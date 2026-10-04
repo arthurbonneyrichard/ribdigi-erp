@@ -1,4 +1,5 @@
 from app.pos import compute_expected_cash, compute_variance, normalize_payment_method
+import pytest
 
 
 def test_expected_cash():
@@ -12,4 +13,6 @@ def test_variance():
 def test_normalize_payment_method():
     assert normalize_payment_method("CASH") == "cash"
     assert normalize_payment_method("Card") == "card"
-    assert normalize_payment_method("unknown") == "other"
+    with pytest.raises(Exception):
+        normalize_payment_method("unknown")
+    assert normalize_payment_method("unknown", strict=False) == "other"

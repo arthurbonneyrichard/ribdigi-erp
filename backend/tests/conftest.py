@@ -14,6 +14,17 @@ from app.security import hash_password
 from app.rbac import permissions_for_role
 
 
+@pytest.fixture(autouse=True)
+def _isolate_file_storage(tmp_path, monkeypatch):
+    """Point local media/backup storage at a per-test temp dir.
+
+    The default MEDIA_DIR/BACKUP_DIR ("/data/...") is the Docker volume mount and
+    is not writable on CI runners, so file-writing tests must not depend on it.
+    """
+    monkeypatch.setattr("app.config.settings.MEDIA_DIR", str(tmp_path / "media"))
+    monkeypatch.setattr("app.config.settings.BACKUP_DIR", str(tmp_path / "backups"))
+
+
 @pytest.fixture
 def _disable_rate_limit(monkeypatch):
     monkeypatch.setattr("app.middleware.settings.RATE_LIMIT_ENABLED", False)
@@ -44,30 +55,21 @@ async def db_session(db_engine):
 
 
 async def _seed_two_tenants(db: AsyncSession) -> dict:
-    t1 = m.Tenant(slug="alpha", company_name="Alpha Co", status="active", industry="retail", max_companies=3)
-    t2 = m.Tenant(slug="beta", company_name="Beta Co", status="active", industry="retail", max_companies=1)
+    t1 = m.Tenant(
+        slug="alpha",
+        company_name="Alpha Co",
+        status="active",
+        industry="retail",
+        package_code="professional",
+    )
+    t2 = m.Tenant(
+        slug="beta",
+        company_name="Beta Co",
+        status="active",
+        industry="retail",
+        package_code="professional",
+    )
     db.add_all([t1, t2])
-    await db.flush()
-
-    c1 = m.Company(
-        tenant_id=t1.id,
-        code="MAIN",
-        name="Alpha Co",
-        industry="retail",
-        is_active=True,
-        is_default=True,
-        store_limit=5,
-    )
-    c2 = m.Company(
-        tenant_id=t2.id,
-        code="MAIN",
-        name="Beta Co",
-        industry="retail",
-        is_active=True,
-        is_default=True,
-        store_limit=5,
-    )
-    db.add_all([c1, c2])
     await db.flush()
 
     u1 = m.User(
@@ -130,22 +132,8 @@ async def _seed_two_tenants(db: AsyncSession) -> dict:
     db.add_all([u1, u2, admin1, mgr1, super_u])
     await db.flush()
 
-    for user, company in ((u1, c1), (u2, c2), (admin1, c1), (mgr1, c1), (super_u, c1)):
-        db.add(
-            m.UserCompanyMembership(
-                tenant_id=user.tenant_id,
-                user_id=user.id,
-                company_id=company.id,
-                role=user.role,
-                permissions=user.permissions if isinstance(user.permissions, dict) else None,
-                is_active=True,
-            )
-        )
-    await db.flush()
-
     p1 = m.Product(
         tenant_id=t1.id,
-        company_id=c1.id,
         name="Alpha Widget",
         sku="A-1",
         cost_price=1,
@@ -154,7 +142,6 @@ async def _seed_two_tenants(db: AsyncSession) -> dict:
     )
     p2 = m.Product(
         tenant_id=t2.id,
-        company_id=c2.id,
         name="Beta Widget",
         sku="B-1",
         cost_price=1,
@@ -163,21 +150,14 @@ async def _seed_two_tenants(db: AsyncSession) -> dict:
     )
     db.add_all([p1, p2])
 
-    party1 = m.Party(
-        tenant_id=t1.id, company_id=c1.id, name="Alpha Customer", kind="customer", credit_limit=100
-    )
-    party2 = m.Party(
-        tenant_id=t2.id, company_id=c2.id, name="Beta Customer", kind="customer", credit_limit=0
-    )
-    supplier2 = m.Party(
-        tenant_id=t2.id, company_id=c2.id, name="Beta Supplier", kind="supplier", credit_limit=0
-    )
+    party1 = m.Party(tenant_id=t1.id, name="Alpha Customer", kind="customer", credit_limit=100)
+    party2 = m.Party(tenant_id=t2.id, name="Beta Customer", kind="customer", credit_limit=0)
+    supplier2 = m.Party(tenant_id=t2.id, name="Beta Supplier", kind="supplier", credit_limit=0)
     db.add_all([party1, party2, supplier2])
     await db.flush()
 
     inv2 = m.SalesInvoice(
         tenant_id=t2.id,
-        company_id=c2.id,
         invoice_number="INV-B-1",
         customer_id=party2.id,
         status="draft",
@@ -191,8 +171,6 @@ async def _seed_two_tenants(db: AsyncSession) -> dict:
     return {
         "t1": t1,
         "t2": t2,
-        "c1": c1,
-        "c2": c2,
         "u1": u1,
         "u2": u2,
         "mgr1": mgr1,
@@ -213,6 +191,14 @@ async def seeded(db_session):
     return await _seed_two_tenants(db_session)
 
 
+async def set_tenant_industry(db_session, tenant, industry: str):
+    """Set tenant business type and persist (re-login required for JWT claims)."""
+    tenant.industry = industry
+    await db_session.commit()
+    await db_session.refresh(tenant)
+    return tenant
+
+
 @pytest_asyncio.fixture
 async def client(db_engine, seeded, _disable_rate_limit):
     session_factory = async_sessionmaker(db_engine, expire_on_commit=False, class_=AsyncSession)
@@ -224,22 +210,25 @@ async def client(db_engine, seeded, _disable_rate_limit):
     app.dependency_overrides[get_db] = override_get_db
     previous_factory = getattr(app.state, "session_factory", None)
     app.state.session_factory = session_factory
+    # Job handlers import SessionLocal at module load and open their own sessions;
+    # point them at the in-memory test engine so CI without Docker DNS still works.
+    import app.db as db_mod
+    import app.jobs as jobs_mod
+
+    previous_db_session_local = db_mod.SessionLocal
+    previous_jobs_session_local = jobs_mod.SessionLocal
+    db_mod.SessionLocal = session_factory
+    jobs_mod.SessionLocal = session_factory
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac, seeded
-    app.dependency_overrides.clear()
+    db_mod.SessionLocal = previous_db_session_local
+    jobs_mod.SessionLocal = previous_jobs_session_local
     app.state.session_factory = previous_factory
+    app.dependency_overrides.clear()
 
 
-async def auth_headers(
-    client: AsyncClient,
-    *,
-    email: str,
-    tenant_slug: str,
-    totp_code: str | None = None,
-    company_id: str | None = None,
-    workspace_kind: str | None = None,
-):
+async def auth_headers(client: AsyncClient, *, email: str, tenant_slug: str, totp_code: str | None = None):
     body = {"email": email, "password": "SecurePass123!", "tenant_id": tenant_slug}
     if totp_code:
         body["totp_code"] = totp_code
@@ -250,31 +239,13 @@ async def auth_headers(
         raise AssertionError("2FA challenge unexpected without totp_code")
     token = data["access_token"]
     tenant_id = data["user"]["tenant_id"]
-    headers = {"Authorization": f"Bearer {token}", "X-Tenant-ID": tenant_id}
-    if company_id:
-        headers["X-Company-ID"] = company_id
-        headers["X-Workspace-Kind"] = workspace_kind or "company"
-    elif workspace_kind:
-        headers["X-Workspace-Kind"] = workspace_kind
-    return headers
+    return {"Authorization": f"Bearer {token}", "X-Tenant-ID": tenant_id}
 
 
-async def company_auth_headers(
-    client: AsyncClient,
-    seed: dict,
-    *,
-    email: str,
-    tenant_slug: str | None = None,
-    totp_code: str | None = None,
-    company_key: str = "c1",
-):
-    """Login + explicit company workspace (ADR-490) for operational module tests."""
-    slug = tenant_slug or ("alpha" if company_key == "c1" else "beta")
+async def platform_owner_headers(client: AsyncClient, seed: dict) -> dict:
+    import pyotp
+
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
     return await auth_headers(
-        client,
-        email=email,
-        tenant_slug=slug,
-        totp_code=totp_code,
-        company_id=seed[company_key].id,
-        workspace_kind="company",
+        client, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
     )

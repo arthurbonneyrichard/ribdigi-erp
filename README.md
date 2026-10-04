@@ -27,18 +27,6 @@ docker compose up --build
 - API: http://localhost:8000
 - Swagger: http://localhost:8000/docs
 
-**Live code updates (Docker Desktop):** `backend` and `frontend` bind-mount the repo. Backend uses uvicorn `--reload`; frontend uses `next dev` with polling (`WATCHPACK_POLLING`). After pulling compose changes, recreate the frontend once:
-
-```bash
-docker compose up -d --build --force-recreate frontend
-```
-
-Celery worker/beat do **not** auto-reload — restart them after backend task/code changes:
-
-```bash
-docker compose restart celery_worker celery_beat
-```
-
 No default application login is created automatically. Create a tenant through the tenant registration API/UI.
 
 ## Optional local seed data
@@ -60,4 +48,37 @@ Never enable this flag in staging or production.
 
 ## Production deployment
 
-Use production secrets, production CORS origins, managed infrastructure, TLS, migrations, backup/restore, monitoring and security controls as defined in the deployment and security documentation. Do not use development Docker credentials in production.
+### Option A — Dokploy (recommended for first VPS)
+
+**Deploy the latest commercial ERP from Git branch `production` (not `main`).**  
+GitHub `main` is an older ERP lineage; Dokploy must use:
+
+| Setting | Value |
+|---------|--------|
+| Repository | `ribdigi-erp` |
+| **Branch** | **`production`** |
+| Compose file | `docker-compose.dokploy.yml` |
+
+After switching branch, **Redeploy with image rebuild (no cache)**. Confirm the live API:
+
+`GET /api/v1/health` → `release_channel: "production"` and a current `build_id`.
+
+Step-by-step (buy VPS → install Dokploy → GitHub → domains → Platform Owner):
+
+- **`ops/vps/DOKPLOY_FIRST_TIME.md`**
+- Compose file: **`docker-compose.dokploy.yml`** (Traefik handles HTTPS — no Caddy)
+
+### Option B — Manual Docker Compose + Caddy
+
+- **`ops/vps/README.md`** — full A–L operator guide
+- **`docker-compose.prod.yml`** — production stack with Caddy
+- **`ops/vps/env.production.example`** — copy to `.env` and replace all `REPLACE_ME_*` values
+
+```bash
+cp ops/vps/env.production.example .env
+# edit .env and ops/vps/Caddyfile for your domain
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Do not run Option A and Option B on the same VPS (both need ports 80/443).  
+Do not use development Docker credentials in production. Never set `ALLOW_DEVELOPMENT_SEED=true` on a public host.

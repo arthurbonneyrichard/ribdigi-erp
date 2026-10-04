@@ -1,8 +1,10 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { api } from '../../lib/api';
 import { useRouter, useSearchParams } from 'next/navigation';
+import LoginBrandLogo from '../../components/LoginBrandLogo';
 
 function VerifyEmailForm() {
   const params = useSearchParams();
@@ -10,36 +12,115 @@ function VerifyEmailForm() {
   const [token, setToken] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [autoTried, setAutoTried] = useState(false);
 
   useEffect(() => {
     const t = params.get('token');
     if (t) setToken(t);
   }, [params]);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  async function verify(rawToken: string) {
     setError('');
+    setMessage('');
+    const trimmedToken = rawToken.trim();
+    if (!trimmedToken) {
+      setError('Email verification token is required.');
+      return;
+    }
+    setSubmitting(true);
     try {
       const r = await api('/auth/verify-email', {
         method: 'POST',
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token: trimmedToken }),
       });
       setMessage(r.message || 'Email verified — you can sign in now');
       setTimeout(() => router.push('/'), 1200);
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setSubmitting(false);
     }
   }
 
+  useEffect(() => {
+    const t = params.get('token');
+    if (t && !autoTried) {
+      setAutoTried(true);
+      verify(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params, autoTried]);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    await verify(token);
+  }
+
   return (
-    <div className="login">
-      <h1>Verify email</h1>
-      <form onSubmit={submit}>
-        <input value={token} onChange={(e) => setToken(e.target.value)} placeholder="Verification token" required />
-        <button type="submit">Verify</button>
-        {error && <p>{error}</p>}
-        {message && <p style={{ color: '#047857' }}>{message}</p>}
-      </form>
+    <div className="login-stage">
+      <div className="login-stage-bg" aria-hidden>
+        <span className="login-orb login-orb-a" />
+        <span className="login-orb login-orb-b" />
+        <span className="login-grid" />
+      </div>
+
+      <div className="login">
+        <LoginBrandLogo />
+
+        <h1 className="login-heading">Verify email</h1>
+        <p className="login-hint" style={{ marginBottom: 12 }}>
+          Confirm your email to unlock sign-in for this workspace.
+        </p>
+
+        <form className="login-form" onSubmit={submit}>
+          {!params.get('token') && (
+            <label className="login-field">
+              <span>Verification token</span>
+              <input
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder="Paste token from email"
+                aria-label="Email verification token"
+                required
+              />
+            </label>
+          )}
+          <button
+            className="login-primary"
+            type="submit"
+            disabled={submitting || !token.trim()}
+            aria-label="Verify email"
+          >
+            {submitting ? 'Verifying…' : 'Verify email'}
+          </button>
+          <Link className="login-ghost" href="/" style={{ display: 'block', textAlign: 'center' }}>
+            Back to sign in
+          </Link>
+          {error && (
+            <p className="login-error" role="alert">
+              {error}
+            </p>
+          )}
+          {message && (
+            <p className="login-success" role="status">
+              {message}
+            </p>
+          )}
+        </form>
+
+        <p className="login-foot">
+          <a href="https://ribdigihouse.com" target="_blank" rel="noopener noreferrer" aria-label="Ribdigi House">
+            <img
+              src="/brand/ribdigi-house-logo.png"
+              alt="Ribdigi House"
+              width={180}
+              height={117}
+              style={{ display: 'block', margin: '12px auto 0', maxWidth: 160, height: 'auto' }}
+            />
+          </a>
+        </p>
+      </div>
     </div>
   );
 }
@@ -48,9 +129,11 @@ export default function Page() {
   return (
     <Suspense
       fallback={
-        <div className="login">
-          <h1>Verify email</h1>
-          <p>Loading…</p>
+        <div className="login-stage">
+          <div className="login">
+            <h1 className="login-heading">Verify email</h1>
+            <p className="login-hint">Loading…</p>
+          </div>
         </div>
       }
     >

@@ -13,6 +13,7 @@ from app.tenants import (
 from app import models as m
 from fastapi import HTTPException
 import pytest
+from tests.conftest import platform_owner_headers
 
 
 def test_assert_suspended_blocks_login():
@@ -70,5 +71,63 @@ def test_grace_in_valid_statuses():
 
 
 def test_industries_cover_brd():
-    for item in ("retail", "pharmacy", "restaurant", "bakery", "wholesale", "manufacturing"):
+    for item in (
+        "retail",
+        "pharmacy",
+        "restaurant",
+        "bakery",
+        "wholesale",
+        "manufacturing",
+        "distribution",
+        "general_trading",
+    ):
         assert item in VALID_INDUSTRIES
+
+
+def test_normalize_industry_accepts_and_rejects():
+    from app.tenants import normalize_industry
+
+    assert normalize_industry("Retail") == "retail"
+    assert normalize_industry("  PHARMACY ") == "pharmacy"
+    with pytest.raises(HTTPException) as exc:
+        normalize_industry("spaceships")
+    assert exc.value.status_code == 400
+    assert "industry must be one of" in str(exc.value.detail)
+    assert normalize_industry(None, required=False) is None
+
+
+@pytest.mark.asyncio
+async def test_create_tenant_rejects_invalid_industry(client):
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
+    bad = await ac.post(
+        "/api/v1/tenants",
+        headers=headers,
+        json={
+            "company_name": "Bad Industry Co",
+            "slug": "bad-industry-co",
+            "industry": "spaceships",
+            "currency": "GHS",
+            "admin_email": "admin@bad-industry.example.com",
+            "admin_password": "SecurePass123!",
+        },
+    )
+    assert bad.status_code == 422, bad.text
+    assert "industry" in bad.text.lower() or "literal" in bad.text.lower() or "Input" in bad.text
+
+    ok = await ac.post(
+        "/api/v1/tenants",
+        headers=headers,
+        json={
+            "company_name": "Good Industry Co",
+            "slug": "good-industry-co",
+            "industry": "Wholesale",
+            "currency": "GHS",
+            "admin_email": "admin@good-industry.example.com",
+            "admin_password": "SecurePass123!",
+        },
+    )
+    assert ok.status_code == 200, ok.text
+    body = ok.json()["data"]
+    assert body["status"] == "trial"
+    assert body["slug"] == "good-industry-co"

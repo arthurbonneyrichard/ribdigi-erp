@@ -42,9 +42,15 @@ def test_serialize_variant_and_batch():
 
 
 def test_sale_line_schemas_accept_variant_id():
-    line = LineItem(product_id="p1", quantity=2, variant_id="v1")
-    assert line.variant_id == "v1"
-    inv = SalesInvoiceItemCreate(product_id="p1", quantity=1, variant_id="v1", unit_price=9.5)
-    assert inv.variant_id == "v1" and inv.unit_price == 9.5
-    ret = SalesReturnItemCreate(product_id="p1", quantity=1, variant_id="v1")
-    assert ret.variant_id == "v1"
+    from uuid import uuid4
+
+    pid, vid = str(uuid4()), str(uuid4())
+    line = LineItem(product_id=pid, quantity=2, variant_id=vid)
+    assert line.variant_id == vid
+    inv = SalesInvoiceItemCreate(product_id=pid, quantity=1, variant_id=vid, unit_price=9.5)
+    assert inv.variant_id == vid and inv.unit_price == 9.5
+    ret = SalesReturnItemCreate(
+        product_id=pid, quantity=1, variant_id=vid, condition="sellable"
+    )
+    assert ret.variant_id == vid
+    assert ret.condition == "sellable"

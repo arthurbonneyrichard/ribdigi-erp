@@ -1,19 +1,17 @@
-"""Stage 5 O1: OWASP automated suite beyond smoke (A01–A03, A05, A07).
+"""OWASP automated suite beyond smoke (A01–A03, A05, A07).
 
-Vendor ZAP / external pen test remain deferred per STAGE_5_PLAN.
+Vendor ZAP / external pen test remain deferred (packaging only on tip).
 """
 
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
+import pyotp
 import pytest
 from jose import jwt
 
-from fastapi import HTTPException
-
 from app.config import settings
-from app.roles import assert_assignable_role
 from tests.conftest import auth_headers
 
 pytestmark = pytest.mark.security
@@ -40,15 +38,39 @@ async def test_a01_cashier_cannot_create_users(client):
 async def test_a01_privilege_escalation_super_admin_blocked(client, db_session):
     """company_admin cannot assign super_admin (A01 privilege escalation)."""
     ac, seed = client
-    with pytest.raises(HTTPException) as exc:
-        await assert_assignable_role(
-            db_session,
-            seed["t1"].id,
-            "super_admin",
-            actor_role="company_admin",
-        )
-    assert exc.value.status_code == 403
-    assert "super_admin" in str(exc.value.detail).lower()
+    from app import totp as totp_svc
+
+    admin = seed["admin1"]
+    secret = pyotp.random_base32()
+    admin.totp_enabled = True
+    admin.totp_secret_enc = totp_svc.encrypt_secret(secret)
+    admin.totp_confirmed_at = datetime.utcnow()
+    await db_session.commit()
+
+    headers = await auth_headers(
+        ac, email="admin@alpha.example.com", tenant_slug="alpha", totp_code=pyotp.TOTP(secret).now()
+    )
+    r = await ac.post(
+        "/api/v1/users",
+        headers=headers,
+        json={
+            "email": "evil-super@alpha.example.com",
+            "full_name": "Evil Super",
+            "password": "SecurePass123!",
+            "role": "super_admin",
+        },
+    )
+    # RoleKeyValue / create_user reject reserved platform roles before RBAC (400/422);
+    # older builds returned 403. Any of these means escalation was blocked.
+    assert r.status_code in (400, 403, 422)
+    body = r.text.lower()
+    assert (
+        "super_admin" in body
+        or "platform/staff" in body
+        or "platform staff" in body
+        or "reserved" in body
+        or "forbidden" in body
+    ), body
 
 
 @pytest.mark.asyncio
@@ -72,9 +94,6 @@ async def test_a01_mismatched_tenant_header_denied(client):
 @pytest.mark.asyncio
 async def test_a02_smtp_settings_never_leak_password(client):
     ac, seed = client
-    # company_admin may require MFA — use super with TOTP
-    import pyotp
-
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     headers = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
@@ -91,7 +110,6 @@ async def test_a02_smtp_settings_never_leak_password(client):
 @pytest.mark.asyncio
 async def test_a02_tampered_jwt_rejected(client):
     ac, seed = client
-    # Sign with wrong secret
     now = datetime.now(timezone.utc)
     bad = jwt.encode(
         {
@@ -119,12 +137,11 @@ async def test_a03_sql_injection_product_search_safe(client):
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
     payload = "'; DROP TABLE products;--"
     r = await ac.get(
-        "/api/v1/inventory/products/lookup",
+        "/api/v1/pos/products/search",
         headers=headers,
         params={"q": payload},
     )
     assert r.status_code == 200, r.text
-    # Still can list products afterward (injection did not break schema)
     again = await ac.get("/api/v1/products", headers=headers)
     assert again.status_code == 200
     assert isinstance(again.json()["data"], list)
@@ -149,7 +166,6 @@ async def test_a03_xss_payload_stored_as_json_text(client):
     assert created.status_code == 200, created.text
     data = created.json()["data"]
     assert data["name"] == xss
-    # JSON response must not include executable HTML context — Content-Type is JSON
     assert "application/json" in created.headers.get("content-type", "")
     assert "<html" not in created.text.lower()
 
@@ -165,20 +181,36 @@ async def test_a05_error_404_has_no_traceback(client):
     assert r.status_code == 404
     blob = r.text.lower()
     assert "traceback" not in blob
-    assert "file \"" not in blob
+    assert 'file "' not in blob
     assert "password_hash" not in blob
 
 
 @pytest.mark.asyncio
 async def test_a07_missing_and_garbage_bearer_rejected(client):
-    ac, _seed = client
+    ac, seed = client
     missing = await ac.get("/api/v1/products")
     assert missing.status_code == 401
     garbage = await ac.get(
         "/api/v1/products",
-        headers={"Authorization": "Bearer not-a-jwt", "X-Tenant-ID": "alpha"},
+        headers={
+            "Authorization": "Bearer not-a-jwt",
+            "X-Tenant-ID": seed["t1"].id,
+        },
     )
     assert garbage.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_a07_garbage_x_tenant_header_rejected_422(client):
+    """Malformed X-Tenant-ID → 422 before JWT auth (UuidIdValue honesty)."""
+    ac, seed = client
+    headers = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
+    for bad in ("alpha", "!!!", "http://evil", "not-a-uuid"):
+        r = await ac.get(
+            "/api/v1/products",
+            headers={**headers, "X-Tenant-ID": bad},
+        )
+        assert r.status_code == 422, bad
 
 
 @pytest.mark.asyncio

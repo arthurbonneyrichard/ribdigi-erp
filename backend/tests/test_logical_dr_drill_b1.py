@@ -2,7 +2,7 @@
 
 Proves the quarterly logical restore drill path end-to-end, writes a durable
 evidence artifact, and confirms foreign-tenant backup ids cannot be restored.
-WAL / pg_dump / S3 PITR remain deferred post-MVP.
+WAL / pg_dump / S3 PITR remain deferred post-MVP (packaging elsewhere).
 """
 
 from __future__ import annotations
@@ -19,20 +19,17 @@ from app import models as m
 from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
-EVIDENCE_DIR = Path("/opt/cursor/artifacts/dr")
+EVIDENCE_DIR = Path("/opt/ribdigi/artifacts/dr")
 EVIDENCE_FILE = EVIDENCE_DIR / "stage23_b1_logical_drill.json"
 READINESS = ROOT / "PRODUCTION_READINESS.md"
 RUNBOOK = ROOT / "docs" / "DR_LOGICAL_BACKUP_RUNBOOK.md"
-PLAN = ROOT / "docs" / "STAGE_23_PLAN.md"
 
 
 async def _admin(ac, seed):
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
-    headers = await auth_headers(
+    return await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
     )
-    headers["X-Workspace-Kind"] = "tenant"
-    return headers
 
 
 def _patch_backup_dir(monkeypatch, tmp_path):
@@ -49,7 +46,6 @@ async def test_logical_dr_drill_end_to_end_with_evidence(
     ac, seed = client
     _patch_backup_dir(monkeypatch, tmp_path)
     headers = await _admin(ac, seed)
-    headers["X-Workspace-Kind"] = "tenant"
     product = seed["p1"]
     original_name = product.name
     original_stock = float(product.stock_qty)
@@ -83,7 +79,7 @@ async def test_logical_dr_drill_end_to_end_with_evidence(
         headers=headers,
         json={"dry_run": False, "confirm": True, "confirm_text": "YES"},
     )
-    assert blocked.status_code == 400
+    assert blocked.status_code == 422
 
     applied = await ac.post(
         f"/api/v1/backup/{backup_id}/restore",
@@ -138,12 +134,14 @@ async def test_logical_dr_drill_end_to_end_with_evidence(
         "verify_proof_ok": vdata["proof"]["ok"],
         "audit_actions": sorted(actions),
         "wal_pitr_deferred": True,
+        "operator_pitr_drill_executed": False,
     }
     EVIDENCE_FILE.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
     loaded = json.loads(EVIDENCE_FILE.read_text(encoding="utf-8"))
     assert loaded["passed"] is True
     assert loaded["workstream"] == "B1"
     assert loaded["wal_pitr_deferred"] is True
+    assert loaded["operator_pitr_drill_executed"] is False
 
 
 @pytest.mark.asyncio
@@ -162,7 +160,6 @@ async def test_foreign_tenant_backup_restore_and_verify_404(
     await db_session.commit()
 
     headers = await _admin(ac, seed)
-    headers["X-Workspace-Kind"] = "tenant"
     for path, body in (
         (f"/api/v1/backup/{foreign.id}/restore", {"dry_run": True}),
         (f"/api/v1/backup/{foreign.id}/verify", {}),
@@ -175,16 +172,14 @@ async def test_foreign_tenant_backup_restore_and_verify_404(
         assert resp.status_code == 404, (path, resp.text)
 
 
-def test_dr_gate_runbook_and_plan_cite_stage23_b1() -> None:
+def test_dr_gate_runbook_cites_stage23_b1() -> None:
     readiness = READINESS.read_text(encoding="utf-8")
     runbook = RUNBOOK.read_text(encoding="utf-8")
-    plan = PLAN.read_text(encoding="utf-8")
 
     assert "- [x] Disaster recovery drill passes." in readiness
     assert "Stage 23 B1" in readiness
     assert "test_logical_dr_drill_b1.py" in readiness
     assert "WAL" in readiness or "PITR" in readiness
-    # Stage 26 W1 may mark WAL strategy Complete (MVP); logical DR gate stays Complete.
     assert (
         "- [ ] Point-in-time recovery/WAL strategy complete." in readiness
         or (
@@ -197,7 +192,3 @@ def test_dr_gate_runbook_and_plan_cite_stage23_b1() -> None:
     assert "stage23_b1_logical_drill.json" in runbook
     assert "test_logical_dr_drill_b1.py" in runbook
     assert "WAL" in runbook or "PITR" in runbook
-
-    b1_line = [ln for ln in plan.splitlines() if "| **B1** |" in ln][0]
-    assert "COMPLETE" in b1_line
-    assert "test_logical_dr_drill_b1.py" in plan

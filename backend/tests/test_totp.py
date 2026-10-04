@@ -23,6 +23,32 @@ def test_secret_encrypt_roundtrip(monkeypatch):
     assert decrypt_secret(enc) == secret
 
 
+def test_secret_encrypt_with_hex_key(monkeypatch):
+    """openssl rand -hex 32 style keys (common in Dokploy docs) must work."""
+    hex_key = "a" * 64
+    monkeypatch.setattr("app.totp.settings.TOTP_ENCRYPTION_KEY", hex_key)
+    monkeypatch.setattr("app.totp.settings.BACKUP_ENCRYPTION_KEY", "")
+    secret = pyotp.random_base32()
+    enc = encrypt_secret(secret)
+    assert decrypt_secret(enc) == secret
+
+
+def test_secret_encrypt_rejects_placeholder_key(monkeypatch):
+    from fastapi import HTTPException
+
+    monkeypatch.setattr(
+        "app.totp.settings.TOTP_ENCRYPTION_KEY",
+        "REPLACE_ME_TOTP_ENCRYPTION_KEY___________",
+    )
+    monkeypatch.setattr("app.totp.settings.BACKUP_ENCRYPTION_KEY", "")
+    try:
+        encrypt_secret("X" * 16)
+        assert False, "expected HTTPException"
+    except HTTPException as exc:
+        assert exc.status_code == 500
+        assert "Invalid TOTP encryption key" in str(exc.detail)
+
+
 def test_verify_totp_window(monkeypatch):
     secret = pyotp.random_base32()
     code = pyotp.TOTP(secret).now()
@@ -54,4 +80,5 @@ def test_enforced_roles_and_enrollment_paths(monkeypatch):
     assert path_allowed_during_enrollment("/api/v1/auth/2fa/setup") is True
     assert path_allowed_during_enrollment("/api/v1/auth/webauthn/register/options") is True
     assert path_allowed_during_enrollment("/api/v1/me") is True
+    assert path_allowed_during_enrollment("/api/v1/notifications/unread-count") is True
     assert path_allowed_during_enrollment("/api/v1/products") is False

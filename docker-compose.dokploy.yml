@@ -1,0 +1,415 @@
+# Ribdigi ERP — standalone production Compose for Dokploy
+#
+# ONE file. No overlay. No second -f argument.
+#
+# =============================================================================
+# CRITICAL — deploy the LATEST commercial ERP from Git branch:
+#   Branch       : production
+#   Compose Path : docker-compose.dokploy.yml
+# Do NOT deploy GitHub `main` for erp.ribdigihouse.com — that is the older ERP
+# lineage and will not include commercial features / migration fixes.
+# After changing branch: Redeploy with image rebuild (no cache).
+# Verify live build via: GET /api/v1/health → release_channel=production
+# =============================================================================
+#
+# Dokploy settings:
+#   Repository   : ribdigi-erp
+#   Branch       : production
+#   Compose Path : docker-compose.dokploy.yml
+#   Compose Type : docker-compose
+#   Environment  : paste .env.production.example (edited) into Dokploy → Environment
+#
+# Domains (Dokploy → Domains → Redeploy after changes):
+#   Host: erp.ribdigihouse.com  Path: /api  Service: backend   Port: 8000
+#     HTTPS + Let's Encrypt, Strip Path OFF (API routes are /api/v1/...)
+#   Host: erp.ribdigihouse.com  Path: /     Service: frontend  Port: 3000
+#     HTTPS + Let's Encrypt
+#
+# Traefik is provided by Dokploy — do NOT add Caddy/nginx/Traefik here.
+# Postgres / Redis / RabbitMQ / MinIO publish NO host ports.
+
+name: ribdigi
+
+networks:
+  # External network created by Dokploy; Traefik reaches frontend/backend here.
+  dokploy-network:
+    external: true
+  # Private data plane (no host ports). Not internal:true so Celery/backend keep egress.
+  ribdigi_internal:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  minio_data:
+  backup_data:
+  media_data:
+
+services:
+  # ---------------------------------------------------------------------------
+  # Edge (routable via Dokploy Traefik only — no host port bindings)
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: runner
+      args:
+        # Baked at image build time — must match public HTTPS API URL
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL}
+        # Baked at image build time. Rebuild the frontend after changing these.
+        NEXT_PUBLIC_UMAMI_SRC: ${NEXT_PUBLIC_UMAMI_SRC:-https://analytics.ribdigihouse.com/script.js}
+        NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-0d5b3d4e-fe16-47bf-91f2-6ce564fb2e0e}
+        NEXT_PUBLIC_UMAMI_DOMAINS: ${NEXT_PUBLIC_UMAMI_DOMAINS:-erp.ribdigihouse.com}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+      # Server-side guide check calls /me on the compose network, not the public URL.
+      API_INTERNAL_URL: http://backend:8000/api/v1
+    expose:
+      - "3000"
+    networks:
+      - dokploy-network
+      - ribdigi_internal
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - node -e "require('http').get('http://127.0.0.1:3000/',(r)=>process.exit(r.statusCode&&r.statusCode<500?0:1)).on('error',()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        # Bump to force Dokploy/BuildKit to rebuild app+alembic layers
+        RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PYTHONPATH: /app
+      APP_ENV: ${APP_ENV:-production}
+      DEBUG: ${DEBUG:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      UVICORN_WORKERS: ${UVICORN_WORKERS:-2}
+      RIBDIGI_RELEASE_CHANNEL: production
+      RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
+    volumes:
+      - backup_data:/data/backups
+      - media_data:/data/media
+    expose:
+      - "8000"
+    networks:
+      - dokploy-network
+      - ribdigi_internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    command:
+      - sh
+      - -c
+      - >-
+        exec uvicorn app.main:app --host 0.0.0.0 --port 8000
+        --workers $${UVICORN_WORKERS:-2}
+        --proxy-headers --forwarded-allow-ips='*'
+        --log-level $$(echo "$${LOG_LEVEL:-info}" | tr '[:upper:]' '[:lower:]')
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # ---------------------------------------------------------------------------
+  # One-shot schema migration (Alembic). Refuses create_all in production.
+  # ---------------------------------------------------------------------------
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
+    env_file: .env
+    environment:
+      PYTHONPATH: /app
+      APP_ENV: ${APP_ENV:-production}
+      DEBUG: ${DEBUG:-false}
+      RIBDIGI_RELEASE_CHANNEL: production
+      RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
+    volumes:
+      - backup_data:/data/backups
+      - media_data:/data/media
+    networks:
+      - ribdigi_internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Prove the image embeds IF NOT EXISTS 0106, then run Alembic.
+    command:
+      - sh
+      - -c
+      - |
+        set -eu
+        echo "migrate: build-id=$$(cat /app/.build-id)"
+        MIG=/app/alembic/versions/20260917_0106_transaction_client_request_id.py
+        test -f "$$MIG"
+        test -f /app/alembic/versions/20260917_0107_pos_devices.py
+        grep -F 'RIBDIGI_0106_IF_NOT_EXISTS_V3' "$$MIG"
+        grep -F 'ADD COLUMN IF NOT EXISTS client_request_id' "$$MIG"
+        if grep -E 'op\.add_column\(|batch\.add_column\(' "$$MIG"; then
+          echo "migrate: FATAL stale 0106 still has op/batch.add_column(" >&2
+          exit 3
+        fi
+        if grep -F 'ADD COLUMN client_request_id' "$$MIG"; then
+          echo "migrate: FATAL stale 0106 still has unconditional ADD COLUMN" >&2
+          exit 4
+        fi
+        echo "migrate: 0106 on-disk proof OK"
+        exec python scripts/bootstrap.py
+    restart: "on-failure"
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # Background jobs (RabbitMQ broker, Redis results — see app.config)
+  # ---------------------------------------------------------------------------
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PYTHONPATH: /app
+      APP_ENV: ${APP_ENV:-production}
+      DEBUG: ${DEBUG:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      RIBDIGI_RELEASE_CHANNEL: production
+      RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
+    volumes:
+      - backup_data:/data/backups
+      - media_data:/data/media
+    networks:
+      - ribdigi_internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    command:
+      - celery
+      - -A
+      - app.celery_app.celery
+      - worker
+      - --loglevel=${CELERY_LOG_LEVEL:-INFO}
+      - --concurrency=${CELERY_CONCURRENCY:-2}
+    # Inherit backend image HEALTHCHECK would curl :8000 (FastAPI) — wrong for Celery.
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - celery -A app.celery_app.celery inspect ping --timeout 10 2>/dev/null | grep -qi pong
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PYTHONPATH: /app
+      APP_ENV: ${APP_ENV:-production}
+      DEBUG: ${DEBUG:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      RIBDIGI_RELEASE_CHANNEL: production
+      RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
+    networks:
+      - ribdigi_internal
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      celery_worker:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
+    command:
+      - celery
+      - -A
+      - app.celery_app.celery
+      - beat
+      - --loglevel=${CELERY_LOG_LEVEL:-INFO}
+      - --schedule=/tmp/celerybeat-schedule
+      - --pidfile=/tmp/celerybeat.pid
+    # Beat has no HTTP server; Dockerfile HEALTHCHECK (curl :8000) is invalid here.
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - test -f /tmp/celerybeat.pid && kill -0 "$$(cat /tmp/celerybeat.pid)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # Data plane — NO ports: published to the host / public internet
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ribdigi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-ribdigi_erp}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ribdigi_internal
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U $${POSTGRES_USER:-ribdigi} -d $${POSTGRES_DB:-ribdigi_erp}
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory-policy
+      - allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - ribdigi_internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  rabbitmq:
+    # Management plugin stays internal-only (15672 is NOT published)
+    image: rabbitmq:3.13-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-ribdigi}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?set RABBITMQ_DEFAULT_PASS}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - ribdigi_internal
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2024-12-18T13-15-44Z
+    restart: unless-stopped
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    networks:
+      - ribdigi_internal
+    # MinIO server image may lack curl/wget; readiness is covered by minio-init retries.
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  minio-init:
+    image: quay.io/minio/mc:RELEASE.2024-11-21T17-21-54Z
+    depends_on:
+      minio:
+        condition: service_started
+    networks:
+      - ribdigi_internal
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      S3_BUCKET: ${S3_BUCKET:-ribdigi-prod}
+    entrypoint: >
+      /bin/sh -c "
+      for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+        mc alias set local http://minio:9000 \"$${MINIO_ROOT_USER}\" \"$${MINIO_ROOT_PASSWORD}\" && break;
+        sleep 2;
+      done;
+      mc mb -p local/$${S3_BUCKET} || true;
+      exit 0;
+      "
+    restart: "on-failure"

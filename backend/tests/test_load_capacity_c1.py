@@ -14,7 +14,7 @@ from loadtest.config import TARGETS
 from loadtest.runner import run_baseline
 
 ROOT = Path(__file__).resolve().parents[2]
-EVIDENCE_DIR = Path("/opt/cursor/artifacts/loadtest")
+EVIDENCE_DIR = Path("/opt/ribdigi/artifacts/loadtest")
 EVIDENCE_FILE = EVIDENCE_DIR / "stage26_c1_capacity_evidence.json"
 
 
@@ -133,32 +133,7 @@ def test_load_gate_complete_mvp():
     assert "stage26_c1_capacity_evidence.json" in pr or "LOAD_CAPACITY_MVP.md" in pr
     assert "1000" in pr
     assert "Remaining" in pr or "operator" in pr.lower()
-    # Prior Stage 26 gates stay Complete
+    # Prior Reliability gates stay Complete
     assert "- [x] Monitoring, metrics, logging and alerting complete." in pr
     assert "- [x] Point-in-time recovery/WAL strategy complete." in pr
     assert "- [x] Kubernetes production deployment reviewed." in pr
-
-
-def test_c1_plan_launch_roadmap_cite():
-    plan = _read("docs/STAGE_26_PLAN.md")
-    c1_line = [ln for ln in plan.splitlines() if "| **C1** |" in ln][0]
-    assert "COMPLETE" in c1_line
-    assert "test_load_capacity_c1.py" in plan
-    assert (
-        "C1 next" in plan
-        or "C1 complete" in plan
-        or "D1 next" in plan
-        or "D1 complete" in plan
-        or "H26x next" in plan
-        or "Closed" in plan
-        or "exit met" in plan.lower()
-    )
-
-    launch = _read("docs/LAUNCH_CHECKLIST.md")
-    assert "test_load_capacity_c1.py" in launch
-    assert "Stage 26 C1" in launch or "LOAD_CAPACITY_MVP" in launch
-
-    roadmap = _read("docs/DEVELOPMENT_ROADMAP.md")
-    assert "Stage 26 C1" in roadmap
-    assert "test_load_capacity_c1.py" in roadmap
-    assert "LOAD_CAPACITY_MVP.md" in roadmap or "stage26_c1" in roadmap

@@ -3,24 +3,56 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime
 
 from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import optional_honest_narrative, require_honest_narrative
+from app.schemas import validate_e164_phone_value
 
 CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$")
 
+DEFAULT_DEPARTMENTS: tuple[tuple[str, str], ...] = (
+    ("SALES", "Sales"),
+    ("INV", "Inventory"),
+    ("PURCH", "Purchasing"),
+    ("WH", "Warehouse"),
+    ("FIN", "Finance"),
+    ("ACCT", "Accounting"),
+    ("HR", "Human Resources"),
+    ("PROD", "Production"),
+    ("OPS", "Operations"),
+    ("CS", "Customer Service"),
+    ("IT", "Information Technology"),
+    ("ADMIN", "Administration"),
+    ("MKT", "Marketing"),
+)
 
-def _clean_code(code: str) -> str:
-    value = (code or "").strip().upper()
+
+def _clean_code(code: str, *, label: str = "code") -> str:
+    # OpenAPI BranchCodeValue / DepartmentCodeValue → 422; service defense → 400.
+    value = require_honest_narrative(
+        (code or "").strip().upper(), label=label, max_length=40
+    )
     if not CODE_RE.fullmatch(value):
         raise HTTPException(
             status_code=400,
             detail="code must be 1–40 chars: letters, digits, underscore, or hyphen",
         )
     return value
+
+
+def _optional_branch_phone(value: str | None) -> str | None:
+    """OpenAPI E164PhoneValue → 422; service defense-in-depth → 400."""
+    if value is None:
+        return None
+    try:
+        return validate_e164_phone_value(str(value).strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 async def _assert_tenant_user(db: AsyncSession, tenant_id: str, user_id: str | None) -> str | None:
@@ -39,7 +71,6 @@ async def _assert_tenant_user(db: AsyncSession, tenant_id: str, user_id: str | N
 def serialize_branch(row: m.Branch) -> dict:
     return {
         "id": row.id,
-        "company_id": getattr(row, "company_id", None),
         "code": row.code,
         "name": row.name,
         "address": row.address,
@@ -54,7 +85,6 @@ def serialize_branch(row: m.Branch) -> dict:
 def serialize_department(row: m.Department) -> dict:
     return {
         "id": row.id,
-        "company_id": getattr(row, "company_id", None),
         "code": row.code,
         "name": row.name,
         "branch_id": row.branch_id,
@@ -64,36 +94,26 @@ def serialize_department(row: m.Department) -> dict:
     }
 
 
-async def get_branch(
-    db: AsyncSession,
-    tenant_id: str,
-    branch_id: str,
-    *,
-    company_id: str | None = None,
-) -> m.Branch:
-    stmt = select(m.Branch).where(m.Branch.id == branch_id, m.Branch.tenant_id == tenant_id)
-    if company_id:
-        stmt = stmt.where(m.Branch.company_id == company_id)
-    row = (await db.execute(stmt)).scalar_one_or_none()
+async def get_branch(db: AsyncSession, tenant_id: str, branch_id: str) -> m.Branch:
+    row = (
+        await db.execute(
+            select(m.Branch).where(m.Branch.id == branch_id, m.Branch.tenant_id == tenant_id)
+        )
+    ).scalar_one_or_none()
     if not row:
         raise HTTPException(status_code=404, detail="Branch not found")
     return row
 
 
-async def get_department(
-    db: AsyncSession,
-    tenant_id: str,
-    department_id: str,
-    *,
-    company_id: str | None = None,
-) -> m.Department:
-    stmt = select(m.Department).where(
-        m.Department.id == department_id,
-        m.Department.tenant_id == tenant_id,
-    )
-    if company_id:
-        stmt = stmt.where(m.Department.company_id == company_id)
-    row = (await db.execute(stmt)).scalar_one_or_none()
+async def get_department(db: AsyncSession, tenant_id: str, department_id: str) -> m.Department:
+    row = (
+        await db.execute(
+            select(m.Department).where(
+                m.Department.id == department_id,
+                m.Department.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
     if not row:
         raise HTTPException(status_code=404, detail="Department not found")
     return row
@@ -105,12 +125,9 @@ async def list_branches(
     *,
     active_only: bool = False,
     is_active: bool | None = None,
-    company_id: str | None = None,
 ) -> list[m.Branch]:
     """Stage 122 O1 — is_active for honest inactive-only branch lists."""
     stmt = select(m.Branch).where(m.Branch.tenant_id == tenant_id)
-    if company_id:
-        stmt = stmt.where(m.Branch.company_id == company_id)
     if is_active is not None:
         stmt = stmt.where(m.Branch.is_active.is_(bool(is_active)))
     elif active_only:
@@ -125,19 +142,56 @@ async def list_departments(
     branch_id: str | None = None,
     active_only: bool = False,
     is_active: bool | None = None,
-    company_id: str | None = None,
+    q: str | None = None,
 ) -> list[m.Department]:
     """Stage 122 O1 — is_active for honest inactive-only department lists."""
     stmt = select(m.Department).where(m.Department.tenant_id == tenant_id)
-    if company_id:
-        stmt = stmt.where(m.Department.company_id == company_id)
     if branch_id:
         stmt = stmt.where(m.Department.branch_id == branch_id)
     if is_active is not None:
         stmt = stmt.where(m.Department.is_active.is_(bool(is_active)))
     elif active_only:
         stmt = stmt.where(m.Department.is_active == True)  # noqa: E712
+    needle = (q or "").strip()
+    if needle:
+        like = f"%{needle}%"
+        stmt = stmt.where(
+            (m.Department.name.ilike(like)) | (m.Department.code.ilike(like))
+        )
     return list((await db.execute(stmt.order_by(m.Department.name))).scalars().all())
+
+
+async def _assert_unique_department_name(
+    db: AsyncSession,
+    tenant_id: str,
+    name: str,
+    *,
+    exclude_id: str | None = None,
+) -> None:
+    stmt = select(m.Department).where(
+        m.Department.tenant_id == tenant_id,
+        func.lower(m.Department.name) == name.strip().lower(),
+    )
+    if exclude_id:
+        stmt = stmt.where(m.Department.id != exclude_id)
+    exists = (await db.execute(stmt)).scalar_one_or_none()
+    if exists:
+        raise HTTPException(
+            status_code=409, detail="Department name already exists in this tenant"
+        )
+
+
+async def ensure_default_departments(db: AsyncSession, tenant_id: str) -> None:
+    existing = (
+        await db.execute(select(m.Department.id).where(m.Department.tenant_id == tenant_id).limit(1))
+    ).scalar_one_or_none()
+    if existing:
+        return
+    for code, name in DEFAULT_DEPARTMENTS:
+        try:
+            await create_department(db, tenant_id=tenant_id, code=code, name=name)
+        except HTTPException:
+            continue
 
 
 async def create_branch(
@@ -150,39 +204,26 @@ async def create_branch(
     phone: str | None = None,
     email: str | None = None,
     manager_id: str | None = None,
-    company_id: str | None = None,
 ) -> m.Branch:
-    if not company_id:
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "code": "COMPANY_WORKSPACE_REQUIRED",
-                "message": "Creating a branch requires an active company workspace.",
-            },
-        )
-    code = _clean_code(code)
-    name_clean = (name or "").strip()
-    if len(name_clean) < 2:
-        raise HTTPException(status_code=400, detail="name must be at least 2 characters")
+    code = _clean_code(code, label="branch code")
+    # OpenAPI BranchNameValue → 422; service defense-in-depth → 400.
+    name_clean = require_honest_narrative(
+        name, label="branch name", min_length=2, max_length=150
+    )
     manager_id = await _assert_tenant_user(db, tenant_id, manager_id)
     exists = (
         await db.execute(
-            select(m.Branch).where(
-                m.Branch.tenant_id == tenant_id,
-                m.Branch.code == code,
-                m.Branch.company_id == company_id,
-            )
+            select(m.Branch).where(m.Branch.tenant_id == tenant_id, m.Branch.code == code)
         )
     ).scalar_one_or_none()
     if exists:
         raise HTTPException(status_code=409, detail="Branch code already exists")
     row = m.Branch(
         tenant_id=tenant_id,
-        company_id=company_id,
         code=code,
         name=name_clean,
-        address=(address or "").strip() or None,
-        phone=(phone or "").strip() or None,
+        address=optional_honest_narrative(address, label="branch address", max_length=500),
+        phone=_optional_branch_phone(phone),
         email=(email or "").strip() or None,
         manager_id=manager_id,
         is_active=True,
@@ -204,18 +245,20 @@ async def update_branch(
     manager_id: str | None = None,
     clear_manager: bool = False,
     is_active: bool | None = None,
-    company_id: str | None = None,
 ) -> m.Branch:
-    row = await get_branch(db, tenant_id, branch_id, company_id=company_id)
+    row = await get_branch(db, tenant_id, branch_id)
     if name is not None:
-        name_clean = name.strip()
-        if len(name_clean) < 2:
-            raise HTTPException(status_code=400, detail="name must be at least 2 characters")
-        row.name = name_clean
+        # OpenAPI BranchNameValue → 422; service defense-in-depth → 400.
+        row.name = require_honest_narrative(
+            name, label="branch name", min_length=2, max_length=150
+        )
     if address is not None:
-        row.address = address.strip() or None
+        row.address = optional_honest_narrative(
+            address, label="branch address", max_length=500
+        )
     if phone is not None:
-        row.phone = phone.strip() or None
+        # Defense in depth: BranchUpdate E164PhoneValue → 422 on blank/invalid.
+        row.phone = _optional_branch_phone(phone)
     if email is not None:
         row.email = email.strip() or None
     if clear_manager:
@@ -236,45 +279,39 @@ async def create_department(
     name: str,
     branch_id: str | None = None,
     head_user_id: str | None = None,
-    company_id: str | None = None,
 ) -> m.Department:
-    if not company_id:
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "code": "COMPANY_WORKSPACE_REQUIRED",
-                "message": "Creating a department requires an active company workspace.",
-            },
-        )
-    code = _clean_code(code)
-    name_clean = (name or "").strip()
-    if len(name_clean) < 2:
-        raise HTTPException(status_code=400, detail="name must be at least 2 characters")
+    code = _clean_code(code, label="department code")
+    # OpenAPI DepartmentNameValue → 422; service defense-in-depth → 400.
+    name_clean = require_honest_narrative(
+        name, label="department name", min_length=2, max_length=150
+    )
+    await _assert_unique_department_name(db, tenant_id, name_clean)
     if branch_id:
-        await get_branch(db, tenant_id, branch_id, company_id=company_id)
+        await get_branch(db, tenant_id, branch_id)
     head_user_id = await _assert_tenant_user(db, tenant_id, head_user_id)
     exists = (
         await db.execute(
-            select(m.Department).where(
-                m.Department.tenant_id == tenant_id,
-                m.Department.code == code,
-                m.Department.company_id == company_id,
-            )
+            select(m.Department).where(m.Department.tenant_id == tenant_id, m.Department.code == code)
         )
     ).scalar_one_or_none()
     if exists:
         raise HTTPException(status_code=409, detail="Department code already exists")
-    row = m.Department(
-        tenant_id=tenant_id,
-        company_id=company_id,
-        branch_id=branch_id,
-        code=code,
-        name=name_clean,
-        head_user_id=head_user_id,
-        is_active=True,
+    from app import schema_compat
+    from app.models import uid
+
+    row = await schema_compat.insert_and_get(
+        db,
+        m.Department,
+        {
+            "id": uid(),
+            "tenant_id": tenant_id,
+            "branch_id": branch_id,
+            "code": code,
+            "name": name_clean,
+            "head_user_id": head_user_id,
+            "is_active": True,
+        },
     )
-    db.add(row)
-    await db.flush()
     return row
 
 
@@ -289,18 +326,20 @@ async def update_department(
     head_user_id: str | None = None,
     clear_head: bool = False,
     is_active: bool | None = None,
-    company_id: str | None = None,
 ) -> m.Department:
-    row = await get_department(db, tenant_id, department_id, company_id=company_id)
+    row = await get_department(db, tenant_id, department_id)
     if name is not None:
-        name_clean = name.strip()
-        if len(name_clean) < 2:
-            raise HTTPException(status_code=400, detail="name must be at least 2 characters")
-        row.name = name_clean
+        # OpenAPI DepartmentNameValue → 422; service defense-in-depth → 400.
+        row.name = require_honest_narrative(
+            name, label="department name", min_length=2, max_length=150
+        )
+        await _assert_unique_department_name(
+            db, tenant_id, row.name, exclude_id=row.id
+        )
     if clear_branch:
         row.branch_id = None
     elif branch_id is not None:
-        await get_branch(db, tenant_id, branch_id, company_id=company_id or row.company_id)
+        await get_branch(db, tenant_id, branch_id)
         row.branch_id = branch_id
     if clear_head:
         row.head_user_id = None
@@ -318,17 +357,16 @@ async def assert_user_org_assignment(
     *,
     branch_id: str | None,
     department_id: str | None,
-    company_id: str | None = None,
 ) -> tuple[str | None, str | None]:
     resolved_branch = None
     resolved_dept = None
     if branch_id:
-        branch = await get_branch(db, tenant_id, branch_id, company_id=company_id)
+        branch = await get_branch(db, tenant_id, branch_id)
         if not branch.is_active:
             raise HTTPException(status_code=400, detail="Branch is inactive")
         resolved_branch = branch.id
     if department_id:
-        dept = await get_department(db, tenant_id, department_id, company_id=company_id)
+        dept = await get_department(db, tenant_id, department_id)
         if not dept.is_active:
             raise HTTPException(status_code=400, detail="Department is inactive")
         if dept.branch_id and resolved_branch and dept.branch_id != resolved_branch:

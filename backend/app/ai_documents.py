@@ -1,204 +1,631 @@
-"""AI document assistant (Phase 4 / BR-21.8).
+"""Rule-based AI Document Assistant (BR-21.8) — OCR extract, auto-match, discrepancies.
 
-Wraps existing receipt/invoice OCR, auto-matches extracted fields to tenant
-parties/products, and flags discrepancies — suggest-only, no silent writes.
+Reuses expense_ocr (pypdf / Tesseract). No LLM. Analyze is suggest-only; optional
+``create-expense`` / ``create-purchase-invoice`` create drafts only after an explicit
+user action.
 """
 
 from __future__ import annotations
 
 import re
 from datetime import datetime
+from typing import Any
 
 from fastapi import HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app import expense_ocr as expense_ocr_svc
+from app import ai as ai_svc
+from app import ai_expenses as ai_expenses_svc
+from app import expense_ocr as ocr_svc
+from app.honesty import money_json, optional_honest_narrative
+from app import expenses as expenses_svc
 from app import models as m
+from app import purchasing as purchasing_svc
 from app import storage as storage_svc
-from app.ai_expenses import suggest_category_from_text
-from app.reports import apply_company_filter
+
+VALID_DOC_TYPES = frozenset({"receipt", "invoice", "purchase_order", "auto"})
 
 
-def _norm(text: str | None) -> str:
-    return re.sub(r"\s+", " ", (text or "").strip().lower())
+def _norm(s: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", (s or "").lower())
 
 
-async def _match_party(
-    db: AsyncSession,
-    tenant_id: str,
-    *,
-    kind: str,
+def _tokens(s: str) -> set[str]:
+    return {t for t in re.split(r"[^a-z0-9]+", (s or "").lower()) if len(t) >= 2}
+
+
+def name_similarity(a: str, b: str) -> float:
+    """Heuristic 0..1 similarity for party / document name matching."""
+    na, nb = _norm(a), _norm(b)
+    if not na or not nb:
+        return 0.0
+    if na == nb:
+        return 1.0
+    if na in nb or nb in na:
+        return 0.9
+    ta, tb = _tokens(a), _tokens(b)
+    if not ta or not tb:
+        return 0.0
+    inter = len(ta & tb)
+    union = len(ta | tb)
+    j = inter / union if union else 0.0
+    shorter = ta if len(ta) <= len(tb) else tb
+    cover = inter / len(shorter) if shorter else 0.0
+    return money_json(round(max(j, cover * 0.85), 3))
+
+
+def infer_document_type(text: str, explicit: str | None) -> str:
+    if explicit and explicit != "auto":
+        return explicit if explicit in VALID_DOC_TYPES else "auto"
+    t = (text or "").lower()
+    if re.search(r"\bpurchase\s*order\b|\bpo[\s#:.-]*\d|\bpo\s*number\b", t):
+        return "purchase_order"
+    if re.search(r"\binvoice\b|\btax\s*invoice\b|\bsupplier\s*invoice\b", t):
+        return "invoice"
+    if re.search(r"\breceipt\b|\bmerchant\b|\bcashier\b", t):
+        return "receipt"
+    return "invoice"
+
+
+def match_parties(
     payee: str | None,
-    company_id: str | None = None,
-) -> dict | None:
-    if not payee:
-        return None
-    needle = _norm(payee)
-    if len(needle) < 2:
-        return None
-    stmt = select(m.Party).where(
-        m.Party.tenant_id == tenant_id,
-        m.Party.kind == kind,
-    )
-    stmt = apply_company_filter(stmt, m.Party.company_id, company_id)
-    parties = (await db.execute(stmt)).scalars().all()
-    exact = [p for p in parties if _norm(p.name) == needle]
-    if exact:
-        p = exact[0]
-        return {"id": p.id, "name": p.name, "kind": kind, "match": "exact", "confidence": 0.95}
-    partial = [p for p in parties if needle in _norm(p.name) or _norm(p.name) in needle]
-    if partial:
-        p = partial[0]
-        return {"id": p.id, "name": p.name, "kind": kind, "match": "partial", "confidence": 0.7}
-    return None
-
-
-async def _match_products(
-    db: AsyncSession,
-    tenant_id: str,
-    text: str,
-    company_id: str | None = None,
-) -> list[dict]:
-    stmt = select(m.Product).where(
-        m.Product.tenant_id == tenant_id,
-        m.Product.is_active == True,  # noqa: E712
-    )
-    stmt = apply_company_filter(stmt, m.Product.company_id, company_id)
-    products = (await db.execute(stmt)).scalars().all()
-    hay = _norm(text)
-    hits = []
-    for p in products:
-        for token in filter(None, [_norm(p.sku), _norm(p.name)]):
-            if len(token) >= 3 and token in hay:
-                hits.append(
-                    {
-                        "id": p.id,
-                        "sku": p.sku,
-                        "name": p.name,
-                        "match": "sku" if token == _norm(p.sku) else "name",
-                        "confidence": 0.8 if token == _norm(p.sku) else 0.6,
-                    }
-                )
-                break
-    return hits[:20]
-
-
-async def analyze_document(
-    db: AsyncSession,
-    tenant_id: str,
+    parties: list[m.Party],
     *,
+    preferred_kinds: set[str] | None = None,
+    min_score: float = 0.45,
+    limit: int = 5,
+) -> list[dict[str, Any]]:
+    if not payee:
+        return []
+    hits: list[dict[str, Any]] = []
+    for p in parties:
+        score = name_similarity(payee, p.name)
+        if preferred_kinds and p.kind not in preferred_kinds:
+            score = score * 0.85
+        if score < min_score:
+            continue
+        hits.append(
+            {
+                "party_id": p.id,
+                "name": p.name,
+                "kind": p.kind,
+                "score": money_json(round(score, 3)),
+            }
+        )
+    hits.sort(key=lambda x: (-x["score"], x["name"]))
+    return hits[:limit]
+
+
+def match_purchase_orders(
+    *,
+    reference: str | None,
+    raw_text: str,
+    orders: list[m.PurchaseOrder],
+    parties_by_id: dict[str, m.Party],
+) -> list[dict[str, Any]]:
+    blob = f"{reference or ''}\n{raw_text or ''}".upper()
+    hits: list[dict[str, Any]] = []
+    for po in orders:
+        po_n = (po.po_number or "").strip()
+        if not po_n:
+            continue
+        if po_n.upper() in blob or _norm(po_n) in _norm(blob):
+            supplier = parties_by_id.get(po.supplier_id)
+            hits.append(
+                {
+                    "purchase_order_id": po.id,
+                    "po_number": po.po_number,
+                    "status": po.status,
+                    "total_amount": money_json(po.total_amount),
+                    "supplier_id": po.supplier_id,
+                    "supplier_name": supplier.name if supplier else None,
+                    "score": money_json(1) if po_n.upper() in blob else money_json(0.8),
+                }
+            )
+    hits.sort(key=lambda x: -x["score"])
+    return hits[:10]
+
+
+def build_discrepancies(
+    *,
+    fields: dict[str, Any],
+    confidence: float,
+    expected_amount: float | None,
+    party_matches: list[dict[str, Any]],
+    po_matches: list[dict[str, Any]],
+    duplicate_refs: list[dict[str, Any]],
+    document_type: str,
+) -> list[dict[str, Any]]:
+    flags: list[dict[str, Any]] = []
+    if fields.get("amount") is None:
+        flags.append(
+            {
+                "code": "missing_amount",
+                "severity": "medium",
+                "message": "Could not extract a total amount",
+            }
+        )
+    if fields.get("expense_date") is None:
+        flags.append(
+            {
+                "code": "missing_date",
+                "severity": "low",
+                "message": "Could not extract a document date",
+            }
+        )
+    if fields.get("payee") is None:
+        flags.append(
+            {
+                "code": "missing_payee",
+                "severity": "medium",
+                "message": "Could not extract vendor/payee",
+            }
+        )
+    if confidence < 0.4:
+        flags.append(
+            {
+                "code": "low_confidence",
+                "severity": "high",
+                "message": f"OCR confidence is low ({confidence})",
+            }
+        )
+    if expected_amount is not None and fields.get("amount") is not None:
+        amt = money_json(fields["amount"])
+        expected = money_json(expected_amount)
+        if abs(amt - expected) > 0.05:
+            flags.append(
+                {
+                    "code": "amount_mismatch",
+                    "severity": "high",
+                    "message": (
+                        f"Extracted amount {amt} differs from expected {expected:.2f}"
+                    ),
+                    "extracted": amt,
+                    "expected": expected,
+                }
+            )
+    if fields.get("payee") and not party_matches:
+        flags.append(
+            {
+                "code": "no_party_match",
+                "severity": "medium",
+                "message": f"No tenant party matched payee '{fields['payee']}'",
+            }
+        )
+    if document_type == "purchase_order" and not po_matches:
+        flags.append(
+            {
+                "code": "no_po_match",
+                "severity": "medium",
+                "message": "Document looks like a PO but no purchase_order.po_number matched",
+            }
+        )
+    for dup in duplicate_refs:
+        flags.append(
+            {
+                "code": "duplicate_reference",
+                "severity": "high",
+                "message": dup["message"],
+                "record": dup,
+            }
+        )
+    if po_matches and fields.get("amount") is not None:
+        top = po_matches[0]
+        if abs(money_json(fields["amount"]) - money_json(top["total_amount"])) > 0.05:
+            flags.append(
+                {
+                    "code": "po_amount_mismatch",
+                    "severity": "medium",
+                    "message": (
+                        f"Extracted amount {fields['amount']} differs from matched PO "
+                        f"{top['po_number']} total {top['total_amount']}"
+                    ),
+                }
+            )
+    return flags
+
+
+async def analyze_upload(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    actor_user_id: str | None,
     upload: UploadFile,
-    document_type: str = "receipt",
-    company_id: str | None = None,
-) -> dict:
-    doc_type = (document_type or "receipt").strip().lower()
-    if doc_type not in {"receipt", "expense", "invoice", "purchase_order", "purchase", "po"}:
+    document_type: str = "auto",
+    expected_amount: float | None = None,
+) -> dict[str, Any]:
+    # Schema AiDocumentTypeValue rejects blank/invalid → 422; keep check defense-in-depth.
+    doc_type = (document_type or "auto").strip().lower()
+    if doc_type not in VALID_DOC_TYPES:
         raise HTTPException(
-            status_code=400,
-            detail="document_type must be receipt|expense|invoice|purchase_order",
+            status_code=422,
+            detail=f"document_type must be one of: {', '.join(sorted(VALID_DOC_TYPES))}",
         )
 
     data = await upload.read()
     if not data:
         raise HTTPException(status_code=400, detail="Empty upload")
-    if len(data) > 8 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File too large (max 8MB)")
+    max_bytes = int(
+        getattr(storage_svc.settings, "MEDIA_MAX_ATTACHMENT_BYTES", 10_000_000) or 10_000_000
+    )
+    if len(data) > max_bytes:
+        raise HTTPException(status_code=413, detail="File too large")
 
+    filename = upload.filename or "document.bin"
+    content_type = upload.content_type or "application/octet-stream"
     media = storage_svc.MediaObject(
-        key="inline",
+        key=f"{tenant_id}/ai-documents/{filename}",
         data=data,
-        content_type=upload.content_type or "application/octet-stream",
-        filename=upload.filename or "upload.bin",
+        content_type=content_type,
+        filename=filename,
         backend="memory",
     )
-    ocr = expense_ocr_svc.suggest_from_media(media)
+    ocr = ocr_svc.suggest_from_media(media)
     fields = dict(ocr.get("suggestions") or {})
-    warnings = list(ocr.get("warnings") or [])
-    discrepancies: list[dict] = []
+    raw = ocr.get("raw_text_preview") or ""
+    confidence = money_json(ocr.get("confidence") or 0)
+    resolved_type = infer_document_type(raw, doc_type)
 
-    # Category suggestion for receipts/expenses
-    cat_stmt = select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tenant_id)
-    cat_stmt = apply_company_filter(cat_stmt, m.ExpenseCategory.company_id, company_id)
-    cats = (await db.execute(cat_stmt)).scalars().all()
-    text_blob = " ".join(
-        filter(
-            None,
-            [
-                ocr.get("raw_text_preview"),
-                fields.get("description"),
-                fields.get("payee"),
-                fields.get("reference"),
-            ],
-        )
+    parties = (
+        await db.execute(select(m.Party).where(m.Party.tenant_id == tenant_id))
+    ).scalars().all()
+    preferred = {"supplier"} if resolved_type in {"invoice", "purchase_order"} else None
+    party_matches = match_parties(
+        fields.get("payee"), list(parties), preferred_kinds=preferred
     )
-    cat_sug = suggest_category_from_text(text_blob, cats) if cats else None
-    if cat_sug:
-        fields["category"] = cat_sug["name"]
-        fields["category_id"] = cat_sug["id"]
 
-    matches: dict = {"party": None, "products": []}
-    if doc_type in {"invoice", "purchase", "purchase_order", "po"}:
-        matches["party"] = await _match_party(
-            db, tenant_id, kind="supplier", payee=fields.get("payee"), company_id=company_id
+    orders = (
+        await db.execute(
+            select(m.PurchaseOrder).where(m.PurchaseOrder.tenant_id == tenant_id)
         )
-        if fields.get("payee") and not matches["party"]:
-            discrepancies.append(
+    ).scalars().all()
+    parties_by_id = {p.id: p for p in parties}
+    po_matches = match_purchase_orders(
+        reference=fields.get("reference"),
+        raw_text=raw,
+        orders=list(orders),
+        parties_by_id=parties_by_id,
+    )
+
+    duplicate_refs: list[dict[str, Any]] = []
+    ref = (fields.get("reference") or "").strip()
+    if ref:
+        inv_hits = (
+            await db.execute(
+                select(m.PurchaseInvoice).where(
+                    m.PurchaseInvoice.tenant_id == tenant_id,
+                    m.PurchaseInvoice.supplier_invoice_number == ref,
+                )
+            )
+        ).scalars().all()
+        for inv in inv_hits:
+            duplicate_refs.append(
                 {
-                    "field": "payee",
-                    "severity": "medium",
-                    "detail": f"No supplier matched for payee '{fields.get('payee')}'.",
+                    "kind": "purchase_invoice",
+                    "id": inv.id,
+                    "invoice_number": inv.invoice_number,
+                    "message": (
+                        f"Reference {ref} already on purchase invoice {inv.invoice_number}"
+                    ),
                 }
             )
-    else:
-        matches["party"] = await _match_party(
-            db, tenant_id, kind="supplier", payee=fields.get("payee"), company_id=company_id
-        )
-        # also try customer for credit notes / receipts from buyers — rare
-        if not matches["party"]:
-            matches["party"] = await _match_party(
-                db, tenant_id, kind="customer", payee=fields.get("payee"), company_id=company_id
+        exp_hits = (
+            await db.execute(
+                select(m.Expense).where(
+                    m.Expense.tenant_id == tenant_id,
+                    m.Expense.reference == ref,
+                )
+            )
+        ).scalars().all()
+        for exp in exp_hits:
+            duplicate_refs.append(
+                {
+                    "kind": "expense",
+                    "id": exp.id,
+                    "message": f"Reference {ref} already on expense {exp.id}",
+                }
             )
 
-    matches["products"] = await _match_products(
-        db, tenant_id, text_blob, company_id=company_id
+    category_suggestion = None
+    if resolved_type == "receipt":
+        await expenses_svc.ensure_default_categories(db, tenant_id)
+        cats = (
+            await db.execute(
+                select(m.ExpenseCategory).where(
+                    m.ExpenseCategory.tenant_id == tenant_id,
+                    m.ExpenseCategory.is_active == True,  # noqa: E712
+                )
+            )
+        ).scalars().all()
+        blob = " ".join(
+            str(x)
+            for x in (raw, fields.get("payee"), fields.get("description"))
+            if x
+        )
+        category_suggestion = ai_expenses_svc.suggest_category_from_text(blob, list(cats))
+        if category_suggestion:
+            fields["category_id"] = category_suggestion["category_id"]
+            fields["category"] = category_suggestion["category"]
+
+    mapped = {
+        "supplier_invoice_number": fields.get("reference") or fields.get("payee"),
+        "invoice_date": fields.get("expense_date"),
+        "notes": fields.get("description"),
+        "ocr_amount": fields.get("amount"),
+        "ocr_payee": fields.get("payee"),
+    }
+
+    discrepancies = build_discrepancies(
+        fields=fields,
+        confidence=confidence,
+        expected_amount=expected_amount,
+        party_matches=party_matches,
+        po_matches=po_matches,
+        duplicate_refs=duplicate_refs,
+        document_type=resolved_type,
     )
 
-    if fields.get("amount") is None:
-        discrepancies.append(
-            {
-                "field": "amount",
-                "severity": "high",
-                "detail": "Could not extract a total amount from the document.",
-            }
-        )
-    if fields.get("expense_date") is None and doc_type in {"receipt", "expense", "invoice"}:
-        discrepancies.append(
-            {
-                "field": "date",
-                "severity": "medium",
-                "detail": "Could not extract a document date.",
-            }
-        )
+    warnings = list(ocr.get("warnings") or [])
+    await ai_svc.record_query(
+        db,
+        tenant_id=tenant_id,
+        user_id=actor_user_id,
+        endpoint="documents_analyze",
+        status="ok",
+        message=f"{resolved_type}:{filename}",
+        details={
+            "document_type": resolved_type,
+            "engine": ocr.get("engine"),
+            "confidence": confidence,
+            "match_count": len(party_matches),
+            "discrepancy_count": len(discrepancies),
+            "method": "rule_based_ocr",
+        },
+    )
+    await db.commit()
 
     return {
-        "generated_at": datetime.utcnow(),
-        "method": "rules_v1",
-        "document_type": doc_type,
-        "filename": upload.filename,
-        "content_type": upload.content_type,
-        "ocr": {
-            "engine": ocr.get("engine"),
-            "confidence": ocr.get("confidence"),
-            "raw_text_preview": ocr.get("raw_text_preview"),
-            "tesseract_available": ocr.get("tesseract_available"),
+        "method": "rule_based_ocr",
+        "document_type": resolved_type,
+        "document_type_requested": doc_type,
+        "engine": ocr.get("engine"),
+        "tesseract_available": ocr.get("tesseract_available"),
+        "filename": filename,
+        "content_type": content_type,
+        "confidence": confidence,
+        "extracted": fields,
+        "mapped": mapped,
+        "matches": {
+            "parties": party_matches,
+            "purchase_orders": po_matches,
         },
-        "extracted_fields": fields,
-        "matches": matches,
+        "category_suggestion": category_suggestion,
         "discrepancies": discrepancies,
         "warnings": warnings,
+        "raw_text_preview": raw[:2000],
         "apply_hint": (
-            "Review extracted fields and matches, then create/update the related "
-            "expense or purchase invoice manually — analysis is suggest-only."
+            "Review matches/discrepancies, then use Create draft expense or Create draft "
+            "purchase invoice (PO-matched), or apply fields manually on Expenses / Purchasing. "
+            "Analyze itself writes no business records."
         ),
+    }
+
+
+def _parse_expense_date(value: Any) -> datetime | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, datetime):
+        return value
+    text = str(value).strip()
+    if not text:
+        return None
+    for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%d-%m-%Y", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(text[:10], fmt)
+        except ValueError:
+            continue
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).replace(tzinfo=None)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid expense_date: {text}") from None
+
+
+async def create_expense_from_extract(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    amount: float | None,
+    payee: str | None = None,
+    description: str | None = None,
+    reference: str | None = None,
+    category_id: str | None = None,
+    category: str | None = None,
+    payment_method: str | None = None,
+    expense_date: Any = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
+    department_id: str | None = None,
+) -> dict:
+    """Create a pending/auto-approved expense from reviewed OCR fields (explicit action)."""
+    try:
+        amt = money_json(amount) if amount is not None else 0.0
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="amount is required") from exc
+    if amt <= 0:
+        raise HTTPException(status_code=400, detail="amount must be greater than 0")
+
+    method = (payment_method or "cash").strip().lower() or "cash"
+
+    parsed_date = _parse_expense_date(expense_date)
+    # OpenAPI ExpenseDescriptionValue / PayeeValue / ReferenceValue → 422; service → 400.
+    desc = optional_honest_narrative(description, label="expense description") or ""
+    payee_clean = optional_honest_narrative(payee, label="expense payee", max_length=150)
+    reference_clean = optional_honest_narrative(
+        reference, label="expense reference", max_length=100
+    )
+    if not desc and payee_clean:
+        desc = f"OCR receipt — {payee_clean}"
+    if not desc:
+        desc = "OCR draft expense"
+
+    await expenses_svc.ensure_default_categories(db, tenant_id)
+    resolved_category_id = category_id
+    resolved_category = category
+    if not resolved_category_id and not (resolved_category or "").strip():
+        misc = (
+            await db.execute(
+                select(m.ExpenseCategory).where(
+                    m.ExpenseCategory.tenant_id == tenant_id,
+                    m.ExpenseCategory.code == "MISC",
+                    m.ExpenseCategory.is_active == True,  # noqa: E712
+                )
+            )
+        ).scalar_one_or_none()
+        if misc:
+            resolved_category_id = misc.id
+            resolved_category = misc.name
+        else:
+            resolved_category = "Miscellaneous"
+
+    expense = await expenses_svc.create_expense(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        amount=amt,
+        description=desc,
+        category_id=resolved_category_id,
+        category=resolved_category,
+        payment_method=method,
+        reference=reference_clean,
+        payee=payee_clean,
+        store_id=store_id,
+        branch_id=branch_id,
+        department_id=department_id,
+        expense_date=parsed_date,
+    )
+    await ai_svc.record_query(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        endpoint="documents_create_expense",
+        status="ok",
+        message=f"expense:{expense.id}",
+        details={
+            "expense_id": expense.id,
+            "amount": money_json(expense.amount),
+            "payee": expense.payee,
+            "reference": expense.reference,
+            "method": "rule_based_ocr_apply",
+        },
+    )
+    serialized = await expenses_svc.serialize_expense_full(db, expense)
+    return {
+        "expense": serialized,
+        "method": "rule_based_ocr_apply",
+    }
+
+
+def _parse_invoice_date(value: Any) -> datetime | None:
+    """Reuse expense date parser for OCR invoice dates."""
+    return _parse_expense_date(value)
+
+
+async def create_purchase_invoice_from_extract(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    purchase_order_id: str,
+    supplier_id: str | None = None,
+    supplier_invoice_number: str | None = None,
+    notes: str | None = None,
+    is_reverse_charge: bool = False,
+    invoice_date: Any = None,
+) -> dict:
+    """Create a draft purchase invoice by copying lines from a matched PO (explicit action).
+
+    MVP scope: PO-matched path only — no line-item OCR. Analyze remains suggest-only.
+    """
+    po_id = (purchase_order_id or "").strip()
+    if not po_id:
+        raise HTTPException(status_code=400, detail="purchase_order_id is required")
+
+    po = await purchasing_svc.get_po(db, tenant_id, po_id)
+    status = (po.status or "").strip().lower()
+    if status == "cancelled":
+        raise HTTPException(status_code=400, detail="Purchase order is cancelled")
+
+    resolved_supplier_id = (supplier_id or "").strip() or po.supplier_id
+    if not resolved_supplier_id:
+        raise HTTPException(status_code=400, detail="supplier_id is required")
+    if resolved_supplier_id != po.supplier_id:
+        raise HTTPException(
+            status_code=400,
+            detail="supplier_id must match the purchase order supplier",
+        )
+
+    po_items = await purchasing_svc.list_po_items(db, tenant_id, po.id)
+    items: list[dict] = []
+    for poi in po_items:
+        qty = money_json(poi.quantity or 0)
+        if qty <= 0:
+            continue
+        items.append(
+            {
+                "product_id": poi.product_id,
+                "quantity": money_json(qty),
+                "unit_price": money_json(poi.unit_price),
+                "tax_rate": money_json(poi.tax_rate),
+                "discount": money_json(getattr(poi, "discount", 0) or 0),
+            }
+        )
+    if not items:
+        raise HTTPException(status_code=400, detail="Purchase order has no line items")
+
+    discount_amount = money_json(round(sum(money_json(i.get("discount") or 0) for i in items), 2))
+    parsed_date = _parse_invoice_date(invoice_date)
+    # OpenAPI PurchaseInvoiceNotesValue → 422; omit/`null`/blank → OCR default note.
+    inv_notes = optional_honest_narrative(notes, label="purchase invoice notes")
+    if not inv_notes:
+        inv_notes = f"OCR draft PI from {po.po_number}"
+
+    inv = await purchasing_svc.create_purchase_invoice(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        supplier_id=resolved_supplier_id,
+        purchase_order_id=po.id,
+        items=items,
+        supplier_invoice_number=optional_honest_narrative(
+            supplier_invoice_number, label="supplier invoice number", max_length=100
+        ),
+        invoice_date=parsed_date,
+        discount_amount=discount_amount,
+        notes=inv_notes,
+        is_reverse_charge=bool(is_reverse_charge),
+    )
+    await ai_svc.record_query(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        endpoint="documents_create_purchase_invoice",
+        status="ok",
+        message=f"purchase_invoice:{inv.id}",
+        details={
+            "purchase_invoice_id": inv.id,
+            "invoice_number": inv.invoice_number,
+            "purchase_order_id": po.id,
+            "po_number": po.po_number,
+            "supplier_id": resolved_supplier_id,
+            "method": "rule_based_ocr_apply_po",
+        },
+    )
+    serialized = await purchasing_svc.serialize_purchase_invoice(db, inv)
+    return {
+        "purchase_invoice": serialized,
+        "purchase_order_id": po.id,
+        "po_number": po.po_number,
+        "method": "rule_based_ocr_apply_po",
     }

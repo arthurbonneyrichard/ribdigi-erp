@@ -1,217 +1,264 @@
-"""Custom tenant roles — create, assign, authorize, delete guards."""
+"""Custom tenant roles (BR-3.2)."""
 
 from __future__ import annotations
 
 import pyotp
 import pytest
 
-from app import models as m
-from app.rbac import has_permission
+from app.rbac import has_permission, is_system_role
 from tests.conftest import auth_headers
 
 
-async def _admin_headers(ac, seed):
+async def _super(ac, seed):
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     return await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
     )
 
 
+def test_has_permission_custom_role_does_not_merge_cashier():
+    assert not is_system_role("warehouse_lead")
+    # Only inventory — must not inherit cashier POS
+    assert has_permission(
+        "warehouse_lead",
+        "inventory",
+        "write",
+        overrides={"inventory": ["read", "write"]},
+    )
+    assert not has_permission(
+        "warehouse_lead",
+        "pos",
+        "write",
+        overrides={"inventory": ["read", "write"]},
+    )
+
+
 @pytest.mark.asyncio
-async def test_create_custom_role_appears_in_catalog(client):
+async def test_create_assign_and_enforce_custom_role(client, db_session):
     ac, seed = client
-    headers = await _admin_headers(ac, seed)
+    admin = await _super(ac, seed)
+
     created = await ac.post(
         "/api/v1/roles",
-        headers=headers,
+        headers=admin,
         json={
-            "slug": "floor_lead",
-            "label": "Floor Lead",
-            "base_role": "cashier",
-            "record_scope": "own",
-            "permissions": {
-                "dashboard": ["read"],
-                "pos": ["read", "write"],
-                "inventory": ["read"],
-                "notifications": ["read", "write"],
-                "security": ["read", "write"],
-            },
+            "key": "warehouse_lead",
+            "label": "Warehouse Lead",
+            "base_role": "inventory_officer",
+            "record_scope": "all",
         },
     )
     assert created.status_code == 200, created.text
     body = created.json()["data"]
-    assert body["role"] == "floor_lead"
+    assert body["role"] == "warehouse_lead"
     assert body["system"] is False
-    assert body["permissions"]["pos"] == ["read", "write"]
-    assert "*" not in body["permissions"]
+    assert "inventory" in body["permissions"]
+    assert body["record_scope"] == "all"
 
-    catalog = await ac.get("/api/v1/roles", headers=headers)
-    assert catalog.status_code == 200
-    roles = {r["role"]: r for r in catalog.json()["data"]}
-    assert "floor_lead" in roles
-    assert roles["cashier"]["system"] is True
-    assert roles["floor_lead"]["system"] is False
+    catalog = await ac.get("/api/v1/roles", headers=admin)
+    keys = {r["role"] for r in catalog.json()["data"]}
+    assert "warehouse_lead" in keys
+    assert "cashier" in keys
 
-
-@pytest.mark.asyncio
-async def test_cannot_create_system_slug_or_wildcard_custom_role(client):
-    ac, seed = client
-    headers = await _admin_headers(ac, seed)
-    reserved = await ac.post(
-        "/api/v1/roles",
-        headers=headers,
-        json={"slug": "cashier", "label": "Fake Cashier", "base_role": "cashier"},
-    )
-    assert reserved.status_code == 400
-
-    wildcard = await ac.post(
-        "/api/v1/roles",
-        headers=headers,
-        json={
-            "slug": "almost_admin",
-            "label": "Almost Admin",
-            "permissions": {"*": ["*"]},
-        },
-    )
-    assert wildcard.status_code == 400
-
-
-@pytest.mark.asyncio
-async def test_assign_custom_role_enforces_permissions(client):
-    ac, seed = client
-    headers = await _admin_headers(ac, seed)
-    await ac.post(
-        "/api/v1/roles",
-        headers=headers,
-        json={
-            "slug": "pos_only",
-            "label": "POS Only",
-            "permissions": {
-                "dashboard": ["read"],
-                "pos": ["read", "write"],
-                "notifications": ["read"],
-                "security": ["read", "write"],
-            },
-            "record_scope": "own",
-        },
-    )
-    created = await ac.post(
+    user = await ac.post(
         "/api/v1/users",
-        headers=headers,
+        headers=admin,
         json={
-            "email": "posonly@alpha.example.com",
-            "full_name": "POS Only User",
+            "email": "whlead@alpha.example.com",
+            "full_name": "Warehouse Lead",
             "password": "SecurePass123!",
-            "role": "pos_only",
+            "role": "warehouse_lead",
         },
     )
-    assert created.status_code == 200, created.text
-    assert created.json()["data"]["user"]["role"] == "pos_only"
+    assert user.status_code == 200, user.text
+    assert user.json()["data"]["user"]["role"] == "warehouse_lead"
+
+    # Admin-created users start unverified; mark verified so login exercises RBAC.
+    from sqlalchemy import select
+
+    from app import models as m
+
+    row = (
+        await db_session.execute(
+            select(m.User).where(m.User.email == "whlead@alpha.example.com")
+        )
+    ).scalar_one()
+    row.email_verified = True
+    await db_session.commit()
 
     login = await ac.post(
         "/api/v1/auth/login",
         json={
-            "email": "posonly@alpha.example.com",
+            "email": "whlead@alpha.example.com",
             "password": "SecurePass123!",
             "tenant_id": "alpha",
         },
     )
     assert login.status_code == 200, login.text
     token = login.json()["data"]["access_token"]
-    tenant_id = login.json()["data"]["user"]["tenant_id"]
-    user_headers = {"Authorization": f"Bearer {token}", "X-Tenant-ID": tenant_id}
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "X-Tenant-ID": seed["t1"].id,
+    }
 
-    pos_ok = await ac.get("/api/v1/pos/sessions", headers=user_headers)
-    assert pos_ok.status_code != 403
+    # inventory:read allowed via cloned inventory_officer map
+    inv = await ac.get("/api/v1/products", headers=headers)
+    assert inv.status_code == 200, inv.text
 
-    denied = await ac.get("/api/v1/expenses", headers=user_headers)
+    # users:write should be denied (inventory_officer lacks users write)
+    denied = await ac.post(
+        "/api/v1/users",
+        headers=headers,
+        json={
+            "email": "x@alpha.example.com",
+            "full_name": "Nope",
+            "password": "SecurePass123!",
+            "role": "cashier",
+        },
+    )
     assert denied.status_code == 403
 
 
 @pytest.mark.asyncio
-async def test_cannot_delete_custom_role_in_use(client):
+async def test_cannot_delete_custom_role_with_users(client):
     ac, seed = client
-    headers = await _admin_headers(ac, seed)
+    admin = await _super(ac, seed)
     await ac.post(
         "/api/v1/roles",
-        headers=headers,
+        headers=admin,
         json={
-            "slug": "temp_role",
-            "label": "Temp Role",
-            "base_role": "cashier",
+            "key": "buyer",
+            "label": "Buyer",
+            "permissions": {"purchasing": ["read", "write"], "dashboard": ["read"]},
         },
     )
     await ac.post(
         "/api/v1/users",
-        headers=headers,
+        headers=admin,
         json={
-            "email": "temp@alpha.example.com",
-            "full_name": "Temp User",
+            "email": "buyer@alpha.example.com",
+            "full_name": "Buyer",
             "password": "SecurePass123!",
-            "role": "temp_role",
+            "role": "buyer",
         },
     )
-    blocked = await ac.delete("/api/v1/roles/temp_role", headers=headers)
+    blocked = await ac.delete("/api/v1/roles/buyer", headers=admin)
     assert blocked.status_code == 409
 
-    # Reassign then delete
-    users = await ac.get("/api/v1/users", headers=headers)
-    uid = next(u["id"] for u in users.json()["data"] if u["email"] == "temp@alpha.example.com")
-    await ac.patch(f"/api/v1/users/{uid}", headers=headers, json={"role": "cashier"})
-    deleted = await ac.delete("/api/v1/roles/temp_role", headers=headers)
+    # Deactivate user then delete role still blocked while assigned
+    users = await ac.get("/api/v1/users", headers=admin)
+    uid = next(u["id"] for u in users.json()["data"] if u["email"] == "buyer@alpha.example.com")
+    await ac.patch(f"/api/v1/users/{uid}", headers=admin, json={"role": "cashier"})
+    deleted = await ac.delete("/api/v1/roles/buyer", headers=admin)
     assert deleted.status_code == 200, deleted.text
 
 
 @pytest.mark.asyncio
-async def test_patch_role_permissions_updates_assigned_users(client, db_session):
+async def test_system_roles_immutable(client):
     ac, seed = client
-    headers = await _admin_headers(ac, seed)
-    await ac.post(
+    admin = await _super(ac, seed)
+    bad = await ac.patch(
+        "/api/v1/roles/cashier",
+        headers=admin,
+        json={"label": "Nope"},
+    )
+    assert bad.status_code == 400
+    collide = await ac.post(
         "/api/v1/roles",
-        headers=headers,
-        json={
-            "slug": "stock_helper",
-            "label": "Stock Helper",
-            "permissions": {
-                "dashboard": ["read"],
-                "inventory": ["read"],
-                "notifications": ["read"],
-                "security": ["read", "write"],
-            },
-        },
+        headers=admin,
+        json={"key": "cashier", "label": "Clone", "base_role": "cashier"},
     )
+    assert collide.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_custom_role_soft_deactivate_and_reactivate(client):
+    """BR-3.2 — PATCH is_active; default catalog hides inactive; include_inactive lists them;
+    new assignment of inactive roles is blocked; reactivation restores catalog + assign."""
+    ac, seed = client
+    admin = await _super(ac, seed)
+    key = "night_auditor"
+
     created = await ac.post(
+        "/api/v1/roles",
+        headers=admin,
+        json={
+            "key": key,
+            "label": "Night Auditor",
+            "base_role": "accountant",
+            "record_scope": "branch",
+        },
+    )
+    assert created.status_code == 200, created.text
+    assert created.json()["data"]["is_active"] is True
+
+    deact = await ac.patch(
+        f"/api/v1/roles/{key}",
+        headers=admin,
+        json={"is_active": False},
+    )
+    assert deact.status_code == 200, deact.text
+    assert deact.json()["data"]["is_active"] is False
+
+    default_catalog = await ac.get("/api/v1/roles", headers=admin)
+    assert default_catalog.status_code == 200
+    default_keys = {r["role"] for r in default_catalog.json()["data"]}
+    assert key not in default_keys
+    assert "cashier" in default_keys
+
+    full = await ac.get("/api/v1/roles?include_inactive=true", headers=admin)
+    assert full.status_code == 200
+    by_role = {r["role"]: r for r in full.json()["data"]}
+    assert key in by_role
+    assert by_role[key]["is_active"] is False
+    assert by_role[key]["system"] is False
+
+    blocked = await ac.post(
         "/api/v1/users",
-        headers=headers,
+        headers=admin,
         json={
-            "email": "stock@alpha.example.com",
-            "full_name": "Stock Helper",
+            "email": "night@alpha.example.com",
+            "full_name": "Night User",
             "password": "SecurePass123!",
-            "role": "stock_helper",
+            "role": key,
         },
     )
-    user_id = created.json()["data"]["id"]
+    assert blocked.status_code == 400, blocked.text
 
-    await ac.put(
-        "/api/v1/roles/stock_helper/permissions",
-        headers=headers,
+    react = await ac.patch(
+        f"/api/v1/roles/{key}",
+        headers=admin,
+        json={"is_active": True},
+    )
+    assert react.status_code == 200, react.text
+    assert react.json()["data"]["is_active"] is True
+
+    restored = await ac.get("/api/v1/roles", headers=admin)
+    assert key in {r["role"] for r in restored.json()["data"]}
+
+    user = await ac.post(
+        "/api/v1/users",
+        headers=admin,
         json={
-            "permissions": {
-                "dashboard": ["read"],
-                "inventory": ["read", "write"],
-                "notifications": ["read", "write"],
-                "security": ["read", "write"],
-            }
+            "email": "night@alpha.example.com",
+            "full_name": "Night User",
+            "password": "SecurePass123!",
+            "role": key,
         },
     )
-    user = await db_session.get(m.User, user_id)
-    await db_session.refresh(user)
-    assert "write" in (user.permissions or {}).get("inventory", [])
+    assert user.status_code == 200, user.text
+    assert user.json()["data"]["user"]["role"] == key
 
 
-def test_has_permission_uses_overrides_as_authority():
-    # Custom restrictive map must not inherit cashier POS write.
-    custom = {"dashboard": ["read"], "inventory": ["read"]}
-    assert has_permission("pos_only", "pos", "read", overrides=custom) is False
-    assert has_permission("pos_only", "inventory", "read", overrides=custom) is True
-    assert has_permission("cashier", "pos", "write", overrides=None) is True
+def test_custom_role_soft_deactivate_ui_wired():
+    from pathlib import Path
+
+    users = (Path(__file__).resolve().parents[2] / "frontend/app/(dashboard)/users/page.tsx").read_text(
+        encoding="utf-8"
+    )
+    assert "setCustomRoleActive" in users
+    assert "include_inactive=true" in users
+    assert "[inactive]" in users
+    assert "Deactivate" in users
+    assert "Activate" in users
+    assert "assignableRoles" in users

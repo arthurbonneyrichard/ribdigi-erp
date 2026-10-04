@@ -76,463 +76,6 @@ Phase 1 (Foundation)
 
 Establish the technical foundation of the platform: multi-tenant architecture, authentication, user management, company setup, and the executive dashboard. This phase delivers the "shell" that all subsequent features inhabit.
 
-**Stage 1 exit (2026-08-09):** Foundation workstreams A–H are recorded as met in `docs/STAGE_1_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_008_STAGE1_FREEZE.md` (no new Stage 1 feature scope).
-
-**Stage 2 open (2026-08-09):** Inventory & Supply Chain hardening track approved — `docs/ADR_009_STAGE2_OPEN.md` + `docs/STAGE_2_PLAN.md`.
-
-**Stage 2 exit (2026-08-09):** I1–I6 met — `docs/STAGE_2_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_010_STAGE2_FREEZE.md` (no new Stage 2 feature scope; amended when Stage 3 opened).
-
-**Stage 3 open (2026-08-09):** Sales, POS & Financials hardening track approved — `docs/ADR_011_STAGE3_OPEN.md` + `docs/STAGE_3_PLAN.md`.
-
-**Stage 3 exit (2026-08-09):** A1–A3, P1, C1 met — `docs/STAGE_3_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_012_STAGE3_FREEZE.md` (amended when Stage 4 opened).
-
-**Stage 4 open (2026-08-09):** Intelligence, Multi-Store & Scale hardening track approved — `docs/ADR_013_STAGE4_OPEN.md` + `docs/STAGE_4_PLAN.md`.
-
-**Stage 4 exit (2026-08-09):** T1, M1, N1, R1 met — `docs/STAGE_4_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_014_STAGE4_FREEZE.md` (amended when Stage 5 opened).
-
-**Stage 5 open (2026-08-09):** Polish, Security & Launch hardening track approved — `docs/ADR_015_STAGE5_OPEN.md` + `docs/STAGE_5_PLAN.md`.
-
-**Stage 5 exit (2026-08-09):** S1, O1, A1, B1, H5, L1 met — `docs/STAGE_5_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_016_STAGE5_FREEZE.md` (amended when Stage 6 opened).
-
-**Stage 6 open (2026-08-09):** Integrations, Onboarding & Performance track approved — `docs/ADR_017_STAGE6_OPEN.md` + `docs/STAGE_6_PLAN.md`.
-
-**Stage 6 exit (2026-08-09):** K1, W1, N2, P2 met — `docs/STAGE_6_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_018_STAGE6_FREEZE.md` (amended when Stage 7 opened).
-
-**Stage 7 open (2026-08-09):** Launch Reliability Closeout track approved — `docs/ADR_019_STAGE7_OPEN.md` + `docs/STAGE_7_PLAN.md`.
-
-**Stage 7 exit (2026-08-09):** W2, C2, K2, L7x met — `docs/STAGE_7_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_020_STAGE7_FREEZE.md`. Launch checklist: `docs/LAUNCH_CHECKLIST.md`.
-
-**Stage 8 open (2026-08-09):** Credit Fidelity & AP Cash Closeout track approved — `docs/ADR_021_STAGE8_OPEN.md` + `docs/STAGE_8_PLAN.md`.
-
-**Stage 8 exit (2026-08-09):** S1, S2, A1, P1, H8x met — `docs/STAGE_8_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_022_STAGE8_FREEZE.md`.
-
-**Stage 9 open (2026-08-09):** Report Fidelity & Document Attachments Closeout track approved — `docs/ADR_023_STAGE9_OPEN.md` + `docs/STAGE_9_PLAN.md`.
-
-**Stage 9 exit (2026-08-09):** J1, R1, R2, D1, H9x met — `docs/STAGE_9_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_024_STAGE9_FREEZE.md`. Fidelity: `docs/STAGE_9_FIDELITY.md`.
-
-**Stage 10 open (2026-08-09):** Tax Fidelity & Document Workflow Closeout track approved — `docs/ADR_025_STAGE10_OPEN.md` + `docs/STAGE_10_PLAN.md`.
-
-**Stage 10 exit (2026-08-09):** T1, T2, A1, B1, H10x met — `docs/STAGE_10_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_026_STAGE10_FREEZE.md`.
-
-**Stage 11 open (2026-08-10):** Purchase-to-Pay Chain Fidelity track approved — `docs/ADR_027_STAGE11_OPEN.md` + `docs/STAGE_11_PLAN.md` (PO → GRN → inventory → supplier balance → accounting → audit).
-
-**Stage 11 exit (2026-08-10):** C1, C2, A1, D1, H11x met — `docs/STAGE_11_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_028_STAGE11_FREEZE.md`. Fidelity: `docs/STAGE_11_FIDELITY.md`.
-
-**Stage 12 open (2026-08-10):** Order-to-Cash & POS Chain Fidelity track approved — `docs/ADR_029_STAGE12_OPEN.md` + `docs/STAGE_12_PLAN.md` (Customers → Sales → Invoices → Payments → POS).
-
-**Stage 12 exit (2026-08-10):** C1, C2, A1, D1, H12x met — `docs/STAGE_12_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_030_STAGE12_FREEZE.md`. Fidelity: `docs/STAGE_12_FIDELITY.md`.
-
-**Stage 13 open (2026-08-10):** POS Sale Execution Chain Hardening track approved — `docs/ADR_031_STAGE13_OPEN.md` + `docs/STAGE_13_PLAN.md` (POS → Sale → Payment → Inventory → Receipt → Accounting → Audit).
-
-**Stage 13 exit (2026-08-10):** H1, H2, D1, H13x met — `docs/STAGE_13_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_032_STAGE13_FREEZE.md`. Fidelity: `docs/STAGE_13_FIDELITY.md`.
-
-**Stage 14 open (2026-08-10):** Finance Closeout Chain Fidelity track approved — `docs/ADR_033_STAGE14_OPEN.md` + `docs/STAGE_14_PLAN.md` (Expenses → Accounting → Credit → Tax).
-
-**Stage 14 D1 (2026-08-10):** Spec / BR / readiness fidelity sync — `docs/STAGE_14_FIDELITY.md`.
-
-**Stage 14 exit (2026-08-10):** E1, E2, A1, A2, T1, R1, A3, D1, H14x met — `docs/STAGE_14_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_034_STAGE14_FREEZE.md`. Fidelity: `docs/STAGE_14_FIDELITY.md`.
-
-**Stage 15 open (2026-08-10):** Sales Inventory–Ledger Chain Fidelity track approved — `docs/ADR_035_STAGE15_OPEN.md` + `docs/STAGE_15_PLAN.md` (Sales → Inventory → Customer balance → Tax → Accounting → Audit).
-
-**Stage 15 D1 (2026-08-10):** Spec / BR / readiness fidelity sync — `docs/STAGE_15_FIDELITY.md`.
-
-**Stage 15 exit (2026-08-10):** C1, I1, H1, R1, T1, A1, D1, H15x met — `docs/STAGE_15_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_036_STAGE15_FREEZE.md`. Fidelity: `docs/STAGE_15_FIDELITY.md`.
-
-**Stage 16 open (2026-08-10):** Multi-Store / Reports / Notifications Fidelity track approved — `docs/ADR_037_STAGE16_OPEN.md` + `docs/STAGE_16_PLAN.md` (Warehouses → Stock per location → Transfers → Transfer receiving → Central management; Reports suite; Notification alerts).
-
-**Stage 16 D1 (2026-08-10):** Spec / BR-13–15 / readiness fidelity sync — `docs/STAGE_16_FIDELITY.md`.
-
-**Stage 16 exit (2026-08-10):** M1, N1, R1, R2, M2, N2, D1, H16x met — `docs/STAGE_16_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_038_STAGE16_FREEZE.md`. Fidelity: `docs/STAGE_16_FIDELITY.md`.
-
-**Stage 17 open (2026-08-10):** Inventory Catalog & Stock Ops Fidelity track approved — `docs/ADR_039_STAGE17_OPEN.md` + `docs/STAGE_17_PLAN.md` (Catalog → Stock Ops → Warehouse → Low Stock).
-
-**Stage 17 D1 (2026-08-10):** Spec / BR-5.1–5.5 / readiness fidelity sync — `docs/STAGE_17_FIDELITY.md`.
-
-**Stage 17 exit (2026-08-10):** C1, S1, S2, W1, L1, A1, D1, H17x met — `docs/STAGE_17_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_040_STAGE17_FREEZE.md`. Fidelity: `docs/STAGE_17_FIDELITY.md`.
-
-**Stage 18 open (2026-08-10):** Launch Integrity & Ops Fidelity track approved — `docs/ADR_041_STAGE18_OPEN.md` + `docs/STAGE_18_PLAN.md` (Security → Backup/Restore → Data integrity → Logging/Monitoring → Test & deploy hygiene).
-
-**Stage 18 D1 (2026-08-10):** Spec / BR-16–17 / readiness / launch fidelity sync — `docs/STAGE_18_FIDELITY.md`.
-
-**Stage 18 exit (2026-08-10):** S1, A1, B1, I1, L1, T1, C1, D1, H18x met — `docs/STAGE_18_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_042_STAGE18_FREEZE.md`. Fidelity: `docs/STAGE_18_FIDELITY.md`.
-
-**Stage 19 open (2026-08-10):** API, Settings & Operator Reliability Fidelity track approved — `docs/ADR_043_STAGE19_OPEN.md` + `docs/STAGE_19_PLAN.md` (API surface → Company & security settings → Operator reliability).
-
-**Stage 19 D1 (2026-08-10):** Spec / BR-18–20 / readiness / launch fidelity sync — `docs/STAGE_19_FIDELITY.md`.
-
-**Stage 19 exit (2026-08-10):** K1, P1, S1, A1, U1, C1, R1, D1, H19x met — `docs/STAGE_19_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_044_STAGE19_FREEZE.md`. Fidelity: `docs/STAGE_19_FIDELITY.md`.
-
-**Stage 20 open (2026-08-10):** AI Business Assistant Fidelity track approved — `docs/ADR_045_STAGE20_OPEN.md` + `docs/STAGE_20_PLAN.md` (AI assistant surface → Inventory & sales intelligence → Customer & security AI).
-
-**Stage 20 D1 (2026-08-10):** Spec / BR-21 / readiness / Phase 4 / USER_MANUAL / API fidelity sync — `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`).
-
-**Stage 20 exit (2026-08-10):** C1, I1, V1, L1, S1, R1, U1, D1, H20x met — `docs/STAGE_20_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_046_STAGE20_FREEZE.md`. Fidelity: `docs/STAGE_20_FIDELITY.md`.
-
-**Stage 21 open (2026-08-10):** Tenant Lifecycle, Org & Dashboard Fidelity track approved — `docs/ADR_047_STAGE21_OPEN.md` + `docs/STAGE_21_PLAN.md` (tenant lifecycle → org/admin → identity shell → executive dashboard).
-
-**Stage 21 D1 (2026-08-10):** Spec / BR-1–4 / readiness / USER_MANUAL / API / launch §§1–2 fidelity sync — `docs/STAGE_21_FIDELITY.md` (`test_stage21_fidelity_d1.py`).
-
-**Stage 21 exit (2026-08-10):** T1, I1, O1, C1, U1, V1, N1, D1, H21x met — `docs/STAGE_21_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_048_STAGE21_FREEZE.md`. Fidelity: `docs/STAGE_21_FIDELITY.md`.
-
-**Stage 22 open (2026-08-10):** Expenses, Ledger, Credit & Tax Surface Fidelity track approved — `docs/ADR_049_STAGE22_OPEN.md` + `docs/STAGE_22_PLAN.md` (expenses → ledger → credit/tax).
-
-**Stage 22 D1 (2026-08-10):** Spec / BR-9–12 / readiness / USER_MANUAL / API / launch fidelity sync — `docs/STAGE_22_FIDELITY.md` (`test_stage22_fidelity_d1.py`).
-
-**Stage 22 exit (2026-08-10):** E1, A1, C1, B1, P1, R1, T1, D1, H22x met — `docs/STAGE_22_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_050_STAGE22_FREEZE.md`. Fidelity: `docs/STAGE_22_FIDELITY.md`.
-
-**Stage 23 open (2026-08-10):** Reports Dimension & Commercial MVP Gate Fidelity track approved — `docs/ADR_051_STAGE23_OPEN.md` + `docs/STAGE_23_PLAN.md` (reports filters → gate closure).
-
-**Stage 23 F1 (2026-08-10):** Balance sheet + financial `store_id`/`branch_id` filters — `test_financial_report_filters_f1.py` (BR-14.5).
-
-**Stage 23 C1 (2026-08-10):** Financial comparative P&L / cash-flow / balance sheet — `test_financial_comparative_c1.py` (BR-14.5).
-
-**Stage 23 I1 (2026-08-10):** Isolation matrix residual — liquid accounts/transfers, expense categories/recurring, report dimensions, mismatched header (`test_isolation_matrix_i1.py`).
-
-**Stage 23 G1 (2026-08-10):** Commercial MVP gate closure — readiness honesty flips for isolation, lifecycle, expenses, accounting, tax, reports (`test_mvp_gate_closure_g1.py`); Remaining deferred-only (ADR-001/002, Open Banking, e-file, FIFO/LIFO/WA).
-
-**Stage 23 B1 (2026-08-10):** Logical DR drill automation evidence — create → dry-run → guarded restore → verify + foreign-tenant 404; artifact `/opt/cursor/artifacts/dr/stage23_b1_logical_drill.json` (`test_logical_dr_drill_b1.py`); WAL/PITR deferred.
-
-**Stage 23 D1 (2026-08-10):** Spec / BR-14 / readiness / USER_MANUAL / API fidelity sync — `docs/STAGE_23_FIDELITY.md` (`test_stage23_fidelity_d1.py`); open ADR `docs/ADR_051_STAGE23_OPEN.md`; plan `docs/STAGE_23_PLAN.md`.
-
-**Stage 23 exit (2026-08-10):** F1, C1, I1, G1, B1, D1, H23x met — `docs/STAGE_23_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_052_STAGE23_FREEZE.md`. Fidelity: `docs/STAGE_23_FIDELITY.md`.
-
-**Stage 24 open (2026-08-10):** Commerce & Ops Gate Fidelity track approved — `docs/ADR_053_STAGE24_OPEN.md` + `docs/STAGE_24_PLAN.md` (numbering → commerce/ops/AI gate honesty).
-
-**Stage 24 N1 (2026-08-10):** Shared document numbering series fidelity — configure/preview all `DOC_KEYS`; live QT/SO/INV/SR/CN/PO/GRN allocation (`test_document_numbering_n1.py`).
-
-**Stage 24 G1 (2026-08-10):** Commerce gates closure — Inventory, Purchasing, Sales, POS, Multi-store Complete (MVP) (`test_commerce_gate_closure_g1.py`); Remaining deferred-only (Kanban, USB/serial, multi-bin, ADR-005).
-
-**Stage 24 O1 (2026-08-10):** Ops Redis/Celery + AI MVP gate honesty — Redis/Celery intended workloads + AI provider/tenant-safe/functions Complete (MVP) (`test_ops_ai_gate_closure_o1.py`); Remaining PgBouncer/LLM/Prophet; monitoring/WAL/K8s/load stay open.
-
-**Stage 24 D1 (2026-08-10):** Spec / BR-20.4 / readiness / USER_MANUAL / API fidelity sync — `docs/STAGE_24_FIDELITY.md` (`test_stage24_fidelity_d1.py`); open ADR `docs/ADR_053_STAGE24_OPEN.md`; plan `docs/STAGE_24_PLAN.md`.
-
-**Stage 24 exit (2026-08-11):** N1, G1, O1, D1, H24x met — `docs/STAGE_24_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_054_STAGE24_FREEZE.md`. Fidelity: `docs/STAGE_24_FIDELITY.md`.
-
-**Stage 25 open (2026-08-11):** Actuals → AI Analysis → Business Insights track approved — `docs/ADR_055_STAGE25_OPEN.md` + `docs/STAGE_25_PLAN.md` (Inv/Sales/Purch/Exp actuals → basic AI → insights).
-
-**Stage 25 P1 (2026-08-11):** Purchases actuals → AI analysis — `GET /ai/purchases/analysis` spend trend, supplier concentration, PO fill/open backlog, overdue PI suggestions (`test_ai_purchases_analysis_p1.py`; BR-21.11).
-
-**Stage 25 X1 (2026-08-11):** Cross-domain AI analysis — `GET /ai/cross-domain/analysis` orchestrates Inv/Sales/Purch/Exp analyzers + `cross_signals` (`test_ai_cross_domain_x1.py`; BR-21.12).
-
-**Stage 25 B1 (2026-08-11):** Business Insights surface cites all four actuals — `GET /ai/insights` `domains`/`actuals_covered` + purchase spend/overdue/draft PO cards; dashboard/`/ai` UI (`test_ai_business_insights_b1.py`; BR-21.2).
-
-**Stage 25 U1 (2026-08-11):** AI UI fidelity — `/ai` purchases analysis, cross-domain analysis, and document analyze panels (`test_ai_ui_fidelity_u1.py`; `frontend/app/ai/page.tsx`).
-
-**Stage 25 D1 (2026-08-11):** Spec / BR-21.2 / 21.11 / 21.12 / readiness / USER_MANUAL / API fidelity sync — `docs/STAGE_25_FIDELITY.md` (`test_stage25_fidelity_d1.py`); open ADR `docs/ADR_055_STAGE25_OPEN.md`; plan `docs/STAGE_25_PLAN.md`.
-
-**Stage 25 exit (2026-08-11):** P1, X1, B1, U1, D1, H25x met — `docs/STAGE_25_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_056_STAGE25_FREEZE.md`. Fidelity: `docs/STAGE_25_FIDELITY.md`.
-
-**Stage 26 open (2026-08-11):** Production Platform & Ops Fidelity track approved — `docs/ADR_057_STAGE26_OPEN.md` + `docs/STAGE_26_PLAN.md` (Monitoring → WAL/PITR → K8s → Load capacity → fidelity).
-
-**Stage 26 M1 (2026-08-11):** Monitoring & alerting fidelity — Prometheus scrape `ops/prometheus/prometheus.yml`, alerts `ops/prometheus/alerts/ribdigi.yml`, Fluent Bit example `ops/logging/fluent-bit-ribdigi.conf.example`, `docs/OPS_MONITORING_MVP.md` (`test_ops_monitoring_m1.py`); readiness monitoring Complete (MVP).
-
-**Stage 26 W1 (2026-08-11):** WAL / PITR strategy + S3 offsite — `docs/DR_WAL_PITR_RUNBOOK.md`, `ops/postgres/` WAL archive configs, `ops/backup/sync-ribbak-offsite.sh.example`, evidence `stage26_w1_wal_pitr_strategy.json` (`test_wal_pitr_w1.py`); readiness WAL Complete (MVP); operator PITR drill Remaining.
-
-**Stage 26 K1 (2026-08-11):** Kubernetes / Helm deploy fidelity — `helm/ribdigi/`, hardened `k8s/` with `/api/v1/health/ready` probes, `ops/k8s/` install/smoke, `docs/K8S_DEPLOY_MVP.md`, evidence `stage26_k1_deploy_fidelity.json` (`test_k8s_deploy_k1.py`); readiness Kubernetes Complete (MVP); live GHA→staging Remaining.
-
-**Stage 26 C1 (2026-08-11):** Load capacity evidence — CI smoke + CI capacity profiles via `backend/loadtest/` (`--ci-capacity`), `docs/LOAD_CAPACITY_MVP.md`, evidence `stage26_c1_capacity_evidence.json` (`test_load_capacity_c1.py`); readiness load Complete (MVP); operator ~1000-VU Remaining.
-
-**Stage 26 D1 (2026-08-11):** Spec / BR-16 / NFR §5.6 / readiness / deploy / launch / security fidelity sync — `docs/STAGE_26_FIDELITY.md` (`test_stage26_fidelity_d1.py`); open ADR `docs/ADR_057_STAGE26_OPEN.md`; plan `docs/STAGE_26_PLAN.md`.
-
-**Stage 26 exit (2026-08-11):** M1, W1, K1, C1, D1, H26x met — `docs/STAGE_26_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_058_STAGE26_FREEZE.md`. Fidelity: `docs/STAGE_26_FIDELITY.md`.
-
-**Stage 27 open (2026-08-11):** Commercial MVP Release Fidelity track approved — `docs/ADR_059_STAGE27_OPEN.md` + `docs/STAGE_27_PLAN.md` (Auto `.ribbak` offsite → PgBouncer → Security scan → Launch cert → fidelity).
-
-**Stage 27 B1 (2026-08-11):** Automatic `.ribbak` offsite upload after `create_backup` — `BACKUP_OFFSITE_UPLOAD_ENABLED` / `BACKUP_OFFSITE_S3_BUCKET` / `BACKUP_OFFSITE_S3_PREFIX`; failure → `Backup failed` (no fake success); evidence `stage27_b1_offsite_upload.json` (`test_backup_offsite_b1.py`); operator `ops/backup/sync-ribbak-offsite.sh.example` retained.
-
-**Stage 27 P1 (2026-08-11):** PgBouncer connection pooling fidelity — `ops/postgres/pgbouncer.ini.example`, `docker-compose.pgbouncer.example.yml`, `docs/PGBOUNCER_MVP.md`, evidence `stage27_p1_pgbouncer.json` (`test_pgbouncer_p1.py`); asyncpg statement cache disabled when URL targets PgBouncer; live soak / Helm pooler Remaining.
-
-**Stage 27 S1 (2026-08-11):** Security scan / OWASP baseline evidence — `docs/SECURITY_SCAN_MVP.md`, `ops/security/zap-baseline.example.yml` (not in main CI), evidence `stage27_s1_security_scan.json` (`test_security_scan_s1.py`); vendor pen test / live ZAP staging Remaining.
-
-**Stage 27 L1 (2026-08-11):** Launch certification pack — `docs/LAUNCH_CERT_MVP.md`, `ops/launch/checklist-map.json`, evidence `stage27_l1_launch_cert.json` (`test_launch_cert_l1.py`); operator §§1–3 / §7 remain unsigned (no fake production sign-off).
-
-**Stage 27 D1 (2026-08-11):** Spec / BR-16 / readiness / deploy / launch / security fidelity sync — `docs/STAGE_27_FIDELITY.md` (`test_stage27_fidelity_d1.py`); open ADR `docs/ADR_059_STAGE27_OPEN.md`; plan `docs/STAGE_27_PLAN.md`.
-
-**Stage 27 exit (2026-08-11):** B1, P1, S1, L1, D1, H27x met — `docs/STAGE_27_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_060_STAGE27_FREEZE.md`. Fidelity: `docs/STAGE_27_FIDELITY.md`.
-
-**Stage 28 open (2026-08-11):** Staging Certification Fidelity track approved — `docs/ADR_061_STAGE28_OPEN.md` + `docs/STAGE_28_PLAN.md` (Operator PITR drill → Staging GHA → Grafana/Alertmanager → 1000-VU cert → fidelity).
-
-**Stage 28 R1 (2026-08-11):** Operator PITR drill pack — `docs/PITR_DRILL_PACK_MVP.md`, `ops/postgres/pitr-drill-checklist.json`, evidence `stage28_r1_pitr_drill_pack.json` (`test_pitr_drill_pack_r1.py`); extends `docs/DR_WAL_PITR_RUNBOOK.md`; live staging drill execution Remaining (no fake CI PITR success).
-
-**Stage 28 G1 (2026-08-11):** Staging GHA deploy workflow pack — `docs/STAGING_GHA_MVP.md`, `ops/k8s/deploy-staging.example.yml` (not main `ci.yml`), evidence `stage28_g1_staging_gha.json` (`test_staging_gha_g1.py`); live staging apply Remaining.
-
-**Stage 28 A1 (2026-08-11):** Grafana / Alertmanager operator pack — `docs/GRAFANA_PACK_MVP.md`, `ops/grafana/dashboard-ribdigi-mvp.json.example`, `ops/grafana/alertmanager.yml.example`, evidence `stage28_a1_grafana_pack.json` (`test_grafana_pack_a1.py`); hosted SaaS Remaining.
-
-**Stage 28 C1 (2026-08-11):** Operator ~1000-VU cert pack — `docs/LOAD_CERT_PACK_MVP.md`, `ops/loadtest/1000vu-cert-checklist.json`, `ops/loadtest/operator_1000vu_run.example.json`, evidence `stage28_c1_load_cert_pack.json` (`test_load_cert_pack_c1.py`); live 1000-VU execution Remaining (no forged certificate).
-
-**Stage 28 D1 (2026-08-11):** Spec / BR-16 / readiness / deploy / launch / security fidelity sync — `docs/STAGE_28_FIDELITY.md` (`test_stage28_fidelity_d1.py`); open ADR `docs/ADR_061_STAGE28_OPEN.md`; plan `docs/STAGE_28_PLAN.md`.
-
-**Stage 28 exit (2026-08-11):** R1, G1, A1, C1, D1, H28x met — `docs/STAGE_28_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_062_STAGE28_FREEZE.md`. Fidelity: `docs/STAGE_28_FIDELITY.md`.
-
-**Stage 29 open (2026-08-11):** Operator Hardening & Production Cutover Fidelity track approved — `docs/ADR_063_STAGE29_OPEN.md` + `docs/STAGE_29_PLAN.md` (Vendor pen-test/ZAP → PgBouncer soak → Cert-manager/TLS → Production cutover → fidelity).
-
-**Stage 29 V1 (2026-08-11):** Vendor pen-test / ZAP staging pack — `docs/PENTEST_PACK_MVP.md`, `ops/security/pentest-engagement-checklist.json`, `ops/security/vendor-engagement.example.json`, evidence `stage29_v1_pentest_pack.json` (`test_pentest_pack_v1.py`); purchased cert / live ZAP Remaining.
-
-**Stage 29 B2 (2026-08-11):** PgBouncer soak / pooler pack — `docs/PGBOUNCER_SOAK_PACK_MVP.md`, `ops/postgres/pgbouncer-soak-checklist.json`, `ops/postgres/pgbouncer-deployment.example.yaml`, evidence `stage29_b2_pgbouncer_soak.json` (`test_pgbouncer_soak_b2.py`); live soak / default Helm pooler Remaining.
-
-**Stage 29 T1 (2026-08-11):** Cert-manager / TLS ingress pack — `docs/TLS_INGRESS_PACK_MVP.md`, `ops/k8s/cluster-issuer.example.yaml`, `ops/k8s/ingress-tls.example.yaml`, evidence `stage29_t1_tls_ingress.json` (`test_tls_ingress_t1.py`); live ACME issuance / TLS cutover Remaining.
-
-**Stage 29 X1 (2026-08-11):** Production cutover pack — `docs/CUTOVER_PACK_MVP.md`, `ops/launch/cutover-checklist.json`, `ops/k8s/deploy-production.example.yml`, evidence `stage29_x1_cutover_pack.json` (`test_cutover_pack_x1.py`); live cutover / §7 sign-off Remaining.
-
-**Stage 29 D1 (2026-08-11):** Operator hardening & cutover fidelity sync — `docs/STAGE_29_FIDELITY.md` (`test_stage29_fidelity_d1.py`) maps V1–X1 → BR-16 / readiness / deploy / launch / security; H29x next.
-
-**Stage 29 exit (2026-08-11):** V1, B2, T1, X1, D1, H29x met — `docs/STAGE_29_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_064_STAGE29_FREEZE.md`. Fidelity: `docs/STAGE_29_FIDELITY.md`.
-
-**Stage 30 open (2026-08-11):** Go-Live Support Fidelity track approved — `docs/ADR_065_STAGE30_OPEN.md` + `docs/STAGE_30_PLAN.md` (Evidence ledger → Incident/on-call → Support/Admin runbooks → Attestation → fidelity).
-
-**Stage 30 L1 (2026-08-11):** Operator evidence ledger — `docs/EVIDENCE_LEDGER_MVP.md`, `ops/evidence/ledger.json`, evidence `stage30_l1_evidence_ledger.json` (`test_evidence_ledger_l1.py`); live runs / attestation Remaining.
-
-**Stage 30 I1 (2026-08-11):** Incident response / on-call pack — `docs/INCIDENT_PACK_MVP.md`, `ops/incident/incident-checklist.json`, `ops/incident/oncall-runbook.md.example`, evidence `stage30_i1_incident_pack.json` (`test_incident_pack_i1.py`); hosted PagerDuty / live rota Remaining.
-
-**Stage 30 S1 (2026-08-11):** Support & Admin runbook fidelity — `docs/SUPPORT_RUNBOOK_MVP.md`, `ops/support/admin-ops-map.json`, ADMIN_MANUAL §§7/11/12 sync, evidence `stage30_s1_support_runbook.json` (`test_support_runbook_s1.py`); live ops SLA Remaining.
-
-**Stage 30 A1 (2026-08-11):** Go-live attestation matrix — `docs/ATTESTATION_PACK_MVP.md`, `ops/launch/attestation-matrix.json`, evidence `stage30_a1_attestation_pack.json` (`test_attestation_pack_a1.py`); §§1–3 / §7 / attestation Remaining.
-
-**Stage 30 D1 (2026-08-11):** Go-live support fidelity sync — `docs/STAGE_30_FIDELITY.md` (`test_stage30_fidelity_d1.py`) maps L1–A1 → BR-16 / readiness / deploy / launch / security / admin; H30x next.
-
-**Stage 30 exit (2026-08-11):** L1, I1, S1, A1, D1, H30x met — `docs/STAGE_30_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_066_STAGE30_FREEZE.md`. Fidelity: `docs/STAGE_30_FIDELITY.md`.
-
-**Stage 31 open (2026-08-11):** Commercial MVP Closeout Fidelity track approved — `docs/ADR_067_STAGE31_OPEN.md` + `docs/STAGE_31_PLAN.md` (Gate honesty → Deferred ADR register → Operator Remaining → MVP declaration → fidelity).
-
-**Stage 31 G1 (2026-08-11):** MVP gate honesty matrix — `docs/MVP_GATE_MATRIX_MVP.md`, `ops/mvp/gate-matrix.json`, evidence `stage31_g1_mvp_gate_matrix.json` (`test_mvp_gate_matrix_g1.py`); go-live / §7 Remaining.
-
-**Stage 31 R1 (2026-08-11):** Deferred ADR register — `docs/DEFERRED_ADR_REGISTER_MVP.md`, `ops/mvp/deferred-adr-register.json`, evidence `stage31_r1_deferred_adr_register.json` (`test_deferred_adr_register_r1.py`); ADR-001–006 post-MVP scopes Remaining.
-
-**Stage 31 O1 (2026-08-11):** Operator Remaining register — `docs/OPERATOR_REMAINING_MVP.md`, `ops/mvp/operator-remaining-register.json`, evidence `stage31_o1_operator_remaining.json` (`test_operator_remaining_o1.py`); live runs / attestation / §7 Remaining.
-
-**Stage 31 C1 (2026-08-11):** Commercial MVP declaration — `docs/MVP_DECLARATION_MVP.md`, `ops/mvp/mvp-declaration.json`, evidence `stage31_c1_mvp_declaration.json` (`test_mvp_declaration_c1.py`); packaging Complete ≠ live go-live / §7.
-
-**Stage 31 D1 (2026-08-11):** Commercial MVP closeout fidelity sync — `docs/STAGE_31_FIDELITY.md` (`test_stage31_fidelity_d1.py`) maps G1–C1 → BR-16 / readiness / deploy / launch / security; H31x next.
-
-**Stage 31 exit (2026-08-11):** G1, R1, O1, C1, D1, H31x met — `docs/STAGE_31_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_068_STAGE31_FREEZE.md`. Fidelity: `docs/STAGE_31_FIDELITY.md`.
-
-**Stage 32 open (2026-08-11):** Commercial MVP Handoff Fidelity track approved — `docs/ADR_069_STAGE32_OPEN.md` + `docs/STAGE_32_PLAN.md` (Acceptance archive → Operator handoff → Release notes → Post-MVP backlog → fidelity).
-
-**Stage 32 A1 (2026-08-11):** MVP acceptance archive — `docs/ACCEPTANCE_ARCHIVE_MVP.md`, `ops/mvp/acceptance-archive.json`, evidence `stage32_a1_acceptance_archive.json` (`test_acceptance_archive_a1.py`); Stage 1–31 exit/freeze index; go-live / §7 Remaining.
-
-**Stage 32 H1 (2026-08-11):** Operator handoff pack — `docs/OPERATOR_HANDOFF_MVP.md`, `ops/mvp/operator-handoff.json`, evidence `stage32_h1_operator_handoff.json` (`test_operator_handoff_h1.py`); ops take-over checklist; live handoff / §7 Remaining.
-
-**Stage 32 N1 (2026-08-11):** Commercial release notes — `docs/RELEASE_NOTES_MVP.md`, `ops/mvp/release-notes.json`, evidence `stage32_n1_release_notes.json` (`test_release_notes_n1.py`); packaging Complete ≠ production live.
-
-**Stage 32 B1 (2026-08-11):** Post-MVP backlog — `docs/POST_MVP_BACKLOG_MVP.md`, `ops/mvp/post-mvp-backlog.json`, evidence `stage32_b1_post_mvp_backlog.json` (`test_post_mvp_backlog_b1.py`); ADR-001–006 + operator Remaining indexed; deferred scopes Remaining.
-
-**Stage 32 D1 (2026-08-11):** Commercial MVP handoff fidelity sync — `docs/STAGE_32_FIDELITY.md` (`test_stage32_fidelity_d1.py`) maps A1–B1 → BR-16 / readiness / deploy / launch / security; H32x next.
-
-**Stage 32 exit (2026-08-11):** A1, H1, N1, B1, D1, H32x met — `docs/STAGE_32_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_070_STAGE32_FREEZE.md`. Fidelity: `docs/STAGE_32_FIDELITY.md`.
-
-**Stage 33 open (2026-08-11):** Commercial MVP Continuity Fidelity track approved — `docs/ADR_071_STAGE33_OPEN.md` + `docs/STAGE_33_PLAN.md` (Residual risk → Compliance readiness → First-tenant onboarding → Knowledge transfer → fidelity).
-
-**Stage 33 K1 (2026-08-11):** Residual risk register — `docs/RESIDUAL_RISK_MVP.md`, `ops/mvp/residual-risk-register.json`, evidence `stage33_k1_residual_risk.json` (`test_residual_risk_k1.py`); risks remain open/accepted; go-live Remaining.
-
-**Stage 33 C1 (2026-08-11):** Compliance readiness — `docs/COMPLIANCE_READINESS_MVP.md`, `ops/mvp/compliance-readiness-register.json`, evidence `stage33_c1_compliance_readiness.json` (`test_compliance_readiness_c1.py`); SOC 2 / ISO certification Remaining.
-
-**Stage 33 F1 (2026-08-11):** First-tenant onboarding — `docs/FIRST_TENANT_ONBOARDING_MVP.md`, `ops/mvp/first-tenant-onboarding.json`, evidence `stage33_f1_first_tenant_onboarding.json` (`test_first_tenant_onboarding_f1.py`); live onboarding success Remaining.
-
-**Stage 33 T1 (2026-08-11):** Knowledge transfer — `docs/KNOWLEDGE_TRANSFER_MVP.md`, `ops/mvp/knowledge-transfer.json`, evidence `stage33_t1_knowledge_transfer.json` (`test_knowledge_transfer_t1.py`); live training Remaining.
-
-**Stage 33 D1 (2026-08-11):** Commercial MVP continuity fidelity sync — `docs/STAGE_33_FIDELITY.md` (`test_stage33_fidelity_d1.py`) maps K1–T1 → BR-16 / readiness / deploy / launch / security; H33x next.
-
-**Stage 33 exit (2026-08-11):** K1, C1, F1, T1, D1, H33x met — `docs/STAGE_33_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_072_STAGE33_FREEZE.md`. Fidelity: `docs/STAGE_33_FIDELITY.md`.
-
-**Stage 34 open (2026-08-11):** Commercial Customer Assurance Fidelity track approved — `docs/ADR_073_STAGE34_OPEN.md` + `docs/STAGE_34_PLAN.md` (Assurance evidence → Compliance questionnaire → Support SLA boundary → Billing-deferred honesty → fidelity).
-
-**Stage 34 A1 (2026-08-11):** Assurance evidence — `docs/ASSURANCE_EVIDENCE_MVP.md`, `ops/mvp/assurance-evidence.json`, evidence `stage34_a1_assurance_evidence.json` (`test_assurance_evidence_a1.py`); live attestation / §7 Remaining.
-
-**Stage 34 C1 (2026-08-11):** Compliance questionnaire — `docs/COMPLIANCE_QUESTIONNAIRE_MVP.md`, `ops/mvp/compliance-questionnaire.json`, evidence `stage34_c1_compliance_questionnaire.json` (`test_compliance_questionnaire_c1.py`); SOC 2 / ISO certification Remaining.
-
-**Stage 34 D1 (2026-08-11):** Commercial customer assurance fidelity sync — `docs/STAGE_34_FIDELITY.md` (`test_stage34_fidelity_d1.py`) maps A1–C1 → BR-16 / readiness / deploy / launch / security; S1/B1 deferred.
-
-**Stage 34 exit (2026-08-11):** A1, C1, D1, H34x met; S1/B1 deferred — `docs/STAGE_34_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_074_STAGE34_FREEZE.md`. Fidelity: `docs/STAGE_34_FIDELITY.md`.
-
-**Stage 35 open (2026-08-11):** Commercial End-to-End Operational Smoke Fidelity track approved — `docs/ADR_075_STAGE35_OPEN.md` + `docs/STAGE_35_PLAN.md` (Org bootstrap → Users/RBAC → Purchase-to-stock → Sale-to-payment → Verify financials → Backup/restore → fidelity).
-
-**Stage 35 T1 (2026-08-11):** Org bootstrap — `docs/E2E_ORG_BOOTSTRAP_MVP.md`, `ops/mvp/e2e-org-bootstrap.json`, evidence `stage35_t1_e2e_org_bootstrap.json` (`test_e2e_org_bootstrap_t1.py`); tenant → company → branch → store → warehouse; live bootstrap / demo tenants Remaining.
-
-**Stage 35 U1 (2026-08-11):** Users + RBAC — `docs/E2E_USERS_RBAC_MVP.md`, `ops/mvp/e2e-users-rbac.json`, evidence `stage35_u1_e2e_users_rbac.json` (`test_e2e_users_rbac_u1.py`); roles + RBAC smoke packaging; live provisioning / ADR-005 store membership Remaining.
-
-**Stage 35 P1 (2026-08-11):** Purchase-to-stock — `docs/E2E_PURCHASE_STOCK_MVP.md`, `ops/mvp/e2e-purchase-stock.json`, evidence `stage35_p1_e2e_purchase_stock.json` (`test_e2e_purchase_stock_p1.py`); supplier → products → PO → GRN → verify stock; live purchasing / PO Kanban Remaining.
-
-**Stage 35 S1 (2026-08-11):** Sale-to-payment — `docs/E2E_SALE_PAYMENT_MVP.md`, `ops/mvp/e2e-sale-payment.json`, evidence `stage35_s1_e2e_sale_payment.json` (`test_e2e_sale_payment_s1.py`); customer → POS → payment → stock reduction; live POS / USB-serial Remaining.
-
-**Stage 35 V1 (2026-08-11):** Verify financials — `docs/E2E_VERIFY_FINANCIALS_MVP.md`, `ops/mvp/e2e-verify-financials.json`, evidence `stage35_v1_e2e_verify_financials.json` (`test_e2e_verify_financials_v1.py`); tax → accounting → credit → reports → audit; live verification / tax e-file Remaining.
-
-**Stage 35 R1 (2026-08-11):** Backup + restore — `docs/E2E_BACKUP_RESTORE_MVP.md`, `ops/mvp/e2e-backup-restore.json`, evidence `stage35_r1_e2e_backup_restore.json` (`test_e2e_backup_restore_r1.py`); logical backup → dry-run → apply → verify; live restore / PITR drill Remaining.
-
-**Stage 35 D1 (2026-08-11):** E2E operational smoke fidelity — `docs/STAGE_35_FIDELITY.md` (`test_stage35_fidelity_d1.py`); maps T1–R1 → readiness / launch / deploy / security; live E2E smoke Remaining.
-
-**Stage 35 exit (2026-08-11):** T1, U1, P1, S1, V1, R1, D1, H35x met — `docs/STAGE_35_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_076_STAGE35_FREEZE.md`. Fidelity: `docs/STAGE_35_FIDELITY.md`.
-
-**Stage 36 open (2026-08-11):** Commercial Assurance Completion Fidelity track approved — `docs/ADR_077_STAGE36_OPEN.md` + `docs/STAGE_36_PLAN.md` (Support SLA boundary → Billing-deferred honesty → fidelity).
-
-**Stage 36 S1 (2026-08-11):** Support SLA boundary — `docs/SUPPORT_SLA_BOUNDARY_MVP.md`, `ops/mvp/support-sla-boundary.json`, evidence `stage36_s1_support_sla_boundary.json` (`test_support_sla_boundary_s1.py`); live SLA / PagerDuty Remaining.
-
-**Stage 36 B1 (2026-08-11):** Billing-deferred honesty — `docs/BILLING_DEFERRED_HONESTY_MVP.md`, `ops/mvp/billing-deferred-honesty.json`, evidence `stage36_b1_billing_deferred_honesty.json` (`test_billing_deferred_honesty_b1.py`); ADR-002 / plan_code metadata; paid billing Remaining.
-
-**Stage 36 D1 (2026-08-11):** Commercial assurance completion fidelity — `docs/STAGE_36_FIDELITY.md` (`test_stage36_fidelity_d1.py`); maps S1–B1 → readiness / launch / deploy / security; live SLA / paid billing Remaining.
-
-**Stage 36 exit (2026-08-11):** S1, B1, D1, H36x met — `docs/STAGE_36_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_078_STAGE36_FREEZE.md`. Fidelity: `docs/STAGE_36_FIDELITY.md`.
-
-**Stage 37 open (2026-08-11):** Commercial Data Protection Fidelity track approved — `docs/ADR_079_STAGE37_OPEN.md` + `docs/STAGE_37_PLAN.md` (Data subject access/portability → Erasure/soft-delete honesty → fidelity).
-
-**Stage 37 P1 (2026-08-11):** Data subject access / portability — `docs/DATA_PORTABILITY_MVP.md`, `ops/mvp/data-portability.json`, evidence `stage37_p1_data_portability.json` (`test_data_portability_p1.py`); GDPR / DSAR Remaining.
-
-**Stage 37 E1 (2026-08-11):** Erasure / soft-delete honesty — `docs/ERASURE_HONESTY_MVP.md`, `ops/mvp/erasure-honesty.json`, evidence `stage37_e1_erasure_honesty.json` (`test_erasure_honesty_e1.py`); ADR-003; hard-delete Remaining.
-
-**Stage 37 D1 (2026-08-11):** Commercial data protection fidelity — `docs/STAGE_37_FIDELITY.md` (`test_stage37_fidelity_d1.py`); maps P1–E1 → readiness / launch / deploy / security; GDPR / hard-delete Remaining.
-
-**Stage 37 exit (2026-08-11):** P1, E1, D1, H37x met — `docs/STAGE_37_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_080_STAGE37_FREEZE.md`. Fidelity: `docs/STAGE_37_FIDELITY.md`.
-
-**Stage 38 open (2026-08-11):** Commercial Security Disclosure Fidelity track approved — `docs/ADR_081_STAGE38_OPEN.md` + `docs/STAGE_38_PLAN.md` (Vulnerability disclosure → Breach notification / security contact → fidelity).
-
-**Stage 38 V1 (2026-08-11):** Vulnerability disclosure — `docs/VULN_DISCLOSURE_MVP.md`, `ops/mvp/vuln-disclosure.json`, evidence `stage38_v1_vuln_disclosure.json` (`test_vuln_disclosure_v1.py`); live disclosure / bug-bounty Remaining.
-
-**Stage 38 B1 (2026-08-11):** Breach notification / security contact — `docs/BREACH_NOTIFICATION_MVP.md`, `ops/mvp/breach-notification.json`, evidence `stage38_b1_breach_notification.json` (`test_breach_notification_b1.py`); live breach drill Remaining.
-
-**Stage 38 D1 (2026-08-11):** Commercial security disclosure fidelity — `docs/STAGE_38_FIDELITY.md` (`test_stage38_fidelity_d1.py`); maps V1–B1 → readiness / launch / deploy / security; live disclosure / breach drill Remaining.
-
-**Stage 38 exit (2026-08-11):** V1, B1, D1, H38x met — `docs/STAGE_38_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_082_STAGE38_FREEZE.md`. Fidelity: `docs/STAGE_38_FIDELITY.md`.
-
-**Stage 39 open (2026-08-11):** Commercial Contract Evidence Fidelity track approved — `docs/ADR_083_STAGE39_OPEN.md` + `docs/STAGE_39_PLAN.md` (DPA/subprocessor → MSA security addendum → fidelity).
-
-**Stage 39 P1 (2026-08-11):** DPA / subprocessor honesty — `docs/DPA_SUBPROCESSOR_MVP.md`, `ops/mvp/dpa-subprocessor.json`, evidence `stage39_p1_dpa_subprocessor.json` (`test_dpa_subprocessor_p1.py`); signed DPA Remaining.
-
-**Stage 39 A1 (2026-08-11):** MSA security addendum honesty — `docs/MSA_ADDENDUM_MVP.md`, `ops/mvp/msa-addendum.json`, evidence `stage39_a1_msa_addendum.json` (`test_msa_addendum_a1.py`); signed MSA Remaining.
-
-**Stage 39 D1 (2026-08-11):** Commercial contract evidence fidelity — `docs/STAGE_39_FIDELITY.md` (`test_stage39_fidelity_d1.py`); maps P1–A1 → readiness / launch / deploy / security; signed DPA/MSA Remaining.
-
-**Stage 39 exit (2026-08-11):** P1, A1, D1, H39x met — `docs/STAGE_39_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_084_STAGE39_FREEZE.md`. Fidelity: `docs/STAGE_39_FIDELITY.md`.
-
-**Stage 40 open (2026-08-11):** Commercial Availability & Supply-Chain Fidelity track approved — `docs/ADR_085_STAGE40_OPEN.md` + `docs/STAGE_40_PLAN.md` (status/uptime → SBOM/dependency disclosure → fidelity).
-
-**Stage 40 U1 (2026-08-11):** Status page / uptime honesty — `docs/STATUS_UPTIME_MVP.md`, `ops/mvp/status-uptime.json`, evidence `stage40_u1_status_uptime.json` (`test_status_uptime_u1.py`); live status page / 99.9% SLA Remaining.
-
-**Stage 40 S1 (2026-08-11):** SBOM / dependency disclosure honesty — `docs/SBOM_DISCLOSURE_MVP.md`, `ops/mvp/sbom-disclosure.json`, evidence `stage40_s1_sbom_disclosure.json` (`test_sbom_disclosure_s1.py`); live SBOM pipeline Remaining.
-
-**Stage 40 D1 (2026-08-11):** Commercial availability & supply-chain fidelity — `docs/STAGE_40_FIDELITY.md` (`test_stage40_fidelity_d1.py`); maps U1–S1 → readiness / launch / deploy / security; live status page / SBOM pipeline Remaining.
-
-**Stage 40 exit (2026-08-11):** U1, S1, D1, H40x met — `docs/STAGE_40_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_086_STAGE40_FREEZE.md`. Fidelity: `docs/STAGE_40_FIDELITY.md`.
-
-**Stage 41 open (2026-08-11):** Commercial Accessibility & Change Governance Fidelity track approved — `docs/ADR_087_STAGE41_OPEN.md` + `docs/STAGE_41_PLAN.md` (accessibility statement → change/maintenance governance → fidelity).
-
-**Stage 41 A1 (2026-08-11):** Accessibility statement honesty — `docs/ACCESSIBILITY_STATEMENT_MVP.md`, `ops/mvp/accessibility-statement.json`, evidence `stage41_a1_accessibility_statement.json` (`test_accessibility_statement_a1.py`); WCAG AA audit Remaining.
-
-**Stage 41 C1 (2026-08-11):** Change / maintenance governance honesty — `docs/CHANGE_GOVERNANCE_MVP.md`, `ops/mvp/change-governance.json`, evidence `stage41_c1_change_governance.json` (`test_change_governance_c1.py`); public change calendar Remaining.
-
-**Stage 41 D1 (2026-08-11):** Commercial accessibility & change governance fidelity — `docs/STAGE_41_FIDELITY.md` (`test_stage41_fidelity_d1.py`); maps A1–C1 → readiness / launch / deploy / security; WCAG AA audit / public change calendar Remaining.
-
-**Stage 41 exit (2026-08-11):** A1, C1, D1, H41x met — `docs/STAGE_41_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_088_STAGE41_FREEZE.md`. Fidelity: `docs/STAGE_41_FIDELITY.md`.
-
-**Stage 42 open (2026-08-11):** Commercial AI Transparency Fidelity track approved — `docs/ADR_089_STAGE42_OPEN.md` + `docs/STAGE_42_PLAN.md` (AI use disclosure → AI model/provider boundary → fidelity).
-
-**Stage 42 A1 (2026-08-11):** AI use disclosure honesty — `docs/AI_USE_DISCLOSURE_MVP.md`, `ops/mvp/ai-use-disclosure.json`, evidence `stage42_a1_ai_use_disclosure.json` (`test_ai_use_disclosure_a1.py`); AI certification Remaining.
-
-**Stage 42 P1 (2026-08-11):** AI model / provider boundary honesty — `docs/AI_PROVIDER_BOUNDARY_MVP.md`, `ops/mvp/ai-provider-boundary.json`, evidence `stage42_p1_ai_provider_boundary.json` (`test_ai_provider_boundary_p1.py`); external LLM Remaining.
-
-**Stage 42 D1 (2026-08-11):** Commercial AI transparency fidelity — `docs/STAGE_42_FIDELITY.md` (`test_stage42_fidelity_d1.py`); maps A1–P1 → readiness / launch / deploy / security; external LLM / AI certification Remaining.
-
-**Stage 42 exit (2026-08-11):** A1, P1, D1, H42x met — `docs/STAGE_42_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_090_STAGE42_FREEZE.md`. Fidelity: `docs/STAGE_42_FIDELITY.md`.
-
-**Stage 43 open (2026-08-11):** Commercial Legal Notice Fidelity track approved — `docs/ADR_091_STAGE43_OPEN.md` + `docs/STAGE_43_PLAN.md` (ToS/AUP → cookie/privacy notice → fidelity).
-
-**Stage 43 T1 (2026-08-11):** ToS / AUP honesty — `docs/TOS_AUP_MVP.md`, `ops/mvp/tos-aup.json`, evidence `stage43_t1_tos_aup.json` (`test_tos_aup_t1.py`); signed ToS Remaining.
-
-**Stage 43 C1 (2026-08-11):** Cookie / privacy notice honesty — `docs/COOKIE_PRIVACY_NOTICE_MVP.md`, `ops/mvp/cookie-privacy-notice.json`, evidence `stage43_c1_cookie_privacy_notice.json` (`test_cookie_privacy_notice_c1.py`); live cookie-consent Remaining.
-
-**Stage 43 D1 (2026-08-11):** Commercial legal notice fidelity — `docs/STAGE_43_FIDELITY.md` (`test_stage43_fidelity_d1.py`); maps T1–C1 → readiness / launch / deploy / security; signed ToS / live cookie-consent Remaining.
-
-**Stage 43 exit (2026-08-11):** T1, C1, D1, H43x met — `docs/STAGE_43_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_092_STAGE43_FREEZE.md`. Fidelity: `docs/STAGE_43_FIDELITY.md`.
-
-**Stage 44 open (2026-08-11):** Commercial Data Trust Fidelity track approved — `docs/ADR_093_STAGE44_OPEN.md` + `docs/STAGE_44_PLAN.md` (data residency → encryption/KMS → fidelity).
-
-**Stage 44 R1 (2026-08-11):** Data residency / localization honesty — `docs/DATA_RESIDENCY_MVP.md`, `ops/mvp/data-residency.json`, evidence `stage44_r1_data_residency.json` (`test_data_residency_r1.py`); multi-region residency Remaining.
-
-**Stage 44 E1 (2026-08-11):** Encryption / key-management honesty — `docs/ENCRYPTION_KMS_MVP.md`, `ops/mvp/encryption-kms.json`, evidence `stage44_e1_encryption_kms.json` (`test_encryption_kms_e1.py`); HSM / live Vault Remaining.
-
-**Stage 44 D1 (2026-08-11):** Commercial data trust fidelity — `docs/STAGE_44_FIDELITY.md` (`test_stage44_fidelity_d1.py`); maps R1–E1 → readiness / launch / deploy / security; multi-region residency / HSM / Vault Remaining.
-
-**Stage 44 exit (2026-08-11):** R1, E1, D1, H44x met — `docs/STAGE_44_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_094_STAGE44_FREEZE.md`. Fidelity: `docs/STAGE_44_FIDELITY.md`.
-
-**Stage 45 open (2026-08-11):** Commercial Continuity & Exit Fidelity track approved — `docs/ADR_095_STAGE45_OPEN.md` + `docs/STAGE_45_PLAN.md` (RTO/RPO → retention/return → fidelity).
-
-**Stage 45 O1 (2026-08-11):** RTO / RPO recovery objectives honesty — `docs/RTO_RPO_MVP.md`, `ops/mvp/rto-rpo.json`, evidence `stage45_o1_rto_rpo.json` (`test_rto_rpo_o1.py`); measured RTO/RPO Remaining.
-
-**Stage 45 T1 (2026-08-11):** Data retention / return honesty — `docs/DATA_RETENTION_RETURN_MVP.md`, `ops/mvp/data-retention-return.json`, evidence `stage45_t1_data_retention_return.json` (`test_data_retention_return_t1.py`); data-return portal Remaining.
-
-**Stage 45 D1 (2026-08-11):** Commercial continuity & exit fidelity — `docs/STAGE_45_FIDELITY.md` (`test_stage45_fidelity_d1.py`); maps O1–T1 → readiness / launch / deploy / security; measured RTO/RPO / data-return portal Remaining.
-
-**Stage 45 exit (2026-08-11):** O1, T1, D1, H45x met — `docs/STAGE_45_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_096_STAGE45_FREEZE.md`. Fidelity: `docs/STAGE_45_FIDELITY.md`.
-
-**Stage 46 open (2026-08-11):** Commercial Liability & Remedy Fidelity track approved — `docs/ADR_097_STAGE46_OPEN.md` + `docs/STAGE_46_PLAN.md` (liability/indemnity → service credit/warranty → fidelity).
-
-**Stage 46 L1 (2026-08-11):** Limitation of liability / indemnity honesty — `docs/LIABILITY_INDEMNITY_MVP.md`, `ops/mvp/liability-indemnity.json`, evidence `stage46_l1_liability_indemnity.json` (`test_liability_indemnity_l1.py`); signed liability-cap Remaining.
-
-**Stage 46 W1 (2026-08-11):** Service credit / warranty honesty — `docs/SERVICE_CREDIT_WARRANTY_MVP.md`, `ops/mvp/service-credit-warranty.json`, evidence `stage46_w1_service_credit_warranty.json` (`test_service_credit_warranty_w1.py`); live service credits Remaining.
-
-**Stage 46 D1 (2026-08-11):** Commercial liability & remedy fidelity — `docs/STAGE_46_FIDELITY.md` (`test_stage46_fidelity_d1.py`); maps L1–W1 → readiness / launch / deploy / security; signed liability-cap / live service credits Remaining.
-
-**Stage 46 exit (2026-08-11):** L1, W1, D1, H46x met — `docs/STAGE_46_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_098_STAGE46_FREEZE.md`. Fidelity: `docs/STAGE_46_FIDELITY.md`.
-
-**Stage 47 open (2026-08-11):** Commercial Insurance & Audit Fidelity track approved — `docs/ADR_099_STAGE47_OPEN.md` + `docs/STAGE_47_PLAN.md` (cyber insurance/COI → customer audit rights → fidelity).
-
-**Stage 47 I1 (2026-08-11):** Cyber insurance / COI honesty — `docs/CYBER_INSURANCE_MVP.md`, `ops/mvp/cyber-insurance.json`, evidence `stage47_i1_cyber_insurance.json` (`test_cyber_insurance_i1.py`); issued COI Remaining.
-
-**Stage 47 A1 (2026-08-11):** Customer audit rights honesty — `docs/CUSTOMER_AUDIT_RIGHTS_MVP.md`, `ops/mvp/customer-audit-rights.json`, evidence `stage47_a1_customer_audit_rights.json` (`test_customer_audit_rights_a1.py`); customer audit executed Remaining.
-
-**Stage 47 D1 (2026-08-11):** Commercial insurance & audit fidelity — `docs/STAGE_47_FIDELITY.md` (`test_stage47_fidelity_d1.py`); maps I1–A1 → readiness / launch / deploy / security; issued COI / customer audit executed Remaining.
-
-**Stage 47 exit (2026-08-11):** I1, A1, D1, H47x met — `docs/STAGE_47_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_100_STAGE47_FREEZE.md`. Fidelity: `docs/STAGE_47_FIDELITY.md`.
-
-**Stage 48 open (2026-08-11):** Commercial Services Fidelity track approved — `docs/ADR_101_STAGE48_OPEN.md` + `docs/STAGE_48_PLAN.md` (professional services/SOW → customer training/cert → fidelity).
-
-**Stage 48 P1 (2026-08-11):** Professional services / SOW honesty — `docs/PROFESSIONAL_SERVICES_SOW_MVP.md`, `ops/mvp/professional-services-sow.json`, evidence `stage48_p1_professional_services_sow.json` (`test_professional_services_sow_p1.py`); signed SOW Remaining.
-
-**Stage 48 T1 (2026-08-11):** Customer training / certification honesty — `docs/CUSTOMER_TRAINING_CERT_MVP.md`, `ops/mvp/customer-training-cert.json`, evidence `stage48_t1_customer_training_cert.json` (`test_customer_training_cert_t1.py`); live training Remaining.
-
-**Stage 48 D1 (2026-08-11):** Commercial services fidelity — `docs/STAGE_48_FIDELITY.md` (`test_stage48_fidelity_d1.py`); maps P1–T1 → readiness / launch / deploy / security; signed SOW / live training Remaining.
-
-**Stage 48 exit (2026-08-11):** P1, T1, D1, H48x met — `docs/STAGE_48_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_102_STAGE48_FREEZE.md`. Fidelity: `docs/STAGE_48_FIDELITY.md`.
-
-**Stage 49 open (2026-08-11):** Commercial Channel & Pricing Fidelity track approved — `docs/ADR_103_STAGE49_OPEN.md` + `docs/STAGE_49_PLAN.md` (partner/reseller → pricing transparency → fidelity).
-
-**Stage 49 R1 (2026-08-11):** Partner / reseller terms honesty — `docs/PARTNER_RESELLER_MVP.md`, `ops/mvp/partner-reseller.json`, evidence `stage49_r1_partner_reseller.json` (`test_partner_reseller_r1.py`); live partner program Remaining.
-
-**Stage 49 L1 (2026-08-11):** Pricing transparency honesty — `docs/PRICING_TRANSPARENCY_MVP.md`, `ops/mvp/pricing-transparency.json`, evidence `stage49_l1_pricing_transparency.json` (`test_pricing_transparency_l1.py`); public pricing portal Remaining.
-
-**Stage 49 D1 (2026-08-11):** Channel & pricing fidelity sync — `docs/STAGE_49_FIDELITY.md` (`test_stage49_fidelity_d1.py`); maps R1–L1 → readiness / launch / deploy / security.
-
-**Stage 49 exit (2026-08-11):** R1, L1, D1, H49x met — `docs/STAGE_49_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_104_STAGE49_FREEZE.md`. Fidelity: `docs/STAGE_49_FIDELITY.md`.
-
-**Stage 50 open (2026-08-11):** Commercial Acquisition & Trial Fidelity track approved — `docs/ADR_105_STAGE50_OPEN.md` + `docs/STAGE_50_PLAN.md` (referral → freemium trial → fidelity).
-
-**Stage 50 R1 (2026-08-11):** Referral program honesty — `docs/REFERRAL_PROGRAM_MVP.md`, `ops/mvp/referral-program.json`, evidence `stage50_r1_referral_program.json` (`test_referral_program_r1.py`); live referral credits Remaining.
-
-**Stage 50 F1 (2026-08-11):** Freemium trial honesty — `docs/FREEMIUM_TRIAL_MVP.md`, `ops/mvp/freemium-trial.json`, evidence `stage50_f1_freemium_trial.json` (`test_freemium_trial_f1.py`); live freemium conversion Remaining.
-
-**Stage 50 D1 (2026-08-11):** Acquisition & trial fidelity sync — `docs/STAGE_50_FIDELITY.md` (`test_stage50_fidelity_d1.py`); maps R1–F1 → readiness / launch / deploy / security.
-
-**Stage 50 exit (2026-08-11):** R1, F1, D1, H50x met — `docs/STAGE_50_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_106_STAGE50_FREEZE.md`. Fidelity: `docs/STAGE_50_FIDELITY.md`.
-
-**Stage 51 open (2026-08-11):** Commercial Marketplace & Add-Ons Fidelity track approved — `docs/ADR_107_STAGE51_OPEN.md` + `docs/STAGE_51_PLAN.md` (marketplace → add-ons → fidelity).
-
-**Stage 51 M1 (2026-08-11):** Marketplace presence honesty — `docs/MARKETPLACE_PRESENCE_MVP.md`, `ops/mvp/marketplace-presence.json`, evidence `stage51_m1_marketplace_presence.json` (`test_marketplace_presence_m1.py`); live marketplace listing Remaining.
-
-**Stage 51 A1 (2026-08-11):** Add-on services honesty — `docs/ADDON_SERVICES_MVP.md`, `ops/mvp/addon-services.json`, evidence `stage51_a1_addon_services.json` (`test_addon_services_a1.py`); live add-on catalog Remaining.
-
-**Stage 51 D1 (2026-08-11):** Marketplace & add-ons fidelity sync — `docs/STAGE_51_FIDELITY.md` (`test_stage51_fidelity_d1.py`); maps M1–A1 → readiness / launch / deploy / security.
-
-**Stage 51 exit (2026-08-11):** M1, A1, D1, H51x met — `docs/STAGE_51_EXIT_CRITERIA.md`. Scope freeze: `docs/ADR_108_STAGE51_FREEZE.md`. Fidelity: `docs/STAGE_51_FIDELITY.md`.
-
-**Stage 52 open (2026-08-11):** Commercial Partnerships & Renewal Fidelity track approved — `docs/ADR_109_STAGE52_OPEN.md` + `docs/STAGE_52_PLAN.md` (industry partnerships → renewal/discount → fidelity).
-
-**Stage 52 I1 (2026-08-11):** Industry partnerships honesty — `docs/INDUSTRY_PARTNERSHIPS_MVP.md`, `ops/mvp/industry-partnerships.json`, evidence `stage52_i1_industry_partnerships.json` (`test_industry_partnerships_i1.py`); live industry partnership program Remaining.
-
-**Stage 52 R1 (2026-08-11):** Subscription renewal / annual discount honesty — `docs/SUBSCRIPTION_RENEWAL_MVP.md`, `ops/mvp/subscription-renewal.json`, evidence `stage52_r1_subscription_renewal.json` (`test_subscription_renewal_r1.py`); live annual-discount enforcement Remaining.
-
-**Stage 52 D1 (2026-08-11):** Partnerships & renewal fidelity sync — `docs/STAGE_52_FIDELITY.md` (`test_stage52_fidelity_d1.py`); maps I1–R1 → readiness / launch / deploy / security.
-
-
-
-
 ### 2.2 Features
 
 | # | Feature | Module | Priority |
@@ -610,7 +153,7 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 - [ ] Database migration system (Alembic) tested across multiple tenant schemas
 - [ ] API documentation (OpenAPI/Swagger) auto-generated
 
-### 2.8 AI/Cursor Implementation Prompt
+### 2.8 AI Implementation Prompt
 
 ```
 Implement Phase 1 of RIBDIGI ERP MVP:
@@ -657,8 +200,6 @@ Acceptance Criteria:
 ### 3.1 Objective
 
 Build the complete inventory management and purchasing system. This includes product catalog management, stock tracking, warehouse operations, supplier management, and the full purchase order lifecycle. This is the operational heart of the ERP.
-
-**Stage 2 delivery plan (frozen):** `docs/STAGE_2_PLAN.md` — exit `docs/STAGE_2_EXIT_CRITERIA.md` / ADR-010.
 
 ### 3.2 Features
 
@@ -738,14 +279,14 @@ Build the complete inventory management and purchasing system. This includes pro
 
 - [ ] Complete product catalog with variants, images, barcodes
 - [ ] Real-time stock tracking across multiple warehouses
-- [ ] Full purchasing workflow: Request → PO → GRN → Invoice → Return
+- [x] Full purchasing workflow: Request → PO → GRN → Invoice → Return
 - [ ] Low stock alert system with configurable thresholds
 - [ ] Stock movement audit trail (who, what, when, why)
 - [ ] Physical stock count module with variance reporting
 - [ ] Supplier balance tracking with aging report
-- [ ] CSV bulk import for products and stock
+- [x] CSV bulk import for products and stock
 
-### 3.8 AI/Cursor Implementation Prompt
+### 3.8 AI Implementation Prompt
 
 ```
 Implement Phase 2 of RIBDIGI ERP MVP — Inventory & Supply Chain:
@@ -792,8 +333,6 @@ Acceptance Criteria:
 ### 4.1 Objective
 
 Build the revenue-generating side of the platform: customer management, sales pipeline (quotation → order → invoice), Point of Sale (POS), expense tracking, basic accounting, tax management, and credit control. This phase makes the ERP commercially usable.
-
-**Stage 3 delivery plan (frozen):** `docs/STAGE_3_PLAN.md` — exit `docs/STAGE_3_EXIT_CRITERIA.md` / ADR-012.
 
 ### 4.2 Features
 
@@ -889,8 +428,8 @@ Build the revenue-generating side of the platform: customer management, sales pi
 ### 4.7 Deliverables
 
 - [ ] Complete sales pipeline: Quotation → Order → Invoice → Payment → Return
-- [x] Fully functional POS with barcode support, discounts, split payments, receipts (Stage 12 C2 / Stage 13 H1–H2; USB/serial drivers deferred)
-- [x] Shift management with cash reconciliation (Stage 12 C2 / A1)
+- [ ] Fully functional POS with barcode support, discounts, split payments, receipts
+- [ ] Shift management with cash reconciliation
 - [ ] Expense tracking with approval workflow and receipt attachments
 - [ ] Double-entry accounting with Chart of Accounts, Journal Entries, AR/AP
 - [ ] Financial reports: P&L, Cash Flow, Trial Balance
@@ -898,7 +437,7 @@ Build the revenue-generating side of the platform: customer management, sales pi
 - [ ] Customer & supplier credit management with aging reports
 - [ ] Recurring expense automation (Celery beat)
 
-### 4.8 AI/Cursor Implementation Prompt
+### 4.8 AI Implementation Prompt
 
 ```
 Implement Phase 3 of RIBDIGI ERP MVP — Sales, POS & Financials:
@@ -947,8 +486,6 @@ Acceptance Criteria:
 
 Add advanced capabilities that differentiate RIBDIGI from basic ERPs: AI-driven business insights, multi-store management for retail chains, comprehensive reporting, and proactive notifications. This phase transforms the ERP from a record-keeping tool into an intelligent business advisor.
 
-**Stage 4 delivery plan (frozen):** `docs/STAGE_4_PLAN.md` — exit `docs/STAGE_4_EXIT_CRITERIA.md` / ADR-014.
-
 ### 5.2 Features
 
 | # | Feature | Module | Priority |
@@ -996,37 +533,28 @@ Add advanced capabilities that differentiate RIBDIGI from basic ERPs: AI-driven 
 | `/reports/sales/monthly` | GET | Monthly sales report |
 | `/reports/sales/products` | GET | Product sales report |
 | `/reports/inventory/balance` | GET | Stock balance report |
-| `/reports/inventory/valuation` | GET | Stock valuation (Stage 9 R2 — standard cost) |
 | `/reports/inventory/movements` | GET | Stock movement report |
 | `/reports/purchases/summary` | GET | Purchase summary |
 | `/reports/purchases/suppliers` | GET | Supplier purchase report |
-| `/reports/purchases/pending-orders` | GET | Pending POs (Stage 9 R1) |
-| `/reports/purchases/returns` | GET | Purchase return summary (Stage 9 R1) |
 | `/reports/expenses/summary` | GET | Expense summary |
 | `/notifications` | GET | List notifications |
 | `/notifications/{id}/read` | PATCH | Mark read |
 | `/notifications/settings` | GET/PATCH | Notification preferences |
-| `/ai/chat` | POST | AI chat assistant (Stage 20 C1) |
-| `/ai/chat/history` | GET | Chat history |
-| `/ai/insights` | GET | Dashboard insights (Stage 20 I1) |
+| `/ai/chat` | POST | AI chat assistant |
+| `/ai/insights` | GET | Dashboard insights |
 | `/ai/inventory/predictions` | GET | Inventory predictions |
-| `/ai/inventory/demand-forecast` | GET | Demand 7/30/90 + reorder (Stage 20 V1) |
-| `/ai/inventory/dead-stock` | GET | Dead stock (Stage 20 V1) |
-| `/ai/inventory/low-stock-prediction` | GET | Low stock prediction (Stage 20 L1) |
-| `/ai/sales/analysis` | GET | Sales analysis (Stage 20 S1) |
-| `/ai/expenses/analysis` | GET | Expense analysis (BR-21.6 / Stage 10) |
-| `/ai/reports/generate` | POST | AI report generation (+ `?export=true`) (Stage 20 R1) |
-| `/ai/reports/templates` | GET/POST | Saved NL report templates (Stage 20 R1) |
-| `/ai/documents/analyze` | POST | Document OCR analysis (BR-21.8 / Stage 10) |
-| `/ai/customer/assist` | POST | Customer AI assistant (Stage 20 U1) |
-| `/ai/customers/insights` | GET | Churn / best / promos (Stage 20 U1) |
-| `/ai/security/alerts` | GET | AI security alerts (Stage 20 U1) |
-
-Stage 20 D1 fidelity: `docs/STAGE_20_FIDELITY.md`.
+| `/ai/inventory/low-stock-prediction` | GET | Low stock prediction |
+| `/ai/inventory/low-stock-prediction/requests` | POST | Draft PRs from predictions (AI UI) |
+| `/ai/sales/analysis` | GET | Sales analysis |
+| `/ai/expenses/analysis` | GET | Expense analysis |
+| `/ai/reports/generate` | POST | AI report generation |
+| `/ai/documents/analyze` | POST | Document OCR analysis |
+| `/ai/customer/assist` | POST | Customer AI assistant |
+| `/ai/security/alerts` | GET | AI security alerts |
 
 ### 5.5 UI Requirements
 
-- **Multi-Store Dashboard:** Store selector dropdown (global context switch). Per-store inventory and sales views. Transfer request form with source/destination store pickers.
+- **Multi-Store Dashboard:** Store selector dropdown (global context switch) — **Done (MVP):** Shell `StoreSwitcher` + `storeContext` persisted per tenant; seeds POS / Sales / Reports / Tax / Expenses. Per-store inventory and sales views. Transfer request form with source/destination store pickers.
 - **Reports Center:** Sidebar with report categories. Date range picker with presets (Today, This Week, This Month, Last Month, Custom). Tables with sortable columns, export to PDF/Excel. Charts (line for trends, pie for breakdowns).
 - **Notification Center:** Bell icon with unread badge. Dropdown panel with notification list, mark-all-read. Settings page with per-type channel toggles (Dashboard/Email/SMS).
 - **AI Chat Assistant:** Floating chat widget (bottom-right) or dedicated page. Natural language input, suggested prompts, response with data cards and "View Details" links. Conversation history.
@@ -1060,7 +588,7 @@ Stage 20 D1 fidelity: `docs/STAGE_20_FIDELITY.md`.
 - [ ] Materialized views for fast report loading
 - [ ] Global store context switcher in UI header
 
-### 5.8 AI/Cursor Implementation Prompt
+### 5.8 AI Implementation Prompt
 
 ```
 Implement Phase 4 of RIBDIGI ERP MVP — Intelligence, Multi-Store & Scale:
@@ -1109,12 +637,6 @@ Acceptance Criteria:
 
 Harden the platform for production readiness: implement backup/recovery, audit logs, API expansion, advanced security features, performance optimization, and final QA. This phase ensures the MVP is secure, reliable, and scalable enough for real tenant onboarding.
 
-**Stage 5 delivery plan (closed):** `docs/STAGE_5_PLAN.md` — exit met; freeze ADR-016.
-
-**Stage 6 delivery plan (closed):** `docs/STAGE_6_PLAN.md` — exit met; freeze ADR-018.
-
-**Active delivery plan:** Stage 39 exit met (`docs/STAGE_39_EXIT_CRITERIA.md`, ADR-084). Stages 1–39 remain frozen for their scopes; Stage 40+ requires explicit open ADR after CONTINUE/NEXT.
-
 ### 6.2 Features
 
 | # | Feature | Module | Priority |
@@ -1123,10 +645,10 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 | 5.2 | Database Restore | Backup & Recovery | P0 |
 | 5.3 | Audit Logs (Login, Logout, Product Changes, Sales, Purchases, User Activity) | Audit Logs | P0 |
 | 5.4 | Authentication API | API | P0 |
-| 5.5 | Products API | API | P0 |
-| 5.6 | Customers API | API | P0 |
-| 5.7 | Sales API | API | P0 |
-| 5.8 | Purchases API | API | P0 |
+| 5.5 | Products API | API | P0 | Complete (MVP) — BR-18.2; `GET /inventory/products/lookup`, `GET /products/{id}/warehouse-stock` |
+| 5.6 | Customers API | API | P0 | Complete (MVP) — BR-18.3 balance/history |
+| 5.7 | Sales API | API | P0 | Complete (MVP) — BR-18.4 QT/SO/INV/payments/returns/POS |
+| 5.8 | Purchases API | API | P0 | Complete (MVP) — BR-18.5 PR/PO/GRN/PI/suppliers/payments |
 | 5.9 | Two-Factor Authentication (Optional) | Authentication & Security | P1 |
 | 5.10 | Email Verification | Authentication & Security | P0 |
 | 5.11 | Password Reset | Authentication & Security | P0 |
@@ -1169,9 +691,9 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 - **Backup Management:** Admin page showing backup history (date, size, status). "Backup Now" button, "Restore" button with confirmation modal (destructive action warning). Scheduled backup configuration (frequency, retention).
 - **Audit Log Viewer:** Filterable table (date range, user, event type, resource type). Diff view showing old vs new values for update events. Export to CSV.
 - **Security Settings:** 2FA setup wizard (QR code display, verification code input). Active sessions list with "Revoke" buttons per device. Password policy configuration.
-- **API Keys:** Generate/revoke API keys for third-party integrations. Usage statistics (requests, last used) — **COMPLETE (Stage 7 K2).**
+- **API Keys:** Generate/revoke API keys for third-party integrations. Usage statistics (requests, last used).
 - **Performance Dashboard:** Admin-only page showing query slow log, cache hit rates, average response times, error rates.
-- **Onboarding Checklist:** New tenant sees progress checklist (Setup company → Add products → Create supplier → Make first sale) with skip/complete actions. **COMPLETE (Stage 6 N2):** `GET /onboarding/checklist` + Shell banner; dismissible at ≥80%.
+- **Onboarding Checklist:** New tenant sees progress checklist (Setup company → Add products → Create supplier → Stock → Make first sale) with skip/complete/dismiss/restore; Shell banner Complete (MVP).
 
 ### 6.6 Testing Requirements
 
@@ -1191,7 +713,8 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 - [ ] Point-in-time database restore capability
 - [ ] Immutable audit log for all sensitive operations
 - [ ] Complete REST API for external integrations (Products, Customers, Sales, Purchases)
-- [ ] Webhook system with signature verification
+- [x] Webhook system with signature verification
+  - Complete (MVP): HMAC `X-Ribdigi-Signature`; Integrations deliveries/retry; verify samples in API docs §17.4
 - [ ] Two-factor authentication (TOTP)
 - [ ] Email verification and password reset flows
 - [ ] Session management with revoke capability
@@ -1200,9 +723,9 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 - [ ] Security hardened: TLS 1.3, WAF rules, rate limiting, input validation, RBAC enforced
 - [ ] Production Kubernetes deployment with monitoring (Prometheus/Grafana)
 - [ ] Complete documentation set: API docs, User Manual, Admin Manual, Security Guide
-- [x] Launch checklist documented (Stage 7 L7x — `docs/LAUNCH_CHECKLIST.md`); operator environment sign-off remains ops
+- [ ] Launch checklist completed and signed off
 
-### 6.8 AI/Cursor Implementation Prompt
+### 6.8 AI Implementation Prompt
 
 ```
 Implement Phase 5 of RIBDIGI ERP MVP — Polish, Security & Launch:
@@ -1213,15 +736,15 @@ BACKEND (FastAPI + DevOps):
 3. API expansion: Public API endpoints under /api/v1/ with API key authentication (separate from JWT). Rate limiting per API key. Webhook system: tenants register URLs, events trigger POST with HMAC-SHA256 signature. Retry logic with exponential backoff.
 4. 2FA: TOTP-based using pyotp. QR code generation for setup. Backup codes (10 single-use). Enforced per role (optional for cashier, mandatory for admin).
 5. Email verification: SendGrid/AWS SES integration. Verification token expires in 24 hours. Unverified users blocked from protected routes.
-6. Performance: Redis caching for dashboard metrics (5 min TTL), product catalog (10 min TTL), user permissions (1 hour TTL). SQL query optimization: add missing indexes, refactor N+1 queries using joinedload. Database connection pooling via PgBouncer. **PARTIAL (Stage 6 P2 + Stage 7 C2):** dashboard + catalog + permissions Redis/app cache with invalidation; PgBouncer remains deferred.
+6. Performance: Redis caching for dashboard metrics (5 min TTL), product catalog (10 min TTL), user permissions (1 hour TTL). SQL query optimization: add missing indexes, refactor N+1 queries using joinedload. Database connection pooling via PgBouncer.
 7. Security: Input sanitization on all endpoints. CORS restricted to known origins. Security headers (HSTS, CSP, X-Frame-Options). Rate limiting per tenant tier. Container security: non-root user, read-only root filesystem, dropped capabilities.
 
 FRONTEND (Next.js):
 1. Backup page: admin-only. Table of backups with download/restore buttons. Schedule config form (cron expression picker). Restore confirmation with "Type RESTORE to confirm" safety.
 2. Audit log viewer: filter sidebar (date range, user dropdown, event type checkboxes). Table with expandable rows showing old/new value diff (green for added, red for removed).
 3. Security settings: 2FA setup modal with QR code and 6-digit input. Active sessions table showing device, IP, location, last active, revoke button.
-4. API Keys: generate button, copy-to-clipboard, revoke button. Usage chart (requests per day). **COMPLETE (Stage 7 K2).**
-5. Onboarding checklist: persistent banner for new tenants. 5 steps with progress bar. Each step links to relevant page. Dismissible after 80% complete.
+4. API Keys: generate button, copy-to-clipboard, revoke button. Usage chart (requests per day).
+5. Onboarding checklist: persistent banner for new tenants. 5 steps with progress bar. Each step links to relevant page. Dismissible after 80% complete. **Done (MVP):** `OnboardingChecklist` in Shell + API skip/dismiss/restore.
 
 DEVOPS:
 1. Production Kubernetes deployment: Helm charts with values-production.yaml. Ingress with TLS 1.3. Cert-manager for Let's Encrypt. HPA for backend (5-20 pods), frontend (3-10 pods), Celery (3-15 pods).

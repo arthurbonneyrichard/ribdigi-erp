@@ -1,248 +1,276 @@
-"""Company branding for printable documents (BR-20.1 / ADR-490 phase 17)."""
+"""Print branding helpers: logo embed, header/footer, default templates."""
 
 from __future__ import annotations
 
-import base64
-import logging
+import io
 from typing import Any
 
+from fastapi import HTTPException
+
 from app import models as m
-from app import storage as storage_svc
+from app.honesty import optional_honest_narrative
 
-logger = logging.getLogger(__name__)
+DEFAULT_INVOICE_TEMPLATE = "a4"
+DEFAULT_RECEIPT_PAPER = "80mm"
+DEFAULT_FOOTER_INVOICE = "Thank you for your business."
+DEFAULT_FOOTER_RECEIPT = "Thank you"
+# Logo leaf / CSS --brand (#4AB012) as PDF device RGB (0–1).
+BRAND_GREEN_RGB: tuple[float, float, float] = (0.290, 0.690, 0.071)
+POWERED_BY_RIBDIGI = "Powered by RIBDIGI"
 
 
-def print_templates_for_serialize(
-    tenant: m.Tenant | None, company: m.Company | None = None
-) -> dict[str, Any]:
-    """Prefer company print templates when a company workspace/row is active."""
-    if company is not None:
-        return {
-            "invoice_print_template": (
-                getattr(company, "invoice_print_template", None)
-                or getattr(tenant, "invoice_print_template", None)
-                or "a4"
-            ),
-            "receipt_print_template": (
-                getattr(company, "receipt_print_template", None)
-                or getattr(tenant, "receipt_print_template", None)
-                or "thermal_80"
-            ),
-            "document_header": getattr(company, "document_header", None),
-            "document_footer": getattr(company, "document_footer", None),
-        }
+def style_powered_by_line(
+    text: str,
+    size: int = 8,
+) -> tuple[str, int] | tuple[str, int, tuple[float, float, float]]:
+    """Paint the shared 'Powered by RIBDIGI' footer in brand green when matched."""
+    raw = (text or "").strip()
+    if raw == POWERED_BY_RIBDIGI:
+        return (POWERED_BY_RIBDIGI, size, BRAND_GREEN_RGB)
+    return (text, size)
+
+
+INVOICE_TEMPLATES = frozenset({"a4", "thermal"})
+RECEIPT_PAPERS = frozenset({"58mm", "80mm"})
+
+
+def coerce_invoice_template_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for Literal 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+def coerce_receipt_paper_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for Literal 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+def print_branding_settings(tenant: m.Tenant | None) -> dict[str, Any]:
+    raw = (getattr(tenant, "print_branding", None) or {}) if tenant else {}
+    if not isinstance(raw, dict):
+        raw = {}
+    header = str(raw.get("header_text") or "").strip()
+    footer = str(raw.get("footer_text") or "").strip()
+    inv = str(raw.get("default_invoice_template") or DEFAULT_INVOICE_TEMPLATE).lower()
+    if inv not in INVOICE_TEMPLATES:
+        inv = DEFAULT_INVOICE_TEMPLATE
+    paper = str(raw.get("default_receipt_paper") or DEFAULT_RECEIPT_PAPER).lower()
+    if paper not in RECEIPT_PAPERS:
+        paper = DEFAULT_RECEIPT_PAPER
     return {
-        "invoice_print_template": getattr(tenant, "invoice_print_template", None) or "a4",
-        "receipt_print_template": getattr(tenant, "receipt_print_template", None) or "thermal_80",
-        "document_header": getattr(tenant, "document_header", None) if tenant else None,
-        "document_footer": getattr(tenant, "document_footer", None) if tenant else None,
+        "header_text": header,
+        "footer_text": footer,
+        "default_invoice_template": inv,
+        "default_receipt_paper": paper,
+        "has_logo": bool(getattr(tenant, "logo_url", None) if tenant else None),
     }
 
 
-def document_company_name(
-    tenant: m.Tenant | None, company: m.Company | None = None
-) -> str:
-    """Prefer legal name on documents; fall back to trading/company name."""
-    if company is not None:
-        legal = (getattr(company, "legal_name", None) or "").strip()
-        if legal:
-            return legal
-        name = (getattr(company, "name", None) or "").strip()
-        if name:
-            return name
-    if tenant is None:
-        return "RIBDIGI ERP"
-    legal = (getattr(tenant, "legal_name", None) or "").strip()
-    if legal:
-        return legal
-    return (tenant.company_name or "").strip() or "RIBDIGI ERP"
+def apply_print_branding_update(tenant: m.Tenant, payload: dict[str, Any]) -> dict[str, Any]:
+    current = dict(getattr(tenant, "print_branding", None) or {})
+    # Key present + null → clear; key present + value → set (schema already validated).
+    if "header_text" in payload:
+        val = payload["header_text"]
+        if val is None:
+            current["header_text"] = ""
+        else:
+            cleaned = optional_honest_narrative(
+                val, label="print header text", max_length=200
+            )
+            current["header_text"] = cleaned or ""
+    if "footer_text" in payload:
+        val = payload["footer_text"]
+        if val is None:
+            current["footer_text"] = ""
+        else:
+            cleaned = optional_honest_narrative(
+                val, label="print footer text", max_length=300
+            )
+            current["footer_text"] = cleaned or ""
+    if payload.get("default_invoice_template") is not None:
+        # Defense in depth: PrintBrandingUpdate Literal rejects blank/unknown with 422.
+        # Read path still coerces garbage to a4 silently.
+        inv = str(payload["default_invoice_template"]).lower().strip()
+        if inv not in INVOICE_TEMPLATES:
+            raise HTTPException(status_code=400, detail="default_invoice_template must be a4 or thermal")
+        current["default_invoice_template"] = inv
+    if payload.get("default_receipt_paper") is not None:
+        paper = str(payload["default_receipt_paper"]).lower().strip()
+        if paper not in RECEIPT_PAPERS:
+            raise HTTPException(status_code=400, detail="default_receipt_paper must be 58mm or 80mm")
+        current["default_receipt_paper"] = paper
+    tenant.print_branding = current
+    return print_branding_settings(tenant)
 
 
-def trading_name_if_distinct(
-    tenant: m.Tenant | None, company: m.Company | None = None
-) -> str | None:
-    """Trading/company name when different from the document headline (legal name)."""
-    if company is not None:
-        legal = (getattr(company, "legal_name", None) or "").strip()
-        trading = (getattr(company, "name", None) or "").strip()
-        if legal and trading and legal.casefold() != trading.casefold():
-            return trading
-        return None
-    if tenant is None:
-        return None
-    legal = (getattr(tenant, "legal_name", None) or "").strip()
-    trading = (tenant.company_name or "").strip()
-    if legal and trading and legal.casefold() != trading.casefold():
-        return trading
-    return None
+def branding_fields_for_payload(tenant: m.Tenant | None) -> dict[str, Any]:
+    cfg = print_branding_settings(tenant)
+    return {
+        "print_header": cfg["header_text"] or None,
+        "print_footer": cfg["footer_text"] or None,
+        "has_logo": cfg["has_logo"],
+        "default_invoice_template": cfg["default_invoice_template"],
+        "default_receipt_paper": cfg["default_receipt_paper"],
+    }
 
 
-def load_logo_data_url(
-    tenant: m.Tenant | None, company: m.Company | None = None
-) -> str | None:
-    """Load logo as a data URI for HTML embeds. Prefer company logo when set."""
-    logo_key = None
-    tenant_id = None
-    if company is not None and getattr(company, "logo_url", None):
-        logo_key = company.logo_url
-        tenant_id = company.tenant_id
-    elif tenant is not None and getattr(tenant, "logo_url", None):
-        logo_key = tenant.logo_url
-        tenant_id = tenant.id
-    if not logo_key or not tenant_id:
+def load_logo_jpeg(
+    tenant: m.Tenant | None,
+    *,
+    max_width_px: int = 360,
+    max_height_px: int = 120,
+) -> tuple[bytes, int, int] | None:
+    """Return (jpeg_bytes, width_px, height_px) or None if unavailable."""
+    if not tenant or not getattr(tenant, "logo_url", None):
         return None
     try:
-        media = storage_svc.read_object(logo_key, tenant_id=tenant_id)
-        if not media.data:
-            return None
-        b64 = base64.b64encode(media.data).decode("ascii")
-        ctype = media.content_type or "image/png"
-        return f"data:{ctype};base64,{b64}"
+        from PIL import Image
+
+        from app import storage as storage_svc
+
+        media = storage_svc.read_object(tenant.logo_url, tenant_id=tenant.id)
+        img = Image.open(io.BytesIO(media.data))
+        img = img.convert("RGB")
+        img.thumbnail((max_width_px, max_height_px))
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=85)
+        return buf.getvalue(), img.width, img.height
     except Exception:
-        logger.warning(
-            "Failed to load logo for tenant %s key %s",
-            tenant_id,
-            logo_key,
-            exc_info=True,
-        )
         return None
 
 
-def tenant_document_brand(
-    tenant: m.Tenant | None, company: m.Company | None = None
-) -> dict[str, Any]:
-    """Shared brand fields for invoice/receipt/quotation/credit-note prints.
-
-    When ``company`` is provided (ADR-490 company workspace), prefer company
-    profile + print header/footer; tenant remains legacy fallback.
-    """
-    logo_data_url = load_logo_data_url(tenant, company)
-    templates = print_templates_for_serialize(tenant, company)
-    header = (templates.get("document_header") or "").strip()
-    footer = (templates.get("document_footer") or "").strip()
-    if company is not None:
-        address = getattr(company, "address", None) or (getattr(tenant, "address", None) if tenant else None)
-        phone = getattr(company, "phone", None) or (getattr(tenant, "phone", None) if tenant else None)
-        email = getattr(company, "email", None) or (getattr(tenant, "email", None) if tenant else None)
-        tax = getattr(company, "tax_registration_number", None) or (
-            getattr(tenant, "tax_registration_number", None) if tenant else None
-        )
-        legal = (getattr(company, "legal_name", None) or "").strip() or None
-    else:
-        address = getattr(tenant, "address", None) if tenant else None
-        phone = getattr(tenant, "phone", None) if tenant else None
-        email = (str(getattr(tenant, "email", None) or "") or None) if tenant else None
-        tax = getattr(tenant, "tax_registration_number", None) if tenant else None
-        legal = (getattr(tenant, "legal_name", None) or "").strip() or None if tenant else None
-    return {
-        "company_name": document_company_name(tenant, company),
-        "legal_name": legal,
-        "trading_name": trading_name_if_distinct(tenant, company),
-        "company_address": address,
-        "company_phone": phone,
-        "company_email": (str(email) or None) if email else None,
-        "tax_registration_number": tax,
-        "has_logo": bool(logo_data_url),
-        "logo_data_url": logo_data_url,
-        "document_header": header or None,
-        "document_footer": footer or None,
-        "invoice_print_template": templates["invoice_print_template"],
-        "receipt_print_template": templates["receipt_print_template"],
-    }
-
-
-def header_footer_text_lines(text: str | None, width: int) -> list[str]:
-    """Wrap optional header/footer for monospace thermal/A4 text layouts."""
-    raw = (text or "").strip()
-    if not raw:
-        return []
-    lines: list[str] = []
-    for paragraph in raw.splitlines() or [raw]:
-        para = paragraph.strip()
-        if not para:
-            continue
-        while len(para) > width:
-            cut = para.rfind(" ", 0, width + 1)
-            if cut <= 0:
-                cut = width
-            lines.append(para[:cut].rstrip())
-            para = para[cut:].lstrip()
-        if para:
-            lines.append(para)
-    return lines
-
-
-def header_footer_html(text: str | None, *, css_class: str) -> str:
-    """Escaped HTML block for document header/footer customization."""
-    from html import escape
-
-    raw = (text or "").strip()
-    if not raw:
-        return ""
-    body = "<br>".join(escape(line) for line in raw.splitlines() if line.strip())
-    if not body:
-        return ""
-    return f'<p class="{css_class} muted">{body}</p>'
-
-
-# Platform branding on printable documents (invoices, receipts, quotes, POs, etc.)
-PLATFORM_PRINT_FOOTER_LINES: tuple[str, ...] = (
-    "RIBDIGI ERP",
-    "One System. Total Business Control.",
-    "A Ribdigi House Product",
-)
-
-
-def platform_print_footer_text_lines(*, width: int = 42, center: bool = False) -> list[str]:
-    """Monospace platform footer lines for text / thermal / PDF-from-text prints."""
-
-    def _fit(line: str) -> str:
-        text = line if len(line) <= width else line[:width]
-        if not center:
-            return text
-        pad = max(0, width - len(text))
-        left = pad // 2
-        return (" " * left) + text
-
-    return ["", *(_fit(line) for line in PLATFORM_PRINT_FOOTER_LINES)]
-
-
-def platform_print_footer_html() -> str:
-    """HTML platform footer block appended below tenant document_footer on print views."""
-    from html import escape
-
-    body = "<br>".join(escape(line) for line in PLATFORM_PRINT_FOOTER_LINES)
-    return (
-        '<footer class="platform-footer" style="margin-top:32px;padding-top:14px;'
-        "border-top:1px solid #d6d3d1;text-align:center;color:#57534e;font-size:0.85rem;"
-        f'line-height:1.45">{body}</footer>'
-    )
-
-
-def brand_html_block(
+def build_text_pdf(
+    lines: list[tuple[str, int] | tuple[str, int, tuple[float, float, float]]],
     *,
-    company_name: str,
-    logo_data_url: str | None = None,
-    trading_name: str | None = None,
-    meta_html: str = "",
-) -> str:
-    """HTML fragment for the document brand header (logo + name + meta)."""
-    from html import escape
+    page_width: float,
+    page_height: float,
+    margin: float = 40,
+    mono: bool = False,
+    logo: tuple[bytes, int, int] | None = None,
+    logo_max_pt: float = 80,
+) -> bytes:
+    """Minimal single-page PDF with optional JPEG logo and Helvetica/Courier text.
 
-    logo_html = ""
-    if logo_data_url and logo_data_url.startswith("data:image/"):
-        logo_html = (
-            f'<img class="logo" src="{escape(logo_data_url, quote=True)}" '
-            f'alt="{escape(company_name)} logo" />'
+    Each line is ``(text, font_size)`` or ``(text, font_size, rgb)`` where ``rgb`` is
+    0–1 floats (e.g. brand green for the Powered-by footer).
+    """
+    from app.report_export import _pdf_escape
+
+    content: list[str] = []
+    y = page_height - margin
+    x_text = margin
+
+    if logo:
+        jpeg, px_w, px_h = logo
+        scale = min(logo_max_pt / max(px_w, 1), logo_max_pt / max(px_h, 1), 1.0)
+        draw_w = px_w * scale
+        draw_h = px_h * scale
+        y_img = y - draw_h
+        content.append(
+            f"q {draw_w:.2f} 0 0 {draw_h:.2f} {margin:.2f} {y_img:.2f} cm /Im1 Do Q"
         )
-    trading_html = (
-        f'<div class="muted trading">Trading as {escape(trading_name)}</div>'
-        if trading_name
-        else ""
+        y = y_img - 10
+
+    for entry in lines:
+        text_line = entry[0]
+        size = int(entry[1])
+        rgb = entry[2] if len(entry) >= 3 else None
+        if y < margin + size:
+            break
+        if text_line:
+            font = "/F1" if mono else ("/F2" if size >= 14 else "/F1")
+            escaped = _pdf_escape(text_line)
+            if rgb is not None:
+                r, g, b = float(rgb[0]), float(rgb[1]), float(rgb[2])
+                content.append(
+                    f"BT {font} {size} Tf {r:.3f} {g:.3f} {b:.3f} rg "
+                    f"{x_text:.1f} {y - size:.1f} Td ({escaped}) Tj 0 0 0 rg ET"
+                )
+            else:
+                content.append(
+                    f"BT {font} {size} Tf {x_text:.1f} {y - size:.1f} Td ({escaped}) Tj ET"
+                )
+        y -= size + 4
+
+    stream = "\n".join(content).encode("latin-1", errors="replace")
+    objects: list[bytes] = []
+
+    def obj(n: int, body: bytes) -> None:
+        objects.append(f"{n} 0 obj\n".encode() + body + b"\nendobj\n")
+
+    if logo:
+        jpeg, _, _ = logo
+        obj(
+            1,
+            b"<< /Type /Catalog /Pages 2 0 R >>",
+        )
+        obj(
+            2,
+            b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        )
+        obj(
+            3,
+            (
+                f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {page_width} {page_height}] "
+                f"/Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> "
+                f"/XObject << /Im1 7 0 R >> >> >>"
+            ).encode(),
+        )
+        obj(4, f"<< /Length {len(stream)} >>\nstream\n".encode() + stream + b"\nendstream")
+        if mono:
+            obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>")
+            obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold >>")
+        else:
+            obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+            obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>")
+        obj(
+            7,
+            (
+                f"<< /Type /XObject /Subtype /Image /Width {logo[1]} /Height {logo[2]} "
+                f"/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode "
+                f"/Length {len(jpeg)} >>\nstream\n"
+            ).encode()
+            + jpeg
+            + b"\nendstream",
+        )
+        n_objs = 7
+    else:
+        obj(1, b"<< /Type /Catalog /Pages 2 0 R >>")
+        obj(2, b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+        obj(
+            3,
+            (
+                f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {page_width} {page_height}] "
+                f"/Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>"
+            ).encode(),
+        )
+        obj(4, f"<< /Length {len(stream)} >>\nstream\n".encode() + stream + b"\nendstream")
+        if mono:
+            obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>")
+            obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold >>")
+        else:
+            obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+            obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>")
+        n_objs = 6
+
+    out = bytearray(b"%PDF-1.4\n")
+    offsets = [0]
+    for i, o in enumerate(objects, start=1):
+        offsets.append(len(out))
+        out.extend(o)
+    xref_pos = len(out)
+    out.extend(f"xref\n0 {n_objs + 1}\n".encode())
+    out.extend(b"0000000000 65535 f \n")
+    for off in offsets[1:]:
+        out.extend(f"{off:010d} 00000 n \n".encode())
+    out.extend(
+        f"trailer\n<< /Size {n_objs + 1} /Root 1 0 R >>\nstartxref\n{xref_pos}\n%%EOF\n".encode()
     )
-    meta = f'<div class="muted">{meta_html}</div>' if meta_html else ""
-    return (
-        f'<div class="brand">{logo_html}'
-        f"<h1>{escape(company_name)}</h1>"
-        f"{trading_html}{meta}</div>"
-    )
+    return bytes(out)

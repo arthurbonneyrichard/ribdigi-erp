@@ -1,4 +1,4 @@
-"""Deep health checks for ops readiness (Stage 5 H5)."""
+"""Deep health checks for ops readiness (Celery/Redis/DB)."""
 
 from __future__ import annotations
 
@@ -9,7 +9,6 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.config import settings
-from app.security_runtime import security_posture
 
 
 CheckResult = dict[str, Any]
@@ -114,10 +113,90 @@ async def check_celery_broker() -> CheckResult:
         }
 
 
+async def _outlook_staff_absent(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> bool:
+    """True when arthurbonneyrichard@outlook.com is not on the platform workspace."""
+    target = "arthurbonneyrichard@outlook.com"
+    async with session_factory() as db:
+        row = (
+            await db.execute(
+                text(
+                    """
+                    SELECT 1
+                    FROM users u
+                    JOIN tenants t ON t.id = u.tenant_id
+                    WHERE lower(u.email) = lower(:email)
+                      AND (
+                        t.slug IN ('platform', 'ribdigi-platform')
+                        OR t.id IN ('platform', 'ribdigi-platform')
+                        OR lower(t.company_name) = lower('Ribdigi House')
+                      )
+                    LIMIT 1
+                    """
+                ),
+                {"email": target},
+            )
+        ).first()
+    return row is None
+
+
+async def check_platform_workspace(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> CheckResult:
+    """Report platform workspace status/email (ops recovery verification)."""
+    start = time.perf_counter()
+    try:
+        async with session_factory() as db:
+            row = (
+                await db.execute(
+                    text(
+                        """
+                        SELECT slug, company_name, status, email
+                        FROM tenants
+                        WHERE slug IN ('platform', 'ribdigi-platform')
+                           OR id IN ('platform', 'ribdigi-platform')
+                           OR lower(company_name) = lower('Ribdigi House')
+                        ORDER BY CASE
+                            WHEN slug IN ('platform', 'ribdigi-platform') THEN 0
+                            ELSE 1
+                        END
+                        LIMIT 1
+                        """
+                    )
+                )
+            ).mappings().first()
+        if not row:
+            return {
+                "status": "degraded",
+                "latency_ms": _ms_since(start),
+                "required": False,
+                "error": "platform_workspace_missing",
+            }
+        st = (row.get("status") or "").strip().lower()
+        email = row.get("email")
+        return {
+            "status": "ok" if st == "active" else "degraded",
+            "latency_ms": _ms_since(start),
+            "required": False,
+            "slug": row.get("slug"),
+            "company_name": row.get("company_name"),
+            "tenant_status": row.get("status"),
+            "email": email,
+            "removed_outlook_staff": await _outlook_staff_absent(session_factory),
+        }
+    except Exception as exc:
+        return {
+            "status": "degraded",
+            "latency_ms": _ms_since(start),
+            "error": type(exc).__name__,
+            "required": False,
+        }
+
+
 def _aggregate_status(checks: dict[str, CheckResult]) -> str:
     statuses = [c.get("status") for c in checks.values()]
     if "error" in statuses:
-        # Only database error (or required redis) should be hard-error overall.
         db = checks.get("database", {}).get("status")
         redis = checks.get("redis", {})
         if db == "error":
@@ -140,7 +219,8 @@ async def assemble_health(
         "status": "ok",
         "service": "ribdigi-erp",
         "deep": bool(deep),
-        **security_posture(),
+        "release_channel": settings.RIBDIGI_RELEASE_CHANNEL,
+        "build_id": settings.RIBDIGI_BUILD_ID,
     }
     if not deep:
         return body, 200
@@ -152,6 +232,7 @@ async def assemble_health(
         "database": await check_database(factory),
         "redis": await check_redis(),
         "celery_broker": await check_celery_broker(),
+        "platform_workspace": await check_platform_workspace(factory),
     }
     body["checks"] = checks
     body["status"] = _aggregate_status(checks)

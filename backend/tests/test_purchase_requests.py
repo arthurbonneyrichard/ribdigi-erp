@@ -1,125 +1,204 @@
-"""Purchase request lifecycle: draft → pending → approved → converted PO."""
+"""Purchase request workflow: create → submit → approve → convert to PO."""
 
 from __future__ import annotations
 
 import pyotp
 import pytest
 
+from app.rbac import permissions_for_role
+from app.security import hash_password
+from app import models as m
 from tests.conftest import auth_headers
 
 
-async def _mgr_headers(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-
-
-async def _super_headers(ac, seed):
-    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+async def _super(ac, seeded):
+    code = pyotp.TOTP(seeded["super_totp_secret"]).now()
     return await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
     )
 
 
-async def _ensure_supplier(ac, headers) -> str:
-    created = await ac.post(
-        "/api/v1/suppliers",
-        headers=headers,
-        json={"name": "PR Supplier"},
+async def _manager(ac):
+    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+
+async def _seed_inventory_officer(db_session, seeded):
+    user = m.User(
+        tenant_id=seeded["t1"].id,
+        email="io@alpha.example.com",
+        full_name="Alpha Inventory Officer",
+        password_hash=hash_password("SecurePass123!"),
+        role="inventory_officer",
+        email_verified=True,
+        permissions=permissions_for_role("inventory_officer"),
+        totp_enabled=False,
     )
-    assert created.status_code == 200, created.text
-    return created.json()["data"]["id"]
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user
 
 
 @pytest.mark.asyncio
-async def test_purchase_request_approve_convert_flow(client):
-    ac, seed = client
-    mgr = await _mgr_headers(ac)
-    super_h = await _super_headers(ac, seed)
+async def test_purchase_request_happy_path_convert(client, db_session):
+    ac, seeded = client
+    await _seed_inventory_officer(db_session, seeded)
+    io = await auth_headers(ac, email="io@alpha.example.com", tenant_slug="alpha")
+    mgr = await _manager(ac)
+    admin = await _super(ac, seeded)
 
-    supplier_id = await _ensure_supplier(ac, mgr)
-    product_id = seed["p1"].id
+    supplier = await ac.post(
+        "/api/v1/suppliers",
+        headers=admin,
+        json={"name": "PR Supplier Co"},
+    )
+    assert supplier.status_code == 200, supplier.text
+    supplier_id = supplier.json()["data"]["id"]
+    product_id = seeded["p1"].id
 
     created = await ac.post(
         "/api/v1/purchasing/requests",
-        headers=mgr,
+        headers=io,
         json={
-            "supplier_id": supplier_id,
-            "department": "Store Ops",
-            "items": [{"product_id": product_id, "quantity": 12, "unit_price": 5}],
-        },
+            "preferred_supplier_id": supplier_id,
+            "department": "Front Store",
+            "notes": "Restock widgets",
+            "items": [{"product_id": product_id, "quantity": 12}]},
     )
     assert created.status_code == 200, created.text
     pr = created.json()["data"]
     assert pr["status"] == "draft"
-    assert pr["department"] == "Store Ops"
-    assert len(pr["items"]) == 1
+    assert pr["request_number"].startswith("PREQ-")
+    parts = pr["request_number"].split("-")
+    assert len(parts) == 3 and len(parts[2]) == 4 and parts[2].isdigit()
+    request_id = pr["id"]
 
     submitted = await ac.post(
-        f"/api/v1/purchasing/requests/{pr['id']}/submit",
-        headers=mgr,
+        f"/api/v1/purchasing/requests/{request_id}/submit",
+        headers=io,
+        json={},
     )
     assert submitted.status_code == 200, submitted.text
-    assert submitted.json()["data"]["status"] == "pending"
+    body = submitted.json()["data"]
+    assert body["status"] == "pending"
+    assert body["approval_steps_required"] == 2
+    assert body["approval_step"] == 1
+    assert "store_manager" in body["awaiting_roles"]
 
-    # Creator cannot approve own request
+    # No self-approve
     self_approve = await ac.post(
-        f"/api/v1/purchasing/requests/{pr['id']}/approve",
-        headers=mgr,
+        f"/api/v1/purchasing/requests/{request_id}/approve",
+        headers=io,
+        json={},
     )
     assert self_approve.status_code == 403
 
+    # L1 — store manager
+    l1 = await ac.post(
+        f"/api/v1/purchasing/requests/{request_id}/approve",
+        headers=mgr,
+        json={},
+    )
+    assert l1.status_code == 200, l1.text
+    assert l1.json()["data"]["status"] == "pending"
+    assert l1.json()["data"]["approval_step"] == 2
+
+    # Manager cannot do L2
+    blocked = await ac.post(
+        f"/api/v1/purchasing/requests/{request_id}/approve",
+        headers=mgr,
+        json={},
+    )
+    assert blocked.status_code == 403
+
+    # Convert blocked while still pending
+    early = await ac.post(
+        f"/api/v1/purchasing/requests/{request_id}/convert",
+        headers=io,
+        json={},
+    )
+    assert early.status_code == 409
+
+    # L2 — company_admin / super_admin
     approved = await ac.post(
-        f"/api/v1/purchasing/requests/{pr['id']}/approve",
-        headers=super_h,
+        f"/api/v1/purchasing/requests/{request_id}/approve",
+        headers=admin,
+        json={},
     )
     assert approved.status_code == 200, approved.text
     assert approved.json()["data"]["status"] == "approved"
-    assert approved.json()["data"]["approved_by"]
+    assert approved.json()["data"]["approval_step"] == 2
+    assert len(approved.json()["data"]["approval_actions"]) == 2
 
     converted = await ac.post(
-        f"/api/v1/purchasing/requests/{pr['id']}/convert",
-        headers=mgr,
+        f"/api/v1/purchasing/requests/{request_id}/convert",
+        headers=io,
+        json={},
     )
     assert converted.status_code == 200, converted.text
     body = converted.json()["data"]
-    assert body["request"]["status"] == "converted"
+    assert body["status"] == "converted"
+    assert body["converted_po_id"]
     assert body["purchase_order"]["status"] == "draft"
-    assert body["purchase_order"]["purchase_request_id"] == pr["id"]
-    assert body["purchase_order"]["items"][0]["quantity"] == 12
-    assert body["request"]["purchase_order_id"] == body["purchase_order"]["id"]
+    assert body["purchase_order"]["supplier_id"] == supplier_id
+    assert len(body["purchase_order"]["items"]) == 1
+    assert body["purchase_order"]["items"][0]["quantity"] == 12.0
 
 
 @pytest.mark.asyncio
-async def test_purchase_request_reject_and_isolation(client):
-    ac, seed = client
-    mgr = await _mgr_headers(ac)
-    super_h = await _super_headers(ac, seed)
+async def test_purchase_request_reject(client, db_session):
+    ac, seeded = client
+    await _seed_inventory_officer(db_session, seeded)
+    io = await auth_headers(ac, email="io@alpha.example.com", tenant_slug="alpha")
+    mgr = await _manager(ac)
 
-    supplier_id = await _ensure_supplier(ac, mgr)
     created = await ac.post(
         "/api/v1/purchasing/requests",
-        headers=mgr,
-        json={
-            "supplier_id": supplier_id,
-            "items": [{"product_id": seed["p1"].id, "quantity": 3}],
-        },
+        headers=io,
+        json={"items": [{"product_id": seeded["p1"].id, "quantity": 3}]},
     )
-    pr_id = created.json()["data"]["id"]
-    await ac.post(f"/api/v1/purchasing/requests/{pr_id}/submit", headers=mgr)
+    assert created.status_code == 200, created.text
+    request_id = created.json()["data"]["id"]
+    await ac.post(f"/api/v1/purchasing/requests/{request_id}/submit", headers=io, json={})
 
     rejected = await ac.post(
-        f"/api/v1/purchasing/requests/{pr_id}/reject",
-        headers=super_h,
-        json={"reason": "Budget hold"},
+        f"/api/v1/purchasing/requests/{request_id}/reject",
+        headers=mgr,
+        json={"reason": "Not needed"},
     )
     assert rejected.status_code == 200, rejected.text
     assert rejected.json()["data"]["status"] == "rejected"
-    assert rejected.json()["data"]["rejection_reason"] == "Budget hold"
+    assert rejected.json()["data"]["rejection_reason"] == "Not needed"
 
-    bad = await ac.post(f"/api/v1/purchasing/requests/{pr_id}/convert", headers=mgr)
-    assert bad.status_code == 409
-
-    foreign = await ac.get(
-        f"/api/v1/purchasing/requests/{pr_id}",
-        headers=await auth_headers(ac, email="cashier@beta.example.com", tenant_slug="beta"),
+    convert = await ac.post(
+        f"/api/v1/purchasing/requests/{request_id}/convert",
+        headers=io,
+        json={"supplier_id": seeded["supplier2"].id},
     )
+    assert convert.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_purchase_request_tenant_isolation(client, db_session):
+    ac, seeded = client
+    await _seed_inventory_officer(db_session, seeded)
+    io = await auth_headers(ac, email="io@alpha.example.com", tenant_slug="alpha")
+    beta = await auth_headers(ac, email="cashier@beta.example.com", tenant_slug="beta")
+
+    created = await ac.post(
+        "/api/v1/purchasing/requests",
+        headers=io,
+        json={"items": [{"product_id": seeded["p1"].id, "quantity": 2}]},
+    )
+    assert created.status_code == 200, created.text
+    request_id = created.json()["data"]["id"]
+
+    listed = await ac.get("/api/v1/purchasing/requests", headers=beta)
+    # cashier lacks purchasing:read
+    assert listed.status_code in {200, 403}
+    if listed.status_code == 200:
+        ids = {r["id"] for r in listed.json()["data"]}
+        assert request_id not in ids
+
+    foreign = await ac.get(f"/api/v1/purchasing/requests/{request_id}", headers=beta)
     assert foreign.status_code in {403, 404}

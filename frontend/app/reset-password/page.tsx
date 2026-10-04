@@ -1,16 +1,20 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { api } from '../../lib/api';
 import { useRouter, useSearchParams } from 'next/navigation';
+import LoginBrandLogo from '../../components/LoginBrandLogo';
 
 function ResetPasswordForm() {
   const params = useSearchParams();
   const router = useRouter();
   const [token, setToken] = useState('');
   const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const t = params.get('token');
@@ -20,34 +24,121 @@ function ResetPasswordForm() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    setMessage('');
+    const trimmedToken = token.trim();
+    if (!trimmedToken) {
+      setError('Password reset token is required.');
+      return;
+    }
+    const trimmedPassword = password.trim();
+    if (!trimmedPassword) {
+      setError('Password reset new password is required.');
+      return;
+    }
+    if (trimmedPassword !== confirm.trim()) {
+      setError('Passwords do not match');
+      return;
+    }
+    setSubmitting(true);
     try {
       const r = await api('/auth/password-reset', {
         method: 'POST',
-        body: JSON.stringify({ token, new_password: password }),
+        body: JSON.stringify({ token: trimmedToken, new_password: trimmedPassword }),
       });
-      setMessage(r.message || 'Password updated');
+      setMessage(r.message || 'Password updated — you can sign in now');
       setTimeout(() => router.push('/'), 1200);
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setSubmitting(false);
     }
   }
 
   return (
-    <div className="login">
-      <h1>Reset password</h1>
-      <form onSubmit={submit}>
-        <input value={token} onChange={(e) => setToken(e.target.value)} placeholder="Reset token" required />
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="New password"
-          required
-        />
-        <button type="submit">Update password</button>
-        {error && <p>{error}</p>}
-        {message && <p style={{ color: '#047857' }}>{message}</p>}
-      </form>
+    <div className="login-stage">
+      <div className="login-stage-bg" aria-hidden>
+        <span className="login-orb login-orb-a" />
+        <span className="login-orb login-orb-b" />
+        <span className="login-grid" />
+      </div>
+
+      <div className="login">
+        <LoginBrandLogo />
+
+        <h1 className="login-heading">Reset password</h1>
+        <p className="login-hint" style={{ marginBottom: 12 }}>
+          Choose a strong password (8+ chars, mixed case, number, and symbol).
+        </p>
+
+        <form className="login-form" onSubmit={submit}>
+          {!params.get('token') && (
+            <label className="login-field">
+              <span>Reset token</span>
+              <input
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder="Paste token from email"
+                aria-label="Password reset token"
+                required
+              />
+            </label>
+          )}
+          <label className="login-field">
+            <span>New password</span>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="New password"
+              autoComplete="new-password"
+              aria-label="Password reset new password"
+              required
+            />
+          </label>
+          <label className="login-field">
+            <span>Confirm password</span>
+            <input
+              type="password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              placeholder="Confirm new password"
+              autoComplete="new-password"
+              aria-label="Password reset confirm password"
+              required
+            />
+          </label>
+          <button
+            className="login-primary"
+            type="submit"
+            disabled={submitting || !password.trim() || !token.trim()}
+            aria-label="Update password"
+          >
+            {submitting ? 'Updating…' : 'Update password'}
+          </button>
+          <Link className="login-ghost" href="/forgot-password" style={{ display: 'block', textAlign: 'center' }}>
+            Request a new link
+          </Link>
+          <Link className="login-ghost" href="/" style={{ display: 'block', textAlign: 'center' }}>
+            Back to sign in
+          </Link>
+          {error && (
+            <p className="login-error" role="alert">
+              {error}
+            </p>
+          )}
+          {message && (
+            <p className="login-success" role="status">
+              {message}
+            </p>
+          )}
+        </form>
+
+        <p className="login-foot">
+          <a href="https://ribdigihouse.com" target="_blank" rel="noopener noreferrer">
+            A Ribdigi House Product
+          </a>
+        </p>
+      </div>
     </div>
   );
 }
@@ -56,9 +147,11 @@ export default function Page() {
   return (
     <Suspense
       fallback={
-        <div className="login">
-          <h1>Reset password</h1>
-          <p>Loading…</p>
+        <div className="login-stage">
+          <div className="login">
+            <h1 className="login-heading">Reset password</h1>
+            <p className="login-hint">Loading…</p>
+          </div>
         </div>
       }
     >

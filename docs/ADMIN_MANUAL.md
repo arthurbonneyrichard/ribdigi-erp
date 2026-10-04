@@ -23,6 +23,8 @@
 12. [Troubleshooting](#12-troubleshooting)
 13. [Appendix](#13-appendix)
 
+> Also see **§9A Integrations** (API keys & webhooks) after System Settings.
+
 ---
 
 ## 1. Introduction & Role Definitions
@@ -422,9 +424,10 @@ For businesses operating in multiple currencies:
 
 ### 4.7 Language Configuration
 
-1. Commercial MVP UI language is **English only** (ADR-006 / BR-2.7).
-2. Profile / Security shows the current language (`en`); other locales are rejected until packs ship.
-3. Frontend i18n scaffold (`frontend/lib/i18n.ts`) is in place for future language packs — do not claim Spanish/French/etc. are available in MVP.
+1. Go to **Admin → Company Setup → Languages**
+2. **Default Language:** Set for all users (MVP: English only)
+3. **User-Level Override:** Individual users can set their preferred language in profile settings
+4. **i18n Framework:** Ready for future language packs (Spanish, French, Arabic, Chinese, etc.)
 
 ### 4.8 Tax Configuration
 
@@ -531,14 +534,15 @@ Proper tax setup is critical for compliance.
 
 ### 5.4 Deleting a User
 
-> **Commercial MVP:** Permanent hard delete is **not** available (see ADR-003). Use **Deactivate**.
+> **⚠️ CAUTION:** Deletion is permanent. Deactivation is preferred.
 
 1. Go to **Admin → Users**
-2. Find user → **Deactivate**
-3. Confirm — the user cannot log in; historical transactions and audit trails keep the user ID
-4. To restore access later → **Activate**
-
-Hard delete with archival/reassignment remains a post-MVP capability.
+2. Find user → **Actions (⋮) → Delete**
+3. Choose handling method:
+   - **Reassign Records:** Transfer user's transactions to another user
+   - **Preserve Records:** Keep transactions with "Deleted User" label
+4. Enter confirmation text
+5. Click **Permanently Delete**
 
 ### 5.5 Bulk User Import
 
@@ -547,18 +551,18 @@ For onboarding multiple users at once:
 1. Go to **Admin → Users → Import**
 2. Download the **CSV Template**
 3. Fill in required columns:
-   - `full_name`, `email`, `phone`, `role`
-   - Optional: `branch`, `store`, `department`, `employee_id`
+   - `full_name`, `email`, `role`, `temporary_password`
+   - Optional: `phone`
 4. Upload CSV file
 5. System validates:
-   - Email uniqueness
-   - Role existence
-   - Branch/store validity
+   - Email uniqueness (file + tenant)
+   - Role existence (system roles; `super_admin` blocked for non–super admins)
+   - Password policy (upper, lower, number, symbol, min 8)
 6. Review validation report
-7. Click **Import Valid Rows**
-8. Welcome emails sent automatically
+7. Click **Import valid rows** (all-or-nothing)
+8. Verification emails dispatched for each created user
 
-> **Template Download:** Available at `Admin → Users → Import → Download Template`
+> **Template Download:** Available at **Users → Bulk import users → Download CSV template** (`GET /users/import/template`)
 
 ### 5.6 User Profile Management
 
@@ -694,8 +698,6 @@ For exceptional cases where a user needs permissions different from their role:
 ---
 
 ## 7. Backup & Recovery
-
-**MVP fidelity (Stage 30 S1):** Operator backup/restore UI steps below pair with infra packs — `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`, `docs/DR_WAL_PITR_RUNBOOK.md`, `docs/PITR_DRILL_PACK_MVP.md`, `ops/postgres/pitr-drill-checklist.json`, `ops/backup/sync-ribbak-offsite.sh.example` (`docs/SUPPORT_RUNBOOK_MVP.md`, `test_support_runbook_s1.py`). Packaging only — live PITR drill **execution** Remaining; do not treat this manual as green WAL replay.
 
 ### 7.1 Understanding Backup Architecture
 
@@ -927,7 +929,15 @@ RIBDIGI ensures tamper-evident logging:
 - **Immutable Storage:** Write-once storage backend for audit data
 - **Access Control:** Only Company Admin and Super Admin can view audit logs
 
-> **⚠️ Legal Hold:** In case of legal proceedings, contact RIBDIGI Support to place a legal hold on audit data, preventing automated archival deletion.
+### 8.6 Retention & cold archive
+
+1. Open **Audit** in the Shell (`/audit`)
+2. Review the **Retention & cold archive** card (minimum 7 years; purge never)
+3. Company Admin / Super Admin can **Archive cold now** — aged hot rows are copied to checksummed JSONL object storage and marked `archived_at` (never deleted)
+4. The archives table lists manifests (event count, date range, size, SHA-256)
+5. Celery job `archive_cold_audit_logs` (also on **Jobs**) runs the same archive on a schedule
+
+> **⚠️ Legal Hold:** In case of legal proceedings, contact RIBDIGI Support to place a legal hold on audit data before changing archive settings.
 
 ---
 
@@ -1048,6 +1058,31 @@ Use these placeholders in custom templates:
 
 ---
 
+## 9A. Integrations (API keys & webhooks)
+
+Company Admins manage external integrations at **Integrations** (`/integrations`).
+
+### 9A.1 API keys
+
+1. Open **Integrations**.
+2. Create a key (optional expiry). Copy the `rdk_…` secret immediately — it is shown once.
+3. Clients send `X-API-Key: rdk_…` (or `Authorization: Bearer rdk_…`) plus `X-Tenant-ID` when required.
+4. Use **Usage** to inspect request counts; **Revoke** to invalidate immediately.
+
+Default scopes (if omitted at create): read on inventory, sales, purchasing, customers, reports.
+
+### 9A.2 Webhooks
+
+1. Create an HTTPS endpoint URL and select events (at least one).
+2. Copy the `whsec_…` signing secret once (or after **Rotate secret**).
+3. Click **Test** to send a signed `webhook.test` ping.
+4. Open **Deliveries** to see recent attempts; use **Retry** for `pending_retry` / `failed` rows.
+5. Verify incoming signatures using `docs/API_DOCUMENTATION.md` §17.4 (Python/Node samples) or the on-page **Verify signature** panel.
+
+**Honesty:** Live fan-out today includes `webhook.test`, `sale.created` (invoice post + POS), `sale.paid` (AR payment + fully settled POS), `customer.created`, `supplier.created`, `purchase.order.created`, `purchase.grn.received`, `expense.approved`, `stock.low`, `stock.in` (skips GRN — use `purchase.grn.received`), `stock.out` (skips POS/invoice — use `sale.created`), `tenant.suspended`, and `user.login` (interactive auth only; not refresh).
+
+---
+
 ## 10. Security Administration
 
 ### 10.1 Password Policy
@@ -1146,8 +1181,6 @@ Use these placeholders in custom templates:
 
 ## 11. Maintenance & Monitoring
 
-**MVP fidelity (Stage 30 S1):** Health / maintenance UI pairs with `docs/OPS_MONITORING_MVP.md`, `docs/GRAFANA_PACK_MVP.md`, `docs/INCIDENT_PACK_MVP.md`, `ops/prometheus/`, `ops/grafana/alertmanager.yml.example`, `ops/incident/oncall-runbook.md.example` (`docs/SUPPORT_RUNBOOK_MVP.md`, `test_support_runbook_s1.py`). Hosted Grafana/PagerDuty and live on-call rota remain Remaining — packaging only.
-
 ### 11.1 System Health Dashboard
 
 **Super Admin Only:**
@@ -1198,8 +1231,6 @@ For long-term data management:
 
 ## 12. Troubleshooting
 
-**MVP fidelity (Stage 30 S1):** Product UI troubleshooting below; infra emergencies also use `docs/INCIDENT_PACK_MVP.md`, `docs/CUTOVER_PACK_MVP.md`, `docs/TLS_INGRESS_PACK_MVP.md`, `docs/PGBOUNCER_SOAK_PACK_MVP.md`, `docs/EVIDENCE_LEDGER_MVP.md` (`ops/support/admin-ops-map.json`, `test_support_runbook_s1.py`). Not a claim of live cutover / soak / ACME / attestation success.
-
 ### 12.1 User Access Issues
 
 | Issue | Cause | Solution |
@@ -1239,13 +1270,12 @@ For long-term data management:
 3. Reset passwords for affected users
 4. Enable maintenance mode if necessary
 5. Export audit logs for analysis
-6. Follow operator incident pack — `docs/INCIDENT_PACK_MVP.md` / `ops/incident/oncall-runbook.md.example` (Stage 30 I1; hosted PagerDuty Remaining)
-7. Contact RIBDIGI Support immediately
+6. Contact RIBDIGI Support immediately
 
 **Data Corruption:**
 1. Do not attempt manual database edits
 2. Note the affected records and symptoms
-3. Restore from most recent clean backup (logical `.ribbak` — `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`; WAL/PITR packaging — `docs/PITR_DRILL_PACK_MVP.md`, live execution Remaining)
+3. Restore from most recent clean backup
 4. Contact RIBDIGI Support for assistance
 
 ---
@@ -1283,7 +1313,6 @@ For long-term data management:
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | August 2026 | RIBDIGI Product Team | Initial MVP release |
-| 1.0.1 | August 2026 | RIBDIGI Product Team | Stage 30 S1: §§7/11/12 cite ops packs (`docs/SUPPORT_RUNBOOK_MVP.md`) |
 
 ---
 

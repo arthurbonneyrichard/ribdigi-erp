@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 CHECKLIST = ROOT / "ops" / "loadtest" / "1000vu-cert-checklist.json"
 RUN_EXAMPLE = ROOT / "ops" / "loadtest" / "operator_1000vu_run.example.json"
-EVIDENCE_DIR = Path("/opt/cursor/artifacts/loadtest")
+EVIDENCE_DIR = Path("/opt/ribdigi/artifacts/loadtest")
 EVIDENCE_FILE = EVIDENCE_DIR / "stage28_c1_load_cert_pack.json"
 
 
@@ -96,34 +96,12 @@ def test_load_capacity_extended_for_c1():
     assert (ROOT / "backend" / "loadtest" / "locustfile.py").is_file()
 
 
-def test_c1_plan_launch_roadmap_readiness():
-    plan = _read("docs/STAGE_28_PLAN.md")
-    c1_line = [ln for ln in plan.splitlines() if "| **C1** |" in ln][0]
-    assert "COMPLETE" in c1_line
-    assert "test_load_cert_pack_c1.py" in plan
-    assert (
-        "C1 next" in plan
-        or "C1 complete" in plan
-        or "D1 next" in plan
-        or "D1 complete" in plan
-        or "H28x next" in plan
-        or "Closed" in plan
-        or "exit met" in plan.lower()
-    )
-
-    launch = _read("docs/LAUNCH_CHECKLIST.md")
-    assert "test_load_cert_pack_c1.py" in launch
-    assert "Stage 28 C1" in launch
-
-    roadmap = _read("docs/DEVELOPMENT_ROADMAP.md")
-    assert "Stage 28 C1" in roadmap
-    assert "test_load_cert_pack_c1.py" in roadmap
-
+def test_load_cert_pack_evidence_and_readiness():
     pr = _read("PRODUCTION_READINESS.md")
     assert "Stage 28 C1" in pr
     assert "test_load_cert_pack_c1.py" in pr or "LOAD_CERT_PACK_MVP.md" in pr
     load_gate = pr.split("- [x] Load/performance tests meet documented targets.")[1].split(
-        "- [x]"
+        "- ["
     )[0]
     assert "Stage 28 C1" in load_gate or "LOAD_CERT_PACK_MVP" in load_gate
     assert "Remaining" in load_gate or "1000" in load_gate

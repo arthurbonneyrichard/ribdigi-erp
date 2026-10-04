@@ -1,0 +1,161 @@
+"""Opening stock entry (BR-5.2) — initialize on-hand qty for go-live / fiscal year."""
+
+from __future__ import annotations
+
+import uuid
+
+from fastapi import HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app import models as m
+from app.catalog import stock_in_with_batch
+from app.honesty import money_json, optional_honest_narrative
+from app.doc_numbers import next_opening_stock_number
+
+
+async def post_opening_stock(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    lines: list[dict],
+    post_journal: bool = True,
+    reference: str | None = None,
+    notes: str | None = None,
+) -> dict:
+    if not lines:
+        raise HTTPException(status_code=400, detail="Opening stock requires at least one line")
+
+    entry_id = str(uuid.uuid4())
+    # OpenAPI OpeningStockReferenceValue → 422; service defense-in-depth → 400.
+    ref_label = optional_honest_narrative(
+        reference, label="opening stock reference", max_length=100
+    )
+    if ref_label is None:
+        ref_label = await next_opening_stock_number(db, tenant_id)
+    results: list[dict] = []
+    inventory_value = 0.0
+    notes = optional_honest_narrative(notes, label="opening stock notes")
+
+    for raw in lines:
+        product_id = raw.get("product_id")
+        if not product_id:
+            raise HTTPException(status_code=400, detail="Each line needs product_id")
+        qty = money_json(raw.get("quantity") or 0)
+        if qty <= 0:
+            raise HTTPException(status_code=400, detail="quantity must be positive")
+
+        line_note = optional_honest_narrative(
+            raw.get("notes"), label="opening stock line notes"
+        )
+        parts = [p for p in (notes, line_note) if p]
+        line_notes = "; ".join(parts) if parts else None
+
+        moved = await stock_in_with_batch(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            product_id=product_id,
+            quantity=qty,
+            unit_id=raw.get("unit_id"),
+            notes=line_notes,
+            warehouse_id=raw.get("warehouse_id"),
+            variant_id=raw.get("variant_id"),
+            batch_number=raw.get("batch_number"),
+            manufacturing_date=raw.get("manufacturing_date"),
+            expiry_date=raw.get("expiry_date"),
+            movement_type="opening_stock",
+            reference_type="opening_stock",
+            reference_id=entry_id,
+        )
+        unit_cost = raw.get("unit_cost")
+        if unit_cost is None:
+            unit_cost = money_json(moved.get("cost_price") or 0)
+        else:
+            unit_cost = money_json(unit_cost)
+            if unit_cost < 0:
+                raise HTTPException(status_code=400, detail="unit_cost cannot be negative")
+        line_value = money_json(round(money_json(moved["quantity_base"]) * unit_cost, 2))
+        inventory_value += line_value
+        results.append(
+            {
+                **moved,
+                "unit_cost": money_json(unit_cost),
+                "line_value": line_value,
+            }
+        )
+
+    journal = None
+    if post_journal and inventory_value > 0:
+        from app.accounting import post_opening_stock_journal
+
+        journal = await post_opening_stock_journal(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            entry_id=entry_id,
+            reference=ref_label,
+            inventory_value=inventory_value,
+            description=notes or f"Opening stock {ref_label}",
+        )
+
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="opening_stock_posted",
+            entity="opening_stock",
+            entity_id=entry_id,
+            details={
+                "reference": ref_label,
+                "line_count": len(results),
+                "inventory_value": money_json(round(inventory_value, 2)),
+                "journal_id": journal.id if journal else None,
+                "post_journal": post_journal,
+            },
+        )
+    )
+
+    return {
+        "id": entry_id,
+        "reference": ref_label,
+        "line_count": len(results),
+        "inventory_value": money_json(round(inventory_value, 2)),
+        "journal_id": journal.id if journal else None,
+        "journal_number": journal.entry_number if journal else None,
+        "lines": results,
+    }
+
+
+async def list_opening_stock_movements(
+    db: AsyncSession, tenant_id: str, *, limit: int = 100
+) -> list[dict]:
+    rows = (
+        await db.execute(
+            select(m.StockMovement)
+            .where(
+                m.StockMovement.tenant_id == tenant_id,
+                m.StockMovement.movement_type == "opening_stock",
+            )
+            .order_by(m.StockMovement.created_at.desc())
+            .limit(limit)
+        )
+    ).scalars().all()
+    return [
+        {
+            "id": r.id,
+            "product_id": r.product_id,
+            "warehouse_id": r.warehouse_id,
+            "variant_id": r.variant_id,
+            "batch_id": r.batch_id,
+            "quantity": money_json(r.quantity),
+            "quantity_before": money_json(r.quantity_before),
+            "quantity_after": money_json(r.quantity_after),
+            "reference_id": r.reference_id,
+            "notes": r.notes,
+            "created_by": r.created_by,
+            "created_at": r.created_at,
+        }
+        for r in rows
+    ]

@@ -1,13 +1,13 @@
-# Ops Monitoring MVP (Stage 18 L1 + Stage 26 M1 + Stage 28 A1)
+# Ops Monitoring MVP (Stage 5 H5 + Stage 18 L1 + Stage 26 M1 + Stage 28 A1)
 
-**Status:** Documented — Stage 26 M1 scrape / alert / log-ship fidelity; Stage 28 A1 Grafana/Alertmanager operator packaging  
+**Status:** Documented — scrape / alert / log-ship fidelity + Grafana/Alertmanager operator packaging  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
-**Related:** Stage 5 H5 (`test_health_metrics_h5.py`), Stage 18 L1 (`test_request_logging_l1.py`), Stage 26 M1 (`test_ops_monitoring_m1.py`), Stage 28 A1 (`test_grafana_pack_a1.py`)  
+**Related:** `test_health_deep.py`, `test_request_logging_l1.py`, `test_ops_monitoring_m1.py`, `test_grafana_pack_a1.py`  
 **Grafana pack:** [GRAFANA_PACK_MVP.md](GRAFANA_PACK_MVP.md) · `ops/grafana/`
 
 This is the **MVP monitoring surface**: live health/metrics/logs plus versioned Prometheus scrape, alert rules, log-shipping operator hooks, and Stage 28 A1 Grafana dashboard / Alertmanager **examples**. It is **not** a claim that a hosted Grafana/Alertmanager/PagerDuty/SIEM stack is deployed in CI or production by default.
 
-## Structured request / error logs
+## Structured request / error logs (Stage 18 L1)
 
 Middleware: `RequestLoggingMiddleware` (`backend/app/request_logging.py`).
 
@@ -37,13 +37,13 @@ Ship these lines with your container log driver / Fluent Bit / cloud logging. Do
 
 | Endpoint | Role |
 |----------|------|
-| `GET /api/v1/health` | Liveness (shallow; includes non-sensitive security posture) |
+| `GET /api/v1/health` | Liveness (shallow) |
 | `GET /api/v1/health?deep=true` | Dependency probe (database, Redis, Celery broker) |
 | `GET /api/v1/health/ready` | Readiness — same deep checks; **503** when hard deps fail |
 
 Use `health/ready` for orchestrator readiness probes. Shallow `/health` stays safe for load balancers that must not fail on Redis blips unless you opt into deep checks.
 
-## Metrics
+## Metrics (Stage 5 H5)
 
 | Endpoint | Role |
 |----------|------|
@@ -83,16 +83,6 @@ Wire Alertmanager → PagerDuty in the operator environment when ready; hosted P
 
 Import the dashboard against operator Prometheus; do not treat packaging as hosted Grafana SaaS Complete.
 
-## Incident / on-call packaging (Stage 30 I1)
-
-| Path | Role |
-|------|------|
-| `ops/incident/incident-checklist.json` | Severity + operator steps; honesty flags |
-| `ops/incident/oncall-runbook.md.example` | Detection → recovery playbook template |
-| `docs/INCIDENT_PACK_MVP.md` | Pack honesty + evidence (`test_incident_pack_i1.py`) |
-
-Extends Alertmanager critical routing; does **not** claim hosted PagerDuty or a live on-call rota.
-
 ## Log shipping hooks (Stage 26 M1)
 
 Example: `ops/logging/fluent-bit-ribdigi.conf.example` — parse `ribdigi.request` JSON lines and forward (stdout / ES / CloudWatch / Loki via operator OUTPUT).
@@ -101,11 +91,11 @@ Docker `json-file` / journald drivers also capture process stdout when `REQUEST_
 
 ## Explicitly deferred (hosted ops)
 
-- Hosted Grafana-as-a-service / production Alertmanager→PagerDuty Complete / SIEM (Stage 28 A1 packages **examples** only; Stage 30 I1 packs incident runbook only)
-- Live on-call rota / incident drill certificate (Stage 30 I1 packaging)
+- Hosted Grafana-as-a-service / production Alertmanager→PagerDuty Complete / SIEM
+- Live on-call rota / incident drill certificate
 - Distributed tracing (OpenTelemetry) backends
 - Full log PII scanners / SIEM rulesets
-- Certified capacity / SLO burn-rate alerts (Stage 26 C1 / Stage 28 C1)
+- Certified capacity / SLO burn-rate alerts
 
 ## Operator smoke
 
@@ -116,4 +106,4 @@ Docker `json-file` / journald drivers also capture process stdout when `REQUEST_
 5. Optionally mount `ops/prometheus` into a local Prometheus container per `ops/prometheus/README.md`.
 6. Optionally import `ops/grafana/dashboard-ribdigi-mvp.json.example` and dry-run `ops/grafana/alertmanager.yml.example` (Stage 28 A1) — not hosted SaaS Complete.
 
-See also Stage 221 ops monitoring remaining-gate index: [`OPS_MONITORING_REMAINING_GATE_MVP.md`](OPS_MONITORING_REMAINING_GATE_MVP.md).
+Evidence: `/opt/ribdigi/artifacts/monitoring/ops_monitoring_m1.json` (`test_ops_monitoring_m1.py`), `/opt/ribdigi/artifacts/monitoring/stage28_a1_grafana_pack.json` (`test_grafana_pack_a1.py`).

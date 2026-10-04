@@ -2,8 +2,8 @@
 
 **Scope:** Stage 26 W1 — PostgreSQL WAL archiving strategy, S3-compatible offsite packaging for WAL + encrypted `.ribbak`, operator PITR outline; Stage 28 R1 adds operator drill pack packaging  
 **Related logical DR:** [DR_LOGICAL_BACKUP_RUNBOOK.md](DR_LOGICAL_BACKUP_RUNBOOK.md) (Stages 5/10/18/23 — Complete)  
-**Evidence (W1):** `backend/tests/test_wal_pitr_w1.py` → `/opt/cursor/artifacts/dr/stage26_w1_wal_pitr_strategy.json`  
-**Evidence (R1 pack):** `backend/tests/test_pitr_drill_pack_r1.py` → `/opt/cursor/artifacts/dr/stage28_r1_pitr_drill_pack.json`  
+**Evidence (W1):** `backend/tests/test_wal_pitr_w1.py` → `/opt/ribdigi/artifacts/dr/stage26_w1_wal_pitr_strategy.json`  
+**Evidence (R1 pack):** `backend/tests/test_pitr_drill_pack_r1.py` → `/opt/ribdigi/artifacts/dr/stage28_r1_pitr_drill_pack.json`  
 **Drill pack:** [PITR_DRILL_PACK_MVP.md](PITR_DRILL_PACK_MVP.md) · `ops/postgres/pitr-drill-checklist.json`  
 **Configs:** `ops/postgres/`, `ops/backup/`
 

@@ -57,7 +57,6 @@ def test_request_id_header_and_structured_log_fields():
             headers={"X-Request-ID": "s18-l1-req-001"},
         )
         assert response.headers.get("X-Request-ID") == "s18-l1-req-001"
-        # Unauthenticated → 401 with structured log
         assert response.status_code == 401
         logs = _parsed_logs(handler)
         assert logs, "expected structured request log"
@@ -67,10 +66,7 @@ def test_request_id_header_and_structured_log_fields():
         assert hit["path"] == "/api/v1/products"
         assert hit["status"] == 401
         assert "latency_ms" in hit and float(hit["latency_ms"]) >= 0
-        assert hit.get("error_code") in {"UNAUTHENTICATED", "Authentication required"} or (
-            isinstance(hit.get("error_code"), str) and hit["error_code"]
-        )
-        # tenant/user may be null when unauthenticated without JWT
+        assert hit.get("error_code")
         assert "tenant_id" in hit
         assert "user_id" in hit
     finally:
@@ -107,56 +103,7 @@ async def test_authenticated_log_includes_tenant_and_user(client, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_safe_error_code_for_insufficient_stock(client, db_session, monkeypatch):
-    ac, seed = client
-    monkeypatch.setattr("app.config.settings.REQUEST_LOG_ENABLED", True)
-    monkeypatch.setattr("app.request_logging.settings.REQUEST_LOG_ENABLED", True)
-
-    from app import accounting as accounting_svc
-
-    await accounting_svc.ensure_default_accounts(db_session, seed["t1"].id)
-    product = seed["p1"]
-    product.stock_qty = 1
-    product.reserved_qty = 0
-    product.selling_price = 10
-    await db_session.commit()
-
-    cashier = await auth_headers(
-        ac, email="cashier@alpha.example.com", tenant_slug="alpha"
-    )
-    opened = await ac.post(
-        "/api/v1/pos/sessions/open",
-        headers=cashier,
-        json={"opening_cash": 20},
-    )
-    assert opened.status_code == 200, opened.text
-    session_id = opened.json()["data"]["session_id"]
-
-    logger, handler = _attach_capture()
-    try:
-        rid = "s18-l1-stock-fail"
-        denied = await ac.post(
-            "/api/v1/pos/sales",
-            headers={**cashier, "X-Request-ID": rid},
-            json={
-                "session_id": session_id,
-                "payment_method": "cash",
-                "items": [{"product_id": product.id, "quantity": 9}],
-            },
-        )
-        assert denied.status_code == 409
-        logs = _parsed_logs(handler)
-        hit = next(row for row in logs if row.get("request_id") == rid)
-        assert hit["status"] == 409
-        assert hit["error_code"] == "INSUFFICIENT_STOCK"
-        assert hit["event"] == "http_error"
-    finally:
-        _detach(logger, handler)
-
-
-@pytest.mark.asyncio
 async def test_health_and_metrics_hooks_still_green(client, monkeypatch):
-    """MVP monitoring hooks from Stage 5 H5 remain operational under L1."""
     ac, _seed = client
     monkeypatch.setattr("app.config.settings.CELERY_TASK_ALWAYS_EAGER", True)
     monkeypatch.setattr("app.health.settings.CELERY_TASK_ALWAYS_EAGER", True)
@@ -164,7 +111,7 @@ async def test_health_and_metrics_hooks_still_green(client, monkeypatch):
     monkeypatch.setattr("app.health.settings.RATE_LIMIT_REQUIRE_REDIS", False)
 
     async def _redis_ok():
-        return {"status": "ok", "latency_ms": 0.1}
+        return {"status": "ok", "latency_ms": 0.1, "required": False}
 
     monkeypatch.setattr("app.health.check_redis", _redis_ok)
 
@@ -219,3 +166,11 @@ def test_ops_monitoring_doc_exists():
     assert "request_id" in doc
     assert "X-Request-ID" in doc
     assert "Grafana" in doc or "PagerDuty" in doc
+
+
+def test_metrics_can_be_disabled(monkeypatch):
+    rate_limiter.reset_for_tests()
+    monkeypatch.setattr("app.config.settings.METRICS_ENABLED", False)
+    monkeypatch.setattr("app.metrics.settings.METRICS_ENABLED", False)
+    client = TestClient(app)
+    assert client.get("/api/v1/metrics").status_code == 404

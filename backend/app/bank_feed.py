@@ -9,6 +9,8 @@ from datetime import datetime
 
 from fastapi import HTTPException
 
+from app.honesty import money_json
+
 # Flexible CSV header aliases → canonical field
 _DATE_HEADERS = {
     "date",
@@ -68,7 +70,7 @@ def _parse_amount(value: str | None) -> float | None:
     text = re.sub(r"[^\d.\-]", "", text)
     if not text or text in {".", "-"}:
         return None
-    amt = float(text)
+    amt = money_json(text)
     return -amt if neg else amt
 
 
@@ -139,7 +141,7 @@ def parse_csv_feed(content: str) -> dict:
         lines.append(
             {
                 "txn_date": _parse_date(date_raw),
-                "amount": round(amount, 2),
+                "amount": money_json(round(money_json(amount), 2)),
                 "description": desc or None,
                 "external_ref": ref or None,
             }
@@ -189,7 +191,7 @@ def parse_ofx_feed(content: str) -> dict:
         lines.append(
             {
                 "txn_date": _parse_date(dt),
-                "amount": round(amount, 2),
+                "amount": money_json(round(money_json(amount), 2)),
                 "description": desc.strip() or None,
                 "external_ref": ref.strip() or None,
             }
@@ -212,7 +214,7 @@ def parse_ofx_feed(content: str) -> dict:
             lines.append(
                 {
                     "txn_date": _parse_date(dt),
-                    "amount": round(amount, 2),
+                    "amount": money_json(round(money_json(amount), 2)),
                     "description": desc.strip() or None,
                     "external_ref": ref.strip() or None,
                 }
@@ -223,14 +225,14 @@ def parse_ofx_feed(content: str) -> dict:
 
     # Infer opening from closing − net when LEDGERBAL present
     if closing is not None:
-        net = round(sum(float(ln["amount"]) for ln in lines), 2)
-        opening = round(closing - net, 2)
+        net = money_json(round(sum(money_json(ln["amount"]) for ln in lines), 2))
+        opening = money_json(round(money_json(closing) - net, 2))
 
     return {
         "format": "ofx",
         "lines": lines,
-        "opening_balance": opening,
-        "closing_balance": closing,
+        "opening_balance": money_json(opening) if opening is not None else None,
+        "closing_balance": money_json(closing) if closing is not None else None,
     }
 
 

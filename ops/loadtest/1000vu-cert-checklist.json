@@ -29,7 +29,7 @@
       "operator",
       "notes"
     ],
-    "example_path": "/opt/cursor/artifacts/loadtest/operator_1000vu_run.example.json",
+    "example_path": "/opt/ribdigi/artifacts/loadtest/operator_1000vu_run.example.json",
     "note": "Operator fills a real run JSON outside CI; packaging does not invent pass=true at 1000 VU"
   },
   "steps": [
@@ -70,7 +70,7 @@
     "error_rate == 0",
     "Operator run JSON + change-log entry recorded"
   ],
-  "evidence_artifact": "/opt/cursor/artifacts/loadtest/stage28_c1_load_cert_pack.json",
+  "evidence_artifact": "/opt/ribdigi/artifacts/loadtest/stage28_c1_load_cert_pack.json",
   "deferred": [
     "Certified ~1000-VU staging capacity certificate in CI",
     "Forged operator_1000vu_run.json with passed true without a real staging run",

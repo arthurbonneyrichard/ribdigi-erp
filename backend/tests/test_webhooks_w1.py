@@ -33,6 +33,31 @@ def test_hmac_sign_and_verify():
     )
 
 
+def test_hmac_golden_fixture_matches_api_docs():
+    """Stable vectors published in docs/API_DOCUMENTATION.md §17.4."""
+    secret = "whsec_demo_secret_123456"
+    body = (
+        b'{"event":"webhook.test","timestamp":"2026-08-15T07:00:00Z",'
+        b'"tenant_id":"demo","data":{"message":"ping"}}'
+    )
+    ts = 1723705200
+    header, _ = webhooks_svc.sign_payload(secret=secret, body=body, timestamp=ts)
+    assert (
+        header
+        == "t=1723705200,v1=8ba12e1df3b867331f2ccf13f760ace4afd370df9d542012046eb4aba49bb2e2"
+    )
+    assert webhooks_svc.verify_signature(
+        secret=secret, body=body, header=header, tolerance_seconds=10**9
+    )
+    assert not webhooks_svc.verify_signature(
+        secret=secret, body=body + b" ", header=header, tolerance_seconds=10**9
+    )
+    # skew rejection when "now" is far from fixture timestamp
+    assert not webhooks_svc.verify_signature(
+        secret=secret, body=body, header=header, tolerance_seconds=60
+    )
+
+
 @pytest.mark.asyncio
 async def test_webhook_crud_and_signed_delivery(client, db_session, monkeypatch):
     ac, seed = client
@@ -126,7 +151,8 @@ async def test_webhook_rejects_http_non_localhost(client):
         headers=headers,
         json={"url": "http://evil.example.com/hook", "events": ["sale.created"]},
     )
-    assert bad.status_code == 400
+    # WebhookUrlValue → 422 (was late service validate_url **400**)
+    assert bad.status_code == 422
 
 
 @pytest.mark.asyncio
@@ -138,4 +164,50 @@ async def test_webhook_unknown_event_rejected(client):
         headers=headers,
         json={"url": "https://hooks.example.com/x", "events": ["not.real"]},
     )
-    assert bad.status_code == 400
+    assert bad.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_webhooks_list_is_active_filter(client):
+    ac, seed = client
+    headers = await _admin(ac, seed)
+    created = await ac.post(
+        "/api/v1/webhooks",
+        headers=headers,
+        json={
+            "url": "https://hooks.example.com/filter-demo",
+            "events": ["webhook.test"],
+            "description": "Filter Demo Webhook",
+        },
+    )
+    assert created.status_code == 200, created.text
+    wid = created.json()["data"]["id"]
+
+    await ac.patch(
+        f"/api/v1/webhooks/{wid}",
+        headers=headers,
+        json={"is_active": False},
+    )
+
+    all_rows = await ac.get("/api/v1/webhooks", headers=headers)
+    assert wid in {r["id"] for r in all_rows.json()["data"]}
+
+    active_only = await ac.get("/api/v1/webhooks?is_active=true", headers=headers)
+    assert wid not in {r["id"] for r in active_only.json()["data"]}
+
+    inactive_only = await ac.get("/api/v1/webhooks?is_active=false", headers=headers)
+    assert wid in {r["id"] for r in inactive_only.json()["data"]}
+    assert all(r["is_active"] is False for r in inactive_only.json()["data"])
+
+
+def test_webhook_status_filter_ui_wired():
+    from pathlib import Path
+
+    integrations = (
+        Path(__file__).resolve().parents[2] / "frontend/app/(dashboard)/integrations/page.tsx"
+    ).read_text(encoding="utf-8")
+    assert "webhookManageFilter" in integrations
+    assert 'aria-label="Webhook status filter"' in integrations
+    assert "managedHooks" in integrations
+    assert "[inactive]" in integrations
+    assert "toggleActive" in integrations
