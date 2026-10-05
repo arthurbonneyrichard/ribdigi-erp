@@ -260,6 +260,14 @@ export default function Page() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>('orders');
+  const [poPrefix, setPoPrefix] = useState('');
+  const [poNext, setPoNext] = useState('');
+  const [grnPrefix, setGrnPrefix] = useState('');
+  const [piPrefix, setPiPrefix] = useState('');
+  const [prPrefix, setPrPrefix] = useState('');
+  const [pretPrefix, setPretPrefix] = useState('');
+  const [dnPrefix, setDnPrefix] = useState('');
+  const [spPrefix, setSpPrefix] = useState('');
   useEffect(() => {
     const next = searchParams.get('tab');
     if (isPurchasingTab(next) && next !== tab) setTab(next);
@@ -2002,6 +2010,52 @@ export default function Page() {
         <button type="button" className="btn-primary" onClick={() => setPoCreateOpen(true)} aria-label="Add purchase order">
           Add purchase order
         </button>
+        <button type="button" onClick={() => setTab('suppliers')} aria-label="Quick add supplier">
+          Quick add supplier
+        </button>
+        <input value={poPrefix} onChange={(e) => setPoPrefix(e.target.value)} aria-label="Purchase order number prefix" placeholder="PO prefix" />
+        <input value={poNext} onChange={(e) => setPoNext(e.target.value)} aria-label="Purchase order next number" placeholder="Next #" />
+        <input value={grnPrefix} onChange={(e) => setGrnPrefix(e.target.value)} aria-label="GRN number prefix" placeholder="GRN prefix" />
+        <input value={piPrefix} onChange={(e) => setPiPrefix(e.target.value)} aria-label="Purchase invoice number prefix" placeholder="PI prefix" />
+        <input value={prPrefix} onChange={(e) => setPrPrefix(e.target.value)} aria-label="Purchase request number prefix" placeholder="PR prefix" />
+        <input value={pretPrefix} onChange={(e) => setPretPrefix(e.target.value)} aria-label="Purchase return number prefix" placeholder="Return prefix" />
+        <input value={dnPrefix} onChange={(e) => setDnPrefix(e.target.value)} aria-label="Debit note number prefix" placeholder="Debit note prefix" />
+        <input value={spPrefix} onChange={(e) => setSpPrefix(e.target.value)} aria-label="Supplier payment number prefix" placeholder="Payment prefix" />
+        <button
+          type="button"
+          aria-label="Save purchasing numbering"
+          onClick={() => {
+            const pack = (prefix: string, next = '') => {
+              const p = prefix.trim();
+              const n = next.trim();
+              if (!p && !n) return undefined;
+              const out: { prefix?: string; next_number?: number } = {};
+              if (p) out.prefix = p;
+              if (n) out.next_number = Number(n);
+              return out;
+            };
+            const body: Record<string, unknown> = {};
+            const po = pack(poPrefix, poNext);
+            const grn = pack(grnPrefix);
+            const pi = pack(piPrefix);
+            const pr = pack(prPrefix);
+            const pret = pack(pretPrefix);
+            const dn = pack(dnPrefix);
+            const sp = pack(spPrefix);
+            if (po) body.purchase_order_numbering = po;
+            if (grn) body.grn_numbering = grn;
+            if (pi) body.purchase_invoice_numbering = pi;
+            if (pr) body.purchase_request_numbering = pr;
+            if (pret) body.purchase_return_numbering = pret;
+            if (dn) body.debit_note_numbering = dn;
+            if (sp) body.supplier_payment_numbering = sp;
+            api('/purchasing/settings', { method: 'PATCH', body: JSON.stringify(body) }).catch((err) =>
+              setError(err.message || 'Could not save numbering'),
+            );
+          }}
+        >
+          Save numbering
+        </button>
       </div>
       {poCreateOpen ? (
       <FormModal
@@ -2101,7 +2155,7 @@ export default function Page() {
             className="btn-primary"
             onClick={createPo}
             disabled={!supplierId || !productId || saveBusy}
-            aria-label="Create purchase order"
+            aria-label="Create draft PO"
           >
             {saveBusy ? 'Saving…' : 'Create purchase order'}
           </button>

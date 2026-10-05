@@ -82,6 +82,10 @@ type Tab = 'overview' | 'ledger' | 'cash' | 'reconcile' | 'cheques';
 export default function Page() {
   const currency = '';
   const [tab, setTab] = useState<Tab>('overview');
+  const [journalPrefix, setJournalPrefix] = useState('');
+  const [journalNext, setJournalNext] = useState('');
+  const [xferNumPrefix, setXferNumPrefix] = useState('');
+  const [xferNumNext, setXferNumNext] = useState('');
   const [accounts, setAccounts] = useState<any[]>([]);
   const [accountManageFilter, setAccountManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [liquid, setLiquid] = useState<any[]>([]);
@@ -1062,9 +1066,37 @@ export default function Page() {
   });
   const activeAccounts = accounts.filter((a) => a.is_active !== false);
 
+  async function saveAccountingNumbering() {
+    const pack = (prefix: string, next: string) => {
+      const p = prefix.trim();
+      const n = next.trim();
+      if (!p && !n) return undefined;
+      const out: { prefix?: string; next_number?: number } = {};
+      if (p) out.prefix = p;
+      if (n) out.next_number = Number(n);
+      return out;
+    };
+    const body: Record<string, unknown> = {};
+    const journal = pack(journalPrefix, journalNext);
+    const transfer = pack(xferNumPrefix, xferNumNext);
+    if (journal) body.journal_numbering = journal;
+    if (transfer) body.cash_transfer_numbering = transfer;
+    await api('/accounting/settings', { method: 'PATCH', body: JSON.stringify(body) });
+    setMessage('Accounting numbering saved');
+  }
+
   return (
     <>
       <h1>Accounting</h1>
+      <div className="card" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+        <input value={journalPrefix} onChange={(e) => setJournalPrefix(e.target.value)} aria-label="Journal number prefix" placeholder="Journal prefix" />
+        <input value={journalNext} onChange={(e) => setJournalNext(e.target.value)} aria-label="Journal next number" placeholder="Next #" />
+        <input value={xferNumPrefix} onChange={(e) => setXferNumPrefix(e.target.value)} aria-label="Cash transfer number prefix" placeholder="Transfer prefix" />
+        <input value={xferNumNext} onChange={(e) => setXferNumNext(e.target.value)} aria-label="Cash transfer next number" placeholder="Next #" />
+        <button type="button" aria-label="Save accounting numbering" onClick={() => saveAccountingNumbering().catch((err) => setError(err.message || 'Could not save numbering'))}>
+          Save numbering
+        </button>
+      </div>
       <p className="muted">
         One company ledger. Sales, expenses, and supplier bills post here — this is not a second set of books.
       </p>

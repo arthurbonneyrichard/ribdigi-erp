@@ -493,6 +493,15 @@ async def create_transfer(
     if not items:
         raise HTTPException(status_code=400, detail="Transfer requires at least one item")
 
+    from app import store_entitlements as store_ent_svc
+
+    tenant = await db.get(m.Tenant, tenant_id)
+    if tenant is not None and not store_ent_svc.is_multi_store(tenant):
+        raise HTTPException(
+            status_code=403,
+            detail="This company is single-store. Branch and warehouse transfers are not available.",
+        )
+
     from app.warehouses import get_warehouse
 
     if from_warehouse_id and to_warehouse_id:

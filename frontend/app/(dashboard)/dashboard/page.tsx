@@ -13,6 +13,7 @@ import {
   type IndustryDashboardFeature,
 } from '../../../lib/industryDashboard';
 import { useStoreContext } from '../../../lib/storeContext';
+import OfflineProvisionalNotice from '../../../components/OfflineProvisionalNotice';
 
 type Subscription = {
   status?: string;
@@ -503,6 +504,7 @@ export default function Page() {
           </h1>
           <p className="greet-sub">{tod.sub}</p>
           <p className="greet-date">{dateLabel}</p>
+          <OfflineProvisionalNotice />
           {liveIndustry && liveIndustry !== 'retail' && (
             <p className="greet-date">{industryLabel(liveIndustry)} dashboard</p>
           )}

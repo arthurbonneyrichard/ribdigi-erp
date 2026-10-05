@@ -197,6 +197,7 @@ def classify_prompt(prompt: str, *, now: datetime | None = None) -> dict[str, An
 
 def parse_prompt(prompt: str, *, now: datetime | None = None) -> dict[str, Any]:
     """Map NL prompt → report_type + params. Unmapped prompts raise 422 with options."""
+    prompt = require_honest_narrative(prompt, label="AI report prompt", max_length=16000)
     intent = classify_prompt(prompt, now=now)
     if not intent.get("mapped"):
         raise HTTPException(status_code=422, detail=intent)

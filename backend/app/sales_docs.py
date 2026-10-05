@@ -71,9 +71,10 @@ async def _prepare_lines(
         )
         assert_moq(product, qty_base or qty, sales_channel or "retail")
         gross = money_json(round(qty * unit, 2))
+        discount = money_json(item.get("discount") or 0)
         discount, line_disc_type, line_disc_pct = resolve_discount(
             base_amount=gross,
-            discount=item.get("discount") or 0,
+            discount=discount,
             discount_type=item.get("discount_type") or "fixed",
             discount_percent=item.get("discount_percent") or 0,
             label="Line discount",
@@ -231,14 +232,15 @@ async def create_quotation(
     from app.sale_discounts import resolve_discount
 
     header_base = money_json(round(subtotal + tax_total, 2))
+    discount_amount = money_json(discount_amount or 0)
     discount_amount, header_disc_type, header_disc_pct = resolve_discount(
         base_amount=header_base,
-        discount=discount_amount or 0,
+        discount=discount_amount,
         discount_type=discount_type,
         discount_percent=discount_percent or 0,
         label="Sale discount",
     )
-    total = money_json(round(header_base - discount_amount, 2))
+    total = money_json(round(subtotal + tax_total - discount_amount, 2))
     if total < 0:
         raise HTTPException(status_code=400, detail="Total cannot be negative")
     quote = m.SalesQuotation(
@@ -496,14 +498,15 @@ async def create_order(
     from app.sale_discounts import resolve_discount
 
     header_base = money_json(round(subtotal + tax_total, 2))
+    discount_amount = money_json(discount_amount or 0)
     discount_amount, header_disc_type, header_disc_pct = resolve_discount(
         base_amount=header_base,
-        discount=discount_amount or 0,
+        discount=discount_amount,
         discount_type=discount_type,
         discount_percent=discount_percent or 0,
         label="Sale discount",
     )
-    total = money_json(round(header_base - discount_amount, 2))
+    total = money_json(round(subtotal + tax_total - discount_amount, 2))
     order = m.SalesOrder(
         tenant_id=tenant_id,
         order_number=await next_sales_order_number(db, tenant_id),

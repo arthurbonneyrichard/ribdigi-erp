@@ -359,10 +359,12 @@ async def create_sales_invoice(
             )
         else:
             spec = await resolve_product_tax(db, tenant_id, product, explicit_rate=None)
-        line_amount = money_json(round(qty * money_json(unit_price), 2))
+        line_amount = qty * money_json(unit_price)
+        line_amount = money_json(round(line_amount, 2))
+        discount = money_json(item.get("discount") or 0)
         discount, line_disc_type, line_disc_pct = resolve_discount(
             base_amount=line_amount,
-            discount=item.get("discount") or 0,
+            discount=discount,
             discount_type=item.get("discount_type") or "fixed",
             discount_percent=item.get("discount_percent") or 0,
             label="Line discount",
@@ -731,7 +733,7 @@ async def post_sales_invoice(
             tenant_id=tenant_id,
             user_id=user_id,
             product_id=item.product_id,
-            quantity=issue_qty,
+            quantity=money_json(item.quantity) if skip <= 1e-9 else issue_qty,
             unit_id=item.unit_id,
             notes=f"Invoice {invoice.invoice_number}",
             variant_id=item.variant_id,

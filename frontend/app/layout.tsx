@@ -10,7 +10,6 @@ export const viewport = {
 export const metadata = {
   title: 'RIBDIGI ERP',
   description: 'One System. Total Business Control. A Ribdigi House Product.',
-  themeColor: '#4AB012',
   applicationName: 'RIBDIGI ERP',
   icons: {
     icon: [

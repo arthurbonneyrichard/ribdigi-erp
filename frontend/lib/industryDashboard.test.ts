@@ -16,11 +16,11 @@ test('hotel home is /hotel; everyone else stays on /dashboard', () => {
   assert.equal(industryHomePath('retail'), '/dashboard');
 });
 
-test('pharmacy extras are lots/batches/POS plus Rx catalog and prescriptions; mart has none', () => {
+test('pharmacy extras are lots, batches, and prescriptions; mart has none', () => {
   const pharmacy = industryDashboardFeatures('pharmacy');
   assert.deepEqual(
     pharmacy.map((f) => f.id),
-    ['expiry_lots', 'batches', 'pos', 'rx_products', 'prescriptions'],
+    ['expiry_lots', 'batches', 'rx_products', 'prescriptions'],
   );
   assert.equal(
     pharmacy.some((f) => f.href.startsWith('/hotel')),
@@ -28,20 +28,18 @@ test('pharmacy extras are lots/batches/POS plus Rx catalog and prescriptions; ma
   );
   assert.equal(pharmacy.some((f) => f.href === '/prescriptions'), true);
   assert.deepEqual(industryDashboardFeatures('mart'), []);
-  assert.deepEqual(
-    industryDashboardFeatures('retail').map((f) => f.id),
-    ['pos', 'inventory', 'customers'],
-  );
-  assert.equal(industryDashboardSectionLabel('pharmacy'), 'Pharmacy management');
-  assert.equal(industryDashboardSectionLabel('wholesale'), 'Wholesale operations');
+  assert.deepEqual(industryDashboardFeatures('retail').map((f) => f.id), []);
+  assert.equal(industryDashboardSectionLabel('pharmacy'), 'Pharmacy');
+  assert.equal(industryDashboardSectionLabel('wholesale'), 'Wholesale');
   assert.equal(industryDashboardSectionLabel('retail_wholesale'), 'Retail + wholesale');
+  assert.equal(industryDashboardSectionLabel('retail'), null);
   assert.deepEqual(
     industryDashboardFeatures('wholesale').map((f) => f.id),
-    ['quotes', 'orders', 'credit', 'customers'],
+    ['quotes', 'orders', 'credit'],
   );
   assert.deepEqual(
     industryDashboardFeatures('retail_wholesale').map((f) => f.id),
-    ['pos', 'quotes', 'orders', 'credit', 'inventory'],
+    ['quotes', 'orders', 'credit'],
   );
   assert.equal(
     industryDashboardFeatures('wholesale').some((f) => f.href.startsWith('/hotel')),
@@ -50,11 +48,11 @@ test('pharmacy extras are lots/batches/POS plus Rx catalog and prescriptions; ma
   assert.equal(industryDashboardSectionLabel('mart'), null);
 });
 
-test('restaurant cards are POS/printers without hotel PMS', () => {
+test('restaurant cards are printers without hotel PMS', () => {
   const rows = industryDashboardFeatures('restaurant');
   assert.deepEqual(
     rows.map((f) => f.href),
-    ['/pos', '/printers'],
+    ['/printers'],
   );
   assert.equal(
     rows.some((f) => f.href.startsWith('/hotel')),

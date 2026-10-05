@@ -50,6 +50,8 @@ BANK_SETTLEMENT_METHODS = frozenset(
         "credit_card",
         "debit_card",
         "wallet",
+        "mobile_money",
+        "momo",
         "ach",
         "wire",
         "eft",

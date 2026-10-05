@@ -677,7 +677,7 @@ export default function Page() {
     setDeptBusy(true);
     try {
       const payload: Record<string, string> = {
-        code: codeTrim,
+        code: deptCode.trim() || codeTrim,
         name: nameTrim,
       };
       if (deptBranchId.trim()) payload.branch_id = deptBranchId.trim();
@@ -1313,6 +1313,9 @@ export default function Page() {
               ) : null}
               <button type="button" onClick={createTransfer} aria-label={xferConfirming ? 'Confirm stock transfer' : 'Review stock transfer'}>
                 {xferConfirming ? 'Confirm create' : 'Review transfer'}
+              </button>
+              <button type="button" onClick={createTransfer} aria-label="Create and request stock transfer">
+                Create and request
               </button>
             </div>
           </div>

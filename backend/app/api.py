@@ -10,6 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
+import asyncio
 import logging
 
 from app import models as m
@@ -244,6 +245,10 @@ from app.schemas import (
     PasswordResetRequest,
     PosSaleCreate,
     PosDeviceHeartbeat,
+    PosOfflineAuthorize,
+    PosOfflineDeviceBlock,
+    PosOfflineResolve,
+    PosOfflineStatusQuery,
     PosSessionClose,
     PosSessionOpen,
     PosCashMovementCreate,
@@ -732,6 +737,7 @@ async def create_tenant(
         raise HTTPException(status_code=409, detail="Tenant slug exists")
 
     industry = tenants_svc.normalize_industry(payload.industry)
+    tenants_svc.assert_industry_selectable(industry)
     trial_end = tenants_svc.default_trial_ends_at()
     now = datetime.utcnow()
     from app import store_entitlements as store_ent_svc
@@ -1297,6 +1303,8 @@ async def tenant_update_industry(
         )
     tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
     previous = getattr(tenant, "industry", None)
+    next_industry = tenants_svc.normalize_industry(payload.industry)
+    tenants_svc.assert_industry_selectable(next_industry or "", previous=previous)
     reason = require_honest_narrative(payload.reason, label="business type change reason")
     tenant = await tenants_svc.update_profile(
         db, tenant, industry=payload.industry
@@ -2123,7 +2131,12 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
     if user and user.locked_until and user.locked_until > datetime.utcnow():
         raise HTTPException(status_code=423, detail="Account temporarily locked")
 
-    if not user or not user.is_active or not verify_password(payload.password, user.password_hash):
+    password_ok = False
+    if user and user.is_active:
+        password_ok = await asyncio.to_thread(
+            verify_password, payload.password, user.password_hash
+        )
+    if not user or not user.is_active or not password_ok:
         if user:
             user.failed_login_attempts = int(user.failed_login_attempts or 0) + 1
             if user.failed_login_attempts >= 5:
@@ -2579,7 +2592,7 @@ async def auth_2fa_disable(
             status_code=400,
             detail="2FA cannot be disabled for this role",
         )
-    if not verify_password(payload.password, user.password_hash):
+    if not await asyncio.to_thread(verify_password, payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid password")
     ok = await totp_svc.verify_user_second_factor(db, user, payload.code)
     if not ok:
@@ -2714,7 +2727,9 @@ async def change_password(
     user = await db.get(m.User, claims["sub"])
     if not user or user.tenant_id != claims["tenant_id"]:
         raise HTTPException(status_code=404, detail="User not found")
-    if not verify_password(payload.current_password, user.password_hash):
+    if not await asyncio.to_thread(
+        verify_password, payload.current_password, user.password_hash
+    ):
         raise HTTPException(status_code=401, detail="Current password is incorrect")
     validate_password_strength(payload.new_password)
     if payload.new_password == payload.current_password:
@@ -4111,7 +4126,11 @@ async def add_product(
     await db.flush()
     if money_json(product.stock_qty or 0) > 0:
         opening = money_json(product.stock_qty)
-        product.stock_qty = 0
+        # get_mapped returns a detached row. Assigning stock_qty here does not
+        # UPDATE the table, so the locked re-read in apply_stock_change would
+        # add the opening quantity on top of the inserted on-hand.
+        await schema_compat.update_matching_row(db, "products", product.id, {"stock_qty": 0})
+        await db.flush()
         await apply_stock_change(
             db,
             tenant_id=claims["tenant_id"],
@@ -7191,6 +7210,25 @@ async def create_quotation(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    client_request_id = (payload.client_request_id or "").strip() or None
+
+    async def _existing_quote():
+        if not client_request_id:
+            return None
+        return (
+            await db.execute(
+                select(m.SalesQuotation).where(
+                    m.SalesQuotation.tenant_id == claims["tenant_id"],
+                    m.SalesQuotation.client_request_id == client_request_id,
+                )
+            )
+        ).scalar_one_or_none()
+
+    prior = await _existing_quote()
+    if prior is not None:
+        data = await sales_docs_svc.serialize_quotation(db, prior)
+        data["idempotent_replay"] = True
+        return env(data, "Quotation already recorded")
     quote = await sales_docs_svc.create_quotation(
         db,
         tenant_id=claims["tenant_id"],
@@ -7204,8 +7242,21 @@ async def create_quotation(
         items=[i.model_dump() for i in payload.items],
         sales_channel=payload.sales_channel,
     )
-    await db.commit()
-    return env(await sales_docs_svc.serialize_quotation(db, quote), "Quotation created")
+    if client_request_id:
+        quote.client_request_id = client_request_id
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        prior = await _existing_quote()
+        if prior is None:
+            raise
+        data = await sales_docs_svc.serialize_quotation(db, prior)
+        data["idempotent_replay"] = True
+        return env(data, "Quotation already recorded")
+    data = await sales_docs_svc.serialize_quotation(db, quote)
+    data["idempotent_replay"] = False
+    return env(data, "Quotation created")
 
 
 @api.get("/sales/quotations/{quotation_id}")
@@ -8576,6 +8627,186 @@ async def pos_offline_policy(
     return env(data)
 
 
+@api.post("/pos/offline/authorize")
+async def pos_offline_authorize(
+    payload: PosOfflineAuthorize,
+    claims=Depends(require_permission("pos", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Online revalidation → server-issued, device-bound offline grant and stock slice."""
+    from app import offline_pos as offline_pos_svc
+
+    grant, allocations = await offline_pos_svc.issue_grant(
+        db,
+        claims=claims,
+        device_id=payload.device_id,
+        store_id=payload.store_id,
+        pending_items=payload.pending_items,
+        allocation_pct=payload.allocation_pct,
+        label=payload.label,
+        app_version=payload.app_version,
+        pending_queue_count=payload.pending_queue_count,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="pos",
+        action="offline_grant_issued",
+        entity="offline_grant",
+        entity_id=grant.id,
+        details={
+            "device_id": payload.device_id,
+            "store_id": payload.store_id,
+            "valid_until": grant.valid_until.isoformat(),
+            "allocation_products": len(allocations),
+        },
+    )
+    await db.commit()
+    return env(offline_pos_svc.serialize_grant(grant, allocations), "Offline access revalidated")
+
+
+@api.post("/pos/offline/status")
+async def pos_offline_status(
+    payload: PosOfflineStatusQuery,
+    claims=Depends(require_permission("pos", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Grant expiry, allocation remaining, other devices' pending count, and conflict resolutions."""
+    from app import offline_pos as offline_pos_svc
+
+    data = await offline_pos_svc.device_status(
+        db,
+        claims=claims,
+        device_id=payload.device_id,
+        client_request_ids=list(payload.client_request_ids or []),
+    )
+    return env(data)
+
+
+@api.get("/pos/offline/catalog")
+async def pos_offline_catalog(
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    claims=Depends(require_permission("pos", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Store-scoped catalogue + permitted customers for the encrypted device cache."""
+    from app import offline_pos as offline_pos_svc
+
+    data = await offline_pos_svc.offline_catalog(db, claims=claims, store_id=store_id)
+    await db.commit()
+    return env(data)
+
+
+@api.post("/pos/offline/release")
+async def pos_offline_release(
+    payload: PosOfflineStatusQuery,
+    claims=Depends(require_permission("pos", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return this device's unsold stock slice (sign-out / end of shift). Queued sales stay valid."""
+    from app import offline_pos as offline_pos_svc
+
+    released = await offline_pos_svc.release_device(
+        db, tenant_id=claims["tenant_id"], device_id=payload.device_id, reason="released"
+    )
+    await db.commit()
+    return env({"device_id": payload.device_id, "grants_released": released})
+
+
+@api.get("/pos/offline/conflicts")
+async def pos_offline_conflicts(
+    device_id: Annotated[str | None, Query(max_length=64)] = None,
+    include_resolved: bool = False,
+    claims=Depends(require_permission("pos", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Offline sales needing attention. Managers (pos:approve) see their stores; cashiers their own."""
+    from app import offline_pos as offline_pos_svc
+
+    rows = await offline_pos_svc.list_events(
+        db, claims=claims, device_id=device_id, open_only=not include_resolved
+    )
+    return env([offline_pos_svc.serialize_event(r) for r in rows])
+
+
+@api.post("/pos/offline/conflicts/{event_id}/resolve")
+async def pos_offline_resolve(
+    event_id: UuidIdValue,
+    payload: PosOfflineResolve,
+    claims=Depends(require_permission("pos", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Approve or dismiss a conflicted offline sale. The record is kept either way."""
+    from app import offline_pos as offline_pos_svc
+
+    row = await offline_pos_svc.resolve_event(
+        db, claims=claims, event_id=event_id, action=payload.action, note=payload.note
+    )
+    await db.commit()
+    return env(offline_pos_svc.serialize_event(row), "Resolution recorded")
+
+
+@api.post("/pos/offline/devices/{device_id}/block")
+async def pos_offline_block_device(
+    device_id: str,
+    payload: PosOfflineDeviceBlock,
+    claims=Depends(require_permission("pos", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Block or unblock a device from offline selling; blocking revokes its grant (pos:approve)."""
+    from app import offline_pos as offline_pos_svc
+    from app import store_access as store_access_svc
+
+    if not offline_pos_svc.claims_can(claims, "pos", "approve"):
+        raise HTTPException(status_code=403, detail="Missing permission: pos:approve")
+    existing = (
+        await db.execute(
+            select(m.PosDevice).where(
+                m.PosDevice.tenant_id == claims["tenant_id"],
+                m.PosDevice.device_id == device_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if existing is not None and existing.store_id:
+        await store_access_svc.assert_store_access(
+            db, tenant_id=claims["tenant_id"], user_id=claims["sub"], store_id=existing.store_id
+        )
+    row = await offline_pos_svc.set_device_blocked(
+        db, tenant_id=claims["tenant_id"], device_id=device_id, blocked=payload.blocked
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="pos",
+        action="offline_device_blocked" if payload.blocked else "offline_device_unblocked",
+        entity="pos_device",
+        entity_id=row.id,
+        details={"device_id": device_id},
+    )
+    await db.commit()
+    return env(_serialize_pos_device(row))
+
+
+@api.get("/pos/offline/provisional")
+async def pos_offline_provisional(
+    claims=Depends(require_permission("dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Whether any device still holds unsynced offline sales (reports/stock are provisional)."""
+    from app import offline_pos as offline_pos_svc
+    from app import store_access as store_access_svc
+
+    allowed = await store_access_svc.assigned_store_ids(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+    )
+    data = await offline_pos_svc.store_pending_summary(
+        db, tenant_id=claims["tenant_id"], store_ids=allowed
+    )
+    return env(data)
+
+
 @api.post("/pos/sessions/open")
 async def pos_open_session(
     payload: PosSessionOpen,
@@ -8876,6 +9107,7 @@ def _serialize_pos_device(row: m.PosDevice) -> dict:
         "app_version": row.app_version,
         "user_agent": row.user_agent,
         "pending_queue_count": int(row.pending_queue_count or 0),
+        "offline_blocked": bool(getattr(row, "offline_blocked", False)),
         "last_seen_at": row.last_seen_at.isoformat() + "Z" if row.last_seen_at else None,
         "created_at": row.created_at.isoformat() + "Z" if row.created_at else None,
         "updated_at": row.updated_at.isoformat() + "Z" if row.updated_at else None,
@@ -8968,6 +9200,41 @@ async def pos_sale(
     claims=Depends(require_permission("pos", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    def sale_totals(tx):
+        return {
+            "subtotal": money_json(tx.subtotal),
+            "tax": money_json(tx.tax),
+            "total": money_json(tx.total),
+        }
+
+    offline_sync = bool(payload.offline_sync or payload.offline_created_at)
+    if not offline_sync:
+        return await _pos_sale_impl(payload, claims, db, sale_totals=sale_totals)
+    from app import offline_pos as offline_pos_svc
+
+    try:
+        return await _pos_sale_impl(payload, claims, db, sale_totals=sale_totals)
+    except HTTPException as exc:
+        # Any rejection of a queued sale is kept as a visible conflict with the full
+        # request, so an authorised user can resolve it. The device keeps its copy too.
+        await db.rollback()
+        store_id = None
+        if payload.session_id:
+            sess = await db.get(m.PosSession, payload.session_id)
+            if sess is not None and sess.tenant_id == claims["tenant_id"]:
+                store_id = sess.store_id
+        event = await offline_pos_svc.record_sync_failure(
+            db,
+            claims=claims,
+            request=payload.model_dump(mode="json"),
+            exc=exc,
+            store_id=store_id,
+        )
+        await db.commit()
+        raise offline_pos_svc.exception_with_event(exc, event) from None
+
+
+async def _pos_sale_impl(payload: PosSaleCreate, claims: dict, db: AsyncSession, sale_totals=None):
     # Idempotent offline/retry: same client_request_id → original sale, never a duplicate.
     client_request_id = (payload.client_request_id or "").strip() or None
     if client_request_id:
@@ -8993,37 +9260,70 @@ async def pos_sale(
                 "POS sale already recorded",
             )
 
-    session = await pos_svc.require_open_session(
-        db,
-        tenant_id=claims["tenant_id"],
-        user_id=claims["sub"],
-        session_id=payload.session_id,
-    )
     items = [i.model_dump() for i in payload.items]
     offline_sync = bool(payload.offline_sync or payload.offline_created_at)
+    offline_grant = None
+    resolution = None
+    original_session_id = None
     if offline_sync:
         from app import offline_pos as offline_pos_svc
         from app import tenants as tenants_svc
 
+        offline_created = offline_pos_svc.parse_offline_created_at(payload.offline_created_at)
+        resolution = await offline_pos_svc.load_resolution(
+            db,
+            tenant_id=claims["tenant_id"],
+            client_request_id=client_request_id,
+            event_id=payload.resolution_event_id,
+        )
+        approved = resolution.resolution if resolution is not None else None
+        session, original_session_id = await offline_pos_svc.resolve_sync_session(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            session_id=payload.session_id,
+        )
+        offline_grant = await offline_pos_svc.validate_sale_grant(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            device_id=payload.device_id,
+            grant_id=payload.offline_grant_id,
+            offline_created_at=offline_created,
+            window_approved=approved == "approve_outside_window",
+        )
+        if approved == "approve_server_price":
+            for item in items:
+                item.pop("unit_price", None)
         tenant_row = await tenants_svc.get_tenant(db, claims["tenant_id"])
-        try:
-            await offline_pos_svc.preflight_offline_sale(
+        await offline_pos_svc.preflight_offline_sale(
+            db,
+            tenant=tenant_row,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            store_id=session.store_id,
+            items=items,
+            customer_id=payload.party_id,
+            offline_created_at=offline_created,
+            device_id=payload.device_id,
+            client_request_id=client_request_id,
+            accept_server_price=approved == "approve_server_price",
+        )
+        if offline_grant is not None:
+            await offline_pos_svc.check_grant_allocation(
                 db,
-                tenant=tenant_row,
-                tenant_id=claims["tenant_id"],
-                user_id=claims["sub"],
-                store_id=session.store_id,
-                items=items,
-                customer_id=payload.party_id,
-                offline_created_at=offline_pos_svc.parse_offline_created_at(
-                    payload.offline_created_at
-                ),
-                device_id=payload.device_id,
-                client_request_id=client_request_id,
+                grant=offline_grant,
+                qty_by_product=offline_pos_svc.qty_by_product(items),
+                override_requested=bool(payload.allocation_override),
+                override_approved=approved == "approve_allocation_override",
             )
-        except HTTPException:
-            await db.commit()
-            raise
+    else:
+        session = await pos_svc.require_open_session(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            session_id=payload.session_id,
+        )
     from app.tax import resolve_product_tax
     from app.catalog import resolve_sale_line
     from app.sale_discounts import resolve_discount
@@ -9043,9 +9343,10 @@ async def pos_sale(
         gross_before_discount = money_json(round(
             money_json(item["quantity"]) * money_json(unit_price), 2
         ))
+        line_discount = money_json(round(money_json(item.get("discount") or 0), 2))
         line_discount, line_disc_type, line_disc_pct = resolve_discount(
             base_amount=gross_before_discount,
-            discount=item.get("discount") or 0,
+            discount=line_discount,
             discount_type=item.get("discount_type") or "fixed",
             discount_percent=item.get("discount_percent") or 0,
             label="Line discount",
@@ -9120,20 +9421,23 @@ async def pos_sale(
             coupon_meta["discount_percent"],
         )
     else:
+        cart_discount = money_json(round(money_json(payload.discount_amount or 0), 2))
         cart_discount, cart_disc_type, cart_disc_pct = resolve_discount(
             base_amount=header_base,
-            discount=payload.discount_amount or 0,
+            discount=cart_discount,
             discount_type=payload.discount_type,
             discount_percent=payload.discount_percent or 0,
             label="Cart discount",
         )
-    total = money_json(round(header_base - cart_discount, 2))
+    total = money_json(round(subtotal + tax_total - cart_discount, 2))
 
     payments = pos_svc.resolve_sale_payments(
         total=total,
         payment_method=payload.payment_method,
         payments=[p.model_dump() for p in payload.payments] if payload.payments else None,
     )
+    if offline_sync:
+        offline_pos_svc.assert_offline_tenders(payments)
     from app import loyalty_gift as loyalty_gift_svc
 
     await loyalty_gift_svc.settle_pos_tenders(
@@ -9157,11 +9461,13 @@ async def pos_sale(
             status_code=400,
             detail="Select a customer for credit sales",
         )
-    if bool(payload.offline_sync) and credit_amount > 0:
-        raise HTTPException(
-            status_code=409,
-            detail="Credit sales cannot be completed offline. Record on-account tenders when online.",
-        )
+    credit_override = bool(payload.override_credit_limit)
+    credit_override_allowed = None
+    credit_override_reason = payload.override_reason
+    if resolution is not None and resolution.resolution == "approve_credit_override":
+        credit_override = True
+        credit_override_allowed = True
+        credit_override_reason = resolution.resolution_note
 
     party = None
     # OpenAPI PosCustomerNameValue → 422; service defense-in-depth → 400.
@@ -9183,9 +9489,13 @@ async def pos_sale(
         pos_override_info = enforce_customer_credit_limit(
             party,
             amount=money_json(credit_amount),
-            override=bool(payload.override_credit_limit),
-            override_allowed=claims_may_override_credit(claims),
-            override_reason=payload.override_reason,
+            override=credit_override,
+            override_allowed=(
+                credit_override_allowed
+                if credit_override_allowed is not None
+                else claims_may_override_credit(claims)
+            ),
+            override_reason=credit_override_reason,
             extra={"source": "pos_sale"},
         )
 
@@ -9212,6 +9522,10 @@ async def pos_sale(
     body.pop("device_id", None)
     body.pop("offline_created_at", None)
     body.pop("offline_sync", None)
+    body.pop("offline_grant_id", None)
+    body.pop("resolution_event_id", None)
+    body.pop("allocation_override", None)
+    body.pop("local_receipt_number", None)
     body.pop("prescription_id", None)
 
     from app.trade import assert_channel_allowed, default_sales_channel
@@ -9236,6 +9550,12 @@ async def pos_sale(
         "coupon_id": (coupon_meta or {}).get("coupon_id"),
         "offline_sync": bool(offline_sync),
         "offline_created_at": str(payload.offline_created_at) if payload.offline_created_at else None,
+        "offline_grant_id": offline_grant.id if offline_grant is not None else None,
+        "offline_legacy_no_grant": bool(offline_sync and offline_grant is None),
+        "offline_resolution": resolution.resolution if resolution is not None else None,
+        "offline_resolution_event_id": resolution.id if resolution is not None else None,
+        "local_receipt_number": payload.local_receipt_number,
+        "original_session_id": original_session_id,
         "device_id": payload.device_id,
         "cashier_user_id": claims.get("sub"),
         "paid_amount": settlement["paid_amount"],
@@ -9304,7 +9624,23 @@ async def pos_sale(
         reference_id=tx.id,
         outbound=True,
         warehouse_id=warehouse_id,
+        offline_device_id=payload.device_id,
     )
+    from app import offline_pos as offline_alloc_svc
+
+    sold_qty = offline_alloc_svc.qty_by_product(items)
+    allocation_remaining = None
+    if offline_grant is not None:
+        await offline_alloc_svc.consume_grant_allocation(
+            db, grant=offline_grant, qty_by_product=sold_qty
+        )
+    elif not offline_sync:
+        allocation_remaining = await offline_alloc_svc.consume_online_allocation(
+            db,
+            tenant_id=claims["tenant_id"],
+            device_id=payload.device_id,
+            qty_by_product=sold_qty,
+        )
     await pharmacy_svc.apply_pos_dispense(
         db,
         tenant_id=claims["tenant_id"],
@@ -9510,7 +9846,20 @@ async def pos_sale(
                 payload.offline_created_at
             ),
             result="synced",
-            details={"reference": ref},
+            details={
+                "reference": ref,
+                "local_receipt_number": payload.local_receipt_number,
+                "grant_id": offline_grant.id if offline_grant is not None else None,
+                "legacy_no_grant": offline_grant is None,
+                "resolution": resolution.resolution if resolution is not None else None,
+                "original_session_id": original_session_id,
+            },
+        )
+        await offline_pos_svc.close_events_for_synced_sale(
+            db,
+            tenant_id=claims["tenant_id"],
+            client_request_id=client_request_id,
+            sale_id=tx.id,
         )
     try:
         await db.commit()
@@ -9543,9 +9892,11 @@ async def pos_sale(
         "id": tx.id,
         "reference": ref,
         "session_id": session.id,
-        "subtotal": money_json(tx.subtotal),
-        "tax": money_json(tx.tax),
-        "total": money_json(tx.total),
+        **(sale_totals(tx) if sale_totals else {
+            "subtotal": money_json(tx.subtotal),
+            "tax": money_json(tx.tax),
+            "total": money_json(tx.total),
+        }),
         "discount_amount": money_json(cart_discount),
         "line_discounts": money_json(round(line_discounts, 2)),
         "payment_method": payment_method,
@@ -9563,7 +9914,12 @@ async def pos_sale(
         "idempotent_replay": False,
         "sales_channel": pos_channel,
         "prescription_id": payload.prescription_id,
+        "local_receipt_number": payload.local_receipt_number,
+        "offline_sync": bool(offline_sync),
+        "original_session_id": original_session_id,
     }
+    if allocation_remaining is not None:
+        payload_out["offline_allocation_remaining"] = allocation_remaining
     if drawer is not None:
         payload_out["drawer"] = drawer
     payload_out["print_jobs"] = print_jobs_out

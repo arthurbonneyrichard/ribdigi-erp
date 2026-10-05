@@ -12,8 +12,8 @@ from tests.conftest import auth_headers
 @pytest.mark.parametrize(
     "qty,reorder,expected",
     [
-        (0, 0, "red"),
-        (0, 10, "red"),
+        (0, 0, "out"),
+        (0, 10, "out"),
         (5, 10, "red"),
         (10, 10, "red"),
         (11, 10, "yellow"),

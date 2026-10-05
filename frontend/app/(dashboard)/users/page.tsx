@@ -544,7 +544,7 @@ export default function Page() {
           password: trimmedPassword,
           role: form.role,
           phone: form.phone.trim() || null,
-          branch_id: hideStoreUx ? null : form.branch_id.trim() || null,
+          branch_id: form.branch_id.trim() || null,
           department_id: form.department_id.trim() || null,
           store_id: hideStoreAssign ? null : form.store_ids[0] || null,
           store_ids: hideStoreAssign ? [] : form.store_ids,

@@ -59,6 +59,7 @@ def test_expense_payment_method_literal_schema():
 
 def test_normalize_expense_payment_method_defense():
     assert coerce_expense_payment_method_value("  Debit Card ") == "card"
+    assert coerce_expense_payment_method_value("MoMo") == "mobile_money"
     assert coerce_expense_payment_method_value("") == ""
     assert normalize_expense_payment_method(None) == "cash"
     assert normalize_expense_payment_method(None, default="bank_transfer") == "bank_transfer"
@@ -78,8 +79,9 @@ def test_expense_payment_method_ui_and_docs():
     assert 'value="bank_transfer"' in expenses
     assert 'value="card"' in expenses
     assert 'value="cheque"' in expenses
+    assert 'value="mobile_money"' in expenses
     assert "paymentMethod" in expenses
     api = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "payment_method" in api
-    assert 'Literal["cash","bank_transfer","card","cheque"]' in api
+    assert 'Literal["cash","bank_transfer","card","cheque","mobile_money"]' in api
     assert "422" in api

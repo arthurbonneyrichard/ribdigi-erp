@@ -39,7 +39,11 @@ async def available_qty(
     warehouse_id: str,
     product_id: str,
     exclude_order_id: str | None = None,
+    exclude_offline_device_id: str | None = None,
 ) -> float:
+    """On hand − active order reservations − other devices' unsold offline allocations."""
+    from app.offline_pos import outstanding_allocated_qty
+
     await allocate_unlocated_stock(
         db, tenant_id=tenant_id, warehouse_id=warehouse_id, product_id=product_id
     )
@@ -54,6 +58,14 @@ async def available_qty(
         product_id=product_id,
         exclude_order_id=exclude_order_id,
     )
+    offline_held = await outstanding_allocated_qty(
+        db,
+        tenant_id=tenant_id,
+        warehouse_id=warehouse_id,
+        product_id=product_id,
+        exclude_device_id=exclude_offline_device_id,
+    )
+    on_hand = money_json(on_hand - offline_held)
     return money_json(on_hand - reserved)
 
 

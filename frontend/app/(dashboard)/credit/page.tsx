@@ -588,14 +588,14 @@ export default function Page() {
         <button
           onClick={() => selectKind('receivable')}
           disabled={kind === 'receivable'}
-          aria-label="Show customer credit"
+          aria-label="Show receivables aging"
         >
           Receivables
         </button>
         <button
           onClick={() => selectPayableView()}
           disabled={kind === 'payable' && !payPanel}
-          aria-label="Show supplier balances"
+          aria-label="Show payables aging"
         >
           Payables
         </button>
@@ -744,6 +744,7 @@ export default function Page() {
           <h3>{kind === 'receivable' ? 'Record repayment' : 'Record payment'}</h3>
           <p className="muted">
             Pays the oldest open documents first. This does not create a new sale or bill.
+            Mobile Money records how the customer paid. Ribdigi does not collect or settle those funds.
           </p>
           <select
             value={partyId}
@@ -774,6 +775,7 @@ export default function Page() {
               <option value="bank_transfer">Bank transfer</option>
               <option value="card">Card</option>
               <option value="cheque">Cheque</option>
+              <option value="mobile_money">Mobile Money (MoMo)</option>
             </select>
             <input
               value={payReference}

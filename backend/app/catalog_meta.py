@@ -157,7 +157,8 @@ def compute_stock_status(
     - green: otherwise
     """
     qty = money_json(stock_qty or 0)
-    floor = low_stock_floor(minimum_stock, reorder_level)
+    reorder = money_json(reorder_level or 0)
+    floor = low_stock_floor(minimum_stock, reorder)
     if qty <= 0:
         return {"status": "out", "label": "out_of_stock"}
     if floor > 0 and qty <= floor:

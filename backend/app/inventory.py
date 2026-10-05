@@ -402,8 +402,13 @@ async def apply_line_items_stock(
     reference_id: str,
     outbound: bool,
     warehouse_id: str | None = None,
+    offline_device_id: str | None = None,
 ) -> None:
-    """Apply stock for transaction payload items: [{product_id, quantity, unit_id?, variant_id?}]."""
+    """Apply stock for transaction payload items: [{product_id, quantity, unit_id?, variant_id?}].
+
+    Outbound availability excludes stock allocated to *other* offline POS devices;
+    ``offline_device_id`` is the selling device, whose own slice stays sellable.
+    """
     if not items:
         return
     from app.catalog import get_variant, stock_out_with_batch
@@ -441,6 +446,7 @@ async def apply_line_items_stock(
                     tenant_id=tenant_id,
                     warehouse_id=warehouse_id,
                     product_id=product_id,
+                    exclude_offline_device_id=offline_device_id,
                 )
                 on_hand_row = (
                     await db.execute(
@@ -469,7 +475,8 @@ async def apply_line_items_stock(
                         status_code=409,
                         detail={
                             "code": "INSUFFICIENT_AVAILABLE_STOCK",
-                            "message": "Insufficient available stock (on hand minus reserved wholesale orders)",
+                            "message": "Insufficient available stock (on hand minus reserved orders and "
+                            "other POS devices' offline allocations)",
                             "product_id": product_id,
                             "warehouse_id": warehouse_id,
                             "available": avail,
@@ -570,7 +577,10 @@ async def list_warehouse_stock(
         if item["is_low_stock"]:
             reorder_qty = item["reorder_qty"]
             floor = item["low_stock_floor"]
-            item["suggested_order_qty"] = money_json(max(reorder_qty, money_json(round(floor - qty, 3))))
+            reorder = floor
+            via_floor = money_json(max(reorder_qty, money_json(round(floor - qty, 3))))
+            via_reorder = money_json(max(reorder_qty, money_json(round(reorder - qty, 3))))
+            item["suggested_order_qty"] = via_floor if via_floor == via_reorder else via_reorder
         items.append(item)
     return {
         "warehouse_id": wh.id,

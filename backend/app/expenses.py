@@ -30,13 +30,18 @@ MAX_APPROVAL_LEVELS = 5
 DEFAULT_L1_ROLES = ("store_manager", "accountant", "company_admin", "super_admin")
 
 # BR-9.2 — OpenAPI Expense* / RecurringExpense* Literals; FE selects match.
-EXPENSE_PAYMENT_METHODS = frozenset({"cash", "bank_transfer", "card", "cheque"})
+EXPENSE_PAYMENT_METHODS = frozenset(
+    {"cash", "bank_transfer", "card", "cheque", "mobile_money"}
+)
 EXPENSE_PAYMENT_METHOD_ALIASES = {
     "check": "cheque",
     "credit_card": "card",
     "debit_card": "card",
     "bank": "bank_transfer",
     "transfer": "bank_transfer",
+    "momo": "mobile_money",
+    "mobilemoney": "mobile_money",
+    "mobile_money": "mobile_money",
 }
 
 

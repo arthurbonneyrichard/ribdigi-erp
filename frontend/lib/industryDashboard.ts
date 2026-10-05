@@ -75,10 +75,10 @@ export function industryDashboardFeatures(
 
 export function industryDashboardSectionLabel(industry?: string | null): string | null {
   const ind = normalizeIndustry(industry);
-  if (ind === 'pharmacy') return 'Pharmacy management';
-  if (ind === 'wholesale') return 'Wholesale operations';
+  if (ind === 'pharmacy') return 'Pharmacy';
+  if (ind === 'wholesale') return 'Wholesale';
   if (ind === 'retail_wholesale') return 'Retail + wholesale';
-  if (ind === 'retail') return 'Retail operations';
+  if (ind === 'retail') return null;
   if (ind === 'fmcg') return 'FMCG management';
   if (ind === 'restaurant') return 'Restaurant operations';
   if (ind === 'hotel') return 'Hotel dashboard';

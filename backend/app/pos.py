@@ -28,15 +28,7 @@ def compute_expected_cash(
     cash_in: float = 0,
     cash_out: float = 0,
 ) -> float:
-    return money_json(
-        round(
-            money_json(opening_cash or 0)
-            + money_json(cash_sales or 0)
-            + money_json(cash_in or 0)
-            - money_json(cash_out or 0),
-            2,
-        )
-    )
+    return money_json(round(money_json(opening_cash or 0) + money_json(cash_sales or 0) + money_json(cash_in or 0) - money_json(cash_out or 0), 2))
 
 
 def expected_cash_for_session(session: m.PosSession) -> float:
@@ -53,13 +45,26 @@ def compute_variance(actual_cash: float, expected_cash: float) -> float:
 
 
 PAYMENT_METHODS = frozenset(
-    {"cash", "card", "wallet", "credit", "other", "gift_card", "loyalty", "mobile_money"}
+    {
+        "cash",
+        "card",
+        "wallet",
+        "credit",
+        "other",
+        "gift_card",
+        "loyalty",
+        "mobile_money",
+        "bank_transfer",
+    }
 )
 PAYMENT_METHOD_ALIASES = {
     "digital_wallet": "wallet",
     "momo": "mobile_money",
     "mobilemoney": "mobile_money",
     "mobile_money": "mobile_money",
+    "bank": "bank_transfer",
+    "transfer": "bank_transfer",
+    "bank_transfer": "bank_transfer",
 }
 
 
@@ -73,6 +78,7 @@ def payment_method_label(method: str | None) -> str:
         "gift_card": "Gift card",
         "loyalty": "Loyalty points",
         "mobile_money": "Mobile Money (MoMo)",
+        "bank_transfer": "Bank transfer",
         "split": "Split",
         "other": "Other",
     }

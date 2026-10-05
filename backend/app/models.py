@@ -1193,7 +1193,54 @@ class PosDevice(Base):
     app_version: Mapped[str | None] = mapped_column(String(40), nullable=True)
     user_agent: Mapped[str | None] = mapped_column(String(300), nullable=True)
     pending_queue_count: Mapped[int] = mapped_column(Integer, default=0)
+    offline_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class OfflineGrant(Base):
+    """Server-issued, device-bound offline POS authorization.
+
+    Sales created on the device between ``issued_at`` and ``valid_until`` (or
+    ``revoked_at`` when earlier) may sync later. Expiry blocks new offline sales
+    on the device; it never invalidates sales recorded inside the window.
+    """
+
+    __tablename__ = "offline_grants"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    device_id: Mapped[str] = mapped_column(String(64), index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    warehouse_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    industry: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    allowed_actions: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    can_override_allocation: Mapped[bool] = mapped_column(Boolean, default=False)
+    issued_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    valid_until: Mapped[datetime] = mapped_column(DateTime, index=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    revoke_reason: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class OfflineStockAllocation(Base):
+    """Per-device stock slice for offline selling under one grant."""
+
+    __tablename__ = "offline_stock_allocations"
+    __table_args__ = (UniqueConstraint("grant_id", "product_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    grant_id: Mapped[str] = mapped_column(ForeignKey("offline_grants.id"), index=True)
+    device_id: Mapped[str] = mapped_column(String(64), index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True)
+    warehouse_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    allocated_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    sold_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    released_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -1217,6 +1264,10 @@ class OfflineSyncEvent(Base):
     result: Mapped[str] = mapped_column(String(40), default="pending", index=True)
     conflict_code: Mapped[str | None] = mapped_column(String(80), nullable=True)
     details: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    resolution: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    resolved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    resolution_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
@@ -1440,7 +1491,10 @@ class WebAuthnChallenge(Base):
 
 class SalesQuotation(Base):
     __tablename__ = "sales_quotations"
-    __table_args__ = (UniqueConstraint("tenant_id", "quotation_number"),)
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "quotation_number"),
+        UniqueConstraint("tenant_id", "client_request_id", name="uq_sales_quotations_tenant_client_request"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -1462,6 +1516,7 @@ class SalesQuotation(Base):
     emailed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     emailed_to: Mapped[str | None] = mapped_column(String(255), nullable=True)
     sales_channel: Mapped[str] = mapped_column(String(20), default="wholesale")
+    client_request_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

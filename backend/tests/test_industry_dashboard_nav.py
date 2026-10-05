@@ -172,13 +172,13 @@ def test_frontend_industry_dashboard_and_nav_source():
     assert "industryHomePath" in dash
     assert "router.replace('/hotel')" in dash
     assert "industry_features" in dash
-    assert "Pharmacy management" in helper
+    assert "return 'Pharmacy'" in helper
     assert "id: 'batches'" in helper or 'id: "batches"' in helper
     assert "tab=batches" in helper
     assert "tab=expiry" in helper
     assert "/prescriptions" in helper
     assert "PHARMACY_NAV_ITEMS" in nav
-    assert "label: 'Pharmacy management'" in nav
+    assert "label: 'Pharmacy'" in nav
     assert "HIS" in backend or "dispensing" in backend.lower()
     hotel_block = nav[nav.find("export const HOTEL_NAV_ITEMS") : nav.find("export const FMCG_NAV_ITEMS")]
     assert "Pharmacy" not in hotel_block

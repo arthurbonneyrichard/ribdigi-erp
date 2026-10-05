@@ -56,7 +56,9 @@ def test_path_uuid_id_batch3_docs():
     import re
 
     left = re.findall(r"^    ([a-z_]+_id): str,$", api, re.M)
-    assert left == ["tenant_id"], left
+    # Internal helpers still take plain str (the route already validated the id).
+    # Offline device keys are client strings (String(64)), not UUIDs.
+    assert left == ["tenant_id", "user_id", "tenant_id", "device_id"], left
 
 
 @pytest.mark.asyncio

@@ -185,19 +185,30 @@ def _prepare_payload(sync_session, table_name: str, values: dict) -> dict:
 
 
 async def table_column_names(db: AsyncSession, table_name: str) -> set[str]:
-    cached = _COL_CACHE.get(table_name)
-    if cached is not None:
-        return cached
+    """Live column names for this session's engine.
+
+    The cache key includes the engine identity. A process-wide name-only cache
+    mixed Postgres reflection from the app engine with the sqlite engines used
+    by tests, and a cached empty set (table not created yet) made later reads
+    return no row.
+    """
 
     def _names(sync_session) -> set[str]:
+        bind = sync_session.get_bind()
+        engine = getattr(bind, "engine", bind)
+        key = f"{id(engine)}:{table_name}"
+        cached = _COL_CACHE.get(key)
+        if cached is not None:
+            return cached
         insp = inspect(_session_connection(sync_session))
         if not insp.has_table(table_name):
             return set()
-        return {c["name"] for c in insp.get_columns(table_name)}
+        names = {c["name"] for c in insp.get_columns(table_name)}
+        if names:
+            _COL_CACHE[key] = names
+        return names
 
-    names = await db.run_sync(_names)
-    _COL_CACHE[table_name] = names
-    return names
+    return await db.run_sync(_names)
 
 
 async def insert_matching_row(db: AsyncSession, table_name: str, values: dict) -> None:

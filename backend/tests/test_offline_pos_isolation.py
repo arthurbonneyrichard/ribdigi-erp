@@ -238,7 +238,11 @@ async def test_offline_sync_stock_conflict_visible(client, db_session):
 
 
 @pytest.mark.asyncio
-async def test_expired_offline_sale_is_rejected_not_dropped(client, db_session):
+async def test_old_legacy_queued_sale_syncs_for_online_user(client, db_session):
+    """A sale queued before server grants existed syncs once the user is online-authenticated.
+
+    The device's offline window lapsing must not strand sales recorded while it was valid.
+    """
     ac, seed = client
     headers = await _cashier(ac)
     product = seed["p1"]
@@ -263,10 +267,11 @@ async def test_expired_offline_sale_is_rejected_not_dropped(client, db_session):
         "items": [{"product_id": product.id, "quantity": 1, "unit_price": 10}],
     }
     r = await ac.post("/api/v1/pos/sales", headers=headers, json=body)
-    assert r.status_code == 403, r.text
-    assert r.json()["detail"]["code"] == "OFFLINE_AUTH_EXPIRED"
+    assert r.status_code == 200, r.text
     replay = await ac.post("/api/v1/pos/sales", headers=headers, json=body)
-    assert replay.status_code == 403
+    assert replay.status_code == 200
+    assert replay.json()["data"]["id"] == r.json()["data"]["id"]
+    assert replay.json()["data"]["idempotent_replay"] is True
 
 
 @pytest.mark.asyncio

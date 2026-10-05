@@ -57,6 +57,8 @@ PROVISION_INDUSTRIES: tuple[str, ...] = (
     "wholesale",
     "retail_wholesale",
 )
+# Not offered for new companies or as a business-type change. Stored values stay.
+RETIRED_PROVISION_INDUSTRIES: frozenset[str] = frozenset({"hotel", "fmcg"})
 VALID_DATE_FORMATS = frozenset({"DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"})
 VALID_DECIMAL_SEPARATORS = frozenset({".", ","})
 VALID_THOUSAND_SEPARATORS = frozenset({",", ".", " ", ""})
@@ -151,6 +153,22 @@ def normalize_industry(industry: str | None, *, required: bool = True) -> str | 
             detail=f"industry must be one of: {sorted(VALID_INDUSTRIES)}",
         )
     return None
+
+
+def assert_industry_selectable(industry: str, *, previous: str | None = None) -> None:
+    """Block Hotel and FMCG for new companies. An existing company may keep its type."""
+    if industry not in RETIRED_PROVISION_INDUSTRIES:
+        return
+    prev = (previous or "").strip().lower()
+    if prev == industry:
+        return
+    raise HTTPException(
+        status_code=400,
+        detail=(
+            "Hotel and FMCG are not available when creating or changing a company. "
+            "A company that already uses that business type keeps its records."
+        ),
+    )
 
 
 def industry_label(value: str | None) -> str:

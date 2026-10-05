@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import test from 'node:test';
 import { hoursUntilValid, isOfflineAuthValid, partitionScope } from './posOffline';
 
@@ -21,6 +23,7 @@ test('offline auth requires prior online envelope and rejects expiry', () => {
   const past = new Date(Date.now() - 60_000).toISOString();
   assert.equal(
     isOfflineAuthValid({
+      grant_id: 'g1',
       tenant_id: 't1',
       store_id: 's1',
       user_id: 'u1',
@@ -38,6 +41,7 @@ test('offline auth requires prior online envelope and rejects expiry', () => {
   );
   assert.equal(
     isOfflineAuthValid({
+      grant_id: 'g1',
       tenant_id: 't1',
       store_id: 's1',
       user_id: 'u1',
@@ -55,6 +59,7 @@ test('offline auth requires prior online envelope and rejects expiry', () => {
   );
   assert.equal(
     isOfflineAuthValid({
+      grant_id: null,
       tenant_id: '',
       store_id: null,
       user_id: '',
@@ -70,4 +75,16 @@ test('offline auth requires prior online envelope and rejects expiry', () => {
     }),
     false
   );
+});
+
+test('service worker reloads POS from cache, including page data, and never touches the queue', () => {
+  const root = process.env.RIBDIGI_FRONTEND_ROOT || path.resolve(__dirname, '..');
+  const sw = fs.readFileSync(path.join(root, 'public', 'sw.js'), 'utf8');
+  assert.match(sw, /const VERSION = 'v7'/);
+  assert.match(sw, /ribdigi-pos-shell-\$\{VERSION\}/);
+  assert.match(sw, /function isRsc/);
+  assert.match(sw, /networkFirstExact/);
+  assert.match(sw, /\/_next\/static\//);
+  assert.doesNotMatch(sw, /indexedDB/);
+  assert.doesNotMatch(sw, /sync_queue/);
 });

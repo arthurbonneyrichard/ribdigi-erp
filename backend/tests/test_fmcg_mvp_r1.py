@@ -16,8 +16,10 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_fmcg_module_registered():
     assert "fmcg" in PACKAGEABLE_MODULES
+    nav = (ROOT / "frontend/lib/tenantNav.ts").read_text(encoding="utf-8")
+    assert "['FMCG overview', '/fmcg', 'fmcg']" in nav
     shell = (ROOT / "frontend/components/Shell.tsx").read_text(encoding="utf-8")
-    assert "['FMCG', '/fmcg', 'fmcg']" in shell or '["FMCG", "/fmcg", "fmcg"]' in shell
+    assert "FMCG_NAV_ITEMS" in shell
     page = (ROOT / "frontend/app/(dashboard)/fmcg/page.tsx").read_text(encoding="utf-8")
     assert "/fmcg/schemes" in page
     assert "/fmcg/routes" in page

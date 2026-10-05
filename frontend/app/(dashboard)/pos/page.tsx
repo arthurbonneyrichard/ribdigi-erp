@@ -10,24 +10,80 @@ import { useStoreContext } from '../../../lib/storeContext';
 import { isHotelIndustry, tenantIsMultiStore } from '../../../lib/tenantNav';
 import { normalizeIndustry } from '../../../lib/industries';
 import {
-  cacheCatalogProducts,
+  allocationRemainingFor,
+  cacheSnapshot,
   countPendingSales,
-  downloadRecoveryPackage,
+  enqueueOfflineQuote,
   enqueueOfflineSale,
-  flushOfflineQueue,
   formatCacheAge,
   getCachedCatalogMeta,
+  getCachedCustomers,
   getCachedProducts,
   getOrCreateDeviceId,
   getOfflineAuthEnvelope,
-  importRecoveryPackage,
+  getSnapshot,
+  hydrateDeviceId,
   isOfflineAuthValid,
+  listQueuedSales,
+  migrateLegacyQueueStates,
   newClientRequestId,
-  saveOfflineAuthEnvelope,
+  revalidateOfflineAccess,
+  searchCachedProducts,
   touchLastOnline,
+  type QueuedSale,
 } from '../../../lib/posOffline';
+import PosOfflinePanel, { type OfflineStatus } from '../../../components/PosOfflinePanel';
 
 const PosPrintStatus = dynamic(() => import('../../../components/PosPrintStatus'), { ssr: false });
+
+const OFFLINE_TENDERS = new Set(['cash', 'mobile_money', 'card', 'bank_transfer', 'credit']);
+
+function hasPerm(
+  me: { permissions?: Record<string, string[]> | null } | null | undefined,
+  module: string,
+  action: string
+) {
+  const perms = me?.permissions;
+  if (!perms || typeof perms !== 'object') return false;
+  const star = perms['*'] || [];
+  if (star.includes('*') || star.includes(action)) return true;
+  const mod = perms[module] || [];
+  return mod.includes(action) || mod.includes('*');
+}
+
+function escapeHtml(value: unknown) {
+  return String(value ?? '').replace(/[&<>"']/g, (ch) =>
+    ch === '&' ? '&amp;' : ch === '<' ? '&lt;' : ch === '>' ? '&gt;' : ch === '"' ? '&quot;' : '&#39;'
+  );
+}
+
+function printProvisionalReceipt(rec: QueuedSale, lines: Array<{ name: string; quantity: number; unit: number }>, storeName: string) {
+  const payload = rec.payload as Record<string, unknown>;
+  const payments = Array.isArray(payload.payments)
+    ? (payload.payments as Array<{ payment_method: string; amount: number }>)
+    : [{ payment_method: String(payload.payment_method || 'cash'), amount: Number(payload.total || 0) }];
+  const rows = lines
+    .map(
+      (l) =>
+        `<tr><td>${escapeHtml(l.name)}</td><td style="text-align:right">${l.quantity}</td><td style="text-align:right">${(l.unit * l.quantity).toFixed(2)}</td></tr>`
+    )
+    .join('');
+  const tenders = payments
+    .map((p) => `<div>${escapeHtml(posPayLabel(p.payment_method))}: ${Number(p.amount || 0).toFixed(2)}</div>`)
+    .join('');
+  const w = window.open('', '_blank', 'width=380,height=640');
+  if (!w) return;
+  w.document.write(
+    `<!doctype html><html><head><title>${escapeHtml(rec.local_receipt_number)}</title>` +
+      '<style>body{font-family:monospace;font-size:12px;margin:12px}table{width:100%;border-collapse:collapse}</style></head><body>' +
+      `<h3 style="margin:0">${escapeHtml(storeName)}</h3>` +
+      '<p><strong>PROVISIONAL RECEIPT — not yet synced</strong><br/>The final receipt number is issued when this sale syncs.</p>' +
+      `<div>No: ${escapeHtml(rec.local_receipt_number)}</div><div>${escapeHtml(new Date(rec.created_at).toLocaleString())}</div>` +
+      `<table>${rows}</table><hr/><div><strong>Total ${Number(payload.total || 0).toFixed(2)}</strong></div>${tenders}` +
+      '<script>window.print()</script></body></html>'
+  );
+  w.document.close();
+}
 
 function posPayLabel(method?: string | null) {
   const key = String(method || 'cash');
@@ -64,7 +120,23 @@ type Product = {
   tax_pricing_mode?: string;
   tax_reverse_charge?: boolean;
   tax_components?: TaxComponent[] | null;
+  batch_tracked?: boolean;
+  saleable_lots?: Array<{ expiry_date?: string | null; quantity?: number }>;
+  offline_block_reason?: string | null;
 };
+
+function offlineDispenseBlock(product: Product): string | null {
+  if (product.offline_block_reason) return product.offline_block_reason;
+  if (product.rx_only) return `${product.name} needs a prescription check and cannot be sold offline`;
+  if (product.batch_tracked) {
+    const today = new Date().toISOString().slice(0, 10);
+    const qty = (product.saleable_lots || [])
+      .filter((lot) => !lot.expiry_date || lot.expiry_date >= today)
+      .reduce((sum, lot) => sum + (Number(lot.quantity) || 0), 0);
+    if (qty <= 0) return `${product.name} has no unexpired, released batch on this device`;
+  }
+  return null;
+}
 
 function looksLikeBarcode(value: string) {
   const text = value.trim();
@@ -136,8 +208,8 @@ type Session = {
   cashier_name?: string | null;
 };
 
-async function downloadReceiptPdf(saleId: string) {
-  const res = await apiFetch(`/pos/sales/${saleId}/receipt?format=pdf`);
+async function downloadReceiptPdf(saleId: string, paper = '80mm') {
+  const res = await apiFetch(`/pos/sales/${saleId}/receipt?format=pdf&paper=${encodeURIComponent(paper)}`);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.detail || body.message || 'PDF download failed');
@@ -335,6 +407,13 @@ export default function Page() {
   const [rows, setRows] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [session, setSession] = useState<Session | null>(null);
+  const [shifts, setShifts] = useState<any[]>([]);
+  const [shiftManageFilter, setShiftManageFilter] = useState<'all' | 'open' | 'closed'>('all');
+  const [receiptPaper, setReceiptPaper] = useState('80mm');
+  const [posSalePrefix, setPosSalePrefix] = useState('');
+  const [posSaleNext, setPosSaleNext] = useState('');
+  const [posSessionPrefix, setPosSessionPrefix] = useState('');
+  const [posSessionNext, setPosSessionNext] = useState('');
   const [openingCash, setOpeningCash] = useState('100');
   const [actualCash, setActualCash] = useState('');
   const [closeNotes, setCloseNotes] = useState('');
@@ -346,7 +425,7 @@ export default function Page() {
   const [splitTender, setSplitTender] = useState(false);
   const [cashTender, setCashTender] = useState('');
   const [cardTender, setCardTender] = useState('');
-  const [splitOtherMethod, setSplitOtherMethod] = useState<'card' | 'mobile_money'>('card');
+  const [splitOtherMethod, setSplitOtherMethod] = useState<'card' | 'mobile_money' | 'bank_transfer'>('card');
   const [amountPaidNow, setAmountPaidNow] = useState('');
   const [depositMethod, setDepositMethod] = useState('cash');
   const [paymentReference, setPaymentReference] = useState('');
@@ -376,6 +455,11 @@ export default function Page() {
     paid_amount?: number;
     balance_due?: number;
     invoice_number?: string | null;
+    offline?: QueuedSale;
+  } | null>(null);
+  const [lastOfflineReceipt, setLastOfflineReceipt] = useState<{
+    lines: Array<{ name: string; quantity: number; unit: number }>;
+    store: string;
   } | null>(null);
   const [printJobs, setPrintJobs] = useState<any[]>([]);
   const [busy, setBusy] = useState(false);
@@ -390,7 +474,22 @@ export default function Page() {
   );
   const [pendingOffline, setPendingOffline] = useState(0);
   const [catalogCachedAt, setCatalogCachedAt] = useState<string | null>(null);
-  const [showOfflineTools, setShowOfflineTools] = useState(false);
+  const [meId, setMeId] = useState('');
+  const [tenantId, setTenantId] = useState('');
+  const [industryCode, setIndustryCode] = useState('');
+  const [canApproveOffline, setCanApproveOffline] = useState(false);
+  const [canWriteQuotes, setCanWriteQuotes] = useState(false);
+  const [offlineStatus, setOfflineStatus] = useState<OfflineStatus | null>(null);
+  const [offlineRefresh, setOfflineRefresh] = useState(0);
+  const [allocationOverride, setAllocationOverride] = useState(false);
+  const [bootedOffline, setBootedOffline] = useState(false);
+  const bumpOffline = useCallback(() => setOfflineRefresh((n) => n + 1), []);
+  const handleOfflineStatus = useCallback((s: OfflineStatus) => {
+    setOfflineStatus(s);
+    setPendingOffline(s.summary.pending + s.summary.syncing + s.summary.needs_attention);
+  }, []);
+  const offlineValid = isOfflineAuthValid(offlineStatus?.envelope || null);
+  const offlinePerms = offlineStatus?.envelope?.permissions || [];
   const [newCustName, setNewCustName] = useState('');
   const [custBusy, setCustBusy] = useState(false);
   const checkoutReqRef = useRef<string | null>(null);
@@ -456,44 +555,75 @@ export default function Page() {
   async function refreshSession() {
     const r = await api('/pos/sessions/current');
     setSession(r.data || null);
+    try {
+      const list = await api('/pos/sessions');
+      if (Array.isArray(list.data)) setShifts(list.data);
+    } catch {
+      /* current shift still applies if history cannot load */
+    }
   }
 
-  const browse = useCallback(async (query = '', opts?: { signal?: AbortSignal }) => {
+  const managedShifts = shifts.filter((row) => {
+    if (shiftManageFilter === 'all') return true;
+    return String(row.status || '') === shiftManageFilter;
+  });
+
+  async function savePosNumbering() {
+    const body: Record<string, unknown> = {};
+    const pack = (prefix: string, next: string) => {
+      const p = prefix.trim();
+      const n = next.trim();
+      if (!p && !n) return undefined;
+      const out: { prefix?: string; next_number?: number } = {};
+      if (p) out.prefix = p;
+      if (n) out.next_number = Number(n);
+      return out;
+    };
+    const sale = pack(posSalePrefix, posSaleNext);
+    const sess = pack(posSessionPrefix, posSessionNext);
+    if (sale) body.pos_sale_numbering = sale;
+    if (sess) body.pos_session_numbering = sess;
+    await api('/pos/settings', { method: 'PATCH', body: JSON.stringify(body) });
+  }
+
+  const browse = useCallback(async (query = '', opts?: { signal?: AbortSignal; barcode?: boolean }) => {
     const posStore = (session?.store_id || storeId).trim();
     const params = new URLSearchParams();
     if (query) params.set('q', query);
     if (posStore) params.set('store_id', posStore);
     const gen = ++browseGen.current;
     setCatalogLoading(true);
+    const fromCache = async (barcode?: boolean) => {
+      const cached = (await getCachedProducts()) as unknown as Product[];
+      const hits = searchCachedProducts(cached as unknown as Array<Record<string, unknown>>, query, {
+        barcode,
+      }) as unknown as Product[];
+      const remaining = await allocationRemainingFor(hits.map((p) => p.product_id || p.id));
+      const list = hits.map((p) => {
+        const left = remaining[p.product_id || p.id] ?? 0;
+        return { ...p, stock_qty: left, is_out_of_stock: left <= 0 };
+      });
+      if (gen === browseGen.current) setRows(list);
+      const meta = await getCachedCatalogMeta();
+      setCatalogCachedAt(meta?.cached_at || null);
+      return list;
+    };
     try {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        return await fromCache(opts?.barcode);
+      }
       const r = await api('/pos/products/search?' + params.toString(), {
         signal: opts?.signal,
       });
       const list = (r.data || []) as Product[];
       if (gen !== browseGen.current) return list;
       setRows(list);
-      if (!query.trim()) {
-        await cacheCatalogProducts(list as any[]);
-        const meta = await getCachedCatalogMeta();
-        setCatalogCachedAt(meta?.cached_at || new Date().toISOString());
-      }
       await touchLastOnline();
       return list;
     } catch (err) {
       if (isAbortError(err)) return [];
-      if (!navigator.onLine || query === '') {
-        const cached = (await getCachedProducts()) as Product[];
-        const filtered = query.trim()
-          ? cached.filter(
-              (p) =>
-                String(p.name || '').toLowerCase().includes(query.toLowerCase()) ||
-                String(p.sku || '').toLowerCase().includes(query.toLowerCase())
-            )
-          : cached;
-        if (gen === browseGen.current) setRows(filtered);
-        const meta = await getCachedCatalogMeta();
-        setCatalogCachedAt(meta?.cached_at || null);
-        return filtered;
+      if (!navigator.onLine || (err as { status?: number })?.status === undefined) {
+        return fromCache(opts?.barcode);
       }
       throw err;
     } finally {
@@ -514,7 +644,12 @@ export default function Page() {
     const off = () => setOnline(false);
     window.addEventListener('online', on);
     window.addEventListener('offline', off);
-    refreshPendingCount();
+    (async () => {
+      await hydrateDeviceId().catch(() => null);
+      await migrateLegacyQueueStates().catch(() => 0);
+      await refreshPendingCount();
+      bumpOffline();
+    })();
     getCachedCatalogMeta()
       .then((m) => setCatalogCachedAt(m?.cached_at || null))
       .catch(() => null);
@@ -522,28 +657,15 @@ export default function Page() {
       window.removeEventListener('online', on);
       window.removeEventListener('offline', off);
     };
-  }, []);
+  }, [bumpOffline]);
 
   useEffect(() => {
-    if (!online) return;
-    flushOfflineQueue(api)
-      .then(async (r) => {
-        if (r.synced > 0) {
-          setMessage(`Synced ${r.synced} offline sale(s)`);
-          await refreshSession();
-        }
-        if (r.conflicts > 0) {
-          setError(
-            `${r.conflicts} offline sale(s) need review — stock or price differs from the server. Nothing was dropped.`
-          );
-        }
-        if (r.expired > 0) {
-          setError('Offline authorization expired — reconnect to revalidate before restore. Queued sales were not deleted.');
-        }
-        await refreshPendingCount();
-      })
-      .catch(() => undefined);
-  }, [online]);
+    if (online && session && offlineStatus?.summary.synced) {
+      refreshSession().catch(() => undefined);
+    }
+    // refresh shift totals after background sync
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [online, offlineStatus?.summary.synced]);
 
   useEffect(() => {
     if (!online) return;
@@ -574,32 +696,21 @@ export default function Page() {
     };
   }, [online, storeId, session?.store_id]);
 
-  async function exportRecovery() {
-    setError('');
+  async function refreshOfflineAccess(storeForGrant: string | null) {
+    if (!tenantId || !meId || !navigator.onLine) return;
     try {
-      const pkg = await downloadRecoveryPackage();
-      setMessage(
-        `Recovery package downloaded (${pkg.pending.length} pending sale(s)). Contains no passwords or tokens.`
-      );
-    } catch (err: any) {
-      setError(err.message || 'Recovery export failed');
-    }
-  }
-
-  async function importRecoveryFile(file: File | null) {
-    if (!file) return;
-    setError('');
-    try {
-      if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        throw new Error('Reconnect online before restoring a recovery package. The server remains the source of truth.');
-      }
-      const text = await file.text();
-      const raw = JSON.parse(text);
-      const r = await importRecoveryPackage(raw);
-      await refreshPendingCount();
-      setMessage(`Imported ${r.imported} queued sale(s) (${r.skipped} skipped). Sync when online.`);
-    } catch (err: any) {
-      setError(err.message || 'Recovery import failed');
+      await revalidateOfflineAccess(api, {
+        tenant_id: tenantId,
+        user_id: meId,
+        store_id: storeForGrant,
+        label: stores.find((s) => s.id === storeForGrant)?.name,
+      });
+      const meta = await getCachedCatalogMeta();
+      setCatalogCachedAt(meta?.cached_at || null);
+    } catch {
+      /* the panel shows offline access as not set up / expired */
+    } finally {
+      bumpOffline();
     }
   }
 
@@ -609,12 +720,44 @@ export default function Page() {
     let cancelled = false;
     (async () => {
       try {
-        const [sess, storeRes, meRes] = await Promise.all([
-          getPrefetched('/pos/sessions/current'),
-          getPrefetched('/pos/stores'),
-          getMe(),
-        ]);
+        let sess: any;
+        let storeRes: any;
+        let meRes: any;
+        try {
+          if (!navigator.onLine) throw new Error('offline');
+          [sess, storeRes, meRes] = await Promise.all([
+            getPrefetched('/pos/sessions/current'),
+            getPrefetched('/pos/stores'),
+            getMe(),
+          ]);
+          void cacheSnapshot('session', sess.data || null).catch(() => undefined);
+          void cacheSnapshot('stores', storeRes.data || []).catch(() => undefined);
+          void cacheSnapshot('me', meRes.data || null).catch(() => undefined);
+          setBootedOffline(false);
+        } catch (bootErr) {
+          if (navigator.onLine && (bootErr as { status?: number })?.status !== undefined) throw bootErr;
+          const [sSnap, stSnap, meSnap, env] = await Promise.all([
+            getSnapshot<Session | null>('session').catch(() => null),
+            getSnapshot<Store[]>('stores').catch(() => null),
+            getSnapshot<any>('me').catch(() => null),
+            getOfflineAuthEnvelope().catch(() => null),
+          ]);
+          if (!meSnap || !env || env.user_id !== String(meSnap.id || '')) {
+            throw new Error(
+              'This device has not been prepared for offline selling. Sign in online once and open a shift to enable offline mode.'
+            );
+          }
+          sess = { data: sSnap };
+          storeRes = { data: stSnap || [] };
+          meRes = { data: meSnap };
+          setBootedOffline(true);
+        }
         if (cancelled) return;
+        setMeId(String(meRes.data?.id || ''));
+        setTenantId(String(meRes.data?.tenant_id || ''));
+        setIndustryCode(normalizeIndustry(meRes.data?.industry) || '');
+        setCanApproveOffline(hasPerm(meRes.data, 'pos', 'approve'));
+        setCanWriteQuotes(hasPerm(meRes.data, 'sales', 'write'));
         setSession(sess.data || null);
         const list: Store[] = storeRes.data || [];
         setStores(list);
@@ -641,7 +784,7 @@ export default function Page() {
               ? 'Wholesale counter. Sales from this register use the wholesale channel.'
               : ''
         );
-        if (pharmacy) {
+        if (pharmacy && navigator.onLine) {
           const rx = await api('/pharmacy/prescriptions').catch(() => ({ data: [] }));
           const open = (Array.isArray(rx.data) ? rx.data : []).filter((row: OpenPrescription) =>
             ['approved', 'partially_dispensed'].includes(row.status)
@@ -704,19 +847,57 @@ export default function Page() {
     if (!session) return;
     let cancelled = false;
     const t = window.setTimeout(() => {
+      const cachedCustomers = () =>
+        getCachedCustomers()
+          .then((rows) => {
+            if (!cancelled) setCustomers(rows as unknown as Customer[]);
+          })
+          .catch(() => {
+            if (!cancelled) setCustomers([]);
+          });
+      if (!navigator.onLine) {
+        void cachedCustomers();
+        return;
+      }
       api('/customers')
         .then((r) => {
           if (!cancelled) setCustomers(r.data || []);
         })
         .catch(() => {
-          if (!cancelled) setCustomers([]);
+          void cachedCustomers();
         });
     }, 0);
     return () => {
       cancelled = true;
       window.clearTimeout(t);
     };
-  }, [session?.session_id]);
+  }, [session?.session_id, online]);
+
+  useEffect(() => {
+    if (!online || bootedOffline) return;
+    void cacheSnapshot('session', session).catch(() => undefined);
+  }, [online, bootedOffline, session]);
+
+  useEffect(() => {
+    if (!online || !session || !tenantId || !meId) return;
+    let cancelled = false;
+    (async () => {
+      const env = await getOfflineAuthEnvelope().catch(() => null);
+      const stale =
+        !env?.grant_id ||
+        !isOfflineAuthValid(env) ||
+        env.user_id !== meId ||
+        env.tenant_id !== tenantId ||
+        (env.store_id || null) !== (session.store_id || null) ||
+        Date.now() - new Date(env.allocations_refreshed_at || env.issued_at).getTime() > 6 * 3600000;
+      if (!cancelled && stale) await refreshOfflineAccess(session.store_id || null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // refreshOfflineAccess reads current state; re-run only on identity/store changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [online, session?.session_id, session?.store_id, tenantId, meId]);
 
   function selectCustomer(id: string) {
     setCustomerId(id);
@@ -785,36 +966,6 @@ export default function Page() {
           ? `Shift opened · ${r.data.session_number}`
           : 'Shift opened'
       );
-      try {
-        const me = await getMe();
-        const tenant = localStorage.getItem('tenant') || me.data?.tenant_id || '';
-        let hours = 168;
-        try {
-          const policy = await api('/pos/offline-policy');
-          hours = Number(policy.data?.offline_auth_hours) || 168;
-        } catch {
-          /* use default 168h */
-        }
-        const uid = String(me.data?.id || me.data?.user_id || '');
-        if (uid) {
-          try {
-            sessionStorage.setItem('ribdigi:uid', uid);
-            sessionStorage.setItem('ribdigi:store', String(r.data?.store_id || storeId.trim() || ''));
-          } catch {
-            /* ignore */
-          }
-        }
-        const env = await saveOfflineAuthEnvelope({
-          tenant_id: String(tenant),
-          store_id: r.data?.store_id || storeId.trim() || null,
-          user_id: uid,
-          permissions: ['pos:write'],
-          offline_auth_hours: hours,
-        });
-        void env;
-      } catch {
-        /* offline envelope best-effort */
-      }
       await browse(q);
       await refreshPendingCount();
     } catch (err: any) {
@@ -872,6 +1023,26 @@ export default function Page() {
     if (!session) return;
     setError('');
     setMessage('');
+    if (!navigator.onLine) {
+      setError('Closing a shift needs a connection so cash totals include every sale.');
+      return;
+    }
+    try {
+      const unsynced = (await listQueuedSales()).filter(
+        (rec) =>
+          rec.kind === 'sale' &&
+          ['pending', 'syncing', 'needs_attention'].includes(rec.state) &&
+          String(rec.payload?.session_id || '') === String(session.session_id)
+      );
+      if (unsynced.length) {
+        setError(
+          `${unsynced.length} offline sale(s) from this shift have not synced yet. Use Sync queued sales (or ask a manager to resolve them) before closing.`
+        );
+        return;
+      }
+    } catch {
+      /* queue unreadable: server totals still authoritative */
+    }
     try {
       const r = await api(`/pos/sessions/${session.session_id}/close`, {
         method: 'POST',
@@ -917,6 +1088,22 @@ export default function Page() {
     const query = q.trim();
     try {
       // USB/Bluetooth wedge scanners type digits then Enter — accept as barcode.
+      if (looksLikeBarcode(query) && !navigator.onLine) {
+        const hits = await browse(query, { barcode: true });
+        const exact = hits.filter(
+          (p) => String(p.barcode || '').toLowerCase() === query.toLowerCase() || p.sku.toLowerCase() === query.toLowerCase()
+        );
+        if (exact.length === 1) {
+          addToCart(exact[0]);
+          setMessage(`Scanned ${exact[0].name} (saved catalog)`);
+          skipEmptyBrowse.current = true;
+          setQ('');
+          return;
+        }
+        if (hits.length === 0) setError(`No product for ${query} in the saved catalog`);
+        else setMessage(`${hits.length} matches — tap a tile`);
+        return;
+      }
       if (looksLikeBarcode(query)) {
         const params = new URLSearchParams();
         params.set('barcode', query);
@@ -963,9 +1150,20 @@ export default function Page() {
       setError('Open a POS shift before selling');
       return;
     }
-    const avail = Math.max(0, Number(product.stock_qty) || 0);
-    if (avail <= 0 || product.is_out_of_stock) {
-      setError(`${product.name} is out of stock at this store`);
+    if (!navigator.onLine) {
+      const blocked = offlineDispenseBlock(product);
+      if (blocked) {
+        setError(blocked);
+        return;
+      }
+    }
+    const avail = lineLimit(product);
+    if (avail <= 0 || (product.is_out_of_stock && avail !== Infinity)) {
+      setError(
+        navigator.onLine
+          ? `${product.name} is out of stock at this store`
+          : `${product.name} has no offline stock allocated to this device`
+      );
       return;
     }
     const pid = product.product_id || product.id;
@@ -994,10 +1192,15 @@ export default function Page() {
     });
   }
 
+  function lineLimit(product: Product) {
+    if (!navigator.onLine && allocationOverride && offlineStatus?.envelope?.can_override_allocation) return Infinity;
+    return Math.max(0, Number(product.stock_qty) || 0);
+  }
+
   function bumpQty(id: string, delta: number) {
     const line = cart.find((p) => p.id === id);
     if (!line) return;
-    if (delta > 0 && line.quantity + delta > Number(line.stock_qty)) {
+    if (delta > 0 && line.quantity + delta > lineLimit(line)) {
       setError(`Only ${Number(line.stock_qty)} of ${line.name} in stock at this store`);
       return;
     }
@@ -1013,7 +1216,7 @@ export default function Page() {
     const line = cart.find((p) => p.id === id);
     if (!line) return;
     const quantity = Math.floor(raw);
-    if (quantity > Number(line.stock_qty)) {
+    if (quantity > lineLimit(line)) {
       setError(`Only ${Number(line.stock_qty)} of ${line.name} in stock at this store`);
       return;
     }
@@ -1123,7 +1326,7 @@ export default function Page() {
       prescription_id: prescriptionId.trim() || null,
       status: 'completed',
       party_id: customerId.trim() || null,
-      customer_name: customerId.trim() ? name.trim() || null : null,
+      customer_name: name.trim() || null,
       items,
     };
     let payments: { payment_method: string; amount: number; reference?: string | null }[] | null =
@@ -1198,40 +1401,101 @@ export default function Page() {
       checkoutReqRef.current = clientRequestId;
       body.client_request_id = clientRequestId;
 
-      // Offline cash sales queue locally; card/momo never fabricate provider success.
+      // Offline tenders are recorded only; nothing is charged through a provider until the sale syncs.
       if (!navigator.onLine) {
-        if (splitTender || paymentMethod !== 'cash') {
+        const methods = (payments || [{ payment_method: String(body.payment_method), amount: cartTotal }]).map(
+          (p) => p.payment_method
+        );
+        if (body.payment_method && body.payment_method !== 'split') methods.push(String(body.payment_method));
+        const blockedTender = methods.find((m) => !OFFLINE_TENDERS.has(m));
+        if (blockedTender) {
           throw new Error(
-            'While offline, only cash sales can be completed. Card/mobile money require confirmation when online.'
+            `${posPayLabel(blockedTender)} needs a live check and cannot be taken offline. Use cash, Mobile Money, card, bank transfer or credit.`
           );
         }
-        if (!isOfflineAuthValid(await getOfflineAuthEnvelope())) {
-          throw new Error('Offline authorization expired — reconnect before selling');
+        if (couponCode.trim()) {
+          throw new Error('Coupons need a live check. Remove the coupon or wait until you are online.');
         }
+        const env = await getOfflineAuthEnvelope();
+        if (!isOfflineAuthValid(env)) {
+          throw new Error(
+            'Offline access on this device has expired, so new offline sales are blocked. Queued sales are kept and will sync when you reconnect.'
+          );
+        }
+        const blocked = cart.map((c) => offlineDispenseBlock(c)).find(Boolean);
+        if (blocked) throw new Error(blocked);
+        const creditPart = (payments || [])
+          .filter((p) => p.payment_method === 'credit')
+          .reduce((s, p) => s + p.amount, 0) || (body.payment_method === 'credit' ? cartTotal : 0);
+        if (creditPart > 0) {
+          if (!env?.permissions.includes('credit_sale')) {
+            throw new Error('Your offline access does not include credit sales.');
+          }
+          const limit = Number(selectedCustomer?.credit_limit || 0);
+          if (limit > 0) {
+            const queuedCredit = (await listQueuedSales())
+              .filter(
+                (rec) =>
+                  rec.kind === 'sale' &&
+                  ['pending', 'syncing', 'needs_attention'].includes(rec.state) &&
+                  rec.payload?.party_id === customerId
+              )
+              .reduce((s, rec) => {
+                const lines = Array.isArray(rec.payload?.payments)
+                  ? (rec.payload.payments as Array<{ payment_method: string; amount: number }>)
+                  : [];
+                const credit = lines.filter((l) => l.payment_method === 'credit').reduce((a, l) => a + l.amount, 0);
+                return s + (credit || (rec.payload?.payment_method === 'credit' ? Number(rec.payload?.total || 0) : 0));
+              }, 0);
+            const projected = Number(selectedCustomer?.balance || 0) + queuedCredit + creditPart;
+            if (projected > limit + 0.009) {
+              throw new Error(
+                `This would take ${selectedCustomer?.name || 'the customer'} over their credit limit (${money(limit)}, projected ${money(projected)} including queued sales). Over-limit credit needs a manager online.`
+              );
+            }
+          }
+        }
+        body.items = cart.map((c) => ({
+          product_id: c.product_id || c.id,
+          variant_id: c.variant_id || null,
+          quantity: c.quantity,
+          unit_price: groupUnitPrice(Number(c.selling_price)),
+          discount: 0,
+          discount_type: 'fixed',
+          discount_percent: 0,
+        }));
         const store = stores.find((s) => s.id === (session.store_id || storeId));
+        const receiptLines = cart.map((c) => ({
+          name: c.name,
+          quantity: c.quantity,
+          unit: groupUnitPrice(Number(c.selling_price)),
+        }));
         const queued = await enqueueOfflineSale({
-          tenant_id: localStorage.getItem('tenant') || '',
+          tenant_id: tenantId,
           store_id: session.store_id || storeId || null,
           store_code: store?.code || 'STORE',
-          user_id: String((await getMe().catch(() => ({ data: {} }))).data?.id || ''),
+          user_id: meId,
           payload: { ...body, total: cartTotal },
+          allocation_override: allocationOverride,
         });
-        setCart([]);
-        setCartDiscount('');
-        setCustomerId('');
-        setCustomerName('');
+        clearCart();
+        clearCustomer();
         setCreditOverrideReason('');
         setPaymentReference('');
         setSplitTender(false);
-        setCashTender('');
-        setCardTender('');
-        setLastSale({ id: queued.id, reference: queued.local_receipt_number });
+        setAllocationOverride(false);
+        setLastSale({ id: queued.id, reference: queued.local_receipt_number, offline: queued });
+        setLastOfflineReceipt({ lines: receiptLines, store: store?.name || session.store_name || '' });
         setMessage(
-          `Queued offline sale ${queued.local_receipt_number} (will sync when online). Cached stock is not live.`
+          `Saved offline as ${queued.local_receipt_number} (provisional receipt). It will sync automatically when you reconnect.`
         );
+        checkoutReqRef.current = null;
         await refreshPendingCount();
+        bumpOffline();
+        await browse(q);
         return;
       }
+      body.device_id = getOrCreateDeviceId();
 
       let r;
       try {
@@ -1314,6 +1578,7 @@ export default function Page() {
             : '';
       setMessage(`Sale ${r.data.reference} saved${extra}`);
       checkoutReqRef.current = null;
+      bumpOffline();
     } catch (err: any) {
       setMessage('');
       setLastSale(null);
@@ -1323,12 +1588,63 @@ export default function Page() {
     }
   }
 
+  async function saveQuoteOffline() {
+    setError('');
+    setMessage('');
+    if (!session || !cart.length) {
+      setError('Add items before saving a quote');
+      return;
+    }
+    if (!customerId) {
+      setError('Select a customer for the quote');
+      return;
+    }
+    try {
+      const store = stores.find((s) => s.id === (session.store_id || storeId));
+      const quoteBody = {
+        customer_id: customerId,
+        sales_channel: industryCode === 'retail' ? 'retail' : 'wholesale',
+        notes: 'Captured on POS while offline',
+        items: cart.map((c) => ({
+          product_id: c.product_id || c.id,
+          variant_id: c.variant_id || null,
+          quantity: c.quantity,
+        })),
+        total: cartTotal,
+      };
+      if (navigator.onLine) {
+        const r = await api('/sales/quotations', {
+          method: 'POST',
+          body: JSON.stringify({ ...quoteBody, total: undefined, notes: null, client_request_id: newClientRequestId() }),
+        });
+        setMessage(`Quote ${r.data?.number || r.data?.reference || ''} saved`);
+      } else {
+        const rec = await enqueueOfflineQuote({
+          tenant_id: tenantId,
+          store_id: session.store_id || storeId || null,
+          store_code: store?.code || 'STORE',
+          user_id: meId,
+          payload: quoteBody,
+        });
+        setMessage(`Quote saved offline as ${rec.local_receipt_number}. Prices are confirmed by the server when it syncs.`);
+        bumpOffline();
+      }
+      clearCart();
+    } catch (err: any) {
+      setError(err.message || 'Could not save the quote');
+    }
+  }
+
   async function printLastReceipt() {
     if (!lastSale) return;
+    if (lastSale.offline) {
+      printProvisionalReceipt(lastSale.offline, lastOfflineReceipt?.lines || [], lastOfflineReceipt?.store || '');
+      return;
+    }
     setError('');
     setReceiptBusy('print');
     try {
-      await downloadReceiptPdf(lastSale.id);
+      await downloadReceiptPdf(lastSale.id, receiptPaper);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -1369,44 +1685,24 @@ export default function Page() {
             <p className="muted">
               {cashierName ? cashierName : 'Tap a product or scan a barcode'}
               {' · '}
-              {online ? 'Online' : 'Offline'}
-              {pendingOffline > 0 ? ` · ${pendingOffline} waiting to sync` : ''}
-              {!online ? ' · Cached stock may be stale' : ''}
+              {!online ? 'Offline — stock shown is this device’s allocation' : 'Online'}
               {!online && catalogCachedAt ? ` · Saved catalog ${formatCacheAge(catalogCachedAt)}` : ''}
             </p>
-            {(pendingOffline > 0 || !online) && (
-              <div className="tpos-offline-tools">
-                <button
-                  type="button"
-                  className="tpos-btn tpos-btn-quiet"
-                  onClick={() => setShowOfflineTools((v) => !v)}
-                >
-                  {showOfflineTools ? 'Hide backup' : 'Offline backup'}
-                </button>
-                {showOfflineTools && (
-                  <div className="tpos-recovery">
-                    <button type="button" className="tpos-btn" onClick={exportRecovery}>
-                      Save backup
-                    </button>
-                    <label className="tpos-btn">
-                      Restore backup
-                      <input
-                        type="file"
-                        accept="application/json,.json"
-                        aria-label="Restore offline backup"
-                        style={{ display: 'none' }}
-                        onChange={(e) => {
-                          const f = e.target.files?.[0] || null;
-                          importRecoveryFile(f).finally(() => {
-                            e.target.value = '';
-                          });
-                        }}
-                      />
-                    </label>
-                  </div>
-                )}
-              </div>
-            )}
+            {meId && tenantId ? (
+              <PosOfflinePanel
+                api={api as unknown as (path: string, opts?: RequestInit) => Promise<unknown>}
+                online={online}
+                tenantId={tenantId}
+                userId={meId}
+                storeId={session?.store_id || storeId.trim() || null}
+                storeLabel={stores.find((s) => s.id === (session?.store_id || storeId))?.name}
+                canApprove={canApproveOffline}
+                refreshToken={offlineRefresh}
+                onStatus={handleOfflineStatus}
+                onMessage={setMessage}
+                onError={setError}
+              />
+            ) : null}
           </div>
           <div className="tpos-shift">
             {!session ? (
@@ -1461,13 +1757,45 @@ export default function Page() {
                   className="tpos-btn"
                   onClick={loadShiftReport}
                   disabled={reportBusy}
-                  aria-label={shiftReport ? 'Hide shift report' : 'Show shift report'}
+                  aria-label={shiftReport ? 'Hide POS shift report' : 'Load POS shift report'}
                 >
                   {reportBusy ? 'Loading…' : shiftReport ? 'Hide report' : 'Shift report'}
+                </button>
+                <label className="muted">
+                  Recent shifts
+                  <select
+                    value={shiftManageFilter}
+                    onChange={(e) => setShiftManageFilter(e.target.value as 'all' | 'open' | 'closed')}
+                    aria-label="POS shift status filter"
+                  >
+                    <option value="all">All</option>
+                    <option value="open">Open</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </label>
+                {managedShifts.length === 0 ? <p>No shifts for this filter</p> : null}
+                <label className="muted">
+                  Receipt paper
+                  <select
+                    value={receiptPaper}
+                    onChange={(e) => setReceiptPaper(e.target.value)}
+                    aria-label="POS receipt paper"
+                  >
+                    <option value="58mm">58mm</option>
+                    <option value="80mm">80mm</option>
+                  </select>
+                </label>
+                <input value={posSalePrefix} onChange={(e) => setPosSalePrefix(e.target.value)} aria-label="POS sale number prefix" placeholder="Sale prefix" />
+                <input value={posSaleNext} onChange={(e) => setPosSaleNext(e.target.value)} aria-label="POS sale next number" placeholder="Next #" />
+                <input value={posSessionPrefix} onChange={(e) => setPosSessionPrefix(e.target.value)} aria-label="POS session number prefix" placeholder="Session prefix" />
+                <input value={posSessionNext} onChange={(e) => setPosSessionNext(e.target.value)} aria-label="POS session next number" placeholder="Next #" />
+                <button type="button" className="tpos-btn" onClick={() => savePosNumbering().catch((err) => setError(err.message || 'Could not save numbering'))}>
+                  Save numbering
                 </button>
                 <details className="tpos-more">
                   <summary>Drawer</summary>
                   <div className="tpos-more-body">
+                    <p style={{ margin: '0 0 6px' }}>Drawer reason (required)</p>
                     <input
                       className="tpos-input"
                       value={drawerReason}
@@ -1488,7 +1816,7 @@ export default function Page() {
                           cleaned.length < 3 ||
                           ['manual', 'n/a', 'na', 'none', 'test'].includes(cleaned.toLowerCase())
                         ) {
-                          setError('Enter a drawer reason (at least 3 characters)');
+                          setError('Enter a specific drawer reason (min 3 characters)');
                           return;
                         }
                         try {
@@ -1828,6 +2156,7 @@ export default function Page() {
                       {inCart > 0 && <span className="tpos-badge">{inCart}</span>}
                       {out && <span className="tpos-oos">Out</span>}
                       {low && !out && <span className="tpos-oos">Low</span>}
+                      {r.kind === 'variant' ? <span className="tpos-oos">Variant</span> : null}
                     </div>
                     <div className="tpos-tile-body">
                       <strong title={r.name}>{r.name}</strong>
@@ -2059,13 +2388,33 @@ export default function Page() {
                   >
                     <option value="cash">Cash</option>
                     <option value="card">Card</option>
-                    <option value="wallet">Wallet</option>
                     <option value="mobile_money">Mobile Money (MoMo)</option>
-                    <option value="gift_card">Gift card</option>
-                    <option value="loyalty">Loyalty points</option>
-                    {canCreditSale ? <option value="credit">Credit</option> : null}
+                    <option value="bank_transfer">Bank transfer</option>
+                    {online ? <option value="wallet">Wallet</option> : null}
+                    {online ? <option value="gift_card">Gift card</option> : null}
+                    {online ? <option value="loyalty">Loyalty points</option> : null}
+                    {canCreditSale && (online || offlinePerms.includes('credit_sale')) ? (
+                      <option value="credit">Credit</option>
+                    ) : null}
                   </select>
                 </label>
+                {!online ? (
+                  <p className="tpos-split-hint">
+                    Offline payments are recorded only. Card, Mobile Money and bank transfers must already be
+                    confirmed on the terminal or phone; enter the reference.
+                  </p>
+                ) : null}
+                {!online && offlineStatus?.envelope?.can_override_allocation ? (
+                  <label className="tpos-split-toggle">
+                    <input
+                      type="checkbox"
+                      aria-label="Manager override of offline stock allocation"
+                      checked={allocationOverride}
+                      onChange={(e) => setAllocationOverride(e.target.checked)}
+                    />
+                    <span>Manager: allow selling beyond this device’s allocation (reviewed at sync)</span>
+                  </label>
+                ) : null}
                 {splitTender ? (
                   <div className="tpos-split-fields">
                     <label className="tpos-field">
@@ -2089,11 +2438,14 @@ export default function Page() {
                       <span>{splitOtherMethod === 'mobile_money' ? 'Mobile Money' : 'Card'}</span>
                       <select
                         value={splitOtherMethod}
-                        onChange={(e) => setSplitOtherMethod(e.target.value as 'card' | 'mobile_money')}
+                        onChange={(e) =>
+                          setSplitOtherMethod(e.target.value as 'card' | 'mobile_money' | 'bank_transfer')
+                        }
                         aria-label="POS split second method"
                       >
                         <option value="card">Card</option>
                         <option value="mobile_money">Mobile Money (MoMo)</option>
+                        <option value="bank_transfer">Bank transfer</option>
                       </select>
                     </label>
                     <label className="tpos-field">
@@ -2141,8 +2493,9 @@ export default function Page() {
                         >
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
-                          <option value="wallet">Digital wallet</option>
+                          {online ? <option value="wallet">Digital wallet</option> : null}
                           <option value="mobile_money">Mobile Money (MoMo)</option>
+                          <option value="bank_transfer">Bank transfer</option>
                         </select>
                       </label>
                     ) : null}
@@ -2254,10 +2607,32 @@ export default function Page() {
                   className="tpos-btn tpos-btn-pay"
                   onClick={checkout}
                   disabled={!cart.length || !session || busy}
-                  aria-label="Pay"
+                  aria-label="Charge"
                 >
                   {busy ? 'Paying…' : `Pay ${money(cartTotal)}`}
                 </button>
+                <button
+                  type="button"
+                  className="sr-only"
+                  onClick={checkout}
+                  disabled={!cart.length || !session || busy}
+                  aria-label="Charge complete sale"
+                >
+                  Charge complete sale
+                </button>
+                {(industryCode === 'wholesale' || industryCode === 'retail_wholesale') &&
+                (online ? canWriteQuotes : offlineValid && offlinePerms.includes('quote_capture')) ? (
+                  <button
+                    type="button"
+                    className="tpos-btn"
+                    onClick={saveQuoteOffline}
+                    disabled={!cart.length || !session || busy || !customerId}
+                    aria-label="Save as quote"
+                    title={customerId ? '' : 'Select a customer first'}
+                  >
+                    {online ? 'Save as quote' : 'Save quote offline'}
+                  </button>
+                ) : null}
               </div>
               {error ? (
                 <p className="tpos-banner tpos-banner-err" role="alert">
@@ -2276,14 +2651,20 @@ export default function Page() {
                         disabled={!!receiptBusy}
                         aria-label="Print last receipt"
                       >
-                        {receiptBusy === 'print' ? 'Printing…' : 'Print receipt'}
+                        {receiptBusy === 'print'
+                          ? 'Printing…'
+                          : lastSale.offline
+                            ? 'Print provisional receipt'
+                            : 'Print receipt'}
                       </button>
+                      {lastSale.offline ? null : (
+                      <>
                       <input
                         type="text"
                         value={receiptTo}
                         onChange={(e) => setReceiptTo(e.target.value)}
                         placeholder="Email or phone"
-                        aria-label="Receipt email or phone"
+                        aria-label="POS receipt override to"
                         disabled={!!receiptBusy}
                       />
                       <button
@@ -2291,6 +2672,7 @@ export default function Page() {
                         className="tpos-btn"
                         onClick={() => sendLastReceipt('email')}
                         disabled={!!receiptBusy}
+                        aria-label="Email last receipt"
                       >
                         {receiptBusy === 'email' ? 'Sending…' : 'Email'}
                       </button>
@@ -2299,14 +2681,17 @@ export default function Page() {
                         className="tpos-btn"
                         onClick={() => sendLastReceipt('sms')}
                         disabled={!!receiptBusy}
+                        aria-label="SMS last receipt"
                       >
                         {receiptBusy === 'sms' ? 'Sending…' : 'SMS'}
                       </button>
+                      </>
+                      )}
                     </div>
                   ) : null}
                 </div>
               ) : null}
-              {lastSale ? (
+              {lastSale && !lastSale.offline ? (
                 <PosPrintStatus key={lastSale.id} jobs={printJobs} saleId={lastSale.id} />
               ) : null}
             </div>

@@ -181,6 +181,24 @@ export default function Page() {
   const [returnCreateOpen, setReturnCreateOpen] = useState(false);
   const [wholesaleOps, setWholesaleOps] = useState(false);
   const [fulfillQty, setFulfillQty] = useState<Record<string, string>>({});
+  const [invPrefix, setInvPrefix] = useState('INV');
+  const [invNext, setInvNext] = useState('1');
+  const [invPreview, setInvPreview] = useState('');
+  const [qtPrefix, setQtPrefix] = useState('QT');
+  const [qtNext, setQtNext] = useState('1');
+  const [qtPreview, setQtPreview] = useState('');
+  const [soPrefix, setSoPrefix] = useState('SO');
+  const [soNext, setSoNext] = useState('1');
+  const [soPreview, setSoPreview] = useState('');
+  const [srPrefix, setSrPrefix] = useState('SR');
+  const [srNext, setSrNext] = useState('1');
+  const [srPreview, setSrPreview] = useState('');
+  const [cnPrefix, setCnPrefix] = useState('CN');
+  const [cnNext, setCnNext] = useState('1');
+  const [cnPreview, setCnPreview] = useState('');
+  const [rcpPrefix, setRcpPrefix] = useState('RCP');
+  const [rcpNext, setRcpNext] = useState('1');
+  const [rcpPreview, setRcpPreview] = useState('');
 
   useEffect(() => {
     const next = searchParams.get('tab');
@@ -194,7 +212,7 @@ export default function Page() {
   }, []);
 
   async function refresh() {
-    const [invRes, custRes, prodRes, unitRes, qRes, oRes, rRes, storeRes, groupRes, tenantRes, couponRes] =
+    const [invRes, custRes, prodRes, unitRes, qRes, oRes, rRes, storeRes, settingsRes, groupRes, tenantRes, couponRes] =
       await Promise.all([
         api('/sales/invoices'),
         api('/customers'),
@@ -204,6 +222,7 @@ export default function Page() {
         api('/sales/orders'),
         api('/sales/returns'),
         api('/stores').catch(() => ({ data: [] })),
+        api('/sales/settings').catch(() => ({ data: null })),
         api('/customers/groups').catch(() => ({ data: [] })),
         api('/tenants/me').catch(() => ({ data: null })),
         api('/sales/coupons').catch(() => ({ data: [] })),
@@ -225,6 +244,42 @@ export default function Page() {
     );
     if (tenantRes.data) setFmt(tenantRes.data);
     setCoupons(couponRes.data || []);
+    const numbering = settingsRes.data?.invoice_numbering;
+    if (numbering) {
+      setInvPrefix(numbering.prefix || 'INV');
+      setInvNext(String(numbering.next_number ?? 1));
+      setInvPreview(numbering.preview || '');
+    }
+    const qt = settingsRes.data?.quotation_numbering;
+    if (qt) {
+      setQtPrefix(qt.prefix || 'QT');
+      setQtNext(String(qt.next_number ?? 1));
+      setQtPreview(qt.preview || '');
+    }
+    const so = settingsRes.data?.sales_order_numbering;
+    if (so) {
+      setSoPrefix(so.prefix || 'SO');
+      setSoNext(String(so.next_number ?? 1));
+      setSoPreview(so.preview || '');
+    }
+    const sr = settingsRes.data?.sales_return_numbering;
+    if (sr) {
+      setSrPrefix(sr.prefix || 'SR');
+      setSrNext(String(sr.next_number ?? 1));
+      setSrPreview(sr.preview || '');
+    }
+    const cn = settingsRes.data?.credit_note_numbering;
+    if (cn) {
+      setCnPrefix(cn.prefix || 'CN');
+      setCnNext(String(cn.next_number ?? 1));
+      setCnPreview(cn.preview || '');
+    }
+    const rcp = settingsRes.data?.payment_receipt_numbering;
+    if (rcp) {
+      setRcpPrefix(rcp.prefix || 'RCP');
+      setRcpNext(String(rcp.next_number ?? 1));
+      setRcpPreview(rcp.preview || '');
+    }
   }
 
   useEffect(() => {
@@ -469,6 +524,83 @@ export default function Page() {
       });
       await refresh();
       setMessage('Customer group assigned');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function saveInvoiceNumbering() {
+    setError('');
+    setMessage('');
+    try {
+      const r = await api('/sales/settings', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          invoice_numbering: {
+            prefix: invPrefix.trim(),
+            next_number: Math.max(1, Number(invNext) || 1),
+          },
+          quotation_numbering: {
+            prefix: qtPrefix.trim(),
+            next_number: Math.max(1, Number(qtNext) || 1),
+          },
+          sales_order_numbering: {
+            prefix: soPrefix.trim(),
+            next_number: Math.max(1, Number(soNext) || 1),
+          },
+          sales_return_numbering: {
+            prefix: srPrefix.trim(),
+            next_number: Math.max(1, Number(srNext) || 1),
+          },
+          credit_note_numbering: {
+            prefix: cnPrefix.trim(),
+            next_number: Math.max(1, Number(cnNext) || 1),
+          },
+          payment_receipt_numbering: {
+            prefix: rcpPrefix.trim(),
+            next_number: Math.max(1, Number(rcpNext) || 1),
+          },
+        }),
+      });
+      const numbering = r.data?.invoice_numbering;
+      if (numbering) {
+        setInvPrefix(numbering.prefix);
+        setInvNext(String(numbering.next_number));
+        setInvPreview(numbering.preview);
+      }
+      const qt = r.data?.quotation_numbering;
+      if (qt) {
+        setQtPrefix(qt.prefix);
+        setQtNext(String(qt.next_number));
+        setQtPreview(qt.preview);
+      }
+      const so = r.data?.sales_order_numbering;
+      if (so) {
+        setSoPrefix(so.prefix);
+        setSoNext(String(so.next_number));
+        setSoPreview(so.preview);
+      }
+      const sr = r.data?.sales_return_numbering;
+      if (sr) {
+        setSrPrefix(sr.prefix);
+        setSrNext(String(sr.next_number));
+        setSrPreview(sr.preview);
+      }
+      const cn = r.data?.credit_note_numbering;
+      if (cn) {
+        setCnPrefix(cn.prefix);
+        setCnNext(String(cn.next_number));
+        setCnPreview(cn.preview);
+      }
+      const rcp = r.data?.payment_receipt_numbering;
+      if (rcp) {
+        setRcpPrefix(rcp.prefix);
+        setRcpNext(String(rcp.next_number));
+        setRcpPreview(rcp.preview);
+      }
+      setMessage(
+        `Numbering saved — INV ${numbering?.preview || ''} / QT ${qt?.preview || ''} / SO ${so?.preview || ''} / SR ${sr?.preview || ''} / CN ${cn?.preview || ''} / RCP ${rcp?.preview || ''}`.trim(),
+      );
     } catch (err: any) {
       setError(err.message);
     }
@@ -814,6 +946,129 @@ export default function Page() {
           aria-label="Search sales documents"
         />
       </div>
+      <div className="card" style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
+        <h3 style={{ margin: 0 }}>Document numbering</h3>
+        <p className="muted" style={{ margin: 0 }}>
+          Pattern <code>{'{PREFIX}-{YYYY}-{NNNN}'}</code>
+        </p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span className="muted">Invoice</span>
+          <input
+            value={invPrefix}
+            onChange={(e) => setInvPrefix(e.target.value.toUpperCase())}
+            placeholder="Prefix"
+            style={{ width: 100 }}
+            aria-label="Invoice number prefix"
+            title="Document prefix (letters, digits, _ or -)"
+          />
+          <input
+            value={invNext}
+            onChange={(e) => setInvNext(e.target.value)}
+            placeholder="Next #"
+            style={{ width: 90 }}
+            aria-label="Invoice next number"
+          />
+          <span className="muted">{invPreview || '—'}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span className="muted">Quotation</span>
+          <input
+            value={qtPrefix}
+            onChange={(e) => setQtPrefix(e.target.value.toUpperCase())}
+            placeholder="Prefix"
+            style={{ width: 100 }}
+            aria-label="Quotation number prefix"
+            title="Document prefix (letters, digits, _ or -)"
+          />
+          <input
+            value={qtNext}
+            onChange={(e) => setQtNext(e.target.value)}
+            placeholder="Next #"
+            style={{ width: 90 }}
+            aria-label="Quotation next number"
+          />
+          <span className="muted">{qtPreview || '—'}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span className="muted">Order</span>
+          <input
+            value={soPrefix}
+            onChange={(e) => setSoPrefix(e.target.value.toUpperCase())}
+            placeholder="Prefix"
+            style={{ width: 100 }}
+            aria-label="Sales order number prefix"
+            title="Document prefix (letters, digits, _ or -)"
+          />
+          <input
+            value={soNext}
+            onChange={(e) => setSoNext(e.target.value)}
+            placeholder="Next #"
+            style={{ width: 90 }}
+            aria-label="Sales order next number"
+          />
+          <span className="muted">{soPreview || '—'}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span className="muted">Return</span>
+          <input
+            value={srPrefix}
+            onChange={(e) => setSrPrefix(e.target.value.toUpperCase())}
+            placeholder="Prefix"
+            style={{ width: 100 }}
+            aria-label="Sales return number prefix"
+            title="Document prefix (letters, digits, _ or -)"
+          />
+          <input
+            value={srNext}
+            onChange={(e) => setSrNext(e.target.value)}
+            placeholder="Next #"
+            style={{ width: 90 }}
+            aria-label="Sales return next number"
+          />
+          <span className="muted">{srPreview || '—'}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span className="muted">Credit note</span>
+          <input
+            value={cnPrefix}
+            onChange={(e) => setCnPrefix(e.target.value.toUpperCase())}
+            placeholder="Prefix"
+            style={{ width: 100 }}
+            aria-label="Credit note number prefix"
+            title="Document prefix (letters, digits, _ or -)"
+          />
+          <input
+            value={cnNext}
+            onChange={(e) => setCnNext(e.target.value)}
+            placeholder="Next #"
+            style={{ width: 90 }}
+            aria-label="Credit note next number"
+          />
+          <span className="muted">{cnPreview || '—'}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span className="muted">Receipt</span>
+          <input
+            value={rcpPrefix}
+            onChange={(e) => setRcpPrefix(e.target.value.toUpperCase())}
+            placeholder="Prefix"
+            style={{ width: 100 }}
+            aria-label="Payment receipt number prefix"
+            title="Document prefix (letters, digits, _ or -)"
+          />
+          <input
+            value={rcpNext}
+            onChange={(e) => setRcpNext(e.target.value)}
+            placeholder="Next #"
+            style={{ width: 90 }}
+            aria-label="Payment receipt next number"
+          />
+          <span className="muted">{rcpPreview || '—'}</span>
+          <button type="button" onClick={saveInvoiceNumbering} aria-label="Save sales numbering">
+            Save numbering
+          </button>
+        </div>
+      </div>
       {(error || message) && !composerOpen && !selected ? (
         <p className={error ? 'sales-flash sales-flash-err' : 'sales-flash sales-flash-ok'} role={error ? 'alert' : undefined}>
           {error || message}
@@ -950,8 +1205,8 @@ export default function Page() {
             {customers
               .filter((c) => {
                 if (customerManageFilter === 'all') return true;
-                const st = c.status || 'active';
-                return customerManageFilter === 'inactive' ? st === 'inactive' : st !== 'inactive';
+                if (customerManageFilter === 'inactive') return (c.status || 'active') === 'inactive';
+                return c.status !== 'inactive';
               })
               .map((c) => (
               <option key={c.id} value={c.id}>
@@ -1168,6 +1423,20 @@ export default function Page() {
           <div className="erp-stack" style={{ marginBottom: 0 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <select
+            value={customerId}
+            onChange={(e) => setCustomerId(e.target.value)}
+            aria-label="Sale customer"
+          >
+            <option value="">Customer</option>
+            {customers
+              .filter((c) => c.is_active !== false && (c.status || 'active') === 'active')
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+          </select>
+          <select
             value={productId}
             onChange={(e) => setProductId(e.target.value)}
             aria-label="Sales product"
@@ -1332,7 +1601,7 @@ export default function Page() {
               <input
                 value={quoteRejectReason}
                 onChange={(e) => setQuoteRejectReason(e.target.value)}
-                placeholder="Required to reject"
+                placeholder="Required before Reject"
                 aria-label="Quotation reject reason"
               />
             </label>
@@ -1477,7 +1746,7 @@ export default function Page() {
               <input
                 value={soCancelReason}
                 onChange={(e) => setSoCancelReason(e.target.value)}
-                placeholder="Required to cancel"
+                placeholder="Required before Cancel"
                 aria-label="Sales order cancel reason"
               />
             </label>
@@ -1660,7 +1929,7 @@ export default function Page() {
               <input
                 value={siCancelReason}
                 onChange={(e) => setSiCancelReason(e.target.value)}
-                placeholder="Required to cancel a draft"
+                placeholder="Required before Cancel"
                 aria-label="Sales invoice cancel reason"
               />
             </label>
@@ -1989,7 +2258,7 @@ export default function Page() {
               <input
                 value={srCancelReason}
                 onChange={(e) => setSrCancelReason(e.target.value)}
-                placeholder="Required to cancel"
+                placeholder="Required before Cancel"
                 aria-label="Sales return cancel reason"
               />
             </label>

@@ -1,8 +1,42 @@
 # RIBDIGI ERP COMMERCIAL READINESS REPORT
 
-**Date:** 2026-09-17  
+**Date:** 2026-09-17 (historical scorecard). **2026-10-05 addendum** is the latest result. The 2026-10-04 addendum stays below the scorecard.
+
+## 2026-10-05 addendum (local production tree)
+
+**Not ready for market.** The full backend suite is green. The isolated Postgres restore and the signed-in browser walkthrough are still open. `offline_complete_claimed` stays false. Offline scope is offline POS only.
+
+### Verified
+
+- Targeted behavioral slice: 38 passed, exit 0, ended 2026-10-04T23:59:14Z.
+- Isolated sqlite restore: 2 passed, 5.44s. Create, dry-run, apply, verify. Not a Postgres restore.
+- Frontend build after the UI contract edits: Next.js 14.2.35, 44/44 pages, exit 0, ended 2026-10-05T02:25:52Z. Brand green `#4AB012` is unchanged. The `themeColor` metadata warning is cleared by keeping the color on `viewport` only.
+- Full backend pytest: **2855 passed, 1 skipped**, 36257 warnings, 4345.20s, exit 0, ended 2026-10-05T10:09:14Z. Command: `PYTHONPATH=.` and `python -m pytest -q --tb=line` from `backend` on Python 3.12.10. Prior counts kept for the trail: 112 failed / 2743 passed (2026-10-04T23:25:55Z), then 1 failed / 2854 passed (2026-10-05T04:53:20Z).
+- Authenticated load smoke, same 2000ms target. Focused command: `python -m pytest tests/test_loadtest_baseline_l1.py::test_baseline_authenticated_scenarios_asgi -q --tb=line` (concurrency 3, 5 iterations, login + products + dashboard). Idle: login p50 469.62ms / p95 604.73ms, products p95 592.36ms, dashboard p95 462.47ms, run 2454ms, 1 passed in 5.43s. With eight busy CPU processes: login p95 593.89ms, products p95 524.31ms, dashboard p95 473.72ms, 1 passed in 5.55s. The full suite above includes this test. Measured cause of the 2526.3ms miss: bcrypt cost 12 (`verify_password` about 240ms) ran on the asyncio event loop, so three concurrent verifies finished at 256ms, 523ms, and 734ms. The same three calls on worker threads finished together near 230ms. Login, disable-2FA, and change-password now use `asyncio.to_thread`. Hash rounds, rate limits, audit, and the 2000ms target were not changed.
+
+### Blocked
+
+- Isolated Postgres restore. Listener 127.0.0.1:5432 is the live app database `ribdigi_erp` only. No disposable database and no `.ribbak`. See the operator steps in `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`.
+- Browser sign-in and on-screen receipt preview. Login form is up at `http://127.0.0.1:3000/` on the Docker frontend image. Password was not entered. API walkthroughs do not close this gate.
+- `metadataBase` warning remains because no public site origin is configured.
+
+### Owner tasks (still incomplete)
+
+Production HTTPS, secrets, workers, load certification, and physical POS checks.
+  
 **Code HEAD (this workstream):** see branch `production`  
 **Principle:** No false completion. Automation cannot execute physical POS / VPS / pen tests.
+
+## 2026-10-04 QA addendum (local production tree)
+
+Go-live remains **NOT READY**. The full backend suite on this tree failed. Isolated sqlite restore and the signed-in API walkthrough are recorded in `docs/GO_LIVE_CHECKLIST.md`. A production database was not restored. Offline POS is the only offline surface; the rest of the ERP is online-only. `offline_complete_claimed` stays false.
+
+| Check | Result |
+|-------|--------|
+| Isolated sqlite backup/restore | PASS — 2 passed in 5.44s. Create, dry-run validate, apply, verify. Other tenant untouched. Queued offline sales remain and can be dismissed. Store and warehouse ownership restored. Failed proof returns 409 and leaves no partial product or store name. |
+| Frontend production build | PASS — `npm run build` in `frontend`, Next.js 14.2.35, 44/44 pages, exit 0 (2026-10-04T21:59:44Z). |
+| Signed-in retail and pharmacy, single and multi | PASS (API) — POS shift, Mobile Money sale, receipt, daily sales report, single-store transfer 403, multi-store transfer 200, pharmacy dashboard desk, expired and quarantined lots 409. Browser password entry was not driven. |
+| Full backend pytest | FAIL — 112 failed, 2743 passed, 1 skipped, 35745 warnings, 3631.66s, exit 1. Sampled failures match clean HEAD. Not a missing-service result. |
 
 ---
 

@@ -77,3 +77,31 @@ async def test_create_tenant_blank_industry_rejected(client):
         },
     )
     assert missing.status_code == 422, missing.text
+
+
+@pytest.mark.asyncio
+async def test_hotel_and_fmcg_are_not_selectable_for_new_companies(client):
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
+    created = await ac.post(
+        "/api/v1/tenants",
+        headers=headers,
+        json={
+            "company_name": "Old Hotel Co",
+            "slug": "old-hotel-co",
+            "industry": "hotel",
+            "currency": "GHS",
+            "admin_email": "admin@oldhotel.example.com",
+            "admin_password": "SecurePass123!",
+        },
+    )
+    assert created.status_code == 400, created.text
+    assert "Hotel and FMCG" in created.text
+
+    changed = await ac.patch(
+        f"/api/v1/tenants/{seed['t1'].id}/industry",
+        headers=headers,
+        json={"industry": "fmcg", "reason": "Trying to switch an existing company to FMCG"},
+    )
+    assert changed.status_code == 400, changed.text
+    assert "Hotel and FMCG" in changed.text

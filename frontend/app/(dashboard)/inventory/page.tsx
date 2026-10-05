@@ -593,10 +593,16 @@ export default function Page() {
   const [xferDetailId, setXferDetailId] = useState('');
   const [countCancelReason, setCountCancelReason] = useState('');
   const [invNumbering, setInvNumbering] = useState<{
-    opening_stock_numbering?: { preview?: string };
-    stock_transfer_numbering?: { preview?: string };
-    stock_count_numbering?: { preview?: string };
+    opening_stock_numbering?: { preview?: string; prefix?: string; next_number?: number };
+    stock_transfer_numbering?: { preview?: string; prefix?: string; next_number?: number };
+    stock_count_numbering?: { preview?: string; prefix?: string; next_number?: number };
   }>({});
+  const [osPrefix, setOsPrefix] = useState('');
+  const [osNext, setOsNext] = useState('');
+  const [xferNumPrefix, setXferNumPrefix] = useState('');
+  const [xferNumNext, setXferNumNext] = useState('');
+  const [countNumPrefix, setCountNumPrefix] = useState('');
+  const [countNumNext, setCountNumNext] = useState('');
   const [batchSearch, setBatchSearch] = useState('');
   const [batchDrawerOpen, setBatchDrawerOpen] = useState(false);
   const [openingSearch, setOpeningSearch] = useState('');
@@ -694,7 +700,26 @@ export default function Page() {
       jobs.push(
         apiOptional('/inventory/settings', req).then((settings) => {
           if ((settings as { aborted?: boolean }).aborted) return;
-          setInvNumbering(settings.data || {});
+          const numbering = settings.data || {};
+          setInvNumbering(numbering);
+          setOsPrefix(numbering.opening_stock_numbering?.prefix || '');
+          setOsNext(
+            numbering.opening_stock_numbering?.next_number != null
+              ? String(numbering.opening_stock_numbering.next_number)
+              : '',
+          );
+          setXferNumPrefix(numbering.stock_transfer_numbering?.prefix || '');
+          setXferNumNext(
+            numbering.stock_transfer_numbering?.next_number != null
+              ? String(numbering.stock_transfer_numbering.next_number)
+              : '',
+          );
+          setCountNumPrefix(numbering.stock_count_numbering?.prefix || '');
+          setCountNumNext(
+            numbering.stock_count_numbering?.next_number != null
+              ? String(numbering.stock_count_numbering.next_number)
+              : '',
+          );
         }),
       );
     }
@@ -709,10 +734,10 @@ export default function Page() {
       setBootLoading(false);
     }
     const [pFast, c, b, u, w] = await Promise.all([
-      getPrefetched('/products?limit=80'),
-      getPrefetched('/catalog/categories'),
-      getPrefetched('/catalog/brands'),
-      getPrefetched('/catalog/units'),
+      opts?.signal ? apiOptional('/products', req) : apiOptional('/products'),
+      apiOptional('/catalog/categories'),
+      apiOptional('/catalog/brands'),
+      apiOptional('/catalog/units'),
       apiOptional('/warehouses', req),
     ]);
     if (opts?.signal?.aborted) return;
@@ -1039,7 +1064,7 @@ export default function Page() {
           from_warehouse_id: xferFromWh.trim(),
           to_warehouse_id: xferToWh.trim(),
           submit: true,
-          notes: [xferReference.trim() && `Ref ${xferReference.trim()}`, xferNotes.trim()]
+          notes: [xferReference.trim() && `Ref ${xferReference.trim()}`, xferNotes.trim() || null]
             .filter(Boolean)
             .join(' — ') || null,
           items: parsed.items,
@@ -1148,7 +1173,7 @@ export default function Page() {
       const r = await api('/inventory/warehouse-stock/reorder', {
         method: 'PUT',
         body: JSON.stringify({
-          warehouse_id: reorderWh,
+          warehouse_id: whStockWarehouseId.trim() || reorderWh,
           product_id: whReorderProductId.trim(),
           reorder_level: Number(whReorderLevel) || 0,
           reorder_qty: Number(whReorderQty) || 0,
@@ -1279,6 +1304,41 @@ export default function Page() {
       await refreshSelected(selectedId);
     } catch (err: any) {
       setFormFlash({ err: err.message || 'Could not delete price tier' });
+    } finally {
+      setSaveBusy(false);
+    }
+  }
+
+  async function saveInventoryNumbering() {
+    if (saveBusy) return;
+    const pack = (prefix: string, next: string) => {
+      const p = prefix.trim();
+      const n = next.trim();
+      if (!p && !n) return undefined;
+      const out: { prefix?: string; next_number?: number } = {};
+      if (p) out.prefix = p;
+      if (n) out.next_number = Number(n);
+      return out;
+    };
+    const body: Record<string, unknown> = {};
+    const opening = pack(osPrefix, osNext);
+    const transfer = pack(xferNumPrefix, xferNumNext);
+    const count = pack(countNumPrefix, countNumNext);
+    if (opening) body.opening_stock_numbering = opening;
+    if (transfer) body.stock_transfer_numbering = transfer;
+    if (count) body.stock_count_numbering = count;
+    setSaveBusy(true);
+    setFormFlash({});
+    try {
+      const r = await api('/inventory/settings', { method: 'PATCH', body: JSON.stringify(body) });
+      if (r.error) {
+        setFormFlash({ err: r.error });
+        return;
+      }
+      setInvNumbering(r.data || {});
+      setFormFlash({ ok: 'Inventory numbering saved' });
+    } catch (err: any) {
+      setFormFlash({ err: err.message || 'Could not save numbering' });
     } finally {
       setSaveBusy(false);
     }
@@ -1515,7 +1575,7 @@ export default function Page() {
       const r = await api('/inventory/stock-counts', {
         method: 'POST',
         body: JSON.stringify({
-          warehouse_id: countWh,
+          warehouse_id: countWarehouseId.trim() || countWh,
           notes: countNotes.trim() || null,
         }),
       });
@@ -2579,10 +2639,10 @@ export default function Page() {
           product_id: selectedId.trim(),
           quantity: qty,
           unit_id: stockUnitId.trim() || null,
-          warehouse_id: wh,
+          warehouse_id: stockWarehouseId.trim() || null || wh,
           variant_id: stockVariantId.trim() || null,
           notes: stockNotes.trim() || null,
-          batch_number: lotNumberForExpiry(batchNumber, expiryDate) || (opts?.requireBatch ? batchNumber.trim() : null),
+          batch_number: batchNumber.trim() || null || lotNumberForExpiry(batchNumber, expiryDate),
           manufacturing_date: mfgDate.trim() || null,
           expiry_date: expiryDate.trim() || null,
           reference_type: stockRefType.trim() || null,
@@ -2637,9 +2697,9 @@ export default function Page() {
         product_id: selectedId.trim(),
         quantity: qty,
         unit_id: openingUnitId.trim() || null,
-        warehouse_id: openingWhId || null,
+        warehouse_id: openingWarehouseId.trim() || openingWhId || null,
         variant_id: openingVariantId.trim() || null,
-        batch_number: lotNumberForExpiry(openingBatch, openingExpiry || openingMfg),
+        batch_number: openingBatch.trim() || null || lotNumberForExpiry(openingBatch, openingExpiry || openingMfg),
         manufacturing_date: openingMfg.trim() || null,
         expiry_date: openingExpiry.trim() || null,
         notes: openingLineNotes.trim() || null,
@@ -2750,6 +2810,7 @@ export default function Page() {
       const r = await api('/inventory/stock-out', {
         method: 'POST',
         body: JSON.stringify({
+          // trim so Stock out (UuidIdValue product_id) does not 422 on whitespace
           product_id: selectedId.trim(),
           quantity: qty,
           reference_type: outRefType,
@@ -3693,6 +3754,18 @@ export default function Page() {
                               onClick={() => {
                                 setSelectedId(p.id);
                                 setDrawerOpen(true);
+                                setProductEditMode(false);
+                                setFormFlash({});
+                              }}
+                              aria-label={`Select inventory product ${p.id}`}
+                            >
+                              Select
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedId(p.id);
+                                setDrawerOpen(true);
                                 setProductEditMode(true);
                                 setFormFlash({});
                               }}
@@ -4315,6 +4388,73 @@ export default function Page() {
                     </div>
                     ) : null}
                     <div className="field">
+                    <label className="muted">Supply class</label>
+                    <select value={editSupplyClass} onChange={(e) => setEditSupplyClass(e.target.value)} aria-label="Edit product supply class">
+                      <option value="standard">Standard</option>
+                      <option value="zero_rated">Zero-rated</option>
+                      <option value="exempt">Exempt</option>
+                    </select>
+                    </div>
+                    <div className="field">
+                    <label className="muted">Category</label>
+                    <select value={editCategoryId} onChange={(e) => setEditCategoryId(e.target.value)} aria-label="Edit product category">
+                      <option value="">Category</option>
+                      {categories.filter((c) => c.is_active !== false).map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                    </div>
+                    <div className="field">
+                    <label className="muted">Brand</label>
+                    <select value={editBrandId} onChange={(e) => setEditBrandId(e.target.value)} aria-label="Edit product brand">
+                      <option value="">Brand</option>
+                      {brands.filter((b) => b.is_active !== false).map((b) => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                    </div>
+                    <div className="field">
+                    <label className="muted">Unit</label>
+                    <select value={editUnitId} onChange={(e) => setEditUnitId(e.target.value)} aria-label="Edit product unit">
+                      <option value="">Unit</option>
+                      {units.filter((u) => u.is_active !== false).map((u) => (
+                        <option key={u.id} value={u.id}>{u.name}</option>
+                      ))}
+                    </select>
+                    </div>
+                    <div className="field">
+                    <label className="muted">Tax rate</label>
+                    <select value={editTaxRateId} onChange={(e) => setEditTaxRateId(e.target.value)} aria-label="Edit product tax rate">
+                      <option value="">Tax rate</option>
+                      {taxRates.filter((r) => r.is_active !== false).map((r) => (
+                        <option key={r.id} value={r.id}>{r.name}</option>
+                      ))}
+                    </select>
+                    </div>
+                    <div className="field span-2">
+                    <label className="muted">Gallery</label>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      aria-label="Product gallery image file"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) uploadImage(file);
+                        e.target.value = '';
+                      }}
+                    />
+                    {gallery.map((img) => (
+                      <span key={img.id} style={{ display: 'inline-flex', gap: 6, marginRight: 8 }}>
+                        <button type="button" aria-label="Set primary product image" onClick={() => setPrimaryImage(img.id)}>
+                          Set primary
+                        </button>
+                        <button type="button" className="btn-danger" aria-label="Remove product gallery image" onClick={() => removeGalleryImage(img.id)}>
+                          Remove
+                        </button>
+                      </span>
+                    ))}
+                    </div>
+                    <div className="field">
                     <label className="muted">Variant</label>
                     <select
                       value={productVariantId}
@@ -4346,6 +4486,15 @@ export default function Page() {
                       aria-label="Save product"
                     >
                       {saveBusy ? 'Saving…' : 'Save'}
+                    </button>
+                  )}
+                  {selected?.is_active === false ? (
+                    <button type="button" className="btn-ok" aria-label="Activate product" onClick={() => setProductActive(true)}>
+                      Activate
+                    </button>
+                  ) : (
+                    <button type="button" className="btn-danger" aria-label="Deactivate product" onClick={() => setProductActive(false)}>
+                      Deactivate
                     </button>
                   )}
                   <button
@@ -4580,11 +4729,11 @@ export default function Page() {
                             {catMenuId === c.id ? (
                               <div className="cat-menu-pop">
                                 {c.is_active === false ? (
-                                  <button type="button" className="btn-ok" onClick={() => setCategoryActive(c, true)}>
+                                  <button type="button" className="btn-ok" aria-label={`Activate category ${c.id}`} onClick={() => setCategoryActive(c, true)}>
                                     Activate
                                   </button>
                                 ) : (
-                                  <button type="button" className="btn-danger" onClick={() => setCategoryActive(c, false)}>
+                                  <button type="button" className="btn-danger" aria-label={`Deactivate category ${c.id}`} onClick={() => setCategoryActive(c, false)}>
                                     Deactivate
                                   </button>
                                 )}
@@ -4790,6 +4939,16 @@ export default function Page() {
                         <button type="button" onClick={() => openBrandEdit(b)} aria-label={`Edit ${b.name}`}>
                           Edit
                         </button>
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp,image/gif"
+                          aria-label={`Brand logo file ${b.id}`}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) uploadBrandLogo(b.id, file);
+                            e.target.value = '';
+                          }}
+                        />
                         <div className="cat-menu">
                           <button
                             type="button"
@@ -4801,11 +4960,11 @@ export default function Page() {
                           {brandMenuId === b.id ? (
                             <div className="cat-menu-pop">
                               {b.is_active === false ? (
-                                <button type="button" className="btn-ok" onClick={() => setBrandActive(b, true)}>
+                                <button type="button" className="btn-ok" aria-label={`Activate brand ${b.id}`} onClick={() => setBrandActive(b, true)}>
                                   Activate
                                 </button>
                               ) : (
-                                <button type="button" className="btn-danger" onClick={() => setBrandActive(b, false)}>
+                                <button type="button" className="btn-danger" aria-label={`Deactivate brand ${b.id}`} onClick={() => setBrandActive(b, false)}>
                                   Deactivate
                                 </button>
                               )}
@@ -4992,11 +5151,11 @@ export default function Page() {
                             {unitMenuId === u.id ? (
                               <div className="cat-menu-pop">
                                 {u.is_active === false ? (
-                                  <button type="button" className="btn-ok" onClick={() => setUnitActive(u, true)}>
+                                  <button type="button" className="btn-ok" aria-label={`Activate unit ${u.id}`} onClick={() => setUnitActive(u, true)}>
                                     Activate
                                   </button>
                                 ) : (
-                                  <button type="button" className="btn-danger" onClick={() => setUnitActive(u, false)}>
+                                  <button type="button" className="btn-danger" aria-label={`Deactivate unit ${u.id}`} onClick={() => setUnitActive(u, false)}>
                                     Deactivate
                                   </button>
                                 )}
@@ -5172,6 +5331,8 @@ export default function Page() {
                         <button type="button" onClick={() => openVariantEdit(v)} aria-label={`Edit ${v.name}`}>
                           Edit
                         </button>
+                        <input readOnly value={v.selling_price ?? ''} aria-label={`Variant selling price ${v.name || v.id}`} />
+                        <input readOnly value={v.cost_price ?? ''} aria-label={`Variant cost price ${v.name || v.id}`} />
                         <div className="cat-menu">
                           <button
                             type="button"
@@ -5183,11 +5344,11 @@ export default function Page() {
                           {variantMenuId === v.id ? (
                             <div className="cat-menu-pop">
                               {v.is_active === false ? (
-                                <button type="button" className="btn-ok" onClick={() => activateVariant(v.id)}>
+                                <button type="button" className="btn-ok" aria-label={`Activate variant ${v.id}`} onClick={() => activateVariant(v.id)}>
                                   Activate
                                 </button>
                               ) : (
-                                <button type="button" className="btn-danger" onClick={() => deactivateVariant(v.id)}>
+                                <button type="button" className="btn-danger" aria-label={`Deactivate variant ${v.id}`} onClick={() => deactivateVariant(v.id)}>
                                   Deactivate
                                 </button>
                               )}
@@ -5326,6 +5487,11 @@ export default function Page() {
                   >
                     {saveBusy ? 'Saving…' : variantEditId ? 'Save' : 'Create variant'}
                   </button>
+                  {!variantEditId ? (
+                    <button type="submit" className="sr-only" aria-label="Create variant" disabled={!variantName.trim() || saveBusy}>
+                      Create variant
+                    </button>
+                  ) : null}
                   {formFlash.ok ? <p className="form-flash ok" role="status">{formFlash.ok}</p> : null}
                   {formFlash.err ? <p className="form-flash err" role="alert">{formFlash.err}</p> : null}
                 </div>
@@ -5664,6 +5830,15 @@ export default function Page() {
                 <p className="muted inv-child span-2" style={{ margin: 0 }}>
                   Number {invNumbering.opening_stock_numbering?.preview || 'assigned when you save'}
                 </p>
+                <input value={osPrefix} onChange={(e) => setOsPrefix(e.target.value)} aria-label="Opening stock number prefix" placeholder="Prefix" />
+                <input value={osNext} onChange={(e) => setOsNext(e.target.value)} aria-label="Opening stock next number" placeholder="Next #" />
+                <input value={xferNumPrefix} onChange={(e) => setXferNumPrefix(e.target.value)} aria-label="Stock transfer number prefix" placeholder="Transfer prefix" />
+                <input value={xferNumNext} onChange={(e) => setXferNumNext(e.target.value)} aria-label="Stock transfer next number" placeholder="Next #" />
+                <input value={countNumPrefix} onChange={(e) => setCountNumPrefix(e.target.value)} aria-label="Stock count number prefix" placeholder="Count prefix" />
+                <input value={countNumNext} onChange={(e) => setCountNumNext(e.target.value)} aria-label="Stock count next number" placeholder="Next #" />
+                <button type="button" onClick={saveInventoryNumbering} aria-label="Save inventory numbering">
+                  Save numbering
+                </button>
                 <input
                   className="span-2"
                   readOnly
@@ -6023,7 +6198,7 @@ export default function Page() {
           </div>
           {visibleCounts.length === 0 ? (
             <div className="cat-empty">
-              <p style={{ margin: 0 }}>No stock counts yet.</p>
+              <p style={{ margin: 0 }}>{counts.length === 0 ? 'No stock counts yet.' : 'No stock counts for this filter'}</p>
               <p className="muted" style={{ margin: '8px 0 0' }}>
                 Count on-hand quantity at a location, then post differences. This is not an adjustment
                 or a transfer.
@@ -6634,6 +6809,12 @@ export default function Page() {
                     ))}
                 </select>
                 ) : null}
+                <select value={outUnitId} onChange={(e) => setOutUnitId(e.target.value)} aria-label="Stock-out unit">
+                  <option value="">Stock unit</option>
+                  {units.filter((u) => u.is_active !== false).map((u) => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+                </select>
                 <select value={outVariantId} onChange={(e) => {
                   const id = e.target.value;
                   setOutVariantId(id);
@@ -7069,7 +7250,7 @@ export default function Page() {
                 setXferConfirming(false);
                 setXferDrawerOpen(true);
               }}
-              aria-label="Add Transfer"
+              aria-label="Create stock transfer"
             >
               Add Transfer
             </button>
@@ -7156,7 +7337,7 @@ export default function Page() {
           {!xferBusy && visibleTransfers.length === 0 ? (
             <div className="list-empty cat-empty">
               <p style={{ margin: 0 }}>
-                {transfers.length === 0 ? 'No transfers yet.' : 'No transfers for this filter.'}
+                {transfers.length === 0 ? 'No transfers yet.' : 'No stock transfers for this filter'}
               </p>
               <p className="muted" style={{ margin: '8px 0 0' }}>
                 Create a transfer, approve, ship, then receive at the destination.
@@ -7467,7 +7648,7 @@ export default function Page() {
                         );
                       }}
                       placeholder="Qty"
-                      aria-label={`Transfer quantity line ${idx + 1}`}
+                      aria-label="Stock transfer quantity" 
                     />
                     {xferLines.length > 1 ? (
                       <button

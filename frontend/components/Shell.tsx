@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, apiRoot, clearSessionAndRedirect, idleTimeoutMs, isConfirmedAuthExpiry, tenantHeaderValue, getAccessToken, hydrateAuth } from '../lib/api';
 import { industryAllowsModule, INDUSTRY_SPECIFIC_MODULES } from '../lib/industryModules';
 import { industryLabel, normalizeIndustry } from '../lib/industries';
-import { isStoreNetworkNavItem, tenantIsMultiStore } from '../lib/tenantNav';
+import { isStoreNetworkNavItem, tenantIsMultiStore, type StoreEntitlementMe } from '../lib/tenantNav';
 import { getMe, invalidateMeCache } from '../lib/meCache';
 import { prefetchGet } from '../lib/prefetchCache';
 import { loadUserTheme, writeUserTheme } from '../lib/theme';
@@ -753,34 +753,61 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         clearSessionAndRedirect();
         return;
       }
+      const applyMe = (data: StoreEntitlementMe & {
+        permissions?: Record<string, string[]>;
+        enabled_modules?: string[];
+        industry?: string | null;
+        industry_valid?: boolean;
+        role?: string;
+        full_name?: string;
+        company_name?: string;
+        has_logo?: boolean;
+        id?: string;
+        inactivity_timeout_minutes?: number;
+      }) => {
+        if (!active) return;
+        setAuthGateError('');
+        setAuthReady(true);
+        setPermissions(data.permissions || {});
+        setEnabledModules(Array.isArray(data.enabled_modules) ? data.enabled_modules : []);
+        setIndustry(data.industry ?? null);
+        setIndustryValid(
+          typeof data.industry_valid === 'boolean' ? data.industry_valid : Boolean(normalizeIndustry(data.industry))
+        );
+        setMultiStore(tenantIsMultiStore(data));
+        setRole(data.role || '');
+        setFullName(data.full_name || '');
+        setCompanyName(data.company_name || '');
+        setHasLogo(Boolean(data.has_logo));
+        const uid = String(data.id || '').trim();
+        if (uid) {
+          setUserId(uid);
+          setTheme(loadUserTheme(uid));
+        }
+        const mins = Number(data.inactivity_timeout_minutes);
+        if (Number.isFinite(mins)) setIdleMinutes(mins);
+      };
+      const applyCachedAccount = async () => {
+        const { getSnapshot } = await import('../lib/posOffline');
+        const meSnap = await getSnapshot<Parameters<typeof applyMe>[0]>('me');
+        if (!meSnap?.id) return false;
+        applyMe(meSnap);
+        return true;
+      };
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        try {
+          if (await applyCachedAccount()) return;
+        } catch {
+          /* no cached account yet; the online check below explains that */
+        }
+      }
       try {
         await Promise.race([
           getMe({ force: true }).then((meRes) => {
-            if (!active) return meRes;
-            setAuthGateError('');
-            setAuthReady(true);
-            setPermissions(meRes.data?.permissions || {});
-            setEnabledModules(
-              Array.isArray(meRes.data?.enabled_modules) ? meRes.data.enabled_modules : []
-            );
-            setIndustry(meRes.data?.industry ?? null);
-            setIndustryValid(
-              typeof meRes.data?.industry_valid === 'boolean'
-                ? meRes.data.industry_valid
-                : Boolean(normalizeIndustry(meRes.data?.industry))
-            );
-            setMultiStore(tenantIsMultiStore(meRes.data));
-            setRole(meRes.data?.role || '');
-            setFullName(meRes.data?.full_name || '');
-            setCompanyName(meRes.data?.company_name || '');
-            setHasLogo(Boolean(meRes.data?.has_logo));
-            const uid = String(meRes.data?.id || '').trim();
-            if (uid) {
-              setUserId(uid);
-              setTheme(loadUserTheme(uid));
-            }
-            const mins = Number(meRes.data?.inactivity_timeout_minutes);
-            if (Number.isFinite(mins)) setIdleMinutes(mins);
+            applyMe(meRes.data || {});
+            void import('../lib/posOffline')
+              .then((offline) => offline.cacheSnapshot('me', meRes.data || null))
+              .catch(() => undefined);
             return meRes;
           }),
           new Promise((_, reject) => {
@@ -801,6 +828,14 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         if (isConfirmedAuthExpiry(err)) {
           clearSessionAndRedirect();
           return;
+        }
+        const status = (err as { status?: number }).status;
+        if (status === undefined) {
+          try {
+            if (await applyCachedAccount()) return;
+          } catch {
+            /* keep the connection error below */
+          }
         }
         const message = err instanceof Error ? err.message : 'Could not verify your account.';
         if (active) {
@@ -878,6 +913,12 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   }, [userId]);
 
   async function logout() {
+    try {
+      const offline = await import('../lib/posOffline');
+      await offline.releaseOfflineGrantIfIdle(api);
+    } catch {
+      /* grant expires on its own; queued sales are never cleared on logout */
+    }
     try {
       await api('/auth/logout', { method: 'POST' });
     } catch {

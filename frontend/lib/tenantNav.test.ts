@@ -175,7 +175,7 @@ test('pharmacy grouped nav surfaces lots/batches, not hotel PMS', () => {
   const out = groupedTenantNav(groups, visible, 'pharmacy');
   const industry = out.find((g) => g.id === 'industry');
   assert.ok(industry);
-  assert.equal(industry.label, 'Pharmacy management');
+  assert.equal(industry.label, 'Pharmacy');
   assert.deepEqual(
     industry.items.map(([, href]) => href),
     [
@@ -211,7 +211,7 @@ test('wholesale grouped nav is quotes/orders/credit without hotel or pharmacy Rx
   const wholesale = groupedTenantNav(groups, visible, 'wholesale');
   const industry = wholesale.find((g) => g.id === 'industry');
   assert.ok(industry);
-  assert.equal(industry.label, 'Wholesale operations');
+  assert.equal(industry.label, 'Wholesale');
   assert.deepEqual(
     industry.items.map(([, href]) => href),
     ['/sales?tab=quotations', '/sales?tab=orders', '/credit'],

@@ -1376,19 +1376,19 @@ async def inventory_balance(
         for product in products:
             qty = money_json(qty_by_product.get(product.id, 0))
             cost = money_json(product.cost_price)
-            items.append(
-                {
-                    "product_id": product.id,
-                    "name": product.name,
-                    "sku": product.sku,
-                    "warehouse_id": warehouse_id
-                    if warehouse_id
-                    else (last_wh.get(product.id) if len(warehouse_ids or []) == 1 else None),
-                    "quantity": qty,
-                    "cost_price": cost,
-                    "value": money_json(round(qty * cost, 2)),
-                }
-            )
+            row = {
+                "product_id": product.id,
+                "name": product.name,
+                "sku": product.sku,
+                "warehouse_id": warehouse_id
+                if warehouse_id
+                else (last_wh.get(product.id) if len(warehouse_ids or []) == 1 else None),
+                "cost_price": money_json(product.cost_price),
+                "value": money_json(0),
+            }
+            row["quantity"] = money_json(qty)
+            row["value"] = money_json(round(qty * cost, 2))
+            items.append(row)
     else:
         products = (
             await db.execute(
@@ -1702,6 +1702,7 @@ async def inventory_low_stock(
     def _product_row(p: m.Product) -> dict:
         qty = money_json(p.stock_qty)
         reorder = money_json(p.reorder_level)
+        reorder_qty = money_json(getattr(p, "reorder_qty", None) or 0)
         minimum = money_json(getattr(p, "minimum_stock", 0) or 0)
         floor = low_stock_floor(minimum, reorder)
         status = compute_stock_status(qty, reorder, minimum)
@@ -1717,7 +1718,9 @@ async def inventory_low_stock(
             "low_stock_floor": floor,
             "stock_status": status["status"],
             "stock_status_label": status["label"],
-            "suggested_order_qty": money_json(max(1.0, money_json(round(floor - qty, 3))))
+            "suggested_order_qty": money_json(
+                    max(reorder_qty, money_json(round(reorder - qty, 3)))
+                )
             if qty <= floor
             else money_json(0),
             "scope": "product",

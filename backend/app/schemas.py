@@ -36,11 +36,24 @@ from app.fx import coerce_currency_code_value
 from app.honesty import money_json
 
 PosTenderMethod = Annotated[
-    Literal["cash", "card", "wallet", "credit", "other", "gift_card", "loyalty", "mobile_money"],
+    Literal[
+        "cash", "card", "wallet", "credit", "other", "gift_card", "loyalty", "mobile_money", "bank_transfer"
+    ],
     BeforeValidator(coerce_payment_method_value),
 ]
 PosSalePaymentMethod = Annotated[
-    Literal["cash", "card", "wallet", "credit", "other", "gift_card", "loyalty", "mobile_money", "split"],
+    Literal[
+        "cash",
+        "card",
+        "wallet",
+        "credit",
+        "other",
+        "gift_card",
+        "loyalty",
+        "mobile_money",
+        "bank_transfer",
+        "split",
+    ],
     BeforeValidator(coerce_payment_method_value),
 ]
 IndustryValue = Annotated[
@@ -213,7 +226,7 @@ ProductSearchQueryValue = Annotated[
 
 
 ExpensePaymentMethod = Annotated[
-    Literal["cash", "bank_transfer", "card", "cheque"],
+    Literal["cash", "bank_transfer", "card", "cheque", "mobile_money"],
     BeforeValidator(coerce_expense_payment_method_value),
 ]
 # Shared settlement allow-list for AR/AP (same as expenses).
@@ -323,6 +336,7 @@ PackageableModuleValue = Annotated[
         "stores",
         "hotel",
         "fmcg",
+        "hospital",
         "reports",
         "notifications",
         "audit",
@@ -387,6 +401,13 @@ SystemRoleValue = Annotated[
         "inventory_officer",
         "accountant",
         "cashier",
+        "hotel_manager",
+        "hotel_front_desk",
+        "hotel_reservations",
+        "hotel_housekeeping",
+        "hotel_maintenance",
+        "hotel_cashier",
+        "hotel_auditor",
     ],
     BeforeValidator(coerce_platform_role_value),
 ]
@@ -3710,7 +3731,7 @@ class OtherIncomeCreate(BaseModel):
     description: SalesDocumentNotesValue
     amount: PositiveMoneyValue
     income_date: datetime | None = None
-    payment_method: Literal["cash", "bank_transfer", "card", "cheque"] = "cash"
+    payment_method: ExpensePaymentMethod = "cash"
     liquid_account_id: UuidIdValue | None = None
     payer: PartyNameValue | None = None
     reference: SalesDocumentNotesValue | None = None
@@ -3735,6 +3756,8 @@ class SalesQuotationCreate(BaseModel):
     # omit → industry default (wholesale for wholesale / retail+wholesale).
     sales_channel: Literal["retail", "wholesale"] | None = None
     items: list[SalesInvoiceItemCreate] = Field(min_length=1)
+    # Offline-captured quote idempotency; same tenant + id returns the original quote.
+    client_request_id: ClientRequestIdValue | None = None
 
 
 class SalesQuotationReject(BaseModel):
@@ -4324,6 +4347,7 @@ AuditModuleValue = Annotated[
         "onboarding",
         "platform_staff",
         "pos",
+        "printers",
         "purchasing",
         "reports",
         "sales",
@@ -9069,6 +9093,14 @@ class PosSaleCreate(BaseModel):
     device_id: str | None = Field(default=None, max_length=64)
     offline_created_at: IsoDateQueryValue | None = None
     offline_sync: bool = False
+    # Server-issued offline grant the sale was rung under; omit for legacy queue rows.
+    offline_grant_id: UuidIdValue | None = None
+    # Manager-approved conflict resolution (OfflineSyncEvent id) for this queued sale.
+    resolution_event_id: UuidIdValue | None = None
+    # Device-side override of its stock allocation; honoured only when the grant allows it.
+    allocation_override: bool = False
+    # Provisional receipt printed offline; kept on the sale to reconcile with the server number.
+    local_receipt_number: Annotated[str, Field(max_length=64)] | None = None
     # Pharmacy POS fill. Omit on retail. Existence is tenant-scoped (**404**/409).
     prescription_id: UuidIdValue | None = None
 
@@ -9121,6 +9153,53 @@ class PosDeviceHeartbeat(BaseModel):
     store_id: UuidIdValue | None = None
     app_version: Annotated[str, Field(max_length=40)] | None = None
     pending_queue_count: Annotated[int, Field(ge=0, le=100000)] = 0
+
+
+class PosOfflineAuthorize(BaseModel):
+    """POST /pos/offline/authorize — online revalidation → device-bound offline grant."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    device_id: PosDeviceIdValue
+    store_id: UuidIdValue | None = None
+    # Unsynced queued qty per product from earlier grants; reduces the new slice.
+    pending_items: dict[str, Annotated[float, Field(ge=0, le=1_000_000)]] | None = Field(
+        default=None, max_length=5000
+    )
+    allocation_pct: Annotated[int, Field(ge=1, le=100)] | None = None
+    label: Annotated[str, Field(max_length=120)] | None = None
+    app_version: Annotated[str, Field(max_length=40)] | None = None
+    pending_queue_count: Annotated[int, Field(ge=0, le=100000)] | None = None
+
+
+class PosOfflineStatusQuery(BaseModel):
+    """POST /pos/offline/status — grant, allocations, and resolution state for queued sales."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    device_id: PosDeviceIdValue
+    client_request_ids: list[ClientRequestIdValue] = Field(default_factory=list, max_length=500)
+
+
+class PosOfflineResolve(BaseModel):
+    """POST /pos/offline/conflicts/{id}/resolve — authorised resolution; never deletes the sale."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    action: Literal[
+        "approve_server_price",
+        "approve_outside_window",
+        "approve_allocation_override",
+        "approve_credit_override",
+        "dismiss",
+    ]
+    note: Annotated[str, Field(min_length=3, max_length=500)]
+
+
+class PosOfflineDeviceBlock(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    blocked: bool
 
 
 # --- Hotel module (rooms / guests / reservations / folio / HK / maintenance) ---

@@ -43,6 +43,9 @@ async def db_engine():
     )
     async with engine.begin() as conn:
         await conn.run_sync(m.Base.metadata.create_all)
+    from app.schema_compat import clear_column_cache
+
+    clear_column_cache()
     yield engine
     await engine.dispose()
 

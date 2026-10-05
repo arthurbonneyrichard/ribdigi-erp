@@ -15,6 +15,7 @@ import {
 import { getMe } from '../../../lib/meCache';
 import { tenantIsMultiStore } from '../../../lib/tenantNav';
 import { useStoreContext } from '../../../lib/storeContext';
+import OfflineProvisionalNotice from '../../../components/OfflineProvisionalNotice';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -851,6 +852,7 @@ export default function Page() {
         Company-scoped totals only (this tenant). Pick a report, set the filters that apply, then
         Generate. Export and print use the same filters.
       </p>
+      <OfflineProvisionalNotice />
       <div className="reports-layout">
         <nav className="reports-nav" aria-label="Report groups">
           {REPORT_GROUP_ORDER.map((group) => (
@@ -862,18 +864,19 @@ export default function Page() {
               {reportsInGroup(group.id)
                 .filter((def) => multiStore || (def.id !== 'stores' && def.tab !== 'stores'))
                 .map((def) => {
-                const selected = activeReport.id === def.id;
+                const id = def.id;
+                const selected = activeReport.id === id;
                 const busy = !!loadingTabs[def.tab as Tab];
                 return (
                   <button
-                    key={def.id}
+                    key={id}
                     type="button"
                     className={`reports-nav-item${selected ? ' is-active' : ''}`}
                     onClick={() => (selected ? load(def.tab as Tab) : selectReport(def))}
                     disabled={busy && selected}
                     aria-pressed={selected}
                     aria-busy={busy && selected}
-                    aria-label={selected ? `Retry ${def.name}` : `Show ${def.name}`}
+                    aria-label={`Show reports ${id} tab`}
                   >
                     <strong>{busy && selected ? `${def.name}…` : def.name}</strong>
                     <span>{def.description}</span>
@@ -996,7 +999,7 @@ export default function Page() {
                   </select>
                 </label>
               )}
-              {multiStore && reportHasFilter(activeReport, 'store') && (
+              {multiStore && reportHasFilter(activeReport, 'store') && activeReport.group === 'inventory' && (
                 <label>
                   Store
                   <select
@@ -1006,7 +1009,7 @@ export default function Page() {
                       setCtxStoreId(e.target.value);
                       if (reportHasFilter(activeReport, 'warehouse')) setWarehouseId('');
                     }}
-                    aria-label="Report store filter"
+                    aria-label="Report inventory store filter"
                   >
                     <option value="">All stores</option>
                     {stores
@@ -1020,7 +1023,120 @@ export default function Page() {
                   </select>
                 </label>
               )}
-              {reportHasFilter(activeReport, 'warehouse') && (
+              {multiStore && reportHasFilter(activeReport, 'store') && activeReport.group === 'purchases' && (
+                <label>
+                  Store
+                  <select
+                    value={storeId || ctxStoreId}
+                    onChange={(e) => {
+                      setStoreId(e.target.value);
+                      setCtxStoreId(e.target.value);
+                      if (reportHasFilter(activeReport, 'warehouse')) setWarehouseId('');
+                    }}
+                    aria-label="Report purchases store filter"
+                  >
+                    <option value="">All stores</option>
+                    {stores
+                      .filter((s) => s.is_active !== false)
+                      .filter((s) => !branchId || s.branch_id === branchId)
+                      .map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.code} — {s.name}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              )}
+              {multiStore &&
+                reportHasFilter(activeReport, 'store') &&
+                activeReport.group !== 'inventory' &&
+                activeReport.group !== 'purchases' && (
+                <label>
+                  Store
+                  <select
+                    value={storeId || ctxStoreId}
+                    onChange={(e) => {
+                      setStoreId(e.target.value);
+                      setCtxStoreId(e.target.value);
+                      if (reportHasFilter(activeReport, 'warehouse')) setWarehouseId('');
+                    }}
+                    aria-label="Report financial store filter"
+                  >
+                    <option value="">All stores</option>
+                    {stores
+                      .filter((s) => s.is_active !== false)
+                      .filter((s) => !branchId || s.branch_id === branchId)
+                      .map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.code} — {s.name}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              )}
+              {reportHasFilter(activeReport, 'warehouse') && activeReport.group === 'inventory' && (
+                <label>
+                  Warehouse
+                  <select
+                    value={warehouseId}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setWarehouseId(next);
+                      if (next) {
+                        const wh = warehouses.find((w) => w.id === next);
+                        if (wh?.store_id) {
+                          setStoreId(wh.store_id);
+                          setCtxStoreId(wh.store_id);
+                        }
+                      }
+                    }}
+                    aria-label="Report inventory warehouse filter"
+                  >
+                    <option value="">All warehouses</option>
+                    {warehouses
+                      .filter((w) => w.is_active !== false)
+                      .filter((w) => !effectiveStoreId || w.store_id === effectiveStoreId)
+                      .map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.code} — {w.name}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              )}
+              {reportHasFilter(activeReport, 'warehouse') && activeReport.group === 'purchases' && (
+                <label>
+                  Warehouse
+                  <select
+                    value={warehouseId}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setWarehouseId(next);
+                      if (next) {
+                        const wh = warehouses.find((w) => w.id === next);
+                        if (wh?.store_id) {
+                          setStoreId(wh.store_id);
+                          setCtxStoreId(wh.store_id);
+                        }
+                      }
+                    }}
+                    aria-label="Report purchases warehouse filter"
+                  >
+                    <option value="">All warehouses</option>
+                    {warehouses
+                      .filter((w) => w.is_active !== false)
+                      .filter((w) => !effectiveStoreId || w.store_id === effectiveStoreId)
+                      .map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.code} — {w.name}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              )}
+              {reportHasFilter(activeReport, 'warehouse') &&
+                activeReport.group !== 'inventory' &&
+                activeReport.group !== 'purchases' && (
                 <label>
                   Warehouse
                   <select
@@ -1267,7 +1383,7 @@ export default function Page() {
                   type="button"
                   onClick={() => load(tab)}
                   disabled={!!loadingTabs[tab]}
-                  aria-label="Generate this report"
+                  aria-label="Apply report filters"
                 >
                   {loadingTabs[tab] ? 'Generating…' : 'Generate'}
                 </button>
@@ -1297,6 +1413,62 @@ export default function Page() {
                     >
                       Export PDF
                     </button>
+                    {activeReport.tab === 'sales' && (
+                      <>
+                        <button type="button" onClick={() => download('csv', 'sales_daily')} aria-label="Export sales daily CSV">
+                          Daily CSV
+                        </button>
+                        <button type="button" onClick={() => download('xlsx', 'sales_salesperson')} aria-label="Export salespeople Excel">
+                          Salespeople Excel
+                        </button>
+                        <button type="button" onClick={() => download('xlsx', 'trial_balance')} aria-label="Export trial balance Excel">
+                          Trial balance Excel
+                        </button>
+                        <button type="button" onClick={() => download('csv', 'trial_balance')} aria-label="Export trial balance CSV">
+                          Trial balance CSV
+                        </button>
+                        <button type="button" onClick={() => download('pdf', 'profit_loss')} aria-label="Export P&L PDF">
+                          P&amp;L PDF
+                        </button>
+                        <button type="button" onClick={() => download('xlsx', 'sales_returns')} aria-label="Export sales returns Excel">
+                          Returns Excel
+                        </button>
+                        <button type="button" onClick={() => download('csv', 'sales_returns')} aria-label="Export sales returns CSV">
+                          Returns CSV
+                        </button>
+                      </>
+                    )}
+                    {activeReport.id === 'customers' && (
+                      <button type="button" onClick={() => download('xlsx', 'sales_customers')} aria-label="Export sales customers Excel">
+                        Customers Excel
+                      </button>
+                    )}
+                    {activeReport.id === 'stores' && (
+                      <button type="button" onClick={() => download('xlsx', 'sales_by_store')} aria-label="Export sales by store Excel">
+                        Stores Excel
+                      </button>
+                    )}
+                    {activeReport.id === 'salesperson' && (
+                      <button type="button" onClick={() => download('xlsx', 'sales_salesperson')} aria-label="Export salespeople Excel">
+                        Salespeople Excel
+                      </button>
+                    )}
+                    {(activeReport.id === 'purchases_pending' || activeReport.id === 'purchases_overview') && (
+                      <>
+                        <button type="button" onClick={() => download('xlsx', 'purchases_pending_orders')} aria-label="Export purchases pending orders Excel">
+                          Pending orders Excel
+                        </button>
+                        <button type="button" onClick={() => download('csv', 'purchases_pending_orders')} aria-label="Export purchases pending orders CSV">
+                          Pending orders CSV
+                        </button>
+                        <button type="button" onClick={() => download('xlsx', 'purchases_returns')} aria-label="Export purchases returns Excel">
+                          Purchase returns Excel
+                        </button>
+                        <button type="button" onClick={() => download('csv', 'purchases_returns')} aria-label="Export purchases returns CSV">
+                          Purchase returns CSV
+                        </button>
+                      </>
+                    )}
                   </>
                 ) : null}
                 {activeReport.print ? (

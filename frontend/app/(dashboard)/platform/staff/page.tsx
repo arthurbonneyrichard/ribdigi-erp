@@ -44,6 +44,8 @@ export default function PlatformStaffPage() {
   const [busy, setBusy] = useState(false);
   const [staffAddOpen, setStaffAddOpen] = useState(false);
   const [meRole, setMeRole] = useState('');
+  const [grantUserId, setGrantUserId] = useState('');
+  const [grantRole, setGrantRole] = useState('platform_support');
   const [editingId, setEditingId] = useState('');
   const [editForm, setEditForm] = useState({
     full_name: '',
@@ -558,6 +560,38 @@ export default function PlatformStaffPage() {
             </tbody>
           </table>
         </div>
+        <form
+          className="card"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setError('');
+            setMessage('');
+            try {
+              await api('/platform/staff/grant', {
+                method: 'POST',
+                body: JSON.stringify({ user_id: grantUserId.trim(), role: grantRole }),
+              });
+              setMessage('Dashboard access granted');
+              await refresh({ force: true });
+            } catch (err: any) {
+              setError(err.message || 'Could not grant access');
+            }
+          }}
+        >
+          <h2>Grant as</h2>
+          <select value={grantUserId} onChange={(e) => setGrantUserId(e.target.value)} aria-label="Grant access user">
+            <option value="">Select user</option>
+            {staff.map((u) => (
+              <option key={u.id} value={u.id}>{u.full_name}</option>
+            ))}
+          </select>
+          <select value={grantRole} onChange={(e) => setGrantRole(e.target.value)} aria-label="Platform grant role">
+            {PLATFORM_ROLES.map((role) => (
+              <option key={role} value={role}>{role}</option>
+            ))}
+          </select>
+          <button type="submit">Grant as</button>
+        </form>
       </div>
     </>
   );

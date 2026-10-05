@@ -193,14 +193,14 @@ export function groupedTenantNav(
         if (ind === 'pharmacy') {
           return {
             id: 'industry',
-            label: 'Pharmacy management',
+            label: 'Pharmacy',
             items: PHARMACY_NAV_ITEMS.filter(([, href]) => allowed.has(href)),
           };
         }
         if (ind === 'wholesale') {
           return {
             id: 'industry',
-            label: 'Wholesale operations',
+            label: 'Wholesale',
             items: WHOLESALE_NAV_ITEMS.filter(([, href]) => allowed.has(href)),
           };
         }

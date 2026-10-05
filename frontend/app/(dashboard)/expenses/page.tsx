@@ -57,6 +57,8 @@ type Expense = {
 
 export default function Page() {
   const [rows, setRows] = useState<Expense[]>([]);
+  const [expPrefix, setExpPrefix] = useState('');
+  const [expNext, setExpNext] = useState('');
   const [expenseManageFilter, setExpenseManageFilter] = useState<
     'all' | 'pending' | 'approved' | 'rejected'
   >('all');
@@ -814,15 +816,205 @@ export default function Page() {
       <div className="list-page-head" style={{ marginBottom: 16 }}>
         <div>
           <h1 style={{ margin: 0 }}>Expenses</h1>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+            <input value={expPrefix} onChange={(e) => setExpPrefix(e.target.value)} aria-label="Expense number prefix" placeholder="Prefix" />
+            <input value={expNext} onChange={(e) => setExpNext(e.target.value)} aria-label="Expense next number" placeholder="Next #" />
+            <button
+              type="button"
+              aria-label="Save expense numbering"
+              onClick={() => {
+                const prefix = expPrefix.trim();
+                const next = expNext.trim();
+                const numbering: { prefix?: string; next_number?: number } = {};
+                if (prefix) numbering.prefix = prefix;
+                if (next) numbering.next_number = Number(next);
+                const body = Object.keys(numbering).length ? { expense_numbering: numbering } : {};
+                api('/expenses/settings', { method: 'PATCH', body: JSON.stringify(body) }).catch((err) =>
+                  setError(err.message || 'Could not save numbering'),
+                );
+              }}
+            >
+              Save numbering
+            </button>
+          </div>
           <p className="muted" style={{ margin: '8px 0 0' }}>
         Record what the company paid. Amounts at or below {threshold} post automatically.
         Receipts attach on the list. VAT on supplier invoices is calculated under Tax / Purchases,
         not here. Other income (below) posts to Other Income (4400) against cash/bank — it does not collect funds.
           </p>
         </div>
-        <button type="button" className="list-btn-primary" onClick={() => setExpenseAddOpen(true)} aria-label="Add expense">
-          Add expense
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => document.getElementById('budgets')?.scrollIntoView({ behavior: 'smooth' })}
+            aria-label="Manage expense categories"
+          >
+            Categories
+          </button>
+          <button type="button" className="list-btn-primary" onClick={() => setExpenseAddOpen(true)} aria-label="Add expense">
+            Add expense
+          </button>
+        </div>
+      </div>
+
+      <div className="card" id="expense-register" style={{ marginBottom: 16 }}>
+        <h2 style={{ marginTop: 0 }}>Paid and unpaid expenses</h2>
+        <p className="muted">Paid means the expense was posted. Unpaid means it is still waiting for approval.</p>
+      <div className="erp-toolbar">
+        <input
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search payee, category, description…"
+          aria-label="Search expenses"
+        />
+        <select
+          value={expenseManageFilter}
+          onChange={(e) =>
+            setExpenseManageFilter(
+              e.target.value as 'all' | 'pending' | 'approved' | 'rejected'
+            )
+          }
+          title="Filter expense list by status"
+          aria-label="Expense status filter"
+        >
+          <option value="all">All</option>
+          <option value="approved">Paid</option>
+          <option value="pending">Unpaid</option>
+          <option value="rejected">Voided</option>
+        </select>
+      </div>
+      <table className="table compact">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Paid to</th>
+            <th>What for</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Receipt</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {managedExpenses.length === 0 ? (
+            <tr>
+              <td colSpan={7} className="muted">
+                {expenseManageFilter === 'all' ? 'No expenses match this search' : 'No expenses for this filter'}
+              </td>
+            </tr>
+          ) : (
+            managedExpenses.map((r) => (
+            <tr key={r.id}>
+              <td>{r.category}</td>
+              <td>{r.payee || '—'}</td>
+              <td>
+                {r.description}
+                {r.rejection_reason ? (
+                  <div className="muted" style={{ fontSize: 12 }}>
+                    Void: {r.rejection_reason}
+                  </div>
+                ) : null}
+              </td>
+              <td>{r.amount}</td>
+              <td>
+                {r.status === 'approved'
+                  ? 'Posted'
+                  : r.status === 'rejected'
+                    ? 'Voided'
+                    : 'Waiting'}
+              </td>
+              <td>
+                {r.has_attachment ? (
+                  <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
+                    <button
+                    type="button"
+                    aria-label={`Preview expense attachment ${r.id}`}
+                    onClick={() =>
+                      setAttachPreview({
+                        apiPath: `/expenses/${r.id}/attachment`,
+                        title: `Receipt — ${r.reference || r.description || r.id.slice(0, 8)}`,
+                      })
+                    }
+                  >
+                    Preview
+                  </button>
+                    <button onClick={() => downloadAttachment(r.id)} aria-label="Download expense attachment">
+                      Download
+                    </button>
+                    <button onClick={() => suggestOcr(r.id)} aria-label={`Suggest expense OCR ${r.id}`}>OCR</button>
+                    <button onClick={() => removeAttachment(r.id)} aria-label={`Remove expense attachment ${r.id}`}>Remove</button>
+                  </span>
+                ) : (
+                  <label style={{ cursor: 'pointer' }}>
+                    <span className="muted">Upload</span>
+                    <input
+                      type="file"
+                      style={{ display: 'none' }}
+                      aria-label={`Upload expense attachment ${r.id}`}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) uploadAttachment(r.id, f);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                )}
+              </td>
+              <td>
+                <div className="erp-row-actions">
+                {(r.status === 'pending' || r.status === 'rejected') && (
+                  <button
+                    type="button"
+                    onClick={() => startEdit(r)}
+                    aria-label={`Edit expense ${r.id}`}
+                    disabled={rowBusyId === r.id}
+                  >
+                    Edit
+                  </button>
+                )}
+                {r.status === 'pending' && (
+                  <>
+                    <button
+                      className="btn-ok"
+                      onClick={() => approve(r.id)}
+                      aria-label="Approve expense"
+                      disabled={rowBusyId === r.id}
+                    >
+                      Approve
+                    </button>
+                    <button
+                      className="btn-danger"
+                      onClick={() => reject(r.id)}
+                      aria-label={`Reject expense ${r.id}`}
+                      disabled={!rejectReason.trim() || rowBusyId === r.id}
+                      title={
+                        rejectReason.trim()
+                          ? 'Void expense'
+                          : 'Enter a void reason first'
+                      }
+                    >
+                      Void
+                    </button>
+                  </>
+                )}
+                {r.status === 'rejected' && (
+                  <button
+                    className="btn-danger"
+                    type="button"
+                    onClick={() => removeExpense(r.id)}
+                    disabled={rowBusyId === r.id}
+                    aria-label={`Remove voided expense ${r.id}`}
+                  >
+                    Remove
+                  </button>
+                )}
+                </div>
+              </td>
+            </tr>
+          ))
+          )}
+        </tbody>
+      </table>
       </div>
       <div className="card cat-panel" style={{ marginBottom: 16 }}>
         <h3>Other income</h3>
@@ -970,6 +1162,7 @@ export default function Page() {
             <option value="bank_transfer">Bank transfer</option>
             <option value="card">Card</option>
             <option value="cheque">Cheque</option>
+            <option value="mobile_money">Mobile Money (MoMo)</option>
           </select>
           </label>
           <label>
@@ -1117,6 +1310,7 @@ export default function Page() {
       </FormModal>
       ) : null}
 
+      <div className="erp-split">
       <details className="erp-advanced" id="approval-matrix">
         <summary>Approval rules</summary>
       <div className="card" style={{ marginBottom: 0, boxShadow: 'none', border: 0, padding: '0 0 8px' }}>
@@ -1333,6 +1527,8 @@ export default function Page() {
         </table>
       </div>
       </details>
+      </div>
+      <div className="erp-split">
       <details className="erp-advanced" id="recurring">
         <summary>Repeat on a schedule</summary>
       <div className="card" style={{ marginBottom: 0, boxShadow: 'none', border: 0, padding: '0 0 8px' }}>
@@ -1420,6 +1616,7 @@ export default function Page() {
             <option value="bank_transfer">Bank transfer</option>
             <option value="card">Card</option>
             <option value="cheque">Cheque</option>
+            <option value="mobile_money">Mobile Money (MoMo)</option>
           </select>
           <select
             value={recBranchId}
@@ -1596,15 +1793,16 @@ export default function Page() {
           <input
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
-            placeholder="Required before Void"
-            aria-label="Expense void reason"
+            placeholder="Required before Reject"
+            aria-label="Expense reject reason"
             title="Required reason for Void (1–500 chars; letters/digits required)"
             style={{ minWidth: 280 }}
           />
         </label>
         <p className="muted" style={{ marginTop: 6 }}>
-          Used when you void a pending expense (stored as rejection reason). Posted expenses stay on the books.
+          Enter a reject reason before rejecting an expense. Used when you void a pending expense (stored as rejection reason).
         </p>
+      </div>
       </div>
 
       {ocrDraft && ocrFor && (
@@ -1780,7 +1978,7 @@ export default function Page() {
               <option value="bank_transfer">Bank transfer</option>
               <option value="card">Card</option>
               <option value="cheque">Cheque</option>
-              <option value="mobile_money">Mobile money</option>
+              <option value="mobile_money">Mobile Money (MoMo)</option>
             </select>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button type="button" onClick={saveEdit} disabled={editBusy} aria-label="Save expense changes">
@@ -1794,165 +1992,6 @@ export default function Page() {
         </div>
       )}
 
-      <div className="card" id="expense-register" style={{ marginBottom: 16 }}>
-        <h2 style={{ marginTop: 0 }}>Paid and unpaid expenses</h2>
-        <p className="muted">Paid means the expense was posted. Unpaid means it is still waiting for approval.</p>
-      <div className="erp-toolbar">
-        <input
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search payee, category, description…"
-          aria-label="Search expenses"
-        />
-        <select
-          value={expenseManageFilter}
-          onChange={(e) =>
-            setExpenseManageFilter(
-              e.target.value as 'all' | 'pending' | 'approved' | 'rejected'
-            )
-          }
-          title="Filter expense list by status"
-          aria-label="Expense status filter"
-        >
-          <option value="all">All</option>
-          <option value="approved">Paid</option>
-          <option value="pending">Unpaid</option>
-          <option value="rejected">Voided</option>
-        </select>
-      </div>
-      <table className="table compact">
-        <thead>
-          <tr>
-            <th>Category</th>
-            <th>Paid to</th>
-            <th>What for</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th>Receipt</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {managedExpenses.length === 0 ? (
-            <tr>
-              <td colSpan={7} className="muted">
-                No expenses match this search
-              </td>
-            </tr>
-          ) : (
-            managedExpenses.map((r) => (
-            <tr key={r.id}>
-              <td>{r.category}</td>
-              <td>{r.payee || '—'}</td>
-              <td>
-                {r.description}
-                {r.rejection_reason ? (
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    Void: {r.rejection_reason}
-                  </div>
-                ) : null}
-              </td>
-              <td>{r.amount}</td>
-              <td>
-                {r.status === 'approved'
-                  ? 'Posted'
-                  : r.status === 'rejected'
-                    ? 'Voided'
-                    : 'Waiting'}
-              </td>
-              <td>
-                {r.has_attachment ? (
-                  <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
-                    <button
-                    type="button"
-                    aria-label={`Preview expense attachment ${r.id}`}
-                    onClick={() =>
-                      setAttachPreview({
-                        apiPath: `/expenses/${r.id}/attachment`,
-                        title: `Receipt — ${r.reference || r.description || r.id.slice(0, 8)}`,
-                      })
-                    }
-                  >
-                    Preview
-                  </button>
-                    <button onClick={() => downloadAttachment(r.id)} aria-label="Download expense attachment">
-                      Download
-                    </button>
-                    <button onClick={() => suggestOcr(r.id)} aria-label={`Suggest expense OCR ${r.id}`}>OCR</button>
-                    <button onClick={() => removeAttachment(r.id)} aria-label={`Remove expense attachment ${r.id}`}>Remove</button>
-                  </span>
-                ) : (
-                  <label style={{ cursor: 'pointer' }}>
-                    <span className="muted">Upload</span>
-                    <input
-                      type="file"
-                      style={{ display: 'none' }}
-                      aria-label={`Upload expense attachment ${r.id}`}
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) uploadAttachment(r.id, f);
-                        e.target.value = '';
-                      }}
-                    />
-                  </label>
-                )}
-              </td>
-              <td>
-                <div className="erp-row-actions">
-                {(r.status === 'pending' || r.status === 'rejected') && (
-                  <button
-                    type="button"
-                    onClick={() => startEdit(r)}
-                    aria-label={`Edit expense ${r.id}`}
-                    disabled={rowBusyId === r.id}
-                  >
-                    Edit
-                  </button>
-                )}
-                {r.status === 'pending' && (
-                  <>
-                    <button
-                      className="btn-ok"
-                      onClick={() => approve(r.id)}
-                      aria-label="Approve expense"
-                      disabled={rowBusyId === r.id}
-                    >
-                      Approve
-                    </button>
-                    <button
-                      className="btn-danger"
-                      onClick={() => reject(r.id)}
-                      aria-label={`Void expense ${r.id}`}
-                      disabled={!rejectReason.trim() || rowBusyId === r.id}
-                      title={
-                        rejectReason.trim()
-                          ? 'Void expense'
-                          : 'Enter a void reason first'
-                      }
-                    >
-                      Void
-                    </button>
-                  </>
-                )}
-                {r.status === 'rejected' && (
-                  <button
-                    className="btn-danger"
-                    type="button"
-                    onClick={() => removeExpense(r.id)}
-                    disabled={rowBusyId === r.id}
-                    aria-label={`Remove voided expense ${r.id}`}
-                  >
-                    Remove
-                  </button>
-                )}
-                </div>
-              </td>
-            </tr>
-          ))
-          )}
-        </tbody>
-      </table>
-      </div>
       {attachPreview && (
         <AttachmentPreview
           open
