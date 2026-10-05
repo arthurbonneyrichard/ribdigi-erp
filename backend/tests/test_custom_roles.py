@@ -345,11 +345,11 @@ def test_custom_role_soft_deactivate_ui_wired():
     assert "assignableRoles" in users
     assert "Edit permissions" in users
     assert "saveCustomRolePerms" in users
-    assert "CloneFromPicker" in users
-    assert "No compatible roles available" in users
-    assert "Create without cloning" in users
-    assert "This company" in users
-    assert "System templates" in users
+    assert "CloneFromPicker" not in users
+    assert "Clone from" not in users
+    assert "Create without cloning" not in users
+    assert "This company" not in users
+    assert "System templates" not in users
 
 
 async def _beta_hotel_admin(ac, db_session, seed):

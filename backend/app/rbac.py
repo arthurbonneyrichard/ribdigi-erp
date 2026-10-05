@@ -212,6 +212,11 @@ PLATFORM_ROLES = frozenset(
 )
 
 PLATFORM_OWNER_ROLES = frozenset({"super_admin", "platform_owner"})
+# Hard-delete a company: software owner and platform admin. Support, finance,
+# and tenant roles are excluded. super_admin stays the legacy owner equivalent.
+PLATFORM_TENANT_DELETE_ROLES = frozenset(
+    {"super_admin", "platform_owner", "platform_admin"}
+)
 
 # Customer system templates. Hotel_* stay hotel-only; store_manager is the
 # retail/store counterpart (hotels use hotel_manager). Shared templates
@@ -318,6 +323,11 @@ def is_platform_role(role: str | None) -> bool:
 
 def is_platform_owner_role(role: str | None) -> bool:
     return (role or "") in PLATFORM_OWNER_ROLES
+
+
+def is_platform_tenant_delete_role(role: str | None) -> bool:
+    """Software owner, platform admin, or legacy super_admin."""
+    return (role or "") in PLATFORM_TENANT_DELETE_ROLES
 
 
 def is_wildcard_permission_map(perms: dict | None) -> bool:

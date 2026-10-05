@@ -382,7 +382,12 @@ from app import hotel as hotel_svc
 from app import hotel_pms as hotel_pms_svc
 from app import fmcg as fmcg_svc
 from app import pharmacy as pharmacy_svc
-from app.rbac import PLATFORM_ROLES, is_platform_owner_role, is_platform_role
+from app.rbac import (
+    PLATFORM_ROLES,
+    is_platform_owner_role,
+    is_platform_role,
+    is_platform_tenant_delete_role,
+)
 
 api = APIRouter(prefix="/api/v1")
 api.include_router(printers_api_mod.router)
@@ -1100,11 +1105,11 @@ async def tenant_delete_by_ref(
     claims=Depends(require_platform_permission("platform_tenants", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Permanently delete a company tenant (platform owner only)."""
-    if not is_platform_owner_role(claims.get("role")):
+    """Permanently delete a company tenant (software owner or platform admin)."""
+    if not is_platform_tenant_delete_role(claims.get("role")):
         raise HTTPException(
             status_code=403,
-            detail="Only the platform owner can delete a tenant",
+            detail="Only the software owner or platform admin can delete a tenant",
         )
     tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
     snapshot = await tenants_svc.delete_tenant(

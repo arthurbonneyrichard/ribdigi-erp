@@ -11,11 +11,8 @@ type RoleRow = {
   role: string;
   label: string;
   system?: boolean;
-  base_role?: string | null;
   record_scope?: string;
   is_active?: boolean;
-  cloneable?: boolean;
-  clone_group?: 'system_template' | 'tenant_role';
   permissions?: Record<string, string[]>;
 };
 type BranchRow = { id: string; code: string; name: string; is_active?: boolean };
@@ -205,121 +202,6 @@ function PermissionGrid({
   );
 }
 
-function CloneFromPicker({
-  roles,
-  value,
-  onSelect,
-}: {
-  roles: RoleRow[];
-  value: string;
-  onSelect: (role: RoleRow | null) => void;
-}) {
-  const [query, setQuery] = useState('');
-  const needle = query.trim().toLowerCase();
-  const cloneable = roles.filter((r) => r.cloneable !== false && !PLATFORM_USER_ROLES.has(r.role));
-  const systemRows = cloneable.filter((r) => r.system !== false && r.clone_group !== 'tenant_role');
-  const tenantRows = cloneable.filter((r) => r.system === false || r.clone_group === 'tenant_role');
-  const match = (r: RoleRow) =>
-    !needle || r.label.toLowerCase().includes(needle) || r.role.toLowerCase().includes(needle);
-  const systemHits = systemRows.filter(match);
-  const tenantHits = tenantRows.filter(match);
-  const empty = !systemHits.length && !tenantHits.length;
-
-  return (
-    <div style={{ display: 'grid', gap: 6 }}>
-      <input
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search compatible roles"
-        aria-label="Clone from system role"
-      />
-      <div
-        role="listbox"
-        aria-label="Clone from"
-        style={{
-          border: '1px solid var(--border, #d0d5dd)',
-          borderRadius: 8,
-          maxHeight: 168,
-          overflow: 'auto',
-          padding: 6,
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => onSelect(null)}
-          style={{
-            display: 'block',
-            width: '100%',
-            textAlign: 'left',
-            background: !value ? 'var(--surface-muted, #f2f4f7)' : 'transparent',
-            border: 0,
-            padding: '6px 8px',
-          }}
-        >
-          Create without cloning
-        </button>
-        {empty ? (
-          <p className="muted" style={{ margin: '8px 6px' }}>
-            No compatible roles available
-          </p>
-        ) : null}
-        {systemHits.length ? (
-          <>
-            <p className="muted" style={{ margin: '8px 6px 4px', fontSize: 12 }}>
-              System templates
-            </p>
-            {systemHits.map((r) => (
-              <button
-                key={r.role}
-                type="button"
-                role="option"
-                aria-selected={value === r.role}
-                onClick={() => onSelect(r)}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  textAlign: 'left',
-                  background: value === r.role ? 'var(--surface-muted, #f2f4f7)' : 'transparent',
-                  border: 0,
-                  padding: '6px 8px',
-                }}
-              >
-                Clone from {r.label}
-              </button>
-            ))}
-          </>
-        ) : null}
-        {tenantHits.length ? (
-          <>
-            <p className="muted" style={{ margin: '8px 6px 4px', fontSize: 12 }}>
-              This company&apos;s roles
-            </p>
-            {tenantHits.map((r) => (
-              <button
-                key={r.role}
-                type="button"
-                role="option"
-                aria-selected={value === r.role}
-                onClick={() => onSelect(r)}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  textAlign: 'left',
-                  background: value === r.role ? 'var(--surface-muted, #f2f4f7)' : 'transparent',
-                  border: 0,
-                  padding: '6px 8px',
-                }}
-              >
-                Clone from {r.label}
-              </button>
-            ))}
-          </>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
 type ImportReportRow = {
   line: number;
   email: string;
@@ -351,7 +233,6 @@ export default function Page() {
   const [roleForm, setRoleForm] = useState({
     key: '',
     label: '',
-    base_role: '',
   });
   const [meIndustry, setMeIndustry] = useState<string | null>(null);
   const [createPerms, setCreatePerms] = useState<Record<string, string[]>>({});
@@ -411,13 +292,6 @@ export default function Page() {
     setRows(hidePlatform ? listed.filter((u) => !PLATFORM_USER_ROLES.has(u.role)) : listed);
     const catalog: RoleRow[] = rolesRes.data || [];
     setRoles(catalog);
-    setCreatePerms((prev) => {
-      if (Object.keys(prev).length) return prev;
-      const industry = meRes.data?.industry || null;
-      const selected = catalog.find((r) => r.role === roleForm.base_role && r.cloneable);
-      if (selected) return pickAssignablePerms(selected.permissions, industry);
-      return {};
-    });
     setBranches(branchesRes.data || []);
     setDepartments(deptsRes.data || []);
     setStores((storesRes.data || []).filter((s: StoreRow) => s.is_active !== false));
@@ -627,11 +501,10 @@ export default function Page() {
         body: JSON.stringify({
           key: roleForm.key.trim(),
           label,
-          ...(roleForm.base_role ? { base_role: roleForm.base_role } : {}),
           ...(Object.keys(createPerms).length ? { permissions: createPerms } : {}),
         }),
       });
-      setRoleForm({ key: '', label: '', base_role: '' });
+      setRoleForm({ key: '', label: '' });
       setCreatePerms({});
       setMessage(`Custom role ${r.data?.role || roleForm.key} created`);
       await refresh();
@@ -1203,11 +1076,10 @@ export default function Page() {
         <form onSubmit={createCustomRole} className="card" style={{ margin: '20px 0', display: 'grid', gap: 8 }}>
           <h2 style={{ fontSize: 18, margin: 0 }}>Custom roles</h2>
           <p className="muted" style={{ margin: 0 }}>
-            Clone a system role&apos;s permissions into a tenant-specific role key, then tick the
-            modules this company actually uses. Saved permissions apply to navigation, pages, buttons,
-            and APIs. Soft-deactivate with <strong>Deactivate</strong> (keeps assignees; blocks new
-            assignment). Delete is blocked while any user still has the role. System roles stay
-            immutable — clone them instead of granting platform-owner rights.
+            Create a tenant-specific role key, then tick the modules this company actually uses.
+            Saved permissions apply to navigation, pages, buttons, and APIs. Soft-deactivate with{' '}
+            <strong>Deactivate</strong> (keeps assignees; blocks new assignment). Delete is blocked
+            while any user still has the role. System roles stay immutable.
           </p>
           <input
             value={roleForm.key}
@@ -1223,20 +1095,12 @@ export default function Page() {
             required
             aria-label="Custom role label"
           />
-          <CloneFromPicker
-            roles={roles}
-            value={roleForm.base_role}
-            onSelect={(source) => {
-              setRoleForm({ ...roleForm, base_role: source?.role || '' });
-              setCreatePerms(pickAssignablePerms(source?.permissions, meIndustry));
-            }}
-          />
-          <p className="muted" style={{ margin: 0 }}>
-            Selecting a source copies permissions as an editable starting point. It does not copy
-            users or keep a live link. Store assignments stay separate.
-          </p>
           <PermissionGrid value={createPerms} onChange={setCreatePerms} industry={meIndustry} />
-          <button type="submit" disabled={busy || !roleForm.key.trim() || !roleForm.label.trim()} aria-label="Create custom role">
+          <button
+            type="submit"
+            disabled={busy || !roleForm.key.trim() || !roleForm.label.trim() || !Object.keys(createPerms).length}
+            aria-label="Create custom role"
+          >
             {busy ? 'Saving…' : 'Create custom role'}
           </button>
           <select

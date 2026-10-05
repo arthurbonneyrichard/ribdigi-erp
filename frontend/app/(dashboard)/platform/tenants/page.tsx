@@ -141,6 +141,7 @@ export default function PlatformTenantsPage() {
   });
   const [moduleDraft, setModuleDraft] = useState<string[]>([]);
   const [suspendReason, setSuspendReason] = useState('');
+  const [deleteConfirmSlug, setDeleteConfirmSlug] = useState('');
   const [overrideDraft, setOverrideDraft] = useState('');
   const [industryDraft, setIndustryDraft] = useState('');
   const [industryReason, setIndustryReason] = useState('');
@@ -152,6 +153,8 @@ export default function PlatformTenantsPage() {
     [tenants, selectedId]
   );
   const canDeleteTenant = meRole === 'platform_owner' || meRole === 'super_admin';
+  const canHardDeleteTenant =
+    canDeleteTenant || meRole === 'platform_admin';
 
   function openManage(row: TenantRow) {
     setError('');
@@ -404,18 +407,17 @@ export default function PlatformTenantsPage() {
       setError('The platform owner workspace cannot be deleted.');
       return;
     }
+    const typed = deleteConfirmSlug.trim();
+    if (typed !== slug) {
+      setError(`Type the tenant slug exactly to confirm: ${slug}`);
+      setMessage('');
+      return;
+    }
     if (
       !window.confirm(
         `Delete ${row.company_name} permanently?\n\nThis removes the company workspace and all of its data. This cannot be undone.`
       )
     ) {
-      return;
-    }
-    const typed = window.prompt(`Type the workspace slug to confirm:\n\n${slug}`);
-    if (typed == null) return;
-    if (typed.trim() !== slug) {
-      setError(`Slug did not match. Type exactly: ${slug}`);
-      setMessage('');
       return;
     }
     setBusy(row.id);
@@ -427,6 +429,7 @@ export default function PlatformTenantsPage() {
         body: JSON.stringify({ confirm_slug: slug }),
       });
       if (selectedId === row.id) setSelectedId(null);
+      setDeleteConfirmSlug('');
       setMessage(`Deleted ${row.company_name}`);
       await refresh({ force: true });
     } catch (err: any) {
@@ -772,6 +775,24 @@ export default function PlatformTenantsPage() {
             <p className="muted" style={{ marginTop: 6 }}>
               Used by Suspend on non-suspended tenants (stored as <code>suspended_reason</code>).
             </p>
+            {canHardDeleteTenant ? (
+              <>
+                <label style={{ display: 'block', marginTop: 10 }}>
+                  Delete confirmation{' '}
+                  <input
+                    value={deleteConfirmSlug}
+                    onChange={(e) => setDeleteConfirmSlug(e.target.value)}
+                    placeholder="Type the tenant slug"
+                    aria-label="Delete tenant confirmation"
+                    style={{ minWidth: 280 }}
+                  />
+                </label>
+                <p className="muted" style={{ marginTop: 6 }}>
+                  Delete removes the company and its data. Type that tenant&apos;s slug, then Delete.
+                  Support and finance cannot delete a company.
+                </p>
+              </>
+            ) : null}
           </div>
 
           {selected ? (
@@ -887,7 +908,7 @@ export default function PlatformTenantsPage() {
                             Suspend
                           </button>
                         ) : null}
-                        {canDeleteTenant && t.slug !== 'platform' && t.slug !== 'ribdigi-platform' ? (
+                        {canHardDeleteTenant && t.slug !== 'platform' && t.slug !== 'ribdigi-platform' ? (
                           <button
                             type="button"
                             className="btn-danger"

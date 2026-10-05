@@ -628,15 +628,15 @@ async def delete_tenant(
     actor_tenant_id: str,
     confirm_slug: str,
 ) -> dict:
-    """Permanently remove a company tenant and all of its scoped data (owner only)."""
-    from app.rbac import is_platform_owner_role
+    """Permanently remove a company tenant and all of its scoped data."""
+    from app.rbac import is_platform_tenant_delete_role
     from sqlalchemy import delete
     from sqlalchemy.schema import sort_tables
 
-    if not is_platform_owner_role(actor_role):
+    if not is_platform_tenant_delete_role(actor_role):
         raise HTTPException(
             status_code=403,
-            detail="Only the platform owner can delete a tenant",
+            detail="Only the software owner or platform admin can delete a tenant",
         )
     slug = (tenant.slug or "").strip().lower()
     if slug in PROTECTED_TENANT_SLUGS:
@@ -649,8 +649,8 @@ async def delete_tenant(
             status_code=400,
             detail="Cannot delete your own workspace",
         )
-    expected = (tenant.slug or "").strip()
-    provided = (confirm_slug or "").strip()
+    expected = (tenant.slug or "").strip().lower()
+    provided = (confirm_slug or "").strip().lower()
     if not provided or provided != expected:
         raise HTTPException(
             status_code=400,

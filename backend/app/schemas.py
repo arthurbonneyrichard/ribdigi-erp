@@ -856,11 +856,16 @@ class TenantSuspendRequest(BaseModel):
 
 
 class TenantDeleteConfirm(BaseModel):
-    """Platform owner hard-delete — must re-type the tenant slug to confirm."""
+    """Hard-delete a company. Software owner or platform admin only.
+
+    `confirm_slug` must be that tenant's slug (`TenantSlugValue`). A missing
+    field, blank, or garbage slug is **422**. A well-formed slug that does not
+    match the path tenant is **400**. Unknown keys are **422** (`extra=forbid`).
+    """
 
     model_config = ConfigDict(extra="forbid")
 
-    confirm_slug: Annotated[str, Field(min_length=1, max_length=80)]
+    confirm_slug: TenantSlugValue
 
 
 class TenantSubscriptionAssign(BaseModel):

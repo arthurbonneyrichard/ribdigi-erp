@@ -70,7 +70,7 @@ def test_custom_role_permissions_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/users/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Custom role key"' in page
     assert 'aria-label="Custom role label"' in page
-    assert 'aria-label="Clone from system role"' in page
+    assert 'aria-label="Clone from system role"' not in page
     assert 'aria-label="Create custom role"' in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Custom role permissions OpenAPI" in agents
