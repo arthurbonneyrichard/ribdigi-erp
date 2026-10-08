@@ -324,6 +324,36 @@ def media_response(
     )
 
 
+def delete_tenant_media(tenant_id: str) -> None:
+    """Remove uploaded files stored under this tenant id. Other tenants stay."""
+    import shutil
+
+    tid = (tenant_id or "").strip()
+    if not tid or any(part in tid for part in ("/", "\\", "..")):
+        raise ValueError("invalid tenant id")
+    if storage_backend() == "s3":
+        ensure_bucket()
+        client = _s3_client()
+        bucket = _s3_bucket()
+        token = None
+        while True:
+            kwargs = {"Bucket": bucket, "Prefix": f"{tid}/"}
+            if token:
+                kwargs["ContinuationToken"] = token
+            page = client.list_objects_v2(**kwargs)
+            keys = [{"Key": obj["Key"]} for obj in page.get("Contents") or []]
+            if keys:
+                client.delete_objects(Bucket=bucket, Delete={"Objects": keys})
+            if not page.get("IsTruncated"):
+                return
+            token = page.get("NextContinuationToken")
+    root = media_root().resolve()
+    path = (root / tid).resolve()
+    path.relative_to(root)
+    if path.is_dir():
+        shutil.rmtree(path)
+
+
 def storage_status() -> dict:
     backend = storage_backend()
     info: dict = {

@@ -324,6 +324,7 @@ from app.schemas import (
     TenantProfileUpdate,
     TenantSuspendRequest,
     TenantDeleteConfirm,
+    TenantSelfDeleteConfirm,
     TenantSubscriptionAssign,
     TenantModulesUpdate,
     TenantAdminPasswordReset,
@@ -1100,6 +1101,28 @@ async def tenant_activate_by_ref(
     return env(tenants_svc.serialize_tenant(tenant), "Tenant activated")
 
 
+@api.post("/tenants/me/delete")
+async def tenant_delete_self(
+    payload: TenantSelfDeleteConfirm,
+    claims=Depends(require_roles("company_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Company admin deletes only the company on the signed-in token."""
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    if tenant is None:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    result = await tenants_svc.delete_own_tenant(
+        db,
+        tenant,
+        actor_role=claims.get("role") or "",
+        actor_user_id=claims["sub"],
+        password=payload.password,
+        confirm_name=payload.confirm_name,
+        confirm=payload.confirm,
+    )
+    return env(result, "Company deleted")
+
+
 @api.post("/tenants/{tenant_ref}/delete")
 async def tenant_delete_by_ref(
     tenant_ref: TenantRefValue,
@@ -1136,6 +1159,7 @@ async def tenant_delete_by_ref(
         },
     )
     await db.commit()
+    tenants_svc._remove_tenant_files(snapshot["id"])
     return env(snapshot, "Tenant deleted")
 
 

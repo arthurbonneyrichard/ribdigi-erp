@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api, apiFetch, apiOptional } from '../../../lib/api';
+import { api, apiFetch, apiOptional, clearSessionAndRedirect } from '../../../lib/api';
 import { getMe, invalidateMeCache } from '../../../lib/meCache';
 import { formatDateTime, formatNumber } from '../../../lib/format';
 import { canDownloadStaffGuide, industryLabel } from '../../../lib/industries';
@@ -50,6 +50,11 @@ export default function Page() {
   const [industryValid, setIndustryValid] = useState(true);
 
   const [logoBusy, setLogoBusy] = useState(false);
+  const [meRole, setMeRole] = useState('');
+  const [deleteName, setDeleteName] = useState('');
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteArmed, setDeleteArmed] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const LOGO_MAX_BYTES = 2_000_000;
   const LOGO_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif']);
@@ -111,6 +116,7 @@ export default function Page() {
     setProfilePhone(me.data?.phone || '');
     setProfileFullName(me.data?.full_name || '');
     setCanGuide(canDownloadStaffGuide(me.data?.role, me.data?.permissions));
+    setMeRole(me.data?.role || '');
     if (me.data) {
       setIndustryValid(me.data.industry_valid !== false);
     }
@@ -1045,9 +1051,110 @@ export default function Page() {
               }}
               aria-label="Send test SMS to me"
             >
-              Send test SMS to me
-            </button>
+            Send test SMS to me
+          </button>
           </div>
+        </div>
+      )}
+
+      {meRole === 'company_admin' && tenant && (
+        <div className="card" style={{ marginTop: 16, maxWidth: 720 }}>
+          <h2>Company administration</h2>
+          <p className="muted">
+            These tools stay inside this company. The sidebar is built from the saved industry,
+            enabled modules, and your permissions. A hidden menu item is not permission to open the page.
+          </p>
+          <p>
+            <a href="/users">Users and roles</a>
+            {' · '}
+            <a href="/stores">Stores and locations</a>
+            {' · '}
+            <a href="/notifications">Notifications</a>
+            {' · '}
+            <a href="/audit">Activity log</a>
+            {' · '}
+            <a href="/company/billing">Subscription billing</a>
+            {' · '}
+            <a href="/printers">Printers</a>
+            {' · '}
+            <a href="/backup">Download a backup</a>
+          </p>
+          <p className="muted">
+            Printers covers receipts and barcode output for this company&apos;s saved industry.
+            Barcode labels are also printed from Inventory. The cash drawer is on Multi-Store when
+            that module is enabled.
+          </p>
+        </div>
+      )}
+
+      {meRole === 'company_admin' && tenant && (
+        <div className="card" style={{ marginTop: 16, maxWidth: 720 }}>
+          <h2>Delete tenant</h2>
+          <p>
+            This permanently deletes <strong>{tenant.company_name}</strong>. It removes this
+            company&apos;s users, roles, inventory, sales, purchases, finance, stores, settings,
+            uploaded files, sessions, and saved payment references. Platform plans, platform owner
+            accounts, and other companies are not deleted.
+          </p>
+          <p className="muted">
+            A billing or backup copy that was already stored is not erased at this moment. Those
+            copies expire under the backup retention schedule. Download a backup from Backup first
+            if you still need the data.
+          </p>
+          <label style={{ display: 'block', marginBottom: 8 }}>
+            <input
+              type="checkbox"
+              checked={deleteArmed}
+              onChange={(e) => setDeleteArmed(e.target.checked)}
+              aria-label="Confirm permanent tenant deletion"
+            />{' '}
+            I understand this cannot be undone.
+          </label>
+          <label className="muted">Company name</label>
+          <input
+            value={deleteName}
+            onChange={(e) => setDeleteName(e.target.value)}
+            aria-label="Delete tenant confirmation name"
+            style={{ width: '100%', marginBottom: 8 }}
+          />
+          <label className="muted">Your password</label>
+          <input
+            type="password"
+            value={deletePassword}
+            onChange={(e) => setDeletePassword(e.target.value)}
+            aria-label="Delete tenant password"
+            style={{ width: '100%', marginBottom: 8 }}
+          />
+          <button
+            className="btn-danger"
+            disabled={
+              deleteBusy ||
+              !deleteArmed ||
+              deleteName.trim() !== String(tenant.company_name || '').trim() ||
+              !deletePassword.trim()
+            }
+            aria-label="Delete tenant"
+            onClick={async () => {
+              setDeleteBusy(true);
+              setError('');
+              try {
+                await api('/tenants/me/delete', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    password: deletePassword.trim(),
+                    confirm_name: deleteName.trim(),
+                    confirm: true,
+                  }),
+                });
+                clearSessionAndRedirect();
+              } catch (err: any) {
+                setError(err.message);
+                setDeleteBusy(false);
+              }
+            }}
+          >
+            Delete tenant
+          </button>
         </div>
       )}
     </>

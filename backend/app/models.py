@@ -2694,6 +2694,25 @@ class TenantBillingAttempt(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class PlatformTenantDeletion(Base):
+    """Minimal record that a company was deleted. No tenant foreign key.
+
+    The column is ``deleted_tenant_id`` so the tenant-scoped purge, which
+    deletes every table that has ``tenant_id``, leaves this row in place.
+    Do not store the company name, user names, or payment tokens here.
+    """
+
+    __tablename__ = "platform_tenant_deletions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    deleted_tenant_id: Mapped[str] = mapped_column(String(36), index=True)
+    actor_user_id: Mapped[str] = mapped_column(String(36))
+    status: Mapped[str] = mapped_column(String(16), default="pending")
+    error_code: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
 class TenantBillingEvent(Base):
     """Processed gateway webhook id. Raw card payloads are not stored."""
 

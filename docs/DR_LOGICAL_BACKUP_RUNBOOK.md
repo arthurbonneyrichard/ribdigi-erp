@@ -119,3 +119,7 @@ Do not restore into `ribdigi_erp` or any production or staging data.
 Record date, operator, `backup_id`, checksum, dry-run/apply/verify outcomes, and any mismatches in the ops incident or change log after each quarterly drill.
 
 Stage 23 B1 CI/harness evidence: when `test_logical_dr_drill_b1.py` passes, it writes `/opt/ribdigi/artifacts/dr/stage23_b1_logical_drill.json` with `passed`, `backup_id`, checksum, proof flags, and `wal_pitr_deferred=true`.
+
+## Deleted companies and retained backups
+
+Deleting a company removes its live database rows, uploaded files, and the on-disk logical backup folder for that company. It does **not** erase copies that are already inside an older `.ribbak` archive, an offsite object that was uploaded before the delete, or a Postgres WAL / base-backup window. Those copies age out when backup retention deletes the archive (`retention_count` on the backup schedule) or when the operator's WAL retention expires. Do not tell a customer that a backup copy disappeared at the moment of deletion.

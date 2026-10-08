@@ -620,6 +620,93 @@ def _tenant_scoped_tables():
     return tables
 
 
+async def purge_tenant_records(db: AsyncSession, tenant: m.Tenant) -> None:
+    """Delete every row scoped to this tenant, then the tenant row.
+
+    Tables are ordered so dependents go first. The platform deletion log is
+    not included: it has no ``tenant_id`` column. A failure raises 409 and
+    the caller rolls the transaction back.
+    """
+    from sqlalchemy import delete
+    from sqlalchemy.schema import sort_tables
+
+    try:
+        ordered = list(reversed(sort_tables(_tenant_scoped_tables())))
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unable to order tenant tables for delete: {exc}",
+        ) from exc
+
+    try:
+        for table in ordered:
+            await db.execute(delete(table).where(table.c.tenant_id == tenant.id))
+        await db.delete(tenant)
+        await db.flush()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Cannot delete this tenant because some records could not be removed. "
+                "Suspend the tenant instead, or contact support."
+            ),
+        ) from exc
+
+
+def _remove_tenant_files(tenant_id: str) -> str | None:
+    """Drop this tenant's uploads and on-disk logical backups. None when both succeed."""
+    from app.backup import backup_root
+    from app.storage import delete_tenant_media
+    import shutil
+
+    errors = []
+    try:
+        delete_tenant_media(tenant_id)
+    except Exception:
+        errors.append("files_remaining")
+    try:
+        tid = (tenant_id or "").strip()
+        if tid and all(part not in tid for part in ("/", "\\", "..")):
+            root = backup_root().resolve()
+            path = (root / tid).resolve()
+            path.relative_to(root)
+            if path.is_dir():
+                shutil.rmtree(path)
+    except Exception:
+        errors.append("backups_remaining")
+    return errors[0] if errors else None
+
+
+async def _notify_deletion_result(db: AsyncSession, deleted_tenant_id: str, status: str) -> None:
+    """Tell platform owners on their own workspace. Identifier and status only."""
+    from app import notifications as notifications_svc
+    from app.rbac import PLATFORM_OWNER_ROLES
+
+    owners = (
+        await db.execute(
+            select(m.User).where(
+                m.User.role.in_(tuple(PLATFORM_OWNER_ROLES)),
+                m.User.is_active == True,  # noqa: E712
+            )
+        )
+    ).scalars().all()
+    title = "Tenant deletion completed" if status == "completed" else "Tenant deletion failed"
+    message = f"Tenant {deleted_tenant_id} deletion {status}."
+    for owner in owners:
+        if owner.tenant_id == deleted_tenant_id:
+            continue
+        await notifications_svc.create_notification(
+            db,
+            tenant_id=owner.tenant_id,
+            user_id=owner.id,
+            category="platform",
+            title=title,
+            message=message,
+            entity_type="tenant_deletion",
+            entity_id=deleted_tenant_id,
+        )
+
+
 async def delete_tenant(
     db: AsyncSession,
     tenant: m.Tenant,
@@ -630,8 +717,6 @@ async def delete_tenant(
 ) -> dict:
     """Permanently remove a company tenant and all of its scoped data."""
     from app.rbac import is_platform_tenant_delete_role
-    from sqlalchemy import delete
-    from sqlalchemy.schema import sort_tables
 
     if not is_platform_tenant_delete_role(actor_role):
         raise HTTPException(
@@ -663,30 +748,126 @@ async def delete_tenant(
         "company_name": tenant.company_name,
         "status": tenant.status,
     }
+    await purge_tenant_records(db, tenant)
+    return snapshot
 
-    # Parents first from sort_tables → reverse so children (dependents) go first.
-    try:
-        ordered = list(reversed(sort_tables(_tenant_scoped_tables())))
-    except Exception as exc:
+
+async def delete_own_tenant(
+    db: AsyncSession,
+    tenant: m.Tenant,
+    *,
+    actor_role: str,
+    actor_user_id: str,
+    password: str,
+    confirm_name: str,
+    confirm: bool,
+) -> dict:
+    """Company admin permanently deletes the tenant on their own token.
+
+    Sessions are revoked and that change is committed before the purge, so
+    existing tokens stop working immediately. The purge is one transaction.
+    If it fails, it rolls back and the admin can sign in and retry. The
+    deletion row stays outside tenant data.
+    """
+    import asyncio
+
+    from app.rbac import PLATFORM_OWNER_ROLES
+    from app.security import verify_password
+
+    if (actor_role or "") != "company_admin":
         raise HTTPException(
-            status_code=500,
-            detail=f"Unable to order tenant tables for delete: {exc}",
-        ) from exc
+            status_code=403,
+            detail="Only a company admin can delete this company",
+        )
+    slug = (tenant.slug or "").strip().lower()
+    if slug in PROTECTED_TENANT_SLUGS or (tenant.id or "") in PROTECTED_TENANT_SLUGS:
+        raise HTTPException(
+            status_code=400,
+            detail="The platform owner workspace cannot be deleted",
+        )
+    if confirm is not True:
+        raise HTTPException(status_code=400, detail="Confirm deletion before continuing")
+    expected_name = (tenant.company_name or "").strip()
+    if (confirm_name or "").strip() != expected_name:
+        raise HTTPException(
+            status_code=400,
+            detail="Type this company's exact name to confirm deletion",
+        )
+    user = await db.get(m.User, actor_user_id)
+    if user is None or user.tenant_id != tenant.id or not user.is_active:
+        raise HTTPException(status_code=403, detail="Only a company admin of this company can delete it")
+    if not await asyncio.to_thread(verify_password, password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Password is incorrect")
 
+    owners_here = (
+        await db.execute(
+            select(m.User.id).where(
+                m.User.tenant_id == tenant.id,
+                m.User.role.in_(tuple(PLATFORM_OWNER_ROLES)),
+            )
+        )
+    ).first()
+    if owners_here is not None:
+        raise HTTPException(
+            status_code=400,
+            detail="This company hosts a platform owner account and cannot be deleted here",
+        )
+
+    deleted_id = tenant.id
+    row = m.PlatformTenantDeletion(
+        deleted_tenant_id=deleted_id,
+        actor_user_id=actor_user_id,
+        status="pending",
+    )
+    db.add(row)
+    await db.flush()
+    deletion_id = row.id
+    await revoke_all_sessions(db, deleted_id)
+    await db.commit()
+
+    tenant = await db.get(m.Tenant, deleted_id)
+    row = await db.get(m.PlatformTenantDeletion, deletion_id)
+    if tenant is None:
+        if row is not None:
+            row.status = "completed"
+            row.completed_at = datetime.utcnow()
+            await db.commit()
+        return {"deleted_tenant_id": deleted_id, "status": "completed"}
     try:
-        for table in ordered:
-            await db.execute(delete(table).where(table.c.tenant_id == tenant.id))
-        await db.delete(tenant)
-        await db.flush()
-    except Exception as exc:
+        await purge_tenant_records(db, tenant)
+        if row is not None:
+            row.status = "completed"
+            row.completed_at = datetime.utcnow()
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        failed = await db.get(m.PlatformTenantDeletion, deletion_id)
+        if failed is not None:
+            failed.status = "failed"
+            failed.error_code = "purge_failed"
+            failed.completed_at = datetime.utcnow()
+            await db.commit()
+        await _notify_deletion_result(db, deleted_id, "failed")
+        await db.commit()
         raise HTTPException(
             status_code=409,
             detail=(
-                "Cannot delete this tenant because some records could not be removed. "
-                "Suspend the tenant instead, or contact support."
+                "Deletion did not finish. Your existing sessions were signed out. "
+                "Sign in and retry. Company data was not removed."
             ),
-        ) from exc
-    return snapshot
+        )
+    file_error = _remove_tenant_files(deleted_id)
+    if file_error:
+        saved = await db.get(m.PlatformTenantDeletion, deletion_id)
+        if saved is not None:
+            saved.error_code = file_error
+            await db.commit()
+    try:
+        await _notify_deletion_result(db, deleted_id, "completed")
+        await db.commit()
+    except Exception:
+        await db.rollback()
+    return {"deleted_tenant_id": deleted_id, "status": "completed"}
 
 
 async def ensure_trial_state(db: AsyncSession, tenant: m.Tenant) -> m.Tenant:

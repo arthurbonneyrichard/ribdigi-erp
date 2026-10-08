@@ -855,6 +855,22 @@ class TenantSuspendRequest(BaseModel):
     reason: TenantSuspendReasonValue
 
 
+class TenantSelfDeleteConfirm(BaseModel):
+    """Company admin deletes only the tenant in their own token.
+
+    There is no tenant id field. ``confirm`` must be true. ``confirm_name``
+    must match the saved company name after strip. ``password`` is the
+    admin's current password. Unknown keys, including a client tenant id,
+    are **422**.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    password: LoginPasswordValue
+    confirm_name: str = Field(min_length=1, max_length=200)
+    confirm: Literal[True]
+
+
 class TenantDeleteConfirm(BaseModel):
     """Hard-delete a company. Software owner or platform admin only.
 
