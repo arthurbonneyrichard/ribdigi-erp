@@ -82,7 +82,7 @@ export default function PlatformBillingPage() {
         body: JSON.stringify(body),
       });
       setGatewayForm((current) => ({ ...current, secret: '', webhook_secret: '' }));
-      setStatus((current) => mergePlatformBillingStatus(current, saved?.data || saved));
+      setStatus((current: any) => mergePlatformBillingStatus(current, saved?.data || saved));
       setMessage('Sandbox gateway saved. Secrets stay on the server.');
     } catch (err: any) {
       setError(err.message || 'Could not save the gateway');
@@ -95,7 +95,7 @@ export default function PlatformBillingPage() {
     try {
       const result = await api('/platform/billing/gateway/test', { method: 'POST' });
       const probe = result?.data || result;
-      setStatus((current) => mergePlatformBillingStatus(current, probe));
+      setStatus((current: any) => mergePlatformBillingStatus(current, probe));
       setMessage(probe?.last_test_message || result?.message || 'Connection test finished.');
     } catch (err: any) {
       setError(err.message || 'Could not test the gateway');
