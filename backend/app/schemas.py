@@ -4176,6 +4176,7 @@ JobNameValue = Annotated[
         "generate_recurring_expenses",
         "run_due_backups",
         "scan_trial_lifecycle",
+        "process_subscription_renewals",
         "run_due_report_emails",
         "refresh_fx_rates",
         "sync_bank_feeds",

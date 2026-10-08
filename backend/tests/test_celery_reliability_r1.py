@@ -35,6 +35,7 @@ EXPECTED_HANDLERS = {
     "retry_due_webhooks",
     "scan_ai_security_alerts",
     "send_weekly_ai_insight_digest",
+    "process_subscription_renewals",
 }
 
 
@@ -95,6 +96,7 @@ def test_handler_beat_jobs_api_parity():
         "retry_due_webhooks_seconds",
         "scan_ai_security_alerts_minutes",
         "send_weekly_ai_insight_digest_schedule",
+        "process_subscription_renewals_minutes",
     ):
         assert key in api_src
 

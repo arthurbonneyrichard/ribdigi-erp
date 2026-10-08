@@ -392,8 +392,10 @@ from app.rbac import (
 api = APIRouter(prefix="/api/v1")
 api.include_router(printers_api_mod.router)
 from app import commerce_extras_api as commerce_extras_api_mod
+from app import billing_api as billing_api_mod
 
 api.include_router(commerce_extras_api_mod.router)
+api.include_router(billing_api_mod.router)
 logger = logging.getLogger("ribdigi.api")
 
 
@@ -14764,6 +14766,7 @@ async def list_jobs(
                 "generate_recurring_expenses_minutes": app_settings.CELERY_RECURRING_INTERVAL_MINUTES,
                 "run_due_backups_minutes": app_settings.CELERY_BACKUP_INTERVAL_MINUTES,
                 "scan_trial_lifecycle_minutes": app_settings.CELERY_TRIAL_INTERVAL_MINUTES,
+                "process_subscription_renewals_minutes": app_settings.CELERY_BILLING_INTERVAL_MINUTES,
                 "run_due_report_emails_minutes": app_settings.CELERY_REPORT_EMAIL_INTERVAL_MINUTES,
                 "refresh_fx_rates_minutes": app_settings.CELERY_FX_INTERVAL_MINUTES,
                 "sync_bank_feeds_minutes": app_settings.CELERY_BANK_FEED_INTERVAL_MINUTES,

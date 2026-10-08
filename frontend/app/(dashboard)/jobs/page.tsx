@@ -19,6 +19,7 @@ const JOB_LABELS: Record<string, string> = {
   retry_due_webhooks: 'Retry webhooks',
   scan_ai_security_alerts: 'AI security alerts',
   send_weekly_ai_insight_digest: 'Weekly AI insight digest',
+  process_subscription_renewals: 'Subscription renewals',
 };
 
 const PLATFORM_VIEW_ROLES = new Set([

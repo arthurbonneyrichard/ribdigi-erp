@@ -2605,3 +2605,105 @@ class PrintJobAttempt(Base):
     detail: Mapped[str | None] = mapped_column(Text, nullable=True)
     actor_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PlatformBillingPlan(Base):
+    """Software-owner price for an ERP package. Not a customer sale."""
+
+    __tablename__ = "platform_billing_plans"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    code: Mapped[str] = mapped_column(String(40), unique=True, index=True)
+    package_code: Mapped[str] = mapped_column(String(40), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    interval: Mapped[str] = mapped_column(String(16))
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    currency: Mapped[str] = mapped_column(String(3), default="GHS")
+    trial_days: Mapped[int] = mapped_column(Integer, default=14)
+    grace_days: Mapped[int] = mapped_column(Integer, default=7)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class TenantBillingAccount(Base):
+    """One SaaS billing profile per tenant. Stores gateway references, never card data."""
+
+    __tablename__ = "tenant_billing_accounts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), unique=True, index=True)
+    plan_id: Mapped[str | None] = mapped_column(
+        ForeignKey("platform_billing_plans.id"), nullable=True
+    )
+    billing_status: Mapped[str] = mapped_column(String(32), default="trialing")
+    auto_renew: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    consent_version: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    consent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    consent_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    consent_plan_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    consent_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    consent_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    consent_interval: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    gateway_provider: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    gateway_customer_ref: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    gateway_authorization_ref: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    paid_through: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    next_renewal_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    next_retry_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    canceled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    grace_ends_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_notice_key: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class TenantBillingInvoice(Base):
+    __tablename__ = "tenant_billing_invoices"
+    __table_args__ = (UniqueConstraint("idempotency_key", name="uq_tenant_billing_invoice_key"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    account_id: Mapped[str] = mapped_column(ForeignKey("tenant_billing_accounts.id"), index=True)
+    plan_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    idempotency_key: Mapped[str] = mapped_column(String(160))
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    currency: Mapped[str] = mapped_column(String(3))
+    status: Mapped[str] = mapped_column(String(16), default="open")
+    period_start: Mapped[datetime] = mapped_column(DateTime)
+    period_end: Mapped[datetime] = mapped_column(DateTime)
+    gateway_reference: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class TenantBillingAttempt(Base):
+    __tablename__ = "tenant_billing_attempts"
+    __table_args__ = (
+        UniqueConstraint("invoice_id", "attempt_number", name="uq_tenant_billing_attempt"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    invoice_id: Mapped[str] = mapped_column(ForeignKey("tenant_billing_invoices.id"), index=True)
+    attempt_number: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(16), default="pending")
+    failure_reason: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    gateway_reference: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class TenantBillingEvent(Base):
+    """Processed gateway webhook id. Raw card payloads are not stored."""
+
+    __tablename__ = "tenant_billing_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    provider: Mapped[str] = mapped_column(String(32))
+    gateway_event_id: Mapped[str] = mapped_column(String(160), unique=True, index=True)
+    tenant_id: Mapped[str | None] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
+    invoice_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    event_type: Mapped[str] = mapped_column(String(80))
+    outcome: Mapped[str] = mapped_column(String(40))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

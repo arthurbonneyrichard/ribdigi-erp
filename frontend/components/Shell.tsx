@@ -51,6 +51,7 @@ import StoreSwitcher from './StoreSwitcher';
 const TENANT_ITEMS: NavItem[] = [
   ['Dashboard', '/dashboard', 'dashboard'],
   ['Company', '/company', 'company'],
+  ['Subscription billing', '/company/billing', 'company'],
   ['Products', '/inventory?tab=products', 'inventory'],
   ['Categories', '/inventory?tab=categories', 'inventory'],
   ['Brands', '/inventory?tab=brands', 'inventory'],
@@ -169,6 +170,7 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
     label: 'Settings',
     items: [
       ['Company', '/company', 'company'],
+      ['Subscription billing', '/company/billing', 'company'],
       ['Integrations', '/integrations', 'integrations'],
       ['Security', '/security', 'security'],
       ['Printers', '/printers', 'printers'],
@@ -201,6 +203,7 @@ function usesAccordion(group: NavGroup): boolean {
 const PLATFORM_ITEMS: NavItem[] = [
   ['Platform', '/platform', 'platform'],
   ['Tenant', '/platform/tenants', 'platform_tenants'],
+  ['Billing', '/platform/billing', 'platform'],
   ['Staff', '/platform/staff', 'platform_staff'],
   ['Reports', '/platform/reports', 'platform_reports'],
   ['Jobs', '/jobs', 'jobs'],

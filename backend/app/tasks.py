@@ -112,6 +112,13 @@ def send_weekly_ai_insight_digest() -> dict:
     return jobs_svc.run_async(jobs_svc.job_send_weekly_ai_insight_digest())
 
 
+@celery.task(name="app.tasks.process_subscription_renewals")
+def process_subscription_renewals() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    return jobs_svc.run_async(jobs_svc.job_process_subscription_renewals())
+
+
 @celery.task(name="app.tasks.run_named_job")
 def run_named_job(name: str) -> dict:
     if not settings.CELERY_ENABLED:

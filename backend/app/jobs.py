@@ -251,6 +251,20 @@ async def job_send_weekly_ai_insight_digest() -> dict:
     return await _for_each_tenant(work)
 
 
+async def job_process_subscription_renewals() -> dict:
+    from app import saas_billing as billing_svc
+
+    async with SessionLocal() as db:
+        try:
+            outcome = await billing_svc.process_due_renewals(db)
+            await db.commit()
+            return {"ok": True, **outcome}
+        except Exception:
+            logger.exception("Subscription renewal job failed")
+            await db.rollback()
+            return {"ok": False, "error": "job_failed"}
+
+
 JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "scan_low_stock": job_scan_low_stock,
     "scan_payment_due": job_scan_payment_due,
@@ -267,6 +281,7 @@ JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "retry_due_webhooks": job_retry_due_webhooks,
     "scan_ai_security_alerts": job_scan_ai_security_alerts,
     "send_weekly_ai_insight_digest": job_send_weekly_ai_insight_digest,
+    "process_subscription_renewals": job_process_subscription_renewals,
 }
 
 

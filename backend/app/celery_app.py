@@ -107,5 +107,11 @@ celery.conf.update(
             "task": "app.tasks.send_weekly_ai_insight_digest",
             "schedule": crontab(minute=0, hour=7, day_of_week="monday"),
         },
+        "process-subscription-renewals": {
+            "task": "app.tasks.process_subscription_renewals",
+            "schedule": schedule(
+                run_every=max(1, int(settings.CELERY_BILLING_INTERVAL_MINUTES)) * 60.0
+            ),
+        },
     },
 )

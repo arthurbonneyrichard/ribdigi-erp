@@ -66,6 +66,7 @@ export const HOTEL_NAV_ITEMS: NavItem[] = [
   ['Notifications', '/notifications', 'notifications'],
   ['Hotel Profile and Settings', '/hotel?tab=settings', 'hotel'],
   ['Company profile', '/company', 'company'],
+  ['Subscription billing', '/company/billing', 'company'],
   ['Integrations', '/integrations', 'company'],
 ];
 

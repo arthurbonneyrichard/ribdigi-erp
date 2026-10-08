@@ -19,6 +19,7 @@ EXPECTED_HANDLERS = {
     "retry_due_webhooks",
     "scan_ai_security_alerts",
     "send_weekly_ai_insight_digest",
+    "process_subscription_renewals",
 }
 
 EXPECTED_BEAT = {
@@ -37,6 +38,7 @@ EXPECTED_BEAT = {
     "retry-due-webhooks",
     "scan-ai-security-alerts",
     "send-weekly-ai-insight-digest",
+    "process-subscription-renewals",
 }
 
 

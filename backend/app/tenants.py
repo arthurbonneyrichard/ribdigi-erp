@@ -730,6 +730,11 @@ async def process_trial_lifecycle(db: AsyncSession) -> dict:
     for tenant in tenants:
         if tenant.status == "trial":
             if tenant.trial_ends_at and tenant.trial_ends_at <= now:
+                from app import saas_billing as billing_svc
+
+                billing_outcome = await billing_svc.note_trial_ended(db, tenant)
+                if billing_outcome == "paid" or tenant.status != "trial":
+                    continue
                 await enter_grace(db, tenant, now=now)
                 entered_grace += 1
                 await notify_trial_event(
