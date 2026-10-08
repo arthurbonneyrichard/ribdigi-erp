@@ -438,7 +438,7 @@ async def test_pending_charge_waits_for_webhook(client, monkeypatch):
         def charge(self, **kwargs):
             return ChargeResult(False, "gw_pending_1", "pending", pending=True)
 
-    monkeypatch.setattr("app.saas_billing.get_gateway", lambda: _PendingGateway())
+    monkeypatch.setattr("app.billing_gateway.get_gateway", lambda: _PendingGateway())
     async with jobs_mod.SessionLocal() as db:
         first = await process_due_renewals(db, now=datetime.utcnow())
         await db.commit()

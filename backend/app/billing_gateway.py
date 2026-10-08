@@ -11,11 +11,14 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import ipaddress
 import json
 from dataclasses import dataclass
 from decimal import Decimal
+from urllib.parse import urlparse
 
 import httpx
+from fastapi import HTTPException
 
 from app.config import settings
 
@@ -77,8 +80,21 @@ class MockGateway(BillingGateway):
     provider = "mock"
     _charged: set[str] = set()
 
+    def __init__(self, *, mode: str = "sandbox") -> None:
+        self.mode = (mode or "sandbox").strip().lower()
+
     def configured(self) -> bool:
-        return settings.APP_ENV.lower() != "production"
+        if settings.APP_ENV.lower() == "production":
+            return False
+        return self.mode != "live"
+
+    def test_connection(self) -> tuple[bool, str]:
+        """Confirm sandbox mock is usable. Does not capture a payment."""
+        if settings.APP_ENV.lower() == "production":
+            return False, "sandbox_disabled"
+        if self.mode == "live":
+            return False, "mock_live_refused"
+        return True, "sandbox_ready"
 
     def charge(
         self,
@@ -126,14 +142,34 @@ class MockGateway(BillingGateway):
 class PaystackGateway(BillingGateway):
     provider = "paystack"
 
+    def __init__(self, *, secret: str | None = None, base_url: str | None = None) -> None:
+        raw = settings.PAYSTACK_SECRET_KEY if secret is None else secret
+        self.secret = (raw or "").strip()
+        self.base_url = (base_url or "https://api.paystack.co").strip().rstrip("/")
+
     def configured(self) -> bool:
-        return bool((settings.PAYSTACK_SECRET_KEY or "").strip())
+        return bool(self.secret)
 
     def _headers(self) -> dict[str, str]:
         return {
-            "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY.strip()}",
+            "Authorization": f"Bearer {self.secret}",
             "Content-Type": "application/json",
         }
+
+    def test_connection(self) -> tuple[bool, str]:
+        """Read Paystack balance. This does not create a charge."""
+        if not self.configured():
+            return False, "paystack_not_configured"
+        if not self.base_url.startswith("https://api.paystack.co"):
+            return False, "provider_url_rejected"
+        try:
+            response = httpx.get(f"{self.base_url}/balance", headers=self._headers(), timeout=15.0)
+            body = response.json()
+        except (httpx.HTTPError, ValueError):
+            return False, "paystack_unreachable"
+        if response.status_code < 300 and isinstance(body, dict) and body.get("status") is True:
+            return True, "paystack_ok"
+        return False, "paystack_rejected"
 
     def charge(
         self,
@@ -155,7 +191,7 @@ class PaystackGateway(BillingGateway):
         }
         try:
             response = httpx.post(
-                PAYSTACK_CHARGE_URL,
+                f"{self.base_url}/transaction/charge_authorization",
                 headers=self._headers(),
                 json=payload,
                 timeout=20.0,
@@ -202,7 +238,7 @@ class PaystackGateway(BillingGateway):
         }
         try:
             response = httpx.post(
-                PAYSTACK_INITIALIZE_URL,
+                f"{self.base_url}/transaction/initialize",
                 headers=self._headers(),
                 json=payload,
                 timeout=20.0,
@@ -225,21 +261,25 @@ def get_gateway() -> BillingGateway:
     return BillingGateway()
 
 
-def verify_webhook_signature(provider: str, body: bytes, header: str | None) -> bool:
+def verify_webhook_signature(
+    provider: str, body: bytes, header: str | None, secret: str | None = None
+) -> bool:
     supplied = (header or "").strip()
     if not supplied or not body:
         return False
     name = (provider or "").strip().lower()
     if name == "paystack":
-        secret = (settings.PAYSTACK_SECRET_KEY or "").strip()
-        if not secret:
+        key = settings.PAYSTACK_SECRET_KEY if secret is None else secret
+        key = (key or "").strip()
+        if not key:
             return False
-        digest = hmac.new(secret.encode("utf-8"), body, hashlib.sha512).hexdigest()
+        digest = hmac.new(key.encode("utf-8"), body, hashlib.sha512).hexdigest()
         return hmac.compare_digest(digest, supplied)
-    secret = (settings.BILLING_WEBHOOK_SECRET or "").strip()
-    if not secret:
+    key = settings.BILLING_WEBHOOK_SECRET if secret is None else secret
+    secret_key = (key or "").strip()
+    if not secret_key:
         return False
-    digest = hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
+    digest = hmac.new(secret_key.encode("utf-8"), body, hashlib.sha256).hexdigest()
     return hmac.compare_digest(digest, supplied)
 
 
@@ -258,3 +298,79 @@ def webhook_json(body: bytes) -> dict:
     if not isinstance(parsed, dict):
         raise ValueError("webhook body must be an object")
     return parsed
+
+
+PAYSTACK_HOST = "api.paystack.co"
+
+
+def validate_paystack_base_url(url: str) -> str:
+    """Allow only the public Paystack API host over HTTPS."""
+    parsed = urlparse((url or "").strip())
+    host = (parsed.hostname or "").lower()
+    if parsed.scheme != "https" or parsed.username or parsed.password:
+        raise HTTPException(status_code=422, detail="Provider URL must be https with no credentials")
+    if parsed.query or parsed.fragment or (parsed.port not in (None, 443)):
+        raise HTTPException(status_code=422, detail="Provider URL is not allowed")
+    if host != PAYSTACK_HOST:
+        raise HTTPException(status_code=422, detail="Provider host is not allowed")
+    try:
+        ipaddress.ip_address(host)
+    except ValueError:
+        pass
+    else:
+        raise HTTPException(status_code=422, detail="Provider host is not allowed")
+    return f"https://{host}"
+
+
+def gateway_for_config(*, provider: str, mode: str, secret: str, base_url: str | None) -> BillingGateway:
+    name = (provider or "").strip().lower()
+    if name == "mock":
+        return MockGateway(mode=mode)
+    if name == "paystack":
+        base = validate_paystack_base_url(base_url or "https://api.paystack.co")
+        return PaystackGateway(secret=secret, base_url=base)
+    return BillingGateway()
+
+
+async def current_gateway(db) -> BillingGateway:
+    """Use a tested, enabled platform row. Otherwise keep the environment gateway."""
+    from sqlalchemy import select
+
+    from app import models as m
+    from app.billing_secrets import decrypt_billing_secret
+
+    row = (await db.execute(select(m.PlatformBillingGateway).limit(1))).scalar_one_or_none()
+    if row is None:
+        return get_gateway()
+    if not row.enabled or not row.last_test_ok or not row.secret_enc:
+        return BillingGateway()
+    try:
+        secret = decrypt_billing_secret(row.secret_enc)
+    except HTTPException:
+        return BillingGateway()
+    return gateway_for_config(
+        provider=row.provider,
+        mode=row.mode,
+        secret=secret,
+        base_url=row.api_base_url,
+    )
+
+
+async def webhook_signing_secret(db, provider: str) -> str | None:
+    """Stored secret when a row exists. None means use the environment secret."""
+    from sqlalchemy import select
+
+    from app import models as m
+    from app.billing_secrets import decrypt_billing_secret
+
+    row = (await db.execute(select(m.PlatformBillingGateway).limit(1))).scalar_one_or_none()
+    if row is None or (row.provider or "").strip().lower() != (provider or "").strip().lower():
+        return None
+    name = (provider or "").strip().lower()
+    token = row.secret_enc if name == "paystack" else row.webhook_secret_enc
+    if not token:
+        return None
+    try:
+        return decrypt_billing_secret(token)
+    except HTTPException:
+        return ""

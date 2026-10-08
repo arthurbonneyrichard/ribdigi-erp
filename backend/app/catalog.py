@@ -696,7 +696,7 @@ async def stock_out_with_batch(
     from app.packages import canonicalize_industry
     from app import pharmacy as pharmacy_svc
 
-    pharmacy_fefo = canonicalize_industry(getattr(tenant, "industry", None) if tenant else None) == "pharmacy"
+    hard_expiry = canonicalize_industry(getattr(tenant, "industry", None) if tenant else None) in {"pharmacy", "fmcg"}
 
     def _blocked(batch: m.ProductBatch, held: set[str]) -> str | None:
         if batch.id in held:
@@ -797,7 +797,7 @@ async def stock_out_with_batch(
                         "shortfall": money_json(remaining),
                     },
                 )
-        elif batches and not saleable and (product.tracks_batches or pharmacy_fefo or consumed):
+        elif batches and not saleable and (product.tracks_batches or hard_expiry or consumed):
             raise HTTPException(
                 status_code=409,
                 detail={

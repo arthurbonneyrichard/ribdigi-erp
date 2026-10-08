@@ -7,12 +7,12 @@ import {
   industryHomePath,
 } from './industryDashboard';
 
-test('hotel home is /hotel; everyone else stays on /dashboard', () => {
+test('hotel home is /hotel and restaurant home is /restaurant', () => {
   assert.equal(industryHomePath('hotel'), '/hotel');
   assert.equal(industryHomePath('hospitality'), '/hotel');
   assert.equal(industryHomePath('pharmacy'), '/dashboard');
   assert.equal(industryHomePath('mart'), '/dashboard');
-  assert.equal(industryHomePath('restaurant'), '/dashboard');
+  assert.equal(industryHomePath('restaurant'), '/restaurant');
   assert.equal(industryHomePath('retail'), '/dashboard');
 });
 
@@ -48,11 +48,11 @@ test('pharmacy extras are lots, batches, and prescriptions; mart has none', () =
   assert.equal(industryDashboardSectionLabel('mart'), null);
 });
 
-test('restaurant cards are printers without hotel PMS', () => {
+test('restaurant cards are floor and kitchen without hotel PMS', () => {
   const rows = industryDashboardFeatures('restaurant');
   assert.deepEqual(
     rows.map((f) => f.href),
-    ['/printers'],
+    ['/restaurant', '/restaurant?tab=orders', '/restaurant?tab=kitchen', '/printers'],
   );
   assert.equal(
     rows.some((f) => f.href.startsWith('/hotel')),

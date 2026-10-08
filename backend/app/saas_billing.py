@@ -20,7 +20,7 @@ from app import audit as audit_svc
 from app import models as m
 from app import notifications as notifications_svc
 from app import packages as packages_svc
-from app.billing_gateway import CONSENT_VERSION, get_gateway, minor_units
+from app.billing_gateway import CONSENT_VERSION, current_gateway, get_gateway, minor_units
 from app.config import settings
 from app.honesty import money_json
 from app.models import uid
@@ -62,6 +62,14 @@ def _now() -> datetime:
 
 def money(value) -> Decimal:
     return Decimal(str(value if value is not None else "0")).quantize(Decimal("0.01"))
+
+
+def billable_price(account, plan) -> tuple[Decimal, str]:
+    override = getattr(account, "price_override_amount", None)
+    if override is not None:
+        currency = (getattr(account, "price_override_currency", None) or plan.currency or "GHS").upper()
+        return money(override), currency
+    return money(plan.amount), (plan.currency or "GHS").upper()
 
 
 def _reject_card_text(value: str | None, label: str) -> str:
@@ -149,6 +157,10 @@ def serialize_account(account: m.TenantBillingAccount, plan: m.PlatformBillingPl
         "consent_user_id": account.consent_user_id,
         "consent_amount": money_json(account.consent_amount) if account.consent_amount is not None else None,
         "consent_currency": account.consent_currency,
+        "price_override_amount": money_json(account.price_override_amount)
+        if getattr(account, "price_override_amount", None) is not None
+        else None,
+        "price_override_currency": getattr(account, "price_override_currency", None),
         "consent_interval": account.consent_interval,
         "authorization_present": bool(account.gateway_authorization_ref),
         "authorization_hint": _mask(account.gateway_authorization_ref),
@@ -253,8 +265,8 @@ def _validate_plan_fields(payload) -> None:
     if amount <= 0:
         raise HTTPException(status_code=422, detail="amount must be greater than zero")
     currency = (payload.currency or "").strip().upper()
-    if not re.fullmatch(r"[A-Z]{3}", currency):
-        raise HTTPException(status_code=422, detail="currency must be a 3-letter ISO code")
+    if currency not in {"GHS", "USD"}:
+        raise HTTPException(status_code=422, detail="currency must be GHS or USD")
     if int(payload.trial_days) < 0 or int(payload.trial_days) > 365:
         raise HTTPException(status_code=422, detail="trial_days must be between 0 and 365")
     if int(payload.grace_days) < 1 or int(payload.grace_days) > 90:
@@ -307,8 +319,8 @@ async def update_plan(db: AsyncSession, plan_id: str, payload, *, actor) -> m.Pl
         plan.amount = amount
     if "currency" in data and data["currency"] is not None:
         currency = data["currency"].strip().upper()
-        if not re.fullmatch(r"[A-Z]{3}", currency):
-            raise HTTPException(status_code=422, detail="currency must be a 3-letter ISO code")
+        if currency not in {"GHS", "USD"}:
+            raise HTTPException(status_code=422, detail="currency must be GHS or USD")
         plan.currency = currency
     if "name" in data and data["name"] is not None:
         plan.name = data["name"].strip()
@@ -345,7 +357,7 @@ async def assign_plan(db: AsyncSession, tenant: m.Tenant, payload, *, actor) -> 
     plan = await _plan_by_code(db, payload.plan_code)
     account = await get_or_create_account(db, tenant)
     account.plan_id = plan.id
-    account.gateway_provider = get_gateway().provider
+    account.gateway_provider = (await current_gateway(db)).provider
     trial_ends = _parse_iso(payload.trial_ends_at)
     renewal = _parse_iso(payload.next_renewal_at)
     if trial_ends:
@@ -357,6 +369,16 @@ async def assign_plan(db: AsyncSession, tenant: m.Tenant, payload, *, actor) -> 
         account.next_renewal_at = renewal
     elif trial_ends:
         account.next_renewal_at = trial_ends
+    custom = getattr(payload, "custom_amount", None)
+    if custom is not None:
+        custom_currency = (getattr(payload, "custom_currency", None) or plan.currency or "GHS").strip().upper()
+        if custom_currency not in {"GHS", "USD"}:
+            raise HTTPException(status_code=422, detail="currency must be GHS or USD")
+        amount = money(custom)
+        if amount <= 0:
+            raise HTTPException(status_code=422, detail="amount must be greater than zero")
+        account.price_override_amount = amount
+        account.price_override_currency = custom_currency
     tenant.package_code = plan.package_code
     tenant.enabled_modules = None
     account.updated_at = _now()
@@ -385,8 +407,9 @@ async def record_consent(
     account.consent_at = now
     account.consent_user_id = user_id
     account.consent_plan_id = plan.id
-    account.consent_amount = money(plan.amount)
-    account.consent_currency = plan.currency
+    price, price_currency = billable_price(account, plan)
+    account.consent_amount = price
+    account.consent_currency = price_currency
     account.consent_interval = plan.interval
     account.auto_renew = bool(account.gateway_authorization_ref)
     account.updated_at = now
@@ -402,8 +425,8 @@ async def record_consent(
         details={
             "version": CONSENT_VERSION,
             "plan_id": plan.id,
-            "amount": str(money(plan.amount)),
-            "currency": plan.currency,
+            "amount": str(price),
+            "currency": price_currency,
             "interval": plan.interval,
         },
     )
@@ -425,12 +448,12 @@ async def start_checkout(db: AsyncSession, tenant: m.Tenant, *, plan_code: str, 
     account = await get_account(db, tenant.id)
     if not account or account.consent_plan_id != plan.id or not account.consent_at:
         raise HTTPException(status_code=422, detail="Record renewal consent before checkout")
-    gateway = get_gateway()
+    gateway = await current_gateway(db)
     reference = f"checkout:{account.id}:{plan.id}"
     result = gateway.checkout(
         email=email,
-        amount_minor=minor_units(money(plan.amount)),
-        currency=plan.currency,
+        amount_minor=minor_units(billable_price(account, plan)[0]),
+        currency=billable_price(account, plan)[1],
         reference=reference,
         callback_url=checkout_path(),
     )
@@ -453,7 +476,7 @@ async def start_checkout(db: AsyncSession, tenant: m.Tenant, *, plan_code: str, 
 async def attach_sandbox_authorization(
     db: AsyncSession, tenant: m.Tenant, *, authorization_code: str, user_id: str
 ) -> m.TenantBillingAccount:
-    gateway = get_gateway()
+    gateway = await current_gateway(db)
     if gateway.provider != "mock" or not gateway.configured():
         raise HTTPException(status_code=404, detail="Sandbox authorization is not available")
     token = _reject_card_text(authorization_code, "authorization_code")
@@ -602,8 +625,8 @@ async def _open_invoice(
         account_id=account.id,
         plan_id=plan.id,
         idempotency_key=key,
-        amount=money(plan.amount),
-        currency=plan.currency,
+        amount=billable_price(account, plan)[0],
+        currency=billable_price(account, plan)[1],
         status="open",
         period_start=period_start,
         period_end=period_end,
@@ -777,7 +800,7 @@ async def charge_invoice(
             await db.flush()
     except IntegrityError:
         return "skipped"
-    gateway = get_gateway()
+    gateway = await current_gateway(db)
     result = gateway.charge(
         authorization_ref=account.gateway_authorization_ref or "",
         amount_minor=minor_units(money(invoice.amount)),
@@ -1138,8 +1161,8 @@ async def manual_payment(db: AsyncSession, tenant: m.Tenant, payload, *, actor) 
     reference = _reject_card_text(payload.reference, "reference")
     note = _reject_card_text(payload.note, "note") if payload.note else None
     currency = payload.currency.strip().upper()
-    if not re.fullmatch(r"[A-Z]{3}", currency):
-        raise HTTPException(status_code=422, detail="currency must be a 3-letter ISO code")
+    if currency not in {"GHS", "USD"}:
+        raise HTTPException(status_code=422, detail="currency must be GHS or USD")
     amount = money(payload.amount)
     if amount <= 0:
         raise HTTPException(status_code=422, detail="amount must be greater than zero")

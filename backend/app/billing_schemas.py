@@ -64,6 +64,25 @@ class BillingAssignBody(BaseModel):
     plan_code: str = Field(min_length=2, max_length=40)
     trial_ends_at: str | None = None
     next_renewal_at: str | None = None
+    custom_amount: Decimal | None = None
+    custom_currency: str | None = None
+
+
+class BillingGatewayWrite(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    provider: str = Field(min_length=3, max_length=32)
+    mode: str = Field(min_length=3, max_length=16)
+    api_base_url: str | None = None
+    secret: str | None = None
+    webhook_secret: str | None = None
+
+
+class BillingGatewayRotate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    secret: str = Field(min_length=8, max_length=200)
+    webhook_secret: str | None = None
 
 
 class BillingManualPaymentBody(BaseModel):

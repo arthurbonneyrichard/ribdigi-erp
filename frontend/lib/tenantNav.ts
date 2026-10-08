@@ -70,6 +70,15 @@ export const HOTEL_NAV_ITEMS: NavItem[] = [
   ['Integrations', '/integrations', 'company'],
 ];
 
+export const RESTAURANT_NAV_ITEMS: NavItem[] = [
+  ['Restaurant dashboard', '/restaurant', 'restaurant'],
+  ['Tables and floor', '/restaurant?tab=tables', 'restaurant'],
+  ['Orders', '/restaurant?tab=orders', 'restaurant'],
+  ['Kitchen', '/restaurant?tab=kitchen', 'restaurant'],
+  ['Recipes', '/restaurant?tab=recipes', 'restaurant'],
+  ['Printers', '/printers', 'printers'],
+];
+
 export const FMCG_NAV_ITEMS: NavItem[] = [
   ['FMCG overview', '/fmcg', 'fmcg'],
   ['Trade schemes', '/fmcg?tab=schemes', 'fmcg'],
@@ -184,6 +193,13 @@ export function groupedTenantNav(
             items: FMCG_NAV_ITEMS.filter(([, href]) => allowed.has(href)),
           };
         }
+        if (ind === 'restaurant') {
+          return {
+            id: 'industry',
+            label: 'Restaurant',
+            items: RESTAURANT_NAV_ITEMS.filter(([, href]) => allowed.has(href)),
+          };
+        }
         if (ind === 'hospital') {
           return {
             id: 'industry',
@@ -293,6 +309,7 @@ export const NAV_MODULE_BY_PATH: Record<string, string> = {
   '/stores': 'stores',
   '/hotel': 'hotel',
   '/fmcg': 'fmcg',
+  '/restaurant': 'restaurant',
   '/reports': 'reports',
   '/notifications': 'notifications',
   '/audit': 'audit',

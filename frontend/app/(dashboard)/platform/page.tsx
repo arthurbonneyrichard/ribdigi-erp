@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, apiFetch } from '../../../lib/api';
+import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { getPrefetched } from '../../../lib/prefetchCache';
 import { industryLabel } from '../../../lib/industries';
@@ -111,35 +111,7 @@ export default function PlatformConsole() {
   const [tenants, setTenants] = useState<TenantRow[]>([]);
   const [activity, setActivity] = useState<ActivityRow[]>([]);
   const [error, setError] = useState('');
-  const [scriptBusy, setScriptBusy] = useState(false);
-  const [scriptError, setScriptError] = useState('');
   const [ready, setReady] = useState(false);
-
-  async function downloadLiveTestScript() {
-    setScriptError('');
-    setScriptBusy(true);
-    try {
-      const response = await apiFetch('/live-test-script');
-      const type = (response.headers.get('content-type') || '').toLowerCase();
-      if (!response.ok || !type.includes('pdf')) {
-        setScriptError('Could not download the live test script.');
-        return;
-      }
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'RIBDIGI-Retail-Pharmacy-Wholesale-Live-Test.pdf';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-    } catch {
-      setScriptError('Could not download the live test script.');
-    } finally {
-      setScriptBusy(false);
-    }
-  }
 
   useEffect(() => {
     let cancelled = false;
@@ -202,19 +174,6 @@ export default function PlatformConsole() {
             Platform activity and workspace totals. Create and manage tenants from the Tenant page.
             Paid self-serve checkout is not live.
           </p>
-          <button
-            type="button"
-            onClick={downloadLiveTestScript}
-            disabled={scriptBusy}
-            aria-label="Download live test script PDF"
-          >
-            {scriptBusy ? 'Preparing live test script…' : 'Download live test script (PDF)'}
-          </button>
-          {scriptError ? (
-            <p className="login-error" role="alert">
-              {scriptError}
-            </p>
-          ) : null}
         </div>
       </header>
 

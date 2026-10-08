@@ -35,8 +35,6 @@ export default function Page() {
   const [canGuide, setCanGuide] = useState(false);
   const [guideBusy, setGuideBusy] = useState(false);
   const [guideError, setGuideError] = useState('');
-  const [scriptBusy, setScriptBusy] = useState(false);
-  const [scriptError, setScriptError] = useState('');
   const [profileBusy, setProfileBusy] = useState(false);
   const [printBusy, setPrintBusy] = useState(false);
   const [emailBusy, setEmailBusy] = useState(false);
@@ -173,42 +171,6 @@ export default function Page() {
       setGuideError('Could not download the guide.');
     } finally {
       setGuideBusy(false);
-    }
-  }
-
-  async function downloadLiveTestScript() {
-    setScriptError('');
-    setScriptBusy(true);
-    try {
-      const response = await apiFetch('/live-test-script');
-      const type = (response.headers.get('content-type') || '').toLowerCase();
-      if (!response.ok || !type.includes('pdf')) {
-        let detail = 'Could not download the live test script.';
-        try {
-          const body = await response.json();
-          const raw = body?.detail;
-          if (typeof raw === 'string') detail = raw;
-          else if (raw?.message) detail = String(raw.message);
-        } catch {
-          if (response.status === 401) detail = 'Sign in required';
-          if (response.status === 403) detail = 'Missing permission: staff_guide:download';
-        }
-        setScriptError(detail);
-        return;
-      }
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'RIBDIGI-Retail-Pharmacy-Wholesale-Live-Test.pdf';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-    } catch {
-      setScriptError('Could not download the live test script.');
-    } finally {
-      setScriptBusy(false);
     }
   }
 
@@ -677,25 +639,9 @@ export default function Page() {
             >
               {guideBusy ? 'Preparing staff guide…' : 'Download staff user guide (PDF)'}
             </button>
-            <button
-              type="button"
-              onClick={downloadLiveTestScript}
-              disabled={scriptBusy}
-              aria-label="Download live test script PDF"
-            >
-              {scriptBusy ? 'Preparing live test script…' : 'Download live test script (PDF)'}
-            </button>
-            <p className="muted" style={{ margin: 0 }}>
-              Retail, Pharmacy, and Wholesale steps to run on the live site. Mark each step only when the screen matches it.
-            </p>
             {guideError ? (
               <p className="form-flash err" role="alert">
                 {guideError}
-              </p>
-            ) : null}
-            {scriptError ? (
-              <p className="form-flash err" role="alert">
-                {scriptError}
               </p>
             ) : null}
           </div>

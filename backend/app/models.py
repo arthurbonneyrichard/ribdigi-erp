@@ -2644,6 +2644,8 @@ class TenantBillingAccount(Base):
     consent_plan_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     consent_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     consent_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    price_override_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    price_override_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
     consent_interval: Mapped[str | None] = mapped_column(String(16), nullable=True)
     gateway_provider: Mapped[str | None] = mapped_column(String(32), nullable=True)
     gateway_customer_ref: Mapped[str | None] = mapped_column(String(120), nullable=True)
@@ -2725,4 +2727,140 @@ class TenantBillingEvent(Base):
     invoice_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     event_type: Mapped[str] = mapped_column(String(80))
     outcome: Mapped[str] = mapped_column(String(40))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PlatformBillingGateway(Base):
+    """One platform-wide subscription gateway. Secrets are ciphertext only."""
+
+    __tablename__ = "platform_billing_gateways"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    provider: Mapped[str] = mapped_column(String(32), default="mock")
+    mode: Mapped[str] = mapped_column(String(16), default="sandbox")
+    api_base_url: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    secret_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    webhook_secret_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    last_test_ok: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    last_test_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_test_message: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    last_webhook_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_webhook_outcome: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    updated_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class RestaurantTable(Base):
+    __tablename__ = "restaurant_tables"
+    __table_args__ = (UniqueConstraint("tenant_id", "code", name="uq_restaurant_table_code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    code: Mapped[str] = mapped_column(String(40))
+    name: Mapped[str] = mapped_column(String(120))
+    seats: Mapped[int] = mapped_column(Integer, default=2)
+    status: Mapped[str] = mapped_column(String(20), default="available")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class RestaurantModifierGroup(Base):
+    __tablename__ = "restaurant_modifier_groups"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class RestaurantModifier(Base):
+    __tablename__ = "restaurant_modifiers"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    group_id: Mapped[str] = mapped_column(ForeignKey("restaurant_modifier_groups.id"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class RestaurantRecipe(Base):
+    __tablename__ = "restaurant_recipes"
+    __table_args__ = (UniqueConstraint("tenant_id", "product_id", name="uq_restaurant_recipe_product"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    name: Mapped[str] = mapped_column(String(160))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class RestaurantRecipeLine(Base):
+    __tablename__ = "restaurant_recipe_lines"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    recipe_id: Mapped[str] = mapped_column(ForeignKey("restaurant_recipes.id"), index=True)
+    ingredient_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+
+
+class RestaurantOrder(Base):
+    __tablename__ = "restaurant_orders"
+    __table_args__ = (UniqueConstraint("tenant_id", "order_number", name="uq_restaurant_order_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    order_number: Mapped[str] = mapped_column(String(40))
+    service_mode: Mapped[str] = mapped_column(String(20))
+    table_id: Mapped[str | None] = mapped_column(ForeignKey("restaurant_tables.id"), nullable=True)
+    customer_name: Mapped[str | None] = mapped_column(String(180), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="open")
+    payment_method: Mapped[str] = mapped_column(String(32), default="cash")
+    subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    total_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class RestaurantOrderLine(Base):
+    __tablename__ = "restaurant_order_lines"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    order_id: Mapped[str] = mapped_column(ForeignKey("restaurant_orders.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    station: Mapped[str] = mapped_column(String(20), default="kitchen")
+
+
+class RestaurantOrderModifier(Base):
+    __tablename__ = "restaurant_order_modifiers"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    line_id: Mapped[str] = mapped_column(ForeignKey("restaurant_order_lines.id"), index=True)
+    modifier_id: Mapped[str] = mapped_column(ForeignKey("restaurant_modifiers.id"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+
+
+class RestaurantKitchenTicket(Base):
+    __tablename__ = "restaurant_kitchen_tickets"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    order_id: Mapped[str] = mapped_column(ForeignKey("restaurant_orders.id"), index=True)
+    station: Mapped[str] = mapped_column(String(20), default="kitchen")
+    status: Mapped[str] = mapped_column(String(20), default="queued")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

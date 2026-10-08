@@ -33,6 +33,9 @@ export const HOTEL_DASHBOARD_FEATURES: readonly IndustryDashboardFeature[] = [
 ];
 
 export const RESTAURANT_DASHBOARD_FEATURES: readonly IndustryDashboardFeature[] = [
+  { id: 'restaurant_home', label: 'Restaurant dashboard', href: '/restaurant', module: 'restaurant' },
+  { id: 'restaurant_orders', label: 'Orders', href: '/restaurant?tab=orders', module: 'restaurant' },
+  { id: 'restaurant_kitchen', label: 'Kitchen', href: '/restaurant?tab=kitchen', module: 'restaurant' },
   { id: 'printers', label: 'Printers', href: '/printers', module: 'printers' },
 ];
 
@@ -62,7 +65,10 @@ const BY_INDUSTRY: Record<string, readonly IndustryDashboardFeature[]> = {
 };
 
 export function industryHomePath(industry?: string | null): string {
-  return normalizeIndustry(industry) === 'hotel' ? '/hotel' : '/dashboard';
+  const ind = normalizeIndustry(industry);
+  if (ind === 'hotel') return '/hotel';
+  if (ind === 'restaurant') return '/restaurant';
+  return '/dashboard';
 }
 
 export function industryDashboardFeatures(

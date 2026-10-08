@@ -7,12 +7,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import saas_billing as billing_svc
 from app import tenants as tenants_svc
-from app.billing_gateway import get_gateway, verify_webhook_signature, webhook_json
+from app import billing_gateway_setup as gateway_setup
+from app.billing_gateway import current_gateway, verify_webhook_signature, webhook_json
 from app.billing_schemas import (
     BillingAssignBody,
     BillingCancelBody,
     BillingCheckoutBody,
     BillingConsentBody,
+    BillingGatewayRotate,
+    BillingGatewayWrite,
     BillingManualPaymentBody,
     BillingPlanPatch,
     BillingPlanWrite,
@@ -33,11 +36,98 @@ def _owner(claims: dict) -> dict:
 
 
 @router.get("/platform/billing/status")
-async def billing_provider_status(claims=Depends(require_platform_permission("platform", "read"))):
+async def billing_provider_status(
+    request: Request,
+    claims=Depends(require_platform_permission("platform", "read")),
+    db: AsyncSession = Depends(get_db),
+):
     _owner(claims)
     from app.api import env
 
-    return env(billing_svc.provider_status())
+    body = billing_svc.provider_status()
+    row = await gateway_setup._row(db)
+    provider = (row.provider if row else body["provider"])
+    body["gateway"] = gateway_setup.public_view(
+        row, webhook_url=gateway_setup.webhook_url_for(request, provider)
+    )
+    body["connected"] = bool(body["gateway"]["connected"])
+    return env(body)
+
+
+@router.put("/platform/billing/gateway")
+async def save_billing_gateway(
+    payload: BillingGatewayWrite,
+    request: Request,
+    claims=Depends(require_platform_permission("platform", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    _owner(claims)
+    from app.api import env
+
+    if payload.provider.strip().lower() not in {"mock", "paystack"}:
+        raise HTTPException(status_code=422, detail="provider must be mock or paystack")
+    if payload.mode.strip().lower() not in {"sandbox", "live"}:
+        raise HTTPException(status_code=422, detail="mode must be sandbox or live")
+    body = await gateway_setup.save_gateway(db, payload, actor=claims, request=request)
+    await db.commit()
+    return env(body, "Gateway saved. Run a connection test before enabling it.")
+
+
+@router.post("/platform/billing/gateway/test")
+async def test_billing_gateway(
+    request: Request,
+    claims=Depends(require_platform_permission("platform", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    _owner(claims)
+    from app.api import env
+
+    body = await gateway_setup.test_gateway(db, actor=claims, request=request)
+    await db.commit()
+    return env(body, "Connection test finished")
+
+
+@router.post("/platform/billing/gateway/enable")
+async def enable_billing_gateway(
+    request: Request,
+    claims=Depends(require_platform_permission("platform", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    _owner(claims)
+    from app.api import env
+
+    body = await gateway_setup.set_enabled(db, enabled=True, actor=claims, request=request)
+    await db.commit()
+    return env(body, "Gateway enabled")
+
+
+@router.post("/platform/billing/gateway/disable")
+async def disable_billing_gateway(
+    request: Request,
+    claims=Depends(require_platform_permission("platform", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    _owner(claims)
+    from app.api import env
+
+    body = await gateway_setup.set_enabled(db, enabled=False, actor=claims, request=request)
+    await db.commit()
+    return env(body, "Gateway disabled")
+
+
+@router.post("/platform/billing/gateway/rotate")
+async def rotate_billing_gateway(
+    payload: BillingGatewayRotate,
+    request: Request,
+    claims=Depends(require_platform_permission("platform", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    _owner(claims)
+    from app.api import env
+
+    body = await gateway_setup.rotate_gateway(db, payload, actor=claims, request=request)
+    await db.commit()
+    return env(body, "Credentials rotated. Test the connection again before enabling.")
 
 
 @router.get("/platform/billing/plans")
@@ -301,7 +391,7 @@ async def billing_sandbox_authorize(
 ):
     from app.api import env
 
-    if settings.APP_ENV.lower() == "production" or get_gateway().provider != "mock":
+    if settings.APP_ENV.lower() == "production" or (await current_gateway(db)).provider != "mock":
         raise HTTPException(status_code=404, detail="Not found")
     tenant = await _tenant_admin(claims, db)
     account = await billing_svc.attach_sandbox_authorization(
@@ -356,12 +446,18 @@ async def billing_webhook(
         raise HTTPException(status_code=404, detail="Unknown billing provider")
     body = await request.body()
     header = x_paystack_signature if name == "paystack" else x_ribdigi_billing_signature
-    if not verify_webhook_signature(name, body, header):
+    from app.billing_gateway import webhook_signing_secret
+
+    stored_secret = await webhook_signing_secret(db, name)
+    if not verify_webhook_signature(name, body, header, secret=stored_secret):
+        await gateway_setup.note_webhook(db, provider=name, outcome="signature_rejected")
+        await db.commit()
         raise HTTPException(status_code=401, detail="Invalid billing webhook signature")
     try:
         event = webhook_json(body)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail="Invalid billing webhook body") from exc
     result = await billing_svc.apply_webhook(db, provider=name, event=event)
+    await gateway_setup.note_webhook(db, provider=name, outcome=str(result.get("outcome") or "processed"))
     await db.commit()
     return env(result, "Webhook processed")

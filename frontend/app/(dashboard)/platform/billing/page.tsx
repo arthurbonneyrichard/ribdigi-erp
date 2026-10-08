@@ -15,6 +15,13 @@ export default function PlatformBillingPage() {
   const [suspendReason, setSuspendReason] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [gatewayForm, setGatewayForm] = useState({
+    provider: 'mock',
+    mode: 'sandbox',
+    api_base_url: 'https://api.paystack.co',
+    secret: '',
+    webhook_secret: '',
+  });
   const [form, setForm] = useState({
     code: '',
     package_code: 'professional',
@@ -27,19 +34,71 @@ export default function PlatformBillingPage() {
   });
 
   async function load() {
-    const [statusRes, planRes, attentionRes] = await Promise.all([
+    const [statusRes, planRes, attentionRes] = await Promise.allSettled([
       api('/platform/billing/status'),
       api('/platform/billing/plans'),
       api('/platform/billing/attention'),
     ]);
-    setStatus(statusRes?.data || null);
-    setPlans(planRes?.data || []);
-    setAttention(attentionRes?.data || []);
+    if (statusRes.status === 'fulfilled') {
+      const data = statusRes.value?.data || null;
+      setStatus(data);
+      const gateway = data?.gateway;
+      if (gateway) {
+        setGatewayForm((current) => ({
+          ...current,
+          provider: gateway.provider === 'paystack' ? 'paystack' : 'mock',
+          mode: gateway.mode === 'live' ? 'live' : 'sandbox',
+          api_base_url: gateway.api_base_url || current.api_base_url,
+          secret: '',
+          webhook_secret: '',
+        }));
+      }
+    } else {
+      setStatus(null);
+      setError(statusRes.reason?.message || 'Could not load platform billing');
+    }
+    if (planRes.status === 'fulfilled') setPlans(planRes.value?.data || []);
+    if (attentionRes.status === 'fulfilled') setAttention(attentionRes.value?.data || []);
   }
 
   useEffect(() => {
     load().catch((err) => setError(err.message || 'Could not load platform billing'));
   }, []);
+
+  async function saveGateway() {
+    setError('');
+    setMessage('');
+    try {
+      const body: Record<string, string> = {
+        provider: gatewayForm.provider,
+        mode: gatewayForm.mode,
+      };
+      if (gatewayForm.provider === 'paystack') body.api_base_url = gatewayForm.api_base_url.trim();
+      if (gatewayForm.secret.trim()) body.secret = gatewayForm.secret.trim();
+      if (gatewayForm.webhook_secret.trim()) body.webhook_secret = gatewayForm.webhook_secret.trim();
+      const saved = await api('/platform/billing/gateway', {
+        method: 'PUT',
+        body: JSON.stringify(body),
+      });
+      setGatewayForm((current) => ({ ...current, secret: '', webhook_secret: '' }));
+      setStatus(saved?.data || saved);
+      setMessage('Sandbox gateway saved. Secrets stay on the server.');
+    } catch (err: any) {
+      setError(err.message || 'Could not save the gateway');
+    }
+  }
+
+  async function testGateway() {
+    setError('');
+    setMessage('');
+    try {
+      const result = await api('/platform/billing/gateway/test', { method: 'POST' });
+      setStatus(result?.data || result);
+      setMessage(result?.data?.last_test_message || result?.message || 'Connection test finished.');
+    } catch (err: any) {
+      setError(err.message || 'Could not test the gateway');
+    }
+  }
 
   async function createPlan() {
     setError('');
@@ -190,6 +249,61 @@ export default function PlatformBillingPage() {
         <p>Provider: {status?.provider || '—'}</p>
         <p>Configured: {status?.configured ? 'Yes' : 'No'}</p>
         <p>Live charges: {status?.live_charges ? 'Yes' : 'No'}</p>
+        <p>{status?.gateway?.secret_configured ? `Secret on file ends ${status.gateway.secret_hint || '••••'}` : 'No secret on file.'}</p>
+        <label>
+          Provider
+          <select
+            aria-label="Billing gateway provider"
+            value={gatewayForm.provider}
+            onChange={(event) => setGatewayForm({ ...gatewayForm, provider: event.target.value })}
+          >
+            <option value="mock">Mock</option>
+            <option value="paystack">Paystack</option>
+          </select>
+        </label>
+        <label>
+          Mode
+          <select
+            aria-label="Billing gateway mode"
+            value={gatewayForm.mode}
+            onChange={(event) => setGatewayForm({ ...gatewayForm, mode: event.target.value })}
+          >
+            <option value="sandbox">Sandbox</option>
+            <option value="live">Live</option>
+          </select>
+        </label>
+        {gatewayForm.provider === 'paystack' && (
+          <label>
+            API base URL
+            <input
+              aria-label="Billing gateway API base URL"
+              value={gatewayForm.api_base_url}
+              onChange={(event) => setGatewayForm({ ...gatewayForm, api_base_url: event.target.value })}
+            />
+          </label>
+        )}
+        <label>
+          Secret
+          <input
+            aria-label="Billing gateway secret"
+            type="password"
+            autoComplete="new-password"
+            value={gatewayForm.secret}
+            onChange={(event) => setGatewayForm({ ...gatewayForm, secret: event.target.value })}
+          />
+        </label>
+        <label>
+          Webhook secret
+          <input
+            aria-label="Billing gateway webhook secret"
+            type="password"
+            autoComplete="new-password"
+            value={gatewayForm.webhook_secret}
+            onChange={(event) => setGatewayForm({ ...gatewayForm, webhook_secret: event.target.value })}
+          />
+        </label>
+        <button aria-label="Save billing gateway" type="button" onClick={saveGateway}>Save gateway</button>
+        <button aria-label="Test billing gateway connection" type="button" onClick={testGateway}>Test connection</button>
       </section>
       <section className="card">
         <h2>Plans</h2>
@@ -236,7 +350,10 @@ export default function PlatformBillingPage() {
         </label>
         <label>
           Currency
-          <input aria-label="Billing plan currency" value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value })} />
+          <select aria-label="Billing plan currency" value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value })}>
+            <option value="GHS">GHS</option>
+            <option value="USD">USD</option>
+          </select>
         </label>
         <button aria-label="Create billing plan" className="btn-primary" type="button" onClick={createPlan}>
           Create plan
@@ -287,7 +404,10 @@ export default function PlatformBillingPage() {
             </label>
             <label>
               Payment currency
-              <input aria-label="Manual payment currency" value={payment.currency} onChange={(event) => setPayment({ ...payment, currency: event.target.value })} />
+              <select aria-label="Manual payment currency" value={payment.currency === 'USD' ? 'USD' : 'GHS'} onChange={(event) => setPayment({ ...payment, currency: event.target.value })}>
+                <option value="GHS">GHS</option>
+                <option value="USD">USD</option>
+              </select>
             </label>
             <label>
               Payment reference

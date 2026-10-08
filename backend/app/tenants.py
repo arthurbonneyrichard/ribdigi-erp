@@ -50,15 +50,18 @@ INDUSTRY_LABELS = {
     "manufacturing": "Manufacturing",
     "hospital": "Hospital",
 }
-# Platform Owner trade provision surface. Hotel/FMCG remain valid for existing tenants.
+# Platform Owner provision surface. Existing stored industries stay valid.
 PROVISION_INDUSTRIES: tuple[str, ...] = (
     "retail",
     "pharmacy",
     "wholesale",
     "retail_wholesale",
+    "restaurant",
+    "hotel",
+    "fmcg",
 )
-# Not offered for new companies or as a business-type change. Stored values stay.
-RETIRED_PROVISION_INDUSTRIES: frozenset[str] = frozenset({"hotel", "fmcg"})
+# Kept so older callers still import the name. Nothing is blocked.
+RETIRED_PROVISION_INDUSTRIES: frozenset[str] = frozenset()
 VALID_DATE_FORMATS = frozenset({"DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"})
 VALID_DECIMAL_SEPARATORS = frozenset({".", ","})
 VALID_THOUSAND_SEPARATORS = frozenset({",", ".", " ", ""})

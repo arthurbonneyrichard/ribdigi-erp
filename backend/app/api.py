@@ -394,9 +394,11 @@ api = APIRouter(prefix="/api/v1")
 api.include_router(printers_api_mod.router)
 from app import commerce_extras_api as commerce_extras_api_mod
 from app import billing_api as billing_api_mod
+from app import restaurant_api as restaurant_api_mod
 
 api.include_router(commerce_extras_api_mod.router)
 api.include_router(billing_api_mod.router)
+api.include_router(restaurant_api_mod.router)
 logger = logging.getLogger("ribdigi.api")
 
 
@@ -3001,24 +3003,6 @@ async def download_staff_guide(
         media_type="application/pdf",
         headers={
             "Content-Disposition": f'attachment; filename="{filename}"',
-            "Cache-Control": "private, no-store",
-        },
-    )
-
-
-@api.get("/live-test-script")
-async def download_live_test_script(
-    claims=Depends(require_permission("staff_guide", "download")),
-):
-    """Retail, Pharmacy, and Wholesale checklist for a live test."""
-    from app.live_test_script import build_live_test_pdf
-
-    pdf = build_live_test_pdf()
-    return Response(
-        content=pdf,
-        media_type="application/pdf",
-        headers={
-            "Content-Disposition": 'attachment; filename="RIBDIGI-Retail-Pharmacy-Wholesale-Live-Test.pdf"',
             "Cache-Control": "private, no-store",
         },
     )
@@ -17150,6 +17134,23 @@ async def fmcg_summary(
     db: AsyncSession = Depends(get_db),
 ):
     return env(await fmcg_svc.summary(db, tenant_id=claims["tenant_id"]))
+
+
+@api.post("/fmcg/pack-convert")
+async def fmcg_pack_convert(
+    payload: fmcg_svc.FmcgPackConvert,
+    claims=Depends(require_permission("fmcg", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(
+        await fmcg_svc.convert_pack(
+            db,
+            tenant_id=claims["tenant_id"],
+            product_id=payload.product_id,
+            from_unit_id=payload.from_unit_id,
+            quantity=payload.quantity,
+        )
+    )
 
 
 @api.get("/fmcg/expiring")

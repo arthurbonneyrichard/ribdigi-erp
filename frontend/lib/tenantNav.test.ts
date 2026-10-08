@@ -5,6 +5,7 @@ import {
   CASHIER_NAV_MODULES,
   filterNavForStoreMode,
   groupedTenantNav,
+  RESTAURANT_NAV_ITEMS,
   hideStoreUx,
   HOTEL_CASHIER_NAV_MODULES,
   HOTEL_OMIT_NAV_GROUP_IDS,
@@ -253,6 +254,30 @@ test('mart grouped nav has no pharmacy or hotel industry group', () => {
   assert.equal(restaurant.some((g) => g.id === 'industry'), false);
   assert.equal(
     restaurant.some((g) => g.items.some(([, href]) => href.startsWith('/hotel'))),
+    false,
+  );
+});
+
+test('restaurant nav shows floor and kitchen and hides hotel rooms', () => {
+  const groups: NavGroup[] = [
+    {
+      id: 'industry',
+      label: 'Industry-specific features',
+      items: [['Hotel Dashboard', '/hotel', 'hotel']],
+    },
+  ];
+  const restaurant = groupedTenantNav(groups, RESTAURANT_NAV_ITEMS, 'restaurant');
+  const industry = restaurant.find((g) => g.id === 'industry');
+  assert.ok(industry);
+  assert.equal(industry.label, 'Restaurant');
+  const hrefs = industry.items.map(([, href]) => href);
+  assert.equal(hrefs.includes('/restaurant'), true);
+  assert.equal(hrefs.includes('/restaurant?tab=tables'), true);
+  assert.equal(hrefs.includes('/restaurant?tab=kitchen'), true);
+  assert.equal(hrefs.some((href) => href.startsWith('/hotel')), false);
+  const hotel = groupedTenantNav(groups, RESTAURANT_NAV_ITEMS, 'hotel');
+  assert.equal(
+    hotel.some((g) => g.items.some(([, href]) => href.startsWith('/restaurant'))),
     false,
   );
 });

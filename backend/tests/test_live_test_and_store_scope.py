@@ -1,4 +1,4 @@
-"""Assigned-store report limits and the live-test PDF."""
+"""Assigned-store report limits."""
 
 from datetime import datetime
 from uuid import uuid4
@@ -11,23 +11,6 @@ from tests.conftest import auth_headers
 
 async def _admin(ac):
     return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
-
-
-@pytest.mark.asyncio
-async def test_live_test_script_pdf_covers_three_industries(client):
-    ac, _seed = client
-    headers = await _admin(ac)
-    response = await ac.get("/api/v1/live-test-script", headers=headers)
-    assert response.status_code == 200, response.text
-    assert response.headers["content-type"].startswith("application/pdf")
-    body = response.content
-    assert body.startswith(b"%PDF-1.4")
-    text = body.decode("latin-1", errors="ignore")
-    assert "Retail" in text
-    assert "Pharmacy" in text
-    assert "Wholesale" in text
-    assert "does not fall again" in text
-    assert text.count("/Type /Page") >= 2
 
 
 @pytest.mark.asyncio

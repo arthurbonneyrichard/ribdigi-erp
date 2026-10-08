@@ -318,9 +318,10 @@ export default function Page() {
         if (cancelled) return;
         const ind = normalizeIndustry(me.data?.industry);
         setIndustry(ind);
-        if (industryHomePath(ind) === '/hotel') {
+        const home = industryHomePath(ind);
+        if (home !== '/dashboard') {
           setHotelHome(true);
-          router.replace('/hotel');
+          router.replace(home);
         }
       })
       .catch(() => undefined);
@@ -343,9 +344,12 @@ export default function Page() {
         setDashStatus('ready');
         const payloadIndustry = normalizeIndustry((r.data || {}).industry);
         if (payloadIndustry) setIndustry(payloadIndustry);
-        if (industryHomePath((r.data || {}).industry) === '/hotel' || (r.data || {}).industry_home === '/hotel') {
+        const payloadHome = industryHomePath((r.data || {}).industry);
+        const serverHome = (r.data || {}).industry_home;
+        const home = serverHome && serverHome !== '/dashboard' ? serverHome : payloadHome;
+        if (home && home !== '/dashboard') {
           setHotelHome(true);
-          router.replace('/hotel');
+          router.replace(home);
         }
       })
       .catch((err: unknown) => {

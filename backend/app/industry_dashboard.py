@@ -77,8 +77,11 @@ _HOTEL_FEATURES: tuple[dict[str, str], ...] = (
     },
 )
 
-# Restaurant printers stay. The POS shortcut only showed the word Open.
+# Restaurant floor, kitchen, and printers. Hotel rooms stay off this list.
 _RESTAURANT_FEATURES: tuple[dict[str, str], ...] = (
+    {"id": "restaurant_home", "label": "Restaurant dashboard", "href": "/restaurant", "module": "restaurant"},
+    {"id": "restaurant_orders", "label": "Orders", "href": "/restaurant?tab=orders", "module": "restaurant"},
+    {"id": "restaurant_kitchen", "label": "Kitchen", "href": "/restaurant?tab=kitchen", "module": "restaurant"},
     {"id": "printers", "label": "Printers", "href": "/printers", "module": "printers"},
 )
 
@@ -108,8 +111,11 @@ _FEATURES: dict[str, tuple[dict[str, str], ...]] = {
 
 
 def industry_home_path(industry: str | None) -> str:
-    if canonicalize_industry(industry) == "hotel":
+    ind = canonicalize_industry(industry)
+    if ind == "hotel":
         return "/hotel"
+    if ind == "restaurant":
+        return "/restaurant"
     return "/dashboard"
 
 
@@ -135,6 +141,10 @@ def industry_dashboard_payload(tenant: Any) -> dict[str, Any]:
                 continue
         href = feat.get("href") or ""
         if industry != "hotel" and (href == "/hotel" or href.startswith("/hotel?")):
+            continue
+        if industry != "restaurant" and (href == "/restaurant" or href.startswith("/restaurant?")):
+            continue
+        if industry != "fmcg" and (href == "/fmcg" or href.startswith("/fmcg?")):
             continue
         if industry != "pharmacy" and (
             href == "/prescriptions" or href.startswith("/prescriptions?")

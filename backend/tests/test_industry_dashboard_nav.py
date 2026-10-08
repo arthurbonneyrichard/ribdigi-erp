@@ -23,7 +23,7 @@ def test_industry_home_and_feature_catalog():
     assert industry_home_path("hospitality") == "/hotel"
     assert industry_home_path("pharmacy") == "/dashboard"
     assert industry_home_path("mart") == "/dashboard"
-    assert industry_home_path("restaurant") == "/dashboard"
+    assert industry_home_path("restaurant") == "/restaurant"
     assert industry_home_path("retail") == "/dashboard"
 
     pharmacy_ids = {row["id"] for row in industry_dashboard_features("pharmacy")}
@@ -45,7 +45,8 @@ def test_industry_home_and_feature_catalog():
     assert "batches" not in {row["id"] for row in mart}
 
     restaurant = industry_dashboard_features("restaurant")
-    assert {row["id"] for row in restaurant} == {"printers"}
+    assert {row["id"] for row in restaurant} == {"restaurant_home", "restaurant_orders", "restaurant_kitchen", "printers"}
+    assert any(row["href"] == "/restaurant" for row in restaurant)
     assert all(not row["href"].startswith("/hotel") for row in restaurant)
 
     hotel = industry_dashboard_features("hotel")
@@ -133,9 +134,10 @@ async def test_restaurant_dashboard_omits_hotel_pms(client, db_session):
     admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
     data = (await ac.get("/api/v1/dashboard", headers=admin)).json()["data"]
     assert data["industry"] == "restaurant"
-    assert data["industry_home"] == "/dashboard"
+    assert data["industry_home"] == "/restaurant"
     hrefs = [row["href"] for row in data["industry_features"]]
     assert "/pos" not in hrefs
+    assert "/restaurant" in hrefs
     assert "/printers" in hrefs
     assert all(not href.startswith("/hotel") for href in hrefs)
     denied = await ac.get("/api/v1/hotel/rooms", headers=admin)
@@ -170,7 +172,7 @@ def test_frontend_industry_dashboard_and_nav_source():
     backend = (ROOT / "backend/app/industry_dashboard.py").read_text(encoding="utf-8")
 
     assert "industryHomePath" in dash
-    assert "router.replace('/hotel')" in dash
+    assert "router.replace(home)" in dash
     assert "industry_features" in dash
     assert "return 'Pharmacy'" in helper
     assert "id: 'batches'" in helper or 'id: "batches"' in helper

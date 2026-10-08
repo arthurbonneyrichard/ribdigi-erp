@@ -30,6 +30,7 @@ PACKAGEABLE_MODULES: tuple[str, ...] = (
     "hotel",
     "fmcg",
     "hospital",
+    "restaurant",
     "reports",
     "notifications",
     "audit",
@@ -61,6 +62,7 @@ _STARTER = (
     "hotel",
     "fmcg",
     "hospital",
+    "restaurant",
 )
 
 _PROFESSIONAL = _STARTER + (
@@ -118,7 +120,7 @@ VALID_TERM_UNITS = frozenset({"months", "years"})
 
 # Industry-specific modules are packageable but only activate for matching business types.
 # Core modules (inventory, sales, POS, …) stay shared across industries.
-INDUSTRY_SPECIFIC_MODULES: frozenset[str] = frozenset({"hotel", "fmcg", "hospital"})
+INDUSTRY_SPECIFIC_MODULES: frozenset[str] = frozenset({"hotel", "fmcg", "hospital", "restaurant"})
 
 # Business type → industry modules that may activate (in addition to shared core).
 # Industries omitted here get no industry-specific modules (retail/mart/pharmacy/…).
@@ -126,11 +128,12 @@ INDUSTRY_MODULE_ALLOWLIST: dict[str, frozenset[str]] = {
     "hotel": frozenset({"hotel"}),
     "fmcg": frozenset({"fmcg"}),
     "hospital": frozenset({"hospital"}),
+    "restaurant": frozenset({"restaurant"}),
 }
 
 # Implemented industry verticals (must match shipped UI + APIs). Unimplemented
 # verticals are never added to enabled_modules or the sidebar.
-IMPLEMENTED_INDUSTRY_MODULES: frozenset[str] = frozenset({"hotel", "fmcg", "hospital"})
+IMPLEMENTED_INDUSTRY_MODULES: frozenset[str] = frozenset({"hotel", "fmcg", "hospital", "restaurant"})
 
 CANONICAL_INDUSTRIES: frozenset[str] = frozenset(
     {
