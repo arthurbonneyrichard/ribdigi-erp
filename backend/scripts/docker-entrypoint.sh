@@ -12,7 +12,17 @@ echo "entrypoint: start $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 if [ -f "$BUILD_ID_FILE" ]; then
   echo "entrypoint: image build-id=$(cat "$BUILD_ID_FILE")"
 else
-  echo "entrypoint: WARNING missing $BUILD_ID_FILE" >&2
+  echo "entrypoint: FATAL missing $BUILD_ID_FILE" >&2
+  exit 19
+fi
+if [ "$(cat "$BUILD_ID_FILE")" != "20261008-alembic-single-head-0136" ]; then
+  echo "entrypoint: FATAL stale image build-id=$(cat "$BUILD_ID_FILE") (need 20261008-alembic-single-head-0136)" >&2
+  exit 20
+fi
+MERGE=/app/alembic/versions/20261008_0136_merge_offline_and_restaurant_heads.py
+if [ ! -f "$MERGE" ]; then
+  echo "entrypoint: FATAL missing $MERGE (Alembic graph is not the single head)" >&2
+  exit 18
 fi
 
 if [ ! -f "$OVL" ]; then

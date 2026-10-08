@@ -92,12 +92,14 @@ services:
         max-file: "5"
 
   backend:
+    image: ribdigi-backend:20261008-alembic-single-head-0136
+    pull_policy: build
     build:
       context: ./backend
       dockerfile: Dockerfile
       args:
         # Bump to force Dokploy/BuildKit to rebuild app+alembic layers
-        RIBDIGI_BUILD_ID: "20261008-alembic-head-0136"
+        RIBDIGI_BUILD_ID: "20261008-alembic-single-head-0136"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -107,7 +109,7 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       UVICORN_WORKERS: ${UVICORN_WORKERS:-2}
       RIBDIGI_RELEASE_CHANNEL: production
-      RIBDIGI_BUILD_ID: "20261008-alembic-head-0136"
+      RIBDIGI_BUILD_ID: "20261008-alembic-single-head-0136"
     volumes:
       - backup_data:/data/backups
       - media_data:/data/media
@@ -149,18 +151,20 @@ services:
   # One-shot schema migration (Alembic). Refuses create_all in production.
   # ---------------------------------------------------------------------------
   migrate:
+    image: ribdigi-backend:20261008-alembic-single-head-0136
+    pull_policy: build
     build:
       context: ./backend
       dockerfile: Dockerfile
       args:
-        RIBDIGI_BUILD_ID: "20261008-alembic-head-0136"
+        RIBDIGI_BUILD_ID: "20261008-alembic-single-head-0136"
     env_file: .env
     environment:
       PYTHONPATH: /app
       APP_ENV: ${APP_ENV:-production}
       DEBUG: ${DEBUG:-false}
       RIBDIGI_RELEASE_CHANNEL: production
-      RIBDIGI_BUILD_ID: "20261008-alembic-head-0136"
+      RIBDIGI_BUILD_ID: "20261008-alembic-single-head-0136"
     volumes:
       - backup_data:/data/backups
       - media_data:/data/media
@@ -176,6 +180,11 @@ services:
       - |
         set -eu
         echo "migrate: build-id=$$(cat /app/.build-id)"
+        test "$$(cat /app/.build-id)" = "20261008-alembic-single-head-0136"
+        test -f /app/alembic/versions/20261008_0136_merge_offline_and_restaurant_heads.py
+        HEADS="$$(DATABASE_URL=postgresql+asyncpg://verify:verify@127.0.0.1:9/ribdigi_verify_build_graph python -m alembic heads)"
+        echo "migrate: alembic-heads=$$HEADS"
+        test "$$HEADS" = "20261008_0136 (head)"
         MIG=/app/alembic/versions/20260917_0106_transaction_client_request_id.py
         test -f "$$MIG"
         test -f /app/alembic/versions/20260917_0107_pos_devices.py
@@ -202,11 +211,13 @@ services:
   # Background jobs (RabbitMQ broker, Redis results — see app.config)
   # ---------------------------------------------------------------------------
   celery_worker:
+    image: ribdigi-backend:20261008-alembic-single-head-0136
+    pull_policy: build
     build:
       context: ./backend
       dockerfile: Dockerfile
       args:
-        RIBDIGI_BUILD_ID: "20261008-alembic-head-0136"
+        RIBDIGI_BUILD_ID: "20261008-alembic-single-head-0136"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -215,7 +226,7 @@ services:
       DEBUG: ${DEBUG:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       RIBDIGI_RELEASE_CHANNEL: production
-      RIBDIGI_BUILD_ID: "20261008-alembic-head-0136"
+      RIBDIGI_BUILD_ID: "20261008-alembic-single-head-0136"
     volumes:
       - backup_data:/data/backups
       - media_data:/data/media
@@ -253,11 +264,13 @@ services:
         max-file: "5"
 
   celery_beat:
+    image: ribdigi-backend:20261008-alembic-single-head-0136
+    pull_policy: build
     build:
       context: ./backend
       dockerfile: Dockerfile
       args:
-        RIBDIGI_BUILD_ID: "20261008-alembic-head-0136"
+        RIBDIGI_BUILD_ID: "20261008-alembic-single-head-0136"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -266,7 +279,7 @@ services:
       DEBUG: ${DEBUG:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       RIBDIGI_RELEASE_CHANNEL: production
-      RIBDIGI_BUILD_ID: "20261008-alembic-head-0136"
+      RIBDIGI_BUILD_ID: "20261008-alembic-single-head-0136"
     networks:
       - ribdigi_internal
     depends_on:

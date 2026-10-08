@@ -26,11 +26,14 @@ ARG RIBDIGI_BUILD_ID=unknown
 LABEL org.ribdigi.build_id="${RIBDIGI_BUILD_ID}"
 RUN printf '%s\n' "${RIBDIGI_BUILD_ID}" > /app/.build-id
 
-    COPY alembic.ini .
+COPY alembic.ini .
 COPY alembic ./alembic
 COPY app ./app
 COPY scripts ./scripts
 COPY guides ./guides
+# Authoritative image id lives in the backend context. Compose build-args alone
+# did not rebuild the Dokploy image that still reports 20261003-live-test-store-scope.
+COPY ribdigi-build-id.txt /tmp/ribdigi-build-id.txt
 
 # Fail the image build if the production-critical idempotent marker is missing
 # in BOTH the alembic tree and the runtime overlay used by entrypoint.
@@ -43,6 +46,26 @@ RUN MIG=alembic/versions/20260917_0106_transaction_client_request_id.py \
     && ! grep -F 'ADD COLUMN client_request_id' "$MIG" \
     && cmp -s "$MIG" "$OVL" \
     && chmod +x scripts/docker-entrypoint.sh
+
+# Fail the image unless this context has exactly one Alembic head.
+# Dummy URL is never contacted: `alembic heads` reads the script directory only.
+RUN set -eu; \
+    DATABASE_URL=postgresql+asyncpg://verify:verify@127.0.0.1:9/ribdigi_verify_build_graph \
+    python -m alembic heads > /tmp/alembic-heads.txt; \
+    printf '%s\n' '20261008_0136 (head)' > /tmp/alembic-heads.expected; \
+    tr -d '\r' < /tmp/ribdigi-build-id.txt | awk 'NF { print; exit }' > /app/.build-id; \
+    if ! cmp -s /tmp/alembic-heads.expected /tmp/alembic-heads.txt \
+        || ! grep -qx '20261008-alembic-single-head-0136' /app/.build-id \
+        || ! test -f alembic/versions/20261008_0136_merge_offline_and_restaurant_heads.py; then \
+      echo 'alembic heads output:'; \
+      cat -A /tmp/alembic-heads.txt; \
+      echo 'build id file:'; \
+      cat -A /app/.build-id; \
+      exit 1; \
+    fi; \
+    rm -f /tmp/alembic-heads.txt /tmp/alembic-heads.expected
+
+ENV RIBDIGI_BUILD_ID=20261008-alembic-single-head-0136
 
 RUN useradd --create-home --uid 10001 --shell /usr/sbin/nologin appuser \
     && mkdir -p /data/media /data/backups \
