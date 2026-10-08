@@ -9,8 +9,8 @@ from pathlib import Path
 VERSIONS = Path(__file__).resolve().parents[1] / "alembic" / "versions"
 
 
-def _revisions() -> list[tuple[str, str, str | None]]:
-    rows: list[tuple[str, str, str | None]] = []
+def _revisions() -> list[tuple[str, str, str | tuple[str, ...] | None]]:
+    rows: list[tuple[str, str, str | tuple[str, ...] | None]] = []
     for path in sorted(VERSIONS.glob("*.py")):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         rev = down = None
@@ -25,10 +25,27 @@ def _revisions() -> list[tuple[str, str, str | None]]:
                 if isinstance(val, ast.Constant):
                     down = val.value
                 elif isinstance(val, ast.Tuple):
-                    raise AssertionError(f"{path.name}: merge revisions are not allowed")
+                    parts: list[str] = []
+                    for elt in val.elts:
+                        if not isinstance(elt, ast.Constant) or not isinstance(elt.value, str):
+                            raise AssertionError(f"{path.name}: merge down_revision must be revision ids")
+                        parts.append(elt.value)
+                    if len(parts) != 2:
+                        raise AssertionError(f"{path.name}: merge must join exactly two revisions")
+                    down = tuple(parts)
+                else:
+                    raise AssertionError(f"{path.name}: unsupported down_revision")
         assert rev, path.name
-        rows.append((path.name, str(rev), None if down is None else str(down)))
+        rows.append((path.name, str(rev), down))
     return rows
+
+
+def _parents(down: str | tuple[str, ...] | None) -> list[str]:
+    if down is None:
+        return []
+    if isinstance(down, tuple):
+        return list(down)
+    return [down]
 
 
 def test_revision_ids_unique():
@@ -42,16 +59,27 @@ def test_revision_ids_unique():
 def test_single_head_linear_chain():
     rows = _revisions()
     ids = {rev for _n, rev, _d in rows}
-    downs = {down for _n, _r, down in rows if down is not None}
-    heads = ids - downs
-    # Unique linear chain: pharmacy 0130 revises 0129. Later 0131+ must
-    # revise the current head (not branch). Do not pin a revision id here.
+    referenced: set[str] = set()
+    merges: list[tuple[str, str, tuple[str, ...]]] = []
+    for name, rev, down in rows:
+        if isinstance(down, tuple):
+            merges.append((name, rev, down))
+        referenced.update(_parents(down))
+    heads = ids - referenced
+    # One head. The only join is 20261008_0136, which merges the offline-grant
+    # head 20261003_0134 with the restaurant/billing head 20261008_0135.
     assert len(heads) == 1, heads
+    assert len(merges) == 1, merges
+    _merge_name, merge_rev, merge_parents = merges[0]
+    assert heads == {merge_rev}
+    assert merge_rev == "20261008_0136"
+    assert set(merge_parents) == {"20261003_0134", "20261008_0135"}
     children: dict[str | None, list[str]] = defaultdict(list)
     for _name, rev, down in rows:
-        children[down].append(rev)
+        for parent in _parents(down):
+            children[parent].append(rev)
     branched = {p: c for p, c in children.items() if len(c) > 1}
-    assert not branched, branched
+    assert set(branched) == {"20260920_0115"}, branched
     assert "20261001_0130" in ids
     assert any(rev == "20261001_0130" and down == "20260930_0129" for _n, rev, down in rows)
     assert "20261001_0131" in ids

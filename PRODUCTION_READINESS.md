@@ -175,4 +175,49 @@ Revision `20261008_0135` revises `20261008_0117`. It creates missing tables only
 
 Applied on `ribdigi_verify_0135` together with head `20261003_0134`. Not applied on `ribdigi_erp`. Alembic was not run against `ribdigi_erp`.
 
-Still open: `/printers` was not opened. Bootstrap on a development start still calls `alembic upgrade head` and then `create_all`, so a normal backend restart will recreate the empty `20261008_0135` tables on `ribdigi_erp` until the two Alembic heads are merged and that database is migrated on purpose. Do not treat this ERP as certified.
+Still open in that pass: `/printers` was not opened. The head merge in the next section closes the two-head gap. `ribdigi_erp` was still not migrated. Do not treat this ERP as certified.
+
+## 2026-10-08 head merge and billing status
+
+Checkout remains `C:\Users\arthu\ribdigi-erp-production`, branch `production`, commit `3141b2c9c5`, plus uncommitted local edits. Nothing was deployed or pushed. `ribdigi_erp` was not migrated. This is not a certification.
+
+Alembic had two heads, `20261003_0134` and `20261008_0135`, because both descend from `20260920_0115`. Empty merge revision `20261008_0136` joins those two heads. It does not create a `companies` table. `20261008_0135` still creates restaurant and gateway tables only when they are missing, with foreign keys to `tenants` and `stores`.
+
+Verified with a one-off `DATABASE_URL` in a `docker exec` of the backend container. That did not change the running API process or the checkout `.env`.
+
+- `alembic heads` reports `20261008_0136 (head)`.
+- `alembic upgrade head` on disposable `ribdigi_verify_0136` exited 0. That database was already stamped `20261008_0136`. `current_database()` was `ribdigi_verify_0136`. `platform_billing_gateways` and `restaurant_tables` exist. `companies` does not.
+- `alembic upgrade head` on disposable `ribdigi_verify_0135` exited 0 and logged `Running upgrade 20261003_0134, 20261008_0135 -> 20261008_0136`. `alembic_version` is now only `20261008_0136`. `companies` does not exist there either.
+
+`ribdigi_erp` still has no `alembic_version` table and no `platform_billing_gateways` or `restaurant_tables`. The running API is still on `ribdigi_erp`. A restart of the backend container would run bootstrap `alembic upgrade head` against `ribdigi_erp` and would now succeed. That restart was not done.
+
+`/platform/billing` no longer replaces the status object with the connection-test payload. The test body is the gateway view (`secret_configured`, `last_test_ok`, `enabled`) and does not include `configured`. The page merges that view under `status.gateway` and keeps `configured` and `live_charges`. After a successful Mock sandbox test the status lines stay Configured Yes when they were already Yes, Secret on file, Last test ok, and Enabled No. The test route does not set `enabled` and does not charge. The page has no control that enables the gateway. The running UI on port 3000 was not clicked: it talks to the API on `ribdigi_erp`, and that database was not retargeted. The merge behavior was checked with `node --experimental-strip-types --test frontend/lib/billingStatus.test.ts` (1 passed).
+
+Pytest, host Python 3.12, `PYTHONPATH=.`: `tests/test_alembic_revision_graph.py` and `tests/test_restaurant_fmcg_billing_r1.py` — 11 passed. The graph test still requires exactly one head and allows only this merge of `20261003_0134` and `20261008_0135`.
+
+Still not certified. `/printers` was not opened. Paid live checkout is not claimed. A full backend suite, a signed-in browser pass of Test connection, and an operator production restore were not run.
+
+## 2026-10-08 verification re-check
+
+Checkout remains `C:\Users\arthu\ribdigi-erp-production`, branch `production`, commit `3141b2c9c5`, plus uncommitted local edits. Nothing was committed, pushed, or deployed. This is not a certification.
+
+`20261008_0136` is an empty merge. `upgrade()` and `downgrade()` are `pass`. `down_revision` is exactly `("20261003_0134", "20261008_0135")`. It does not create a `companies` table. `20261003_0134` revises `20261003_0133`. `20261008_0135` revises `20261008_0117`, which revises `20261006_0116`, which revises `20260920_0115`. The other side also descends from `20260920_0115`. The graph test allows only that one branch point and only this merge. `20261008_0135` creates missing restaurant tables and `platform_billing_gateways`, with foreign keys to `tenants` and `stores`. `20260816_0105` does not mention `companies`.
+
+This pass did not run `alembic upgrade`. It only read the two disposable databases through `docker exec` on `ribdigi-erp-postgres-1` (`psql -d ribdigi_verify_0135` and `psql -d ribdigi_verify_0136`). `current_database()` matched each name. `alembic_version` is `20261008_0136` in both. `to_regclass('public.companies')` is null in both. `platform_billing_gateways` and `restaurant_tables` exist in both. `ribdigi_erp` was not a connection target. The backend container was not restarted. Ports 3000 and 8000 were left as they were.
+
+Billing, from code and tests:
+
+- A successful Mock sandbox test response is merged under `status.gateway`. `configured` and `live_charges` stay as they were. `secret_configured` stays true. Raw `secret` and `webhook_secret` are dropped.
+- `last_test_ok`, `last_test_at`, and `last_test_message` update from the probe. The page shows ok or not ok, and the timestamp when `last_test_at` is present.
+- The test route does not set `enabled`. Enable is a separate platform-owner route. The page has no enable control. A failed probe keeps `enabled` false and does not mark the test ok.
+- Mock `test_connection` does not call `charge`. Audit details drop keys whose names contain `secret`.
+
+Commands and results, host Python 3.12, from `backend`, `PYTHONPATH=.`:
+
+`python -m pytest tests/test_alembic_revision_graph.py tests/test_restaurant_fmcg_billing_r1.py` — 12 passed. The pytest database is in-memory SQLite, not Postgres.
+
+From `frontend`: `node --experimental-strip-types --test lib/billingStatus.test.ts` — 2 passed.
+
+The billing page was not clicked. The frontend on port 3000 still uses the API on port 8000, and that API is the existing container on `ribdigi_erp`. A second API and frontend were not started. No password was written.
+
+Still not certified. `/printers` was not opened. Paid live checkout is not claimed. A full backend suite, a signed-in browser pass of Test connection against a disposable database, and an operator production restore were not run. Do not restart the backend container until a migration of `ribdigi_erp` is an explicit decision.

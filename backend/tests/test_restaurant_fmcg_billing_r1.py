@@ -281,8 +281,16 @@ async def test_connection_test_does_not_charge(client, db_session):
     assert early.status_code == 422, early.text
     tested = await ac.post("/api/v1/platform/billing/gateway/test", headers=owner)
     assert tested.status_code == 200, tested.text
-    assert tested.json()["data"]["last_test_ok"] is True
-    assert tested.json()["data"]["connected"] is False
+    tested_body = tested.json()["data"]
+    assert tested_body["last_test_ok"] is True
+    assert tested_body["last_test_at"]
+    assert tested_body["last_test_message"] == "sandbox_ready"
+    assert tested_body["enabled"] is False
+    assert tested_body["connected"] is False
+    assert tested_body["secret_configured"] is True
+    assert "mocksecret1" not in tested.text
+    assert "secret" not in tested_body
+    assert "webhook_secret" not in tested_body
     assert MockGateway._charged == set()
     enabled = await ac.post("/api/v1/platform/billing/gateway/enable", headers=owner)
     assert enabled.status_code == 200, enabled.text
@@ -296,6 +304,33 @@ async def test_connection_test_does_not_charge(client, db_session):
     assert rotated.json()["data"]["enabled"] is False
     assert rotated.json()["data"]["connected"] is False
     assert "mocksecret2" not in rotated.text
+
+
+async def test_failed_connection_keeps_saved_gateway(client, db_session, monkeypatch):
+    ac, seed = client
+    owner = await platform_owner_headers(ac, seed)
+    await _save_mock(ac, owner)
+    monkeypatch.setattr(MockGateway, "test_connection", lambda self: (False, "sandbox_refused"))
+    tested = await ac.post("/api/v1/platform/billing/gateway/test", headers=owner)
+    assert tested.status_code == 200, tested.text
+    tested_body = tested.json()["data"]
+    assert tested_body["last_test_ok"] is False
+    assert tested_body["last_test_message"] == "sandbox_refused"
+    assert tested_body["last_test_at"]
+    assert tested_body["enabled"] is False
+    assert tested_body["secret_configured"] is True
+    assert "mocksecret1" not in tested.text
+    assert "secret" not in tested_body
+    assert MockGateway._charged == set()
+    status = await ac.get("/api/v1/platform/billing/status", headers=owner)
+    assert status.status_code == 200, status.text
+    payload = status.json()["data"]
+    assert payload["configured"] is True
+    assert payload["live_charges"] is False
+    assert payload["gateway"]["secret_configured"] is True
+    assert payload["gateway"]["last_test_ok"] is False
+    assert payload["gateway"]["enabled"] is False
+    assert "mocksecret1" not in status.text
 
 
 async def _enable_mock(ac, owner):

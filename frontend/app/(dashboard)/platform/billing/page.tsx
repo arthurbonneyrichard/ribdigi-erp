@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '../../../../lib/api';
+import { mergePlatformBillingStatus } from '../../../../lib/billingStatus';
 
 export default function PlatformBillingPage() {
   const [status, setStatus] = useState<any>(null);
@@ -81,7 +82,7 @@ export default function PlatformBillingPage() {
         body: JSON.stringify(body),
       });
       setGatewayForm((current) => ({ ...current, secret: '', webhook_secret: '' }));
-      setStatus(saved?.data || saved);
+      setStatus((current) => mergePlatformBillingStatus(current, saved?.data || saved));
       setMessage('Sandbox gateway saved. Secrets stay on the server.');
     } catch (err: any) {
       setError(err.message || 'Could not save the gateway');
@@ -93,8 +94,9 @@ export default function PlatformBillingPage() {
     setMessage('');
     try {
       const result = await api('/platform/billing/gateway/test', { method: 'POST' });
-      setStatus(result?.data || result);
-      setMessage(result?.data?.last_test_message || result?.message || 'Connection test finished.');
+      const probe = result?.data || result;
+      setStatus((current) => mergePlatformBillingStatus(current, probe));
+      setMessage(probe?.last_test_message || result?.message || 'Connection test finished.');
     } catch (err: any) {
       setError(err.message || 'Could not test the gateway');
     }
@@ -249,7 +251,13 @@ export default function PlatformBillingPage() {
         <p>Provider: {status?.provider || '—'}</p>
         <p>Configured: {status?.configured ? 'Yes' : 'No'}</p>
         <p>Live charges: {status?.live_charges ? 'Yes' : 'No'}</p>
+        <p>Enabled: {status?.gateway?.enabled ? 'Yes' : 'No'}</p>
         <p>{status?.gateway?.secret_configured ? `Secret on file ends ${status.gateway.secret_hint || '••••'}` : 'No secret on file.'}</p>
+        <p>
+          Last test:{' '}
+          {status?.gateway?.last_test_ok ? 'ok' : status?.gateway?.last_test_message ? 'not ok' : 'not run'}
+          {status?.gateway?.last_test_at ? ` at ${status.gateway.last_test_at}` : ''}
+        </p>
         <label>
           Provider
           <select
