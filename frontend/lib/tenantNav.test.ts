@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   ALWAYS_LIST_NAV_GROUP_IDS,
@@ -100,12 +101,29 @@ test('hideStoreUx covers hotel and single-store, keeps multi-store retail', () =
   assert.equal(hideStoreUx({ industry: 'mart', max_stores: 10 }), false);
 });
 
-test('cashier nav allowlist is dashboard and POS only', () => {
-  assert.deepEqual([...CASHIER_NAV_MODULES].sort(), ['dashboard', 'pos']);
+test('cashier nav allowlist is dashboard, POS, and restaurant', () => {
+  assert.deepEqual([...CASHIER_NAV_MODULES].sort(), ['dashboard', 'pos', 'restaurant']);
   assert.equal(CASHIER_NAV_MODULES.includes('inventory'), false);
   assert.equal(CASHIER_NAV_MODULES.includes('sales'), false);
   assert.equal(CASHIER_NAV_MODULES.includes('users'), false);
   assert.equal(CASHIER_NAV_MODULES.includes('purchasing'), false);
+  assert.equal(unauthorizedNavRedirect('/restaurant', 'cashier', CASHIER_NAV_MODULES), null);
+  assert.equal(unauthorizedNavRedirect('/restaurant?tab=kitchen', 'cashier', CASHIER_NAV_MODULES), null);
+});
+
+test('roles that can use restaurant in the API keep it on the sidebar allowlist', () => {
+  const shell = readFileSync(new URL('../components/Shell.tsx', import.meta.url), 'utf8');
+  function roleBlock(name: string): string {
+    const start = shell.indexOf(`${name}: [`);
+    assert.ok(start >= 0, name);
+    const end = shell.indexOf('],', start);
+    return shell.slice(start, end);
+  }
+  for (const role of ['store_manager', 'sales_officer', 'inventory_officer']) {
+    assert.equal(roleBlock(role).includes("'restaurant'"), true, role);
+  }
+  assert.equal(unauthorizedNavRedirect('/restaurant', 'store_manager', ['dashboard', 'restaurant']), null);
+  assert.equal(unauthorizedNavRedirect('/restaurant?tab=orders', 'sales_officer', ['sales', 'restaurant']), null);
 });
 
 test('custom role permissions drive nav, not cashier fallback', () => {

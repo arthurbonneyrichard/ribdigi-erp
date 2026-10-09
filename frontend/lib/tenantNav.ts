@@ -275,8 +275,8 @@ export function groupedTenantNav(
   return [...hotelGroups, ...mapped];
 }
 
-/** Retail cashier sidebar: POS plus dashboard (already granted). Other modules stay off the menu. */
-export const CASHIER_NAV_MODULES: string[] = ['dashboard', 'pos'];
+/** Cashier sidebar: dashboard, POS, and the restaurant floor. Industry and package gates hide restaurant for other business types. */
+export const CASHIER_NAV_MODULES: string[] = ['dashboard', 'pos', 'restaurant'];
 
 export const HOTEL_CASHIER_NAV_MODULES: string[] = [
   'hotel',

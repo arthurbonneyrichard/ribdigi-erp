@@ -74,7 +74,7 @@ def test_stores_entitlement_ui_wired():
     assert "CASHIER_NAV_MODULES" in shell
     nav = (ROOT / "frontend/lib/tenantNav.ts").read_text(encoding="utf-8")
     assert "filterNavForStoreMode" in nav
-    assert "CASHIER_NAV_MODULES: string[] = ['dashboard', 'pos']" in nav
+    assert "CASHIER_NAV_MODULES: string[] = ['dashboard', 'pos', 'restaurant']" in nav
 
 
 def test_is_multi_store_and_create_override():
