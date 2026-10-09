@@ -167,7 +167,15 @@ def test_dashboard_page_surfaces_load_errors():
     assert "Batches" not in count_block
     assert "featureCards.length > 0" in text
     assert "industryHomePath" in text
-    assert "industryHomePath(ind) === '/hotel'" in text
+    assert "const home = industryHomePath(ind);" in text
+    assert "router.replace(home)" in text
+    home_src = (
+        Path(__file__).resolve().parents[2] / "frontend/lib/industryDashboard.ts"
+    ).read_text(encoding="utf-8")
+    assert "export function industryHomePath" in home_src
+    assert "if (ind === 'hotel') return '/hotel';" in home_src
+    assert "if (ind === 'restaurant') return '/restaurant';" in home_src
+    assert "return '/dashboard';" in home_src
     assert "Retail operations" not in text
     assert "Gross profit (7d)" in text
     assert "rx_queue" in text

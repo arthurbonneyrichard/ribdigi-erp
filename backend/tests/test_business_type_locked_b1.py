@@ -80,28 +80,48 @@ async def test_create_tenant_blank_industry_rejected(client):
 
 
 @pytest.mark.asyncio
-async def test_hotel_and_fmcg_are_not_selectable_for_new_companies(client):
+async def test_hotel_fmcg_and_restaurant_are_selectable_for_new_companies(client):
+    """Restaurant, Hotel, and FMCG create successfully. Retail, Pharmacy, Wholesale, and Hospital stay selectable."""
+    from app.tenants import RETIRED_PROVISION_INDUSTRIES
+
+    assert RETIRED_PROVISION_INDUSTRIES == frozenset()
     ac, seed = client
     headers = await platform_owner_headers(ac, seed)
-    created = await ac.post(
-        "/api/v1/tenants",
-        headers=headers,
-        json={
-            "company_name": "Old Hotel Co",
-            "slug": "old-hotel-co",
-            "industry": "hotel",
-            "currency": "GHS",
-            "admin_email": "admin@oldhotel.example.com",
-            "admin_password": "SecurePass123!",
-        },
+    selectable = (
+        ("hotel", "Hotel Co", "hotel-co", "admin@hotel-co.example.com"),
+        ("fmcg", "FMCG Co", "fmcg-co", "admin@fmcg-co.example.com"),
+        ("restaurant", "Restaurant Co", "restaurant-co", "admin@restaurant-co.example.com"),
+        ("retail", "Retail Co", "retail-co", "admin@retail-co.example.com"),
+        ("pharmacy", "Pharmacy Co", "pharmacy-co", "admin@pharmacy-co.example.com"),
+        ("wholesale", "Wholesale Co", "wholesale-co", "admin@wholesale-co.example.com"),
+        ("hospital", "Hospital Co", "hospital-co", "admin@hospital-co.example.com"),
     )
-    assert created.status_code == 400, created.text
-    assert "Hotel and FMCG" in created.text
+    for industry, company_name, slug, email in selectable:
+        created = await ac.post(
+            "/api/v1/tenants",
+            headers=headers,
+            json={
+                "company_name": company_name,
+                "slug": slug,
+                "industry": industry,
+                "currency": "GHS",
+                "admin_email": email,
+                "admin_password": "SecurePass123!",
+            },
+        )
+        assert created.status_code == 200, created.text
+        assert created.json()["data"]["slug"] == slug
+
+    listed = await ac.get("/api/v1/tenants", headers=headers)
+    assert listed.status_code == 200, listed.text
+    by_slug = {row["slug"]: row["industry"] for row in listed.json()["data"]}
+    for industry, _company_name, slug, _email in selectable:
+        assert by_slug[slug] == industry
 
     changed = await ac.patch(
         f"/api/v1/tenants/{seed['t1'].id}/industry",
         headers=headers,
-        json={"industry": "fmcg", "reason": "Trying to switch an existing company to FMCG"},
+        json={"industry": "fmcg", "reason": "Switching an existing company to FMCG"},
     )
-    assert changed.status_code == 400, changed.text
-    assert "Hotel and FMCG" in changed.text
+    assert changed.status_code == 200, changed.text
+    assert changed.json()["data"]["industry"] == "fmcg"

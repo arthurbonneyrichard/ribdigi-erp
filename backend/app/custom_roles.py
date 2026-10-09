@@ -46,6 +46,7 @@ ASSIGNABLE_MODULES = frozenset(
         "stores",
         "hotel",
         "fmcg",
+        "hospital",
         "restaurant",
         "reports",
         "notifications",

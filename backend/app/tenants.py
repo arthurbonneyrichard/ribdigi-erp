@@ -159,7 +159,11 @@ def normalize_industry(industry: str | None, *, required: bool = True) -> str | 
 
 
 def assert_industry_selectable(industry: str, *, previous: str | None = None) -> None:
-    """Block Hotel and FMCG for new companies. An existing company may keep its type."""
+    """Restaurant, Hotel, and FMCG are selectable. RETIRED_PROVISION_INDUSTRIES is empty.
+
+    A code added to that set later is rejected on create and on a change away
+    from a company that already stores it.
+    """
     if industry not in RETIRED_PROVISION_INDUSTRIES:
         return
     prev = (previous or "").strip().lower()

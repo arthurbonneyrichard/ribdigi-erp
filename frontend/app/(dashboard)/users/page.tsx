@@ -123,6 +123,8 @@ const TENANT_RBAC_MODULES = [
   'stores',
   'hotel',
   'fmcg',
+  'hospital',
+  'restaurant',
   'reports',
   'notifications',
   'users',

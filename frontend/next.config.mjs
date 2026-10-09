@@ -20,6 +20,9 @@ const nextConfig = {
     }
     return config;
   },
+  async redirects() {
+    return [{ source: '/login', destination: '/', permanent: false }];
+  },
   async rewrites() {
     return [
       {

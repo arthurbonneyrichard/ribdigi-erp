@@ -398,6 +398,7 @@ def test_users_page_store_and_perm_ui_wired():
     from pathlib import Path
 
     from app.custom_roles import ASSIGNABLE_MODULES
+    from app.rbac import ROLE_PERMISSIONS
 
     users = (Path(__file__).resolve().parents[2] / "frontend/app/(dashboard)/users/page.tsx").read_text(
         encoding="utf-8"
@@ -410,3 +411,7 @@ def test_users_page_store_and_perm_ui_wired():
     assert "saveCustomRolePerms" in users
     for mod in ASSIGNABLE_MODULES:
         assert f"'{mod}'" in users
+    assert "hospital" in ASSIGNABLE_MODULES
+    assert "restaurant" in ASSIGNABLE_MODULES
+    assert "hospital" not in ROLE_PERMISSIONS["cashier"]
+    assert "hospital" not in ROLE_PERMISSIONS["accountant"]

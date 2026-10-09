@@ -8,10 +8,14 @@ import { getPrefetched } from '../../../../lib/prefetchCache';
 import { industryAllowsModule } from '../../../../lib/industryModules';
 import { INDUSTRIES, PROVISION_INDUSTRIES, industryLabel } from '../../../../lib/industries';
 
-/** New companies: retail, pharmacy, wholesale, retail+wholesale, and hospital.
- * Hotel and FMCG stay valid on companies that already use them. */
-const CREATE_INDUSTRIES = [...PROVISION_INDUSTRIES, 'hospital'] as const;
-const RETIRED_INDUSTRIES = new Set(['hotel', 'fmcg']);
+/** New companies: Retail, Pharmacy, Wholesale, Retail + Wholesale, Restaurant, Hotel, FMCG, and Hospital. */
+const CREATE_INDUSTRIES = [
+  ...PROVISION_INDUSTRIES,
+  'restaurant',
+  'hotel',
+  'fmcg',
+  'hospital',
+] as const;
 
 type SubscriptionInfo = {
   package_code?: string;
@@ -997,9 +1001,7 @@ export default function PlatformTenantsPage() {
                     onChange={(e) => setIndustryDraft(e.target.value)}
                     aria-label="Change tenant business type"
                   >
-                    {INDUSTRIES.filter(
-                      (i) => !RETIRED_INDUSTRIES.has(i) || i === (selected.industry || '')
-                    ).map((i) => (
+                    {INDUSTRIES.map((i) => (
                       <option key={i} value={i}>
                         {industryLabel(i)}
                       </option>

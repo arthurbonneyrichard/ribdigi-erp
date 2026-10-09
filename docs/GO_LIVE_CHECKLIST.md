@@ -14,7 +14,7 @@
 | Frontend production build | PASS with warning | `npm run build` in `frontend` after the UI edits. Next.js 14.2.35, 44/44 pages, exit 0, ended 2026-10-05T02:25:52Z. `themeColor` warning is gone; brand `#4AB012` stays on `viewport` and the manifest. `metadataBase` is still unset (15 warnings). Next used `http://localhost:3000` while generating pages. No public origin is configured, so a production host was not invented. |
 | Owner tasks | INCOMPLETE | Production HTTPS, secrets, workers, load certification, and physical POS checks stay open. |
 
-Pharmacy stays on the main dashboard. Retail keeps shared sales, inventory, and POS. A single-store company cannot create a transfer. Hotel and FMCG are not selectable for new companies. Mobile Money is a recorded tender only. Staff guides stay industry-specific. An unmapped AI prompt is not shown as a completed report.
+Pharmacy stays on the main dashboard. Retail keeps shared sales, inventory, and POS. A single-store company cannot create a transfer. Restaurant, Hotel, and FMCG are selectable for new companies. Mobile Money is a recorded tender only. Staff guides stay industry-specific. An unmapped AI prompt is not shown as a completed report.
 
 ### Signed-in browser steps (operator, still open)
 
@@ -32,11 +32,11 @@ Do this in a browser against a build of this tree, not only the Docker image on 
 
 ## Audit 2026-10-04 (local, not deployed)
 
-Supported new-company industries: Retail, Pharmacy, Wholesale, Retail + Wholesale, and Hospital. Hotel and FMCG are rejected on create and on a business-type change. A company that already stores Hotel or FMCG keeps that value and its records. Offline Complete, paid checkout, and a hospital information system are not claimed.
+Supported new-company industries: Retail, Pharmacy, Wholesale, Retail + Wholesale, Restaurant, Hotel, FMCG, and Hospital. Create succeeds for those types. Offline Complete, paid checkout, and a hospital information system are not claimed.
 
 | Area | Status | Evidence |
 |------|--------|----------|
-| Hotel / FMCG removed from new selection | PASS | `assert_industry_selectable`; `tests/test_business_type_locked_b1.py::test_hotel_and_fmcg_are_not_selectable_for_new_companies` |
+| Restaurant, Hotel, and FMCG selectable for new companies | PASS (code) | `RETIRED_PROVISION_INDUSTRIES` is empty; `tests/test_business_type_locked_b1.py::test_hotel_fmcg_and_restaurant_are_selectable_for_new_companies` |
 | Single-store transfer API | PASS | `stores.create_transfer` returns 403 when entitlement is 1 store; `test_single_store_company_cannot_create_a_transfer` |
 | Paid expenses list | PASS (code) | Expenses page shows the register under the title, with a Categories jump |
 | Staff guide by industry | PASS (code) | `staff_guide.py` steps differ for retail, pharmacy, wholesale, and retail+wholesale |
