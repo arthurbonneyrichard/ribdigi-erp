@@ -575,10 +575,10 @@ export default function Page() {
                 { label: 'Partially dispensed', val: num(d.pharmacy_desk.partially_dispensed), href: '/prescriptions?status=partially_dispensed' },
                 { label: 'Low-stock medicines', val: num(d.pharmacy_desk.low_stock), href: '/inventory?tab=lowstock' },
                 { label: 'Out of stock', val: num(d.pharmacy_desk.out_of_stock), href: '/inventory?tab=products&stock=oos' },
-                { label: 'Nearing expiry', val: num(d.pharmacy_desk.expiring_soon), href: '/inventory?tab=expiry' },
-                { label: 'Expired lots', val: num(d.pharmacy_desk.expired_lots), href: '/inventory?tab=expiry' },
-                { label: 'Quarantined', val: num(d.pharmacy_desk.quarantined), href: '/prescriptions' },
-                { label: 'Recalled', val: num(d.pharmacy_desk.recalled), href: '/prescriptions' },
+                { label: 'Nearing expiry', val: num(d.pharmacy_desk.expiring_soon), href: '/inventory?tab=expiry&when=soon' },
+                { label: 'Expired lots', val: num(d.pharmacy_desk.expired_lots), href: '/inventory?tab=expiry&when=expired' },
+                { label: 'Quarantined', val: num(d.pharmacy_desk.quarantined), href: '/prescriptions?holds=quarantine#lot-holds' },
+                { label: 'Recalled', val: num(d.pharmacy_desk.recalled), href: '/prescriptions?holds=recall#lot-holds' },
                 { label: 'Pending purchase orders', val: num(d.pharmacy_desk.pending_purchase_orders), href: '/purchasing' },
               ].map((card) => (
                 <Link className="stat" key={card.label} href={card.href} style={{ textDecoration: 'none', color: 'inherit' }}>

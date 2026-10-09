@@ -221,6 +221,11 @@ async def test_pharmacy_pos_fefo_skips_expired_and_held_lots(client, db_session)
     admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
     lots = await ac.get(f"/api/v1/products/{product_id}/batches", headers=admin)
     assert lots.status_code == 200, lots.text
+    company_lots = await ac.get("/api/v1/inventory/batches", headers=admin)
+    assert company_lots.status_code == 200, company_lots.text
+    company_numbers = {row["batch_number"] for row in company_lots.json()["data"]}
+    assert "EXP-1" in company_numbers
+    assert "FRESH-1" in company_numbers
     by_id = {row["id"]: row for row in lots.json()["data"]}
     assert float(by_id[fresh_id]["quantity"]) == pytest.approx(6)
     assert float(by_id[expired_id]["quantity"]) == pytest.approx(8)

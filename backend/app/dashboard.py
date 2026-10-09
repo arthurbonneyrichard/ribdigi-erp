@@ -429,6 +429,7 @@ async def build_dashboard(
             returns_today = int((await db.execute(ret_stmt)).scalar() or 0)
 
         expired_lots = 0
+        nearing_lots = 0
         if await schema_compat_svc.table_column_names(db, "product_batches"):
             exp_stmt = select(func.count()).select_from(m.ProductBatch).where(
                 m.ProductBatch.tenant_id == tenant_id,
@@ -437,6 +438,14 @@ async def build_dashboard(
                 m.ProductBatch.quantity > 0,
             )
             expired_lots = int((await db.execute(_limit_warehouses(exp_stmt, m.ProductBatch.warehouse_id))).scalar() or 0)
+            near_stmt = select(func.count()).select_from(m.ProductBatch).where(
+                m.ProductBatch.tenant_id == tenant_id,
+                m.ProductBatch.expiry_date.is_not(None),
+                m.ProductBatch.expiry_date >= now_dt,
+                m.ProductBatch.expiry_date <= now_dt + timedelta(days=30),
+                m.ProductBatch.quantity > 0,
+            )
+            nearing_lots = int((await db.execute(_limit_warehouses(near_stmt, m.ProductBatch.warehouse_id))).scalar() or 0)
 
         quarantined = 0
         recalled = 0
@@ -474,7 +483,7 @@ async def build_dashboard(
             "partially_dispensed": int(queue.get("partially_dispensed") or 0),
             "low_stock": low_stock,
             "out_of_stock": out_of_stock,
-            "expiring_soon": expiring_soon,
+            "expiring_soon": nearing_lots,
             "expired_lots": expired_lots,
             "quarantined": quarantined,
             "recalled": recalled,

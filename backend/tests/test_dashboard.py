@@ -182,6 +182,10 @@ def test_dashboard_page_surfaces_load_errors():
     assert "aria-label=\"Pharmacy\"" in text
     assert "New prescription" in text
     assert "Pharmacy POS" in text
+    assert "/inventory?tab=expiry&when=soon" in text
+    assert "/inventory?tab=expiry&when=expired" in text
+    assert "/prescriptions?holds=quarantine#lot-holds" in text
+    assert "/prescriptions?holds=recall#lot-holds" in text
 
 
 @pytest.mark.asyncio
@@ -225,3 +229,36 @@ async def test_pharmacy_dashboard_desk_counts(db_session, seeded):
     assert "quarantined" in desk
     assert "recalled" in desk
     assert "pending_purchase_orders" in desk
+    from datetime import datetime, timedelta
+
+    now = datetime.utcnow()
+    db_session.add_all(
+        [
+            m.ProductBatch(
+                tenant_id=seeded["t1"].id,
+                product_id=seeded["p1"].id,
+                batch_number="DESK-EXP",
+                quantity=2,
+                expiry_date=now - timedelta(days=3),
+            ),
+            m.ProductBatch(
+                tenant_id=seeded["t1"].id,
+                product_id=seeded["p1"].id,
+                batch_number="DESK-SOON",
+                quantity=2,
+                expiry_date=now + timedelta(days=10),
+            ),
+            m.ProductBatch(
+                tenant_id=seeded["t1"].id,
+                product_id=seeded["p1"].id,
+                batch_number="DESK-LATER",
+                quantity=2,
+                expiry_date=now + timedelta(days=90),
+            ),
+        ]
+    )
+    await db_session.commit()
+    after = await build_dashboard(db_session, seeded["t1"].id)
+    desk_after = after["pharmacy_desk"]
+    assert desk_after["expired_lots"] == desk["expired_lots"] + 1
+    assert desk_after["expiring_soon"] == desk["expiring_soon"] + 1

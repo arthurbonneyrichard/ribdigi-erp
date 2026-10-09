@@ -49,6 +49,12 @@ def test_stock_tabs_ui_matches_categories_pattern():
     assert "Receive batch" in batches
     assert "FormModal" in batches
     assert "No batches yet" in batches
+    assert "apiOptional('/inventory/batches'" in page
+    assert "Quarantine lot" in batches
+    assert "Release lot hold" in batches
+    assert "expiryWhen === 'expired'" in page
+    assert "No expired lots on hand." in page
+    assert "No lots expiring in the next 30 days." in page
 
     assert "Opening stock" in opening
     assert "assigned when you save" in opening

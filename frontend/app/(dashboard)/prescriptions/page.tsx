@@ -50,11 +50,20 @@ type Prescription = {
 type Customer = { id: string; name: string; status?: string };
 type BatchHold = {
   id: string;
+  batch_id?: string;
   batch_number?: string | null;
   product_name?: string | null;
   hold_type: string;
   status: string;
   reason?: string | null;
+};
+
+type LotRow = {
+  id: string;
+  batch_number?: string | null;
+  product_id?: string;
+  quantity?: number;
+  expiry_date?: string | null;
 };
 
 const NEXT: Record<string, { status: string; label: string }[]> = {
@@ -74,6 +83,8 @@ const NEXT: Record<string, { status: string; label: string }[]> = {
 export default function PrescriptionsPage() {
   const searchParams = useSearchParams();
   const statusFilter = (searchParams.get('status') || '').trim();
+  const holdParam = (searchParams.get('holds') || '').trim().toLowerCase();
+  const holdKind = holdParam === 'quarantine' || holdParam === 'recall' ? holdParam : '';
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [canWrite, setCanWrite] = useState(false);
   const [rows, setRows] = useState<Prescription[]>([]);
@@ -81,6 +92,8 @@ export default function PrescriptionsPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<RxProduct[]>([]);
   const [holds, setHolds] = useState<BatchHold[]>([]);
+  const [lots, setLots] = useState<LotRow[]>([]);
+  const [holdForm, setHoldForm] = useState({ batch_id: '', hold_type: 'quarantine', reason: '' });
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -110,13 +123,24 @@ export default function PrescriptionsPage() {
     return c;
   }, [rows]);
 
+  const visibleHolds = useMemo(() => {
+    if (!holdKind) return holds;
+    return holds.filter((row) => row.hold_type === holdKind);
+  }, [holds, holdKind]);
+
+  useEffect(() => {
+    if (!holdKind || allowed !== true) return;
+    document.getElementById('lot-holds')?.scrollIntoView({ block: 'start' });
+  }, [holdKind, allowed, holds.length]);
+
   async function refresh() {
-    const [list, rx, cust, catalog, holdRes] = await Promise.all([
+    const [list, rx, cust, catalog, holdRes, lotRes] = await Promise.all([
       api('/pharmacy/prescriptions'),
       api('/pharmacy/rx-products'),
       api('/customers').catch(() => ({ data: [] })),
       api('/products?is_active=true').catch(() => ({ data: [] })),
       api('/pharmacy/batch-holds').catch(() => ({ data: [] })),
+      api('/inventory/batches').catch(() => ({ data: [] })),
     ]);
     const nextRows = Array.isArray(list.data) ? list.data : [];
     setRows(nextRows);
@@ -125,6 +149,7 @@ export default function PrescriptionsPage() {
     setCustomers(custList.filter((c: Customer) => (c.status || 'active') === 'active'));
     setProducts(Array.isArray(catalog.data) ? catalog.data : []);
     setHolds(Array.isArray(holdRes.data) ? holdRes.data : []);
+    setLots(Array.isArray(lotRes.data) ? lotRes.data : []);
     setSelected((cur) => (cur ? nextRows.find((r: Prescription) => r.id === cur.id) || cur : null));
   }
 
@@ -235,6 +260,52 @@ export default function PrescriptionsPage() {
       await refresh();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Could not dispense');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function placeHold(e: React.FormEvent) {
+    e.preventDefault();
+    if (busy || !canWrite) return;
+    const reason = holdForm.reason.trim();
+    if (!holdForm.batch_id || !reason) return;
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      await api('/pharmacy/batch-holds', {
+        method: 'POST',
+        body: JSON.stringify({
+          batch_id: holdForm.batch_id,
+          hold_type: holdForm.hold_type,
+          reason,
+        }),
+      });
+      setMessage(holdForm.hold_type === 'recall' ? 'Lot recalled' : 'Lot quarantined');
+      setHoldForm({ batch_id: '', hold_type: 'quarantine', reason: '' });
+      await refresh();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not hold lot');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function releaseHold(id: string) {
+    if (busy || !canWrite) return;
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      await api(`/pharmacy/batch-holds/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'released' }),
+      });
+      setMessage('Lot hold released');
+      await refresh();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not release lot hold');
     } finally {
       setBusy(false);
     }
@@ -386,14 +457,60 @@ export default function PrescriptionsPage() {
         </table>
       )}
 
-      <section className="card" style={{ marginTop: 16 }}>
-        <h2 style={{ marginTop: 0 }}>Lot holds</h2>
+      <section className="card" id="lot-holds" style={{ marginTop: 16 }}>
+        <h2 style={{ marginTop: 0 }}>
+          {holdKind === 'quarantine' ? 'Quarantine holds' : holdKind === 'recall' ? 'Recall holds' : 'Lot holds'}
+        </h2>
         <p className="muted">
-          Quarantine or recall a lot so POS FEFO will not sell it. Release from inventory batches
-          when the lot is cleared.
+          Quarantine or recall a lot so POS FEFO will not sell it. Release the hold here, or from
+          Inventory → Batches, when the lot is cleared.
         </p>
-        {holds.length === 0 ? (
-          <p className="muted">No open lot holds.</p>
+        {canWrite ? (
+          <form onSubmit={placeHold} className="erp-form-grid" style={{ marginBottom: 12 }}>
+            <label className="muted">
+              Lot
+              <select
+                value={holdForm.batch_id}
+                onChange={(e) => setHoldForm((f) => ({ ...f, batch_id: e.target.value }))}
+                aria-label="Lot to hold"
+                required
+              >
+                <option value="">Select lot</option>
+                {lots.map((lot) => (
+                  <option key={lot.id} value={lot.id}>
+                    {lot.batch_number || lot.id}
+                    {lot.expiry_date ? ` · ${String(lot.expiry_date).slice(0, 10)}` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="muted">
+              Hold type
+              <select
+                value={holdForm.hold_type}
+                onChange={(e) => setHoldForm((f) => ({ ...f, hold_type: e.target.value }))}
+                aria-label="Lot hold type"
+              >
+                <option value="quarantine">Quarantine</option>
+                <option value="recall">Recall</option>
+              </select>
+            </label>
+            <label className="muted span-2">
+              Reason
+              <input
+                value={holdForm.reason}
+                onChange={(e) => setHoldForm((f) => ({ ...f, reason: e.target.value }))}
+                aria-label="Lot hold reason"
+                required
+              />
+            </label>
+            <button type="submit" className="btn-danger" disabled={busy || !holdForm.batch_id}>
+              {busy ? 'Saving…' : 'Place lot hold'}
+            </button>
+          </form>
+        ) : null}
+        {visibleHolds.length === 0 ? (
+          <p className="muted">{holdKind ? `No open ${holdKind} holds.` : 'No open lot holds.'}</p>
         ) : (
           <table className="table">
             <thead>
@@ -402,15 +519,29 @@ export default function PrescriptionsPage() {
                 <th>Product</th>
                 <th>Type</th>
                 <th>Reason</th>
+                {canWrite ? <th></th> : null}
               </tr>
             </thead>
             <tbody>
-              {holds.map((h) => (
+              {visibleHolds.map((h) => (
                 <tr key={h.id}>
-                  <td>{h.batch_number || h.id}</td>
+                  <td>{h.batch_number || h.batch_id || h.id}</td>
                   <td>{h.product_name || '—'}</td>
                   <td>{h.hold_type}</td>
                   <td>{h.reason || '—'}</td>
+                  {canWrite ? (
+                    <td>
+                      <button
+                        type="button"
+                        className="btn-ok"
+                        onClick={() => releaseHold(h.id)}
+                        disabled={busy}
+                        aria-label={`Release lot hold ${h.batch_number || h.id}`}
+                      >
+                        Release
+                      </button>
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>

@@ -5853,6 +5853,16 @@ async def list_product_batches(
     return env([catalog_svc.serialize_batch(b) for b in rows])
 
 
+@api.get("/inventory/batches")
+async def inventory_batches_list(
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """On-hand lots for the company. Product batch routes stay per product."""
+    rows = await catalog_svc.list_batches(db, claims["tenant_id"])
+    return env([catalog_svc.serialize_batch(b) for b in rows])
+
+
 @api.get("/inventory/batches/expiring")
 async def inventory_batches_expiring(
     # omit → 30; 0/negative/>365 → **422** (was free int; negative/huge horizons accepted)

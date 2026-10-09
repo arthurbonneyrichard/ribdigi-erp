@@ -372,6 +372,13 @@ export default function Page() {
   const [productVariantId, setProductVariantId] = useState('');
   const [gallery, setGallery] = useState<any[]>([]);
   const [batches, setBatches] = useState<any[]>([]);
+  const [lotRegister, setLotRegister] = useState<any[]>([]);
+  const [lotHolds, setLotHolds] = useState<any[]>([]);
+  const [holdDraft, setHoldDraft] = useState<{
+    batchId: string;
+    holdType: 'quarantine' | 'recall';
+    reason: string;
+  } | null>(null);
   const [expiring, setExpiring] = useState<any[]>([]);
   const [counts, setCounts] = useState<any[]>([]);
   const [countManageFilter, setCountManageFilter] = useState<
@@ -658,6 +665,23 @@ export default function Page() {
         })().finally(() => {
           if (current === 'expiry') setExpiryBusy(false);
         }),
+      );
+    }
+    if (current === 'batches') {
+      jobs.push(
+        (async () => {
+          const lots = await apiOptional('/inventory/batches', req);
+          if ((lots as { aborted?: boolean }).aborted) return;
+          if (lots.error) {
+            setError(lots.error);
+            setLotRegister([]);
+          } else {
+            setLotRegister(Array.isArray(lots.data) ? lots.data : []);
+          }
+          const holds = await apiOptional('/pharmacy/batch-holds', req);
+          if ((holds as { aborted?: boolean }).aborted) return;
+          setLotHolds(!holds.error && Array.isArray(holds.data) ? holds.data : []);
+        })(),
       );
     }
     if (current === 'counts') {
@@ -1822,6 +1846,63 @@ export default function Page() {
       if (!lotWh && createOpeningWh) setLotWh(createOpeningWh);
     } catch (err: any) {
       setFormFlash({ err: err.message || 'Could not save product' });
+    } finally {
+      setSaveBusy(false);
+    }
+  }
+
+  function openHoldFor(batch: any) {
+    return lotHolds.find((h) => String(h.batch_id) === String(batch.id) && h.status !== 'released');
+  }
+
+  async function reloadLotRegister() {
+    const lots = await apiOptional('/inventory/batches');
+    if (!lots.error && Array.isArray(lots.data)) setLotRegister(lots.data);
+    const holds = await apiOptional('/pharmacy/batch-holds');
+    setLotHolds(!holds.error && Array.isArray(holds.data) ? holds.data : []);
+  }
+
+  async function placeLotHold() {
+    if (!holdDraft || saveBusy) return;
+    const reason = holdDraft.reason.trim();
+    if (!reason) {
+      setError('Enter a reason for the lot hold');
+      return;
+    }
+    setSaveBusy(true);
+    setError('');
+    try {
+      await api('/pharmacy/batch-holds', {
+        method: 'POST',
+        body: JSON.stringify({
+          batch_id: holdDraft.batchId,
+          hold_type: holdDraft.holdType,
+          reason,
+        }),
+      });
+      setMessage(holdDraft.holdType === 'recall' ? 'Lot recalled' : 'Lot quarantined');
+      setHoldDraft(null);
+      await reloadLotRegister();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not hold lot');
+    } finally {
+      setSaveBusy(false);
+    }
+  }
+
+  async function releaseLotHold(holdId: string) {
+    if (saveBusy) return;
+    setSaveBusy(true);
+    setError('');
+    try {
+      await api(`/pharmacy/batch-holds/${holdId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'released' }),
+      });
+      setMessage('Lot hold released');
+      await reloadLotRegister();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not release lot hold');
     } finally {
       setSaveBusy(false);
     }
@@ -3027,13 +3108,6 @@ export default function Page() {
     return (t.status || 'draft') === transferManageFilter;
   });
   const batchQuery = batchSearch.trim().toLowerCase();
-  const visibleBatches = batches.filter((b) => {
-    if (!batchQuery) return true;
-    const prod = products.find((p) => p.id === b.product_id);
-    const wh = warehouses.find((w) => w.id === b.warehouse_id);
-    const hay = `${b.batch_number || ''} ${prod?.name || ''} ${prod?.sku || ''} ${wh?.name || ''} ${wh?.code || ''}`.toLowerCase();
-    return hay.includes(batchQuery);
-  });
   const openingQuery = openingSearch.trim().toLowerCase();
   const visibleOpening = openingHistory.filter((m) => {
     if (!openingQuery) return true;
@@ -3042,9 +3116,28 @@ export default function Page() {
     return hay.includes(openingQuery);
   });
   const expiryQuery = expirySearch.trim().toLowerCase();
+  const expiryWhen = searchParams.get('when');
   const storeWhIds = new Set(storeWarehouses.map((w: any) => String(w.id)));
+  const visibleBatches = lotRegister.filter((b) => {
+    if (scopeStoreId && b.warehouse_id && !storeWhIds.has(String(b.warehouse_id))) return false;
+    if (!batchQuery) return true;
+    const prod = products.find((p) => p.id === b.product_id);
+    const wh = warehouses.find((w) => w.id === b.warehouse_id);
+    const hay = `${b.batch_number || ''} ${prod?.name || ''} ${prod?.sku || ''} ${wh?.name || ''} ${wh?.code || ''}`.toLowerCase();
+    return hay.includes(batchQuery);
+  });
   const visibleExpiring = expiring.filter((b) => {
     if (scopeStoreId && b.warehouse_id && !storeWhIds.has(String(b.warehouse_id))) return false;
+    if (expiryWhen === 'expired' || expiryWhen === 'soon') {
+      const stamp = Date.parse(String(b.expiry_date || ''));
+      if (Number.isNaN(stamp)) return false;
+      const now = Date.now();
+      if (expiryWhen === 'expired') {
+        if (stamp >= now) return false;
+      } else if (stamp < now || stamp > now + 30 * 24 * 60 * 60 * 1000) {
+        return false;
+      }
+    }
     if (!expiryQuery) return true;
     const prod = products.find((p) => p.id === b.product_id);
     const wh = warehouses.find((w) => w.id === b.warehouse_id);
@@ -5525,6 +5618,31 @@ export default function Page() {
               aria-label="Search batches"
             />
           </div>
+          {pharmacyOps ? (
+            <p className="muted">
+              On-hand lots for this company. Quarantine or recall a lot so POS will not sell it, then release the hold when it is cleared.
+            </p>
+          ) : null}
+          {holdDraft ? (
+            <div className="erp-form-grid form-grid" style={{ marginBottom: 12 }}>
+              <p className="muted span-2" style={{ margin: 0 }}>
+                {holdDraft.holdType === 'recall' ? 'Recall' : 'Quarantine'}{' '}
+                {lotRegister.find((b) => b.id === holdDraft.batchId)?.batch_number || 'lot'}
+              </p>
+              <input
+                value={holdDraft.reason}
+                onChange={(e) => setHoldDraft({ ...holdDraft, reason: e.target.value })}
+                placeholder="Reason"
+                aria-label="Lot hold reason"
+              />
+              <button type="button" className="btn-danger" onClick={placeLotHold} disabled={saveBusy} aria-label="Save lot hold">
+                {saveBusy ? 'Saving…' : 'Save lot hold'}
+              </button>
+              <button type="button" onClick={() => setHoldDraft(null)} aria-label="Cancel lot hold">
+                Cancel
+              </button>
+            </div>
+          ) : null}
           {visibleBatches.length === 0 ? (
             <div className="cat-empty">
               <p style={{ margin: 0 }}>No batches yet.</p>
@@ -5547,18 +5665,23 @@ export default function Page() {
               <table className="table cat-table">
                 <thead>
                   <tr>
+                    <th>Product</th>
                     <th>Batch</th>
                     <th>Qty</th>
                     <th>Expiry</th>
                     <th>Location</th>
+                    {pharmacyOps ? <th>Hold</th> : null}
                   </tr>
                 </thead>
                 <tbody>
                   {visibleBatches.map((b) => {
+                    const prod = products.find((p) => p.id === b.product_id);
                     const wh = warehouses.find((w) => w.id === b.warehouse_id);
                     const vr = variants.find((v) => v.id === b.variant_id);
+                    const hold = pharmacyOps ? openHoldFor(b) : null;
                     return (
                       <tr key={b.id}>
+                        <td data-label="Product">{prod?.name || prod?.sku || '—'}</td>
                         <td data-label="Batch">
                           <div className="cat-name-cell">
                             <strong>{b.batch_number}</strong>
@@ -5571,6 +5694,43 @@ export default function Page() {
                         <td data-label="Qty">{b.quantity}</td>
                         <td data-label="Expiry">{b.expiry_date ? String(b.expiry_date).slice(0, 10) : '—'}</td>
                         <td data-label="Location">{wh ? wh.name || wh.code : '—'}</td>
+                        {pharmacyOps ? (
+                          <td data-label="Hold">
+                            {hold ? (
+                              <>
+                                <span>{hold.hold_type}</span>{' '}
+                                <button
+                                  type="button"
+                                  className="btn-ok"
+                                  onClick={() => releaseLotHold(hold.id)}
+                                  disabled={saveBusy}
+                                  aria-label={`Release lot hold ${b.batch_number || hold.id}`}
+                                >
+                                  Release
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  className="btn-danger"
+                                  onClick={() => setHoldDraft({ batchId: b.id, holdType: 'quarantine', reason: '' })}
+                                  aria-label={`Quarantine lot ${b.batch_number || b.id}`}
+                                >
+                                  Quarantine
+                                </button>{' '}
+                                <button
+                                  type="button"
+                                  className="btn-danger"
+                                  onClick={() => setHoldDraft({ batchId: b.id, holdType: 'recall', reason: '' })}
+                                  aria-label={`Recall lot ${b.batch_number || b.id}`}
+                                >
+                                  Recall
+                                </button>
+                              </>
+                            )}
+                          </td>
+                        ) : null}
                       </tr>
                     );
                   })}
@@ -5973,7 +6133,9 @@ export default function Page() {
       {tab === 'expiry' && (
         <div className="card cat-panel">
           <div className="cat-head">
-            <h2 style={{ margin: 0 }}>Expiry</h2>
+            <h2 style={{ margin: 0 }}>
+              {expiryWhen === 'expired' ? 'Expired lots' : expiryWhen === 'soon' ? 'Nearing expiry' : 'Expiry'}
+            </h2>
             <button
               type="button"
               onClick={() => {
@@ -6009,7 +6171,13 @@ export default function Page() {
             </div>
           ) : visibleExpiring.length === 0 ? (
             <div className="cat-empty">
-              <p style={{ margin: 0 }}>No batches expiring in the next year.</p>
+              <p style={{ margin: 0 }}>
+                {expiryWhen === 'expired'
+                  ? 'No expired lots on hand.'
+                  : expiryWhen === 'soon'
+                    ? 'No lots expiring in the next 30 days.'
+                    : 'No batches expiring in the next year.'}
+              </p>
               <p className="muted" style={{ margin: '8px 0 0' }}>
                 After you add a product, set expiry here with quantity and warehouse. Expiry is stored on the lot, not the product header.
               </p>
