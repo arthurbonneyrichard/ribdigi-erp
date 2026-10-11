@@ -453,33 +453,53 @@ export default function HotelPage() {
     const qs = filter ? `?list_kind=${filter}` : '';
     const startD = new Date();
     startD.setDate(startD.getDate() - 7);
-    try {
-      const [s, r, g, resv, set] = await Promise.all([
-        api(`/hotel/summary?on_date=${dashDate}`),
-        api('/hotel/rooms?is_active=true'),
-        api('/hotel/guests?is_active=true'),
-        api(`/hotel/reservations${qs}`),
-        api('/hotel/settings'),
-      ]);
-      setSummary(s.data || null);
-      setRooms(r.data || []);
-      setGuests(g.data || []);
-      setReservations(resv.data || []);
-      setSettings(set.data || null);
-      if (set.data) {
+    const [sRes, rRes, gRes, resvRes, setRes] = await Promise.allSettled([
+      api(`/hotel/summary?on_date=${dashDate}`),
+      api('/hotel/rooms?is_active=true'),
+      api('/hotel/guests?is_active=true'),
+      api(`/hotel/reservations${qs}`),
+      api('/hotel/settings'),
+    ]);
+    if (sRes.status === 'fulfilled') setSummary(sRes.value.data || null);
+    if (rRes.status === 'fulfilled') setRooms(rRes.value.data || []);
+    if (gRes.status === 'fulfilled') setGuests(gRes.value.data || []);
+    if (resvRes.status === 'fulfilled') setReservations(resvRes.value.data || []);
+    if (setRes.status === 'fulfilled') {
+      const setData = setRes.value.data || null;
+      setSettings(setData);
+      if (setData) {
         setSettingsForm({
-          check_in_time: set.data.check_in_time || '14:00',
-          check_out_time: set.data.check_out_time || '11:00',
-          cancellation_hours: String(set.data.cancellation_hours ?? 24),
-          tax_percent: String(set.data.tax_percent ?? 0),
-          early_checkin_fee: String(set.data.early_checkin_fee ?? 0),
-          late_checkout_fee: String(set.data.late_checkout_fee ?? 0),
-          property_name: set.data.property_name || '',
+          check_in_time: setData.check_in_time || '14:00',
+          check_out_time: setData.check_out_time || '11:00',
+          cancellation_hours: String(setData.cancellation_hours ?? 24),
+          tax_percent: String(setData.tax_percent ?? 0),
+          early_checkin_fee: String(setData.early_checkin_fee ?? 0),
+          late_checkout_fee: String(setData.late_checkout_fee ?? 0),
+          property_name: setData.property_name || '',
         });
       }
+    }
+    const roomFail = rRes.status === 'rejected' ? rRes.reason : null;
+    const stayFail = resvRes.status === 'rejected' ? resvRes.reason : null;
+    const extraFail =
+      sRes.status === 'rejected'
+        ? sRes.reason
+        : gRes.status === 'rejected'
+          ? gRes.reason
+          : setRes.status === 'rejected'
+            ? setRes.reason
+            : null;
+    if (roomFail || stayFail) {
+      setError(hotelErr(roomFail || stayFail, 'Could not load rooms and reservations. Try again.'));
+    } else if (extraFail) {
+      setError(
+        hotelErr(
+          extraFail,
+          'Could not complete that. Try again. Hotel extras may need a database update; rooms and reservations are separate.'
+        )
+      );
+    } else {
       setError('');
-    } catch (err: any) {
-      setError(hotelErr(err, 'Could not load rooms and reservations. Try again.'));
     }
     const [hk, mt, rep, svc, fol, plans, reqs, lf, shift, audits, ev] = await Promise.all([
       soft<HkTask[]>('/hotel/housekeeping', []),

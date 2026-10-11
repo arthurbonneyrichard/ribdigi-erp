@@ -60,6 +60,32 @@ async def _optional_scalars(db: AsyncSession, stmt) -> list:
         logger.warning("hotel optional query skipped", exc_info=True)
         return []
 
+
+async def _scalars_or_schema_behind(db: AsyncSession, stmt) -> list:
+    """Hotel extras (services, later folio columns) stay off the room and reservation tables."""
+    try:
+        async with db.begin_nested():
+            return list((await db.execute(stmt)).scalars().all())
+    except (ProgrammingError, OperationalError) as exc:
+        _raise_schema_behind(exc)
+        return []
+
+
+async def _one_or_schema_behind(db: AsyncSession, stmt):
+    try:
+        async with db.begin_nested():
+            return (await db.execute(stmt)).scalar_one_or_none()
+    except (ProgrammingError, OperationalError) as exc:
+        _raise_schema_behind(exc)
+
+
+async def _flush_extra(db: AsyncSession) -> None:
+    try:
+        async with db.begin_nested():
+            await db.flush()
+    except (ProgrammingError, OperationalError) as exc:
+        _raise_schema_behind(exc)
+
 # In-process serialization for same-room bookings (SQLite tests + single-worker).
 # Postgres multi-worker still relies on SELECT … FOR UPDATE on the room row.
 _room_booking_locks: dict[str, asyncio.Lock] = {}
@@ -2024,11 +2050,21 @@ async def summary(db: AsyncSession, *, tenant_id: str, on_date: date | None = No
         if created == today:
             payments_today += float(p.amount or 0)
     recent = []
+    folio_schema_ok = True
     for r, room, guest in reservations[:8]:
         bal = None
-        folio = await get_folio_for_reservation(db, tenant_id=tenant_id, reservation_id=r.id)
-        if folio:
-            bal = await folio_balance(db, tenant_id=tenant_id, folio_id=folio.id)
+        if folio_schema_ok:
+            try:
+                async with db.begin_nested():
+                    folio = await get_folio_for_reservation(
+                        db, tenant_id=tenant_id, reservation_id=r.id
+                    )
+                    if folio:
+                        bal = await folio_balance(db, tenant_id=tenant_id, folio_id=folio.id)
+            except (ProgrammingError, OperationalError):
+                logger.warning("hotel folio lookup skipped", exc_info=True)
+                folio_schema_ok = False
+                bal = None
         recent.append(serialize_reservation(r, room=room, guest=guest, folio_balance=bal))
     hk_rows = await list_housekeeping(db, tenant_id=tenant_id)
     overdue_hk = sum(
@@ -2052,9 +2088,9 @@ async def summary(db: AsyncSession, *, tenant_id: str, on_date: date | None = No
     from app.catalog_meta import qty_is_low_stock, qty_is_out_of_stock
 
     low_stock = []
-    products = (
-        await db.execute(select(m.Product).where(m.Product.tenant_id == tenant_id).limit(200))
-    ).scalars().all()
+    products = await _optional_scalars(
+        db, select(m.Product).where(m.Product.tenant_id == tenant_id).limit(200)
+    )
     for prod in products:
         qty = float(getattr(prod, "stock_qty", 0) or 0)
         if qty_is_low_stock(
@@ -2376,8 +2412,11 @@ async def calendar(
         for r, _, guest in reservations:
             if r.room_id != room.id or r.status in {"cancelled", "no_show"}:
                 continue
-            cur = r.check_in_date
-            while cur < r.check_out_date:
+            cur = _as_date(r.check_in_date)
+            checkout = _as_date(r.check_out_date)
+            if not cur or not checkout:
+                continue
+            while cur < checkout:
                 key = cur.isoformat()
                 if start <= cur <= end:
                     cells[key] = {
@@ -2412,17 +2451,22 @@ async def reports(
     cancellations = 0
     no_shows = 0
     for r, room, _guest in reservations:
+        check_in = _as_date(r.check_in_date)
+        check_out = _as_date(r.check_out_date)
+        if not check_in or not check_out:
+            continue
         if r.status == "cancelled":
-            if start <= r.check_in_date <= end:
+            if start <= check_in <= end:
                 cancellations += 1
             continue
         if r.status == "no_show":
-            if start <= r.check_in_date <= end:
+            if start <= check_in <= end:
                 no_shows += 1
             continue
-        # Count nights overlapping report window for checked_in/out/booked
-        night = max(r.check_in_date, start)
-        last = min(r.check_out_date, end + __import__("datetime").timedelta(days=1))
+        # Count nights overlapping report window for checked_in/out/booked.
+        # Rooms and reservations stay separate rows; extras (folios) are optional below.
+        night = max(check_in, start)
+        last = min(check_out, end + timedelta(days=1))
         while night < last and night <= end:
             if night >= start:
                 occupied_nights += 1
@@ -2431,21 +2475,20 @@ async def reports(
                 by_source[src] = by_source.get(src, 0) + float(r.nightly_rate or 0)
                 rtype = room.room_type if room else "unknown"
                 by_type[rtype] = by_type.get(rtype, 0) + float(r.nightly_rate or 0)
-            night = night + __import__("datetime").timedelta(days=1)
+            night = night + timedelta(days=1)
     occupancy = round(100.0 * occupied_nights / room_nights_available, 2)
     adr = round(room_revenue / occupied_nights, 2) if occupied_nights else 0.0
     revpar = round(room_revenue / room_nights_available, 2)
-    charges = (
-        await db.execute(
-            select(m.HotelFolioCharge).where(
-                m.HotelFolioCharge.tenant_id == tenant_id,
-                m.HotelFolioCharge.is_void.is_(False),
-            )
-        )
-    ).scalars().all()
-    payments = (
-        await db.execute(select(m.HotelFolioPayment).where(m.HotelFolioPayment.tenant_id == tenant_id))
-    ).scalars().all()
+    charges = await _optional_scalars(
+        db,
+        select(m.HotelFolioCharge).where(
+            m.HotelFolioCharge.tenant_id == tenant_id,
+            m.HotelFolioCharge.is_void.is_(False),
+        ),
+    )
+    payments = await _optional_scalars(
+        db, select(m.HotelFolioPayment).where(m.HotelFolioPayment.tenant_id == tenant_id)
+    )
     service_sales: dict[str, float] = {}
     payments_total = 0.0
     for ch in charges:
@@ -2457,22 +2500,20 @@ async def reports(
         if created and start <= created <= end:
             payments_total += float(p.amount or 0)
     outstanding = 0.0
-    open_folios = (
-        await db.execute(
-            select(m.HotelFolio).where(m.HotelFolio.tenant_id == tenant_id, m.HotelFolio.status == "open")
-        )
-    ).scalars().all()
+    open_folios = await _optional_scalars(
+        db,
+        select(m.HotelFolio).where(m.HotelFolio.tenant_id == tenant_id, m.HotelFolio.status == "open"),
+    )
     for f in open_folios:
         outstanding += await folio_balance(db, tenant_id=tenant_id, folio_id=f.id)
     inventory_usage: list[dict] = []
-    products = (
-        await db.execute(
-            select(m.Product)
-            .where(m.Product.tenant_id == tenant_id)
-            .order_by(m.Product.name.asc())
-            .limit(40)
-        )
-    ).scalars().all()
+    products = await _optional_scalars(
+        db,
+        select(m.Product)
+        .where(m.Product.tenant_id == tenant_id)
+        .order_by(m.Product.name.asc())
+        .limit(40),
+    )
     for prod in products:
         inventory_usage.append(
             {
@@ -2558,7 +2599,7 @@ async def list_services(
     stmt = select(m.HotelService).where(m.HotelService.tenant_id == tenant_id).order_by(m.HotelService.name)
     if is_active is not None:
         stmt = stmt.where(m.HotelService.is_active.is_(bool(is_active)))
-    return list((await db.execute(stmt)).scalars().all())
+    return await _scalars_or_schema_behind(db, stmt)
 
 
 async def create_service(
@@ -2578,13 +2619,12 @@ async def create_service(
             status_code=422, detail=f"category must be one of: {', '.join(sorted(SERVICE_CATEGORIES))}"
         )
     code_clean = require_honest_narrative(code, label="service code", max_length=40).upper()
-    exists = (
-        await db.execute(
-            select(m.HotelService).where(
-                m.HotelService.tenant_id == tenant_id, m.HotelService.code == code_clean
-            )
-        )
-    ).scalar_one_or_none()
+    exists = await _one_or_schema_behind(
+        db,
+        select(m.HotelService).where(
+            m.HotelService.tenant_id == tenant_id, m.HotelService.code == code_clean
+        ),
+    )
     if exists:
         raise HTTPException(status_code=409, detail="Service code already exists")
     row = m.HotelService(
@@ -2598,7 +2638,7 @@ async def create_service(
         is_active=True,
     )
     db.add(row)
-    await db.flush()
+    await _flush_extra(db)
     return row
 
 
@@ -2614,13 +2654,12 @@ async def update_service(
     is_active: bool | None = None,
     notes: str | None = None,
 ) -> m.HotelService:
-    row = (
-        await db.execute(
-            select(m.HotelService).where(
-                m.HotelService.id == service_id, m.HotelService.tenant_id == tenant_id
-            )
-        )
-    ).scalar_one_or_none()
+    row = await _one_or_schema_behind(
+        db,
+        select(m.HotelService).where(
+            m.HotelService.id == service_id, m.HotelService.tenant_id == tenant_id
+        ),
+    )
     if not row:
         raise HTTPException(status_code=404, detail="Hotel service not found")
     if name is not None:
@@ -2639,7 +2678,7 @@ async def update_service(
     if notes is not None:
         row.notes = optional_honest_narrative(notes, label="notes", max_length=500)
     row.updated_at = datetime.utcnow()
-    await db.flush()
+    await _flush_extra(db)
     return row
 
 
@@ -2652,15 +2691,14 @@ async def post_service_to_folio(
     quantity: float = 1,
     created_by: str | None = None,
 ) -> m.HotelFolioCharge:
-    svc = (
-        await db.execute(
-            select(m.HotelService).where(
-                m.HotelService.id == service_id,
-                m.HotelService.tenant_id == tenant_id,
-                m.HotelService.is_active.is_(True),
-            )
-        )
-    ).scalar_one_or_none()
+    svc = await _one_or_schema_behind(
+        db,
+        select(m.HotelService).where(
+            m.HotelService.id == service_id,
+            m.HotelService.tenant_id == tenant_id,
+            m.HotelService.is_active.is_(True),
+        ),
+    )
     if not svc:
         raise HTTPException(status_code=404, detail="Hotel service not found")
     qty = float(quantity or 1)

@@ -14,7 +14,13 @@ test('429 uses Retry-After seconds and hides RATE_LIMIT_EXCEEDED', () => {
 
 test('403 and 5xx are not session-expired copy', () => {
   assert.equal(formatApiError({}, 403), 'You do not have permission to do that.');
-  assert.match(formatApiError({}, 500), /try again/i);
+  assert.equal(formatApiError({}, 500), 'Could not complete that. Try again.');
+  assert.match(formatApiError({}, 500, '/auth/login'), /try again/i);
+  assert.equal(formatApiError({}, 500, '/auth/login').includes('Hotel extras'), false);
+  assert.match(
+    formatApiError({}, 500, '/hotel/services'),
+    /Hotel extras may need a database update/,
+  );
   assert.equal(formatApiError({}, 401), 'Your session expired. Please sign in again.');
 });
 

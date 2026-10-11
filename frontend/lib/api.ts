@@ -208,7 +208,8 @@ async function refreshSession(): Promise<boolean> {
 }
 
 /** Safe user-facing API error. Never include tokens, passwords, SQL, or stack traces. */
-export function formatApiError(body: unknown, status: number): string {
+export function formatApiError(body: unknown, status: number, path?: string): string {
+  const hotelRequest = typeof path === 'string' && path.includes('/hotel/');
   const fallbackByStatus = (code: number): string => {
     if (code === 401) return 'Your session expired. Please sign in again.';
     if (code === 403) return 'You do not have permission to do that.';
@@ -217,7 +218,12 @@ export function formatApiError(body: unknown, status: number): string {
     if (code === 422) return 'Some fields are invalid. Check email, role, phone (E.164), and password.';
     if (code === 429) return 'Too many requests. Wait a moment, then retry.';
     if (code === 503) return 'This extra is not ready on the server yet. Rooms and reservations still work.';
-    if (code >= 500) return 'Could not complete that. Try again. Hotel extras may need a database update; rooms and reservations are separate.';
+    if (code >= 500) {
+      if (hotelRequest) {
+        return 'Could not complete that. Try again. Hotel extras may need a database update; rooms and reservations are separate.';
+      }
+      return 'Could not complete that. Try again.';
+    }
     return 'Request failed';
   };
   const looksUnsafe = (text: string): boolean => {
@@ -292,9 +298,10 @@ function attachApiError(
   body: unknown,
   status: number,
   retryAfter?: number,
-  requestId?: string
+  requestId?: string,
+  path?: string
 ): ApiClientError {
-  const err = new Error(formatApiError(body, status)) as ApiClientError;
+  const err = new Error(formatApiError(body, status, path)) as ApiClientError;
   err.detail = body && typeof body === 'object' ? (body as { detail?: unknown }).detail : undefined;
   err.status = status;
   if (retryAfter && retryAfter > 0) err.retryAfter = retryAfter;
@@ -380,7 +387,7 @@ async function apiOnce(path: string, opts: RequestInit, retryOn401: boolean, get
       const untilExisting = getBackoffUntil.get(backoffKey) || 0;
       const now = Date.now();
       if (untilExisting > now) {
-        throw attachApiError(body, 429, Math.ceil((untilExisting - now) / 1000), requestId);
+        throw attachApiError(body, 429, Math.ceil((untilExisting - now) / 1000), requestId, path);
       }
       const waitMs = Math.min(GET_429_MAX_WAIT_MS, Math.max(1000, retryAfter * 1000));
       getBackoffUntil.set(backoffKey, now + waitMs);
@@ -390,10 +397,10 @@ async function apiOnce(path: string, opts: RequestInit, retryOn401: boolean, get
       }
       return apiOnce(path, opts, retryOn401, getRetries + 1);
     }
-    throw attachApiError(body, 429, retryAfter, requestId);
+    throw attachApiError(body, 429, retryAfter, requestId, path);
   }
   if (!response.ok) {
-    throw attachApiError(body, response.status, undefined, requestId);
+    throw attachApiError(body, response.status, undefined, requestId, path);
   }
   if (typeof window !== 'undefined' && !isGetLike(opts) && !isPublicAuthPath(path)) {
     bumpLastActivity();
