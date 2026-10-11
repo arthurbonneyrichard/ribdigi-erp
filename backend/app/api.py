@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, Query, 
 from fastapi.responses import FileResponse, PlainTextResponse, Response
 from pydantic import EmailStr, TypeAdapter, ValidationError as PydanticValidationError
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
 import asyncio
@@ -582,6 +582,20 @@ async def seed_tenant_defaults(db: AsyncSession, tenant_id: str) -> None:
 
 
 
+async def _optional_login_step(db: AsyncSession, label: str, work):
+    """Run audit, webhook, or passkey lookup without failing authentication.
+
+    A missing table or column (database behind Alembic head) raises during these
+    writes. Password, tenant, and 2FA checks stay outside this helper.
+    """
+    try:
+        async with db.begin_nested():
+            return await work()
+    except SQLAlchemyError:
+        logger.exception("login continued without optional %s", label)
+        return None
+
+
 async def create_session(
     db: AsyncSession,
     *,
@@ -602,20 +616,25 @@ async def create_session(
         expires_at=refresh_exp,
     )
     db.add(session)
+    await db.flush()
     # Interactive login only — refresh must not fan out user.login.
     if login_method:
-        await webhooks_svc.emit_event(
+        await _optional_login_step(
             db,
-            tenant_id=user.tenant_id,
-            event="user.login",
-            data={
-                "user_id": user.id,
-                "email": user.email,
-                "role": user.role,
-                "method": login_method,
-                "session_id": session.id,
-                "ip": session.ip_address,
-            },
+            "user.login webhook",
+            lambda: webhooks_svc.emit_event(
+                db,
+                tenant_id=user.tenant_id,
+                event="user.login",
+                data={
+                    "user_id": user.id,
+                    "email": user.email,
+                    "role": user.role,
+                    "method": login_method,
+                    "session_id": session.id,
+                    "ip": session.ip_address,
+                },
+            ),
         )
     return access, refresh_raw
 
@@ -2173,40 +2192,68 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
         if user:
             user.failed_login_attempts = int(user.failed_login_attempts or 0) + 1
             if user.failed_login_attempts >= 5:
-                user.locked_until = datetime.utcnow() + __import__("datetime").timedelta(minutes=30)
+                user.locked_until = datetime.utcnow() + timedelta(minutes=30)
                 user.failed_login_attempts = 0
-            await audit_svc.record_event(
-                db,
-                tenant_id=tenant_id,
-                user_id=user.id,
-                module="auth",
-                action="login_failed",
-                entity="user",
-                entity_id=user.id,
-                details={"email": payload.email},
-                ip_address=request.client.host if request.client else None,
-                user_agent=request.headers.get("user-agent"),
-            )
-            await db.commit()
+            try:
+                await db.flush()
+            except SQLAlchemyError:
+                await db.rollback()
+                logger.exception("login failed-attempt update skipped")
+            else:
+                await _optional_login_step(
+                    db,
+                    "login_failed audit",
+                    lambda: audit_svc.record_event(
+                        db,
+                        tenant_id=tenant_id,
+                        user_id=user.id,
+                        module="auth",
+                        action="login_failed",
+                        entity="user",
+                        entity_id=user.id,
+                        details={"email": payload.email},
+                        ip_address=request.client.host if request.client else None,
+                        user_agent=request.headers.get("user-agent"),
+                    ),
+                )
+                try:
+                    await db.commit()
+                except SQLAlchemyError:
+                    await db.rollback()
+                    logger.exception("login failed-attempt commit skipped")
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     user.failed_login_attempts = 0
     user.locked_until = None
 
     if not user.email_verified:
-        await audit_svc.record_event(
-            db,
-            tenant_id=tenant_id,
-            user_id=user.id,
-            module="auth",
-            action="login_blocked_unverified",
-            entity="user",
-            entity_id=user.id,
-            details={"email": user.email},
-            ip_address=request.client.host if request.client else None,
-            user_agent=request.headers.get("user-agent"),
-        )
-        await db.commit()
+        try:
+            await db.flush()
+        except SQLAlchemyError:
+            await db.rollback()
+            logger.exception("login unverified update skipped")
+        else:
+            await _optional_login_step(
+                db,
+                "login_blocked_unverified audit",
+                lambda: audit_svc.record_event(
+                    db,
+                    tenant_id=tenant_id,
+                    user_id=user.id,
+                    module="auth",
+                    action="login_blocked_unverified",
+                    entity="user",
+                    entity_id=user.id,
+                    details={"email": user.email},
+                    ip_address=request.client.host if request.client else None,
+                    user_agent=request.headers.get("user-agent"),
+                ),
+            )
+            try:
+                await db.commit()
+            except SQLAlchemyError:
+                await db.rollback()
+                logger.exception("login unverified commit skipped")
         raise HTTPException(
             status_code=403,
             detail={
@@ -2217,7 +2264,13 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
 
     from app import webauthn_svc as webauthn
 
-    has_webauthn = await webauthn.user_has_webauthn(db, user.id)
+    has_webauthn = bool(
+        await _optional_login_step(
+            db,
+            "webauthn lookup",
+            lambda: webauthn.user_has_webauthn(db, user.id),
+        )
+    )
     needs_2fa = totp_svc.login_2fa_enabled() and (bool(user.totp_enabled) or has_webauthn)
     methods: list[str] = []
     if user.totp_enabled:
@@ -2231,37 +2284,65 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
             ok = await totp_svc.verify_user_second_factor(db, user, payload.totp_code)
             if not ok:
                 user.failed_login_attempts = int(user.failed_login_attempts or 0) + 1
-                await audit_svc.record_event(
-                    db,
-                    tenant_id=tenant_id,
-                    user_id=user.id,
-                    module="auth",
-                    action="2fa_failed",
-                    entity="user",
-                    entity_id=user.id,
-                    details={"email": user.email},
-                    ip_address=request.client.host if request.client else None,
-                    user_agent=request.headers.get("user-agent"),
-                )
-                await db.commit()
+                try:
+                    await db.flush()
+                except SQLAlchemyError:
+                    await db.rollback()
+                    logger.exception("login 2fa-failed update skipped")
+                else:
+                    await _optional_login_step(
+                        db,
+                        "2fa_failed audit",
+                        lambda: audit_svc.record_event(
+                            db,
+                            tenant_id=tenant_id,
+                            user_id=user.id,
+                            module="auth",
+                            action="2fa_failed",
+                            entity="user",
+                            entity_id=user.id,
+                            details={"email": user.email},
+                            ip_address=request.client.host if request.client else None,
+                            user_agent=request.headers.get("user-agent"),
+                        ),
+                    )
+                    try:
+                        await db.commit()
+                    except SQLAlchemyError:
+                        await db.rollback()
+                        logger.exception("login 2fa-failed commit skipped")
                 raise HTTPException(status_code=401, detail="Invalid 2FA code")
         elif not payload.totp_code:
             challenge = totp_svc.create_challenge_token(
                 user_id=user.id, tenant_id=tenant_id, role=user.role
             )
-            await audit_svc.record_event(
-                db,
-                tenant_id=tenant_id,
-                user_id=user.id,
-                module="auth",
-                action="2fa_challenge",
-                entity="user",
-                entity_id=user.id,
-                details={"email": user.email, "methods": methods},
-                ip_address=request.client.host if request.client else None,
-                user_agent=request.headers.get("user-agent"),
-            )
-            await db.commit()
+            try:
+                await db.flush()
+            except SQLAlchemyError:
+                await db.rollback()
+                logger.exception("login 2fa-challenge update skipped")
+            else:
+                await _optional_login_step(
+                    db,
+                    "2fa_challenge audit",
+                    lambda: audit_svc.record_event(
+                        db,
+                        tenant_id=tenant_id,
+                        user_id=user.id,
+                        module="auth",
+                        action="2fa_challenge",
+                        entity="user",
+                        entity_id=user.id,
+                        details={"email": user.email, "methods": methods},
+                        ip_address=request.client.host if request.client else None,
+                        user_agent=request.headers.get("user-agent"),
+                    ),
+                )
+                try:
+                    await db.commit()
+                except SQLAlchemyError:
+                    await db.rollback()
+                    logger.exception("login 2fa-challenge commit skipped")
             return env(
                 {
                     "requires_2fa": True,
@@ -2289,20 +2370,24 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
         request=request,
         login_method="totp" if (needs_2fa and payload.totp_code) else "password",
     )
-    await audit_svc.record_event(
+    await _optional_login_step(
         db,
-        tenant_id=tenant_id,
-        user_id=user.id,
-        module="auth",
-        action="login",
-        entity="user",
-        entity_id=user.id,
-        details={"email": user.email, "totp": bool(user.totp_enabled), "webauthn": has_webauthn},
-        ip_address=request.client.host if request.client else None,
-        user_agent=request.headers.get("user-agent"),
+        "login audit",
+        lambda: audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user.id,
+            module="auth",
+            action="login",
+            entity="user",
+            entity_id=user.id,
+            details={"email": user.email, "totp": bool(user.totp_enabled), "webauthn": has_webauthn},
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        ),
     )
     await db.commit()
-    has_mfa = await webauthn.user_has_mfa(db, user)
+    has_mfa = bool(user.totp_enabled) or has_webauthn
     return env(
         {
             "access_token": access,
@@ -2333,34 +2418,46 @@ async def auth_2fa_verify(payload: TwoFactorVerify, request: Request, db: AsyncS
         raise HTTPException(status_code=400, detail="2FA is not enabled for this user")
     ok = await totp_svc.verify_user_second_factor(db, user, payload.code)
     if not ok:
-        await audit_svc.record_event(
+        await _optional_login_step(
             db,
-            tenant_id=user.tenant_id,
-            user_id=user.id,
-            module="auth",
-            action="2fa_failed",
-            entity="user",
-            entity_id=user.id,
-            ip_address=request.client.host if request.client else None,
-            user_agent=request.headers.get("user-agent"),
+            "2fa_failed audit",
+            lambda: audit_svc.record_event(
+                db,
+                tenant_id=user.tenant_id,
+                user_id=user.id,
+                module="auth",
+                action="2fa_failed",
+                entity="user",
+                entity_id=user.id,
+                ip_address=request.client.host if request.client else None,
+                user_agent=request.headers.get("user-agent"),
+            ),
         )
-        await db.commit()
+        try:
+            await db.commit()
+        except SQLAlchemyError:
+            await db.rollback()
+            logger.exception("2fa verify failed-attempt commit skipped")
         raise HTTPException(status_code=401, detail="Invalid 2FA code")
 
     access, refresh = await create_session(
         db, user=user, request=request, login_method="totp"
     )
-    await audit_svc.record_event(
+    await _optional_login_step(
         db,
-        tenant_id=user.tenant_id,
-        user_id=user.id,
-        module="auth",
-        action="login",
-        entity="user",
-        entity_id=user.id,
-        details={"email": user.email, "totp": True},
-        ip_address=request.client.host if request.client else None,
-        user_agent=request.headers.get("user-agent"),
+        "login audit",
+        lambda: audit_svc.record_event(
+            db,
+            tenant_id=user.tenant_id,
+            user_id=user.id,
+            module="auth",
+            action="login",
+            entity="user",
+            entity_id=user.id,
+            details={"email": user.email, "totp": True},
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        ),
     )
     await db.commit()
     return env(
@@ -2510,17 +2607,21 @@ async def webauthn_login_verify(
     access, refresh = await create_session(
         db, user=user, request=request, login_method="webauthn"
     )
-    await audit_svc.record_event(
+    await _optional_login_step(
         db,
-        tenant_id=user.tenant_id,
-        user_id=user.id,
-        module="auth",
-        action="login",
-        entity="user",
-        entity_id=user.id,
-        details={"email": user.email, "webauthn": True},
-        ip_address=request.client.host if request.client else None,
-        user_agent=request.headers.get("user-agent"),
+        "login audit",
+        lambda: audit_svc.record_event(
+            db,
+            tenant_id=user.tenant_id,
+            user_id=user.id,
+            module="auth",
+            action="login",
+            entity="user",
+            entity_id=user.id,
+            details={"email": user.email, "webauthn": True},
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        ),
     )
     await db.commit()
     return env(
