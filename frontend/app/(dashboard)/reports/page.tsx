@@ -377,7 +377,8 @@ export default function Page() {
         const activeView = viewOverride !== undefined ? viewOverride : view;
         const report = reportFromTabView('sales', activeView);
         const categoryTrim = categoryId.trim();
-        const extra = categoryTrim ? { category_id: categoryTrim } : {};
+        const extra: Record<string, string> = {};
+        if (categoryTrim) extra.category_id = categoryTrim;
         if (report.id === 'sales_summary') {
           const anchor = toDate || fromDate;
           const monthQuery: Record<string, string> = {};

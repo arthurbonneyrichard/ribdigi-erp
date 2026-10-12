@@ -42,7 +42,7 @@ export async function getMe(options?: { force?: boolean }): Promise<MeBody> {
   inflight = api('/me')
     .then((body) => {
       if (activeTenant() === tenant) {
-        cached = { at: Date.now(), body, tenant };
+        cached = { at: Date.now(), body, tenant, key: meCacheKey(tenant, industryOf(body)) };
       }
       return body;
     })

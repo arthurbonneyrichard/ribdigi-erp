@@ -937,7 +937,7 @@ export default function Page() {
   const quoteCols = 5 + (showChannel ? 1 : 0) + (showQuoteReject ? 1 : 0);
   const orderCols = 5 + (showChannel ? 1 : 0) + (showStore ? 1 : 0) + (showReserved ? 1 : 0);
   const invoiceCols = 5 + (showChannel ? 1 : 0) + (showStore ? 1 : 0);
-  const drawerLines = selected?.items || [];
+  const drawerLines: any[] = selected?.items || [];
   const showFilled = drawerLines.some((it) => it.qty_fulfilled != null && it.qty_fulfilled !== '');
   const showCondition = drawerLines.some((it) => Boolean(it.condition));
 
@@ -1613,12 +1613,12 @@ export default function Page() {
             <tbody>
               {managedMade.map((row) => (
                 <tr key={`${row.source}-${row.id}`}>
-                  <td>{formatWhen(row.when, displayFmt)}</td>
+                  <td>{formatWhen(row.when, fmt)}</td>
                   <td>{row.number}</td>
                   <td>{row.customer || 'Walk-in'}</td>
                   <td>{saleWords(row.source)}</td>
                   <td>{saleWords(row.status)}</td>
-                  <td>{formatNumber(row.total, displayFmt)}</td>
+                  <td>{formatNumber(row.total, fmt)}</td>
                   <td>
                     {row.invoice_id ? (
                       <button
@@ -1719,8 +1719,8 @@ export default function Page() {
                 <td>{q.quotation_number}</td>
                 {showChannel ? <td>{channelLabel(q.sales_channel)}</td> : null}
                 <td>{saleWords(q.status)}</td>
-                <td>{formatNumber(q.total_amount, displayFmt)}</td>
-                <td>{q.valid_until ? formatWhen(q.valid_until, displayFmt) : '—'}</td>
+                <td>{formatNumber(q.total_amount, fmt)}</td>
+                <td>{q.valid_until ? formatWhen(q.valid_until, fmt) : '—'}</td>
                 {showQuoteReject ? <td>{q.rejection_reason || '—'}</td> : null}
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(q)} aria-label={`View quotation ${q.id}`}>View</button>
@@ -1864,15 +1864,15 @@ export default function Page() {
                 {showReserved ? (
                 <td>
                   {o.reservation_status
-                    ? `${formatNumber(o.reserved_qty ?? 0, displayFmt)} ${saleWords(o.reservation_status)}`
+                    ? `${formatNumber(o.reserved_qty ?? 0, fmt)} ${saleWords(o.reservation_status)}`
                     : '—'}
                 </td>
                 ) : null}
                 <td>
-                  {o.delivery_date ? formatWhen(o.delivery_date, displayFmt) : '—'}
+                  {o.delivery_date ? formatWhen(o.delivery_date, fmt) : '—'}
                   {o.delivery_address ? ` · ${o.delivery_address}` : ''}
                 </td>
-                <td>{formatNumber(o.total_amount, displayFmt)}</td>
+                <td>{formatNumber(o.total_amount, fmt)}</td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(o)} aria-label={`View sales order ${o.id}`}>View</button>
                   {o.status === 'draft' && (
@@ -2050,8 +2050,8 @@ export default function Page() {
                 {showChannel ? <td>{channelLabel(inv.sales_channel)}</td> : null}
                 <td>{saleWords(inv.status)}</td>
                 {showStore ? <td>{storeName(inv.store_id) || '—'}</td> : null}
-                <td>{formatNumber(inv.total_amount, displayFmt)}</td>
-                <td>{formatNumber(inv.paid_amount, displayFmt)}</td>
+                <td>{formatNumber(inv.total_amount, fmt)}</td>
+                <td>{formatNumber(inv.paid_amount, fmt)}</td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(inv)} aria-label={`View sales invoice ${inv.id}`}>View</button>
                   {inv.status === 'draft' && (
@@ -2210,8 +2210,8 @@ export default function Page() {
                     <td>{c.code}</td>
                     <td>{c.name}</td>
                     <td>{saleWords(c.discount_type)}</td>
-                    <td>{formatNumber(c.amount, displayFmt)}</td>
-                    <td>{formatNumber(c.min_spend, displayFmt)}</td>
+                    <td>{formatNumber(c.amount, fmt)}</td>
+                    <td>{formatNumber(c.min_spend, fmt)}</td>
                     <td>{c.is_active ? 'Yes' : 'No'}</td>
                     <td>{c.redemption_count ?? 0}</td>
                   </tr>
@@ -2352,10 +2352,10 @@ export default function Page() {
                 <td>{saleWords(r.status)}</td>
                 <td>
                   {r.settlement_method ? saleWords(r.settlement_method) : '—'}
-                  {r.refunded_amount > 0 ? ` · ${formatNumber(r.refunded_amount, displayFmt)}` : ''}
+                  {r.refunded_amount > 0 ? ` · ${formatNumber(r.refunded_amount, fmt)}` : ''}
                 </td>
                 <td>{saleWords(r.reason)}</td>
-                <td>{formatNumber(r.total_amount, displayFmt)}</td>
+                <td>{formatNumber(r.total_amount, fmt)}</td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(r)} aria-label={`View sales return ${r.id}`}>View</button>
                   {r.status === 'draft' && (
@@ -2456,16 +2456,16 @@ export default function Page() {
           {selected.emailed_to && (
             <p className="muted" style={{ marginBottom: 8 }}>
               Last emailed to {selected.emailed_to}
-              {selected.emailed_at ? ` · ${formatWhen(selected.emailed_at, displayFmt)}` : ''}
+              {selected.emailed_at ? ` · ${formatWhen(selected.emailed_at, fmt)}` : ''}
             </p>
           )}
           {(selected.invoice_date || selected.due_date || selected.valid_until || selected.delivery_date) ? (
             <p className="muted" style={{ marginBottom: 8 }}>
               {[
-                selected.invoice_date ? `Invoice ${formatWhen(selected.invoice_date, displayFmt)}` : '',
-                selected.due_date ? `Due ${formatWhen(selected.due_date, displayFmt)}` : '',
-                selected.valid_until ? `Valid until ${formatWhen(selected.valid_until, displayFmt)}` : '',
-                selected.delivery_date ? `Delivery ${formatWhen(selected.delivery_date, displayFmt)}` : '',
+                selected.invoice_date ? `Invoice ${formatWhen(selected.invoice_date, fmt)}` : '',
+                selected.due_date ? `Due ${formatWhen(selected.due_date, fmt)}` : '',
+                selected.valid_until ? `Valid until ${formatWhen(selected.valid_until, fmt)}` : '',
+                selected.delivery_date ? `Delivery ${formatWhen(selected.delivery_date, fmt)}` : '',
               ].filter(Boolean).join(' · ')}
             </p>
           ) : null}
@@ -2504,24 +2504,24 @@ export default function Page() {
                     {it.is_reverse_charge ? ' · Reverse charge' : ''}
                   </td>
                   <td>{prod?.sku || '—'}</td>
-                  <td>{formatNumber(it.quantity, displayFmt)}</td>
-                  {showFilled ? <td>{it.qty_fulfilled != null ? formatNumber(it.qty_fulfilled, displayFmt) : '—'}</td> : null}
-                  <td>{formatNumber(it.unit_price, displayFmt)}</td>
-                  <td>{it.tax_rate != null ? `${formatNumber(it.tax_rate, displayFmt)}%` : '—'}</td>
+                  <td>{formatNumber(it.quantity, fmt)}</td>
+                  {showFilled ? <td>{it.qty_fulfilled != null ? formatNumber(it.qty_fulfilled, fmt) : '—'}</td> : null}
+                  <td>{formatNumber(it.unit_price, fmt)}</td>
+                  <td>{it.tax_rate != null ? `${formatNumber(it.tax_rate, fmt)}%` : '—'}</td>
                   <td>
-                    {formatNumber(it.discount ?? 0, displayFmt)}
-                    {it.discount_type === 'percent' ? ` (${formatNumber(it.discount_percent, displayFmt)}%)` : ''}
+                    {formatNumber(it.discount ?? 0, fmt)}
+                    {it.discount_type === 'percent' ? ` (${formatNumber(it.discount_percent, fmt)}%)` : ''}
                   </td>
                   {showCondition ? <td>{it.condition ? saleWords(it.condition) : '—'}</td> : null}
                   <td>
-                    {formatNumber(it.line_tax ?? 0, displayFmt)}
+                    {formatNumber(it.line_tax ?? 0, fmt)}
                     {(it.tax_components || []).length
                       ? ` (${(it.tax_components || [])
-                          .map((c) => `${c.name || saleWords(c.code)} ${formatNumber(c.amount, displayFmt)}`)
+                          .map((c: any) => `${c.name || saleWords(c.code)} ${formatNumber(c.amount, fmt)}`)
                           .join(', ')})`
                       : ''}
                   </td>
-                  <td>{formatNumber(it.line_total, displayFmt)}</td>
+                  <td>{formatNumber(it.line_total, fmt)}</td>
                 </tr>
                 );
               })}
@@ -2575,22 +2575,22 @@ export default function Page() {
           <div className="grid" style={{ marginTop: 12 }}>
             <div className="card">
               <div className="muted">Subtotal</div>
-              <div className="kpi">{formatNumber(selected.subtotal ?? 0, displayFmt)}</div>
+              <div className="kpi">{formatNumber(selected.subtotal ?? 0, fmt)}</div>
             </div>
             <div className="card">
               <div className="muted">Tax</div>
-              <div className="kpi">{formatNumber(selected.tax_amount ?? 0, displayFmt)}</div>
+              <div className="kpi">{formatNumber(selected.tax_amount ?? 0, fmt)}</div>
             </div>
             <div className="card">
               <div className="muted">Discount</div>
               <div className="kpi">
-                {formatNumber(selected.discount_amount ?? 0, displayFmt)}
-                {selected.discount_type === 'percent' ? ` (${formatNumber(selected.discount_percent, displayFmt)}%)` : ''}
+                {formatNumber(selected.discount_amount ?? 0, fmt)}
+                {selected.discount_type === 'percent' ? ` (${formatNumber(selected.discount_percent, fmt)}%)` : ''}
               </div>
             </div>
             <div className="card">
               <div className="muted">Total</div>
-              <div className="kpi">{formatNumber(selected.total_amount ?? 0, displayFmt)}</div>
+              <div className="kpi">{formatNumber(selected.total_amount ?? 0, fmt)}</div>
             </div>
           </div>
           {(selected.tax_breakdown?.by_rate || []).length > 0 && (
@@ -2608,9 +2608,9 @@ export default function Page() {
                 <tbody>
                   {selected.tax_breakdown.by_rate.map((r: any, idx: number) => (
                     <tr key={`${r.tax_rate}-${idx}`}>
-                      <td>{formatNumber(r.tax_rate, displayFmt)}%</td>
-                      <td>{formatNumber(r.taxable, displayFmt)}</td>
-                      <td>{formatNumber(r.tax, displayFmt)}</td>
+                      <td>{formatNumber(r.tax_rate, fmt)}%</td>
+                      <td>{formatNumber(r.taxable, fmt)}</td>
+                      <td>{formatNumber(r.tax, fmt)}</td>
                       <td>{r.is_reverse_charge ? 'Reverse charge' : 'Standard'}</td>
                     </tr>
                   ))}
@@ -2618,7 +2618,7 @@ export default function Page() {
               </table>
               {selected.reverse_charge_tax > 0 && (
                 <p className="muted">
-                  Reverse-charge tax: {formatNumber(selected.reverse_charge_tax, displayFmt)}
+                  Reverse-charge tax: {formatNumber(selected.reverse_charge_tax, fmt)}
                   {selected.is_reverse_charge ? ' · This document is reverse charge' : ''}
                 </p>
               )}

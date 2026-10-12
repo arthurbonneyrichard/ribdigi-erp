@@ -1946,7 +1946,6 @@ export default function Page() {
               onChange={(e) => setEditDraft({ ...editDraft, department_id: e.target.value })}
               aria-label="Edit expense department"
               title="Department"
-              title="Optional department (UuidIdValue); blank clears when previously set"
             >
               <option value="">
                 {editDraft.had_department ? 'Clear department' : 'No department'}

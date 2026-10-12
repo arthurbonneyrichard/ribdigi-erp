@@ -13,7 +13,7 @@ type Props = {
   sectionErrors: Record<string, string>;
   multiStore: boolean;
   fmtMoney: (value: unknown) => string;
-  formatWhen: (value: unknown) => string;
+  formatWhen: (value?: string | Date | null) => string;
   page: number;
   onPage: (page: number) => void;
 };
