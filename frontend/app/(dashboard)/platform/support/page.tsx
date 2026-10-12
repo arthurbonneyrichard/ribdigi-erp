@@ -557,8 +557,11 @@ export default function SupportDeskPage() {
         </button>
       </div>
       <div className="desk-split">
-      <section className="plat-panel">
-        <h2>Queue</h2>
+      <section className="plat-panel desk-queue">
+        <div className="desk-panel-head">
+          <h2>Queue</h2>
+          {ticketTotal > 0 ? <p className="muted">Showing {rows.length} of {ticketTotal}</p> : null}
+        </div>
         <form className="support-filters" onSubmit={applyFilters}>
           <label><span>Reference or company</span><input aria-label="Search tickets" value={q} onChange={(event) => setQ(event.target.value)} /></label>
           <label><span>Status</span>
@@ -607,7 +610,6 @@ export default function SupportDeskPage() {
           </div>
         </form>
         {!loading && ticketTotal === 0 ? <p className="muted">No tickets match these filters.</p> : null}
-        {ticketTotal > 0 ? <p className="muted">Showing {rows.length} of {ticketTotal}.</p> : null}
         <div className="support-table-wrap">
           <table>
             <thead>
@@ -657,15 +659,17 @@ export default function SupportDeskPage() {
             <button className="btn" type="button" aria-label="Hide ticket" onClick={() => setDetail(null)}>Hide</button>
           </div>
           <p className="desk-description">{detail.ticket.description}</p>
-          <p className="desk-company">
-            <strong>{detail.tenant?.company_name || 'Company'}</strong>
-            <span>{detail.tenant?.slug || '—'}</span>
-            <span>{INDUSTRY_LABELS[detail.tenant?.industry || ''] || detail.tenant?.industry || '—'}</span>
-            <span>{detail.tenant?.status ? `${detail.tenant.status.charAt(0).toUpperCase()}${detail.tenant.status.slice(1).replace(/_/g, ' ')}` : '—'}</span>
-            {detail.tenant?.email ? <span>{detail.tenant.email}</span> : null}
-            {detail.tenant?.phone ? <span>{detail.tenant.phone}</span> : null}
-          </p>
-          <p className="muted">Opened {showWhen(detail.ticket.created_at, prefs)} · Resolved {showWhen(detail.ticket.resolved_at, prefs)} · Closed {showWhen(detail.ticket.closed_at, prefs)}</p>
+          <div className="desk-facts">
+            <span><small>Company</small><strong>{detail.tenant?.company_name || 'Company'}</strong></span>
+            <span><small>Workspace</small>{detail.tenant?.slug || '—'}</span>
+            <span><small>Industry</small>{INDUSTRY_LABELS[detail.tenant?.industry || ''] || detail.tenant?.industry || '—'}</span>
+            <span><small>Status</small>{detail.tenant?.status ? `${detail.tenant.status.charAt(0).toUpperCase()}${detail.tenant.status.slice(1).replace(/_/g, ' ')}` : '—'}</span>
+            <span><small>Email</small>{detail.tenant?.email || '—'}</span>
+            <span><small>Phone</small>{detail.tenant?.phone || '—'}</span>
+            <span><small>Opened</small>{showWhen(detail.ticket.created_at, prefs)}</span>
+            <span><small>Resolved</small>{showWhen(detail.ticket.resolved_at, prefs)}</span>
+            <span><small>Closed</small>{showWhen(detail.ticket.closed_at, prefs)}</span>
+          </div>
           <div className="support-filters">
             <label><span>Status</span>
               <select aria-label="Ticket status" value={draftStatus} onChange={(event) => setDraftStatus(event.target.value)}>
@@ -755,12 +759,13 @@ export default function SupportDeskPage() {
         )}
       </section>
       </div>
+      <div className="desk-admin">
       {canNotify ? (
-        <section className="plat-panel">
-          <h2>Who gets ticket email</h2>
+        <section className="plat-panel desk-people">
+          <div className="desk-panel-head"><h2>Who gets ticket email</h2></div>
           <p className="muted">Active recipients are emailed when a company needs support. This page does not store mail-server passwords.</p>
           {emailWarning ? <p role="status">{emailWarning}</p> : null}
-          <form className="support-filters" onSubmit={addRecipient}>
+          <form className="desk-inline" onSubmit={addRecipient}>
             <label><span>Email</span><input aria-label="New support recipient" value={newEmail} onChange={(event) => setNewEmail(event.target.value)} placeholder="name@company.com" /></label>
             <div className="desk-filter-actions">
               <button className="btn btn-primary" type="submit" disabled={busy}>Add recipient</button>
@@ -804,8 +809,8 @@ export default function SupportDeskPage() {
           </div>
         </section>
       ) : null}
-      <section className="plat-panel" ref={deliveriesRef} id="support-deliveries">
-        <h2>Email still to send</h2>
+      <section className="plat-panel desk-mail" ref={deliveriesRef} id="support-deliveries">
+        <div className="desk-panel-head"><h2>Email still to send</h2></div>
         <p className="muted">These messages stay queued until email is sent. Retry uses the same delivery and does not create a second email.</p>
         {mailNote ? <p role="alert">{mailNote}</p> : deliveries.length === 0 ? <p className="muted">No pending or failed notifications.</p> : null}
         <div className="support-table-wrap">
@@ -826,6 +831,7 @@ export default function SupportDeskPage() {
           </table>
         </div>
       </section>
+      </div>
     </div>
   );
 }
