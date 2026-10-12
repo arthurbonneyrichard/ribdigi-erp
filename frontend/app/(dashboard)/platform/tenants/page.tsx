@@ -5,8 +5,11 @@ import { useRouter } from 'next/navigation';
 import { api } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
 import { getPrefetched } from '../../../../lib/prefetchCache';
+import { formatNumber } from '../../../../lib/format';
 import { industryAllowsModule } from '../../../../lib/industryModules';
 import { INDUSTRIES, PROVISION_INDUSTRIES, industryLabel } from '../../../../lib/industries';
+import { subscriptionAmountLabel, subscriptionAmountToSend } from '../../../../lib/platformBilling';
+import { useCompanyFormat } from '../../../../lib/useCompanyFormat';
 
 /** New companies: Retail, Hotel, and Restaurant. */
 const CREATE_INDUSTRIES = [...PROVISION_INDUSTRIES] as const;
@@ -119,6 +122,7 @@ function slugify(name: string) {
 
 export default function PlatformTenantsPage() {
   const router = useRouter();
+  const prefs = useCompanyFormat();
   const [tenants, setTenants] = useState<TenantRow[]>([]);
   const [packages, setPackages] = useState<PackageInfo[]>([]);
   const [packageable, setPackageable] = useState<string[]>([]);
@@ -136,7 +140,9 @@ export default function PlatformTenantsPage() {
     term_unit: 'months',
     start_at: '',
     max_stores_override: '' as string,
+    amount: '',
   });
+  const [planAmounts, setPlanAmounts] = useState<Record<string, { amount: number | null; currency: string | null }>>({});
   const [moduleDraft, setModuleDraft] = useState<string[]>([]);
   const [suspendReason, setSuspendReason] = useState('');
   const [deleteConfirmSlug, setDeleteConfirmSlug] = useState('');
@@ -173,6 +179,12 @@ export default function PlatformTenantsPage() {
       getPrefetched('/packages', { force }),
       api('/platform/directory'),
     ]);
+    let billed: { data?: Array<{ slug?: string; amount?: number | null; currency?: string | null }> } = { data: [] };
+    try {
+      billed = await api('/platform/billing/companies');
+    } catch {
+      billed = { data: [] };
+    }
     const role = me.data?.role || '';
     const platformRoles = [
       'super_admin',
@@ -192,6 +204,12 @@ export default function PlatformTenantsPage() {
     );
     setPackages(pkgs.data?.packages || []);
     setPackageable(pkgs.data?.packageable_modules || []);
+    const amounts: Record<string, { amount: number | null; currency: string | null }> = {};
+    for (const row of billed.data || []) {
+      if (!row?.slug) continue;
+      amounts[row.slug] = { amount: row.amount ?? null, currency: row.currency ?? null };
+    }
+    setPlanAmounts(amounts);
     setReady(true);
   }
 
@@ -207,11 +225,13 @@ export default function PlatformTenantsPage() {
     }
     const sel = tenants.find((t) => t.id === selectedId);
     if (!sel) return;
+    const billed = planAmounts[sel.slug];
     setSubForm({
       package_code: sel.package_code || sel.subscription?.package_code || 'professional',
       term_value: sel.subscription?.term_value || 12,
       term_unit: sel.subscription?.term_unit || 'months',
       start_at: '',
+      amount: billed?.amount == null ? '' : formatNumber(billed.amount, prefs),
       max_stores_override:
         sel.max_stores_override != null
           ? String(sel.max_stores_override)
@@ -439,6 +459,12 @@ export default function PlatformTenantsPage() {
   async function assignSubscription(e: React.FormEvent) {
     e.preventDefault();
     if (!selected) return;
+    const parsed = subscriptionAmountToSend(subForm.amount, subForm.package_code, prefs);
+    if ('error' in parsed) {
+      setError(parsed.error);
+      setMessage('');
+      return;
+    }
     setBusy(selected.id);
     setError('');
     setMessage('');
@@ -448,6 +474,7 @@ export default function PlatformTenantsPage() {
         term_value: Number(subForm.term_value),
         term_unit: subForm.term_unit,
         activate: true,
+        amount: parsed.amount,
       };
       if (subForm.start_at.trim()) body.start_at = subForm.start_at.trim();
       if (subForm.max_stores_override.trim() !== '') {
@@ -457,8 +484,13 @@ export default function PlatformTenantsPage() {
         method: 'POST',
         body: JSON.stringify(body),
       });
+      const shown = subscriptionAmountLabel(
+        parsed.amount,
+        planAmounts[selected.slug]?.currency || selected.currency,
+        formatNumber(parsed.amount, prefs),
+      );
       setMessage(
-        `Assigned ${r.data?.subscription?.package_name || subForm.package_code} for ${subForm.term_value} ${subForm.term_unit} to ${selected.company_name}`
+        `Assigned ${r.data?.subscription?.package_name || subForm.package_code} for ${subForm.term_value} ${subForm.term_unit} at ${shown} to ${selected.company_name}. No payment was recorded.`
       );
       await refresh({ force: true });
       setSelectedId(r.data?.id || selected.id);
@@ -973,6 +1005,18 @@ export default function PlatformTenantsPage() {
                 </strong>
               </div>
               <div className="plat-stat">
+                <span>Amount</span>
+                <strong style={{ fontSize: 16 }}>
+                  {subscriptionAmountLabel(
+                    planAmounts[selected.slug]?.amount,
+                    planAmounts[selected.slug]?.currency || selected.currency,
+                    planAmounts[selected.slug]?.amount == null
+                      ? ''
+                      : formatNumber(planAmounts[selected.slug]?.amount, prefs),
+                  )}
+                </strong>
+              </div>
+              <div className="plat-stat">
                 <span>Renewal</span>
                 <strong style={{ fontSize: 16 }}>{fmtDate(sub?.subscription_ends_at)}</strong>
               </div>
@@ -1097,6 +1141,16 @@ export default function PlatformTenantsPage() {
                   <option value="months">Months</option>
                   <option value="years">Years</option>
                 </select>
+              </label>
+              <label>
+                <span>Amount</span>
+                <input
+                  aria-label="Subscription amount"
+                  inputMode="decimal"
+                  value={subForm.amount}
+                  onChange={(e) => setSubForm((f) => ({ ...f, amount: e.target.value }))}
+                  required
+                />
               </label>
               <label>
                 <span>Start date</span>

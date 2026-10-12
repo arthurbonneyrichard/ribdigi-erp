@@ -97,10 +97,12 @@ class Settings(BaseSettings):
     CELERY_BACKUP_INTERVAL_MINUTES: int = 60
     CELERY_TRIAL_INTERVAL_MINUTES: int = 60
     CELERY_BILLING_INTERVAL_MINUTES: int = 60
-    # SaaS subscription billing (tenants paying for Ribdigi). mock | paystack.
-    # mock never charges in production. paystack charges only with PAYSTACK_SECRET_KEY.
+    # SaaS subscription billing (tenants paying for Ribdigi). mock | paystack | flutterwave.
+    # mock never charges in production. A live provider charges only with its secret.
     BILLING_PROVIDER: str = "mock"
     PAYSTACK_SECRET_KEY: str = ""
+    FLUTTERWAVE_SECRET_KEY: str = ""
+    FLUTTERWAVE_WEBHOOK_HASH: str = ""
     BILLING_WEBHOOK_SECRET: str = ""
     BILLING_GRACE_DAYS: int = 7
     BILLING_MAX_ATTEMPTS: int = 3
@@ -219,14 +221,21 @@ class Settings(BaseSettings):
                         "TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER"
                     )
             billing_provider = (self.BILLING_PROVIDER or "mock").strip().lower()
-            if billing_provider not in {"mock", "paystack"}:
-                raise ValueError("BILLING_PROVIDER must be mock or paystack")
+            if billing_provider not in {"mock", "paystack", "flutterwave"}:
+                raise ValueError("BILLING_PROVIDER must be mock, paystack, or flutterwave")
             if billing_provider == "paystack":
                 secret = (self.PAYSTACK_SECRET_KEY or "").strip()
                 weak_keys = {"", "change-me", "sk_test", "sk_live"}
                 if secret.lower() in weak_keys or len(secret) < 16:
                     raise ValueError(
                         "Production BILLING_PROVIDER=paystack requires PAYSTACK_SECRET_KEY"
+                    )
+            if billing_provider == "flutterwave":
+                secret = (self.FLUTTERWAVE_SECRET_KEY or "").strip()
+                weak_keys = {"", "change-me", "flwseck_test", "flwseck"}
+                if secret.lower() in weak_keys or len(secret) < 16:
+                    raise ValueError(
+                        "Production BILLING_PROVIDER=flutterwave requires FLUTTERWAVE_SECRET_KEY"
                     )
             if self.AI_ENABLED:
                 provider = (self.AI_PROVIDER or "").strip().lower()

@@ -241,6 +241,11 @@ async def test_created_package_assigns_that_price_and_name(client, db_session):
     plan = account.json()["data"]["plan"]
     assert plan["name"] == "Hotel yearly"
     assert plan["amount"] == 1200.0
+    reports = await ac.get("/api/v1/platform/reports/subscriptions", headers=owner)
+    assert reports.status_code == 200, reports.text
+    alpha = next(row for row in reports.json()["data"]["rows"] if row["slug"] == "alpha")
+    assert alpha["amount"] == 1200.0
+    assert alpha["currency"] == "GHS"
     mismatch = await ac.post(
         "/api/v1/tenants/alpha/subscription",
         headers=owner,
@@ -302,6 +307,12 @@ async def test_owner_can_edit_and_delete_an_unused_package(client, db_session):
     listed = await ac.get("/api/v1/platform/billing/plans", headers=owner)
     assert listed.status_code == 200, listed.text
     assert all(row["id"] != plan_id for row in listed.json()["data"])
+    activity = await ac.get("/api/v1/platform/activity", headers=owner)
+    assert activity.status_code == 200, activity.text
+    summaries = [row["summary"] for row in activity.json()["data"]]
+    assert "Package created (hotel-edit)" in summaries
+    assert "Package updated (hotel-edit)" in summaries
+    assert "Package deleted (hotel-edit)" in summaries
 
 
 async def test_assigned_package_cannot_be_deleted(client, db_session):

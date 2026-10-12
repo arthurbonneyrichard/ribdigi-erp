@@ -29,6 +29,9 @@ PLATFORM_ACTIVITY: tuple[tuple[str, str], ...] = (
     ("platform_staff", "grant_dashboard"),
     ("platform_staff", "revoke_dashboard"),
     ("platform_staff", "email_verified"),
+    ("billing", "billing_plan_created"),
+    ("billing", "billing_plan_updated"),
+    ("billing", "billing_plan_deleted"),
 )
 
 _SECRET_DETAIL_KEYS = frozenset(
@@ -73,10 +76,14 @@ async def build_platform_summary(db: AsyncSession) -> dict[str, Any]:
 
 
 async def build_subscription_usage_report(db: AsyncSession) -> dict[str, Any]:
+    from app.saas_billing import company_billing_roster
+
     rows = (await db.execute(select(m.Tenant).order_by(m.Tenant.company_name.asc()))).scalars().all()
+    priced = {row["slug"]: row for row in await company_billing_roster(db)}
     items = []
     for t in rows:
         usage = packages_svc.usage_snapshot(t)
+        bill = priced.get(t.slug) or {}
         items.append(
             {
                 "tenant_id": t.id,
@@ -93,6 +100,8 @@ async def build_subscription_usage_report(db: AsyncSession) -> dict[str, Any]:
                 "years_remaining": usage.get("years_remaining"),
                 "days_remaining": usage.get("days_remaining"),
                 "renewal_due": usage.get("subscription_ends_at"),
+                "amount": bill.get("amount"),
+                "currency": bill.get("currency"),
             }
         )
     items.sort(
@@ -196,7 +205,20 @@ def _activity_summary(module: str, action: str, details: dict) -> str:
     if action == "industry_changed":
         return f"Industry changed to {details.get('industry') or 'unknown'}"
     if action == "assign_subscription":
-        return f"Package set to {details.get('package_code') or 'package'}"
+        code = details.get("package_code") or "package"
+        amount = details.get("amount")
+        if amount is not None:
+            return f"Package set to {code} at {amount}"
+        return f"Package set to {code}"
+    if action == "billing_plan_created":
+        code = details.get("code") or ""
+        return f"Package created{f' ({code})' if code else ''}"
+    if action == "billing_plan_updated":
+        code = details.get("code") or ""
+        return f"Package updated{f' ({code})' if code else ''}"
+    if action == "billing_plan_deleted":
+        code = details.get("code") or ""
+        return f"Package deleted{f' ({code})' if code else ''}"
     if action == "update_modules":
         return "Feature modules updated"
     if action == "admin_password_reset_requested":

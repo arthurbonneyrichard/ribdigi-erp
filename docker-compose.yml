@@ -51,6 +51,9 @@ services:
     env_file: .env
     environment:
       PYTHONPATH: /app
+      # The ./backend bind mount hides the image .build-id. Production compose
+      # does not set this, so a missing id there still stops the container.
+      RIBDIGI_ALLOW_MISSING_BUILD_ID: "1"
     ports: ["8000:8000"]
     depends_on:
       postgres: {condition: service_healthy}
@@ -64,6 +67,7 @@ services:
     env_file: .env
     environment:
       PYTHONPATH: /app
+      RIBDIGI_ALLOW_MISSING_BUILD_ID: "1"
     depends_on:
       postgres: {condition: service_healthy}
       redis: {condition: service_started}
@@ -75,6 +79,7 @@ services:
     env_file: .env
     environment:
       PYTHONPATH: /app
+      RIBDIGI_ALLOW_MISSING_BUILD_ID: "1"
     depends_on:
       rabbitmq: {condition: service_healthy}
       celery_worker: {condition: service_started}

@@ -20,7 +20,13 @@ from app import audit as audit_svc
 from app import models as m
 from app import notifications as notifications_svc
 from app import packages as packages_svc
-from app.billing_gateway import CONSENT_VERSION, current_gateway, get_gateway, minor_units
+from app.billing_gateway import (
+    CONSENT_VERSION,
+    LIVE_CHARGE_PROVIDERS,
+    current_gateway,
+    get_gateway,
+    minor_units,
+)
 from app.config import settings
 from app.honesty import money_json
 from app.models import uid
@@ -185,7 +191,8 @@ def provider_status() -> dict:
     return {
         "provider": gateway.provider,
         "configured": gateway.configured(),
-        "live_charges": gateway.provider == "paystack" and gateway.configured(),
+        "live_charges": gateway.provider in LIVE_CHARGE_PROVIDERS and gateway.configured(),
+        "providers": ["mock", "paystack", "flutterwave"],
         "consent_version": CONSENT_VERSION,
         "checkout_path": checkout_path(),
     }
@@ -1155,7 +1162,7 @@ def _reusable_authorization(data: dict) -> str | None:
     else:
         code = str(data.get("authorization_code") or "").strip()
     compact = code.replace(" ", "").replace("-", "")
-    if not code.startswith(("AUTH_", "mock_auth_")) or CARD_RE.search(compact):
+    if not code.startswith(("AUTH_", "mock_auth_", "flw_")) or CARD_RE.search(compact):
         return None
     return code
 

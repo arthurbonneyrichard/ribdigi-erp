@@ -202,7 +202,7 @@ services:
         fi
         echo "migrate: 0106 on-disk proof OK"
         exec python scripts/bootstrap.py
-    restart: "on-failure"
+    restart: "no"
     logging:
       driver: json-file
       options:

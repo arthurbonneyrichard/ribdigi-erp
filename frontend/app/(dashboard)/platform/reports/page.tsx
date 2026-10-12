@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatNumber } from '../../../../lib/format';
 import { getMe } from '../../../../lib/meCache';
 import { getPrefetched } from '../../../../lib/prefetchCache';
+import { subscriptionAmountLabel } from '../../../../lib/platformBilling';
+import { useCompanyFormat } from '../../../../lib/useCompanyFormat';
 
 const PLATFORM_ROLES = [
   'super_admin',
@@ -28,6 +31,7 @@ function fmtDate(value?: string | null) {
 
 export default function PlatformReportsPage() {
   const router = useRouter();
+  const prefs = useCompanyFormat();
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
@@ -129,6 +133,7 @@ export default function PlatformReportsPage() {
               <tr>
                 <th>Company</th>
                 <th>Package</th>
+                <th>Amount</th>
                 <th>Used</th>
                 <th>Remaining</th>
                 <th>Renewal</th>
@@ -145,6 +150,13 @@ export default function PlatformReportsPage() {
                     </div>
                   </td>
                   <td>{r.package_name || r.package_code}</td>
+                  <td>
+                    {subscriptionAmountLabel(
+                      r.amount,
+                      r.currency,
+                      r.amount == null ? '' : formatNumber(r.amount, prefs),
+                    )}
+                  </td>
                   <td>{r.months_used ?? 0} mo</td>
                   <td>
                     {r.months_remaining != null ? `${r.months_remaining} mo` : '—'}

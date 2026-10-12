@@ -8,7 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import saas_billing as billing_svc
 from app import tenants as tenants_svc
 from app import billing_gateway_setup as gateway_setup
-from app.billing_gateway import current_gateway, verify_webhook_signature, webhook_json
+from app.billing_gateway import (
+    current_gateway,
+    normalize_webhook_event,
+    verify_webhook_signature,
+    webhook_json,
+)
 from app.billing_schemas import (
     BillingAssignBody,
     BillingCancelBody,
@@ -64,8 +69,8 @@ async def save_billing_gateway(
     _owner(claims)
     from app.api import env
 
-    if payload.provider.strip().lower() not in {"mock", "paystack"}:
-        raise HTTPException(status_code=422, detail="provider must be mock or paystack")
+    if payload.provider.strip().lower() not in {"mock", "paystack", "flutterwave"}:
+        raise HTTPException(status_code=422, detail="provider must be mock, paystack, or flutterwave")
     if payload.mode.strip().lower() not in {"sandbox", "live"}:
         raise HTTPException(status_code=422, detail="mode must be sandbox or live")
     body = await gateway_setup.save_gateway(db, payload, actor=claims, request=request)
@@ -472,15 +477,22 @@ async def billing_webhook(
     request: Request,
     x_paystack_signature: str | None = Header(default=None, alias="x-paystack-signature"),
     x_ribdigi_billing_signature: str | None = Header(default=None, alias="x-ribdigi-billing-signature"),
+    x_verif_hash: str | None = Header(default=None, alias="verif-hash"),
+    x_flutterwave_signature: str | None = Header(default=None, alias="flutterwave-signature"),
     db: AsyncSession = Depends(get_db),
 ):
     from app.api import env
 
     name = (provider or "").strip().lower()
-    if name not in {"mock", "paystack"}:
+    if name not in {"mock", "paystack", "flutterwave"}:
         raise HTTPException(status_code=404, detail="Unknown billing provider")
     body = await request.body()
-    header = x_paystack_signature if name == "paystack" else x_ribdigi_billing_signature
+    if name == "paystack":
+        header = x_paystack_signature
+    elif name == "flutterwave":
+        header = x_verif_hash or x_flutterwave_signature
+    else:
+        header = x_ribdigi_billing_signature
     from app.billing_gateway import webhook_signing_secret
 
     stored_secret = await webhook_signing_secret(db, name)
@@ -492,6 +504,7 @@ async def billing_webhook(
         event = webhook_json(body)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail="Invalid billing webhook body") from exc
+    event = normalize_webhook_event(name, event)
     result = await billing_svc.apply_webhook(db, provider=name, event=event)
     await gateway_setup.note_webhook(db, provider=name, outcome=str(result.get("outcome") or "processed"))
     await db.commit()

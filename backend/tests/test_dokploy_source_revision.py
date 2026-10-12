@@ -142,7 +142,11 @@ def test_dockerignore_keeps_alembic_versions_and_build_id():
     assert "ENV RIBDIGI_BUILD_ID=" not in dockerfile
     entry = ENTRYPOINT.read_text(encoding="utf-8")
     assert "export RIBDIGI_BUILD_ID" in entry
+    assert "FATAL missing $BUILD_ID_FILE" in entry
     assert "20261003-live-test-store-scope" in entry
+    local_compose = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
+    assert "RIBDIGI_ALLOW_MISSING_BUILD_ID" in local_compose
+    assert "RIBDIGI_ALLOW_MISSING_BUILD_ID" not in DOKPLOY.read_text(encoding="utf-8")
     bootstrap = BOOTSTRAP.read_text(encoding="utf-8")
     assert '"upgrade", "head"' in bootstrap
     assert '"upgrade", "heads"' not in bootstrap

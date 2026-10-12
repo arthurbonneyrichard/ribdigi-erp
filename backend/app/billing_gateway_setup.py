@@ -11,7 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import audit as audit_svc
 from app import models as m
-from app.billing_gateway import gateway_for_config, validate_paystack_base_url
+from app.billing_gateway import (
+    gateway_for_config,
+    validate_flutterwave_base_url,
+    validate_paystack_base_url,
+)
 from app.billing_secrets import decrypt_billing_secret, encrypt_billing_secret
 from app.config import settings
 
@@ -60,6 +64,11 @@ def _check_provider_mode(provider: str, mode: str, secret: str | None) -> None:
             raise HTTPException(status_code=422, detail="Paystack sandbox requires a test secret key")
         if mode == "live" and not secret.startswith("sk_live_"):
             raise HTTPException(status_code=422, detail="Paystack live mode requires a live secret key")
+    if provider == "flutterwave" and secret:
+        if mode == "sandbox" and not secret.startswith("FLWSECK_TEST-"):
+            raise HTTPException(status_code=422, detail="Flutterwave sandbox requires a test secret key")
+        if mode == "live" and (secret.startswith("FLWSECK_TEST-") or not secret.startswith("FLWSECK-")):
+            raise HTTPException(status_code=422, detail="Flutterwave live mode requires a live secret key")
 
 
 async def _audit(db: AsyncSession, *, actor: dict, action: str, details: dict) -> None:
@@ -84,7 +93,10 @@ def public_view(row: m.PlatformBillingGateway | None, *, webhook_url: str) -> di
         return {
             "provider": (settings.BILLING_PROVIDER or "mock").strip().lower(),
             "mode": "sandbox",
-            "api_base_url": "https://api.paystack.co",
+            "api_base_url": {
+                "paystack": "https://api.paystack.co",
+                "flutterwave": "https://api.flutterwave.com",
+            }.get((settings.BILLING_PROVIDER or "mock").strip().lower(), "https://api.paystack.co"),
             "enabled": False,
             "connected": False,
             "secret_configured": False,
@@ -127,7 +139,7 @@ def public_view(row: m.PlatformBillingGateway | None, *, webhook_url: str) -> di
 def webhook_url_for(request: Request, provider: str) -> str:
     base = str(request.base_url).rstrip("/")
     name = (provider or "mock").strip().lower()
-    if name not in {"mock", "paystack"}:
+    if name not in {"mock", "paystack", "flutterwave"}:
         name = "mock"
     return f"{base}/api/v1/billing/webhooks/{name}"
 
@@ -148,6 +160,8 @@ async def save_gateway(db: AsyncSession, payload, *, actor: dict, request: Reque
     base_url = None
     if provider == "paystack":
         base_url = validate_paystack_base_url(payload.api_base_url or "https://api.paystack.co")
+    elif provider == "flutterwave":
+        base_url = validate_flutterwave_base_url(payload.api_base_url or "https://api.flutterwave.com")
     if row is None:
         row = m.PlatformBillingGateway(id=GATEWAY_ID, provider=provider, mode=mode)
         db.add(row)
@@ -214,6 +228,8 @@ async def set_enabled(db: AsyncSession, *, enabled: bool, actor: dict, request: 
         raise HTTPException(status_code=422, detail="Save gateway credentials first")
     if enabled and not row.last_test_ok:
         raise HTTPException(status_code=422, detail="Run a successful connection test before enabling")
+    if enabled and row.provider == "flutterwave" and not row.webhook_secret_enc:
+        raise HTTPException(status_code=422, detail="Save a Flutterwave webhook secret before enabling")
     row.enabled = bool(enabled)
     row.updated_by = actor.get("sub")
     row.updated_at = _now()
