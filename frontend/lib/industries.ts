@@ -7,6 +7,9 @@ export type IndustryKey = (typeof INDUSTRIES)[number];
 /** Customer industries a new company can choose. Platform software is not in this list. */
 export const PROVISION_INDUSTRIES = ['retail', 'hotel', 'restaurant'] as const;
 
+/** Stored on older companies. Not offered when creating a company and not a sidebar item. */
+export const LEGACY_INDUSTRIES = ['pharmacy'] as const;
+
 export const INDUSTRY_LABELS: Record<string, string> = {
   retail: 'Retail',
   mart: 'Mart',
@@ -42,7 +45,9 @@ export function normalizeIndustry(value?: string | null): string | null {
     cafe: 'restaurant',
   };
   const mapped = aliases[raw] || raw;
-  return (INDUSTRIES as readonly string[]).includes(mapped) ? mapped : null;
+  if ((INDUSTRIES as readonly string[]).includes(mapped)) return mapped;
+  if ((LEGACY_INDUSTRIES as readonly string[]).includes(mapped)) return mapped;
+  return null;
 }
 
 /** Inter-store / warehouse stock-transfer UI (retail POS-style). Hotel uses

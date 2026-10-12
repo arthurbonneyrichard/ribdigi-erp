@@ -183,7 +183,7 @@ export function industryNavHrefOk(href: string, industry: string | null | undefi
     return ind === 'retail' || ind === 'hotel' || ind === 'restaurant';
   }
   if (path === '/sales' || path === '/customers') {
-    return ind === 'retail' || ind === 'restaurant' || ind === 'hotel';
+    return ind === 'retail' || ind === 'restaurant' || ind === 'hotel' || ind === 'pharmacy';
   }
   return true;
 }
@@ -263,7 +263,7 @@ export function filterNavForIndustry(items: NavItem[], industry: string | null |
     if (layout === 'platform') {
       return PLATFORM_CONSOLE_MODULES.has(module) || SHARED_ACCOUNT_MODULES.has(module);
     }
-    if (layout === 'hotel' || layout === 'retail') {
+    if (layout === 'hotel' || layout === 'retail' || layout === 'pharmacy') {
       return true;
     }
     if (layout === 'restaurant') {

@@ -508,7 +508,7 @@ export default function Page() {
     setMessage('');
     const reason = rejectReason.trim();
     if (!reason) {
-      setError('Enter a reason before voiding this expense');
+      setError('Enter a reject reason before rejecting an expense');
       return;
     }
     setRowBusyId(id);
@@ -1416,8 +1416,8 @@ export default function Page() {
           <select
             value={newCatAccountId}
             onChange={(e) => setNewCatAccountId(e.target.value)}
-            title="Expense account"
-            aria-label="Expense account"
+            title="Expense category GL account"
+            aria-label="Expense category GL account"
           >
             <option value="">Default expense account</option>
             {expenseAccounts.map((a: any) => (
@@ -1463,11 +1463,7 @@ export default function Page() {
                 <td>{c.code}</td>
                 <td>
                   {c.name}
-                  {c.is_active === false ? (
-                    <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>
-                      Inactive
-                    </span>
-                  ) : null}
+                  {c.is_active === false ? ' [inactive]' : ''}
                 </td>
                 <td>
                   <input
@@ -1485,7 +1481,7 @@ export default function Page() {
                     onChange={(e) =>
                       setAccountDrafts((prev) => ({ ...prev, [c.id]: e.target.value }))
                     }
-                    aria-label={`Edit expense account ${c.name || c.code}`}
+                    aria-label={`Edit expense category GL account ${c.name || c.code}`}
                   >
                     <option value="">Default expense account</option>
                     {expenseAccounts.map((a: any) => (
@@ -1550,7 +1546,7 @@ export default function Page() {
           />
         </label>
         <p className="muted" style={{ marginTop: 0, marginBottom: 10 }}>
-          Required before Skip next. The reason is kept with the record.
+          Required before Skip next. The reason is kept with the record as recurring_expense_skipped.
         </p>
         {recEditId ? (
           <p style={{ color: 'var(--deep-green, #006B2E)', marginTop: 0 }}>
@@ -1711,11 +1707,7 @@ export default function Page() {
               <tr key={r.id}>
                 <td>
                   {r.category}
-                  {r.is_active === false ? (
-                    <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>
-                      Inactive
-                    </span>
-                  ) : null}
+                  {r.is_active === false ? ' [inactive]' : ''}
                   {r.description ? (
                     <div className="muted" style={{ fontSize: 12 }}>
                       {r.description}

@@ -2456,21 +2456,21 @@ export default function Page() {
               <div className="tpos-cart-actions">
                 <button
                   type="button"
-                  className="tpos-btn"
-                  onClick={clearCart}
-                  disabled={!cart.length}
-                  aria-label="Clear POS cart"
-                >
-                  Clear
-                </button>
-                <button
-                  type="button"
                   className="tpos-btn tpos-btn-pay"
                   onClick={checkout}
                   disabled={!cart.length || !session || busy}
                   aria-label="Charge"
                 >
                   {busy ? 'Paying…' : `Pay ${money(cartTotal)}`}
+                </button>
+                <button
+                  type="button"
+                  className="tpos-btn tpos-btn-clear btn-danger"
+                  onClick={clearCart}
+                  disabled={!cart.length}
+                  aria-label="Clear POS cart"
+                >
+                  Clear
                 </button>
                 <button
                   type="button"

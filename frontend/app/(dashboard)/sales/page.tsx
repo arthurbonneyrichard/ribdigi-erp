@@ -974,7 +974,7 @@ export default function Page() {
             className={tab === id ? 'sales-tab is-on' : 'sales-tab'}
             onClick={() => setTab(id)}
             disabled={tab === id}
-            aria-label={id === 'made' ? 'Show all sales' : `Show sales ${id} tab`}
+            aria-label={`Show sales ${id} tab`}
           >
             {label}
           </button>
@@ -1385,6 +1385,19 @@ export default function Page() {
           <button type="button" onClick={assignCustomerGroup} aria-label="Assign customer group">
             Assign group
           </button>
+          <button
+            type="button"
+            aria-label="Toggle customer active status"
+            disabled={!customerId}
+            onClick={() => {
+              const inactive = (customers.find((c) => c.id === customerId)?.status || 'active') === 'inactive';
+              setCustomerActive(inactive);
+            }}
+          >
+            {(customers.find((c) => c.id === customerId)?.status || 'active') === 'inactive'
+              ? 'Activate customer'
+              : 'Deactivate customer'}
+          </button>
         </div>
         {customerId &&
           (customers.find((c) => c.id === customerId)?.status || 'active') === 'inactive' && (
@@ -1439,6 +1452,20 @@ export default function Page() {
             ))}
           </select>
           ) : null}
+          <input
+            type="date"
+            value={deliveryDate}
+            onChange={(e) => setDeliveryDate(e.target.value)}
+            aria-label="SO delivery date"
+            title="Promised delivery date for a sales order"
+          />
+          <input
+            value={deliveryAddress}
+            onChange={(e) => setDeliveryAddress(e.target.value)}
+            placeholder="Delivery address"
+            aria-label="SO delivery address"
+            title="Ship-to address for a sales order"
+          />
           <select
             value={productId}
             onChange={(e) => setProductId(e.target.value)}

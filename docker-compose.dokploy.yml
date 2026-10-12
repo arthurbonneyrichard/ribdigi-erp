@@ -95,7 +95,7 @@ services:
         max-file: "5"
 
   backend:
-    image: ribdigi-backend:f35f5653b651
+    image: ribdigi-backend:eb5720b74b52
     pull_policy: build
     build:
       context: .
@@ -103,7 +103,7 @@ services:
       args:
         # Must match backend/ribdigi-build-id.txt. Image /app/.build-id is the
         # git short sha of the commit Dokploy checks out (see resolve_source_revision.py).
-        RIBDIGI_SOURCE_REV: "f35f5653b651"
+        RIBDIGI_SOURCE_REV: "eb5720b74b52"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -154,13 +154,13 @@ services:
   # One-shot schema migration (Alembic). Refuses create_all in production.
   # ---------------------------------------------------------------------------
   migrate:
-    image: ribdigi-backend:f35f5653b651
+    image: ribdigi-backend:eb5720b74b52
     pull_policy: build
     build:
       context: .
       dockerfile: backend/Dockerfile
       args:
-        RIBDIGI_SOURCE_REV: "f35f5653b651"
+        RIBDIGI_SOURCE_REV: "eb5720b74b52"
     env_file: .env
     environment:
       PYTHONPATH: /app
@@ -216,13 +216,13 @@ services:
   # Background jobs (RabbitMQ broker, Redis results — see app.config)
   # ---------------------------------------------------------------------------
   celery_worker:
-    image: ribdigi-backend:f35f5653b651
+    image: ribdigi-backend:eb5720b74b52
     pull_policy: build
     build:
       context: .
       dockerfile: backend/Dockerfile
       args:
-        RIBDIGI_SOURCE_REV: "f35f5653b651"
+        RIBDIGI_SOURCE_REV: "eb5720b74b52"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -268,13 +268,13 @@ services:
         max-file: "5"
 
   celery_beat:
-    image: ribdigi-backend:f35f5653b651
+    image: ribdigi-backend:eb5720b74b52
     pull_policy: build
     build:
       context: .
       dockerfile: backend/Dockerfile
       args:
-        RIBDIGI_SOURCE_REV: "f35f5653b651"
+        RIBDIGI_SOURCE_REV: "eb5720b74b52"
     restart: unless-stopped
     env_file: .env
     environment:

@@ -551,8 +551,13 @@ async def test_offline_catalog_scoped_by_industry(client, db_session):
     combo = await ac.get(
         f"/api/v1/pos/offline/catalog?store_id={store_id}", headers=await _cashier(ac)
     )
-    assert combo.json()["data"]["wholesale_tiers"] is True
-    assert combo.json()["data"]["pharmacy_rules"] is False
+    assert combo.status_code == 403, combo.text
+    detail = combo.json()["detail"]
+    assert detail["code"] == "INDUSTRY_MODULE_DISABLED"
+    assert detail["module"] == "pos"
+    assert detail["industry"] is None
+    assert combo.json().get("data", {}).get("wholesale_tiers") is not True
+    assert combo.json().get("data", {}).get("pharmacy_rules") is not True
 
 
 @pytest.mark.asyncio

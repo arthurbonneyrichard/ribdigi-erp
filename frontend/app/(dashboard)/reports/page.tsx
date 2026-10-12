@@ -388,7 +388,7 @@ export default function Page() {
             monthQuery.month = String(Number(m));
           }
           const [daily, monthly] = await Promise.all([
-            fetchReport(`/reports/sales/daily${qs(anchor ? { date: anchor } : {})}`),
+            fetchReport(`/reports/sales/daily${qs(anchor ? { date: toDate || fromDate } : {})}`),
             fetchReport(`/reports/sales/monthly${qs(monthQuery)}`),
           ]);
           const sections: Record<string, string> = {};
@@ -1523,6 +1523,31 @@ export default function Page() {
                     {activeReport.id === 'salesperson' && (
                       <button type="button" onClick={() => download('xlsx', 'sales_salesperson')} aria-label="Export salespeople Excel">
                         Salespeople Excel
+                      </button>
+                    )}
+                    {activeReport.id === 'sales_returns' && (
+                      <>
+                        <button type="button" onClick={() => download('xlsx', 'sales_returns')} aria-label="Export sales returns Excel">
+                          Returns Excel
+                        </button>
+                        <button type="button" onClick={() => download('csv', 'sales_returns')} aria-label="Export sales returns CSV">
+                          Returns CSV
+                        </button>
+                      </>
+                    )}
+                    {activeReport.id === 'trialbalance' && (
+                      <>
+                        <button type="button" onClick={() => download('xlsx', 'trial_balance')} aria-label="Export trial balance Excel">
+                          Trial balance Excel
+                        </button>
+                        <button type="button" onClick={() => download('csv', 'trial_balance')} aria-label="Export trial balance CSV">
+                          Trial balance CSV
+                        </button>
+                      </>
+                    )}
+                    {activeReport.id === 'pnl' && (
+                      <button type="button" onClick={() => download('pdf', 'profit_loss')} aria-label="Export P&L PDF">
+                        P&L PDF
                       </button>
                     )}
                     {(activeReport.id === 'purchases_pending' || activeReport.id === 'purchases_overview') && (

@@ -133,7 +133,9 @@ INDUSTRY_MODULE_ALLOWLIST: dict[str, frozenset[str]] = {
 # verticals are never added to enabled_modules or the sidebar.
 IMPLEMENTED_INDUSTRY_MODULES: frozenset[str] = frozenset({"hotel", "restaurant"})
 
-CANONICAL_INDUSTRIES: frozenset[str] = frozenset({"retail", "hotel", "restaurant"})
+# Pharmacy stays recognizable for companies that already use it. New companies
+# cannot choose it (VALID_INDUSTRIES / the create picker stay retail, hotel, restaurant).
+CANONICAL_INDUSTRIES: frozenset[str] = frozenset({"retail", "hotel", "restaurant", "pharmacy"})
 
 # Safe aliases → canonical customer industries. Removed desks do not map onto retail.
 INDUSTRY_ALIASES: dict[str, str] = {

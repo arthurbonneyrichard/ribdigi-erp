@@ -1975,7 +1975,7 @@ export default function Page() {
                   <td colSpan={7} className="muted">
                     {journals.length === 0
                       ? 'No entries yet'
-                      : 'No entries for this filter'}
+                      : 'No journals for this filter'}
                   </td>
                 </tr>
               ) : (

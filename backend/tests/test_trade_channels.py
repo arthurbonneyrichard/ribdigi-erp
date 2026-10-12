@@ -249,9 +249,9 @@ async def test_pharmacy_rx_activity_report(client, db_session, seeded):
         headers=admin,
         json={"items": [{"product_id": seed["p1"].id, "quantity": 3}]},
     )
-    assert created.status_code == 403, created.text
+    assert created.status_code == 200, created.text
     report = await ac.get("/api/v1/reports/pharmacy/rx-activity", headers=admin)
-    assert report.status_code == 403, report.text
+    assert report.status_code == 200, report.text
     expiry = await ac.get("/api/v1/reports/inventory/expiry?days=30", headers=admin)
     assert expiry.status_code == 200, expiry.text
 

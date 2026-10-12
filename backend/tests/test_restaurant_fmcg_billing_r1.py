@@ -189,7 +189,8 @@ async def test_fmcg_pack_conversion_and_expired_lot_block(client, db_session):
         admin,
         name="Soap",
         selling_price=5,
-        stock_qty=5,
+        stock_qty=0,
+        tracks_batches=True,
         unit_id=piece.json()["data"]["id"],
     )
     converted = await ac.post(
@@ -197,8 +198,8 @@ async def test_fmcg_pack_conversion_and_expired_lot_block(client, db_session):
         json={"product_id": product["id"], "from_unit_id": carton.json()["data"]["id"], "quantity": 2},
         headers=admin,
     )
-    assert converted.status_code == 200, converted.text
-    assert converted.json()["data"]["quantity_base"] == 24
+    assert converted.status_code == 403, converted.text
+    assert converted.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
     db_session.add(
         m.ProductBatch(
             tenant_id=seed["t1"].id,
@@ -224,6 +225,7 @@ async def test_fmcg_pack_conversion_and_expired_lot_block(client, db_session):
         headers=admin,
     )
     assert hotel.status_code == 403, hotel.text
+    assert hotel.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
 
 
 async def _save_mock(ac, owner):

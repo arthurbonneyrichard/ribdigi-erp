@@ -45,7 +45,8 @@ def test_staff_guide_follows_industry_and_role():
             permissions={"sales": ["read", "write"]},
         )
     )
-    assert "sales order" in wholesale.lower()
+    assert "sales order" not in wholesale.lower()
+    assert "business type: not a configured business type" in wholesale.lower()
     pdf = to_pdf("Alpha Shop staff guide", retail)
     assert pdf.startswith(b"%PDF")
 

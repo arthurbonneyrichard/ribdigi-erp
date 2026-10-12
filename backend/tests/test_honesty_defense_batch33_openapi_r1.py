@@ -111,7 +111,9 @@ def test_money_json_wired_batch33():
 
     reports_src = Path(reports_mod.__file__).read_text(encoding="utf-8")
     assert "inv = money_json((await db.execute(inv_stmt)).scalar() or 0)" in reports_src
-    assert "pos = money_json((await db.execute(pos_stmt)).scalar() or 0)" in reports_src
+    assert "pos_tx_stmt" in reports_src
+    assert "pos_counts_with_invoice" in reports_src
+    assert "pos = money_json(round(pos + money_json(tx.total), 2))" in reports_src
     assert '(-money_json(r["actual"])' in reports_src
 
     backup_src = Path(backup_mod.__file__).read_text(encoding="utf-8")

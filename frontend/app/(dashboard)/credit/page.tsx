@@ -597,14 +597,14 @@ export default function Page() {
           disabled={kind === 'receivable'}
           aria-label="Show receivables aging"
         >
-          Customers owe us
+          Receivables — customers owe us
         </button>
         <button
           onClick={() => selectPayableView()}
           disabled={kind === 'payable' && !payPanel}
           aria-label="Show payables aging"
         >
-          We owe suppliers
+          Payables — we owe suppliers
         </button>
         <button
           onClick={() => selectPayableView('pay')}

@@ -49,9 +49,9 @@ def test_jobs_console_fe_packaged():
     assert "Run sync" in page
     assert "Enqueue" in page
     shell = (ROOT / "frontend/components/Shell.tsx").read_text(encoding="utf-8")
-    assert "['Jobs', '/jobs', 'jobs']" in shell
-    assert "['Jobs', '/jobs', 'jobs']" not in (
-        shell.split("PLATFORM_ITEMS")[0]
-    )
+    nav = (ROOT / "frontend/lib/tenantNav.ts").read_text(encoding="utf-8")
+    assert "platformNavItemsForRole" in shell
+    assert "['Jobs', '/jobs', 'jobs']" in nav
+    assert "['Jobs', '/jobs', 'jobs']" not in shell.split("PLATFORM_ITEMS")[0]
     runbook = (ROOT / "docs/CELERY_RELIABILITY_RUNBOOK.md").read_text(encoding="utf-8")
     assert "/jobs" in runbook

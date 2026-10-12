@@ -58,8 +58,8 @@ def guide_lines(
     role: str,
     permissions: dict | None,
 ) -> list[str]:
-    ind = packages_svc.canonicalize_industry(industry) or "retail"
-    label = INDUSTRY_LABELS.get(ind, ind)
+    canonical = packages_svc.canonicalize_industry(industry)
+    label = INDUSTRY_LABELS.get(canonical, canonical) if canonical else "Not a configured business type"
     modules = set(enabled_modules or [])
     lines = [
         f"{company_name} staff guide",
@@ -68,7 +68,11 @@ def guide_lines(
         "",
         "How this company sells",
     ]
-    for step in _INDUSTRY_STEPS.get(ind, _INDUSTRY_STEPS["retail"]):
+    steps = _INDUSTRY_STEPS.get(canonical or "", [
+        "Retail, hotel, and restaurant are the business types a new company can use.",
+        "A company saved under another type keeps its own records and does not get that other desk.",
+    ])
+    for step in steps:
         lines.append(f"- {step}")
     lines.append("")
     lines.append("Enabled workflows")
@@ -76,7 +80,7 @@ def guide_lines(
     for key, text in _MODULE_STEPS.items():
         if key not in modules:
             continue
-        if key in packages_svc.INDUSTRY_SPECIFIC_MODULES and not packages_svc.industry_allows_module(ind, key):
+        if key in packages_svc.INDUSTRY_SPECIFIC_MODULES and not packages_svc.industry_allows_module(canonical, key):
             continue
         lines.append(f"- {text}")
         shown = True

@@ -614,28 +614,25 @@ async def test_ticket_categories_follow_industry_desk(client):
         assert meta.status_code == 200, meta.text
         return {row["code"]: row["label"] for row in meta.json()["data"]["categories"]}
 
-    wholesale = await labels_for("wholesale")
-    assert wholesale.get("pos_sales") == "Sales"
-    assert "inventory_stock" in wholesale
-    fmcg = await labels_for("fmcg")
-    assert fmcg.get("pos_sales") == "Sales"
-    assert "printing_barcode_receipt" not in fmcg
-    assert "inventory_stock" in fmcg
+    retail = await labels_for("retail")
+    assert retail.get("pos_sales") == "POS and sales"
+    hotel = await labels_for("hotel")
+    assert hotel.get("pos_sales") == "POS and sales"
+    restaurant = await labels_for("restaurant")
+    assert restaurant.get("pos_sales") == "POS and sales"
     pharmacy = await labels_for("pharmacy")
     assert pharmacy.get("pos_sales") == "POS and sales"
-    hospital = await labels_for("hospital")
-    assert "pos_sales" not in hospital
-    assert "inventory_stock" not in hospital
-    assert "purchases_suppliers" not in hospital
-    assert "printing_barcode_receipt" not in hospital
-    assert "account_login" in hospital
-    assert "bug_other" in hospital
+    for removed in ("wholesale", "fmcg", "hospital"):
+        hidden = await labels_for(removed)
+        assert "pos_sales" not in hidden
+        assert "account_login" in hidden
+        assert "bug_other" in hidden
     opened = await ac.post(
         "/api/v1/support/tickets",
         headers=cashier,
         json={
-            "subject": "Ward list is empty",
-            "description": "The patient list stays blank after sign-in.",
+            "subject": "Sign-in stays on the login page",
+            "description": "The company cannot get past the sign-in screen.",
             "category": "account_login",
         },
     )
@@ -645,8 +642,8 @@ async def test_ticket_categories_follow_industry_desk(client):
         "/api/v1/support/tickets",
         headers=cashier,
         json={
-            "subject": "POS should be hidden",
-            "description": "Hospital companies do not run a shop till.",
+            "subject": "Removed desk should stay hidden",
+            "description": "Wholesale, FMCG, and hospital are not operating desks.",
             "category": "pos_sales",
         },
     )
@@ -670,7 +667,7 @@ async def test_desk_filters_industry_and_company_categories(client):
     async with factory() as db:
         alpha = await db.get(m.Tenant, seed["t1"].id)
         beta = await db.get(m.Tenant, seed["t2"].id)
-        alpha.industry = "wholesale"
+        alpha.industry = "retail"
         beta.industry = "pharmacy"
         await db.commit()
     wholesale = await ac.post(
@@ -694,21 +691,21 @@ async def test_desk_filters_industry_and_company_categories(client):
         },
     )
     assert pharmacy.status_code == 200, pharmacy.text
-    listed = await ac.get("/api/v1/support/desk/tickets?industry=wholesale", headers=desk)
+    listed = await ac.get("/api/v1/support/desk/tickets?industry=retail", headers=desk)
     assert listed.status_code == 200, listed.text
     rows = listed.json()["data"]["items"]
     assert {row["id"] for row in rows} == {wholesale_id}
-    assert rows[0]["category_label"] == "Sales"
-    assert rows[0]["tenant"]["industry"] == "wholesale"
+    assert rows[0]["category_label"] == "POS and sales"
+    assert rows[0]["tenant"]["industry"] == "retail"
     unknown = await ac.get("/api/v1/support/desk/tickets?industry=not-an-industry", headers=desk)
     assert unknown.status_code == 422, unknown.text
     detail = await ac.get(f"/api/v1/support/desk/tickets/{wholesale_id}", headers=desk)
     assert detail.status_code == 200, detail.text
     body = detail.json()["data"]
     labels = {row["code"]: row["label"] for row in body["allowed_categories"]}
-    assert labels["pos_sales"] == "Sales"
+    assert labels["pos_sales"] == "POS and sales"
     assert "account_login" in labels
-    assert body["ticket"]["category_label"] == "Sales"
+    assert body["ticket"]["category_label"] == "POS and sales"
 
 
 @pytest.mark.asyncio

@@ -58,6 +58,7 @@ const BY_INDUSTRY: Record<string, readonly IndustryDashboardFeature[]> = {
   retail: RETAIL_DASHBOARD_FEATURES,
   hotel: HOTEL_DASHBOARD_FEATURES,
   restaurant: RESTAURANT_DASHBOARD_FEATURES,
+  pharmacy: PHARMACY_DASHBOARD_FEATURES,
 };
 
 const PLATFORM_DASHBOARD_ROLES = new Set([
@@ -92,8 +93,8 @@ export function softwareOwnerDashboardPath(
   return null;
 }
 
-/** Industries with a dedicated operations dashboard. Anything else is unconfigured. */
-export const CONFIGURED_DASHBOARD_INDUSTRIES = ['retail', 'hotel', 'restaurant'] as const;
+/** Industries with a dedicated operations dashboard. Pharmacy is legacy (no sidebar item). */
+export const CONFIGURED_DASHBOARD_INDUSTRIES = ['retail', 'hotel', 'restaurant', 'pharmacy'] as const;
 
 export function dashboardLayout(industry?: string | null): string {
   if (isSoftwareOwnerIndustry(industry)) return 'platform';
@@ -131,6 +132,7 @@ export function industryDashboardFeatures(
 export function industryDashboardSectionLabel(industry?: string | null): string | null {
   const ind = normalizeIndustry(industry);
   if (ind === 'retail') return null;
+  if (ind === 'pharmacy') return 'Lots and prescriptions';
   if (ind === 'restaurant') return 'Restaurant operations';
   if (ind === 'hotel') return 'Hotel dashboard';
   return null;

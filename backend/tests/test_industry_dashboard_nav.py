@@ -30,11 +30,17 @@ def test_industry_home_and_feature_catalog():
     assert industry_home_path("restaurant") == "/restaurant"
     assert industry_home_path("retail") == "/dashboard"
 
-    for removed in ("pharmacy", "wholesale", "retail_wholesale", "fmcg", "hospital", "mart"):
+    for removed in ("wholesale", "retail_wholesale", "fmcg", "hospital", "mart"):
         assert industry_dashboard_features(removed) == []
         assert industry_home_path(removed) == "/dashboard"
         assert dashboard_layout(removed) == "unconfigured"
         assert shows_retail_operations(removed) is False
+
+    pharmacy = industry_dashboard_features("pharmacy")
+    assert {row["id"] for row in pharmacy} == {"expiry_lots", "batches", "rx_products", "prescriptions"}
+    assert industry_home_path("pharmacy") == "/dashboard"
+    assert dashboard_layout("pharmacy") == "pharmacy"
+    assert shows_retail_operations("pharmacy") is False
 
     retail = industry_dashboard_features("retail")
     assert retail == []
@@ -55,10 +61,11 @@ def test_payload_uses_tenant_industry_not_client():
         enabled_modules = None
 
     payload = industry_dashboard_payload(T())
-    assert payload["industry"] is None
-    assert payload["dashboard_layout"] == "unconfigured"
+    assert payload["industry"] == "pharmacy"
+    assert payload["dashboard_layout"] == "pharmacy"
+    assert payload["industry_home"] == "/dashboard"
     assert payload["show_retail_operations"] is False
-    assert payload["industry_features"] == []
+    assert any(row["href"] == "/prescriptions" for row in payload["industry_features"])
 
     T.industry = "hotel"
     hotel = industry_dashboard_payload(T())
@@ -87,22 +94,22 @@ async def test_dashboard_industry_from_tenant_ignores_query(client, db_session):
 
     me = await ac.get("/api/v1/me", headers=admin)
     assert me.status_code == 200, me.text
-    assert me.json()["data"]["industry"] is None
+    assert me.json()["data"]["industry"] == "pharmacy"
     assert me.json()["data"]["industry_raw"] == "pharmacy"
 
     spoofed = await ac.get("/api/v1/dashboard?industry=hotel", headers=admin)
     assert spoofed.status_code == 200, spoofed.text
     data = spoofed.json()["data"]
-    assert data["industry"] is None
-    assert data["dashboard_layout"] == "unconfigured"
+    assert data["industry"] == "pharmacy"
+    assert data["dashboard_layout"] == "pharmacy"
     assert data["show_retail_operations"] is False
     assert data["industry_home"] == "/dashboard"
-    assert data["industry_features"] == []
+    assert any(row["href"] == "/prescriptions" for row in data["industry_features"])
 
     cashier_dash = await ac.get("/api/v1/dashboard", headers=cashier)
     assert cashier_dash.status_code == 200, cashier_dash.text
-    assert cashier_dash.json()["data"]["industry"] is None
-    assert cashier_dash.json()["data"]["industry_features"] == []
+    assert cashier_dash.json()["data"]["industry"] == "pharmacy"
+    assert any(row["href"] == "/prescriptions" for row in cashier_dash.json()["data"]["industry_features"])
     assert cashier_dash.json()["data"]["show_retail_operations"] is False
 
 
@@ -200,7 +207,7 @@ def test_software_owner_dashboard_is_platform_home_not_an_operating_desk():
     }
     assert "pharmacy_desk" not in payload
     assert dashboard_layout("retail") == "retail"
-    assert dashboard_layout("pharmacy") == "unconfigured"
+    assert dashboard_layout("pharmacy") == "pharmacy"
     assert shows_retail_operations("retail") is True
     assert shows_retail_operations("pharmacy") is False
     assert industry_home_path("pharmacy") == "/dashboard"
@@ -243,7 +250,7 @@ async def test_software_dashboard_is_not_a_customer_operating_desk(client, db_se
 def test_dashboard_layout_does_not_treat_other_industries_as_retail():
     assert dashboard_layout("retail") == "retail"
     assert shows_retail_operations("retail") is True
-    assert dashboard_layout("pharmacy") == "unconfigured"
+    assert dashboard_layout("pharmacy") == "pharmacy"
     assert shows_retail_operations("pharmacy") is False
     assert dashboard_layout("fmcg") == "unconfigured"
     assert dashboard_layout("hospital") == "unconfigured"
@@ -267,19 +274,20 @@ async def test_industry_desks_and_route_gates(client, db_session):
     await set_tenant_industry(db_session, seed["t1"], "pharmacy")
     admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
     pharmacy = (await ac.get("/api/v1/dashboard", headers=admin)).json()["data"]
-    assert pharmacy["dashboard_layout"] == "unconfigured"
+    assert pharmacy["dashboard_layout"] == "pharmacy"
+    assert pharmacy["industry"] == "pharmacy"
+    assert pharmacy["industry_home"] == "/dashboard"
     assert pharmacy["show_retail_operations"] is False
-    assert pharmacy["pharmacy_desk"] is None
+    assert pharmacy["pharmacy_desk"] is not None
     assert pharmacy["fmcg_desk"] is None
     assert pharmacy["hospital_desk"] is None
-    assert pharmacy["industry_features"] == []
+    assert any(row["href"] == "/prescriptions" for row in pharmacy["industry_features"])
 
     gift = await ac.post("/api/v1/gift-cards", headers=admin, json={"amount": 10})
     assert gift.status_code == 403, gift.text
     assert gift.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
     pharmacy_pos = await ac.get("/api/v1/pos/sessions", headers=admin)
-    assert pharmacy_pos.status_code == 403, pharmacy_pos.text
-    assert pharmacy_pos.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
+    assert pharmacy_pos.status_code == 200, pharmacy_pos.text
 
     await set_tenant_industry(db_session, seed["t1"], "retail")
     admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
@@ -337,13 +345,13 @@ async def test_non_retail_never_gets_retail_operations_or_other_tenant_rows(clie
     await set_tenant_industry(db_session, seed["t1"], "pharmacy")
     admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
     pharmacy = (await ac.get("/api/v1/dashboard", headers=admin)).json()["data"]
-    assert pharmacy["dashboard_layout"] == "unconfigured"
+    assert pharmacy["dashboard_layout"] == "pharmacy"
     assert pharmacy["show_retail_operations"] is False
     assert pharmacy["products"] == 1
-    assert pharmacy["industry"] is None
+    assert pharmacy["industry"] == "pharmacy"
 
     same_token = await ac.get("/api/v1/dashboard", headers=admin)
-    assert same_token.json()["data"]["industry"] is None
+    assert same_token.json()["data"]["industry"] == "pharmacy"
     assert same_token.json()["data"]["products"] == 1
 
     await set_tenant_industry(db_session, seed["t1"], "wholesale")

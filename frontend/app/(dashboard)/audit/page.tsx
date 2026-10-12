@@ -43,7 +43,7 @@ const AUDIT_MODULES = [
 
 function areaLabel(value: string | null | undefined): string {
   const key = String(value || '').trim().toLowerCase();
-  if (!key) return 'All areas';
+  if (!key) return 'All modules';
   const special: Record<string, string> = {
     ai: 'AI',
     auth: 'Sign-in',
@@ -96,6 +96,7 @@ export default function Page() {
   const [appliedEntity, setAppliedEntity] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [userDraft, setUserDraft] = useState('');
   const [userId, setUserId] = useState('');
   const [verify, setVerify] = useState<any>(null);
   const [retention, setRetention] = useState<any>(null);
@@ -268,7 +269,7 @@ export default function Page() {
           {canArchive && (
             <div>
               <button type="button" onClick={archiveCold} disabled={busy} aria-label="Archive cold audit logs">
-                {busy ? 'Storing…' : 'Store older records'}
+                {busy ? 'Storing…' : 'Archive cold now'}
               </button>
             </div>
           )}
@@ -355,6 +356,13 @@ export default function Page() {
           title="To date"
           aria-label="Audit to date"
         />
+        <input
+          value={userDraft}
+          onChange={(e) => setUserDraft(e.target.value)}
+          placeholder="Staff id"
+          title="Staff id. Leave blank for everyone."
+          aria-label="Audit user filter"
+        />
         <button
           type="button"
           aria-label="Apply audit filters"
@@ -367,9 +375,18 @@ export default function Page() {
               setError('Use a short code such as sales_invoice.');
               return;
             }
+            const nextUser = userDraft.trim();
+            if (
+              nextUser &&
+              !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(nextUser)
+            ) {
+              setError('Enter a staff id, or leave it blank.');
+              return;
+            }
             setError('');
             setAppliedAction(auditActionQueryValue(action) || '');
             setAppliedEntity(auditEntityQueryValue(entity) || '');
+            setUserId(nextUser);
           }}
         >
           Filter

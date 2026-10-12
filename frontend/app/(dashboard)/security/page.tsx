@@ -448,6 +448,9 @@ export default function Page() {
           {passkeys.map((p) => (
             <li key={p.id}>
               {p.name || 'Passkey'}{' '}
+              <button type="button" onClick={() => removePasskey(p.id)} aria-label="Remove passkey">
+                Remove passkey
+              </button>
             </li>
           ))}
           {!passkeys.length && <li className="muted">No passkeys yet</li>}

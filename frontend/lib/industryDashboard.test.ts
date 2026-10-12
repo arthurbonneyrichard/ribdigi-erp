@@ -23,13 +23,21 @@ test('hotel home is /hotel and restaurant home is /restaurant', () => {
 });
 
 test('removed industries are not customer desks', () => {
-  for (const code of ['pharmacy', 'wholesale', 'retail_wholesale', 'fmcg', 'hospital', 'mart']) {
+  for (const code of ['wholesale', 'retail_wholesale', 'fmcg', 'hospital', 'mart']) {
     assert.deepEqual(industryDashboardFeatures(code), []);
     assert.equal(industryDashboardSectionLabel(code), null);
     assert.equal(dashboardLayout(code), 'unconfigured');
     assert.equal(showsRetailOperations(code), false);
     assert.equal(industryHomePath(code), '/dashboard');
   }
+  assert.equal(dashboardLayout('pharmacy'), 'pharmacy');
+  assert.equal(showsRetailOperations('pharmacy'), false);
+  assert.equal(industryHomePath('pharmacy'), '/dashboard');
+  assert.equal(industryDashboardSectionLabel('pharmacy'), 'Lots and prescriptions');
+  assert.deepEqual(
+    industryDashboardFeatures('pharmacy').map((row) => row.id),
+    ['expiry_lots', 'batches', 'rx_products', 'prescriptions'],
+  );
   assert.deepEqual(industryDashboardFeatures('retail').map((f) => f.id), []);
   assert.equal(industryDashboardSectionLabel('retail'), null);
   assert.equal(showsRetailOperations('retail'), true);
@@ -78,7 +86,7 @@ test('software owner dashboard is the platform console, not an operating desk', 
   assert.equal(industryHomePath('pharmacy'), '/dashboard');
   assert.equal(industryHomePath('hotel'), '/hotel');
   assert.equal(industryHomePath('restaurant'), '/restaurant');
-  assert.equal(dashboardLayout('pharmacy'), 'unconfigured');
+  assert.equal(dashboardLayout('pharmacy'), 'pharmacy');
   assert.equal(dashboardLayout('retail'), 'retail');
   assert.equal(showsRetailOperations('retail'), true);
 

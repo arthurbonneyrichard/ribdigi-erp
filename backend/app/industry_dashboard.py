@@ -112,12 +112,15 @@ _HOSPITAL_FEATURES: tuple[dict[str, str], ...] = (
 # Industries with a real operations dashboard. Stored types outside this set
 # (mart, bakery, distribution, general trading, manufacturing) and blank or
 # unknown values stay unconfigured — they do not inherit the retail desk.
-CONFIGURED_DASHBOARD_INDUSTRIES: frozenset[str] = frozenset({"retail", "hotel", "restaurant"})
+CONFIGURED_DASHBOARD_INDUSTRIES: frozenset[str] = frozenset(
+    {"retail", "hotel", "restaurant", "pharmacy"}
+)
 
 _FEATURES: dict[str, tuple[dict[str, str], ...]] = {
     "retail": _RETAIL_FEATURES,
     "hotel": _HOTEL_FEATURES,
     "restaurant": _RESTAURANT_FEATURES,
+    "pharmacy": _PHARMACY_FEATURES,
 }
 
 
@@ -156,7 +159,7 @@ def industry_home_path(industry: str | None) -> str:
     return "/dashboard"
 
 
-POS_INDUSTRIES = frozenset({"retail", "restaurant", "hotel"})
+POS_INDUSTRIES = frozenset({"retail", "restaurant", "hotel", "pharmacy"})
 
 
 def assert_pos_for_industry(claims: dict) -> None:

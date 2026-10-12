@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from uuid import uuid4
+
 import pyotp
 import pytest
 from fastapi import HTTPException
@@ -62,6 +64,7 @@ async def test_hospital_visits_are_industry_gated(client, db_session, seeded):
         json={"name": "Ada Patient"},
     )
     assert denied.status_code == 403, denied.text
+    assert denied.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
 
     await set_tenant_industry(db_session, seed["t1"], "hospital")
     admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
@@ -70,20 +73,16 @@ async def test_hospital_visits_are_industry_gated(client, db_session, seeded):
         headers=admin,
         json={"name": "Ada Patient"},
     )
-    assert created.status_code == 200, created.text
+    assert created.status_code == 403, created.text
+    assert created.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
+    assert "Ada Patient" not in created.text
     visit = await ac.post(
         "/api/v1/hospital/encounters",
         headers=admin,
-        json={"patient_id": created.json()["data"]["id"], "reason": "Fever and cough"},
+        json={"patient_id": str(uuid4()), "reason": "Fever and cough"},
     )
-    assert visit.status_code == 200, visit.text
-    assert visit.json()["data"]["status"] == "open"
-    closed = await ac.post(
-        f"/api/v1/hospital/encounters/{visit.json()['data']['id']}/close",
-        headers=admin,
-    )
-    assert closed.status_code == 200, closed.text
-    assert closed.json()["data"]["status"] == "closed"
+    assert visit.status_code == 403, visit.text
+    assert visit.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
 
 
 @pytest.mark.asyncio
