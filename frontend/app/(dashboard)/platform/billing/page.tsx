@@ -8,6 +8,7 @@ import { getMe } from '../../../../lib/meCache';
 import {
   canAssignSubscription,
   packageCodeFromName,
+  gatewaySaveBody,
   packageCreateBody,
   packageUpdateBody,
   subscriptionAmountLabel,
@@ -83,6 +84,11 @@ export default function PlatformBillingPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [gatewayProvider, setGatewayProvider] = useState('mock');
+  const [gatewayMode, setGatewayMode] = useState('sandbox');
+  const [gatewaySecret, setGatewaySecret] = useState('');
+  const [gatewayHook, setGatewayHook] = useState('');
+  const [gatewayView, setGatewayView] = useState<Record<string, unknown> | null>(null);
 
   async function loadPackages() {
     const res = await api('/platform/billing/plans');
@@ -118,6 +124,18 @@ export default function PlatformBillingPage() {
           await loadPackages();
         } catch (err: unknown) {
           const detail = err instanceof Error ? err.message : 'Could not load packages';
+          if (!cancelled) setError(detail);
+        }
+        try {
+          const status = await api('/platform/billing/status');
+          const gateway = (status?.data?.gateway || {}) as Record<string, unknown>;
+          if (!cancelled) {
+            setGatewayView(gateway);
+            setGatewayProvider(String(gateway.provider || 'mock'));
+            setGatewayMode(String(gateway.mode || 'sandbox'));
+          }
+        } catch (err: unknown) {
+          const detail = err instanceof Error ? err.message : 'Could not load the payment gateway';
           if (!cancelled) setError(detail);
         }
       }
@@ -306,6 +324,70 @@ export default function PlatformBillingPage() {
     return <p className="muted">Loading billing…</p>;
   }
 
+  async function saveGateway(event: FormEvent) {
+    event.preventDefault();
+    const built = gatewaySaveBody({
+      provider: gatewayProvider,
+      mode: gatewayMode,
+      secret: gatewaySecret,
+      webhookSecret: gatewayHook,
+    });
+    if ('error' in built) {
+      setError(built.error);
+      setMessage('');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const saved = await api('/platform/billing/gateway', {
+        method: 'PUT',
+        body: JSON.stringify(built.body),
+      });
+      setGatewayView((saved?.data || {}) as Record<string, unknown>);
+      setGatewaySecret('');
+      setGatewayHook('');
+      setMessage('Gateway saved. Run a connection test before enabling it.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not save the gateway');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function testGateway() {
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const tested = await api('/platform/billing/gateway/test', { method: 'POST' });
+      setGatewayView((tested?.data || {}) as Record<string, unknown>);
+      setMessage(tested?.data?.last_test_ok ? 'Connection test succeeded. No charge was made.' : 'Connection test failed.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not test the gateway');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function setGatewayEnabled(enabled: boolean) {
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const saved = await api(enabled ? '/platform/billing/gateway/enable' : '/platform/billing/gateway/disable', {
+        method: 'POST',
+      });
+      setGatewayView((saved?.data || {}) as Record<string, unknown>);
+      setMessage(enabled ? 'Gateway enabled for checkout.' : 'Gateway disabled.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not update the gateway');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="plat">
       <header className="plat-hero">
@@ -318,6 +400,71 @@ export default function PlatformBillingPage() {
           </p>
         </div>
       </header>
+      {canCreate && (
+        <div className="plat-panel">
+          <h2>Payment gateway</h2>
+          <p>
+            Choose Paystack or Flutterwave for hosted checkout. Sandbox does not charge. Saving a
+            gateway does not mark an invoice paid.
+          </p>
+          <form className="plat-form" onSubmit={saveGateway}>
+            <label>
+              <span>Provider</span>
+              <select
+                aria-label="Billing gateway provider"
+                value={gatewayProvider}
+                onChange={(event) => setGatewayProvider(event.target.value)}
+              >
+                <option value="mock">Sandbox</option>
+                <option value="paystack">Paystack</option>
+                <option value="flutterwave">Flutterwave</option>
+              </select>
+            </label>
+            <label>
+              <span>Mode</span>
+              <select
+                aria-label="Billing gateway mode"
+                value={gatewayMode}
+                onChange={(event) => setGatewayMode(event.target.value)}
+              >
+                <option value="sandbox">Sandbox</option>
+                <option value="live">Live</option>
+              </select>
+            </label>
+            <label>
+              <span>Secret key</span>
+              <input
+                aria-label="Billing gateway secret"
+                type="password"
+                autoComplete="off"
+                value={gatewaySecret}
+                onChange={(event) => setGatewaySecret(event.target.value)}
+              />
+            </label>
+            <label>
+              <span>Webhook secret</span>
+              <input
+                aria-label="Billing gateway webhook secret"
+                type="password"
+                autoComplete="off"
+                value={gatewayHook}
+                onChange={(event) => setGatewayHook(event.target.value)}
+              />
+            </label>
+            <button aria-label="Save billing gateway" className="btn-primary" type="submit" disabled={busy}>
+              Save gateway
+            </button>
+            <button aria-label="Test billing gateway" type="button" disabled={busy} onClick={testGateway}>
+              Test connection
+            </button>
+            <button aria-label="Enable billing gateway" className="btn-ok" type="button" disabled={busy} onClick={() => setGatewayEnabled(true)}>
+              Enable
+            </button>
+          </form>
+          {gatewayView?.webhook_url ? <p>Webhook URL: {String(gatewayView.webhook_url)}</p> : null}
+          {gatewayView?.secret_hint ? <p>Saved secret ends {String(gatewayView.secret_hint)}</p> : null}
+        </div>
+      )}
       {error && (
         <p className="login-error" role="alert">
           {error}

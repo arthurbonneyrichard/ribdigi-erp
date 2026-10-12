@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '../../../../lib/api';
+import { billingGatewayLabel } from '../../../../lib/billingStatus';
 import { formatDate, formatDateTime, formatNumber, type FormatPrefs } from '../../../../lib/format';
 
 type Plan = {
@@ -239,9 +240,11 @@ export default function SubscriptionBillingPage() {
           Agree to renewal
         </button>
         <p role="status">
+          Payment gateway: {billingGatewayLabel(account?.provider?.provider)}. A return from the
+          payment page leaves the invoice unpaid until that gateway confirms a reusable authorization.
           {account?.provider?.live_charges
-            ? 'Returning from the payment page leaves the invoice unpaid until the provider confirms a reusable authorization.'
-            : 'This payment page is local or sandbox. It is not a production charge. Returning from it leaves the invoice unpaid until the provider confirms a reusable authorization.'}
+            ? ''
+            : ' This page is not a production charge.'}
         </p>
         <button aria-label="Start hosted checkout" type="button" disabled={!account?.consent_at || !assigned} onClick={startCheckout}>
           {account?.authorization_present ? 'Update payment method' : 'Add payment method'}

@@ -48,3 +48,10 @@ export function mergePlatformBillingStatus(current: unknown, payload: unknown): 
     gateway: { ...priorGateway, ...probe },
   };
 }
+
+export function billingGatewayLabel(provider: string | null | undefined): string {
+  if (provider === 'paystack') return 'Paystack';
+  if (provider === 'flutterwave') return 'Flutterwave';
+  if (provider === 'mock') return 'Sandbox';
+  return 'Not connected';
+}

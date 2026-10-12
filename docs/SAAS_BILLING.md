@@ -38,4 +38,24 @@ Paystack must support:
 
 The mock webhook is `POST /api/v1/billing/webhooks/mock` with header `x-ribdigi-billing-signature` (HMAC-SHA256 using `BILLING_WEBHOOK_SECRET`).
 
-Until `PAYSTACK_SECRET_KEY` is set, live recurring billing does not run.
+Until `PAYSTACK_SECRET_KEY` is set, a Paystack charge does not run.
+
+## Live Flutterwave (not enabled here)
+
+Set these only in the server environment, or save them from Billing as the software owner. Do not commit them.
+
+- `BILLING_PROVIDER=flutterwave`
+- `FLUTTERWAVE_SECRET_KEY` — secret key, server only. Sandbox keys start with `FLWSECK_TEST-`. Live keys start with `FLWSECK-`.
+- `FLUTTERWAVE_WEBHOOK_HASH` — the webhook secret hash configured in the Flutterwave dashboard
+- `FRONTEND_URL` — used as the hosted-checkout return URL
+
+Flutterwave must support:
+
+- Hosted checkout via `POST /v3/payments`
+- A reusable card token for `POST /v3/tokenized-charges`
+- Webhook `POST /api/v1/billing/webhooks/flutterwave` with header `verif-hash` (the stored secret) or `flutterwave-signature` (HMAC-SHA256 of the raw body)
+- Amounts in major units. Ribdigi converts them to minor units before matching an invoice.
+
+The API host is locked to `https://api.flutterwave.com`. A signed `charge.completed` with status `successful` is the only Flutterwave event that can confirm a payment method or a matching invoice. A browser return does not mark an invoice paid.
+
+Until `FLUTTERWAVE_SECRET_KEY` is set, a Flutterwave charge does not run.

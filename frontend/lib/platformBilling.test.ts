@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   canAssignSubscription,
   packageCodeFromName,
+  gatewaySaveBody,
   packageCreateBody,
   packageUpdateBody,
   subscriptionAmountLabel,
@@ -94,6 +95,35 @@ test('edit package sends the changed price without a new code', () => {
     { name: 'X', packageCode: 'trial', interval: 'week', amount: '0', currency: 'EUR' },
     null,
   ), true);
+});
+
+test('gateway save accepts Paystack or Flutterwave and omits a blank secret', () => {
+  const flutterwave = gatewaySaveBody({
+    provider: 'flutterwave',
+    mode: 'sandbox',
+    secret: ' FLWSECK_TEST-localkey ',
+    webhookSecret: '',
+  });
+  assert.equal('body' in flutterwave ? flutterwave.body.provider : '', 'flutterwave');
+  assert.equal('body' in flutterwave ? flutterwave.body.secret : '', 'FLWSECK_TEST-localkey');
+  assert.equal('body' in flutterwave ? 'webhook_secret' in flutterwave.body : true, false);
+  assert.equal(
+    'error' in gatewaySaveBody({ provider: 'stripe', mode: 'sandbox', secret: '', webhookSecret: '' }),
+    true,
+  );
+  assert.equal(
+    'error' in gatewaySaveBody({
+      provider: 'flutterwave',
+      mode: 'live',
+      secret: 'FLWSECK_TEST-localkey',
+      webhookSecret: '',
+    }),
+    true,
+  );
+  assert.equal(
+    'error' in gatewaySaveBody({ provider: 'mock', mode: 'live', secret: '', webhookSecret: '' }),
+    true,
+  );
 });
 
 test('only package write can assign a plan', () => {

@@ -115,6 +115,43 @@ export function packageUpdateBody(
   };
 }
 
+export function gatewaySaveBody(draft: {
+  provider: string;
+  mode: string;
+  secret: string;
+  webhookSecret: string;
+}): { body: Record<string, string> } | { error: string } {
+  const provider = draft.provider.trim().toLowerCase();
+  const mode = draft.mode.trim().toLowerCase();
+  if (provider !== 'mock' && provider !== 'paystack' && provider !== 'flutterwave') {
+    return { error: 'Choose Sandbox, Paystack, or Flutterwave' };
+  }
+  if (mode !== 'sandbox' && mode !== 'live') return { error: 'Choose sandbox or live' };
+  if (provider === 'mock' && mode === 'live') return { error: 'Sandbox cannot take live payments' };
+  const body: Record<string, string> = { provider, mode };
+  const secret = draft.secret.trim();
+  const hook = draft.webhookSecret.trim();
+  if (secret) body.secret = secret;
+  if (hook) body.webhook_secret = hook;
+  if (provider === 'paystack' && secret) {
+    if (mode === 'sandbox' && !secret.startsWith('sk_test_')) {
+      return { error: 'Paystack sandbox needs a test secret key' };
+    }
+    if (mode === 'live' && !secret.startsWith('sk_live_')) {
+      return { error: 'Paystack live needs a live secret key' };
+    }
+  }
+  if (provider === 'flutterwave' && secret) {
+    if (mode === 'sandbox' && !secret.startsWith('FLWSECK_TEST-')) {
+      return { error: 'Flutterwave sandbox needs a test secret key' };
+    }
+    if (mode === 'live' && (secret.startsWith('FLWSECK_TEST-') || !secret.startsWith('FLWSECK-'))) {
+      return { error: 'Flutterwave live needs a live secret key' };
+    }
+  }
+  return { body };
+}
+
 export function canAssignSubscription(
   permissions: Record<string, string[]> | null | undefined,
 ): boolean {
