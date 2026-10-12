@@ -16,7 +16,9 @@ import {
   HOTEL_CASHIER_NAV_MODULES,
   HOTEL_OMIT_NAV_GROUP_IDS,
   navAllowlistFromPermissions,
+  navItemVisibleForRole,
   PEOPLE_NAV_ITEMS,
+  roleHomePath,
   tenantIsMultiStore,
   unauthorizedNavRedirect,
   type NavGroup,
@@ -106,15 +108,31 @@ test('hideStoreUx covers hotel and single-store, keeps multi-store retail', () =
   assert.equal(hideStoreUx({ industry: 'mart', max_stores: 10 }), false);
 });
 
-test('cashier nav allowlist is dashboard, POS, restaurant, and support', () => {
-  assert.deepEqual([...CASHIER_NAV_MODULES].sort(), ['dashboard', 'pos', 'restaurant', 'support']);
+test('cashier nav allowlist is POS and Help & Support', () => {
+  assert.deepEqual([...CASHIER_NAV_MODULES].sort(), ['pos', 'support']);
+  assert.equal(CASHIER_NAV_MODULES.includes('dashboard'), false);
   assert.equal(CASHIER_NAV_MODULES.includes('inventory'), false);
   assert.equal(CASHIER_NAV_MODULES.includes('sales'), false);
   assert.equal(CASHIER_NAV_MODULES.includes('users'), false);
   assert.equal(CASHIER_NAV_MODULES.includes('purchasing'), false);
-  assert.equal(unauthorizedNavRedirect('/restaurant', 'cashier', CASHIER_NAV_MODULES), null);
-  assert.equal(unauthorizedNavRedirect('/restaurant?tab=kitchen', 'cashier', CASHIER_NAV_MODULES), null);
+  assert.equal(unauthorizedNavRedirect('/pos', 'cashier', CASHIER_NAV_MODULES), null);
   assert.equal(unauthorizedNavRedirect('/support', 'cashier', CASHIER_NAV_MODULES), null);
+  assert.equal(unauthorizedNavRedirect('/dashboard', 'cashier', CASHIER_NAV_MODULES), '/pos');
+  assert.equal(unauthorizedNavRedirect('/restaurant', 'cashier', CASHIER_NAV_MODULES), '/pos');
+  assert.equal(unauthorizedNavRedirect('/restaurant?tab=kitchen', 'cashier', CASHIER_NAV_MODULES), '/pos');
+  assert.equal(unauthorizedNavRedirect('/gift-cards', 'cashier', CASHIER_NAV_MODULES), '/pos');
+  assert.equal(roleHomePath('cashier'), '/pos');
+  assert.equal(roleHomePath('cashier', 'restaurant'), '/pos');
+  assert.equal(roleHomePath('cashier', 'retail'), '/pos');
+  assert.equal(roleHomePath('store_manager', 'restaurant'), '/restaurant');
+  assert.equal(roleHomePath('company_admin'), '/dashboard');
+  assert.equal(navItemVisibleForRole('cashier', '/gift-cards'), false);
+  assert.equal(navItemVisibleForRole('cashier', '/pos'), true);
+  assert.equal(navItemVisibleForRole('cashier', '/support'), true);
+  assert.equal(navItemVisibleForRole('company_admin', '/gift-cards'), true);
+  assert.equal(navItemVisibleForRole('store_manager', '/gift-cards'), true);
+  assert.equal(unauthorizedNavRedirect('/gift-cards', 'store_manager', ['dashboard', 'pos']), null);
+  assert.equal(unauthorizedNavRedirect('/gift-cards', 'company_admin', '*'), null);
 });
 
 test('roles that can use restaurant in the API keep it on the sidebar allowlist', () => {
@@ -158,7 +176,7 @@ test('cashier forbidden routes redirect to POS, not a blank page', () => {
   assert.equal(unauthorizedNavRedirect('/customers', 'cashier', CASHIER_NAV_MODULES), '/pos');
   assert.equal(unauthorizedNavRedirect('/credit?kind=payable', 'cashier', CASHIER_NAV_MODULES), '/pos');
   assert.equal(unauthorizedNavRedirect('/pos', 'cashier', CASHIER_NAV_MODULES), null);
-  assert.equal(unauthorizedNavRedirect('/dashboard', 'cashier', CASHIER_NAV_MODULES), null);
+  assert.equal(unauthorizedNavRedirect('/dashboard', 'cashier', CASHIER_NAV_MODULES), '/pos');
 });
 
 test('route guard does not lock tenant admins or hotel cashier POS', () => {

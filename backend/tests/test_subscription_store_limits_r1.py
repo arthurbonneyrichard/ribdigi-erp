@@ -78,7 +78,7 @@ def test_stores_entitlement_ui_wired():
         line for line in nav.splitlines() if "export const CASHIER_NAV_MODULES: string[]" in line
     )
     assert cashier_line == (
-        "export const CASHIER_NAV_MODULES: string[] = ['dashboard', 'pos', 'restaurant', 'support'];"
+        "export const CASHIER_NAV_MODULES: string[] = ['pos', 'support'];"
     )
     assert "'reports'" not in cashier_line
     assert "'company'" not in cashier_line

@@ -406,8 +406,15 @@ export function groupedTenantNav(
   return [...hotelGroups, ...pointed];
 }
 
-/** Cashier sidebar: dashboard, POS, restaurant floor, and Help & Support. */
-export const CASHIER_NAV_MODULES: string[] = ['dashboard', 'pos', 'restaurant', 'support'];
+/** Cashier sidebar: POS and Help & Support only. */
+export const CASHIER_NAV_MODULES: string[] = ['pos', 'support'];
+
+/** Gift cards share the POS module. Cashiers stay on the till; other roles keep the page. */
+export function navItemVisibleForRole(role: string, href: string): boolean {
+  if (role !== 'cashier') return true;
+  const path = (href.split('?')[0] || '').split('#')[0];
+  return path !== '/gift-cards' && !path.startsWith('/gift-cards/');
+}
 
 export const HOTEL_CASHIER_NAV_MODULES: string[] = [
   'hotel',
@@ -474,17 +481,14 @@ export function navModuleForPath(pathname: string): string | null {
 }
 
 export function roleHomePath(role: string, industry?: string | null): string {
+  if (role === 'cashier') return '/pos';
   const ind = normalizeIndustry(industry);
   if (
     ind === 'restaurant' &&
-    (role === 'cashier' ||
-      role === 'store_manager' ||
-      role === 'sales_officer' ||
-      role === 'inventory_officer')
+    (role === 'store_manager' || role === 'sales_officer' || role === 'inventory_officer')
   ) {
     return '/restaurant';
   }
-  if (role === 'cashier') return '/pos';
   if (role.startsWith('hotel_')) return '/hotel';
   if (role === 'super_admin' || role.startsWith('platform_')) return '/platform';
   return '/dashboard';
@@ -518,6 +522,9 @@ export function unauthorizedNavRedirect(
 ): string | null {
   if (!role || allowed === '*') return null;
   const path = navPathname(pathname);
+  if (role === 'cashier' && (path === '/gift-cards' || path.startsWith('/gift-cards/'))) {
+    return '/pos';
+  }
   const mod = navModuleForPath(path);
   if (!mod) return null;
   if (allowed.includes(mod)) return null;

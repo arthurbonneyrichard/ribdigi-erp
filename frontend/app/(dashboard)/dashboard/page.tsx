@@ -17,6 +17,7 @@ import {
   type IndustryDashboardFeature,
 } from '../../../lib/industryDashboard';
 import { WholesaleDeskCards } from '../../../components/IndustryDashboardViews';
+import { DailyBars, TrendLine } from '../../../components/RetailDashboardInfographic';
 import { formatDate } from '../../../lib/format';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import { useStoreContext } from '../../../lib/storeContext';
@@ -181,70 +182,6 @@ function PanelIcon({ name }: { name: string }) {
   );
 }
 
-function DailyBars({
-  data,
-  field,
-  color,
-}: {
-  data: { label: string; sales: number; profit: number }[];
-  field: 'sales' | 'profit';
-  color: string;
-}) {
-  const n = data.length || 1;
-  const max = Math.max(1, ...data.map((x) => x[field] || 0));
-  const slot = 300 / n;
-  const bw = Math.min(26, slot * 0.55);
-  return (
-    <svg viewBox="0 0 300 172" width="100%" height="172" role="img" aria-label={`Daily ${field}`}>
-      <line x1="8" y1="138" x2="292" y2="138" stroke="#D4E5C4" />
-      {data.map((t, i) => {
-        const v = t[field] || 0;
-        const h = Math.max(0, (v / max) * 112);
-        const x = i * slot + (slot - bw) / 2;
-        const y = 138 - h;
-        return (
-          <g key={t.label + i}>
-            <rect x={x} y={y} width={bw} height={h} rx={5} fill={color} />
-            <text x={x + bw / 2} y={y - 5} textAnchor="middle" className="vbar-val">
-              {v ? new Intl.NumberFormat().format(Math.round(v)) : ''}
-            </text>
-            <text x={x + bw / 2} y={156} textAnchor="middle" className="vbar-label">
-              {t.label}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
-function TrendLine({
-  data,
-  color,
-}: {
-  data: { label: string; sales: number }[];
-  color: string;
-}) {
-  const max = Math.max(1, ...data.map((x) => x.sales || 0));
-  const pts = data.map((t, i) => {
-    const x = data.length <= 1 ? 150 : (i / (data.length - 1)) * 284 + 8;
-    const y = 138 - ((t.sales || 0) / max) * 112;
-    return `${x},${y}`;
-  });
-  return (
-    <svg viewBox="0 0 300 172" width="100%" height="172" role="img" aria-label="30-day sales">
-      <line x1="8" y1="138" x2="292" y2="138" stroke="#D4E5C4" />
-      <polyline fill="none" stroke={color} strokeWidth="2.5" points={pts.join(' ')} />
-      <text x="8" y="156" className="vbar-label">
-        {data[0]?.label || ''}
-      </text>
-      <text x="292" y="156" textAnchor="end" className="vbar-label">
-        {data[data.length - 1]?.label || ''}
-      </text>
-    </svg>
-  );
-}
-
 function MonthlyBars({ data }: { data: { label: string; total: number }[] }) {
   const n = data.length || 1;
   const max = Math.max(1, ...data.map((x) => x.total || 0));
@@ -342,6 +279,10 @@ export default function Page() {
         setIndustryRaw(raw);
         const ind = normalizeIndustry(me.data?.industry);
         setIndustry(ind);
+        if (role === 'cashier') {
+          router.replace('/pos');
+          return;
+        }
         if (softwareOwnerDashboardPath(role, raw)) {
           setHotelHome(false);
           return;
@@ -366,7 +307,7 @@ export default function Page() {
   }, [router]);
 
   useEffect(() => {
-    if (hotelHome) return;
+    if (!meReady || accountRole === 'cashier' || hotelHome) return;
     let cancelled = false;
     setNow(new Date());
     setDashStatus('loading');
@@ -399,7 +340,7 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [headerStoreId, dashTick, hotelHome]);
+  }, [headerStoreId, dashTick, hotelHome, meReady, accountRole]);
 
   useEffect(() => {
     getMe()
@@ -430,6 +371,10 @@ export default function Page() {
           setIndustry(ind);
           setD({});
           setDashStatus('loading');
+          if (role === 'cashier') {
+            router.replace('/pos');
+            return;
+          }
           if (softwareOwnerDashboardPath(role, raw)) {
             setHotelHome(false);
             return;
@@ -575,6 +520,14 @@ export default function Page() {
     return (
       <p className="muted" role="status">
         Loading dashboard…
+      </p>
+    );
+  }
+
+  if (accountRole === 'cashier') {
+    return (
+      <p className="muted" role="status">
+        Opening POS…
       </p>
     );
   }

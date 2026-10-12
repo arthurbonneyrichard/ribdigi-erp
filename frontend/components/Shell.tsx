@@ -34,6 +34,7 @@ import {
   HOTEL_NAV_ITEMS,
   isHotelIndustry,
   navAllowlistFromPermissions,
+  navItemVisibleForRole,
   PEOPLE_NAV_ITEMS,
   platformNavItemsForRole,
   unauthorizedNavRedirect,
@@ -626,6 +627,7 @@ function navItemsForRole(
     ) {
       return false;
     }
+    if (!navItemVisibleForRole(role, href)) return false;
     return canReadModule(permissions, permModule);
   });
 }

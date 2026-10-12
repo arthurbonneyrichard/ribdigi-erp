@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api, setAuthTokens, unreachableApiMessage } from '../lib/api';
-import { invalidateMeCache } from '../lib/meCache';
+import { getAccessTokenSync } from '../lib/authStorage';
+import { getMe, invalidateMeCache } from '../lib/meCache';
+import { roleHomePath } from '../lib/tenantNav';
 import { invalidatePrefetchCache } from '../lib/prefetchCache';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -43,6 +45,20 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const router = useRouter();
 
+  useEffect(() => {
+    if (!getAccessTokenSync()) return;
+    let cancelled = false;
+    getMe()
+      .then((me) => {
+        if (cancelled) return;
+        if (String(me.data?.role || '') === 'cashier') router.replace('/pos');
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
   async function finishLogin(data: any) {
     invalidateMeCache();
     invalidatePrefetchCache();
@@ -74,7 +90,7 @@ export default function Login() {
     ) {
       router.push('/platform');
     } else {
-      router.push('/dashboard');
+      router.push(roleHomePath(String(data.user?.role || ''), data.user?.industry));
     }
   }
 
