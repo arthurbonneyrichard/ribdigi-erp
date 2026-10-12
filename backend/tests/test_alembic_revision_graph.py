@@ -66,14 +66,18 @@ def test_single_head_linear_chain():
             merges.append((name, rev, down))
         referenced.update(_parents(down))
     heads = ids - referenced
-    # One head. The only join is 20261008_0136, which merges the offline-grant
-    # head 20261003_0134 with the restaurant/billing head 20261008_0135.
+    # One head, 20261011_0138, after the support-ticket and cashier-presence
+    # revisions. The only join remains 20261008_0136, which merges the
+    # offline-grant head 20261003_0134 with the restaurant/billing head
+    # 20261008_0135.
     assert len(heads) == 1, heads
+    assert heads == {"20261011_0138"}
     assert len(merges) == 1, merges
     _merge_name, merge_rev, merge_parents = merges[0]
-    assert heads == {merge_rev}
     assert merge_rev == "20261008_0136"
     assert set(merge_parents) == {"20261003_0134", "20261008_0135"}
+    assert any(rev == "20261011_0137" and down == "20261008_0136" for _n, rev, down in rows)
+    assert any(rev == "20261011_0138" and down == "20261011_0137" for _n, rev, down in rows)
     children: dict[str | None, list[str]] = defaultdict(list)
     for _name, rev, down in rows:
         for parent in _parents(down):

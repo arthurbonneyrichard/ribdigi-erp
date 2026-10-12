@@ -109,7 +109,9 @@ def test_dokploy_compose_builds_from_this_checkout_and_migrate_does_not_loop():
     migrate = text.split("  migrate:", 1)[1].split("  celery_worker:", 1)[0]
     assert 'restart: "no"' in migrate
     assert "alembic upgrade head" not in migrate
-    assert 'test "$$HEADS" = "20261008_0136 (head)"' in migrate
+    assert 'test "$$HEADS" = "20261011_0138 (head)"' in migrate
+    assert "20261008-alembic-single-head-0136" in migrate
+    assert 'test "$$BUILD_ID" != "20261008-alembic-single-head-0136"' in migrate
     backend = text.split("\n  backend:\n", 1)[1].split("\n  migrate:\n", 1)[0]
     assert "\n      migrate:\n" in backend
     assert "service_completed_successfully" in backend

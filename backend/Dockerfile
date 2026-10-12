@@ -58,7 +58,7 @@ RUN MIG=alembic/versions/20260917_0106_transaction_client_request_id.py \
 RUN set -eu; \
     DATABASE_URL=postgresql+asyncpg://verify:verify@127.0.0.1:9/ribdigi_verify_build_graph \
     python -m alembic heads > /tmp/alembic-heads.txt; \
-    printf '%s\n' '20261008_0136 (head)' > /tmp/alembic-heads.expected; \
+    printf '%s\n' '20261011_0138 (head)' > /tmp/alembic-heads.expected; \
     tr -d '\r\n' < /app/.build-id > /tmp/build-id-one-line; \
     if ! cmp -s /tmp/alembic-heads.expected /tmp/alembic-heads.txt \
         || ! grep -Eq '^[0-9a-f]{12}$' /tmp/build-id-one-line \
