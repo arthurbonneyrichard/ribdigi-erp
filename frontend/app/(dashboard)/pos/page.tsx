@@ -431,7 +431,6 @@ export default function Page() {
   const [splitOtherMethod, setSplitOtherMethod] = useState<'card' | 'mobile_money' | 'bank_transfer'>('card');
   const [amountPaidNow, setAmountPaidNow] = useState('');
   const [depositMethod, setDepositMethod] = useState('cash');
-  const [paymentReference, setPaymentReference] = useState('');
   const [receiptTo, setReceiptTo] = useState('');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerId, setCustomerId] = useState('');
@@ -493,8 +492,6 @@ export default function Page() {
   }, []);
   const offlineValid = isOfflineAuthValid(offlineStatus?.envelope || null);
   const offlinePerms = offlineStatus?.envelope?.permissions || [];
-  const [newCustName, setNewCustName] = useState('');
-  const [custBusy, setCustBusy] = useState(false);
   const checkoutReqRef = useRef<string | null>(null);
   const cashMoveLock = useRef(false);
   const browseGen = useRef(0);
@@ -550,6 +547,37 @@ export default function Page() {
     paymentMethod === 'credit' && !splitTender
       ? Math.max(0, Math.round((cartTotal - creditPaidNow) * 100) / 100)
       : 0;
+  const cashTenderAmount = Math.round((Number(cashTender) || 0) * 100) / 100;
+  const otherTenderAmount = Math.round((Number(cardTender) || 0) * 100) / 100;
+  const splitPaid = Math.round((cashTenderAmount + otherTenderAmount) * 100) / 100;
+  const splitBalanced = Math.abs(splitPaid - cartTotal) <= 0.01;
+  const splitOtherLabel =
+    splitOtherMethod === 'mobile_money'
+      ? 'Mobile Money'
+      : splitOtherMethod === 'bank_transfer'
+        ? 'Bank transfer'
+        : 'Card';
+  const splitError = !splitTender
+    ? ''
+    : cashTenderAmount <= 0 || otherTenderAmount <= 0
+      ? `Enter a cash amount and a ${splitOtherLabel} amount.`
+      : !splitBalanced
+        ? `Cash and ${splitOtherLabel} must add up to the amount due.`
+        : '';
+
+  useEffect(() => {
+    if (!splitTender) return;
+    const cash = Math.round((Number(cashTender) || 0) * 100) / 100;
+    const nextOther = Math.max(0, Math.round((cartTotal - cash) * 100) / 100);
+    setCardTender((prev) => {
+      const current = Math.round((Number(prev) || 0) * 100) / 100;
+      if (Math.abs(current - nextOther) <= 0.001) return prev;
+      return nextOther === 0 ? '0' : String(nextOther);
+    });
+    // Rebalance the other tender when the sale total changes. Typing either
+    // amount already fills the remainder in the change handlers.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartTotal, splitTender]);
 
   useEffect(() => {
     if (!canCreditSale && paymentMethod === 'credit') setPaymentMethod('cash');
@@ -952,34 +980,6 @@ export default function Page() {
     setCustomerName('');
   }
 
-  async function createPosCustomer() {
-    const name = newCustName.trim();
-    if (!name) {
-      setError('Enter a customer name');
-      return;
-    }
-    if (custBusy) return;
-    setCustBusy(true);
-    setError('');
-    try {
-      const r = await api('/customers', {
-        method: 'POST',
-        body: JSON.stringify({ name, profile_type: 'registered', status: 'active' }),
-      });
-      const created = r.data;
-      if (!created?.id) throw new Error(r.message || 'Could not create customer');
-      setCustomers((prev) => [created, ...prev.filter((c) => c.id !== created.id)]);
-      setCustomerId(created.id);
-      setCustomerName(created.name || name);
-      setNewCustName('');
-      setMessage(`Customer ${created.name || name} saved`);
-    } catch (err: any) {
-      setError(err.message || 'Could not create customer');
-    } finally {
-      setCustBusy(false);
-    }
-  }
-
   async function recordCashMove(kind: 'cash_in' | 'cash_out') {
     if (!session || cashMoveLock.current) return;
     setError('');
@@ -1289,67 +1289,35 @@ export default function Page() {
       customer_name: name.trim() || null,
       items,
     };
-    let payments: { payment_method: string; amount: number; reference?: string | null }[] | null =
-      null;
-    const tenderRef = paymentReference.trim() || null;
+    let payments: { payment_method: string; amount: number }[] | null = null;
     if (splitTender) {
-      payments = [
-        { payment_method: 'cash', amount: Number(cashTender) || 0, reference: null },
-        { payment_method: splitOtherMethod, amount: Number(cardTender) || 0, reference: tenderRef },
-      ].filter((p) => p.amount > 0);
-      if (payments.length < 2) {
-        setError('Split tender needs cash and card amounts');
+      if (splitError) {
+        setError(splitError);
         return;
       }
+      payments = [
+        { payment_method: 'cash', amount: cashTenderAmount },
+        { payment_method: splitOtherMethod, amount: otherTenderAmount },
+      ];
       body.payments = payments;
       body.payment_method = 'split';
-    } else if (!splitTender && paymentMethod === 'credit') {
+    } else if (paymentMethod === 'credit') {
       const paidNow = Math.round((Number(amountPaidNow) || 0) * 100) / 100;
       const remaining = Math.max(0, Math.round((cartTotal - paidNow) * 100) / 100);
       if (paidNow > 0 && remaining > 0) {
         payments = [
-          { payment_method: depositMethod, amount: paidNow, reference: tenderRef },
-          { payment_method: 'credit', amount: remaining, reference: null },
+          { payment_method: depositMethod, amount: paidNow },
+          { payment_method: 'credit', amount: remaining },
         ];
         body.payments = payments;
         body.payment_method = 'split';
       } else if (paidNow > 0 && remaining <= 0) {
         body.payment_method = depositMethod;
-        if (tenderRef) {
-          payments = [{ payment_method: depositMethod, amount: cartTotal, reference: tenderRef }];
-          body.payments = payments;
-        }
-      } else if (tenderRef) {
-        payments = [{ payment_method: 'credit', amount: cartTotal, reference: tenderRef }];
-        body.payments = payments;
-        body.payment_method = 'credit';
       } else {
         body.payment_method = 'credit';
       }
-    } else if (tenderRef) {
-      // PosPaymentLine.reference only applies on payments[]; wrap single tender.
-      payments = [
-        {
-          payment_method: paymentMethod,
-          amount: cartTotal,
-          reference: tenderRef,
-        },
-      ];
-      body.payments = payments;
-      body.payment_method = paymentMethod;
     } else {
       body.payment_method = paymentMethod;
-    }
-    if (paymentMethod === 'gift_card' && !tenderRef) {
-      setError('Enter the gift card code in payment reference');
-      return;
-    }
-    if (
-      (paymentMethod === 'mobile_money' || (splitTender && splitOtherMethod === 'mobile_money')) &&
-      !tenderRef
-    ) {
-      setError('Enter the Mobile Money reference in payment reference');
-      return;
     }
     if (paymentMethod === 'loyalty' && !customerId) {
       setError('Select a customer before paying with loyalty points');
@@ -1441,7 +1409,6 @@ export default function Page() {
         clearCart();
         clearCustomer();
         setCreditOverrideReason('');
-        setPaymentReference('');
         setSplitTender(false);
         setAllocationOverride(false);
         setLastSale({ id: queued.id, reference: queued.local_receipt_number, offline: queued });
@@ -1474,8 +1441,9 @@ export default function Page() {
           typeof detail.sale_total === 'number'
         ) {
           body.payments = scalePayments(payments, detail.sale_total);
-          setCashTender(String((body.payments as any[]).find((p) => p.payment_method === 'cash')?.amount ?? ''));
-          setCardTender(String((body.payments as any[]).find((p) => p.payment_method === 'card')?.amount ?? ''));
+          const scaled = body.payments as Array<{ payment_method: string; amount: number }>;
+          setCashTender(String(scaled.find((p) => p.payment_method === 'cash')?.amount ?? ''));
+          setCardTender(String(scaled.find((p) => p.payment_method !== 'cash')?.amount ?? ''));
           r = await api('/pos/sales', {
             method: 'POST',
             body: JSON.stringify(body),
@@ -1514,7 +1482,6 @@ export default function Page() {
       clearCart();
       clearCustomer();
       setSplitTender(false);
-      setPaymentReference('');
       setAmountPaidNow('');
       setDepositMethod('cash');
       setLastSale({
@@ -2244,32 +2211,18 @@ export default function Page() {
 
             <div className="tpos-cart-dock">
               <div className="tpos-cart-lines">
-                <div className="tpos-name-ref">
-                  <label className="tpos-field">
-                    <span>Customer name</span>
-                    <input
-                      className="tpos-input"
-                      aria-label="POS customer name"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      placeholder="Walk-in if none selected"
-                      maxLength={180}
-                      autoComplete="off"
-                    />
-                  </label>
-                  <label className="tpos-field">
-                    <span>Payment reference</span>
-                    <input
-                      className="tpos-input"
-                      value={paymentReference}
-                      onChange={(e) => setPaymentReference(e.target.value)}
-                      placeholder="MoMo, card, or gift card reference"
-                      aria-label="POS payment reference"
-                      maxLength={100}
-                      autoComplete="off"
-                    />
-                  </label>
-                </div>
+                <label className="tpos-field">
+                  <span>Customer name</span>
+                  <input
+                    className="tpos-input"
+                    aria-label="POS customer name"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Walk-in if none selected"
+                    maxLength={180}
+                    autoComplete="off"
+                  />
+                </label>
                 <label className="tpos-split-toggle">
                   <input
                     type="checkbox"
@@ -2279,29 +2232,115 @@ export default function Page() {
                   />
                   <span>Split payment</span>
                 </label>
-                <label className="tpos-pay-select">
-                  <span>Payment</span>
-                  <select
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    aria-label="POS payment method"
-                  >
-                    <option value="cash">Cash</option>
-                    <option value="card">Card</option>
-                    <option value="mobile_money">Mobile Money (MoMo)</option>
-                    <option value="bank_transfer">Bank transfer</option>
-                    {online ? <option value="wallet">Wallet</option> : null}
-                    {online ? <option value="gift_card">Gift card</option> : null}
-                    {online ? <option value="loyalty">Loyalty points</option> : null}
-                    {canCreditSale && (online || offlinePerms.includes('credit_sale')) ? (
-                      <option value="credit">Credit</option>
-                    ) : null}
-                  </select>
-                </label>
+                {splitTender ? (
+                  <div className="tpos-split-panel">
+                    <p className="tpos-split-due">
+                      <span>Amount due</span>
+                      <strong>{money(cartTotal)}</strong>
+                    </p>
+                    <p className="tpos-split-hint">
+                      Cash plus one other tender. Editing either amount fills the rest. Mobile Money is
+                      recorded only and does not charge a phone.
+                    </p>
+                    <div className="tpos-split-fields">
+                      <label className="tpos-field">
+                        <span>Cash amount</span>
+                        <input
+                          className="tpos-input tpos-cash-tender"
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={cashTender}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            const cash = Number(raw);
+                            setCashTender(raw);
+                            if (!Number.isFinite(cash)) return;
+                            setCardTender(
+                              String(Math.max(0, Math.round((cartTotal - cash) * 100) / 100))
+                            );
+                          }}
+                          inputMode="decimal"
+                          aria-label="POS cash tender"
+                        />
+                      </label>
+                      <label className="tpos-field">
+                        <span>Other tender</span>
+                        <select
+                          value={splitOtherMethod}
+                          onChange={(e) =>
+                            setSplitOtherMethod(e.target.value as 'card' | 'mobile_money' | 'bank_transfer')
+                          }
+                          aria-label="POS split second method"
+                        >
+                          <option value="card">Card</option>
+                          <option value="mobile_money">Mobile Money (MoMo)</option>
+                          <option value="bank_transfer">Bank transfer</option>
+                        </select>
+                      </label>
+                      <label className="tpos-field tpos-split-other-amount">
+                        <span>{splitOtherLabel} amount</span>
+                        <input
+                          className="tpos-input tpos-card-tender"
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={cardTender}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            const other = Number(raw);
+                            setCardTender(raw);
+                            if (!Number.isFinite(other)) return;
+                            setCashTender(
+                              String(Math.max(0, Math.round((cartTotal - other) * 100) / 100))
+                            );
+                          }}
+                          inputMode="decimal"
+                          aria-label="POS card tender"
+                        />
+                      </label>
+                    </div>
+                    {splitError ? (
+                      <p className="tpos-split-error" role="alert">
+                        {splitError}
+                      </p>
+                    ) : (
+                      <p className="tpos-split-hint">
+                        Cash {money(cashTenderAmount)} + {splitOtherLabel} {money(otherTenderAmount)} ={' '}
+                        {money(splitPaid)}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <label className="tpos-pay-select">
+                    <span>Payment</span>
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      aria-label="POS payment method"
+                    >
+                      <option value="cash">Cash</option>
+                      <option value="card">Card</option>
+                      <option value="mobile_money">Mobile Money (MoMo)</option>
+                      <option value="bank_transfer">Bank transfer</option>
+                      {online ? <option value="wallet">Wallet</option> : null}
+                      {online ? <option value="gift_card">Gift card</option> : null}
+                      {online ? <option value="loyalty">Loyalty points</option> : null}
+                      {canCreditSale && (online || offlinePerms.includes('credit_sale')) ? (
+                        <option value="credit">Credit</option>
+                      ) : null}
+                    </select>
+                  </label>
+                )}
+                {!splitTender && paymentMethod === 'mobile_money' ? (
+                  <p className="tpos-split-hint">
+                    Mobile Money is recorded only. It does not charge a phone.
+                  </p>
+                ) : null}
                 {!online ? (
                   <p className="tpos-split-hint">
                     Offline payments are recorded only. Card, Mobile Money and bank transfers must already be
-                    confirmed on the terminal or phone; enter the reference.
+                    confirmed on the terminal or phone.
                   </p>
                 ) : null}
                 {!online && offlineStatus?.envelope?.can_override_allocation ? (
@@ -2314,58 +2353,6 @@ export default function Page() {
                     />
                     <span>Manager: allow selling beyond this device’s allocation (reviewed at sync)</span>
                   </label>
-                ) : null}
-                {splitTender ? (
-                  <div className="tpos-split-fields">
-                    <label className="tpos-field">
-                      <span>Cash</span>
-                      <input
-                        className="tpos-input tpos-cash-tender"
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={cashTender}
-                        onChange={(e) => {
-                          const cash = Number(e.target.value) || 0;
-                          setCashTender(e.target.value);
-                          setCardTender(String(Math.max(0, Math.round((cartTotal - cash) * 100) / 100)));
-                        }}
-                        inputMode="decimal"
-                        aria-label="POS cash tender"
-                      />
-                    </label>
-                    <label className="tpos-field">
-                      <span>{splitOtherMethod === 'mobile_money' ? 'Mobile Money' : 'Card'}</span>
-                      <select
-                        value={splitOtherMethod}
-                        onChange={(e) =>
-                          setSplitOtherMethod(e.target.value as 'card' | 'mobile_money' | 'bank_transfer')
-                        }
-                        aria-label="POS split second method"
-                      >
-                        <option value="card">Card</option>
-                        <option value="mobile_money">Mobile Money (MoMo)</option>
-                        <option value="bank_transfer">Bank transfer</option>
-                      </select>
-                    </label>
-                    <label className="tpos-field">
-                      <span>Amount</span>
-                      <input
-                        className="tpos-input tpos-card-tender"
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={cardTender}
-                        onChange={(e) => {
-                          const card = Number(e.target.value) || 0;
-                          setCardTender(e.target.value);
-                          setCashTender(String(Math.max(0, Math.round((cartTotal - card) * 100) / 100)));
-                        }}
-                        inputMode="decimal"
-                        aria-label="POS card tender"
-                      />
-                    </label>
-                  </div>
                 ) : null}
                 {!splitTender && paymentMethod === 'credit' ? (
                   <>
@@ -2400,11 +2387,6 @@ export default function Page() {
                       </label>
                     ) : null}
                   </>
-                ) : splitTender ? (
-                  <p className="tpos-split-hint">
-                    Split {money((Number(cashTender) || 0) + (Number(cardTender) || 0))} · due{' '}
-                    {money(cartTotal)}
-                  </p>
                 ) : null}
                 {paymentMethod === 'credit' && !splitTender ? (
                   <label className="tpos-field">
@@ -2420,27 +2402,6 @@ export default function Page() {
                     />
                   </label>
                 ) : null}
-                <label className="tpos-field tpos-new-customer">
-                  <span>New customer</span>
-                  <input
-                    className="tpos-input"
-                    value={newCustName}
-                    onChange={(e) => setNewCustName(e.target.value)}
-                    placeholder="Name"
-                    maxLength={180}
-                    autoComplete="off"
-                    aria-label="Create POS customer name"
-                  />
-                  <button
-                    type="button"
-                    className="tpos-btn"
-                    onClick={createPosCustomer}
-                    disabled={custBusy || !newCustName.trim()}
-                    aria-label="Save new customer"
-                  >
-                    {custBusy ? 'Saving…' : 'Save'}
-                  </button>
-                </label>
                 <div className="tpos-foot-discounts">
                   <label className="tpos-field tpos-field-compact">
                     <span>Cart discount</span>
