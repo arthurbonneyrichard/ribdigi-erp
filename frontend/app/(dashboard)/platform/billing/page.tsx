@@ -85,6 +85,8 @@ export default function PlatformBillingPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [gatewayProvider, setGatewayProvider] = useState('mock');
+  const [gatewayName, setGatewayName] = useState('');
+  const [gatewayUrl, setGatewayUrl] = useState('');
   const [gatewayMode, setGatewayMode] = useState('sandbox');
   const [gatewaySecret, setGatewaySecret] = useState('');
   const [gatewayHook, setGatewayHook] = useState('');
@@ -131,7 +133,11 @@ export default function PlatformBillingPage() {
           const gateway = (status?.data?.gateway || {}) as Record<string, unknown>;
           if (!cancelled) {
             setGatewayView(gateway);
-            setGatewayProvider(String(gateway.provider || 'mock'));
+            const savedProvider = String(gateway.provider || 'mock');
+            const builtin = savedProvider === 'mock' || savedProvider === 'paystack' || savedProvider === 'flutterwave';
+            setGatewayProvider(builtin ? savedProvider : 'other');
+            setGatewayName(builtin ? '' : savedProvider);
+            setGatewayUrl(String(gateway.api_base_url || ''));
             setGatewayMode(String(gateway.mode || 'sandbox'));
           }
         } catch (err: unknown) {
@@ -328,9 +334,11 @@ export default function PlatformBillingPage() {
     event.preventDefault();
     const built = gatewaySaveBody({
       provider: gatewayProvider,
+      name: gatewayName,
       mode: gatewayMode,
       secret: gatewaySecret,
       webhookSecret: gatewayHook,
+      apiBaseUrl: gatewayUrl,
     });
     if ('error' in built) {
       setError(built.error);
@@ -404,8 +412,9 @@ export default function PlatformBillingPage() {
         <div className="plat-panel">
           <h2>Payment gateway</h2>
           <p>
-            Choose Paystack or Flutterwave for hosted checkout. Sandbox does not charge. Saving a
-            gateway does not mark an invoice paid.
+            Choose Paystack, Flutterwave, or another gateway. Sandbox does not charge. Saving a
+            gateway does not mark an invoice paid. Another gateway needs a public https address, a
+            health check that does not charge, and a signed webhook.
           </p>
           <form className="plat-form" onSubmit={saveGateway}>
             <label>
@@ -418,8 +427,31 @@ export default function PlatformBillingPage() {
                 <option value="mock">Sandbox</option>
                 <option value="paystack">Paystack</option>
                 <option value="flutterwave">Flutterwave</option>
+                <option value="other">Other gateway</option>
               </select>
             </label>
+            {gatewayProvider === 'other' ? (
+              <>
+                <label>
+                  <span>Gateway name</span>
+                  <input
+                    aria-label="Billing gateway name"
+                    value={gatewayName}
+                    onChange={(event) => setGatewayName(event.target.value)}
+                    placeholder="hubtel"
+                  />
+                </label>
+                <label>
+                  <span>API address</span>
+                  <input
+                    aria-label="Billing gateway API address"
+                    value={gatewayUrl}
+                    onChange={(event) => setGatewayUrl(event.target.value)}
+                    placeholder="https://api.example.com"
+                  />
+                </label>
+              </>
+            ) : null}
             <label>
               <span>Mode</span>
               <select
@@ -459,6 +491,9 @@ export default function PlatformBillingPage() {
             </button>
             <button aria-label="Enable billing gateway" className="btn-ok" type="button" disabled={busy} onClick={() => setGatewayEnabled(true)}>
               Enable
+            </button>
+            <button aria-label="Disable billing gateway" className="btn-danger" type="button" disabled={busy} onClick={() => setGatewayEnabled(false)}>
+              Disable
             </button>
           </form>
           {gatewayView?.webhook_url ? <p>Webhook URL: {String(gatewayView.webhook_url)}</p> : null}

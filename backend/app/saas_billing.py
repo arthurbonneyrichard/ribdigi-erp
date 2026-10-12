@@ -192,7 +192,7 @@ def provider_status() -> dict:
         "provider": gateway.provider,
         "configured": gateway.configured(),
         "live_charges": gateway.provider in LIVE_CHARGE_PROVIDERS and gateway.configured(),
-        "providers": ["mock", "paystack", "flutterwave"],
+        "providers": ["mock", "paystack", "flutterwave", "other"],
         "consent_version": CONSENT_VERSION,
         "checkout_path": checkout_path(),
     }
@@ -1162,7 +1162,7 @@ def _reusable_authorization(data: dict) -> str | None:
     else:
         code = str(data.get("authorization_code") or "").strip()
     compact = code.replace(" ", "").replace("-", "")
-    if not code.startswith(("AUTH_", "mock_auth_", "flw_")) or CARD_RE.search(compact):
+    if not code.startswith(("AUTH_", "mock_auth_", "flw_", "gw_")) or CARD_RE.search(compact):
         return None
     return code
 

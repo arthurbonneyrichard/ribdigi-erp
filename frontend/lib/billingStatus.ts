@@ -53,5 +53,11 @@ export function billingGatewayLabel(provider: string | null | undefined): string
   if (provider === 'paystack') return 'Paystack';
   if (provider === 'flutterwave') return 'Flutterwave';
   if (provider === 'mock') return 'Sandbox';
+  if (provider && /^[a-z][a-z0-9-]{2,31}$/.test(provider)) {
+    return provider
+      .split('-')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  }
   return 'Not connected';
 }

@@ -5,6 +5,8 @@ A browser return and an unsigned webhook never mark an invoice paid.
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 
 import pytest
@@ -202,3 +204,148 @@ async def test_flutterwave_webhook_saves_method_only_when_signed_and_amount_matc
     assert saved_account["authorization_present"] is True
     invoices = (await ac.get("/api/v1/billing/invoices", headers=headers)).json()["data"]
     assert all(row["status"] != "paid" for row in invoices)
+
+
+async def test_named_gateway_uses_a_public_address_and_a_signed_webhook(client, monkeypatch):
+    ac, seed = client
+    owner = await platform_owner_headers(ac, seed)
+    headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    from app.billing_gateway import CheckoutResult, CustomGateway
+
+    calls = {"post": 0}
+
+    def _post(*_args, **_kwargs):
+        calls["post"] += 1
+        raise AssertionError("connection test must not create a charge")
+
+    monkeypatch.setattr("app.billing_gateway.httpx.post", _post)
+    monkeypatch.setattr(CustomGateway, "test_connection", lambda self: (True, "gateway_ok"))
+
+    def _checkout(self, **kwargs):
+        return CheckoutResult(True, "https://payments.example.com/pay", kwargs["reference"], "hosted_checkout")
+
+    monkeypatch.setattr(CustomGateway, "checkout", _checkout)
+    private = await ac.put(
+        "/api/v1/platform/billing/gateway",
+        json={
+            "provider": "hubtel",
+            "mode": "sandbox",
+            "secret": "hubtel_test_key",
+            "webhook_secret": "hubtel_hook_secret",
+            "api_base_url": "https://127.0.0.1/charge",
+        },
+        headers=owner,
+    )
+    assert private.status_code == 422, private.text
+    garbage = await ac.put(
+        "/api/v1/platform/billing/gateway",
+        json={"provider": "not a name", "mode": "sandbox", "secret": "hubtel_test_key"},
+        headers=owner,
+    )
+    assert garbage.status_code == 422, garbage.text
+    saved = await ac.put(
+        "/api/v1/platform/billing/gateway",
+        json={
+            "provider": "hubtel",
+            "mode": "sandbox",
+            "secret": "hubtel_test_key",
+            "webhook_secret": "hubtel_hook_secret",
+            "api_base_url": "https://payments.example.com",
+        },
+        headers=owner,
+    )
+    assert saved.status_code == 200, saved.text
+    assert saved.json()["data"]["webhook_url"].endswith("/api/v1/billing/webhooks/hubtel")
+    assert "hubtel_test_key" not in saved.text
+    tested = await ac.post("/api/v1/platform/billing/gateway/test", headers=owner)
+    assert tested.status_code == 200, tested.text
+    assert tested.json()["data"]["last_test_ok"] is True
+    assert calls["post"] == 0
+    enabled = await ac.post("/api/v1/platform/billing/gateway/enable", headers=owner)
+    assert enabled.status_code == 200, enabled.text
+    assigned = await ac.post(
+        "/api/v1/platform/billing/tenants/alpha/assign",
+        json={"plan_code": "professional-month"},
+        headers=owner,
+    )
+    assert assigned.status_code == 200, assigned.text
+    consent = await ac.post(
+        "/api/v1/billing/consent",
+        json={"plan_code": "professional-month", "accept": True},
+        headers=headers,
+    )
+    assert consent.status_code == 200, consent.text
+    checkout = await ac.post(
+        "/api/v1/billing/checkout",
+        json={"plan_code": "professional-month"},
+        headers=headers,
+    )
+    assert checkout.status_code == 200, checkout.text
+    assert checkout.json()["data"]["paid"] is False
+    assert checkout.json()["data"]["provider"] == "hubtel"
+    reference = checkout.json()["data"]["reference"]
+
+    def _post_event(event: dict, signature: str | None):
+        raw = json.dumps(event, separators=(",", ":")).encode()
+        outgoing = {"content-type": "application/json"}
+        if signature is not None:
+            outgoing["x-ribdigi-billing-signature"] = signature
+        return ac.post("/api/v1/billing/webhooks/hubtel", content=raw, headers=outgoing)
+
+    def _sign(event: dict) -> str:
+        raw = json.dumps(event, separators=(",", ":")).encode()
+        return hmac.new(b"hubtel_hook_secret", raw, hashlib.sha256).hexdigest()
+
+    unsigned = await _post_event(
+        {
+            "id": "evt-open",
+            "event": "charge.success",
+            "data": {
+                "reference": reference,
+                "amount": 49900,
+                "currency": "GHS",
+                "status": "success",
+                "authorization": {"authorization_code": "tok_ok", "reusable": True},
+            },
+        },
+        None,
+    )
+    assert unsigned.status_code == 401, unsigned.text
+    mismatch_event = {
+        "id": "evt-mismatch",
+        "event": "charge.success",
+        "data": {
+            "reference": reference,
+            "amount": 1250,
+            "currency": "GHS",
+            "status": "success",
+            "authorization": {"authorization_code": "tok_ok", "reusable": True},
+        },
+    }
+    mismatch = await _post_event(mismatch_event, _sign(mismatch_event))
+    assert mismatch.status_code == 200, mismatch.text
+    assert mismatch.json()["data"]["outcome"] == "mismatch"
+    account = (await ac.get("/api/v1/billing/account", headers=headers)).json()["data"]
+    assert account["authorization_present"] is False
+    confirmed_event = {
+        "id": "evt-ok",
+        "event": "charge.success",
+        "data": {
+            "reference": reference,
+            "amount": 49900,
+            "currency": "GHS",
+            "status": "success",
+            "authorization": {"authorization_code": "tok_ok", "reusable": True},
+        },
+    }
+    confirmed = await _post_event(confirmed_event, _sign(confirmed_event))
+    assert confirmed.status_code == 200, confirmed.text
+    assert confirmed.json()["data"]["outcome"] == "authorization_saved"
+    assert "tok_ok" not in confirmed.text
+    saved_account = (await ac.get("/api/v1/billing/account", headers=headers)).json()["data"]
+    assert saved_account["authorization_present"] is True
+    assert saved_account["provider"]["provider"] == "hubtel"
+    assert saved_account["provider"]["live_charges"] is False
+    invoices = (await ac.get("/api/v1/billing/invoices", headers=headers)).json()["data"]
+    assert all(row["status"] != "paid" for row in invoices)
+

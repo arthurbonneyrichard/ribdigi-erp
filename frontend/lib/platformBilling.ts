@@ -120,12 +120,11 @@ export function gatewaySaveBody(draft: {
   mode: string;
   secret: string;
   webhookSecret: string;
+  name?: string;
+  apiBaseUrl?: string;
 }): { body: Record<string, string> } | { error: string } {
   const provider = draft.provider.trim().toLowerCase();
   const mode = draft.mode.trim().toLowerCase();
-  if (provider !== 'mock' && provider !== 'paystack' && provider !== 'flutterwave') {
-    return { error: 'Choose Sandbox, Paystack, or Flutterwave' };
-  }
   if (mode !== 'sandbox' && mode !== 'live') return { error: 'Choose sandbox or live' };
   if (provider === 'mock' && mode === 'live') return { error: 'Sandbox cannot take live payments' };
   const body: Record<string, string> = { provider, mode };
@@ -149,7 +148,54 @@ export function gatewaySaveBody(draft: {
       return { error: 'Flutterwave live needs a live secret key' };
     }
   }
+  const named = provider === 'other' || (provider !== 'mock' && provider !== 'paystack' && provider !== 'flutterwave');
+  if (named) {
+    const slug = (provider === 'other' ? draft.name || '' : provider).trim().toLowerCase();
+    if (!/^[a-z][a-z0-9-]{2,31}$/.test(slug)) {
+      return { error: 'Enter a gateway name using letters, numbers, and hyphens' };
+    }
+    if (slug === 'mock' || slug === 'paystack' || slug === 'flutterwave') {
+      return { error: 'Choose that provider from the list' };
+    }
+    const address = publicGatewayAddress(draft.apiBaseUrl || '');
+    if ('error' in address) return address;
+    body.provider = slug;
+    body.api_base_url = address.url;
+  }
   return { body };
+}
+
+function publicGatewayAddress(value: string): { url: string } | { error: string } {
+  const url = value.trim();
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return { error: 'Enter a public https gateway address' };
+  }
+  const host = parsed.hostname.toLowerCase();
+  const privateHost =
+    host === 'localhost' ||
+    host.endsWith('.local') ||
+    host.endsWith('.internal') ||
+    host === '127.0.0.1' ||
+    host === '0.0.0.0' ||
+    host.startsWith('10.') ||
+    host.startsWith('192.168.') ||
+    host.startsWith('169.254.') ||
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
+  if (
+    parsed.protocol !== 'https:' ||
+    parsed.username ||
+    parsed.password ||
+    parsed.search ||
+    parsed.hash ||
+    (parsed.port && parsed.port !== '443') ||
+    privateHost
+  ) {
+    return { error: 'Enter a public https gateway address' };
+  }
+  return { url: url.replace(/\/$/, '') };
 }
 
 export function canAssignSubscription(

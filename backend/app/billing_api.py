@@ -40,6 +40,20 @@ def _owner(claims: dict) -> dict:
     return claims
 
 
+async def _visible_provider(db) -> dict:
+    """Show the enabled gateway name. Sandbox and an untested gateway are not a live charge."""
+    status = billing_svc.provider_status()
+    row = await gateway_setup._row(db)
+    if row is None or not row.enabled or not row.last_test_ok:
+        return status
+    name = (row.provider or "").strip().lower()
+    status = dict(status)
+    status["provider"] = name or status["provider"]
+    status["configured"] = True
+    status["live_charges"] = name not in {"", "mock", "unconfigured"} and (row.mode or "") == "live"
+    return status
+
+
 @router.get("/platform/billing/status")
 async def billing_provider_status(
     request: Request,
@@ -69,8 +83,9 @@ async def save_billing_gateway(
     _owner(claims)
     from app.api import env
 
-    if payload.provider.strip().lower() not in {"mock", "paystack", "flutterwave"}:
-        raise HTTPException(status_code=422, detail="provider must be mock, paystack, or flutterwave")
+    from app.billing_gateway import normalize_billing_provider
+
+    normalize_billing_provider(payload.provider)
     if payload.mode.strip().lower() not in {"sandbox", "live"}:
         raise HTTPException(status_code=422, detail="mode must be sandbox or live")
     body = await gateway_setup.save_gateway(db, payload, actor=claims, request=request)
@@ -346,7 +361,7 @@ async def my_billing_account(
     }
     body["trial_ends_at"] = tenant.trial_ends_at
     body["tenant_status"] = tenant.status
-    body["provider"] = billing_svc.provider_status()
+    body["provider"] = await _visible_provider(db)
     body = billing_svc.apply_assigned_amount_to_account_body(body, account, tenant)
     return env(body)
 
@@ -419,7 +434,7 @@ async def billing_checkout_return(
     body["reference_matches_checkout"] = bool(expected) and reference.strip() == expected
     body["confirmed_by_redirect"] = False
     body["paid"] = False
-    body["provider"] = billing_svc.provider_status()
+    body["provider"] = await _visible_provider(db)
     return env(body)
 
 
@@ -483,8 +498,10 @@ async def billing_webhook(
 ):
     from app.api import env
 
+    from app.billing_gateway import BILLING_PROVIDERS, is_custom_billing_provider
+
     name = (provider or "").strip().lower()
-    if name not in {"mock", "paystack", "flutterwave"}:
+    if name not in BILLING_PROVIDERS and not is_custom_billing_provider(name):
         raise HTTPException(status_code=404, detail="Unknown billing provider")
     body = await request.body()
     if name == "paystack":

@@ -111,6 +111,27 @@ test('gateway save accepts Paystack or Flutterwave and omits a blank secret', ()
     'error' in gatewaySaveBody({ provider: 'stripe', mode: 'sandbox', secret: '', webhookSecret: '' }),
     true,
   );
+  const other = gatewaySaveBody({
+    provider: 'other',
+    name: 'Hubtel',
+    mode: 'sandbox',
+    secret: 'hubtel_test_key',
+    webhookSecret: 'hubtel_hook_secret',
+    apiBaseUrl: 'https://api.hubtel.example/v1/',
+  });
+  assert.equal('body' in other ? other.body.provider : '', 'hubtel');
+  assert.equal('body' in other ? other.body.api_base_url : '', 'https://api.hubtel.example/v1');
+  assert.equal(
+    'error' in gatewaySaveBody({
+      provider: 'other',
+      name: 'hubtel',
+      mode: 'sandbox',
+      secret: 'hubtel_test_key',
+      webhookSecret: '',
+      apiBaseUrl: 'http://127.0.0.1/charge',
+    }),
+    true,
+  );
   assert.equal(
     'error' in gatewaySaveBody({
       provider: 'flutterwave',

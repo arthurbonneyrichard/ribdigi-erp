@@ -2,7 +2,8 @@
 
 `mock` is the sandbox used by tests and local development. It never talks to a
 live processor. `paystack` and `flutterwave` charge only when that provider's
-secret is set. Empty credentials do not pretend a charge succeeded.
+secret is set. Any other named gateway uses the public address the software
+owner saves. Empty credentials do not pretend a charge succeeded.
 
 Card numbers, CVV, PINs, and banking passwords are not accepted or stored.
 """
@@ -14,6 +15,7 @@ import hmac
 import ipaddress
 import json
 import re
+import socket
 from dataclasses import dataclass
 from decimal import Decimal
 from urllib.parse import urlparse
@@ -26,6 +28,12 @@ from app.config import settings
 CONSENT_VERSION = "saas-billing-v1"
 BILLING_PROVIDERS = frozenset({"mock", "paystack", "flutterwave"})
 LIVE_CHARGE_PROVIDERS = frozenset({"paystack", "flutterwave"})
+_PROVIDER_RE = re.compile(r"^[a-z][a-z0-9-]{2,31}$")
+_BLOCKED_GATEWAY_HOSTS = frozenset({
+    "localhost",
+    "host.docker.internal",
+    "metadata.google.internal",
+})
 PAYSTACK_INITIALIZE_URL = "https://api.paystack.co/transaction/initialize"
 PAYSTACK_CHARGE_URL = "https://api.paystack.co/transaction/charge_authorization"
 
@@ -393,6 +401,163 @@ class FlutterwaveGateway(BillingGateway):
         return CheckoutResult(True, str(link), reference, "hosted_checkout")
 
 
+def normalize_billing_provider(value: str) -> str:
+    """Built-in providers, or another gateway name made of letters, numbers, and hyphens."""
+    name = (value or "").strip().lower()
+    if name in BILLING_PROVIDERS or _PROVIDER_RE.match(name):
+        return name
+    raise HTTPException(
+        status_code=422,
+        detail="Enter a gateway name using letters, numbers, and hyphens",
+    )
+
+
+def is_custom_billing_provider(provider: str) -> bool:
+    name = (provider or "").strip().lower()
+    return bool(_PROVIDER_RE.match(name)) and name not in BILLING_PROVIDERS
+
+
+class CustomGateway(BillingGateway):
+    """Hosted checkout for a gateway the software owner names.
+
+    Connection test calls GET {base}/health and does not create a charge.
+    Checkout calls POST {base}/checkout. A plan is paid only after a signed webhook.
+    """
+
+    def __init__(self, *, provider: str, secret: str, base_url: str) -> None:
+        self.provider = normalize_billing_provider(provider)
+        self.secret = (secret or "").strip()
+        self.base_url = validate_custom_base_url(base_url)
+
+    def configured(self) -> bool:
+        return bool(self.secret and self.base_url)
+
+    def _headers(self) -> dict[str, str]:
+        return {"Authorization": f"Bearer {self.secret}", "Content-Type": "application/json"}
+
+    def _public_host(self) -> bool:
+        host = (urlparse(self.base_url).hostname or "").lower()
+        try:
+            answers = socket.getaddrinfo(host, 443, type=socket.SOCK_STREAM)
+        except socket.gaierror:
+            return False
+        seen = False
+        for answer in answers:
+            address = answer[4][0]
+            try:
+                ip = ipaddress.ip_address(address)
+            except ValueError:
+                return False
+            seen = True
+            if not ip.is_global:
+                return False
+        return seen
+
+    def test_connection(self) -> tuple[bool, str]:
+        if not self.configured():
+            return False, "gateway_not_configured"
+        if not self._public_host():
+            return False, "provider_url_rejected"
+        try:
+            response = httpx.get(
+                f"{self.base_url}/health",
+                headers=self._headers(),
+                timeout=15.0,
+                follow_redirects=False,
+            )
+        except httpx.HTTPError:
+            return False, "gateway_unreachable"
+        if 200 <= response.status_code < 300:
+            return True, "gateway_ok"
+        return False, "gateway_rejected"
+
+    def charge(
+        self,
+        *,
+        authorization_ref: str,
+        amount_minor: int,
+        currency: str,
+        reference: str,
+        email: str,
+    ) -> ChargeResult:
+        if not self.configured():
+            return ChargeResult(False, None, "gateway_not_configured")
+        token = (authorization_ref or "").strip()
+        if token.startswith("gw_"):
+            token = token[3:]
+        if not token:
+            return ChargeResult(False, None, "invalid_authorization")
+        payload = {
+            "authorization_ref": token,
+            "amount": _major_amount(amount_minor),
+            "amount_minor": int(amount_minor),
+            "currency": (currency or "").strip().upper(),
+            "reference": reference,
+            "email": email,
+        }
+        try:
+            response = httpx.post(
+                f"{self.base_url}/charge",
+                headers=self._headers(),
+                json=payload,
+                timeout=20.0,
+                follow_redirects=False,
+            )
+            body = response.json()
+        except (httpx.HTTPError, ValueError):
+            return ChargeResult(False, None, "gateway_unreachable")
+        data = body.get("data") if isinstance(body, dict) and isinstance(body.get("data"), dict) else body
+        if not isinstance(data, dict):
+            return ChargeResult(False, None, "gateway_rejected")
+        status = str(data.get("status") or "").strip().lower()
+        ref = str(data.get("reference") or data.get("id") or reference)
+        if response.status_code < 300 and status in {"success", "successful", "approved"}:
+            return ChargeResult(True, ref, "approved")
+        if status in {"pending", "processing", "ongoing"}:
+            return ChargeResult(False, ref, "pending", pending=True)
+        return ChargeResult(False, ref, "declined")
+
+    def checkout(
+        self,
+        *,
+        email: str,
+        amount_minor: int,
+        currency: str,
+        reference: str,
+        callback_url: str,
+    ) -> CheckoutResult:
+        if not self.configured():
+            return CheckoutResult(False, None, reference, "gateway_not_configured")
+        payload = {
+            "email": email,
+            "amount": _major_amount(amount_minor),
+            "amount_minor": int(amount_minor),
+            "currency": (currency or "").strip().upper(),
+            "reference": reference,
+            "callback_url": callback_url,
+        }
+        try:
+            response = httpx.post(
+                f"{self.base_url}/checkout",
+                headers=self._headers(),
+                json=payload,
+                timeout=20.0,
+                follow_redirects=False,
+            )
+            body = response.json()
+        except (httpx.HTTPError, ValueError):
+            return CheckoutResult(False, None, reference, "gateway_unreachable")
+        data = body.get("data") if isinstance(body, dict) and isinstance(body.get("data"), dict) else {}
+        link = ""
+        if isinstance(body, dict):
+            link = str(body.get("checkout_url") or body.get("payment_url") or "")
+        if isinstance(data, dict) and not link:
+            link = str(data.get("checkout_url") or data.get("authorization_url") or data.get("link") or data.get("payment_url") or "")
+        if response.status_code >= 300 or not link.startswith("https://"):
+            return CheckoutResult(False, None, reference, "gateway_rejected")
+        return CheckoutResult(True, link, reference, "hosted_checkout")
+
+
 def get_gateway() -> BillingGateway:
     provider = (settings.BILLING_PROVIDER or "mock").strip().lower()
     if provider == "mock":
@@ -497,6 +662,34 @@ def validate_flutterwave_base_url(url: str) -> str:
     return f"https://{host}"
 
 
+def validate_custom_base_url(url: str) -> str:
+    """Public HTTPS address only. Private, local, and credentialed hosts are rejected."""
+    parsed = urlparse((url or "").strip())
+    host = (parsed.hostname or "").lower().rstrip(".")
+    if parsed.scheme != "https" or parsed.username or parsed.password:
+        raise HTTPException(status_code=422, detail="Gateway address must be https with no credentials")
+    if parsed.query or parsed.fragment or (parsed.port not in (None, 443)):
+        raise HTTPException(status_code=422, detail="Gateway address is not allowed")
+    if (
+        not host
+        or host in _BLOCKED_GATEWAY_HOSTS
+        or host.endswith(".local")
+        or host.endswith(".internal")
+        or ".." in (parsed.path or "")
+    ):
+        raise HTTPException(status_code=422, detail="Gateway host is not allowed")
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        if not re.match(r"^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$", host):
+            raise HTTPException(status_code=422, detail="Gateway host is not allowed")
+    else:
+        if not ip.is_global:
+            raise HTTPException(status_code=422, detail="Gateway host is not allowed")
+    path = (parsed.path or "").rstrip("/")
+    return f"https://{host}{path}"
+
+
 def gateway_for_config(*, provider: str, mode: str, secret: str, base_url: str | None) -> BillingGateway:
     name = (provider or "").strip().lower()
     if name == "mock":
@@ -507,6 +700,8 @@ def gateway_for_config(*, provider: str, mode: str, secret: str, base_url: str |
     if name == "flutterwave":
         base = validate_flutterwave_base_url(base_url or "https://api.flutterwave.com")
         return FlutterwaveGateway(secret=secret, base_url=base)
+    if is_custom_billing_provider(name):
+        return CustomGateway(provider=name, secret=secret, base_url=base_url or "")
     return BillingGateway()
 
 
@@ -554,6 +749,39 @@ async def webhook_signing_secret(db, provider: str) -> str | None:
         return ""
 
 
+def _normalize_custom_webhook(event: dict) -> dict:
+    """Keep the charge.success contract and reject card-shaped tokens."""
+    if not isinstance(event, dict):
+        return event
+    data = event.get("data")
+    if not isinstance(data, dict):
+        return event
+    data = dict(data)
+
+    def _token(code: str) -> str:
+        text = (code or "").strip()
+        compact = text.replace(" ", "").replace("-", "")
+        if not text or _TOKEN_CARD_RE.search(compact):
+            return ""
+        if text.startswith(("AUTH_", "mock_auth_", "flw_", "gw_")):
+            return text
+        return f"gw_{text}"
+
+    nested = data.get("authorization")
+    if isinstance(nested, dict):
+        nested = dict(nested)
+        code = _token(str(nested.get("authorization_code") or ""))
+        if code:
+            nested["authorization_code"] = code
+        else:
+            nested["authorization_code"] = ""
+            nested["reusable"] = False
+        data["authorization"] = nested
+    elif data.get("authorization_code"):
+        data["authorization_code"] = _token(str(data.get("authorization_code") or ""))
+    return {**event, "data": data}
+
+
 def normalize_webhook_event(provider: str, event: dict) -> dict:
     """Map a provider payload onto the charge.success / charge.failed contract.
 
@@ -561,6 +789,8 @@ def normalize_webhook_event(provider: str, event: dict) -> dict:
     sends major-unit amounts and charge.completed.
     """
     name = (provider or "").strip().lower()
+    if is_custom_billing_provider(name):
+        return _normalize_custom_webhook(event)
     if name != "flutterwave" or not isinstance(event, dict):
         return event
     data = event.get("data") if isinstance(event.get("data"), dict) else {}

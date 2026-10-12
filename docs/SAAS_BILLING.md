@@ -59,3 +59,11 @@ Flutterwave must support:
 The API host is locked to `https://api.flutterwave.com`. A signed `charge.completed` with status `successful` is the only Flutterwave event that can confirm a payment method or a matching invoice. A browser return does not mark an invoice paid.
 
 Until `FLUTTERWAVE_SECRET_KEY` is set, a Flutterwave charge does not run.
+
+## Another gateway
+
+On Billing, the software owner can choose **Other gateway**, enter a short name, and save one public `https` API address. Private, local, and credentialed addresses are rejected. The connection test calls `GET {address}/health` and does not create a charge. Checkout calls `POST {address}/checkout`. Enable stays blocked until that test succeeds and a webhook secret is saved.
+
+The webhook is `POST /api/v1/billing/webhooks/{name}` with header `x-ribdigi-billing-signature` set to the HMAC-SHA256 hex of the raw body using the webhook secret. Amounts are minor units. A signed `charge.success` whose amount and currency match can confirm a reusable token that starts with `gw_`. It does not mark an invoice paid unless that signed event matches an open invoice. A browser return still leaves the invoice unpaid.
+
+This repository does not enable a live gateway. Do not put gateway secrets in the repo.
