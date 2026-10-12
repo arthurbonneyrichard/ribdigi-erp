@@ -46,7 +46,7 @@ const CONSOLE_NOTES: Record<string, string> = {
   '/notifications': 'Platform notifications.',
   '/audit': 'Audit log.',
   '/security': 'Security settings for this account.',
-  '/platform/support': 'Support desk for customer companies.',
+  '/platform/support': 'Company tickets, public replies, and staff notes.',
 };
 
 const STATUS_BARS = [
