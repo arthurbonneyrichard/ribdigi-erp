@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react';
 import FormModal from '../../../components/FormModal';
 import { api, getAccessToken } from '../../../lib/api';
+import { formatElapsed, formatWhen } from '../../../lib/format';
 import { industryAllowsModule } from '../../../lib/industryModules';
 import { getMe } from '../../../lib/meCache';
 import { hideStoreUx as shouldHideStoreUx, isHotelIndustry } from '../../../lib/tenantNav';
+import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 
 type RoleRow = {
   role: string;
@@ -43,6 +45,15 @@ type UserRow = {
   store_id?: string | null;
   store_ids?: string[];
   record_scope?: string | null;
+};
+type CashierPresenceRow = {
+  user_id: string;
+  full_name: string;
+  role: string;
+  status: 'online' | 'offline' | 'no_signal';
+  offline_since?: string | null;
+  offline_duration_seconds?: number | null;
+  last_seen_at?: string | null;
 };
 
 const emptyForm = {
@@ -138,6 +149,40 @@ const TENANT_RBAC_MODULES = [
 
 const TENANT_RBAC_ACTIONS = ['read', 'write', 'approve'] as const;
 
+const MODULE_LABELS: Record<string, string> = {
+  dashboard: 'Dashboard',
+  inventory: 'Products and stock',
+  sales: 'Sales',
+  pos: 'Point of sale',
+  purchasing: 'Purchasing',
+  suppliers: 'Suppliers',
+  customers: 'Customers',
+  expenses: 'Expenses',
+  accounting: 'Finance',
+  credit: 'Balances',
+  tax: 'Tax',
+  stores: 'Stores',
+  hotel: 'Hotel',
+  fmcg: 'FMCG',
+  hospital: 'Hospital',
+  restaurant: 'Restaurant',
+  reports: 'Reports',
+  notifications: 'Notifications',
+  users: 'Staff',
+  audit: 'Audit',
+  ai: 'AI Assistant',
+  security: 'Security',
+  backup: 'Backup',
+  company: 'Company',
+  printers: 'Printers',
+};
+
+const ACTION_LABELS: Record<string, string> = {
+  read: 'View',
+  write: 'Change',
+  approve: 'Approve',
+};
+
 function pickAssignablePerms(
   perms?: Record<string, string[]> | null,
   industry?: string | null,
@@ -222,8 +267,16 @@ type ImportReport = {
   rows: ImportReportRow[];
 };
 
+function cashierSellingLabel(status: CashierPresenceRow['status']): string {
+  if (status === 'online') return 'Online';
+  if (status === 'offline') return 'Offline';
+  return 'No POS signal';
+}
+
 export default function Page() {
+  const formatPrefs = useCompanyFormat();
   const [rows, setRows] = useState<UserRow[]>([]);
+  const [cashierPresence, setCashierPresence] = useState<CashierPresenceRow[] | null>(null);
   const [userManageFilter, setUserManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [roleManageFilter, setRoleManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [roles, setRoles] = useState<RoleRow[]>([]);
@@ -316,6 +369,24 @@ export default function Page() {
 
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
+  }, []);
+
+  useEffect(() => {
+    let stop = false;
+    async function loadPresence() {
+      try {
+        const res = await api('/users/cashier-presence');
+        if (!stop) setCashierPresence(res.data || []);
+      } catch {
+        if (!stop) setCashierPresence(null);
+      }
+    }
+    loadPresence();
+    const timer = window.setInterval(loadPresence, 30000);
+    return () => {
+      stop = true;
+      window.clearInterval(timer);
+    };
   }, []);
 
   const branchLabel = (id?: string | null) => {
@@ -784,10 +855,8 @@ export default function Page() {
         <div>
           <h1 style={{ margin: 0 }}>User Management</h1>
           <p className="muted" style={{ margin: '8px 0 0' }}>
-            Add staff with a short form (name, email, temporary password, role, and store access).
-            Single-store companies assign that one store; multi-store companies pick one or several
-            in this company. Platform owner roles are not created here. Deactivate stops sign-in but
-            keeps history; Delete removes the account.
+            Add staff with a name, email, temporary password, and role. Deactivate stops sign-in
+            and keeps their history. Delete removes the account.
           </p>
         </div>
         {(canWrite || (canWriteStores && !hideStoreUx)) ? (
@@ -825,6 +894,57 @@ export default function Page() {
             create users from this page, by URL, or via the API.
           </p>
         </div>
+      ) : null}
+
+      {cashierPresence ? (
+        <section className="card cashier-presence" aria-label="Cashier offline status">
+          <h2>Cashier selling status</h2>
+          <p className="muted" style={{ margin: '0 0 10px' }}>
+            Online or offline selling from each cashier&apos;s POS, and how long they have been offline.
+          </p>
+          {cashierPresence.length === 0 ? (
+            <p className="muted" style={{ margin: 0 }}>No active cashiers.</p>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Cashier</th>
+                    <th>Selling</th>
+                    <th>Offline for</th>
+                    <th>Last seen</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cashierPresence.map((row) => (
+                    <tr key={row.user_id}>
+                      <td>{row.full_name}</td>
+                      <td>
+                        <span
+                          className={`cashier-sell-status${
+                            row.status === 'online'
+                              ? ' is-online'
+                              : row.status === 'offline'
+                                ? ' is-offline'
+                                : ' is-unknown'
+                          }`}
+                        >
+                          {cashierSellingLabel(row.status)}
+                        </span>
+                      </td>
+                      <td>
+                        {row.status === 'offline'
+                          ? formatElapsed(row.offline_duration_seconds) || 'under a minute'
+                          : '—'}
+                      </td>
+                      <td>{row.last_seen_at ? formatWhen(row.last_seen_at, formatPrefs) : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       ) : null}
 
       {canWrite && userAddOpen ? (
@@ -896,7 +1016,7 @@ export default function Page() {
               });
             }}
             aria-label="User branch"
-            title="Optional branch assignment (UuidIdValue)"
+            title="Optional branch"
           >
             <option value="">Branch (optional)</option>
             {activeBranches.map((b) => (
@@ -962,12 +1082,12 @@ export default function Page() {
             value={form.department_id}
             onChange={(e) => setForm({ ...form, department_id: e.target.value })}
             aria-label="User department"
-            title="Optional department assignment (UuidIdValue)"
+            title="Optional department"
           >
             <option value="">Department (optional)</option>
             {activeDepartments(form.branch_id).map((d) => (
               <option key={d.id} value={d.id}>
-                {d.code} — {d.name}
+                {d.name}
               </option>
             ))}
           </select>
@@ -1078,15 +1198,14 @@ export default function Page() {
         <form onSubmit={createCustomRole} className="card" style={{ margin: '20px 0', display: 'grid', gap: 8 }}>
           <h2 style={{ fontSize: 18, margin: 0 }}>Custom roles</h2>
           <p className="muted" style={{ margin: 0 }}>
-            Create a tenant-specific role key, then tick the modules this company actually uses.
-            Saved permissions apply to navigation, pages, buttons, and APIs. Soft-deactivate with{' '}
-            <strong>Deactivate</strong> (keeps assignees; blocks new assignment). Delete is blocked
-            while any user still has the role. System roles stay immutable.
+            Add a role for this company and choose what that role can open. Deactivate keeps people
+            who already have it, and stops new assignments. A role cannot be deleted while someone
+            still uses it.
           </p>
           <input
             value={roleForm.key}
             onChange={(e) => setRoleForm({ ...roleForm, key: e.target.value })}
-            placeholder="Role key (e.g. warehouse_lead)"
+            placeholder="Role code, for example warehouse_lead"
             required
             aria-label="Custom role key"
           />
@@ -1120,10 +1239,10 @@ export default function Page() {
           <ul style={{ margin: 0, paddingLeft: 18 }}>
             {managedCustomRoles.map((r) => (
               <li key={r.role}>
-                {r.label} <code>{r.role}</code>
+                {r.label}
                 {r.is_active === false ? (
                   <span className="muted" style={{ marginLeft: 6 }}>
-                    [inactive]
+                    Inactive
                   </span>
                 ) : null}
                 {r.is_active === false ? (
@@ -1178,8 +1297,8 @@ export default function Page() {
         <div className="card" style={{ margin: '20px 0', display: 'grid', gap: 12 }}>
           <h2 style={{ fontSize: 18, margin: 0 }}>Bulk import users</h2>
           <p className="muted" style={{ margin: 0 }}>
-            Download the CSV template, fill rows (role must be a system role; temporary password must
-            meet policy), validate, then import. Import is all-or-nothing.
+            Download the spreadsheet template, fill one person per row, check it, then import.
+            If one row is invalid, nothing is imported.
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button type="button" onClick={downloadImportTemplate} aria-label="Download user CSV template">
@@ -1348,7 +1467,7 @@ export default function Page() {
                 {r.full_name}
                 {r.is_active === false ? (
                   <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>
-                    [inactive]
+                    Inactive
                   </span>
                 ) : null}
               </td>
@@ -1467,7 +1586,7 @@ export default function Page() {
                     <option value="">None</option>
                     {activeDepartments(r.branch_id || undefined).map((d) => (
                       <option key={d.id} value={d.id}>
-                        {d.code}
+                        {d.name}
                       </option>
                     ))}
                   </select>
@@ -1538,8 +1657,7 @@ export default function Page() {
           onClose={() => setPermRole(null)}
         >
           <p className="muted" style={{ marginTop: 0 }}>
-            Existing RBAC modules only. This does not grant platform-owner rights. Changes apply to
-            users with this custom role (nav, pages, buttons, and APIs).
+            These choices apply to everyone with this role. They do not grant platform owner access.
           </p>
           <PermissionGrid value={permMap} onChange={setPermMap} disabled={permBusy} industry={meIndustry} />
           <button

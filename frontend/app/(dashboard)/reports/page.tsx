@@ -3,15 +3,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api, getAccessToken } from '../../../lib/api';
-import { formatDate, formatDateTime, formatNumber } from '../../../lib/format';
+import { formatNumber, formatWhen, plainLabel } from '../../../lib/format';
+import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import {
   REPORT_GROUP_ORDER,
   reportFromTabView,
+  findReport,
   reportHasFilter,
+  reportVisible,
   reportsHref,
   reportsInGroup,
   type ReportDef,
 } from '../../../lib/reportGroups';
+import SalesReportSheets from '../../../components/SalesReportSheets';
 import { getMe } from '../../../lib/meCache';
 import { tenantIsMultiStore } from '../../../lib/tenantNav';
 import { useStoreContext } from '../../../lib/storeContext';
@@ -122,8 +126,6 @@ function emptyTabCache(): TabCache {
 function formatReportError(err: unknown): string {
   const e = err as { message?: string; requestId?: string; status?: number };
   const message = (e?.message || 'Could not load this report.').trim();
-  const rid = typeof e?.requestId === 'string' ? e.requestId.trim() : '';
-  if (rid && !message.includes(rid)) return `${message} Request ID: ${rid}`;
   return message || 'Could not load this report.';
 }
 
@@ -134,14 +136,11 @@ function fmtMoney(value: unknown): string {
   return formatNumber(n);
 }
 
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
 function fmtDate(value: unknown): string {
   if (value === null || value === undefined || value === '') return '—';
-  const raw = String(value);
-  const day = raw.slice(0, 10);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(day) && raw.length <= 10) {
-    return formatDate(day) || raw;
-  }
-  return formatDateTime(raw) || raw;
+  return formatWhen(String(value)) || '—';
 }
 
 async function fetchReport(path: string): Promise<{ data: any; error: string }> {
@@ -154,16 +153,19 @@ async function fetchReport(path: string): Promise<{ data: any; error: string }> 
 }
 
 export default function Page() {
+  useCompanyFormat();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>('summary');
   const [view, setView] = useState('');
+  const [reportPage, setReportPage] = useState(0);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [storeId, setStoreId] = useState('');
   const { storeId: ctxStoreId, setStoreId: setCtxStoreId } = useStoreContext();
   const [branchId, setBranchId] = useState('');
   const [multiStore, setMultiStore] = useState(true);
+  const [industry, setIndustry] = useState('');
   const [stores, setStores] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
   const [asOf, setAsOf] = useState('');
@@ -283,7 +285,7 @@ export default function Page() {
     return s ? `?${s}` : '';
   }
 
-  async function load(nextTab: Tab = tab) {
+  async function load(nextTab: Tab = tab, viewOverride?: string) {
     const gen = (loadGen.current[nextTab] || 0) + 1;
     loadGen.current[nextTab] = gen;
     const isStale = () => loadGen.current[nextTab] !== gen;
@@ -302,7 +304,12 @@ export default function Page() {
     }
 
     setLoadingTabs((prev) => ({ ...prev, [nextTab]: true }));
-    publish({ loading: true, error: '', sectionErrors: {} });
+    publish({
+      loading: true,
+      error: '',
+      sectionErrors: {},
+      ...(nextTab === 'sales' ? { data: null, generatedAt: '' } : {}),
+    });
     if (tabRef.current === nextTab) {
       setError('');
       setSectionErrors({});
@@ -367,37 +374,56 @@ export default function Page() {
       const path = paths[nextTab as Exclude<Tab, 'schedules'>];
 
       if (nextTab === 'sales') {
-        const [products, daily, monthly, returns] = await Promise.all([
-          fetchReport(path),
-          fetchReport(
-            `/reports/sales/daily${qs(toDate || fromDate ? { date: toDate || fromDate } : {})}`
-          ),
-          fetchReport(`/reports/sales/monthly${qs()}`),
-          fetchReport(
-            `/reports/sales/returns${qs({
-              ...(salesReturnStatus ? { status: salesReturnStatus } : {}),
-              ...(salesReturnReason ? { reason: salesReturnReason } : {}),
-            })}`
-          ),
-        ]);
-        const sections: Record<string, string> = {};
-        if (products.error) sections.products = products.error;
-        if (daily.error) sections.daily = daily.error;
-        if (monthly.error) sections.monthly = monthly.error;
-        if (returns.error) sections.returns = returns.error;
-        const payload = {
-          products: products.data,
-          daily: daily.data,
-          monthly: monthly.data,
-          returns: returns.data,
-        };
-        const hasData = Boolean(products.data || daily.data || monthly.data || returns.data);
+        const activeView = viewOverride !== undefined ? viewOverride : view;
+        const report = reportFromTabView('sales', activeView);
+        const categoryTrim = categoryId.trim();
+        const extra = categoryTrim ? { category_id: categoryTrim } : {};
+        if (report.id === 'sales_summary') {
+          const anchor = toDate || fromDate;
+          const monthQuery: Record<string, string> = {};
+          if (anchor && /^\d{4}-\d{2}/.test(anchor)) {
+            const [y, m] = anchor.slice(0, 7).split('-');
+            monthQuery.year = y;
+            monthQuery.month = String(Number(m));
+          }
+          const [daily, monthly] = await Promise.all([
+            fetchReport(`/reports/sales/daily${qs(anchor ? { date: anchor } : {})}`),
+            fetchReport(`/reports/sales/monthly${qs(monthQuery)}`),
+          ]);
+          const sections: Record<string, string> = {};
+          if (daily.error) sections.daily = daily.error;
+          if (monthly.error) sections.monthly = monthly.error;
+          const hasData = Boolean(daily.data || monthly.data);
+          publish({
+            loading: false,
+            data: hasData ? { daily: daily.data, monthly: monthly.data } : null,
+            error: hasData ? '' : Object.values(sections)[0] || 'Could not load this report.',
+            sectionErrors: sections,
+            generatedAt: hasData ? new Date().toISOString() : '',
+          });
+          return;
+        }
+        let salesPath = `/reports/sales/products${qs(extra)}`;
+        if (report.id === 'sales_returns') {
+          salesPath = `/reports/sales/returns${qs({
+            ...(salesReturnStatus ? { status: salesReturnStatus } : {}),
+            ...(salesReturnReason ? { reason: salesReturnReason } : {}),
+          })}`;
+        } else if (report.id === 'sales_lines') salesPath = `/reports/sales/lines${qs(extra)}`;
+        else if (report.id === 'sales_transactions') salesPath = `/reports/sales/transactions${qs()}`;
+        else if (report.id === 'sales_payments') salesPath = `/reports/sales/payments${qs()}`;
+        else if (report.id === 'sales_discounts') salesPath = `/reports/sales/discounts${qs()}`;
+        else if (report.id === 'sales_credit') salesPath = `/reports/sales/credit${qs()}`;
+        else if (report.id === 'sales_quotations') salesPath = `/reports/sales/quotations${qs()}`;
+        else if (report.id === 'sales_pos') salesPath = `/reports/sales/pos${qs()}`;
+        else if (report.id === 'sales_brand') salesPath = `/reports/sales/products${qs()}`;
+        const result = await fetchReport(salesPath);
         publish({
           loading: false,
-          data: hasData ? payload : null,
-          error: hasData ? '' : Object.values(sections)[0] || 'Could not load this report.',
-          sectionErrors: sections,
-          generatedAt: hasData ? new Date().toISOString() : '',
+          data: result.data,
+          error: result.data ? '' : result.error || 'Could not load this report.',
+          sectionErrors: result.error ? { report: result.error } : {},
+          generatedAt: result.data ? new Date().toISOString() : '',
         });
         return;
       }
@@ -498,6 +524,34 @@ export default function Page() {
         return;
       }
 
+      if (nextTab === 'summary') {
+        const summary = await fetchReport(path);
+        if (isStale()) return;
+        let payload = summary.data;
+        if (payload && !payload.products_sold) {
+          const range =
+            !fromDate && !toDate
+              ? (() => {
+                  const now = new Date();
+                  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+                  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0));
+                  const iso = (d: Date) => d.toISOString().slice(0, 10);
+                  return { from_date: iso(start), to_date: iso(end) };
+                })()
+              : {};
+          const products = await fetchReport(`/reports/sales/products${qs(range)}`);
+          if (products.data) payload = { ...payload, products_sold: products.data };
+        }
+        publish({
+          loading: false,
+          data: summary.error ? null : payload,
+          error: summary.error,
+          sectionErrors: {},
+          generatedAt: summary.error ? '' : new Date().toISOString(),
+        });
+        return;
+      }
+
       const r = await fetchReport(path);
       if (isStale()) return;
       publish({
@@ -524,7 +578,10 @@ export default function Page() {
 
   useEffect(() => {
     getMe()
-      .then((me) => setMultiStore(tenantIsMultiStore(me?.data)))
+      .then((me) => {
+        setMultiStore(tenantIsMultiStore(me?.data));
+        setIndustry(String(me?.data?.industry || ''));
+      })
       .catch(() => setMultiStore(true));
     load('summary');
     Promise.all([
@@ -584,7 +641,7 @@ export default function Page() {
     tabRef.current = t;
     setTab(t);
     if (nextView !== undefined) setView(nextView);
-    const cached = tabCacheRef.current[t];
+    const cached = t === 'sales' ? undefined : tabCacheRef.current[t];
     if (cached) {
       setData(cached.data);
       setError(cached.error);
@@ -600,23 +657,29 @@ export default function Page() {
     }
     const href = reportsHref(reportFromTabView(t, nextView !== undefined ? nextView : view));
     router.replace(href, { scroll: false });
-    load(t);
+    load(t, nextView);
   }
 
   function selectReport(def: ReportDef) {
     const nextTab = def.tab as Tab;
     const nextView = def.view || '';
+    setReportPage(0);
     if (nextTab === tab) {
       setView(nextView);
       router.replace(reportsHref(def), { scroll: false });
-      const cached = tabCacheRef.current[nextTab];
-      if (!cached || cached.loading) {
-        load(nextTab);
-      }
+      if (nextTab === 'sales') tabCacheRef.current[nextTab] = emptyTabCache();
+      load(nextTab, nextView);
       return;
     }
     switchTab(nextTab, nextView);
   }
+
+  useEffect(() => {
+    if (reportVisible(activeReport, { industry, multiStore })) return;
+    const fallback =
+      activeReport.group === 'inventory' ? findReport('inventory_low_stock') : findReport('summary');
+    if (fallback && fallback.id !== activeReport.id) selectReport(fallback);
+  }, [industry, multiStore, activeReport.id]);
 
   function resetFilters() {
     setFromDate('');
@@ -653,9 +716,12 @@ export default function Page() {
       tabRef.current = next;
       setTab(next);
       setView(nextView);
-      load(next);
+      setReportPage(0);
+      load(next, nextView);
     } else if (nextView !== view) {
       setView(nextView);
+      setReportPage(0);
+      if ((isReportTab(next) ? next : tab) === 'sales') load('sales', nextView);
     }
     // load is stable enough for tab query changes from the sidebar
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -722,13 +788,25 @@ export default function Page() {
       if (fromDate) params.set('from_date', fromDate);
       if (toDate) params.set('to_date', toDate);
       // trim so UuidIdValue Query filters do not 422 on whitespace
-      const storeTrim = (storeId || ctxStoreId || '').trim();
-      const branchTrim = branchId.trim();
+      const storeTrim = multiStore ? (storeId || ctxStoreId || '').trim() : '';
+      const branchTrim = multiStore ? branchId.trim() : '';
       const departmentTrim = departmentId.trim();
       const warehouseTrim = warehouseId.trim();
       const categoryTrim = categoryId.trim();
       if (storeTrim) params.set('store_id', storeTrim);
       if (branchTrim) params.set('branch_id', branchTrim);
+      if (exportType === 'sales_daily') {
+        const anchor = toDate || fromDate;
+        if (anchor) params.set('date', anchor);
+      }
+      if (exportType === 'sales_monthly') {
+        const anchor = toDate || fromDate;
+        if (anchor && /^\d{4}-\d{2}/.test(anchor)) {
+          const [y, m] = anchor.slice(0, 7).split('-');
+          params.set('year', y);
+          params.set('month', String(Number(m)));
+        }
+      }
       if (departmentTrim) params.set('department_id', departmentTrim);
       if (warehouseTrim) params.set('warehouse_id', warehouseTrim);
       if (
@@ -847,23 +925,40 @@ export default function Page() {
 
   return (
     <>
-      <h1>Reports</h1>
-      <p className="muted">
-        Company-scoped totals only (this tenant). Pick a report, set the filters that apply, then
-        Generate. Export and print use the same filters.
+      <h1 className="no-print">Reports</h1>
+      <p className="muted no-print">
+        Totals for this company. Choose a report, set the dates, then Generate. Export and print use the same filters.
       </p>
-      <OfflineProvisionalNotice />
+      <div className="no-print">
+        <OfflineProvisionalNotice />
+      </div>
       <div className="reports-layout">
         <nav className="reports-nav" aria-label="Report groups">
-          {REPORT_GROUP_ORDER.map((group) => (
+          {REPORT_GROUP_ORDER.map((group) => {
+            const visibleDefs = reportsInGroup(group.id).filter((def) =>
+              reportVisible(def, { industry, multiStore }),
+            );
+            const groupActive = activeReport.group === group.id;
+            return (
             <div
               key={group.id}
-              className={`reports-nav-group${activeReport.group === group.id ? ' is-active' : ''}`}
+              data-group={group.id}
+              className={`reports-nav-group${groupActive ? ' is-active' : ''}`}
             >
-              <h2 className="reports-nav-title">{group.label}</h2>
-              {reportsInGroup(group.id)
-                .filter((def) => multiStore || (def.id !== 'stores' && def.tab !== 'stores'))
-                .map((def) => {
+              <button
+                type="button"
+                className="reports-nav-cat"
+                aria-pressed={groupActive}
+                aria-label={`Show ${group.label} reports`}
+                onClick={() => {
+                  if (groupActive) return;
+                  const first = visibleDefs[0];
+                  if (first) selectReport(first);
+                }}
+              >
+                {group.label}
+              </button>
+              {visibleDefs.map((def) => {
                 const id = def.id;
                 const selected = activeReport.id === id;
                 const busy = !!loadingTabs[def.tab as Tab];
@@ -872,7 +967,7 @@ export default function Page() {
                     key={id}
                     type="button"
                     className={`reports-nav-item${selected ? ' is-active' : ''}`}
-                    onClick={() => (selected ? load(def.tab as Tab) : selectReport(def))}
+                    onClick={() => (selected ? load(def.tab as Tab, def.view || '') : selectReport(def))}
                     disabled={busy && selected}
                     aria-pressed={selected}
                     aria-busy={busy && selected}
@@ -884,9 +979,10 @@ export default function Page() {
                 );
               })}
             </div>
-          ))}
+            );
+          })}
         </nav>
-        <div className="reports-main">
+        <div className="reports-main" data-group={activeReport.group}>
           <p className="reports-crumb muted">
             {REPORT_GROUP_ORDER.find((g) => g.id === activeReport.group)?.label || 'Reports'} ·{' '}
             {activeReport.name}
@@ -898,7 +994,7 @@ export default function Page() {
               {error}{' '}
               <button
                 type="button"
-                onClick={() => load(tab)}
+                onClick={() => load(tab, view)}
                 disabled={!!loadingTabs[tab]}
                 aria-label="Retry this report"
               >
@@ -1381,7 +1477,7 @@ export default function Page() {
               <div className="reports-actions">
                 <button
                   type="button"
-                  onClick={() => load(tab)}
+                  onClick={() => load(tab, view)}
                   disabled={!!loadingTabs[tab]}
                   aria-label="Apply report filters"
                 >
@@ -1413,31 +1509,6 @@ export default function Page() {
                     >
                       Export PDF
                     </button>
-                    {activeReport.tab === 'sales' && (
-                      <>
-                        <button type="button" onClick={() => download('csv', 'sales_daily')} aria-label="Export sales daily CSV">
-                          Daily CSV
-                        </button>
-                        <button type="button" onClick={() => download('xlsx', 'sales_salesperson')} aria-label="Export salespeople Excel">
-                          Salespeople Excel
-                        </button>
-                        <button type="button" onClick={() => download('xlsx', 'trial_balance')} aria-label="Export trial balance Excel">
-                          Trial balance Excel
-                        </button>
-                        <button type="button" onClick={() => download('csv', 'trial_balance')} aria-label="Export trial balance CSV">
-                          Trial balance CSV
-                        </button>
-                        <button type="button" onClick={() => download('pdf', 'profit_loss')} aria-label="Export P&L PDF">
-                          P&amp;L PDF
-                        </button>
-                        <button type="button" onClick={() => download('xlsx', 'sales_returns')} aria-label="Export sales returns Excel">
-                          Returns Excel
-                        </button>
-                        <button type="button" onClick={() => download('csv', 'sales_returns')} aria-label="Export sales returns CSV">
-                          Returns CSV
-                        </button>
-                      </>
-                    )}
                     {activeReport.id === 'customers' && (
                       <button type="button" onClick={() => download('xlsx', 'sales_customers')} aria-label="Export sales customers Excel">
                         Customers Excel
@@ -1471,6 +1542,22 @@ export default function Page() {
                     )}
                   </>
                 ) : null}
+                {activeReport.id === 'sales_summary' ? (
+                  <>
+                    <button type="button" onClick={() => download('csv', 'sales_daily')} aria-label="Export sales daily CSV">
+                      Day CSV
+                    </button>
+                    <button type="button" onClick={() => download('xlsx', 'sales_daily')} aria-label="Export sales daily Excel">
+                      Day Excel
+                    </button>
+                    <button type="button" onClick={() => download('csv', 'sales_monthly')} aria-label="Export sales monthly CSV">
+                      Month CSV
+                    </button>
+                    <button type="button" onClick={() => download('xlsx', 'sales_monthly')} aria-label="Export sales monthly Excel">
+                      Month Excel
+                    </button>
+                  </>
+                ) : null}
                 {activeReport.print ? (
                   <button type="button" onClick={() => window.print()} aria-label="Print report">
                     Print
@@ -1492,6 +1579,7 @@ export default function Page() {
           ) : null}
 
       {tab === 'summary' && data && (
+        <div className="report-sheet">
         <div className="grid">
           <div className="card">
             <div className="muted">Today sales</div>
@@ -1502,139 +1590,64 @@ export default function Page() {
             <div className="kpi">{fmtMoney(data.month_sales?.total_revenue)}</div>
             <p className="muted">vs prior: {data.month_sales?.change_pct ?? '—'}%</p>
           </div>
-          <div className="card">
+          <div className="card no-print">
             <div className="muted">Low stock SKUs</div>
             <div className="kpi">{data.low_stock_report?.count ?? 0}</div>
           </div>
-          <div className="card">
+          <div className="card no-print">
             <div className="muted">Approved expenses</div>
             <div className="kpi">{fmtMoney(data.expenses_summary?.total_amount)}</div>
           </div>
         </div>
-      )}
-
-      {tab === 'sales' && data && (
-        <>
-          {activeReport.view !== 'returns' && (
-            <>
-          {sectionErrors.daily ? <p style={{ color: '#b91c1c' }}>{sectionErrors.daily}</p> : null}
-          {sectionErrors.monthly ? <p style={{ color: '#b91c1c' }}>{sectionErrors.monthly}</p> : null}
-          <div className="grid">
-            <div className="card">
-              <h3>
-                {data.daily?.date ? `Day · ${data.daily.date}` : 'Today'}
-                {data.daily?.store_name ? ` · ${data.daily.store_name}` : ''}
-              </h3>
-              <p>Revenue: {data.daily?.total_revenue}</p>
-              <p>Invoices: {data.daily?.invoice_count} · POS: {data.daily?.pos_count}</p>
-            </div>
-            <div className="card">
-              <h3>This month{data.monthly?.store_name ? ` · ${data.monthly.store_name}` : ''}</h3>
-              <p>Revenue: {data.monthly?.total_revenue}</p>
-              <p>Change: {data.monthly?.change_pct ?? '—'}%</p>
-            </div>
-          </div>
-          <h3 style={{ marginTop: 16 }}>Products</h3>
-          {sectionErrors.products ? <p style={{ color: '#b91c1c' }}>{sectionErrors.products}</p> : null}
-          <p className="muted">
-            Qty {data.products?.total_quantity ?? 0} · revenue {data.products?.total_revenue ?? 0}
-            {data.products?.total_profit != null ? ` · profit ${data.products.total_profit}` : ''}
-            {data.products?.store_id ? ' · store filtered' : ''}
-            {data.products?.category_name ? ` · ${data.products.category_name}` : ''}
-          </p>
-          <div className="list-table-wrap">
+        <h3 style={{ marginTop: 16 }}>Products sold</h3>
+        <p className="muted">
+          Qty {fmtMoney(data.products_sold?.total_quantity)} · revenue {fmtMoney(data.products_sold?.total_revenue)}
+        </p>
+        <div className="list-table-wrap">
           <table className="table">
             <thead>
               <tr>
                 <th>Product</th>
                 <th>SKU</th>
-                <th>Category</th>
                 <th>Qty</th>
                 <th>Revenue</th>
-                <th>Profit</th>
               </tr>
             </thead>
             <tbody>
-              {(data.products?.products || []).map((p: any) => (
+              {(data.products_sold?.products || []).map((p: any) => (
                 <tr key={p.product_id}>
                   <td>{p.name}</td>
                   <td>{p.sku || '—'}</td>
-                  <td>{p.category_name || '—'}</td>
-                  <td>{p.quantity}</td>
+                  <td>{fmtMoney(p.quantity)}</td>
                   <td>{fmtMoney(p.revenue)}</td>
-                  <td>{p.profit != null ? fmtMoney(p.profit) : '—'}</td>
                 </tr>
               ))}
-              {!(data.products?.products || []).length ? (
+              {(data.products_sold?.products || []).length === 0 && (
                 <tr>
-                  <td colSpan={6} className="muted">
-                    No product sales for this period.
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-          </div>
-            </>
-          )}
-          {activeReport.view === 'returns' && (
-            <>
-          <h3 style={{ marginTop: 16 }}>Sales returns</h3>
-          {sectionErrors.returns ? <p style={{ color: '#b91c1c' }}>{sectionErrors.returns}</p> : null}
-          <p className="muted">
-            {data.returns?.return_count ?? 0} returns · total {fmtMoney(data.returns?.total_amount)} ·
-            posted {fmtMoney(data.returns?.posted_amount)} · qty {data.returns?.total_quantity ?? 0} ·
-            refunded {fmtMoney(data.returns?.refunded_amount)}
-            {data.returns?.store_name ? ` · ${data.returns.store_name}` : ''}
-          </p>
-          <div className="list-table-wrap">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Return</th>
-                <th>Customer</th>
-                <th>Reason</th>
-                <th>Status</th>
-                <th>Qty</th>
-                <th>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(data.returns?.returns || []).map((ret: any) => (
-                <tr key={ret.id}>
-                  <td>{ret.return_number}</td>
-                  <td>{ret.customer_name}</td>
-                  <td>{ret.reason}</td>
-                  <td>{ret.status}</td>
-                  <td>{ret.quantity}</td>
-                  <td>{ret.total_amount}</td>
-                </tr>
-              ))}
-              {!data.returns?.returns?.length && (
-                <tr>
-                  <td colSpan={6} className="muted">
-                    No sales returns
+                  <td colSpan={4} className="muted">
+                    No products sold in this period
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
-          </div>
-          {(data.returns?.by_reason || []).length > 0 && (
-            <>
-              <h4 style={{ marginTop: 12 }}>Returns by reason</h4>
-              <ul>
-                {data.returns.by_reason.map((x: any) => (
-                  <li key={x.reason}>
-                    {x.reason}: {x.return_count} · qty {x.quantity} · {x.total_amount}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-            </>
-          )}
-        </>
+        </div>
+        </div>
+      )}
+
+      {tab === 'sales' && data && (
+        <div className="report-sheet">
+          <SalesReportSheets
+            view={activeReport.view || 'products'}
+            data={data}
+            sectionErrors={sectionErrors}
+            multiStore={multiStore}
+            fmtMoney={fmtMoney}
+            formatWhen={formatWhen}
+            page={reportPage}
+            onPage={setReportPage}
+          />
+        </div>
       )}
 
       {tab === 'salesperson' && data && (
@@ -1686,6 +1699,13 @@ export default function Page() {
                   <td>{s.avg_ticket}</td>
                 </tr>
               ))}
+              {!(data.salespeople || []).length ? (
+                <tr>
+                  <td colSpan={8} className="muted">
+                    No staff sales for this period.
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
           </div>
@@ -1808,6 +1828,13 @@ export default function Page() {
                   <td>{s.avg_ticket}</td>
                 </tr>
               ))}
+              {!(data.stores || []).length ? (
+                <tr>
+                  <td colSpan={7} className="muted">
+                    No store sales for this period.
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
           </div>
@@ -2194,7 +2221,7 @@ export default function Page() {
                   <td>{b.name || '—'}</td>
                   <td>{b.sku || '—'}</td>
                   <td>{b.batch_number}</td>
-                  <td>{fmtDate(b.expiry_date ? String(b.expiry_date).slice(0, 10) : '')}</td>
+                  <td>{fmtDate(b.expiry_date)}</td>
                   <td>{b.days_until_expiry ?? '—'}</td>
                   <td>{b.quantity}</td>
                 </tr>
@@ -2234,7 +2261,7 @@ export default function Page() {
               {(data.rxActivity?.prescriptions || []).map((row: any) => (
                 <tr key={row.id}>
                   <td>{row.rx_number}</td>
-                  <td>{row.status}</td>
+                  <td>{plainLabel(row.status)}</td>
                   <td>{row.customer_name || '—'}</td>
                   <td>{row.sale_number || '—'}</td>
                   <td>{row.qty_remaining}</td>
@@ -2243,7 +2270,7 @@ export default function Page() {
               {!data.rxActivity?.prescriptions?.length && (
                 <tr>
                   <td colSpan={5} className="muted">
-                    No prescription activity for this filter (pharmacy tenants only).
+                    No prescriptions for these dates.
                   </td>
                 </tr>
               )}
@@ -2881,7 +2908,7 @@ export default function Page() {
               <tbody>
                 {(data.lines || []).map((l: any, idx: number) => (
                   <tr key={`${l.journal_entry_id}-${idx}`}>
-                    <td>{String(l.date || '').slice(0, 10)}</td>
+                    <td>{fmtDate(l.date)}</td>
                     <td>{l.entry_number}</td>
                     <td>{l.description || '—'}</td>
                     <td>{l.debit}</td>
@@ -2981,7 +3008,7 @@ export default function Page() {
       {tab === 'schedules' && (
         <>
           <p className="muted">
-            Company admins can schedule CSV, Excel, or PDF reports emailed on a daily or weekly cadence (UTC hour).
+            Email a saved report every day or once a week. The hour is UTC.
           </p>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <input
@@ -2989,16 +3016,20 @@ export default function Page() {
               value={schedForm.name}
               onChange={(e) => setSchedForm({ ...schedForm, name: e.target.value })}
               aria-label="Report schedule name"
-              title="Schedule name (2–120 chars; letters/digits required)"
+              title="Schedule name"
             />
             <select
               value={schedForm.report_type}
               onChange={(e) => setSchedForm({ ...schedForm, report_type: e.target.value })}
               aria-label="Report schedule report type"
             >
-              {REPORT_TYPES.map((t) => (
+              {REPORT_TYPES.filter(
+                (t) =>
+                  (industry === 'pharmacy' || t !== 'pharmacy_rx_activity') &&
+                  (multiStore || t !== 'inventory_transfers'),
+              ).map((t) => (
                 <option key={t} value={t}>
-                  {t}
+                  {plainLabel(t)}
                 </option>
               ))}
             </select>
@@ -3118,15 +3149,16 @@ export default function Page() {
                       {s.name} {!s.enabled && <span className="muted">(off)</span>}
                     </td>
                     <td>
-                      {s.report_type} / {s.format}
+                      {plainLabel(s.report_type)} · {String(s.format || '').toUpperCase()}
                     </td>
                     <td>
-                      {s.frequency}
-                      {s.frequency === 'weekly' ? ` dow=${s.weekday}` : ''} @ {s.hour_utc}:00 UTC
+                      {plainLabel(s.frequency)}
+                      {s.frequency === 'weekly' ? `, ${WEEKDAYS[Number(s.weekday)] || ''}` : ''}
+                      {` at ${String(s.hour_utc ?? 0).padStart(2, '0')}:00 UTC`}
                     </td>
                     <td>{(s.recipients || []).join(', ')}</td>
                     <td>
-                      {s.last_run_at ? String(s.last_run_at).slice(0, 19) : '—'}
+                      {s.last_run_at ? formatWhen(s.last_run_at) : '—'}
                       {s.last_error ? (
                         <div style={{ color: '#b91c1c', fontSize: 12 }}>{s.last_error}</div>
                       ) : null}

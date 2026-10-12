@@ -59,6 +59,9 @@ async def issue_gift_card(
     claims=Depends(require_permission("pos", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.industry_dashboard import assert_gift_cards_for_industry
+
+    assert_gift_cards_for_industry(claims)
     row = await loyalty_gift_svc.issue_gift_card(
         db,
         tenant_id=claims["tenant_id"],

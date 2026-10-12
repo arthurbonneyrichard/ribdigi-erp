@@ -1,4 +1,4 @@
-"""Platform owner and platform admin can permanently delete a company tenant."""
+"""Only the software owner can permanently delete a company tenant."""
 
 from __future__ import annotations
 
@@ -23,8 +23,9 @@ def test_platform_tenant_delete_ui_wired():
     assert 'aria-label={`Delete tenant ${t.slug || t.id}`}' in plat
     assert 'aria-label="Delete tenant confirmation"' in plat
     assert "canDeleteTenant" in plat
-    assert "canHardDeleteTenant" in plat
-    assert "meRole === 'platform_admin'" in plat
+    assert "const canHardDeleteTenant = canDeleteTenant" in plat
+    assert "meRole === 'platform_admin'" not in plat
+    assert "Only the software owner can delete a company." in plat
 
 
 @pytest.mark.asyncio
@@ -159,10 +160,10 @@ async def test_platform_admin_can_delete_tenant(client, db_session):
         headers=admin,
         json={"confirm_slug": slug},
     )
-    assert deleted.status_code == 200, deleted.text
-    assert deleted.json()["data"]["slug"] == slug
+    assert deleted.status_code == 403, deleted.text
+    assert "software owner" in str(deleted.json()["detail"]).lower()
     listed = await ac.get("/api/v1/tenants", headers=owner)
-    assert slug not in {row["slug"] for row in listed.json()["data"]}
+    assert slug in {row["slug"] for row in listed.json()["data"]}
 
 
 @pytest.mark.asyncio

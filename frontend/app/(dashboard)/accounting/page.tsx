@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import AttachmentPreview from '../../../components/AttachmentPreview';
 import FormModal from '../../../components/FormModal';
 import { api, getAccessToken } from '../../../lib/api';
+import { formatWhen, plainLabel } from '../../../lib/format';
 import { useStoreContext } from '../../../lib/storeContext';
+import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -1099,9 +1101,7 @@ export default function Page() {
       </div>
       <p className="muted">
         One company ledger. Sales, expenses, and supplier bills post here — this is not a second set of books.
-      </p>
-      <p className="muted" style={{ marginTop: 0 }}>
-        <strong>Books</strong> snapshot · <strong>Chart &amp; statements</strong> (journals, trial balance, P&amp;L, balance sheet, cash flow) · <strong>Cash</strong> tills &amp; transfers · <strong>Bank match</strong> · <strong>Cheques</strong>
+        Income, expenses, and supplier bills for this company. Use the tabs to see accounts, cash, bank matching, and cheques.
       </p>
       {loading && <p className="muted">Loading accounting…</p>}
       {error && <p className="erp-banner err" role="alert">{error}</p>}
@@ -1120,7 +1120,7 @@ export default function Page() {
           disabled={tab === 'ledger'}
           aria-label="Show accounting ledger tab"
         >
-          Chart &amp; statements
+          Accounts and reports
         </button>
         <button
           onClick={() => setTab('cash')}
@@ -1205,7 +1205,7 @@ export default function Page() {
                 {!journals.length && (
                   <tr>
                     <td colSpan={4} className="muted">
-                      No journals yet
+                      No entries yet
                     </td>
                   </tr>
                 )}
@@ -1218,20 +1218,21 @@ export default function Page() {
       {tab === 'ledger' && (
         <>
           <p className="muted">
-            Chart of accounts, opening balances, journals, and financial statements. Totals come from posted journals — they are not typed in by hand.
+            Accounts, starting balances, and entries. Totals come from saved entries.
           </p>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
-            <h3>Period close (BR-10.2)</h3>
+            <h3>Close the books</h3>
             <p className="muted" style={{ margin: 0 }}>
-              Closing books through a date blocks posting and unposting journals on or before that
-              date. Fiscal year start: {period?.fiscal_year_start || '01-01'}
+              Closing through a date stops new entries on or before that date.
               {period?.current_fiscal_start
-                ? ` · current period ${period.current_fiscal_start} → ${period.current_fiscal_end_exclusive}`
+                ? ` This year starts ${formatWhen(period.current_fiscal_start)}.`
                 : ''}
             </p>
             <p style={{ margin: 0 }}>
               Closed through:{' '}
-              <strong>{period?.books_closed_through || 'not closed'}</strong>
+              <strong>
+                {period?.books_closed_through ? formatWhen(period.books_closed_through) : 'Open'}
+              </strong>
             </p>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <input
@@ -1259,16 +1260,14 @@ export default function Page() {
               )}
             </div>
             <p className="muted" style={{ margin: 0 }}>
-              Reason is required for close and reopen (audit <code>period_closed</code> /{' '}
-              <code>period_reopened</code> <code>details.reason</code>).
+              A reason is required. It is kept with the record.
             </p>
           </div>
 
           <div className="card" style={{ marginBottom: 16 }}>
             <h3>Manual journal</h3>
             <p className="muted" style={{ marginTop: 0 }}>
-              Multi-line adjusting entries (BR-10.2). At least two lines; Σ debit must equal Σ credit
-              (±0.01). Each line is debit <em>or</em> credit.
+              Use at least two lines. Debit and credit must match. Each line is either a debit or a credit.
             </p>
             <div style={{ display: 'grid', gap: 8 }}>
               <input
@@ -1316,7 +1315,7 @@ export default function Page() {
                             )
                           }
                           aria-label={`Journal line ${idx + 1} account`}
-                          title="Optional COA account (UuidIdValue); blank/garbage → 422"
+                          title="Account"
                         >
                           <option value="">Select account</option>
                           {activeAccounts.map((a) => (
@@ -1419,10 +1418,11 @@ export default function Page() {
           </div>
 
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
-            <h3>COA opening balances (BR-10.1)</h3>
+            <h3>Starting balances</h3>
             <p className="muted" style={{ margin: 0 }}>
-              Post go-live / fiscal-year openings. Asset &amp; expense amounts debit; liability,
-              equity &amp; income credit. Unbalanced residual plugs to Owner&apos;s Equity (3000).
+              Enter the balances this company already had when it started here. Money the company
+              owns or has spent goes in Debit. Money it owes or has earned goes in Credit. Any
+              difference is added to Owner&apos;s equity.
             </p>
             {coaOpenStatus?.posted ? (
               <p style={{ color: 'var(--brand, #4AB012)', margin: 0 }}>
@@ -1436,7 +1436,7 @@ export default function Page() {
                     value={coaOpenAccountId}
                     onChange={(e) => setCoaOpenAccountId(e.target.value)}
                     aria-label="Opening balance account"
-                    title="Optional COA account (UuidIdValue); blank/garbage → 422"
+                    title="Account"
                   >
                     {activeAccounts.map((a) => (
                       <option key={a.id} value={a.id}>
@@ -1460,7 +1460,7 @@ export default function Page() {
                   onChange={(e) => setCoaOpenRef(e.target.value)}
                   placeholder="Reference (e.g. FY2026-OPEN)"
                   aria-label="Opening balance reference"
-                  title="Optional reference (1–100 chars; blank → auto COA-OPEN-YYYYMMDD)"
+                  title="Leave blank to number this automatically"
                 />
                 <input
                   value={coaOpenNotes}
@@ -1549,8 +1549,8 @@ export default function Page() {
               <div>
                 <h3 style={{ marginTop: 0 }}>Chart of accounts</h3>
                 <p className="muted" style={{ margin: 0 }}>
-                  These are the buckets money is recorded in (assets, liabilities, income, expenses).
-                  Adding an account here does not post a journal.
+                  These are the groups money is recorded in: what the company owns, owes, earns, and spends.
+                  Adding a group does not record a transaction by itself.
                 </p>
               </div>
               <button type="button" className="list-btn-primary" onClick={() => openAddAccount('')}>
@@ -1648,7 +1648,7 @@ export default function Page() {
             <div className="card">
               <h3>Trial balance</h3>
               <p className="muted" style={{ marginTop: 0 }}>
-                Checks that total debits equal total credits. Set a date or leave blank for live balances, then Generate.
+                Checks that debits equal credits. Set a date, or leave it blank for current balances, then Generate.
               </p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
                 <input
@@ -1667,13 +1667,16 @@ export default function Page() {
                 </button>
               </div>
               <p className="muted">
-                {trial?.mode === 'journals' ? `As of ${trial?.as_of} (journals)` : 'Live balances'}
+                {trial?.mode === 'journals'
+                  ? `As of ${formatWhen(trial?.as_of) || '—'}`
+                  : 'Current balances'}
                 {' · '}
-                Balanced: {String(trial?.balanced)} | Dr {trial?.total_debit} / Cr{' '}
-                {trial?.total_credit}
+                {trial?.balanced ? 'Balanced' : 'Not balanced'}
+                {' · '}
+                Debit {fmtMoney(trial?.total_debit)} · Credit {fmtMoney(trial?.total_credit)}
               </p>
               {!trial?.rows?.length && !loading ? (
-                <p className="muted">No trial balance rows yet. Generate after you have journals.</p>
+                <p className="muted">No balances yet. Add entries, then generate.</p>
               ) : null}
               {!!trial?.rows?.length && (
                 <table className="table" style={{ marginTop: 8 }}>
@@ -1761,14 +1764,14 @@ export default function Page() {
               </div>
               <p className="muted" style={{ marginTop: 0 }}>
                 {pnl?.mode === 'journals'
-                  ? 'Period / location from posted journals'
-                  : 'Lifetime account balances'}
+                  ? 'For the dates and location you chose'
+                  : 'All-time balances'}
               </p>
-              <p>Revenue: {pnl?.revenue ?? pnl?.income}</p>
-              <p>COGS: {pnl?.cogs ?? 0}</p>
-              <p>Gross profit: {pnl?.gross_profit ?? (pnl?.income ?? 0) - (pnl?.cogs ?? 0)}</p>
-              <p>Operating expenses: {pnl?.operating_expenses ?? pnl?.expense}</p>
-              <div className="kpi">{pnl?.net_profit}</div>
+              <p>Revenue: {fmtMoney(pnl?.revenue ?? pnl?.income)}</p>
+              <p>Cost of goods: {fmtMoney(pnl?.cogs ?? 0)}</p>
+              <p>Gross profit: {fmtMoney(pnl?.gross_profit ?? (pnl?.income ?? 0) - (pnl?.cogs ?? 0))}</p>
+              <p>Operating expenses: {fmtMoney(pnl?.operating_expenses ?? pnl?.expense)}</p>
+              <div className="kpi">{fmtMoney(pnl?.net_profit)}</div>
               <p className="muted" style={{ margin: 0 }}>
                 Net profit
               </p>
@@ -1778,8 +1781,7 @@ export default function Page() {
           <div className="card" style={{ marginTop: 12 }}>
           <h3 style={{ marginTop: 0 }}>Balance sheet</h3>
           <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
-            What the business owns and owes at a point in time. Uses the same as-of date as Trial balance, plus optional compare.
-            Store/branch follow the Shell header and P&amp;L branch filter when set.
+            What the company owns and owes on the date you choose.
           </p>
           <div className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div>
@@ -1840,8 +1842,8 @@ export default function Page() {
               ) : null}
               <p className="muted" style={{ fontSize: 12, marginBottom: 0 }}>
                 {(headerStoreId || pnlBranchId)
-                  ? 'Scoped to Shell store and/or P&L branch filter.'
-                  : 'Company-wide (no Shell store or P&L branch filter).'}
+                  ? 'Limited to the selected store or branch.'
+                  : 'Whole company.'}
               </p>
             </>
           ) : (
@@ -1852,7 +1854,7 @@ export default function Page() {
         <div className="card" style={{ marginTop: 12 }}>
           <h3 style={{ marginTop: 0 }}>Cash flow</h3>
           <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
-            Cash in and cash out for a period (needs reports access). Dates and store/branch match P&amp;L.
+            Cash in and cash out for the dates you choose.
           </p>
           <div className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div>
@@ -1908,8 +1910,8 @@ export default function Page() {
               ) : null}
               <p className="muted" style={{ fontSize: 12, marginBottom: 0 }}>
                 {(headerStoreId || pnlBranchId)
-                  ? 'Scoped to Shell store and/or P&L branch filter.'
-                  : 'Company-wide (no Shell store or P&L branch filter).'}
+                  ? 'Limited to the selected store or branch.'
+                  : 'Whole company.'}
               </p>
             </>
           ) : (
@@ -1919,10 +1921,10 @@ export default function Page() {
           )}
         </div>
 
-        <h3 style={{ marginTop: 16 }}>Journals</h3>
+        <h3 style={{ marginTop: 16 }}>Entries</h3>
           <p className="muted">
-            Posted entries that make up the ledger. Manual journals can be unposted in the open fiscal period.
-            Attach supporting documents on any entry.
+            Saved entries for this company. You can undo a manual entry while the books are still open.
+            Attach a file to any entry.
           </p>
           <select
             value={journalManageFilter}
@@ -1943,13 +1945,13 @@ export default function Page() {
               value={unpostReason}
               onChange={(e) => setUnpostReason(e.target.value)}
               placeholder="Required before Unpost"
-              title="Required unpost reason (1–500 chars; letters/digits required)"
+              title="Reason for undoing this entry"
               aria-label="Journal unpost reason"
               style={{ minWidth: 280 }}
             />
           </label>
           <p className="muted" style={{ marginTop: 0 }}>
-            Appended to the journal description and audit (`POST .../unpost` {'{ reason }'}).
+            The reason is kept with the entry.
           </p>
           <table className="table">
             <thead>
@@ -1968,8 +1970,8 @@ export default function Page() {
                 <tr>
                   <td colSpan={7} className="muted">
                     {journals.length === 0
-                      ? 'No journals yet'
-                      : 'No journals for this filter'}
+                      ? 'No entries yet'
+                      : 'No entries for this filter'}
                   </td>
                 </tr>
               ) : (
@@ -2059,8 +2061,8 @@ export default function Page() {
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Cash and bank accounts</h3>
             <p className="muted" style={{ margin: 0 }}>
-              Tills and bank GL accounts used for payments. Bank accounts need a bank name. For income
-              or expense accounts, use Chart &amp; statements → Add account.
+              Cash and bank accounts used when you record a payment. A bank account needs a bank name.
+              For other accounts, use Accounts and reports, then Add account.
             </p>
             <button
               type="button"
@@ -2072,10 +2074,9 @@ export default function Page() {
           </div>
 
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
-            <h3>Transfer / deposit / withdrawal</h3>
+            <h3>Move money</h3>
             <p className="muted" style={{ margin: 0 }}>
-              Transfer moves funds between liquid accounts. Deposit credits Owner&apos;s Equity (3000);
-              withdrawal debits equity.
+              A transfer moves money between cash and bank. A deposit adds money. A withdrawal takes money out.
             </p>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <select
@@ -2141,7 +2142,7 @@ export default function Page() {
             </div>
           </div>
 
-          <h3>Liquid accounts</h3>
+          <h3>Cash and bank</h3>
           <table className="table">
             <thead>
               <tr>
@@ -2315,18 +2316,15 @@ export default function Page() {
               </button>
             </div>
             <p className="muted">
-              Tip: post a cash/bank journal first, import a CSV/OFX feed (or create a line), then
-              auto-clear or match manually. CSV needs date + amount (or debit/credit) columns.
+              Bring in a bank file, or match a line by hand. A spreadsheet needs a date and an amount.
             </p>
           </div>
 
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Bank API connections</h3>
             <p className="muted">
-              Link a liquid GL account to a live feed (`mock` for demos/tests, `http_json` for any
-              aggregator that returns JSON transactions). Sync creates a reconcilable statement;
-              duplicates are skipped by external ref. Soft-deactivate pauses automatic bank sync
-              without deleting the connection (use Remove to delete).
+              Connect a cash or bank account so new bank lines can be brought in. Turning a connection
+              off pauses those updates. Remove deletes the connection.
             </p>
             <input aria-label="Bank connection display name" value={connName} onChange={(e) => setConnName(e.target.value)} placeholder="Connection name" />
             <select

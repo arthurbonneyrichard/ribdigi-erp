@@ -24,6 +24,24 @@ def apply_store_scope(stmt, column, store_id: str | None, store_ids: list[str] |
     return stmt
 
 
+COMPLETED_SALE_STATUSES = ("posted", "sent", "partial", "paid", "overdue")
+
+
+def linked_sales_invoice_id(tx) -> str | None:
+    """Invoice created for a register sale, when the payload records one."""
+    payload = tx.payload if isinstance(getattr(tx, "payload", None), dict) else {}
+    linked = payload.get("sales_invoice_id")
+    if linked is None or str(linked).strip() == "":
+        return None
+    return str(linked)
+
+
+def pos_counts_with_invoice(tx, invoice_ids: set[str]) -> bool:
+    """True when this register sale is already included via its completed invoice."""
+    linked = linked_sales_invoice_id(tx)
+    return bool(linked and linked in invoice_ids)
+
+
 def parse_date(value: str | datetime | None, *, end_of_day: bool = False) -> datetime | None:
     # Schema IsoDateQueryValue rejects blank/invalid on audit Query → 422; keep
     # defense-in-depth so other free-str date Query paths return **400** not **500**.
@@ -143,7 +161,12 @@ async def sales_daily(
         )
     )
     pos_stmt = apply_store_scope(pos_stmt, m.PosSession.store_id, store_id, store_ids)
-    pos_rows = (await db.execute(pos_stmt)).all()
+    counted_invoice_ids = {str(i.id) for i in invoices}
+    pos_rows = [
+        row
+        for row in (await db.execute(pos_stmt)).all()
+        if not pos_counts_with_invoice(row[0], counted_invoice_ids)
+    ]
 
     invoice_total = sum(money_json(i.total_amount) for i in invoices)
     invoice_tax = sum(money_json(i.tax_amount) for i in invoices)
@@ -162,7 +185,12 @@ async def sales_daily(
         "total_revenue": money_json(round(invoice_total + pos_total, 2)),
         "tax": money_json(round(invoice_tax + pos_tax, 2)),
         "discounts": money_json(round(invoice_discount, 2)),
-        "net_sales": money_json(round(invoice_total + pos_total - invoice_discount, 2)),
+        # Invoice total_amount is already net of the header discount.
+        "net_sales": money_json(round(invoice_total + pos_total, 2)),
+        "returns_note": (
+            "Completed sales only. Header discounts are already taken out of revenue. "
+            "Posted returns are listed on Sales returns and are not subtracted here."
+        ),
     }
 
 
@@ -198,7 +226,12 @@ async def sales_monthly(
         )
     )
     pos_stmt = apply_store_scope(pos_stmt, m.PosSession.store_id, store_id, store_ids)
-    pos_rows = (await db.execute(pos_stmt)).all()
+    counted_invoice_ids = {str(i.id) for i in invoices}
+    pos_rows = [
+        row
+        for row in (await db.execute(pos_stmt)).all()
+        if not pos_counts_with_invoice(row[0], counted_invoice_ids)
+    ]
 
     by_day: dict[str, float] = defaultdict(float)
     for inv in invoices:
@@ -256,9 +289,16 @@ async def sales_monthly_total(
     inv_stmt = apply_store_scope(inv_stmt, m.SalesInvoice.store_id, store_id, store_ids)
     inv = money_json((await db.execute(inv_stmt)).scalar() or 0)
 
-    pos_stmt = (
-        select(func.coalesce(func.sum(m.Transaction.total), 0))
-        .select_from(m.Transaction)
+    counted_stmt = select(m.SalesInvoice.id).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.status.in_(list(COMPLETED_SALE_STATUSES)),
+        m.SalesInvoice.posted_at >= start,
+        m.SalesInvoice.posted_at <= end,
+    )
+    counted_stmt = apply_store_scope(counted_stmt, m.SalesInvoice.store_id, store_id, store_ids)
+    counted_invoice_ids = {str(row) for row in (await db.execute(counted_stmt)).scalars().all()}
+    pos_tx_stmt = (
+        select(m.Transaction)
         .outerjoin(m.PosSession, m.PosSession.id == m.Transaction.session_id)
         .where(
             m.Transaction.tenant_id == tenant_id,
@@ -267,8 +307,12 @@ async def sales_monthly_total(
             m.Transaction.created_at <= end,
         )
     )
-    pos_stmt = apply_store_scope(pos_stmt, m.PosSession.store_id, store_id, store_ids)
-    pos = money_json((await db.execute(pos_stmt)).scalar() or 0)
+    pos_tx_stmt = apply_store_scope(pos_tx_stmt, m.PosSession.store_id, store_id, store_ids)
+    pos = 0.0
+    for tx in (await db.execute(pos_tx_stmt)).scalars().all():
+        if pos_counts_with_invoice(tx, counted_invoice_ids):
+            continue
+        pos = money_json(round(pos + money_json(tx.total), 2))
     return money_json(round(inv + pos, 2))
 
 
@@ -281,6 +325,7 @@ async def sales_by_product(
     store_id: str | None = None,
     store_ids: list[str] | None = None,
     category_id: str | None = None,
+    include_cost: bool = True,
 ) -> dict:
     """Product-wise quantity and revenue; optional store / category filters (BR-14.1)."""
     category_name: str | None = None
@@ -372,6 +417,31 @@ async def sales_by_product(
         ).scalars().all():
             cat_names[c.id] = c.name
 
+    brand_ids = {p.brand_id for _, _, p in rows if p.brand_id}
+    brand_ids.update(p.brand_id for p in product_cache.values() if p.brand_id)
+    brand_names: dict[str, str] = {}
+    if brand_ids:
+        for brand in (
+            await db.execute(
+                select(m.Brand).where(
+                    m.Brand.tenant_id == tenant_id,
+                    m.Brand.id.in_(list(brand_ids)),
+                )
+            )
+        ).scalars().all():
+            brand_names[brand.id] = brand.name
+
+    counted_stmt = select(m.SalesInvoice.id).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.status.in_(list(COMPLETED_SALE_STATUSES)),
+    )
+    if from_date:
+        counted_stmt = counted_stmt.where(m.SalesInvoice.posted_at >= from_date)
+    if to_date:
+        counted_stmt = counted_stmt.where(m.SalesInvoice.posted_at <= to_date)
+    counted_stmt = apply_store_scope(counted_stmt, m.SalesInvoice.store_id, store_id, store_ids)
+    counted_invoice_ids = {str(row) for row in (await db.execute(counted_stmt)).scalars().all()}
+
     def _bucket(agg: dict[str, dict], product: m.Product) -> dict:
         return agg.setdefault(
             product.id,
@@ -379,8 +449,11 @@ async def sales_by_product(
                 "product_id": product.id,
                 "name": product.name,
                 "sku": product.sku,
+                "barcode": product.barcode,
                 "category_id": product.category_id,
                 "category_name": cat_names.get(product.category_id or "", None),
+                "brand_id": product.brand_id,
+                "brand_name": brand_names.get(product.brand_id or "", None),
                 "quantity": 0.0,
                 "revenue": 0.0,
                 "cost": 0.0,
@@ -399,6 +472,8 @@ async def sales_by_product(
             row["cost"] = money_json(round(row["cost"] + unit_cost * qty, 2))
 
     for tx in pos_txs:
+        if pos_counts_with_invoice(tx, counted_invoice_ids):
+            continue
         for line in (tx.payload or {}).get("items") or []:
             pid = line.get("product_id")
             if not pid:
@@ -426,18 +501,54 @@ async def sales_by_product(
         row["revenue"] = money_json(round(row["revenue"], 2))
         row["cost"] = money_json(round(row["cost"], 2))
         row["profit"] = money_json(round(row["revenue"] - row["cost"], 2))
-    return {
+
+    def _rollup(id_key: str, name_key: str, missing: str) -> list[dict]:
+        buckets: dict[str, dict] = {}
+        for product in products:
+            key = str(product.get(id_key) or missing)
+            bucket = buckets.setdefault(
+                key,
+                {
+                    id_key: product.get(id_key),
+                    name_key: product.get(name_key) or missing,
+                    "quantity": 0.0,
+                    "revenue": 0.0,
+                    "cost": 0.0,
+                    "profit": 0.0,
+                },
+            )
+            bucket["quantity"] = money_json(round(bucket["quantity"] + product["quantity"], 3))
+            bucket["revenue"] = money_json(round(bucket["revenue"] + product["revenue"], 2))
+            bucket["cost"] = money_json(round(bucket["cost"] + product["cost"], 2))
+            bucket["profit"] = money_json(round(bucket["profit"] + product["profit"], 2))
+        return sorted(buckets.values(), key=lambda row: row["revenue"], reverse=True)
+
+    categories = _rollup("category_id", "category_name", "Uncategorised")
+    brands = _rollup("brand_id", "brand_name", "Unbranded")
+    payload = {
         "from_date": from_date.isoformat() if from_date else None,
         "to_date": to_date.isoformat() if to_date else None,
         "store_id": store_id,
         "category_id": category_id,
         "category_name": category_name,
         "products": products,
+        "categories": categories,
+        "brands": brands,
         "total_revenue": money_json(round(sum(p["revenue"] for p in products), 2)),
         "total_quantity": money_json(round(sum(p["quantity"] for p in products), 3)),
-        "total_cost": money_json(round(sum(p["cost"] for p in products), 2)),
-        "total_profit": money_json(round(sum(p["profit"] for p in products), 2)),
+        "include_cost": include_cost,
+        "returns_note": (
+            "Completed sales only. Posted returns are listed on Sales returns and are not subtracted here."
+        ),
     }
+    if include_cost:
+        payload["total_cost"] = money_json(round(sum(p["cost"] for p in products), 2))
+        payload["total_profit"] = money_json(round(sum(p["profit"] for p in products), 2))
+        return payload
+    for row in (*products, *categories, *brands):
+        row.pop("cost", None)
+        row.pop("profit", None)
+    return payload
 
 
 async def sales_by_customer(
@@ -504,7 +615,9 @@ async def sales_by_customer(
     if to_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at <= to_date)
     inv_stmt = apply_store_scope(inv_stmt, m.SalesInvoice.store_id, store_id, store_ids)
-    for inv in (await db.execute(inv_stmt)).scalars().all():
+    customer_invoices = (await db.execute(inv_stmt)).scalars().all()
+    counted_invoice_ids = {str(inv.id) for inv in customer_invoices}
+    for inv in customer_invoices:
         row = _bucket(agg, inv.customer_id)
         total = money_json(inv.total_amount)
         tax = money_json(inv.tax_amount)
@@ -529,6 +642,8 @@ async def sales_by_customer(
         )
         pos_stmt = apply_store_scope(pos_stmt, m.PosSession.store_id, store_id, store_ids)
     for tx in (await db.execute(pos_stmt)).scalars().all():
+        if pos_counts_with_invoice(tx, counted_invoice_ids):
+            continue
         row = _bucket(agg, tx.party_id)
         total = money_json(tx.total)
         tax = money_json(tx.tax)
@@ -875,7 +990,9 @@ async def sales_by_salesperson(
             inv_stmt = inv_stmt.where(m.SalesInvoice.id == None)  # noqa: E711 — empty dept membership
         else:
             inv_stmt = inv_stmt.where(m.SalesInvoice.created_by.in_(dept_user_ids))
-    for inv in (await db.execute(inv_stmt)).scalars().all():
+    staff_invoices = (await db.execute(inv_stmt)).scalars().all()
+    counted_invoice_ids = {str(inv.id) for inv in staff_invoices}
+    for inv in staff_invoices:
         row = _bucket(agg, inv.created_by)
         total = money_json(inv.total_amount)
         tax = money_json(inv.tax_amount)
@@ -905,6 +1022,8 @@ async def sales_by_salesperson(
         else:
             pos_stmt = pos_stmt.where(m.PosSession.user_id.in_(dept_user_ids))
     for tx, session in (await db.execute(pos_stmt)).all():
+        if pos_counts_with_invoice(tx, counted_invoice_ids):
+            continue
         user_id = session.user_id if session else None
         row = _bucket(agg, user_id)
         total = money_json(tx.total)
@@ -1049,7 +1168,9 @@ async def sales_by_store(
         else:
             inv_stmt = inv_stmt.where(m.SalesInvoice.created_by.in_(dept_user_ids))
     inv_stmt = apply_store_scope(inv_stmt, m.SalesInvoice.store_id, None, store_ids)
-    for inv in (await db.execute(inv_stmt)).scalars().all():
+    store_invoices = (await db.execute(inv_stmt)).scalars().all()
+    counted_invoice_ids = {str(inv.id) for inv in store_invoices}
+    for inv in store_invoices:
         row = _bucket(agg, inv.store_id)
         total = money_json(inv.total_amount)
         tax = money_json(inv.tax_amount)
@@ -1079,6 +1200,8 @@ async def sales_by_store(
             pos_stmt = pos_stmt.where(m.PosSession.user_id.in_(dept_user_ids))
     pos_stmt = apply_store_scope(pos_stmt, m.PosSession.store_id, None, store_ids)
     for tx, session in (await db.execute(pos_stmt)).all():
+        if pos_counts_with_invoice(tx, counted_invoice_ids):
+            continue
         store_id = session.store_id if session else None
         row = _bucket(agg, store_id)
         total = money_json(tx.total)
@@ -1213,7 +1336,9 @@ async def sales_by_department(
     if to_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at <= to_date)
     inv_stmt = apply_store_scope(inv_stmt, m.SalesInvoice.store_id, None, store_ids)
-    for inv in (await db.execute(inv_stmt)).scalars().all():
+    department_invoices = (await db.execute(inv_stmt)).scalars().all()
+    counted_invoice_ids = {str(inv.id) for inv in department_invoices}
+    for inv in department_invoices:
         seller_dept = user_dept.get(inv.created_by) if inv.created_by else None
         if filter_id and seller_dept != filter_id:
             continue
@@ -1241,6 +1366,8 @@ async def sales_by_department(
         pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
     pos_stmt = apply_store_scope(pos_stmt, m.PosSession.store_id, None, store_ids)
     for tx, session in (await db.execute(pos_stmt)).all():
+        if pos_counts_with_invoice(tx, counted_invoice_ids):
+            continue
         user_id = session.user_id if session else None
         seller_dept = user_dept.get(user_id) if user_id else None
         if filter_id and seller_dept != filter_id:

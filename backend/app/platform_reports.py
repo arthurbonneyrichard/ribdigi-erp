@@ -10,8 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app import packages as packages_svc
+from app import schema_compat
 from app import store_entitlements as store_ent_svc
 from app import tenants as tenants_svc
+
+_OPEN_TICKET_STATUSES = ("new", "in_progress", "waiting_for_tenant")
 
 # Platform dashboard activity. Operational modules (pos, sales, inventory, …) are excluded.
 PLATFORM_ACTIVITY: tuple[tuple[str, str], ...] = (
@@ -50,11 +53,22 @@ async def build_platform_summary(db: AsyncSession) -> dict[str, Any]:
         by_status[t.status] = by_status.get(t.status, 0) + 1
         code = getattr(t, "package_code", None) or "trial"
         by_package[code] = by_package.get(code, 0) + 1
+    open_support_tickets = 0
+    if await schema_compat.table_column_names(db, "support_tickets"):
+        open_support_tickets = int(
+            await db.scalar(
+                select(func.count())
+                .select_from(m.SupportTicket)
+                .where(m.SupportTicket.status.in_(_OPEN_TICKET_STATUSES))
+            )
+            or 0
+        )
     return {
         "generated_at": datetime.utcnow().isoformat() + "Z",
         "tenant_count": len(rows),
         "by_status": by_status,
         "by_package": by_package,
+        "open_support_tickets": open_support_tickets,
     }
 
 

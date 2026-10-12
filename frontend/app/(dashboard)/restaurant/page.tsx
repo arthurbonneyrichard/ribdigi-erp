@@ -3,6 +3,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
+import { moduleEnabledForTenant } from '../../../lib/industryModules';
 
 type Row = Record<string, any>;
 

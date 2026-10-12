@@ -6,6 +6,10 @@ import { getPrefetched } from '../../../lib/prefetchCache';
 import { pageLoadStarted } from '../../../lib/navTiming';
 import PageSkeleton from '../../../components/PageSkeleton';
 
+import { closeShiftForSignOut } from '../../../lib/cashierShift';
+import { formatWhen } from '../../../lib/format';
+import { useCompanyFormat } from '../../../lib/useCompanyFormat';
+
 function bufferToBase64url(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
   let str = '';
@@ -84,11 +88,24 @@ type AuthSessionRow = {
 
 function shortAgent(ua?: string | null): string {
   if (!ua) return 'Unknown device';
-  const s = ua.slice(0, 80);
-  return ua.length > 80 ? `${s}…` : s;
+  const lower = ua.toLowerCase();
+  if (lower.includes('python') || lower.includes('urllib') || lower.includes('curl')) return 'App or script';
+  let browser = 'Browser';
+  if (lower.includes('edg/')) browser = 'Edge';
+  else if (lower.includes('chrome/') || lower.includes('crios/')) browser = 'Chrome';
+  else if (lower.includes('firefox/')) browser = 'Firefox';
+  else if (lower.includes('safari/')) browser = 'Safari';
+  let system = '';
+  if (lower.includes('windows')) system = 'Windows';
+  else if (lower.includes('mac os') || lower.includes('macintosh')) system = 'Mac';
+  else if (lower.includes('android')) system = 'Android';
+  else if (lower.includes('iphone') || lower.includes('ipad')) system = 'iPhone or iPad';
+  else if (lower.includes('linux')) system = 'Linux';
+  return system ? `${browser} on ${system}` : browser;
 }
 
 export default function Page() {
+  const prefs = useCompanyFormat();
   const [status, setStatus] = useState<any>(null);
   const [passkeys, setPasskeys] = useState<any[]>([]);
   const [sessions, setSessions] = useState<AuthSessionRow[]>([]);
@@ -149,9 +166,9 @@ export default function Page() {
       await api(`/auth/sessions/${id}`, { method: 'DELETE' });
       if (isCurrent) {
         try {
-          await api('/auth/logout', { method: 'POST' });
+          await closeShiftForSignOut();
         } catch {
-          /* best-effort */
+          /* sign-out still proceeds */
         }
         localStorage.removeItem('token');
         localStorage.removeItem('refresh_token');
@@ -372,8 +389,8 @@ export default function Page() {
                   ) : null}
                 </div>
                 <div className="muted" style={{ fontSize: 13 }}>
-                  {s.ip_address || 'IP unknown'}
-                  {s.created_at ? ` · signed in ${new Date(s.created_at).toLocaleString()}` : ''}
+                  {s.ip_address ? `From ${s.ip_address}` : 'Location not recorded'}
+                  {s.created_at ? ` · Signed in ${formatWhen(s.created_at, prefs)}` : ''}
                 </div>
               </div>
               <button
@@ -412,8 +429,8 @@ export default function Page() {
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <h2>Passkeys (WebAuthn)</h2>
-        <p className="muted">Register a platform or security-key passkey for passwordless second factor.</p>
+        <h2>Passkeys</h2>
+        <p className="muted">Use a fingerprint, face, or security key as a second step at sign-in.</p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
           <input
             aria-label="Passkey name"
@@ -430,10 +447,7 @@ export default function Page() {
         <ul>
           {passkeys.map((p) => (
             <li key={p.id}>
-              {p.name || 'Passkey'} · sign count {p.sign_count}{' '}
-              <button type="button" onClick={() => removePasskey(p.id)} aria-label={`Remove passkey ${p.id}`}>
-                Remove
-              </button>
+              {p.name || 'Passkey'}{' '}
             </li>
           ))}
           {!passkeys.length && <li className="muted">No passkeys yet</li>}

@@ -8,6 +8,8 @@ import { industryAllowsModule, INDUSTRY_SPECIFIC_MODULES } from '../lib/industry
 import { industryLabel, normalizeIndustry } from '../lib/industries';
 import { isStoreNetworkNavItem, tenantIsMultiStore, type StoreEntitlementMe } from '../lib/tenantNav';
 import { getMe, invalidateMeCache } from '../lib/meCache';
+import { closeShiftForSignOut, openShiftForSignedInUser } from '../lib/cashierShift';
+import { subscribePosDrawerBridge, type PosDrawerBridgeState } from '../lib/posDrawerBridge';
 import { prefetchGet } from '../lib/prefetchCache';
 import { loadUserTheme, writeUserTheme } from '../lib/theme';
 import { StoreProvider } from '../lib/storeContext';
@@ -23,20 +25,18 @@ import {
 import {
   ALWAYS_LIST_NAV_GROUP_IDS,
   CASHIER_NAV_MODULES,
-  FMCG_NAV_ITEMS,
   RESTAURANT_NAV_ITEMS,
+  filterNavForIndustry,
   groupedTenantNav,
+  industryFeatureBlock,
   HOTEL_CASHIER_NAV_MODULES,
   HOTEL_INVENTORY_PROCUREMENT_CHILDREN,
   HOTEL_NAV_ITEMS,
   isHotelIndustry,
   navAllowlistFromPermissions,
   PEOPLE_NAV_ITEMS,
-  HOSPITAL_NAV_ITEMS,
-  PHARMACY_NAV_ITEMS,
-  RETAIL_WHOLESALE_NAV_ITEMS,
+  platformNavItemsForRole,
   unauthorizedNavRedirect,
-  WHOLESALE_NAV_ITEMS,
   type NavGroup,
   type NavItem,
 } from '../lib/tenantNav';
@@ -86,12 +86,7 @@ const TENANT_ITEMS: NavItem[] = [
   ...PEOPLE_NAV_ITEMS,
   ...HOTEL_NAV_ITEMS,
   ...HOTEL_INVENTORY_PROCUREMENT_CHILDREN,
-  ...FMCG_NAV_ITEMS,
   ...RESTAURANT_NAV_ITEMS,
-  ...HOSPITAL_NAV_ITEMS,
-  ...PHARMACY_NAV_ITEMS,
-  ...WHOLESALE_NAV_ITEMS,
-  ...RETAIL_WHOLESALE_NAV_ITEMS,
   ['Reports', '/reports', 'reports'],
   ['Notifications', '/notifications', 'notifications'],
   ['Audit', '/audit', 'audit'],
@@ -100,10 +95,11 @@ const TENANT_ITEMS: NavItem[] = [
   ['Security', '/security', 'security'],
   ['Printers', '/printers', 'printers'],
   ['AI Assistant', '/ai', 'ai'],
+  ['Help & Support', '/support', 'support'],
 ];
 
 /** Never accordion — click navigates even if later given extra children. */
-const STANDALONE_NAV_IDS = new Set(['dashboard', 'notifications', 'hotel']);
+const STANDALONE_NAV_IDS = new Set(['dashboard', 'notifications', 'hotel', 'support']);
 
 const TENANT_NAV_GROUPS: NavGroup[] = [
   { id: 'dashboard', label: 'Dashboard', items: [['Dashboard', '/dashboard', 'dashboard']] },
@@ -167,6 +163,7 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
     items: [...PEOPLE_NAV_ITEMS],
   },
   { id: 'notifications', label: 'Notifications', items: [['Notifications', '/notifications', 'notifications']] },
+  { id: 'support', label: 'Help & Support', items: [['Help & Support', '/support', 'support']] },
   {
     id: 'settings',
     label: 'Settings',
@@ -185,12 +182,7 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
     label: 'Industry-specific features',
     items: [
       ...HOTEL_NAV_ITEMS,
-      ...FMCG_NAV_ITEMS,
       ...RESTAURANT_NAV_ITEMS,
-      ...HOSPITAL_NAV_ITEMS,
-      ...PHARMACY_NAV_ITEMS,
-      ...WHOLESALE_NAV_ITEMS,
-      ...RETAIL_WHOLESALE_NAV_ITEMS,
     ],
   },
 ];
@@ -201,19 +193,6 @@ function usesAccordion(group: NavGroup): boolean {
   if (group.id === 'hotel-inventory') return group.items.length > 0;
   return group.items.length > 1;
 }
-
-/** Software-owner / platform console navigation only. */
-const PLATFORM_ITEMS: NavItem[] = [
-  ['Platform', '/platform', 'platform'],
-  ['Tenant', '/platform/tenants', 'platform_tenants'],
-  ['Billing', '/platform/billing', 'platform'],
-  ['Staff', '/platform/staff', 'platform_staff'],
-  ['Reports', '/platform/reports', 'platform_reports'],
-  ['Jobs', '/jobs', 'jobs'],
-  ['Notifications', '/notifications', 'notifications'],
-  ['Audit', '/audit', 'audit'],
-  ['Security', '/security', 'security'],
-];
 
 const PLATFORM_ROLES = new Set([
   'super_admin',
@@ -252,6 +231,7 @@ const ROLE_NAV_MODULES: Record<string, string[] | '*'> = {
     'ai',
     'security',
     'printers',
+    'support',
   ],
   sales_officer: [
     'dashboard',
@@ -267,6 +247,7 @@ const ROLE_NAV_MODULES: Record<string, string[] | '*'> = {
     'notifications',
     'ai',
     'security',
+    'support',
   ],
   inventory_officer: [
     'dashboard',
@@ -277,6 +258,7 @@ const ROLE_NAV_MODULES: Record<string, string[] | '*'> = {
     'notifications',
     'ai',
     'security',
+    'support',
   ],
   accountant: [
     'dashboard',
@@ -292,6 +274,7 @@ const ROLE_NAV_MODULES: Record<string, string[] | '*'> = {
     'ai',
     'audit',
     'security',
+    'support',
   ],
   cashier: [...CASHIER_NAV_MODULES],
   hotel_manager: [
@@ -310,13 +293,14 @@ const ROLE_NAV_MODULES: Record<string, string[] | '*'> = {
     'security',
     'company',
     'printers',
+    'support',
   ],
-  hotel_front_desk: ['hotel', 'notifications', 'security', 'printers'],
-  hotel_reservations: ['hotel', 'notifications', 'security'],
-  hotel_housekeeping: ['hotel', 'inventory', 'notifications', 'security'],
-  hotel_maintenance: ['hotel', 'inventory', 'notifications', 'security'],
+  hotel_front_desk: ['hotel', 'notifications', 'security', 'printers', 'support'],
+  hotel_reservations: ['hotel', 'notifications', 'security', 'support'],
+  hotel_housekeeping: ['hotel', 'inventory', 'notifications', 'security', 'support'],
+  hotel_maintenance: ['hotel', 'inventory', 'notifications', 'security', 'support'],
   hotel_cashier: [...HOTEL_CASHIER_NAV_MODULES],
-  hotel_auditor: ['hotel', 'reports', 'audit', 'accounting', 'notifications', 'security'],
+  hotel_auditor: ['hotel', 'reports', 'audit', 'accounting', 'notifications', 'security', 'support'],
 };
 
 // Monochrome line icons (inherit the nav text color via currentColor).
@@ -505,6 +489,13 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
     </>
   ),
+  support: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 3v2M12 19v2M3 12h2M19 12h2" />
+    </>
+  ),
 };
 
 function NavIcon({ name }: { name: string }) {
@@ -605,13 +596,9 @@ function navItemsForRole(
   industry: string | null,
   multiStore = true
 ): NavItem[] {
-  // Software owner staff: platform console nav only.
+  // Software owner staff: platform console only. Industry and package filters do not apply.
   if (PLATFORM_ROLES.has(role)) {
-    return PLATFORM_ITEMS.filter(([, , module]) => {
-      if (module === 'platform' || module === 'platform_tenants') return true;
-      if (permissions?.['*']?.includes('*')) return true;
-      return canReadModule(permissions, module);
-    });
+    return platformNavItemsForRole(role, permissions);
   }
 
   const allowed = navAllowlistForRole(role, permissions);
@@ -619,6 +606,9 @@ function navItemsForRole(
     enabledModules && enabledModules.length > 0 ? new Set(enabledModules.map((m) => m.toLowerCase())) : null;
   const industrySpecific = new Set<string>(INDUSTRY_SPECIFIC_MODULES);
   return TENANT_ITEMS.filter(([, href, module]) => {
+    if (module === 'support') {
+      return allowed === '*' || allowed.includes('support');
+    }
     const permModule = module === 'integrations' ? 'company' : module;
     if (allowed !== '*' && !allowed.includes(permModule) && module !== 'integrations')
       return false;
@@ -632,7 +622,7 @@ function navItemsForRole(
     } else if (
       packageSet &&
       !packageSet.has(permModule) &&
-      !['dashboard', 'notifications', 'security', 'users', 'printers', 'stores'].includes(module)
+      !['dashboard', 'notifications', 'security', 'users', 'printers', 'stores', 'support'].includes(module)
     ) {
       return false;
     }
@@ -641,6 +631,25 @@ function navItemsForRole(
 }
 
 const NAV_EXPANDED_KEY = 'ribdigi.nav.expanded';
+const NAV_HIDDEN_KEY = 'ribdigi.nav.hidden';
+
+function readNavCompact(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(NAV_HIDDEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeNavCompact(compact: boolean) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(NAV_HIDDEN_KEY, compact ? '1' : '0');
+  } catch {
+    /* quota / private mode — the rail still toggles for this visit */
+  }
+}
 
 function readExpandedNav(): string[] {
   if (typeof window === 'undefined') return [];
@@ -704,6 +713,137 @@ function enrollmentRequired(err: unknown): boolean {
   return e?.status === 403 && /2fa enrollment/i.test(String(e?.message || ''));
 }
 
+function SideEdgeToggle({ compact, onToggle }: { compact: boolean; onToggle: () => void }) {
+  const label = compact ? 'Expand sidebar' : 'Collapse sidebar';
+  return (
+    <button
+      type="button"
+      className="side-edge-toggle"
+      aria-expanded={!compact}
+      aria-controls="app-sidebar"
+      aria-label={label}
+      title={label}
+      onClick={onToggle}
+    >
+      <span className="side-edge-chevron" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path
+            d="M10 3.5 5.5 8 10 12.5"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+    </button>
+  );
+}
+
+const DRAWER_REASON_PLACEHOLDERS = new Set(['manual', 'n/a', 'na', 'none', 'test']);
+
+function drawerOpenReason(raw: string): string | null {
+  const cleaned = raw.trim();
+  if (cleaned.length < 3 || cleaned.length > 200) return null;
+  if (!/[A-Za-z0-9]/.test(cleaned)) return null;
+  if (cleaned.includes('://') || cleaned.includes('@')) return null;
+  if (DRAWER_REASON_PLACEHOLDERS.has(cleaned.toLowerCase())) return null;
+  return cleaned;
+}
+
+/** Sits in the POS top row, immediately to the right of the selling pill. */
+function PosDrawerTopControls() {
+  const [bridge, setBridge] = useState<PosDrawerBridgeState | null>(null);
+  const [drawerReason, setDrawerReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [drawerNote, setDrawerNote] = useState('');
+  const [drawerError, setDrawerError] = useState('');
+
+  useEffect(() => subscribePosDrawerBridge(setBridge), []);
+
+  if (!bridge?.sessionId) return null;
+
+  return (
+    <>
+      <input
+        className="pos-top-drawer-reason"
+        value={drawerReason}
+        onChange={(e) => setDrawerReason(e.target.value)}
+        placeholder="Drawer reason"
+        maxLength={200}
+        autoComplete="off"
+        aria-label="Cash drawer open reason"
+      />
+      <button
+        type="button"
+        className="tpos-btn tpos-btn-primary pos-top-drawer-btn"
+        aria-label="Open drawer"
+        disabled={busy}
+        onClick={() => {
+          const sessionId = bridge.sessionId;
+          const cleaned = drawerOpenReason(drawerReason);
+          if (!cleaned) {
+            setDrawerNote('');
+            setDrawerError('Enter a short reason for opening the drawer.');
+            return;
+          }
+          setDrawerError('');
+          setBusy(true);
+          void api(`/pos/sessions/${sessionId}/drawer/open`, {
+            method: 'POST',
+            body: JSON.stringify({ reason: cleaned }),
+          })
+            .then((r) => {
+              setDrawerReason('');
+              setDrawerNote(r.data?.message || r.message || 'Drawer opened');
+            })
+            .catch((err: unknown) => {
+              const message = err instanceof Error ? err.message : 'Could not open the drawer.';
+              setDrawerError(message || 'Could not open the drawer.');
+            })
+            .finally(() => setBusy(false));
+        }}
+      >
+        {busy ? 'Opening…' : 'Open drawer'}
+      </button>
+      {drawerNote ? (
+        <span className="pos-top-drawer-note" role="status">
+          {drawerNote}
+        </span>
+      ) : null}
+      {drawerError ? (
+        <span className="pos-top-drawer-note is-error" role="alert">
+          {drawerError}
+        </span>
+      ) : null}
+    </>
+  );
+}
+
+function PosSellingStatus() {
+  const [online, setOnline] = useState(
+    () => (typeof navigator === 'undefined' ? true : navigator.onLine),
+  );
+  useEffect(() => {
+    const sync = () => setOnline(navigator.onLine);
+    sync();
+    window.addEventListener('online', sync);
+    window.addEventListener('offline', sync);
+    return () => {
+      window.removeEventListener('online', sync);
+      window.removeEventListener('offline', sync);
+    };
+  }, []);
+  return (
+    <span
+      className={`pos-sell-mode${online ? ' is-online' : ' is-offline'}`}
+      role="status"
+    >
+      {online ? 'Online selling' : 'Offline selling'}
+    </span>
+  );
+}
+
 export default function Shell({ children }: { children: React.ReactNode }) {
   const [authReady, setAuthReady] = useState(false);
   const [authGateError, setAuthGateError] = useState('');
@@ -716,6 +856,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
+  const [navCompact, setNavCompact] = useState(false);
   const [fullName, setFullName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [hasLogo, setHasLogo] = useState(false);
@@ -876,6 +1017,18 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    setNavCompact(readNavCompact());
+  }, []);
+
+  function toggleNavCompact() {
+    setNavCompact((prev) => {
+      const next = !prev;
+      writeNavCompact(next);
+      return next;
+    });
+  }
+
+  useEffect(() => {
     if (typeof document === 'undefined') return;
     const body = document.body;
     if (!menuOpen) {
@@ -921,7 +1074,17 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     setTheme((el.getAttribute('data-theme') as 'light' | 'dark') || 'light');
   }, [userId]);
 
+  useEffect(() => {
+    if (!authReady) return;
+    void openShiftForSignedInUser();
+  }, [authReady]);
+
   async function logout() {
+    try {
+      await closeShiftForSignOut();
+    } catch {
+      /* sign-out still proceeds */
+    }
     try {
       const offline = await import('../lib/posOffline');
       await offline.releaseOfflineGrantIfIdle(api);
@@ -1144,6 +1307,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     if (idleLoggingOut.current) return;
     idleLoggingOut.current = true;
     try {
+      await closeShiftForSignOut();
+    } catch {
+      /* sign-out still proceeds */
+    }
+    try {
       await api('/auth/logout', { method: 'POST' });
     } catch {
       /* revoke best-effort */
@@ -1222,10 +1390,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     };
   }, [authReady]);
 
-  const visible = useMemo(
-    () => navItemsForRole(role, permissions, enabledModules, industry, multiStore),
-    [role, permissions, enabledModules, industry, multiStore]
-  );
+  const visible = useMemo(() => {
+    const items = navItemsForRole(role, permissions, enabledModules, industry, multiStore);
+    if (PLATFORM_ROLES.has(role)) return items;
+    return filterNavForIndustry(items, industry);
+  }, [role, permissions, enabledModules, industry, multiStore]);
   const navGroups = useMemo(
     () => groupedTenantNav(TENANT_NAV_GROUPS, visible, industry, multiStore),
     [visible, industry, multiStore]
@@ -1233,8 +1402,12 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const navRedirectTo = useMemo(() => {
     if (!authReady || !role || PLATFORM_ROLES.has(role)) return null;
     const allowed = navAllowlistForRole(role, permissions);
-    return unauthorizedNavRedirect(pathname || '', role, allowed);
-  }, [authReady, role, permissions, pathname]);
+    return unauthorizedNavRedirect(pathname || '', role, allowed, industry);
+  }, [authReady, role, permissions, pathname, industry]);
+  const industryPageBlock = useMemo(() => {
+    if (!role || PLATFORM_ROLES.has(role)) return null;
+    return industryFeatureBlock(pathname || '/', industry, enabledModules);
+  }, [role, pathname, industry, enabledModules]);
 
   useEffect(() => {
     if (!navRedirectTo) return;
@@ -1266,6 +1439,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       return next;
     });
   }, [pathname, navSearch, navHash, navGroups, visible, isPlatformOwner]);
+
+  const drawerClosed = (mobileNav && !menuOpen) || (!mobileNav && navCompact);
 
   function toggleNavGroup(id: string) {
     setExpandedNav((prev) => {
@@ -1333,11 +1508,12 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <StoreProvider enabled={Boolean(role) && !isPlatformOwner}>
-      <div className={`shell shell-secure${menuOpen ? ' nav-open' : ''}`}>
+      <div className={`shell shell-secure${menuOpen ? ' nav-open' : ''}${navCompact ? ' nav-compact' : ''}${pathname === '/pos' ? ' is-pos' : ''}`}>
       <aside
+        id="app-sidebar"
         className="side"
-        aria-hidden={mobileNav && !menuOpen}
-        {...(mobileNav && !menuOpen ? { inert: true } : {})}
+        aria-hidden={drawerClosed}
+        {...(drawerClosed ? { inert: true } : {})}
       >
         <div className="brand" aria-label="Workspace brand">
           <div className="brand-logo-slot">
@@ -1363,6 +1539,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           {(isPlatformOwner ? [{ id: 'platform', label: '', items: visible }] : navGroups).map((group) => {
             const links = group.items.map(([n, h, module]) => {
               const active = isNavActive(pathname || '', h, visible, navSearch, navHash);
+              const label =
+                n +
+                ((h === '/notifications' || h.startsWith('/notifications?')) && unread > 0
+                  ? ` (${unread})`
+                  : '');
               return (
                 <Link
                   key={h}
@@ -1370,6 +1551,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                   prefetch={false}
                   className={active ? 'active' : undefined}
                   aria-current={active ? 'page' : undefined}
+                  title={label}
                   onClick={() => {
                     setMenuOpen(false);
                     const dest = hrefParts(h);
@@ -1386,12 +1568,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                   <span className="nav-ico">
                     <NavIcon name={module} />
                   </span>
-                  <span className="nav-label">
-                    {n}
-                    {(h === '/notifications' || h.startsWith('/notifications?')) && unread > 0
-                      ? ` (${unread})`
-                      : ''}
-                  </span>
+                  <span className="nav-label">{label}</span>
                 </Link>
               );
             });
@@ -1446,16 +1623,21 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           </a>
         </div>
       </aside>
+      <SideEdgeToggle compact={navCompact} onToggle={toggleNavCompact} />
       <div className="side-backdrop" onClick={() => setMenuOpen(false)} aria-hidden />
       <main className="main">
         <div className="topbar">
           <div className="topbar-left">
+            {pathname === '/pos' ? <PosSellingStatus /> : null}
+            {pathname === '/pos' ? <PosDrawerTopControls /> : null}
             <button
               type="button"
               className="menu-btn"
               aria-label="Toggle navigation menu"
-              aria-expanded={menuOpen}
-              onClick={() => setMenuOpen((v) => !v)}
+              aria-expanded={mobileNav ? menuOpen : undefined}
+              onClick={() => {
+                if (mobileNav) setMenuOpen((v) => !v);
+              }}
             >
               <span aria-hidden>{'\u2630'}</span>
               <span className="menu-btn-label">Menu</span>
@@ -1547,7 +1729,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                 <span className="uavatar" aria-hidden>
                   {fullName.trim().charAt(0).toUpperCase() || 'U'}
                 </span>
-                <span className="uname">{fullName.trim().split(/\s+/)[0]}</span>
+                <span className="uname">{pathname === '/pos' ? fullName.trim() : fullName.trim().split(/\s+/)[0]}</span>
               </span>
             )}
             <button type="button" className="logout-btn" onClick={logout} aria-label="Log out" title="Log out">
@@ -1566,9 +1748,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           </p>
         )}
         {!isPlatformOwner && (
-          <OnboardingChecklist
-            canManage={role === 'company_admin' || role === 'super_admin'}
-          />
+          <div className="no-print">
+            <OnboardingChecklist
+              canManage={role === 'company_admin' || role === 'super_admin'}
+            />
+          </div>
         )}
         {navPending ? <div className="nav-progress" role="progressbar" aria-label="Loading page" /> : null}
         <div key={pathname || '/'} className="page-view">

@@ -21,12 +21,7 @@ TRADE_INDUSTRIES = frozenset({"retail", "pharmacy", "wholesale", "retail_wholesa
 WHOLESALE_INDUSTRIES = frozenset({"wholesale", "retail_wholesale"})
 # Platform Owner provision list — other canonical industries remain valid for
 # existing tenants (hotel/fmcg/…) but these four are the trade ERP surface.
-PROVISION_INDUSTRIES: tuple[str, ...] = (
-    "retail",
-    "pharmacy",
-    "wholesale",
-    "retail_wholesale",
-)
+PROVISION_INDUSTRIES: tuple[str, ...] = ("retail", "hotel", "restaurant")
 
 
 def normalize_sales_channel(value: str | None) -> str | None:

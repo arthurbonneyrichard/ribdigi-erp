@@ -3,6 +3,8 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '../../../lib/api';
+import { formatWhen, plainLabel } from '../../../lib/format';
+import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 
 function retryAfterFrom(raw: unknown): number {
   const n = Number((raw as { retryAfter?: number })?.retryAfter);
@@ -129,6 +131,7 @@ function CreateCreditForm({
 }
 
 export default function Page() {
+  useCompanyFormat();
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlKind = searchParams.get('kind') === 'payable' ? 'payable' : 'receivable';
@@ -559,10 +562,10 @@ export default function Page() {
       </h1>
       <p className="muted">
         {kind === 'receivable'
-          ? 'Money customers still owe. Record a repayment here. New credit sales are created on Sales or POS.'
+          ? 'Money customers still owe. Record a payment here. New sales on credit are created under Sales or Point of sale.'
           : payPanel
-            ? 'Pay open supplier bills. This records money going out — it does not create a new bill.'
-            : 'What we still owe suppliers from posted supplier bills after recorded payments, purchase returns, and credits. Open purchase orders are listed separately and are not treated as invoiced amounts due. Click a bill to open it or payment history.'}
+            ? 'Pay an open supplier bill. This records money going out. It does not create a new bill.'
+            : 'What this company still owes suppliers. Purchase orders are listed separately until a bill is posted.'}
       </p>
       {error && (
         <p className="erp-banner err" role="alert">
@@ -590,14 +593,14 @@ export default function Page() {
           disabled={kind === 'receivable'}
           aria-label="Show receivables aging"
         >
-          Receivables
+          Customers owe us
         </button>
         <button
           onClick={() => selectPayableView()}
           disabled={kind === 'payable' && !payPanel}
           aria-label="Show payables aging"
         >
-          Payables
+          We owe suppliers
         </button>
         <button
           onClick={() => selectPayableView('pay')}
@@ -624,7 +627,7 @@ export default function Page() {
       </div>
       {kind === 'payable' && loadState === 'success' && Number(report?.commitment_total || 0) > 0 ? (
         <p className="muted credit-commitments" role="status">
-          Open purchase-order commitments (not yet billed): {report.commitment_total}
+          Open purchase orders (not yet billed): {report.commitment_total}
         </p>
       ) : null}
 
@@ -636,7 +639,7 @@ export default function Page() {
           ) : (
             <>
           <p className="muted">
-            Open Purchases to post a supplier invoice. That increases what we owe. This page only records money going out.
+            Open Purchases to record a supplier bill. That increases what the company owes. This page only records money going out.
           </p>
           <a href="/purchasing?tab=invoices">
             <button type="button">Go to Purchases</button>
@@ -665,7 +668,7 @@ export default function Page() {
         <div className="erp-split" style={{ marginTop: 8 }}>
         <div className="card">
           <h3>Early payment terms</h3>
-          <p className="muted">e.g. 2% if paid within 10 days (AR give / AP take)</p>
+          <p className="muted">For example, 2% off if the bill is paid within 10 days.</p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <input
               value={epPct}
@@ -686,13 +689,13 @@ export default function Page() {
             </button>
           </div>
           <p className="muted" style={{ marginTop: 8 }}>
-            Status: {epEnabled ? 'enabled' : 'disabled'}
+            Status: {epEnabled ? 'On' : 'Off'}
           </p>
         </div>
         <div className="card">
           <h3>Exchange rates</h3>
           <p className="muted">
-            Base: {baseCurrency} — 1 foreign unit = rate × {baseCurrency}
+            Company currency is {baseCurrency}. The rate is how many {baseCurrency} equal 1 unit of the other currency.
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <input
@@ -719,7 +722,7 @@ export default function Page() {
           </div>
           <label className="muted" style={{ display: 'block', marginTop: 8 }}>
             <input type="checkbox" checked={fxAutoRefresh} onChange={toggleFxAutoRefresh} aria-label="FX auto-refresh" />{' '}
-            Auto-refresh via scheduled job
+            Update rates automatically
           </label>
           <ul style={{ marginTop: 8, paddingLeft: 18 }}>
             {fxRates.map((r: any) => (
@@ -727,7 +730,7 @@ export default function Page() {
                 {r.currency_code}: {r.rate_to_base}
                 {r.source ? ` · ${r.source}` : ''}
                 {r.provider_fetched_at
-                  ? ` · ${String(r.provider_fetched_at).replace('T', ' ').slice(0, 16)}`
+                  ? ` · ${formatWhen(r.provider_fetched_at)}`
                   : ''}{' '}
                 <button type="button" onClick={() => removeFxRate(r.currency_code)} aria-label={`Remove exchange rate ${r.currency_code}`}>
                   Remove
@@ -814,17 +817,17 @@ export default function Page() {
                   value={payChequeDate}
                   onChange={(e) => setPayChequeDate(e.target.value)}
                   aria-label="Payment cheque date"
-                  title="Cheque date (YYYY-MM-DD)"
+                  title="Cheque date"
                 />
               </>
             ) : null}
             <select
               value={liquidAccountId}
               onChange={(e) => setLiquidAccountId(e.target.value)}
-              title="Optional GL override"
+              title="Account this payment uses"
               aria-label="Credit payment liquid account"
             >
-              <option value="">GL: method default</option>
+              <option value="">Default account</option>
               {liquidAccounts.map((a: any) => (
                 <option key={a.id} value={a.id}>
                   {a.code} {a.name}
@@ -834,7 +837,7 @@ export default function Page() {
             <input
               value={payFxRate}
               onChange={(e) => setPayFxRate(e.target.value)}
-              placeholder="Settle FX rate"
+              placeholder="Exchange rate"
               style={{ width: 110 }}
               title="Optional payment exchange rate (same currency as invoice)"
               aria-label="Payment FX rate"
@@ -1001,12 +1004,12 @@ export default function Page() {
                   >
                     <td>{row.party_name}</td>
                     <td>{row.document_number}</td>
-                    <td>{String(row.invoice_date || '').slice(0, 10) || '—'}</td>
-                    <td>{String(row.due_date || '').slice(0, 10) || '—'}</td>
+                    <td>{formatWhen(row.invoice_date) || '—'}</td>
+                    <td>{formatWhen(row.due_date) || '—'}</td>
                     <td>{row.total_amount}</td>
                     <td>{row.paid_amount}</td>
                     <td>{row.balance_due}</td>
-                    <td>{row.status}</td>
+                    <td>{plainLabel(row.status)}</td>
                     <td>
                       <button
                         type="button"
@@ -1053,7 +1056,7 @@ export default function Page() {
                   >
                     <td>{row.party_name}</td>
                     <td>{row.document_number}</td>
-                    <td>{row.status}</td>
+                    <td>{plainLabel(row.status)}</td>
                     <td>{row.balance_due}</td>
                   </tr>
                 ))}
@@ -1083,7 +1086,7 @@ export default function Page() {
                   (row: any, i: number) => (
                     <tr key={row.id || row.invoice_id || i}>
                       <td>
-                        {String(row.date || row.posted_at || row.created_at || '').slice(0, 10) || '—'}
+                        {formatWhen(row.date || row.posted_at || row.created_at) || '—'}
                       </td>
                       <td>{row.reference || row.invoice_number || row.description || '—'}</td>
                       <td>{row.amount ?? row.total_amount ?? row.balance ?? '—'}</td>
@@ -1146,14 +1149,14 @@ export default function Page() {
                 {(creditInfo.credit_sales || []).map((row: any) => (
                   <tr key={row.invoice_id}>
                     <td>{row.invoice_number}</td>
-                    <td>{row.status}</td>
+                    <td>{plainLabel(row.status)}</td>
                     <td>{row.amount}</td>
                   </tr>
                 ))}
                 {(creditInfo.open_bills || []).map((row: any) => (
                   <tr key={row.purchase_invoice_id || row.purchase_order_id}>
                     <td>{row.invoice_number || row.po_number}</td>
-                    <td>{row.status}</td>
+                    <td>{plainLabel(row.status)}</td>
                     <td>{row.amount}</td>
                   </tr>
                 ))}
@@ -1183,9 +1186,9 @@ export default function Page() {
             <tbody>
               {(history.purchases || []).map((p: any) => (
                 <tr key={`${p.type}-${p.id}`}>
-                  <td>{p.type}</td>
+                  <td>{plainLabel(p.type)}</td>
                   <td>{p.reference}</td>
-                  <td>{p.status}</td>
+                  <td>{plainLabel(p.status)}</td>
                   <td>{p.total_amount}</td>
                 </tr>
               ))}
@@ -1213,7 +1216,7 @@ export default function Page() {
                 <tr key={r.id}>
                   <td>{r.return_number}</td>
                   <td>{r.reason}</td>
-                  <td>{r.status}</td>
+                  <td>{plainLabel(r.status)}</td>
                   <td>{r.total_amount}</td>
                 </tr>
               ))}
@@ -1272,20 +1275,18 @@ export default function Page() {
                 <th>Status</th>
                 <th>Balance</th>
                 <th>Days</th>
-                <th>Early disc.</th>
+                <th>Early discount</th>
               </tr>
             </thead>
             <tbody>
               {(schedule.items || []).map((row: any) => (
                 <tr key={`${row.document_type}-${row.id}`}>
                   <td>
-                    {row.due_date
-                      ? String(row.due_date).replace('T', ' ').slice(0, 10)
-                      : '—'}
+                    {formatWhen(row.due_date) || '—'}
                   </td>
                   <td>{row.document_number}</td>
-                  <td>{row.document_type === 'purchase_invoice' ? 'Bill' : 'PO'}</td>
-                  <td>{row.status}</td>
+                  <td>{row.document_type === 'purchase_invoice' ? 'Bill' : 'Order'}</td>
+                  <td>{plainLabel(row.status)}</td>
                   <td>{row.balance_due}</td>
                   <td>
                     {row.days_until_due == null

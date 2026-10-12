@@ -6,6 +6,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     JSON,
     Numeric,
@@ -1194,6 +1195,10 @@ class PosDevice(Base):
     user_agent: Mapped[str | None] = mapped_column(String(300), nullable=True)
     pending_queue_count: Mapped[int] = mapped_column(Integer, default=0)
     offline_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Last POS selling pill: True while the cashier's browser is online.
+    selling_online: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Set when selling_online flips to false; cleared on the next online heartbeat.
+    offline_since: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -2864,3 +2869,124 @@ class RestaurantKitchenTicket(Base):
     station: Mapped[str] = mapped_column(String(20), default="kitchen")
     status: Mapped[str] = mapped_column(String(20), default="queued")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class SupportTicketSequence(Base):
+    """Per-year counter for RIB-YYYY-NNNNNN references. No tenant_id (global)."""
+
+    __tablename__ = "support_ticket_sequences"
+
+    year: Mapped[int] = mapped_column(Integer, primary_key=True)
+    next_number: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class SupportNotificationRecipient(Base):
+    """Software-owner support inbox. No tenant_id so company purge cannot delete it."""
+
+    __tablename__ = "support_notification_recipients"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    last_test_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    last_test_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_test_error: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    updated_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class SupportTicket(Base):
+    __tablename__ = "support_tickets"
+    __table_args__ = (
+        UniqueConstraint("reference", name="uq_support_tickets_reference"),
+        Index("ix_support_tickets_tenant_status", "tenant_id", "status"),
+        Index("ix_support_tickets_created_at", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    reference: Mapped[str] = mapped_column(String(20), nullable=False)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    created_by: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    subject: Mapped[str] = mapped_column(String(200))
+    description: Mapped[str] = mapped_column(Text)
+    category: Mapped[str] = mapped_column(String(40), index=True)
+    priority: Mapped[str] = mapped_column(String(20), default="normal", index=True)
+    status: Mapped[str] = mapped_column(String(32), default="new", index=True)
+    assignee_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    assigned_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    resolved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    closed_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+
+
+class SupportTicketMessage(Base):
+    __tablename__ = "support_ticket_messages"
+    __table_args__ = (Index("ix_support_messages_ticket", "ticket_id", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    ticket_id: Mapped[str] = mapped_column(ForeignKey("support_tickets.id"), index=True)
+    author_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    visibility: Mapped[str] = mapped_column(String(20), default="public")  # public | internal
+    body: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class SupportTicketAttachment(Base):
+    __tablename__ = "support_ticket_attachments"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    ticket_id: Mapped[str] = mapped_column(ForeignKey("support_tickets.id"), index=True)
+    message_id: Mapped[str | None] = mapped_column(ForeignKey("support_ticket_messages.id"), nullable=True)
+    storage_key: Mapped[str] = mapped_column(String(500))
+    filename: Mapped[str] = mapped_column(String(200))
+    content_type: Mapped[str] = mapped_column(String(80))
+    size_bytes: Mapped[int] = mapped_column(Integer)
+    uploaded_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class SupportTicketEvent(Base):
+    __tablename__ = "support_ticket_events"
+    __table_args__ = (Index("ix_support_events_ticket", "ticket_id", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    ticket_id: Mapped[str] = mapped_column(ForeignKey("support_tickets.id"), index=True)
+    actor_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    action: Mapped[str] = mapped_column(String(80))
+    before: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    after: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class SupportEmailOutbox(Base):
+    __tablename__ = "support_email_outbox"
+    __table_args__ = (
+        UniqueConstraint("idempotency_key", name="uq_support_email_outbox_idempotency"),
+        Index("ix_support_email_outbox_status", "status"),
+        Index("ix_support_email_outbox_recipient", "recipient_email"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str | None] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
+    ticket_id: Mapped[str | None] = mapped_column(ForeignKey("support_tickets.id"), nullable=True, index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(220))
+    event_type: Mapped[str] = mapped_column(String(40))
+    recipient_email: Mapped[str] = mapped_column(String(255))
+    subject: Mapped[str] = mapped_column(String(200))
+    body_text: Mapped[str] = mapped_column(Text)
+    link_url: Mapped[str] = mapped_column(String(500), default="")
+    status: Mapped[str] = mapped_column(String(20), default="pending")  # pending | sending | sent | failed
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    last_error: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    failed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

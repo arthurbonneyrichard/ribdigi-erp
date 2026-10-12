@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     MEDIA_DIR: str = "/data/media"
     MEDIA_MAX_LOGO_BYTES: int = 2_000_000
     MEDIA_MAX_ATTACHMENT_BYTES: int = 10_000_000
+    SUPPORT_ATTACHMENT_MAX_BYTES: int = 10_000_000
     # local | s3 (MinIO-compatible via S3_ENDPOINT)
     STORAGE_BACKEND: str = "local"
     S3_ENDPOINT: str = ""

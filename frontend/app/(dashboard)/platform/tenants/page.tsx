@@ -8,14 +8,8 @@ import { getPrefetched } from '../../../../lib/prefetchCache';
 import { industryAllowsModule } from '../../../../lib/industryModules';
 import { INDUSTRIES, PROVISION_INDUSTRIES, industryLabel } from '../../../../lib/industries';
 
-/** New companies: Retail, Pharmacy, Wholesale, Retail + Wholesale, Restaurant, Hotel, FMCG, and Hospital. */
-const CREATE_INDUSTRIES = [
-  ...PROVISION_INDUSTRIES,
-  'restaurant',
-  'hotel',
-  'fmcg',
-  'hospital',
-] as const;
+/** New companies: Retail, Hotel, and Restaurant. */
+const CREATE_INDUSTRIES = [...PROVISION_INDUSTRIES] as const;
 
 type SubscriptionInfo = {
   package_code?: string;
@@ -157,8 +151,7 @@ export default function PlatformTenantsPage() {
     [tenants, selectedId]
   );
   const canDeleteTenant = meRole === 'platform_owner' || meRole === 'super_admin';
-  const canHardDeleteTenant =
-    canDeleteTenant || meRole === 'platform_admin';
+  const canHardDeleteTenant = canDeleteTenant;
 
   function openManage(row: TenantRow) {
     setError('');
@@ -793,7 +786,7 @@ export default function PlatformTenantsPage() {
                 </label>
                 <p className="muted" style={{ marginTop: 6 }}>
                   Delete removes the company and its data. Type that tenant&apos;s slug, then Delete.
-                  Support and finance cannot delete a company.
+                  Only the software owner can delete a company.
                 </p>
               </>
             ) : null}
@@ -988,9 +981,8 @@ export default function PlatformTenantsPage() {
             <h3 style={{ marginTop: 20, fontSize: 15 }}>Business type</h3>
             <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>
               Current: {industryLabel(selected.industry)}. Only the Platform Owner can change this.
-              APIs follow the saved industry immediately. Ask staff to refresh or sign in again so
-              the sidebar matches. Records (including prescriptions) are kept — they are not
-              deleted. Pharmacy APIs return 403 after you leave pharmacy.
+              Choose Retail, Hotel, or Restaurant. APIs follow the saved industry immediately. Ask
+              staff to refresh or sign in again so the sidebar matches. Existing records are kept.
             </p>
             {canDeleteTenant ? (
               <div className="plat-form" style={{ marginTop: 8, display: 'grid', gap: 8 }}>
@@ -1001,6 +993,12 @@ export default function PlatformTenantsPage() {
                     onChange={(e) => setIndustryDraft(e.target.value)}
                     aria-label="Change tenant business type"
                   >
+                    {selected.industry &&
+                    !(INDUSTRIES as readonly string[]).includes(selected.industry) ? (
+                      <option value={selected.industry} disabled>
+                        {industryLabel(selected.industry)} (current, not available)
+                      </option>
+                    ) : null}
                     {INDUSTRIES.map((i) => (
                       <option key={i} value={i}>
                         {industryLabel(i)}
@@ -1023,12 +1021,19 @@ export default function PlatformTenantsPage() {
                   aria-label="Save tenant business type"
                   onClick={async () => {
                     setError('');
+                    const stored = selected.industry || '';
+                    const selectable = INDUSTRIES as readonly string[];
+                    const nextIndustry = (industryDraft || (selectable.includes(stored) ? stored : '')).trim();
+                    if (!selectable.includes(nextIndustry)) {
+                      setError('Choose retail, hotel, or restaurant.');
+                      return;
+                    }
                     setBusy(selected.id);
                     try {
                       await api(`/tenants/${selected.id}/industry`, {
                         method: 'PATCH',
                         body: JSON.stringify({
-                          industry: industryDraft || selected.industry,
+                          industry: nextIndustry,
                           reason: industryReason.trim(),
                         }),
                       });

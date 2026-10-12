@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { api } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
+import { moduleEnabledForTenant } from '../../../lib/industryModules';
 
 type Patient = { id: string; name: string; phone?: string | null };
 type Visit = { id: string; patient_id: string; reason: string; status: string };

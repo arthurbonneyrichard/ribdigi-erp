@@ -127,9 +127,9 @@ def test_money_value_ui_and_docs():
     assert 'aria-label="Cash transfer amount"' in acct
     assert 'aria-label="Statement line amount"' in acct
 
-    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
-    assert 'aria-label="Opening cash"' in pos
-    assert 'aria-label="Counted cash"' in pos
+    helper = (ROOT / "frontend/lib/cashierShift.ts").read_text(encoding="utf-8")
+    assert "opening_cash: 0" in helper
+    assert "actual_cash: Number(session.expected_cash || 0)" in helper
 
 
 @pytest.mark.asyncio

@@ -59,6 +59,12 @@ _FMCG_FEATURES: tuple[dict[str, str], ...] = (
         "href": "/fmcg?tab=deliveries",
         "module": "fmcg",
     },
+    {
+        "id": "fmcg_packs",
+        "label": "Pack convert",
+        "href": "/fmcg?tab=packs",
+        "module": "fmcg",
+    },
 )
 
 _HOTEL_FEATURES: tuple[dict[str, str], ...] = (
@@ -99,24 +105,102 @@ _RETAIL_WHOLESALE_FEATURES: tuple[dict[str, str], ...] = (
     {"id": "credit", "label": "B2B credit", "href": "/credit", "module": "credit"},
 )
 
+_HOSPITAL_FEATURES: tuple[dict[str, str], ...] = (
+    {"id": "hospital_home", "label": "Patients and visits", "href": "/hospital", "module": "hospital"},
+)
+
+# Industries with a real operations dashboard. Stored types outside this set
+# (mart, bakery, distribution, general trading, manufacturing) and blank or
+# unknown values stay unconfigured — they do not inherit the retail desk.
+CONFIGURED_DASHBOARD_INDUSTRIES: frozenset[str] = frozenset({"retail", "hotel", "restaurant"})
+
 _FEATURES: dict[str, tuple[dict[str, str], ...]] = {
     "retail": _RETAIL_FEATURES,
-    "pharmacy": _PHARMACY_FEATURES,
-    "wholesale": _WHOLESALE_FEATURES,
-    "retail_wholesale": _RETAIL_WHOLESALE_FEATURES,
-    "fmcg": _FMCG_FEATURES,
     "hotel": _HOTEL_FEATURES,
     "restaurant": _RESTAURANT_FEATURES,
 }
 
 
+def _raw_industry(industry: str | None) -> str:
+    return str(industry or "").strip().lower().replace(" ", "_").replace("-", "_")
+
+
+def is_software_owner_industry(industry: str | None) -> bool:
+    """Ribdigi House workspace. Not a customer operating industry."""
+    return _raw_industry(industry) == "software"
+
+
+def dashboard_layout(industry: str | None) -> str:
+    """Server-side layout key. Never treats a missing industry as retail."""
+    if is_software_owner_industry(industry):
+        return "platform"
+    ind = canonicalize_industry(industry)
+    if not ind or ind not in CONFIGURED_DASHBOARD_INDUSTRIES:
+        return "unconfigured"
+    return ind
+
+
+def shows_retail_operations(industry: str | None) -> bool:
+    """Retail KPI grid is only the retail desk."""
+    return dashboard_layout(industry) == "retail"
+
+
 def industry_home_path(industry: str | None) -> str:
+    if is_software_owner_industry(industry):
+        return "/platform"
     ind = canonicalize_industry(industry)
     if ind == "hotel":
         return "/hotel"
     if ind == "restaurant":
         return "/restaurant"
     return "/dashboard"
+
+
+POS_INDUSTRIES = frozenset({"retail", "restaurant", "hotel"})
+
+
+def assert_pos_for_industry(claims: dict) -> None:
+    """POS is a storefront for retail, restaurant, and hotel. Other industries get 403."""
+    from fastapi import HTTPException
+
+    from app.rbac import is_platform_role
+
+    if is_platform_role(claims.get("role")):
+        return
+    industry = canonicalize_industry(claims.get("industry"))
+    if industry in POS_INDUSTRIES:
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "INDUSTRY_MODULE_DISABLED",
+            "message": "This feature is not available for this company.",
+            "module": "pos",
+            "industry": industry,
+        },
+    )
+
+
+def assert_gift_cards_for_industry(claims: dict) -> None:
+    """Gift cards are a retail storefront. Other industries get 403."""
+    from fastapi import HTTPException
+
+    from app.rbac import is_platform_role
+
+    if is_platform_role(claims.get("role")):
+        return
+    industry = canonicalize_industry(claims.get("industry"))
+    if industry == "retail":
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "INDUSTRY_MODULE_DISABLED",
+            "message": "This feature is not available for this company.",
+            "module": "pos",
+            "industry": industry,
+        },
+    )
 
 
 def industry_dashboard_features(industry: str | None) -> list[dict[str, str]]:
@@ -129,6 +213,14 @@ def industry_dashboard_features(industry: str | None) -> list[dict[str, str]]:
 
 def industry_dashboard_payload(tenant: Any) -> dict[str, Any]:
     raw = getattr(tenant, "industry", None) if tenant else None
+    if is_software_owner_industry(raw):
+        return {
+            "industry": "software",
+            "industry_home": "/platform",
+            "industry_features": [],
+            "dashboard_layout": "platform",
+            "show_retail_operations": False,
+        }
     industry = canonicalize_industry(raw)
     enabled = set(resolve_enabled_modules(tenant) if tenant else [])
     features: list[dict[str, str]] = []
@@ -146,6 +238,8 @@ def industry_dashboard_payload(tenant: Any) -> dict[str, Any]:
             continue
         if industry != "fmcg" and (href == "/fmcg" or href.startswith("/fmcg?")):
             continue
+        if industry != "hospital" and (href == "/hospital" or href.startswith("/hospital?")):
+            continue
         if industry != "pharmacy" and (
             href == "/prescriptions" or href.startswith("/prescriptions?")
         ):
@@ -155,4 +249,6 @@ def industry_dashboard_payload(tenant: Any) -> dict[str, Any]:
         "industry": industry,
         "industry_home": industry_home_path(industry),
         "industry_features": features,
+        "dashboard_layout": dashboard_layout(industry),
+        "show_retail_operations": shows_retail_operations(industry),
     }

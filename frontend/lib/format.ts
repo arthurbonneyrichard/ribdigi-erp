@@ -107,3 +107,87 @@ export function formatDateTime(
   if (!time) return date;
   return `${date} ${time}`;
 }
+
+let rememberedPrefs: FormatPrefs | null = null;
+
+/** Pages remember company date settings so shared formatters stay consistent. */
+export function rememberFormatPrefs(prefs?: FormatPrefs | null) {
+  if (prefs) rememberedPrefs = prefs;
+}
+
+function activePrefs(prefs?: FormatPrefs | null): FormatPrefs | null | undefined {
+  return prefs || rememberedPrefs;
+}
+
+/** Date-only values stay dates. Values with a clock include the time. */
+export function formatWhen(
+  value?: string | Date | null,
+  prefs?: FormatPrefs | null
+): string {
+  if (value == null || value === '') return '';
+  const raw = value instanceof Date ? value.toISOString() : String(value).trim();
+  if (!raw) return '';
+  const use = activePrefs(prefs);
+  const hasClock = raw.includes('T') || /\d{1,2}:\d{2}/.test(raw);
+  return hasClock ? formatDateTime(raw, use) : formatDate(raw, use);
+}
+
+/** How long a cashier has been offline, in plain minutes and hours. */
+export function formatElapsed(seconds: number | null | undefined): string {
+  if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return '';
+  const total = Math.floor(seconds);
+  if (total < 60) return 'under a minute';
+  const minutes = Math.floor(total / 60);
+  if (minutes < 60) return minutes === 1 ? '1 minute' : `${minutes} minutes`;
+  const hours = Math.floor(minutes / 60);
+  const rem = minutes % 60;
+  if (hours < 48) {
+    const hourLabel = hours === 1 ? '1 hour' : `${hours} hours`;
+    return rem ? `${hourLabel} ${rem} minutes` : hourLabel;
+  }
+  const days = Math.floor(hours / 24);
+  return days === 1 ? '1 day' : `${days} days`;
+}
+
+const PLAIN_LABELS: Record<string, string> = {
+  trialing: 'Trial',
+  trial: 'Trial',
+  active: 'Active',
+  inactive: 'Inactive',
+  grace: 'Grace period',
+  grace_period: 'Grace period',
+  suspended: 'Suspended',
+  payment_required: 'Payment needed',
+  past_due: 'Payment overdue',
+  draft: 'Draft',
+  pending: 'Pending',
+  paid: 'Paid',
+  unpaid: 'Unpaid',
+  partial: 'Partly paid',
+  overdue: 'Overdue',
+  cancelled: 'Cancelled',
+  canceled: 'Cancelled',
+  in_progress: 'In progress',
+  reconciled: 'Reconciled',
+  delivered: 'Delivered',
+  failed: 'Failed',
+  pending_retry: 'Waiting to retry',
+  revoked: 'Revoked',
+  expired: 'Expired',
+  daily: 'Daily',
+  weekly: 'Weekly',
+  monthly: 'Monthly',
+  yearly: 'Yearly',
+  yes: 'Yes',
+  no: 'No',
+};
+
+/** Turn stored codes such as past_due into words a company user can read. */
+export function plainLabel(value?: string | number | null): string {
+  const key = String(value ?? '').trim().toLowerCase();
+  if (!key) return '';
+  if (PLAIN_LABELS[key]) return PLAIN_LABELS[key];
+  return key
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}

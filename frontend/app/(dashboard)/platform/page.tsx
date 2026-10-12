@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { getPrefetched } from '../../../lib/prefetchCache';
 import { industryLabel } from '../../../lib/industries';
+import { platformNavItemsForRole } from '../../../lib/tenantNav';
 
 type TenantRow = {
   id: string;
@@ -21,6 +23,12 @@ type ActivityRow = {
   action?: string;
 };
 
+type PlatformSummary = {
+  tenant_count?: number;
+  by_package?: Record<string, number>;
+  open_support_tickets?: number;
+};
+
 const PLATFORM_ROLES = [
   'super_admin',
   'platform_owner',
@@ -28,6 +36,18 @@ const PLATFORM_ROLES = [
   'platform_support',
   'platform_finance',
 ];
+
+const CONSOLE_NOTES: Record<string, string> = {
+  '/platform/tenants': 'Companies, subscriptions, feature modules, usage, and store entitlement.',
+  '/platform/billing': 'Company plans, amounts, and subscription terms.',
+  '/platform/staff': 'Platform staff accounts. Owner actions stay with the software owner.',
+  '/platform/reports': 'Subscriptions, packages, trials, and cross-tenant usage.',
+  '/jobs': 'Scheduled jobs. Viewing is open to platform staff; running a job stays with the owner.',
+  '/notifications': 'Platform notifications.',
+  '/audit': 'Audit log.',
+  '/security': 'Security settings for this account.',
+  '/platform/support': 'Support desk for customer companies.',
+};
 
 const STATUS_BARS = [
   { key: 'active', label: 'Active', color: '#3D8B40' },
@@ -110,25 +130,45 @@ export default function PlatformConsole() {
   const router = useRouter();
   const [tenants, setTenants] = useState<TenantRow[]>([]);
   const [activity, setActivity] = useState<ActivityRow[]>([]);
+  const [summary, setSummary] = useState<PlatformSummary | null>(null);
+  const [summaryMissing, setSummaryMissing] = useState(false);
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
+  const [role, setRole] = useState('');
+  const [permissions, setPermissions] = useState<Record<string, string[]> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [me, tenantRes, activityRes] = await Promise.all([
-        getMe(),
-        getPrefetched('/tenants'),
-        api('/platform/activity'),
-      ]);
+      const me = await getMe();
       if (cancelled) return;
       const role = me.data?.role || '';
       if (!PLATFORM_ROLES.includes(role)) {
         router.replace('/dashboard');
         return;
       }
-      setTenants(tenantRes.data || []);
-      setActivity(activityRes.data || []);
+      setRole(role);
+      setPermissions(me.data?.permissions || {});
+      const [tenantRes, activityRes, summaryRes] = await Promise.allSettled([
+        getPrefetched('/tenants'),
+        api('/platform/activity'),
+        api('/platform/reports/summary'),
+      ]);
+      if (cancelled) return;
+      const problems: string[] = [];
+      if (tenantRes.status === 'fulfilled') setTenants(tenantRes.value.data || []);
+      else problems.push(tenantRes.reason?.message || 'Companies did not load');
+      if (activityRes.status === 'fulfilled') setActivity(activityRes.value.data || []);
+      else problems.push(activityRes.reason?.message || 'Platform activity did not load');
+      if (summaryRes.status === 'fulfilled') {
+        setSummary(summaryRes.value.data || {});
+        setSummaryMissing(false);
+      } else {
+        setSummary(null);
+        setSummaryMissing(true);
+        problems.push(summaryRes.reason?.message || 'Platform counts did not load');
+      }
+      if (problems.length) setError(problems.join(' '));
       setReady(true);
     })().catch((err) => {
       if (!cancelled) setError(err.message || 'Failed to load platform console');
@@ -148,6 +188,23 @@ export default function PlatformConsole() {
       suspended: count('suspended'),
     };
   }, [tenants]);
+
+  const tools = useMemo(
+    () => platformNavItemsForRole(role, permissions).filter(([, href]) => href !== '/platform'),
+    [role, permissions],
+  );
+
+  const companyCount =
+    typeof summary?.tenant_count === 'number'
+      ? summary.tenant_count
+      : summaryMissing && counts.total === 0
+        ? null
+        : counts.total;
+  const subscriptionCount = summary?.by_package
+    ? Object.values(summary.by_package).reduce((sum, value) => sum + Number(value || 0), 0)
+    : null;
+  const openTickets = typeof summary?.open_support_tickets === 'number' ? summary.open_support_tickets : null;
+  const canOpenDesk = tools.some(([, href]) => href === '/platform/support');
 
   const industries = useMemo(() => {
     const tally = new Map<string, number>();
@@ -171,8 +228,8 @@ export default function PlatformConsole() {
           <p className="plat-kicker">Software owner</p>
           <h1>Platform console</h1>
           <p className="plat-sub">
-            Platform activity and workspace totals. Create and manage tenants from the Tenant page.
-            Paid self-serve checkout is not live.
+            Platform activity and workspace totals. Subscriptions, modules, usage, and store
+            entitlement are on the Tenant page. Paid self-serve checkout is not live.
           </p>
         </div>
       </header>
@@ -182,6 +239,48 @@ export default function PlatformConsole() {
           {error}
         </p>
       )}
+
+      <div className="plat-panel">
+        <h2>Platform tools</h2>
+        <ul className="plat-tools">
+          {tools.map(([label, href]) => (
+            <li key={href}>
+              <Link href={href}>{label}</Link>
+              {CONSOLE_NOTES[href] ? <p className="muted">{CONSOLE_NOTES[href]}</p> : null}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="plat-stats" aria-label="Platform counts">
+        <Link href="/platform/tenants" className="plat-stat">
+          <span>Companies</span>
+          <strong>{companyCount == null ? '—' : companyCount}</strong>
+          {companyCount === 0 ? <p className="muted">No companies yet.</p> : null}
+          {companyCount == null ? <p className="muted">Company count did not load.</p> : null}
+        </Link>
+        <Link href="/platform/reports" className="plat-stat">
+          <span>Subscriptions</span>
+          <strong>{subscriptionCount == null ? '—' : subscriptionCount}</strong>
+          {subscriptionCount === 0 ? <p className="muted">No subscriptions yet.</p> : null}
+          {subscriptionCount == null ? <p className="muted">Subscription count did not load.</p> : null}
+        </Link>
+        {canOpenDesk ? (
+          <Link href="/platform/support" className="plat-stat">
+            <span>Open support tickets</span>
+            <strong>{openTickets == null ? '—' : openTickets}</strong>
+            {openTickets === 0 ? <p className="muted">No open support tickets.</p> : null}
+            {openTickets == null ? <p className="muted">Open ticket count did not load.</p> : null}
+          </Link>
+        ) : (
+          <div className="plat-stat">
+            <span>Open support tickets</span>
+            <strong>{openTickets == null ? '—' : openTickets}</strong>
+            {openTickets === 0 ? <p className="muted">No open support tickets.</p> : null}
+            {openTickets == null ? <p className="muted">Open ticket count did not load.</p> : null}
+          </div>
+        )}
+      </div>
 
       <div className="plat-stats">
         <div className="plat-stat">

@@ -57,21 +57,7 @@ PosSalePaymentMethod = Annotated[
     BeforeValidator(coerce_payment_method_value),
 ]
 IndustryValue = Annotated[
-    Literal[
-        "retail",
-        "pharmacy",
-        "restaurant",
-        "bakery",
-        "wholesale",
-        "retail_wholesale",
-        "manufacturing",
-        "mart",
-        "hotel",
-        "fmcg",
-        "distribution",
-        "general_trading",
-        "hospital",
-    ],
+    Literal["retail", "hotel", "restaurant"],
     BeforeValidator(coerce_industry_value),
 ]
 TaxFilingPeriodValue = Annotated[
@@ -885,6 +871,38 @@ class TenantDeleteConfirm(BaseModel):
     confirm_slug: TenantSlugValue
 
 
+def _billing_plan_code_in(value):
+    """Optional saved package code. Blank means omit. Garbage is 422."""
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError("plan code must be text")
+    text = value.strip().lower()
+    if not text:
+        return None
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{1,39}", text):
+        raise ValueError("plan code must use letters, numbers, and hyphens")
+    return text
+
+
+def _subscription_amount_in(value):
+    """Blank amount is invalid. Omit stays None so a saved price is not replaced with 0."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            raise ValueError("amount must be a number")
+        value = text
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        raise ValueError("amount must be a number") from None
+    if number != number or number in (float("inf"), float("-inf")) or number < 0 or number > 1_000_000_000_000_000:
+        raise ValueError("amount must be a finite number greater than or equal to zero")
+    return number
+
+
 class TenantSubscriptionAssign(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -904,6 +922,21 @@ class TenantSubscriptionAssign(BaseModel):
     # Platform store entitlement override; omit = no change; null clears to package default
     max_stores_override: int | None = Field(default=None, ge=0)
     clear_max_stores_override: bool = False
+    # Amount this company is billed. Omit leaves the saved amount unchanged.
+    # Paid packages reject blank, zero, and negative. Trial may be 0.
+    amount: Annotated[float | None, BeforeValidator(_subscription_amount_in)] = None
+    # Saved package code from POST /platform/billing/plans. Omit uses the catalog price row.
+    plan_code: Annotated[str | None, BeforeValidator(_billing_plan_code_in)] = None
+
+    @model_validator(mode="after")
+    def _paid_package_needs_positive_amount(self) -> TenantSubscriptionAssign:
+        if "amount" not in self.model_fields_set:
+            return self
+        if (self.package_code or "") == "trial":
+            return self
+        if self.amount is None or self.amount <= 0:
+            raise ValueError("amount must be greater than zero for a paid package")
+        return self
 
 
 class TenantAdminPasswordReset(BaseModel):
@@ -9178,6 +9211,8 @@ class PosDeviceHeartbeat(BaseModel):
     store_id: UuidIdValue | None = None
     app_version: Annotated[str, Field(max_length=40)] | None = None
     pending_queue_count: Annotated[int, Field(ge=0, le=100000)] = 0
+    # Browser selling pill. Omit means the terminal is still online (older clients).
+    selling_online: bool | None = None
 
 
 class PosOfflineAuthorize(BaseModel):

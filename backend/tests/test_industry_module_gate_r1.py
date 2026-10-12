@@ -20,7 +20,7 @@ from tests.conftest import auth_headers
 def test_industry_module_allowlist_unit():
     assert packages_svc.industry_allows_module("hotel", "hotel")
     assert not packages_svc.industry_allows_module("hotel", "fmcg")
-    assert packages_svc.industry_allows_module("fmcg", "fmcg")
+    assert not packages_svc.industry_allows_module("fmcg", "fmcg")
     assert not packages_svc.industry_allows_module("fmcg", "hotel")
     assert not packages_svc.industry_allows_module("retail", "hotel")
     assert not packages_svc.industry_allows_module("pharmacy", "fmcg")
@@ -47,7 +47,7 @@ def test_resolve_enabled_modules_filters_by_industry():
 
     T.industry = "fmcg"
     fmcg = packages_svc.resolve_enabled_modules(T())
-    assert "fmcg" in fmcg
+    assert "fmcg" not in fmcg
     assert "hotel" not in fmcg
 
 
@@ -108,11 +108,12 @@ async def test_fmcg_tenant_denied_hotel_and_allowed_fmcg(client, seeded, db_sess
     admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
     me = await ac.get("/api/v1/me", headers=admin)
     mods = me.json()["data"]["enabled_modules"]
-    assert "fmcg" in mods
+    assert me.json()["data"]["industry"] is None
+    assert "fmcg" not in mods
     assert "hotel" not in mods
 
     schemes = await ac.get("/api/v1/fmcg/schemes", headers=admin)
-    assert schemes.status_code == 200, schemes.text
+    assert schemes.status_code == 403, schemes.text
 
     hotel = await ac.post(
         "/api/v1/hotel/rooms",

@@ -17,23 +17,29 @@ RUN apt-get update \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Build arg busts Dokploy/BuildKit cache for application layers after deps.
-# Bump RIBDIGI_BUILD_ID in docker-compose.dokploy.yml when migrations must ship.
-ARG RIBDIGI_BUILD_ID=unknown
-LABEL org.ribdigi.build_id="${RIBDIGI_BUILD_ID}"
-RUN printf '%s\n' "${RIBDIGI_BUILD_ID}" > /app/.build-id
+# Context is the repo root so this layer sees .git (Dokploy clone) and the
+# stamp file. A Dockerfile-only edit is not enough when the Dockerfile is
+# excluded from the context hash; the stamp file is in the context and changes
+# when the source revision changes.
+ARG RIBDIGI_SOURCE_REV=unknown
+ENV RIBDIGI_SOURCE_REV=${RIBDIGI_SOURCE_REV}
+COPY backend/ribdigi-build-id.txt /tmp/ribdigi-build-id.txt
+COPY backend/scripts/resolve_source_revision.py /tmp/resolve_source_revision.py
+COPY .git /tmp/dotgit
+RUN python /tmp/resolve_source_revision.py \
+    && grep -Eq '^[0-9a-f]{12}$' /app/.build-id \
+    && ! grep -Fxq '20261003-live-test-store-scope' /app/.build-id \
+    && ! grep -Fxq '20261008-alembic-single-head-0136' /app/.build-id
+LABEL org.ribdigi.build_id="${RIBDIGI_SOURCE_REV}"
 
-COPY alembic.ini .
-COPY alembic ./alembic
-COPY app ./app
-COPY scripts ./scripts
-COPY guides ./guides
-# Authoritative image id lives in the backend context. Compose build-args alone
-# did not rebuild the Dokploy image that still reports 20261003-live-test-store-scope.
-COPY ribdigi-build-id.txt /tmp/ribdigi-build-id.txt
+COPY backend/alembic.ini ./alembic.ini
+COPY backend/alembic ./alembic
+COPY backend/app ./app
+COPY backend/scripts ./scripts
+COPY backend/guides ./guides
 
 # Fail the image build if the production-critical idempotent marker is missing
 # in BOTH the alembic tree and the runtime overlay used by entrypoint.
@@ -53,9 +59,11 @@ RUN set -eu; \
     DATABASE_URL=postgresql+asyncpg://verify:verify@127.0.0.1:9/ribdigi_verify_build_graph \
     python -m alembic heads > /tmp/alembic-heads.txt; \
     printf '%s\n' '20261008_0136 (head)' > /tmp/alembic-heads.expected; \
-    tr -d '\r' < /tmp/ribdigi-build-id.txt | awk 'NF { print; exit }' > /app/.build-id; \
+    tr -d '\r\n' < /app/.build-id > /tmp/build-id-one-line; \
     if ! cmp -s /tmp/alembic-heads.expected /tmp/alembic-heads.txt \
-        || ! grep -qx '20261008-alembic-single-head-0136' /app/.build-id \
+        || ! grep -Eq '^[0-9a-f]{12}$' /tmp/build-id-one-line \
+        || grep -Fxq '20261003-live-test-store-scope' /tmp/build-id-one-line \
+        || grep -Fxq '20261008-alembic-single-head-0136' /tmp/build-id-one-line \
         || ! test -f alembic/versions/20261008_0136_merge_offline_and_restaurant_heads.py; then \
       echo 'alembic heads output:'; \
       cat -A /tmp/alembic-heads.txt; \
@@ -63,9 +71,7 @@ RUN set -eu; \
       cat -A /app/.build-id; \
       exit 1; \
     fi; \
-    rm -f /tmp/alembic-heads.txt /tmp/alembic-heads.expected
-
-ENV RIBDIGI_BUILD_ID=20261008-alembic-single-head-0136
+    rm -f /tmp/alembic-heads.txt /tmp/alembic-heads.expected /tmp/build-id-one-line
 
 RUN useradd --create-home --uid 10001 --shell /usr/sbin/nologin appuser \
     && mkdir -p /data/media /data/backups \

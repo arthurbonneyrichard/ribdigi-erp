@@ -186,6 +186,10 @@ def test_dashboard_page_surfaces_load_errors():
     assert "/inventory?tab=expiry&when=expired" in text
     assert "/prescriptions?holds=quarantine#lot-holds" in text
     assert "/prescriptions?holds=recall#lot-holds" in text
+    assert "pharmacy_desk?.on_hand_lots" in text
+    assert "Daily sales (7d)" in text
+    assert "Revenue trend (30d)" in text
+    assert "Monthly sales (12 mo)" in text
 
 
 @pytest.mark.asyncio
@@ -226,6 +230,7 @@ async def test_pharmacy_dashboard_desk_counts(db_session, seeded):
     assert desk["partially_dispensed"] == 0
     assert desk["returns_today"] == 0
     assert "expired_lots" in desk
+    assert "on_hand_lots" in desk
     assert "quarantined" in desk
     assert "recalled" in desk
     assert "pending_purchase_orders" in desk
@@ -262,3 +267,4 @@ async def test_pharmacy_dashboard_desk_counts(db_session, seeded):
     desk_after = after["pharmacy_desk"]
     assert desk_after["expired_lots"] == desk["expired_lots"] + 1
     assert desk_after["expiring_soon"] == desk["expiring_soon"] + 1
+    assert desk_after["on_hand_lots"] == desk["on_hand_lots"] + 3

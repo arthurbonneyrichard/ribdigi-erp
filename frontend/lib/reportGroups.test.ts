@@ -6,6 +6,7 @@ import {
   findReport,
   reportFromTabView,
   reportHasFilter,
+  reportVisible,
   reportsHref,
   reportsInGroup,
 } from './reportGroups';
@@ -74,6 +75,23 @@ test('export is only listed when a report type exists; schedules and statement h
   assert.equal(findReport('accountstatement')?.exportType, undefined);
   assert.equal(findReport('sales_products')?.exportType, 'sales_products');
   assert.equal(findReport('inventory_counts')?.exportType, 'inventory_stock_counts');
+});
+
+test('sales reports stay industry-specific and single-store hides store lists', () => {
+  const pos = findReport('sales_pos');
+  const quotes = findReport('sales_quotations');
+  const stores = findReport('stores');
+  assert.ok(pos && quotes && stores);
+  assert.equal(reportVisible(pos, { industry: 'hotel', multiStore: false }), true);
+  assert.equal(reportVisible(pos, { industry: 'wholesale', multiStore: true }), false);
+  assert.equal(reportVisible(pos, { industry: 'fmcg', multiStore: true }), false);
+  assert.equal(reportVisible(quotes, { industry: 'retail', multiStore: true }), true);
+  assert.equal(reportVisible(quotes, { industry: 'hotel', multiStore: true }), false);
+  assert.equal(reportVisible(quotes, { industry: 'restaurant', multiStore: true }), false);
+  assert.equal(reportVisible(stores, { industry: 'retail', multiStore: false }), false);
+  assert.equal(reportVisible(stores, { industry: 'retail', multiStore: true }), true);
+  assert.equal(findReport('sales_products')?.name, 'Sales by product');
+  assert.equal(reportsInGroup('customers')[0].name, 'Sales by customer');
 });
 
 test('reportsHref keeps tab and optional view', () => {

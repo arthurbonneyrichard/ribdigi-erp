@@ -4,7 +4,16 @@ import { api, tenantHeaderValue } from './api';
 
 type MeBody = Awaited<ReturnType<typeof api>>;
 
-let cached: { at: number; body: MeBody; tenant: string } | null = null;
+let cached: { at: number; body: MeBody; tenant: string; key: string } | null = null;
+
+export function meCacheKey(tenant: string, industry?: string | null): string {
+  return `${tenant}::${industry || 'unset'}`;
+}
+
+function industryOf(body: MeBody): string {
+  const data = (body as { data?: { industry?: string | null } } | null)?.data;
+  return typeof data?.industry === 'string' ? data.industry : '';
+}
 let inflight: Promise<MeBody> | null = null;
 let inflightTenant = '';
 

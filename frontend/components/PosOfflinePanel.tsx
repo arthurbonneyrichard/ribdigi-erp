@@ -26,6 +26,8 @@ import {
   type QueueSummary,
   type QueuedSale,
 } from '../lib/posOffline';
+import { formatWhen, plainLabel } from '../lib/format';
+import { useCompanyFormat } from '../lib/useCompanyFormat';
 
 type ManagerConflict = {
   id: string;
@@ -87,6 +89,7 @@ export default function PosOfflinePanel({
   onMessage: (text: string) => void;
   onError: (text: string) => void;
 }) {
+  useCompanyFormat();
   const [envelope, setEnvelope] = useState<OfflineAuthEnvelope | null>(null);
   const [summary, setSummary] = useState<QueueSummary | null>(null);
   const [records, setRecords] = useState<QueuedSale[]>([]);
@@ -201,7 +204,7 @@ export default function PosOfflinePanel({
 
   async function revalidate() {
     if (!online) {
-      onError('Revalidating offline access needs a connection.');
+      onError('Refreshing offline selling needs a connection.');
       return;
     }
     setBusy('revalidate');
@@ -214,11 +217,11 @@ export default function PosOfflinePanel({
         label: storeLabel,
       });
       onMessage(
-        `Offline access revalidated until ${new Date(r.envelope.offline_valid_until).toLocaleString()} · ` +
+        `Offline selling is ready until ${formatWhen(r.envelope.offline_valid_until) || 'the next online check'} · ` +
           `${r.products} products and ${r.customers} customers saved on this device.`
       );
     } catch (err: unknown) {
-      onError((err as Error)?.message || 'Could not revalidate offline access');
+      onError((err as Error)?.message || 'Could not refresh offline selling');
     } finally {
       setBusy('');
       await reload();
@@ -231,7 +234,7 @@ export default function PosOfflinePanel({
     setBusy('backup');
     try {
       const pkg = await downloadRecoveryPackage(passphrase);
-      onMessage(`Backup file saved (${pkg.record_count} record(s), encrypted). It holds no passwords or tokens.`);
+      onMessage(`Backup file saved (${pkg.record_count} sale${pkg.record_count === 1 ? '' : 's'}, encrypted). It holds no passwords.`);
     } catch (err: unknown) {
       onError((err as Error)?.message || 'Backup failed');
     } finally {
@@ -299,7 +302,7 @@ export default function PosOfflinePanel({
   async function restoreSnapshot(id: string) {
     try {
       const r = await restoreQueueSnapshot(id);
-      onMessage(`Safety copy merged: ${r.imported} record(s) restored, ${r.skipped} already present.`);
+      onMessage(`Copy restored: ${r.imported} sale${r.imported === 1 ? '' : 's'} added, ${r.skipped} already here.`);
     } catch (err: unknown) {
       onError((err as Error)?.message || 'Could not restore the safety copy');
     }
@@ -309,57 +312,65 @@ export default function PosOfflinePanel({
   const valid = isOfflineAuthValid(envelope);
   const unsynced = summary ? summary.pending + summary.syncing + summary.needs_attention : 0;
   const authText = !envelope?.grant_id
-    ? 'Offline access: not set up on this device'
+    ? 'This device is not ready for offline selling.'
     : valid
-      ? `Offline access: valid · ${formatTimeLeft(envelope.offline_valid_until)}`
+      ? `Offline selling is ready · ${formatTimeLeft(envelope.offline_valid_until)}`
       : envelope.revoked_at
-        ? 'Offline access: replaced or revoked — new offline sales blocked'
-        : 'Offline access: expired — new offline sales blocked';
+        ? 'Offline selling was turned off on this device.'
+        : 'Offline selling on this device has expired.';
+  const quiet = online && unsynced === 0 && !provisional && otherDevices === 0 && (!envelope?.grant_id || valid);
+  const summaryLabel = !online
+    ? 'You are offline'
+    : unsynced > 0
+      ? `${unsynced} saved sale${unsynced === 1 ? '' : 's'} to send`
+      : 'Offline selling';
 
   return (
-    <div className="tpos-offline-tools" aria-live="polite">
-      <p className="muted" style={{ margin: 0 }}>
-        {online ? 'Online' : 'Offline'} · {authText} · Last sync {lastSyncAt ? formatCacheAge(lastSyncAt) : 'never'} ·{' '}
-        {unsynced} waiting to sync
-        {summary?.needs_attention ? ` (${summary.needs_attention} need attention)` : ''}
+    <details className="tpos-more tpos-offline-tools" open={!quiet || undefined}>
+      <summary>{summaryLabel}</summary>
+      <div className="tpos-more-body" aria-live="polite">
+      <p className="muted" style={{ margin: 0, flexBasis: '100%' }}>
+        {authText}
+        {lastSyncAt ? ` Last sent ${formatWhen(lastSyncAt) || formatCacheAge(lastSyncAt)}.` : ' Nothing has been sent from this device yet.'}
+        {summary?.needs_attention ? ` ${summary.needs_attention} need a manager.` : ''}
         {provisional || otherDevices > 0
-          ? ` · Provisional: ${otherDevices} sale(s) on other devices not synced yet`
+          ? ` ${otherDevices} sale${otherDevices === 1 ? '' : 's'} on other devices are not here yet.`
           : ''}
       </p>
       {!online ? (
-        <p className="muted" style={{ margin: '4px 0 0' }}>
-          You are offline. This device uses prices, stock and permissions from its last online check
-          {catalogAt ? ` (${formatCacheAge(catalogAt)})` : ''}. Recent account, price or permission changes may not be here yet.
+        <p className="muted" style={{ margin: 0, flexBasis: '100%' }}>
+          Prices and stock are from the last time this device was online
+          {catalogAt ? ` (${formatCacheAge(catalogAt)})` : ''}.
         </p>
       ) : null}
       {online && envelope?.grant_id && !valid && unsynced > 0 ? (
-        <p className="muted" style={{ margin: '4px 0 0' }}>
-          Your queued sales are safe and can sync now. Revalidate offline access only to make new offline sales.
+        <p className="muted" style={{ margin: 0, flexBasis: '100%' }}>
+          Saved sales can be sent now. Refresh offline selling only if you need to sell while offline again.
         </p>
       ) : null}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button type="button" className="tpos-btn" onClick={revalidate} disabled={!online || !!busy}>
-          {busy === 'revalidate' ? 'Revalidating…' : 'Revalidate offline access'}
+          {busy === 'revalidate' ? 'Refreshing…' : 'Refresh offline selling'}
         </button>
         <button type="button" className="tpos-btn" onClick={() => syncNow({ force: true })} disabled={!online || !!busy}>
-          {busy === 'sync' ? 'Syncing…' : 'Sync queued sales'}
+          {busy === 'sync' ? 'Sending…' : 'Send saved sales'}
         </button>
         <button type="button" className="tpos-btn tpos-btn-quiet" onClick={() => setOpen((v) => !v)}>
-          {open ? 'Hide offline queue' : 'Offline queue'}
+          {open ? 'Hide saved sales' : 'Saved sales'}
         </button>
       </div>
       {open ? (
         <div className="tpos-recovery" style={{ display: 'grid', gap: 8, marginTop: 8 }}>
-          {records.length === 0 ? <p className="muted">No offline records on this device.</p> : null}
+          {records.length === 0 ? <p className="muted">No saved sales on this device.</p> : null}
           {records.slice(0, 50).map((rec) => (
             <div key={rec.id} style={{ borderTop: '1px solid var(--border, #ddd)', paddingTop: 6 }}>
               <div>
                 <strong>{rec.local_receipt_number || rec.client_request_id}</strong>
-                {rec.kind === 'quote' ? ' · quote' : ''} · {STATE_LABELS[rec.state] || rec.state}
+                {rec.kind === 'quote' ? ' · quote' : ''} · {STATE_LABELS[rec.state] || plainLabel(rec.state)}
                 {rec.server_reference ? ` → ${rec.server_reference}` : ''}
                 {typeof rec.payload?.total === 'number' ? ` · ${Number(rec.payload.total).toFixed(2)}` : ''}
                 {' · '}
-                {new Date(rec.created_at).toLocaleString()}
+                {formatWhen(rec.created_at) || '—'}
                 {rec.user_id && rec.user_id !== userId ? ' · another cashier' : ''}
               </div>
               {rec.last_error_message ? <div className="muted">{rec.last_error_message}</div> : null}
@@ -406,7 +417,8 @@ export default function PosOfflinePanel({
               <strong>Needs a manager (all devices in your stores)</strong>
               {managerConflicts.map((c) => (
                 <div key={c.id} style={{ marginTop: 4 }}>
-                  {c.local_receipt_number || c.client_request_id} · {c.conflict_code} · device {c.device_id}
+                  {c.local_receipt_number || c.client_request_id}
+                  {c.created_at ? ` · ${formatWhen(c.created_at)}` : ''}
                   {typeof c.offline_total === 'number' ? ` · ${Number(c.offline_total).toFixed(2)}` : ''}
                   <div className="muted">{c.message}</div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -446,19 +458,18 @@ export default function PosOfflinePanel({
               />
             </label>
             <button type="button" className="tpos-btn tpos-btn-quiet" onClick={resendAfterServerRestore} disabled={!online || !!busy}>
-              Re-send synced sales after a server restore
+              Send sales again after a restore
             </button>
             <button type="button" className="tpos-btn tpos-btn-quiet" onClick={loadSnapshots}>
-              Safety copies
+              Saved copies
             </button>
           </div>
           <p className="muted" style={{ margin: 0 }}>
-            Restoring a backup file only adds records that are missing here; it never replaces or removes queued sales.
-            Syncing never needs a restore.
+            Restoring a backup only adds sales that are missing here. Sending sales does not need a restore.
           </p>
           {snapshots.map((s) => (
             <div key={s.id}>
-              {new Date(s.created_at).toLocaleString()} · {s.reason} · {s.count} record(s){' '}
+              {formatWhen(s.created_at) || '—'} · {plainLabel(s.reason) || s.reason} · {s.count} sale{s.count === 1 ? '' : 's'}{' '}
               <button type="button" className="tpos-btn tpos-btn-quiet" onClick={() => restoreSnapshot(s.id)}>
                 Merge back
               </button>
@@ -466,6 +477,7 @@ export default function PosOfflinePanel({
           ))}
         </div>
       ) : null}
-    </div>
+      </div>
+    </details>
   );
 }

@@ -20,6 +20,7 @@ export const FMCG_DASHBOARD_FEATURES: readonly IndustryDashboardFeature[] = [
   { id: 'fmcg_schemes', label: 'Trade schemes', href: '/fmcg?tab=schemes', module: 'fmcg' },
   { id: 'fmcg_routes', label: 'Routes', href: '/fmcg?tab=routes', module: 'fmcg' },
   { id: 'fmcg_deliveries', label: 'Deliveries', href: '/fmcg?tab=deliveries', module: 'fmcg' },
+  { id: 'fmcg_packs', label: 'Pack convert', href: '/fmcg?tab=packs', module: 'fmcg' },
 ];
 
 export const HOSPITAL_DASHBOARD_FEATURES: readonly IndustryDashboardFeature[] = [
@@ -55,16 +56,64 @@ export const RETAIL_WHOLESALE_DASHBOARD_FEATURES: readonly IndustryDashboardFeat
 
 const BY_INDUSTRY: Record<string, readonly IndustryDashboardFeature[]> = {
   retail: RETAIL_DASHBOARD_FEATURES,
-  pharmacy: PHARMACY_DASHBOARD_FEATURES,
-  wholesale: WHOLESALE_DASHBOARD_FEATURES,
-  retail_wholesale: RETAIL_WHOLESALE_DASHBOARD_FEATURES,
-  fmcg: FMCG_DASHBOARD_FEATURES,
   hotel: HOTEL_DASHBOARD_FEATURES,
-  hospital: HOSPITAL_DASHBOARD_FEATURES,
   restaurant: RESTAURANT_DASHBOARD_FEATURES,
 };
 
+const PLATFORM_DASHBOARD_ROLES = new Set([
+  'super_admin',
+  'platform_owner',
+  'platform_admin',
+  'platform_support',
+  'platform_finance',
+]);
+
+/** Ribdigi House workspace. Not a pharmacy, retail, or other operating desk. */
+export function isSoftwareOwnerIndustry(industry?: string | null): boolean {
+  const raw = String(industry || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+  return raw === 'software';
+}
+
+/**
+ * Platform console for software-owner staff.
+ * Empty role does not redirect (the account check owns that). A known non-platform role stays off
+ * `/platform` so the console does not bounce them back onto this page.
+ */
+export function softwareOwnerDashboardPath(
+  role?: string | null,
+  industry?: string | null,
+): '/platform' | null {
+  const normalizedRole = String(role || '').trim().toLowerCase();
+  if (!PLATFORM_DASHBOARD_ROLES.has(normalizedRole)) return null;
+  if (isSoftwareOwnerIndustry(industry) || normalizedRole) return '/platform';
+  return null;
+}
+
+/** Industries with a dedicated operations dashboard. Anything else is unconfigured. */
+export const CONFIGURED_DASHBOARD_INDUSTRIES = ['retail', 'hotel', 'restaurant'] as const;
+
+export function dashboardLayout(industry?: string | null): string {
+  if (isSoftwareOwnerIndustry(industry)) return 'platform';
+  const ind = normalizeIndustry(industry);
+  if (!ind || !(CONFIGURED_DASHBOARD_INDUSTRIES as readonly string[]).includes(ind)) {
+    return 'unconfigured';
+  }
+  return ind;
+}
+
+/** Retail KPI grid is only the retail desk. */
+export function showsRetailOperations(layoutOrIndustry?: string | null): boolean {
+  const raw = String(layoutOrIndustry || '').trim().toLowerCase();
+  if (raw === 'platform' || isSoftwareOwnerIndustry(raw)) return false;
+  if (raw === 'retail') return true;
+  return dashboardLayout(layoutOrIndustry) === 'retail';
+}
+
 export function industryHomePath(industry?: string | null): string {
+  if (isSoftwareOwnerIndustry(industry)) return '/platform';
   const ind = normalizeIndustry(industry);
   if (ind === 'hotel') return '/hotel';
   if (ind === 'restaurant') return '/restaurant';
@@ -81,14 +130,9 @@ export function industryDashboardFeatures(
 
 export function industryDashboardSectionLabel(industry?: string | null): string | null {
   const ind = normalizeIndustry(industry);
-  if (ind === 'pharmacy') return 'Pharmacy';
-  if (ind === 'wholesale') return 'Wholesale';
-  if (ind === 'retail_wholesale') return 'Retail + wholesale';
   if (ind === 'retail') return null;
-  if (ind === 'fmcg') return 'FMCG management';
   if (ind === 'restaurant') return 'Restaurant operations';
   if (ind === 'hotel') return 'Hotel dashboard';
-  if (ind === 'hospital') return 'Hospital';
   return null;
 }
 

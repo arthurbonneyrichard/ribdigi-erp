@@ -28,6 +28,13 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
     NEXT_PUBLIC_UMAMI_WEBSITE_ID=${NEXT_PUBLIC_UMAMI_WEBSITE_ID} \
     NEXT_PUBLIC_UMAMI_DOMAINS=${NEXT_PUBLIC_UMAMI_DOMAINS}
 COPY --from=deps /app/node_modules ./node_modules
+# Stamp is in the frontend context so a rebuild cannot reuse an image whose
+# context still hashes as the old production tree.
+COPY ribdigi-build-id.txt /tmp/ribdigi-build-id.txt
+RUN tr -d '\r' < /tmp/ribdigi-build-id.txt | awk 'NF { print; exit }' > /tmp/ribdigi-build-id.one \
+    && grep -Eq '^[0-9a-f]{12}$' /tmp/ribdigi-build-id.one \
+    && ! grep -Fxq '20261003-live-test-store-scope' /tmp/ribdigi-build-id.one \
+    && ! grep -Fxq '20261008-alembic-single-head-0136' /tmp/ribdigi-build-id.one
 COPY . .
 # Never reuse a host/layer .next; standalone runner copies this same build.
 RUN rm -rf .next && npm run build

@@ -210,6 +210,7 @@ async function refreshSession(): Promise<boolean> {
 /** Safe user-facing API error. Never include tokens, passwords, SQL, or stack traces. */
 export function formatApiError(body: unknown, status: number, path?: string): string {
   const hotelRequest = typeof path === 'string' && path.includes('/hotel/');
+  const loginRequest = typeof path === 'string' && (path === '/auth/login' || path.startsWith('/auth/login?'));
   const fallbackByStatus = (code: number): string => {
     if (code === 401) return 'Your session expired. Please sign in again.';
     if (code === 403) return 'You do not have permission to do that.';

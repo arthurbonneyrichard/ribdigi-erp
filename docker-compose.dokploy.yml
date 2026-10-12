@@ -62,6 +62,9 @@ services:
         NEXT_PUBLIC_UMAMI_SRC: ${NEXT_PUBLIC_UMAMI_SRC:-https://analytics.ribdigihouse.com/script.js}
         NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-0d5b3d4e-fe16-47bf-91f2-6ce564fb2e0e}
         NEXT_PUBLIC_UMAMI_DOMAINS: ${NEXT_PUBLIC_UMAMI_DOMAINS:-erp.ribdigihouse.com}
+    # Rebuild from this checkout. A cached frontend image omits the sign-in
+    # status handling and can keep serving an older page against a new API.
+    pull_policy: build
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -92,14 +95,15 @@ services:
         max-file: "5"
 
   backend:
-    image: ribdigi-backend:20261008-alembic-single-head-0136
+    image: ribdigi-backend:f35f5653b651
     pull_policy: build
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
       args:
-        # Bump to force Dokploy/BuildKit to rebuild app+alembic layers
-        RIBDIGI_BUILD_ID: "20261008-alembic-single-head-0136"
+        # Must match backend/ribdigi-build-id.txt. Image /app/.build-id is the
+        # git short sha of the commit Dokploy checks out (see resolve_source_revision.py).
+        RIBDIGI_SOURCE_REV: "f35f5653b651"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -109,7 +113,6 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       UVICORN_WORKERS: ${UVICORN_WORKERS:-2}
       RIBDIGI_RELEASE_CHANNEL: production
-      RIBDIGI_BUILD_ID: "20261008-alembic-single-head-0136"
     volumes:
       - backup_data:/data/backups
       - media_data:/data/media
@@ -151,20 +154,19 @@ services:
   # One-shot schema migration (Alembic). Refuses create_all in production.
   # ---------------------------------------------------------------------------
   migrate:
-    image: ribdigi-backend:20261008-alembic-single-head-0136
+    image: ribdigi-backend:f35f5653b651
     pull_policy: build
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
       args:
-        RIBDIGI_BUILD_ID: "20261008-alembic-single-head-0136"
+        RIBDIGI_SOURCE_REV: "f35f5653b651"
     env_file: .env
     environment:
       PYTHONPATH: /app
       APP_ENV: ${APP_ENV:-production}
       DEBUG: ${DEBUG:-false}
       RIBDIGI_RELEASE_CHANNEL: production
-      RIBDIGI_BUILD_ID: "20261008-alembic-single-head-0136"
     volumes:
       - backup_data:/data/backups
       - media_data:/data/media
@@ -211,13 +213,13 @@ services:
   # Background jobs (RabbitMQ broker, Redis results — see app.config)
   # ---------------------------------------------------------------------------
   celery_worker:
-    image: ribdigi-backend:20261008-alembic-single-head-0136
+    image: ribdigi-backend:f35f5653b651
     pull_policy: build
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
       args:
-        RIBDIGI_BUILD_ID: "20261008-alembic-single-head-0136"
+        RIBDIGI_SOURCE_REV: "f35f5653b651"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -226,7 +228,6 @@ services:
       DEBUG: ${DEBUG:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       RIBDIGI_RELEASE_CHANNEL: production
-      RIBDIGI_BUILD_ID: "20261008-alembic-single-head-0136"
     volumes:
       - backup_data:/data/backups
       - media_data:/data/media
@@ -264,13 +265,13 @@ services:
         max-file: "5"
 
   celery_beat:
-    image: ribdigi-backend:20261008-alembic-single-head-0136
+    image: ribdigi-backend:f35f5653b651
     pull_policy: build
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
       args:
-        RIBDIGI_BUILD_ID: "20261008-alembic-single-head-0136"
+        RIBDIGI_SOURCE_REV: "f35f5653b651"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -279,7 +280,6 @@ services:
       DEBUG: ${DEBUG:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       RIBDIGI_RELEASE_CHANNEL: production
-      RIBDIGI_BUILD_ID: "20261008-alembic-single-head-0136"
     networks:
       - ribdigi_internal
     depends_on:

@@ -176,6 +176,34 @@ async def patch_billing_plan(
     return env(billing_svc.serialize_plan(plan), "Billing plan updated")
 
 
+@router.delete("/platform/billing/plans/{plan_id}")
+async def delete_billing_plan(
+    plan_id: str,
+    claims=Depends(require_platform_permission("platform", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    _owner(claims)
+    from app.api import env
+
+    body = await billing_svc.delete_plan(db, plan_id, actor=claims)
+    await db.commit()
+    return env(body, "Billing plan deleted")
+
+
+@router.get("/platform/billing/companies")
+async def billing_companies(
+    claims=Depends(require_platform_permission("platform_tenants", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Company plans for platform staff. Does not record a payment or expose gateway secrets."""
+    del claims
+    from app.api import env
+
+    rows = await billing_svc.company_billing_roster(db)
+    await db.commit()
+    return env(rows)
+
+
 @router.get("/platform/billing/attention")
 async def billing_attention(
     claims=Depends(require_platform_permission("platform_tenants", "read")),
@@ -283,6 +311,13 @@ async def _tenant_admin(claims: dict, db: AsyncSession):
     return tenant
 
 
+def _tenant_account_body(account, plan) -> dict:
+    body = billing_svc.serialize_account(account, plan)
+    if account and plan and body.get("plan"):
+        body["plan"] = billing_svc.serialize_assigned_plan(account, plan)
+    return body
+
+
 @router.get("/billing/account")
 async def my_billing_account(
     claims=Depends(require_roles("company_admin")),
@@ -295,7 +330,7 @@ async def my_billing_account(
     account = await billing_svc.get_account(db, tenant.id)
     plan = await billing_svc._load_plan(db, account.plan_id) if account else None
     await db.commit()
-    body = billing_svc.serialize_account(account, plan) if account else {
+    body = _tenant_account_body(account, plan) if account else {
         "tenant_id": tenant.id,
         "billing_status": "trialing" if tenant.status == "trial" else "payment_required",
         "access_note": billing_svc.ACCESS_NOTES["trialing"],
@@ -307,6 +342,7 @@ async def my_billing_account(
     body["trial_ends_at"] = tenant.trial_ends_at
     body["tenant_status"] = tenant.status
     body["provider"] = billing_svc.provider_status()
+    body = billing_svc.apply_assigned_amount_to_account_body(body, account, tenant)
     return env(body)
 
 
@@ -315,21 +351,16 @@ async def my_billing_plans(
     claims=Depends(require_roles("company_admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    from sqlalchemy import select
-
-    from app import models as m
     from app.api import env
 
+    tenant = await _tenant_admin(claims, db)
     await billing_svc.ensure_default_plans(db)
-    rows = (
-        await db.execute(
-            select(m.PlatformBillingPlan)
-            .where(m.PlatformBillingPlan.is_active == True)  # noqa: E712
-            .order_by(m.PlatformBillingPlan.code)
-        )
-    ).scalars().all()
+    account = await billing_svc.get_account(db, tenant.id)
+    plan = await billing_svc._load_plan(db, account.plan_id) if account else None
     await db.commit()
-    return env([billing_svc.serialize_plan(row) for row in rows])
+    if account is None or plan is None:
+        return env([])
+    return env([billing_svc.serialize_assigned_plan(account, plan)])
 
 
 @router.post("/billing/consent")
@@ -346,7 +377,7 @@ async def billing_consent(
     )
     plan = await billing_svc._load_plan(db, account.plan_id)
     await db.commit()
-    return env(billing_svc.serialize_account(account, plan), "Renewal consent recorded")
+    return env(_tenant_account_body(account, plan), "Renewal consent recorded")
 
 
 @router.post("/billing/checkout")
@@ -371,15 +402,19 @@ async def billing_checkout_return(
     claims=Depends(require_roles("company_admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    """A browser return never marks an invoice paid."""
+    """A browser return reports the profile already stored. It never marks an invoice paid."""
     from app.api import env
 
     tenant = await _tenant_admin(claims, db)
     account = await billing_svc.get_account(db, tenant.id)
     plan = await billing_svc._load_plan(db, account.plan_id) if account else None
-    body = billing_svc.serialize_account(account, plan) if account else {}
+    body = _tenant_account_body(account, plan) if account else {}
+    expected = f"checkout:{account.id}:{account.plan_id}" if account and account.plan_id else ""
     body["return_reference"] = reference
+    body["reference_matches_checkout"] = bool(expected) and reference.strip() == expected
     body["confirmed_by_redirect"] = False
+    body["paid"] = False
+    body["provider"] = billing_svc.provider_status()
     return env(body)
 
 
@@ -399,7 +434,7 @@ async def billing_sandbox_authorize(
     )
     plan = await billing_svc._load_plan(db, account.plan_id)
     await db.commit()
-    return env(billing_svc.serialize_account(account, plan), "Sandbox payment method saved")
+    return env(_tenant_account_body(account, plan), "Sandbox payment method saved")
 
 
 @router.post("/billing/cancel")
@@ -416,7 +451,7 @@ async def billing_cancel(
     )
     plan = await billing_svc._load_plan(db, account.plan_id)
     await db.commit()
-    return env(billing_svc.serialize_account(account, plan), "Future renewals canceled")
+    return env(_tenant_account_body(account, plan), "Future renewals canceled")
 
 
 @router.get("/billing/invoices")

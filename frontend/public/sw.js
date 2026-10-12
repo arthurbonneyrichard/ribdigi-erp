@@ -1,6 +1,6 @@
 /* Ribdigi POS offline shell cache — application security only; not OS lockdown.
  * Never touches IndexedDB: queued sales survive every service-worker update. */
-const VERSION = 'v7';
+const VERSION = 'v8';
 const SHELL = `ribdigi-pos-shell-${VERSION}`;
 const STATIC = `ribdigi-pos-static-${VERSION}`;
 const KEEP = new Set([SHELL, STATIC]);
@@ -61,16 +61,28 @@ async function networkFirstExact(req) {
   }
 }
 
+function hardReload(req) {
+  return req.cache === 'reload' || req.cache === 'no-cache' || req.cache === 'no-store';
+}
+
 async function cacheFirstStatic(req) {
   const cache = await caches.open(STATIC);
-  const hit = await cache.match(req);
-  if (hit) return hit;
-  const res = await fetch(req);
-  if (res.ok && res.type === 'basic') {
-    await cache.put(req, res.clone());
-    void trim(STATIC, MAX_STATIC_ENTRIES);
+  if (!hardReload(req)) {
+    const hit = await cache.match(req);
+    if (hit) return hit;
   }
-  return res;
+  try {
+    const res = await fetch(req);
+    if (res.ok && res.type === 'basic') {
+      await cache.put(req, res.clone());
+      void trim(STATIC, MAX_STATIC_ENTRIES);
+    }
+    return res;
+  } catch (err) {
+    const hit = await cache.match(req);
+    if (hit) return hit;
+    throw err;
+  }
 }
 
 async function shellAsset(req) {

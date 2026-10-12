@@ -126,34 +126,16 @@ INDUSTRY_SPECIFIC_MODULES: frozenset[str] = frozenset({"hotel", "fmcg", "hospita
 # Industries omitted here get no industry-specific modules (retail/mart/pharmacy/…).
 INDUSTRY_MODULE_ALLOWLIST: dict[str, frozenset[str]] = {
     "hotel": frozenset({"hotel"}),
-    "fmcg": frozenset({"fmcg"}),
-    "hospital": frozenset({"hospital"}),
     "restaurant": frozenset({"restaurant"}),
 }
 
 # Implemented industry verticals (must match shipped UI + APIs). Unimplemented
 # verticals are never added to enabled_modules or the sidebar.
-IMPLEMENTED_INDUSTRY_MODULES: frozenset[str] = frozenset({"hotel", "fmcg", "hospital", "restaurant"})
+IMPLEMENTED_INDUSTRY_MODULES: frozenset[str] = frozenset({"hotel", "restaurant"})
 
-CANONICAL_INDUSTRIES: frozenset[str] = frozenset(
-    {
-        "retail",
-        "pharmacy",
-        "restaurant",
-        "bakery",
-        "wholesale",
-        "retail_wholesale",
-        "manufacturing",
-        "mart",
-        "hotel",
-        "fmcg",
-        "distribution",
-        "general_trading",
-        "hospital",
-    }
-)
+CANONICAL_INDUSTRIES: frozenset[str] = frozenset({"retail", "hotel", "restaurant"})
 
-# Safe aliases → canonical VALID_INDUSTRIES keys. Do not invent competing codes.
+# Safe aliases → canonical customer industries. Removed desks do not map onto retail.
 INDUSTRY_ALIASES: dict[str, str] = {
     "hospitality": "hotel",
     "hotels": "hotel",
@@ -163,25 +145,9 @@ INDUSTRY_ALIASES: dict[str, str] = {
     "guesthouse": "hotel",
     "retail_mart": "retail",
     "retail/mart": "retail",
-    "supermarket": "mart",
-    "super_market": "mart",
-    "grocery": "mart",
-    "fast_moving_consumer_goods": "fmcg",
-    "fmcg_distribution": "fmcg",
-    "pharma": "pharmacy",
-    "drugstore": "pharmacy",
     "resto": "restaurant",
     "food_service": "restaurant",
     "cafe": "restaurant",
-    "wholesaler": "wholesale",
-    "retail_+_wholesale": "retail_wholesale",
-    "retail+wholesale": "retail_wholesale",
-    "retail_and_wholesale": "retail_wholesale",
-    "retailwholesale": "retail_wholesale",
-    "dual_trade": "retail_wholesale",
-    "distributor": "distribution",
-    "trading": "general_trading",
-    "manufacture": "manufacturing",
 }
 
 

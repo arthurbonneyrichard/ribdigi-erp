@@ -5,14 +5,15 @@ import { useSearchParams } from 'next/navigation';
 import FormModal from '../../../components/FormModal';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import { api, getAccessToken } from '../../../lib/api';
-import { formatNumber, type FormatPrefs } from '../../../lib/format';
+import { formatNumber, formatWhen, plainLabel, type FormatPrefs } from '../../../lib/format';
+import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import { getMe } from '../../../lib/meCache';
 import { usesWholesaleTrade } from '../../../lib/industries';
 import { useStoreContext } from '../../../lib/storeContext';
 
-type Tab = 'invoices' | 'quotations' | 'orders' | 'returns' | 'coupons';
+type Tab = 'made' | 'invoices' | 'quotations' | 'orders' | 'returns' | 'coupons';
 
-const SALES_TABS: Tab[] = ['invoices', 'quotations', 'orders', 'returns', 'coupons'];
+const SALES_TABS: Tab[] = ['made', 'invoices', 'quotations', 'orders', 'returns', 'coupons'];
 
 function isSalesTab(value: string | null): value is Tab {
   return Boolean(value && (SALES_TABS as string[]).includes(value));
@@ -22,6 +23,25 @@ function channelLabel(value?: string | null) {
   if (value === 'wholesale') return 'Wholesale';
   if (value === 'retail') return 'Retail';
   return '—';
+}
+
+function saleWords(value?: string | null) {
+  const code = String(value || '').trim().toLowerCase();
+  if (!code) return '—';
+  const mapped: Record<string, string> = {
+    adjust: 'Credit on the account',
+    refund: 'Cash refund',
+    sellable: 'Good to sell again',
+    discard: 'Do not restock',
+    wrong_item: 'Wrong item',
+    customer_change: 'Customer changed their mind',
+    partial: 'Partly paid',
+    percent: 'Percent off',
+    fixed: 'Fixed amount',
+    register: 'Register',
+    invoice: 'Invoice',
+  };
+  return mapped[code] || plainLabel(code);
 }
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -83,7 +103,8 @@ async function previewInvoicePdf(invoiceId: string, template: 'a4' | 'thermal') 
 
 export default function Page() {
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<Tab>('invoices');
+  const [tab, setTab] = useState<Tab>('made');
+  const [madeSales, setMadeSales] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [invoiceManageFilter, setInvoiceManageFilter] = useState<
     'all' | 'draft' | 'posted' | 'sent' | 'partial' | 'paid' | 'overdue' | 'cancelled'
@@ -212,8 +233,9 @@ export default function Page() {
   }, []);
 
   async function refresh() {
-    const [invRes, custRes, prodRes, unitRes, qRes, oRes, rRes, storeRes, settingsRes, groupRes, tenantRes, couponRes] =
+    const [madeRes, invRes, custRes, prodRes, unitRes, qRes, oRes, rRes, storeRes, settingsRes, groupRes, tenantRes, couponRes] =
       await Promise.all([
+        api('/sales/made').catch(() => ({ data: [] })),
         api('/sales/invoices'),
         api('/customers'),
         api('/products'),
@@ -227,6 +249,7 @@ export default function Page() {
         api('/tenants/me').catch(() => ({ data: null })),
         api('/sales/coupons').catch(() => ({ data: [] })),
       ]);
+    setMadeSales(madeRes.data || []);
     setInvoices(invRes.data || []);
     setCustomers(custRes.data || []);
     setProducts(prodRes.data || []);
@@ -868,6 +891,9 @@ export default function Page() {
     if (!q) return true;
     const cust = customers.find((c) => c.id === row.customer_id);
     const hay = [
+      row.number,
+      row.customer,
+      row.source,
       row.invoice_number,
       row.quotation_number,
       row.order_number,
@@ -892,6 +918,7 @@ export default function Page() {
     if (invoiceManageFilter !== 'all' && (inv.status || 'draft') !== invoiceManageFilter) return false;
     return matchesList(inv);
   });
+  const managedMade = madeSales.filter((row) => matchesList(row));
   const managedQuotations = quotations.filter((q) => {
     if (quotationManageFilter !== 'all' && (q.status || 'draft') !== quotationManageFilter) return false;
     return matchesList(q);
@@ -901,6 +928,19 @@ export default function Page() {
     return matchesList(o);
   });
 
+  const showChannel = wholesaleOps;
+  const activeStores = stores.filter((s) => s.is_active !== false);
+  const showStore = activeStores.length > 1;
+  const showQuoteReject = managedQuotations.some((q) => q.rejection_reason);
+  const showReserved = managedOrders.some((o) => o.reservation_status);
+  const storeName = (id?: string | null) => (id ? stores.find((s) => s.id === id)?.name || '' : '');
+  const quoteCols = 5 + (showChannel ? 1 : 0) + (showQuoteReject ? 1 : 0);
+  const orderCols = 5 + (showChannel ? 1 : 0) + (showStore ? 1 : 0) + (showReserved ? 1 : 0);
+  const invoiceCols = 5 + (showChannel ? 1 : 0) + (showStore ? 1 : 0);
+  const drawerLines = selected?.items || [];
+  const showFilled = drawerLines.some((it) => it.qty_fulfilled != null && it.qty_fulfilled !== '');
+  const showCondition = drawerLines.some((it) => Boolean(it.condition));
+
   return (
     <div className="sales-desk">
       <header className="sales-desk-head">
@@ -908,8 +948,8 @@ export default function Page() {
           <h1>Sales</h1>
           <p className="muted">
             {wholesaleOps
-              ? 'Wholesale quotes and orders share stock with POS. Minimum order quantity and quantity prices apply on this desk.'
-              : 'Find a document, or create a new quote, order, or invoice.'}
+              ? 'All sales lists every completed invoice and register sale. Quotes and orders are not sales until they are invoiced.'
+              : 'All sales lists every completed invoice and register sale.'}
           </p>
         </div>
         <button type="button" className="btn-primary" onClick={() => setComposerOpen(true)}>
@@ -920,6 +960,7 @@ export default function Page() {
       <div className="sales-toolbar">
         {(
           [
+            ['made', 'All sales'],
             ['invoices', 'Invoices'],
             ['quotations', 'Quotes'],
             ['orders', 'Orders'],
@@ -933,7 +974,7 @@ export default function Page() {
             className={tab === id ? 'sales-tab is-on' : 'sales-tab'}
             onClick={() => setTab(id)}
             disabled={tab === id}
-            aria-label={`Show sales ${id} tab`}
+            aria-label={id === 'made' ? 'Show all sales' : `Show sales ${id} tab`}
           >
             {label}
           </button>
@@ -946,11 +987,10 @@ export default function Page() {
           aria-label="Search sales documents"
         />
       </div>
-      <div className="card" style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
-        <h3 style={{ margin: 0 }}>Document numbering</h3>
-        <p className="muted" style={{ margin: 0 }}>
-          Pattern <code>{'{PREFIX}-{YYYY}-{NNNN}'}</code>
-        </p>
+      {false && (
+      <details className="sales-more">
+        <summary>Document numbers</summary>
+      <div className="card sales-more-body" style={{ display: 'grid', gap: 8 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <span className="muted">Invoice</span>
           <input
@@ -1069,6 +1109,8 @@ export default function Page() {
           </button>
         </div>
       </div>
+      </details>
+      )}
       {(error || message) && !composerOpen && !selected ? (
         <p className={error ? 'sales-flash sales-flash-err' : 'sales-flash sales-flash-ok'} role={error ? 'alert' : undefined}>
           {error || message}
@@ -1210,15 +1252,12 @@ export default function Page() {
               })
               .map((c) => (
               <option key={c.id} value={c.id}>
-                {c.code ? `${c.code} — ` : ''}
                 {c.name}
-                {c.profile_type === 'walk_in' ? ' (walk-in)' : ''}
-                {c.status === 'inactive' ? ' [inactive]' : ''}
-                {c.customer_group ? ` [${c.customer_group.name}]` : ''}
-                {c.email ? ` (${c.email})` : ''}
+                {c.status === 'inactive' ? ' · Inactive' : ''}
               </option>
             ))}
           </select>
+          {showStore ? (
           <select
             value={storeId}
             onChange={(e) => {
@@ -1227,50 +1266,14 @@ export default function Page() {
             }}
             aria-label="Sale store"
           >
-            <option value="">Store (required to confirm orders)</option>
-            {stores
-              .filter((s) => s.is_active !== false)
-              .map((s) => (
+            <option value="">Choose a store</option>
+            {activeStores.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.code} — {s.name}
+                {s.name}
               </option>
             ))}
           </select>
-          {customerId ? (
-            <button
-              type="button"
-              className={
-                (customers.find((c) => c.id === customerId)?.status || 'active') === 'inactive'
-                  ? 'btn-ok'
-                  : 'btn-danger'
-              }
-              onClick={() =>
-                setCustomerActive(
-                  (customers.find((c) => c.id === customerId)?.status || 'active') === 'inactive',
-                )
-              }
-              aria-label="Toggle customer active status"
-            >
-              {(customers.find((c) => c.id === customerId)?.status || 'active') === 'inactive'
-                ? 'Activate'
-                : 'Deactivate'}
-            </button>
           ) : null}
-          <input
-            aria-label="SO delivery date"
-            type="text"
-            placeholder="YYYY-MM-DD"
-            title="Delivery date (optional YYYY-MM-DD)"
-            value={deliveryDate}
-            onChange={(e) => setDeliveryDate(e.target.value)}
-          />
-          <input
-            value={deliveryAddress}
-            onChange={(e) => setDeliveryAddress(e.target.value)}
-            placeholder="Delivery address"
-            aria-label="SO delivery address"
-            style={{ minWidth: 180 }}
-          />
           <details className="sales-more">
             <summary>Currency</summary>
           <input
@@ -1354,7 +1357,7 @@ export default function Page() {
           <input
             value={customerPhone}
             onChange={(e) => setCustomerPhone(e.target.value)}
-            placeholder="Phone (E.164 e.g. +233...)"
+            placeholder="Phone"
             aria-label="Customer phone"
             style={{ width: 160 }}
           />
@@ -1593,9 +1596,64 @@ export default function Page() {
       </FormModal>
       ) : null}
 
+      {tab === 'made' && (
+        <div className="list-table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Number</th>
+                <th>Customer</th>
+                <th>Where</th>
+                <th>Status</th>
+                <th>Total</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {managedMade.map((row) => (
+                <tr key={`${row.source}-${row.id}`}>
+                  <td>{formatWhen(row.when, displayFmt)}</td>
+                  <td>{row.number}</td>
+                  <td>{row.customer || 'Walk-in'}</td>
+                  <td>{saleWords(row.source)}</td>
+                  <td>{saleWords(row.status)}</td>
+                  <td>{formatNumber(row.total, displayFmt)}</td>
+                  <td>
+                    {row.invoice_id ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const inv = invoices.find((item) => item.id === row.invoice_id);
+                          if (inv) setSelected(inv);
+                        }}
+                        aria-label={`View sales invoice ${row.invoice_id}`}
+                      >
+                        View
+                      </button>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {!managedMade.length && (
+                <tr>
+                  <td colSpan={7} className="muted">
+                    {listSearch.trim() ? 'No sales for this search' : 'No sales yet'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {tab === 'quotations' && (
         <>
-          <div className="card" style={{ marginBottom: 12 }}>
+          <details className="sales-more" style={{ marginBottom: 12 }}>
+            <summary>Reject or email a quote</summary>
+          <div className="card sales-more-body">
             <label>
               Reject reason{' '}
               <input
@@ -1616,6 +1674,7 @@ export default function Page() {
               />
             </label>
           </div>
+          </details>
         <select
           value={quotationManageFilter}
           onChange={(e) =>
@@ -1646,11 +1705,11 @@ export default function Page() {
           <thead>
             <tr>
               <th>Number</th>
-              <th>Channel</th>
+              {showChannel ? <th>Channel</th> : null}
               <th>Status</th>
               <th>Total</th>
-              <th>Valid</th>
-              <th>Reject reason</th>
+              <th>Valid until</th>
+              {showQuoteReject ? <th>Reject reason</th> : null}
               <th>Actions</th>
             </tr>
           </thead>
@@ -1658,11 +1717,11 @@ export default function Page() {
             {managedQuotations.map((q) => (
               <tr key={q.id}>
                 <td>{q.quotation_number}</td>
-                <td>{channelLabel(q.sales_channel)}</td>
-                <td>{q.status}</td>
-                <td>{formatNumber(q.total_amount, fmt)}</td>
-                <td>{q.valid_until ? String(q.valid_until).slice(0, 10) : '—'}</td>
-                <td>{q.rejection_reason || '—'}</td>
+                {showChannel ? <td>{channelLabel(q.sales_channel)}</td> : null}
+                <td>{saleWords(q.status)}</td>
+                <td>{formatNumber(q.total_amount, displayFmt)}</td>
+                <td>{q.valid_until ? formatWhen(q.valid_until, displayFmt) : '—'}</td>
+                {showQuoteReject ? <td>{q.rejection_reason || '—'}</td> : null}
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(q)} aria-label={`View quotation ${q.id}`}>View</button>
                   {q.status === 'draft' && (
@@ -1726,9 +1785,9 @@ export default function Page() {
             ))}
             {managedQuotations.length === 0 && (
               <tr>
-                <td colSpan={7} className="muted">
+                <td colSpan={quoteCols} className="muted">
                   {quotations.length === 0
-                    ? 'No quotations yet'
+                    ? 'No quotes yet'
                     : 'No quotations for this filter'}
                 </td>
               </tr>
@@ -1740,7 +1799,9 @@ export default function Page() {
 
       {tab === 'orders' && (
         <>
-          <div className="card" style={{ marginBottom: 12 }}>
+          <details className="sales-more" style={{ marginBottom: 12 }}>
+            <summary>Cancel an order</summary>
+          <div className="card sales-more-body">
             <label>
               Cancel reason{' '}
               <input
@@ -1751,6 +1812,7 @@ export default function Page() {
               />
             </label>
           </div>
+          </details>
           <select
             value={orderManageFilter}
             onChange={(e) =>
@@ -1783,13 +1845,12 @@ export default function Page() {
           <thead>
             <tr>
               <th>Number</th>
-              <th>Channel</th>
+              {showChannel ? <th>Channel</th> : null}
               <th>Status</th>
-              <th>Store</th>
-              <th>Reserved</th>
+              {showStore ? <th>Store</th> : null}
+              {showReserved ? <th>Reserved</th> : null}
               <th>Delivery</th>
               <th>Total</th>
-              <th>Notes</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -1797,28 +1858,21 @@ export default function Page() {
             {managedOrders.map((o) => (
               <tr key={o.id}>
                 <td>{o.order_number}</td>
-                <td>{channelLabel(o.sales_channel)}</td>
-                <td>{o.status}</td>
-                <td>
-                  {stores.find((s) => s.id === o.store_id)?.name ||
-                    (o.store_id ? o.store_id.slice(0, 8) : '—')}
-                </td>
+                {showChannel ? <td>{channelLabel(o.sales_channel)}</td> : null}
+                <td>{saleWords(o.status)}</td>
+                {showStore ? <td>{storeName(o.store_id) || '—'}</td> : null}
+                {showReserved ? (
                 <td>
                   {o.reservation_status
-                    ? `${o.reserved_qty ?? 0} (${o.reservation_status})`
+                    ? `${formatNumber(o.reserved_qty ?? 0, displayFmt)} ${saleWords(o.reservation_status)}`
                     : '—'}
                 </td>
+                ) : null}
                 <td>
-                  {o.delivery_date
-                    ? new Date(o.delivery_date).toLocaleDateString()
-                    : '—'}
+                  {o.delivery_date ? formatWhen(o.delivery_date, displayFmt) : '—'}
                   {o.delivery_address ? ` · ${o.delivery_address}` : ''}
-                  {o.delivery_note_number ? ` · ${o.delivery_note_number}` : ''}
                 </td>
-                <td>{formatNumber(o.total_amount, fmt)}</td>
-                <td className="muted" style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>
-                  {o.notes || '—'}
-                </td>
+                <td>{formatNumber(o.total_amount, displayFmt)}</td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(o)} aria-label={`View sales order ${o.id}`}>View</button>
                   {o.status === 'draft' && (
@@ -1900,9 +1954,9 @@ export default function Page() {
             ))}
             {managedOrders.length === 0 && (
               <tr>
-                <td colSpan={9} className="muted">
+                <td colSpan={orderCols} className="muted">
                   {orders.length === 0
-                    ? 'No sales orders yet'
+                    ? 'No orders yet'
                     : 'No sales orders for this filter'}
                 </td>
               </tr>
@@ -1914,7 +1968,9 @@ export default function Page() {
 
       {tab === 'invoices' && (
         <>
-          <div className="card" style={{ marginBottom: 12 }}>
+          <details className="sales-more" style={{ marginBottom: 12 }}>
+            <summary>Cancel, email, or sell over the limit</summary>
+          <div className="card sales-more-body">
             <label>
               Credit override{' '}
               <input
@@ -1944,6 +2000,7 @@ export default function Page() {
               />
             </label>
           </div>
+          </details>
         <select
           className="list-toolbar"
           value={invoiceManageFilter}
@@ -1978,12 +2035,11 @@ export default function Page() {
           <thead>
             <tr>
               <th>Number</th>
-              <th>Channel</th>
+              {showChannel ? <th>Channel</th> : null}
               <th>Status</th>
-              <th>Store</th>
+              {showStore ? <th>Store</th> : null}
               <th>Total</th>
               <th>Paid</th>
-              <th>Notes</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -1991,17 +2047,11 @@ export default function Page() {
             {managedInvoices.map((inv) => (
               <tr key={inv.id}>
                 <td>{inv.invoice_number}</td>
-                <td>{channelLabel(inv.sales_channel)}</td>
-                <td>{inv.status}</td>
-                <td>
-                  {stores.find((s) => s.id === inv.store_id)?.name ||
-                    (inv.store_id ? inv.store_id.slice(0, 8) : '—')}
-                </td>
-                <td>{formatNumber(inv.total_amount, fmt)}</td>
-                <td>{formatNumber(inv.paid_amount, fmt)}</td>
-                <td className="muted" style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>
-                  {inv.notes || '—'}
-                </td>
+                {showChannel ? <td>{channelLabel(inv.sales_channel)}</td> : null}
+                <td>{saleWords(inv.status)}</td>
+                {showStore ? <td>{storeName(inv.store_id) || '—'}</td> : null}
+                <td>{formatNumber(inv.total_amount, displayFmt)}</td>
+                <td>{formatNumber(inv.paid_amount, displayFmt)}</td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(inv)} aria-label={`View sales invoice ${inv.id}`}>View</button>
                   {inv.status === 'draft' && (
@@ -2033,7 +2083,7 @@ export default function Page() {
                         }
                         aria-label="Print sales invoice A4"
                       >
-                        Print A4
+                        Print
                       </button>
                       <button
                         onClick={() =>
@@ -2043,7 +2093,7 @@ export default function Page() {
                         }
                         aria-label="Print sales invoice thermal"
                       >
-                        Print thermal
+                        Receipt
                       </button>
                     </>
                   )}
@@ -2057,7 +2107,7 @@ export default function Page() {
                   )}
                   {inv.status === 'overdue' && (
                     <span className="muted" style={{ alignSelf: 'center' }}>
-                      {inv.days_overdue}d overdue
+                      {inv.days_overdue} days overdue
                     </span>
                   )}
                   {['posted', 'sent', 'partial', 'overdue'].includes(inv.status) && (
@@ -2088,7 +2138,7 @@ export default function Page() {
             ))}
             {managedInvoices.length === 0 && (
               <tr>
-                <td colSpan={8} className="muted">
+                <td colSpan={invoiceCols} className="muted">
                   {invoices.length === 0
                     ? 'No invoices yet'
                     : 'No sales invoices for this filter'}
@@ -2159,9 +2209,9 @@ export default function Page() {
                   <tr key={c.id}>
                     <td>{c.code}</td>
                     <td>{c.name}</td>
-                    <td>{c.discount_type}</td>
-                    <td>{c.amount}</td>
-                    <td>{c.min_spend}</td>
+                    <td>{saleWords(c.discount_type)}</td>
+                    <td>{formatNumber(c.amount, displayFmt)}</td>
+                    <td>{formatNumber(c.min_spend, displayFmt)}</td>
                     <td>{c.is_active ? 'Yes' : 'No'}</td>
                     <td>{c.redemption_count ?? 0}</td>
                   </tr>
@@ -2217,7 +2267,7 @@ export default function Page() {
             <option value="">Select reason</option>
             {['damaged', 'wrong_item', 'defective', 'customer_change', 'other'].map((r) => (
               <option key={r} value={r}>
-                {r}
+                {saleWords(r)}
               </option>
             ))}
           </select>
@@ -2227,8 +2277,8 @@ export default function Page() {
             aria-label="Return condition"
           >
             <option value="">Select condition</option>
-            <option value="sellable">sellable</option>
-            <option value="discard">discard</option>
+            <option value="sellable">Good to sell again</option>
+            <option value="discard">Do not restock</option>
           </select>
           <label>
             <input type="checkbox" checked={restock} onChange={(e) => setRestock(e.target.checked)} aria-label="Sales return restock" /> Restock
@@ -2252,7 +2302,9 @@ export default function Page() {
             </div>
           </FormModal>
           ) : null}
-          <div className="card" style={{ marginBottom: 12 }}>
+          <details className="sales-more" style={{ marginBottom: 12 }}>
+            <summary>Cancel a return</summary>
+          <div className="card sales-more-body">
             <label>
               Cancel reason{' '}
               <input
@@ -2263,6 +2315,7 @@ export default function Page() {
               />
             </label>
           </div>
+          </details>
         <select
           value={returnManageFilter}
           onChange={(e) =>
@@ -2288,7 +2341,6 @@ export default function Page() {
               <th>Settlement</th>
               <th>Reason</th>
               <th>Total</th>
-              <th>Notes</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -2297,16 +2349,13 @@ export default function Page() {
               <tr key={r.id}>
                 <td>{r.return_number}</td>
                 <td>{r.credit_note_number || '—'}</td>
-                <td>{r.status}</td>
+                <td>{saleWords(r.status)}</td>
                 <td>
-                  {r.settlement_method || '—'}
-                  {r.refunded_amount > 0 ? ` (refunded ${r.refunded_amount})` : ''}
+                  {r.settlement_method ? saleWords(r.settlement_method) : '—'}
+                  {r.refunded_amount > 0 ? ` · ${formatNumber(r.refunded_amount, displayFmt)}` : ''}
                 </td>
-                <td>{r.reason}</td>
-                <td>{formatNumber(r.total_amount, fmt)}</td>
-                <td className="muted" style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>
-                  {r.notes || '—'}
-                </td>
+                <td>{saleWords(r.reason)}</td>
+                <td>{formatNumber(r.total_amount, displayFmt)}</td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(r)} aria-label={`View sales return ${r.id}`}>View</button>
                   {r.status === 'draft' && (
@@ -2350,10 +2399,11 @@ export default function Page() {
             ))}
             {managedReturns.length === 0 && (
               <tr>
-                <td colSpan={8} className="muted">
+                <td colSpan={7} className="muted">
                   {returns.length === 0
                     ? 'No returns yet'
                     : 'No sales returns for this filter'}
+
                 </td>
               </tr>
             )}
@@ -2367,7 +2417,7 @@ export default function Page() {
         <div className="sales-drawer" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Document details">
           <div className="sales-drawer-head">
             <h2>
-              {selected.invoice_number || selected.quotation_number || selected.order_number || selected.return_number || 'Document'} — {selected.status}
+              {selected.invoice_number || selected.quotation_number || selected.order_number || selected.return_number || 'Document'} — {saleWords(selected.status)}
               {selected.invoice_number ? (
                 <span style={{ display: 'inline-flex', gap: 8, marginLeft: 12 }}>
                   <button
@@ -2406,10 +2456,24 @@ export default function Page() {
           {selected.emailed_to && (
             <p className="muted" style={{ marginBottom: 8 }}>
               Last emailed to {selected.emailed_to}
-              {selected.emailed_at ? ` · ${String(selected.emailed_at).slice(0, 19)}` : ''}
+              {selected.emailed_at ? ` · ${formatWhen(selected.emailed_at, displayFmt)}` : ''}
             </p>
           )}
-          {selected.sales_channel ? (
+          {(selected.invoice_date || selected.due_date || selected.valid_until || selected.delivery_date) ? (
+            <p className="muted" style={{ marginBottom: 8 }}>
+              {[
+                selected.invoice_date ? `Invoice ${formatWhen(selected.invoice_date, displayFmt)}` : '',
+                selected.due_date ? `Due ${formatWhen(selected.due_date, displayFmt)}` : '',
+                selected.valid_until ? `Valid until ${formatWhen(selected.valid_until, displayFmt)}` : '',
+                selected.delivery_date ? `Delivery ${formatWhen(selected.delivery_date, displayFmt)}` : '',
+              ].filter(Boolean).join(' · ')}
+            </p>
+          ) : null}
+          {selected.notes ? <p style={{ marginBottom: 8 }}>{selected.notes}</p> : null}
+          {selected.rejection_reason ? (
+            <p className="muted" style={{ marginBottom: 8 }}>Rejected: {selected.rejection_reason}</p>
+          ) : null}
+          {showChannel && selected.sales_channel ? (
             <p className="muted" style={{ marginBottom: 8 }}>
               Channel {channelLabel(selected.sales_channel)}
               {selected.delivery_note_number ? ` · Delivery note ${selected.delivery_note_number}` : ''}
@@ -2421,43 +2485,43 @@ export default function Page() {
                 <th>Product</th>
                 <th>SKU</th>
                 <th>Qty</th>
-                <th>Filled</th>
-                <th>Unit</th>
-                <th>Tax %</th>
+                {showFilled ? <th>Filled</th> : null}
+                <th>Price</th>
+                <th>Tax</th>
                 <th>Discount</th>
-                <th>Condition</th>
-                <th>Line tax</th>
+                {showCondition ? <th>Condition</th> : null}
+                <th>Tax amount</th>
                 <th>Line total</th>
               </tr>
             </thead>
             <tbody>
-              {(selected.items || []).map((it: any) => {
+              {drawerLines.map((it) => {
                 const prod = products.find((p) => p.id === it.product_id);
                 return (
                 <tr key={it.id}>
                   <td>
-                    {prod?.name || it.product_id}
-                    {it.is_reverse_charge ? ' · RC' : ''}
+                    {prod?.name || 'Product'}
+                    {it.is_reverse_charge ? ' · Reverse charge' : ''}
                   </td>
                   <td>{prod?.sku || '—'}</td>
-                  <td>{it.quantity}</td>
-                  <td>{it.qty_fulfilled ?? '—'}</td>
-                  <td>{it.unit_price}</td>
-                  <td>{it.tax_rate}</td>
+                  <td>{formatNumber(it.quantity, displayFmt)}</td>
+                  {showFilled ? <td>{it.qty_fulfilled != null ? formatNumber(it.qty_fulfilled, displayFmt) : '—'}</td> : null}
+                  <td>{formatNumber(it.unit_price, displayFmt)}</td>
+                  <td>{it.tax_rate != null ? `${formatNumber(it.tax_rate, displayFmt)}%` : '—'}</td>
                   <td>
-                    {it.discount ?? 0}
-                    {it.discount_type === 'percent' ? ` (${it.discount_percent}%)` : ''}
+                    {formatNumber(it.discount ?? 0, displayFmt)}
+                    {it.discount_type === 'percent' ? ` (${formatNumber(it.discount_percent, displayFmt)}%)` : ''}
                   </td>
-                  <td>{it.condition || '—'}</td>
+                  {showCondition ? <td>{it.condition ? saleWords(it.condition) : '—'}</td> : null}
                   <td>
-                    {it.line_tax ?? 0}
+                    {formatNumber(it.line_tax ?? 0, displayFmt)}
                     {(it.tax_components || []).length
                       ? ` (${(it.tax_components || [])
-                          .map((c: any) => `${c.name || c.code}:${c.amount}`)
+                          .map((c) => `${c.name || saleWords(c.code)} ${formatNumber(c.amount, displayFmt)}`)
                           .join(', ')})`
                       : ''}
                   </td>
-                  <td>{it.line_total}</td>
+                  <td>{formatNumber(it.line_total, displayFmt)}</td>
                 </tr>
                 );
               })}
@@ -2511,22 +2575,22 @@ export default function Page() {
           <div className="grid" style={{ marginTop: 12 }}>
             <div className="card">
               <div className="muted">Subtotal</div>
-              <div className="kpi">{selected.subtotal ?? 0}</div>
+              <div className="kpi">{formatNumber(selected.subtotal ?? 0, displayFmt)}</div>
             </div>
             <div className="card">
               <div className="muted">Tax</div>
-              <div className="kpi">{selected.tax_amount ?? 0}</div>
+              <div className="kpi">{formatNumber(selected.tax_amount ?? 0, displayFmt)}</div>
             </div>
             <div className="card">
               <div className="muted">Discount</div>
               <div className="kpi">
-                {selected.discount_amount ?? 0}
-                {selected.discount_type === 'percent' ? ` (${selected.discount_percent}%)` : ''}
+                {formatNumber(selected.discount_amount ?? 0, displayFmt)}
+                {selected.discount_type === 'percent' ? ` (${formatNumber(selected.discount_percent, displayFmt)}%)` : ''}
               </div>
             </div>
             <div className="card">
               <div className="muted">Total</div>
-              <div className="kpi">{selected.total_amount ?? 0}</div>
+              <div className="kpi">{formatNumber(selected.total_amount ?? 0, displayFmt)}</div>
             </div>
           </div>
           {(selected.tax_breakdown?.by_rate || []).length > 0 && (
@@ -2544,9 +2608,9 @@ export default function Page() {
                 <tbody>
                   {selected.tax_breakdown.by_rate.map((r: any, idx: number) => (
                     <tr key={`${r.tax_rate}-${idx}`}>
-                      <td>{r.tax_rate}%</td>
-                      <td>{r.taxable}</td>
-                      <td>{r.tax}</td>
+                      <td>{formatNumber(r.tax_rate, displayFmt)}%</td>
+                      <td>{formatNumber(r.taxable, displayFmt)}</td>
+                      <td>{formatNumber(r.tax, displayFmt)}</td>
                       <td>{r.is_reverse_charge ? 'Reverse charge' : 'Standard'}</td>
                     </tr>
                   ))}
@@ -2554,8 +2618,8 @@ export default function Page() {
               </table>
               {selected.reverse_charge_tax > 0 && (
                 <p className="muted">
-                  Reverse-charge tax (memo): {selected.reverse_charge_tax}
-                  {selected.is_reverse_charge ? ' · header RC' : ''}
+                  Reverse-charge tax: {formatNumber(selected.reverse_charge_tax, displayFmt)}
+                  {selected.is_reverse_charge ? ' · This document is reverse charge' : ''}
                 </p>
               )}
             </div>

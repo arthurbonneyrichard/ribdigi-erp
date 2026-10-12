@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '../../../../lib/api';
+import { formatDate, formatDateTime, formatNumber, type FormatPrefs } from '../../../../lib/format';
 
 type Plan = {
-  code: string;
   name: string;
   amount: number;
   currency: string;
   interval: string;
-  trial_days: number;
+  code: string;
 };
 
 type Account = {
@@ -19,65 +19,127 @@ type Account = {
   paid_through?: string | null;
   next_renewal_at?: string | null;
   authorization_present?: boolean;
-  authorization_hint?: string | null;
-  checkout_path?: string;
   consent_at?: string | null;
-  consent_version?: string | null;
-  consent_amount?: number | null;
-  consent_currency?: string | null;
-  consent_interval?: string | null;
   canceled_at?: string | null;
   trial_ends_at?: string | null;
-  tenant_status?: string;
   plan?: Plan | null;
-  provider?: { provider?: string; configured?: boolean; live_charges?: boolean };
+  provider?: { provider?: string; live_charges?: boolean };
 };
+
+type Invoice = {
+  id: string;
+  status?: string;
+  amount?: number;
+  currency?: string;
+  period_end?: string | null;
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  trialing: 'Trial',
+  active: 'Active',
+  payment_required: 'Payment needed',
+  past_due: 'Payment overdue',
+  grace_period: 'Grace period',
+  canceled: 'Renewal off',
+  suspended: 'Suspended',
+  paid: 'Paid',
+  pending: 'Pending',
+  failed: 'Failed',
+  open: 'Open',
+};
+
+function labelStatus(value?: string | null): string {
+  const key = String(value || '').trim().toLowerCase();
+  if (!key) return '—';
+  if (STATUS_LABELS[key]) return STATUS_LABELS[key];
+  return key.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function showWhen(value?: string | null, prefs?: FormatPrefs | null): string {
+  if (!value) return '—';
+  const text = String(value);
+  const hasTime = text.includes('T') || /\d{1,2}:\d{2}/.test(text);
+  const formatted = hasTime ? formatDateTime(text, prefs) : formatDate(text, prefs);
+  return formatted || '—';
+}
+
+function moneyLine(amount: number | null | undefined, currency?: string | null, prefs?: FormatPrefs | null): string {
+  if (amount === null || amount === undefined || Number.isNaN(Number(amount))) return '—';
+  return `${currency || ''} ${formatNumber(amount, prefs)}`.trim();
+}
+
+function periodWord(interval?: string | null): string {
+  if (interval === 'year') return 'year';
+  if (interval === 'month') return 'month';
+  return interval || 'period';
+}
 
 export default function SubscriptionBillingPage() {
   const [account, setAccount] = useState<Account | null>(null);
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [invoices, setInvoices] = useState<any[]>([]);
-  const [planCode, setPlanCode] = useState('professional-month');
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [prefs, setPrefs] = useState<FormatPrefs | null>(null);
   const [consent, setConsent] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
   async function load() {
-    const [accountRes, planRes, invoiceRes] = await Promise.all([
+    const [accountRes, invoiceRes, profileRes] = await Promise.all([
       api('/billing/account'),
-      api('/billing/plans'),
       api('/billing/invoices'),
+      api('/tenants/me').catch(() => null),
     ]);
     setAccount(accountRes?.data || null);
-    setPlans(planRes?.data || []);
     setInvoices(invoiceRes?.data || []);
-    if (accountRes?.data?.plan?.code) setPlanCode(accountRes.data.plan.code);
+    const profile = profileRes?.data;
+    if (profile) {
+      setPrefs({
+        date_format: profile.date_format,
+        time_format: profile.time_format,
+        decimal_separator: profile.decimal_separator,
+        thousand_separator: profile.thousand_separator,
+      });
+    }
   }
 
   useEffect(() => {
-    const ref = new URLSearchParams(window.location.search).get('checkout_ref') || '';
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('checkout_ref') || params.get('reference') || params.get('trxref') || '';
     load()
       .then(async () => {
         if (!ref) return;
         const returned = await api(`/billing/checkout/return?reference=${encodeURIComponent(ref)}`);
-        if (returned?.data && returned.data.confirmed_by_redirect === false) {
-          setMessage('Checkout returned. No invoice was marked paid.');
+        await load();
+        const data = returned?.data;
+        if (data?.authorization_present) {
+          setMessage('Payment method saved. Returning from the payment page did not mark an invoice paid.');
+        } else {
+          setMessage(
+            'You returned from the payment page. The payment method stays unsaved until the provider confirms a reusable authorization. This invoice is not marked paid.'
+          );
         }
+        window.history.replaceState(null, '', window.location.pathname);
       })
       .catch((err) => setError(err.message || 'Could not load billing'));
   }, []);
 
-  const selected = plans.find((plan) => plan.code === planCode);
+  const assigned = account?.plan || null;
+  const price = assigned
+    ? `${moneyLine(assigned.amount, assigned.currency, prefs)} per ${periodWord(assigned.interval)}`
+    : '—';
 
   async function recordConsent() {
     setError('');
     setMessage('');
+    if (!assigned?.code) {
+      setError('No subscription plan is assigned to this company.');
+      return;
+    }
     try {
       await api('/billing/consent', {
         method: 'POST',
-        body: JSON.stringify({ plan_code: planCode, accept: true }),
+        body: JSON.stringify({ plan_code: assigned.code, accept: true }),
       });
-      setMessage('Renewal consent recorded. A charge happens only after the gateway saves a payment method.');
+      setMessage('Renewal agreement saved. A payment is taken only after a payment method is saved.');
       await load();
     } catch (err: any) {
       setError(err.message || 'Could not record consent');
@@ -90,39 +152,32 @@ export default function SubscriptionBillingPage() {
     try {
       const result = await api('/billing/checkout', {
         method: 'POST',
-        body: JSON.stringify({ plan_code: planCode }),
+        body: JSON.stringify({ plan_code: assigned?.code }),
       });
+      if (result?.data?.paid === true) {
+        setError('Checkout did not stay unpaid. Refresh this page before trying again.');
+        return;
+      }
       if (result?.data?.checkout_url) {
         window.location.href = result.data.checkout_url;
         return;
       }
-      setMessage('Checkout did not return a hosted page.');
+      setMessage('The payment page is not available right now.');
     } catch (err: any) {
+      if (err?.status === 503 || /not configured/i.test(String(err?.message || ''))) {
+        setMessage('The payment page is not available right now.');
+        return;
+      }
       setError(err.message || 'Checkout is not available');
     }
   }
 
-  async function saveSandboxMethod() {
-    setError('');
-    setMessage('');
-    try {
-      await api('/billing/sandbox/authorize', {
-        method: 'POST',
-        body: JSON.stringify({ authorization_code: 'mock_auth_sandbox' }),
-      });
-      setMessage('Sandbox payment method saved. No card was charged.');
-      await load();
-    } catch (err: any) {
-      setError(err.message || 'Sandbox payment method was not saved');
-    }
-  }
-
   async function cancelRenewal() {
-    if (!window.confirm('Stop future renewals? Access stays through the paid-through date.')) return;
+    if (!window.confirm('Turn off future renewals? Access stays through the date already paid.')) return;
     setError('');
     try {
       await api('/billing/cancel', { method: 'POST', body: JSON.stringify({ confirm: true }) });
-      setMessage('Future renewals are canceled.');
+      setMessage('Future renewals are turned off.');
       await load();
     } catch (err: any) {
       setError(err.message || 'Could not cancel renewal');
@@ -131,52 +186,46 @@ export default function SubscriptionBillingPage() {
 
   return (
     <main className="page">
-      <h1>Subscription billing</h1>
-      <p>
-        This page is for your Ribdigi ERP subscription. It does not take payment from your customers.
-        Returning from checkout does not mark an invoice paid.
-      </p>
+      <h1>Subscription</h1>
+      <p className="muted">This is your Ribdigi ERP plan. It is separate from payments you take from your own customers.</p>
       {error && <p role="alert">{error}</p>}
       {message && <p>{message}</p>}
       <section className="card">
-        <h2>Current subscription</h2>
-        <p>Status: {account?.billing_status || '—'}</p>
-        <p>Workspace: {account?.tenant_status || '—'}</p>
-        <p>Trial ends: {account?.trial_ends_at || '—'}</p>
-        <p>Next renewal: {account?.next_renewal_at || '—'}</p>
-        <p>Paid through: {account?.paid_through || '—'}</p>
-        <p>
-          Price: {account?.plan
-            ? `${account.plan.currency} ${account.plan.amount} / ${account.plan.interval}`
-            : selected
-              ? `${selected.currency} ${selected.amount} / ${selected.interval}`
-              : '—'}
-        </p>
-        <p>
-          Consent: {account?.consent_at
-            ? `${account.consent_version} on ${account.consent_at} for ${account.consent_currency || ''} ${account.consent_amount ?? ''} / ${account.consent_interval || ''}`
-            : 'Not recorded'}
-        </p>
-        <p>Payment method on file: {account?.authorization_present ? account.authorization_hint || 'Yes' : 'No'}</p>
-        <p>Automatic renewal: {account?.auto_renew ? 'On' : 'Off'}</p>
-        <p>{account?.access_note}</p>
-        <p>
-          Gateway: {account?.provider?.provider || 'mock'}
-          {account?.provider?.live_charges ? ' (live charges enabled)' : ' (live charges are not enabled)'}
-        </p>
+        <h2>Your plan</h2>
+        <dl className="billing-facts">
+          <dt>Plan</dt>
+          <dd>{assigned?.name || 'Not assigned'}</dd>
+          <dt>Amount</dt>
+          <dd>{assigned ? price : '—'}</dd>
+          <dt>Status</dt>
+          <dd>{labelStatus(account?.billing_status)}</dd>
+          <dt>Trial ends</dt>
+          <dd>{showWhen(account?.trial_ends_at, prefs)}</dd>
+          <dt>Next renewal</dt>
+          <dd>{showWhen(account?.next_renewal_at, prefs)}</dd>
+          <dt>Paid through</dt>
+          <dd>{showWhen(account?.paid_through, prefs)}</dd>
+          <dt>Automatic renewal</dt>
+          <dd>{account?.auto_renew ? 'On' : 'Off'}</dd>
+          <dt>Payment method</dt>
+          <dd>{account?.authorization_present ? 'Saved' : 'Not saved'}</dd>
+          <dt>Renewal agreement</dt>
+          <dd>{account?.consent_at ? `Agreed ${showWhen(account.consent_at, prefs)}` : 'Not agreed'}</dd>
+        </dl>
+        {account?.access_note && <p>{account.access_note}</p>}
+        {!assigned && (
+          <p role="status">No plan is assigned yet. Ribdigi House sets the plan and the amount for this company.</p>
+        )}
       </section>
       <section className="card">
-        <h2>Authorize renewal</h2>
-        <label>
-          Plan
-          <select aria-label="Subscription plan" value={planCode} onChange={(event) => setPlanCode(event.target.value)}>
-            {plans.map((plan) => (
-              <option key={plan.code} value={plan.code}>
-                {plan.name} — {plan.currency} {plan.amount}
-              </option>
-            ))}
-          </select>
-        </label>
+        <h2>Renewal</h2>
+        {assigned ? (
+          <p aria-label="Subscription plan">
+            {assigned.name} at {price}.
+          </p>
+        ) : (
+          <p role="status">Renewal stays off until a plan is assigned.</p>
+        )}
         <label>
           <input
             aria-label="Consent to automatic renewal"
@@ -184,53 +233,50 @@ export default function SubscriptionBillingPage() {
             checked={consent}
             onChange={(event) => setConsent(event.target.checked)}
           />{' '}
-          I agree to automatic renewal of this plan at the price, currency, and interval shown, until I turn renewal off.
+          I agree to renew this plan automatically at the amount shown until I turn renewal off.
         </label>
-        <button aria-label="Record renewal consent" className="btn-primary" type="button" disabled={!consent} onClick={recordConsent}>
-          Record consent
+        <button aria-label="Record renewal consent" className="btn-primary" type="button" disabled={!consent || !assigned} onClick={recordConsent}>
+          Agree to renewal
         </button>
-        <button aria-label="Start hosted checkout" type="button" disabled={!account?.consent_at} onClick={startCheckout}>
-          {account?.authorization_present ? 'Update payment method' : 'Start hosted checkout'}
+        <p role="status">
+          {account?.provider?.live_charges
+            ? 'Returning from the payment page leaves the invoice unpaid until the provider confirms a reusable authorization.'
+            : 'This payment page is local or sandbox. It is not a production charge. Returning from it leaves the invoice unpaid until the provider confirms a reusable authorization.'}
+        </p>
+        <button aria-label="Start hosted checkout" type="button" disabled={!account?.consent_at || !assigned} onClick={startCheckout}>
+          {account?.authorization_present ? 'Update payment method' : 'Add payment method'}
         </button>
-        {account?.provider?.provider === 'mock' && !account?.provider?.live_charges && (
-          <button
-            aria-label="Save sandbox payment method"
-            type="button"
-            disabled={!account?.consent_at}
-            onClick={saveSandboxMethod}
-          >
-            Save sandbox payment method
-          </button>
+        {account?.canceled_at && (
+          <p>Renewal was turned off on {showWhen(account.canceled_at, prefs)}. Access continues through {showWhen(account.paid_through, prefs)}.</p>
         )}
-        {account?.canceled_at && <p>Renewal turned off on {account.canceled_at}. Access continues through {account.paid_through || 'the paid-through date'}.</p>}
         <button aria-label="Cancel automatic renewal" className="btn-danger" type="button" onClick={cancelRenewal}>
-          Turn off automatic renewal
+          Turn off renewal
         </button>
       </section>
       <section className="card">
         <h2>Invoices</h2>
-        <table aria-label="Subscription invoices">
-          <thead>
-            <tr>
-              <th>Status</th>
-              <th>Amount</th>
-              <th>Currency</th>
-              <th>Period end</th>
-              <th>Gateway reference</th>
-            </tr>
-          </thead>
-          <tbody>
-            {invoices.map((row) => (
-              <tr key={row.id}>
-                <td>{row.status}</td>
-                <td>{row.amount}</td>
-                <td>{row.currency}</td>
-                <td>{row.period_end}</td>
-                <td>{row.gateway_reference || '—'}</td>
+        {!invoices.length ? (
+          <p className="muted">No invoices yet.</p>
+        ) : (
+          <table aria-label="Subscription invoices">
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Amount</th>
+                <th>Period ends</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {invoices.map((row) => (
+                <tr key={row.id}>
+                  <td>{labelStatus(row.status)}</td>
+                  <td>{moneyLine(row.amount, row.currency, prefs)}</td>
+                  <td>{showWhen(row.period_end, prefs)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </section>
     </main>
   );

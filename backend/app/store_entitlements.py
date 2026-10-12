@@ -9,6 +9,9 @@ Downgrades never delete stores; they only block new creates / activations while 
 
 from __future__ import annotations
 
+import asyncio
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import HTTPException
@@ -21,6 +24,25 @@ from app import packages as packages_svc
 STORE_LIMIT_REACHED = "STORE_LIMIT_REACHED"
 # Platform create "Multi-store" default when no explicit override (Professional catalog).
 MULTI_STORE_DEFAULT_CAP = 10
+
+# One lock per tenant in this process. Postgres also uses SELECT … FOR UPDATE.
+# SQLite (including the test StaticPool) does not honor that row lock, so two
+# concurrent creates can both read the same active-store count unless this
+# guard is held through commit.
+_quota_guard = asyncio.Lock()
+_quota_locks: dict[str, asyncio.Lock] = {}
+
+
+@asynccontextmanager
+async def tenant_store_quota_guard(tenant_id: str) -> AsyncIterator[None]:
+    """Hold through the quota check and the commit that inserts the store."""
+    async with _quota_guard:
+        lock = _quota_locks.get(tenant_id)
+        if lock is None:
+            lock = asyncio.Lock()
+            _quota_locks[tenant_id] = lock
+    async with lock:
+        yield
 
 
 def package_max_stores(package_code: str | None) -> int | None:

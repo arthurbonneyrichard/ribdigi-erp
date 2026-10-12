@@ -25,5 +25,4 @@ celerybeat-schedule.*
 .DS_Store
 .git
 .gitignore
-Dockerfile
 .dockerignore

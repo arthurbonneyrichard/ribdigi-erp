@@ -36,6 +36,7 @@ def test_platform_console_ui_keeps_working_controls():
     staff = (ROOT / "frontend/app/(dashboard)/platform/staff/page.tsx").read_text(encoding="utf-8")
     notes = (ROOT / "frontend/app/(dashboard)/notifications/page.tsx").read_text(encoding="utf-8")
     shell = (ROOT / "frontend/components/Shell.tsx").read_text(encoding="utf-8")
+    nav = (ROOT / "frontend/lib/tenantNav.ts").read_text(encoding="utf-8")
     assert "Platform activity" in overview
     assert "Tenants by status" in overview
     assert "Tenants by industry" in overview
@@ -44,9 +45,14 @@ def test_platform_console_ui_keeps_working_controls():
     assert "admin-password-reset" in page
     assert "industryAllowsModule(selected.industry, mod)" in page
     assert "(industry)" not in page
-    assert "'hotel', 'fmcg'" in page
-    assert "['Tenant', '/platform/tenants', 'platform_tenants']" in shell
-    assert "['Users', '/users', 'users']" not in shell.split("PLATFORM_ITEMS", 1)[1].split("PLATFORM_ROLES", 1)[0]
+    head = page.split("type SubscriptionInfo", 1)[0]
+    assert "Retail, Hotel, and Restaurant" in head
+    for removed in ("fmcg", "hospital", "pharmacy", "wholesale"):
+        assert removed not in head
+    assert "['Tenant', '/platform/tenants', 'platform_tenants']" in nav
+    platform_nav = nav.split("export const PLATFORM_NAV_ITEMS", 1)[1].split("const PLATFORM_SUPPORT_NAV_ROLES", 1)[0]
+    assert "['Users', '/users', 'users']" not in platform_nav
+    assert "platformNavItemsForRole" in shell
     assert "async function deleteStaff" not in staff
     assert "Delete platform staff" not in staff
     assert "Staff directory" in staff
@@ -57,11 +63,13 @@ def test_platform_console_ui_keeps_working_controls():
 
 def test_hotel_and_fmcg_stay_on_industry_allowlists():
     assert packages_svc.industry_allows_module("hotel", "hotel")
-    assert packages_svc.industry_allows_module("fmcg", "fmcg")
+    assert packages_svc.industry_allows_module("restaurant", "restaurant")
+    assert not packages_svc.industry_allows_module("fmcg", "fmcg")
     assert not packages_svc.industry_allows_module("retail", "hotel")
     assert not packages_svc.industry_allows_module("hotel", "fmcg")
     assert "hotel" in packages_svc.IMPLEMENTED_INDUSTRY_MODULES
-    assert "fmcg" in packages_svc.IMPLEMENTED_INDUSTRY_MODULES
+    assert "restaurant" in packages_svc.IMPLEMENTED_INDUSTRY_MODULES
+    assert "fmcg" not in packages_svc.IMPLEMENTED_INDUSTRY_MODULES
 
 
 @pytest.mark.asyncio

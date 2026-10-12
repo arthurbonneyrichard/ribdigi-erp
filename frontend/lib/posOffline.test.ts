@@ -80,7 +80,9 @@ test('offline auth requires prior online envelope and rejects expiry', () => {
 test('service worker reloads POS from cache, including page data, and never touches the queue', () => {
   const root = process.env.RIBDIGI_FRONTEND_ROOT || path.resolve(__dirname, '..');
   const sw = fs.readFileSync(path.join(root, 'public', 'sw.js'), 'utf8');
-  assert.match(sw, /const VERSION = 'v7'/);
+  assert.match(sw, /const VERSION = 'v8'/);
+  assert.match(sw, /function hardReload/);
+  assert.match(sw, /req\.cache === 'reload'/);
   assert.match(sw, /ribdigi-pos-shell-\$\{VERSION\}/);
   assert.match(sw, /function isRsc/);
   assert.match(sw, /networkFirstExact/);

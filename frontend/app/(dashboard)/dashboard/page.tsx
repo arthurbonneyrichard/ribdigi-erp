@@ -7,11 +7,18 @@ import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { industryLabel, normalizeIndustry } from '../../../lib/industries';
 import {
+  dashboardLayout,
   filterIndustryDashboardFeatures,
   industryDashboardFeatures,
   industryHomePath,
+  isSoftwareOwnerIndustry,
+  showsRetailOperations,
+  softwareOwnerDashboardPath,
   type IndustryDashboardFeature,
 } from '../../../lib/industryDashboard';
+import { WholesaleDeskCards } from '../../../components/IndustryDashboardViews';
+import { formatDate } from '../../../lib/format';
+import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import { useStoreContext } from '../../../lib/storeContext';
 import OfflineProvisionalNotice from '../../../components/OfflineProvisionalNotice';
 
@@ -79,6 +86,15 @@ type Dash = {
   industry?: string | null;
   industry_home?: string | null;
   industry_features?: IndustryDashboardFeature[];
+  dashboard_layout?: string;
+  show_retail_operations?: boolean;
+  returns_count?: number;
+  wholesale_desk?: {
+    open_quotes?: number;
+    open_orders?: number;
+    reserved_qty?: number;
+    ar_total_due?: number;
+  } | null;
   pharmacy_desk?: {
     sales_today?: number;
     returns_today?: number;
@@ -89,6 +105,7 @@ type Dash = {
     out_of_stock?: number;
     expiring_soon?: number;
     expired_lots?: number;
+    on_hand_lots?: number;
     quarantined?: number;
     recalled?: number;
     pending_purchase_orders?: number;
@@ -310,21 +327,39 @@ export default function Page() {
   const [dashTick, setDashTick] = useState(0);
   const [hotelHome, setHotelHome] = useState(false);
   const [industry, setIndustry] = useState<string | null>(null);
+  const [industryRaw, setIndustryRaw] = useState<string | null>(null);
+  const [accountRole, setAccountRole] = useState('');
+  const [meReady, setMeReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     getMe()
       .then((me) => {
         if (cancelled) return;
+        const role = String(me.data?.role || '');
+        const raw = String(me.data?.industry_raw || me.data?.industry || '').trim() || null;
+        setAccountRole(role);
+        setIndustryRaw(raw);
         const ind = normalizeIndustry(me.data?.industry);
         setIndustry(ind);
+        if (softwareOwnerDashboardPath(role, raw)) {
+          setHotelHome(false);
+          return;
+        }
         const home = industryHomePath(ind);
-        if (home !== '/dashboard') {
+        if (home !== '/dashboard' && home !== '/platform') {
           setHotelHome(true);
           router.replace(home);
+        } else {
+          setHotelHome(false);
         }
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (!cancelled) setIndustry(null);
+      })
+      .finally(() => {
+        if (!cancelled) setMeReady(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -344,9 +379,12 @@ export default function Page() {
         setDashStatus('ready');
         const payloadIndustry = normalizeIndustry((r.data || {}).industry);
         if (payloadIndustry) setIndustry(payloadIndustry);
+        const rawPayload = String((r.data || {}).industry || '').trim();
+        if (isSoftwareOwnerIndustry(rawPayload)) setIndustryRaw(rawPayload);
         const payloadHome = industryHomePath((r.data || {}).industry);
         const serverHome = (r.data || {}).industry_home;
         const home = serverHome && serverHome !== '/dashboard' ? serverHome : payloadHome;
+        if (home === '/platform') return;
         if (home && home !== '/dashboard') {
           setHotelHome(true);
           router.replace(home);
@@ -384,6 +422,26 @@ export default function Page() {
       void getMe({ force: true })
         .then((r) => {
           setCompanyName(String(r.data?.company_name || r.data?.tenant?.company_name || '').trim());
+          const role = String(r.data?.role || '');
+          const raw = String(r.data?.industry_raw || r.data?.industry || '').trim() || null;
+          setAccountRole(role);
+          setIndustryRaw(raw);
+          const ind = normalizeIndustry(r.data?.industry);
+          setIndustry(ind);
+          setD({});
+          setDashStatus('loading');
+          if (softwareOwnerDashboardPath(role, raw)) {
+            setHotelHome(false);
+            return;
+          }
+          const home = industryHomePath(ind);
+          if (home !== '/dashboard' && home !== '/platform') {
+            setHotelHome(true);
+            router.replace(home);
+          } else {
+            setHotelHome(false);
+            setDashTick((n) => n + 1);
+          }
         })
         .catch(() => undefined);
     };
@@ -393,18 +451,13 @@ export default function Page() {
       window.removeEventListener('storage', applyTenantChange);
       window.clearInterval(id);
     };
-  }, []);
+  }, [router]);
 
-  const firstName = fullName.trim().split(/\s+/)[0] || '';
+  const signedInName = fullName.trim();
+  const formatPrefs = useCompanyFormat();
 
   const tod = useMemo(() => timeOfDay(now ? now.getHours() : 9), [now]);
-  const dateLabel = useMemo(
-    () =>
-      now
-        ? now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-        : '',
-    [now],
-  );
+  const dateLabel = useMemo(() => (now ? formatDate(now, formatPrefs) : ''), [now, formatPrefs]);
 
   const sub = d.subscription;
   const status = subStatus(sub);
@@ -470,12 +523,33 @@ export default function Page() {
     },
   ];
 
+  const serverLayout = typeof d.dashboard_layout === 'string' ? d.dashboard_layout : '';
+  const rawIndustry = industryRaw || (typeof d.industry === 'string' ? d.industry : null) || industry;
+  const ownerHome = softwareOwnerDashboardPath(accountRole, rawIndustry);
+  const platformLayout = serverLayout === 'platform' || isSoftwareOwnerIndustry(rawIndustry);
+  const layout = serverLayout || (meReady ? dashboardLayout(d.industry || industry) : '');
+
+  useEffect(() => {
+    if (!ownerHome) return;
+    router.replace(ownerHome);
+  }, [ownerHome, router]);
+  const showRetail = serverLayout
+    ? d.show_retail_operations === true
+    : meReady && showsRetailOperations(layout);
+
   const countStats = [
     { label: 'Products', val: products, href: links.products || '/inventory' },
     { label: 'Low stock', val: low, href: links.low_stock || '/inventory?tab=lowstock' },
     { label: 'Out of stock', val: oos, href: links.out_of_stock || '/inventory?tab=products&stock=oos' },
     { label: 'Expiring soon', val: expiring, href: links.expiring || '/inventory?tab=expiry' },
   ];
+  if (showRetail && typeof d.returns_count === 'number') {
+    countStats.push({
+      label: 'Posted returns',
+      val: d.returns_count,
+      href: '/sales?tab=returns',
+    });
+  }
 
   const liveIndustry = normalizeIndustry(d.industry) || industry;
   const featureCards = filterIndustryDashboardFeatures(
@@ -485,8 +559,41 @@ export default function Page() {
     liveIndustry
   ).filter((f) => f.id !== 'pos' && f.id !== 'inventory' && f.id !== 'customers');
 
-  if (hotelHome) {
-    return <p className="muted">Opening hotel dashboard…</p>;
+  if (ownerHome || platformLayout) {
+    return (
+      <p className="muted" role="status">
+        {ownerHome
+          ? 'Opening platform console…'
+          : accountRole
+            ? 'This workspace uses the platform console.'
+            : 'Loading dashboard…'}
+      </p>
+    );
+  }
+
+  if (!meReady && !serverLayout) {
+    return (
+      <p className="muted" role="status">
+        Loading dashboard…
+      </p>
+    );
+  }
+
+  const awayHome = industryHomePath(d.industry || industry);
+  if (awayHome !== '/platform' && (hotelHome || (awayHome && awayHome !== '/dashboard'))) {
+    const opening =
+      awayHome === '/restaurant'
+        ? 'restaurant'
+        : awayHome === '/fmcg'
+          ? 'FMCG'
+          : awayHome === '/hospital'
+            ? 'hospital'
+            : 'hotel';
+    return (
+      <p className="muted" role="status">
+        Opening {opening} dashboard…
+      </p>
+    );
   }
 
   return (
@@ -503,7 +610,7 @@ export default function Page() {
           )}
           <h1 className="greet">
             {tod.greeting}
-            {companyName ? `, ${companyName}` : firstName ? `, ${firstName}` : ''}{' '}
+            {signedInName ? `, ${signedInName}` : ''}{' '}
             <span className="wave">{tod.icon}</span>
           </h1>
           <p className="greet-sub">{tod.sub}</p>
@@ -513,10 +620,10 @@ export default function Page() {
             <p className="greet-date">{industryLabel(liveIndustry)} dashboard</p>
           )}
           {sub?.status === 'trial' && sub?.trial_ends_at && (
-            <p className="greet-date">Trial ends {fmtDate(sub.trial_ends_at)}</p>
+            <p className="greet-date">Trial ends {formatDate(sub.trial_ends_at, formatPrefs)}</p>
           )}
           {sub?.status === 'grace' && sub?.grace_ends_at && (
-            <p className="greet-date">Grace period ends {fmtDate(sub.grace_ends_at)}</p>
+            <p className="greet-date">Grace period ends {formatDate(sub.grace_ends_at, formatPrefs)}</p>
           )}
           {dashStatus === 'loading' && (
             <p className="greet-date" role="status">
@@ -532,7 +639,6 @@ export default function Page() {
             </p>
           )}
         </section>
-
         {dashStatus !== 'ready' ? (
           <section className="stat-grid" aria-busy={dashStatus === 'loading'}>
             <div className="stat">
@@ -603,6 +709,7 @@ export default function Page() {
             {featureCards.map((f) => {
               let value = 'Open';
               if (f.id === 'expiry_lots') value = num(expiring);
+              if (f.id === 'batches') value = num(d.pharmacy_desk?.on_hand_lots ?? 0);
               if (f.id === 'prescriptions') value = num(d.rx_queue?.open ?? 0);
               if (f.id === 'rx_products') value = num(d.rx_only_count ?? 0);
               return (
@@ -618,6 +725,10 @@ export default function Page() {
               );
             })}
           </section>
+        )}
+
+        {(layout === 'wholesale' || layout === 'retail_wholesale') && (
+          <WholesaleDeskCards status={dashStatus} desk={d.wholesale_desk} />
         )}
 
         <section className="info-grid">

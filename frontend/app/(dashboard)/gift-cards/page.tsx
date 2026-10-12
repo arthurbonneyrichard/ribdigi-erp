@@ -1,7 +1,9 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { api } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
+import { normalizeIndustry } from '../../../lib/industries';
 
 type Card = { code: string; balance: number; status: string };
 

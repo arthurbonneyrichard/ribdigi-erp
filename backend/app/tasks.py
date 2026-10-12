@@ -119,6 +119,15 @@ def process_subscription_renewals() -> dict:
     return jobs_svc.run_async(jobs_svc.job_process_subscription_renewals())
 
 
+@celery.task(name="app.tasks.deliver_support_outbox")
+def deliver_support_outbox() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    from app.support_tickets import deliver_outbox_job
+
+    return jobs_svc.run_async(deliver_outbox_job())
+
+
 @celery.task(name="app.tasks.run_named_job")
 def run_named_job(name: str) -> dict:
     if not settings.CELERY_ENABLED:

@@ -1,4 +1,4 @@
-"""Company admin can delete only the company on their own token."""
+"""Company users cannot delete a tenant. Only the software owner can."""
 
 from __future__ import annotations
 
@@ -6,10 +6,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from fastapi import HTTPException
-from sqlalchemy import func, select
 
-from app import models as m
 from app.config import settings
 from tests.conftest import auth_headers, platform_owner_headers
 

@@ -14,7 +14,7 @@ from tests.conftest import auth_headers, set_tenant_industry
 
 def test_canonicalize_industry_aliases():
     assert canonicalize_industry("Hospitality") == "hotel"
-    assert canonicalize_industry("supermarket") == "mart"
+    assert canonicalize_industry("supermarket") is None
     assert canonicalize_industry("retail") == "retail"
     assert canonicalize_industry("not-a-real-industry") is None
     assert canonicalize_industry("") is None
@@ -29,7 +29,7 @@ def test_industry_allows_module_unknown_does_not_grant_verticals():
     assert industry_allows_module("hotel", "inventory") is True
     assert industry_allows_module("mart", "inventory") is True
     assert industry_allows_module("hotel", "inventory") is True
-    assert industry_allows_module("fmcg", "fmcg") is True
+    assert industry_allows_module("fmcg", "fmcg") is False
     assert industry_allows_module("hotel", "fmcg") is False
     assert has_permission("hotel_manager", "purchasing", "write")
     assert has_permission("hotel_manager", "inventory", "read")
@@ -158,8 +158,9 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     hotel_block = nav[hotel_start:hotel_end]
     assert hotel_start >= 0 and hotel_end > hotel_start
     assert "Pharmacy" not in hotel_block
-    assert "PHARMACY_NAV_ITEMS" in nav
-    assert "label: 'Pharmacy'" in nav
+    assert "PHARMACY_NAV_ITEMS" not in nav
+    assert "label: 'Pharmacy'" not in nav
+    assert "'/pharmacy'" not in nav and '"/pharmacy"' not in nav
     assert "['POS'" not in nav and '["POS"' not in nav
     assert "Restaurant and POS" in nav
     assert "['Hotel Dashboard', '/hotel', 'hotel']" in nav or '["Hotel Dashboard", "/hotel", "hotel"]' in nav

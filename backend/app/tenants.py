@@ -18,23 +18,7 @@ from app.honesty import money_json, optional_honest_narrative, require_honest_na
 VALID_STATUSES = frozenset({"trial", "active", "grace", "suspended"})
 # Platform owner workspace — never suspend/delete (lockout recovery).
 PROTECTED_TENANT_SLUGS = frozenset({"platform", "ribdigi-platform"})
-VALID_INDUSTRIES = frozenset(
-    {
-        "retail",
-        "pharmacy",
-        "restaurant",
-        "bakery",
-        "wholesale",
-        "retail_wholesale",
-        "manufacturing",
-        "mart",
-        "hotel",
-        "fmcg",
-        "distribution",
-        "general_trading",
-        "hospital",
-    }
-)
+VALID_INDUSTRIES = frozenset({"retail", "hotel", "restaurant"})
 INDUSTRY_LABELS = {
     "retail": "Retail",
     "mart": "Mart",
@@ -50,16 +34,8 @@ INDUSTRY_LABELS = {
     "manufacturing": "Manufacturing",
     "hospital": "Hospital",
 }
-# Platform Owner provision surface. Existing stored industries stay valid.
-PROVISION_INDUSTRIES: tuple[str, ...] = (
-    "retail",
-    "pharmacy",
-    "wholesale",
-    "retail_wholesale",
-    "restaurant",
-    "hotel",
-    "fmcg",
-)
+# Customer industries a new or edited company can choose. Platform software is not in this list.
+PROVISION_INDUSTRIES: tuple[str, ...] = ("retail", "hotel", "restaurant")
 # Kept so older callers still import the name. Nothing is blocked.
 RETIRED_PROVISION_INDUSTRIES: frozenset[str] = frozenset()
 VALID_DATE_FORMATS = frozenset({"DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"})
@@ -728,7 +704,7 @@ async def delete_tenant(
     if not is_platform_tenant_delete_role(actor_role):
         raise HTTPException(
             status_code=403,
-            detail="Only the software owner or platform admin can delete a tenant",
+            detail="Only the software owner can delete a tenant",
         )
     slug = (tenant.slug or "").strip().lower()
     if slug in PROTECTED_TENANT_SLUGS:

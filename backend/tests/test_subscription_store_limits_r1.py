@@ -74,7 +74,14 @@ def test_stores_entitlement_ui_wired():
     assert "CASHIER_NAV_MODULES" in shell
     nav = (ROOT / "frontend/lib/tenantNav.ts").read_text(encoding="utf-8")
     assert "filterNavForStoreMode" in nav
-    assert "CASHIER_NAV_MODULES: string[] = ['dashboard', 'pos', 'restaurant']" in nav
+    cashier_line = next(
+        line for line in nav.splitlines() if "export const CASHIER_NAV_MODULES: string[]" in line
+    )
+    assert cashier_line == (
+        "export const CASHIER_NAV_MODULES: string[] = ['dashboard', 'pos', 'restaurant', 'support'];"
+    )
+    assert "'reports'" not in cashier_line
+    assert "'company'" not in cashier_line
 
 
 def test_is_multi_store_and_create_override():
@@ -357,11 +364,6 @@ async def test_concurrent_store_create_respects_limit(client, db_session):
 
     r1, r2 = await asyncio.gather(create_one("CONC-1"), create_one("CONC-2"))
     statuses = sorted([r1.status_code, r2.status_code])
-    if statuses == [200, 200]:
-        pytest.skip(
-            "SQLite StaticPool cannot prove FOR UPDATE concurrency; "
-            "create_store uses tenant row lock for Postgres."
-        )
     assert statuses == [200, 403], (r1.text, r2.text)
 
     rows = (

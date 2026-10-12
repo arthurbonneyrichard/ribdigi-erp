@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api, apiFetch, apiOptional, clearSessionAndRedirect } from '../../../lib/api';
+import { api, apiFetch, apiOptional } from '../../../lib/api';
 import { getMe, invalidateMeCache } from '../../../lib/meCache';
-import { formatDateTime, formatNumber } from '../../../lib/format';
+import { formatDateTime, formatNumber, formatWhen, plainLabel } from '../../../lib/format';
 import { canDownloadStaffGuide, industryLabel } from '../../../lib/industries';
 import { TAX_COUNTRIES } from '../../../lib/taxCountries';
 
@@ -49,10 +49,8 @@ export default function Page() {
 
   const [logoBusy, setLogoBusy] = useState(false);
   const [meRole, setMeRole] = useState('');
-  const [deleteName, setDeleteName] = useState('');
-  const [deletePassword, setDeletePassword] = useState('');
-  const [deleteArmed, setDeleteArmed] = useState(false);
-  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [offlineHours, setOfflineHours] = useState('168');
+  const [storeLimitDraft, setStoreLimitDraft] = useState('');
 
   const LOGO_MAX_BYTES = 2_000_000;
   const LOGO_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif']);
@@ -93,6 +91,10 @@ export default function Page() {
     const loadError = [r, e, s, me].map((x) => x.error).filter(Boolean).join(' ');
     if (r.data) {
       setTenant(r.data);
+      setOfflineHours(String(r.data.offline_auth_hours ?? 168));
+      setStoreLimitDraft(
+        r.data.store_limit == null || r.data.store_limit === '' ? '' : String(r.data.store_limit),
+      );
     }
     setEmailStatus(e.data);
     if (e.data) {
@@ -233,6 +235,85 @@ export default function Page() {
     }
   }
 
+  function storeEntitlementCap(row: any): number | null {
+    const raw =
+      row?.store_usage?.subscription_store_entitlement ??
+      row?.subscription?.subscription_store_entitlement ??
+      row?.max_stores;
+    if (raw == null || raw === '') return null;
+    const cap = Number(raw);
+    return Number.isFinite(cap) ? cap : null;
+  }
+
+  async function saveAdministration() {
+    setMeFlash({});
+    const hoursRaw = offlineHours.trim();
+    if (!/^\d+$/.test(hoursRaw)) {
+      setMeFlash({ err: 'Offline authorization hours must be a whole number from 1 to 168.' });
+      return;
+    }
+    const hours = Number(hoursRaw);
+    if (hours < 1 || hours > 168) {
+      setMeFlash({ err: 'Offline authorization hours must be a whole number from 1 to 168.' });
+      return;
+    }
+    const limitRaw = storeLimitDraft.trim();
+    let storeLimit: number | null = null;
+    if (limitRaw) {
+      if (!/^\d+$/.test(limitRaw)) {
+        setMeFlash({
+          err: 'Store allocation must be a whole number, or blank to use the full entitlement.',
+        });
+        return;
+      }
+      storeLimit = Number(limitRaw);
+    }
+    const cap = storeEntitlementCap(tenant);
+    if (storeLimit != null && cap != null && storeLimit > cap) {
+      setMeFlash({ err: `Store allocation cannot exceed the subscription entitlement (${cap}).` });
+      return;
+    }
+    setMeBusy(true);
+    try {
+      const profile = await api('/tenants/me', {
+        method: 'PATCH',
+        body: JSON.stringify({ offline_auth_hours: hours }),
+      });
+      let allocation: any = null;
+      try {
+        allocation = await api('/tenants/me/store-limit', {
+          method: 'PATCH',
+          body: JSON.stringify({ store_limit: storeLimit }),
+        });
+      } catch (err: any) {
+        setTenant((current: any) => ({
+          ...(current || {}),
+          ...(profile.data || {}),
+          store_usage: profile.data?.store_usage ?? current?.store_usage,
+        }));
+        setOfflineHours(String(profile.data?.offline_auth_hours ?? hours));
+        setMeFlash({ err: err.message || 'Could not save store allocation' });
+        return;
+      }
+      setTenant((current: any) => ({
+        ...(current || {}),
+        ...(profile.data || {}),
+        ...(allocation.data || {}),
+        store_usage: allocation.data?.store_usage ?? current?.store_usage,
+      }));
+      setOfflineHours(
+        String(allocation.data?.offline_auth_hours ?? profile.data?.offline_auth_hours ?? hours),
+      );
+      const savedLimit = allocation.data?.store_limit;
+      setStoreLimitDraft(savedLimit == null ? '' : String(savedLimit));
+      setMeFlash({ ok: 'Company administration saved' });
+    } catch (err: any) {
+      setMeFlash({ err: err.message || 'Could not save company administration' });
+    } finally {
+      setMeBusy(false);
+    }
+  }
+
   async function activate() {
     setError('');
     try {
@@ -270,13 +351,12 @@ export default function Page() {
       <h1>Company</h1>
       {!industryValid && (
         <p className="login-error" role="alert">
-          Industry is missing or not recognized. Choose a supported industry (Retail, Mart, Hotel, FMCG,
-          Pharmacy, Restaurant, Bakery, Wholesale, Distribution, General Trading, or Manufacturing).
-          Industry-specific modules stay disabled until this is saved.
+          Business type is missing. Choose Retail, Pharmacy, Wholesale, Retail + Wholesale, Restaurant,
+          Hotel, FMCG, or Hospital, then save.
         </p>
       )}
       <p className="muted">
-        Status: {tenant.status} · Slug: {tenant.slug}
+        Status: {plainLabel(tenant.status)} · Sign-in name: {tenant.slug}
         {tenant.days_remaining != null && tenant.status === 'trial'
           ? ` · Trial days left: ${tenant.days_remaining}`
           : ''}
@@ -287,7 +367,7 @@ export default function Page() {
       {tenant.status === 'trial' && (
         <div className="card" style={{ marginBottom: 12, borderLeft: '4px solid #ca8a04' }}>
           <p>
-            Trial ends {tenant.trial_ends_at ? String(tenant.trial_ends_at).slice(0, 10) : 'soon'}
+            Trial ends {tenant.trial_ends_at ? formatDateTime(tenant.trial_ends_at, tenant) : 'soon'}
             {tenant.days_remaining != null ? ` (${tenant.days_remaining} day(s) left)` : ''}.
           </p>
           <button className="btn-ok" aria-label="Activate company" onClick={activate}>Activate now</button>
@@ -298,7 +378,7 @@ export default function Page() {
           <p>
             <b>Read-only grace period.</b> Writes are blocked until you activate.
             {tenant.grace_ends_at
-              ? ` Grace ends ${String(tenant.grace_ends_at).slice(0, 10)}.`
+              ? ` Grace ends ${formatWhen(tenant.grace_ends_at, tenant)}.`
               : ''}
           </p>
           <button className="btn-ok" aria-label="Activate company" onClick={activate}>Activate to restore access</button>
@@ -735,8 +815,9 @@ export default function Page() {
         </button>
       </div>
 
+      <div className="company-side-by-side">
       {emailStatus && (
-        <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
+        <div className="card">
           <h2>Email / SMTP</h2>
           <p className="muted">
             Mode: {emailStatus.mode} · Source: {emailStatus.source || '—'} · Configured:{' '}
@@ -877,7 +958,7 @@ export default function Page() {
       )}
 
       {smsStatus && (
-        <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
+        <div className="card">
           <h2>SMS / Twilio</h2>
           <p className="muted">
             Mode: {smsStatus.mode} · Source: {smsStatus.source || '—'} · Configured:{' '}
@@ -1003,106 +1084,99 @@ export default function Page() {
         </div>
       )}
 
-      {meRole === 'company_admin' && tenant && (
-        <div className="card" style={{ marginTop: 16, maxWidth: 720 }}>
+      {(meRole === 'company_admin' || meRole === 'super_admin') && tenant && (
+        <div className="card">
           <h2>Company administration</h2>
           <p className="muted">
             These tools stay inside this company. The sidebar is built from the saved industry,
             enabled modules, and your permissions. A hidden menu item is not permission to open the page.
           </p>
-          <p>
-            <a href="/users">Users and roles</a>
-            {' · '}
-            <a href="/stores">Stores and locations</a>
-            {' · '}
-            <a href="/notifications">Notifications</a>
-            {' · '}
-            <a href="/audit">Activity log</a>
-            {' · '}
-            <a href="/company/billing">Subscription billing</a>
-            {' · '}
-            <a href="/printers">Printers</a>
-            {' · '}
-            <a href="/backup">Download a backup</a>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Business type: {industryLabel(tenant.industry)}
+            {tenant.package_code ? ` · Package: ${plainLabel(tenant.package_code)}` : ''}
           </p>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Enabled modules:{' '}
+            {Array.isArray(tenant.enabled_modules) && tenant.enabled_modules.length
+              ? tenant.enabled_modules.map((code: string) => plainLabel(code)).join(', ')
+              : 'None'}
+          </p>
+          <p className="muted" style={{ marginTop: 0 }}>
+            {(() => {
+              const usage = tenant.store_usage || {};
+              const active = usage.stores_active;
+              const effective = usage.effective_store_limit ?? tenant.subscription?.effective_store_limit;
+              const unlimited =
+                usage.unlimited ?? tenant.subscription?.unlimited_stores ?? storeEntitlementCap(tenant) == null;
+              if (active == null && effective == null && !unlimited) {
+                return 'Store usage loads with the company profile.';
+              }
+              if (unlimited && active != null) return `${active} active stores (unlimited entitlement)`;
+              if (active != null && effective != null) return `${active} of ${effective} stores used`;
+              return unlimited ? 'Store entitlement is unlimited' : 'Store usage loads with the company profile.';
+            })()}
+          </p>
+          <nav aria-label="Company administration links" style={{ display: 'grid', gap: 6, marginBottom: 12 }}>
+            <a href="/users">Users and roles</a>
+            <a href="/stores">Stores and locations</a>
+            <a href="/notifications">Notifications</a>
+            <a href="/audit">Activity log</a>
+            <a href="/company/billing">Subscription billing</a>
+            <a href="/printers">Printers</a>
+            <a href="/backup">Download a backup</a>
+          </nav>
           <p className="muted">
             Printers covers receipts and barcode output for this company&apos;s saved industry.
             Barcode labels are also printed from Inventory. The cash drawer is on Multi-Store when
             that module is enabled.
           </p>
-        </div>
-      )}
-
-      {meRole === 'company_admin' && tenant && (
-        <div className="card" style={{ marginTop: 16, maxWidth: 720 }}>
-          <h2>Delete tenant</h2>
-          <p>
-            This permanently deletes <strong>{tenant.company_name}</strong>. It removes this
-            company&apos;s users, roles, inventory, sales, purchases, finance, stores, settings,
-            uploaded files, sessions, and saved payment references. Platform plans, platform owner
-            accounts, and other companies are not deleted.
-          </p>
-          <p className="muted">
-            A billing or backup copy that was already stored is not erased at this moment. Those
-            copies expire under the backup retention schedule. Download a backup from Backup first
-            if you still need the data.
-          </p>
-          <label style={{ display: 'block', marginBottom: 8 }}>
-            <input
-              type="checkbox"
-              checked={deleteArmed}
-              onChange={(e) => setDeleteArmed(e.target.checked)}
-              aria-label="Confirm permanent tenant deletion"
-            />{' '}
-            I understand this cannot be undone.
-          </label>
-          <label className="muted">Company name</label>
+          <label className="muted">Offline authorization (hours)</label>
           <input
-            value={deleteName}
-            onChange={(e) => setDeleteName(e.target.value)}
-            aria-label="Delete tenant confirmation name"
+            type="number"
+            min={1}
+            max={168}
+            value={offlineHours}
+            onChange={(e) => setOfflineHours(e.target.value)}
+            aria-label="Company offline authorization hours"
+            title="Hours a signed-in device may sell offline (1–168)"
             style={{ width: '100%', marginBottom: 8 }}
           />
-          <label className="muted">Your password</label>
+          <label className="muted">Company store allocation</label>
           <input
-            type="password"
-            value={deletePassword}
-            onChange={(e) => setDeletePassword(e.target.value)}
-            aria-label="Delete tenant password"
+            type="number"
+            min={0}
+            value={storeLimitDraft}
+            onChange={(e) => setStoreLimitDraft(e.target.value)}
+            placeholder="Full entitlement"
+            aria-label="Company store allocation"
+            title="Active-store cap within the subscription. Blank uses the full entitlement."
             style={{ width: '100%', marginBottom: 8 }}
           />
+          <p className="muted" style={{ marginTop: 0 }}>
+            Blank store allocation uses the full subscription entitlement
+            {storeEntitlementCap(tenant) != null ? ` (${storeEntitlementCap(tenant)})` : ' (unlimited)'}.
+          </p>
           <button
-            className="btn-danger"
-            disabled={
-              deleteBusy ||
-              !deleteArmed ||
-              deleteName.trim() !== String(tenant.company_name || '').trim() ||
-              !deletePassword.trim()
-            }
-            aria-label="Delete tenant"
-            onClick={async () => {
-              setDeleteBusy(true);
-              setError('');
-              try {
-                await api('/tenants/me/delete', {
-                  method: 'POST',
-                  body: JSON.stringify({
-                    password: deletePassword.trim(),
-                    confirm_name: deleteName.trim(),
-                    confirm: true,
-                  }),
-                });
-                clearSessionAndRedirect();
-              } catch (err: any) {
-                setError(err.message);
-                setDeleteBusy(false);
-              }
-            }}
+            type="button"
+            onClick={saveAdministration}
+            disabled={!!tenant.read_only || meBusy}
+            aria-label="Save company administration"
           >
-            Delete tenant
+            {meBusy ? 'Saving…' : 'Save company administration'}
           </button>
+          {meFlash.ok ? (
+            <p className="form-flash ok" role="status">
+              {meFlash.ok}
+            </p>
+          ) : null}
+          {meFlash.err ? (
+            <p className="form-flash err" role="alert">
+              {meFlash.err}
+            </p>
+          ) : null}
         </div>
       )}
+      </div>
     </>
   );
 }

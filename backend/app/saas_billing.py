@@ -122,6 +122,15 @@ def serialize_plan(plan: m.PlatformBillingPlan) -> dict:
     }
 
 
+def serialize_assigned_plan(account, plan: m.PlatformBillingPlan) -> dict:
+    """Tenant view: the assigned plan at the amount this company is billed."""
+    amount, currency = billable_price(account, plan)
+    body = serialize_plan(plan)
+    body["amount"] = money_json(amount)
+    body["currency"] = currency
+    return body
+
+
 def serialize_invoice(row: m.TenantBillingInvoice) -> dict:
     return {
         "id": row.id,
@@ -323,7 +332,15 @@ async def update_plan(db: AsyncSession, plan_id: str, payload, *, actor) -> m.Pl
             raise HTTPException(status_code=422, detail="currency must be GHS or USD")
         plan.currency = currency
     if "name" in data and data["name"] is not None:
-        plan.name = data["name"].strip()
+        name = data["name"].strip()
+        if len(name) < 2:
+            raise HTTPException(status_code=422, detail="name must be at least 2 characters")
+        plan.name = name
+    if "package_code" in data and data["package_code"] is not None:
+        package = data["package_code"].strip().lower()
+        if package not in packages_svc.VALID_PACKAGE_CODES or package == "trial":
+            raise HTTPException(status_code=422, detail="package_code must be a paid package")
+        plan.package_code = package
     if "trial_days" in data and data["trial_days"] is not None:
         plan.trial_days = int(data["trial_days"])
     if "grace_days" in data and data["grace_days"] is not None:
@@ -341,6 +358,32 @@ async def update_plan(db: AsyncSession, plan_id: str, payload, *, actor) -> m.Pl
         details={"code": plan.code},
     )
     return plan
+
+
+async def delete_plan(db: AsyncSession, plan_id: str, *, actor) -> dict:
+    """Remove a package that no company is using. Does not change invoices or record a payment."""
+    plan = await db.get(m.PlatformBillingPlan, plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Billing plan not found")
+    assigned = (
+        await db.execute(
+            select(m.TenantBillingAccount.id).where(m.TenantBillingAccount.plan_id == plan.id).limit(1)
+        )
+    ).first()
+    if assigned is not None:
+        raise HTTPException(status_code=409, detail="This package is assigned to a company")
+    snapshot = {"id": plan.id, "code": plan.code}
+    await db.delete(plan)
+    await db.flush()
+    await _audit(
+        db,
+        tenant_id=actor["tenant_id"],
+        user_id=actor["sub"],
+        action="billing_plan_deleted",
+        entity_id=snapshot["id"],
+        details={"code": snapshot["code"]},
+    )
+    return snapshot
 
 
 def _parse_iso(value: str | None) -> datetime | None:
@@ -394,13 +437,26 @@ async def assign_plan(db: AsyncSession, tenant: m.Tenant, payload, *, actor) -> 
     return account
 
 
+async def require_assigned_plan(
+    db: AsyncSession, account: m.TenantBillingAccount, plan_code: str
+) -> m.PlatformBillingPlan:
+    """A tenant may consent or check out only for the plan assigned to that company."""
+    assigned = await _load_plan(db, account.plan_id)
+    if assigned is None:
+        raise HTTPException(status_code=422, detail="No subscription plan is assigned to this company")
+    requested = await _plan_by_code(db, plan_code)
+    if requested.id != assigned.id:
+        raise HTTPException(status_code=422, detail="That plan is not assigned to this company")
+    return assigned
+
+
 async def record_consent(
     db: AsyncSession, tenant: m.Tenant, *, plan_code: str, accept: bool, user_id: str
 ) -> m.TenantBillingAccount:
     if not accept:
         raise HTTPException(status_code=422, detail="Automatic renewal consent is required")
-    plan = await _plan_by_code(db, plan_code)
     account = await get_or_create_account(db, tenant)
+    plan = await require_assigned_plan(db, account, plan_code)
     now = _now()
     account.plan_id = plan.id
     account.consent_version = CONSENT_VERSION
@@ -444,9 +500,11 @@ def _authorized(account: m.TenantBillingAccount) -> bool:
 
 
 async def start_checkout(db: AsyncSession, tenant: m.Tenant, *, plan_code: str, email: str) -> dict:
-    plan = await _plan_by_code(db, plan_code)
     account = await get_account(db, tenant.id)
-    if not account or account.consent_plan_id != plan.id or not account.consent_at:
+    if account is None:
+        raise HTTPException(status_code=422, detail="No subscription plan is assigned to this company")
+    plan = await require_assigned_plan(db, account, plan_code)
+    if account.consent_plan_id != plan.id or not account.consent_at:
         raise HTTPException(status_code=422, detail="Record renewal consent before checkout")
     gateway = await current_gateway(db)
     reference = f"checkout:{account.id}:{plan.id}"
@@ -1069,10 +1127,67 @@ async def process_due_renewals(db: AsyncSession, *, now: datetime | None = None)
     return {"reminded": reminded, "charged": charged, "failed": failed, "suspended": suspended}
 
 
+def _webhook_event_id(provider: str, event: dict, data: dict) -> str:
+    """Paystack sends the transaction id on `data.id` and omits a top-level event id."""
+    explicit = str(event.get("id") or "").strip()
+    if explicit:
+        return explicit[:160]
+    data_id = str(data.get("id") or "").strip()
+    event_type = str(event.get("event") or "").strip().lower()
+    if data_id and event_type:
+        return f"{provider}:{event_type}:{data_id}"[:160]
+    return ""
+
+
+def _customer_code(data: dict) -> str | None:
+    customer_obj = data.get("customer") if isinstance(data.get("customer"), dict) else {}
+    text = str(customer_obj.get("customer_code") or data.get("customer_code") or "").strip()
+    return text or None
+
+
+def _reusable_authorization(data: dict) -> str | None:
+    """A reusable gateway token. Card numbers are never accepted."""
+    nested = data.get("authorization") if isinstance(data.get("authorization"), dict) else None
+    if nested is not None:
+        if nested.get("reusable") is not True:
+            return None
+        code = str(nested.get("authorization_code") or "").strip()
+    else:
+        code = str(data.get("authorization_code") or "").strip()
+    compact = code.replace(" ", "").replace("-", "")
+    if not code.startswith(("AUTH_", "mock_auth_")) or CARD_RE.search(compact):
+        return None
+    return code
+
+
+def _supplied_minor(value) -> int | None:
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return -1
+
+
+async def _checkout_account(
+    db: AsyncSession, reference: str
+) -> tuple[m.TenantBillingAccount, m.PlatformBillingPlan] | None:
+    parts = (reference or "").split(":")
+    if len(parts) != 3 or parts[0] != "checkout" or not parts[1] or not parts[2]:
+        return None
+    account = await db.get(m.TenantBillingAccount, parts[1])
+    if not account or account.plan_id != parts[2] or not account.consent_at:
+        return None
+    plan = await _load_plan(db, account.plan_id)
+    if not plan:
+        return None
+    return account, plan
+
+
 async def apply_webhook(db: AsyncSession, *, provider: str, event: dict) -> dict:
-    event_id = str(event.get("id") or "").strip()
     event_type = str(event.get("event") or "").strip().lower()
     data = event.get("data") if isinstance(event.get("data"), dict) else {}
+    event_id = _webhook_event_id(provider, event, data)
     if not event_id or not event_type:
         raise HTTPException(status_code=422, detail="Webhook event id and type are required")
     existing = (
@@ -1085,12 +1200,13 @@ async def apply_webhook(db: AsyncSession, *, provider: str, event: dict) -> dict
     reference = str(data.get("reference") or "").strip()
     invoice = await _invoice_by_key(db, reference) if reference else None
     outcome = "ignored"
+    event_tenant_id = invoice.tenant_id if invoice else None
     if invoice and event_type in {"charge.success", "charge.failed"}:
         expected_minor = minor_units(money(invoice.amount))
-        supplied_minor = data.get("amount")
+        supplied_minor = _supplied_minor(data.get("amount"))
         currency = str(data.get("currency") or "").upper()
         tenant_ok = not data.get("tenant_id") or str(data.get("tenant_id")) == invoice.tenant_id
-        amount_ok = supplied_minor is None or int(supplied_minor) == expected_minor
+        amount_ok = supplied_minor is None or supplied_minor == expected_minor
         currency_ok = not currency or currency == invoice.currency.upper()
         if not (tenant_ok and amount_ok and currency_ok):
             outcome = "mismatch"
@@ -1112,11 +1228,16 @@ async def apply_webhook(db: AsyncSession, *, provider: str, event: dict) -> dict
                         invoice=invoice,
                         gateway_reference=str(data.get("gateway_reference") or reference),
                     )
-                    auth = str(data.get("authorization_code") or "").strip()
-                    if auth and not CARD_RE.search(auth):
+                    auth = _reusable_authorization(data)
+                    if not auth:
+                        flat = str(data.get("authorization_code") or "").strip()
+                        nested = data.get("authorization")
+                        if not isinstance(nested, dict) and flat and not CARD_RE.search(flat.replace(" ", "").replace("-", "")):
+                            auth = flat
+                    if auth:
                         account.gateway_authorization_ref = auth
                         account.auto_renew = bool(account.consent_at)
-                    customer = str(data.get("customer_code") or "").strip()
+                    customer = _customer_code(data)
                     if customer:
                         account.gateway_customer_ref = customer
             outcome = "paid"
@@ -1139,11 +1260,44 @@ async def apply_webhook(db: AsyncSession, *, provider: str, event: dict) -> dict
                     reason="gateway_declined",
                 )
             outcome = "failed"
+    elif event_type == "charge.success":
+        found = await _checkout_account(db, reference)
+        if found:
+            account, plan = found
+            event_tenant_id = account.tenant_id
+            status = str(data.get("status") or "").strip().lower()
+            price, price_currency = billable_price(account, plan)
+            supplied_minor = _supplied_minor(data.get("amount"))
+            currency = str(data.get("currency") or "").upper()
+            tenant_ok = not data.get("tenant_id") or str(data.get("tenant_id")) == account.tenant_id
+            amount_ok = supplied_minor is None or supplied_minor == minor_units(price)
+            currency_ok = not currency or currency == price_currency
+            auth = _reusable_authorization(data) if status in {"", "success"} else None
+            if not (tenant_ok and amount_ok and currency_ok):
+                outcome = "mismatch"
+            elif auth:
+                account.gateway_provider = provider
+                account.gateway_authorization_ref = auth
+                customer = _customer_code(data)
+                if customer:
+                    account.gateway_customer_ref = customer
+                if not account.cancel_at_period_end:
+                    account.auto_renew = True
+                account.updated_at = _now()
+                outcome = "authorization_saved"
+                await _audit(
+                    db,
+                    tenant_id=account.tenant_id,
+                    user_id=None,
+                    action="billing_authorization_saved",
+                    entity_id=account.id,
+                    details={"provider": provider, "hint": _mask(auth), "source": "webhook"},
+                )
     row = m.TenantBillingEvent(
         id=uid(),
         provider=provider,
         gateway_event_id=event_id,
-        tenant_id=invoice.tenant_id if invoice else None,
+        tenant_id=event_tenant_id,
         invoice_id=invoice.id if invoice else None,
         event_type=event_type[:80],
         outcome=outcome,
@@ -1251,6 +1405,207 @@ async def reactivate_access(db: AsyncSession, tenant: m.Tenant, *, actor) -> dic
         "billing_status": account.billing_status if account else None,
         "charged": False,
     }
+
+
+async def plan_for_package(
+    db: AsyncSession, package_code: str, term_unit: str | None
+) -> m.PlatformBillingPlan | None:
+    """Active catalog plan for a package and term. Does not create an invoice."""
+    await ensure_default_plans(db)
+    code = (package_code or "").strip().lower()
+    interval = "year" if (term_unit or "") == "years" else "month"
+    rows = (
+        await db.execute(
+            select(m.PlatformBillingPlan).where(
+                m.PlatformBillingPlan.package_code == code,
+                m.PlatformBillingPlan.is_active == True,  # noqa: E712
+                m.PlatformBillingPlan.interval == interval,
+            )
+        )
+    ).scalars().all()
+    if not rows and interval == "year":
+        rows = (
+            await db.execute(
+                select(m.PlatformBillingPlan).where(
+                    m.PlatformBillingPlan.package_code == code,
+                    m.PlatformBillingPlan.is_active == True,  # noqa: E712
+                    m.PlatformBillingPlan.interval == "month",
+                )
+            )
+        ).scalars().all()
+    if not rows:
+        return None
+    return sorted(rows, key=lambda row: row.code or "")[0]
+
+
+async def record_assigned_subscription_amount(
+    db: AsyncSession,
+    tenant: m.Tenant,
+    *,
+    package_code: str,
+    term_unit: str | None,
+    amount,
+    plan_code: str | None = None,
+) -> m.TenantBillingAccount:
+    """Save the amount the software owner assigned. Does not charge or mark an invoice paid."""
+    code = (package_code or "").strip().lower()
+    priced = money(amount)
+    if code == "trial":
+        if priced < 0:
+            raise HTTPException(status_code=422, detail="amount must be zero or greater")
+    elif priced <= 0:
+        raise HTTPException(status_code=422, detail="amount must be greater than zero")
+    account = await get_or_create_account(db, tenant)
+    currency = (getattr(tenant, "currency", None) or "GHS").strip().upper()
+    if len(currency) != 3 or not currency.isalpha():
+        currency = "GHS"
+    if code == "trial":
+        if (plan_code or "").strip():
+            raise HTTPException(status_code=422, detail="Trial does not use a priced package")
+        account.plan_id = None
+    else:
+        chosen = (plan_code or "").strip().lower()
+        if chosen:
+            plan = await _plan_by_code(db, chosen)
+            expected = "year" if (term_unit or "") == "years" else "month"
+            if (plan.package_code or "") != code or plan.interval != expected:
+                raise HTTPException(
+                    status_code=422,
+                    detail="That package does not match the selected features and term",
+                )
+        else:
+            plan = await plan_for_package(db, code, term_unit)
+            if plan is None:
+                raise HTTPException(status_code=422, detail="No billing price is configured for that package")
+        account.plan_id = plan.id
+    account.price_override_amount = priced
+    account.price_override_currency = currency
+    account.updated_at = _now()
+    await db.flush()
+    return account
+
+
+def apply_assigned_amount_to_account_body(body: dict, account, tenant) -> dict:
+    """Show this tenant's assigned amount on their own subscription page."""
+    override = getattr(account, "price_override_amount", None) if account else None
+    if override is None:
+        return body
+    currency = (
+        getattr(account, "price_override_currency", None)
+        or getattr(tenant, "currency", None)
+        or "GHS"
+    ).upper()
+    amount = money_json(override)
+    plan = body.get("plan")
+    if isinstance(plan, dict):
+        plan = dict(plan)
+        plan["amount"] = amount
+        plan["currency"] = currency
+        body["plan"] = plan
+        return body
+    usage = packages_svc.usage_snapshot(tenant)
+    interval = "year" if usage.get("term_unit") == "years" else "month"
+    body["plan"] = {
+        "id": None,
+        "code": "",
+        "package_code": usage.get("package_code") or "trial",
+        "name": usage.get("package_name") or "Trial",
+        "interval": interval,
+        "amount": amount,
+        "currency": currency,
+        "trial_days": 0,
+        "grace_days": 0,
+        "is_active": True,
+    }
+    return body
+
+
+def _catalog_price(plans: list, package_code: str, term_unit: str | None) -> tuple[float | None, str | None]:
+    """Active catalog price for a package. Trial has no price. Missing plans stay blank."""
+    code = (package_code or "").strip().lower()
+    if code == "trial":
+        return None, None
+    interval = "year" if (term_unit or "") == "years" else "month"
+    matches = [
+        plan
+        for plan in plans
+        if (plan.package_code or "") == code and bool(plan.is_active) and (plan.interval or "") == interval
+    ]
+    if not matches and interval == "year":
+        matches = [
+            plan
+            for plan in plans
+            if (plan.package_code or "") == code and bool(plan.is_active) and (plan.interval or "") == "month"
+        ]
+    if not matches:
+        return None, None
+    plan = sorted(matches, key=lambda row: row.code or "")[0]
+    return money_json(plan.amount), (plan.currency or "GHS").upper()
+
+
+async def company_billing_roster(db: AsyncSession) -> list[dict]:
+    """Customer companies with the assigned package, catalog or billed amount, term, and status.
+
+    Ribdigi House (slug platform) is the software owner workspace, not a billed company.
+    Gateway secrets, invoice ids, and payment references are not included.
+    """
+    from app import tenants as tenants_svc
+
+    await ensure_default_plans(db)
+    tenants = await tenants_svc.list_tenants(db, limit=500)
+    plans = (
+        await db.execute(select(m.PlatformBillingPlan).where(m.PlatformBillingPlan.is_active == True))  # noqa: E712
+    ).scalars().all()
+    accounts = (await db.execute(select(m.TenantBillingAccount))).scalars().all()
+    account_by_tenant = {row.tenant_id: row for row in accounts}
+    plan_ids = {row.plan_id for row in accounts if row.plan_id}
+    known = {row.id for row in plans}
+    missing = [plan_id for plan_id in plan_ids if plan_id not in known]
+    plan_by_id = {row.id: row for row in plans}
+    if missing:
+        extra = (
+            await db.execute(select(m.PlatformBillingPlan).where(m.PlatformBillingPlan.id.in_(missing)))
+        ).scalars().all()
+        for row in extra:
+            plan_by_id[row.id] = row
+
+    rows: list[dict] = []
+    for tenant in tenants:
+        if (tenant.slug or "").strip().lower() == "platform":
+            continue
+        usage = packages_svc.usage_snapshot(tenant)
+        package_code = usage.get("package_code") or "trial"
+        term_unit = usage.get("term_unit")
+        amount, currency = _catalog_price(list(plans), package_code, term_unit)
+        account = account_by_tenant.get(tenant.id)
+        billed = plan_by_id.get(account.plan_id) if account and account.plan_id else None
+        override = getattr(account, "price_override_amount", None) if account is not None else None
+        if override is not None:
+            amount = money_json(override)
+            currency = (
+                getattr(account, "price_override_currency", None) or currency or "GHS"
+            ).upper()
+        elif account and billed and (billed.package_code or "") == package_code:
+            price, cur = billable_price(account, billed)
+            amount = money_json(price)
+            currency = cur
+        renews = usage.get("subscription_ends_at")
+        rows.append(
+            {
+                "company_name": tenant.company_name,
+                "slug": tenant.slug,
+                "plan": usage.get("package_name") or package_code,
+                "package_code": package_code,
+                "amount": amount,
+                "currency": currency,
+                "term_value": usage.get("term_value"),
+                "term_unit": term_unit,
+                "status": tenant.status,
+                "renews": renews.isoformat() if renews is not None else None,
+            }
+        )
+    rows.sort(key=lambda row: (row["company_name"] or "").lower())
+    return rows
 
 
 async def attention_list(db: AsyncSession) -> list[dict]:

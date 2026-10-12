@@ -73,6 +73,31 @@ async def build_dashboard(
 ) -> dict[str, Any]:
     from fastapi import HTTPException
 
+    from app.industry_dashboard import industry_dashboard_payload, is_software_owner_industry
+
+    tenant = await db.get(m.Tenant, tenant_id)
+    if tenant and is_software_owner_industry(getattr(tenant, "industry", None)):
+        # Software-owner home is the platform console. Do not attach a customer operating desk.
+        return {
+            **industry_dashboard_payload(tenant),
+            "scope": "platform",
+            "pharmacy_desk": None,
+            "fmcg_desk": None,
+            "hospital_desk": None,
+            "wholesale_desk": None,
+            "recent_sales": [],
+            "monthly_sales": [],
+            "daily_sales": [],
+            "top_products_by_revenue": [],
+            "top_products_by_quantity": [],
+            "links": {
+                "platform": "/platform",
+                "tenants": "/platform/tenants",
+                "reports": "/platform/reports",
+                "support": "/platform/support",
+            },
+        }
+
     async def scalar(stmt):
         return (await db.execute(stmt)).scalar() or 0
 
@@ -430,7 +455,15 @@ async def build_dashboard(
 
         expired_lots = 0
         nearing_lots = 0
+        on_hand_lots = 0
         if await schema_compat_svc.table_column_names(db, "product_batches"):
+            lot_stmt = select(func.count()).select_from(m.ProductBatch).where(
+                m.ProductBatch.tenant_id == tenant_id,
+                m.ProductBatch.quantity > 0,
+            )
+            on_hand_lots = int(
+                (await db.execute(_limit_warehouses(lot_stmt, m.ProductBatch.warehouse_id))).scalar() or 0
+            )
             exp_stmt = select(func.count()).select_from(m.ProductBatch).where(
                 m.ProductBatch.tenant_id == tenant_id,
                 m.ProductBatch.expiry_date.is_not(None),
@@ -485,6 +518,7 @@ async def build_dashboard(
             "out_of_stock": out_of_stock,
             "expiring_soon": nearing_lots,
             "expired_lots": expired_lots,
+            "on_hand_lots": on_hand_lots,
             "quarantined": quarantined,
             "recalled": recalled,
             "pending_purchase_orders": pending_purchase_orders,
@@ -526,6 +560,82 @@ async def build_dashboard(
         days_remaining = tenants_svc.calendar_days_until(tenant.grace_ends_at)
     else:
         days_remaining = None
+
+    industry_code = industry_payload.get("industry")
+    fmcg_desk = None
+    hospital_desk = None
+    wholesale_desk = None
+    if industry_code == "fmcg":
+        from app import fmcg as fmcg_svc
+        from app import schema_compat as schema_compat_svc
+
+        if await schema_compat_svc.table_column_names(db, "fmcg_routes"):
+            fmcg_desk = await fmcg_svc.summary(db, tenant_id=tenant_id)
+        else:
+            fmcg_desk = {
+                "schemes_active": 0,
+                "routes_active": 0,
+                "route_stops": 0,
+                "customers_active": 0,
+                "batches_expiring_30d": 0,
+                "deliveries_pending": 0,
+                "deliveries_completed": 0,
+                "deliveries_failed": 0,
+            }
+    if industry_code == "hospital":
+        from app import schema_compat as schema_compat_svc
+
+        patients = 0
+        open_visits = 0
+        if await schema_compat_svc.table_column_names(db, "hospital_patients"):
+            patients = int(
+                (
+                    await db.execute(
+                        select(func.count())
+                        .select_from(m.HospitalPatient)
+                        .where(m.HospitalPatient.tenant_id == tenant_id)
+                    )
+                ).scalar()
+                or 0
+            )
+        if await schema_compat_svc.table_column_names(db, "hospital_encounters"):
+            open_visits = int(
+                (
+                    await db.execute(
+                        select(func.count())
+                        .select_from(m.HospitalEncounter)
+                        .where(
+                            m.HospitalEncounter.tenant_id == tenant_id,
+                            m.HospitalEncounter.status == "open",
+                        )
+                    )
+                ).scalar()
+                or 0
+            )
+        hospital_desk = {"patients": patients, "open_visits": open_visits}
+    if industry_code in {"wholesale", "retail_wholesale"}:
+        wholesale_desk = {
+            "open_quotes": open_quotes,
+            "open_orders": open_orders,
+            "reserved_qty": reserved_qty,
+            "ar_total_due": ar_total_due,
+        }
+
+    returns_count = None
+    if industry_code in {"retail", "retail_wholesale"}:
+        returns_count = 0
+        if await schema_compat.table_column_names(db, "sales_returns"):
+            ret_all = select(func.count()).select_from(m.SalesReturn).where(
+                m.SalesReturn.tenant_id == tenant_id,
+                m.SalesReturn.status == "posted",
+            )
+            if store_id or store_ids is not None:
+                ret_all = ret_all.join(
+                    m.SalesInvoice, m.SalesInvoice.id == m.SalesReturn.sales_invoice_id
+                )
+                ret_all = apply_store_scope(ret_all, m.SalesInvoice.store_id, store_id, store_ids)
+            returns_count = int((await db.execute(ret_all)).scalar() or 0)
+
     subscription = {
         "status": tenant.status if tenant else None,
         "trial_ends_at": tenant.trial_ends_at if tenant else None,
@@ -569,12 +679,16 @@ async def build_dashboard(
         "rx_queue": rx_queue,
         "rx_only_count": rx_only_count,
         "pharmacy_desk": pharmacy_desk,
+        "fmcg_desk": fmcg_desk,
+        "hospital_desk": hospital_desk,
+        "wholesale_desk": wholesale_desk,
         "open_quotes": open_quotes,
         "open_orders": open_orders,
         "reserved_qty": reserved_qty,
         "recent_sales": recent_sales,
         "top_products_by_revenue": top_products_by_revenue,
         "top_products_by_quantity": top_products_by_quantity,
+        "returns_count": returns_count,
         "links": {
             "sales": "/sales",
             "purchases": "/purchasing",

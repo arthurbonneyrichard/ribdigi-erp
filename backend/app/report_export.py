@@ -536,6 +536,7 @@ async def build_report_payload(
     compare: str | None = None,
     department_id: str | None = None,
     store_ids: list[str] | None = None,
+    include_cost: bool = True,
 ) -> Any:
     # Defense in depth: /reports/export report_type Query Literal → 422 on blank/unknown.
     if report_type not in EXPORTABLE:
@@ -593,6 +594,7 @@ async def build_report_payload(
             store_id=store_id or None,
             store_ids=store_ids,
             category_id=category_id or None,
+            include_cost=include_cost,
         )
     if report_type == "sales_salesperson":
         return await reports_svc.sales_by_salesperson(

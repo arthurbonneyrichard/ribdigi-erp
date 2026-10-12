@@ -39,6 +39,8 @@ async def test_summary_does_not_return_generic_500(client):
     assert "month_sales" in data
     assert "low_stock_report" in data
     assert "expenses_summary" in data
+    assert isinstance(data["products_sold"]["products"], list)
+    assert data["products_sold"]["total_quantity"] == 0
     assert data["today_sales"]["invoice_count"] == 0
     assert data["today_sales"]["total_revenue"] == 0
     assert data["expenses_summary"]["count"] == 0

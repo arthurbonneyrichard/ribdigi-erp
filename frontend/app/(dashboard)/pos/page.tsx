@@ -9,6 +9,10 @@ import { pageLoadStarted } from '../../../lib/navTiming';
 import { useStoreContext } from '../../../lib/storeContext';
 import { isHotelIndustry, tenantIsMultiStore } from '../../../lib/tenantNav';
 import { normalizeIndustry } from '../../../lib/industries';
+import { formatDate, formatWhen, plainLabel } from '../../../lib/format';
+import { useCompanyFormat } from '../../../lib/useCompanyFormat';
+import { openShiftForSignedInUser } from '../../../lib/cashierShift';
+import { setPosDrawerBridge } from '../../../lib/posDrawerBridge';
 import {
   allocationRemainingFor,
   cacheSnapshot,
@@ -77,8 +81,8 @@ function printProvisionalReceipt(rec: QueuedSale, lines: Array<{ name: string; q
     `<!doctype html><html><head><title>${escapeHtml(rec.local_receipt_number)}</title>` +
       '<style>body{font-family:monospace;font-size:12px;margin:12px}table{width:100%;border-collapse:collapse}</style></head><body>' +
       `<h3 style="margin:0">${escapeHtml(storeName)}</h3>` +
-      '<p><strong>PROVISIONAL RECEIPT — not yet synced</strong><br/>The final receipt number is issued when this sale syncs.</p>' +
-      `<div>No: ${escapeHtml(rec.local_receipt_number)}</div><div>${escapeHtml(new Date(rec.created_at).toLocaleString())}</div>` +
+      '<p><strong>Receipt copy — not the final receipt yet</strong><br/>The final receipt number is issued when this sale is sent.</p>' +
+      `<div>No: ${escapeHtml(rec.local_receipt_number)}</div><div>${escapeHtml(formatWhen(rec.created_at) || '')}</div>` +
       `<table>${rows}</table><hr/><div><strong>Total ${Number(payload.total || 0).toFixed(2)}</strong></div>${tenders}` +
       '<script>window.print()</script></body></html>'
   );
@@ -206,6 +210,7 @@ type Session = {
   store_address?: string | null;
   cashier_id?: string | null;
   cashier_name?: string | null;
+  opened_at?: string | null;
 };
 
 async function downloadReceiptPdf(saleId: string, paper = '80mm') {
@@ -403,6 +408,7 @@ const ProductThumb = memo(function ProductThumb({
 });
 
 export default function Page() {
+  useCompanyFormat();
   const [q, setQ] = useState('');
   const [rows, setRows] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -414,9 +420,6 @@ export default function Page() {
   const [posSaleNext, setPosSaleNext] = useState('');
   const [posSessionPrefix, setPosSessionPrefix] = useState('');
   const [posSessionNext, setPosSessionNext] = useState('');
-  const [openingCash, setOpeningCash] = useState('100');
-  const [actualCash, setActualCash] = useState('');
-  const [closeNotes, setCloseNotes] = useState('');
   const [stores, setStores] = useState<Store[]>([]);
   const [storeId, setStoreId] = useState('');
   const { storeId: ctxStoreId, setStoreId: setCtxStoreId } = useStoreContext();
@@ -434,7 +437,7 @@ export default function Page() {
   const [customerId, setCustomerId] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [creditOverrideReason, setCreditOverrideReason] = useState('');
-  const [drawerReason, setDrawerReason] = useState('');
+  const [canOpenDrawer, setCanOpenDrawer] = useState(false);
   const [cashMoveAmount, setCashMoveAmount] = useState('');
   const [cashMoveReason, setCashMoveReason] = useState('');
   const [cashMoveBusy, setCashMoveBusy] = useState<null | 'cash_in' | 'cash_out'>(null);
@@ -552,15 +555,19 @@ export default function Page() {
     if (!canCreditSale && paymentMethod === 'credit') setPaymentMethod('cash');
   }, [canCreditSale, paymentMethod]);
 
-  async function refreshSession() {
-    const r = await api('/pos/sessions/current');
-    setSession(r.data || null);
+  async function loadShiftHistory() {
     try {
       const list = await api('/pos/sessions');
       if (Array.isArray(list.data)) setShifts(list.data);
     } catch {
-      /* current shift still applies if history cannot load */
+      /* recent shifts stay hidden if history cannot load */
     }
+  }
+
+  async function refreshSession() {
+    const r = await api('/pos/sessions/current');
+    setSession(r.data || null);
+    await loadShiftHistory();
   }
 
   const managedShifts = shifts.filter((row) => {
@@ -668,9 +675,8 @@ export default function Page() {
   }, [online, offlineStatus?.summary.synced]);
 
   useEffect(() => {
-    if (!online) return;
     let cancelled = false;
-    async function beat() {
+    async function beat(sellingOnline: boolean) {
       try {
         const pending = await countPendingSales();
         await api('/pos/devices/heartbeat', {
@@ -680,15 +686,21 @@ export default function Page() {
             store_id: storeId.trim() || session?.store_id || null,
             app_version: 'web-mvp',
             pending_queue_count: pending,
+            selling_online: sellingOnline,
           }),
         });
       } catch {
-        /* heartbeat best-effort */
+        /* heartbeat best-effort; a missed beat still ages into offline on the server */
       }
     }
-    beat();
+    beat(online);
+    if (!online) {
+      return () => {
+        cancelled = true;
+      };
+    }
     const t = window.setInterval(() => {
-      if (!cancelled && navigator.onLine) beat();
+      if (!cancelled && navigator.onLine) beat(true);
     }, 60000);
     return () => {
       cancelled = true;
@@ -744,7 +756,7 @@ export default function Page() {
           ]);
           if (!meSnap || !env || env.user_id !== String(meSnap.id || '')) {
             throw new Error(
-              'This device has not been prepared for offline selling. Sign in online once and open a shift to enable offline mode.'
+              'This device has not been prepared for offline selling. Sign in online once so this device can sell offline.'
             );
           }
           sess = { data: sSnap };
@@ -757,16 +769,31 @@ export default function Page() {
         setTenantId(String(meRes.data?.tenant_id || ''));
         setIndustryCode(normalizeIndustry(meRes.data?.industry) || '');
         setCanApproveOffline(hasPerm(meRes.data, 'pos', 'approve'));
+        setCanOpenDrawer(hasPerm(meRes.data, 'pos', 'write'));
         setCanWriteQuotes(hasPerm(meRes.data, 'sales', 'write'));
-        setSession(sess.data || null);
         const list: Store[] = storeRes.data || [];
         setStores(list);
+        let chosen = '';
         if (ctxStoreId && list.some((s) => s.id === ctxStoreId)) {
+          chosen = ctxStoreId;
           setStoreId(ctxStoreId);
         } else if (list.length === 1) {
+          chosen = list[0].id;
           setStoreId(list[0].id);
           setCtxStoreId(list[0].id);
         }
+        const tillIndustry = ['retail', 'retail_wholesale', 'pharmacy', 'restaurant', 'hotel'].includes(
+          normalizeIndustry(meRes.data?.industry) || ''
+        );
+        if (!sess.data && navigator.onLine && tillIndustry && !cancelled) {
+          const opened = await openShiftForSignedInUser(chosen || null);
+          if (cancelled) return;
+          if (opened?.session_id) sess = { data: opened as Session };
+          else setError('Your shift could not be started. Sign out and sign in again.');
+        }
+        if (cancelled) return;
+        setSession(sess.data || null);
+        void loadShiftHistory();
         setCashierName(meRes.data?.full_name || meRes.data?.email || '');
         setCanCreditSale(canWriteCredit(meRes.data));
         setHideStorePicker(
@@ -805,6 +832,17 @@ export default function Page() {
     // setCtxStoreId intentionally omitted: stable setter (see storeContext noops);
     // including an unstable fallback previously caused a mount request storm.
   }, [ctxStoreId, setCtxStoreId]);
+
+  useEffect(() => {
+    const sessionId = String(session?.session_id || '').trim();
+    const shiftOpen = String(session?.status || '').toLowerCase() === 'open';
+    if (canOpenDrawer && shiftOpen && sessionId) {
+      setPosDrawerBridge({ sessionId });
+    } else {
+      setPosDrawerBridge(null);
+    }
+    return () => setPosDrawerBridge(null);
+  }, [canOpenDrawer, session]);
 
   useEffect(() => {
     if (!session) {
@@ -942,39 +980,6 @@ export default function Page() {
     }
   }
 
-  async function openShift() {
-    setError('');
-    setMessage('');
-    if (shiftBusy) return;
-    if (stores.length > 0 && !storeId) {
-      setError('Select a store before opening the shift');
-      return;
-    }
-    setShiftBusy(true);
-    try {
-      const r = await api('/pos/sessions/open', {
-        method: 'POST',
-        body: JSON.stringify({
-          opening_cash: Number(openingCash) || 0,
-          // null when blank so Open shift (UuidIdValue store_id) does not 422
-          store_id: storeId.trim() || null,
-        }),
-      });
-      setSession(r.data);
-      setMessage(
-        r.data?.session_number
-          ? `Shift opened · ${r.data.session_number}`
-          : 'Shift opened'
-      );
-      await browse(q);
-      await refreshPendingCount();
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setShiftBusy(false);
-    }
-  }
-
   async function recordCashMove(kind: 'cash_in' | 'cash_out') {
     if (!session || cashMoveLock.current) return;
     setError('');
@@ -1016,51 +1021,6 @@ export default function Page() {
     } finally {
       cashMoveLock.current = false;
       setCashMoveBusy(null);
-    }
-  }
-
-  async function closeShift() {
-    if (!session) return;
-    setError('');
-    setMessage('');
-    if (!navigator.onLine) {
-      setError('Closing a shift needs a connection so cash totals include every sale.');
-      return;
-    }
-    try {
-      const unsynced = (await listQueuedSales()).filter(
-        (rec) =>
-          rec.kind === 'sale' &&
-          ['pending', 'syncing', 'needs_attention'].includes(rec.state) &&
-          String(rec.payload?.session_id || '') === String(session.session_id)
-      );
-      if (unsynced.length) {
-        setError(
-          `${unsynced.length} offline sale(s) from this shift have not synced yet. Use Sync queued sales (or ask a manager to resolve them) before closing.`
-        );
-        return;
-      }
-    } catch {
-      /* queue unreadable: server totals still authoritative */
-    }
-    try {
-      const r = await api(`/pos/sessions/${session.session_id}/close`, {
-        method: 'POST',
-        body: JSON.stringify({
-          actual_cash: Number(actualCash || session.expected_cash),
-          notes: closeNotes.trim() || null,
-        }),
-      });
-      setSession(null);
-      setShiftReport(null);
-      setMessage(
-        `Shift closed. Variance: ${r.data.variance ?? 0} (expected ${r.data.expected_cash})`
-      );
-      setActualCash('');
-      setCloseNotes('');
-      setCart([]);
-    } catch (err: any) {
-      setError(err.message);
     }
   }
 
@@ -1419,7 +1379,7 @@ export default function Page() {
         const env = await getOfflineAuthEnvelope();
         if (!isOfflineAuthValid(env)) {
           throw new Error(
-            'Offline access on this device has expired, so new offline sales are blocked. Queued sales are kept and will sync when you reconnect.'
+            'Offline selling on this device has expired, so new offline sales are blocked. Saved sales stay on this device and will send when you are back online.'
           );
         }
         const blocked = cart.map((c) => offlineDispenseBlock(c)).find(Boolean);
@@ -1487,7 +1447,7 @@ export default function Page() {
         setLastSale({ id: queued.id, reference: queued.local_receipt_number, offline: queued });
         setLastOfflineReceipt({ lines: receiptLines, store: store?.name || session.store_name || '' });
         setMessage(
-          `Saved offline as ${queued.local_receipt_number} (provisional receipt). It will sync automatically when you reconnect.`
+          `Saved on this device as ${queued.local_receipt_number}. This is not the final receipt. It will send when you are back online.`
         );
         checkoutReqRef.current = null;
         await refreshPendingCount();
@@ -1683,10 +1643,11 @@ export default function Page() {
             <h1>Point of Sale</h1>
             {tradeBanner ? <p className="muted">{tradeBanner}</p> : null}
             <p className="muted">
-              {cashierName ? cashierName : 'Tap a product or scan a barcode'}
-              {' · '}
-              {!online ? 'Offline — stock shown is this device’s allocation' : 'Online'}
-              {!online && catalogCachedAt ? ` · Saved catalog ${formatCacheAge(catalogCachedAt)}` : ''}
+              {cashierName || 'Scan a barcode or tap a product.'}
+              {!online
+                ? ' · Offline. Prices and stock are from the last time this device was online.'
+                : ''}
+              {!online && catalogCachedAt ? ` · Saved ${formatCacheAge(catalogCachedAt)}` : ''}
             </p>
             {meId && tenantId ? (
               <PosOfflinePanel
@@ -1712,8 +1673,21 @@ export default function Page() {
                     className="tpos-input"
                     value={storeId}
                     onChange={(e) => {
-                      setStoreId(e.target.value);
-                      setCtxStoreId(e.target.value);
+                      const id = e.target.value;
+                      setStoreId(id);
+                      setCtxStoreId(id);
+                      if (!id) return;
+                      setShiftBusy(true);
+                      setError('');
+                      void openShiftForSignedInUser(id).then((opened) => {
+                        if (opened?.session_id) {
+                          setSession(opened as Session);
+                          void loadShiftHistory();
+                        } else {
+                          setError('Your shift could not be started. Sign out and sign in again.');
+                        }
+                        setShiftBusy(false);
+                      });
                     }}
                     aria-label="POS store"
                   >
@@ -1725,29 +1699,18 @@ export default function Page() {
                     ))}
                   </select>
                 )}
-                <input
-                  className="tpos-input"
-                  value={openingCash}
-                  onChange={(e) => setOpeningCash(e.target.value)}
-                  inputMode="decimal"
-                  placeholder="Opening cash"
-                  aria-label="Opening cash"
-                />
-                <button
-                  type="button"
-                  className="tpos-btn tpos-btn-primary"
-                  onClick={openShift}
-                  disabled={shiftBusy}
-                  aria-label="Open shift"
-                >
-                  {shiftBusy ? 'Opening…' : 'Open shift'}
-                </button>
+                <span className="muted">
+                  {shiftBusy || hideStorePicker || stores.length <= 1
+                    ? 'Starting your shift…'
+                    : 'Choose a store to start your shift.'}
+                </span>
               </>
             ) : (
               <>
                 <div className="tpos-shift-meta">
                   <strong>{session.session_number}</strong>
                   <span>
+                    {session.opened_at ? `${formatWhen(session.opened_at)} · ` : ''}
                     {session.store_name ? `${session.store_name} · ` : ''}
                     {session.sale_count} sales · {money(Number(session.total_sales || 0))}
                   </span>
@@ -1761,83 +1724,9 @@ export default function Page() {
                 >
                   {reportBusy ? 'Loading…' : shiftReport ? 'Hide report' : 'Shift report'}
                 </button>
-                <label className="muted">
-                  Recent shifts
-                  <select
-                    value={shiftManageFilter}
-                    onChange={(e) => setShiftManageFilter(e.target.value as 'all' | 'open' | 'closed')}
-                    aria-label="POS shift status filter"
-                  >
-                    <option value="all">All</option>
-                    <option value="open">Open</option>
-                    <option value="closed">Closed</option>
-                  </select>
-                </label>
-                {managedShifts.length === 0 ? <p>No shifts for this filter</p> : null}
-                <label className="muted">
-                  Receipt paper
-                  <select
-                    value={receiptPaper}
-                    onChange={(e) => setReceiptPaper(e.target.value)}
-                    aria-label="POS receipt paper"
-                  >
-                    <option value="58mm">58mm</option>
-                    <option value="80mm">80mm</option>
-                  </select>
-                </label>
-                <input value={posSalePrefix} onChange={(e) => setPosSalePrefix(e.target.value)} aria-label="POS sale number prefix" placeholder="Sale prefix" />
-                <input value={posSaleNext} onChange={(e) => setPosSaleNext(e.target.value)} aria-label="POS sale next number" placeholder="Next #" />
-                <input value={posSessionPrefix} onChange={(e) => setPosSessionPrefix(e.target.value)} aria-label="POS session number prefix" placeholder="Session prefix" />
-                <input value={posSessionNext} onChange={(e) => setPosSessionNext(e.target.value)} aria-label="POS session next number" placeholder="Next #" />
-                <button type="button" className="tpos-btn" onClick={() => savePosNumbering().catch((err) => setError(err.message || 'Could not save numbering'))}>
-                  Save numbering
-                </button>
-                <details className="tpos-more">
-                  <summary>Drawer</summary>
-                  <div className="tpos-more-body">
-                    <p style={{ margin: '0 0 6px' }}>Drawer reason (required)</p>
-                    <input
-                      className="tpos-input"
-                      value={drawerReason}
-                      onChange={(e) => setDrawerReason(e.target.value)}
-                      placeholder="Reason"
-                      maxLength={200}
-                      autoComplete="off"
-                      aria-label="Cash drawer open reason"
-                    />
-                    <button
-                      type="button"
-                      className="tpos-btn"
-                      aria-label="Open cash drawer"
-                      onClick={async () => {
-                        setError('');
-                        const cleaned = drawerReason.trim();
-                        if (
-                          cleaned.length < 3 ||
-                          ['manual', 'n/a', 'na', 'none', 'test'].includes(cleaned.toLowerCase())
-                        ) {
-                          setError('Enter a specific drawer reason (min 3 characters)');
-                          return;
-                        }
-                        try {
-                          const r = await api(`/pos/sessions/${session.session_id}/drawer/open`, {
-                            method: 'POST',
-                            body: JSON.stringify({ reason: cleaned }),
-                          });
-                          setDrawerReason('');
-                          setMessage(r.data?.message || r.message || 'Drawer opened');
-                        } catch (err: any) {
-                          setError(err.message);
-                        }
-                      }}
-                    >
-                      Open drawer
-                    </button>
-                  </div>
-                </details>
                 <section className="tpos-cash" aria-label="Shift drawer cash">
                   <p className="tpos-cash-balance">
-                    <span>Drawer</span>
+                    <span>Cash in the drawer</span>
                     <strong>{money(Number(session.expected_cash || 0))}</strong>
                     <span>
                       In {money(Number(session.cash_in || 0))} · Out {money(Number(session.cash_out || 0))}
@@ -1893,31 +1782,51 @@ export default function Page() {
                     </p>
                   ) : null}
                 </section>
-                <details className="tpos-more">
-                  <summary>Close shift</summary>
-                  <div className="tpos-more-body">
-                    <input
-                      className="tpos-input"
-                      value={actualCash}
-                      onChange={(e) => setActualCash(e.target.value)}
-                      inputMode="decimal"
-                      placeholder={`Counted cash (${session.expected_cash})`}
-                      aria-label="Counted cash"
-                    />
-                    <input
-                      className="tpos-input"
-                      value={closeNotes}
-                      onChange={(e) => setCloseNotes(e.target.value)}
-                      placeholder="Notes (optional)"
-                      aria-label="POS shift close notes"
-                    />
-                    <button type="button" className="tpos-btn" onClick={closeShift} aria-label="Close shift">
-                      Close shift
-                    </button>
-                  </div>
-                </details>
               </>
             )}
+            <details className="tpos-more">
+              <summary>Receipt numbers</summary>
+              <div className="tpos-more-body">
+                <label className="muted">
+                  Receipt paper
+                  <select
+                    value={receiptPaper}
+                    onChange={(e) => setReceiptPaper(e.target.value)}
+                    aria-label="POS receipt paper"
+                  >
+                    <option value="58mm">58mm</option>
+                    <option value="80mm">80mm</option>
+                  </select>
+                </label>
+                <input value={posSalePrefix} onChange={(e) => setPosSalePrefix(e.target.value)} aria-label="POS sale number prefix" placeholder="Sale prefix" />
+                <input value={posSaleNext} onChange={(e) => setPosSaleNext(e.target.value)} aria-label="POS sale next number" placeholder="Next sale number" />
+                <input value={posSessionPrefix} onChange={(e) => setPosSessionPrefix(e.target.value)} aria-label="POS session number prefix" placeholder="Shift prefix" />
+                <input value={posSessionNext} onChange={(e) => setPosSessionNext(e.target.value)} aria-label="POS session next number" placeholder="Next shift number" />
+                <button type="button" className="tpos-btn" onClick={() => savePosNumbering().catch((err) => setError(err.message || 'Could not save numbering'))}>
+                  Save numbering
+                </button>
+                <label className="muted">
+                  Recent shifts
+                  <select
+                    value={shiftManageFilter}
+                    onChange={(e) => setShiftManageFilter(e.target.value as 'all' | 'open' | 'closed')}
+                    aria-label="POS shift status filter"
+                  >
+                    <option value="all">All</option>
+                    <option value="open">Open</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </label>
+                {managedShifts.length === 0 ? <p>No shifts yet.</p> : null}
+                {managedShifts.slice(0, 8).map((row) => (
+                  <p key={row.session_id || row.id} className="muted">
+                    {row.session_number} · {plainLabel(row.status) || 'Open'}
+                    {row.opened_at ? ` · ${formatWhen(row.opened_at)}` : ''}
+                    {row.closed_at ? ` – ${formatWhen(row.closed_at)}` : ''}
+                  </p>
+                ))}
+              </div>
+            </details>
           </div>
         </header>
 
@@ -1972,11 +1881,14 @@ export default function Page() {
               </div>
             </div>
             <p className="muted" style={{ margin: '8px 0' }}>
+              {shiftReport.session?.opened_at
+                ? `Opened ${formatWhen(shiftReport.session.opened_at)} · `
+                : ''}
               {shiftReport.session?.cashier_name
                 ? `Cashier ${shiftReport.session.cashier_name} · `
                 : ''}
-              {shiftReport.summary?.sale_count ?? 0} sales · tax{' '}
-              {money(Number(shiftReport.summary?.tax || 0))} · net after returns{' '}
+              {shiftReport.summary?.sale_count ?? 0} sales · Tax{' '}
+              {money(Number(shiftReport.summary?.tax || 0))} · After returns{' '}
               {money(Number(shiftReport.summary?.net_after_returns ?? 0))}
             </p>
             {(shiftReport.cash_movements || []).length > 0 ? (
@@ -2009,7 +1921,7 @@ export default function Page() {
                     <th>Time</th>
                     <th>Customer</th>
                     <th>Pay</th>
-                    <th>Disc</th>
+                    <th>Discount</th>
                     <th>Tax</th>
                     <th>Total</th>
                   </tr>
@@ -2025,11 +1937,7 @@ export default function Page() {
                   {(shiftReport.sales || []).map((sale: any) => (
                     <tr key={sale.id}>
                       <td>{sale.reference}</td>
-                      <td>
-                        {sale.created_at
-                          ? String(sale.created_at).replace('T', ' ').slice(0, 16)
-                          : '—'}
-                      </td>
+                      <td>{sale.created_at ? formatWhen(sale.created_at) || '—' : '—'}</td>
                       <td>{sale.customer_name || 'Walk-in'}</td>
                       <td>
                         {sale.payment_method === 'split' && sale.payments?.length
@@ -2043,7 +1951,7 @@ export default function Page() {
                               .join(' + ')
                           : posPayLabel(sale.payment_method)}
                         {sale.payment_status && sale.payment_status !== 'paid'
-                          ? ` · ${String(sale.payment_status).replace(/_/g, ' ')}`
+                          ? ` · ${plainLabel(sale.payment_status)}`
                           : ''}
                       </td>
                       <td>{money(Number(sale.discounts || sale.discount_amount || 0))}</td>
@@ -2070,8 +1978,8 @@ export default function Page() {
                     {shiftReport.returns.map((ret: any) => (
                       <tr key={ret.id}>
                         <td>{ret.return_number}</td>
-                        <td>{ret.reason}</td>
-                        <td>{ret.status}</td>
+                        <td>{plainLabel(ret.reason) || '—'}</td>
+                        <td>{plainLabel(ret.status) || '—'}</td>
                         <td>{money(Number(ret.total_amount || 0))}</td>
                       </tr>
                     ))}
@@ -2089,7 +1997,7 @@ export default function Page() {
                 className="tpos-search-input"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Scan barcode or search name / SKU"
+                placeholder="Scan a barcode or search by name"
                 disabled={!session}
                 autoComplete="off"
                 autoFocus
@@ -2115,7 +2023,7 @@ export default function Page() {
 
             {!session && (
               <div className="tpos-empty">
-                <p>{bootLoading ? 'Loading POS…' : 'Open a shift to unlock the product catalog.'}</p>
+                <p>{error || 'Starting your shift…'}</p>
               </div>
             )}
 
@@ -2164,29 +2072,22 @@ export default function Page() {
                         {r.sku}
                       </span>
                       <div className="tpos-tile-foot">
-                        <div className="tpos-price-pair">
-                          {r.cost_price != null && Number.isFinite(Number(r.cost_price)) ? (
-                            <span className="tpos-price-actual">
-                              <span className="tpos-price-label">Actual</span>
-                              <span className="tpos-price-value">{money(Number(r.cost_price))}</span>
-                            </span>
-                          ) : null}
-                          <span className="tpos-price-selling">
-                            <span className="tpos-price-label">Selling</span>
-                            <span className="tpos-price-value">{money(Number(r.selling_price))}</span>
-                          </span>
-                        </div>
+                        <span className="tpos-price-selling">
+                          <span className="tpos-price-value">{money(Number(r.selling_price))}</span>
+                        </span>
                         <span
                           className="tpos-stock"
                           title={
                             online
                               ? `${r.stock_qty} in stock`
-                              : `Cached: ${r.stock_qty} · ${formatCacheAge(catalogCachedAt)}`
+                              : `Saved on this device: ${r.stock_qty}`
                           }
                         >
-                          {online ? `${r.stock_qty} left` : `${r.stock_qty} left`}
-                          {r.nearest_expiry_date ? ` · FEFO ${r.nearest_expiry_date}` : ''}
-                          {r.rx_only ? ' · Rx' : ''}
+                          {`${r.stock_qty} left`}
+                          {r.nearest_expiry_date
+                            ? ` · Expires ${formatDate(r.nearest_expiry_date) || r.nearest_expiry_date}`
+                            : ''}
+                          {r.rx_only ? ' · Prescription' : ''}
                         </span>
                       </div>
                     </div>
@@ -2287,7 +2188,7 @@ export default function Page() {
                     <div className="tpos-cart-product">
                       <strong className="tpos-cart-name" title={c.name}>
                         <span className="tpos-cart-name-text">{c.name}</span>
-                        {c.rx_only ? <span className="tpos-cart-flag">Rx</span> : null}
+                        {c.rx_only ? <span className="tpos-cart-flag">Prescription</span> : null}
                         {stockOut ? (
                           <span className="tpos-cart-flag tpos-cart-flag-out">Out</span>
                         ) : c.is_low_stock ? (
@@ -2364,7 +2265,6 @@ export default function Page() {
                       onChange={(e) => setPaymentReference(e.target.value)}
                       placeholder="MoMo, card, or gift card reference"
                       aria-label="POS payment reference"
-                      title="Optional tender reference (1–100 chars; letters/digits required)"
                       maxLength={100}
                       autoComplete="off"
                     />
@@ -2377,7 +2277,7 @@ export default function Page() {
                     checked={splitTender}
                     onChange={(e) => enableSplit(e.target.checked)}
                   />
-                  <span>Split cash + card</span>
+                  <span>Split payment</span>
                 </label>
                 <label className="tpos-pay-select">
                   <span>Payment</span>
@@ -2485,7 +2385,7 @@ export default function Page() {
                     </label>
                     {creditPaidNow > 0 ? (
                       <label className="tpos-field">
-                        <span>Paid-now method</span>
+                        <span>How this amount was paid</span>
                         <select
                           value={depositMethod}
                           onChange={(e) => setDepositMethod(e.target.value)}
@@ -2508,7 +2408,7 @@ export default function Page() {
                 ) : null}
                 {paymentMethod === 'credit' && !splitTender ? (
                   <label className="tpos-field">
-                    <span>Credit override reason</span>
+                    <span>Reason for selling over the limit</span>
                     <input
                       className="tpos-input"
                       value={creditOverrideReason}
@@ -2585,7 +2485,7 @@ export default function Page() {
                 <span>
                   Subtotal {money(cartTotals.subtotal)}
                   {cartTotals.tax > 0 ? ` · Tax ${money(cartTotals.tax)}` : ''}
-                  {cartDiscountAmount > 0 ? ` · Disc −${money(cartDiscountAmount)}` : ''}
+                  {cartDiscountAmount > 0 ? ` · Discount −${money(cartDiscountAmount)}` : ''}
                   {paymentMethod === 'credit' && !splitTender
                     ? ` · On account ${money(creditRemaining)}`
                     : ''}
@@ -2654,7 +2554,7 @@ export default function Page() {
                         {receiptBusy === 'print'
                           ? 'Printing…'
                           : lastSale.offline
-                            ? 'Print provisional receipt'
+                            ? 'Print receipt (not final)'
                             : 'Print receipt'}
                       </button>
                       {lastSale.offline ? null : (

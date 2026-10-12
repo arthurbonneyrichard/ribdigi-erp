@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api, getAccessToken } from '../../../lib/api';
+import { formatWhen, plainLabel } from '../../../lib/format';
 import { getMe } from '../../../lib/meCache';
+import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -39,6 +41,21 @@ const AUDIT_MODULES = [
   'webhooks',
 ] as const;
 
+function areaLabel(value: string | null | undefined): string {
+  const key = String(value || '').trim().toLowerCase();
+  if (!key) return 'All areas';
+  const special: Record<string, string> = {
+    ai: 'AI',
+    auth: 'Sign-in',
+    fmcg: 'FMCG',
+    platform_staff: 'Platform',
+    pos: 'Point of sale',
+    tenants: 'Companies',
+    webhooks: 'Connections',
+  };
+  return special[key] || plainLabel(key);
+}
+
 /** Keep aligned with backend AuditActionValue (strip/lower; digit-start OK for 2fa_*). */
 function auditActionQueryValue(raw: string): string | null {
   const v = raw.trim().toLowerCase();
@@ -70,6 +87,7 @@ function recordHref(entity?: string, entityId?: string | null): string | null {
 }
 
 export default function Page() {
+  useCompanyFormat();
   const [rows, setRows] = useState<any[]>([]);
   const [module, setModule] = useState('');
   const [action, setAction] = useState('');
@@ -86,6 +104,7 @@ export default function Page() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [staffNames, setStaffNames] = useState<Record<string, string>>({});
 
   const refreshLogs = useCallback(async () => {
     const params = new URLSearchParams();
@@ -127,6 +146,18 @@ export default function Page() {
     Promise.all([refreshLogs(), refreshPolicy()]).catch((err) => setError(err.message));
   }, [refreshLogs, refreshPolicy]);
 
+  useEffect(() => {
+    api('/users')
+      .then((r) => {
+        const map: Record<string, string> = {};
+        for (const person of r.data || []) {
+          if (person?.id) map[String(person.id)] = person.full_name || person.email || 'Staff';
+        }
+        setStaffNames(map);
+      })
+      .catch(() => setStaffNames({}));
+  }, []);
+
   async function runVerify() {
     setError('');
     try {
@@ -142,11 +173,11 @@ export default function Page() {
     setError('');
     try {
       if (action.trim() && !auditActionQueryValue(action)) {
-        setError('Action must be snake_case (2+ chars; 2fa_* OK)');
+              setError('Use a short code such as invoice_posted.');
         return;
       }
       if (entity.trim() && !auditEntityQueryValue(entity)) {
-        setError('Entity must be snake_case starting with a letter');
+              setError('Use a short code such as sales_invoice.');
         return;
       }
       const token = getAccessToken();
@@ -184,7 +215,7 @@ export default function Page() {
   async function archiveCold() {
     if (
       !window.confirm(
-        'Cold-archive aged audit events now? Hot rows are marked archived_at and never deleted.',
+        'Move older records into long-term storage? They stay on this list and are never deleted.',
       )
     ) {
       return;
@@ -210,34 +241,34 @@ export default function Page() {
     <>
       <h1>Audit</h1>
       <p className="muted">
-        Who did what, when, and to which record. Search and open the record when a link exists.
-        Passwords and secrets are never shown. Logs cannot be edited or erased. Technical integrity
-        tools stay on Verify chain (platform-style ops).
+        Who did what, and when. Open a record when a link is shown. These entries cannot be edited
+        or deleted.
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
       {retention && (
         <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }} data-testid="audit-retention">
-          <h3 style={{ margin: 0 }}>Retention & cold archive</h3>
+          <h3 style={{ margin: 0 }}>How long records are kept</h3>
           <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-            {retention.notes}
+            Records stay for at least {retention.retention_years} years. Older records can be stored
+            away, and they are never deleted.
           </p>
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 14 }}>
             <span>
-              Retention: <strong>{retention.retention_years} years</strong>
+              Kept for: <strong>{retention.retention_years} years</strong>
             </span>
             <span>
-              Cold after: <strong>{retention.cold_archive_after_days} days</strong>
+              Store away after: <strong>{retention.cold_archive_after_days} days</strong>
             </span>
             <span>
-              Purge: <strong>{retention.purge_allowed ? 'allowed' : 'never'}</strong>
+              Removal: <strong>{retention.purge_allowed ? 'Allowed' : 'Never'}</strong>
             </span>
           </div>
           {canArchive && (
             <div>
               <button type="button" onClick={archiveCold} disabled={busy} aria-label="Archive cold audit logs">
-                {busy ? 'Archiving…' : 'Archive cold now'}
+                {busy ? 'Storing…' : 'Store older records'}
               </button>
             </div>
           )}
@@ -249,39 +280,31 @@ export default function Page() {
                   <th>Events</th>
                   <th>Range</th>
                   <th>Size</th>
-                  <th>SHA-256</th>
                 </tr>
               </thead>
               <tbody>
                 {archives.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="muted">
-                      No cold archives yet
+                    <td colSpan={4} className="muted">
+                      No older records stored yet
                     </td>
                   </tr>
                 )}
                 {archives.map((a) => (
                   <tr key={a.id}>
                     <td style={{ fontSize: 12 }}>
-                      {a.created_at ? String(a.created_at).replace('T', ' ').slice(0, 19) : '—'}
+                      {formatWhen(a.created_at) || '—'}
                     </td>
                     <td>{a.event_count ?? '—'}</td>
                     <td className="muted" style={{ fontSize: 12 }}>
-                      {a.from_created_at
-                        ? String(a.from_created_at).replace('T', ' ').slice(0, 10)
-                        : '—'}
-                      {' → '}
-                      {a.to_created_at
-                        ? String(a.to_created_at).replace('T', ' ').slice(0, 10)
-                        : '—'}
+                      {formatWhen(a.from_created_at) || '—'}
+                      {' to '}
+                      {formatWhen(a.to_created_at) || '—'}
                     </td>
                     <td className="muted" style={{ fontSize: 12 }}>
                       {typeof a.byte_size === 'number'
                         ? `${Math.max(1, Math.round(a.byte_size / 1024))} KB`
                         : '—'}
-                    </td>
-                    <td className="muted" style={{ fontSize: 12 }} title={a.sha256 || ''}>
-                      {a.sha256 ? String(a.sha256).slice(0, 12) : '—'}
                     </td>
                   </tr>
                 ))}
@@ -300,55 +323,48 @@ export default function Page() {
         >
           {AUDIT_MODULES.map((m) => (
             <option key={m || 'all'} value={m}>
-              {m ? `Module: ${m}` : 'All modules'}
+              {areaLabel(m)}
             </option>
           ))}
         </select>
         <input
           value={action}
           onChange={(e) => setAction(e.target.value)}
-          placeholder="Action"
-          title="Filter by audit action (snake_case; 2fa_* allowed)"
+          placeholder="What happened"
+          title="For example invoice_posted"
           aria-label="Audit action filter"
         />
         <input
           value={entity}
           onChange={(e) => setEntity(e.target.value)}
-          placeholder="Entity"
-          title="Filter by audit entity (snake_case; start with a letter)"
+          placeholder="Record type"
+          title="For example sales_invoice"
           aria-label="Audit entity filter"
         />
         <input
           type="date"
           value={fromDate}
           onChange={(e) => setFromDate(e.target.value)}
-          title="From date (YYYY-MM-DD)"
+          title="From date"
           aria-label="Audit from date"
         />
         <input
           type="date"
           value={toDate}
           onChange={(e) => setToDate(e.target.value)}
-          title="To date (YYYY-MM-DD)"
+          title="To date"
           aria-label="Audit to date"
-        />
-        <input
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-          placeholder="User id (UUID)"
-          title="Filter by actor user id (UUID)"
-          aria-label="Audit user filter"
         />
         <button
           type="button"
           aria-label="Apply audit filters"
           onClick={() => {
             if (action.trim() && !auditActionQueryValue(action)) {
-              setError('Action must be snake_case (2+ chars; 2fa_* OK)');
+              setError('Use a short code such as invoice_posted.');
               return;
             }
             if (entity.trim() && !auditEntityQueryValue(entity)) {
-              setError('Entity must be snake_case starting with a letter');
+              setError('Use a short code such as sales_invoice.');
               return;
             }
             setError('');
@@ -359,7 +375,7 @@ export default function Page() {
           Filter
         </button>
         <button type="button" aria-label="Verify audit chain" onClick={runVerify}>
-          Verify chain
+          Check records
         </button>
         <button type="button" onClick={exportCsv} aria-label="Export audit CSV">
           Export CSV
@@ -368,9 +384,8 @@ export default function Page() {
 
       {verify && (
         <div className="card" style={{ marginBottom: 16 }}>
-          <p>Valid: {String(verify.valid)}</p>
+          <p>{verify.valid ? 'Records check out.' : 'A record failed the check.'}</p>
           <p>Checked: {verify.checked}</p>
-          {verify.broken_at && <p>Broken at: {verify.broken_at}</p>}
         </div>
       )}
 
@@ -378,9 +393,9 @@ export default function Page() {
         <thead>
           <tr>
             <th>When</th>
-            <th>Module</th>
+            <th>Area</th>
             <th>Action</th>
-            <th>Entity</th>
+            <th>Record type</th>
             <th>User</th>
             <th>IP</th>
             <th>Record</th>
@@ -397,23 +412,21 @@ export default function Page() {
           ) : null}
           {rows.map((r) => (
             <tr key={r.id}>
-              <td>{String(r.created_at)}</td>
-              <td>{r.module}</td>
-              <td>{r.action}</td>
-              <td>
-                {r.entity}
-                {r.entity_id ? `:${String(r.entity_id).slice(0, 8)}` : ''}
-              </td>
-              <td>{r.user_id ? String(r.user_id).slice(0, 8) : '—'}</td>
+              <td>{formatWhen(r.created_at) || '—'}</td>
+              <td>{areaLabel(r.module)}</td>
+              <td>{plainLabel(r.action)}</td>
+              <td>{plainLabel(r.entity)}</td>
+              <td>{r.user_id ? staffNames[String(r.user_id)] || 'Staff' : '—'}</td>
               <td>{r.ip_address || '—'}</td>
               <td>
                 {recordHref(r.entity, r.entity_id) ? (
                   <a href={recordHref(r.entity, r.entity_id) || '#'}>Open</a>
-                ) : r.entity_id ? (
-                  String(r.entity_id).slice(0, 8)
                 ) : (
                   '—'
                 )}
+              </td>
+              <td className="muted" style={{ fontSize: 12 }}>
+                {formatWhen(r.archived_at) || '—'}
               </td>
               <td className="muted" style={{ fontSize: 12 }}>
                 {r.archived_at

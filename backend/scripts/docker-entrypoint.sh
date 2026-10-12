@@ -15,10 +15,19 @@ else
   echo "entrypoint: FATAL missing $BUILD_ID_FILE" >&2
   exit 19
 fi
-if [ "$(cat "$BUILD_ID_FILE")" != "20261008-alembic-single-head-0136" ]; then
-  echo "entrypoint: FATAL stale image build-id=$(cat "$BUILD_ID_FILE") (need 20261008-alembic-single-head-0136)" >&2
+BUILD_ID=$(tr -d '\r\n' < "$BUILD_ID_FILE")
+case "$BUILD_ID" in
+  ""|unknown|dev|20261003-live-test-store-scope|20261008-alembic-single-head-0136)
+    echo "entrypoint: FATAL stale image build-id=${BUILD_ID}" >&2
+    exit 20
+    ;;
+esac
+if ! printf '%s\n' "$BUILD_ID" | grep -Eq '^[0-9a-f]{12}$'; then
+  echo "entrypoint: FATAL build-id is not a 12-character git sha (${BUILD_ID})" >&2
   exit 20
 fi
+export RIBDIGI_BUILD_ID="$BUILD_ID"
+echo "entrypoint: source-revision=${BUILD_ID}"
 MERGE=/app/alembic/versions/20261008_0136_merge_offline_and_restaurant_heads.py
 if [ ! -f "$MERGE" ]; then
   echo "entrypoint: FATAL missing $MERGE (Alembic graph is not the single head)" >&2

@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import FormModal from '../../../components/FormModal';
 import AttachmentPreview from '../../../components/AttachmentPreview';
 import { api, getAccessToken } from '../../../lib/api';
+import { formatWhen, plainLabel } from '../../../lib/format';
 import { useStoreContext } from '../../../lib/storeContext';
+import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -837,10 +839,10 @@ export default function Page() {
               Save numbering
             </button>
           </div>
-          <p className="muted" style={{ margin: '8px 0 0' }}>
-        Record what the company paid. Amounts at or below {threshold} post automatically.
-        Receipts attach on the list. VAT on supplier invoices is calculated under Tax / Purchases,
-        not here. Other income (below) posts to Other Income (4400) against cash/bank — it does not collect funds.
+          <p className="muted">
+            Record what the company paid. Small amounts are approved automatically. Attach the receipt
+            on the list. Tax on supplier bills is handled under Purchases. Other income below is money
+            the company received, separate from a sale.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -859,7 +861,7 @@ export default function Page() {
 
       <div className="card" id="expense-register" style={{ marginBottom: 16 }}>
         <h2 style={{ marginTop: 0 }}>Paid and unpaid expenses</h2>
-        <p className="muted">Paid means the expense was posted. Unpaid means it is still waiting for approval.</p>
+        <p className="muted">Paid means it is approved and recorded. Unpaid means it is still waiting for approval.</p>
       <div className="erp-toolbar">
         <input
           value={searchQuery}
@@ -1064,7 +1066,7 @@ export default function Page() {
             <tbody>
               {incomes.map((row) => (
                 <tr key={row.id}>
-                  <td>{String(row.income_date || '').slice(0, 10)}</td>
+                  <td>{formatWhen(row.income_date) || '—'}</td>
                   <td>{row.description}</td>
                   <td>{row.payer || '—'}</td>
                   <td>{row.amount}</td>
@@ -1222,7 +1224,7 @@ export default function Page() {
             value={liquidAccountId}
             onChange={(e) => setLiquidAccountId(e.target.value)}
             aria-label="Expense liquid account"
-            title="Optional liquid GL override (UuidIdValue)"
+            title="Account this payment uses"
           >
             <option value="">Default for payment method</option>
             {liquidAccounts.map((a: any) => (
@@ -1242,7 +1244,7 @@ export default function Page() {
               setStoreId('');
             }}
             aria-label="Expense branch"
-            title="Optional branch (UuidIdValue)"
+            title="Branch"
           >
             <option value="">None</option>
             {branches
@@ -1263,7 +1265,7 @@ export default function Page() {
               setCtxStoreId(e.target.value);
             }}
             aria-label="Expense store"
-            title="Optional store (UuidIdValue)"
+            title="Store"
           >
             <option value="">None</option>
             {stores
@@ -1282,7 +1284,7 @@ export default function Page() {
             value={departmentId}
             onChange={(e) => setDepartmentId(e.target.value)}
             aria-label="Expense department"
-            title="Optional department (UuidIdValue)"
+            title="Department"
           >
             <option value="">None</option>
             {departments
@@ -1316,16 +1318,15 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 0, boxShadow: 'none', border: 0, padding: '0 0 8px' }}>
         <h3>Who must approve large amounts</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
-          Amount must exceed a level&apos;s min to require that step. Roles are comma-separated.
-          Pending expenses email current-step role holders (opt out under Notifications →
-          expense_approval).
+          A larger amount needs the next step. Type the roles who can approve that step, separated by commas.
+          People in that role can be emailed when an expense is waiting. They can turn that off under Notifications.
         </p>
         {levels.map((lvl, idx) => (
           <div
             key={idx}
             style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}
           >
-            <span className="muted">L{idx + 1}</span>
+            <span className="muted">Step {idx + 1}</span>
             <input
               value={lvl.min_amount}
               onChange={(e) => updateLevel(idx, { min_amount: Number(e.target.value) || 0 })}
@@ -1351,7 +1352,7 @@ export default function Page() {
                     .filter(Boolean),
                 })
               }
-              placeholder="roles (comma-separated system roles)"
+              placeholder="Who can approve"
               list="expense-approval-system-roles"
               style={{ minWidth: 220, flex: 1 }}
               aria-label={`Expense approval level ${idx + 1} roles`}
@@ -1373,10 +1374,10 @@ export default function Page() {
         </datalist>
         <div style={{ display: 'flex', gap: 8 }}>
           <button type="button" onClick={addLevel} disabled={levels.length >= 5} aria-label="Add expense approval level">
-            Add level
+            Add step
           </button>
           <button type="button" onClick={saveApprovalMatrix} aria-label="Save expense approval matrix">
-            Save matrix
+            Save approval rules
           </button>
         </div>
       </div>
@@ -1386,8 +1387,7 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 0, boxShadow: 'none', border: 0, padding: '0 0 8px' }}>
         <h3>Categories and monthly budgets</h3>
         <p className="muted">
-          Monthly budgets scale to the report period (Net 30 days = 1×). Optional GL posts approved
-          spend to that expense account (default 6000).
+          Set a monthly budget for each category. Reports compare spending with that budget.
         </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
           <input
@@ -1415,10 +1415,10 @@ export default function Page() {
           <select
             value={newCatAccountId}
             onChange={(e) => setNewCatAccountId(e.target.value)}
-            title="GL expense account"
-            aria-label="Expense category GL account"
+            title="Expense account"
+            aria-label="Expense account"
           >
-            <option value="">GL: default 6000</option>
+            <option value="">Default expense account</option>
             {expenseAccounts.map((a: any) => (
               <option key={a.id} value={a.id}>
                 {a.code} — {a.name}
@@ -1451,7 +1451,7 @@ export default function Page() {
               <th>Code</th>
               <th>Name</th>
               <th>Monthly budget</th>
-              <th>GL account</th>
+              <th>Account</th>
               <th>Active</th>
               <th></th>
             </tr>
@@ -1464,7 +1464,7 @@ export default function Page() {
                   {c.name}
                   {c.is_active === false ? (
                     <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>
-                      [inactive]
+                      Inactive
                     </span>
                   ) : null}
                 </td>
@@ -1484,9 +1484,9 @@ export default function Page() {
                     onChange={(e) =>
                       setAccountDrafts((prev) => ({ ...prev, [c.id]: e.target.value }))
                     }
-                    aria-label={`Edit expense category GL account ${c.id}`}
+                    aria-label={`Edit expense account ${c.name || c.code}`}
                   >
-                    <option value="">Default 6000</option>
+                    <option value="">Default expense account</option>
                     {expenseAccounts.map((a: any) => (
                       <option key={a.id} value={a.id}>
                         {a.code} — {a.name}
@@ -1494,7 +1494,7 @@ export default function Page() {
                     ))}
                   </select>
                 </td>
-                <td>{c.is_active === false ? 'no' : 'yes'}</td>
+                <td>{c.is_active === false ? 'No' : 'Yes'}</td>
                 <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   <button
                     type="button"
@@ -1534,12 +1534,8 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 0, boxShadow: 'none', border: 0, padding: '0 0 8px' }}>
         <h3>Repeat on a schedule</h3>
         <p className="muted">
-          Schedules auto-generate due expenses (automatic schedule + manual Generate). Generated entries use the
-          EXP-YYYY-NNNN series when reference is blank. Advance notify (T−1) uses category
-          `recurring_expense_due` via Notifications scan-due. Use <strong>Skip next</strong>{' '}
-          with a typed reason to advance `next_run_at` by one period without creating an expense
-          (reason is audit-only; schedule description is unchanged). Use{' '}
-          <strong>Edit schedule</strong> to change template amount/payee for future generations.
+          A schedule creates the next expense when it is due. Skip next moves that date forward
+          without creating an expense. Edit changes the amount or payee for later expenses.
         </p>
         <label style={{ display: 'block', marginBottom: 10 }}>
           Skip next reason{' '}
@@ -1553,8 +1549,7 @@ export default function Page() {
           />
         </label>
         <p className="muted" style={{ marginTop: 0, marginBottom: 10 }}>
-          Used by Skip next on active schedules (stored on audit <code>recurring_expense_skipped</code>
-          , not the template description).
+          Required before Skip next. The reason is kept with the record.
         </p>
         {recEditId ? (
           <p style={{ color: 'var(--deep-green, #006B2E)', marginTop: 0 }}>
@@ -1697,8 +1692,8 @@ export default function Page() {
               <th>Category</th>
               <th>Payee</th>
               <th>Amount</th>
-              <th>Freq</th>
-              <th>Next run</th>
+              <th>How often</th>
+              <th>Next date</th>
               <th>Active</th>
               <th></th>
             </tr>
@@ -1717,7 +1712,7 @@ export default function Page() {
                   {r.category}
                   {r.is_active === false ? (
                     <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>
-                      [inactive]
+                      Inactive
                     </span>
                   ) : null}
                   {r.description ? (
@@ -1728,11 +1723,11 @@ export default function Page() {
                 </td>
                 <td>{r.payee || '—'}</td>
                 <td>{r.amount}</td>
-                <td>{r.frequency}</td>
+                <td>{plainLabel(r.frequency)}</td>
                 <td className="muted" style={{ fontSize: 12 }}>
-                  {r.next_run_at ? String(r.next_run_at).replace('T', ' ').slice(0, 19) : '—'}
+                  {formatWhen(r.next_run_at) || '—'}
                 </td>
-                <td>{r.is_active ? 'yes' : 'no'}</td>
+                <td>{r.is_active ? 'On' : 'Off'}</td>
                 <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   <button type="button" onClick={() => startRecurringEdit(r)} aria-label={`Edit recurring expense schedule ${r.id}`}>
                     Edit schedule
@@ -1779,14 +1774,14 @@ export default function Page() {
           <input
             value={approveComment}
             onChange={(e) => setApproveComment(e.target.value)}
-            placeholder="Optional — stored as approval_comment"
+            placeholder="Optional note when you approve"
             aria-label="Expense approve comment"
             title="Optional comment (1–500 chars; letters/digits required); blank omits"
             style={{ minWidth: 280 }}
           />
         </label>
         <p className="muted" style={{ marginTop: 6 }}>
-          Used by Approve on pending expenses (no hardcoded <code>Approved</code> comment).
+          Optional. Shown with the approval.
         </p>
         <label style={{ display: 'block', marginTop: 12 }}>
           Void reason{' '}
@@ -1800,17 +1795,16 @@ export default function Page() {
           />
         </label>
         <p className="muted" style={{ marginTop: 6 }}>
-          Enter a reject reason before rejecting an expense. Used when you void a pending expense (stored as rejection reason).
+          Required before you void an expense. The reason is kept with the record.
         </p>
       </div>
       </div>
 
       {ocrDraft && ocrFor && (
         <div className="card" style={{ marginBottom: 16 }}>
-          <h3>OCR suggestions</h3>
+          <h3>Suggestions from the receipt</h3>
           <p className="muted">
-            Engine: {ocrMeta?.engine || '—'} · Confidence: {ocrMeta?.confidence ?? '—'}
-            {ocrMeta?.tesseract_available === false ? ' · Tesseract not on server (PDF text still works)' : ''}
+            Check these fields before you apply them.
           </p>
           <div style={{ display: 'grid', gap: 8 }}>
             <input
@@ -1867,8 +1861,7 @@ export default function Page() {
         <div className="card" style={{ marginBottom: 16 }}>
           <h3>Edit expense</h3>
           <p className="muted" style={{ marginTop: 0 }}>
-            Pending or rejected expenses only (BR-9.2). Use this to fix amount/payee before approve — including
-            expenses generated from recurring schedules.
+            Change the amount or payee before this expense is approved.
           </p>
           <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
             <input
@@ -1899,7 +1892,7 @@ export default function Page() {
               value={editDraft.category_id}
               onChange={(e) => setEditDraft({ ...editDraft, category_id: e.target.value })}
               aria-label="Edit expense category"
-              title="Optional spend category (UuidIdValue); blank → no change / clear path"
+              title="Category"
             >
               <option value="">Keep current category</option>
               {categories
@@ -1914,7 +1907,7 @@ export default function Page() {
               value={editDraft.store_id}
               onChange={(e) => setEditDraft({ ...editDraft, store_id: e.target.value })}
               aria-label="Edit expense store"
-              title="Optional store (UuidIdValue); blank clears when previously set"
+              title="Store"
             >
               <option value="">{editDraft.had_store ? 'Clear store' : 'No store'}</option>
               {stores
@@ -1937,7 +1930,7 @@ export default function Page() {
                 })
               }
               aria-label="Edit expense branch"
-              title="Optional branch (UuidIdValue); blank clears when previously set"
+              title="Branch"
             >
               <option value="">{editDraft.had_branch ? 'Clear branch' : 'No branch'}</option>
               {branches
@@ -1952,6 +1945,7 @@ export default function Page() {
               value={editDraft.department_id}
               onChange={(e) => setEditDraft({ ...editDraft, department_id: e.target.value })}
               aria-label="Edit expense department"
+              title="Department"
               title="Optional department (UuidIdValue); blank clears when previously set"
             >
               <option value="">

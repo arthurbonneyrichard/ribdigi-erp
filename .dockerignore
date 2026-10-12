@@ -1,0 +1,34 @@
+# Backend image context is the repository root (see docker-compose.dokploy.yml).
+# Do not exclude backend/alembic/versions, backend/ribdigi-build-id.txt,
+# backend/Dockerfile, or .git/HEAD — those files are what make a rebuild
+# differ from the cached 20261003-live-test-store-scope image.
+.git/objects
+.git/hooks
+.git/logs
+.git/lfs
+.git/worktrees
+.git/modules
+.git/info
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/.venv
+**/venv
+frontend
+docs
+ops
+helm
+k8s
+backend/tests
+backend/loadtest
+backend/data
+**/.env
+**/.env.*
+!**/.env.example
+**/.devdata
+**/dump.rdb
+**/*.log
+node_modules
+.next

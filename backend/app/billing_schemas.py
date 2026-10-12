@@ -50,6 +50,7 @@ class BillingPlanPatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str | None = None
+    package_code: str | None = None
     amount: Decimal | None = None
     currency: str | None = None
     interval: str | None = None

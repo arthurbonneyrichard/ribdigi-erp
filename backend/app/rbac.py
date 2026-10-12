@@ -215,12 +215,36 @@ PLATFORM_ROLES = frozenset(
     }
 )
 
+# Support desk permissions live on the system role catalog only.
+# Owner actions are still rejected for tenant roles in support_tickets.support_can,
+# even when the role has a wildcard grant.
+_TENANT_SUPPORT_ACTIONS = ["create", "view_own", "reply", "close"]
+_PLATFORM_ADMIN_SUPPORT = [
+    "view_all",
+    "assign",
+    "manage",
+    "reply",
+    "close",
+    "internal_note",
+    "notification_manage",
+]
+_PLATFORM_SUPPORT_ACTIONS = ["view_all", "assign", "manage", "reply", "close", "internal_note"]
+for _support_role, _support_perms in ROLE_PERMISSIONS.items():
+    if _support_perms.get("*") == ["*"]:
+        continue
+    if _support_role == "platform_admin":
+        _support_perms["support"] = list(_PLATFORM_ADMIN_SUPPORT)
+    elif _support_role == "platform_support":
+        _support_perms["support"] = list(_PLATFORM_SUPPORT_ACTIONS)
+    elif _support_role == "platform_finance":
+        continue
+    else:
+        _support_perms["support"] = list(_TENANT_SUPPORT_ACTIONS)
+
 PLATFORM_OWNER_ROLES = frozenset({"super_admin", "platform_owner"})
-# Hard-delete a company: software owner and platform admin. Support, finance,
-# and tenant roles are excluded. super_admin stays the legacy owner equivalent.
-PLATFORM_TENANT_DELETE_ROLES = frozenset(
-    {"super_admin", "platform_owner", "platform_admin"}
-)
+# Hard-delete a company: software owner only. super_admin is the legacy owner.
+# Platform admin, support, finance, and tenant roles cannot delete a company.
+PLATFORM_TENANT_DELETE_ROLES = PLATFORM_OWNER_ROLES
 
 # Customer system templates. Hotel_* stay hotel-only; store_manager is the
 # retail/store counterpart (hotels use hotel_manager). Shared templates
@@ -275,6 +299,8 @@ MENU_MODULE_BY_PATH: dict[str, str] = {
     "/users": "users",
     "/departments": "users",
     "/printers": "printers",
+    "/support": "support",
+    "/platform/support": "support",
 }
 
 VALID_ROLES = set(ROLE_PERMISSIONS.keys())
@@ -332,7 +358,7 @@ def is_platform_owner_role(role: str | None) -> bool:
 
 
 def is_platform_tenant_delete_role(role: str | None) -> bool:
-    """Software owner, platform admin, or legacy super_admin."""
+    """Software owner, including legacy super_admin."""
     return (role or "") in PLATFORM_TENANT_DELETE_ROLES
 
 

@@ -1,30 +1,11 @@
 /** Tenant business types — keep aligned with backend VALID_INDUSTRIES. */
 
-export const INDUSTRIES = [
-  'retail',
-  'mart',
-  'hotel',
-  'fmcg',
-  'pharmacy',
-  'restaurant',
-  'bakery',
-  'wholesale',
-  'retail_wholesale',
-  'distribution',
-  'general_trading',
-  'manufacturing',
-  'hospital',
-] as const;
+export const INDUSTRIES = ['retail', 'hotel', 'restaurant'] as const;
 
 export type IndustryKey = (typeof INDUSTRIES)[number];
 
-/** Platform Owner trade provision surface. Other verticals stay valid for existing tenants. */
-export const PROVISION_INDUSTRIES = [
-  'retail',
-  'pharmacy',
-  'wholesale',
-  'retail_wholesale',
-] as const;
+/** Customer industries a new company can choose. Platform software is not in this list. */
+export const PROVISION_INDUSTRIES = ['retail', 'hotel', 'restaurant'] as const;
 
 export const INDUSTRY_LABELS: Record<string, string> = {
   retail: 'Retail',
@@ -56,26 +37,9 @@ export function normalizeIndustry(value?: string | null): string | null {
     guest_house: 'hotel',
     guesthouse: 'hotel',
     retail_mart: 'retail',
-    supermarket: 'mart',
-    super_market: 'mart',
-    grocery: 'mart',
-    fast_moving_consumer_goods: 'fmcg',
-    fmcg_distribution: 'fmcg',
-    pharma: 'pharmacy',
-    drugstore: 'pharmacy',
     resto: 'restaurant',
     food_service: 'restaurant',
     cafe: 'restaurant',
-    wholesaler: 'wholesale',
-    retail_wholesale: 'retail_wholesale',
-    retail_and_wholesale: 'retail_wholesale',
-    retailwholesale: 'retail_wholesale',
-    dual_trade: 'retail_wholesale',
-    'retail_+_wholesale': 'retail_wholesale',
-    'retail+wholesale': 'retail_wholesale',
-    distributor: 'distribution',
-    trading: 'general_trading',
-    manufacture: 'manufacturing',
   };
   const mapped = aliases[raw] || raw;
   return (INDUSTRIES as readonly string[]).includes(mapped) ? mapped : null;

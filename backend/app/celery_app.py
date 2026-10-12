@@ -113,5 +113,9 @@ celery.conf.update(
                 run_every=max(1, int(settings.CELERY_BILLING_INTERVAL_MINUTES)) * 60.0
             ),
         },
+        "deliver-support-outbox": {
+            "task": "app.tasks.deliver_support_outbox",
+            "schedule": schedule(run_every=60.0),
+        },
     },
 )

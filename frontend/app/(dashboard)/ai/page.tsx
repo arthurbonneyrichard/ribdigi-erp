@@ -3,7 +3,22 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api, getAccessToken } from '../../../lib/api';
+import { formatWhen, plainLabel } from '../../../lib/format';
 import { useStoreContext } from '../../../lib/storeContext';
+import { useCompanyFormat } from '../../../lib/useCompanyFormat';
+
+function amountText(value: unknown): string {
+  if (value == null || value === '') return 'not found';
+  const n = Number(value);
+  if (!Number.isFinite(n)) return String(value);
+  return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+function groupText(counts: Record<string, number> | undefined): string {
+  const entries = Object.entries(counts || {});
+  if (!entries.length) return 'none yet';
+  return entries.map(([key, count]) => `${plainLabel(key)} ${count}`).join(', ');
+}
 
 export default function Page() {
   const { storeId: ctxStoreId, setStoreId: setCtxStoreId } = useStoreContext();
@@ -169,6 +184,7 @@ export default function Page() {
       setA(
         (r.data?.alerts || [])
           .map((x: any) => `[${x.risk_score}] ${x.kind}: ${x.title}`)
+          .map((x: any) => `${x.title || plainLabel(x.kind)} (risk ${x.risk_score ?? '—'})`)
           .join('\n') || 'No security alerts'
       );
     } catch (err: any) {
@@ -190,7 +206,7 @@ export default function Page() {
               .slice(0, 20)
               .map(
                 (x: any) =>
-                  `${x.sku || x.product_id}: days=${x.days_to_stockout} conf=${x.confidence} qty=${x.suggested_order_qty} (${x.risk_reason})`
+                  `${x.sku || x.product_name || 'Product'}: about ${x.days_to_stockout ?? '—'} days of stock left. Suggested order ${x.suggested_order_qty ?? '—'}. ${plainLabel(x.risk_reason)}`
               )
               .join('\n')
           : 'No at-risk products in the prediction window'
@@ -270,7 +286,10 @@ export default function Page() {
         setMessage(r.message || 'No draft purchase requests created (nothing eligible).');
         setA(
           skipped.length
-            ? `skipped=${JSON.stringify(skipped.slice(0, 10))}`
+            ? skipped
+                .slice(0, 10)
+                .map((row: any) => `${row.sku || row.product_name || 'A product'}: ${plainLabel(row.reason || row.message || 'not eligible')}`)
+                .join('\n')
             : 'No at-risk lines eligible for draft PRs'
         );
       }
@@ -281,7 +300,7 @@ export default function Page() {
         setA(
           skipped
             .slice(0, 20)
-            .map((s: any) => `${s.product_id}: ${s.reason}`)
+            .map((s: any) => `${s.sku || s.product_name || 'A product'}: ${plainLabel(s.reason)}`)
             .join('\n')
         );
         setError(
@@ -307,10 +326,10 @@ export default function Page() {
       const d = r.data || {};
       setA(
         [
-          `Trend next-month forecast: ${d.trend?.forecast_next_month}`,
-          `RFM customers: ${d.rfm?.customer_count} segments=${JSON.stringify(d.rfm?.segment_counts || {})}`,
-          `Affinity pairs: ${(d.affinity || []).length}`,
-          `Peak hours: ${(d.peaks?.hours || []).map((h: any) => h.hour).join(',')}`,
+          `Next month forecast: ${amountText(d.trend?.forecast_next_month)}`,
+          `Customers reviewed: ${d.rfm?.customer_count ?? 0}. Groups: ${groupText(d.rfm?.segment_counts)}`,
+          `Products often bought together: ${(d.affinity || []).length}`,
+          `Busiest hours: ${(d.peaks?.hours || []).map((h: any) => `${String(h.hour).padStart(2, '0')}:00`).filter(Boolean).join(', ') || 'none yet'}`,
         ].join('\n')
       );
     } catch (err: any) {
@@ -362,9 +381,8 @@ export default function Page() {
       }
       setA(
         [
-          `type=${d.report_type} period=${d.period_label || '-'} rows=${d.row_count}`,
-          `method=${d.method}`,
-          JSON.stringify(d.preview_rows?.slice?.(0, 3) || d.data || {}, null, 2).slice(0, 1200),
+          `${plainLabel(d.report_type) || 'Report'} for ${d.period_label || 'this period'}. ${d.row_count ?? 0} rows.`,
+          'Use Export CSV for the full file.',
         ].join('\n')
       );
     } catch (err: any) {
@@ -398,7 +416,7 @@ export default function Page() {
           typeof detail === 'string'
             ? detail
             : Array.isArray(detail)
-              ? detail.map((d: any) => d.msg || JSON.stringify(d)).join('; ')
+              ? detail.map((d: any) => (typeof d === 'string' ? d : d.msg || 'Check the report request and try again.')).join('; ')
               : body.message || 'Export failed'
         );
       }
@@ -413,7 +431,7 @@ export default function Page() {
       a.click();
       URL.revokeObjectURL(url);
       setMessage(`AI report CSV downloaded (${filename})`);
-      setA(`exported=${filename} prompt=${prompt}`);
+      setA(`Downloaded ${filename}.`);
     } catch (err: any) {
       setError(err.message || 'Unable to export AI report');
     }
@@ -440,16 +458,8 @@ export default function Page() {
         body: JSON.stringify({ name, prompt, format: 'csv' }),
       });
       const d = r.data || {};
-      setMessage(`Template saved: ${d.name} (${d.report_type})`);
-      setA(
-        [
-          `template_id=${d.id}`,
-          `name=${d.name}`,
-          `report_type=${d.report_type}`,
-          `format=${d.format}`,
-          `prompt=${d.prompt}`,
-        ].join('\n')
-      );
+      setMessage(`Saved “${d.name}”.`);
+      setA(`Saved “${d.name}” as a ${plainLabel(d.report_type) || 'report'} template.`);
     } catch (err: any) {
       setError(err.message || 'Unable to save report template');
     }
@@ -471,9 +481,7 @@ export default function Page() {
       setA(
         [
           d.answer || '',
-          `intent=${d.intent} method=${d.method}`,
-          `best=${(d.best_customers || []).length} high_churn=${(d.churn_risks || []).filter((c: any) => c.risk_level === 'high').length}`,
-          `promos=${(d.promotions || []).length}`,
+          `Strong customers: ${(d.best_customers || []).length}. High chance of leaving: ${(d.churn_risks || []).filter((c: any) => c.risk_level === 'high').length}. Offers: ${(d.promotions || []).length}.`,
         ].join('\n')
       );
     } catch (err: any) {
@@ -517,11 +525,11 @@ export default function Page() {
       );
       setA(
         [
-          `type=${d.document_type} engine=${d.engine} conf=${d.confidence}`,
-          `amount=${d.extracted?.amount} date=${d.extracted?.expense_date} payee=${d.extracted?.payee} ref=${d.extracted?.reference}`,
-          `category=${d.extracted?.category || d.category_suggestion?.category || '—'}`,
-          `party_matches=${(d.matches?.parties || []).length} po_matches=${(d.matches?.purchase_orders || []).length}`,
-          `discrepancies=${(d.discrepancies || []).map((x: any) => x.code).join(',') || 'none'}`,
+          `Read as ${plainLabel(d.document_type) || 'a document'}.`,
+          `Amount ${amountText(d.extracted?.amount)}. Date ${formatWhen(d.extracted?.expense_date) || 'not found'}. Payee ${d.extracted?.payee || 'not found'}.`,
+          `Category ${d.extracted?.category || d.category_suggestion?.category || 'not found'}.`,
+          `Matched ${(d.matches?.parties || []).length} supplier or customer and ${(d.matches?.purchase_orders || []).length} purchase order.`,
+          `Checks: ${(d.discrepancies || []).map((x: any) => plainLabel(x.code || x.message)).filter(Boolean).join(', ') || 'none'}.`,
           d.apply_hint || '',
         ].join('\n')
       );
@@ -620,7 +628,7 @@ export default function Page() {
       <h1>AI Assistant</h1>
       <p className="muted">
         {aiStatusNote ||
-          'Tenant-scoped, rule-based insights from your books. This build does not send data to OpenAI or Gemini. Confirm before creating drafts.'}
+          'Answers use this company’s records. Check a draft before you save it.'}
       </p>
       <div className="card">
         <textarea
@@ -643,7 +651,7 @@ export default function Page() {
           <input
             value={reportPeriod}
             onChange={(e) => setReportPeriod(e.target.value)}
-            placeholder="Period (e.g. this_month)"
+            placeholder="Period, for example this month"
             aria-label="AI report period"
             style={{ minWidth: 160 }}
           />
@@ -665,7 +673,7 @@ export default function Page() {
             value={assistCustomerId}
             onChange={(e) => setAssistCustomerId(e.target.value)}
             aria-label="AI customer assist customer"
-            title="Optional customer (UuidIdValue); blank → overview / all customers"
+            title="Leave blank to review all customers"
           >
             <option value="">All customers / overview</option>
             {customers
@@ -688,10 +696,10 @@ export default function Page() {
                 setDocumentType(e.target.value as 'auto' | 'receipt' | 'invoice' | 'purchase_order')
               }
             >
-              <option value="auto">auto</option>
-              <option value="receipt">receipt</option>
-              <option value="invoice">invoice</option>
-              <option value="purchase_order">purchase_order</option>
+              <option value="auto">Auto</option>
+              <option value="receipt">Receipt</option>
+              <option value="invoice">Invoice</option>
+              <option value="purchase_order">Purchase order</option>
             </select>
           </label>
           <input
@@ -737,9 +745,9 @@ export default function Page() {
             value={draftDocCategoryId}
             onChange={(e) => setDraftDocCategoryId(e.target.value)}
             aria-label="AI document expense category"
-            title="Optional spend category (UuidIdValue); blank → MISC / label path"
+            title="Leave blank if the category is not known"
           >
-            <option value="">No category / MISC</option>
+            <option value="">No category</option>
             {expenseCategories
               .filter((c) => c.is_active !== false)
               .map((c) => (
@@ -756,7 +764,7 @@ export default function Page() {
               if (next) setCtxStoreId(next);
             }}
             aria-label="AI document expense store"
-            title="Optional store (UuidIdValue); blank → no store"
+            title="Leave blank if this expense is not for a store"
           >
             <option value="">No store</option>
             {stores
@@ -776,7 +784,7 @@ export default function Page() {
               setDraftDocDepartmentId('');
             }}
             aria-label="AI document expense branch"
-            title="Optional branch (UuidIdValue); blank → no branch"
+            title="Leave blank if this expense is not for a branch"
           >
             <option value="">No branch</option>
             {branches
@@ -791,7 +799,7 @@ export default function Page() {
             value={draftDocDepartmentId}
             onChange={(e) => setDraftDocDepartmentId(e.target.value)}
             aria-label="AI document expense department"
-            title="Optional department (UuidIdValue); blank → no department"
+            title="Leave blank if this expense is not for a department"
           >
             <option value="">No department</option>
             {departments
@@ -823,7 +831,7 @@ export default function Page() {
               setDraftDocSupplierId(String(match?.supplier_id || '').trim());
             }}
             aria-label="AI document purchase order"
-            title="Matched purchase order (UuidIdValue); required for draft PI"
+            title="Purchase order matched from the document"
           >
             <option value="">Select matched PO</option>
             {(lastDocExtract?.matches?.purchase_orders || []).map((m: any) => (
@@ -836,7 +844,7 @@ export default function Page() {
             value={draftDocSupplierId}
             onChange={(e) => setDraftDocSupplierId(e.target.value)}
             aria-label="AI document supplier"
-            title="Optional supplier (UuidIdValue); omit → PO supplier; must match PO"
+            title="Supplier on the purchase order"
           >
             <option value="">PO default supplier</option>
             {suppliers

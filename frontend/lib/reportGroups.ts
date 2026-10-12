@@ -27,6 +27,8 @@ export type ReportFilterKey =
   | 'transferStatus'
   | 'stockCountStatus';
 
+export type ReportAudience = 'pos' | 'quotations';
+
 export type ReportDef = {
   id: string;
   tab: string;
@@ -37,7 +39,29 @@ export type ReportDef = {
   filters: ReportFilterKey[];
   exportType?: string;
   print?: boolean;
+  audience?: ReportAudience;
 };
+
+export const POS_REPORT_INDUSTRIES = ['retail', 'restaurant', 'hotel'] as const;
+export const QUOTATION_REPORT_INDUSTRIES = ['retail'] as const;
+
+export function reportVisible(
+  def: ReportDef,
+  opts: { industry?: string | null; multiStore?: boolean },
+): boolean {
+  const industry = (opts.industry || '').trim().toLowerCase();
+  const multiStore = opts.multiStore !== false;
+  if (def.id === 'pharmacy_rx_activity' && industry !== 'pharmacy') return false;
+  if (!multiStore && (def.id === 'stores' || def.tab === 'stores' || def.id === 'inventory_transfers')) {
+    return false;
+  }
+  if (def.audience === 'pos' || def.audience === 'quotations') {
+    if (!industry) return true;
+    const allowed = def.audience === 'pos' ? POS_REPORT_INDUSTRIES : QUOTATION_REPORT_INDUSTRIES;
+    return (allowed as readonly string[]).includes(industry);
+  }
+  return true;
+}
 
 export const REPORT_GROUP_ORDER: { id: ReportGroupId; label: string }[] = [
   { id: 'sales', label: 'Sales' },
@@ -55,9 +79,39 @@ export const REPORT_CATALOG: ReportDef[] = [
     tab: 'summary',
     group: 'sales',
     name: 'Sales snapshot',
-    description: 'Today and this month, plus low-stock and expense totals.',
+    description: 'Today and this month, with the products sold in the date range.',
     filters: ['dates', 'store'],
     exportType: 'summary',
+    print: true,
+  },
+  {
+    id: 'sales_summary',
+    tab: 'sales',
+    view: 'summary',
+    group: 'sales',
+    name: 'Sales summary',
+    description: 'Day and month sales. Discounts are shown apart from revenue.',
+    filters: ['dates', 'store'],
+    print: true,
+  },
+  {
+    id: 'sales_transactions',
+    tab: 'sales',
+    view: 'transactions',
+    group: 'sales',
+    name: 'Detailed sales',
+    description: 'Each completed invoice and register sale, listed once.',
+    filters: ['dates', 'store'],
+    print: true,
+  },
+  {
+    id: 'sales_lines',
+    tab: 'sales',
+    view: 'lines',
+    group: 'sales',
+    name: 'Products sold',
+    description: 'Each product line on a completed sale.',
+    filters: ['dates', 'store', 'category'],
     print: true,
   },
   {
@@ -72,6 +126,26 @@ export const REPORT_CATALOG: ReportDef[] = [
     print: true,
   },
   {
+    id: 'sales_category',
+    tab: 'sales',
+    view: 'category',
+    group: 'sales',
+    name: 'Sales by category',
+    description: 'Quantity and revenue grouped by product category.',
+    filters: ['dates', 'store', 'category'],
+    print: true,
+  },
+  {
+    id: 'sales_brand',
+    tab: 'sales',
+    view: 'brand',
+    group: 'sales',
+    name: 'Sales by brand',
+    description: 'Quantity and revenue grouped by brand. Products without a brand are Unbranded.',
+    filters: ['dates', 'store'],
+    print: true,
+  },
+  {
     id: 'sales_returns',
     tab: 'sales',
     view: 'returns',
@@ -81,6 +155,58 @@ export const REPORT_CATALOG: ReportDef[] = [
     filters: ['dates', 'store', 'salesReturn'],
     exportType: 'sales_returns',
     print: true,
+  },
+  {
+    id: 'sales_discounts',
+    tab: 'sales',
+    view: 'discounts',
+    group: 'sales',
+    name: 'Discounts',
+    description: 'Invoice and line discounts. These are already taken out of revenue.',
+    filters: ['dates', 'store'],
+    print: true,
+  },
+  {
+    id: 'sales_payments',
+    tab: 'sales',
+    view: 'payments',
+    group: 'sales',
+    name: 'Sales by payment method',
+    description: 'Collected tenders and the unpaid balance, without counting a sale twice.',
+    filters: ['dates', 'store'],
+    print: true,
+  },
+  {
+    id: 'sales_credit',
+    tab: 'sales',
+    view: 'credit',
+    group: 'sales',
+    name: 'Credit sales outstanding',
+    description: 'Customer balances still owed on open invoices.',
+    filters: ['store'],
+    print: true,
+  },
+  {
+    id: 'sales_quotations',
+    tab: 'sales',
+    view: 'quotations',
+    group: 'sales',
+    name: 'Quotations',
+    description: 'Quotations in the date range. They are not included in sales totals.',
+    filters: ['dates'],
+    print: true,
+    audience: 'quotations',
+  },
+  {
+    id: 'sales_pos',
+    tab: 'sales',
+    view: 'pos',
+    group: 'sales',
+    name: 'POS sales',
+    description: 'Register receipts. A receipt that also created an invoice is counted once in the summary.',
+    filters: ['dates', 'store'],
+    print: true,
+    audience: 'pos',
   },
   {
     id: 'stores',
@@ -152,7 +278,7 @@ export const REPORT_CATALOG: ReportDef[] = [
     view: 'rx',
     group: 'inventory',
     name: 'Rx activity',
-    description: 'Prescription queue, fills, and remaining qty from the Rx ledger.',
+    description: 'Prescriptions, what was dispensed, and what is still left.',
     filters: ['dates'],
     exportType: 'pharmacy_rx_activity',
     print: true,
@@ -307,7 +433,7 @@ export const REPORT_CATALOG: ReportDef[] = [
     tab: 'schedules',
     group: 'schedules',
     name: 'Email schedules',
-    description: 'Email a saved report daily or weekly (UTC hour).',
+    description: 'Email a saved report every day or once a week.',
     filters: [],
   },
 ];

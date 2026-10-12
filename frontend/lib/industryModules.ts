@@ -12,8 +12,6 @@ export type IndustrySpecificModule = (typeof INDUSTRY_SPECIFIC_MODULES)[number];
 
 const ALLOWLIST: Record<string, ReadonlySet<string>> = {
   hotel: new Set(['hotel']),
-  fmcg: new Set(['fmcg']),
-  hospital: new Set(['hospital']),
   restaurant: new Set(['restaurant']),
 };
 
