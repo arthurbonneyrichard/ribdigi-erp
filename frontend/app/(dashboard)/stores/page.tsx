@@ -420,7 +420,7 @@ export default function Page() {
     onDay: (day: keyof OperatingHours, patch: Partial<DayHours>) => void;
   }) {
     return (
-      <div style={{ display: 'grid', gap: 6 }}>
+      <div className="store-hours" style={{ display: 'grid', gap: 6 }}>
         {WEEKDAYS.map(({ key, label }) => {
           const d = value[key] || { closed: true };
           const closed = !!d.closed;
@@ -907,18 +907,20 @@ export default function Page() {
   }
 
   return (
-    <>
-      <h1>Multi-Store</h1>
-      <p className="muted">Branches, departments, stores, warehouses, FEFO mode, and transfers</p>
-      {canCreateStore ? (
-      <div style={{ marginBottom: 12 }}>
-        <button type="button" className="list-btn-primary" onClick={() => setStoreAddOpen(true)} aria-label="Create store">
-          Create store
-        </button>
+    <div className="work">
+      <div className="list-page-head">
+        <div>
+          <h1>Multi-Store</h1>
+          <p className="muted">Branches, departments, stores, warehouses, FEFO mode, and transfers</p>
+        </div>
+        {canCreateStore ? (
+          <button type="button" className="list-btn-primary" onClick={() => setStoreAddOpen(true)} aria-label="Create store">
+            Create store
+          </button>
+        ) : null}
       </div>
-      ) : null}
-      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
+      {error && <p className="erp-banner err" role="alert">{error}</p>}
+      {message && <p className="erp-banner ok" role="status">{message}</p>}
 
       <div className="card" style={{ marginBottom: 16 }}>
         <label className="muted">
@@ -927,7 +929,7 @@ export default function Page() {
         </label>
       </div>
 
-      <div className="grid">
+      <div className="work-pair">
         <div className="card">
           <h3>{editBrId ? 'Edit branch' : 'New branch'}</h3>
           <div style={{ display: 'grid', gap: 8 }}>
@@ -1997,6 +1999,6 @@ export default function Page() {
           )}
         </tbody>
       </table>
-    </>
+    </div>
   );
 }

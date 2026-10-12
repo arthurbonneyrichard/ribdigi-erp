@@ -814,38 +814,17 @@ export default function Page() {
     .reduce((s, r) => s + Number(r.amount || 0), 0);
 
   return (
-    <>
-      <div className="list-page-head" style={{ marginBottom: 16 }}>
+    <div className="work">
+      <div className="list-page-head">
         <div>
           <h1 style={{ margin: 0 }}>Expenses</h1>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-            <input value={expPrefix} onChange={(e) => setExpPrefix(e.target.value)} aria-label="Expense number prefix" placeholder="Prefix" />
-            <input value={expNext} onChange={(e) => setExpNext(e.target.value)} aria-label="Expense next number" placeholder="Next #" />
-            <button
-              type="button"
-              aria-label="Save expense numbering"
-              onClick={() => {
-                const prefix = expPrefix.trim();
-                const next = expNext.trim();
-                const numbering: { prefix?: string; next_number?: number } = {};
-                if (prefix) numbering.prefix = prefix;
-                if (next) numbering.next_number = Number(next);
-                const body = Object.keys(numbering).length ? { expense_numbering: numbering } : {};
-                api('/expenses/settings', { method: 'PATCH', body: JSON.stringify(body) }).catch((err) =>
-                  setError(err.message || 'Could not save numbering'),
-                );
-              }}
-            >
-              Save numbering
-            </button>
-          </div>
           <p className="muted">
             Record what the company paid. Small amounts are approved automatically. Attach the receipt
             on the list. Tax on supplier bills is handled under Purchases. Other income below is money
             the company received, separate from a sale.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div className="work-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button
             type="button"
             onClick={() => document.getElementById('budgets')?.scrollIntoView({ behavior: 'smooth' })}
@@ -857,6 +836,28 @@ export default function Page() {
             Add expense
           </button>
         </div>
+      </div>
+
+      <div className="card" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <input value={expPrefix} onChange={(e) => setExpPrefix(e.target.value)} aria-label="Expense number prefix" placeholder="Prefix" />
+        <input value={expNext} onChange={(e) => setExpNext(e.target.value)} aria-label="Expense next number" placeholder="Next #" />
+        <button
+          type="button"
+          aria-label="Save expense numbering"
+          onClick={() => {
+            const prefix = expPrefix.trim();
+            const next = expNext.trim();
+            const numbering: { prefix?: string; next_number?: number } = {};
+            if (prefix) numbering.prefix = prefix;
+            if (next) numbering.next_number = Number(next);
+            const body = Object.keys(numbering).length ? { expense_numbering: numbering } : {};
+            api('/expenses/settings', { method: 'PATCH', body: JSON.stringify(body) }).catch((err) =>
+              setError(err.message || 'Could not save numbering'),
+            );
+          }}
+        >
+          Save numbering
+        </button>
       </div>
 
       <div className="card" id="expense-register" style={{ marginBottom: 16 }}>
@@ -1994,6 +1995,6 @@ export default function Page() {
           onError={(msg) => setError(msg)}
         />
       )}
-    </>
+    </div>
   );
 }

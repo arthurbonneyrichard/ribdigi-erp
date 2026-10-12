@@ -556,12 +556,8 @@ export default function SupportDeskPage() {
           <strong>{counts?.failed_notifications ?? '—'}</strong>
         </button>
       </div>
-      <div className="desk-split">
-      <section className="plat-panel desk-queue">
-        <div className="desk-panel-head">
-          <h2>Queue</h2>
-          {ticketTotal > 0 ? <p className="muted">Showing {rows.length} of {ticketTotal}</p> : null}
-        </div>
+      <section className="plat-panel desk-filters">
+        <div className="desk-panel-head"><h2>Filters</h2></div>
         <form className="support-filters" onSubmit={applyFilters}>
           <label><span>Reference or company</span><input aria-label="Search tickets" value={q} onChange={(event) => setQ(event.target.value)} /></label>
           <label><span>Status</span>
@@ -609,9 +605,24 @@ export default function SupportDeskPage() {
             <button className="btn" type="button" aria-label="Clear ticket filters" onClick={clearFilters}>Clear</button>
           </div>
         </form>
+      </section>
+      <div className="desk-split">
+      <section className="plat-panel desk-queue">
+        <div className="desk-panel-head">
+          <h2>Queue</h2>
+          {ticketTotal > 0 ? <p className="muted">Showing {rows.length} of {ticketTotal}</p> : null}
+        </div>
         {!loading && ticketTotal === 0 ? <p className="muted">No tickets match these filters.</p> : null}
         <div className="support-table-wrap">
           <table>
+            <colgroup>
+              <col className="desk-col-ticket" />
+              <col className="desk-col-company" />
+              <col className="desk-col-status" />
+              <col className="desk-col-priority" />
+              <col className="desk-col-person" />
+              <col className="desk-col-when" />
+            </colgroup>
             <thead>
               <tr>
                 <th>Ticket</th>
@@ -759,7 +770,6 @@ export default function SupportDeskPage() {
         )}
       </section>
       </div>
-      <div className="desk-admin">
       {canNotify ? (
         <section className="plat-panel desk-people">
           <div className="desk-panel-head"><h2>Who gets ticket email</h2></div>
@@ -774,8 +784,15 @@ export default function SupportDeskPage() {
           {recipientNote ? <p role="alert">{recipientNote}</p> : recipients.length === 0 ? <p className="muted">No recipients yet.</p> : null}
           <div className="support-table-wrap">
             <table>
+              <colgroup>
+                <col className="desk-col-email" />
+                <col className="desk-col-flag" />
+                <col className="desk-col-delivery" />
+                <col className="desk-col-test" />
+                <col className="desk-col-actions" />
+              </colgroup>
               <thead>
-                <tr><th>Email</th><th>Active</th><th>Latest delivery</th><th>Last test</th><th></th></tr>
+                <tr><th>Email</th><th>Active</th><th>Latest delivery</th><th>Last test</th><th>Actions</th></tr>
               </thead>
               <tbody>
                 {recipients.map((row) => (
@@ -815,7 +832,15 @@ export default function SupportDeskPage() {
         {mailNote ? <p role="alert">{mailNote}</p> : deliveries.length === 0 ? <p className="muted">No pending or failed notifications.</p> : null}
         <div className="support-table-wrap">
           <table>
-            <thead><tr><th>Recipient</th><th>Event</th><th>Status</th><th>Attempts</th><th>Error</th><th></th></tr></thead>
+            <colgroup>
+              <col className="desk-col-email" />
+              <col className="desk-col-delivery" />
+              <col className="desk-col-flag" />
+              <col className="desk-col-flag" />
+              <col />
+              <col className="desk-col-flag" />
+            </colgroup>
+            <thead><tr><th>Recipient</th><th>Event</th><th>Status</th><th>Attempts</th><th>Error</th><th>Actions</th></tr></thead>
             <tbody>
               {deliveries.map((row) => (
                 <tr key={row.id}>
@@ -831,7 +856,6 @@ export default function SupportDeskPage() {
           </table>
         </div>
       </section>
-      </div>
     </div>
   );
 }

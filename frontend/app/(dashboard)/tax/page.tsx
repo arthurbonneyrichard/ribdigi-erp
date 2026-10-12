@@ -234,7 +234,9 @@ export default function Page() {
   const boxes = filing?.filing_boxes?.boxes || [];
 
   return (
-    <>
+    <div className="work">
+      <div className="list-page-head">
+        <div>
       <h1>Tax</h1>
       <p className="muted">
         Default rate applies unless a product or line overrides it. Inclusive means the price already
@@ -242,6 +244,11 @@ export default function Page() {
         the sale or bill is the one that posts. Changing a rate does not rewrite past invoices.
         Ghana GRA mapping is available when the company jurisdiction is Ghana (export only — not e-filed).
       </p>
+        </div>
+        <button type="button" className="list-btn-primary" onClick={() => setTaxAddOpen(true)} aria-label="Add a tax rate">
+          Add a tax rate
+        </button>
+      </div>
       {error && <p className="erp-banner err" role="alert">{error}</p>}
       {message && <p className="erp-banner ok" role="status">{message}</p>}
 
@@ -301,12 +308,7 @@ export default function Page() {
         </div>
       </div>
 
-      <div className="grid">
-        <div>
-          <button type="button" className="list-btn-primary" onClick={() => setTaxAddOpen(true)} aria-label="Add a tax rate">
-            Add a tax rate
-          </button>
-        </div>
+      <div className="work-pair">
         {taxAddOpen ? (
         <FormModal
           title="Add a tax rate"
@@ -583,6 +585,6 @@ export default function Page() {
           ))}
         </tbody>
       </table>
-    </>
+    </div>
   );
 }

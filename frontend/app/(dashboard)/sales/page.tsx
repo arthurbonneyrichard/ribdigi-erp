@@ -942,7 +942,7 @@ export default function Page() {
   const showCondition = drawerLines.some((it) => Boolean(it.condition));
 
   return (
-    <div className="sales-desk">
+    <div className="sales-desk work">
       <header className="sales-desk-head">
         <div>
           <h1>Sales</h1>
@@ -1257,23 +1257,6 @@ export default function Page() {
               </option>
             ))}
           </select>
-          {showStore ? (
-          <select
-            value={storeId}
-            onChange={(e) => {
-              setStoreId(e.target.value);
-              setCtxStoreId(e.target.value);
-            }}
-            aria-label="Sale store"
-          >
-            <option value="">Choose a store</option>
-            {activeStores.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-          ) : null}
           <details className="sales-more">
             <summary>Currency</summary>
           <input
@@ -1439,6 +1422,23 @@ export default function Page() {
                 </option>
               ))}
           </select>
+          {showStore ? (
+          <select
+            value={storeId}
+            onChange={(e) => {
+              setStoreId(e.target.value);
+              setCtxStoreId(e.target.value);
+            }}
+            aria-label="Sale store"
+          >
+            <option value="">Choose a store</option>
+            {activeStores.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+          ) : null}
           <select
             value={productId}
             onChange={(e) => setProductId(e.target.value)}

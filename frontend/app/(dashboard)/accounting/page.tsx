@@ -1088,9 +1088,13 @@ export default function Page() {
   }
 
   return (
-    <>
-      <h1>Accounting</h1>
-      <div className="card" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+    <div className="work">
+      <div className="list-page-head">
+        <div>
+          <h1>Accounting</h1>
+        </div>
+      </div>
+      <div className="card" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input value={journalPrefix} onChange={(e) => setJournalPrefix(e.target.value)} aria-label="Journal number prefix" placeholder="Journal prefix" />
         <input value={journalNext} onChange={(e) => setJournalNext(e.target.value)} aria-label="Journal next number" placeholder="Next #" />
         <input value={xferNumPrefix} onChange={(e) => setXferNumPrefix(e.target.value)} aria-label="Cash transfer number prefix" placeholder="Transfer prefix" />
@@ -2999,6 +3003,6 @@ export default function Page() {
           onError={(msg) => setError(msg)}
         />
       )}
-    </>
+    </div>
   );
 }

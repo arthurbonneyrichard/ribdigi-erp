@@ -552,7 +552,9 @@ export default function Page() {
   const weOweAmt = balancesOk ? (report?.total_due ?? 0) : null;
 
   return (
-    <div className="credit-page">
+    <div className="credit-page work">
+      <div className="list-page-head">
+        <div>
       <h1>
         {kind === 'receivable'
           ? 'Customer credit'
@@ -567,6 +569,8 @@ export default function Page() {
             ? 'Pay an open supplier bill. This records money going out. It does not create a new bill.'
             : 'What this company still owes suppliers. Purchase orders are listed separately until a bill is posted.'}
       </p>
+        </div>
+      </div>
       {error && (
         <p className="erp-banner err" role="alert">
           {error}{' '}
@@ -652,13 +656,13 @@ export default function Page() {
           {loadState === 'error' ? (
             <p className="muted">Aging is unavailable until balances load.</p>
           ) : (
-            <>
-          <p>Not yet due: {totals.current ?? 0}</p>
-          <p>1–30 days: {totals['1_30'] ?? 0}</p>
-          <p>31–60 days: {totals['31_60'] ?? 0}</p>
-          <p>61–90 days: {totals['61_90'] ?? 0}</p>
-          <p>90+ days: {totals['90_plus'] ?? 0}</p>
-            </>
+            <div className="work-facts">
+              <span><small>Not yet due</small><strong>{totals.current ?? 0}</strong></span>
+              <span><small>1–30 days</small><strong>{totals['1_30'] ?? 0}</strong></span>
+              <span><small>31–60 days</small><strong>{totals['31_60'] ?? 0}</strong></span>
+              <span><small>61–90 days</small><strong>{totals['61_90'] ?? 0}</strong></span>
+              <span><small>90+ days</small><strong>{totals['90_plus'] ?? 0}</strong></span>
+            </div>
           )}
         </div>
       </div>
