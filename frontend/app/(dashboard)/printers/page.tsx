@@ -210,6 +210,24 @@ export default function PrinterSettingsPage() {
     }
   }
 
+  async function deletePrinter(row: Printer) {
+    if (busy) return;
+    if (!window.confirm(`Delete printer ${row.name}?`)) return;
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      await api(`/printers/${row.id}`, { method: 'DELETE' });
+      setNotice('Printer deleted.');
+      await load();
+    } catch (err: any) {
+      setNotice('');
+      setError(err?.message || 'Could not delete printer');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function testPrint(id: string) {
     setBusy(true);
     setError('');
@@ -508,6 +526,15 @@ export default function PrinterSettingsPage() {
                   onClick={() => patchPrinter(row.id, { is_enabled: !row.is_enabled })}
                 >
                   {row.is_enabled ? 'Turn off' : 'Turn on'}
+                </button>
+                <button
+                  type="button"
+                  className="btn-danger"
+                  disabled={busy}
+                  onClick={() => deletePrinter(row)}
+                  aria-label={`Delete printer ${row.name}`}
+                >
+                  Delete
                 </button>
               </td>
             </tr>

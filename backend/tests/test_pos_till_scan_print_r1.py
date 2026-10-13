@@ -32,11 +32,15 @@ def test_receipt_print_font_is_bold():
     assert "max-width:80mm" in html
     assert "text-align:center" in html
     assert "Powered by RIBDIGI ERP" in html
+    assert "Receipt no." in html
     assert "font-size:2.5px" in html
     assert 'class="gap"' in html
-    assert "height:4mm" in html
+    assert "height:2mm" in html
     assert 'class="feed"' in html
-    assert "height:22mm" in html
+    assert "width:80mm" in html
+    assert "width:72mm" in html
+    assert "height:20mm" in html
+    assert html.rindex("Powered by RIBDIGI ERP") < html.rindex('class="feed"')
     assert "window.print" not in html
     narrow = render_thermal_html(_sample_receipt(), paper="58mm")
     assert "max-width:58mm" in narrow
@@ -73,6 +77,7 @@ def test_email_sms_hidden_unless_option_on():
     assert "Add Email and SMS receipt actions to POS" in printers
     assert "See installed printers" in printers
     assert "Add to printers used for POS" in printers
+    assert "Delete printer" in printers
     assert "cannot list every printer" in printers
     assert pos_show_receipt_email_sms(None) is False
     tenant = type("T", (), {"print_branding": {}})()

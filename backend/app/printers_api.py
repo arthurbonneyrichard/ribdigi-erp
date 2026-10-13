@@ -141,6 +141,29 @@ async def patch_printer(
     return env(printers_svc.serialize_printer(row), "Printer updated")
 
 
+@router.delete("/{printer_id}")
+async def remove_printer(
+    printer_id: str,
+    claims=Depends(require_permission("printers", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await printers_svc.delete_printer(
+        db, tenant_id=claims["tenant_id"], printer_id=printer_id
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="printers",
+        action="printer_delete",
+        entity="printer",
+        entity_id=row.id,
+        details={"name": row.name, "connection_type": row.connection_type},
+    )
+    await db.commit()
+    return env({"id": row.id, "name": row.name}, "Printer deleted")
+
+
 @router.post("/{printer_id}/test")
 async def test_printer(
     printer_id: str,

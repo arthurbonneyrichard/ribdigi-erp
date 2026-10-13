@@ -62,6 +62,7 @@ def test_thermal_text_contains_totals_and_company():
     assert "12 High Street, Accra" in text
     assert "Tel: +233000000000" in text
     assert "hello@demomart.example" in text
+    assert "Receipt no." in text
     assert "POS_SALE-1" in text
     assert "Bottled Water" in text
     assert "TOTAL" in text

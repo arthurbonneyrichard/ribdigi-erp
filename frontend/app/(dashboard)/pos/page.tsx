@@ -76,14 +76,14 @@ function printProvisionalReceipt(rec: QueuedSale, lines: Array<{ name: string; q
     .join('');
   return openReceiptPrintWindow(
     `<!doctype html><html><head><title>${escapeHtml(rec.local_receipt_number)}</title>` +
-      '<style>@page{margin:0;size:80mm auto}html,body{margin:0;padding:0;width:100%}body{display:flex;justify-content:center}' +
-      '.slip{width:72mm;max-width:80mm;margin:2mm auto;font-family:\'Courier New\',ui-monospace,monospace;font-weight:700;font-size:13px;line-height:1.15}' +
-      'h3,p,.mid{text-align:center;margin:0}p{font-size:10px;margin:2mm 0}' +
-      'table{width:100%;border-collapse:collapse}td{font-size:13px;font-weight:700;padding:1px 0;vertical-align:top}' +
-      'td:nth-child(2),td:last-child{text-align:right;white-space:nowrap;padding-left:2mm}</style></head><body><div class="slip">' +
+      '<style>@page{margin:0;size:80mm auto}html,body{margin:0;padding:0;width:80mm;max-width:80mm}' +
+      '.slip{width:72mm;max-width:80mm;margin:0 auto;font-family:\'Courier New\',ui-monospace,monospace;font-weight:700;font-size:13px;line-height:1.15}' +
+      'h3,p,.mid{text-align:center;margin:0;overflow-wrap:anywhere}p{font-size:10px;margin:1mm 0}' +
+      'table{width:100%;border-collapse:collapse;table-layout:fixed}td{font-size:13px;font-weight:700;padding:1px 0;vertical-align:top;overflow-wrap:anywhere}' +
+      'td:nth-child(2),td:last-child{text-align:right;padding-left:1mm}</style></head><body><div class="slip">' +
       `<h3>${escapeHtml(storeName)}</h3>` +
       '<p><strong>Receipt copy — not the final receipt yet</strong><br/>The final receipt number is issued when this sale is sent.</p>' +
-      `<div class="mid">No: ${escapeHtml(rec.local_receipt_number)}</div><div class="mid">${escapeHtml(formatWhen(rec.created_at) || '')}</div>` +
+      `<div class="mid">Receipt no. ${escapeHtml(rec.local_receipt_number)}</div><div class="mid">${escapeHtml(formatWhen(rec.created_at) || '')}</div>` +
       `<table>${rows}</table><hr/><div class="mid"><strong>Total ${Number(payload.total || 0).toFixed(2)}</strong></div><div class="mid">${tenders}</div>` +
       '</div></body></html>',
     ''

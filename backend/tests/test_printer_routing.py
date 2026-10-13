@@ -82,6 +82,39 @@ async def test_printer_test_print_fits_source_id(client):
 
 
 @pytest.mark.asyncio
+async def test_admin_can_delete_printer_and_its_jobs(client):
+    ac, _seed = client
+    admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    cashier = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
+    created = await ac.post(
+        "/api/v1/printers",
+        headers=admin,
+        json={
+            "name": "Delete me till",
+            "connection_type": "browser_dialog",
+            "purposes": ["customer_receipt"],
+        },
+    )
+    assert created.status_code == 200, created.text
+    printer_id = created.json()["data"]["id"]
+    tested = await ac.post(f"/api/v1/printers/{printer_id}/test", headers=admin, json={})
+    assert tested.status_code == 200, tested.text
+
+    denied = await ac.delete(f"/api/v1/printers/{printer_id}", headers=cashier)
+    assert denied.status_code == 403
+
+    deleted = await ac.delete(f"/api/v1/printers/{printer_id}", headers=admin)
+    assert deleted.status_code == 200, deleted.text
+    assert deleted.json()["data"]["id"] == printer_id
+    assert deleted.json()["message"] == "Printer deleted"
+
+    listed = await ac.get("/api/v1/printers", headers=admin)
+    assert printer_id not in {row["id"] for row in listed.json()["data"]}
+    again = await ac.delete(f"/api/v1/printers/{printer_id}", headers=admin)
+    assert again.status_code == 404
+
+
+@pytest.mark.asyncio
 async def test_network_printer_rejects_public_host(client):
     ac, seed = client
     admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")

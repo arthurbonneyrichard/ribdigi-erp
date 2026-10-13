@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import or_, select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import flag_modified
@@ -590,6 +590,44 @@ async def update_printer(
     return row
 
 
+async def delete_printer(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    printer_id: str,
+) -> m.Printer:
+    """Remove a tenant printer and the print jobs that point at it."""
+    row = await db.get(m.Printer, printer_id)
+    if not row or row.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Printer not found")
+    job_ids = list(
+        (
+            await db.execute(
+                select(m.PrintJob.id).where(
+                    m.PrintJob.tenant_id == tenant_id,
+                    m.PrintJob.printer_id == row.id,
+                )
+            )
+        ).scalars().all()
+    )
+    if job_ids:
+        await db.execute(
+            delete(m.PrintJobAttempt).where(
+                m.PrintJobAttempt.tenant_id == tenant_id,
+                m.PrintJobAttempt.job_id.in_(job_ids),
+            )
+        )
+        await db.execute(
+            delete(m.PrintJob).where(
+                m.PrintJob.tenant_id == tenant_id,
+                m.PrintJob.printer_id == row.id,
+            )
+        )
+    await db.delete(row)
+    await db.flush()
+    return row
+
+
 async def _clear_other_defaults(db: AsyncSession, row: m.Printer) -> None:
     others = (
         await db.execute(
@@ -781,8 +819,9 @@ def escpos_receipt_bytes(text: str) -> bytes:
     body = (text or "").replace("\r\n", "\n").replace("\n", "\r\n")
     encoded = body.encode("cp437", errors="replace")
     # Normal font (no double-height) so each padded line stays on the paper.
-    # ESC J 176 dots is about 22mm at 203 dpi, then the cutter.
-    return b"\x1b\x40" + b"\x1b\x61\x00" + encoded + b"\x1b\x4a\xb0" + b"\x1d\x56\x00"
+    # The text already ends on Powered by RIBDIGI ERP. ESC d 5 feeds about
+    # 19mm so the cutter clears that line, then GS V cuts.
+    return b"\x1b\x40" + b"\x1b\x61\x00" + encoded + b"\x1b\x64\x05" + b"\x1d\x56\x00"
 
 
 def send_network_receipt(host: str, port: int, text: str) -> None:

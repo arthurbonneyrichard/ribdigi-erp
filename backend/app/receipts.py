@@ -46,12 +46,16 @@ def _center(text: str, width: int) -> str:
 
 
 def _lr(left: str, right: str, width: int) -> str:
-    left = (left or "")[: width - 1]
-    right = (right or "")[:width]
-    gap = width - len(left) - len(right)
-    if gap < 1:
-        return (left + right)[:width]
-    return left + (" " * gap) + right
+    """Left label and right value. Long values wrap onto the next lines."""
+    left = (left or "").strip()
+    right = (right or "").strip()
+    if len(left) + 1 + len(right) <= width:
+        gap = width - len(left) - len(right)
+        return left + (" " * gap) + right
+    lines = _wrap(left, width)
+    for part in _wrap(right, width):
+        lines.append(part.rjust(width))
+    return "\n".join(lines)
 
 
 def _clean_text(value: Any) -> str | None:
@@ -247,14 +251,14 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
         for part in _wrap(str(receipt["print_header"]), width):
             lines.append(_center(part, width))
     lines.append("-" * width)
-    lines.append(_lr("Sale", str(receipt.get("reference") or ""), width))
+    lines.append(_lr("Receipt no.", str(receipt.get("reference") or ""), width))
     created = receipt.get("created_at")
     if isinstance(created, datetime):
         lines.append(_lr("Date", created.strftime("%Y-%m-%d %H:%M"), width))
     elif created:
         lines.append(_lr("Date", str(created)[:16], width))
     if receipt.get("cashier_name"):
-        lines.append(_lr("Cashier", str(receipt["cashier_name"])[: width // 2], width))
+        lines.append(_lr("Cashier", str(receipt["cashier_name"]), width))
     customer_label = str(receipt.get("customer_name") or WALK_IN_CUSTOMER).strip() or WALK_IN_CUSTOMER
     lines.append(_lr("Customer", customer_label, width))
     lines.append("-" * width)
@@ -318,20 +322,22 @@ def _html_pair(left: str, right: str) -> str:
 def render_thermal_html(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     """Centered thermal slip. Item and total columns share one table width.
 
-    Body type stays 13px / 12px. The powered-by line is half of the previous
-    5px (2.5px) and reads Powered by RIBDIGI ERP, with 22mm of blank paper
-    under it so the cutter runs after the words. Payment references stay off.
+    The page itself is the roll width so a thermal driver does not print only
+    the left side of a centered sheet. Body type stays 13px / 12px inside a
+    72mm / 48mm slip. The powered-by line stays small (2.5px). A 20mm feed
+    sits under that line, and nothing else is printed after it, so the cutter
+    lands after Powered by RIBDIGI ERP. Payment references stay off.
     """
     narrow = str(paper).lower() == "58mm"
     page = "58mm" if narrow else "80mm"
-    slip = "52mm" if narrow else "72mm"
+    slip = "48mm" if narrow else "72mm"
     font = "12px" if narrow else "13px"
     bits: list[str] = []
     bits.append(_html_mid(str(receipt.get("company_name") or "RIBDIGI ERP")))
     if receipt.get("store_name"):
         bits.append(_html_mid(str(receipt["store_name"])))
     if receipt.get("company_address"):
-        for part in _wrap(str(receipt["company_address"]), 28 if narrow else 32):
+        for part in _wrap(str(receipt["company_address"]), 26 if narrow else 32):
             bits.append(_html_mid(part))
     if receipt.get("company_phone"):
         bits.append(_html_mid(f"Tel: {receipt['company_phone']}"))
@@ -340,11 +346,11 @@ def render_thermal_html(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     if receipt.get("company_website"):
         bits.append(_html_mid(str(receipt["company_website"])))
     if receipt.get("print_header"):
-        for part in _wrap(str(receipt["print_header"]), 28 if narrow else 32):
+        for part in _wrap(str(receipt["print_header"]), 26 if narrow else 32):
             bits.append(_html_mid(part))
     bits.append('<div class="rule"></div>')
     meta: list[str] = []
-    meta.append(_html_pair("Sale", str(receipt.get("reference") or "")))
+    meta.append(_html_pair("Receipt no.", str(receipt.get("reference") or "")))
     created = receipt.get("created_at")
     if isinstance(created, datetime):
         meta.append(_html_pair("Date", created.strftime("%Y-%m-%d %H:%M")))
@@ -420,27 +426,26 @@ def render_thermal_html(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
         bits.append(f'<table class="grid">{"".join(settle)}</table>')
     bits.append('<div class="rule"></div>')
     footer = str(receipt.get("print_footer") or "Thank you")
-    for part in _wrap(footer, 28 if narrow else 32):
+    for part in _wrap(footer, 26 if narrow else 32):
         bits.append(_html_mid(part))
     bits.append('<div class="powered">Powered by RIBDIGI ERP</div>')
-    bits.append('<div class="feed"></div>')
+    bits.append('<div class="feed">&nbsp;</div>')
     style = (
         f"@page{{margin:0;size:{page} auto}}"
-        "html,body{margin:0;padding:0;width:100%}"
-        "body{display:flex;justify-content:center}"
-        f".slip{{width:{slip};max-width:{page};margin:2mm auto;"
+        f"html,body{{margin:0;padding:0;width:{page};max-width:{page}}}"
+        f".slip{{width:{slip};max-width:{page};margin:0 auto;box-sizing:border-box;"
         "font-family:'Courier New',ui-monospace,monospace;font-weight:700;"
-        f"font-size:{font};line-height:1.15}}"
-        ".mid{text-align:center}"
+        f"font-size:{font};line-height:1.15;overflow:visible}}"
+        ".mid{text-align:center;overflow-wrap:anywhere}"
         ".rule{border-top:1px dashed #111;margin:1mm 0}"
         "table.grid{width:100%;border-collapse:collapse;margin:0 auto}"
-        f"td{{font-weight:700;font-size:{font};padding:0;vertical-align:top}}"
-        "td.q{width:3.2em;text-align:right;padding-right:1.5mm;white-space:nowrap}"
-        "td.r{text-align:right;white-space:nowrap;padding-left:2mm}"
+        f"td{{font-weight:700;font-size:{font};padding:0;vertical-align:top;overflow-wrap:anywhere}}"
+        "td.q{width:2.2em;text-align:right;padding-right:1mm}"
+        "td.r{text-align:right;padding-left:1mm}"
         ".powered{text-align:center;font-size:2.5px;font-weight:700;line-height:1.2;"
-        "margin-top:2mm;white-space:nowrap}"
-        ".gap{height:4mm}"
-        ".feed{height:22mm}"
+        "margin-top:1mm;overflow-wrap:anywhere}"
+        ".gap{height:2mm}"
+        ".feed{height:20mm;line-height:20mm;font-size:1px;overflow:hidden}"
     )
     return (
         '<!doctype html><html><head><meta charset="utf-8"/>'
