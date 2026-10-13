@@ -76,12 +76,16 @@ function printProvisionalReceipt(rec: QueuedSale, lines: Array<{ name: string; q
     .join('');
   return openReceiptPrintWindow(
     `<!doctype html><html><head><title>${escapeHtml(rec.local_receipt_number)}</title>` +
-      '<style>@page{margin:0;size:80mm auto}body{font-family:\'Courier New\',ui-monospace,monospace;font-weight:700;font-size:13px;line-height:1.15;margin:0;width:80mm}table{width:100%;border-collapse:collapse}td{font-size:13px;font-weight:700;padding:1px 0}td:last-child,td:nth-child(2){text-align:right;white-space:nowrap}h3{font-size:16px;margin:0;text-align:center}p{font-size:10px;margin:4px 0}</style></head><body>' +
-      `<h3 style="margin:0">${escapeHtml(storeName)}</h3>` +
+      '<style>@page{margin:0;size:80mm auto}html,body{margin:0;padding:0;width:100%}body{display:flex;justify-content:center}' +
+      '.slip{width:72mm;max-width:80mm;margin:2mm auto;font-family:\'Courier New\',ui-monospace,monospace;font-weight:700;font-size:13px;line-height:1.15}' +
+      'h3,p,.mid{text-align:center;margin:0}p{font-size:10px;margin:2mm 0}' +
+      'table{width:100%;border-collapse:collapse}td{font-size:13px;font-weight:700;padding:1px 0;vertical-align:top}' +
+      'td:nth-child(2),td:last-child{text-align:right;white-space:nowrap;padding-left:2mm}</style></head><body><div class="slip">' +
+      `<h3>${escapeHtml(storeName)}</h3>` +
       '<p><strong>Receipt copy — not the final receipt yet</strong><br/>The final receipt number is issued when this sale is sent.</p>' +
-      `<div>No: ${escapeHtml(rec.local_receipt_number)}</div><div>${escapeHtml(formatWhen(rec.created_at) || '')}</div>` +
-      `<table>${rows}</table><hr/><div><strong>Total ${Number(payload.total || 0).toFixed(2)}</strong></div>${tenders}` +
-      '</body></html>',
+      `<div class="mid">No: ${escapeHtml(rec.local_receipt_number)}</div><div class="mid">${escapeHtml(formatWhen(rec.created_at) || '')}</div>` +
+      `<table>${rows}</table><hr/><div class="mid"><strong>Total ${Number(payload.total || 0).toFixed(2)}</strong></div><div class="mid">${tenders}</div>` +
+      '</div></body></html>',
     ''
   );
 }

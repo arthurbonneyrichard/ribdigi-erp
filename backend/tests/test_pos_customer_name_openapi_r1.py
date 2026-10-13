@@ -129,10 +129,9 @@ async def test_pos_customer_name_api_blank_invalid_422(client, db_session):
     leftover_data = leftover_receipt.json()["data"]
     leftover_text = leftover_data.get("text") or ""
     leftover_html = leftover_data.get("html") or ""
-    assert leftover_data.get("customer_name") == "Walk-in"
-    assert "Walk-in" in leftover_text
-    assert f"Tip140 Guest {suffix}" not in leftover_text
-    assert f"Tip140 Guest {suffix}" not in leftover_html
+    assert leftover_data.get("customer_name") == f"Tip140 Guest {suffix}"
+    assert f"Tip140 Guest {suffix}" in leftover_text
+    assert f"Tip140 Guest {suffix}" in leftover_html
 
     omit_receipt = await ac.get(
         f"/api/v1/pos/sales/{omit.json()['data']['id']}/receipt",

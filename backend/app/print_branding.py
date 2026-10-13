@@ -16,14 +16,14 @@ DEFAULT_FOOTER_INVOICE = "Thank you for your business."
 DEFAULT_FOOTER_RECEIPT = "Thank you"
 # Logo leaf / CSS --brand (#4AB012) as PDF device RGB (0–1).
 BRAND_GREEN_RGB: tuple[float, float, float] = (0.290, 0.690, 0.071)
-POWERED_BY_RIBDIGI = "Powered by RIBDIGI"
+POWERED_BY_RIBDIGI = "Powered by RIBDIGI ERP"
 
 
 def style_powered_by_line(
     text: str,
     size: int = 8,
 ) -> tuple[str, int] | tuple[str, int, tuple[float, float, float]]:
-    """Paint the shared 'Powered by RIBDIGI' footer in brand green when matched."""
+    """Paint the shared 'Powered by RIBDIGI ERP' footer in brand green when matched."""
     raw = (text or "").strip()
     if raw == POWERED_BY_RIBDIGI:
         return (POWERED_BY_RIBDIGI, size, BRAND_GREEN_RGB)

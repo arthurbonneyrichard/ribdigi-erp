@@ -109,10 +109,10 @@ test('hideStoreUx covers hotel and single-store, keeps multi-store retail', () =
 });
 
 test('cashier nav allowlist is POS and Help & Support', () => {
-  assert.deepEqual([...CASHIER_NAV_MODULES].sort(), ['pos', 'support']);
+  assert.deepEqual([...CASHIER_NAV_MODULES].sort(), ['pos', 'sales', 'support']);
   assert.equal(CASHIER_NAV_MODULES.includes('dashboard'), false);
   assert.equal(CASHIER_NAV_MODULES.includes('inventory'), false);
-  assert.equal(CASHIER_NAV_MODULES.includes('sales'), false);
+  assert.equal(CASHIER_NAV_MODULES.includes('sales'), true);
   assert.equal(CASHIER_NAV_MODULES.includes('users'), false);
   assert.equal(CASHIER_NAV_MODULES.includes('purchasing'), false);
   assert.equal(unauthorizedNavRedirect('/pos', 'cashier', CASHIER_NAV_MODULES), null);
@@ -127,6 +127,8 @@ test('cashier nav allowlist is POS and Help & Support', () => {
   assert.equal(roleHomePath('store_manager', 'restaurant'), '/restaurant');
   assert.equal(roleHomePath('company_admin'), '/dashboard');
   assert.equal(navItemVisibleForRole('cashier', '/gift-cards'), false);
+  assert.equal(navItemVisibleForRole('cashier', '/customers'), false);
+  assert.equal(navItemVisibleForRole('cashier', '/sales'), true);
   assert.equal(navItemVisibleForRole('cashier', '/pos'), true);
   assert.equal(navItemVisibleForRole('cashier', '/support'), true);
   assert.equal(navItemVisibleForRole('company_admin', '/gift-cards'), true);
@@ -172,7 +174,7 @@ test('cashier forbidden routes redirect to POS, not a blank page', () => {
   assert.equal(unauthorizedNavRedirect('/users', 'cashier', CASHIER_NAV_MODULES), '/pos');
   assert.equal(unauthorizedNavRedirect('/stores#branches', 'cashier', CASHIER_NAV_MODULES), '/pos');
   assert.equal(unauthorizedNavRedirect('/security', 'cashier', CASHIER_NAV_MODULES), '/pos');
-  assert.equal(unauthorizedNavRedirect('/sales', 'cashier', CASHIER_NAV_MODULES), '/pos');
+  assert.equal(unauthorizedNavRedirect('/sales', 'cashier', CASHIER_NAV_MODULES), null);
   assert.equal(unauthorizedNavRedirect('/customers', 'cashier', CASHIER_NAV_MODULES), '/pos');
   assert.equal(unauthorizedNavRedirect('/credit?kind=payable', 'cashier', CASHIER_NAV_MODULES), '/pos');
   assert.equal(unauthorizedNavRedirect('/pos', 'cashier', CASHIER_NAV_MODULES), null);

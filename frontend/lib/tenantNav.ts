@@ -406,14 +406,16 @@ export function groupedTenantNav(
   return [...hotelGroups, ...pointed];
 }
 
-/** Cashier sidebar: POS and Help & Support only. */
-export const CASHIER_NAV_MODULES: string[] = ['pos', 'support'];
+/** Cashier sidebar: Sales, POS, and Help & Support. */
+export const CASHIER_NAV_MODULES: string[] = ['sales', 'pos', 'support'];
 
 /** Gift cards share the POS module. Cashiers stay on the till; other roles keep the page. */
 export function navItemVisibleForRole(role: string, href: string): boolean {
   if (role !== 'cashier') return true;
   const path = (href.split('?')[0] || '').split('#')[0];
-  return path !== '/gift-cards' && !path.startsWith('/gift-cards/');
+  if (path === '/gift-cards' || path.startsWith('/gift-cards/')) return false;
+  if (path === '/customers' || path.startsWith('/customers/')) return false;
+  return true;
 }
 
 export const HOTEL_CASHIER_NAV_MODULES: string[] = [

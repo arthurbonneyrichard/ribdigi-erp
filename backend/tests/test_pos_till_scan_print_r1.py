@@ -30,6 +30,9 @@ def test_receipt_print_font_is_bold():
     html = render_thermal_html(_sample_receipt(), paper="80mm")
     assert "font-weight:700" in html
     assert "max-width:80mm" in html
+    assert "text-align:center" in html
+    assert "Powered by RIBDIGI ERP" in html
+    assert "font-size:5px" in html
     assert "window.print" not in html
     narrow = render_thermal_html(_sample_receipt(), paper="58mm")
     assert "max-width:58mm" in narrow

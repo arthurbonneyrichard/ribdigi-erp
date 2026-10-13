@@ -147,15 +147,13 @@ def test_thermal_pdf_is_valid_pdf_bytes():
     assert len(pdf) > 200
 
 
-def test_walk_in_receipt_ignores_leftover_customer_name():
+def test_typed_customer_name_prints_without_a_customer_record():
     receipt = _sample_receipt(extra_payload={"customer_name": "Yesterday Kofi"})
     text = render_thermal_text(receipt, paper="80mm")
     html = render_thermal_html(receipt, paper="80mm")
-    assert receipt["customer_name"] == "Walk-in"
-    assert "Walk-in" in text
-    assert "Yesterday Kofi" not in text
-    assert "Walk-in" in html
-    assert "Yesterday Kofi" not in html
+    assert receipt["customer_name"] == "Yesterday Kofi"
+    assert "Yesterday Kofi" in text
+    assert "Yesterday Kofi" in html
 
 
 def test_receipt_uses_selected_party_not_leftover_name():

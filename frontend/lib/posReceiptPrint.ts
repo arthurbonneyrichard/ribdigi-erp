@@ -4,14 +4,29 @@ function escapePrintText(value: string) {
   return value.replace(/[&<>]/g, (ch) => (ch === '&' ? '&amp;' : ch === '<' ? '&lt;' : '&gt;'));
 }
 
+function receiptHtmlFromText(text: string) {
+  const lines = String(text || '').split('\n');
+  const body: string[] = [];
+  for (const line of lines) {
+    if (line.trim() === 'Powered by RIBDIGI ERP' || line.trim() === 'Powered by RIBDIGI') continue;
+    body.push(line);
+  }
+  return (
+    `<!doctype html><html><head><meta charset="utf-8"/>` +
+    `<style>@page{margin:0;size:80mm auto}html,body{margin:0;padding:0;width:100%}` +
+    `body{display:flex;justify-content:center}` +
+    `.slip{width:72mm;max-width:80mm;margin:2mm auto}` +
+    `pre{font-family:'Courier New',ui-monospace,monospace;font-weight:700;` +
+    `font-size:13px;line-height:1.15;white-space:pre;margin:0 auto;text-align:center}` +
+    `.powered{text-align:center;font-family:'Courier New',ui-monospace,monospace;` +
+    `font-weight:700;font-size:5px;line-height:1.1;margin-top:1mm}</style>` +
+    `</head><body><div class="slip"><pre>${escapePrintText(body.join('\n').trim())}</pre>` +
+    `<div class="powered">Powered by RIBDIGI ERP</div></div></body></html>`
+  );
+}
+
 export function openReceiptPrintWindow(html: string | undefined, text: string): boolean {
-  const body = html
-    ? html
-    : `<!doctype html><html><head><meta charset="utf-8"/>` +
-      `<style>@page{margin:0;size:80mm auto}body{margin:0;display:flex;justify-content:center;width:80mm}` +
-      `pre{font-family:'Courier New',ui-monospace,monospace;font-weight:700;` +
-      `font-size:13px;line-height:1.15;white-space:pre;margin:0}</style>` +
-      `</head><body><pre>${escapePrintText(text)}</pre></body></html>`;
+  const body = html ? html : receiptHtmlFromText(text);
   const iframe = document.createElement('iframe');
   iframe.setAttribute('title', 'Print');
   iframe.style.cssText = 'position:fixed;left:-10000px;top:0;width:80mm;height:100vh;border:0';

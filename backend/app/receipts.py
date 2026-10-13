@@ -67,16 +67,12 @@ def _receipt_customer_name(
     payload: dict[str, Any],
     party: m.Party | None = None,
 ) -> str:
-    """Name of the customer on this sale, or Walk-in.
+    """Name printed on the receipt.
 
-    Checkout `party_id` is the source of truth. A leftover `customer_name` on
-    the stored payload is ignored for walk-in sales and overridden by the
-    selected party's name when `party_id` is set.
+    A selected customer record wins. A name typed at the till is printed when
+    no customer record was selected. Otherwise the slip says Walk-in.
     """
-    party_id = getattr(tx, "party_id", None)
-    if not party_id:
-        return WALK_IN_CUSTOMER
-    if party is not None:
+    if getattr(tx, "party_id", None) and party is not None:
         named = _clean_text(getattr(party, "name", None))
         if named:
             return named
@@ -260,7 +256,7 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     if receipt.get("cashier_name"):
         lines.append(_lr("Cashier", str(receipt["cashier_name"])[: width // 2], width))
     customer_label = str(receipt.get("customer_name") or WALK_IN_CUSTOMER).strip() or WALK_IN_CUSTOMER
-    lines.append(_lr("Customer", customer_label[: width // 2], width))
+    lines.append(_lr("Customer", customer_label, width))
     lines.append("-" * width)
     for item in receipt.get("items") or []:
         name = str(item.get("name") or "Item")
@@ -306,29 +302,140 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     footer = receipt.get("print_footer") or "Thank you"
     for part in _wrap(str(footer), width):
         lines.append(_center(part, width))
-    lines.append(_center("Powered by RIBDIGI", width))
+    lines.append(_center("Powered by RIBDIGI ERP", width))
     lines.append("")
     return "\n".join(lines)
 
 
-def render_thermal_html(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
-    """One thermal slip, monospace so columns line up on the paper.
+def _html_mid(text: str) -> str:
+    return f'<div class="mid">{html.escape(text)}</div>'
 
-    Font is 40% smaller than the previous 22px / 20px slip. Payment references stay off.
+
+def _html_pair(left: str, right: str) -> str:
+    return f"<tr><td>{html.escape(left)}</td><td class=\"r\">{html.escape(right)}</td></tr>"
+
+
+def render_thermal_html(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
+    """Centered thermal slip. Item and total columns share one table width.
+
+    Body type stays 13px / 12px. The powered-by line is 60% smaller (5px)
+    and reads Powered by RIBDIGI ERP. Payment references stay off.
     """
-    text = render_thermal_text(receipt, paper=paper)
-    width = "58mm" if str(paper).lower() == "58mm" else "80mm"
-    font = "12px" if width == "58mm" else "13px"
+    narrow = str(paper).lower() == "58mm"
+    page = "58mm" if narrow else "80mm"
+    slip = "52mm" if narrow else "72mm"
+    font = "12px" if narrow else "13px"
+    bits: list[str] = []
+    bits.append(_html_mid(str(receipt.get("company_name") or "RIBDIGI ERP")))
+    if receipt.get("store_name"):
+        bits.append(_html_mid(str(receipt["store_name"])))
+    if receipt.get("company_address"):
+        for part in _wrap(str(receipt["company_address"]), 28 if narrow else 32):
+            bits.append(_html_mid(part))
+    if receipt.get("company_phone"):
+        bits.append(_html_mid(f"Tel: {receipt['company_phone']}"))
+    if receipt.get("company_email"):
+        bits.append(_html_mid(str(receipt["company_email"])))
+    if receipt.get("company_website"):
+        bits.append(_html_mid(str(receipt["company_website"])))
+    if receipt.get("print_header"):
+        for part in _wrap(str(receipt["print_header"]), 28 if narrow else 32):
+            bits.append(_html_mid(part))
+    bits.append('<div class="rule"></div>')
+    meta: list[str] = []
+    meta.append(_html_pair("Sale", str(receipt.get("reference") or "")))
+    created = receipt.get("created_at")
+    if isinstance(created, datetime):
+        meta.append(_html_pair("Date", created.strftime("%Y-%m-%d %H:%M")))
+    elif created:
+        meta.append(_html_pair("Date", str(created)[:16]))
+    if receipt.get("cashier_name"):
+        meta.append(_html_pair("Cashier", str(receipt["cashier_name"])))
+    customer_label = str(receipt.get("customer_name") or WALK_IN_CUSTOMER).strip() or WALK_IN_CUSTOMER
+    meta.append(_html_pair("Customer", customer_label))
+    bits.append(f'<table class="grid">{"".join(meta)}</table>')
+    bits.append('<div class="rule"></div>')
+    lines: list[str] = []
+    for item in receipt.get("items") or []:
+        name = str(item.get("name") or "Item")
+        qty = money_json(item.get("quantity") or 0)
+        total = money_json(item.get("line_total") or qty * money_json(item.get("unit_price") or 0))
+        lines.append(
+            "<tr>"
+            f'<td class="q">{html.escape(f"{qty:g}")}</td>'
+            f"<td>{html.escape(name)}</td>"
+            f'<td class="r">{html.escape(_money(total))}</td>'
+            "</tr>"
+        )
+        disc = money_json(item.get("discount") or 0)
+        if disc > 0:
+            lines.append(
+                "<tr><td></td><td>Discount</td>"
+                f'<td class="r">{html.escape(f"-{_money(disc)}")}</td></tr>'
+            )
+    bits.append(f'<table class="grid lines">{"".join(lines)}</table>')
+    bits.append('<div class="rule"></div>')
+    totals: list[str] = []
+    currency = str(receipt.get("currency") or "").strip()
+    totals.append(_html_pair("Subtotal", _money(receipt.get("subtotal") or 0)))
+    totals.append(_html_pair("Tax", _money(receipt.get("tax") or 0)))
+    discount_amount = money_json(receipt.get("discount_amount") or 0)
+    if discount_amount > 0:
+        totals.append(_html_pair("Discount", f"-{_money(discount_amount)}"))
+    totals.append(_html_pair(f"TOTAL {currency}".strip(), _money(receipt.get("total") or 0)))
+    payments = receipt.get("payments") or []
+    if len(payments) > 1:
+        bits.append(f'<table class="grid">{"".join(totals)}</table>')
+        bits.append(_html_mid("Payments"))
+        pay_rows: list[str] = []
+        for pay in payments:
+            from app.pos import payment_method_label
+
+            method = payment_method_label(pay.get("payment_method")).upper()
+            pay_rows.append(_html_pair(method, _money(pay.get("amount") or 0)))
+        bits.append(f'<table class="grid">{"".join(pay_rows)}</table>')
+    else:
+        from app.pos import payment_method_label
+
+        totals.append(_html_pair("Payment", payment_method_label(receipt.get("payment_method")).upper()))
+        bits.append(f'<table class="grid">{"".join(totals)}</table>')
+    paid_amount = money_json(receipt.get("paid_amount"))
+    balance_due = money_json(receipt.get("balance_due"))
+    status = str(receipt.get("payment_status") or "").replace("_", " ")
+    settle: list[str] = []
+    if paid_amount > 0 or balance_due > 0 or status:
+        settle.append(_html_pair("Paid", _money(paid_amount)))
+        if balance_due > 0:
+            settle.append(_html_pair("Balance due", _money(balance_due)))
+        if status:
+            settle.append(_html_pair("Status", status.upper()))
+    if receipt.get("invoice_number"):
+        settle.append(_html_pair("Invoice", str(receipt.get("invoice_number"))))
+    if settle:
+        bits.append(f'<table class="grid">{"".join(settle)}</table>')
+    bits.append('<div class="rule"></div>')
+    footer = str(receipt.get("print_footer") or "Thank you")
+    for part in _wrap(footer, 28 if narrow else 32):
+        bits.append(_html_mid(part))
+    bits.append('<div class="powered">Powered by RIBDIGI ERP</div>')
     style = (
-        f"@page{{margin:0;size:{width} auto}}"
-        f"html,body{{margin:0;padding:2mm;width:{width};max-width:{width}}}"
+        f"@page{{margin:0;size:{page} auto}}"
+        "html,body{margin:0;padding:0;width:100%}"
         "body{display:flex;justify-content:center}"
-        "pre{font-family:'Courier New',ui-monospace,monospace;font-weight:700;"
-        f"font-size:{font};line-height:1.15;white-space:pre;margin:0}}"
+        f".slip{{width:{slip};max-width:{page};margin:2mm auto;"
+        "font-family:'Courier New',ui-monospace,monospace;font-weight:700;"
+        f"font-size:{font};line-height:1.15}}"
+        ".mid{text-align:center}"
+        ".rule{border-top:1px dashed #111;margin:1mm 0}"
+        "table.grid{width:100%;border-collapse:collapse;margin:0 auto}"
+        f"td{{font-weight:700;font-size:{font};padding:0;vertical-align:top}}"
+        "td.q{width:3.2em;text-align:right;padding-right:1.5mm;white-space:nowrap}"
+        "td.r{text-align:right;white-space:nowrap;padding-left:2mm}"
+        ".powered{text-align:center;font-size:5px;font-weight:700;line-height:1.1;margin-top:1mm}"
     )
     return (
         '<!doctype html><html><head><meta charset="utf-8"/>'
-        f"<style>{style}</style></head><body><pre>{html.escape(text)}</pre></body></html>"
+        f"<style>{style}</style></head><body><div class=\"slip\">{''.join(bits)}</div></body></html>"
     )
 
 
@@ -344,7 +451,10 @@ def to_thermal_pdf(receipt: dict[str, Any], *, paper: str = "80mm") -> bytes:
     from app.print_branding import build_text_pdf, load_logo_jpeg, style_powered_by_line
 
     text = render_thermal_text(receipt, paper=paper)
-    lines = [style_powered_by_line(line, 8) for line in (text.splitlines() or [""])]
+    lines = [
+        style_powered_by_line(line, 3 if line.strip() == "Powered by RIBDIGI ERP" else 8)
+        for line in (text.splitlines() or [""])
+    ]
     page_width = 226 if paper == "80mm" else 164
     line_height = 11
     top = 20
