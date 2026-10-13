@@ -28,7 +28,7 @@ async def test_sales_invoice_numbering_settings_and_allocation(client, db_sessio
     assert got.status_code == 200, got.text
     numbering = got.json()["data"]["invoice_numbering"]
     assert numbering["prefix"] == "INV"
-    assert numbering["preview"] == f"INV-{year}-0001"
+    assert numbering["preview"] == f"INV{year}0001"
 
     patched = await ac.patch(
         "/api/v1/sales/settings",
@@ -39,7 +39,7 @@ async def test_sales_invoice_numbering_settings_and_allocation(client, db_sessio
     numbering = patched.json()["data"]["invoice_numbering"]
     assert numbering["prefix"] == "SI"
     assert numbering["next_number"] == 7
-    assert numbering["preview"] == f"SI-{year}-0007"
+    assert numbering["preview"] == f"SI{year}0007"
 
     bad = await ac.patch(
         "/api/v1/sales/settings",
@@ -62,7 +62,7 @@ async def test_sales_invoice_numbering_settings_and_allocation(client, db_sessio
         },
     )
     assert created.status_code == 200, created.text
-    assert created.json()["data"]["invoice_number"] == f"SI-{year}-0007"
+    assert created.json()["data"]["invoice_number"] == f"SI{year}0007"
 
     created2 = await ac.post(
         "/api/v1/sales/invoices",
@@ -72,7 +72,7 @@ async def test_sales_invoice_numbering_settings_and_allocation(client, db_sessio
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 10}],
         },
     )
-    assert created2.json()["data"]["invoice_number"] == f"SI-{year}-0008"
+    assert created2.json()["data"]["invoice_number"] == f"SI{year}0008"
 
     tenant = await db_session.get(m.Tenant, seed["t1"].id)
     await db_session.refresh(tenant)
@@ -81,4 +81,4 @@ async def test_sales_invoice_numbering_settings_and_allocation(client, db_sessio
     assert tenant.sales_invoice_number_year == year
 
     preview = await ac.get("/api/v1/sales/settings", headers=admin)
-    assert preview.json()["data"]["invoice_numbering"]["preview"] == f"SI-{year}-0009"
+    assert preview.json()["data"]["invoice_numbering"]["preview"] == f"SI{year}0009"

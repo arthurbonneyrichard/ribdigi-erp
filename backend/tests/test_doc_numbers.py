@@ -8,6 +8,7 @@ from app.doc_numbers import (
     format_daily_number,
     format_series_number,
     _max_seq,
+    _series_seq,
     invoice_numbering_settings,
     numbering_settings,
 )
@@ -21,6 +22,8 @@ def test_format_daily_number_starts_at_001():
 def test_format_series_number():
     assert format_series_number("INV", 2026, 1) == "INV-2026-0001"
     assert format_series_number("SI", 2026, 42) == "SI-2026-0042"
+    assert format_series_number("INV", 2026, 1, joined=True) == "INV20260001"
+    assert format_series_number("SI", 2026, 42, joined=True) == "SI20260042"
 
 
 def test_invoice_numbering_settings_preview_resets_on_year_change():
@@ -31,11 +34,16 @@ def test_invoice_numbering_settings_preview_resets_on_year_change():
 
     cfg = invoice_numbering_settings(T(), as_of=datetime(2026, 3, 1))
     assert cfg["next_number"] == 1
-    assert cfg["preview"] == "INV-2026-0001"
+    assert cfg["preview"] == "INV20260001"
     assert cfg["year"] == 2026
 
 
-def test_max_seq_from_existing_refs():
+def test_series_seq_reads_hyphenated_and_joined():
+    assert _series_seq("INV-2026-0007", "INV", 2026) == 7
+    assert _series_seq("INV20260008", "INV", 2026) == 8
+    assert _series_seq("POS-2026-0041", "POS", 2026) == 41
+    assert _series_seq("PO-2026-0003", "PO", 2026) == 3
+    assert _series_seq("POS20260001", "PO", 2026) is None
     refs = ["S260811-001", "S260811-003", "S260810-009", "POS_SALE-old"]
     assert _max_seq(refs, "S260811-") == 3
     assert _max_seq([], "S260811-") == 0
@@ -53,7 +61,7 @@ def test_pos_and_shift_prefixes_are_server_locked():
 
     sale = numbering_settings(T(), "pos_sale", as_of=datetime(2026, 6, 1))
     assert sale["prefix"] == "POS"
-    assert sale["preview"] == "POS-2026-0009"
+    assert sale["preview"] == "POS20260009"
     assert sale["server_allocated"] is True
     assert sale["editable"] is False
 

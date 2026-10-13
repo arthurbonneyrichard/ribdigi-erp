@@ -237,7 +237,6 @@ def render_invoice_thermal_text(payload: dict[str, Any], *, paper: str = "80mm")
     for part in _wrap(str(footer), width):
         lines.append(_center(part, width))
     lines.append(_center("Powered by RIBDIGI ERP", width))
-    lines.append("")
     return "\n".join(lines)
 
 
@@ -246,7 +245,7 @@ def to_invoice_thermal_pdf(payload: dict[str, Any], *, paper: str = "80mm") -> b
 
     text = render_invoice_thermal_text(payload, paper=paper)
     lines = [
-        style_powered_by_line(line, 3 if line.strip() == "Powered by RIBDIGI ERP" else 8)
+        style_powered_by_line(line, 2 if line.strip() == "Powered by RIBDIGI ERP" else 8)
         for line in (text.splitlines() or [""])
     ]
     page_width = 226 if paper == "80mm" else 164
@@ -349,7 +348,7 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
         add(f"Notes: {payload['notes']}", 9)
     add("", 10)
     add(str(payload.get("print_footer") or DEFAULT_FOOTER_INVOICE), 10)
-    add("Powered by RIBDIGI ERP", 3)
+    add("Powered by RIBDIGI ERP", 2)
 
     logo = None
     if payload.get("logo_key") and payload.get("tenant_id"):

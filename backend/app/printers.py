@@ -781,7 +781,8 @@ def escpos_receipt_bytes(text: str) -> bytes:
     body = (text or "").replace("\r\n", "\n").replace("\n", "\r\n")
     encoded = body.encode("cp437", errors="replace")
     # Normal font (no double-height) so each padded line stays on the paper.
-    return b"\x1b\x40" + b"\x1b\x61\x00" + encoded + b"\r\n\r\n\r\n" + b"\x1d\x56\x00"
+    # ESC J 176 dots is about 22mm at 203 dpi, then the cutter.
+    return b"\x1b\x40" + b"\x1b\x61\x00" + encoded + b"\x1b\x4a\xb0" + b"\x1d\x56\x00"
 
 
 def send_network_receipt(host: str, port: int, text: str) -> None:

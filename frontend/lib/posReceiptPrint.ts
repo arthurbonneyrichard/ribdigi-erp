@@ -19,9 +19,10 @@ function receiptHtmlFromText(text: string) {
     `pre{font-family:'Courier New',ui-monospace,monospace;font-weight:700;` +
     `font-size:13px;line-height:1.15;white-space:pre;margin:0 auto;text-align:center}` +
     `.powered{text-align:center;font-family:'Courier New',ui-monospace,monospace;` +
-    `font-weight:700;font-size:5px;line-height:1.1;margin-top:1mm}</style>` +
+    `font-weight:700;font-size:2.5px;line-height:1.2;margin-top:2mm;white-space:nowrap}` +
+    `.feed{height:22mm}</style>` +
     `</head><body><div class="slip"><pre>${escapePrintText(body.join('\n').trim())}</pre>` +
-    `<div class="powered">Powered by RIBDIGI ERP</div></div></body></html>`
+    `<div class="powered">Powered by RIBDIGI ERP</div><div class="feed"></div></div></body></html>`
   );
 }
 

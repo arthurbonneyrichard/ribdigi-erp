@@ -274,6 +274,7 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     if discount_amount > 0:
         lines.append(_lr("Discount", f"-{_money(discount_amount)}", width))
     lines.append(_lr(f"TOTAL {currency}".strip(), _money(receipt.get("total") or 0), width))
+    lines.append("")
     payments = receipt.get("payments") or []
     if len(payments) > 1:
         lines.append(_center("Payments", width))
@@ -303,7 +304,6 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     for part in _wrap(str(footer), width):
         lines.append(_center(part, width))
     lines.append(_center("Powered by RIBDIGI ERP", width))
-    lines.append("")
     return "\n".join(lines)
 
 
@@ -318,8 +318,9 @@ def _html_pair(left: str, right: str) -> str:
 def render_thermal_html(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     """Centered thermal slip. Item and total columns share one table width.
 
-    Body type stays 13px / 12px. The powered-by line is 60% smaller (5px)
-    and reads Powered by RIBDIGI ERP. Payment references stay off.
+    Body type stays 13px / 12px. The powered-by line is half of the previous
+    5px (2.5px) and reads Powered by RIBDIGI ERP, with 22mm of blank paper
+    under it so the cutter runs after the words. Payment references stay off.
     """
     narrow = str(paper).lower() == "58mm"
     page = "58mm" if narrow else "80mm"
@@ -383,9 +384,10 @@ def render_thermal_html(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     if discount_amount > 0:
         totals.append(_html_pair("Discount", f"-{_money(discount_amount)}"))
     totals.append(_html_pair(f"TOTAL {currency}".strip(), _money(receipt.get("total") or 0)))
+    bits.append(f'<table class="grid">{"".join(totals)}</table>')
+    bits.append('<div class="gap"></div>')
     payments = receipt.get("payments") or []
     if len(payments) > 1:
-        bits.append(f'<table class="grid">{"".join(totals)}</table>')
         bits.append(_html_mid("Payments"))
         pay_rows: list[str] = []
         for pay in payments:
@@ -397,8 +399,11 @@ def render_thermal_html(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     else:
         from app.pos import payment_method_label
 
-        totals.append(_html_pair("Payment", payment_method_label(receipt.get("payment_method")).upper()))
-        bits.append(f'<table class="grid">{"".join(totals)}</table>')
+        bits.append(
+            '<table class="grid">'
+            + _html_pair("Payment", payment_method_label(receipt.get("payment_method")).upper())
+            + "</table>"
+        )
     paid_amount = money_json(receipt.get("paid_amount"))
     balance_due = money_json(receipt.get("balance_due"))
     status = str(receipt.get("payment_status") or "").replace("_", " ")
@@ -418,6 +423,7 @@ def render_thermal_html(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     for part in _wrap(footer, 28 if narrow else 32):
         bits.append(_html_mid(part))
     bits.append('<div class="powered">Powered by RIBDIGI ERP</div>')
+    bits.append('<div class="feed"></div>')
     style = (
         f"@page{{margin:0;size:{page} auto}}"
         "html,body{margin:0;padding:0;width:100%}"
@@ -431,7 +437,10 @@ def render_thermal_html(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
         f"td{{font-weight:700;font-size:{font};padding:0;vertical-align:top}}"
         "td.q{width:3.2em;text-align:right;padding-right:1.5mm;white-space:nowrap}"
         "td.r{text-align:right;white-space:nowrap;padding-left:2mm}"
-        ".powered{text-align:center;font-size:5px;font-weight:700;line-height:1.1;margin-top:1mm}"
+        ".powered{text-align:center;font-size:2.5px;font-weight:700;line-height:1.2;"
+        "margin-top:2mm;white-space:nowrap}"
+        ".gap{height:4mm}"
+        ".feed{height:22mm}"
     )
     return (
         '<!doctype html><html><head><meta charset="utf-8"/>'
@@ -452,7 +461,7 @@ def to_thermal_pdf(receipt: dict[str, Any], *, paper: str = "80mm") -> bytes:
 
     text = render_thermal_text(receipt, paper=paper)
     lines = [
-        style_powered_by_line(line, 3 if line.strip() == "Powered by RIBDIGI ERP" else 8)
+        style_powered_by_line(line, 2 if line.strip() == "Powered by RIBDIGI ERP" else 8)
         for line in (text.splitlines() or [""])
     ]
     page_width = 226 if paper == "80mm" else 164

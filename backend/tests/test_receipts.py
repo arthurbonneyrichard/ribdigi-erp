@@ -66,6 +66,10 @@ def test_thermal_text_contains_totals_and_company():
     assert "Bottled Water" in text
     assert "TOTAL" in text
     assert "22.50" in text
+    total_at = text.find("TOTAL")
+    pay_at = text.find("Payment")
+    assert total_at >= 0 and pay_at > total_at
+    assert "\n\n" in text[total_at:pay_at]
 
 
 def test_receipt_prefers_store_contact_and_location():

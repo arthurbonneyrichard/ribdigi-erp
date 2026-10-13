@@ -28,6 +28,18 @@ LOCKED_SERIES_PREFIXES = {
 _SEQ_RE = re.compile(r"-(\d+)$")
 _PREFIX_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,19}$")
 SERIES_PAD = 4
+# Sales documents print as INV20260001. Other series keep PREFIX-YYYY-NNNN.
+JOINED_SERIES_KINDS = frozenset(
+    {
+        "sales_invoice",
+        "quotation",
+        "sales_order",
+        "sales_return",
+        "credit_note",
+        "customer_payment",
+        "pos_sale",
+    }
+)
 
 # kind -> default prefix + uniqueness model/column (JSON kinds use document_numbering)
 SERIES_KINDS: dict[str, dict[str, Any]] = {
@@ -177,9 +189,28 @@ def format_daily_number(prefix: str, day: str | None = None, seq: int = 1) -> st
     return f"{prefix}{day_part}-{max(int(seq), 1):03d}"
 
 
-def format_series_number(prefix: str, year: int, seq: int, *, pad: int = SERIES_PAD) -> str:
-    """Build INV-2026-0001 style series numbers."""
-    return f"{prefix}-{int(year)}-{max(int(seq), 1):0{int(pad)}d}"
+def format_series_number(
+    prefix: str, year: int, seq: int, *, pad: int = SERIES_PAD, joined: bool = False
+) -> str:
+    """Build INV-2026-0001, or INV20260001 when joined."""
+    body = f"{max(int(seq), 1):0{int(pad)}d}"
+    if joined:
+        return f"{prefix}{int(year)}{body}"
+    return f"{prefix}-{int(year)}-{body}"
+
+
+def _series_seq(ref: str, prefix: str, year: int) -> int | None:
+    """Sequence from PREFIX-YYYY-NNNN or PREFIXYYYYNNNN."""
+    text = str(ref or "")
+    hyphen = f"{prefix}-{int(year)}-"
+    if text.startswith(hyphen):
+        tail = text[len(hyphen) :]
+        return int(tail) if tail.isdigit() else None
+    joined = f"{prefix}{int(year)}"
+    if text.startswith(joined):
+        tail = text[len(joined) :]
+        return int(tail) if tail.isdigit() else None
+    return None
 
 
 def normalize_prefix(prefix: str | None, *, default: str = "INV") -> str:
@@ -280,14 +311,16 @@ def numbering_settings(
         next_seq = 1
     next_seq = max(int(next_seq), 1)
     server_allocated = kind in LOCKED_SERIES_PREFIXES
+    joined = kind in JOINED_SERIES_KINDS
+    pattern = f"{prefix}{{YYYY}}{{NNNN}}" if joined else f"{prefix}-{{YYYY}}-{{NNNN}}"
     return {
         "kind": kind,
         "prefix": prefix,
         "next_number": next_seq,
         "year": year,
         "pad": SERIES_PAD,
-        "pattern": f"{prefix}-{{YYYY}}-{{NNNN}}",
-        "preview": format_series_number(prefix, year, next_seq),
+        "pattern": pattern,
+        "preview": format_series_number(prefix, year, next_seq, joined=joined),
         "server_allocated": server_allocated,
         "editable": not server_allocated,
     }
@@ -377,7 +410,7 @@ async def resolve_pos_company_id(
 async def next_pos_sale_number(
     db: AsyncSession, tenant_id: str, *, company_id: str | None = None
 ) -> str:
-    """Allocate next POS sale reference (POS-YYYY-NNNN) for this tenant/company."""
+    """Allocate next POS sale reference (POSYYYYNNNN) for this tenant/company."""
     return await next_series_document_number(
         db, tenant_id, "pos_sale", company_id=company_id
     )
@@ -506,10 +539,12 @@ async def next_series_document_number(
     *,
     company_id: str | None = None,
 ) -> str:
-    """Allocate next `{prefix}-{YYYY}-{NNNN}` for the given document kind.
+    """Allocate the next document number for the given kind.
 
-    POS/SHIFT prefixes are locked. Sequence is advanced under a tenant row lock
-    and skips numbers that already exist so historic documents are preserved.
+    Sales kinds join the prefix, year, and sequence (INV20260001). Other kinds
+    stay PREFIX-YYYY-NNNN. POS/SHIFT prefixes are locked. Sequence is advanced
+    under a tenant row lock and skips numbers that already exist so historic
+    documents are preserved.
     """
     if kind not in SERIES_KINDS:
         raise HTTPException(status_code=400, detail=f"Unknown numbering kind: {kind}")
@@ -532,24 +567,33 @@ async def next_series_document_number(
         next_seq = 1
         stored_year = year
 
-    like_prefix = f"{prefix}-{year}-"
-    existing_max = _max_seq(
-        await _series_values(
-            db,
-            table=table,
-            column=field_name,
-            tenant_id=tenant_id,
-            like_prefix=like_prefix,
-            company_id=scope_company,
-            extra_eq=extra_eq,
-        ),
-        like_prefix,
-    )
+    like_prefixes = [f"{prefix}-{year}-"]
+    joined = kind in JOINED_SERIES_KINDS
+    if joined:
+        like_prefixes.append(f"{prefix}{year}")
+    existing: list[str] = []
+    for like_prefix in like_prefixes:
+        existing.extend(
+            await _series_values(
+                db,
+                table=table,
+                column=field_name,
+                tenant_id=tenant_id,
+                like_prefix=like_prefix,
+                company_id=scope_company,
+                extra_eq=extra_eq,
+            )
+        )
+    existing_max = 0
+    for ref in existing:
+        found = _series_seq(ref, prefix, year)
+        if found:
+            existing_max = max(existing_max, found)
     next_seq = max(int(next_seq), existing_max + 1, 1)
 
     for _ in range(10_000):
         seq = max(int(next_seq), 1)
-        candidate = format_series_number(prefix, year, seq)
+        candidate = format_series_number(prefix, year, seq, joined=joined)
         next_seq = seq + 1
         _write_state(
             tenant,

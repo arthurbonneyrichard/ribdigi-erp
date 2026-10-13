@@ -67,7 +67,7 @@ class Tenant(Base):
     # e.g. 2/10 net 30 → pct=2, days=10 (0 disables)
     early_pay_discount_pct: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     early_pay_discount_days: Mapped[int] = mapped_column(Integer, default=0)
-    # Sales invoice numbers: {prefix}-{YYYY}-{NNNN} (series resets each calendar year)
+    # Sales invoice numbers: {prefix}{YYYY}{NNNN} (series resets each calendar year)
     sales_invoice_number_prefix: Mapped[str] = mapped_column(String(20), default="INV")
     sales_invoice_number_next: Mapped[int] = mapped_column(Integer, default=1)
     sales_invoice_number_year: Mapped[int | None] = mapped_column(Integer, nullable=True)

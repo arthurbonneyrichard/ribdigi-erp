@@ -68,7 +68,7 @@ async def test_pos_sale_numbering_series(client, db_session):
     assert sale_cfg["server_allocated"] is True
     assert sale_cfg["editable"] is False
     assert sale_cfg["year"] == year
-    assert sale_cfg["pattern"] == "POS-{YYYY}-{NNNN}"
+    assert sale_cfg["pattern"] == "POS{YYYY}{NNNN}"
 
     await _close_open_shift(ac, headers, headers)
 
@@ -90,8 +90,8 @@ async def test_pos_sale_numbering_series(client, db_session):
         },
     )
     assert sale.status_code == 200, sale.text
-    assert sale.json()["data"]["reference"] == f"POS-{year}-0042"
+    assert sale.json()["data"]["reference"] == f"POS{year}0042"
 
     nxt = await ac.get("/api/v1/pos/settings", headers=headers)
     assert nxt.status_code == 200
-    assert nxt.json()["data"]["pos_sale_numbering"]["preview"] == f"POS-{year}-0043"
+    assert nxt.json()["data"]["pos_sale_numbering"]["preview"] == f"POS{year}0043"
