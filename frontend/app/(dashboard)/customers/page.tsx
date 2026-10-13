@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import FormModal from '../../../components/FormModal';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import { api } from '../../../lib/api';
+import { currencySign } from '../../../lib/format';
+import { AmountField } from '../../../components/AmountField';
 import { getMe } from '../../../lib/meCache';
 import {
   matchesCustomerList,
@@ -44,7 +46,8 @@ function canWriteCredit(me: { permissions?: Record<string, string[]> | null } | 
 }
 
 function money(n: number) {
-  return new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+  const body = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+  return `${currencySign()} ${body}`;
 }
 
 function fieldErrorsFromDetail(detail: unknown): Record<string, string> {
@@ -557,7 +560,8 @@ export default function Page() {
           ) : null}
           {canPay ? (
             <div className="list-toolbar" style={{ flexWrap: 'wrap' }}>
-              <input
+              <AmountField
+                inline
                 type="number"
                 min={0}
                 step="0.01"

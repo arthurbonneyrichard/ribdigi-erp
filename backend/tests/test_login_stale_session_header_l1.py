@@ -47,8 +47,11 @@ def test_login_client_omits_stale_session_headers():
     assert "isPublicAuthPath" in api_ts
     assert "path.startsWith('/auth/login')" in api_ts
     assert "unreachableApiMessage" in api_ts
+    assert "Check that the API is running" not in api_ts
+    assert "You are offline, so sign-in cannot finish" in api_ts
+    assert "Pending Point of Sale sales stay on this device" in api_ts
     assert "invalidateMeCache" in login_ts
-    assert "unreachableApiMessage" in login_ts
+    assert "unreachableApiMessage('/auth/login')" in login_ts
     nxt = (ROOT / "frontend/next.config.mjs").read_text(encoding="utf-8")
     assert "source: '/api/v1/:path*'" in nxt
     assert "apiRoot" in api_ts

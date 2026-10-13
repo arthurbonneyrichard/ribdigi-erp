@@ -29,6 +29,26 @@ export function readLastActivity(now = Date.now()): number {
   return now;
 }
 
+export function hasStoredActivity(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const raw = Number(localStorage.getItem(LAST_ACTIVITY_KEY) || 0);
+    return Number.isFinite(raw) && raw > 0;
+  } catch {
+    return false;
+  }
+}
+
+export function clearLastActivity() {
+  resetIdleWriteThrottle();
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(LAST_ACTIVITY_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function bumpLastActivity(now = Date.now()): number {
   if (typeof window === 'undefined') return now;
   if (now - lastWriteMs < ACTIVITY_THROTTLE_MS) return readLastActivity(now);

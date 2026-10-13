@@ -9,6 +9,7 @@ import { industryLabel, normalizeIndustry } from '../lib/industries';
 import { isStoreNetworkNavItem, tenantIsMultiStore, type StoreEntitlementMe } from '../lib/tenantNav';
 import { getMe, invalidateMeCache } from '../lib/meCache';
 import { closeShiftForSignOut, openShiftForSignedInUser } from '../lib/cashierShift';
+import { linkStatusText, type LinkSnapshot } from '../lib/connectivity';
 import { subscribePosDrawerBridge, type PosDrawerBridgeState } from '../lib/posDrawerBridge';
 import { prefetchGet } from '../lib/prefetchCache';
 import { loadUserTheme, writeUserTheme } from '../lib/theme';
@@ -17,6 +18,7 @@ import {
   ACTIVITY_EVENTS,
   LAST_ACTIVITY_KEY,
   bumpLastActivity,
+  hasStoredActivity,
   isIdleExpired,
   readLastActivity,
   resetIdleWriteThrottle,
@@ -823,25 +825,32 @@ function PosDrawerTopControls() {
 }
 
 function PosSellingStatus() {
-  const [online, setOnline] = useState(
-    () => (typeof navigator === 'undefined' ? true : navigator.onLine),
-  );
+  const [snap, setSnap] = useState<LinkSnapshot>({
+    phase: 'online',
+    pending: 0,
+    lastSyncAt: null,
+    syncError: '',
+  });
   useEffect(() => {
-    const sync = () => setOnline(navigator.onLine);
-    sync();
-    window.addEventListener('online', sync);
-    window.addEventListener('offline', sync);
+    let unsub = () => {};
+    let stop = () => {};
+    void import('../lib/connectivity').then((link) => {
+      setSnap(link.getLinkSnapshot());
+      unsub = link.subscribeLink(setSnap);
+      stop = link.startLinkWatch();
+    });
     return () => {
-      window.removeEventListener('online', sync);
-      window.removeEventListener('offline', sync);
+      unsub();
+      stop();
     };
   }, []);
+  const text = linkStatusText(snap);
+  const tone =
+    snap.phase === 'online' ? 'is-online' : snap.phase === 'syncing' ? 'is-syncing' : snap.phase === 'sync_failed' ? 'is-sync-failed' : 'is-offline';
   return (
-    <span
-      className={`pos-sell-mode${online ? ' is-online' : ' is-offline'}`}
-      role="status"
-    >
-      {online ? 'Online selling' : 'Offline selling'}
+    <span className={`pos-sell-mode ${tone}`} role="status" aria-live="polite">
+      <span className="pos-sell-label">{text.label}</span>
+      <span className="pos-sell-detail">{text.detail}</span>
     </span>
   );
 }
@@ -1321,15 +1330,33 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     clearSessionAndRedirect();
   }
 
-  // BR-19.3: auto-logout after tenant-configured idle period (default 30 minutes).
+  // BR-19.3: opening an already-idle session returns to login. Use does not reset that clock.
   useEffect(() => {
     if (typeof window === 'undefined' || !authReady) return;
     const limitMs = idleTimeoutMs(idleMinutes);
-    resetIdleWriteThrottle();
-    bumpLastActivity();
+    const check = () => {
+      const now = Date.now();
+      const last = readLastActivity(now);
+      if (isIdleExpired(limitMs, now, last)) {
+        void idleLogout();
+        return;
+      }
+      setIdleWarn(shouldWarnIdle(limitMs, now, last));
+    };
+    if (!hasStoredActivity()) {
+      resetIdleWriteThrottle();
+      bumpLastActivity();
+    }
+    if (isIdleExpired(limitMs)) {
+      void idleLogout();
+      return;
+    }
     const bump = () => {
       bumpLastActivity();
       setIdleWarn(false);
+    };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') check();
     };
     const opts: AddEventListenerOptions = { capture: true, passive: true };
     ACTIVITY_EVENTS.forEach((name) => document.addEventListener(name, bump, opts));
@@ -1337,18 +1364,16 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       if (ev.key === LAST_ACTIVITY_KEY) setIdleWarn(false);
     };
     window.addEventListener('storage', onStorage);
-    const id = window.setInterval(() => {
-      const now = Date.now();
-      const last = readLastActivity(now);
-      if (isIdleExpired(limitMs, now, last)) {
-        void idleLogout();
-        return;
-      }
-      if (shouldWarnIdle(limitMs, now, last)) setIdleWarn(true);
-    }, 5000);
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', check);
+    window.addEventListener('pageshow', check);
+    const id = window.setInterval(check, 5000);
     return () => {
       ACTIVITY_EVENTS.forEach((name) => document.removeEventListener(name, bump, opts));
       window.removeEventListener('storage', onStorage);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', check);
+      window.removeEventListener('pageshow', check);
       window.clearInterval(id);
     };
   }, [idleMinutes, authReady]);
@@ -1749,11 +1774,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             Shared modules such as finance and reports remain available.
           </p>
         )}
-        {!isPlatformOwner && (
+        {(role === 'company_admin' || role === 'super_admin') && (
           <div className="no-print">
-            <OnboardingChecklist
-              canManage={role === 'company_admin' || role === 'super_admin'}
-            />
+            <OnboardingChecklist canManage />
           </div>
         )}
         {navPending ? <div className="nav-progress" role="progressbar" aria-label="Loading page" /> : null}

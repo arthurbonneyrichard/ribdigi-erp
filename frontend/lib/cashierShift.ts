@@ -88,6 +88,44 @@ export async function openShiftForSignedInUser(preferredStoreId?: string | null)
   }
 }
 
+/** Count the drawer and close the open shift. Pending offline sales stay on this device. */
+export async function countAndCloseOpenShift(
+  actualCash: number,
+  notes: string | null
+): Promise<CashierShift> {
+  if (typeof window === 'undefined') {
+    throw new Error('Cash can only be counted in the browser.');
+  }
+  const current = await api('/pos/sessions/current');
+  const session = current?.data as CashierShift | null;
+  if (!session?.session_id) throw new Error('There is no open shift to count.');
+  try {
+    const offline = await import('./posOffline');
+    const unsynced = (await offline.listQueuedSales()).filter(
+      (rec) =>
+        rec.kind === 'sale' &&
+        ['pending', 'syncing', 'needs_attention'].includes(rec.state) &&
+        String(rec.payload?.session_id || '') === String(session.session_id)
+    );
+    if (unsynced.length) {
+      throw new Error(
+        `Sync ${unsynced.length} offline sale${unsynced.length === 1 ? '' : 's'} before closing this shift.`
+      );
+    }
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Sync ')) throw err;
+    throw new Error('Offline sales could not be checked. Stay online and try the count again.');
+  }
+  const closed = await api(`/pos/sessions/${session.session_id}/close`, {
+    method: 'POST',
+    body: JSON.stringify({
+      actual_cash: actualCash,
+      notes: notes && notes.trim() ? notes.trim() : null,
+    }),
+  });
+  return (closed?.data || session) as CashierShift;
+}
+
 /** Close the open till when the person signs out. Counted cash matches the drawer. */
 export async function closeShiftForSignOut(): Promise<void> {
   if (typeof window === 'undefined') return;

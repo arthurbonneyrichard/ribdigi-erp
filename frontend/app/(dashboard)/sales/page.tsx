@@ -6,7 +6,8 @@ import FormModal from '../../../components/FormModal';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import { api, getAccessToken } from '../../../lib/api';
 import { openReceiptPrintWindow } from '../../../lib/posReceiptPrint';
-import { formatNumber, formatWhen, plainLabel, type FormatPrefs } from '../../../lib/format';
+import { formatMoney, formatNumber, formatWhen, plainLabel, type FormatPrefs } from '../../../lib/format';
+import { AmountField } from '../../../components/AmountField';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import { getMe } from '../../../lib/meCache';
 import { usesWholesaleTrade } from '../../../lib/industries';
@@ -1595,7 +1596,9 @@ export default function Page() {
               Wholesale minimum {products.find((p) => p.id === productId)?.min_order_qty}
             </span>
           ) : null}
-          <input
+          <AmountField
+            inline
+            currency={currency}
             value={unitPrice}
             onChange={(e) => {
               setUseGroupPrice(false);
@@ -1603,7 +1606,6 @@ export default function Page() {
             }}
             placeholder="Price"
             aria-label="Line unit price"
-            style={{ width: 100 }}
           />
           <label style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
             <input
@@ -1629,14 +1631,26 @@ export default function Page() {
             <option value="fixed">Line discount amount</option>
             <option value="percent">Line discount %</option>
           </select>
-          <input
-            value={lineDiscount}
-            onChange={(e) => setLineDiscount(e.target.value)}
-            placeholder="Line discount"
-            aria-label="Line discount"
-            style={{ width: 110 }}
-            title="Line discount amount (tax before discount)"
-          />
+          {lineDiscountType === 'fixed' ? (
+            <AmountField
+              inline
+              currency={currency}
+              value={lineDiscount}
+              onChange={(e) => setLineDiscount(e.target.value)}
+              placeholder="Line discount"
+              aria-label="Line discount"
+              title="Line discount amount (tax before discount)"
+            />
+          ) : (
+            <input
+              value={lineDiscount}
+              onChange={(e) => setLineDiscount(e.target.value)}
+              placeholder="Line discount"
+              aria-label="Line discount"
+              style={{ width: 110 }}
+              title="Line discount amount (tax before discount)"
+            />
+          )}
           <select
             value={headerDiscountType}
             onChange={(e) => setHeaderDiscountType(e.target.value === 'percent' ? 'percent' : 'fixed')}
@@ -1645,14 +1659,26 @@ export default function Page() {
             <option value="fixed">Header discount amount</option>
             <option value="percent">Header discount %</option>
           </select>
-          <input
-            value={headerDiscount}
-            onChange={(e) => setHeaderDiscount(e.target.value)}
-            placeholder="Header discount"
-            aria-label="Header discount"
-            style={{ width: 120 }}
-            title="Document-level discount amount"
-          />
+          {headerDiscountType === 'fixed' ? (
+            <AmountField
+              inline
+              currency={currency}
+              value={headerDiscount}
+              onChange={(e) => setHeaderDiscount(e.target.value)}
+              placeholder="Header discount"
+              aria-label="Header discount"
+              title="Document-level discount amount"
+            />
+          ) : (
+            <input
+              value={headerDiscount}
+              onChange={(e) => setHeaderDiscount(e.target.value)}
+              placeholder="Header discount"
+              aria-label="Header discount"
+              style={{ width: 120 }}
+              title="Document-level discount amount"
+            />
+          )}
           <input
             value={couponCode}
             onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
@@ -1722,7 +1748,7 @@ export default function Page() {
                   <td>{row.customer || 'Walk-in'}</td>
                   <td>{saleWords(row.source)}</td>
                   <td>{saleWords(row.status)}</td>
-                  <td>{formatNumber(row.total, fmt)}</td>
+                  <td>{formatMoney(row.total, fmt, row.currency)}</td>
                   <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                     {row.invoice_id ? (
                       <button
@@ -1829,7 +1855,7 @@ export default function Page() {
                 <td>{q.quotation_number}</td>
                 {showChannel ? <td>{channelLabel(q.sales_channel)}</td> : null}
                 <td>{saleWords(q.status)}</td>
-                <td>{formatNumber(q.total_amount, fmt)}</td>
+                <td>{formatMoney(q.total_amount, fmt, q.currency)}</td>
                 <td>{q.valid_until ? formatWhen(q.valid_until, fmt) : '—'}</td>
                 {showQuoteReject ? <td>{q.rejection_reason || '—'}</td> : null}
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
@@ -1982,7 +2008,7 @@ export default function Page() {
                   {o.delivery_date ? formatWhen(o.delivery_date, fmt) : '—'}
                   {o.delivery_address ? ` · ${o.delivery_address}` : ''}
                 </td>
-                <td>{formatNumber(o.total_amount, fmt)}</td>
+                <td>{formatMoney(o.total_amount, fmt, o.currency)}</td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(o)} aria-label={`View sales order ${o.id}`}>View</button>
                   {o.status === 'draft' && (
@@ -2160,8 +2186,8 @@ export default function Page() {
                 {showChannel ? <td>{channelLabel(inv.sales_channel)}</td> : null}
                 <td>{saleWords(inv.status)}</td>
                 {showStore ? <td>{storeName(inv.store_id) || '—'}</td> : null}
-                <td>{formatNumber(inv.total_amount, fmt)}</td>
-                <td>{formatNumber(inv.paid_amount, fmt)}</td>
+                <td>{formatMoney(inv.total_amount, fmt, inv.currency)}</td>
+                <td>{formatMoney(inv.paid_amount, fmt, inv.currency)}</td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(inv)} aria-label={`View sales invoice ${inv.id}`}>View</button>
                   {inv.status === 'draft' && (
@@ -2237,14 +2263,15 @@ export default function Page() {
                   )}
                   {['posted', 'sent', 'partial', 'overdue'].includes(inv.status) && (
                     <>
-                      <input
+                      <AmountField
+                        inline
+                        currency={inv.currency}
                         value={selected?.id === inv.id ? payAmount : ''}
                         onChange={(e) => {
                           setSelected(inv);
                           setPayAmount(e.target.value);
                         }}
                         placeholder="Pay"
-                        style={{ width: 80 }}
                         aria-label={`Sales invoice pay amount ${inv.invoice_number || inv.id}`}
                       />
                       <button
@@ -2286,7 +2313,11 @@ export default function Page() {
               <option value="percent">Percent</option>
               <option value="fixed">Fixed</option>
             </select>
-            <input value={newCouponAmount} onChange={(e) => setNewCouponAmount(e.target.value)} placeholder="Amount" aria-label="New coupon amount" />
+            {newCouponType === 'fixed' ? (
+              <AmountField value={newCouponAmount} onChange={(e) => setNewCouponAmount(e.target.value)} placeholder="Amount" aria-label="New coupon amount" />
+            ) : (
+              <input value={newCouponAmount} onChange={(e) => setNewCouponAmount(e.target.value)} placeholder="Percent" aria-label="New coupon amount" />
+            )}
             <input value={newCouponMin} onChange={(e) => setNewCouponMin(e.target.value)} placeholder="Min spend" aria-label="New coupon min spend" />
             <button
               type="button"
@@ -2335,8 +2366,8 @@ export default function Page() {
                     <td>{c.code}</td>
                     <td>{c.name}</td>
                     <td>{saleWords(c.discount_type)}</td>
-                    <td>{formatNumber(c.amount, fmt)}</td>
-                    <td>{formatNumber(c.min_spend, fmt)}</td>
+                    <td>{c.discount_type === 'percent' ? `${formatNumber(c.amount, fmt)}%` : formatMoney(c.amount, fmt)}</td>
+                    <td>{formatMoney(c.min_spend, fmt)}</td>
                     <td>{c.is_active ? 'Yes' : 'No'}</td>
                     <td>{c.redemption_count ?? 0}</td>
                   </tr>
@@ -2477,10 +2508,10 @@ export default function Page() {
                 <td>{saleWords(r.status)}</td>
                 <td>
                   {r.settlement_method ? saleWords(r.settlement_method) : '—'}
-                  {r.refunded_amount > 0 ? ` · ${formatNumber(r.refunded_amount, fmt)}` : ''}
+                  {r.refunded_amount > 0 ? ` · ${formatMoney(r.refunded_amount, fmt, r.currency)}` : ''}
                 </td>
                 <td>{saleWords(r.reason)}</td>
-                <td>{formatNumber(r.total_amount, fmt)}</td>
+                <td>{formatMoney(r.total_amount, fmt, r.currency)}</td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <button onClick={() => setSelected(r)} aria-label={`View sales return ${r.id}`}>View</button>
                   {r.status === 'draft' && (
@@ -2631,22 +2662,22 @@ export default function Page() {
                   <td>{prod?.sku || '—'}</td>
                   <td>{formatNumber(it.quantity, fmt)}</td>
                   {showFilled ? <td>{it.qty_fulfilled != null ? formatNumber(it.qty_fulfilled, fmt) : '—'}</td> : null}
-                  <td>{formatNumber(it.unit_price, fmt)}</td>
+                  <td>{formatMoney(it.unit_price, fmt, selected?.currency)}</td>
                   <td>{it.tax_rate != null ? `${formatNumber(it.tax_rate, fmt)}%` : '—'}</td>
                   <td>
-                    {formatNumber(it.discount ?? 0, fmt)}
+                    {it.discount_type === 'percent' ? formatNumber(it.discount ?? 0, fmt) : formatMoney(it.discount ?? 0, fmt, selected?.currency)}
                     {it.discount_type === 'percent' ? ` (${formatNumber(it.discount_percent, fmt)}%)` : ''}
                   </td>
                   {showCondition ? <td>{it.condition ? saleWords(it.condition) : '—'}</td> : null}
                   <td>
-                    {formatNumber(it.line_tax ?? 0, fmt)}
+                    {formatMoney(it.line_tax ?? 0, fmt, selected?.currency)}
                     {(it.tax_components || []).length
                       ? ` (${(it.tax_components || [])
-                          .map((c: any) => `${c.name || saleWords(c.code)} ${formatNumber(c.amount, fmt)}`)
+                          .map((c: any) => `${c.name || saleWords(c.code)} ${formatMoney(c.amount, fmt, selected?.currency)}`)
                           .join(', ')})`
                       : ''}
                   </td>
-                  <td>{formatNumber(it.line_total, fmt)}</td>
+                  <td>{formatMoney(it.line_total, fmt, selected?.currency)}</td>
                 </tr>
                 );
               })}
@@ -2700,22 +2731,22 @@ export default function Page() {
           <div className="grid" style={{ marginTop: 12 }}>
             <div className="card">
               <div className="muted">Subtotal</div>
-              <div className="kpi">{formatNumber(selected.subtotal ?? 0, fmt)}</div>
+              <div className="kpi">{formatMoney(selected.subtotal ?? 0, fmt, selected.currency)}</div>
             </div>
             <div className="card">
               <div className="muted">Tax</div>
-              <div className="kpi">{formatNumber(selected.tax_amount ?? 0, fmt)}</div>
+              <div className="kpi">{formatMoney(selected.tax_amount ?? 0, fmt, selected.currency)}</div>
             </div>
             <div className="card">
               <div className="muted">Discount</div>
               <div className="kpi">
-                {formatNumber(selected.discount_amount ?? 0, fmt)}
+                {selected.discount_type === 'percent' ? formatNumber(selected.discount_amount ?? 0, fmt) : formatMoney(selected.discount_amount ?? 0, fmt, selected.currency)}
                 {selected.discount_type === 'percent' ? ` (${formatNumber(selected.discount_percent, fmt)}%)` : ''}
               </div>
             </div>
             <div className="card">
               <div className="muted">Total</div>
-              <div className="kpi">{formatNumber(selected.total_amount ?? 0, fmt)}</div>
+              <div className="kpi">{formatMoney(selected.total_amount ?? 0, fmt, selected.currency)}</div>
             </div>
           </div>
           {(selected.tax_breakdown?.by_rate || []).length > 0 && (
@@ -2734,8 +2765,8 @@ export default function Page() {
                   {selected.tax_breakdown.by_rate.map((r: any, idx: number) => (
                     <tr key={`${r.tax_rate}-${idx}`}>
                       <td>{formatNumber(r.tax_rate, fmt)}%</td>
-                      <td>{formatNumber(r.taxable, fmt)}</td>
-                      <td>{formatNumber(r.tax, fmt)}</td>
+                      <td>{formatMoney(r.taxable, fmt, selected.currency)}</td>
+                      <td>{formatMoney(r.tax, fmt, selected.currency)}</td>
                       <td>{r.is_reverse_charge ? 'Reverse charge' : 'Standard'}</td>
                     </tr>
                   ))}
@@ -2743,7 +2774,7 @@ export default function Page() {
               </table>
               {selected.reverse_charge_tax > 0 && (
                 <p className="muted">
-                  Reverse-charge tax: {formatNumber(selected.reverse_charge_tax, fmt)}
+                  Reverse-charge tax: {formatMoney(selected.reverse_charge_tax, fmt, selected.currency)}
                   {selected.is_reverse_charge ? ' · This document is reverse charge' : ''}
                 </p>
               )}

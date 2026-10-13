@@ -394,6 +394,52 @@ async def test_user_delete_denies_self_last_admin_platform_and_other_tenant(clie
     assert mgr_denied.status_code == 403
 
 
+@pytest.mark.asyncio
+async def test_last_company_admin_cannot_be_deactivated_or_reassigned(client):
+    ac, seed = client
+    headers = await _admin_headers(ac, seed)
+    admin_id = seed["admin1"].id
+
+    deactivated = await ac.delete(f"/api/v1/users/{admin_id}", headers=headers)
+    assert deactivated.status_code == 400, deactivated.text
+    assert "last active company admin" in deactivated.json()["detail"]
+
+    demoted = await ac.patch(
+        f"/api/v1/users/{admin_id}",
+        headers=headers,
+        json={"role": "cashier"},
+    )
+    assert demoted.status_code == 400, demoted.text
+    assert "last active company admin" in demoted.json()["detail"]
+
+    still = await ac.get(f"/api/v1/users/{admin_id}", headers=headers)
+    assert still.status_code == 200, still.text
+    assert still.json()["data"]["role"] == "company_admin"
+    assert still.json()["data"]["is_active"] is True
+
+    created = await ac.post(
+        "/api/v1/users",
+        headers=headers,
+        json={
+            "email": "second-admin@alpha.example.com",
+            "full_name": "Second Admin",
+            "password": "SecurePass123!",
+            "role": "company_admin",
+        },
+    )
+    assert created.status_code == 200, created.text
+    second_id = created.json()["data"]["id"]
+    moved = await ac.patch(
+        f"/api/v1/users/{admin_id}",
+        headers=headers,
+        json={"role": "accountant"},
+    )
+    assert moved.status_code == 200, moved.text
+    assert moved.json()["data"]["role"] == "accountant"
+    blocked = await ac.delete(f"/api/v1/users/{second_id}", headers=headers)
+    assert blocked.status_code == 400, blocked.text
+
+
 def test_user_delete_ui_confirm_wired():
     from pathlib import Path
 

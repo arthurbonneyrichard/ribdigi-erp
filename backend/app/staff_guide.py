@@ -12,7 +12,7 @@ from app.report_export import to_pdf
 
 _INDUSTRY_STEPS: dict[str, list[str]] = {
     "retail": [
-        "Sell at POS. Cash, card, wallet, Mobile Money, gift card, and loyalty are recorded payments.",
+        "Sell at POS. Cash, card, wallet, and Mobile Money are recorded payments. A gift card or loyalty points reduce stored value, not the cash drawer. A named customer earns 1% of the sale as points.",
         "Mobile Money stores the amount and reference. It does not collect funds.",
         "Keep stock on the inventory pages. Low stock and product lists are the retail catalog.",
         "Customer credit is money still owed. Record a sale, then record a payment when cash arrives.",

@@ -52,9 +52,16 @@ test('sign-in errors stay distinct from connection and session copy', async () =
   );
   assert.equal(formatApiError({}, 404), 'Not found.');
   const offline = unreachableApiMessage();
-  assert.match(offline, /Cannot reach the server/i);
+  assert.match(offline, /server did not respond/i);
+  assert.match(offline, /Pending Point of Sale sales stay on this device/i);
+  assert.doesNotMatch(offline, /API is running/i);
+  assert.doesNotMatch(offline, /workspace slug/i);
+  const signIn = unreachableApiMessage('/auth/login');
+  assert.match(signIn, /Sign-in could not reach the server/i);
+  assert.match(signIn, /Check the connection, then try again/i);
   assert.notEqual(offline, formatApiError({}, 500, '/auth/login'));
   assert.notEqual(offline, formatApiError({ detail: 'Invalid credentials' }, 401, '/auth/login'));
+  assert.notEqual(signIn, formatApiError({}, 500, '/auth/login'));
 });
 
 test('browser sign-in posts to same-origin /api/v1', async () => {

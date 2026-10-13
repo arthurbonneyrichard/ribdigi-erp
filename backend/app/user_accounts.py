@@ -11,6 +11,39 @@ from app import models as m
 from app.rbac import is_platform_role
 
 
+async def require_remaining_company_admin(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user: m.User,
+    next_role: str | None = None,
+    next_active: bool | None = None,
+    action: str = "remove",
+) -> None:
+    """Block a change that would leave the company with no active company admin."""
+    role_after = user.role if next_role is None else next_role
+    active_after = bool(user.is_active) if next_active is None else bool(next_active)
+    stays_admin = role_after == "company_admin" and active_after
+    was_admin = user.role == "company_admin" and bool(user.is_active)
+    if stays_admin or not was_admin:
+        return
+    other = (
+        await db.execute(
+            select(m.User.id).where(
+                m.User.tenant_id == tenant_id,
+                m.User.id != user.id,
+                m.User.role == "company_admin",
+                m.User.is_active.is_(True),
+            ).limit(1)
+        )
+    ).first()
+    if other is None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot {action} the last active company admin",
+        )
+
+
 async def delete_tenant_user(
     db: AsyncSession,
     *,
@@ -33,22 +66,13 @@ async def delete_tenant_user(
             status_code=400,
             detail="Delete platform staff from the platform Staff directory",
         )
-    if user.role == "company_admin":
-        other_admins = (
-            await db.execute(
-                select(m.User).where(
-                    m.User.tenant_id == tenant_id,
-                    m.User.id != user.id,
-                    m.User.role == "company_admin",
-                    m.User.is_active.is_(True),
-                )
-            )
-        ).scalars().all()
-        if not other_admins:
-            raise HTTPException(
-                status_code=400,
-                detail="Cannot delete the last active company admin",
-            )
+    await require_remaining_company_admin(
+        db,
+        tenant_id=tenant_id,
+        user=user,
+        next_active=False,
+        action="delete",
+    )
 
     snapshot = {
         "id": user.id,

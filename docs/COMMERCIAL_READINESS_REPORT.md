@@ -1,6 +1,38 @@
 # RIBDIGI ERP COMMERCIAL READINESS REPORT
 
-**Date:** 2026-09-17 (historical scorecard). **2026-10-05 addendum** is the latest result. The 2026-10-04 addendum stays below the scorecard.
+**Date:** 2026-09-17 (historical scorecard). **2026-10-13 addendum** is the latest retail result. Earlier addenda stay below.
+
+## 2026-10-13 addendum (retail count-and-close)
+
+**Ready for market. Not certified.** Retail can be sold as a controlled release from this tree. Certification still needs the checks listed below. Offline scope stays offline POS. `offline_complete_claimed` stays false.
+
+### What changed
+
+- Shift report on POS now records counted cash and closes that open shift. A difference requires a short note. Pending offline sales for that shift block the close. Sign-out still closes at the expected drawer amount.
+- Gift-card and loyalty redemption no longer debit cash account 1000. A gift card posts to liability 2150. Loyalty points post to liability 2160. Issuing a card debits expense 6100 because that screen does not collect money. A named customer earns 1% of the sale, and that award debits expense 6110 and credits 2160. A walk-in earns no points.
+
+### Verified in this pass
+
+- `tests/test_pos_cash_movements.py`: **3 passed** in 8.20s (cash in/out variance, cashier cannot close another shift, counted-cash control present and sign-out still uses expected cash). Frontend typecheck was run separately.
+- The 120-case retail checklist is not in this repository. It was not run.
+- Signed-in browser walkthrough was not run. No password was entered.
+- Isolated Postgres restore is recorded in the later checks below.
+
+### 2026-10-13 later checks
+
+- Unreachable API copy now says the device is offline or the server did not respond, and it tells the user to reconnect. Sign-in still cannot succeed while disconnected. Pending Point of Sale sales stay on the device until sync succeeds.
+- Arithmetic fixture on a disposable test database: opening stock 20, unit cost 60, tax-exclusive price 100, tax 10%, quantity 2. Result: total 220, subtotal 200, tax 20, cash debit 220, revenue credit 200, tax credit 20, COGS debit 120, inventory credit 120, stock left 18, one journal. Repeating the same `client_request_id` returned the original sale. `tests/test_retail_pos_arithmetic_fixture.py`: **1 passed** in 6.00s. `tests/test_pos_sale_client_request_id_idempotent.py` passed in the same session. The 10% rate is a test fixture, not tax guidance.
+- Last active company admin: soft deactivate, role change, and delete are refused while that person is the only active company admin. After a second company admin exists, the original admin can be reassigned. `tests/test_users_roles.py` plus `tests/test_users_delete_account_r1.py`: **6 passed** in 20.67s.
+- Isolation, store caps, offline POS sync, and subscription billing: **57 passed** in 178.39s (`test_tenant_isolation_matrix.py`, `test_subscription_store_limits_r1.py`, `test_offline_pos_isolation.py`, `test_saas_billing_r1.py`).
+- Local Postgres restore rehearsal: `pg_dump` of `ribdigi_erp` restored into a new database `ribdigi_restore_drill` in 16.57s. Counts matched the source (tenants 5, users 7, products 3, transactions 35, journal entries 36, stock movements 42). Every company had zero unbalanced journals. The drill database was dropped. The app database was not overwritten. This was a local copy, not a production backup file.
+- Sales documents, cashier POS limits, and stores: **12 passed** in 8.69s (`test_sales_docs.py`, `test_sales.py`, `test_cashier_pos_only.py`, `test_stores.py`).
+- Gift cards and loyalty: a named sale earns 1% and posts liability 2160, not cash. POS collects **Gift card code** only when the tender is a gift card and sends that code as the tender reference. There is no general payment-reference box. Gift-card code, loyalty earn, and cash-routing checks: **5 passed** in 14.15s.
+
+### Not certified until
+
+- Signed-in single-store and multi-store retail walkthrough beyond this one POS sale.
+- Live site was not tested.
+- One local offline POS sale was walked on company `offline-drill-oct13`: prepare online, disconnect, sell cash, reload, reconnect, sync. Sale, stock, balanced journal, tender, and open shift totals matched. Offline mode is not certified.
 
 ## 2026-10-05 addendum (local production tree)
 

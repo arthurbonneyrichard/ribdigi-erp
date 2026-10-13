@@ -6,6 +6,7 @@ import FormModal from '../../../components/FormModal';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import AttachmentPreview from '../../../components/AttachmentPreview';
 import { api, getAccessToken } from '../../../lib/api';
+import { AmountField } from '../../../components/AmountField';
 import { getMe } from '../../../lib/meCache';
 import { useStoreContext } from '../../../lib/storeContext';
 import { tenantIsMultiStore } from '../../../lib/tenantNav';
@@ -2112,7 +2113,8 @@ export default function Page() {
             placeholder="Quantity"
             aria-label="Purchase order quantity"
           />
-          <input
+          <AmountField
+            inline
             value={unitPrice}
             onChange={(e) => setUnitPrice(e.target.value)}
             placeholder="Unit price"
@@ -2577,7 +2579,8 @@ export default function Page() {
                     placeholder="Quantity"
                     aria-label="PO amend quantity"
                   />
-                  <input
+                  <AmountField
+                    inline
                     value={amendPrice}
                     onChange={(e) => setAmendPrice(e.target.value)}
                     placeholder="Unit price"
@@ -3147,7 +3150,8 @@ export default function Page() {
                     />
                   </td>
                   <td>
-                    <input
+                    <AmountField
+                      inline
                       value={line.unitCost}
                       onChange={(e) =>
                         setBillLines((rows) =>

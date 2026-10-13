@@ -184,7 +184,7 @@ async def create_payment_notice(
     await db.commit()
     return _env(
         loyalty_gift_svc.notice_payload(row),
-        "Payment information recorded. No card funds were captured.",
+        "Payment notice saved.",
     )
 
 

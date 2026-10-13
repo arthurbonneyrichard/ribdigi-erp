@@ -23,6 +23,8 @@ DEFAULT_ACCOUNTS = [
     ("2000", "Accounts Payable", "liability", False, False),
     ("2015", "Cheques Payable", "liability", False, False),
     ("2100", "Tax Payable", "liability", False, False),
+    ("2150", "Gift Cards Outstanding", "liability", False, False),
+    ("2160", "Loyalty Points Outstanding", "liability", False, False),
     ("3000", "Owner's Equity", "equity", False, False),
     ("4000", "Sales Revenue", "income", False, False),
     ("4100", "Sales Discounts", "expense", False, False),
@@ -31,6 +33,8 @@ DEFAULT_ACCOUNTS = [
     ("4400", "Other Income", "income", False, False),
     ("5000", "Cost of Goods Sold", "expense", False, False),
     ("6000", "Operating Expenses", "expense", False, False),
+    ("6100", "Gift Card Promotions", "expense", False, False),
+    ("6110", "Loyalty Promotions", "expense", False, False),
 ]
 
 
@@ -93,10 +97,17 @@ def supplier_payment_credit_gl(payment_method: str | None) -> tuple[str, str]:
 
 
 def pos_debit_account_for_payment_method(payment_method: str | None) -> tuple[str, str]:
-    """POS receivable side: cash till, bank (card/etc), cheques clearing, or AR for credit sales."""
-    method = (payment_method or "cash").strip().lower()
+    """POS receivable side: cash till, bank (card/etc), cheques clearing, or AR for credit sales.
+
+    Gift cards and loyalty points are stored value. They debit liability, never till cash.
+    """
+    method = (payment_method or "cash").strip().lower().replace("-", "_").replace(" ", "_")
     if method == "credit":
         return "1100", "AR"
+    if method in {"gift_card", "giftcard"}:
+        return "2150", "Gift Cards Outstanding"
+    if method == "loyalty":
+        return "2160", "Loyalty Points Outstanding"
     return liquid_gl_for_payment_method(method)
 
 

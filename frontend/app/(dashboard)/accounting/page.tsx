@@ -4,16 +4,18 @@ import { useEffect, useState } from 'react';
 import AttachmentPreview from '../../../components/AttachmentPreview';
 import FormModal from '../../../components/FormModal';
 import { api, getAccessToken } from '../../../lib/api';
-import { formatWhen, plainLabel } from '../../../lib/format';
+import { currencySign, formatWhen, plainLabel } from '../../../lib/format';
+import { AmountField } from '../../../components/AmountField';
 import { useStoreContext } from '../../../lib/storeContext';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
-function fmtMoney(n: number, _currency?: string) {
+function fmtMoney(n: number, currency?: string) {
   const v = Number(n);
   if (!Number.isFinite(v)) return '—';
-  return v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const body = v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `${currencySign(currency)} ${body}`;
 }
 
 const JOURNAL_SOURCE_LABEL: Record<string, string> = {
@@ -1330,7 +1332,8 @@ export default function Page() {
                         </select>
                       </td>
                       <td>
-                        <input
+                        <AmountField
+                          inline
                           value={line.debit}
                           onChange={(e) =>
                             setManualLines((prev) =>
@@ -1340,12 +1343,12 @@ export default function Page() {
                             )
                           }
                           placeholder="0"
-                          style={{ width: 100 }}
                           aria-label={`Journal line ${idx + 1} debit`}
                         />
                       </td>
                       <td>
-                        <input
+                        <AmountField
+                          inline
                           value={line.credit}
                           onChange={(e) =>
                             setManualLines((prev) =>
@@ -1355,7 +1358,6 @@ export default function Page() {
                             )
                           }
                           placeholder="0"
-                          style={{ width: 100 }}
                           aria-label={`Journal line ${idx + 1} credit`}
                         />
                       </td>
@@ -1448,12 +1450,12 @@ export default function Page() {
                       </option>
                     ))}
                   </select>
-                  <input
+                  <AmountField
+                    inline
                     value={coaOpenAmount}
                     onChange={(e) => setCoaOpenAmount(e.target.value)}
                     placeholder="Amount"
                     aria-label="Opening balance amount"
-                    style={{ width: 120 }}
                   />
                   <button type="button" aria-label="Add opening balance line" onClick={addCoaOpenLine}>
                     Add line
@@ -2120,12 +2122,12 @@ export default function Page() {
                   ))}
                 </select>
               )}
-              <input
+              <AmountField
+                inline
                 value={xferAmount}
                 onChange={(e) => setXferAmount(e.target.value)}
                 placeholder="Amount"
                 aria-label="Cash transfer amount"
-                style={{ width: 100 }}
               />
               <input
                 value={xferRef}
@@ -2257,19 +2259,19 @@ export default function Page() {
                 title="Statement line txn date (YYYY-MM-DD)"
                 aria-label="Statement line txn date"
               />
-              <input
+              <AmountField
                 value={opening}
                 onChange={(e) => setOpening(e.target.value)}
                 placeholder="Opening"
                 aria-label="Statement opening balance"
               />
-              <input
+              <AmountField
                 value={closing}
                 onChange={(e) => setClosing(e.target.value)}
                 placeholder="Closing"
                 aria-label="Statement closing balance"
               />
-              <input
+              <AmountField
                 value={lineAmount}
                 onChange={(e) => setLineAmount(e.target.value)}
                 placeholder="Line amount (+in/−out)"

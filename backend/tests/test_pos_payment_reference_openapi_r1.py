@@ -55,6 +55,8 @@ def test_pos_payment_reference_ui_and_docs():
     assert 'aria-label="POS payment reference"' not in page
     assert "paymentReference" not in page
     assert "Payment reference" not in page
+    assert 'aria-label="Gift card code"' in page
+    assert "payment_method: 'gift_card'" in page
     assert "aria-label={payAsReprint ? 'Reprint last receipt' : 'Charge'}" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "PosPaymentLine.reference" in agents

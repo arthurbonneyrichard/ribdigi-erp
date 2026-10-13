@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../../../lib/api';
 import { formatNumber, formatWhen, plainLabel } from '../../../../lib/format';
+import { AmountField } from '../../../../components/AmountField';
 import { getMe } from '../../../../lib/meCache';
 import {
   canAssignSubscription,
@@ -572,8 +573,9 @@ export default function PlatformBillingPage() {
             </label>
             <label>
               <span>Amount</span>
-              <input
+              <AmountField
                 aria-label="Subscription amount"
+                currency={selected?.currency}
                 inputMode="decimal"
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
@@ -723,8 +725,9 @@ export default function PlatformBillingPage() {
               </label>
               <label>
                 <span>Amount</span>
-                <input
+                <AmountField
                   aria-label="Package amount"
+                  currency={packageCurrency}
                   inputMode="decimal"
                   value={packageAmount}
                   onChange={(event) => setPackageAmount(event.target.value)}

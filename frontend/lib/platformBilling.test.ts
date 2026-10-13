@@ -23,8 +23,8 @@ test('subscription term uses short labels', () => {
 
 test('subscription amount keeps the currency and a blank price blank', () => {
   assert.equal(subscriptionAmountLabel(null, 'GHS', ''), '—');
-  assert.equal(subscriptionAmountLabel(499, 'ghs', '499.00'), 'GHS 499.00');
-  assert.equal(subscriptionAmountLabel(0, null, '0.00'), 'GHS 0.00');
+  assert.equal(subscriptionAmountLabel(499, 'ghs', '499.00'), 'GH₵ 499.00');
+  assert.equal(subscriptionAmountLabel(0, null, '0.00'), 'GH₵ 0.00');
 });
 
 test('assigned amount uses the company number format', () => {

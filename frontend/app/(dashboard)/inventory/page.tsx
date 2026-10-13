@@ -8,6 +8,7 @@ import { getMe } from '../../../lib/meCache';
 import { getPrefetched, peekPrefetch } from '../../../lib/prefetchCache';
 import { pageLoadStarted } from '../../../lib/navTiming';
 import PageSkeleton from '../../../components/PageSkeleton';
+import { AmountField } from '../../../components/AmountField';
 import { useStoreContext } from '../../../lib/storeContext';
 import { isHotelIndustry, tenantIsMultiStore } from '../../../lib/tenantNav';
 import { normalizeIndustry, usesStoreStockTransfers, usesWholesaleTrade } from '../../../lib/industries';
@@ -4045,7 +4046,7 @@ export default function Page() {
             ) : null}
           <div className="product-price-field">
                       <label className="product-price-label" htmlFor="add-product-actual-price">Actual price</label>
-                      <input
+                      <AmountField
                         id="add-product-actual-price"
                         type="number"
                         min="0"
@@ -4059,7 +4060,7 @@ export default function Page() {
                     </div>
           <div className="product-price-field product-price-field--selling">
                       <label className="product-price-label" htmlFor="add-product-selling-price">Selling price</label>
-                      <input
+                      <AmountField
                         id="add-product-selling-price"
                         type="number"
                         min="0"
@@ -4324,7 +4325,7 @@ export default function Page() {
                       </div>
                       <div className="field">
                         <label className="muted">Unit price</label>
-                        <input
+                        <AmountField
                           value={tierPrice}
                           onChange={(e) => setTierPrice(e.target.value)}
                           aria-label="Price tier unit price"
@@ -4468,11 +4469,11 @@ export default function Page() {
                     </div>
                     <div className="field">
                     <label className="muted">Actual price</label>
-                    <input value={editCost} onChange={(e) => setEditCost(e.target.value)} aria-label="Edit product cost price" />
+                    <AmountField value={editCost} onChange={(e) => setEditCost(e.target.value)} aria-label="Edit product cost price" />
                     </div>
                     <div className="field">
                     <label className="muted">Selling price</label>
-                    <input value={editPrice} onChange={(e) => setEditPrice(e.target.value)} aria-label="Edit product selling price" />
+                    <AmountField value={editPrice} onChange={(e) => setEditPrice(e.target.value)} aria-label="Edit product selling price" />
                     </div>
                     {wholesaleOps ? (
                     <div className="field">
@@ -5424,8 +5425,8 @@ export default function Page() {
                         <button type="button" onClick={() => openVariantEdit(v)} aria-label={`Edit ${v.name}`}>
                           Edit
                         </button>
-                        <input readOnly value={v.selling_price ?? ''} aria-label={`Variant selling price ${v.name || v.id}`} />
-                        <input readOnly value={v.cost_price ?? ''} aria-label={`Variant cost price ${v.name || v.id}`} />
+                        <AmountField inline readOnly value={v.selling_price ?? ''} aria-label={`Variant selling price ${v.name || v.id}`} />
+                        <AmountField inline readOnly value={v.cost_price ?? ''} aria-label={`Variant cost price ${v.name || v.id}`} />
                         <div className="cat-menu">
                           <button
                             type="button"
@@ -5558,13 +5559,15 @@ export default function Page() {
                       aria-label="Variant dosage"
                       title="Optional dosage (1–80 chars; letters/digits required)"
                     />
-                    <input
+                    <AmountField
+                      inline
                       value={variantCost}
                       onChange={(e) => setVariantCost(e.target.value)}
                       placeholder="Cost (optional)"
                       aria-label="Variant cost price"
                     />
-                    <input
+                    <AmountField
+                      inline
                       value={variantPrice}
                       onChange={(e) => setVariantPrice(e.target.value)}
                       placeholder="Price (optional)"
@@ -6073,7 +6076,8 @@ export default function Page() {
                     </option>
                   ))}
                 </select>
-                <input
+                <AmountField
+                  inline
                   value={openingUnitCost}
                   onChange={(e) => setOpeningUnitCost(e.target.value)}
                   placeholder={`Unit cost (default ${selected?.cost_price ?? 0})`}

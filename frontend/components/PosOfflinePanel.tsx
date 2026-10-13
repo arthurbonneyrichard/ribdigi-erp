@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   flushOfflineQueue,
   formatCacheAge,
-  formatTimeLeft,
   getCachedCatalogMeta,
   getLastSyncAt,
   getOfflineAuthEnvelope,
@@ -26,6 +25,7 @@ import {
   type QueueSummary,
   type QueuedSale,
 } from '../lib/posOffline';
+import { noteQueue, noteSyncEnd, noteSyncStart } from '../lib/connectivity';
 import { formatWhen, plainLabel } from '../lib/format';
 import { useCompanyFormat } from '../lib/useCompanyFormat';
 
@@ -119,6 +119,7 @@ export default function PosOfflinePanel({
       setRecords(recs.slice().reverse());
       setLastSyncAt(last);
       setCatalogAt(meta?.cached_at || null);
+      noteQueue(sum.pending + sum.syncing + sum.needs_attention, last);
       onStatus({ envelope: env, summary: sum, lastSyncAt: last, provisional });
     } catch {
       /* IndexedDB unavailable: panel shows nothing queued */
@@ -145,16 +146,25 @@ export default function PosOfflinePanel({
   const syncNow = useCallback(
     async (opts?: { force?: boolean; quiet?: boolean }) => {
       if (syncLock.current || !tenantId || !userId) return;
-      if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        if (!opts?.quiet) onError('You are offline. Queued sales are kept and will sync when the connection returns.');
-        return;
-      }
       syncLock.current = true;
       setBusy('sync');
+      noteSyncStart();
+      let problem = '';
       try {
+        const { probeApi } = await import('../lib/connectivity');
+        const phase = await probeApi();
+        if (phase !== 'online') {
+          problem =
+            phase === 'offline'
+              ? 'No internet connection. Queued sales stay on this device.'
+              : 'The server did not respond. Queued sales stay on this device.';
+          if (!opts?.quiet) onError(problem);
+          return;
+        }
         let res = await flushOfflineQueue(api, { tenant_id: tenantId, user_id: userId, force: opts?.force });
         if (res.authRequired) {
-          onError('Sign in again to sync. Your queued sales are kept on this device.');
+          problem = 'Sign in again to sync. Your queued sales are kept on this device.';
+          onError(problem);
           return;
         }
         const status = await refreshOfflineStatus(api, { tenant_id: tenantId, user_id: userId }).catch(() => null);
@@ -179,11 +189,14 @@ export default function PosOfflinePanel({
         if (parts.length && !opts?.quiet) onMessage(`Offline queue: ${parts.join(' · ')}.`);
         else if (res.synced) onMessage(`Synced ${res.synced} offline record(s).`);
         if (res.needsAttention) {
-          onError(`${res.needsAttention} offline record(s) need review. Nothing was deleted; see Offline queue.`);
+          problem = `${res.needsAttention} offline record(s) need review. Nothing was deleted; see Offline queue.`;
+          onError(problem);
         }
       } catch (err: unknown) {
-        onError((err as Error)?.message || 'Sync failed. Queued sales are kept for retry.');
+        problem = (err as Error)?.message || 'Sync failed. Queued sales are kept for retry.';
+        onError(problem);
       } finally {
+        noteSyncEnd(problem || undefined);
         syncLock.current = false;
         setBusy('');
         await reload();
@@ -310,20 +323,19 @@ export default function PosOfflinePanel({
   }
 
   const valid = isOfflineAuthValid(envelope);
+  const prepared = Boolean(envelope?.grant_id && catalogAt && valid);
   const unsynced = summary ? summary.pending + summary.syncing + summary.needs_attention : 0;
-  const authText = !envelope?.grant_id
-    ? 'This device is not ready for offline selling.'
-    : valid
-      ? `Offline selling is ready · ${formatTimeLeft(envelope.offline_valid_until)}`
+  const authText = prepared
+    ? 'Offline ready'
+    : !envelope?.grant_id || !catalogAt
+      ? 'Not prepared. Connect to the internet and sign in to prepare this device for offline POS.'
       : envelope.revoked_at
-        ? 'Offline selling was turned off on this device.'
-        : 'Offline selling on this device has expired.';
+        ? 'Not prepared. Offline selling was turned off on this device. Sign in online. Saved sales stay on this device.'
+        : 'Not prepared. Online sign-in is required before this device can sell offline again. Saved sales stay on this device.';
   const quiet = online && unsynced === 0 && !provisional && otherDevices === 0 && (!envelope?.grant_id || valid);
-  const summaryLabel = !online
-    ? 'You are offline'
-    : unsynced > 0
-      ? `${unsynced} saved sale${unsynced === 1 ? '' : 's'} to send`
-      : 'Offline selling';
+  const waiting =
+    unsynced > 0 ? `${unsynced} saved sale${unsynced === 1 ? '' : 's'} to send` : '';
+  const summaryLabel = !online ? (waiting ? `You are offline · ${waiting}` : 'You are offline') : waiting || 'Offline selling';
 
   return (
     <details className="tpos-more tpos-offline-tools" open={!quiet || undefined}>
@@ -331,7 +343,11 @@ export default function PosOfflinePanel({
       <div className="tpos-more-body" aria-live="polite">
       <p className="muted" style={{ margin: 0, flexBasis: '100%' }}>
         {authText}
-        {lastSyncAt ? ` Last sent ${formatWhen(lastSyncAt) || formatCacheAge(lastSyncAt)}.` : ' Nothing has been sent from this device yet.'}
+        {unsynced > 0
+          ? ` ${unsynced} saved sale${unsynced === 1 ? ' is' : 's are'} still on this device.`
+          : lastSyncAt
+            ? ` Last sent ${formatWhen(lastSyncAt) || formatCacheAge(lastSyncAt)}.`
+            : ' Nothing has been sent from this device yet.'}
         {summary?.needs_attention ? ` ${summary.needs_attention} need a manager.` : ''}
         {provisional || otherDevices > 0
           ? ` ${otherDevices} sale${otherDevices === 1 ? '' : 's'} on other devices are not here yet.`
@@ -356,7 +372,7 @@ export default function PosOfflinePanel({
           {busy === 'sync' ? 'Sending…' : 'Send saved sales'}
         </button>
         <button type="button" className="tpos-btn tpos-btn-quiet" onClick={() => setOpen((v) => !v)}>
-          {open ? 'Hide saved sales' : 'Saved sales'}
+          {open ? 'Hide saved sales' : waiting ? `Saved sales (${unsynced})` : 'Saved sales'}
         </button>
       </div>
       {open ? (

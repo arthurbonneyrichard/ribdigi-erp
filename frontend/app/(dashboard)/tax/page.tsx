@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import FormModal from '../../../components/FormModal';
 import { api, getAccessToken } from '../../../lib/api';
+import { AmountField } from '../../../components/AmountField';
+import { formatMoney } from '../../../lib/format';
 import { useStoreContext } from '../../../lib/storeContext';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -378,7 +380,7 @@ export default function Page() {
         <div className="card">
           <h3>Preview with default rate</h3>
           <p className="muted">Estimate only. Posted documents use the server calculation.</p>
-          <input
+          <AmountField
             value={calcAmount}
             onChange={(e) => setCalcAmount(e.target.value)}
             aria-label="Tax calculator amount"
@@ -388,7 +390,7 @@ export default function Page() {
           </button>
           {calcResult && (
             <p className="muted" style={{ marginTop: 8 }}>
-              Before tax {calcResult.net} · Tax {calcResult.tax} · Customer pays {calcResult.gross} (
+              Before tax {formatMoney(calcResult.net)} · Tax {formatMoney(calcResult.tax)} · Customer pays {formatMoney(calcResult.gross)} (
               {calcResult.rate}% {calcResult.pricing_mode === 'inclusive' ? 'included in price' : 'added on top'}
               {calcResult.is_reverse_charge ? ' · reverse charge' : ''})
             </p>

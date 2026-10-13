@@ -92,3 +92,18 @@ async def test_cashier_cannot_operate_another_shift(client):
         headers=admin,
         json={"actual_cash": 50, "notes": "Admin close"},
     )
+
+
+def test_pos_exposes_counted_cash_close_without_changing_sign_out():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    helper = (root / "frontend/lib/cashierShift.ts").read_text(encoding="utf-8")
+    page = (root / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
+    assert "actual_cash: Number(session.expected_cash || 0)" in helper
+    assert "export async function countAndCloseOpenShift" in helper
+    assert "before closing this shift" in helper
+    assert 'aria-label="Counted cash"' in page
+    assert 'aria-label="Cash count notes"' in page
+    assert 'aria-label="Record cash count and close shift"' in page
+    assert 'aria-label="Start a new shift"' in page

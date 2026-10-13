@@ -1,5 +1,5 @@
 import { clearSessionTheme } from './theme';
-import { bumpLastActivity } from './idleSession';
+import { bumpLastActivity, clearLastActivity } from './idleSession';
 import {
   clearAuthTokens,
   getAccessTokenSync,
@@ -51,8 +51,19 @@ function isPublicAuthPath(path: string): boolean {
   );
 }
 
-export function unreachableApiMessage(): string {
-  return 'Cannot reach the server. Check that the API is running, then sign in with the workspace slug (not the company name).';
+export function unreachableApiMessage(path = ''): string {
+  const signingIn = path.startsWith('/auth/');
+  const browserOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
+  if (browserOffline && signingIn) {
+    return 'You are offline, so sign-in cannot finish. Reconnect, then sign in again. A till that was already prepared can keep selling only while its saved session is still open.';
+  }
+  if (browserOffline) {
+    return 'You are offline. Reconnect to continue. A prepared Point of Sale can keep selling from this device; other pages wait until the connection returns.';
+  }
+  if (signingIn) {
+    return 'Sign-in could not reach the server. Check the connection, then try again.';
+  }
+  return 'The server did not respond. Check the connection and try again. Pending Point of Sale sales stay on this device until sync succeeds.';
 }
 
 export function parseRetryAfterHeader(raw: string | null, now = Date.now()): number {
@@ -139,6 +150,7 @@ export function clearSessionAndRedirect() {
   if (typeof window === 'undefined') return;
   void clearAuthTokens();
   localStorage.removeItem('tenant');
+  clearLastActivity();
   try {
     sessionStorage.removeItem('ribdigi:uid');
     sessionStorage.removeItem('ribdigi:store');
@@ -359,7 +371,7 @@ export async function apiFetch(path: string, opts: RequestInit = {}, retryOn401 
     }
     const raw = err instanceof Error ? err.message : '';
     if (!raw || /failed to fetch|networkerror|load failed/i.test(raw)) {
-      throw new Error(unreachableApiMessage());
+      throw new Error(unreachableApiMessage(path));
     }
     throw err;
   }

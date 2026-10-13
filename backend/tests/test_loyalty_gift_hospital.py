@@ -55,6 +55,36 @@ async def test_gift_card_and_loyalty_stay_in_tenant(db_session, seeded):
 
 
 @pytest.mark.asyncio
+async def test_named_sale_earns_one_percent_and_posts_liability(db_session, seeded):
+    from app import accounting as accounting_svc
+
+    tenant_id = seeded["t1"].id
+    party = seeded["party1"]
+    points = await loyalty_gift_svc.award_sale_points(
+        db_session,
+        tenant_id=tenant_id,
+        party_id=party.id,
+        total=200,
+        payments=[{"payment_method": "cash", "amount": 200}],
+    )
+    assert points == 2
+    liability = await accounting_svc.get_account_by_code(db_session, tenant_id, "2160")
+    promo = await accounting_svc.get_account_by_code(db_session, tenant_id, "6110")
+    cash = await accounting_svc.get_account_by_code(db_session, tenant_id, "1000")
+    assert float(liability.balance or 0) == 2
+    assert float(promo.balance or 0) == 2
+    assert float(cash.balance or 0) == 0
+    skipped = await loyalty_gift_svc.award_sale_points(
+        db_session,
+        tenant_id=tenant_id,
+        party_id=None,
+        total=200,
+        payments=[{"payment_method": "cash", "amount": 200}],
+    )
+    assert skipped == 0
+
+
+@pytest.mark.asyncio
 async def test_hospital_visits_are_industry_gated(client, db_session, seeded):
     ac, seed = client
     admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
@@ -98,3 +128,5 @@ async def test_payment_notice_does_not_capture_funds(client, seeded):
     body = created.json()["data"]
     assert body["funds_captured"] is False
     assert body["amount"] == 40
+    assert created.json()["message"] == "Payment notice saved."
+    assert "card funds" not in created.text.lower()

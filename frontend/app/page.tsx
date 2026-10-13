@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api, setAuthTokens, unreachableApiMessage } from '../lib/api';
-import { getAccessTokenSync } from '../lib/authStorage';
+import { api, clearSessionAndRedirect, idleTimeoutMs, setAuthTokens } from '../lib/api';
+import { explainOfflineAccess, probeApi } from '../lib/connectivity';
+import { bumpLastActivity, hasStoredActivity, isIdleExpired, resetIdleWriteThrottle } from '../lib/idleSession';
+import { getAccessTokenSync, hydrateAuth } from '../lib/authStorage';
 import { getMe, invalidateMeCache } from '../lib/meCache';
 import { roleHomePath } from '../lib/tenantNav';
 import { invalidatePrefetchCache } from '../lib/prefetchCache';
@@ -45,15 +47,62 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const router = useRouter();
 
+  async function openPreparedTill(): Promise<boolean> {
+    try {
+      await hydrateAuth();
+      const offlineMod = await Promise.race([
+        import('../lib/posOffline'),
+        new Promise<never>((_, reject) => {
+          window.setTimeout(() => reject(new Error('offline-module')), 2500);
+        }),
+      ]);
+      const env = await offlineMod.getOfflineAuthEnvelope().catch(() => null);
+      const decision = explainOfflineAccess(env);
+      if (!decision.prepared || !getAccessTokenSync()) {
+        setError(decision.message);
+        return false;
+      }
+      const me = await offlineMod.getSnapshot<{ id?: string } | null>('me').catch(() => null);
+      if (!me?.id || String(me.id) !== String(env?.user_id || '')) {
+        setError('Online sign-in is required. Saved sales stay on this device.');
+        return false;
+      }
+      router.replace('/pos');
+      return true;
+    } catch {
+      setError(explainOfflineAccess(null).message);
+      return false;
+    }
+  }
+
   useEffect(() => {
-    if (!getAccessTokenSync()) return;
     let cancelled = false;
-    getMe()
-      .then((me) => {
+    (async () => {
+      try {
+        await hydrateAuth();
         if (cancelled) return;
-        if (String(me.data?.role || '') === 'cashier') router.replace('/pos');
-      })
-      .catch(() => {});
+        const phase = await probeApi();
+        if (cancelled) return;
+        if (phase === 'online' && getAccessTokenSync()) {
+          try {
+            const me = await getMe();
+            if (cancelled) return;
+            const mins = Number(me.data?.inactivity_timeout_minutes);
+            if (hasStoredActivity() && isIdleExpired(idleTimeoutMs(mins))) {
+              clearSessionAndRedirect();
+              return;
+            }
+            if (String(me.data?.role || '') === 'cashier') router.replace('/pos');
+          } catch (err) {
+            if ((err as { status?: number }).status === undefined) await openPreparedTill();
+          }
+          return;
+        }
+        if (phase !== 'online') await openPreparedTill();
+      } catch {
+        if (!cancelled) setError(explainOfflineAccess(null).message);
+      }
+    })();
     return () => {
       cancelled = true;
     };
@@ -63,6 +112,8 @@ export default function Login() {
     invalidateMeCache();
     invalidatePrefetchCache();
     await setAuthTokens(data.access_token, data.refresh_token || null);
+    resetIdleWriteThrottle();
+    bumpLastActivity();
     const tenantId = String(data.user?.tenant_id || '').trim();
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tenantId)) {
       localStorage.setItem('tenant', tenantId);
@@ -96,10 +147,9 @@ export default function Login() {
 
   async function verifyPasskey() {
     setError('');
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      setError(
-        'Sign-in requires a connection. Offline selling is allowed only on a device that already signed in online with a valid offline authorization — first-time offline login is not supported.'
-      );
+    const phase = await probeApi();
+    if (phase !== 'online') {
+      await openPreparedTill();
       return;
     }
     setBusy(true);
@@ -154,10 +204,9 @@ export default function Login() {
   async function go(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      setError(
-        'Sign-in requires a connection. Offline selling is allowed only on a device that already signed in online with a valid offline authorization — first-time offline login is not supported.'
-      );
+    const phase = await probeApi();
+    if (phase !== 'online') {
+      await openPreparedTill();
       return;
     }
     setBusy(true);
@@ -220,8 +269,8 @@ export default function Login() {
         return;
       }
       const raw = String(err.message || '');
-      if (!raw || /failed to fetch|networkerror|load failed/i.test(raw)) {
-        setError(unreachableApiMessage());
+      if (!raw || /failed to fetch|networkerror|load failed|did not respond|could not reach the server|you are offline/i.test(raw)) {
+        await openPreparedTill();
         return;
       }
       setError(raw || 'Login failed');

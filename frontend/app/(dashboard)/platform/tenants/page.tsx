@@ -6,6 +6,7 @@ import { api } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
 import { getPrefetched } from '../../../../lib/prefetchCache';
 import { formatNumber } from '../../../../lib/format';
+import { AmountField } from '../../../../components/AmountField';
 import { industryAllowsModule } from '../../../../lib/industryModules';
 import { INDUSTRIES, PROVISION_INDUSTRIES, industryLabel } from '../../../../lib/industries';
 import { subscriptionAmountLabel, subscriptionAmountToSend } from '../../../../lib/platformBilling';
@@ -1144,8 +1145,9 @@ export default function PlatformTenantsPage() {
               </label>
               <label>
                 <span>Amount</span>
-                <input
+                <AmountField
                   aria-label="Subscription amount"
+                  currency={planAmounts[selected.slug]?.currency || selected.currency}
                   inputMode="decimal"
                   value={subForm.amount}
                   onChange={(e) => setSubForm((f) => ({ ...f, amount: e.target.value }))}

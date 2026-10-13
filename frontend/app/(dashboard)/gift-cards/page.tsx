@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { api } from '../../../lib/api';
+import { AmountField } from '../../../components/AmountField';
+import { formatMoney } from '../../../lib/format';
 import { getMe } from '../../../lib/meCache';
 import { normalizeIndustry } from '../../../lib/industries';
 
@@ -45,18 +47,18 @@ export default function GiftCardsPage() {
   return (
     <main className="page">
       <h1>Gift cards</h1>
-      <p>Issue a card, then take it at POS with the code in the payment reference. One point of loyalty equals one currency unit and is earned on a named customer sale.</p>
+      <p>Issue a card, then enter that code in Gift card code at POS. The balance stays a liability until the card is spent. One loyalty point equals one currency unit. A named customer earns 1% of the sale.</p>
       {error ? <p role="alert">{error}</p> : null}
       <form onSubmit={issue}>
         <label>
           Amount
-          <input value={amount} onChange={(e) => setAmount(e.target.value)} required type="number" min="0.01" step="0.01" />
+          <AmountField value={amount} onChange={(e) => setAmount(e.target.value)} required type="number" min="0.01" step="0.01" aria-label="Gift card amount" />
         </label>
         <button type="submit">Issue gift card</button>
       </form>
       {issued ? (
         <p>
-          Code <strong>{issued.code}</strong> · balance {issued.balance} · {issued.status}
+          Code <strong>{issued.code}</strong> · balance {formatMoney(issued.balance)} · {issued.status}
         </p>
       ) : null}
       <form onSubmit={find}>
@@ -68,7 +70,7 @@ export default function GiftCardsPage() {
       </form>
       {found ? (
         <p>
-          {found.code} · balance {found.balance} · {found.status}
+          {found.code} · balance {formatMoney(found.balance)} · {found.status}
         </p>
       ) : null}
     </main>

@@ -3181,6 +3181,7 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             "store_ids": claims.get("store_ids"),
             "store_scope": claims.get("store_scope") or "all",
             "company_name": getattr(tenant, "company_name", None) if tenant else None,
+            "currency": (getattr(tenant, "currency", None) or "GHS") if tenant else "GHS",
             "has_logo": bool(getattr(tenant, "logo_url", None)) if tenant else False,
             **totp_svc.status_payload(user),
         }
@@ -3931,6 +3932,14 @@ async def update_user(
             )
         if user.id == claims["sub"] and role_key != user.role:
             raise HTTPException(status_code=400, detail="Cannot change your own role")
+        await user_accounts_svc.require_remaining_company_admin(
+            db,
+            tenant_id=claims["tenant_id"],
+            user=user,
+            next_role=role_key,
+            next_active=bool(user.is_active) if payload.is_active is None else bool(payload.is_active),
+            action="reassign",
+        )
         if user.role != role_key:
             changes["role"] = {"from": user.role, "to": role_key}
             prev_scope = None
@@ -3951,6 +3960,14 @@ async def update_user(
     if payload.is_active is not None:
         if user.id == claims["sub"] and payload.is_active is False:
             raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
+        if payload.role is None:
+            await user_accounts_svc.require_remaining_company_admin(
+                db,
+                tenant_id=claims["tenant_id"],
+                user=user,
+                next_active=bool(payload.is_active),
+                action="deactivate",
+            )
         if bool(user.is_active) != bool(payload.is_active):
             user.is_active = bool(payload.is_active)
             changes["is_active"] = user.is_active
@@ -4058,6 +4075,13 @@ async def deactivate_user(
     )
     if user.id == claims["sub"]:
         raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
+    await user_accounts_svc.require_remaining_company_admin(
+        db,
+        tenant_id=claims["tenant_id"],
+        user=user,
+        next_active=False,
+        action="deactivate",
+    )
     if not user.is_active:
         return env(
             await _serialize_user_with_stores(db, claims["tenant_id"], user),

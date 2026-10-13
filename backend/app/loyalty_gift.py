@@ -16,6 +16,12 @@ from app import models as m
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 
+# One point equals one currency unit. A named sale earns this share of the amount
+# that was not itself paid with points. The full ticket is not awarded, because
+# that would cancel the sale in the ledger.
+LOYALTY_EARN_RATE = 0.01
+
+
 def _code() -> str:
     return secrets.token_hex(4).upper()
 
@@ -53,6 +59,32 @@ async def issue_gift_card(
     )
     db.add(row)
     await db.flush()
+    from app.accounting import ensure_default_accounts, post_journal_entry
+
+    await ensure_default_accounts(db, tenant_id)
+    await post_journal_entry(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        description=f"Gift card {row.code} issued",
+        reference=row.code,
+        source_type="gift_card_issue",
+        source_id=row.id,
+        lines=[
+            {
+                "account_code": "6100",
+                "debit": value,
+                "credit": 0,
+                "description": "Gift card issued",
+            },
+            {
+                "account_code": "2150",
+                "debit": 0,
+                "credit": value,
+                "description": "Gift card liability",
+            },
+        ],
+    )
     return row
 
 
@@ -87,6 +119,7 @@ async def adjust_loyalty(
     tenant_id: str,
     party_id: str,
     delta: float,
+    post_journal: bool = True,
 ) -> m.Party:
     party = await _customer(db, tenant_id, party_id)
     nxt = money_json(round(money_json(party.loyalty_points or 0) + money_json(delta), 2))
@@ -101,6 +134,33 @@ async def adjust_loyalty(
         )
     party.loyalty_points = nxt
     await db.flush()
+    if post_journal and abs(money_json(delta)) > 1e-9:
+        from app.accounting import ensure_default_accounts, post_journal_entry
+
+        await ensure_default_accounts(db, tenant_id)
+        amount = money_json(round(abs(money_json(delta)), 2))
+        if money_json(delta) > 0:
+            lines = [
+                {"account_code": "6110", "debit": amount, "credit": 0, "description": "Loyalty points added"},
+                {"account_code": "2160", "debit": 0, "credit": amount, "description": "Loyalty liability"},
+            ]
+            description = "Loyalty points added"
+        else:
+            lines = [
+                {"account_code": "2160", "debit": amount, "credit": 0, "description": "Loyalty points removed"},
+                {"account_code": "6110", "debit": 0, "credit": amount, "description": "Loyalty promotion reversed"},
+            ]
+            description = "Loyalty points removed"
+        await post_journal_entry(
+            db,
+            tenant_id=tenant_id,
+            user_id=None,
+            description=description,
+            reference=party.id,
+            source_type="loyalty_adjust",
+            source_id=party.id,
+            lines=lines,
+        )
     return party
 
 
@@ -136,7 +196,13 @@ async def settle_pos_tenders(
         elif method == "loyalty":
             if not party_id:
                 raise HTTPException(status_code=400, detail="Select a customer to spend loyalty points")
-            await adjust_loyalty(db, tenant_id=tenant_id, party_id=party_id, delta=-amount)
+            await adjust_loyalty(
+                db,
+                tenant_id=tenant_id,
+                party_id=party_id,
+                delta=-amount,
+                post_journal=False,
+            )
     await db.flush()
 
 
@@ -151,10 +217,13 @@ async def award_sale_points(
     if not party_id:
         return 0
     spent = sum(money_json(p.get("amount") or 0) for p in payments if p.get("payment_method") == "loyalty")
-    earn = money_json(round(max(money_json(total) - spent, 0), 2))
+    basis = max(money_json(total) - spent, 0)
+    earn = money_json(round(basis * LOYALTY_EARN_RATE, 2))
     if earn <= 0:
         return 0
-    party = await adjust_loyalty(db, tenant_id=tenant_id, party_id=party_id, delta=earn)
+    party = await adjust_loyalty(
+        db, tenant_id=tenant_id, party_id=party_id, delta=earn, post_journal=True
+    )
     return money_json(party.loyalty_points or 0)
 
 

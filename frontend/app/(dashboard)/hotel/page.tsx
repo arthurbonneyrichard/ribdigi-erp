@@ -7,6 +7,7 @@ import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { moduleEnabledForTenant } from '../../../lib/industryModules';
 import { HotelRoomNightGrid } from '../../../components/HotelRoomNightGrid';
+import { AmountField } from '../../../components/AmountField';
 
 type Room = {
   id: string;
@@ -1608,7 +1609,7 @@ export default function HotelPage() {
         >
           <label><span>Code</span><input value={rateForm.code} onChange={(e) => setRateForm((f) => ({ ...f, code: e.target.value }))} required aria-label="Rate plan code" /></label>
           <label><span>Name</span><input value={rateForm.name} onChange={(e) => setRateForm((f) => ({ ...f, name: e.target.value }))} required aria-label="Rate plan name" /></label>
-          <label><span>Amount</span><input type="number" min={0} step="0.01" value={rateForm.amount} onChange={(e) => setRateForm((f) => ({ ...f, amount: e.target.value }))} aria-label="Rate plan amount" /></label>
+          <label><span>Amount</span><AmountField type="number" min={0} step="0.01" value={rateForm.amount} onChange={(e) => setRateForm((f) => ({ ...f, amount: e.target.value }))} aria-label="Rate plan amount" /></label>
           <div style={{ alignSelf: 'end' }}><button type="submit" disabled={busy}>Add plan</button></div>
         </form>
         <ul>
@@ -1871,7 +1872,7 @@ export default function HotelPage() {
           </label>
           <label>
             <span>Deposit</span>
-            <input type="number" min={0} step="0.01" value={resForm.deposit_amount} onChange={(e) => setResForm((f) => ({ ...f, deposit_amount: e.target.value }))} aria-label="Hotel deposit amount" />
+            <AmountField type="number" min={0} step="0.01" value={resForm.deposit_amount} onChange={(e) => setResForm((f) => ({ ...f, deposit_amount: e.target.value }))} aria-label="Hotel deposit amount" />
           </label>
           <label style={{ display: 'flex', alignItems: 'end', gap: 8 }}>
             <input type="checkbox" checked={resForm.walk_in} onChange={(e) => setResForm((f) => ({ ...f, walk_in: e.target.checked }))} aria-label="Walk-in reservation" />
@@ -2153,7 +2154,7 @@ export default function HotelPage() {
             </label>
             <label>
               <span>Amount</span>
-              <input type="number" min={0} step="0.01" value={chargeForm.unit_amount} onChange={(e) => setChargeForm((f) => ({ ...f, unit_amount: e.target.value }))} aria-label="Folio charge amount" />
+              <AmountField type="number" min={0} step="0.01" value={chargeForm.unit_amount} onChange={(e) => setChargeForm((f) => ({ ...f, unit_amount: e.target.value }))} aria-label="Folio charge amount" />
             </label>
             <label>
               <span>Type</span>
@@ -2178,7 +2179,7 @@ export default function HotelPage() {
             </label>
             <label>
               <span>Amount</span>
-              <input type="number" min={0} step="0.01" value={payForm.amount} onChange={(e) => setPayForm((f) => ({ ...f, amount: e.target.value }))} aria-label="Folio payment amount" />
+              <AmountField type="number" min={0} step="0.01" value={payForm.amount} onChange={(e) => setPayForm((f) => ({ ...f, amount: e.target.value }))} aria-label="Folio payment amount" />
             </label>
             <div style={{ alignSelf: 'end' }}>
               <button type="submit" disabled={busy}>Record payment info</button>
@@ -2331,7 +2332,7 @@ export default function HotelPage() {
             </label>
             <label>
               <span>Unit amount</span>
-              <input type="number" min={0} step="0.01" value={serviceForm.unit_amount} onChange={(e) => setServiceForm((f) => ({ ...f, unit_amount: e.target.value }))} aria-label="Hotel service amount" />
+              <AmountField type="number" min={0} step="0.01" value={serviceForm.unit_amount} onChange={(e) => setServiceForm((f) => ({ ...f, unit_amount: e.target.value }))} aria-label="Hotel service amount" />
             </label>
             <div style={{ alignSelf: 'end' }}>
               <button type="submit" disabled={busy}>Add service</button>

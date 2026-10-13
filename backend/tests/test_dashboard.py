@@ -151,20 +151,25 @@ def test_dashboard_page_surfaces_load_errors():
     assert "out_of_stock" in text
     assert "/inventory?tab=lowstock" in text
     assert "/inventory?tab=products&stock=oos" in text
-    # Infographic order: Products → Low stock → Out of stock → Expiring soon only
-    products_i = text.find("label: 'Products'")
-    low_i = text.find("label: 'Low stock'")
-    oos_i = text.find("label: 'Out of stock'")
-    expiring_i = text.find("label: 'Expiring soon'")
-    assert 0 <= products_i < low_i < oos_i < expiring_i
+    assert "label: 'Products'" not in text
+    assert "label: 'Low stock'" not in text
+    assert "label: 'Expiring soon'" not in text
+    health = text[text.find("Inventory health") : text.find("Cash flow")]
+    assert "Low stock" in health
+    assert "Out of stock" in health
+    assert "Expiring soon" in health
+    assert "lots expiring within 30 days" in health
+    assert "label: 'Posted returns'" not in text
     assert "label: 'Suppliers'" not in text
     assert "label: 'Customers'" not in text
     assert "label: 'Credit'" not in text
     assert "ar_total_due" in text
     assert "ap_total_due" in text
     assert "credit_outstanding" in text
-    count_block = text[products_i : text.find("const liveIndustry")]
-    assert "Batches" not in count_block
+    headline = text[text.find("const stats = [") : text.find("const liveIndustry")]
+    assert "label: 'Gross profit'" in headline
+    assert "dash-kpis" in text
+    assert "Batches" not in headline
     assert "featureCards.length > 0" in text
     assert "industryHomePath" in text
     assert "const home = industryHomePath(ind);" in text
@@ -177,7 +182,7 @@ def test_dashboard_page_surfaces_load_errors():
     assert "if (ind === 'restaurant') return '/restaurant';" in home_src
     assert "return '/dashboard';" in home_src
     assert "Retail operations" not in text
-    assert "Gross profit (7d)" in text
+    assert "label: 'Gross profit'" in text
     assert "rx_queue" in text
     assert "aria-label=\"Pharmacy\"" in text
     assert "New prescription" in text

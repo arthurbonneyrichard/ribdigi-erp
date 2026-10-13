@@ -1,6 +1,6 @@
 /** Labels for the software-owner billing list. */
 
-import type { FormatPrefs } from './format';
+import { currencySign, type FormatPrefs } from './format';
 
 export type SubscriptionAmountResult = { amount: number } | { error: string };
 
@@ -22,7 +22,7 @@ export function subscriptionAmountLabel(
   formattedNumber: string,
 ): string {
   if (amount == null || formattedNumber === '') return '—';
-  return `${(currency || 'GHS').toUpperCase()} ${formattedNumber}`;
+  return `${currencySign(currency || 'GHS')} ${formattedNumber}`;
 }
 
 export function subscriptionAmountToSend(

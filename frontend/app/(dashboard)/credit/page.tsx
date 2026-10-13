@@ -3,7 +3,8 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '../../../lib/api';
-import { formatWhen, plainLabel } from '../../../lib/format';
+import { formatMoney, formatWhen, plainLabel } from '../../../lib/format';
+import { AmountField } from '../../../components/AmountField';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 
 function retryAfterFrom(raw: unknown): number {
@@ -119,7 +120,7 @@ function CreateCreditForm({
       </label>
       <label>
         Price
-        <input value={price} onChange={(e) => setPrice(e.target.value)} type="number" min="0" step="0.01" required aria-label="Credit price" />
+        <AmountField value={price} onChange={(e) => setPrice(e.target.value)} type="number" min="0" step="0.01" required aria-label="Credit price" />
       </label>
       <label>
         Notes
@@ -318,13 +319,13 @@ export default function Page() {
       setCreditInfo(r.data);
       if (kind === 'receivable') {
         setMessage(
-          `Credit: balance ${r.data?.outstanding_balance ?? 0} · limit ${
-            r.data?.credit_unlimited ? 'unlimited' : r.data?.credit_limit ?? 0
-          } · available ${r.data?.available_credit ?? '—'}`,
+          `Credit: balance ${formatMoney(r.data?.outstanding_balance ?? 0)} · limit ${
+            r.data?.credit_unlimited ? 'unlimited' : formatMoney(r.data?.credit_limit ?? 0)
+          } · available ${r.data?.available_credit == null ? '—' : formatMoney(r.data.available_credit)}`,
         );
       } else {
         setMessage(
-          `Payable balance ${r.data?.outstanding_balance ?? 0} · open bills ${r.data?.open_bill_count ?? 0}`,
+          `Payable balance ${formatMoney(r.data?.outstanding_balance ?? 0)} · open bills ${r.data?.open_bill_count ?? 0}`,
         );
       }
     } catch (err: any) {
@@ -535,7 +536,7 @@ export default function Page() {
   const payPanel = kind === 'payable' && searchParams.get('panel') === 'pay';
   const dueOf = (id: string) => {
     const row = (report?.parties || []).find((x: { party_id?: string }) => x.party_id === id);
-    return row?.total_due ?? 0;
+    return formatMoney(row?.total_due ?? 0);
   };
 
   function selectPayableView(panel?: 'pay') {
@@ -618,20 +619,20 @@ export default function Page() {
       <div className="erp-kpis credit-kpis">
         <div className="card">
           <div className="muted">{kind === 'receivable' ? 'Customer balance' : 'We owe'}</div>
-          <div className="kpi">{loadState === 'loading' ? '…' : loadState === 'error' ? 'Unavailable' : weOweAmt}</div>
+          <div className="kpi">{loadState === 'loading' ? '…' : loadState === 'error' ? 'Unavailable' : formatMoney(weOweAmt ?? 0)}</div>
         </div>
         <div className="card">
           <div className="muted">Overdue</div>
-          <div className="kpi">{loadState === 'loading' ? '…' : loadState === 'error' ? 'Unavailable' : overdueAmt}</div>
+          <div className="kpi">{loadState === 'loading' ? '…' : loadState === 'error' ? 'Unavailable' : formatMoney(overdueAmt ?? 0)}</div>
         </div>
         <div className="card">
           <div className="muted">Not yet due</div>
-          <div className="kpi">{loadState === 'loading' ? '…' : loadState === 'error' ? 'Unavailable' : notDueAmt}</div>
+          <div className="kpi">{loadState === 'loading' ? '…' : loadState === 'error' ? 'Unavailable' : formatMoney(notDueAmt ?? 0)}</div>
         </div>
       </div>
       {kind === 'payable' && loadState === 'success' && Number(report?.commitment_total || 0) > 0 ? (
         <p className="muted credit-commitments" role="status">
-          Open purchase orders (not yet billed): {report.commitment_total}
+          Open purchase orders (not yet billed): {formatMoney(report.commitment_total)}
         </p>
       ) : null}
 
@@ -766,12 +767,12 @@ export default function Page() {
             ))}
           </select>
           <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-            <input
+            <AmountField
+              inline
               value={payAmount}
               onChange={(e) => setPayAmount(e.target.value)}
               placeholder="Amount"
               aria-label="Payment amount"
-              style={{ width: 120 }}
             />
             <select
               value={payMethod}
@@ -864,12 +865,12 @@ export default function Page() {
           {kind === 'receivable' && (
             <>
             <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-              <input
+              <AmountField
+                inline
                 value={creditLimit}
                 onChange={(e) => setCreditLimit(e.target.value)}
                 placeholder="New credit limit"
                 aria-label="Credit limit"
-                style={{ width: 140 }}
               />
               <input
                 value={paymentTermsDays}
@@ -1010,9 +1011,9 @@ export default function Page() {
                     <td>{row.document_number}</td>
                     <td>{formatWhen(row.invoice_date) || '—'}</td>
                     <td>{formatWhen(row.due_date) || '—'}</td>
-                    <td>{row.total_amount}</td>
-                    <td>{row.paid_amount}</td>
-                    <td>{row.balance_due}</td>
+                    <td>{formatMoney(row.total_amount)}</td>
+                    <td>{formatMoney(row.paid_amount)}</td>
+                    <td>{formatMoney(row.balance_due)}</td>
                     <td>{plainLabel(row.status)}</td>
                     <td>
                       <button
@@ -1061,7 +1062,7 @@ export default function Page() {
                     <td>{row.party_name}</td>
                     <td>{row.document_number}</td>
                     <td>{plainLabel(row.status)}</td>
-                    <td>{row.balance_due}</td>
+                    <td>{formatMoney(row.balance_due)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1074,7 +1075,7 @@ export default function Page() {
         <div className="card" style={{ marginTop: 16 }}>
           <h3>Statement</h3>
           <p>
-            Balance {statement.outstanding_balance ?? statement.balance ?? statement.total_due ?? '—'}
+            Balance {formatMoney(statement.outstanding_balance ?? statement.balance ?? statement.total_due) || '—'}
           </p>
           {(statement.lines || statement.entries || statement.invoices) ? (
             <table className="table compact">
@@ -1093,7 +1094,7 @@ export default function Page() {
                         {formatWhen(row.date || row.posted_at || row.created_at) || '—'}
                       </td>
                       <td>{row.reference || row.invoice_number || row.description || '—'}</td>
-                      <td>{row.amount ?? row.total_amount ?? row.balance ?? '—'}</td>
+                      <td>{formatMoney(row.amount ?? row.total_amount ?? row.balance) || '—'}</td>
                     </tr>
                   ),
                 )}
@@ -1113,19 +1114,19 @@ export default function Page() {
           <div className="grid">
             <div>
               <div className="muted">Outstanding</div>
-              <div className="kpi">{creditInfo.outstanding_balance ?? 0}</div>
+              <div className="kpi">{formatMoney(creditInfo.outstanding_balance ?? 0)}</div>
             </div>
             {creditInfo.customer && (
               <>
                 <div>
                   <div className="muted">Credit limit</div>
                   <div className="kpi">
-                    {creditInfo.credit_unlimited ? 'Unlimited' : creditInfo.credit_limit ?? 0}
+                    {creditInfo.credit_unlimited ? 'Unlimited' : formatMoney(creditInfo.credit_limit ?? 0)}
                   </div>
                 </div>
                 <div>
                   <div className="muted">Available</div>
-                  <div className="kpi">{creditInfo.available_credit ?? '—'}</div>
+                  <div className="kpi">{creditInfo.available_credit == null ? '—' : formatMoney(creditInfo.available_credit)}</div>
                   {creditInfo.is_over_limit && (
                     <p style={{ color: '#b91c1c' }}>Over limit</p>
                   )}
@@ -1154,14 +1155,14 @@ export default function Page() {
                   <tr key={row.invoice_id}>
                     <td>{row.invoice_number}</td>
                     <td>{plainLabel(row.status)}</td>
-                    <td>{row.amount}</td>
+                    <td>{formatMoney(row.amount)}</td>
                   </tr>
                 ))}
                 {(creditInfo.open_bills || []).map((row: any) => (
                   <tr key={row.purchase_invoice_id || row.purchase_order_id}>
                     <td>{row.invoice_number || row.po_number}</td>
                     <td>{plainLabel(row.status)}</td>
-                    <td>{row.amount}</td>
+                    <td>{formatMoney(row.amount)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1291,7 +1292,7 @@ export default function Page() {
                   <td>{row.document_number}</td>
                   <td>{row.document_type === 'purchase_invoice' ? 'Bill' : 'Order'}</td>
                   <td>{plainLabel(row.status)}</td>
-                  <td>{row.balance_due}</td>
+                  <td>{formatMoney(row.balance_due)}</td>
                   <td>
                     {row.days_until_due == null
                       ? '—'

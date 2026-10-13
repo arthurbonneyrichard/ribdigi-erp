@@ -1,7 +1,9 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { api } from '../../../lib/api';
+import { formatMoney, formatWhen } from '../../../lib/format';
+import { AmountField } from '../../../components/AmountField';
 
 const METHODS = [
   ['bank_transfer', 'Bank transfer'],
@@ -11,31 +13,55 @@ const METHODS = [
   ['other', 'Other'],
 ] as const;
 
+type Notice = {
+  id: string;
+  amount: number;
+  method: string;
+  reference: string;
+  created_at?: string | null;
+};
+
+function methodLabel(method: string) {
+  return METHODS.find(([value]) => value === method)?.[1] || method;
+}
+
 export default function BillingNoticePage() {
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('bank_transfer');
   const [reference, setReference] = useState('');
+  const [notices, setNotices] = useState<Notice[]>([]);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function load() {
+    const res = await api('/billing/payment-notices');
+    setNotices(Array.isArray(res?.data) ? res.data : []);
+  }
+
+  useEffect(() => {
+    load().catch((err: any) => setError(err?.message || 'Could not load payment notices'));
+  }, []);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
+    if (busy) return;
+    setBusy(true);
     setError('');
     setMessage('');
     try {
-      const res = await api('/billing/payment-notices', {
+      await api('/billing/payment-notices', {
         method: 'POST',
-        body: JSON.stringify({ amount: Number(amount), method, reference }),
+        body: JSON.stringify({ amount: Number(amount), method, reference: reference.trim() }),
       });
-      setMessage(
-        res?.data?.funds_captured
-          ? 'Unexpected capture flag'
-          : 'Payment information saved. No card funds were captured.',
-      );
+      setMessage('Payment notice saved.');
       setAmount('');
       setReference('');
+      await load();
     } catch (err: any) {
       setError(err.message || 'Could not save the payment notice');
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -44,9 +70,7 @@ export default function BillingNoticePage() {
       <div className="list-page-head">
         <div>
           <h1>Payment notice</h1>
-          <p className="muted">
-            Record how a payment was made. This does not charge a card or change subscription revenue.
-          </p>
+          <p className="muted">Record a payment you already received. The amount, method, and reference stay in the list.</p>
         </div>
       </div>
       {error && <p className="erp-banner err" role="alert">{error}</p>}
@@ -57,7 +81,7 @@ export default function BillingNoticePage() {
           <div className="erp-form-grid">
             <label>
               Amount
-              <input
+              <AmountField
                 required
                 type="number"
                 min="0.01"
@@ -86,18 +110,37 @@ export default function BillingNoticePage() {
               />
             </label>
           </div>
-          <button className="list-btn-primary" type="submit" aria-label="Save payment notice">
-            Save payment information
+          <button className="list-btn-primary" type="submit" disabled={busy} aria-label="Save payment notice">
+            Save payment notice
           </button>
         </form>
         <div className="card">
-          <h3>What gets saved</h3>
-          <div className="work-facts">
-            <span><small>Amount</small><strong>The figure you enter</strong></span>
-            <span><small>Method</small><strong>How it was paid</strong></span>
-            <span><small>Reference</small><strong>Your receipt number</strong></span>
-            <span><small>Card charge</small><strong>None</strong></span>
-          </div>
+          <h3>Saved notices</h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Reference</th>
+              </tr>
+            </thead>
+            <tbody>
+              {notices.length === 0 ? (
+                <tr>
+                  <td colSpan={4}>No payment notices yet.</td>
+                </tr>
+              ) : null}
+              {notices.map((row) => (
+                <tr key={row.id}>
+                  <td>{formatWhen(row.created_at) || '—'}</td>
+                  <td>{formatMoney(row.amount)}</td>
+                  <td>{methodLabel(row.method)}</td>
+                  <td>{row.reference}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

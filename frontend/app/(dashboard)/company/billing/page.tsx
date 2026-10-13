@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../../../lib/api';
 import { billingGatewayLabel } from '../../../../lib/billingStatus';
-import { formatDate, formatDateTime, formatNumber, type FormatPrefs } from '../../../../lib/format';
+import { formatDate, formatDateTime, formatMoney, type FormatPrefs } from '../../../../lib/format';
 
 type Plan = {
   name: string;
@@ -66,7 +66,7 @@ function showWhen(value?: string | null, prefs?: FormatPrefs | null): string {
 
 function moneyLine(amount: number | null | undefined, currency?: string | null, prefs?: FormatPrefs | null): string {
   if (amount === null || amount === undefined || Number.isNaN(Number(amount))) return '—';
-  return `${currency || ''} ${formatNumber(amount, prefs)}`.trim();
+  return formatMoney(amount, prefs, currency || 'GHS');
 }
 
 function periodWord(interval?: string | null): string {

@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api, getAccessToken } from '../../../lib/api';
-import { formatWhen, plainLabel } from '../../../lib/format';
+import { currencySign, formatWhen, plainLabel } from '../../../lib/format';
+import { AmountField } from '../../../components/AmountField';
 import { useStoreContext } from '../../../lib/storeContext';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 
@@ -11,7 +12,8 @@ function amountText(value: unknown): string {
   if (value == null || value === '') return 'not found';
   const n = Number(value);
   if (!Number.isFinite(n)) return String(value);
-  return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const body = n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `${currencySign()} ${body}`;
 }
 
 function groupText(counts: Record<string, number> | undefined): string {
@@ -702,7 +704,8 @@ export default function Page() {
               <option value="purchase_order">Purchase order</option>
             </select>
           </label>
-          <input
+          <AmountField
+            inline
             type="number"
             step="any"
             value={expectedAmount}
@@ -710,7 +713,6 @@ export default function Page() {
             placeholder="Expected amount (optional)"
             title="Optional expected amount for discrepancy checks (finite money)"
             aria-label="AI document expected amount"
-            style={{ width: 180 }}
           />
           <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', cursor: 'pointer' }}>
             <span style={{ border: '1px solid #ccc', padding: '6px 10px', borderRadius: 4 }}>Analyze document</span>

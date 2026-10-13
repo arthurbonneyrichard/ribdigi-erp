@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '../../../lib/api';
+import { formatMoney } from '../../../lib/format';
 import { getMe } from '../../../lib/meCache';
 import { industryLabel, normalizeIndustry } from '../../../lib/industries';
 import {
@@ -12,7 +13,6 @@ import {
   industryDashboardFeatures,
   industryHomePath,
   isSoftwareOwnerIndustry,
-  showsRetailOperations,
   softwareOwnerDashboardPath,
   type IndustryDashboardFeature,
 } from '../../../lib/industryDashboard';
@@ -240,6 +240,10 @@ function num(v?: number) {
   return new Intl.NumberFormat().format(Math.round((v || 0) * 100) / 100);
 }
 
+function moneyNum(v?: number) {
+  return formatMoney(v ?? 0);
+}
+
 function timeOfDay(hour: number): { greeting: string; icon: string; sub: string } {
   if (hour < 12) return { greeting: 'Good morning', icon: '\u2600\ufe0f', sub: 'A bright new day for your business.' };
   if (hour < 18) return { greeting: 'Good afternoon', icon: '\u26c5', sub: 'Keep the momentum going strong.' };
@@ -451,20 +455,20 @@ export default function Page() {
       cls: 's-sales',
       ico: '\ud83d\udcb0',
       label: 'Total Sales',
-      val: num(sales),
+      val: moneyNum(sales),
       href: links.sales || '/sales',
-      sub: `Today ${num(cmp.sales_today)} (${pctLabel(cmp.sales_today_pct)} vs yday) · MTD ${num(cmp.sales_mtd)} (${pctLabel(cmp.sales_mtd_pct)} vs last mo)`,
+      sub: `Today ${moneyNum(cmp.sales_today)} (${pctLabel(cmp.sales_today_pct)} vs yday) · MTD ${moneyNum(cmp.sales_mtd)} (${pctLabel(cmp.sales_mtd_pct)} vs last mo)`,
     },
-    { cls: 's-buy', ico: '\ud83d\uded2', label: 'Purchases', val: num(purchases), href: links.purchases || '/purchasing' },
-    { cls: 's-exp', ico: '\ud83e\udde7', label: 'Expenses', val: num(expenses), href: links.expenses || '/expenses' },
-    { cls: 's-net', ico: '\ud83d\udcc8', label: 'Net Position', val: num(net), href: links.reports_sales || '/reports' },
+    { cls: 's-buy', ico: '\ud83d\uded2', label: 'Purchases', val: moneyNum(purchases), href: links.purchases || '/purchasing' },
+    { cls: 's-exp', ico: '\ud83e\udde7', label: 'Expenses', val: moneyNum(expenses), href: links.expenses || '/expenses' },
+    { cls: 's-net', ico: '\ud83d\udcc8', label: 'Net Position', val: moneyNum(net), href: links.reports_sales || '/reports' },
     {
       cls: 's-sales',
       ico: '\ud83d\udcc8',
-      label: 'Gross profit (7d)',
-      val: num(d.gross_profit_7d),
+      label: 'Gross profit',
+      val: moneyNum(d.gross_profit_7d),
       href: links.reports_sales || '/reports',
-      sub: `30d ${num(d.gross_profit_30d)} · from posted sale lines (price − cost)`,
+      sub: `7 days · 30d ${moneyNum(d.gross_profit_30d)}`,
     },
   ];
 
@@ -478,24 +482,6 @@ export default function Page() {
     if (!ownerHome) return;
     router.replace(ownerHome);
   }, [ownerHome, router]);
-  const showRetail = serverLayout
-    ? d.show_retail_operations === true
-    : meReady && showsRetailOperations(layout);
-
-  const countStats = [
-    { label: 'Products', val: products, href: links.products || '/inventory' },
-    { label: 'Low stock', val: low, href: links.low_stock || '/inventory?tab=lowstock' },
-    { label: 'Out of stock', val: oos, href: links.out_of_stock || '/inventory?tab=products&stock=oos' },
-    { label: 'Expiring soon', val: expiring, href: links.expiring || '/inventory?tab=expiry' },
-  ];
-  if (showRetail && typeof d.returns_count === 'number') {
-    countStats.push({
-      label: 'Posted returns',
-      val: d.returns_count,
-      href: '/sales?tab=returns',
-    });
-  }
-
   const liveIndustry = normalizeIndustry(d.industry) || industry;
   const featureCards = filterIndustryDashboardFeatures(
     d.industry_features && d.industry_features.length
@@ -601,7 +587,7 @@ export default function Page() {
           </section>
         ) : (
         <>
-        <section className="stat-grid">
+        <section className="stat-grid dash-kpis">
           {stats.map((s) => (
             <Link className={`stat ${s.cls}`} key={s.label} href={s.href} style={{ textDecoration: 'none', color: 'inherit' }}>
               <span className="rail" />
@@ -613,21 +599,12 @@ export default function Page() {
           ))}
         </section>
 
-        <section className="stat-grid" style={{ marginTop: 12 }}>
-          {countStats.map((s) => (
-            <Link className="stat" key={s.label} href={s.href} style={{ textDecoration: 'none', color: 'inherit' }}>
-              <div className="label">{s.label}</div>
-              <div className="val">{num(s.val)}</div>
-            </Link>
-          ))}
-        </section>
-
         {liveIndustry === 'pharmacy' && d.pharmacy_desk && (
           <section aria-label="Pharmacy" style={{ marginTop: 16 }}>
             <h2 style={{ margin: '0 0 8px', fontSize: 18 }}>Pharmacy</h2>
             <div className="stat-grid">
               {[
-                { label: "Today's pharmacy sales", val: num(d.pharmacy_desk.sales_today), href: '/reports' },
+                { label: "Today's pharmacy sales", val: moneyNum(d.pharmacy_desk.sales_today), href: '/reports' },
                 { label: "Today's returns", val: num(d.pharmacy_desk.returns_today), href: '/sales' },
                 { label: 'Awaiting review', val: num(d.pharmacy_desk.awaiting_review), href: '/prescriptions?status=review' },
                 { label: 'Ready to dispense', val: num(d.pharmacy_desk.ready_to_dispense), href: '/prescriptions?status=approved' },
@@ -732,7 +709,8 @@ export default function Page() {
               Inventory health
             </h3>
             <p className="hint">
-              In-stock vs reorder · <Link href={links.products || '/inventory'}>Inventory</Link>
+              In stock, low stock, out of stock, and lots expiring within 30 days ·{' '}
+              <Link href={links.products || '/inventory'}>Inventory</Link>
             </p>
             <div className="health">
               <svg width="130" height="130" viewBox="0 0 130 130" role="img" aria-label="Inventory health">
@@ -760,17 +738,17 @@ export default function Page() {
                   <span className="dot" style={{ background: '#4AB012', width: 12, height: 12, borderRadius: 4 }} />
                   In stock&nbsp;<b>{num(inStock)}</b>
                 </span>
-                <Link className="pill" href={links.low_stock || '/reports'} style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <span className="dot" style={{ background: '#fb7185', width: 12, height: 12, borderRadius: 4 }} />
+                <Link className="pill" href={links.low_stock || '/inventory?tab=lowstock'}>
+                  <span className="dot" style={{ background: '#f59e0b', width: 12, height: 12, borderRadius: 4 }} />
                   Low stock&nbsp;<b>{num(low)}</b>
                 </Link>
-                <Link className="pill" href={links.products || '/inventory'} style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <span className="dot" style={{ background: '#f59e0b', width: 12, height: 12, borderRadius: 4 }} />
+                <Link className="pill" href={links.out_of_stock || '/inventory?tab=products&stock=oos'}>
+                  <span className="dot" style={{ background: '#ef4444', width: 12, height: 12, borderRadius: 4 }} />
                   Out of stock&nbsp;<b>{num(oos)}</b>
                 </Link>
-                <Link className="pill" href={links.expiring || '/inventory?tab=expiry'} style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <span className="dot" style={{ background: '#13612E', width: 12, height: 12, borderRadius: 4 }} />
-                  Expiring (30d)&nbsp;<b>{num(expiring)}</b>
+                <Link className="pill" href={links.expiring || '/inventory?tab=expiry'}>
+                  <span className="dot" style={{ background: '#fb923c', width: 12, height: 12, borderRadius: 4 }} />
+                  Expiring soon&nbsp;<b>{num(expiring)}</b>
                 </Link>
               </div>
             </div>
@@ -886,7 +864,7 @@ export default function Page() {
                     <td>{p.name}</td>
                     <td>{p.sku || '—'}</td>
                     <td style={{ textAlign: 'right' }}>{num(p.quantity)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{num(p.revenue)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{moneyNum(p.revenue)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -920,7 +898,7 @@ export default function Page() {
                     <td>{s.customer}</td>
                     <td>{s.type === 'pos_sale' ? 'POS' : 'Sale'}</td>
                     <td>{fmtDate(s.date)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{num(s.total)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{moneyNum(s.total)}</td>
                   </tr>
                 ))}
               </tbody>

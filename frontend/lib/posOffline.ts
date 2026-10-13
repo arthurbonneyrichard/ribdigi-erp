@@ -824,10 +824,24 @@ export type FlushResult = {
  * Send queued records for the signed-in user. Does not depend on the offline grant:
  * an online-authenticated user can always sync what was recorded on this device.
  */
+let flushDepth = 0;
+
 export async function flushOfflineQueue(
   api: ApiFn,
   ctx: { tenant_id: string; user_id: string; force?: boolean }
 ): Promise<FlushResult> {
+  if (
+    flushDepth === 0 &&
+    typeof navigator !== 'undefined' &&
+    typeof navigator.locks?.request === 'function'
+  ) {
+    return navigator.locks.request('ribdigi-offline-flush', () => {
+      flushDepth += 1;
+      return flushOfflineQueue(api, ctx).finally(() => {
+        flushDepth -= 1;
+      });
+    });
+  }
   const result: FlushResult = { synced: 0, needsAttention: 0, retrying: 0, authRequired: false, otherUsers: 0 };
   if (!ctx.tenant_id || !ctx.user_id) return result;
   await migrateLegacyQueueStates();

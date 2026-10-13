@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api, getAccessToken } from '../../../lib/api';
-import { formatNumber, formatWhen, plainLabel } from '../../../lib/format';
+import { formatMoney, formatNumber, formatWhen, plainLabel } from '../../../lib/format';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import {
   REPORT_GROUP_ORDER,
@@ -133,7 +133,7 @@ function fmtMoney(value: unknown): string {
   if (value === null || value === undefined || value === '') return '—';
   const n = typeof value === 'number' ? value : Number(value);
   if (!Number.isFinite(n)) return String(value);
-  return formatNumber(n);
+  return formatMoney(n);
 }
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -1627,7 +1627,7 @@ export default function Page() {
         </div>
         <h3 style={{ marginTop: 16 }}>Products sold</h3>
         <p className="muted">
-          Qty {fmtMoney(data.products_sold?.total_quantity)} · revenue {fmtMoney(data.products_sold?.total_revenue)}
+          Qty {formatNumber(data.products_sold?.total_quantity)} · revenue {fmtMoney(data.products_sold?.total_revenue)}
         </p>
         <div className="list-table-wrap">
           <table className="table">
@@ -1644,7 +1644,7 @@ export default function Page() {
                 <tr key={p.product_id}>
                   <td>{p.name}</td>
                   <td>{p.sku || '—'}</td>
-                  <td>{fmtMoney(p.quantity)}</td>
+                  <td>{formatNumber(p.quantity)}</td>
                   <td>{fmtMoney(p.revenue)}</td>
                 </tr>
               ))}

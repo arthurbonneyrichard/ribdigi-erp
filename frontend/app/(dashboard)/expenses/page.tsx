@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import FormModal from '../../../components/FormModal';
 import AttachmentPreview from '../../../components/AttachmentPreview';
 import { api, getAccessToken } from '../../../lib/api';
-import { formatWhen, plainLabel } from '../../../lib/format';
+import { formatMoney, formatWhen, plainLabel } from '../../../lib/format';
+import { AmountField } from '../../../components/AmountField';
 import { useStoreContext } from '../../../lib/storeContext';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 
@@ -316,8 +317,8 @@ export default function Page() {
       });
       setMessage(
         r.data.status === 'approved'
-          ? `Expense saved and posted to the books (${r.data.amount})`
-          : `Expense saved — waiting for approval (${r.data.amount})`,
+          ? `Expense saved and posted to the books (${formatMoney(r.data.amount)})`
+          : `Expense saved — waiting for approval (${formatMoney(r.data.amount)})`,
       );
       setDescription('');
       setPayee('');
@@ -417,7 +418,7 @@ export default function Page() {
       });
       setMessage(
         r.message ||
-          `Schedule updated — ${r.data?.payee || r.data?.category || 'recurring'} @ ${r.data?.amount}`,
+          `Schedule updated — ${r.data?.payee || r.data?.category || 'recurring'} @ ${formatMoney(r.data?.amount)}`,
       );
       cancelRecurringEdit();
       await refresh();
@@ -726,7 +727,7 @@ export default function Page() {
       }
       const r = await api(`/expenses/${editFor}`, { method: 'PATCH', body: JSON.stringify(body) });
       setMessage(
-        `Updated ${r.data?.reference || editFor.slice(0, 8)} — ${r.data?.payee || 'expense'} (${r.data?.amount})`
+        `Updated ${r.data?.reference || editFor.slice(0, 8)} — ${r.data?.payee || 'expense'} (${formatMoney(r.data?.amount)})`
       );
       cancelEdit();
       await refresh();
@@ -918,7 +919,7 @@ export default function Page() {
                   </div>
                 ) : null}
               </td>
-              <td>{r.amount}</td>
+              <td>{formatMoney(r.amount)}</td>
               <td>
                 {r.status === 'approved'
                   ? 'Posted'
@@ -1023,7 +1024,7 @@ export default function Page() {
         <h3>Other income</h3>
         <div className="erp-form-grid">
           <input value={incomeDesc} onChange={(e) => setIncomeDesc(e.target.value)} placeholder="Description" aria-label="Income description" />
-          <input value={incomeAmount} onChange={(e) => setIncomeAmount(e.target.value)} placeholder="Amount" aria-label="Income amount" />
+          <AmountField value={incomeAmount} onChange={(e) => setIncomeAmount(e.target.value)} placeholder="Amount" aria-label="Income amount" />
           <input value={incomePayer} onChange={(e) => setIncomePayer(e.target.value)} placeholder="Payer (optional)" aria-label="Income payer" />
           <button
             type="button"
@@ -1070,7 +1071,7 @@ export default function Page() {
                   <td>{formatWhen(row.income_date) || '—'}</td>
                   <td>{row.description}</td>
                   <td>{row.payer || '—'}</td>
-                  <td>{row.amount}</td>
+                  <td>{formatMoney(row.amount)}</td>
                 </tr>
               ))}
               {incomes.length === 0 && (
@@ -1088,11 +1089,11 @@ export default function Page() {
       <div className="erp-kpis">
         <div className="card">
           <div className="muted">Posted this list</div>
-          <div className="kpi">{approvedSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+          <div className="kpi">{formatMoney(approvedSpend)}</div>
         </div>
         <div className="card">
           <div className="muted">Waiting approval</div>
-          <div className="kpi">{pendingSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+          <div className="kpi">{formatMoney(pendingSpend)}</div>
         </div>
         <div className="card">
           <div className="muted">Rows</div>
@@ -1129,7 +1130,7 @@ export default function Page() {
           </label>
           <label>
             Amount
-          <input
+          <AmountField
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="Amount paid"
@@ -1328,11 +1329,11 @@ export default function Page() {
             style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}
           >
             <span className="muted">Step {idx + 1}</span>
-            <input
+            <AmountField
+              inline
               value={lvl.min_amount}
               onChange={(e) => updateLevel(idx, { min_amount: Number(e.target.value) || 0 })}
               placeholder="Min amount"
-              style={{ width: 100 }}
               aria-label={`Expense approval level ${idx + 1} min amount`}
             />
             <input
@@ -1571,7 +1572,7 @@ export default function Page() {
                 </option>
               ))}
           </select>
-          <input
+          <AmountField
             value={recAmount}
             onChange={(e) => setRecAmount(e.target.value)}
             placeholder="Amount"
@@ -1715,7 +1716,7 @@ export default function Page() {
                   ) : null}
                 </td>
                 <td>{r.payee || '—'}</td>
-                <td>{r.amount}</td>
+                <td>{formatMoney(r.amount)}</td>
                 <td>{plainLabel(r.frequency)}</td>
                 <td className="muted" style={{ fontSize: 12 }}>
                   {formatWhen(r.next_run_at) || '—'}
@@ -1800,7 +1801,7 @@ export default function Page() {
             Check these fields before you apply them.
           </p>
           <div style={{ display: 'grid', gap: 8 }}>
-            <input
+            <AmountField
               value={ocrDraft.amount}
               onChange={(e) => setOcrDraft({ ...ocrDraft, amount: e.target.value })}
               placeholder="Amount"
@@ -1857,7 +1858,7 @@ export default function Page() {
             Change the amount or payee before this expense is approved.
           </p>
           <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
-            <input
+            <AmountField
               value={editDraft.amount}
               onChange={(e) => setEditDraft({ ...editDraft, amount: e.target.value })}
               placeholder="Amount"

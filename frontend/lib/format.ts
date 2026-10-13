@@ -51,6 +51,43 @@ export function formatNumber(
   return `${sign}${joined}${p.decimal_separator}${fracPart}`;
 }
 
+const CURRENCY_SIGNS: Record<string, string> = {
+  GHS: 'GH₵',
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  NGN: '₦',
+  XOF: 'CFA',
+  CAD: 'C$',
+};
+
+let rememberedCurrency = 'GHS';
+
+/** Remember the company currency so amount boxes and totals can show its sign. */
+export function rememberCurrency(code?: string | null) {
+  const next = String(code || '').trim().toUpperCase();
+  if (next) rememberedCurrency = next;
+}
+
+/** Sign for a currency code. A blank code uses the company currency (GHS until loaded). */
+export function currencySign(code?: string | null): string {
+  const raw = String(code ?? '').trim().toUpperCase();
+  const key = raw || rememberedCurrency || 'GHS';
+  return CURRENCY_SIGNS[key] || key;
+}
+
+/** Amount with the currency sign in front, using company number separators. */
+export function formatMoney(
+  value: number | string | null | undefined,
+  prefs?: FormatPrefs | null,
+  currency?: string | null,
+  fractionDigits = 2,
+): string {
+  const body = formatNumber(value, prefs, fractionDigits);
+  if (!body) return '';
+  return `${currencySign(currency)} ${body}`;
+}
+
 function pad2(n: number): string {
   return n < 10 ? `0${n}` : String(n);
 }

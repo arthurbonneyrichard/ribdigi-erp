@@ -362,8 +362,8 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h2>Active sessions</h2>
         <p className="muted">
-          Devices signed in with your account. Revoke a remote session to force re-login. Idle
-          browsers auto-logout after 30 minutes of inactivity.
+          Devices signed in with your account. Revoke a remote session to force re-login. Opening
+          this app after it has been idle, or leaving it unused, signs you out to the login page.
         </p>
         <ul style={{ listStyle: 'none', padding: 0, margin: '12px 0 0' }}>
           {sessions.map((s) => (
