@@ -146,6 +146,18 @@ def load_logo_jpeg(
         return None
 
 
+def _pdf_font_objects(*, mono: bool, bold: bool) -> tuple[bytes, bytes]:
+    if mono:
+        regular = b"/Courier-Bold" if bold else b"/Courier"
+        heavy = b"/Courier-Bold"
+    else:
+        regular = b"/Helvetica-Bold" if bold else b"/Helvetica"
+        heavy = b"/Helvetica-Bold"
+    f1 = b"<< /Type /Font /Subtype /Type1 /BaseFont " + regular + b" >>"
+    f2 = b"<< /Type /Font /Subtype /Type1 /BaseFont " + heavy + b" >>"
+    return f1, f2
+
+
 def build_text_pdf(
     lines: list[tuple[str, int] | tuple[str, int, tuple[float, float, float]]],
     *,
@@ -153,6 +165,7 @@ def build_text_pdf(
     page_height: float,
     margin: float = 40,
     mono: bool = False,
+    bold: bool = False,
     logo: tuple[bytes, int, int] | None = None,
     logo_max_pt: float = 80,
 ) -> bytes:
@@ -224,12 +237,9 @@ def build_text_pdf(
             ).encode(),
         )
         obj(4, f"<< /Length {len(stream)} >>\nstream\n".encode() + stream + b"\nendstream")
-        if mono:
-            obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>")
-            obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold >>")
-        else:
-            obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
-            obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>")
+        f1, f2 = _pdf_font_objects(mono=mono, bold=bold)
+        obj(5, f1)
+        obj(6, f2)
         obj(
             7,
             (
@@ -252,12 +262,9 @@ def build_text_pdf(
             ).encode(),
         )
         obj(4, f"<< /Length {len(stream)} >>\nstream\n".encode() + stream + b"\nendstream")
-        if mono:
-            obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>")
-            obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold >>")
-        else:
-            obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
-            obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>")
+        f1, f2 = _pdf_font_objects(mono=mono, bold=bold)
+        obj(5, f1)
+        obj(6, f2)
         n_objs = 6
 
     out = bytearray(b"%PDF-1.4\n")

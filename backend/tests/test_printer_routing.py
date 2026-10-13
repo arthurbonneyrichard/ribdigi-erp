@@ -57,6 +57,31 @@ async def test_printers_are_tenant_isolated(client):
 
 
 @pytest.mark.asyncio
+async def test_printer_test_print_fits_source_id(client):
+    ac, _seed = client
+    admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    created = await ac.post(
+        "/api/v1/printers",
+        headers=admin,
+        json={
+            "name": "Ready till",
+            "connection_type": "browser_dialog",
+            "purposes": ["customer_receipt"],
+        },
+    )
+    assert created.status_code == 200, created.text
+    body = created.json()["data"]
+    assert body["is_enabled"] is True
+    assert body["status"] == "online"
+    tested = await ac.post(f"/api/v1/printers/{body['id']}/test", headers=admin, json={})
+    assert tested.status_code == 200, tested.text
+    job = tested.json()["data"]
+    assert job["status"] == "browser_pending"
+    assert job["source_id"] and len(job["source_id"]) <= 36
+    assert "The server could not complete this request." not in tested.text
+
+
+@pytest.mark.asyncio
 async def test_network_printer_rejects_public_host(client):
     ac, seed = client
     admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
@@ -72,6 +97,33 @@ async def test_network_printer_rejects_public_host(client):
         },
     )
     assert r.status_code == 400
+
+
+def test_network_receipt_sends_escpos(monkeypatch):
+    sent: dict = {}
+
+    class _Sock:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def sendall(self, data):
+            sent["data"] = data
+
+    def _connect(addr, timeout):
+        sent["addr"] = addr
+        sent["timeout"] = timeout
+        return _Sock()
+
+    monkeypatch.setattr(printers_svc.socket, "create_connection", _connect)
+    printers_svc.send_network_receipt("192.168.1.130", 9100, "Demo Mart\n2 Bottled Water        20.00\n")
+    assert sent["addr"] == ("192.168.1.130", 9100)
+    assert sent["data"].startswith(b"\x1b\x40\x1b\x61\x00")
+    assert b"Demo Mart" in sent["data"]
+    assert b"Bottled Water" in sent["data"]
+    assert sent["data"].endswith(b"\x1d\x56\x00")
 
 
 def test_validate_network_host_allows_rfc1918():

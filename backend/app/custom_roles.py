@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import func, inspect, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
@@ -313,7 +314,9 @@ async def create_custom_role(
     if exists:
         raise HTTPException(status_code=409, detail="Custom role key already exists")
 
+    now = datetime.utcnow()
     row = m.CustomRole(
+        id=m.uid(),
         tenant_id=tenant_id,
         key=role_key,
         label=label_s[:120],
@@ -322,7 +325,47 @@ async def create_custom_role(
         record_scope=scope,
         is_active=True,
         created_by=user_id,
+        created_at=now,
+        updated_at=now,
     )
+
+    def _has_slug(sync_session) -> bool:
+        cols = inspect(sync_session.connection()).get_columns("custom_roles")
+        return any(c["name"] == "slug" for c in cols)
+
+    # Some databases still require custom_roles.slug (unique with tenant).
+    # The app identity is `key`; copy it into slug when that column exists.
+    if await db.run_sync(_has_slug):
+        await db.execute(
+            text(
+                "INSERT INTO custom_roles "
+                "(id, tenant_id, slug, key, label, base_role, permissions, "
+                "record_scope, is_active, created_by, created_at, updated_at) "
+                "VALUES (:id, :tenant_id, :slug, :key, :label, :base_role, "
+                "CAST(:permissions AS json), :record_scope, :is_active, "
+                ":created_by, :created_at, :updated_at)"
+            ),
+            {
+                "id": row.id,
+                "tenant_id": tenant_id,
+                "slug": role_key,
+                "key": role_key,
+                "label": row.label,
+                "base_role": base,
+                "permissions": json.dumps(perms),
+                "record_scope": scope,
+                "is_active": True,
+                "created_by": user_id,
+                "created_at": now,
+                "updated_at": now,
+            },
+        )
+        await db.flush()
+        saved = await get_custom_role(db, tenant_id, role_key, active_only=False)
+        if not saved:
+            raise HTTPException(status_code=400, detail="Custom role was not saved")
+        return saved
+
     db.add(row)
     await db.flush()
     return row

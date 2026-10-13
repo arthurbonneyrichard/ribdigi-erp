@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import FormModal from '../../../components/FormModal';
 import { api, getAccessToken } from '../../../lib/api';
 import { formatElapsed, formatWhen } from '../../../lib/format';
@@ -298,6 +298,8 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [userAddOpen, setUserAddOpen] = useState(false);
+  const [editUser, setEditUser] = useState<UserRow | null>(null);
+  const [editForm, setEditForm] = useState({ full_name: '', phone: '', role: '', password: '' });
   const [storeAddOpen, setStoreAddOpen] = useState(false);
   const [canWrite, setCanWrite] = useState(false);
   const [canWriteStores, setCanWriteStores] = useState(false);
@@ -659,6 +661,50 @@ export default function Page() {
     await patchUser(userId, { role }, 'Role updated');
   }
 
+  function openEditUser(row: UserRow) {
+    setEditUser(row);
+    setEditForm({
+      full_name: row.full_name || '',
+      phone: row.phone || '',
+      role: row.role || '',
+      password: '',
+    });
+  }
+
+  async function saveEditUser(e: FormEvent) {
+    e.preventDefault();
+    if (!editUser) return;
+    const body: Record<string, unknown> = {};
+    const name = editForm.full_name.trim();
+    if (name && name !== (editUser.full_name || '')) body.full_name = name;
+    const phone = editForm.phone.trim();
+    if (phone && phone !== (editUser.phone || '').trim()) body.phone = phone;
+    if (editUser.id !== meId && editForm.role && editForm.role !== editUser.role) {
+      body.role = editForm.role;
+    }
+    if (editForm.password.trim()) body.password = editForm.password.trim();
+    if (!Object.keys(body).length) {
+      setEditUser(null);
+      return;
+    }
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      await api(`/users/${editUser.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      });
+      setMessage('User updated');
+      setEditUser(null);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function setBranch(userId: string, branchId: string) {
     const trimmed = branchId.trim();
     const currentStores = userStoreIds[userId] || [];
@@ -945,6 +991,55 @@ export default function Page() {
             </div>
           )}
         </section>
+      ) : null}
+
+      {canWrite && editUser ? (
+        <FormModal
+          title={`Edit ${editUser.full_name || editUser.email}`}
+          busy={busy}
+          dirty
+          onClose={() => setEditUser(null)}
+        >
+          <form id="edit-user" onSubmit={saveEditUser} style={{ display: 'grid', gap: 8 }}>
+            <input
+              value={editForm.full_name}
+              onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+              placeholder="Full name"
+              aria-label="Edit user full name"
+              required
+            />
+            <input value={editUser.email} aria-label="Edit user email" readOnly />
+            <input
+              value={editForm.phone}
+              onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+              placeholder="Phone (optional, E.164 e.g. +233...)"
+              aria-label="Edit user phone"
+            />
+            <select
+              value={editForm.role}
+              onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+              aria-label={`Edit role for ${editUser.email}`}
+              disabled={editUser.id === meId}
+            >
+              {assignableRoles(editForm.role).map((r) => (
+                <option key={r.role} value={r.role}>
+                  {r.label}
+                  {isCustomRole(r) ? ' (custom)' : ''}
+                </option>
+              ))}
+            </select>
+            <input
+              type="password"
+              value={editForm.password}
+              onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+              placeholder="New password (leave blank to keep)"
+              aria-label="Edit user password"
+            />
+            <button type="submit" className="btn-ok" disabled={busy} aria-label={`Save user ${editUser.email}`}>
+              Save user
+            </button>
+          </form>
+        </FormModal>
       ) : null}
 
       {canWrite && userAddOpen ? (
@@ -1614,6 +1709,14 @@ export default function Page() {
               <td>{r.is_active ? 'Yes' : 'No'}</td>
               {canWrite && (
                 <td>
+                  <button
+                    type="button"
+                    className="btn-ok"
+                    onClick={() => openEditUser(r)}
+                    aria-label={`Edit user ${r.email}`}
+                  >
+                    Edit
+                  </button>
                   {r.email_verified === false ? (
                     <button
                       type="button"

@@ -1,6 +1,5 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, apiFetch, isAbortError } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
@@ -13,6 +12,8 @@ import { formatDate, formatWhen, plainLabel } from '../../../lib/format';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import { openShiftForSignedInUser } from '../../../lib/cashierShift';
 import { setPosDrawerBridge } from '../../../lib/posDrawerBridge';
+import { openReceiptPrintWindow } from '../../../lib/posReceiptPrint';
+import { consumeWedgeKey, looksLikeBarcode, type WedgeBuffer } from '../../../lib/posWedgeScan';
 import {
   allocationRemainingFor,
   cacheSnapshot,
@@ -37,8 +38,6 @@ import {
   type QueuedSale,
 } from '../../../lib/posOffline';
 import PosOfflinePanel, { type OfflineStatus } from '../../../components/PosOfflinePanel';
-
-const PosPrintStatus = dynamic(() => import('../../../components/PosPrintStatus'), { ssr: false });
 
 const OFFLINE_TENDERS = new Set(['cash', 'mobile_money', 'card', 'bank_transfer', 'credit']);
 
@@ -75,18 +74,16 @@ function printProvisionalReceipt(rec: QueuedSale, lines: Array<{ name: string; q
   const tenders = payments
     .map((p) => `<div>${escapeHtml(posPayLabel(p.payment_method))}: ${Number(p.amount || 0).toFixed(2)}</div>`)
     .join('');
-  const w = window.open('', '_blank', 'width=380,height=640');
-  if (!w) return;
-  w.document.write(
+  return openReceiptPrintWindow(
     `<!doctype html><html><head><title>${escapeHtml(rec.local_receipt_number)}</title>` +
-      '<style>body{font-family:monospace;font-size:12px;margin:12px}table{width:100%;border-collapse:collapse}</style></head><body>' +
+      '<style>@page{margin:0;size:80mm auto}body{font-family:\'Courier New\',ui-monospace,monospace;font-weight:700;font-size:13px;line-height:1.15;margin:0;width:80mm}table{width:100%;border-collapse:collapse}td{font-size:13px;font-weight:700;padding:1px 0}td:last-child,td:nth-child(2){text-align:right;white-space:nowrap}h3{font-size:16px;margin:0;text-align:center}p{font-size:10px;margin:4px 0}</style></head><body>' +
       `<h3 style="margin:0">${escapeHtml(storeName)}</h3>` +
       '<p><strong>Receipt copy — not the final receipt yet</strong><br/>The final receipt number is issued when this sale is sent.</p>' +
       `<div>No: ${escapeHtml(rec.local_receipt_number)}</div><div>${escapeHtml(formatWhen(rec.created_at) || '')}</div>` +
       `<table>${rows}</table><hr/><div><strong>Total ${Number(payload.total || 0).toFixed(2)}</strong></div>${tenders}` +
-      '<script>window.print()</script></body></html>'
+      '</body></html>',
+    ''
   );
-  w.document.close();
 }
 
 function posPayLabel(method?: string | null) {
@@ -140,12 +137,6 @@ function offlineDispenseBlock(product: Product): string | null {
     if (qty <= 0) return `${product.name} has no unexpired, released batch on this device`;
   }
   return null;
-}
-
-function looksLikeBarcode(value: string) {
-  const text = value.trim();
-  if (!text || /\s/.test(text)) return false;
-  return /^[A-Za-z0-9\-._]{4,48}$/.test(text);
 }
 
 function canWriteCredit(me: { permissions?: Record<string, string[]> | null } | null | undefined) {
@@ -212,21 +203,6 @@ type Session = {
   cashier_name?: string | null;
   opened_at?: string | null;
 };
-
-async function downloadReceiptPdf(saleId: string, paper = '80mm') {
-  const res = await apiFetch(`/pos/sales/${saleId}/receipt?format=pdf&paper=${encodeURIComponent(paper)}`);
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.detail || body.message || 'PDF download failed');
-  }
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `receipt-${saleId.slice(0, 8)}.pdf`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
 
 function money(n: number) {
   return new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
@@ -459,11 +435,16 @@ export default function Page() {
     invoice_number?: string | null;
     offline?: QueuedSale;
   } | null>(null);
-  const [lastOfflineReceipt, setLastOfflineReceipt] = useState<{
-    lines: Array<{ name: string; quantity: number; unit: number }>;
-    store: string;
-  } | null>(null);
-  const [printJobs, setPrintJobs] = useState<any[]>([]);
+  const [reprintTarget, setReprintTarget] = useState<
+    | { offline: true; rec: QueuedSale; lines: Array<{ name: string; quantity: number; unit: number }>; store: string }
+    | { offline: false; id: string }
+    | null
+  >(null);
+  const [payAsReprint, setPayAsReprint] = useState(false);
+  const [showReceiptEmailSms, setShowReceiptEmailSms] = useState(false);
+  const printedPayIds = useRef<Set<string>>(new Set());
+  const wedgeLookupRef = useRef<(query: string) => void>(() => undefined);
+  const wedgeState = useRef<WedgeBuffer>({ buf: '', last: 0 });
   const [busy, setBusy] = useState(false);
   const [cashierName, setCashierName] = useState('');
   const [hideStorePicker, setHideStorePicker] = useState(false);
@@ -582,6 +563,28 @@ export default function Page() {
   useEffect(() => {
     if (!canCreditSale && paymentMethod === 'credit') setPaymentMethod('cash');
   }, [canCreditSale, paymentMethod]);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      consumeWedgeKey(event, wedgeState.current, (query) => {
+        wedgeLookupRef.current(query);
+      });
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    api('/pos/settings')
+      .then((r) => {
+        if (!cancelled) setShowReceiptEmailSms(r.data?.show_receipt_email_sms === true);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function loadShiftHistory() {
     try {
@@ -1042,10 +1045,10 @@ export default function Page() {
     }
   }
 
-  async function search(e?: React.FormEvent) {
-    e?.preventDefault();
+  async function applyScannedBarcode(raw: string) {
     setError('');
-    const query = q.trim();
+    const query = raw.trim();
+    if (!query) return;
     try {
       // USB/Bluetooth wedge scanners type digits then Enter — accept as barcode.
       if (looksLikeBarcode(query) && !navigator.onLine) {
@@ -1055,13 +1058,12 @@ export default function Page() {
         );
         if (exact.length === 1) {
           addToCart(exact[0]);
-          setMessage(`Scanned ${exact[0].name} (saved catalog)`);
+          setMessage('');
           skipEmptyBrowse.current = true;
           setQ('');
           return;
         }
         if (hits.length === 0) setError(`No product for ${query} in the saved catalog`);
-        else setMessage(`${hits.length} matches — tap a tile`);
         return;
       }
       if (looksLikeBarcode(query)) {
@@ -1073,7 +1075,7 @@ export default function Page() {
         const hits: Product[] = exact.data || [];
         if (hits.length === 1) {
           addToCart(hits[0]);
-          setMessage(`Scanned ${hits[0].name} (${hits[0].barcode || hits[0].sku})`);
+          setMessage('');
           skipEmptyBrowse.current = true;
           setQ('');
           return;
@@ -1083,7 +1085,7 @@ export default function Page() {
           const soft = await browse(query);
           if (soft.length === 1) {
             addToCart(soft[0]);
-            setMessage(`Added ${soft[0].name}`);
+            setMessage('');
             skipEmptyBrowse.current = true;
             setQ('');
             return;
@@ -1092,11 +1094,10 @@ export default function Page() {
             setError(`No product for barcode ${query}`);
             return;
           }
-          setMessage(`${soft.length} matches — tap a tile`);
           return;
         }
         setRows(hits);
-        setMessage(`${hits.length} barcode matches — tap a tile`);
+        setMessage('');
         return;
       }
       await browse(query);
@@ -1104,6 +1105,15 @@ export default function Page() {
       setError(err.message);
     }
   }
+
+  async function search(e?: React.FormEvent) {
+    e?.preventDefault();
+    await applyScannedBarcode(q);
+  }
+
+  wedgeLookupRef.current = (query: string) => {
+    void applyScannedBarcode(query);
+  };
 
   function addToCart(product: Product) {
     if (!session) {
@@ -1133,6 +1143,7 @@ export default function Page() {
       return;
     }
     setError('');
+    setPayAsReprint(false);
     setCart((prev) => {
       const row = prev.find((p) => p.id === product.id);
       if (row) {
@@ -1223,6 +1234,36 @@ export default function Page() {
       const half = Math.round((cartTotal / 2) * 100) / 100;
       setCashTender(String(half || ''));
       setCardTender(String(Math.max(0, Math.round((cartTotal - half) * 100) / 100) || ''));
+    }
+  }
+
+  async function printReceiptAfterPay(
+    saleId: string,
+    jobs: Array<{ id?: string; purpose?: string; status?: string }>,
+    offline?: { rec: QueuedSale; lines: Array<{ name: string; quantity: number; unit: number }>; store: string }
+  ) {
+    if (!saleId || printedPayIds.current.has(saleId)) return;
+    printedPayIds.current.add(saleId);
+    if (offline) {
+      printProvisionalReceipt(offline.rec, offline.lines, offline.store);
+      return;
+    }
+    const receiptJobs = (jobs || []).filter((job) => job.purpose === 'customer_receipt');
+    if (!receiptJobs.length) return;
+    if (receiptJobs.some((job) => job.status === 'printed')) return;
+    const browserJob = receiptJobs.find((job) => job.status === 'browser_pending' && job.id);
+    if (!browserJob?.id) return;
+    try {
+      const detail = await api(`/printers/jobs/${browserJob.id}`);
+      const payload = detail.data?.payload || {};
+      const opened = openReceiptPrintWindow(payload.html, payload.text || '');
+      if (!opened) return;
+      await api(`/printers/jobs/${browserJob.id}/browser-ack`, {
+        method: 'POST',
+        body: JSON.stringify({ status: 'printed' }),
+      });
+    } catch {
+      return;
     }
   }
 
@@ -1412,7 +1453,18 @@ export default function Page() {
         setSplitTender(false);
         setAllocationOverride(false);
         setLastSale({ id: queued.id, reference: queued.local_receipt_number, offline: queued });
-        setLastOfflineReceipt({ lines: receiptLines, store: store?.name || session.store_name || '' });
+        setReprintTarget({
+          offline: true,
+          rec: queued,
+          lines: receiptLines,
+          store: store?.name || session.store_name || '',
+        });
+        setPayAsReprint(true);
+        void printReceiptAfterPay(queued.id, [], {
+          rec: queued,
+          lines: receiptLines,
+          store: store?.name || session.store_name || '',
+        });
         setMessage(
           `Saved on this device as ${queued.local_receipt_number}. This is not the final receipt. It will send when you are back online.`
         );
@@ -1492,7 +1544,10 @@ export default function Page() {
         balance_due: r.data.balance_due,
         invoice_number: r.data.invoice_number,
       });
-      setPrintJobs(Array.isArray(r.data.print_jobs) ? r.data.print_jobs : []);
+      setReprintTarget({ offline: false, id: r.data.id });
+      setPayAsReprint(true);
+      const jobs = Array.isArray(r.data.print_jobs) ? r.data.print_jobs : [];
+      void printReceiptAfterPay(r.data.id, jobs);
       await refreshSession();
       await browse(q);
       const statusLabel = String(r.data.payment_status || '').replace(/_/g, ' ');
@@ -1562,18 +1617,57 @@ export default function Page() {
     }
   }
 
-  async function printLastReceipt() {
-    if (!lastSale) return;
-    if (lastSale.offline) {
-      printProvisionalReceipt(lastSale.offline, lastOfflineReceipt?.lines || [], lastOfflineReceipt?.store || '');
-      return;
-    }
+  async function reprintLastReceipt() {
+    if (!reprintTarget || receiptBusy) return;
     setError('');
-    setReceiptBusy('print');
+    setReceiptBusy('reprint');
     try {
-      await downloadReceiptPdf(lastSale.id, receiptPaper);
+      if (reprintTarget.offline) {
+        printProvisionalReceipt(reprintTarget.rec, reprintTarget.lines, reprintTarget.store);
+        return;
+      }
+      let printed = false;
+      try {
+        const queued = await api('/printers/reprint', {
+          method: 'POST',
+          body: JSON.stringify({ source_type: 'pos_sale', source_id: reprintTarget.id }),
+        });
+        const jobs = Array.isArray(queued.data) ? queued.data : [];
+        if (
+          jobs.some(
+            (job: { purpose?: string; status?: string }) =>
+              job.purpose === 'customer_receipt' && job.status === 'printed'
+          )
+        ) {
+          printed = true;
+        }
+        const browser = printed
+          ? undefined
+          : jobs.find(
+              (job: { id?: string; purpose?: string; status?: string }) =>
+                job.purpose === 'customer_receipt' && job.status === 'browser_pending' && job.id
+            );
+        if (browser?.id) {
+          const detail = await api(`/printers/jobs/${browser.id}`);
+          const payload = detail.data?.payload || {};
+          printed = openReceiptPrintWindow(payload.html, payload.text || '');
+          if (printed) {
+            await api(`/printers/jobs/${browser.id}/browser-ack`, {
+              method: 'POST',
+              body: JSON.stringify({ status: 'printed' }),
+            });
+          }
+        }
+      } catch {
+        printed = false;
+      }
+      if (!printed) {
+        const receipt = await api(`/pos/sales/${reprintTarget.id}/receipt`);
+        const opened = openReceiptPrintWindow(receipt.data?.html, receipt.data?.text || '');
+        if (!opened) setError('Reprint could not open the print dialog.');
+      }
     } catch (err: any) {
-      setError(err.message);
+      setError(err?.message || 'Reprint could not open the print dialog.');
     } finally {
       setReceiptBusy('');
     }
@@ -1609,13 +1703,15 @@ export default function Page() {
           <div className="tpos-top-copy">
             <h1>Point of Sale</h1>
             {tradeBanner ? <p className="muted">{tradeBanner}</p> : null}
+            {cashierName || !online ? (
             <p className="muted">
-              {cashierName || 'Scan a barcode or tap a product.'}
+              {cashierName}
               {!online
-                ? ' · Offline. Prices and stock are from the last time this device was online.'
+                ? `${cashierName ? ' · ' : ''}Offline. Prices and stock are from the last time this device was online.`
                 : ''}
               {!online && catalogCachedAt ? ` · Saved ${formatCacheAge(catalogCachedAt)}` : ''}
             </p>
+            ) : null}
             {meId && tenantId ? (
               <PosOfflinePanel
                 api={api as unknown as (path: string, opts?: RequestInit) => Promise<unknown>}
@@ -2129,7 +2225,6 @@ export default function Page() {
               {cart.length === 0 ? (
                 <div className="tpos-cart-empty">
                   <strong>No products selected</strong>
-                  <p>Tap a product or scan a barcode.</p>
                 </div>
               ) : (
                 <div className="tpos-order-head" aria-hidden>
@@ -2454,6 +2549,22 @@ export default function Page() {
                 <strong>{money(cartTotal)}</strong>
               </div>
               <div className="tpos-cart-actions">
+                <div className="tpos-pay-row">
+                <button
+                  type="button"
+                  className="tpos-btn tpos-btn-pay"
+                  onClick={payAsReprint ? reprintLastReceipt : checkout}
+                  disabled={payAsReprint ? !!receiptBusy : !cart.length || !session || busy}
+                  aria-label={payAsReprint ? 'Reprint last receipt' : 'Charge'}
+                >
+                  {payAsReprint
+                    ? receiptBusy === 'reprint'
+                      ? 'Reprint…'
+                      : 'Reprint'
+                    : busy
+                      ? 'Paying…'
+                      : `Pay ${money(cartTotal)}`}
+                </button>
                 <button
                   type="button"
                   className="tpos-btn tpos-btn-clear btn-danger"
@@ -2463,15 +2574,7 @@ export default function Page() {
                 >
                   Clear
                 </button>
-                <button
-                  type="button"
-                  className="tpos-btn tpos-btn-pay"
-                  onClick={checkout}
-                  disabled={!cart.length || !session || busy}
-                  aria-label="Charge"
-                >
-                  {busy ? 'Paying…' : `Pay ${money(cartTotal)}`}
-                </button>
+                </div>
                 <button
                   type="button"
                   className="sr-only"
@@ -2505,20 +2608,7 @@ export default function Page() {
                   <span>{message}</span>
                   {lastSale ? (
                     <div className="tpos-success-actions">
-                      <button
-                        type="button"
-                        className="tpos-btn"
-                        onClick={printLastReceipt}
-                        disabled={!!receiptBusy}
-                        aria-label="Print last receipt"
-                      >
-                        {receiptBusy === 'print'
-                          ? 'Printing…'
-                          : lastSale.offline
-                            ? 'Print receipt (not final)'
-                            : 'Print receipt'}
-                      </button>
-                      {lastSale.offline ? null : (
+                      {showReceiptEmailSms && !lastSale.offline ? (
                       <>
                       <input
                         type="text"
@@ -2547,13 +2637,10 @@ export default function Page() {
                         {receiptBusy === 'sms' ? 'Sending…' : 'SMS'}
                       </button>
                       </>
-                      )}
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
-              ) : null}
-              {lastSale && !lastSale.offline ? (
-                <PosPrintStatus key={lastSale.id} jobs={printJobs} saleId={lastSale.id} />
               ) : null}
             </div>
           </aside>

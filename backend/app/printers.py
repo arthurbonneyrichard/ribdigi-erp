@@ -8,17 +8,23 @@ The browser cannot enumerate OS printers or silently fan-out. Destinations are:
 
 from __future__ import annotations
 
+import asyncio
 import ipaddress
+import logging
 import re
 import secrets
+import socket
 from datetime import datetime, timedelta
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.attributes import flag_modified
 
 from app import models as m
 from app.honesty import require_honest_narrative
@@ -253,6 +259,28 @@ def validate_network_host(host: str) -> str:
     )
 
 
+def pos_show_receipt_email_sms(tenant: m.Tenant | None) -> bool:
+    """Company choice: Email/SMS receipt actions on the till. Default off."""
+    raw = getattr(tenant, "print_branding", None) if tenant else None
+    if not isinstance(raw, dict):
+        return False
+    return raw.get("pos_show_receipt_email_sms") is True
+
+
+def set_pos_show_receipt_email_sms(tenant: m.Tenant, enabled: bool) -> bool:
+    current = dict(getattr(tenant, "print_branding", None) or {})
+    current["pos_show_receipt_email_sms"] = bool(enabled)
+    tenant.print_branding = current
+    flag_modified(tenant, "print_branding")
+    return bool(enabled)
+
+
+class ReceiptEmailSmsUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    show_email_sms: bool
+
+
 def capabilities(industry: str | None = None) -> dict[str, Any]:
     ind = _canonical_industry(industry)
     allowed = purposes_for_industry(ind)
@@ -481,7 +509,7 @@ async def create_printer(
         is_default=bool(payload.is_default),
         host=host,
         port=int(payload.port or 9100),
-        status="unknown",
+        status="online" if conn == "browser_dialog" else "unknown",
         created_by=user_id,
     )
     db.add(row)
@@ -748,6 +776,58 @@ async def _record_attempt(
     )
 
 
+def escpos_receipt_bytes(text: str) -> bytes:
+    """ESC/POS slip: init, double-height type, text, feed, cut."""
+    body = (text or "").replace("\r\n", "\n").replace("\n", "\r\n")
+    encoded = body.encode("cp437", errors="replace")
+    # Normal font (no double-height) so each padded line stays on the paper.
+    return b"\x1b\x40" + b"\x1b\x61\x00" + encoded + b"\r\n\r\n\r\n" + b"\x1d\x56\x00"
+
+
+def send_network_receipt(host: str, port: int, text: str) -> None:
+    """Send one receipt to an allowlisted private printer. Raises on failure."""
+    safe_host = validate_network_host(host)
+    payload = escpos_receipt_bytes(text)
+    with socket.create_connection((safe_host, int(port or 9100)), timeout=3) as sock:
+        sock.sendall(payload)
+
+
+async def _deliver_network_job(db: AsyncSession, printer: m.Printer, job: m.PrintJob) -> None:
+    """Print a network job now. A failed send does not fail the sale."""
+    if printer.connection_type != "network" or not printer.host:
+        return
+    text = ""
+    if isinstance(job.payload, dict):
+        text = str(job.payload.get("text") or "")
+    if not text:
+        return
+    copies = max(1, int(printer.copies or 1))
+    try:
+        for _ in range(copies):
+            await asyncio.to_thread(
+                send_network_receipt, str(printer.host), int(printer.port or 9100), text
+            )
+    except Exception:
+        logger.exception("Network receipt send failed printer_id=%s", printer.id)
+        now = datetime.utcnow()
+        job.status = "failed"
+        job.last_error = "Could not reach the printer"
+        printer.status = "error"
+        printer.last_error = "Could not reach the printer"
+        printer.updated_at = now
+        await _record_attempt(db, job, status="failed", detail="network send failed")
+        return
+    now = datetime.utcnow()
+    job.status = "printed"
+    job.printed_at = now
+    job.last_error = None
+    printer.status = "online"
+    printer.last_error = None
+    printer.last_seen_at = now
+    printer.updated_at = now
+    await _record_attempt(db, job, status="printed", detail="sent to printer")
+
+
 async def enqueue_job(
     db: AsyncSession,
     *,
@@ -818,6 +898,7 @@ async def enqueue_job(
             return existing
         raise
     await _record_attempt(db, job, status=status, detail="enqueued", actor_id=user_id)
+    await _deliver_network_job(db, printer, job)
     return job
 
 
@@ -1011,7 +1092,8 @@ async def enqueue_test_print(
         "payments_included": False,
         "browser_fallback": printer.connection_type == "browser_dialog",
     }
-    key_source = f"test:{printer.id}:{datetime.utcnow().strftime('%Y%m%d%H%M%S')}:{secrets.token_hex(3)}"
+    # source_id is varchar(36). A printer id plus a timestamp does not fit.
+    key_source = m.uid()
     industry = await load_tenant_industry(db, tenant_id)
     purpose = next(
         (p for p in (printer.purposes or []) if purpose_allowed_for_industry(p, industry)),
@@ -1156,12 +1238,11 @@ async def complete_job(
     job.updated_at = datetime.utcnow()
     if wanted == "printed":
         job.printed_at = datetime.utcnow()
-        if agent:
-            printer = await db.get(m.Printer, job.printer_id)
-            if printer:
-                printer.status = "online"
-                printer.last_seen_at = datetime.utcnow()
-                printer.last_error = None
+        printer = await db.get(m.Printer, job.printer_id)
+        if printer and (agent or printer.connection_type == "browser_dialog"):
+            printer.status = "online"
+            printer.last_seen_at = datetime.utcnow()
+            printer.last_error = None
     elif wanted == "failed" and agent:
         printer = await db.get(m.Printer, job.printer_id)
         if printer:

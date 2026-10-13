@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import FormModal from '../../../components/FormModal';
 import { api } from '../../../lib/api';
+import { openReceiptPrintWindow } from '../../../lib/posReceiptPrint';
 import { industryLabel } from '../../../lib/industries';
 import { getMe } from '../../../lib/meCache';
 import {
@@ -36,9 +37,12 @@ export default function PrinterSettingsPage() {
   const [industry, setIndustry] = useState<string | null>(null);
   const [purposeOptions, setPurposeOptions] = useState<string[]>(() => printerPurposesForIndustry(null));
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [printerAddOpen, setPrinterAddOpen] = useState(false);
   const [pairing, setPairing] = useState('');
+  const [installedName, setInstalledName] = useState('');
+  const [showEmailSms, setShowEmailSms] = useState(false);
   const [form, setForm] = useState({
     name: '',
     connection_type: 'browser_dialog',
@@ -52,12 +56,14 @@ export default function PrinterSettingsPage() {
 
   const load = useCallback(async () => {
     try {
-      const [caps, printers, storeRes, me] = await Promise.all([
+      const [caps, printers, storeRes, me, emailSms] = await Promise.all([
         api('/printers/capabilities').catch(() => ({ data: null })),
         api('/printers'),
         api('/stores').catch(() => ({ data: [] })),
         getMe().catch(() => ({ data: {} })),
+        api('/printers/receipt-email-sms').catch(() => ({ data: { show_email_sms: false } })),
       ]);
+      setShowEmailSms(emailSms.data?.show_email_sms === true);
       const savedIndustry = (me.data?.industry as string | null | undefined) || null;
       const options = resolvePrinterPurposes(savedIndustry, caps.data?.purposes || null);
       setIndustry(savedIndustry);
@@ -73,9 +79,17 @@ export default function PrinterSettingsPage() {
       });
       setError('');
     } catch (err: any) {
+      setNotice('');
       setError(err?.message || 'Unable to load printers');
     }
   }, []);
+
+  function connectionLabel(kind: string) {
+    if (kind === 'browser_dialog') return 'This computer';
+    if (kind === 'print_agent') return 'Till agent';
+    if (kind === 'network') return 'Network';
+    return kind;
+  }
 
   useEffect(() => {
     load().catch(() => undefined);
@@ -91,10 +105,72 @@ export default function PrinterSettingsPage() {
     }));
   }
 
+  function seeInstalledPrinters() {
+    setError('');
+    const opened = openReceiptPrintWindow(
+      '<!doctype html><html><head><meta charset="utf-8"/><title>Installed printers</title></head><body>' +
+        '<p style="font-family:sans-serif">This dialog lists the printers installed on this computer. ' +
+        'Pick one to confirm the name, then close the dialog and type that name on the Printers page.</p>' +
+        '</body></html>',
+      ''
+    );
+    if (!opened) {
+      setNotice('');
+      setError('The print dialog could not open. Try again.');
+    }
+  }
+
+  async function addInstalledPrinter() {
+    const name = installedName.trim();
+    if (!name || busy) return;
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      const hasDefault = rows.some(
+        (row) => row.is_enabled && row.is_default && (row.purposes || []).includes('customer_receipt')
+      );
+      await api('/printers', {
+        method: 'POST',
+        body: JSON.stringify({
+          name,
+          connection_type: 'browser_dialog',
+          paper: '80mm',
+          purposes: ['customer_receipt'],
+          copies: 1,
+          is_default: !hasDefault,
+        }),
+      });
+      setInstalledName('');
+      setNotice(`${name} is linked for POS receipts.`);
+      await load();
+    } catch (err: any) {
+      setNotice('');
+      setError(err?.message || 'Could not add that printer');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveEmailSms(next: boolean) {
+    setShowEmailSms(next);
+    try {
+      await api('/printers/receipt-email-sms', {
+        method: 'PATCH',
+        body: JSON.stringify({ show_email_sms: next }),
+      });
+    } catch (err: any) {
+      setShowEmailSms(!next);
+      setNotice('');
+      setError(err?.message || 'Could not save the Email and SMS option');
+    }
+  }
+
   async function createPrinter() {
     if (busy) return;
     setBusy(true);
     setError('');
+    setNotice('');
     try {
       await api('/printers', {
         method: 'POST',
@@ -111,8 +187,10 @@ export default function PrinterSettingsPage() {
       });
       setForm((f) => ({ ...f, name: '', host: '' }));
       setPrinterAddOpen(false);
+      setNotice('Printer saved.');
       await load();
     } catch (err: any) {
+      setNotice('');
       setError(err?.message || 'Save failed');
     } finally {
       setBusy(false);
@@ -125,6 +203,7 @@ export default function PrinterSettingsPage() {
       await api(`/printers/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
       await load();
     } catch (err: any) {
+      setNotice('');
       setError(err?.message || 'Update failed');
     } finally {
       setBusy(false);
@@ -133,14 +212,34 @@ export default function PrinterSettingsPage() {
 
   async function testPrint(id: string) {
     setBusy(true);
+    setError('');
+    setNotice('');
     try {
       const r = await api(`/printers/${id}/test`, { method: 'POST', body: '{}' });
-      setError(
-        r.data?.status === 'printed'
-          ? 'Test printed'
-          : `Test queued as ${r.data?.status || 'queued'} (queued is not printed)`
-      );
+      const job = r.data || {};
+      if (job.status === 'browser_pending' && job.id) {
+        const payload = job.payload || {};
+        const opened = openReceiptPrintWindow(payload.html, payload.text || '');
+        if (!opened) {
+          setError('The print dialog could not open. Try again.');
+          return;
+        }
+        await api(`/printers/jobs/${job.id}/browser-ack`, {
+          method: 'POST',
+          body: JSON.stringify({ status: 'printed' }),
+        });
+        setNotice('Test printed. This printer is ready.');
+        await load();
+        return;
+      }
+      if (job.status === 'printed') {
+        setNotice('Test printed. This printer is ready.');
+        await load();
+        return;
+      }
+      setError(`Test queued as ${job.status || 'queued'} (queued is not printed)`);
     } catch (err: any) {
+      setNotice('');
       setError(err?.message || 'Test print failed');
     } finally {
       setBusy(false);
@@ -156,29 +255,117 @@ export default function PrinterSettingsPage() {
       });
       setPairing(r.data?.pairing_code || '');
     } catch (err: any) {
+      setNotice('');
       setError(err?.message || 'Pairing failed');
     } finally {
       setBusy(false);
     }
   }
 
+  const linked = rows.filter((row) => row.is_enabled);
   return (
-    <>
-      <h1>Printer settings</h1>
-      <p className="muted">
-        The browser cannot list every OS printer or send to all of them silently. Use the OS print
-        dialog as fallback, pair a till print agent (desktop or Android), or register a private
-        network printer. Checkout still completes if a printer is offline. Receipt numbers come from
-        the server. Destinations follow this tenant&apos;s saved business type
-        {industry ? ` (${industryLabel(industry)})` : ''}: Receipt, Invoice, and Barcode
-        {purposeOptions.includes('kitchen') ? ', plus Kitchen and Bar' : ''}.
-      </p>
-      {error ? <p className="muted" style={{ color: 'var(--danger)' }}>{error}</p> : null}
-      <div style={{ marginBottom: 12 }}>
-        <button type="button" className="list-btn-primary" onClick={() => setPrinterAddOpen(true)} aria-label="Add printer">
-          Add printer
-        </button>
+    <div className="work">
+      <div className="list-page-head">
+        <div>
+          <h1>Printers</h1>
+          <p className="muted" style={{ margin: '6px 0 0' }}>
+            Link the printer on this computer in three steps. Pay then prints the customer receipt once.
+            {industry ? ` Set up for ${industryLabel(industry)}.` : ''}
+          </p>
+        </div>
       </div>
+      {error ? <p className="erp-banner err">{error}</p> : null}
+      {notice ? <p className="erp-banner ok">{notice}</p> : null}
+      <div className="card">
+        <h2 style={{ marginTop: 0 }}>Link a printer for the till</h2>
+        <ol className="print-steps">
+          <li className="print-step">
+            <b>1</b>
+            <div>
+              <h3>See the printers on this computer</h3>
+              <p className="muted">
+                This browser cannot list every printer. The print dialog shows the names Windows or this
+                device offers. Read the name, then close the dialog.
+              </p>
+              <div className="print-actions">
+                <button type="button" className="list-btn-primary" onClick={seeInstalledPrinters} aria-label="See installed printers">
+                  See installed printers
+                </button>
+              </div>
+            </div>
+          </li>
+          <li className="print-step">
+            <b>2</b>
+            <div>
+              <h3>Type the name you saw</h3>
+              <p className="muted">Use the same spelling as the print dialog. That name is what Pay uses.</p>
+              <div className="print-actions">
+                <label>
+                  Printer name
+                  <input
+                    value={installedName}
+                    onChange={(e) => setInstalledName(e.target.value)}
+                    aria-label="Installed printer name"
+                    placeholder="Name shown in the print dialog"
+                  />
+                </label>
+              </div>
+            </div>
+          </li>
+          <li className="print-step">
+            <b>3</b>
+            <div>
+              <h3>Use it for POS receipts</h3>
+              <p className="muted">
+                {linked.length
+                  ? `${linked.length} printer${linked.length === 1 ? '' : 's'} ready. Pay prints one receipt to the linked printer.`
+                  : 'Nothing is linked yet. Add the name from step 2, then Pay can print.'}
+              </p>
+              <div className="print-actions">
+                <button
+                  type="button"
+                  className="list-btn-primary"
+                  onClick={addInstalledPrinter}
+                  disabled={busy || !installedName.trim()}
+                  aria-label="Add to printers used for POS"
+                >
+                  Add to printers used for POS
+                </button>
+              </div>
+            </div>
+          </li>
+        </ol>
+      </div>
+      <div className="card">
+        <h2 style={{ marginTop: 0 }}>After Pay</h2>
+        <label className="print-switch">
+          <input
+            type="checkbox"
+            checked={showEmailSms}
+            onChange={(e) => saveEmailSms(e.target.checked)}
+            aria-label="Add Email and SMS receipt actions to POS"
+          />
+          <span>
+            Add Email and SMS receipt actions to POS
+            <span className="muted" style={{ display: 'block', fontWeight: 500, marginTop: 4 }}>
+              Leave this off for a printed receipt only. Turn it on when the till should also offer Email and SMS.
+            </span>
+          </span>
+        </label>
+      </div>
+      <div className="card">
+        <div className="list-page-head">
+          <div>
+            <h2 style={{ margin: 0 }}>Printers in use</h2>
+            <p className="muted" style={{ margin: '6px 0 0' }}>
+              Receipt, invoice, and barcode
+              {purposeOptions.includes('kitchen') ? ', plus kitchen and bar' : ''}. A sale still completes if a printer is offline.
+            </p>
+          </div>
+          <button type="button" onClick={() => setPrinterAddOpen(true)} aria-label="Add printer">
+            Network or till agent
+          </button>
+        </div>
       {pairing ? (
         <div className="card" style={{ marginBottom: 16 }}>
           <strong>Pairing code (shown once):</strong> <code>{pairing}</code>
@@ -283,44 +470,51 @@ export default function PrinterSettingsPage() {
       <table className="table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Connection</th>
+            <th>Printer</th>
+            <th>How it connects</th>
             <th>Paper</th>
-            <th>Purposes</th>
+            <th>Used for</th>
             <th>Status</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
+          {rows.length === 0 ? (
+            <tr>
+              <td colSpan={6}>No printer linked yet. Use the three steps above.</td>
+            </tr>
+          ) : null}
           {rows.map((row) => (
             <tr key={row.id}>
-              <td>{row.name}</td>
-              <td>{row.connection_type}</td>
+              <td>
+                {row.name}
+                {row.is_default ? ' · Default' : ''}
+              </td>
+              <td>{connectionLabel(row.connection_type)}</td>
               <td>{row.paper}</td>
               <td>
                 {filterListedPrinterPurposes(row.purposes, purposeOptions)
                   .map((p) => printerPurposeLabel(p))
                   .join(', ')}
               </td>
-              <td>
-                {row.status} {row.is_enabled ? '' : '(disabled)'}
-              </td>
-              <td>
+              <td>{row.is_enabled ? 'Ready' : 'Off'}</td>
+              <td className="erp-row-actions">
                 <button type="button" disabled={busy} onClick={() => testPrint(row.id)}>
                   Test
-                </button>{' '}
+                </button>
                 <button
                   type="button"
                   disabled={busy}
                   onClick={() => patchPrinter(row.id, { is_enabled: !row.is_enabled })}
                 >
-                  {row.is_enabled ? 'Disable' : 'Enable'}
+                  {row.is_enabled ? 'Turn off' : 'Turn on'}
                 </button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-    </>
+      </div>
+    </div>
   );
 }

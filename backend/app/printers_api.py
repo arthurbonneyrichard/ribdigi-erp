@@ -94,6 +94,29 @@ async def create_printer(
     return env(printers_svc.serialize_printer(row), "Printer saved")
 
 
+@router.get("/receipt-email-sms")
+async def get_receipt_email_sms(
+    claims=Depends(require_permission("printers", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    return env({"show_email_sms": printers_svc.pos_show_receipt_email_sms(tenant)})
+
+
+@router.patch("/receipt-email-sms")
+async def patch_receipt_email_sms(
+    payload: printers_svc.ReceiptEmailSmsUpdate,
+    claims=Depends(require_permission("printers", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    enabled = printers_svc.set_pos_show_receipt_email_sms(tenant, payload.show_email_sms)
+    await db.commit()
+    return env({"show_email_sms": enabled})
+
+
 @router.patch("/{printer_id}")
 async def patch_printer(
     printer_id: str,

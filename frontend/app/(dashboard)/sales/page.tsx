@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import FormModal from '../../../components/FormModal';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import { api, getAccessToken } from '../../../lib/api';
+import { openReceiptPrintWindow } from '../../../lib/posReceiptPrint';
 import { formatNumber, formatWhen, plainLabel, type FormatPrefs } from '../../../lib/format';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import { getMe } from '../../../lib/meCache';
@@ -195,6 +196,7 @@ export default function Page() {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [reprintingId, setReprintingId] = useState('');
   const [fmt, setFmt] = useState<FormatPrefs | null>(null);
   const [listSearch, setListSearch] = useState('');
   const [composerOpen, setComposerOpen] = useState(false);
@@ -736,6 +738,81 @@ export default function Page() {
       setError(err.message);
     } finally {
       setSaveBusy(false);
+    }
+  }
+
+  async function reprintSale(row: {
+    id: string;
+    source?: string;
+    invoice_id?: string | null;
+    number?: string;
+  }) {
+    if (reprintingId) return;
+    setError('');
+    setMessage('');
+    setReprintingId(row.id);
+    const isRegister = row.source === 'register';
+    const sourceId = isRegister ? row.id : row.invoice_id || row.id;
+    try {
+      let printed = false;
+      try {
+        const queued = await api('/printers/reprint', {
+          method: 'POST',
+          body: JSON.stringify({
+            source_type: isRegister ? 'pos_sale' : 'sales_invoice',
+            source_id: sourceId,
+            purposes: isRegister ? ['customer_receipt'] : ['invoice'],
+          }),
+        });
+        const jobs = Array.isArray(queued.data) ? queued.data : [];
+        if (
+          jobs.some(
+            (job: { purpose?: string; status?: string }) =>
+              (job.purpose === 'customer_receipt' || job.purpose === 'invoice') &&
+              job.status === 'printed'
+          )
+        ) {
+          printed = true;
+        }
+        const browser = printed
+          ? undefined
+          : jobs.find(
+              (job: { id?: string; purpose?: string; status?: string }) =>
+                (job.purpose === 'customer_receipt' || job.purpose === 'invoice') &&
+                job.status === 'browser_pending' &&
+                job.id
+            );
+        if (browser?.id) {
+          const detail = await api(`/printers/jobs/${browser.id}`);
+          const payload = detail.data?.payload || {};
+          printed = openReceiptPrintWindow(payload.html, payload.text || '');
+          if (printed) {
+            await api(`/printers/jobs/${browser.id}/browser-ack`, {
+              method: 'POST',
+              body: JSON.stringify({ status: 'printed' }),
+            });
+          }
+        }
+      } catch {
+        printed = false;
+      }
+      if (!printed) {
+        if (isRegister) {
+          const receipt = await api(`/pos/sales/${row.id}/receipt`);
+          printed = openReceiptPrintWindow(receipt.data?.html, receipt.data?.text || '');
+        } else {
+          const printedDoc = await api(
+            `/sales/invoices/${sourceId}/print?template=thermal&format=json&paper=80mm`
+          );
+          printed = openReceiptPrintWindow(undefined, String(printedDoc.data?.text || ''));
+        }
+      }
+      if (!printed) throw new Error('Reprint could not open the print dialog.');
+      setMessage(`Reprinted ${row.number || ''}`.trim());
+    } catch (err: any) {
+      setError(err?.message || 'Reprint could not open the print dialog.');
+    } finally {
+      setReprintingId('');
     }
   }
 
@@ -1646,7 +1723,7 @@ export default function Page() {
                   <td>{saleWords(row.source)}</td>
                   <td>{saleWords(row.status)}</td>
                   <td>{formatNumber(row.total, fmt)}</td>
-                  <td>
+                  <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                     {row.invoice_id ? (
                       <button
                         type="button"
@@ -1658,9 +1735,15 @@ export default function Page() {
                       >
                         View
                       </button>
-                    ) : (
-                      '—'
-                    )}
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => reprintSale(row)}
+                      disabled={reprintingId === row.id}
+                      aria-label={`Reprint sale ${row.number || row.id}`}
+                    >
+                      {reprintingId === row.id ? 'Reprint…' : 'Reprint'}
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -2121,6 +2204,21 @@ export default function Page() {
                         aria-label="Print sales invoice thermal"
                       >
                         Receipt
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          reprintSale({
+                            id: inv.id,
+                            source: 'invoice',
+                            invoice_id: inv.id,
+                            number: inv.invoice_number,
+                          })
+                        }
+                        disabled={reprintingId === inv.id}
+                        aria-label={`Reprint sales invoice ${inv.id}`}
+                      >
+                        {reprintingId === inv.id ? 'Reprint…' : 'Reprint'}
                       </button>
                     </>
                   )}

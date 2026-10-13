@@ -9338,12 +9338,15 @@ async def pos_settings(
 
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     company_id = await resolve_pos_company_id(db, claims["tenant_id"], store_id)
+    from app.printers import pos_show_receipt_email_sms
+
     return env(
         {
             "pos_sale_numbering": numbering_settings(
                 tenant, "pos_sale", company_id=company_id
             ),
             "pos_session_numbering": numbering_settings(tenant, "pos_session"),
+            "show_receipt_email_sms": pos_show_receipt_email_sms(tenant),
         }
     )
 

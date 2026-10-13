@@ -265,11 +265,8 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     for item in receipt.get("items") or []:
         name = str(item.get("name") or "Item")
         qty = money_json(item.get("quantity") or 0)
-        unit = money_json(item.get("unit_price") or 0)
-        total = money_json(item.get("line_total") or qty * unit)
-        for i, part in enumerate(_wrap(name, width)):
-            lines.append(part if i == 0 else ("  " + part)[:width])
-        lines.append(_lr(f"  {qty:g} x {_money(unit)}", _money(total), width))
+        total = money_json(item.get("line_total") or qty * money_json(item.get("unit_price") or 0))
+        lines.append(_lr(f"{qty:g} {name}", _money(total), width))
         disc = money_json(item.get("discount") or 0)
         if disc > 0:
             lines.append(_lr("  Discount", f"-{_money(disc)}", width))
@@ -315,11 +312,23 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
 
 
 def render_thermal_html(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
-    """Browser/email HTML for the same thermal receipt (no payment references)."""
+    """One thermal slip, monospace so columns line up on the paper.
+
+    Font is 40% smaller than the previous 22px / 20px slip. Payment references stay off.
+    """
     text = render_thermal_text(receipt, paper=paper)
+    width = "58mm" if str(paper).lower() == "58mm" else "80mm"
+    font = "12px" if width == "58mm" else "13px"
+    style = (
+        f"@page{{margin:0;size:{width} auto}}"
+        f"html,body{{margin:0;padding:2mm;width:{width};max-width:{width}}}"
+        "body{display:flex;justify-content:center}"
+        "pre{font-family:'Courier New',ui-monospace,monospace;font-weight:700;"
+        f"font-size:{font};line-height:1.15;white-space:pre;margin:0}}"
+    )
     return (
-        '<pre style="font-family:monospace;white-space:pre-wrap">'
-        f"{html.escape(text)}</pre>"
+        '<!doctype html><html><head><meta charset="utf-8"/>'
+        f"<style>{style}</style></head><body><pre>{html.escape(text)}</pre></body></html>"
     )
 
 
@@ -355,6 +364,7 @@ def to_thermal_pdf(receipt: dict[str, Any], *, paper: str = "80mm") -> bytes:
         page_height=page_height,
         margin=8 if paper == "58mm" else 10,
         mono=True,
+        bold=True,
         logo=logo,
         logo_max_pt=48 if paper == "58mm" else 64,
     )

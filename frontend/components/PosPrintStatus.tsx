@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { api } from '../lib/api';
+import { openReceiptPrintWindow } from '../lib/posReceiptPrint';
 
 type PrintJob = {
   id: string;
@@ -26,18 +27,8 @@ export default function PosPrintStatus({
     const text = job.payload?.text || '';
     setBusy(true);
     try {
-      const frame = window.open('', '_blank', 'noopener,noreferrer,width=480,height=640');
-      if (frame) {
-        const body = html
-          ? html
-          : `<pre style="font-family:monospace;white-space:pre-wrap">${text.replace(/</g, '&lt;')}</pre>`;
-        frame.document.write(body);
-        frame.document.close();
-        frame.focus();
-        frame.print();
-      } else {
-        window.print();
-      }
+      const opened = openReceiptPrintWindow(html, text);
+      if (!opened) window.print();
       await api(`/printers/jobs/${job.id}/browser-ack`, {
         method: 'POST',
         body: JSON.stringify({ status: 'printed' }),
