@@ -19,11 +19,11 @@ import {
   webCryptoAvailable,
   type PassphraseCiphertext,
 } from './deviceCrypto';
+import { fetchOutsideJournal, mirrorSaleToOutsideJournal } from './posOfflineJournal';
 
 const DB_NAME = 'ribdigi-pos-offline';
 const DB_VERSION = 3;
 export const DEFAULT_OFFLINE_AUTH_HOURS = 168;
-export const MAX_SYNC_RETRIES = 8;
 export const SYNCED_RETENTION_DAYS = 30;
 const MAX_BACKOFF_MS = 60 * 60 * 1000;
 const MAX_SNAPSHOTS = 10;
@@ -287,29 +287,51 @@ async function putPlain(key: string, value: unknown): Promise<void> {
 
 // ── Device identity / receipts ─────────────────────────────────────────────
 
+let deviceHydrate: Promise<string> | null = null;
+
+function mintDeviceId(): string {
+  return `dev-${crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`;
+}
+
+function readLegacyDeviceId(): string {
+  if (typeof localStorage === 'undefined') return '';
+  const legacy = (localStorage.getItem('pos_device_id') || '').trim();
+  if (legacy.length < 8) return '';
+  localStorage.removeItem('pos_device_id');
+  return legacy;
+}
+
+/**
+ * Random browser id. A legacy localStorage value is copied once into IndexedDB and removed.
+ * This is not strong device binding: cleared site data and private browsing lose it.
+ */
 export function getOrCreateDeviceId(): string {
   if (deviceIdMem && deviceIdMem.length >= 8) return deviceIdMem;
-  if (typeof localStorage !== 'undefined') {
-    const legacy = (localStorage.getItem('pos_device_id') || '').trim();
-    if (legacy.length >= 8) {
-      deviceIdMem = legacy;
-      localStorage.removeItem('pos_device_id');
-      void putPlain('device_id', deviceIdMem).catch(() => undefined);
-      return deviceIdMem;
-    }
-  }
-  deviceIdMem = `dev-${crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`;
-  void putPlain('device_id', deviceIdMem).catch(() => undefined);
+  const legacy = readLegacyDeviceId();
+  deviceIdMem = legacy || mintDeviceId();
+  if (!deviceHydrate) void hydrateDeviceId();
   return deviceIdMem;
 }
 
-export async function hydrateDeviceId(): Promise<string> {
-  const stored = await getPlain<string>('device_id').catch(() => null);
-  if (stored && stored.length >= 8) {
-    deviceIdMem = stored;
-    return deviceIdMem;
+/** Prefer the id already stored in IndexedDB so a later read does not replace it. */
+export function hydrateDeviceId(): Promise<string> {
+  if (!deviceHydrate) {
+    deviceHydrate = (async () => {
+      const stored = await getPlain<string>('device_id').catch(() => null);
+      if (stored && stored.length >= 8) {
+        deviceIdMem = stored;
+      } else if (!deviceIdMem || deviceIdMem.length < 8) {
+        const legacy = readLegacyDeviceId();
+        deviceIdMem = legacy || mintDeviceId();
+      }
+      await putPlain('device_id', deviceIdMem);
+      return deviceIdMem;
+    })().catch((err) => {
+      deviceHydrate = null;
+      throw err;
+    });
   }
-  return getOrCreateDeviceId();
+  return deviceHydrate;
 }
 
 export function newClientRequestId(): string {
@@ -507,6 +529,7 @@ async function persistRecord(rec: QueuedSale): Promise<void> {
   const { payload, ...rest } = rec;
   const payload_enc = await encryptJson(payload);
   await idbPut('sync_queue', { ...rest, payload: { offline_encrypted: true }, payload_enc });
+  await mirrorSaleToOutsideJournal(rec).catch(() => undefined);
 }
 
 async function revealRecord(raw: QueuedSale): Promise<QueuedSale> {
@@ -680,6 +703,7 @@ export async function enqueueOfflineSale(input: {
   if (!env.permissions.includes('pos_sale')) {
     throw new Error('Your offline access does not include POS sales.');
   }
+  const device_id = await hydrateDeviceId();
   const draft: QueuedSale = {
     id: crypto.randomUUID(),
     kind: 'sale',
@@ -689,7 +713,7 @@ export async function enqueueOfflineSale(input: {
     tenant_id: input.tenant_id,
     store_id: input.store_id,
     user_id,
-    device_id: getOrCreateDeviceId(),
+    device_id,
     grant_id: env.grant_id,
     payload: input.payload,
     state: 'pending',
@@ -719,7 +743,7 @@ export async function enqueueOfflineSale(input: {
         : 'This sale is more than this device’s offline stock allocation. Reduce the quantity or ask a manager to override.'
     );
   }
-  draft.local_receipt_number = await nextLocalReceiptNumber(input.store_code, draft.device_id);
+  draft.local_receipt_number = await nextLocalReceiptNumber(input.store_code, device_id);
   draft.payload = {
     ...input.payload,
     client_request_id: draft.client_request_id,
@@ -749,6 +773,7 @@ export async function enqueueOfflineQuote(input: {
   if (!env.permissions.includes('quote_capture')) {
     throw new Error('Your offline access does not include quotes.');
   }
+  const device_id = await hydrateDeviceId();
   const created_at = new Date().toISOString();
   const client_request_id = newClientRequestId();
   const rec: QueuedSale = {
@@ -756,14 +781,11 @@ export async function enqueueOfflineQuote(input: {
     kind: 'quote',
     scope: partitionScope(input.tenant_id, user_id, input.store_id),
     client_request_id,
-    local_receipt_number: (await nextLocalReceiptNumber(input.store_code, getOrCreateDeviceId())).replace(
-      /^OFF-/,
-      'OFQ-'
-    ),
+    local_receipt_number: (await nextLocalReceiptNumber(input.store_code, device_id)).replace(/^OFF-/, 'OFQ-'),
     tenant_id: input.tenant_id,
     store_id: input.store_id,
     user_id,
-    device_id: getOrCreateDeviceId(),
+    device_id,
     grant_id: env.grant_id,
     payload: { ...input.payload, client_request_id },
     state: 'pending',
@@ -853,7 +875,7 @@ export async function flushOfflineQueue(
       result.otherUsers += 1;
       continue;
     }
-    if (rec.state === 'needs_attention' && !ctx.force) continue;
+    if (rec.state === 'needs_attention' && !ctx.force && (rec.conflict || rec.sync_event_id)) continue;
     if (!ctx.force && rec.next_retry_at && new Date(rec.next_retry_at).getTime() > now) {
       result.retrying += 1;
       continue;
@@ -867,15 +889,27 @@ export async function flushOfflineQueue(
       const r = (await api(path, { method: 'POST', body: JSON.stringify(requestBody(rec)) })) as {
         data?: { id?: string; reference?: string; quotation_number?: string };
       };
-      rec.state = 'synced';
-      rec.synced_at = new Date().toISOString();
-      rec.server_sale_id = r?.data?.id || null;
-      rec.server_reference = r?.data?.reference || r?.data?.quotation_number || null;
-      rec.last_error_code = null;
-      rec.last_error_message = null;
-      rec.next_retry_at = null;
-      rec.conflict = null;
-      result.synced += 1;
+      const serverId = String(r?.data?.id || '').trim();
+      const serverRef = String(r?.data?.reference || r?.data?.quotation_number || '').trim();
+      if (!serverId) {
+        rec.state = 'pending';
+        rec.server_sale_id = null;
+        rec.server_reference = serverRef || null;
+        rec.next_retry_at = new Date(Date.now() + backoffMs(rec.retry_count)).toISOString();
+        rec.last_error_code = 'SYNC_UNCONFIRMED';
+        rec.last_error_message = 'The server did not confirm this sale. It stays on this device.';
+        result.retrying += 1;
+      } else {
+        rec.state = 'synced';
+        rec.synced_at = new Date().toISOString();
+        rec.server_sale_id = serverId;
+        rec.server_reference = serverRef || null;
+        rec.last_error_code = null;
+        rec.last_error_message = null;
+        rec.next_retry_at = null;
+        rec.conflict = null;
+        result.synced += 1;
+      }
     } catch (err: unknown) {
       const e = err as ApiError;
       const status = Number(e?.status) || 0;
@@ -891,15 +925,11 @@ export async function flushOfflineQueue(
         break;
       }
       if (!status || status >= 500 || status === 429 || status === 408) {
-        rec.state = rec.retry_count >= MAX_SYNC_RETRIES ? 'needs_attention' : 'pending';
+        rec.state = 'pending';
         rec.next_retry_at = new Date(Date.now() + backoffMs(rec.retry_count)).toISOString();
         rec.last_error_code = code;
-        rec.last_error_message =
-          rec.state === 'needs_attention'
-            ? `Still failing after ${rec.retry_count} attempts. The sale is kept; retry when the server is reachable.`
-            : String(detail.message || e?.message || 'Server not reachable — will retry');
-        if (rec.state === 'needs_attention') result.needsAttention += 1;
-        else result.retrying += 1;
+        rec.last_error_message = String(detail.message || e?.message || 'Server not reachable — will retry');
+        result.retrying += 1;
       } else {
         rec.state = 'needs_attention';
         rec.last_error_code = code;
@@ -938,7 +968,7 @@ export async function refreshOfflineStatus(
   const r = (await api('/pos/offline/status', {
     method: 'POST',
     body: JSON.stringify({
-      device_id: getOrCreateDeviceId(),
+      device_id: await hydrateDeviceId(),
       client_request_ids: records.map((x) => x.client_request_id).slice(0, 500),
     }),
   })) as {
@@ -1005,6 +1035,11 @@ export async function refreshOfflineStatus(
   };
 }
 
+function prepareStepError(prefix: string, err: unknown): Error {
+  const detail = err instanceof Error && err.message ? err.message : 'the server did not answer';
+  return new Error(`${prefix} ${detail}`.replace(/\s+/g, ' ').trim());
+}
+
 /** Online-only: revalidate user/tenant/permissions/device and refresh the encrypted catalogue. */
 export async function revalidateOfflineAccess(
   api: ApiFn,
@@ -1014,34 +1049,48 @@ export async function revalidateOfflineAccess(
   const device_id = await hydrateDeviceId();
   const pending_items = await unsyncedQtyByProduct(ctx.tenant_id);
   const summary = await queueSummary(ctx.user_id);
-  const auth = (await api('/pos/offline/authorize', {
-    method: 'POST',
-    body: JSON.stringify({
-      device_id,
-      store_id: ctx.store_id,
-      pending_items,
-      label: ctx.label || null,
-      app_version: 'web',
-      pending_queue_count: summary.pending + summary.syncing + summary.needs_attention,
-    }),
-  })) as { data: ServerGrant };
+  let auth: { data: ServerGrant };
+  try {
+    auth = (await api('/pos/offline/authorize', {
+      method: 'POST',
+      body: JSON.stringify({
+        device_id,
+        store_id: ctx.store_id,
+        pending_items,
+        label: ctx.label || null,
+        app_version: 'web',
+        pending_queue_count: summary.pending + summary.syncing + summary.needs_attention,
+      }),
+    })) as { data: ServerGrant };
+  } catch (err) {
+    throw prepareStepError('Offline access could not be prepared.', err);
+  }
   const envelope = envelopeFromGrant(auth.data);
   if (envelope.tenant_id !== ctx.tenant_id || envelope.user_id !== ctx.user_id) {
     throw new Error('Offline access was issued for a different account');
   }
   const params = new URLSearchParams();
   if (ctx.store_id) params.set('store_id', ctx.store_id);
-  const cat = (await api(`/pos/offline/catalog?${params.toString()}`)) as {
+  let cat: {
     data: { products: Array<Record<string, unknown>>; customers: Array<Record<string, unknown>>; generated_at?: string };
   };
-  await saveOfflineGrant(envelope);
-  await cacheOfflineCatalog({
-    scope: envelope.scope,
-    products: cat.data.products || [],
-    customers: cat.data.customers || [],
-    generated_at: cat.data.generated_at,
-  });
-  await touchLastOnline();
+  try {
+    cat = (await api(`/pos/offline/catalog?${params.toString()}`)) as typeof cat;
+  } catch (err) {
+    throw prepareStepError('The product list could not be downloaded.', err);
+  }
+  try {
+    await saveOfflineGrant(envelope);
+    await cacheOfflineCatalog({
+      scope: envelope.scope,
+      products: cat.data.products || [],
+      customers: cat.data.customers || [],
+      generated_at: cat.data.generated_at,
+    });
+    await touchLastOnline();
+  } catch (err) {
+    throw prepareStepError('Offline data could not be saved on this device.', err);
+  }
   return { envelope, products: (cat.data.products || []).length, customers: (cat.data.customers || []).length };
 }
 
@@ -1156,12 +1205,56 @@ async function mergeRecords(rows: QueuedSale[]): Promise<{ imported: number; ski
       scope: rec.scope || partitionScope(rec.tenant_id, rec.user_id, rec.store_id),
       state: state === 'syncing' ? 'pending' : state,
       retry_count: Number(rec.retry_count) || 0,
-      device_id: rec.device_id || getOrCreateDeviceId(),
+      device_id: rec.device_id || (await hydrateDeviceId()),
     });
     existing.add(rec.client_request_id);
     imported += 1;
   }
   return { imported, skipped };
+}
+
+function recoveredSale(raw: QueuedSale, tenantId: string, userId: string): QueuedSale | null {
+  const clientRequestId = String(raw?.client_request_id || '').trim();
+  const tenant = String(raw?.tenant_id || '').trim();
+  const user = String(raw?.user_id || '').trim();
+  const payload = raw?.payload;
+  if (!clientRequestId || tenant !== tenantId || user !== userId) return null;
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
+  const state = normalizeLegacyState(raw.state as string);
+  const serverSaleId = String(raw.server_sale_id || '').trim();
+  const serverReference = String(raw.server_reference || '').trim();
+  const confirmed = Boolean(serverSaleId || serverReference);
+  const nextState: QueueState =
+    state === 'syncing' || (state === 'synced' && !confirmed) ? 'pending' : state;
+  return {
+    ...raw,
+    id: raw.id || clientRequestId,
+    kind: raw.kind === 'quote' ? 'quote' : 'sale',
+    client_request_id: clientRequestId,
+    tenant_id: tenant,
+    user_id: user,
+    scope: raw.scope || partitionScope(tenant, user, raw.store_id),
+    payload,
+    state: nextState,
+    retry_count: Number(raw.retry_count) || 0,
+    server_sale_id: nextState === 'synced' ? serverSaleId || null : null,
+    server_reference: nextState === 'synced' ? serverReference || null : null,
+    synced_at: nextState === 'synced' ? raw.synced_at || null : null,
+  };
+}
+
+/** Read sales the till agent kept after browser site data was cleared. */
+export async function restoreQueuedSalesFromTill(tenantId: string, userId: string): Promise<number> {
+  if (!tenantId || !userId) return 0;
+  const rows = await fetchOutsideJournal(tenantId, userId);
+  const prepared: QueuedSale[] = [];
+  for (const raw of rows) {
+    const rec = recoveredSale(raw, tenantId, userId);
+    if (rec) prepared.push(rec);
+  }
+  if (!prepared.length) return 0;
+  const result = await mergeRecords(prepared);
+  return result.imported;
 }
 
 export async function restoreQueueSnapshot(id: string): Promise<{ imported: number; skipped: number }> {
@@ -1195,7 +1288,7 @@ export async function buildRecoveryPackage(passphrase: string): Promise<Recovery
     version: 2,
     kind: 'ribdigi-pos-recovery',
     exported_at: new Date().toISOString(),
-    device_id: getOrCreateDeviceId(),
+    device_id: await hydrateDeviceId(),
     record_count: records.length,
     secrets_included: false,
     encrypted: await encryptWithPassphrase({ records }, passphrase),
@@ -1275,7 +1368,7 @@ export async function releaseOfflineGrantIfIdle(api: ApiFn): Promise<boolean> {
   if (!env?.grant_id) return false;
   await api('/pos/offline/release', {
     method: 'POST',
-    body: JSON.stringify({ device_id: getOrCreateDeviceId(), client_request_ids: [] }),
+    body: JSON.stringify({ device_id: await hydrateDeviceId(), client_request_ids: [] }),
   });
   return true;
 }

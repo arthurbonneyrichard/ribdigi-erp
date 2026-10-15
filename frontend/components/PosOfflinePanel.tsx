@@ -18,15 +18,21 @@ import {
   resendSyncedAfterRestore,
   resolveRecordOnServer,
   restoreQueueSnapshot,
-  retryRecord,
+  restoreQueuedSalesFromTill,
   revalidateOfflineAccess,
   type ApiFn,
   type OfflineAuthEnvelope,
   type QueueSummary,
   type QueuedSale,
 } from '../lib/posOffline';
-import { noteQueue, noteSyncEnd, noteSyncStart } from '../lib/connectivity';
-import { formatWhen, plainLabel } from '../lib/format';
+import {
+  describePrepareFailure,
+  noteQueue,
+  noteSyncEnd,
+  noteSyncStart,
+  offlineSellingStatus,
+} from '../lib/connectivity';
+import { formatMoney, formatWhen, plainLabel } from '../lib/format';
 import { useCompanyFormat } from '../lib/useCompanyFormat';
 
 type ManagerConflict = {
@@ -73,6 +79,9 @@ export default function PosOfflinePanel({
   storeLabel,
   canApprove,
   refreshToken,
+  preparing = false,
+  prepareFailure = '',
+  embedded = false,
   onStatus,
   onMessage,
   onError,
@@ -85,6 +94,10 @@ export default function PosOfflinePanel({
   storeLabel?: string;
   canApprove: boolean;
   refreshToken: number;
+  preparing?: boolean;
+  prepareFailure?: string;
+  /** Render the panel body only, for the Online status button. */
+  embedded?: boolean;
   onStatus: (status: OfflineStatus) => void;
   onMessage: (text: string) => void;
   onError: (text: string) => void;
@@ -98,6 +111,7 @@ export default function PosOfflinePanel({
   const [provisional, setProvisional] = useState(false);
   const [otherDevices, setOtherDevices] = useState(0);
   const [busy, setBusy] = useState<'' | 'sync' | 'revalidate' | 'restore' | 'backup' | 'resend'>('');
+  const [localFailure, setLocalFailure] = useState('');
   const [open, setOpen] = useState(false);
   const [managerConflicts, setManagerConflicts] = useState<ManagerConflict[]>([]);
   const [snapshots, setSnapshots] = useState<Array<{ id: string; reason: string; created_at: string; count: number }>>(
@@ -107,6 +121,9 @@ export default function PosOfflinePanel({
 
   const reload = useCallback(async () => {
     try {
+      if (tenantId && userId) {
+        await restoreQueuedSalesFromTill(tenantId, userId).catch(() => 0);
+      }
       const [env, sum, recs, last, meta] = await Promise.all([
         getOfflineAuthEnvelope(),
         queueSummary(userId),
@@ -124,7 +141,7 @@ export default function PosOfflinePanel({
     } catch {
       /* IndexedDB unavailable: panel shows nothing queued */
     }
-  }, [userId, provisional, onStatus]);
+  }, [userId, tenantId, provisional, onStatus]);
 
   useEffect(() => {
     void reload();
@@ -150,20 +167,25 @@ export default function PosOfflinePanel({
       setBusy('sync');
       noteSyncStart();
       let problem = '';
+      let reportFailure = false;
       try {
         const { probeApi } = await import('../lib/connectivity');
         const phase = await probeApi();
         if (phase !== 'online') {
-          problem =
-            phase === 'offline'
-              ? 'No internet connection. Queued sales stay on this device.'
-              : 'The server did not respond. Queued sales stay on this device.';
-          if (!opts?.quiet) onError(problem);
+          if (!opts?.quiet) {
+            problem =
+              phase === 'offline'
+                ? 'No internet connection. Queued sales stay on this device.'
+                : 'The server did not respond. Queued sales stay on this device.';
+            reportFailure = true;
+            onError(problem);
+          }
           return;
         }
         let res = await flushOfflineQueue(api, { tenant_id: tenantId, user_id: userId, force: opts?.force });
         if (res.authRequired) {
           problem = 'Sign in again to sync. Your queued sales are kept on this device.';
+          reportFailure = true;
           onError(problem);
           return;
         }
@@ -181,22 +203,32 @@ export default function PosOfflinePanel({
             needsAttention: second.needsAttention + res.needsAttention,
           };
         }
-        const parts: string[] = [];
-        if (res.synced) parts.push(`${res.synced} synced`);
-        if (res.needsAttention) parts.push(`${res.needsAttention} need attention`);
-        if (res.retrying) parts.push(`${res.retrying} will retry`);
-        if (res.otherUsers) parts.push(`${res.otherUsers} waiting for another cashier to sign in`);
-        if (parts.length && !opts?.quiet) onMessage(`Offline queue: ${parts.join(' · ')}.`);
-        else if (res.synced) onMessage(`Synced ${res.synced} offline record(s).`);
         if (res.needsAttention) {
-          problem = `${res.needsAttention} offline record(s) need review. Nothing was deleted; see Offline queue.`;
-          onError(problem);
+          problem =
+            res.needsAttention === 1
+              ? '1 saved sale needs a manager. It stays on this device.'
+              : `${res.needsAttention} saved sales need a manager. They stay on this device.`;
+          reportFailure = true;
+          if (!opts?.quiet) onError(problem);
+        }
+        if (!opts?.quiet) {
+          const parts: string[] = [];
+          if (res.synced) parts.push(`${res.synced} synced`);
+          if (res.needsAttention) parts.push(`${res.needsAttention} need attention`);
+          if (res.retrying) parts.push(`${res.retrying} will retry`);
+          if (res.otherUsers) parts.push(`${res.otherUsers} waiting for another cashier to sign in`);
+          if (parts.length) onMessage(`Offline queue: ${parts.join(' · ')}.`);
+        } else if (res.synced) {
+          onMessage(res.synced === 1 ? '1 saved sale was sent.' : `${res.synced} saved sales were sent.`);
         }
       } catch (err: unknown) {
-        problem = (err as Error)?.message || 'Sync failed. Queued sales are kept for retry.';
-        onError(problem);
+        if (!opts?.quiet) {
+          problem = (err as Error)?.message || 'Sync failed. Queued sales are kept for retry.';
+          reportFailure = true;
+          onError(problem);
+        }
       } finally {
-        noteSyncEnd(problem || undefined);
+        noteSyncEnd(reportFailure ? problem || undefined : undefined);
         syncLock.current = false;
         setBusy('');
         await reload();
@@ -206,21 +238,13 @@ export default function PosOfflinePanel({
     [api, tenantId, userId, onError, onMessage, reload, loadManagerConflicts]
   );
 
-  useEffect(() => {
-    if (!online || !tenantId || !userId) return;
-    void syncNow({ quiet: true });
-    const t = window.setInterval(() => {
-      if (navigator.onLine) void syncNow({ quiet: true });
-    }, 60000);
-    return () => window.clearInterval(t);
-  }, [online, tenantId, userId, syncNow]);
-
   async function revalidate() {
     if (!online) {
       onError('Refreshing offline selling needs a connection.');
       return;
     }
     setBusy('revalidate');
+    setLocalFailure('');
     try {
       await syncNow({ quiet: true });
       const r = await revalidateOfflineAccess(api, {
@@ -229,12 +253,16 @@ export default function PosOfflinePanel({
         store_id: storeId,
         label: storeLabel,
       });
+      setLocalFailure('');
       onMessage(
         `Offline selling is ready until ${formatWhen(r.envelope.offline_valid_until) || 'the next online check'} · ` +
           `${r.products} products and ${r.customers} customers saved on this device.`
       );
     } catch (err: unknown) {
-      onError((err as Error)?.message || 'Could not refresh offline selling');
+      const env = await getOfflineAuthEnvelope().catch(() => null);
+      const text = describePrepareFailure(err, Boolean(env?.grant_id));
+      setLocalFailure(text);
+      onError(text);
     } finally {
       setBusy('');
       await reload();
@@ -265,7 +293,7 @@ export default function PosOfflinePanel({
       const r = await importRecoveryPackage(raw, { tenant_id: tenantId, passphrase });
       onMessage(
         `Restored ${r.imported} record(s), ${r.skipped} already here. A safety copy of the previous queue was kept. ` +
-          'Use Sync now to send them.'
+          'They will be sent automatically.'
       );
     } catch (err: unknown) {
       onError((err as Error)?.message || 'Restore failed. Your current queue was not changed.');
@@ -323,31 +351,58 @@ export default function PosOfflinePanel({
   }
 
   const valid = isOfflineAuthValid(envelope);
-  const prepared = Boolean(envelope?.grant_id && catalogAt && valid);
   const unsynced = summary ? summary.pending + summary.syncing + summary.needs_attention : 0;
-  const authText = prepared
-    ? 'Offline ready'
-    : !envelope?.grant_id || !catalogAt
-      ? 'Not prepared. Connect to the internet and sign in to prepare this device for offline POS.'
-      : envelope.revoked_at
-        ? 'Not prepared. Offline selling was turned off on this device. Sign in online. Saved sales stay on this device.'
-        : 'Not prepared. Online sign-in is required before this device can sell offline again. Saved sales stay on this device.';
-  const quiet = online && unsynced === 0 && !provisional && otherDevices === 0 && (!envelope?.grant_id || valid);
+  const authText = offlineSellingStatus({
+    grantId: envelope?.grant_id,
+    catalogSaved: Boolean(catalogAt),
+    valid,
+    revoked: Boolean(envelope?.revoked_at),
+    online,
+    preparing: preparing || busy === 'revalidate',
+    failure: prepareFailure || localFailure,
+  });
+  const needsManager = (summary?.needs_attention || 0) > 0 || managerConflicts.length > 0;
+  const quiet = online && !needsManager && !provisional && otherDevices === 0 && (!envelope?.grant_id || valid);
   const waiting =
-    unsynced > 0 ? `${unsynced} saved sale${unsynced === 1 ? '' : 's'} to send` : '';
-  const summaryLabel = !online ? (waiting ? `You are offline · ${waiting}` : 'You are offline') : waiting || 'Offline selling';
+    unsynced > 0 ? `${unsynced} saved sale${unsynced === 1 ? '' : 's'} waiting` : '';
+  const summaryLabel = !online
+    ? waiting
+      ? `You are offline · ${waiting}`
+      : 'You are offline'
+    : needsManager
+      ? 'A saved sale needs a manager'
+      : unsynced > 0
+        ? `Sending ${unsynced === 1 ? '1 saved sale' : `${unsynced} saved sales`}`
+        : 'Offline selling';
+  const [userOpen, setUserOpen] = useState(false);
+  const queuedRef = useRef(0);
+  const wasOnline = useRef(online);
+  useEffect(() => {
+    const cameOnline = online && !wasOnline.current;
+    wasOnline.current = online;
+    const grew = unsynced > queuedRef.current;
+    queuedRef.current = unsynced;
+    if (!online || !tenantId || !userId || unsynced <= 0) return;
+    if (cameOnline || grew) void syncNow({ quiet: true });
+  }, [online, unsynced, tenantId, userId, syncNow]);
 
-  return (
-    <details className="tpos-more tpos-offline-tools" open={!quiet || undefined}>
-      <summary>{summaryLabel}</summary>
-      <div className="tpos-more-body" aria-live="polite">
-      <p className="muted" style={{ margin: 0, flexBasis: '100%' }}>
+  useEffect(() => {
+    if (!online || !tenantId || !userId || unsynced <= 0) return;
+    const t = window.setInterval(() => {
+      void syncNow({ quiet: true });
+    }, 15000);
+    return () => window.clearInterval(t);
+  }, [online, tenantId, userId, unsynced, syncNow]);
+
+  const body = (
+      <div className="tpos-more-body tpos-offline-body" aria-live="polite">
+      <p className="muted tpos-offline-status">
         {authText}
         {unsynced > 0
-          ? ` ${unsynced} saved sale${unsynced === 1 ? ' is' : 's are'} still on this device.`
+          ? ` · ${unsynced} saved sale${unsynced === 1 ? ' is' : 's are'} still on this device.`
           : lastSyncAt
-            ? ` Last sent ${formatWhen(lastSyncAt) || formatCacheAge(lastSyncAt)}.`
-            : ' Nothing has been sent from this device yet.'}
+            ? ` · Last sent ${formatWhen(lastSyncAt) || formatCacheAge(lastSyncAt)}.`
+            : ' · Nothing has been sent from this device yet.'}
         {summary?.needs_attention ? ` ${summary.needs_attention} need a manager.` : ''}
         {provisional || otherDevices > 0
           ? ` ${otherDevices} sale${otherDevices === 1 ? '' : 's'} on other devices are not here yet.`
@@ -361,48 +416,40 @@ export default function PosOfflinePanel({
       ) : null}
       {online && envelope?.grant_id && !valid && unsynced > 0 ? (
         <p className="muted" style={{ margin: 0, flexBasis: '100%' }}>
-          Saved sales can be sent now. Refresh offline selling only if you need to sell while offline again.
+          Saved sales are sent automatically. Refresh offline selling only if you need to sell while offline again.
         </p>
       ) : null}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div className="tpos-offline-actions">
         <button type="button" className="tpos-btn" onClick={revalidate} disabled={!online || !!busy}>
           {busy === 'revalidate' ? 'Refreshing…' : 'Refresh offline selling'}
-        </button>
-        <button type="button" className="tpos-btn" onClick={() => syncNow({ force: true })} disabled={!online || !!busy}>
-          {busy === 'sync' ? 'Sending…' : 'Send saved sales'}
         </button>
         <button type="button" className="tpos-btn tpos-btn-quiet" onClick={() => setOpen((v) => !v)}>
           {open ? 'Hide saved sales' : waiting ? `Saved sales (${unsynced})` : 'Saved sales'}
         </button>
       </div>
+      {online && unsynced > 0 ? (
+        <p className="muted" style={{ margin: '6px 0 0' }}>
+          Saved sales are sent automatically when the server answers. You do not need to press anything.
+        </p>
+      ) : null}
       {open ? (
-        <div className="tpos-recovery" style={{ display: 'grid', gap: 8, marginTop: 8 }}>
-          {records.length === 0 ? <p className="muted">No saved sales on this device.</p> : null}
+        <div className="tpos-recovery tpos-offline-list">
+          {records.length === 0 ? <p className="muted">No saved sales are waiting on this device, so charge the next cart when you are ready.</p> : null}
           {records.slice(0, 50).map((rec) => (
-            <div key={rec.id} style={{ borderTop: '1px solid var(--border, #ddd)', paddingTop: 6 }}>
+            <div className="tpos-offline-sale" key={rec.id}>
               <div>
                 <strong>{rec.local_receipt_number || rec.client_request_id}</strong>
                 {rec.kind === 'quote' ? ' · quote' : ''} · {STATE_LABELS[rec.state] || plainLabel(rec.state)}
                 {rec.server_reference ? ` → ${rec.server_reference}` : ''}
-                {typeof rec.payload?.total === 'number' ? ` · ${Number(rec.payload.total).toFixed(2)}` : ''}
-                {' · '}
-                {formatWhen(rec.created_at) || '—'}
                 {rec.user_id && rec.user_id !== userId ? ' · another cashier' : ''}
               </div>
-              {rec.last_error_message ? <div className="muted">{rec.last_error_message}</div> : null}
+              <div className="tpos-offline-sale-meta">
+                {typeof rec.payload?.total === 'number' ? formatMoney(rec.payload.total) : ''}
+              </div>
+              <div className="tpos-offline-sale-meta">{formatWhen(rec.created_at) || '—'}</div>
+              {rec.last_error_message ? <div className="muted tpos-offline-sale-span">{rec.last_error_message}</div> : null}
               {isUnsynced(rec.state) && rec.user_id === userId ? (
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
-                  <button
-                    type="button"
-                    className="tpos-btn tpos-btn-quiet"
-                    disabled={!online}
-                    onClick={async () => {
-                      await retryRecord(rec.id);
-                      await syncNow({ force: true });
-                    }}
-                  >
-                    Retry
-                  </button>
+                <div className="tpos-offline-sale-span" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
                   {rec.state === 'needs_attention' && canApprove
                     ? (rec.allowed_resolutions && rec.allowed_resolutions.length
                         ? rec.allowed_resolutions
@@ -435,7 +482,7 @@ export default function PosOfflinePanel({
                 <div key={c.id} style={{ marginTop: 4 }}>
                   {c.local_receipt_number || c.client_request_id}
                   {c.created_at ? ` · ${formatWhen(c.created_at)}` : ''}
-                  {typeof c.offline_total === 'number' ? ` · ${Number(c.offline_total).toFixed(2)}` : ''}
+                  {typeof c.offline_total === 'number' ? ` · ${formatMoney(c.offline_total)}` : ''}
                   <div className="muted">{c.message}</div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {(c.allowed_resolutions || ['dismiss']).map((action) => (
@@ -494,6 +541,20 @@ export default function PosOfflinePanel({
         </div>
       ) : null}
       </div>
+  );
+
+  if (embedded) return body;
+
+  return (
+    <details
+      className={`tpos-more tpos-offline-tools${!online ? ' is-offline' : ''}${unsynced > 0 ? ' has-queue' : ''}`}
+      open={!quiet || userOpen}
+      onToggle={(event) => {
+        if (quiet) setUserOpen(event.currentTarget.open);
+      }}
+    >
+      <summary>{summaryLabel}</summary>
+      {body}
     </details>
   );
 }

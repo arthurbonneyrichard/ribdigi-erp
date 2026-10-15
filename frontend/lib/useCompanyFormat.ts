@@ -1,33 +1,49 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api } from './api';
-import { rememberFormatPrefs, type FormatPrefs } from './format';
+import { getMe } from './meCache';
+import {
+  peekCompanyFormatCache,
+  rememberFormatPrefs,
+  storeCompanyFormatCache,
+  subscribeCompanyFormatRefresh,
+  type FormatPrefs,
+} from './format';
 
-let cached: FormatPrefs | null | undefined;
+function formatFromMe(data: FormatPrefs | null): FormatPrefs | null {
+  if (!data) return null;
+  return {
+    date_format: data.date_format,
+    decimal_separator: data.decimal_separator,
+    thousand_separator: data.thousand_separator,
+    time_format: data.time_format,
+  };
+}
 
-/** Company date and number settings. A missing profile falls back to the defaults. */
+/** Company date and number settings from `/me`, so a cashier is not blocked by company admin profile. */
 export function useCompanyFormat(): FormatPrefs | null {
-  const [prefs, setPrefs] = useState<FormatPrefs | null>(cached ?? null);
+  const [prefs, setPrefs] = useState<FormatPrefs | null>(peekCompanyFormatCache() ?? null);
 
   useEffect(() => {
-    if (cached !== undefined) {
-      if (cached) rememberFormatPrefs(cached);
-      return;
-    }
     let cancelled = false;
-    api('/tenants/me')
-      .then((res) => {
-        const row = (res.data || null) as FormatPrefs | null;
-        cached = row;
-        rememberFormatPrefs(row);
-        if (!cancelled) setPrefs(row);
-      })
-      .catch(() => {
-        cached = null;
-      });
+    const load = () => {
+      getMe()
+        .then((res) => {
+          const row = formatFromMe((res.data || null) as FormatPrefs | null);
+          storeCompanyFormatCache(row);
+          if (!cancelled) setPrefs(row);
+        })
+        .catch(() => {
+          if (!cancelled) setPrefs(peekCompanyFormatCache() ?? null);
+        });
+    };
+    const existing = peekCompanyFormatCache();
+    if (existing === undefined) load();
+    else if (existing) rememberFormatPrefs(existing);
+    const unsubscribe = subscribeCompanyFormatRefresh(load);
     return () => {
       cancelled = true;
+      unsubscribe();
     };
   }, []);
 

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { api } from '../lib/api';
 import { openReceiptPrintWindow } from '../lib/posReceiptPrint';
+import { printerPurposeLabel } from '../lib/printerPurposes';
 
 type PrintJob = {
   id: string;
@@ -34,7 +35,7 @@ export default function PosPrintStatus({
         body: JSON.stringify({ status: 'printed' }),
       });
       setRows((prev) => prev.map((j) => (j.id === job.id ? { ...j, status: 'printed' } : j)));
-      setNote('Printed from this browser.');
+      setNote('The print dialog opened. This does not confirm that paper came out.');
     } catch (err: any) {
       setNote(err?.message || 'Print failed — the sale is still saved.');
     } finally {
@@ -68,26 +69,36 @@ export default function PosPrintStatus({
   }
 
   return (
-    <div className="tpos-print-status">
-      <strong>Printers</strong>
+    <div className="tpos-print-status print-ui-page">
+      <strong>Print jobs</strong>
+      <p className="print-ui-help">The print dialog does not confirm that paper came out of a printer.</p>
       {note ? <p className="muted">{note}</p> : null}
       <ul>
         {rows.map((job) => (
-          <li key={job.id}>
-            {job.purpose}: <strong>{job.status}</strong>{' '}
+          <li key={job.id} className="print-ui-row">
+            <span>
+              {printerPurposeLabel(job.purpose)}: {jobStatusLabel(job.status)}
+            </span>
             {job.payload?.browser_fallback || job.status === 'browser_pending' ? (
-              <button type="button" className="tpos-btn" disabled={busy} onClick={() => browserPrint(job)}>
-                Print here
+              <button type="button" className="btn-ok" disabled={busy} onClick={() => browserPrint(job)}>
+                Print this job
               </button>
             ) : null}
           </li>
         ))}
       </ul>
       {saleId ? (
-        <button type="button" className="tpos-btn" disabled={busy} onClick={reprint}>
-          Reprint
+        <button type="button" className="btn-ok" disabled={busy} onClick={reprint}>
+          Print again
         </button>
       ) : null}
     </div>
   );
+}
+
+function jobStatusLabel(status: string) {
+  if (status === 'browser_pending') return 'Waiting for the print dialog';
+  if (status === 'printed') return 'Marked printed';
+  if (status === 'queued') return 'Queued';
+  return status.replace(/_/g, ' ');
 }

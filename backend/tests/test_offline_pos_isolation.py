@@ -7,7 +7,12 @@ from datetime import datetime, timedelta
 import pyotp
 import pytest
 
-from app.offline_pos import DEFAULT_OFFLINE_AUTH_HOURS, clamp_offline_auth_hours, offline_window_expired
+from app.offline_pos import (
+    DEFAULT_OFFLINE_AUTH_HOURS,
+    OFFLINE_COMPLETE_MISSING,
+    clamp_offline_auth_hours,
+    offline_window_expired,
+)
 from tests.conftest import auth_headers
 
 
@@ -151,6 +156,8 @@ async def test_offline_policy_default_is_168_hours(client):
     assert data["offline_auth_hours_default"] == DEFAULT_OFFLINE_AUTH_HOURS
     assert data["offline_auth_hours"] == 168
     assert data["offline_complete_claimed"] is False
+    assert "max_sync_retries" not in data
+    assert OFFLINE_COMPLETE_MISSING in data["limitations"]
     assert "inventory" in data["not_offline"]
     assert clamp_offline_auth_hours(999) == 168
     assert clamp_offline_auth_hours(0) == 1

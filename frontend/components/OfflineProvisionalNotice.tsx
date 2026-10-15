@@ -15,9 +15,9 @@ export default function OfflineProvisionalNotice() {
         if (cancelled || !data?.provisional) return;
         const sales = Number(data.sales_pending) || 0;
         const devices = Number(data.devices_pending) || 0;
-        setText(
-          `Provisional. ${sales} offline sale(s) on ${devices} device(s) have not synced, so these figures do not include them yet.`
-        );
+        const saleLabel = `${sales} offline sale${sales === 1 ? '' : 's'}`;
+        const tillLabel = `${devices} till${devices === 1 ? '' : 's'}`;
+        setText(`These figures leave out ${saleLabel} still on ${tillLabel}. They are included after sync.`);
       })
       .catch(() => undefined);
     return () => {
@@ -27,7 +27,7 @@ export default function OfflineProvisionalNotice() {
 
   if (!text) return null;
   return (
-    <p className="muted" role="status">
+    <p className="offline-provisional" role="status">
       {text}
     </p>
   );

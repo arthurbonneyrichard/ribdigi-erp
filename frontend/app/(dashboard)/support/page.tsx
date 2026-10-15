@@ -42,6 +42,17 @@ const PRIORITY_LABEL: Record<string, string> = {
 
 const STATUS_ORDER = ['new', 'in_progress', 'waiting_for_tenant', 'resolved', 'closed'] as const;
 
+const TOPIC_HELP: Record<string, string> = {
+  account_login: 'Signing in, your password, and which screens your role can open.',
+  pos_sales: 'Till sales and receipts, or quotations and invoices when this company uses a sales desk.',
+  inventory_stock: 'Products on hand, stock movements, and what is available to sell.',
+  purchases_suppliers: 'Suppliers, purchase orders, goods received, supplier bills, and returns.',
+  finance_reports: 'Accounts, expenses, and the reports for this company.',
+  printing_barcode_receipt: 'Printers, barcode labels, and sale receipts.',
+  settings_configuration: 'Company settings, including the business type already saved for this company.',
+  bug_other: 'A problem that is not covered by the topics above.',
+};
+
 function errText(err: unknown): string {
   return err instanceof Error ? err.message : 'Request failed';
 }
@@ -76,6 +87,8 @@ export default function HelpSupportPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [guideBusy, setGuideBusy] = useState(false);
+  const [guideError, setGuideError] = useState('');
 
   const loadList = useCallback(async () => {
     const params = new URLSearchParams();
@@ -255,15 +268,80 @@ export default function HelpSupportPage() {
     }
   }
 
+  async function openGuide() {
+    setGuideError('');
+    setGuideBusy(true);
+    try {
+      const response = await apiFetch('/staff-guide');
+      const type = (response.headers.get('content-type') || '').toLowerCase();
+      if (!response.ok || !type.includes('pdf')) {
+        let detail = 'Could not open the guide.';
+        try {
+          const body = await response.json();
+          const raw = body?.detail;
+          if (typeof raw === 'string') detail = raw;
+          else if (raw?.message) detail = String(raw.message);
+        } catch {
+          if (response.status === 401) detail = 'Sign in required';
+          if (response.status === 403) detail = 'You do not have permission to open the guide.';
+        }
+        setGuideError(detail);
+        return;
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'RIBDIGI-ERP-Customer-User-Guide.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setGuideError('Could not open the guide.');
+    } finally {
+      setGuideBusy(false);
+    }
+  }
+
   return (
     <div className="plat desk help">
       <header className="plat-hero">
         <div>
           <p className="plat-kicker">Help</p>
-          <h1>Support</h1>
-          <p className="plat-sub">Open a ticket, follow the reply, and close it when the issue is resolved.</p>
+          <h1>Help & Support</h1>
+          <p className="plat-sub">Find a topic, open the guide, or send a ticket if you still need help.</p>
         </div>
+        <button type="button" className="btn btn-primary" onClick={() => void openGuide()} disabled={guideBusy} aria-label="Open staff guide">
+          {guideBusy ? 'Opening the guide…' : 'Open the guide'}
+        </button>
       </header>
+      {guideError ? <p className="plat-msg desk-alert" role="alert">{guideError}</p> : null}
+      <section className="plat-panel" aria-label="Help topics">
+        <div className="desk-panel-head"><h2>Help topics</h2></div>
+        <p className="muted">A new company chooses retail, hotel, or restaurant. These topics follow the business type already saved for this company.</p>
+        {categories.length === 0 ? (
+          <p className="muted">Topics appear here once this page has loaded your company.</p>
+        ) : (
+          <ul className="desk-files">
+            {categories.map((item) => (
+              <li key={item.code}>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => {
+                    setCategory(item.code);
+                    document.getElementById('help-new-ticket')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                >
+                  {item.label}
+                </button>
+                <span>{TOPIC_HELP[item.code] || 'Covers this part of the product for your company.'}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
       {error ? <p className="plat-msg desk-alert" role="alert">{error}</p> : null}
       {notice ? <p className="plat-msg" role="status">{notice}</p> : null}
       {loading ? <p className="muted">Loading tickets…</p> : null}
@@ -445,7 +523,7 @@ export default function HelpSupportPage() {
                   <h2>New ticket</h2>
                 </div>
               </div>
-              <form onSubmit={createTicket} className="desk-compose">
+              <form id="help-new-ticket" onSubmit={createTicket} className="desk-compose">
                 <label>
                   <span>Subject</span>
                   <input aria-label="Ticket subject" value={subject} onChange={(event) => setSubject(event.target.value)} required />

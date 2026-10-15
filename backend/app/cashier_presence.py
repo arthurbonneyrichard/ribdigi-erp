@@ -14,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json
 
 CASHIER_PRESENCE_ROLES = frozenset({"cashier", "hotel_cashier"})
 # POS heartbeats about once a minute. Two missed beats means the browser
@@ -109,14 +110,54 @@ async def list_cashier_presence(db: AsyncSession, tenant_id: str, *, now: dateti
     for device in devices:
         if device.user_id in by_user:
             by_user[device.user_id].append(device)
+    store_ids = {device.store_id for device in devices if device.store_id}
+    stores: dict[str, m.Store] = {}
+    if store_ids:
+        store_rows = (
+            await db.execute(
+                select(m.Store).where(
+                    m.Store.tenant_id == tenant_id,
+                    m.Store.id.in_(tuple(store_ids)),
+                )
+            )
+        ).scalars().all()
+        stores = {store.id: store for store in store_rows}
+    open_shifts = (
+        await db.execute(
+            select(m.PosSession).where(
+                m.PosSession.tenant_id == tenant_id,
+                m.PosSession.user_id.in_(user_ids),
+                m.PosSession.status == "open",
+            )
+        )
+    ).scalars().all()
+    shift_by_user: dict[str, m.PosSession] = {}
+    for shift in open_shifts:
+        current = shift_by_user.get(shift.user_id)
+        if current is None or (shift.opened_at or datetime.min) >= (current.opened_at or datetime.min):
+            shift_by_user[shift.user_id] = shift
     rows: list[dict] = []
     for user in users:
-        summary = summarize_devices(by_user.get(user.id) or [], moment)
+        user_devices = by_user.get(user.id) or []
+        summary = summarize_devices(user_devices, moment)
+        latest = None
+        if user_devices:
+            latest = max(user_devices, key=lambda row: row.last_seen_at or datetime.min)
+        store = stores.get(latest.store_id) if latest and latest.store_id else None
+        pending = sum(int(device.pending_queue_count or 0) for device in user_devices)
+        shift = shift_by_user.get(user.id)
         rows.append(
             {
                 "user_id": user.id,
                 "full_name": user.full_name,
+                "email": user.email,
                 "role": user.role,
+                "store_name": f"{store.code} — {store.name}" if store else None,
+                "pending_queue_count": pending,
+                "shift_number": shift.session_number if shift else None,
+                "shift_status": "open" if shift else "none",
+                "shift_sale_count": int(shift.sale_count or 0) if shift else None,
+                "shift_sales": money_json(shift.total_sales) if shift else None,
                 **summary,
             }
         )

@@ -13,7 +13,16 @@ import { AmountField } from '../../../components/AmountField';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import { countAndCloseOpenShift, openShiftForSignedInUser } from '../../../lib/cashierShift';
 import { setPosDrawerBridge } from '../../../lib/posDrawerBridge';
-import { explainOfflineAccess, refreshLink, startLinkWatch, subscribeLink } from '../../../lib/connectivity';
+import { setPosOfflinePanelProps } from '../../../lib/posOfflineSlot';
+import {
+  CATALOG_NOT_SAVED,
+  describePrepareFailure,
+  explainOfflineAccess,
+  refreshLink,
+  startLinkWatch,
+  subscribeLink,
+  UNPREPARED_OFFLINE,
+} from '../../../lib/connectivity';
 import { openReceiptPrintWindow } from '../../../lib/posReceiptPrint';
 import { consumeWedgeKey, looksLikeBarcode, type WedgeBuffer } from '../../../lib/posWedgeScan';
 import {
@@ -26,7 +35,6 @@ import {
   getCachedCatalogMeta,
   getCachedCustomers,
   getCachedProducts,
-  getOrCreateDeviceId,
   getOfflineAuthEnvelope,
   getSnapshot,
   hydrateDeviceId,
@@ -39,7 +47,7 @@ import {
   touchLastOnline,
   type QueuedSale,
 } from '../../../lib/posOffline';
-import PosOfflinePanel, { type OfflineStatus } from '../../../components/PosOfflinePanel';
+import { type OfflineStatus } from '../../../components/PosOfflinePanel';
 
 const OFFLINE_TENDERS = new Set(['cash', 'mobile_money', 'card', 'bank_transfer', 'credit']);
 
@@ -62,11 +70,20 @@ function escapeHtml(value: unknown) {
   );
 }
 
-function printProvisionalReceipt(rec: QueuedSale, lines: Array<{ name: string; quantity: number; unit: number }>, storeName: string) {
+function printProvisionalReceipt(
+  rec: QueuedSale,
+  lines: Array<{ name: string; quantity: number; unit: number }>,
+  storeName: string,
+  paper: string = '80mm'
+) {
   const payload = rec.payload as Record<string, unknown>;
   const payments = Array.isArray(payload.payments)
     ? (payload.payments as Array<{ payment_method: string; amount: number }>)
     : [{ payment_method: String(payload.payment_method || 'cash'), amount: Number(payload.total || 0) }];
+  const narrow = paper === '58mm';
+  const page = narrow ? '58mm' : '80mm';
+  const slip = narrow ? '48mm' : '72mm';
+  const font = narrow ? '12px' : '13px';
   const rows = lines
     .map(
       (l) =>
@@ -78,10 +95,10 @@ function printProvisionalReceipt(rec: QueuedSale, lines: Array<{ name: string; q
     .join('');
   return openReceiptPrintWindow(
     `<!doctype html><html><head><title>${escapeHtml(rec.local_receipt_number)}</title>` +
-      '<style>@page{margin:0;size:80mm auto}html,body{margin:0;padding:0;width:80mm;max-width:80mm}' +
-      '.slip{width:72mm;max-width:80mm;margin:0 auto;font-family:\'Courier New\',ui-monospace,monospace;font-weight:700;font-size:13px;line-height:1.15}' +
+      `<style>@page{margin:0;size:${page} auto}html,body{margin:0;padding:0;width:${page};max-width:${page}}` +
+      `.slip{width:${slip};max-width:${page};margin:0 auto;font-family:'Courier New',ui-monospace,monospace;font-weight:700;font-size:${font};line-height:1.15}` +
       'h3,p,.mid{text-align:center;margin:0;overflow-wrap:anywhere}p{font-size:10px;margin:1mm 0}' +
-      'table{width:100%;border-collapse:collapse;table-layout:fixed}td{font-size:13px;font-weight:700;padding:1px 0;vertical-align:top;overflow-wrap:anywhere}' +
+      `table{width:100%;border-collapse:collapse;table-layout:fixed}td{font-size:${font};font-weight:700;padding:1px 0;vertical-align:top;overflow-wrap:anywhere}` +
       'td:nth-child(2),td:last-child{text-align:right;padding-left:1mm}</style></head><body><div class="slip">' +
       `<h3>${escapeHtml(storeName)}</h3>` +
       '<p><strong>Offline sale — pending synchronization.</strong><br/>This is not the final receipt. The receipt number is issued when the sale is sent.</p>' +
@@ -479,6 +496,9 @@ export default function Page() {
   const [offlineRefresh, setOfflineRefresh] = useState(0);
   const [allocationOverride, setAllocationOverride] = useState(false);
   const [bootedOffline, setBootedOffline] = useState(false);
+  const [preparingOffline, setPreparingOffline] = useState(false);
+  const [prepareFailure, setPrepareFailure] = useState('');
+  const prepareNotice = useRef('');
   const bumpOffline = useCallback(() => setOfflineRefresh((n) => n + 1), []);
   const handleOfflineStatus = useCallback((s: OfflineStatus) => {
     setOfflineStatus(s);
@@ -487,6 +507,7 @@ export default function Page() {
   const offlineValid = isOfflineAuthValid(offlineStatus?.envelope || null);
   const offlinePerms = offlineStatus?.envelope?.permissions || [];
   const checkoutReqRef = useRef<string | null>(null);
+  const checkoutAttemptRef = useRef<string | null>(null);
   const cashMoveLock = useRef(false);
   const countLock = useRef(false);
   const browseGen = useRef(0);
@@ -734,7 +755,7 @@ export default function Page() {
         await api('/pos/devices/heartbeat', {
           method: 'POST',
           body: JSON.stringify({
-            device_id: getOrCreateDeviceId(),
+            device_id: await hydrateDeviceId(),
             store_id: storeId.trim() || session?.store_id || null,
             app_version: 'web-mvp',
             pending_queue_count: pending,
@@ -761,7 +782,9 @@ export default function Page() {
   }, [online, storeId, session?.store_id]);
 
   async function refreshOfflineAccess(storeForGrant: string | null) {
-    if (!tenantId || !meId || !navigator.onLine) return;
+    if (!tenantId || !meId) return;
+    setPreparingOffline(true);
+    setPrepareFailure('');
     try {
       await revalidateOfflineAccess(api, {
         tenant_id: tenantId,
@@ -769,11 +792,27 @@ export default function Page() {
         store_id: storeForGrant,
         label: stores.find((s) => s.id === storeForGrant)?.name,
       });
-      const meta = await getCachedCatalogMeta();
-      setCatalogCachedAt(meta?.cached_at || null);
-    } catch {
-      /* the panel shows offline access as not set up / expired */
+      const [meta, env] = await Promise.all([
+        getCachedCatalogMeta(),
+        getOfflineAuthEnvelope().catch(() => null),
+      ]);
+      if (!env?.grant_id || !meta?.cached_at) {
+        throw new Error(env?.grant_id ? CATALOG_NOT_SAVED : 'Offline access was not saved on this device.');
+      }
+      setCatalogCachedAt(meta.cached_at);
+      const previous = prepareNotice.current;
+      prepareNotice.current = '';
+      setPrepareFailure('');
+      setError((prev) => (prev === UNPREPARED_OFFLINE || prev === previous ? '' : prev));
+    } catch (err) {
+      const env = await getOfflineAuthEnvelope().catch(() => null);
+      const text = describePrepareFailure(err, Boolean(env?.grant_id));
+      const previous = prepareNotice.current;
+      prepareNotice.current = text;
+      setPrepareFailure(text);
+      setError((prev) => (prev === '' || prev === UNPREPARED_OFFLINE || prev === previous ? text : prev));
     } finally {
+      setPreparingOffline(false);
       bumpOffline();
     }
   }
@@ -799,7 +838,14 @@ export default function Page() {
           void cacheSnapshot('me', meRes.data || null).catch(() => undefined);
           setBootedOffline(false);
         } catch (bootErr) {
-          if (navigator.onLine && (bootErr as { status?: number })?.status !== undefined) throw bootErr;
+          const httpStatus = (bootErr as { status?: number })?.status;
+          const browserOnline = typeof navigator === 'undefined' ? true : navigator.onLine;
+          if (browserOnline && httpStatus !== undefined) throw bootErr;
+          if (browserOnline && (bootErr as Error)?.message !== 'offline') {
+            throw new Error(
+              (bootErr as Error)?.message || 'Point of Sale could not reach the server to prepare this device.'
+            );
+          }
           const [sSnap, stSnap, meSnap, env] = await Promise.all([
             getSnapshot<Session | null>('session').catch(() => null),
             getSnapshot<Store[]>('stores').catch(() => null),
@@ -972,25 +1018,70 @@ export default function Page() {
   }, [online, bootedOffline, session]);
 
   useEffect(() => {
-    if (!online || !session || !tenantId || !meId) return;
+    if (!online || meId || bootLoading) return;
     let cancelled = false;
     (async () => {
-      const env = await getOfflineAuthEnvelope().catch(() => null);
+      try {
+        const meRes = await getMe();
+        if (cancelled) return;
+        const id = String(meRes.data?.id || '');
+        const tid = String(meRes.data?.tenant_id || '');
+        if (!id || !tid) return;
+        setMeId(id);
+        setTenantId(tid);
+        setIndustryCode(normalizeIndustry(meRes.data?.industry) || '');
+        setCanApproveOffline(hasPerm(meRes.data, 'pos', 'approve'));
+        setCanOpenDrawer(hasPerm(meRes.data, 'pos', 'write'));
+        setCanWriteQuotes(hasPerm(meRes.data, 'sales', 'write'));
+        setCashierName(meRes.data?.full_name || meRes.data?.email || '');
+        setCanCreditSale(canWriteCredit(meRes.data));
+        setError('');
+        const [sess, storeRes] = await Promise.all([
+          getPrefetched('/pos/sessions/current').catch(() => null),
+          getPrefetched('/pos/stores').catch(() => null),
+        ]);
+        if (cancelled) return;
+        const list = (storeRes?.data || []) as Store[];
+        if (list.length) setStores(list);
+        if (sess?.data) {
+          setSession(sess.data);
+          setBootedOffline(false);
+        }
+      } catch {
+        /* still unreachable; the unprepared sentence stays only when there is no grant */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [online, meId, bootLoading]);
+
+  useEffect(() => {
+    if (!online || !tenantId || !meId) return;
+    let cancelled = false;
+    (async () => {
+      const storeForGrant = session?.store_id || storeId.trim() || null;
+      const [env, meta] = await Promise.all([
+        getOfflineAuthEnvelope().catch(() => null),
+        getCachedCatalogMeta().catch(() => null),
+      ]);
+      const storeMismatch = Boolean(storeForGrant) && (env?.store_id || null) !== storeForGrant;
       const stale =
         !env?.grant_id ||
+        !meta?.cached_at ||
         !isOfflineAuthValid(env) ||
         env.user_id !== meId ||
         env.tenant_id !== tenantId ||
-        (env.store_id || null) !== (session.store_id || null) ||
+        storeMismatch ||
         Date.now() - new Date(env.allocations_refreshed_at || env.issued_at).getTime() > 6 * 3600000;
-      if (!cancelled && stale) await refreshOfflineAccess(session.store_id || null);
+      if (!cancelled && stale) await refreshOfflineAccess(storeForGrant);
     })();
     return () => {
       cancelled = true;
     };
     // refreshOfflineAccess reads current state; re-run only on identity/store changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [online, session?.session_id, session?.store_id, tenantId, meId]);
+  }, [online, session?.session_id, session?.store_id, storeId, tenantId, meId]);
 
   function selectCustomer(id: string) {
     setCustomerId(id);
@@ -1226,6 +1317,7 @@ export default function Page() {
       return;
     }
     setError('');
+    setMessage('');
     setPayAsReprint(false);
     setCart((prev) => {
       const row = prev.find((p) => p.id === product.id);
@@ -1295,22 +1387,6 @@ export default function Page() {
     setAmountPaidNow('');
   }
 
-  function scalePayments(
-    payments: { payment_method: string; amount: number }[],
-    target: number
-  ) {
-    const sum = payments.reduce((s, p) => s + p.amount, 0);
-    if (sum <= 0 || payments.length === 0) return payments;
-    const scaled = payments.map((p) => ({
-      ...p,
-      amount: Math.round((p.amount / sum) * target * 100) / 100,
-    }));
-    const paid = scaled.reduce((s, p) => s + p.amount, 0);
-    const last = scaled[scaled.length - 1];
-    last.amount = Math.round((last.amount + (target - paid)) * 100) / 100;
-    return scaled.filter((p) => p.amount > 0);
-  }
-
   function enableSplit(next: boolean) {
     setSplitTender(next);
     if (next) {
@@ -1320,6 +1396,28 @@ export default function Page() {
     }
   }
 
+  function customerReceiptRouteNote(
+    jobs: Array<{ purpose?: string; status?: string }>
+  ): string {
+    const receiptJobs = (jobs || []).filter((job) => job.purpose === 'customer_receipt');
+    const bits: string[] = [];
+    if (
+      receiptJobs.some(
+        (job) => job.status === 'queued' || job.status === 'claimed' || job.status === 'printing'
+      )
+    ) {
+      bits.push(
+        'The till agent uses the paper size stored on that printer, not the size next to Pay'
+      );
+    }
+    if (receiptJobs.some((job) => job.status === 'printed')) {
+      bits.push(
+        'A network printer was sent this receipt at the size stored on that printer. This does not confirm that paper came out'
+      );
+    }
+    return bits.join('. ');
+  }
+
   async function printReceiptAfterPay(
     saleId: string,
     jobs: Array<{ id?: string; purpose?: string; status?: string }>,
@@ -1327,8 +1425,9 @@ export default function Page() {
   ) {
     if (!saleId || printedPayIds.current.has(saleId)) return;
     printedPayIds.current.add(saleId);
+    const paper = receiptPaper === '58mm' ? '58mm' : '80mm';
     if (offline) {
-      printProvisionalReceipt(offline.rec, offline.lines, offline.store);
+      printProvisionalReceipt(offline.rec, offline.lines, offline.store, paper);
       return;
     }
     const receiptJobs = (jobs || []).filter((job) => job.purpose === 'customer_receipt');
@@ -1337,8 +1436,8 @@ export default function Page() {
     const browserJob = receiptJobs.find((job) => job.status === 'browser_pending' && job.id);
     if (!browserJob?.id) return;
     try {
-      const detail = await api(`/printers/jobs/${browserJob.id}`);
-      const payload = detail.data?.payload || {};
+      const detail = await api(`/pos/sales/${saleId}/receipt?paper=${encodeURIComponent(paper)}`);
+      const payload = detail.data || {};
       const opened = openReceiptPrintWindow(payload.html, payload.text || '');
       if (!opened) return;
       await api(`/printers/jobs/${browserJob.id}/browser-ack`, {
@@ -1363,8 +1462,6 @@ export default function Page() {
       setError('Cart is empty');
       return;
     }
-    const selectedName = (selectedCustomer?.name || '').trim();
-    const name = selectedName || customerName.trim();
     if (!splitTender && paymentMethod === 'credit' && !canCreditSale) {
       setError('Credit sales require credit permission');
       return;
@@ -1410,18 +1507,18 @@ export default function Page() {
       prescription_id: prescriptionId.trim() || null,
       status: 'completed',
       party_id: customerId.trim() || null,
-      customer_name: name.trim() || null,
+      customer_name: customerName.trim() || null,
       items,
     };
-    let payments: { payment_method: string; amount: number; reference?: string }[] | null = null;
+    let payments: { payment_method: string; amount: number; reference: string | null }[] | null = null;
     if (splitTender) {
       if (splitError) {
         setError(splitError);
         return;
       }
       payments = [
-        { payment_method: 'cash', amount: cashTenderAmount },
-        { payment_method: splitOtherMethod, amount: otherTenderAmount },
+        { payment_method: 'cash', amount: cashTenderAmount, reference: null },
+        { payment_method: splitOtherMethod, amount: otherTenderAmount, reference: null },
       ];
       body.payments = payments;
       body.payment_method = 'split';
@@ -1439,8 +1536,8 @@ export default function Page() {
       const remaining = Math.max(0, Math.round((cartTotal - paidNow) * 100) / 100);
       if (paidNow > 0 && remaining > 0) {
         payments = [
-          { payment_method: depositMethod, amount: paidNow },
-          { payment_method: 'credit', amount: remaining },
+          { payment_method: depositMethod, amount: paidNow, reference: null },
+          { payment_method: 'credit', amount: remaining, reference: null },
         ];
         body.payments = payments;
         body.payment_method = 'split';
@@ -1452,9 +1549,26 @@ export default function Page() {
     } else {
       body.payment_method = paymentMethod;
     }
-    if (paymentMethod === 'loyalty' && !customerId) {
+    if (!splitTender && paymentMethod === 'loyalty' && !customerId) {
       setError('Select a customer before paying with loyalty points');
       return;
+    }
+    const attemptKey = JSON.stringify({
+      session_id: body.session_id,
+      items: body.items,
+      party_id: body.party_id,
+      customer_name: body.customer_name,
+      payment_method: body.payment_method,
+      payments: body.payments ?? null,
+      discount_amount: body.discount_amount,
+      discount_type: body.discount_type,
+      discount_percent: body.discount_percent,
+      coupon_code: body.coupon_code,
+      prescription_id: body.prescription_id,
+    });
+    if (checkoutAttemptRef.current !== attemptKey) {
+      checkoutReqRef.current = null;
+      checkoutAttemptRef.current = attemptKey;
     }
     setBusy(true);
     try {
@@ -1480,6 +1594,10 @@ export default function Page() {
         const env = await getOfflineAuthEnvelope();
         if (!isOfflineAuthValid(env)) {
           throw new Error(explainOfflineAccess(env).message);
+        }
+        const catalog = await getCachedCatalogMeta();
+        if (!catalog?.cached_at) {
+          throw new Error(CATALOG_NOT_SAVED);
         }
         const blocked = cart.map((c) => offlineDispenseBlock(c)).find(Boolean);
         if (blocked) throw new Error(blocked);
@@ -1539,6 +1657,7 @@ export default function Page() {
         });
         clearCart();
         clearCustomer();
+        setGiftCardCode('');
         setCreditOverrideReason('');
         setSplitTender(false);
         setAllocationOverride(false);
@@ -1557,6 +1676,7 @@ export default function Page() {
         });
         setMessage('Offline sale — pending synchronization.');
         checkoutReqRef.current = null;
+        checkoutAttemptRef.current = null;
         await refreshPendingCount();
         bumpOffline();
         await browse(q);
@@ -1565,7 +1685,7 @@ export default function Page() {
         await takeOffline();
         return;
       }
-      body.device_id = getOrCreateDeviceId();
+      body.device_id = await hydrateDeviceId();
 
       let r;
       try {
@@ -1577,20 +1697,15 @@ export default function Page() {
         const detail = err?.detail;
         if (
           splitTender &&
-          payments &&
           detail &&
           typeof detail === 'object' &&
-          detail.code === 'PAYMENT_TOTAL_MISMATCH' &&
-          typeof detail.sale_total === 'number'
+          detail.code === 'PAYMENT_TOTAL_MISMATCH'
         ) {
-          body.payments = scalePayments(payments, detail.sale_total);
-          const scaled = body.payments as Array<{ payment_method: string; amount: number }>;
-          setCashTender(String(scaled.find((p) => p.payment_method === 'cash')?.amount ?? ''));
-          setCardTender(String(scaled.find((p) => p.payment_method !== 'cash')?.amount ?? ''));
-          r = await api('/pos/sales', {
-            method: 'POST',
-            body: JSON.stringify(body),
-          });
+          const saleTotal =
+            typeof detail.sale_total === 'number' ? money(detail.sale_total) : 'the sale total';
+          throw new Error(
+            `The cash and other amounts on this form do not add up to ${saleTotal}. Change those amounts, then charge again.`
+          );
         } else if (
           err?.status === 409 &&
           detail &&
@@ -1628,6 +1743,8 @@ export default function Page() {
       }
       clearCart();
       clearCustomer();
+      setGiftCardCode('');
+      setCreditOverrideReason('');
       setSplitTender(false);
       setAmountPaidNow('');
       setDepositMethod('cash');
@@ -1647,14 +1764,16 @@ export default function Page() {
       await browse(q);
       const statusLabel = String(r.data.payment_status || '').replace(/_/g, ' ');
       const bal = Number(r.data.balance_due || 0);
+      const routeNote = customerReceiptRouteNote(jobs);
       const extra =
-        r.data?.credit_limit_overridden
+        (r.data?.credit_limit_overridden
           ? ' (credit override)'
           : statusLabel
             ? ` · ${statusLabel}${bal > 0 ? ` · balance ${money(bal)}` : ''}`
-            : '';
+            : '') + (routeNote ? ` · ${routeNote}` : '');
       setMessage(`Sale ${r.data.reference} saved${extra}`);
       checkoutReqRef.current = null;
+      checkoutAttemptRef.current = null;
       bumpOffline();
     } catch (err: any) {
       setMessage('');
@@ -1689,13 +1808,11 @@ export default function Page() {
         })),
         total: cartTotal,
       };
-      if (navigator.onLine) {
-        const r = await api('/sales/quotations', {
-          method: 'POST',
-          body: JSON.stringify({ ...quoteBody, total: undefined, notes: null, client_request_id: newClientRequestId() }),
-        });
-        setMessage(`Quote ${r.data?.number || r.data?.reference || ''} saved`);
-      } else {
+      const saveQueuedQuote = async () => {
+        const env = await getOfflineAuthEnvelope();
+        if (!isOfflineAuthValid(env)) throw new Error(explainOfflineAccess(env).message);
+        const catalog = await getCachedCatalogMeta();
+        if (!catalog?.cached_at) throw new Error(CATALOG_NOT_SAVED);
         const rec = await enqueueOfflineQuote({
           tenant_id: tenantId,
           store_id: session.store_id || storeId || null,
@@ -1703,8 +1820,33 @@ export default function Page() {
           user_id: meId,
           payload: quoteBody,
         });
-        setMessage(`Quote saved offline as ${rec.local_receipt_number}. Prices are confirmed by the server when it syncs.`);
+        setMessage(
+          `Quote saved offline as ${rec.local_receipt_number}. Prices are confirmed by the server when it syncs.`
+        );
         bumpOffline();
+      };
+      if (!online) {
+        await saveQueuedQuote();
+      } else {
+        try {
+          const r = await api('/sales/quotations', {
+            method: 'POST',
+            body: JSON.stringify({
+              ...quoteBody,
+              total: undefined,
+              notes: null,
+              client_request_id: newClientRequestId(),
+            }),
+          });
+          setMessage(`Quote ${r.data?.number || r.data?.reference || ''} saved`);
+        } catch (err: unknown) {
+          const status = Number((err as { status?: number })?.status) || 0;
+          if (!status || status >= 500 || status === 429 || status === 408) {
+            await saveQueuedQuote();
+          } else {
+            throw err;
+          }
+        }
       }
       clearCart();
     } catch (err: any) {
@@ -1717,50 +1859,70 @@ export default function Page() {
     setError('');
     setReceiptBusy('reprint');
     try {
+      const paper = receiptPaper === '58mm' ? '58mm' : '80mm';
       if (reprintTarget.offline) {
-        printProvisionalReceipt(reprintTarget.rec, reprintTarget.lines, reprintTarget.store);
+        printProvisionalReceipt(reprintTarget.rec, reprintTarget.lines, reprintTarget.store, paper);
         return;
       }
-      let printed = false;
+      const notes: string[] = [];
+      let openedBrowser = false;
       try {
         const queued = await api('/printers/reprint', {
           method: 'POST',
           body: JSON.stringify({ source_type: 'pos_sale', source_id: reprintTarget.id }),
         });
         const jobs = Array.isArray(queued.data) ? queued.data : [];
-        if (
-          jobs.some(
-            (job: { purpose?: string; status?: string }) =>
-              job.purpose === 'customer_receipt' && job.status === 'printed'
-          )
-        ) {
-          printed = true;
-        }
-        const browser = printed
-          ? undefined
-          : jobs.find(
-              (job: { id?: string; purpose?: string; status?: string }) =>
-                job.purpose === 'customer_receipt' && job.status === 'browser_pending' && job.id
-            );
+        const receiptJobs = jobs.filter(
+          (job: { purpose?: string }) => job.purpose === 'customer_receipt'
+        );
+        const browser = receiptJobs.find(
+          (job: { id?: string; status?: string }) => job.status === 'browser_pending' && job.id
+        );
+        const agentQueued = receiptJobs.some(
+          (job: { status?: string }) =>
+            job.status === 'queued' || job.status === 'claimed' || job.status === 'printing'
+        );
+        const networkSent = receiptJobs.some((job: { status?: string }) => job.status === 'printed');
         if (browser?.id) {
-          const detail = await api(`/printers/jobs/${browser.id}`);
-          const payload = detail.data?.payload || {};
-          printed = openReceiptPrintWindow(payload.html, payload.text || '');
-          if (printed) {
+          const detail = await api(`/pos/sales/${reprintTarget.id}/receipt?paper=${encodeURIComponent(paper)}`);
+          const payload = detail.data || {};
+          openedBrowser = openReceiptPrintWindow(payload.html, payload.text || '');
+          if (openedBrowser) {
             await api(`/printers/jobs/${browser.id}/browser-ack`, {
               method: 'POST',
               body: JSON.stringify({ status: 'printed' }),
             });
           }
+        } else if (!agentQueued && !networkSent) {
+          const receipt = await api(`/pos/sales/${reprintTarget.id}/receipt?paper=${encodeURIComponent(paper)}`);
+          openedBrowser = openReceiptPrintWindow(receipt.data?.html, receipt.data?.text || '');
+        }
+        if (openedBrowser) {
+          notes.push(
+            'Browser receipt uses the size next to Pay. This does not confirm that paper came out.'
+          );
+        }
+        if (agentQueued) {
+          notes.push(
+            'Reprint is queued for the till agent. That printer uses the paper size stored on it, not the size next to Pay.'
+          );
+        }
+        if (networkSent) {
+          notes.push(
+            'Reprint was sent to a network printer at the paper size stored on it. This does not confirm that paper came out.'
+          );
         }
       } catch {
-        printed = false;
+        const receipt = await api(`/pos/sales/${reprintTarget.id}/receipt?paper=${encodeURIComponent(paper)}`);
+        openedBrowser = openReceiptPrintWindow(receipt.data?.html, receipt.data?.text || '');
+        if (openedBrowser) {
+          notes.push(
+            'Browser receipt uses the size next to Pay. This does not confirm that paper came out.'
+          );
+        }
       }
-      if (!printed) {
-        const receipt = await api(`/pos/sales/${reprintTarget.id}/receipt`);
-        const opened = openReceiptPrintWindow(receipt.data?.html, receipt.data?.text || '');
-        if (!opened) setError('Reprint could not open the print dialog.');
-      }
+      if (notes.length) setMessage(notes.join(' '));
+      else if (!openedBrowser) setError('Reprint could not open the print dialog.');
     } catch (err: any) {
       setError(err?.message || 'Reprint could not open the print dialog.');
     } finally {
@@ -1791,9 +1953,45 @@ export default function Page() {
     }
   }
 
+  useEffect(() => {
+    if (!meId || !tenantId) {
+      setPosOfflinePanelProps(null);
+      return;
+    }
+    setPosOfflinePanelProps({
+      api: api as unknown as (path: string, opts?: RequestInit) => Promise<unknown>,
+      online,
+      tenantId,
+      userId: meId,
+      storeId: session?.store_id || storeId.trim() || null,
+      storeLabel: stores.find((s) => s.id === (session?.store_id || storeId))?.name,
+      canApprove: canApproveOffline,
+      refreshToken: offlineRefresh,
+      preparing: preparingOffline,
+      prepareFailure,
+      onStatus: handleOfflineStatus,
+      onMessage: setMessage,
+      onError: setError,
+    });
+  }, [
+    meId,
+    tenantId,
+    online,
+    session?.store_id,
+    storeId,
+    stores,
+    canApproveOffline,
+    offlineRefresh,
+    preparingOffline,
+    prepareFailure,
+    handleOfflineStatus,
+  ]);
+
+  useEffect(() => () => setPosOfflinePanelProps(null), []);
+
   return (
     <>
-      <div className="tpos">
+      <div className="tpos pos-ui">
         <header className="tpos-top">
           <div className="tpos-top-copy">
             <h1>Point of Sale</h1>
@@ -1807,23 +2005,8 @@ export default function Page() {
               {!online && catalogCachedAt ? ` · Saved ${formatCacheAge(catalogCachedAt)}` : ''}
             </p>
             ) : null}
-            {meId && tenantId ? (
-              <PosOfflinePanel
-                api={api as unknown as (path: string, opts?: RequestInit) => Promise<unknown>}
-                online={online}
-                tenantId={tenantId}
-                userId={meId}
-                storeId={session?.store_id || storeId.trim() || null}
-                storeLabel={stores.find((s) => s.id === (session?.store_id || storeId))?.name}
-                canApprove={canApproveOffline}
-                refreshToken={offlineRefresh}
-                onStatus={handleOfflineStatus}
-                onMessage={setMessage}
-                onError={setError}
-              />
-            ) : null}
           </div>
-          <div className="tpos-shift">
+          <div className="tpos-shift pos-ui-shift">
             {!session ? (
               <>
                 {shiftClosedNote ? (
@@ -1905,7 +2088,7 @@ export default function Page() {
                     </span>
                   </p>
                   <label className="tpos-cash-field">
-                    Amount
+                    Amount to add or remove
                     <AmountField
                       className="tpos-input"
                       value={cashMoveAmount}
@@ -1913,7 +2096,7 @@ export default function Page() {
                       inputMode="decimal"
                       placeholder="0.00"
                       autoComplete="off"
-                      aria-label="Amount"
+                      aria-label="Drawer cash amount"
                     />
                   </label>
                   <label className="tpos-cash-field">
@@ -1922,10 +2105,10 @@ export default function Page() {
                       className="tpos-input"
                       value={cashMoveReason}
                       onChange={(e) => setCashMoveReason(e.target.value)}
-                      placeholder="Short note"
+                      placeholder="Short note, such as a payout or a top-up"
                       maxLength={200}
                       autoComplete="off"
-                      aria-label="Reason"
+                      aria-label="Drawer cash movement reason"
                     />
                   </label>
                   <div className="tpos-cash-actions">
@@ -1959,17 +2142,6 @@ export default function Page() {
             <details className="tpos-more">
               <summary>Receipt numbers</summary>
               <div className="tpos-more-body">
-                <label className="muted">
-                  Receipt paper
-                  <select
-                    value={receiptPaper}
-                    onChange={(e) => setReceiptPaper(e.target.value)}
-                    aria-label="POS receipt paper"
-                  >
-                    <option value="58mm">58mm</option>
-                    <option value="80mm">80mm</option>
-                  </select>
-                </label>
                 <input value={posSalePrefix} onChange={(e) => setPosSalePrefix(e.target.value)} aria-label="POS sale number prefix" placeholder="Sale prefix" />
                 <input value={posSaleNext} onChange={(e) => setPosSaleNext(e.target.value)} aria-label="POS sale next number" placeholder="Next sale number" />
                 <input value={posSessionPrefix} onChange={(e) => setPosSessionPrefix(e.target.value)} aria-label="POS session number prefix" placeholder="Shift prefix" />
@@ -2214,8 +2386,9 @@ export default function Page() {
         )}
 
         <div className="tpos-body">
-          <section className="tpos-catalog" aria-label="Product catalog">
-            <form className="tpos-search" onSubmit={search}>
+          <section className="tpos-catalog pos-ui-catalog" aria-label="Product catalog">
+            <form className="tpos-search pos-ui-search" onSubmit={search}>
+              <p className="pos-ui-step">Find a product</p>
               <input
                 className="tpos-search-input"
                 value={q}
@@ -2246,7 +2419,54 @@ export default function Page() {
 
             {!session && (
               <div className="tpos-empty">
-                <p>{error || 'Starting your shift…'}</p>
+                {stores.length > 0 && !hideStorePicker ? (
+                  <label className="tpos-field">
+                    <span>Choose a store to start your shift.</span>
+                    <select
+                      className="tpos-input"
+                      value={storeId}
+                      onChange={(e) => {
+                        const id = e.target.value;
+                        setStoreId(id);
+                        setCtxStoreId(id);
+                        if (!id) return;
+                        setShiftBusy(true);
+                        setError('');
+                        void openShiftForSignedInUser(id).then((opened) => {
+                          if (opened?.session_id) {
+                            setSession(opened as Session);
+                            void loadShiftHistory();
+                          } else {
+                            setError('Your shift could not be started. Sign out and sign in again.');
+                          }
+                          setShiftBusy(false);
+                        });
+                      }}
+                      aria-label="POS store"
+                    >
+                      <option value="">Select store</option>
+                      {stores.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                    {error ? <p>{error}</p> : null}
+                  </label>
+                ) : (
+                  <p>{error || 'Wait for your shift to open, then scan or search for a product.'}</p>
+                )}
+                {shiftClosedNote ? (
+                  <button
+                    type="button"
+                    className="tpos-btn"
+                    disabled={shiftBusy}
+                    aria-label="Start a new shift"
+                    onClick={() => void startNewShift()}
+                  >
+                    {shiftBusy ? 'Starting…' : 'Start a new shift'}
+                  </button>
+                ) : null}
               </div>
             )}
 
@@ -2260,7 +2480,7 @@ export default function Page() {
 
             {session && !catalogLoading && rows.length === 0 && (
               <div className="tpos-empty">
-                <p>No products match this search.</p>
+                <p>Search again, or tap All to see products you can sell.</p>
               </div>
             )}
 
@@ -2320,13 +2540,13 @@ export default function Page() {
             </div>
           </section>
 
-          <aside className="tpos-cart" aria-label="Cart">
+          <aside className="tpos-cart pos-ui-cart" aria-label="Cart">
             <div className="tpos-cart-head">
               <h2>Cart</h2>
               <span className="tpos-items-badge">Items {cartCount}</span>
             </div>
-            <label className="tpos-field tpos-customer">
-              <span>Customer</span>
+            <label className="tpos-field tpos-customer pos-ui-customer">
+              <span>New customer</span>
               <select
                 value={customerId}
                 onChange={(e) => selectCustomer(e.target.value)}
@@ -2381,16 +2601,16 @@ export default function Page() {
                 </p>
               ) : null}
 
-            <div className="tpos-cart-list">
-              {cart.length === 0 ? (
+            <div className="tpos-cart-list pos-ui-list">
+              {cart.length === 0 && !payAsReprint ? (
                 <div className="tpos-cart-empty">
-                  <strong>No products selected</strong>
+                  <p>Scan or search, then tap a product to add it.</p>
                 </div>
               ) : (
                 <div className="tpos-order-head" aria-hidden>
                   <span>Product</span>
                   <span>Qty</span>
-                  <span>Price</span>
+                  <span>Line total</span>
                   <span />
                 </div>
               )}
@@ -2406,7 +2626,7 @@ export default function Page() {
                 );
                 const stockOut = Number(c.stock_qty) <= 0 || c.is_out_of_stock;
                 return (
-                  <div key={c.id} className="tpos-cart-row">
+                  <div key={c.id} className="tpos-cart-row pos-ui-line">
                     <div className="tpos-cart-product">
                       <strong className="tpos-cart-name" title={c.name}>
                         <span className="tpos-cart-name-text">{c.name}</span>
@@ -2419,7 +2639,7 @@ export default function Page() {
                       </strong>
                       <span className="tpos-cart-unit">{money(unit)} each</span>
                     </div>
-                    <div className="tpos-qty">
+                    <div className="tpos-qty pos-ui-qty">
                       <button
                         type="button"
                         aria-label={`Decrease quantity of ${c.name}`}
@@ -2464,20 +2684,10 @@ export default function Page() {
               })}
             </div>
 
-            <div className="tpos-cart-dock">
+            <div className="tpos-cart-dock pos-ui-pay">
               <div className="tpos-cart-lines">
-                <label className="tpos-field">
-                  <span>Customer name</span>
-                  <input
-                    className="tpos-input"
-                    aria-label="POS customer name"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Walk-in if none selected"
-                    maxLength={180}
-                    autoComplete="off"
-                  />
-                </label>
+                {payAsReprint ? null : <p className="pos-ui-step">Take payment</p>}
+                <div className="pos-ui-pay-method-row">
                 <label className="tpos-split-toggle">
                   <input
                     type="checkbox"
@@ -2488,15 +2698,56 @@ export default function Page() {
                   <span>Split payment</span>
                 </label>
                 {splitTender ? (
+                  <label className="tpos-pay-select">
+                    <span>Payment method</span>
+                    <select
+                      value={splitOtherMethod}
+                      onChange={(e) =>
+                        setSplitOtherMethod(e.target.value as 'card' | 'mobile_money' | 'bank_transfer')
+                      }
+                      aria-label="POS split second method"
+                    >
+                      <option value="card">Card</option>
+                      <option value="mobile_money">Mobile Money (MoMo)</option>
+                      <option value="bank_transfer">Bank transfer</option>
+                    </select>
+                  </label>
+                ) : (
+                  <label className="tpos-pay-select">
+                    <span>Payment method</span>
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      aria-label="POS payment method"
+                    >
+                      <option value="cash">Cash</option>
+                      <option value="card">Card</option>
+                      <option value="mobile_money">Mobile Money (MoMo)</option>
+                      <option value="bank_transfer">Bank transfer</option>
+                      {online ? <option value="wallet">Wallet</option> : null}
+                      {online ? <option value="gift_card">Gift card</option> : null}
+                      {online ? <option value="loyalty">Loyalty points</option> : null}
+                      {canCreditSale && (online || offlinePerms.includes('credit_sale')) ? (
+                        <option value="credit">Credit</option>
+                      ) : null}
+                    </select>
+                  </label>
+                )}
+                </div>
+                {splitTender ? (
                   <div className="tpos-split-panel">
                     <p className="tpos-split-due">
                       <span>Amount due</span>
                       <strong>{money(cartTotal)}</strong>
                     </p>
-                    <p className="tpos-split-hint">
-                      Cash plus one other tender. Editing either amount fills the rest. Mobile Money is
-                      recorded only and does not charge a phone.
-                    </p>
+                    {payAsReprint ? null : <p className="tpos-split-hint">
+                      Cash plus one other tender. Editing either amount fills the rest.{' '}
+                      {splitOtherMethod === 'mobile_money'
+                        ? 'Mobile Money is recorded only and does not charge a phone.'
+                        : splitOtherMethod === 'bank_transfer'
+                          ? 'Bank transfer is recorded only. Collect it at the bank. This register does not charge the account.'
+                          : 'Card is recorded only. Collect it on the card terminal. This register does not charge the card.'}
+                    </p>}
                     <div className="tpos-split-fields">
                       <label className="tpos-field">
                         <span>Cash amount</span>
@@ -2518,20 +2769,6 @@ export default function Page() {
                           inputMode="decimal"
                           aria-label="POS cash tender"
                         />
-                      </label>
-                      <label className="tpos-field">
-                        <span>Other tender</span>
-                        <select
-                          value={splitOtherMethod}
-                          onChange={(e) =>
-                            setSplitOtherMethod(e.target.value as 'card' | 'mobile_money' | 'bank_transfer')
-                          }
-                          aria-label="POS split second method"
-                        >
-                          <option value="card">Card</option>
-                          <option value="mobile_money">Mobile Money (MoMo)</option>
-                          <option value="bank_transfer">Bank transfer</option>
-                        </select>
                       </label>
                       <label className="tpos-field tpos-split-other-amount">
                         <span>{splitOtherLabel} amount</span>
@@ -2566,27 +2803,7 @@ export default function Page() {
                       </p>
                     )}
                   </div>
-                ) : (
-                  <label className="tpos-pay-select">
-                    <span>Payment</span>
-                    <select
-                      value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      aria-label="POS payment method"
-                    >
-                      <option value="cash">Cash</option>
-                      <option value="card">Card</option>
-                      <option value="mobile_money">Mobile Money (MoMo)</option>
-                      <option value="bank_transfer">Bank transfer</option>
-                      {online ? <option value="wallet">Wallet</option> : null}
-                      {online ? <option value="gift_card">Gift card</option> : null}
-                      {online ? <option value="loyalty">Loyalty points</option> : null}
-                      {canCreditSale && (online || offlinePerms.includes('credit_sale')) ? (
-                        <option value="credit">Credit</option>
-                      ) : null}
-                    </select>
-                  </label>
-                )}
+                ) : null}
                 {!splitTender && paymentMethod === 'gift_card' ? (
                   <label className="tpos-field">
                     <span>Gift card code</span>
@@ -2598,12 +2815,27 @@ export default function Page() {
                     />
                   </label>
                 ) : null}
-                {!splitTender && paymentMethod === 'mobile_money' ? (
+                {!payAsReprint && !splitTender && paymentMethod === 'mobile_money' ? (
                   <p className="tpos-split-hint">
                     Mobile Money is recorded only. It does not charge a phone.
                   </p>
                 ) : null}
-                {!online ? (
+                {!payAsReprint && !splitTender && paymentMethod === 'card' ? (
+                  <p className="tpos-split-hint">
+                    Card is recorded only. Collect it on the card terminal. This register does not charge the card.
+                  </p>
+                ) : null}
+                {!payAsReprint && !splitTender && paymentMethod === 'bank_transfer' ? (
+                  <p className="tpos-split-hint">
+                    Bank transfer is recorded only. Collect it at the bank. This register does not charge the account.
+                  </p>
+                ) : null}
+                {!payAsReprint && !splitTender && (paymentMethod === 'wallet' || paymentMethod === 'gift_card' || paymentMethod === 'loyalty') ? (
+                  <p className="tpos-split-hint">
+                    {paymentMethod === 'wallet' ? 'Wallet' : paymentMethod === 'gift_card' ? 'Gift card' : 'Loyalty points'} is online only. This register does not send a live charge.
+                  </p>
+                ) : null}
+                {!payAsReprint && !online ? (
                   <p className="tpos-split-hint">
                     Offline payments are recorded only. Card, Mobile Money and bank transfers must already be
                     confirmed on the terminal or phone.
@@ -2668,6 +2900,98 @@ export default function Page() {
                     />
                   </label>
                 ) : null}
+              </div>
+              <div className="tpos-total pos-ui-due" aria-label="POS cart totals">
+                <span className="pos-ui-due-label">Amount due</span>
+                <strong>{money(cartTotal)}</strong>
+                {payAsReprint ? null : (
+                <span className="pos-ui-due-note">
+                  Subtotal {money(cartTotals.subtotal)}
+                  {cartTotals.tax > 0 ? ` · Tax ${money(cartTotals.tax)}` : ''}
+                  {cartDiscountAmount > 0 ? ` · Discount −${money(cartDiscountAmount)}` : ''}
+                  {paymentMethod === 'credit' && !splitTender
+                    ? ` · On account ${money(creditRemaining)}`
+                    : ''}
+                </span>
+                )}
+              </div>
+              <div className="tpos-cart-actions">
+                <div className="print-ui-row">
+                  <label className="print-ui-paper">
+                    Receipt paper
+                    <select
+                      value={receiptPaper === '58mm' ? '58mm' : '80mm'}
+                      onChange={(e) => setReceiptPaper(e.target.value === '58mm' ? '58mm' : '80mm')}
+                      aria-label="POS receipt paper"
+                    >
+                      <option value="58mm">58mm receipt</option>
+                      <option value="80mm">80mm receipt</option>
+                    </select>
+                  </label>
+                </div>
+                <div className="tpos-pay-row">
+                <button
+                  type="button"
+                  className="tpos-btn tpos-btn-pay"
+                  onClick={payAsReprint ? reprintLastReceipt : checkout}
+                  disabled={payAsReprint ? !!receiptBusy : !cart.length || !session || busy}
+                  aria-label={payAsReprint ? 'Print' : 'Charge'}
+                >
+                  {payAsReprint
+                    ? receiptBusy === 'reprint'
+                      ? 'Print…'
+                      : 'Print'
+                    : busy
+                      ? 'Paying…'
+                      : `Pay ${money(cartTotal)}`}
+                </button>
+                <button
+                  type="button"
+                  className="tpos-btn tpos-btn-clear btn-danger"
+                  onClick={clearCart}
+                  disabled={!cart.length}
+                  aria-label="Clear POS cart"
+                >
+                  Clear
+                </button>
+                </div>
+                <button
+                  type="button"
+                  className="sr-only"
+                  onClick={checkout}
+                  disabled={!cart.length || !session || busy}
+                  aria-label="Charge complete sale"
+                >
+                  Charge complete sale
+                </button>
+                {(industryCode === 'wholesale' || industryCode === 'retail_wholesale') &&
+                (online ? canWriteQuotes : offlineValid && offlinePerms.includes('quote_capture')) ? (
+                  <button
+                    type="button"
+                    className="tpos-btn"
+                    onClick={saveQuoteOffline}
+                    disabled={!cart.length || !session || busy || !customerId}
+                    aria-label="Save as quote"
+                    title={customerId ? '' : 'Select a customer first'}
+                  >
+                    {online ? 'Save as quote' : 'Save quote offline'}
+                  </button>
+                ) : null}
+              </div>
+              <details className="pos-ui-optional">
+                <summary>Customer name, discount, and coupon</summary>
+                <label className="tpos-field">
+                  <span>Customer name</span>
+                  <input
+                    className="tpos-input"
+                    aria-label="POS customer name"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Walk-in if none selected"
+                    maxLength={180}
+                    autoComplete="off"
+                  />
+                </label>
                 <div className="tpos-foot-discounts">
                   <label className="tpos-field tpos-field-compact">
                     <span>Cart discount</span>
@@ -2722,74 +3046,22 @@ export default function Page() {
                     />
                   </label>
                 </div>
-              </div>
-              <div className="tpos-total" aria-label="POS cart totals">
-                <span>
-                  Subtotal {money(cartTotals.subtotal)}
-                  {cartTotals.tax > 0 ? ` · Tax ${money(cartTotals.tax)}` : ''}
-                  {cartDiscountAmount > 0 ? ` · Discount −${money(cartDiscountAmount)}` : ''}
-                  {paymentMethod === 'credit' && !splitTender
-                    ? ` · On account ${money(creditRemaining)}`
-                    : ''}
-                </span>
-                <strong>{money(cartTotal)}</strong>
-              </div>
-              <div className="tpos-cart-actions">
-                <div className="tpos-pay-row">
-                <button
-                  type="button"
-                  className="tpos-btn tpos-btn-pay"
-                  onClick={payAsReprint ? reprintLastReceipt : checkout}
-                  disabled={payAsReprint ? !!receiptBusy : !cart.length || !session || busy}
-                  aria-label={payAsReprint ? 'Reprint last receipt' : 'Charge'}
-                >
-                  {payAsReprint
-                    ? receiptBusy === 'reprint'
-                      ? 'Reprint…'
-                      : 'Reprint'
-                    : busy
-                      ? 'Paying…'
-                      : `Pay ${money(cartTotal)}`}
-                </button>
-                <button
-                  type="button"
-                  className="tpos-btn tpos-btn-clear btn-danger"
-                  onClick={clearCart}
-                  disabled={!cart.length}
-                  aria-label="Clear POS cart"
-                >
-                  Clear
-                </button>
-                </div>
-                <button
-                  type="button"
-                  className="sr-only"
-                  onClick={checkout}
-                  disabled={!cart.length || !session || busy}
-                  aria-label="Charge complete sale"
-                >
-                  Charge complete sale
-                </button>
-                {(industryCode === 'wholesale' || industryCode === 'retail_wholesale') &&
-                (online ? canWriteQuotes : offlineValid && offlinePerms.includes('quote_capture')) ? (
-                  <button
-                    type="button"
-                    className="tpos-btn"
-                    onClick={saveQuoteOffline}
-                    disabled={!cart.length || !session || busy || !customerId}
-                    aria-label="Save as quote"
-                    title={customerId ? '' : 'Select a customer first'}
-                  >
-                    {online ? 'Save as quote' : 'Save quote offline'}
-                  </button>
-                ) : null}
-              </div>
+              </details>
               {error ? (
                 <p className="tpos-banner tpos-banner-err" role="alert">
                   {error}
                 </p>
               ) : null}
-              {message ? (
+              {payAsReprint && lastSale && !lastSale.offline ? (
+                <div className="tpos-banner tpos-banner-ok tpos-success-bar" role="status">
+                  <span>
+                    {String(lastSale.payment_status || '').toLowerCase() === 'paid' &&
+                    !(Number(lastSale.balance_due || 0) > 0)
+                      ? 'Paid'
+                      : 'Success'}
+                  </span>
+                </div>
+              ) : message ? (
                 <div className="tpos-banner tpos-banner-ok tpos-success-bar">
                   <span>{message}</span>
                   {lastSale ? (

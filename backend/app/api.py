@@ -104,6 +104,8 @@ from app.schemas import (
     SalesQuotationStatusValue,
     SalesOrderStatusValue,
     ReturnReportStatusValue,
+    ReportExportStatusValue,
+    ReportExportReasonValue,
     TenantStatusFilterValue,
     ApiKeyStatusFilterValue,
     ApiKeyCreate,
@@ -3182,6 +3184,14 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             "store_scope": claims.get("store_scope") or "all",
             "company_name": getattr(tenant, "company_name", None) if tenant else None,
             "currency": (getattr(tenant, "currency", None) or "GHS") if tenant else "GHS",
+            "date_format": (getattr(tenant, "date_format", None) or "DD/MM/YYYY") if tenant else "DD/MM/YYYY",
+            "decimal_separator": (getattr(tenant, "decimal_separator", None) or ".") if tenant else ".",
+            "thousand_separator": (
+                getattr(tenant, "thousand_separator", None)
+                if tenant and getattr(tenant, "thousand_separator", None) is not None
+                else ","
+            ),
+            "time_format": (getattr(tenant, "time_format", None) or "24h") if tenant else "24h",
             "has_logo": bool(getattr(tenant, "logo_url", None)) if tenant else False,
             **totp_svc.status_payload(user),
         }
@@ -7489,6 +7499,168 @@ async def list_quotations(
     return env([await sales_docs_svc.serialize_quotation(db, q) for q in rows])
 
 
+def _client_request_reused() -> HTTPException:
+    return HTTPException(
+        status_code=409,
+        detail={
+            "code": "CLIENT_REQUEST_REUSED",
+            "message": "This client_request_id was already used for a different request.",
+        },
+    )
+
+
+def _sale_request_fingerprint(payload: PosSaleCreate) -> dict:
+    """Commercial contents of a POS retry. Session and device fields stay out."""
+    items = []
+    for item in payload.items:
+        items.append(
+            {
+                "product_id": str(item.product_id),
+                "variant_id": str(item.variant_id) if item.variant_id else None,
+                "quantity": money_json(item.quantity),
+                "unit_price": money_json(item.unit_price) if item.unit_price is not None else None,
+            }
+        )
+    payments = None
+    if payload.payments:
+        payments = [
+            {
+                "payment_method": str(p.payment_method),
+                "amount": money_json(p.amount),
+                "reference": (p.reference or None),
+            }
+            for p in payload.payments
+        ]
+    return {
+        "party_id": str(payload.party_id) if payload.party_id else None,
+        "payment_method": str(payload.payment_method or "cash"),
+        "payments": payments,
+        "discount_amount": money_json(payload.discount_amount or 0),
+        "discount_type": str(payload.discount_type or "fixed"),
+        "discount_percent": money_json(payload.discount_percent or 0),
+        "coupon_code": (payload.coupon_code or None),
+        "items": items,
+    }
+
+
+def _assert_sale_replay(existing: m.Transaction, payload: PosSaleCreate) -> None:
+    incoming = _sale_request_fingerprint(payload)
+    stored = None
+    if isinstance(existing.payload, dict):
+        stored = existing.payload.get("request_fingerprint")
+    if stored != incoming:
+        raise _client_request_reused()
+
+
+def _pos_replay_response(existing: m.Transaction, client_request_id: str):
+    return env(
+        {
+            "id": existing.id,
+            "reference": existing.reference,
+            "total": money_json(existing.total or 0),
+            "status": existing.status,
+            "idempotent_replay": True,
+            "client_request_id": client_request_id,
+        },
+        "POS sale already recorded",
+    )
+
+
+_POS_REPLAY_LOCKS: dict[tuple[str, str], asyncio.Lock] = {}
+
+
+def _pos_replay_lock(tenant_id: str, client_request_id: str) -> asyncio.Lock:
+    """One in-process lock per tenant and client_request_id.
+
+    The unique constraint still guards other processes. This lock lets the
+    loser wait until the winner commits, then read that sale.
+    """
+    key = (str(tenant_id), str(client_request_id))
+    lock = _POS_REPLAY_LOCKS.get(key)
+    if lock is None:
+        lock = asyncio.Lock()
+        _POS_REPLAY_LOCKS[key] = lock
+    return lock
+
+
+async def _pos_sale_replay_after_conflict(db, tenant_id, client_request_id, payload):
+    """Return the original sale after a unique-key race, once that sale is visible."""
+    await db.rollback()
+    if not client_request_id:
+        return None
+    for attempt in range(20):
+        existing = await _find_existing_pos_sale(db, tenant_id, client_request_id)
+        if existing is not None:
+            _assert_sale_replay(existing, payload)
+            return _pos_replay_response(existing, client_request_id)
+        # End this read so the next one can see the winner's commit.
+        await db.rollback()
+        await asyncio.sleep(0 if attempt < 4 else 0.02)
+    return None
+
+
+async def _find_existing_pos_sale(db: AsyncSession, tenant_id: str, client_request_id: str | None):
+    if not client_request_id:
+        return None
+    return (
+        await db.execute(
+            select(m.Transaction).where(
+                m.Transaction.tenant_id == tenant_id,
+                m.Transaction.client_request_id == client_request_id,
+                m.Transaction.tx_type == "pos_sale",
+            )
+        )
+    ).scalar_one_or_none()
+
+
+async def _find_existing_quote(db: AsyncSession, tenant_id: str, client_request_id: str | None):
+    if not client_request_id:
+        return None
+    return (
+        await db.execute(
+            select(m.SalesQuotation).where(
+                m.SalesQuotation.tenant_id == tenant_id,
+                m.SalesQuotation.client_request_id == client_request_id,
+            )
+        )
+    ).scalar_one_or_none()
+
+
+async def _assert_quote_replay(db: AsyncSession, quote: m.SalesQuotation, payload: SalesQuotationCreate) -> None:
+    """Reject a reused quote id when the customer, lines, or discount differ.
+
+    A retry that omits unit price still matches. The client is asking for the
+    price already stored on the quote. An explicit price that differs is rejected.
+    """
+    if str(quote.customer_id) != str(payload.customer_id):
+        raise _client_request_reused()
+    if str(quote.discount_type or "fixed") != str(payload.discount_type or "fixed"):
+        raise _client_request_reused()
+    if abs(money_json(quote.discount_percent or 0) - money_json(payload.discount_percent or 0)) > 0.001:
+        raise _client_request_reused()
+    if str(payload.discount_type or "fixed") == "fixed":
+        if abs(money_json(quote.discount_amount or 0) - money_json(payload.discount_amount or 0)) > 0.01:
+            raise _client_request_reused()
+    stored_notes = (quote.notes or "").strip()
+    incoming_notes = (payload.notes or "").strip() if payload.notes else ""
+    if stored_notes != incoming_notes:
+        raise _client_request_reused()
+    rows = await sales_docs_svc.list_quotation_items(db, quote.tenant_id, quote.id)
+    if len(rows) != len(payload.items):
+        raise _client_request_reused()
+    stored = {
+        (str(row.product_id), str(row.variant_id) if row.variant_id else ""): row
+        for row in rows
+    }
+    for item in payload.items:
+        key = (str(item.product_id), str(item.variant_id) if item.variant_id else "")
+        row = stored.get(key)
+        if row is None or abs(money_json(row.quantity) - money_json(item.quantity)) > 0.001:
+            raise _client_request_reused()
+        if item.unit_price is not None and abs(money_json(row.unit_price) - money_json(item.unit_price)) > 0.001:
+            raise _client_request_reused()
+
+
 @api.post("/sales/quotations")
 async def create_quotation(
     payload: SalesQuotationCreate,
@@ -7497,20 +7669,9 @@ async def create_quotation(
 ):
     client_request_id = (payload.client_request_id or "").strip() or None
 
-    async def _existing_quote():
-        if not client_request_id:
-            return None
-        return (
-            await db.execute(
-                select(m.SalesQuotation).where(
-                    m.SalesQuotation.tenant_id == claims["tenant_id"],
-                    m.SalesQuotation.client_request_id == client_request_id,
-                )
-            )
-        ).scalar_one_or_none()
-
-    prior = await _existing_quote()
+    prior = await _find_existing_quote(db, claims["tenant_id"], client_request_id)
     if prior is not None:
+        await _assert_quote_replay(db, prior, payload)
         data = await sales_docs_svc.serialize_quotation(db, prior)
         data["idempotent_replay"] = True
         return env(data, "Quotation already recorded")
@@ -7533,9 +7694,10 @@ async def create_quotation(
         await db.commit()
     except IntegrityError:
         await db.rollback()
-        prior = await _existing_quote()
+        prior = await _find_existing_quote(db, claims["tenant_id"], client_request_id)
         if prior is None:
             raise
+        await _assert_quote_replay(db, prior, payload)
         data = await sales_docs_svc.serialize_quotation(db, prior)
         data["idempotent_replay"] = True
         return env(data, "Quotation already recorded")
@@ -9529,22 +9691,25 @@ async def pos_sale(
 
 
 async def _pos_sale_impl(payload: PosSaleCreate, claims: dict, db: AsyncSession, sale_totals=None):
+    client_request_id = (payload.client_request_id or "").strip() or None
+    if not client_request_id:
+        return await _pos_sale_impl_body(payload, claims, db, sale_totals=sale_totals)
+    async with _pos_replay_lock(claims["tenant_id"], client_request_id):
+        return await _pos_sale_impl_body(payload, claims, db, sale_totals=sale_totals)
+
+
+async def _pos_sale_impl_body(payload: PosSaleCreate, claims: dict, db: AsyncSession, sale_totals=None):
     from app.industry_dashboard import assert_pos_for_industry
 
     assert_pos_for_industry(claims)
-    # Idempotent offline/retry: same client_request_id → original sale, never a duplicate.
+    # Same client_request_id returns the original sale only when the commercial
+    # request matches. Different contents are rejected. Never a second sale.
     client_request_id = (payload.client_request_id or "").strip() or None
+    request_fingerprint = _sale_request_fingerprint(payload) if client_request_id else None
     if client_request_id:
-        existing = (
-            await db.execute(
-                select(m.Transaction).where(
-                    m.Transaction.tenant_id == claims["tenant_id"],
-                    m.Transaction.client_request_id == client_request_id,
-                    m.Transaction.tx_type == "pos_sale",
-                )
-            )
-        ).scalar_one_or_none()
+        existing = await _find_existing_pos_sale(db, claims["tenant_id"], client_request_id)
         if existing:
+            _assert_sale_replay(existing, payload)
             return env(
                 {
                     "id": existing.id,
@@ -9854,6 +10019,7 @@ async def _pos_sale_impl(payload: PosSaleCreate, claims: dict, db: AsyncSession,
         "local_receipt_number": payload.local_receipt_number,
         "original_session_id": original_session_id,
         "device_id": payload.device_id,
+        "request_fingerprint": request_fingerprint,
         "cashier_user_id": claims.get("sub"),
         "paid_amount": settlement["paid_amount"],
         "credit_amount": settlement["credit_amount"],
@@ -9877,7 +10043,17 @@ async def _pos_sale_impl(payload: PosSaleCreate, claims: dict, db: AsyncSession,
         payload=body["payload"],
     )
     db.add(tx)
-    await db.flush()
+    try:
+        await db.flush()
+    except IntegrityError:
+        # Unique (tenant, client_request_id) fires on flush when a concurrent
+        # retry already inserted the sale. Compare contents before replaying.
+        replay = await _pos_sale_replay_after_conflict(
+            db, claims["tenant_id"], client_request_id, payload
+        )
+        if replay is not None:
+            return replay
+        raise
     if coupon_meta:
         from app import coupons as coupons_svc
 
@@ -10161,29 +10337,11 @@ async def _pos_sale_impl(payload: PosSaleCreate, claims: dict, db: AsyncSession,
     try:
         await db.commit()
     except IntegrityError:
-        await db.rollback()
-        if client_request_id:
-            existing = (
-                await db.execute(
-                    select(m.Transaction).where(
-                        m.Transaction.tenant_id == claims["tenant_id"],
-                        m.Transaction.client_request_id == client_request_id,
-                        m.Transaction.tx_type == "pos_sale",
-                    )
-                )
-            ).scalar_one_or_none()
-            if existing:
-                return env(
-                    {
-                        "id": existing.id,
-                        "reference": existing.reference,
-                        "total": money_json(existing.total or 0),
-                        "status": existing.status,
-                        "idempotent_replay": True,
-                        "client_request_id": client_request_id,
-                    },
-                    "POS sale already recorded",
-                )
+        replay = await _pos_sale_replay_after_conflict(
+            db, claims["tenant_id"], client_request_id, payload
+        )
+        if replay is not None:
+            return replay
         raise
     payload_out = {
         "id": tx.id,
@@ -12500,6 +12658,10 @@ async def reports_export(
     # omit → no compare; blank/invalid → 422 (same Literal as balance-sheet routes)
     compare: Annotated[BalanceSheetCompareValue | None, Query()] = None,
     department_id: Annotated[UuidIdValue | None, Query()] = None,
+    # omit → report default (stock counts stay completed; others stay unfiltered).
+    # blank/unknown → 422. A status valid here but not for that report is still 422 in the service.
+    status: Annotated[ReportExportStatusValue | None, Query()] = None,
+    reason: Annotated[ReportExportReasonValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -12545,6 +12707,8 @@ async def reports_export(
         as_of=as_of or None,
         compare=compare or None,
         department_id=department_id or None,
+        status=status or None,
+        reason=reason or None,
         include_cost=may_see_sales_cost(claims),
     )
     return Response(
@@ -12872,6 +13036,7 @@ async def report_sales_by_store(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     department_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -12881,8 +13046,9 @@ async def report_sales_by_store(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
-        store_id=None,
+        store_id=store_id,
     )
+    chosen = scope["store_id"]
     return env(
         await reports_svc.sales_by_store(
             db,
@@ -12890,7 +13056,7 @@ async def report_sales_by_store(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             department_id=department_id or None,
-            store_ids=scope["store_ids"],
+            store_ids=[chosen] if chosen else scope["store_ids"],
         )
     )
 
@@ -12900,6 +13066,7 @@ async def report_sales_by_department(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     department_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -12910,8 +13077,9 @@ async def report_sales_by_department(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
-        store_id=None,
+        store_id=store_id,
     )
+    chosen = scope["store_id"]
     return env(
         await reports_svc.sales_by_department(
             db,
@@ -12919,7 +13087,7 @@ async def report_sales_by_department(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             department_id=department_id or None,
-            store_ids=scope["store_ids"],
+            store_ids=[chosen] if chosen else scope["store_ids"],
         )
     )
 
@@ -13996,6 +14164,13 @@ async def supplier_payment(
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.rbac import has_explicit_permission
+
+    role = claims.get("role", "")
+    overrides = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
+    # Till credit is credit:write only. Supplier payments also need credit:read.
+    if not has_explicit_permission(role, "credit", "read", overrides=overrides):
+        raise HTTPException(status_code=403, detail="Missing permission: credit:read")
     payment = await purchasing_svc.record_supplier_payment(
         db,
         tenant_id=claims["tenant_id"],

@@ -95,6 +95,13 @@ def tenant_offline_auth_hours(tenant: m.Tenant | None) -> int:
     return clamp_offline_auth_hours(getattr(tenant, "offline_auth_hours", None) if tenant else None)
 
 
+OFFLINE_COMPLETE_MISSING = (
+    "Offline Complete remains missing because the browser device id is not strong device binding, "
+    "a private window with no till-agent journal on this PC cannot recover those sales, saved sales upload "
+    "only while the Point of Sale page is open and signed in, and a live site has not been tested."
+)
+
+
 def policy_payload(tenant: m.Tenant | None) -> dict[str, Any]:
     hours = tenant_offline_auth_hours(tenant)
     return {
@@ -102,7 +109,6 @@ def policy_payload(tenant: m.Tenant | None) -> dict[str, Any]:
         "offline_auth_hours_default": DEFAULT_OFFLINE_AUTH_HOURS,
         "offline_auth_hours_min": int(settings.OFFLINE_AUTH_HOURS_MIN or 1),
         "offline_auth_hours_max": int(settings.OFFLINE_AUTH_HOURS_MAX or 168),
-        "max_sync_retries": int(settings.OFFLINE_SYNC_MAX_RETRIES or 8),
         "aligned_with_refresh_token_days": int(settings.REFRESH_TOKEN_EXPIRE_DAYS or 7),
         "offline_complete_claimed": False,
         "grant_issuer": "server",
@@ -142,6 +148,9 @@ def policy_payload(tenant: m.Tenant | None) -> dict[str, Any]:
             "store totals provisional until they sync.",
             "Server price, stock, permissions, and credit limits are rechecked at sync; conflicts "
             "go to a resolution queue and are never dropped.",
+            "A missed server response stays pending and retries. Price, stock, and credit conflicts "
+            "stay for a manager.",
+            OFFLINE_COMPLETE_MISSING,
             RECENT_CHANGES_NOTICE,
         ],
         "recent_changes_notice": RECENT_CHANGES_NOTICE,

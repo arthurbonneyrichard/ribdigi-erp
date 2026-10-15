@@ -8,6 +8,30 @@ import { moduleEnabledForTenant } from '../../../lib/industryModules';
 
 type Row = Record<string, any>;
 
+const ORDER_WORDS: Record<string, string> = {
+  dine_in: 'Dine in',
+  takeaway: 'Takeaway',
+  delivery: 'Delivery',
+  cash: 'Cash',
+  card: 'Card',
+  wallet: 'Wallet',
+  mobile_money: 'Mobile Money',
+  credit: 'Credit',
+  open: 'Open',
+  sent: 'In the kitchen',
+  preparing: 'Preparing',
+  ready: 'Ready',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  voided: 'Voided',
+  refunded: 'Refunded',
+};
+
+function orderWord(code: unknown) {
+  const key = String(code || '');
+  return ORDER_WORDS[key] || key.replaceAll('_', ' ');
+}
+
 export default function RestaurantPage() {
   const tab = useSearchParams().get('tab') || 'dashboard';
   const [summary, setSummary] = useState<Row | null>(null);
@@ -159,16 +183,16 @@ export default function RestaurantPage() {
           <h2>Orders</h2>
           <form onSubmit={createOrder}>
             <select aria-label="Restaurant service mode" value={orderForm.service_mode} onChange={(e) => setOrderForm({ ...orderForm, service_mode: e.target.value })}>
-              <option value="dine_in">dine_in</option>
-              <option value="takeaway">takeaway</option>
-              <option value="delivery">delivery</option>
+              <option value="dine_in">Dine in</option>
+              <option value="takeaway">Takeaway</option>
+              <option value="delivery">Delivery</option>
             </select>
             <select aria-label="Restaurant payment method" value={orderForm.payment_method} onChange={(e) => setOrderForm({ ...orderForm, payment_method: e.target.value })}>
-              <option value="cash">cash</option>
-              <option value="card">card</option>
-              <option value="wallet">wallet</option>
-              <option value="mobile_money">mobile_money</option>
-              <option value="credit">credit</option>
+              <option value="cash">Cash</option>
+              <option value="card">Card</option>
+              <option value="wallet">Wallet</option>
+              <option value="mobile_money">Mobile Money</option>
+              <option value="credit">Credit</option>
             </select>
             <select aria-label="Restaurant menu item" value={orderForm.product_id} onChange={(e) => setOrderForm({ ...orderForm, product_id: e.target.value })} required>
               <option value="">Menu item</option>
@@ -183,9 +207,9 @@ export default function RestaurantPage() {
           <ul>
             {orders.map((row) => (
               <li key={row.id}>
-                {row.order_number} {row.service_mode} {row.status} {row.total_amount}
+                {row.order_number} {orderWord(row.service_mode)} {orderWord(row.status)} {row.total_amount}
                 {row.status === 'open' && (
-                  <button type="button" aria-label={`Send order ${row.order_number} to kitchen`} onClick={() => act(row.id, 'send')}>Send</button>
+                  <button type="button" aria-label={`Send order ${row.order_number} to kitchen`} onClick={() => act(row.id, 'send')}>Send to kitchen</button>
                 )}
                 {row.status !== 'completed' && row.status !== 'cancelled' && row.status !== 'voided' && row.status !== 'refunded' && (
                   <button type="button" aria-label={`Complete order ${row.order_number}`} onClick={() => act(row.id, 'complete')}>Complete</button>

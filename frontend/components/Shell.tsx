@@ -11,6 +11,7 @@ import { getMe, invalidateMeCache } from '../lib/meCache';
 import { closeShiftForSignOut, openShiftForSignedInUser } from '../lib/cashierShift';
 import { linkStatusText, type LinkSnapshot } from '../lib/connectivity';
 import { subscribePosDrawerBridge, type PosDrawerBridgeState } from '../lib/posDrawerBridge';
+import { PosOfflineTopSlot } from '../lib/posOfflineSlot';
 import { prefetchGet } from '../lib/prefetchCache';
 import { loadUserTheme, writeUserTheme } from '../lib/theme';
 import { StoreProvider } from '../lib/storeContext';
@@ -717,6 +718,33 @@ function enrollmentRequired(err: unknown): boolean {
   return e?.status === 403 && /2fa enrollment/i.test(String(e?.message || ''));
 }
 
+function MobileSideNavButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  const label = open ? 'Close sidebar' : 'Open sidebar';
+  return (
+    <button
+      type="button"
+      className="mobile-side-nav"
+      aria-expanded={open}
+      aria-controls="app-sidebar"
+      aria-label={label}
+      title={label}
+      onClick={onToggle}
+    >
+      <span className="mobile-side-nav-mark" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+          <path
+            d="M6 3.5 10.5 8 6 12.5"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+    </button>
+  );
+}
+
 function SideEdgeToggle({ compact, onToggle }: { compact: boolean; onToggle: () => void }) {
   const label = compact ? 'Expand sidebar' : 'Collapse sidebar';
   return (
@@ -768,7 +796,8 @@ function PosDrawerTopControls() {
   if (!bridge?.sessionId) return null;
 
   return (
-    <>
+    <div className="pos-top-drawer pos-ui-shift">
+      <div className="pos-top-drawer-row">
       <input
         className="pos-top-drawer-reason"
         value={drawerReason}
@@ -810,6 +839,7 @@ function PosDrawerTopControls() {
       >
         {busy ? 'Opening…' : 'Open drawer'}
       </button>
+      </div>
       {drawerNote ? (
         <span className="pos-top-drawer-note" role="status">
           {drawerNote}
@@ -820,7 +850,7 @@ function PosDrawerTopControls() {
           {drawerError}
         </span>
       ) : null}
-    </>
+    </div>
   );
 }
 
@@ -848,10 +878,15 @@ function PosSellingStatus() {
   const tone =
     snap.phase === 'online' ? 'is-online' : snap.phase === 'syncing' ? 'is-syncing' : snap.phase === 'sync_failed' ? 'is-sync-failed' : 'is-offline';
   return (
-    <span className={`pos-sell-mode ${tone}`} role="status" aria-live="polite">
-      <span className="pos-sell-label">{text.label}</span>
-      <span className="pos-sell-detail">{text.detail}</span>
-    </span>
+    <details className="pos-sell-menu">
+      <summary className={`pos-sell-mode ${tone}`} aria-label={`${text.label}. Offline selling`}>
+        <span className="pos-sell-label" role="status" aria-live="polite">{text.label}</span>
+        <span className="pos-sell-detail">{text.detail}</span>
+      </summary>
+      <div className="pos-sell-menu-body">
+        <PosOfflineTopSlot embedded />
+      </div>
+    </details>
   );
 }
 
@@ -1651,12 +1686,24 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
       <SideEdgeToggle compact={navCompact} onToggle={toggleNavCompact} />
+      <MobileSideNavButton
+        open={menuOpen}
+        onToggle={() => {
+          if (mobileNav) setMenuOpen((v) => !v);
+        }}
+      />
       <div className="side-backdrop" onClick={() => setMenuOpen(false)} aria-hidden />
       <main className="main">
         <div className="topbar">
           <div className="topbar-left">
-            {pathname === '/pos' ? <PosSellingStatus /> : null}
-            {pathname === '/pos' ? <PosDrawerTopControls /> : null}
+            {pathname === '/pos' ? (
+              <>
+                <PosSellingStatus />
+                <div className="pos-top-tools">
+                  <PosDrawerTopControls />
+                </div>
+              </>
+            ) : null}
             <button
               type="button"
               className="menu-btn"
@@ -1756,7 +1803,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                 <span className="uavatar" aria-hidden>
                   {fullName.trim().charAt(0).toUpperCase() || 'U'}
                 </span>
-                <span className="uname">{pathname === '/pos' ? fullName.trim() : fullName.trim().split(/\s+/)[0]}</span>
+                <span className="uname">{fullName.trim()}</span>
               </span>
             )}
             <button type="button" className="logout-btn" onClick={logout} aria-label="Log out" title="Log out">

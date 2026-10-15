@@ -1,0 +1,14 @@
+---
+description: Read the project working documents at session start
+alwaysApply: true
+---
+
+# Working documents
+
+At the start of a session, read these repo-root files before changing code:
+
+- `rule.md` — confirmed implementation rules
+- `planning.md` — current plan and unresolved decisions
+- `tasks.md` — task status and evidence
+
+`AGENTS.md` remains the always-applied workspace rule. Do not copy it into these files. If a working document disagrees with the code, trust the code and update the working document.

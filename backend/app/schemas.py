@@ -4339,6 +4339,35 @@ ReturnReportStatusValue = Annotated[
     Literal["draft", "posted", "cancelled"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Union of status filters the reports screen can send to GET /reports/export.
+# Each report function still rejects a status that is not valid for that report.
+ReportExportStatusValue = Annotated[
+    Literal[
+        "draft",
+        "posted",
+        "cancelled",
+        "requested",
+        "in_transit",
+        "received",
+        "completed",
+        "sent",
+        "partially_received",
+    ],
+    BeforeValidator(coerce_package_code_value),
+]
+# Union of sales and purchase return reasons for GET /reports/export.
+ReportExportReasonValue = Annotated[
+    Literal[
+        "damaged",
+        "wrong_item",
+        "defective",
+        "customer_change",
+        "other",
+        "expiry",
+        "quality",
+    ],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with app.tenants.VALID_STATUSES (Platform tenants list filter).
 TenantStatusFilterValue = Annotated[
     Literal["trial", "active", "grace", "suspended"],
@@ -9145,7 +9174,8 @@ class PosSaleCreate(BaseModel):
     # required when override_credit_limit=true (same CreditOverrideReasonValue).
     override_reason: CreditOverrideReasonValue | None = None
     # Offline / retry idempotency key; omit/`null` → no dedupe; blank/`!!!` → **422**.
-    # Same tenant + client_request_id returns the original sale (never a duplicate).
+    # Same tenant + client_request_id returns the original sale when the commercial
+    # request matches. A reused id with different contents is **409**.
     client_request_id: ClientRequestIdValue | None = None
     # Offline sync metadata. Tokens are never accepted here; device_id is a terminal label.
     device_id: str | None = Field(default=None, max_length=64)

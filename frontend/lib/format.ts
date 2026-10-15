@@ -152,6 +152,30 @@ export function rememberFormatPrefs(prefs?: FormatPrefs | null) {
   if (prefs) rememberedPrefs = prefs;
 }
 
+/** `undefined` means the signed-in company format has not been loaded yet. */
+let loadedCompanyFormat: FormatPrefs | null | undefined;
+const companyFormatListeners = new Set<() => void>();
+
+export function peekCompanyFormatCache(): FormatPrefs | null | undefined {
+  return loadedCompanyFormat;
+}
+
+export function storeCompanyFormatCache(prefs: FormatPrefs | null): void {
+  loadedCompanyFormat = prefs;
+  if (prefs) rememberFormatPrefs(prefs);
+}
+
+export function subscribeCompanyFormatRefresh(listener: () => void): () => void {
+  companyFormatListeners.add(listener);
+  return () => companyFormatListeners.delete(listener);
+}
+
+/** Forget the loaded snapshot so open screens read `/me` again. Remembered separators stay. */
+export function invalidateCompanyFormatCache(): void {
+  loadedCompanyFormat = undefined;
+  companyFormatListeners.forEach((listener) => listener());
+}
+
 function activePrefs(prefs?: FormatPrefs | null): FormatPrefs | null | undefined {
   return prefs || rememberedPrefs;
 }

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '../../../lib/api';
-import { formatMoney } from '../../../lib/format';
+import { formatDate, formatMoney, formatTime } from '../../../lib/format';
 import { getMe } from '../../../lib/meCache';
 import { industryLabel, normalizeIndustry } from '../../../lib/industries';
 import {
@@ -18,7 +18,6 @@ import {
 } from '../../../lib/industryDashboard';
 import { WholesaleDeskCards } from '../../../components/IndustryDashboardViews';
 import { DailyBars, TrendLine } from '../../../components/RetailDashboardInfographic';
-import { formatDate } from '../../../lib/format';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import { useStoreContext } from '../../../lib/storeContext';
 import OfflineProvisionalNotice from '../../../components/OfflineProvisionalNotice';
@@ -250,6 +249,24 @@ function timeOfDay(hour: number): { greeting: string; icon: string; sub: string 
   return { greeting: 'Good evening', icon: '\ud83c\udf19', sub: "Here's how today wrapped up." };
 }
 
+function greetingClockFace(now: Date, timeFormat: string | null | undefined) {
+  const hours24 = now.getHours();
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  if (timeFormat === '12h') {
+    const h12 = hours24 % 12 || 12;
+    return {
+      hours: String(h12),
+      minutes,
+      meridiem: hours24 < 12 ? 'AM' : 'PM',
+    };
+  }
+  return {
+    hours: String(hours24).padStart(2, '0'),
+    minutes,
+    meridiem: null as string | null,
+  };
+}
+
 // Donut / ring geometry
 function arc(fraction: number, radius: number) {
   const c = 2 * Math.PI * radius;
@@ -402,11 +419,31 @@ export default function Page() {
     };
   }, [router]);
 
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+    tick();
+    let intervalId = 0;
+    const delay = 60_000 - (Date.now() % 60_000);
+    const timeoutId = window.setTimeout(() => {
+      tick();
+      intervalId = window.setInterval(tick, 60_000);
+    }, delay);
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
   const signedInName = fullName.trim();
   const formatPrefs = useCompanyFormat();
 
   const tod = useMemo(() => timeOfDay(now ? now.getHours() : 9), [now]);
   const dateLabel = useMemo(() => (now ? formatDate(now, formatPrefs) : ''), [now, formatPrefs]);
+  const timeLabel = useMemo(() => (now ? formatTime(now, formatPrefs) : ''), [now, formatPrefs]);
+  const clockFace = useMemo(
+    () => (now ? greetingClockFace(now, formatPrefs?.time_format) : null),
+    [now, formatPrefs]
+  );
 
   const sub = d.subscription;
   const status = subStatus(sub);
@@ -457,18 +494,39 @@ export default function Page() {
       label: 'Total Sales',
       val: moneyNum(sales),
       href: links.sales || '/sales',
-      sub: `Today ${moneyNum(cmp.sales_today)} (${pctLabel(cmp.sales_today_pct)} vs yday) · MTD ${moneyNum(cmp.sales_mtd)} (${pctLabel(cmp.sales_mtd_pct)} vs last mo)`,
+      sub: `Recorded sales. Today ${moneyNum(cmp.sales_today)}, ${pctLabel(cmp.sales_today_pct)} versus yesterday. This month ${moneyNum(cmp.sales_mtd)}, ${pctLabel(cmp.sales_mtd_pct)} versus last month.`,
     },
-    { cls: 's-buy', ico: '\ud83d\uded2', label: 'Purchases', val: moneyNum(purchases), href: links.purchases || '/purchasing' },
-    { cls: 's-exp', ico: '\ud83e\udde7', label: 'Expenses', val: moneyNum(expenses), href: links.expenses || '/expenses' },
-    { cls: 's-net', ico: '\ud83d\udcc8', label: 'Net Position', val: moneyNum(net), href: links.reports_sales || '/reports' },
+    {
+      cls: 's-buy',
+      ico: '\ud83d\uded2',
+      label: 'Purchases',
+      val: moneyNum(purchases),
+      href: links.purchases || '/purchasing',
+      sub: 'Recorded purchases',
+    },
+    {
+      cls: 's-exp',
+      ico: '\ud83e\udde7',
+      label: 'Expenses',
+      val: moneyNum(expenses),
+      href: links.expenses || '/expenses',
+      sub: 'Approved expenses',
+    },
+    {
+      cls: 's-net',
+      ico: '\ud83d\udcc8',
+      label: 'Net position',
+      val: moneyNum(net),
+      href: links.reports_sales || '/reports',
+      sub: 'Sales minus purchases minus expenses',
+    },
     {
       cls: 's-sales',
       ico: '\ud83d\udcc8',
       label: 'Gross profit',
       val: moneyNum(d.gross_profit_7d),
       href: links.reports_sales || '/reports',
-      sub: `7 days · 30d ${moneyNum(d.gross_profit_30d)}`,
+      sub: `Sale price minus product cost, last 7 days. Last 30 days ${moneyNum(d.gross_profit_30d)}.`,
     },
   ];
 
@@ -520,14 +578,7 @@ export default function Page() {
 
   const awayHome = industryHomePath(d.industry || industry);
   if (awayHome !== '/platform' && (hotelHome || (awayHome && awayHome !== '/dashboard'))) {
-    const opening =
-      awayHome === '/restaurant'
-        ? 'restaurant'
-        : awayHome === '/fmcg'
-          ? 'FMCG'
-          : awayHome === '/hospital'
-            ? 'hospital'
-            : 'hotel';
+    const opening = awayHome === '/restaurant' ? 'restaurant' : 'hotel';
     return (
       <p className="muted" role="status">
         Opening {opening} dashboard…
@@ -547,12 +598,35 @@ export default function Page() {
               <span aria-hidden>{status.icon}</span> {status.label}
             </span>
           )}
-          <h1 className="greet">
-            {tod.greeting}
-            {signedInName ? `, ${signedInName}` : ''}{' '}
-            <span className="wave">{tod.icon}</span>
-          </h1>
-          <p className="greet-sub">{tod.sub}</p>
+          <div className="greet-row">
+            <div className="greet-copy">
+              <h1 className="greet">
+                {tod.greeting}
+                {signedInName ? `, ${signedInName}` : ''}{' '}
+                <span className="wave">{tod.icon}</span>
+              </h1>
+              <p className="greet-sub">{tod.sub}</p>
+            </div>
+            {timeLabel && clockFace ? (
+              <div className="greet-clock">
+                <span className="greet-clock-kicker" aria-hidden="true">Local time</span>
+                <time
+                  className="greet-time"
+                  dateTime={now ? now.toISOString() : undefined}
+                  aria-label={`Dashboard greeting time, ${timeLabel}`}
+                >
+                  <span className="greet-face" aria-hidden="true">
+                    <span className="greet-digit">{clockFace.hours}</span>
+                    <span className="greet-colon">:</span>
+                    <span className="greet-digit">{clockFace.minutes}</span>
+                  </span>
+                  {clockFace.meridiem ? (
+                    <span className="greet-meridiem" aria-hidden="true">{clockFace.meridiem}</span>
+                  ) : null}
+                </time>
+              </div>
+            ) : null}
+          </div>
           <p className="greet-date">{dateLabel}</p>
           <OfflineProvisionalNotice />
           {liveIndustry && liveIndustry !== 'retail' && (
@@ -589,7 +663,13 @@ export default function Page() {
         <>
         <section className="stat-grid dash-kpis">
           {stats.map((s) => (
-            <Link className={`stat ${s.cls}`} key={s.label} href={s.href} style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link
+              className={`stat ${s.cls}`}
+              key={s.label}
+              href={s.href}
+              style={{ textDecoration: 'none', color: 'inherit' }}
+              aria-label={`${s.label}: ${s.val}${s.sub ? `. ${s.sub}` : ''}`}
+            >
               <span className="rail" />
               <div className="ico">{s.ico}</div>
               <div className="label">{s.label}</div>

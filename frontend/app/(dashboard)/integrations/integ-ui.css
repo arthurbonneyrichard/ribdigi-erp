@@ -1,0 +1,139 @@
+.integ-ui {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  max-width: 1100px;
+}
+
+.integ-ui h1,
+.integ-ui h2 {
+  margin: 0 0 8px;
+}
+
+.integ-ui-lead,
+.integ-ui-note {
+  margin: 0;
+  max-width: 46rem;
+}
+
+.integ-ui-alert {
+  margin: 0;
+  color: #b91c1c;
+}
+
+.integ-ui-ok {
+  margin: 0;
+  color: var(--brand, #4ab012);
+}
+
+.integ-ui-secret {
+  border-left: 4px solid #ca8a04;
+  min-width: 0;
+}
+
+.integ-ui-secret code {
+  display: block;
+  margin-bottom: 8px;
+  overflow-wrap: anywhere;
+}
+
+.integ-ui-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  min-width: 0;
+}
+
+.integ-ui-form {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.integ-ui-form input,
+.integ-ui-form select,
+.integ-ui-form button {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.integ-ui-events {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.integ-ui-events label {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+}
+
+.integ-ui-scroll {
+  min-width: 0;
+  max-width: 100%;
+  overflow: auto;
+  max-height: min(24rem, 65vh);
+  margin-top: 8px;
+}
+
+.integ-ui-scroll table {
+  width: 100%;
+  margin: 0;
+}
+
+.integ-ui-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.integ-ui-advanced > summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.integ-ui-code {
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  max-height: 16rem;
+  font-size: 12px;
+  background: var(--mist, #f2f7ec);
+  border-radius: 8px;
+}
+
+@media (max-width: 720px) {
+  .integ-ui {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  .integ-ui-form input,
+  .integ-ui-form select,
+  .integ-ui-form button,
+  .integ-ui-row-actions > button {
+    min-height: 44px;
+  }
+
+  .integ-ui-row-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .integ-ui-row-actions > button {
+    width: 100%;
+  }
+}
+
+@media (min-width: 980px) {
+  .integ-ui-layout {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    align-items: start;
+  }
+}

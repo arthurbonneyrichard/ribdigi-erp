@@ -12,10 +12,11 @@ import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import { getMe } from '../../../lib/meCache';
 import { usesWholesaleTrade } from '../../../lib/industries';
 import { useStoreContext } from '../../../lib/storeContext';
+import './sales-ui.css';
 
-type Tab = 'made' | 'invoices' | 'quotations' | 'orders' | 'returns' | 'coupons';
+type Tab = 'customers' | 'quotations' | 'orders' | 'invoices' | 'returns' | 'coupons' | 'giftcards' | 'made';
 
-const SALES_TABS: Tab[] = ['made', 'invoices', 'quotations', 'orders', 'returns', 'coupons'];
+const SALES_TABS: Tab[] = ['customers', 'quotations', 'orders', 'invoices', 'returns', 'coupons', 'giftcards', 'made'];
 
 function isSalesTab(value: string | null): value is Tab {
   return Boolean(value && (SALES_TABS as string[]).includes(value));
@@ -82,10 +83,13 @@ async function downloadInvoicePdf(
   URL.revokeObjectURL(url);
 }
 
-async function previewInvoicePdf(invoiceId: string, template: 'a4' | 'thermal') {
+async function previewInvoicePdf(invoiceId: string, template: 'a4' | 'thermal', paper = '80mm') {
   const token = getAccessToken();
   const tenant = localStorage.getItem('tenant');
-  const qs = template === 'thermal' ? 'template=thermal&format=pdf&paper=80mm' : 'template=a4&format=pdf';
+  const qs =
+    template === 'thermal'
+      ? `template=thermal&format=pdf&paper=${encodeURIComponent(paper)}`
+      : 'template=a4&format=pdf';
   const res = await fetch(`${apiBase}/sales/invoices/${invoiceId}/print?${qs}`, {
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -105,12 +109,13 @@ async function previewInvoicePdf(invoiceId: string, template: 'a4' | 'thermal') 
 
 export default function Page() {
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<Tab>('made');
+  const [tab, setTab] = useState<Tab>('invoices');
   const [madeSales, setMadeSales] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [invoiceManageFilter, setInvoiceManageFilter] = useState<
     'all' | 'draft' | 'posted' | 'sent' | 'partial' | 'paid' | 'overdue' | 'cancelled'
   >('all');
+  const [invoicePaper, setInvoicePaper] = useState<'a4' | '80mm' | '58mm'>('a4');
   const [quotations, setQuotations] = useState<any[]>([]);
   const [quotationManageFilter, setQuotationManageFilter] = useState<
     'all' | 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired' | 'converted'
@@ -192,7 +197,13 @@ export default function Page() {
   const [returnNotes, setReturnNotes] = useState('');
   const [docNotes, setDocNotes] = useState('');
   const [restock, setRestock] = useState(true);
-  const [payAmount, setPayAmount] = useState('');
+  const [payAmounts, setPayAmounts] = useState<Record<string, string>>({});
+  const [composerKind, setComposerKind] = useState<'invoice' | 'quotation' | 'order'>('invoice');
+  const [customerFormOpen, setCustomerFormOpen] = useState(false);
+  const [giftAmount, setGiftAmount] = useState('');
+  const [giftLookup, setGiftLookup] = useState('');
+  const [giftIssued, setGiftIssued] = useState<{ code: string; balance: number; status: string } | null>(null);
+  const [giftFound, setGiftFound] = useState<{ code: string; balance: number; status: string } | null>(null);
   const [deliveryDate, setDeliveryDate] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [message, setMessage] = useState('');
@@ -460,14 +471,14 @@ export default function Page() {
     }
   }
 
-  async function setCustomerActive(isActive: boolean) {
-    if (!customerId) {
+  async function setCustomerActive(isActive: boolean, id = customerId) {
+    if (!id) {
       setError('Select a customer first');
       return;
     }
     setError('');
     try {
-      const r = await api(`/customers/${customerId}`, {
+      const r = await api(`/customers/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({ status: isActive ? 'active' : 'inactive' }),
       });
@@ -742,6 +753,20 @@ export default function Page() {
     }
   }
 
+  function applyReturnLine(line: { product_id?: string; variant_id?: string | null; quantity?: number } | undefined) {
+    if (!line?.product_id) return;
+    setProductId(String(line.product_id));
+    setVariantId(line.variant_id ? String(line.variant_id) : '');
+    setQty(String(line.quantity ?? 1));
+  }
+
+  function openReturnForInvoice(inv: { id: string; items?: any[] }) {
+    setInvoiceId(inv.id);
+    applyReturnLine(inv.items?.[0]);
+    setTab('returns');
+    setReturnCreateOpen(true);
+  }
+
   async function reprintSale(row: {
     id: string;
     source?: string;
@@ -801,9 +826,13 @@ export default function Page() {
         if (isRegister) {
           const receipt = await api(`/pos/sales/${row.id}/receipt`);
           printed = openReceiptPrintWindow(receipt.data?.html, receipt.data?.text || '');
+        } else if (invoicePaper === 'a4') {
+          await previewInvoicePdf(sourceId, 'a4');
+          printed = true;
         } else {
+          const paper = invoicePaper === '58mm' ? '58mm' : '80mm';
           const printedDoc = await api(
-            `/sales/invoices/${sourceId}/print?template=thermal&format=json&paper=80mm`
+            `/sales/invoices/${sourceId}/print?template=thermal&format=json&paper=${encodeURIComponent(paper)}`
           );
           printed = openReceiptPrintWindow(undefined, String(printedDoc.data?.text || ''));
         }
@@ -939,23 +968,75 @@ export default function Page() {
     }
   }
 
-  async function pay() {
-    if (!selected?.id || !selected.customer_id) return;
+  async function pay(inv: { id: string; customer_id?: string | null }, amountRaw: string) {
+    if (!inv?.id || !inv.customer_id) {
+      setError('This invoice has no customer to record a payment against');
+      return;
+    }
+    const amountText = String(amountRaw ?? '').trim();
+    const amount = Number(amountText);
+    if (!amountText || !Number.isFinite(amount) || amount <= 0) {
+      setError('Enter a pay amount');
+      return;
+    }
     setError('');
     try {
       const r = await api('/sales/payments', {
         method: 'POST',
         body: JSON.stringify({
-          customer_id: selected.customer_id,
-          sales_invoice_id: selected.id,
-          amount: Number(payAmount),
+          customer_id: inv.customer_id,
+          sales_invoice_id: inv.id,
+          amount,
         }),
       });
       setMessage(r.message || 'Payment recorded');
-      setPayAmount('');
+      setPayAmounts((prev) => {
+        const next = { ...prev };
+        delete next[inv.id];
+        return next;
+      });
       await refresh();
     } catch (err: any) {
       setError(err.message);
+    }
+  }
+
+  async function issueGiftCard() {
+    const amountText = giftAmount.trim();
+    const amount = Number(amountText);
+    if (!amountText || !Number.isFinite(amount) || amount <= 0) {
+      setError('Enter a gift card amount');
+      return;
+    }
+    setError('');
+    setGiftIssued(null);
+    try {
+      const res = await api('/gift-cards', {
+        method: 'POST',
+        body: JSON.stringify({ amount }),
+      });
+      setGiftIssued(res.data);
+      setGiftAmount('');
+      setMessage('Gift card issued. The balance stays a liability until the code is spent at the register.');
+    } catch (err: any) {
+      setError(err.message || 'Could not issue the gift card');
+    }
+  }
+
+  async function lookupGiftCard() {
+    const code = giftLookup.trim();
+    if (!code) {
+      setError('Enter the gift card code');
+      setGiftFound(null);
+      return;
+    }
+    setError('');
+    setGiftFound(null);
+    try {
+      const res = await api(`/gift-cards/${encodeURIComponent(code)}`);
+      setGiftFound(res.data);
+    } catch (err: any) {
+      setError(err.message || 'Gift card not found');
     }
   }
 
@@ -1015,35 +1096,246 @@ export default function Page() {
   const quoteCols = 5 + (showChannel ? 1 : 0) + (showQuoteReject ? 1 : 0);
   const orderCols = 5 + (showChannel ? 1 : 0) + (showStore ? 1 : 0) + (showReserved ? 1 : 0);
   const invoiceCols = 5 + (showChannel ? 1 : 0) + (showStore ? 1 : 0);
+  function invoicePrintControls(invoiceId: string, invoiceNumber: string, variant: 'list' | 'drawer') {
+    const paper = invoicePaper;
+    const fail = (err: { message?: string }) => {
+      const text = err?.message || 'Print failed';
+      if (variant === 'drawer') alert(text);
+      else setError(text);
+    };
+    const printChosen = () => {
+      const task =
+        paper === 'a4'
+          ? downloadInvoicePdf(invoiceId, invoiceNumber, 'a4')
+          : downloadInvoicePdf(invoiceId, invoiceNumber, 'thermal', paper);
+      task
+        .then(() =>
+          setMessage(
+            paper === 'a4' ? `Downloaded A4 ${invoiceNumber}` : `Downloaded ${paper} receipt ${invoiceNumber}`
+          )
+        )
+        .catch(fail);
+    };
+    const previewChosen = () =>
+      previewInvoicePdf(invoiceId, paper === 'a4' ? 'a4' : 'thermal', paper === '58mm' ? '58mm' : '80mm').catch(fail);
+    return (
+      <div className="print-ui-row">
+        <label className="print-ui-paper">
+          Paper
+          <select
+            value={paper}
+            onChange={(e) => {
+              const next = e.target.value;
+              setInvoicePaper(next === '58mm' || next === '80mm' ? next : 'a4');
+            }}
+            aria-label={variant === 'drawer' ? 'Invoice paper size' : 'Sales invoice paper size'}
+          >
+            <option value="a4">A4 invoice</option>
+            <option value="80mm">80mm receipt</option>
+            <option value="58mm">58mm receipt</option>
+          </select>
+        </label>
+        <div className="print-ui-actions">
+          {variant === 'list' && paper === 'a4' ? (
+            <button type="button" className="btn-ok" aria-label="Print sales invoice A4" onClick={printChosen}>
+              Print A4 invoice
+            </button>
+          ) : null}
+          {variant === 'list' && paper !== 'a4' ? (
+            <button type="button" className="btn-ok" aria-label="Print sales invoice thermal" onClick={printChosen}>
+              {`Print ${paper} receipt`}
+            </button>
+          ) : null}
+          {variant === 'drawer' && paper === 'a4' ? (
+            <button type="button" className="btn-ok" aria-label="Print invoice A4" onClick={printChosen}>
+              Print A4 invoice
+            </button>
+          ) : null}
+          {variant === 'drawer' && paper !== 'a4' ? (
+            <button type="button" className="btn-ok" aria-label="Print invoice thermal" onClick={printChosen}>
+              {`Print ${paper} receipt`}
+            </button>
+          ) : null}
+          {variant === 'list' ? (
+            <button type="button" onClick={previewChosen} aria-label={`Preview sales invoice ${invoiceId}`}>
+              Preview
+            </button>
+          ) : (
+            <button type="button" onClick={previewChosen} aria-label="Preview invoice">
+              Preview
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   const drawerLines: any[] = selected?.items || [];
   const showFilled = drawerLines.some((it) => it.qty_fulfilled != null && it.qty_fulfilled !== '');
   const showCondition = drawerLines.some((it) => Boolean(it.condition));
 
+  const numberingPanel = (
+    <details className="sales-ui-settings">
+            <summary>Numbering</summary>
+          <div className="card sales-more-body" style={{ display: 'grid', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <span className="muted">Invoice</span>
+              <input
+                value={invPrefix}
+                onChange={(e) => setInvPrefix(e.target.value.toUpperCase())}
+                placeholder="Prefix"
+                style={{ width: 100 }}
+                aria-label="Invoice number prefix"
+                title="Document prefix (letters, digits, _ or -)"
+              />
+              <input
+                value={invNext}
+                onChange={(e) => setInvNext(e.target.value)}
+                placeholder="Next #"
+                style={{ width: 90 }}
+                aria-label="Invoice next number"
+              />
+              <span className="muted">{invPreview || '—'}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <span className="muted">Quotation</span>
+              <input
+                value={qtPrefix}
+                onChange={(e) => setQtPrefix(e.target.value.toUpperCase())}
+                placeholder="Prefix"
+                style={{ width: 100 }}
+                aria-label="Quotation number prefix"
+                title="Document prefix (letters, digits, _ or -)"
+              />
+              <input
+                value={qtNext}
+                onChange={(e) => setQtNext(e.target.value)}
+                placeholder="Next #"
+                style={{ width: 90 }}
+                aria-label="Quotation next number"
+              />
+              <span className="muted">{qtPreview || '—'}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <span className="muted">Order</span>
+              <input
+                value={soPrefix}
+                onChange={(e) => setSoPrefix(e.target.value.toUpperCase())}
+                placeholder="Prefix"
+                style={{ width: 100 }}
+                aria-label="Sales order number prefix"
+                title="Document prefix (letters, digits, _ or -)"
+              />
+              <input
+                value={soNext}
+                onChange={(e) => setSoNext(e.target.value)}
+                placeholder="Next #"
+                style={{ width: 90 }}
+                aria-label="Sales order next number"
+              />
+              <span className="muted">{soPreview || '—'}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <span className="muted">Return</span>
+              <input
+                value={srPrefix}
+                onChange={(e) => setSrPrefix(e.target.value.toUpperCase())}
+                placeholder="Prefix"
+                style={{ width: 100 }}
+                aria-label="Sales return number prefix"
+                title="Document prefix (letters, digits, _ or -)"
+              />
+              <input
+                value={srNext}
+                onChange={(e) => setSrNext(e.target.value)}
+                placeholder="Next #"
+                style={{ width: 90 }}
+                aria-label="Sales return next number"
+              />
+              <span className="muted">{srPreview || '—'}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <span className="muted">Credit note</span>
+              <input
+                value={cnPrefix}
+                onChange={(e) => setCnPrefix(e.target.value.toUpperCase())}
+                placeholder="Prefix"
+                style={{ width: 100 }}
+                aria-label="Credit note number prefix"
+                title="Document prefix (letters, digits, _ or -)"
+              />
+              <input
+                value={cnNext}
+                onChange={(e) => setCnNext(e.target.value)}
+                placeholder="Next #"
+                style={{ width: 90 }}
+                aria-label="Credit note next number"
+              />
+              <span className="muted">{cnPreview || '—'}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <span className="muted">Receipt</span>
+              <input
+                value={rcpPrefix}
+                onChange={(e) => setRcpPrefix(e.target.value.toUpperCase())}
+                placeholder="Prefix"
+                style={{ width: 100 }}
+                aria-label="Payment receipt number prefix"
+                title="Document prefix (letters, digits, _ or -)"
+              />
+              <input
+                value={rcpNext}
+                onChange={(e) => setRcpNext(e.target.value)}
+                placeholder="Next #"
+                style={{ width: 90 }}
+                aria-label="Payment receipt next number"
+              />
+              <span className="muted">{rcpPreview || '—'}</span>
+              <button type="button" onClick={saveInvoiceNumbering} aria-label="Save sales numbering">
+                Save numbering
+              </button>
+            </div>
+          </div>
+          </details>
+  );
+
+  function openComposer(kind: 'invoice' | 'quotation' | 'order') {
+    setComposerKind(kind);
+    setCustomerFormOpen(false);
+    setComposerOpen(true);
+  }
+
   return (
-    <div className="sales-desk work">
+    <div className="sales-desk work sales-ui-page">
       <header className="sales-desk-head">
         <div>
           <h1>Sales</h1>
-          <p className="muted">
+          <p className="sales-ui-path">
+            <span>1 Customers</span>
+            <span>2 Quotes</span>
+            <span>3 Orders</span>
+            <span>4 Invoices</span>
+            <span>5 Returns</span>
+          </p>
+          <p className="sales-ui-note">
             {wholesaleOps
-              ? 'All sales lists every completed invoice and register sale. Quotes and orders are not sales until they are invoiced.'
-              : 'All sales lists every completed invoice and register sale.'}
+              ? 'Quotes and orders are not sales until they are invoiced. Coupons and gift cards are codes, not a card charge.'
+              : 'Coupons and gift cards are codes, not a card charge.'}
           </p>
         </div>
-        <button type="button" className="btn-primary" onClick={() => setComposerOpen(true)}>
-          New
-        </button>
       </header>
 
-      <div className="sales-toolbar">
+      <nav className="sales-toolbar sales-ui-nav" aria-label="Sales workflow">
         {(
           [
-            ['made', 'All sales'],
-            ['invoices', 'Invoices'],
+            ['customers', 'Customers'],
             ['quotations', 'Quotes'],
             ['orders', 'Orders'],
+            ['invoices', 'Invoices'],
             ['returns', 'Returns'],
             ['coupons', 'Coupons'],
+            ['giftcards', 'Gift cards'],
+            ['made', 'All sales'],
           ] as [Tab, string][]
         ).map(([id, label]) => (
           <button
@@ -1064,143 +1356,22 @@ export default function Page() {
           placeholder="Search number, customer, status…"
           aria-label="Search sales documents"
         />
-      </div>
-      {false && (
-      <details className="sales-more">
-        <summary>Document numbers</summary>
-      <div className="card sales-more-body" style={{ display: 'grid', gap: 8 }}>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span className="muted">Invoice</span>
-          <input
-            value={invPrefix}
-            onChange={(e) => setInvPrefix(e.target.value.toUpperCase())}
-            placeholder="Prefix"
-            style={{ width: 100 }}
-            aria-label="Invoice number prefix"
-            title="Document prefix (letters, digits, _ or -)"
-          />
-          <input
-            value={invNext}
-            onChange={(e) => setInvNext(e.target.value)}
-            placeholder="Next #"
-            style={{ width: 90 }}
-            aria-label="Invoice next number"
-          />
-          <span className="muted">{invPreview || '—'}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span className="muted">Quotation</span>
-          <input
-            value={qtPrefix}
-            onChange={(e) => setQtPrefix(e.target.value.toUpperCase())}
-            placeholder="Prefix"
-            style={{ width: 100 }}
-            aria-label="Quotation number prefix"
-            title="Document prefix (letters, digits, _ or -)"
-          />
-          <input
-            value={qtNext}
-            onChange={(e) => setQtNext(e.target.value)}
-            placeholder="Next #"
-            style={{ width: 90 }}
-            aria-label="Quotation next number"
-          />
-          <span className="muted">{qtPreview || '—'}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span className="muted">Order</span>
-          <input
-            value={soPrefix}
-            onChange={(e) => setSoPrefix(e.target.value.toUpperCase())}
-            placeholder="Prefix"
-            style={{ width: 100 }}
-            aria-label="Sales order number prefix"
-            title="Document prefix (letters, digits, _ or -)"
-          />
-          <input
-            value={soNext}
-            onChange={(e) => setSoNext(e.target.value)}
-            placeholder="Next #"
-            style={{ width: 90 }}
-            aria-label="Sales order next number"
-          />
-          <span className="muted">{soPreview || '—'}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span className="muted">Return</span>
-          <input
-            value={srPrefix}
-            onChange={(e) => setSrPrefix(e.target.value.toUpperCase())}
-            placeholder="Prefix"
-            style={{ width: 100 }}
-            aria-label="Sales return number prefix"
-            title="Document prefix (letters, digits, _ or -)"
-          />
-          <input
-            value={srNext}
-            onChange={(e) => setSrNext(e.target.value)}
-            placeholder="Next #"
-            style={{ width: 90 }}
-            aria-label="Sales return next number"
-          />
-          <span className="muted">{srPreview || '—'}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span className="muted">Credit note</span>
-          <input
-            value={cnPrefix}
-            onChange={(e) => setCnPrefix(e.target.value.toUpperCase())}
-            placeholder="Prefix"
-            style={{ width: 100 }}
-            aria-label="Credit note number prefix"
-            title="Document prefix (letters, digits, _ or -)"
-          />
-          <input
-            value={cnNext}
-            onChange={(e) => setCnNext(e.target.value)}
-            placeholder="Next #"
-            style={{ width: 90 }}
-            aria-label="Credit note next number"
-          />
-          <span className="muted">{cnPreview || '—'}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span className="muted">Receipt</span>
-          <input
-            value={rcpPrefix}
-            onChange={(e) => setRcpPrefix(e.target.value.toUpperCase())}
-            placeholder="Prefix"
-            style={{ width: 100 }}
-            aria-label="Payment receipt number prefix"
-            title="Document prefix (letters, digits, _ or -)"
-          />
-          <input
-            value={rcpNext}
-            onChange={(e) => setRcpNext(e.target.value)}
-            placeholder="Next #"
-            style={{ width: 90 }}
-            aria-label="Payment receipt next number"
-          />
-          <span className="muted">{rcpPreview || '—'}</span>
-          <button type="button" onClick={saveInvoiceNumbering} aria-label="Save sales numbering">
-            Save numbering
-          </button>
-        </div>
-      </div>
-      </details>
-      )}
+      </nav>
       {(error || message) && !composerOpen && !selected ? (
         <p className={error ? 'sales-flash sales-flash-err' : 'sales-flash sales-flash-ok'} role={error ? 'alert' : undefined}>
           {error || message}
         </p>
       ) : null}
 
-      {composerOpen ? (
+      {(composerOpen || customerFormOpen) ? (
       <FormModal
-        title="New document"
+        title={composerOpen ? 'New document' : 'Customer'}
         busy={saveBusy}
         dirty={Boolean(customerName.trim() || customerId || productId || docNotes.trim() || qty !== '1')}
-        onClose={() => setComposerOpen(false)}
+        onClose={() => {
+          setComposerOpen(false);
+          setCustomerFormOpen(false);
+        }}
       >
         {(error || message) ? (
           <p className={error ? 'sales-flash sales-flash-err' : 'sales-flash sales-flash-ok'} role={error ? 'alert' : undefined}>
@@ -1208,10 +1379,11 @@ export default function Page() {
           </p>
         ) : null}
       <div className="erp-split">
+        {customerFormOpen && !composerOpen ? (
         <div className="card">
           <h3>Customer</h3>
           <div className="erp-stack" style={{ marginBottom: 0 }}>
-        <details className="sales-more">
+        <details className="sales-more sales-ui-settings">
           <summary>Customer groups</summary>
         <div style={{ display: 'grid', gap: 8 }}>
           <select
@@ -1495,6 +1667,8 @@ export default function Page() {
         ) : null}
           </div>
         </div>
+        ) : null}
+        {composerOpen ? (
         <div className="card">
           <h3>Create sale</h3>
           <div className="erp-stack" style={{ marginBottom: 0 }}>
@@ -1705,15 +1879,26 @@ export default function Page() {
           Reverse charge (tax memo only — not charged to customer)
         </label>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button onClick={createQuotation} disabled={saveBusy} aria-label="Create quotation">
-            {saveBusy ? 'Saving…' : 'Save quote'}
-          </button>
-          <button onClick={createOrder} disabled={saveBusy} aria-label="Create order">
-            {saveBusy ? 'Saving…' : 'Save order'}
-          </button>
-          <button onClick={createInvoice} disabled={saveBusy} aria-label="Create invoice">
-            {saveBusy ? 'Saving…' : 'Save invoice'}
-          </button>
+          {(composerKind === 'quotation'
+            ? (['quotation', 'order', 'invoice'] as const)
+            : composerKind === 'order'
+              ? (['order', 'quotation', 'invoice'] as const)
+              : (['invoice', 'quotation', 'order'] as const)
+          ).map((kind) =>
+            kind === 'quotation' ? (
+              <button key={kind} className={composerKind === kind ? 'btn-primary' : undefined} onClick={createQuotation} disabled={saveBusy} aria-label="Create quotation">
+                {saveBusy ? 'Saving…' : 'Save quote'}
+              </button>
+            ) : kind === 'order' ? (
+              <button key={kind} className={composerKind === kind ? 'btn-primary' : undefined} onClick={createOrder} disabled={saveBusy} aria-label="Create order">
+                {saveBusy ? 'Saving…' : 'Save order'}
+              </button>
+            ) : (
+              <button key={kind} className={composerKind === kind ? 'btn-primary' : undefined} onClick={createInvoice} disabled={saveBusy} aria-label="Create invoice">
+                {saveBusy ? 'Saving…' : 'Save invoice'}
+              </button>
+            ),
+          )}
         </div>
         {(error || message) ? (
           <p className={error ? 'sales-flash sales-flash-err' : 'sales-flash sales-flash-ok'} role={error ? 'alert' : undefined}>
@@ -1722,12 +1907,78 @@ export default function Page() {
         ) : null}
           </div>
         </div>
+        ) : null}
       </div>
       </FormModal>
       ) : null}
 
+      {tab === 'customers' && (
+        <>
+          <div className="sales-ui-actions">
+            <button
+              type="button"
+              className="btn-primary"
+              aria-label="Add customer"
+              onClick={() => {
+                setComposerOpen(false);
+                setCustomerFormOpen(true);
+              }}
+            >
+              Add customer
+            </button>
+          </div>
+          <p className="sales-ui-note">Add a customer, then use that name on a quote, order, or invoice. Groups and credit sit in the customer form.</p>
+          <div className="list-table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Phone</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {customers.map((c) => (
+                  <tr key={c.id}>
+                    <td>{c.name}</td>
+                    <td>{c.phone || '—'}</td>
+                    <td>{c.status || 'active'}</td>
+                    <td className="erp-row-actions">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomerId(c.id);
+                          setComposerOpen(false);
+                          setCustomerFormOpen(true);
+                        }}
+                      >
+                        Open
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Toggle customer active status"
+                        onClick={() => setCustomerActive((c.status || 'active') === 'inactive', c.id)}
+                      >
+                        {(c.status || 'active') === 'inactive' ? 'Activate' : 'Deactivate'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {customers.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="muted">No customers yet. Add a customer to use them on a quote, order, or invoice.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
       {tab === 'made' && (
         <div className="list-table-wrap">
+          <p className="print-ui-help">Choose A4 for a full invoice, or 58mm or 80mm for a receipt slip, then press Print. The file downloads so the browser can print it.</p>
           <table className="table">
             <thead>
               <tr>
@@ -1741,7 +1992,22 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {managedMade.map((row) => (
+              {managedMade.map((row) => {
+                const inv = row.invoice_id
+                  ? invoices.find((item) => item.id === row.invoice_id)
+                  : undefined;
+                const invoiceStatus = inv?.status || (row.source === 'invoice' ? row.status : '');
+                const invoiceId = inv?.id || row.invoice_id || '';
+                const invoiceNumber = inv?.invoice_number || row.number || '';
+                const canPrint = inv ? Boolean(inv.can_print) : ['posted', 'sent', 'partial', 'paid', 'overdue'].includes(invoiceStatus);
+                const canEmail = inv ? Boolean(inv.can_email) : canPrint;
+                const canPay = Boolean(
+                  inv && ['posted', 'sent', 'partial', 'overdue'].includes(inv.status)
+                );
+                const canReturn = Boolean(
+                  inv && ['posted', 'sent', 'partial', 'paid', 'overdue'].includes(inv.status)
+                );
+                return (
                 <tr key={`${row.source}-${row.id}`}>
                   <td>{formatWhen(row.when, fmt)}</td>
                   <td>{row.number}</td>
@@ -1749,19 +2015,25 @@ export default function Page() {
                   <td>{saleWords(row.source)}</td>
                   <td>{saleWords(row.status)}</td>
                   <td>{formatMoney(row.total, fmt, row.currency)}</td>
-                  <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                    {row.invoice_id ? (
+                  <td className="erp-row-actions">
+                    {invoiceId ? (
                       <button
                         type="button"
                         onClick={() => {
-                          const inv = invoices.find((item) => item.id === row.invoice_id);
-                          if (inv) setSelected(inv);
+                          if (inv) {
+                            setSelected(inv);
+                            return;
+                          }
+                          api(`/sales/invoices/${invoiceId}`)
+                            .then((r) => setSelected(r.data))
+                            .catch((err) => setError(err.message));
                         }}
-                        aria-label={`View sales invoice ${row.invoice_id}`}
+                        aria-label={`View sales invoice ${invoiceId}`}
                       >
                         View
                       </button>
                     ) : null}
+                    {canPrint && invoiceId ? invoicePrintControls(invoiceId, invoiceNumber, 'list') : null}
                     <button
                       type="button"
                       onClick={() => reprintSale(row)}
@@ -1770,13 +2042,56 @@ export default function Page() {
                     >
                       {reprintingId === row.id ? 'Reprint…' : 'Reprint'}
                     </button>
+                    {canEmail && invoiceId ? (
+                      <button
+                        type="button"
+                        onClick={() => act(`/sales/invoices/${invoiceId}/send`, 'Invoice emailed')}
+                        aria-label={inv?.emailed_at ? 'Resend invoice email' : 'Email invoice'}
+                      >
+                        {inv?.emailed_at ? 'Resend email' : 'Email'}
+                      </button>
+                    ) : null}
+                    {canPay && inv ? (
+                      <>
+                        <AmountField
+                          inline
+                          currency={inv.currency}
+                          value={payAmounts[inv.id] || ''}
+                          onChange={(e) => {
+                            const next = e.target.value;
+                            setPayAmounts((prev) => ({ ...prev, [inv.id]: next }));
+                          }}
+                          placeholder="Pay"
+                          aria-label={`Sales invoice pay amount ${inv.invoice_number || inv.id}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => pay(inv, payAmounts[inv.id] || '')}
+                          aria-label={`Pay sales invoice ${inv.id}`}
+                        >
+                          Pay
+                        </button>
+                      </>
+                    ) : null}
+                    {canReturn && inv ? (
+                      <button
+                        type="button"
+                        onClick={() => openReturnForInvoice(inv)}
+                        aria-label={`Create sales return ${inv.id}`}
+                      >
+                        Return
+                      </button>
+                    ) : null}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {!managedMade.length && (
                 <tr>
                   <td colSpan={7} className="muted">
-                    {listSearch.trim() ? 'No sales for this search' : 'No sales yet'}
+                    {listSearch.trim()
+                      ? 'No sales for this search. Clear the search to see every completed sale.'
+                      : 'No sales yet. Completed invoices and register sales show here.'}
                   </td>
                 </tr>
               )}
@@ -1787,7 +2102,13 @@ export default function Page() {
 
       {tab === 'quotations' && (
         <>
-          <details className="sales-more" style={{ marginBottom: 12 }}>
+          <div className="sales-ui-actions">
+            <button type="button" className="btn-primary" onClick={() => openComposer('quotation')} aria-label="Create quotation">
+              Create quotation
+            </button>
+          </div>
+          {numberingPanel}
+          <details className="sales-more sales-ui-settings">
             <summary>Reject or email a quote</summary>
           <div className="card sales-more-body">
             <label>
@@ -1837,6 +2158,7 @@ export default function Page() {
           <option value="expired">Expired only</option>
           <option value="converted">Converted only</option>
         </select>
+        <div className="list-table-wrap">
         <table className="table">
           <thead>
             <tr>
@@ -1858,7 +2180,7 @@ export default function Page() {
                 <td>{formatMoney(q.total_amount, fmt, q.currency)}</td>
                 <td>{q.valid_until ? formatWhen(q.valid_until, fmt) : '—'}</td>
                 {showQuoteReject ? <td>{q.rejection_reason || '—'}</td> : null}
-                <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                <td className="erp-row-actions">
                   <button onClick={() => setSelected(q)} aria-label={`View quotation ${q.id}`}>View</button>
                   {q.status === 'draft' && (
                     <button
@@ -1898,6 +2220,10 @@ export default function Page() {
                       >
                         Reject
                       </button>
+                    </>
+                  )}
+                  {['draft', 'sent', 'accepted'].includes(q.status) && (
+                    <>
                       <button
                         type="button"
                         className="btn-ok"
@@ -1923,19 +2249,26 @@ export default function Page() {
               <tr>
                 <td colSpan={quoteCols} className="muted">
                   {quotations.length === 0
-                    ? 'No quotes yet'
-                    : 'No quotations for this filter'}
+                    ? 'No quotes yet. Create a quotation to send a price before you invoice.'
+                    : 'No quotations for this filter. Choose All statuses to see every quote.'}
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+        </div>
         </>
       )}
 
       {tab === 'orders' && (
         <>
-          <details className="sales-more" style={{ marginBottom: 12 }}>
+          <div className="sales-ui-actions">
+            <button type="button" className="btn-primary" onClick={() => openComposer('order')} aria-label="Create order">
+              Create order
+            </button>
+          </div>
+          {numberingPanel}
+          <details className="sales-more sales-ui-settings">
             <summary>Cancel an order</summary>
           <div className="card sales-more-body">
             <label>
@@ -1977,6 +2310,7 @@ export default function Page() {
             <option value="invoiced">Invoiced only</option>
             <option value="cancelled">Cancelled only</option>
           </select>
+          <div className="list-table-wrap">
           <table className="table">
           <thead>
             <tr>
@@ -2009,7 +2343,7 @@ export default function Page() {
                   {o.delivery_address ? ` · ${o.delivery_address}` : ''}
                 </td>
                 <td>{formatMoney(o.total_amount, fmt, o.currency)}</td>
-                <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                <td className="erp-row-actions">
                   <button onClick={() => setSelected(o)} aria-label={`View sales order ${o.id}`}>View</button>
                   {o.status === 'draft' && (
                     <button
@@ -2092,19 +2426,26 @@ export default function Page() {
               <tr>
                 <td colSpan={orderCols} className="muted">
                   {orders.length === 0
-                    ? 'No orders yet'
-                    : 'No sales orders for this filter'}
+                    ? 'No orders yet. Create an order when the customer has agreed to buy.'
+                    : 'No sales orders for this filter. Choose All statuses to see every order.'}
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+          </div>
         </>
       )}
 
       {tab === 'invoices' && (
         <>
-          <details className="sales-more" style={{ marginBottom: 12 }}>
+          <div className="sales-ui-actions">
+            <button type="button" className="btn-primary" onClick={() => openComposer('invoice')} aria-label="Create invoice">
+              Create invoice
+            </button>
+          </div>
+          {numberingPanel}
+          <details className="sales-more sales-ui-settings">
             <summary>Cancel, email, or sell over the limit</summary>
           <div className="card sales-more-body">
             <label>
@@ -2167,6 +2508,7 @@ export default function Page() {
           <option value="cancelled">Cancelled only</option>
         </select>
         <div className="list-table-wrap">
+        <p className="print-ui-help">Choose A4 for a full invoice, or 58mm or 80mm for a receipt slip, then press Print. The file downloads so the browser can print it.</p>
         <table className="table">
           <thead>
             <tr>
@@ -2188,7 +2530,7 @@ export default function Page() {
                 {showStore ? <td>{storeName(inv.store_id) || '—'}</td> : null}
                 <td>{formatMoney(inv.total_amount, fmt, inv.currency)}</td>
                 <td>{formatMoney(inv.paid_amount, fmt, inv.currency)}</td>
-                <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                <td className="erp-row-actions">
                   <button onClick={() => setSelected(inv)} aria-label={`View sales invoice ${inv.id}`}>View</button>
                   {inv.status === 'draft' && (
                     <>
@@ -2211,26 +2553,7 @@ export default function Page() {
                   )}
                   {inv.can_print && (
                     <>
-                      <button
-                        onClick={() =>
-                          downloadInvoicePdf(inv.id, inv.invoice_number, 'a4')
-                            .then(() => setMessage(`Downloaded A4 ${inv.invoice_number}`))
-                            .catch((err) => setError(err.message))
-                        }
-                        aria-label="Print sales invoice A4"
-                      >
-                        Print
-                      </button>
-                      <button
-                        onClick={() =>
-                          downloadInvoicePdf(inv.id, inv.invoice_number, 'thermal', '80mm')
-                            .then(() => setMessage(`Downloaded thermal ${inv.invoice_number}`))
-                            .catch((err) => setError(err.message))
-                        }
-                        aria-label="Print sales invoice thermal"
-                      >
-                        Receipt
-                      </button>
+                      {invoicePrintControls(inv.id, inv.invoice_number, 'list')}
                       <button
                         type="button"
                         onClick={() =>
@@ -2266,24 +2589,30 @@ export default function Page() {
                       <AmountField
                         inline
                         currency={inv.currency}
-                        value={selected?.id === inv.id ? payAmount : ''}
+                        value={payAmounts[inv.id] || ''}
                         onChange={(e) => {
-                          setSelected(inv);
-                          setPayAmount(e.target.value);
+                          const next = e.target.value;
+                          setPayAmounts((prev) => ({ ...prev, [inv.id]: next }));
                         }}
                         placeholder="Pay"
                         aria-label={`Sales invoice pay amount ${inv.invoice_number || inv.id}`}
                       />
                       <button
-                        onClick={() => {
-                          setSelected(inv);
-                          pay();
-                        }}
+                        onClick={() => pay(inv, payAmounts[inv.id] || '')}
                         aria-label={`Pay sales invoice ${inv.id}`}
                       >
                         Pay
                       </button>
                     </>
+                  )}
+                  {['posted', 'sent', 'partial', 'paid', 'overdue'].includes(inv.status) && (
+                    <button
+                      type="button"
+                      onClick={() => openReturnForInvoice(inv)}
+                      aria-label={`Create sales return ${inv.id}`}
+                    >
+                      Return
+                    </button>
                   )}
                 </td>
               </tr>
@@ -2292,8 +2621,8 @@ export default function Page() {
               <tr>
                 <td colSpan={invoiceCols} className="muted">
                   {invoices.length === 0
-                    ? 'No invoices yet'
-                    : 'No sales invoices for this filter'}
+                    ? 'No invoices yet. Create an invoice when you are ready to bill the customer.'
+                    : 'No sales invoices for this filter. Choose All statuses to see every invoice.'}
                 </td>
               </tr>
             )}
@@ -2306,6 +2635,7 @@ export default function Page() {
       {tab === 'coupons' && (
         <div className="card cat-panel">
           <h3>Coupons</h3>
+          <p className="sales-ui-note">A coupon code takes a percent or a fixed amount off a quote, order, or invoice. It is not a payment.</p>
           <div className="erp-form-grid" style={{ marginBottom: 12 }}>
             <input value={newCouponCode} onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())} placeholder="Code" aria-label="New coupon code" />
             <input value={newCouponName} onChange={(e) => setNewCouponName(e.target.value)} placeholder="Name" aria-label="New coupon name" />
@@ -2375,7 +2705,7 @@ export default function Page() {
                 {coupons.length === 0 && (
                   <tr>
                     <td colSpan={7} className="muted">
-                      No coupons yet
+                      No coupons yet. Save a code to take a percent or a fixed amount off a quote, order, or invoice.
                     </td>
                   </tr>
                 )}
@@ -2385,13 +2715,55 @@ export default function Page() {
         </div>
       )}
 
+      {tab === 'giftcards' && (
+        <div className="card cat-panel">
+          <h3>Gift cards</h3>
+          <p className="sales-ui-note">
+            Issue a card, then enter that code in Gift card code at the register. The balance stays a liability until the card is spent. This screen does not take till cash and does not charge a bank card. One loyalty point equals one currency unit. A named customer earns 1% of the sale.
+          </p>
+          <div className="sales-ui-actions">
+            <AmountField
+              value={giftAmount}
+              onChange={(e) => setGiftAmount(e.target.value)}
+              placeholder="Amount"
+              aria-label="Gift card amount"
+            />
+            <button type="button" className="btn-primary" onClick={issueGiftCard}>
+              Issue gift card
+            </button>
+          </div>
+          {giftIssued ? (
+            <p>
+              Code <strong>{giftIssued.code}</strong> · balance {formatMoney(giftIssued.balance, fmt)} · {giftIssued.status}
+            </p>
+          ) : null}
+          <div className="sales-ui-actions">
+            <input
+              value={giftLookup}
+              onChange={(e) => setGiftLookup(e.target.value)}
+              placeholder="Gift card code"
+              aria-label="Gift card lookup code"
+            />
+            <button type="button" onClick={lookupGiftCard}>
+              Look up gift card
+            </button>
+          </div>
+          {giftFound ? (
+            <p>
+              {giftFound.code} · balance {formatMoney(giftFound.balance, fmt)} · {giftFound.status}
+            </p>
+          ) : null}
+        </div>
+      )}
+
       {tab === 'returns' && (
         <>
-          <div style={{ marginBottom: 12 }}>
+          <div className="sales-ui-actions">
             <button type="button" className="btn-primary" onClick={() => setReturnCreateOpen(true)} aria-label="Create return">
               Create return
             </button>
           </div>
+          {numberingPanel}
           {returnCreateOpen ? (
           <FormModal
             title="Create return"
@@ -2403,7 +2775,12 @@ export default function Page() {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <select
             value={invoiceId}
-            onChange={(e) => setInvoiceId(e.target.value)}
+            onChange={(e) => {
+              const nextId = e.target.value;
+              setInvoiceId(nextId);
+              const next = invoices.find((item) => item.id === nextId);
+              applyReturnLine(next?.items?.[0]);
+            }}
             aria-label="Return from invoice"
           >
             <option value="">Return from invoice</option>
@@ -2436,6 +2813,33 @@ export default function Page() {
             <option value="sellable">Good to sell again</option>
             <option value="discard">Do not restock</option>
           </select>
+          {(invoices.find((item) => item.id === invoiceId)?.items || []).length > 0 && (
+            <select
+              value={productId}
+              onChange={(e) => {
+                const lines = invoices.find((item) => item.id === invoiceId)?.items || [];
+                applyReturnLine(lines.find((line: { product_id?: string }) => String(line.product_id) === e.target.value));
+              }}
+              aria-label="Sales return product"
+            >
+              <option value="">Product on invoice</option>
+              {(invoices.find((item) => item.id === invoiceId)?.items || []).map((line: any) => {
+                const prod = products.find((p) => p.id === line.product_id);
+                return (
+                  <option key={line.id || line.product_id} value={line.product_id}>
+                    {prod?.name || 'Product'} · {line.quantity}
+                  </option>
+                );
+              })}
+            </select>
+          )}
+          <input
+            value={qty}
+            onChange={(e) => setQty(e.target.value)}
+            placeholder="Qty"
+            aria-label="Sales return quantity"
+            style={{ width: 80 }}
+          />
           <label>
             <input type="checkbox" checked={restock} onChange={(e) => setRestock(e.target.checked)} aria-label="Sales return restock" /> Restock
           </label>
@@ -2488,6 +2892,7 @@ export default function Page() {
           <option value="posted">Posted only</option>
           <option value="cancelled">Cancelled only</option>
         </select>
+        <div className="list-table-wrap">
         <table className="table">
           <thead>
             <tr>
@@ -2512,7 +2917,7 @@ export default function Page() {
                 </td>
                 <td>{saleWords(r.reason)}</td>
                 <td>{formatMoney(r.total_amount, fmt, r.currency)}</td>
-                <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                <td className="erp-row-actions">
                   <button onClick={() => setSelected(r)} aria-label={`View sales return ${r.id}`}>View</button>
                   {r.status === 'draft' && (
                     <>
@@ -2557,14 +2962,15 @@ export default function Page() {
               <tr>
                 <td colSpan={7} className="muted">
                   {returns.length === 0
-                    ? 'No returns yet'
-                    : 'No sales returns for this filter'}
+                    ? 'No returns yet. Create a return from a posted invoice.'
+                    : 'No sales returns for this filter. Choose All statuses to see every return.'}
 
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+        </div>
         </>
       )}
 
@@ -2575,30 +2981,8 @@ export default function Page() {
             <h2>
               {selected.invoice_number || selected.quotation_number || selected.order_number || selected.return_number || 'Document'} — {saleWords(selected.status)}
               {selected.invoice_number ? (
-                <span style={{ display: 'inline-flex', gap: 8, marginLeft: 12 }}>
-                  <button
-                    type="button"
-                    onClick={() => previewInvoicePdf(selected.id, 'a4').catch((err) => alert(err.message))}
-                    aria-label="Preview invoice"
-                  >
-                    Preview
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => downloadInvoicePdf(selected.id, selected.invoice_number, 'a4')}
-                    aria-label="Print invoice A4"
-                  >
-                    Print invoice
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      downloadInvoicePdf(selected.id, selected.invoice_number, 'thermal', '80mm')
-                    }
-                    aria-label="Print invoice thermal"
-                  >
-                    Thermal
-                  </button>
+                <span className="print-ui-row" style={{ marginLeft: 12 }}>
+                  {invoicePrintControls(selected.id, selected.invoice_number, 'drawer')}
                 </span>
               ) : null}
             </h2>

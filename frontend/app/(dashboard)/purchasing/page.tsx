@@ -10,6 +10,7 @@ import { AmountField } from '../../../components/AmountField';
 import { getMe } from '../../../lib/meCache';
 import { useStoreContext } from '../../../lib/storeContext';
 import { tenantIsMultiStore } from '../../../lib/tenantNav';
+import './purchase-ui.css';
 
 type Tab = 'suppliers' | 'requests' | 'orders' | 'grn' | 'invoices' | 'returns' | 'history';
 
@@ -17,6 +18,12 @@ const PURCHASING_TABS: Tab[] = ['suppliers', 'requests', 'orders', 'grn', 'invoi
 
 function isPurchasingTab(value: string | null): value is Tab {
   return Boolean(value && (PURCHASING_TABS as string[]).includes(value));
+}
+
+function sameParty(a?: string | null, b?: string | null) {
+  const left = String(a || '').trim().toLowerCase();
+  const right = String(b || '').trim().toLowerCase();
+  return Boolean(left) && left === right;
 }
 
 function asList<T>(data: unknown): T[] {
@@ -200,6 +207,7 @@ type PurchaseReturn = {
   id: string;
   return_number: string;
   debit_note_number?: string;
+  supplier_id?: string | null;
   goods_receipt_id: string;
   status: string;
   reason: string;
@@ -214,6 +222,8 @@ type PurchaseReturn = {
 type PurchaseInvoice = {
   id: string;
   invoice_number: string;
+  supplier_id: string;
+  purchase_order_id?: string | null;
   supplier_invoice_number?: string;
   goods_receipt_id?: string;
   status: string;
@@ -260,7 +270,7 @@ export default function Page() {
   const { storeId } = useStoreContext();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<Tab>('orders');
+  const [tab, setTab] = useState<Tab>('suppliers');
   const [poPrefix, setPoPrefix] = useState('');
   const [poNext, setPoNext] = useState('');
   const [grnPrefix, setGrnPrefix] = useState('');
@@ -339,6 +349,7 @@ export default function Page() {
   }, [hideWarehouseUx, storeId, storeWarehouses, billWarehouseId]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [selected, setSelected] = useState<PurchaseOrder | null>(null);
+  const [receiveOrderId, setReceiveOrderId] = useState('');
   const [receiveDrafts, setReceiveDrafts] = useState<
     Record<
       string,
@@ -780,7 +791,7 @@ export default function Page() {
       await refresh();
       const updated = await api(`/purchasing/orders/${po.id}`);
       setSelected(updated.data);
-      setReceiveDrafts({});
+      focusReceivedOrder(updated.data);
       selectTab('grn');
     } catch (err: any) {
       setError(friendlyPurchaseError(err));
@@ -860,31 +871,7 @@ export default function Page() {
       await refresh();
       const updated = await api(`/purchasing/orders/${po.id}`);
       setSelected(updated.data);
-      const drafts: Record<
-        string,
-        {
-          received: string;
-          accepted: string;
-          rejected: string;
-          reason: string;
-          batch: string;
-          mfg: string;
-          expiry: string;
-        }
-      > = {};
-      for (const i of (updated.data.items || []).filter((x: PoItem) => x.outstanding_qty > 0)) {
-        const out = String(i.outstanding_qty);
-        drafts[i.id] = {
-          received: out,
-          accepted: out,
-          rejected: '0',
-          reason: '',
-          batch: '',
-          mfg: '',
-          expiry: '',
-        };
-      }
-      setReceiveDrafts(drafts);
+      focusReceivedOrder(updated.data);
       selectTab('grn');
     } catch (err: any) {
       setError(friendlyPurchaseError(err));
@@ -1322,11 +1309,81 @@ export default function Page() {
     return (inv.status || 'draft') === piManageFilter;
   });
 
-  const supplierNameOf = (id: string) => suppliers.find((s) => s.id === id)?.name || id.slice(0, 8);
+  const supplierNameOf = (id?: string | null, orderId?: string | null) => {
+    const direct = suppliers.find((s) => sameParty(s.id, id));
+    if (direct?.name) return direct.name;
+    const order = orders.find((o) => sameParty(o.id, orderId));
+    const via = suppliers.find((s) => sameParty(s.id, order?.supplier_id));
+    if (via?.name) return via.name;
+    if (String(id || order?.supplier_id || '').trim()) return 'Unknown supplier';
+    return '—';
+  };
+  const billSupplierName = (inv: {
+    supplier_id?: string | null;
+    purchase_order_id?: string | null;
+    goods_receipt_id?: string | null;
+  }) => {
+    const grn = grns.find((g) => sameParty(g.id, inv.goods_receipt_id));
+    return supplierNameOf(inv.supplier_id, inv.purchase_order_id || grn?.purchase_order_id);
+  };
+  const openBillSummary = (supplierId: string) => {
+    const rows = invoices.filter((inv) => {
+      const owner = String(inv.supplier_id || '').trim()
+        || orders.find((o) => sameParty(o.id, inv.purchase_order_id))?.supplier_id
+        || '';
+      return (
+        sameParty(owner, supplierId) &&
+        (inv.status === 'unpaid' || inv.status === 'partial' || inv.status === 'overdue')
+      );
+    });
+    const due = rows.reduce((sum, inv) => {
+      const balance = Number(inv.balance_due);
+      if (Number.isFinite(balance)) return sum + balance;
+      return sum + Math.max(Number(inv.total_amount || 0) - Number(inv.paid_amount || 0), 0);
+    }, 0);
+    return { count: rows.length, due: Math.round(due * 100) / 100 };
+  };
+  function focusReceivedOrder(po: PurchaseOrder | null) {
+    if (po && (po.status === 'sent' || po.status === 'partially_received')) {
+      setReceiveOrderId(po.id);
+      const drafts: Record<
+        string,
+        {
+          received: string;
+          accepted: string;
+          rejected: string;
+          reason: string;
+          batch: string;
+          mfg: string;
+          expiry: string;
+        }
+      > = {};
+      for (const i of (po.items || []).filter((x) => x.outstanding_qty > 0)) {
+        const out = String(i.outstanding_qty);
+        drafts[i.id] = {
+          received: out,
+          accepted: out,
+          rejected: '0',
+          reason: '',
+          batch: '',
+          mfg: '',
+          expiry: '',
+        };
+      }
+      setReceiveDrafts(drafts);
+      return;
+    }
+    setReceiveOrderId('');
+    setReceiveDrafts({});
+  }
   const poNumberOf = (id: string) => orders.find((o) => o.id === id)?.po_number || id.slice(0, 8);
   const productNameOf = (id: string) => products.find((p) => p.id === id)?.name || id.slice(0, 8);
   const receivableOrders = orders.filter(
     (o) => o.status === 'sent' || o.status === 'partially_received',
+  );
+  const receivePo = receivableOrders.find((o) => o.id === receiveOrderId) || null;
+  const openBills = invoices.filter((inv) =>
+    inv.status === 'unpaid' || inv.status === 'partial' || inv.status === 'overdue',
   );
   const purchaseHistory = useMemo(() => {
     const stamp = (iso?: string | null) => (iso ? String(iso) : '');
@@ -1349,19 +1406,18 @@ export default function Page() {
         at: stamp(g.created_at),
         kind: 'Received',
         ref: g.grn_number,
-        party: supplierNameOf(g.supplier_id),
+        party: supplierNameOf(g.supplier_id, g.purchase_order_id),
         status: g.status,
         amount: String((g.items || []).reduce((s, i) => s + Number(i.accepted_qty || 0), 0)),
       });
     }
     for (const inv of invoices) {
-      const g = grns.find((x) => x.id === inv.goods_receipt_id);
       rows.push({
         key: `inv-${inv.id}`,
         at: stamp(inv.created_at || inv.invoice_date),
         kind: 'Bill',
         ref: inv.invoice_number,
-        party: g ? supplierNameOf(g.supplier_id) : inv.supplier_invoice_number || '—',
+        party: billSupplierName(inv),
         status: inv.status,
         amount: String(inv.total_amount ?? ''),
       });
@@ -1373,7 +1429,7 @@ export default function Page() {
         at: stamp(ret.created_at),
         kind: 'Return',
         ref: ret.return_number,
-        party: g ? supplierNameOf(g.supplier_id) : '—',
+        party: supplierNameOf(ret.supplier_id || g?.supplier_id, g?.purchase_order_id),
         status: ret.status,
         amount: String(ret.total_amount ?? ''),
       });
@@ -1391,12 +1447,20 @@ export default function Page() {
   });
 
   return (
-    <div className="purch-desk">
+    <div className="purch-desk purchase-ui-page">
       <div className="cat-head">
         <div>
           <h1>Purchasing</h1>
-          <p className="muted" style={{ margin: '6px 0 0' }}>
-            Supplier → Purchase Order → Receive Goods → Supplier Bill → Payment → Balance
+          <p className="purchase-ui-path">
+            <span>1 Suppliers</span>
+            <span>2 Orders</span>
+            <span>3 Receive goods</span>
+            <span>4 Supplier bills</span>
+            <span>5 Returns</span>
+          </p>
+          <p className="purchase-ui-links">
+            <a href="/credit?kind=payable">Supplier balances</a>
+            <a href="/credit?kind=payable&panel=pay">Record a supplier payment</a>
           </p>
         </div>
       </div>
@@ -1407,11 +1471,11 @@ export default function Page() {
         {(
           [
             ['suppliers', 'Suppliers'],
-            ['requests', 'Requests'],
             ['orders', 'Orders'],
             ['grn', 'Receive Goods'],
             ['invoices', 'Supplier Bills'],
             ['returns', 'Returns'],
+            ['requests', 'Requests'],
             ['history', 'History'],
           ] as const
         ).map(([id, label]) => (
@@ -1431,6 +1495,13 @@ export default function Page() {
 
       {tab === 'requests' && (
         <>
+          <div className="purchase-ui-actions">
+            <button type="button" className="btn-primary" onClick={() => setPrCreateOpen(true)} aria-label="Create purchase request">
+              Create purchase request
+            </button>
+          </div>
+          <details className="purchase-ui-settings">
+            <summary>Approval settings</summary>
           <div className="erp-split">
           <div className="card">
             <h3>PR approval matrix</h3>
@@ -1496,11 +1567,8 @@ export default function Page() {
               </button>
             </div>
           </div>
-          <div>
-            <button type="button" className="btn-primary" onClick={() => setPrCreateOpen(true)} aria-label="Create purchase request">
-              Create purchase request
-            </button>
           </div>
+          </details>
           {prCreateOpen ? (
           <FormModal
             title="Create purchase request"
@@ -1582,7 +1650,6 @@ export default function Page() {
             </div>
           </FormModal>
           ) : null}
-          </div>
           <div className="card">
             <label className="field">
               <span>Reject reason</span>
@@ -1715,8 +1782,8 @@ export default function Page() {
                 <tr>
                   <td colSpan={7} className="muted">
                     {requests.length === 0
-                      ? 'No purchase requests yet'
-                      : 'No purchase requests for this filter'}
+                      ? 'Create a purchase request when you need approval before an order.'
+                      : 'No purchase requests for this filter, so choose All statuses to see them.'}
                   </td>
                 </tr>
               )}
@@ -1742,6 +1809,7 @@ export default function Page() {
               {supplierDrawer ? 'Cancel' : 'Add supplier'}
             </button>
           </div>
+          <p className="purchase-ui-lead">Add a supplier, then use Orders to buy from that supplier.</p>
           <div className="cat-toolbar">
             <input
               className="sales-search"
@@ -1773,13 +1841,8 @@ export default function Page() {
             <div className="cat-empty">
               <p>
                 {suppliers.length === 0
-                  ? 'No suppliers yet.'
-                  : 'No suppliers match this search or status filter.'}
-              </p>
-              <p className="muted">
-                {suppliers.length === 0
-                  ? 'Add a supplier to start purchase orders, receipts, and supplier bills.'
-                  : 'Try another search or choose All statuses.'}
+                  ? 'Add a supplier to start a purchase order.'
+                  : 'Choose All statuses or clear the search to see suppliers.'}
               </p>
             </div>
           ) : (
@@ -1790,22 +1853,31 @@ export default function Page() {
                     <th>Name</th>
                     <th>Code</th>
                     <th>Status</th>
+                    <th>Open bills</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredSuppliers.map((s) => (
+                  {filteredSuppliers.map((s) => {
+                    const owed = openBillSummary(s.id);
+                    return (
                     <tr key={s.id}>
                       <td data-label="Name"><strong>{s.name}</strong></td>
                       <td data-label="Code">{s.code || '—'}</td>
                       <td data-label="Status">{s.status === 'inactive' ? 'Inactive' : 'Active'}</td>
+                      <td data-label="Open bills">
+                        {owed.count === 0 ? 'No open bills' : `${owed.count} open · ${owed.due.toFixed(2)}`}
+                      </td>
                       <td className="cat-actions">
                         <button type="button" onClick={() => setSupplierId(s.id)} aria-label={`Manage ${s.name}`}>
                           Manage
                         </button>
+                        <a href={`/credit?kind=payable&supplier=${s.id}`}>Balance for {s.name}</a>
+                        <a href={`/credit?kind=payable&panel=pay&supplier=${s.id}`}>Record payment for {s.name}</a>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -2007,13 +2079,17 @@ export default function Page() {
       )}
       {tab === 'orders' && (
       <>
-      <div style={{ marginBottom: 12 }}>
+      <div className="purchase-ui-actions">
         <button type="button" className="btn-primary" onClick={() => setPoCreateOpen(true)} aria-label="Add purchase order">
           Add purchase order
         </button>
-        <button type="button" onClick={() => setTab('suppliers')} aria-label="Quick add supplier">
+        <button type="button" onClick={() => selectTab('suppliers')} aria-label="Quick add supplier">
           Quick add supplier
         </button>
+      </div>
+      <details className="purchase-ui-settings">
+        <summary>Numbering</summary>
+        <div className="purchase-ui-actions">
         <input value={poPrefix} onChange={(e) => setPoPrefix(e.target.value)} aria-label="Purchase order number prefix" placeholder="PO prefix" />
         <input value={poNext} onChange={(e) => setPoNext(e.target.value)} aria-label="Purchase order next number" placeholder="Next #" />
         <input value={grnPrefix} onChange={(e) => setGrnPrefix(e.target.value)} aria-label="GRN number prefix" placeholder="GRN prefix" />
@@ -2057,7 +2133,8 @@ export default function Page() {
         >
           Save numbering
         </button>
-      </div>
+        </div>
+      </details>
       {poCreateOpen ? (
       <FormModal
         title="Add purchase order"
@@ -2294,8 +2371,8 @@ export default function Page() {
                 <tr>
                   <td colSpan={7} className="muted">
                     {orders.length === 0
-                      ? 'No purchase orders yet'
-                      : 'No purchase orders for this filter'}
+                      ? 'Add a purchase order for a supplier.'
+                      : 'No purchase orders for this filter, so choose All statuses to see them.'}
                   </td>
                 </tr>
               )}
@@ -2676,14 +2753,22 @@ export default function Page() {
           <h2 style={{ margin: 0 }}>Receive goods</h2>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          Pick a sent order, then receive. Stock posts once — a fully received order cannot be received again.
+          Choose the order to receive. Stock posts for that order only.
         </p>
         <div className="erp-form-grid" style={{ marginTop: 12 }}>
           <select
-            value={selected && receivableOrders.some((o) => o.id === selected.id) ? selected.id : ''}
+            value={receivableOrders.some((o) => o.id === receiveOrderId) ? receiveOrderId : ''}
             onChange={(e) => {
-              const po = orders.find((o) => o.id === e.target.value);
-              if (po) openAmend(po);
+              const id = e.target.value;
+              if (!id) {
+                setReceiveOrderId('');
+                return;
+              }
+              const po = orders.find((o) => o.id === id);
+              if (!po) return;
+              setReceiveOrderId(po.id);
+              const already = po.items.some((i) => receiveDrafts[i.id]);
+              if (!already) focusReceivedOrder(po);
             }}
             aria-label="Order to receive"
           >
@@ -2697,11 +2782,10 @@ export default function Page() {
         </div>
         {receivableOrders.length === 0 ? (
           <div className="cat-empty">
-            <p>No sent orders waiting to receive.</p>
-            <p className="muted">Send an order first, then receive it here.</p>
+            <p>Send a purchase order, then choose it here to receive the goods.</p>
           </div>
         ) : null}
-        {selected && (selected.status === 'sent' || selected.status === 'partially_received') && (
+        {receivePo && (
           <div className="cat-table-wrap" style={{ marginTop: 12 }}>
             <table className="table compact">
               <thead>
@@ -2716,7 +2800,7 @@ export default function Page() {
                 </tr>
               </thead>
               <tbody>
-                {selected.items
+                {receivePo.items
                   .filter((i) => i.outstanding_qty > 0)
                   .map((i) => {
                     const draft = receiveDrafts[i.id] || {
@@ -2802,10 +2886,34 @@ export default function Page() {
                 placeholder="Notes (optional)"
                 aria-label="GRN notes"
               />
-              <button type="button" className="btn-ok" onClick={() => postPartialReceive(selected)} aria-label="Post GRN">
+              <button
+                type="button"
+                className="btn-ok"
+                onClick={() => {
+                  const po = orders.find((o) => o.id === receiveOrderId);
+                  if (!po || (po.status !== 'sent' && po.status !== 'partially_received')) {
+                    setError('Choose the order to receive.');
+                    return;
+                  }
+                  void postPartialReceive(po);
+                }}
+                aria-label="Post GRN"
+              >
                 Receive lines
               </button>
-              <button type="button" className="btn-ok" onClick={() => receiveAll(selected)} aria-label="Receive all accepted">
+              <button
+                type="button"
+                className="btn-ok"
+                onClick={() => {
+                  const po = orders.find((o) => o.id === receiveOrderId);
+                  if (!po || (po.status !== 'sent' && po.status !== 'partially_received')) {
+                    setError('Choose the order to receive.');
+                    return;
+                  }
+                  void receiveAll(po);
+                }}
+                aria-label="Receive all accepted"
+              >
                 Receive all
               </button>
             </div>
@@ -2814,8 +2922,7 @@ export default function Page() {
         <h3 style={{ marginTop: 24 }}>Received</h3>
         {grns.length === 0 ? (
           <div className="cat-empty">
-            <p>Nothing received yet.</p>
-            <p className="muted">Posted receipts will show here with quantities accepted and rejected.</p>
+            <p>Receive a sent order to list the goods receipt here.</p>
           </div>
         ) : (
         <div className="cat-table-wrap">
@@ -2839,7 +2946,7 @@ export default function Page() {
                 <tr key={g.id}>
                   <td data-label="GRN">{g.grn_number}</td>
                   <td data-label="PO">{poNumberOf(g.purchase_order_id)}</td>
-                  <td>{supplierNameOf(g.supplier_id)}</td>
+                  <td>{supplierNameOf(g.supplier_id, g.purchase_order_id)}</td>
                   <td>{g.created_at ? String(g.created_at).slice(0, 10) : '—'}</td>
                   <td>{g.status}</td>
                   <td>{accepted}</td>
@@ -2869,7 +2976,7 @@ export default function Page() {
                 <th>Date</th>
                 <th>Type</th>
                 <th>Number</th>
-                <th>Supplier / ref</th>
+                <th>Supplier</th>
                 <th>Status</th>
                 <th>Amount / qty</th>
               </tr>
@@ -2888,7 +2995,7 @@ export default function Page() {
               {purchaseHistory.length === 0 && (
                 <tr>
                   <td colSpan={6} className="muted">
-                    No purchase documents yet.
+                    Add a supplier, then create an order, to see history for that supplier.
                   </td>
                 </tr>
               )}
@@ -2900,13 +3007,29 @@ export default function Page() {
 
       {tab === 'invoices' && (
         <>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+          <div className="purchase-ui-actions">
             <button type="button" className="btn-primary" onClick={() => setBillCreateOpen(true)} aria-label="Create supplier bill from received goods">
               Bill from GRN
             </button>
             <button type="button" onClick={() => setBillManualOpen(true)} aria-label="Create supplier bill">
               Create supplier bill
             </button>
+          </div>
+          <div className="purchase-ui-bills">
+            {openBills.length > 0
+              ? openBills.map((inv) => (
+                <p key={inv.id} className="purchase-ui-bill">
+                  <span>{billSupplierName(inv)} · {inv.invoice_number} · {inv.status} · due {inv.balance_due}</span>
+                  {inv.supplier_id ? (
+                    <a href={`/credit?kind=payable&panel=pay&supplier=${inv.supplier_id}&bill=${inv.id}`}>
+                      Pay {inv.invoice_number}
+                    </a>
+                  ) : null}
+                </p>
+              ))
+              : invoices.length > 0
+                ? <p className="muted">Approve a supplier bill to see what you owe that supplier.</p>
+                : null}
           </div>
           <div className="erp-split">
       {billCreateOpen ? (
@@ -2925,7 +3048,7 @@ export default function Page() {
             <option value="">Select GRN</option>
             {grns.map((g) => (
               <option key={g.id} value={g.id}>
-                {g.grn_number}
+                {g.grn_number} · {supplierNameOf(g.supplier_id, g.purchase_order_id)}
               </option>
             ))}
           </select>
@@ -3259,6 +3382,7 @@ export default function Page() {
             <div className="card" style={{ marginBottom: 16 }}>
               <h3>Supplier invoice OCR</h3>
               <p className="muted">
+                Apply only to {invoices.find((row) => row.id === ocrFor)?.invoice_number || 'this bill'}.
                 Engine: {ocrMeta?.engine || '—'} · Confidence: {ocrMeta?.confidence ?? '—'}
                 {ocrMeta?.suggestions?.ocr_amount != null
                   ? ` · OCR amount ${ocrMeta.suggestions.ocr_amount}`
@@ -3355,6 +3479,7 @@ export default function Page() {
           <thead>
             <tr>
               <th>Invoice</th>
+              <th>Supplier</th>
               <th>Supplier #</th>
               <th>Status</th>
               <th>Currency</th>
@@ -3377,6 +3502,11 @@ export default function Page() {
                       try {
                         const r = await api(`/purchasing/invoices/${inv.id}`);
                         setSelectedInvoice(r.data);
+                        if (ocrFor && ocrFor !== inv.id) {
+                          setOcrFor(null);
+                          setOcrDraft(null);
+                          setOcrMeta(null);
+                        }
                       } catch (err: any) {
                         setError(friendlyPurchaseError(err));
                       }
@@ -3387,6 +3517,7 @@ export default function Page() {
                     {inv.invoice_number}
                   </button>
                 </td>
+                <td>{billSupplierName(inv)}</td>
                 <td>{inv.supplier_invoice_number || '—'}</td>
                 <td>{inv.status}</td>
                 <td>
@@ -3420,6 +3551,11 @@ export default function Page() {
                       Cancel
                     </button>
                   )}
+                  {(inv.status === 'unpaid' || inv.status === 'partial' || inv.status === 'overdue') && inv.supplier_id ? (
+                    <a href={`/credit?kind=payable&panel=pay&supplier=${inv.supplier_id}&bill=${inv.id}`} aria-label={`Record payment for supplier bill ${inv.id}`}>
+                      Record payment
+                    </a>
+                  ) : null}
                   <label style={{ cursor: 'pointer' }}>
                     <span className="muted" style={{ textDecoration: 'underline' }}>
                       Upload
@@ -3466,10 +3602,10 @@ export default function Page() {
             ))}
             {managedInvoices.length === 0 && (
               <tr>
-                <td colSpan={11} className="muted">
+                <td colSpan={12} className="muted">
                   {invoices.length === 0
-                    ? 'No purchase invoices yet'
-                    : 'No purchase invoices for this filter'}
+                    ? 'Receive goods, then create a supplier bill for that supplier.'
+                    : 'No purchase invoices for this filter, so choose All statuses to see them.'}
                 </td>
               </tr>
             )}
@@ -3480,7 +3616,11 @@ export default function Page() {
         {selectedInvoice && (
           <div className="card" style={{ marginTop: 16 }}>
             <h3>
-              {selectedInvoice.invoice_number} — {selectedInvoice.status}
+              {selectedInvoice.invoice_number}
+              {' — '}
+              {billSupplierName(selectedInvoice)}
+              {' — '}
+              {selectedInvoice.status}
               {selectedInvoice.currency
                 ? ` · ${selectedInvoice.currency} @ ${selectedInvoice.exchange_rate ?? 1}`
                 : ''}
@@ -3488,6 +3628,17 @@ export default function Page() {
                 ? ` · ${warehouses.find((w: any) => w.id === selectedInvoice.warehouse_id)?.code || selectedInvoice.warehouse_id}`
                 : ''}
             </h3>
+            {(selectedInvoice.status === 'unpaid' || selectedInvoice.status === 'partial' || selectedInvoice.status === 'overdue') && selectedInvoice.supplier_id ? (
+              <p style={{ marginTop: 0 }}>
+                <a
+                  className="btn-primary"
+                  href={`/credit?kind=payable&panel=pay&supplier=${selectedInvoice.supplier_id}&bill=${selectedInvoice.id}`}
+                  aria-label={`Record payment for supplier bill ${selectedInvoice.id}`}
+                >
+                  Pay this bill
+                </a>
+              </p>
+            ) : null}
             {selectedInvoice.can_cancel && (
               <p style={{ marginTop: 0 }}>
                 <button
@@ -3620,7 +3771,7 @@ export default function Page() {
             <option value="">Select GRN</option>
             {grns.map((g) => (
               <option key={g.id} value={g.id}>
-                {g.grn_number}
+                {g.grn_number} · {supplierNameOf(g.supplier_id, g.purchase_order_id)}
               </option>
             ))}
           </select>
@@ -3712,6 +3863,7 @@ export default function Page() {
           <thead>
             <tr>
               <th>Return</th>
+              <th>Supplier</th>
               <th>Debit note</th>
               <th>Reason</th>
               <th>Status</th>
@@ -3725,6 +3877,7 @@ export default function Page() {
             {managedReturns.map((r) => (
               <tr key={r.id}>
                 <td>{r.return_number}</td>
+                <td>{supplierNameOf(r.supplier_id || grns.find((g) => g.id === r.goods_receipt_id)?.supplier_id, grns.find((g) => g.id === r.goods_receipt_id)?.purchase_order_id)}</td>
                 <td>{r.debit_note_number || '—'}</td>
                 <td>{r.reason}</td>
                 <td>{r.status}</td>
@@ -3779,10 +3932,10 @@ export default function Page() {
             ))}
             {managedReturns.length === 0 && (
               <tr>
-                <td colSpan={8} className="muted">
+                <td colSpan={9} className="muted">
                   {returns.length === 0
-                    ? 'No returns yet'
-                    : 'No purchase returns for this filter'}
+                    ? 'Receive goods first, then create a purchase return for that supplier.'
+                    : 'No purchase returns for this filter, so choose All statuses to see them.'}
                 </td>
               </tr>
             )}

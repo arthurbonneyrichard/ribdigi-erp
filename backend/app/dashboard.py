@@ -33,6 +33,11 @@ def _add_months(year: int, month: int, delta: int) -> tuple[int, int]:
     return idx // 12, idx % 12 + 1
 
 
+# Supplier bills that have left draft. The headline is to-date recorded purchases,
+# not this month and not open purchase orders. Paid stays in the total.
+RECORDED_PURCHASE_INVOICE_STATUSES = ("unpaid", "partial", "paid", "overdue")
+
+
 def _tx_store_scope(stmt, store_id: str | None, store_ids: list[str] | None):
     """Limit sale rows to one store or the caller's assigned stores."""
     if not store_id and store_ids is None:
@@ -134,12 +139,14 @@ async def build_dashboard(
         db, tenant_id, start=prev_month, end=this_month, store_id=store_id, store_ids=store_ids
     )
 
+    # Legacy POST /purchases rows. The purchasing screens write purchase invoices
+    # instead, so those bills are added below and are not in this sum.
     purchases_stmt = select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
         m.Transaction.tenant_id == tenant_id,
         m.Transaction.tx_type == "purchase",
     )
     purchases_stmt = _tx_store_scope(purchases_stmt, store_id, store_ids)
-    purchases = money_json(await scalar(purchases_stmt))
+    legacy_purchases = money_json(await scalar(purchases_stmt))
     expenses_stmt = select(func.coalesce(func.sum(m.Expense.amount), 0)).where(
         m.Expense.tenant_id == tenant_id,
         m.Expense.status == "approved",
@@ -152,6 +159,19 @@ async def build_dashboard(
     # columns while still having extra company_id.
     from app import schema_compat
     from app.catalog_meta import qty_is_low_stock, qty_is_out_of_stock
+
+    invoice_purchases = 0.0
+    if await schema_compat.table_column_names(db, "purchase_invoices"):
+        invoice_stmt = select(func.coalesce(func.sum(m.PurchaseInvoice.total_amount), 0)).where(
+            m.PurchaseInvoice.tenant_id == tenant_id,
+            m.PurchaseInvoice.status.in_(RECORDED_PURCHASE_INVOICE_STATUSES),
+        )
+        invoice_stmt = apply_store_scope(
+            invoice_stmt, m.PurchaseInvoice.store_id, store_id, store_ids
+        )
+        invoice_purchases = money_json(await scalar(invoice_stmt))
+    # Purchase orders are not added: a billed order is already on its invoice.
+    purchases = money_json(round(legacy_purchases + invoice_purchases, 2))
 
     live_product_cols = await schema_compat.table_column_names(db, "products")
     stock_col_names = (

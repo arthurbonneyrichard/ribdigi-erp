@@ -250,6 +250,10 @@ def resolve_sale_payments(
             amount = money_json(round(money_json(raw.get("amount") or 0), 2))
             if amount <= 0:
                 raise HTTPException(status_code=400, detail="Each payment amount must be > 0")
+            # A cash or bank account must not ride along on stored-value redemption.
+            liquid_id = raw.get("liquid_account_id") or None
+            if method in {"gift_card", "loyalty"}:
+                liquid_id = None
             normalized.append(
                 {
                     "payment_method": method,
@@ -257,7 +261,7 @@ def resolve_sale_payments(
                     "reference": optional_honest_narrative(
                         raw.get("reference"), label="payment reference", max_length=100
                     ),
-                    "liquid_account_id": raw.get("liquid_account_id") or None,
+                    "liquid_account_id": liquid_id,
                 }
             )
         paid = money_json(round(sum(p["amount"] for p in normalized), 2))

@@ -969,18 +969,35 @@ async def post_sales_return_refund_journal(
     payment_method: str = "cash",
     liquid_account_id: str | None = None,
 ) -> m.JournalEntry:
-    """Pay out customer credit from a return: Dr AR, Cr cash/bank."""
+    """Pay out customer credit from a return: Dr AR, Cr the tender's own account.
+
+    Gift cards and loyalty credit 2150 / 2160. A client account id cannot move
+    those credits onto till cash or any other account. Any other non-cash tender
+    that resolves to till cash 1000 is rejected.
+    """
     await ensure_default_accounts(db, tenant_id)
     amount = money_json(round(money_json(amount), 2))
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Refund amount must be positive")
-    liquid_code, liquid_label = await resolve_settlement_gl(
-        db,
-        tenant_id,
-        payment_method,
-        liquid_account_id=liquid_account_id,
-        outflow=True,
-    )
+    method = (payment_method or "cash").strip().lower().replace("-", "_").replace(" ", "_")
+    stored_value = method in {"gift_card", "giftcard", "loyalty"}
+    if stored_value:
+        # Same rule as a sale: the liability account is fixed. Ignore a supplied
+        # cash, bank, or other account id instead of posting it.
+        liquid_code, liquid_label = pos_debit_account_for_payment_method(method)
+    else:
+        liquid_code, liquid_label = await resolve_settlement_gl(
+            db,
+            tenant_id,
+            payment_method,
+            liquid_account_id=liquid_account_id,
+            outflow=True,
+        )
+        if liquid_code == "1000" and method != "cash":
+            raise HTTPException(
+                status_code=400,
+                detail="This tender cannot credit till cash",
+            )
     cn = getattr(sales_return, "credit_note_number", None) or sales_return.return_number
     lines = [
         {"account_code": "1100", "debit": amount, "credit": 0, "description": "Clear AR credit for refund"},
@@ -1444,15 +1461,22 @@ async def post_pos_sale_journal(
     lines: list[dict] = []
     debit_sum = 0.0
     for tender in tenders:
-        method = (tender.get("payment_method") or "cash").strip().lower()
+        method = (tender.get("payment_method") or "cash").strip().lower().replace("-", "_").replace(" ", "_")
         part = money_json(round(money_json(tender.get("amount") or 0), 2))
         if part <= 0:
             continue
-        liquid_id = tender.get("liquid_account_id")
+        # Gift cards and loyalty are liability, even if a cash account id is sent.
+        stored_value = method in {"gift_card", "giftcard", "loyalty"}
+        liquid_id = None if stored_value else tender.get("liquid_account_id")
         if liquid_id and method != "credit":
             code, label = await resolve_settlement_gl(
                 db, tenant_id, method, liquid_account_id=liquid_id, outflow=False
             )
+            if code == "1000" and method != "cash":
+                raise HTTPException(
+                    status_code=400,
+                    detail="This tender cannot debit till cash",
+                )
         else:
             code, label = pos_debit_account_for_payment_method(method)
         lines.append(

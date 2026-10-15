@@ -249,7 +249,7 @@ async def tenant_billing_for_owner(
     await billing_svc.ensure_default_plans(db)
     account = await billing_svc.get_account(db, tenant.id)
     plan = await billing_svc._load_plan(db, account.plan_id) if account else None
-    invoices = await billing_svc.list_invoices(db, tenant.id)
+    invoices = await billing_svc.serialize_tenant_invoices(db, tenant.id)
     return env(
         {
             "tenant_id": tenant.id,
@@ -258,7 +258,7 @@ async def tenant_billing_for_owner(
             "tenant_status": tenant.status,
             "trial_ends_at": tenant.trial_ends_at,
             "account": billing_svc.serialize_account(account, plan) if account else None,
-            "invoices": [billing_svc.serialize_invoice(row) for row in invoices],
+            "invoices": invoices,
         }
     )
 
@@ -350,19 +350,15 @@ async def my_billing_account(
     account = await billing_svc.get_account(db, tenant.id)
     plan = await billing_svc._load_plan(db, account.plan_id) if account else None
     await db.commit()
-    body = _tenant_account_body(account, plan) if account else {
-        "tenant_id": tenant.id,
-        "billing_status": "trialing" if tenant.status == "trial" else "payment_required",
-        "access_note": billing_svc.ACCESS_NOTES["trialing"],
-        "checkout_path": billing_svc.checkout_path(),
-        "plan": None,
-        "authorization_present": False,
-        "auto_renew": False,
-    }
+    body = _tenant_account_body(account, plan) if account else billing_svc.account_view_without_profile(tenant)
     body["trial_ends_at"] = tenant.trial_ends_at
     body["tenant_status"] = tenant.status
     body["provider"] = await _visible_provider(db)
     body = billing_svc.apply_assigned_amount_to_account_body(body, account, tenant)
+    if not isinstance(body.get("plan"), dict):
+        body["plan"] = billing_svc.company_package_plan(tenant)
+    if not body.get("next_renewal_at") and getattr(tenant, "subscription_ends_at", None):
+        body["next_renewal_at"] = tenant.subscription_ends_at
     return env(body)
 
 
@@ -482,8 +478,8 @@ async def my_billing_invoices(
     from app.api import env
 
     tenant = await _tenant_admin(claims, db)
-    rows = await billing_svc.list_invoices(db, tenant.id)
-    return env([billing_svc.serialize_invoice(row) for row in rows])
+    rows = await billing_svc.serialize_tenant_invoices(db, tenant.id)
+    return env(rows)
 
 
 @router.post("/billing/webhooks/{provider}")

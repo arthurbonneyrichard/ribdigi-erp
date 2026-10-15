@@ -137,7 +137,13 @@ def serialize_assigned_plan(account, plan: m.PlatformBillingPlan) -> dict:
     return body
 
 
-def serialize_invoice(row: m.TenantBillingInvoice) -> dict:
+def invoice_description(plan_name: str | None) -> str:
+    """What this company is being billed for. Status stays on its own field."""
+    name = (plan_name or "").strip() or "Subscription"
+    return f"{name} subscription"
+
+
+def serialize_invoice(row: m.TenantBillingInvoice, plan_name: str | None = None) -> dict:
     return {
         "id": row.id,
         "tenant_id": row.tenant_id,
@@ -146,11 +152,63 @@ def serialize_invoice(row: m.TenantBillingInvoice) -> dict:
         "amount": money_json(row.amount),
         "currency": row.currency,
         "status": row.status,
+        "description": invoice_description(plan_name),
         "period_start": row.period_start,
         "period_end": row.period_end,
         "gateway_reference": row.gateway_reference,
         "created_at": row.created_at,
         "paid_at": row.paid_at,
+    }
+
+
+def account_view_without_profile(tenant: m.Tenant) -> dict:
+    """Company has no billing profile yet. Do not describe an active company as a trial."""
+    status = {
+        "trial": "trialing",
+        "active": "active",
+        "grace": "grace_period",
+        "suspended": "suspended",
+    }.get((tenant.status or "").strip().lower(), "payment_required")
+    if status == "active":
+        note = "Full access. No subscription charge is scheduled until a plan amount is confirmed."
+    else:
+        note = ACCESS_NOTES.get(status, ACCESS_NOTES["trialing"])
+    return {
+        "tenant_id": tenant.id,
+        "billing_status": status,
+        "access_note": note,
+        "checkout_path": checkout_path(),
+        "plan": None,
+        "authorization_present": False,
+        "auto_renew": False,
+    }
+
+
+def company_package_plan(tenant: m.Tenant) -> dict:
+    """This company's package name only. Amount stays blank until a price is assigned."""
+    usage = packages_svc.usage_snapshot(tenant)
+    code = (usage.get("package_code") or "trial").strip().lower()
+    term_unit = usage.get("term_unit")
+    if term_unit == "years":
+        interval = "year"
+    elif term_unit == "months":
+        interval = "month"
+    else:
+        interval = ""
+    currency = (getattr(tenant, "currency", None) or "GHS").strip().upper()
+    if len(currency) != 3 or not currency.isalpha():
+        currency = "GHS"
+    return {
+        "id": None,
+        "code": "",
+        "package_code": code,
+        "name": usage.get("package_name") or "Trial",
+        "interval": interval,
+        "amount": None,
+        "currency": currency,
+        "trial_days": 0,
+        "grace_days": 0,
+        "is_active": True,
     }
 
 
@@ -611,6 +669,19 @@ async def list_invoices(db: AsyncSession, tenant_id: str) -> list[m.TenantBillin
             )
         ).scalars().all()
     )
+
+
+async def serialize_tenant_invoices(db: AsyncSession, tenant_id: str) -> list[dict]:
+    """This tenant's invoices only, with the plan name that was billed."""
+    rows = await list_invoices(db, tenant_id)
+    plan_ids = [row.plan_id for row in rows if row.plan_id]
+    names: dict[str, str] = {}
+    if plan_ids:
+        found = (
+            await db.execute(select(m.PlatformBillingPlan).where(m.PlatformBillingPlan.id.in_(plan_ids)))
+        ).scalars().all()
+        names = {plan.id: plan.name for plan in found}
+    return [serialize_invoice(row, names.get(row.plan_id or "")) for row in rows]
 
 
 async def _audit(db, *, tenant_id: str, user_id: str | None, action: str, entity_id: str, details: dict):

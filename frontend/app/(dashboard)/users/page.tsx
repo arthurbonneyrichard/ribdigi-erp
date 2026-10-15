@@ -1,13 +1,12 @@
 'use client';
 
 import { useEffect, useState, type FormEvent } from 'react';
+import CashierPresencePanel from '../../../components/CashierPresencePanel';
 import FormModal from '../../../components/FormModal';
-import { api, getAccessToken } from '../../../lib/api';
-import { formatElapsed, formatWhen } from '../../../lib/format';
+import { api, apiFetch } from '../../../lib/api';
 import { industryAllowsModule } from '../../../lib/industryModules';
 import { getMe } from '../../../lib/meCache';
 import { hideStoreUx as shouldHideStoreUx, isHotelIndustry } from '../../../lib/tenantNav';
-import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 
 type RoleRow = {
   role: string;
@@ -46,16 +45,6 @@ type UserRow = {
   store_ids?: string[];
   record_scope?: string | null;
 };
-type CashierPresenceRow = {
-  user_id: string;
-  full_name: string;
-  role: string;
-  status: 'online' | 'offline' | 'no_signal';
-  offline_since?: string | null;
-  offline_duration_seconds?: number | null;
-  last_seen_at?: string | null;
-};
-
 const emptyForm = {
   email: '',
   full_name: '',
@@ -76,7 +65,8 @@ const RECORD_SCOPES = [
   { value: 'all', label: 'All records' },
 ];
 
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const ROLE_KEY_RE = /^[a-z][a-z0-9_]{1,48}$/;
+const E164_RE = /^\+[0-9]{8,15}$/;
 
 const PLATFORM_USER_ROLES = new Set([
   'super_admin',
@@ -183,6 +173,11 @@ const ACTION_LABELS: Record<string, string> = {
   approve: 'Approve',
 };
 
+function moduleGrants(acts: string[] | undefined, action: string): boolean {
+  if (!acts?.length) return false;
+  return acts.includes('*') || acts.includes(action);
+}
+
 function pickAssignablePerms(
   perms?: Record<string, string[]> | null,
   industry?: string | null,
@@ -191,7 +186,12 @@ function pickAssignablePerms(
   if (!perms || perms['*']?.includes('*')) return out;
   for (const mod of TENANT_RBAC_MODULES) {
     if (!industryAllowsModule(industry, mod)) continue;
-    const acts = (perms[mod] || []).filter((a) =>
+    const raw = (perms[mod] || []).map((a) => String(a || '').trim()).filter(Boolean);
+    if (raw.includes('*')) {
+      out[mod] = ['*'];
+      continue;
+    }
+    const acts = raw.filter((a) =>
       (TENANT_RBAC_ACTIONS as readonly string[]).includes(a),
     );
     if (acts.length) out[mod] = acts;
@@ -205,9 +205,10 @@ function togglePermAction(
   action: string,
 ): Record<string, string[]> {
   const current = map[module] || [];
-  const next = current.includes(action)
-    ? current.filter((a) => a !== action)
-    : [...current, action];
+  const granted = current.includes('*') ? [...TENANT_RBAC_ACTIONS] : current.filter((a) => a !== '*');
+  const next = granted.includes(action)
+    ? granted.filter((a) => a !== action)
+    : [...granted, action];
   const copy = { ...map };
   if (next.length) copy[module] = next;
   else delete copy[module];
@@ -235,7 +236,7 @@ function PermissionGrid({
             <label key={act} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
               <input
                 type="checkbox"
-                checked={(value[mod] || []).includes(act)}
+                checked={moduleGrants(value[mod], act)}
                 disabled={disabled}
                 onChange={() => onChange(togglePermAction(value, mod, act))}
                 aria-label={`${mod} ${act}`}
@@ -267,16 +268,8 @@ type ImportReport = {
   rows: ImportReportRow[];
 };
 
-function cashierSellingLabel(status: CashierPresenceRow['status']): string {
-  if (status === 'online') return 'Online';
-  if (status === 'offline') return 'Offline';
-  return 'No POS signal';
-}
-
 export default function Page() {
-  const formatPrefs = useCompanyFormat();
   const [rows, setRows] = useState<UserRow[]>([]);
-  const [cashierPresence, setCashierPresence] = useState<CashierPresenceRow[] | null>(null);
   const [userManageFilter, setUserManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [roleManageFilter, setRoleManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [roles, setRoles] = useState<RoleRow[]>([]);
@@ -297,7 +290,6 @@ export default function Page() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
-  const [userAddOpen, setUserAddOpen] = useState(false);
   const [editUser, setEditUser] = useState<UserRow | null>(null);
   const [editForm, setEditForm] = useState({ full_name: '', phone: '', role: '', password: '' });
   const [storeAddOpen, setStoreAddOpen] = useState(false);
@@ -361,6 +353,8 @@ export default function Page() {
   }
 
   const isCustomRole = (r: RoleRow) => r.system === false;
+  const roleChoiceText = (role: RoleRow) =>
+    `${role.role}${isCustomRole(role) ? ' (custom)' : ''}${role.is_active === false ? ' [inactive]' : ''}`;
   const isRoleActive = (r: RoleRow) => !isCustomRole(r) || r.is_active !== false;
   const assignableRoles = (currentRole?: string) =>
     roles.filter(
@@ -371,24 +365,6 @@ export default function Page() {
 
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
-  }, []);
-
-  useEffect(() => {
-    let stop = false;
-    async function loadPresence() {
-      try {
-        const res = await api('/users/cashier-presence');
-        if (!stop) setCashierPresence(res.data || []);
-      } catch {
-        if (!stop) setCashierPresence(null);
-      }
-    }
-    loadPresence();
-    const timer = window.setInterval(loadPresence, 30000);
-    return () => {
-      stop = true;
-      window.clearInterval(timer);
-    };
   }, []);
 
   const branchLabel = (id?: string | null) => {
@@ -424,13 +400,21 @@ export default function Page() {
   };
 
   const soleStoreId = stores.length === 1 ? stores[0].id : '';
-  const openAddUser = () => {
+  useEffect(() => {
+    if (hideStoreAssign || !soleStoreId) return;
+    setForm((prev) => (prev.store_ids.length ? prev : { ...prev, store_ids: [soleStoreId] }));
+  }, [hideStoreAssign, soleStoreId]);
+  useEffect(() => {
+    if (!canWrite || typeof window === 'undefined') return;
+    if (window.location.hash !== '#create-user') return;
+    document.getElementById('create-user')?.scrollIntoView({ block: 'start' });
+  }, [canWrite]);
+  const focusAddUser = () => {
     setError('');
     setMessage('');
-    const next = { ...emptyForm, store_ids: [] as string[] };
-    if (!hideStoreAssign && soleStoreId) next.store_ids = [soleStoreId];
-    setForm(next);
-    setUserAddOpen(true);
+    const node = document.getElementById('create-user');
+    node?.scrollIntoView({ block: 'start' });
+    node?.querySelector<HTMLInputElement>('input')?.focus();
   };
 
   const activeBranches = branches.filter((b) => b.is_active !== false);
@@ -465,6 +449,22 @@ export default function Page() {
       (d) =>
         d.is_active !== false && (!branchId || !d.branch_id || d.branch_id === branchId),
     );
+  const branchOptions = (currentId?: string | null) => {
+    const list = activeBranches.slice();
+    if (currentId && !list.some((b) => b.id === currentId)) {
+      const current = branches.find((b) => b.id === currentId);
+      if (current) list.push(current);
+    }
+    return list;
+  };
+  const departmentOptions = (branchId?: string, currentId?: string | null) => {
+    const list = activeDepartments(branchId);
+    if (currentId && !list.some((d) => d.id === currentId)) {
+      const current = departments.find((d) => d.id === currentId);
+      if (current) return [...list, current];
+    }
+    return list;
+  };
 
   async function createUser(e: React.FormEvent) {
     e.preventDefault();
@@ -478,6 +478,12 @@ export default function Page() {
     const trimmedPassword = form.password.trim();
     if (!trimmedPassword) {
       setError('User password is required.');
+      setMessage('');
+      return;
+    }
+    const phoneTrim = form.phone.trim();
+    if (phoneTrim && !E164_RE.test(phoneTrim)) {
+      setError('Phone must be E.164, for example +233241234567, or leave it blank.');
       setMessage('');
       return;
     }
@@ -502,7 +508,6 @@ export default function Page() {
       });
       setForm(emptyForm);
       setMessage('User created. They can sign in with this workspace.');
-      setUserAddOpen(false);
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -562,8 +567,25 @@ export default function Page() {
   async function createCustomRole(e: React.FormEvent) {
     e.preventDefault();
     const label = roleForm.label.trim();
+    const key = roleForm.key.trim().toLowerCase();
     if (!label) {
       setError('Custom role label is required.');
+      setMessage('');
+      return;
+    }
+    if (!ROLE_KEY_RE.test(key)) {
+      setError('Role code must start with a letter and use only lowercase letters, numbers, and underscores (for example warehouse_lead).');
+      setMessage('');
+      return;
+    }
+    if (PLATFORM_USER_ROLES.has(key) || roles.some((r) => r.system && r.role === key)) {
+      setError('That code is already a built-in role. Choose a different role code.');
+      setMessage('');
+      return;
+    }
+    const permissions = pickAssignablePerms(createPerms, meIndustry);
+    if (!Object.keys(permissions).length) {
+      setError('Select at least one module permission.');
       setMessage('');
       return;
     }
@@ -574,9 +596,9 @@ export default function Page() {
       const r = await api('/roles', {
         method: 'POST',
         body: JSON.stringify({
-          key: roleForm.key.trim(),
+          key,
           label,
-          ...(Object.keys(createPerms).length ? { permissions: createPerms } : {}),
+          permissions,
         }),
       });
       setRoleForm({ key: '', label: '' });
@@ -619,7 +641,8 @@ export default function Page() {
 
   async function saveCustomRolePerms() {
     if (!permRole) return;
-    if (!Object.keys(permMap).length) {
+    const permissions = pickAssignablePerms(permMap, meIndustry);
+    if (!Object.keys(permissions).length) {
       setError('Select at least one module permission.');
       setMessage('');
       return;
@@ -630,7 +653,7 @@ export default function Page() {
     try {
       await api(`/roles/${permRole}`, {
         method: 'PATCH',
-        body: JSON.stringify({ permissions: permMap }),
+        body: JSON.stringify({ permissions }),
       });
       setMessage(`Permissions saved for ${permRole}. Assigned users pick this up on their next request.`);
       setPermRole(null);
@@ -678,6 +701,11 @@ export default function Page() {
     const name = editForm.full_name.trim();
     if (name && name !== (editUser.full_name || '')) body.full_name = name;
     const phone = editForm.phone.trim();
+    if (phone && !E164_RE.test(phone)) {
+      setError('Phone must be E.164, for example +233241234567, or leave it blank.');
+      setMessage('');
+      return;
+    }
     if (phone && phone !== (editUser.phone || '').trim()) body.phone = phone;
     if (editUser.id !== meId && editForm.role && editForm.role !== editUser.role) {
       body.role = editForm.role;
@@ -817,14 +845,7 @@ export default function Page() {
   async function downloadImportTemplate() {
     setError('');
     try {
-      const token = getAccessToken();
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/users/import/template`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
-      });
+      const res = await apiFetch('/users/import/template');
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.detail || body.message || 'Template download failed');
@@ -851,16 +872,10 @@ export default function Page() {
     setMessage('');
     setImportBusy(true);
     try {
-      const token = getAccessToken();
-      const tenant = localStorage.getItem('tenant');
       const formData = new FormData();
       formData.append('file', importFile);
-      const res = await fetch(`${apiBase}/users/import?dry_run=${dryRun ? 'true' : 'false'}`, {
+      const res = await apiFetch(`/users/import?dry_run=${dryRun ? 'true' : 'false'}`, {
         method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
         body: formData,
       });
       const body = await res.json().catch(() => ({}));
@@ -896,20 +911,20 @@ export default function Page() {
   }
 
   return (
-    <>
+    <div className="user-manage">
       <div className="list-page-head">
         <div>
           <h1 style={{ margin: 0 }}>User Management</h1>
-          <p className="muted" style={{ margin: '8px 0 0' }}>
-            Add staff with a name, email, temporary password, and role. Deactivate stops sign-in
-            and keeps their history. Delete removes the account.
+          <p className="muted user-manage-lead">
+            See who can sign in, then add a person with a name, email, password, and role.
+            Deactivate stops sign-in and keeps their history.
           </p>
         </div>
         {(canWrite || (canWriteStores && !hideStoreUx)) ? (
         <div className="list-head-actions">
           {canWrite ? (
-            <button type="button" className="list-btn-primary" onClick={openAddUser} aria-label="Add User">
-              Add User
+            <button type="button" className="list-btn-primary" onClick={focusAddUser} aria-label="Add User">
+              Add user
             </button>
           ) : null}
           {canWriteStores && !hideStoreUx ? (
@@ -942,57 +957,6 @@ export default function Page() {
         </div>
       ) : null}
 
-      {cashierPresence ? (
-        <section className="card cashier-presence" aria-label="Cashier offline status">
-          <h2>Cashier selling status</h2>
-          <p className="muted" style={{ margin: '0 0 10px' }}>
-            Online or offline selling from each cashier&apos;s POS, and how long they have been offline.
-          </p>
-          {cashierPresence.length === 0 ? (
-            <p className="muted" style={{ margin: 0 }}>No active cashiers.</p>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Cashier</th>
-                    <th>Selling</th>
-                    <th>Offline for</th>
-                    <th>Last seen</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {cashierPresence.map((row) => (
-                    <tr key={row.user_id}>
-                      <td>{row.full_name}</td>
-                      <td>
-                        <span
-                          className={`cashier-sell-status${
-                            row.status === 'online'
-                              ? ' is-online'
-                              : row.status === 'offline'
-                                ? ' is-offline'
-                                : ' is-unknown'
-                          }`}
-                        >
-                          {cashierSellingLabel(row.status)}
-                        </span>
-                      </td>
-                      <td>
-                        {row.status === 'offline'
-                          ? formatElapsed(row.offline_duration_seconds) || 'under a minute'
-                          : '—'}
-                      </td>
-                      <td>{row.last_seen_at ? formatWhen(row.last_seen_at, formatPrefs) : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-      ) : null}
-
       {canWrite && editUser ? (
         <FormModal
           title={`Edit ${editUser.full_name || editUser.email}`}
@@ -1023,8 +987,7 @@ export default function Page() {
             >
               {assignableRoles(editForm.role).map((r) => (
                 <option key={r.role} value={r.role}>
-                  {r.label}
-                  {isCustomRole(r) ? ' (custom)' : ''}
+                  {roleChoiceText(r)}
                 </option>
               ))}
             </select>
@@ -1042,170 +1005,194 @@ export default function Page() {
         </FormModal>
       ) : null}
 
-      {canWrite && userAddOpen ? (
-        <FormModal
-          title="Add user"
-          busy={busy}
-          dirty={Boolean(form.full_name.trim() || form.email.trim() || form.password.trim())}
-          onClose={() => setUserAddOpen(false)}
-        >
-        <form
-          id="create-user"
-          onSubmit={createUser}
-          style={{ display: 'grid', gap: 8 }}
-        >
-          <input
-            value={form.full_name}
-            onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-            placeholder="Full name"
-            aria-label="User full name"
-            required
-          />
-          <input
-            type="email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            placeholder="Email"
-            aria-label="User email"
-            required
-          />
-          <input
-            type="password"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            placeholder="Temporary password"
-            aria-label="User password"
-            required
-          />
-          <input
-            value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            placeholder="Phone (optional, E.164 e.g. +233...)"
-            aria-label="User phone"
-          />
-          <select
-            value={form.role}
-            onChange={(e) => setForm({ ...form, role: e.target.value })}
-            aria-label="User role"
-          >
-            {assignableRoles().map((r) => (
-              <option key={r.role} value={r.role}>
-                {r.label}
-                {isCustomRole(r) ? ' (custom)' : ''}
-              </option>
-            ))}
-          </select>
-          {!hideStoreUx ? (
-          <select
-            value={form.branch_id}
-            onChange={(e) => {
-              const nextBranch = e.target.value;
-              const keepStores = form.store_ids.filter((id) =>
-                storesForBranch(nextBranch).some((s) => s.id === id),
-              );
-              setForm({
-                ...form,
-                branch_id: nextBranch,
-                department_id: '',
-                store_ids: keepStores,
-              });
-            }}
-            aria-label="User branch"
-            title="Optional branch"
-          >
-            <option value="">Branch (optional)</option>
-            {activeBranches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.code} — {b.name}
-              </option>
-            ))}
-          </select>
-          ) : null}
-          {!hideStoreAssign ? (
-          <fieldset style={{ border: '1px solid var(--border, #ddd)', padding: 8, margin: 0 }}>
-            <legend>
-              {stores.length <= 1
-                ? 'Store (this company)'
-                : 'Assigned stores (this company)'}
-            </legend>
-            {stores.length === 0 ? (
-              <p className="muted" style={{ margin: 0 }}>No store to assign yet.</p>
-            ) : stores.length === 1 ? (
+      {canWrite ? (
+        <form id="create-user" className="card user-manage-card" onSubmit={createUser}>
+          <h2>Add user</h2>
+          <p className="muted">Full name, email, password, role, and phone. Branch, department, and record scope are optional.</p>
+          <div className="user-manage-fields">
+            <label className="user-manage-field">
+              <span>Full name</span>
+              <input
+                value={form.full_name}
+                onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                placeholder="Full name"
+                aria-label="User full name"
+                required
+              />
+            </label>
+            <label className="user-manage-field">
+              <span>Email</span>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="Email"
+                aria-label="User email"
+                required
+              />
+            </label>
+            <label className="user-manage-field">
+              <span>Password</span>
+              <input
+                type="password"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                placeholder="Temporary password"
+                aria-label="User password"
+                required
+              />
+            </label>
+            <label className="user-manage-field">
+              <span>Role</span>
               <select
-                value={form.store_ids[0] || stores[0].id}
-                onChange={(e) => setForm({ ...form, store_ids: e.target.value ? [e.target.value] : [] })}
-                aria-label="User store"
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value })}
+                aria-label="User role"
               >
-                {stores.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.code} — {s.name}
+                {assignableRoles().map((r) => (
+                  <option key={r.role} value={r.role}>
+                    {roleChoiceText(r)}
                   </option>
                 ))}
               </select>
-            ) : (
-              <div style={{ display: 'grid', gap: 4 }}>
-                <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                  <input
-                    type="checkbox"
-                    checked={form.store_ids.length === 0}
-                    onChange={() => setForm({ ...form, store_ids: [] })}
-                    aria-label="All stores in this company"
-                  />
-                  All stores in this company
-                </label>
-                {storesForBranch(form.branch_id).map((s) => (
-                  <label key={s.id} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                    <input
-                      type="checkbox"
-                      checked={form.store_ids.includes(s.id)}
-                      onChange={() => {
-                        const next = form.store_ids.includes(s.id)
-                          ? form.store_ids.filter((id) => id !== s.id)
-                          : [...form.store_ids, s.id];
-                        setForm({ ...form, store_ids: next });
+            </label>
+            <label className="user-manage-field">
+              <span>Phone</span>
+              <input
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                placeholder="+233…"
+                aria-label="User phone"
+              />
+            </label>
+            <details className="user-manage-optional">
+              <summary>Optional details</summary>
+              <div className="user-manage-optional-body">
+                {!hideStoreUx ? (
+                  <label className="user-manage-field">
+                    <span>Branch</span>
+                    <select
+                      value={form.branch_id}
+                      onChange={(e) => {
+                        const nextBranch = e.target.value;
+                        const keepStores = form.store_ids.filter((id) =>
+                          storesForBranch(nextBranch).some((s) => s.id === id),
+                        );
+                        setForm({
+                          ...form,
+                          branch_id: nextBranch,
+                          department_id: '',
+                          store_ids: keepStores,
+                        });
                       }}
-                      aria-label={`Assign store ${s.code}`}
-                    />
-                    {s.code} — {s.name}
+                      aria-label="User branch"
+                      title="Optional branch"
+                    >
+                      <option value="">None</option>
+                      {activeBranches.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.code} — {b.name}
+                        </option>
+                      ))}
+                    </select>
                   </label>
-                ))}
+                ) : null}
+                <label className="user-manage-field">
+                  <span>Department</span>
+                  <select
+                    value={form.department_id}
+                    onChange={(e) => setForm({ ...form, department_id: e.target.value })}
+                    aria-label="User department"
+                    title="Optional department"
+                  >
+                    <option value="">None</option>
+                    {activeDepartments(form.branch_id).map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="user-manage-field">
+                  <span>Record scope</span>
+                  <select
+                    value={form.record_scope}
+                    onChange={(e) => setForm({ ...form, record_scope: e.target.value })}
+                    aria-label="User record scope"
+                  >
+                    {RECORD_SCOPES.map((s) => (
+                      <option key={s.value || 'default'} value={s.value}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {!hideStoreAssign ? (
+                  <fieldset className="user-manage-stores">
+                    <legend>
+                      {stores.length <= 1
+                        ? 'Store (this company)'
+                        : 'Assigned stores (this company)'}
+                    </legend>
+                    {stores.length === 0 ? (
+                      <p className="muted" style={{ margin: 0 }}>No store to assign yet. Create a store when this person needs a location.</p>
+                    ) : stores.length === 1 ? (
+                      <select
+                        value={form.store_ids[0] || stores[0].id}
+                        onChange={(e) => setForm({ ...form, store_ids: e.target.value ? [e.target.value] : [] })}
+                        aria-label="User store"
+                      >
+                        {stores.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.code} — {s.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="user-manage-store-list">
+                        <label className="user-manage-store-choice">
+                          <input
+                            type="checkbox"
+                            checked={form.store_ids.length === 0}
+                            onChange={() => setForm({ ...form, store_ids: [] })}
+                            aria-label="All stores in this company"
+                          />
+                          All stores in this company
+                        </label>
+                        {storesForBranch(form.branch_id).map((s) => (
+                          <label key={s.id} className="user-manage-store-choice">
+                            <input
+                              type="checkbox"
+                              checked={form.store_ids.includes(s.id)}
+                              onChange={() => {
+                                const next = form.store_ids.includes(s.id)
+                                  ? form.store_ids.filter((id) => id !== s.id)
+                                  : [...form.store_ids, s.id];
+                                setForm({ ...form, store_ids: next });
+                              }}
+                              aria-label={`Assign store ${s.code}`}
+                            />
+                            {s.code} — {s.name}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </fieldset>
+                ) : null}
               </div>
-            )}
-          </fieldset>
-          ) : null}
-          <select
-            value={form.department_id}
-            onChange={(e) => setForm({ ...form, department_id: e.target.value })}
-            aria-label="User department"
-            title="Optional department"
-          >
-            <option value="">Department (optional)</option>
-            {activeDepartments(form.branch_id).map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={form.record_scope}
-            onChange={(e) => setForm({ ...form, record_scope: e.target.value })}
-            aria-label="User record scope"
-          >
-            {RECORD_SCOPES.map((s) => (
-              <option key={s.value || 'default'} value={s.value}>
-                Record scope: {s.label}
-              </option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            disabled={busy || !form.full_name.trim() || !form.password.trim()}
-            aria-label="Create user"
-          >
-            {busy ? 'Creating…' : 'Create User'}
-          </button>
+            </details>
+            <div className="user-manage-submit">
+              <button
+                type="submit"
+                className="btn-ok"
+                disabled={busy || !form.full_name.trim() || !form.password.trim()}
+                aria-label="Create user"
+              >
+                {busy ? 'Creating…' : 'Create user'}
+              </button>
+            </div>
+          </div>
         </form>
-        </FormModal>
       ) : null}
 
       {canWriteStores && !hideStoreUx && storeAddOpen ? (
@@ -1289,200 +1276,34 @@ export default function Page() {
         </FormModal>
       ) : null}
 
-      {canWrite && (
-        <form onSubmit={createCustomRole} className="card" style={{ margin: '20px 0', display: 'grid', gap: 8 }}>
-          <h2 style={{ fontSize: 18, margin: 0 }}>Custom roles</h2>
-          <p className="muted" style={{ margin: 0 }}>
-            Add a role for this company and choose what that role can open. Deactivate keeps people
-            who already have it, and stops new assignments. A role cannot be deleted while someone
-            still uses it.
-          </p>
-          <input
-            value={roleForm.key}
-            onChange={(e) => setRoleForm({ ...roleForm, key: e.target.value })}
-            placeholder="Role code, for example warehouse_lead"
-            required
-            aria-label="Custom role key"
-          />
-          <input
-            value={roleForm.label}
-            onChange={(e) => setRoleForm({ ...roleForm, label: e.target.value })}
-            placeholder="Display label"
-            required
-            aria-label="Custom role label"
-          />
-          <PermissionGrid value={createPerms} onChange={setCreatePerms} industry={meIndustry} />
-          <button
-            type="submit"
-            disabled={busy || !roleForm.key.trim() || !roleForm.label.trim() || !Object.keys(createPerms).length}
-            aria-label="Create custom role"
-          >
-            {busy ? 'Saving…' : 'Create custom role'}
-          </button>
-          <select
-            value={roleManageFilter}
-            onChange={(e) =>
-              setRoleManageFilter(e.target.value as 'all' | 'active' | 'inactive')
-            }
-            title="Filter manage custom role list by status"
-            aria-label="Custom role status filter"
-          >
-            <option value="all">All statuses</option>
-            <option value="active">Active only</option>
-            <option value="inactive">Inactive only</option>
-          </select>
-          <ul style={{ margin: 0, paddingLeft: 18 }}>
-            {managedCustomRoles.map((r) => (
-              <li key={r.role}>
-                {r.label}
-                {r.is_active === false ? (
-                  <span className="muted" style={{ marginLeft: 6 }}>
-                    Inactive
-                  </span>
-                ) : null}
-                {r.is_active === false ? (
-                  <button
-                    type="button"
-                    className="btn-ok"
-                    style={{ marginLeft: 8 }}
-                    onClick={() => setCustomRoleActive(r.role, true)}
-                   aria-label={`Activate custom role ${r.role}`}>
-                    Activate
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn-danger"
-                    style={{ marginLeft: 8 }}
-                    onClick={() => setCustomRoleActive(r.role, false)}
-                   aria-label={`Deactivate custom role ${r.role}`}>
-                    Deactivate
-                  </button>
-                )}
-                <button
-                  type="button"
-                  style={{ marginLeft: 8 }}
-                  onClick={() => {
-                    setPermRole(r.role);
-                    setPermMap(pickAssignablePerms(r.permissions, meIndustry));
-                    setError('');
-                    setMessage('');
-                  }}
-                  aria-label={`Edit permissions for custom role ${r.role}`}
-                >
-                  Edit permissions
-                </button>
-                <button
-                  type="button"
-                  style={{ marginLeft: 8 }}
-                  onClick={() => deleteCustomRole(r.role)}
-                 aria-label={`Delete custom role ${r.role}`}>
-                  Delete
-                </button>
-              </li>
-            ))}
-            {!managedCustomRoles.length && (
-              <li className="muted">No custom roles for this filter</li>
-            )}
-          </ul>
-        </form>
-      )}
-
-      {canWrite && (
-        <div className="card" style={{ margin: '20px 0', display: 'grid', gap: 12 }}>
-          <h2 style={{ fontSize: 18, margin: 0 }}>Bulk import users</h2>
-          <p className="muted" style={{ margin: 0 }}>
-            Download the spreadsheet template, fill one person per row, check it, then import.
-            If one row is invalid, nothing is imported.
-          </p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button type="button" onClick={downloadImportTemplate} aria-label="Download user CSV template">
-              Download CSV template
-            </button>
-          </div>
-          <input
-            type="file"
-            accept=".csv,text/csv"
-            aria-label="User CSV import file"
-            onChange={(e) => {
-              setImportFile(e.target.files?.[0] || null);
-              setImportReport(null);
-            }}
-          />
-          {importFile && <p className="muted">Selected: {importFile.name}</p>}
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={() => runUserImport(true)}
-              disabled={!importFile || importBusy}
-              aria-label="Validate user CSV import"
-            >
-              {importBusy ? 'Working…' : 'Validate'}
-            </button>
-            <button
-              type="button"
-              onClick={() => runUserImport(false)}
-              disabled={!importFile || importBusy || !importReport?.can_commit}
-              aria-label="Import valid user CSV rows"
-            >
-              Import valid rows
-            </button>
-          </div>
-          {importReport && (
-            <div>
-              <p className="muted">
-                {importReport.total_rows} rows · {importReport.valid_rows} valid ·{' '}
-                {importReport.error_rows} errors
-                {importReport.imported != null ? ` · imported ${importReport.imported}` : ''}
-              </p>
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Line</th>
-                    <th>Email</th>
-                    <th>Name</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th>Errors</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {importReport.rows.map((r) => (
-                    <tr key={`${r.line}-${r.email}`}>
-                      <td>{r.line}</td>
-                      <td>{r.email || '—'}</td>
-                      <td>{r.full_name || '—'}</td>
-                      <td>{r.role || '—'}</td>
-                      <td style={{ color: r.ok ? 'var(--brand, #4AB012)' : '#b91c1c' }}>{r.ok ? 'OK' : 'Error'}</td>
-                      <td>{r.errors?.length ? r.errors.join('; ') : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
+      <section className="card user-manage-list" aria-label="People">
+        <h2>People</h2>
+        <div className="user-manage-toolbar">
+      <label className="user-manage-field">
+        Status
       <select
         value={userManageFilter}
         onChange={(e) => setUserManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
         title="Filter manage user list by status"
         aria-label="User status filter"
-        style={{ marginBottom: 8 }}
       >
-        <option value="all">All statuses</option>
-        <option value="active">Active only</option>
-        <option value="inactive">Inactive only</option>
+        <option value="all">All</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
       </select>
+      </label>
+      <label className="user-manage-field user-manage-search">
+        Search
       <input
         value={userQuery}
         onChange={(e) => setUserQuery(e.target.value)}
         placeholder={hideStoreUx ? 'Search name, email, department' : 'Search name, email, department, branch, store'}
         aria-label="Search users"
-        style={{ marginLeft: 8, marginBottom: 8 }}
       />
+      </label>
       {!hideStoreUx ? (
+      <label className="user-manage-field">
+        Branch
       <select
         value={branchFilter}
         onChange={(e) => {
@@ -1495,7 +1316,6 @@ export default function Page() {
           }
         }}
         aria-label="Filter users by branch"
-        style={{ marginLeft: 8, marginBottom: 8 }}
       >
         <option value="">All branches</option>
         {branches.map((b) => (
@@ -1504,13 +1324,15 @@ export default function Page() {
           </option>
         ))}
       </select>
+      </label>
       ) : null}
       {!hideStoreUx ? (
+      <label className="user-manage-field">
+        Store
       <select
         value={storeFilter}
         onChange={(e) => setStoreFilter(e.target.value)}
         aria-label="Filter users by store"
-        style={{ marginLeft: 8, marginBottom: 8 }}
       >
         <option value="">All stores</option>
         {storesForBranch(branchFilter).map((s) => (
@@ -1519,12 +1341,14 @@ export default function Page() {
           </option>
         ))}
       </select>
+      </label>
       ) : null}
+      <label className="user-manage-field">
+        Department
       <select
         value={deptFilter}
         onChange={(e) => setDeptFilter(e.target.value)}
         aria-label="Filter users by department"
-        style={{ marginLeft: 8, marginBottom: 8 }}
       >
         <option value="">All departments</option>
         {departments.map((d) => (
@@ -1533,18 +1357,21 @@ export default function Page() {
           </option>
         ))}
       </select>
+      </label>
+        </div>
 
+      <div className="list-table-wrap user-manage-table-scroll">
       <table className="table">
         <thead>
           <tr>
-            <th>Full Name</th>
-            <th>Email</th>
-            <th>Role</th>
+            <th className="user-manage-name">Name</th>
+            <th className="user-manage-email">Email</th>
+            <th className="user-manage-role">Role</th>
             {!hideStoreUx ? <th>Branch</th> : null}
             {!hideStoreAssign ? <th>Store</th> : null}
             <th>Department</th>
             <th>Scope</th>
-            <th>Active</th>
+            <th>Status</th>
             {canWrite && <th>Actions</th>}
           </tr>
         </thead>
@@ -1552,22 +1379,19 @@ export default function Page() {
           {managedUsers.length === 0 && (
             <tr>
               <td colSpan={(canWrite ? 7 : 6) + (hideStoreUx ? 0 : 1) + (hideStoreAssign ? 0 : 1)} className="muted">
-                {rows.length ? 'No users for this filter' : 'No users yet'}
+                {rows.length
+                  ? 'No users for this filter. Choose All to see everyone in this company.'
+                  : 'No users yet. Add a person with a name, email, password, and role.'}
               </td>
             </tr>
           )}
           {managedUsers.map((r) => (
             <tr key={r.id}>
-              <td>
+              <td className="user-manage-name">
                 {r.full_name}
-                {r.is_active === false ? (
-                  <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>
-                    Inactive
-                  </span>
-                ) : null}
               </td>
-              <td>{r.email}</td>
-              <td>
+              <td className="user-manage-email">{r.email}</td>
+              <td className="user-manage-role">
                 {canWrite ? (
                   <select
                     value={r.role}
@@ -1576,9 +1400,7 @@ export default function Page() {
                   >
                     {assignableRoles(r.role).map((role) => (
                       <option key={role.role} value={role.role}>
-                        {role.label}
-                        {isCustomRole(role) ? ' (custom)' : ''}
-                        {role.is_active === false ? ' [inactive]' : ''}
+                        {roleChoiceText(role)}
                       </option>
                     ))}
                   </select>
@@ -1595,9 +1417,9 @@ export default function Page() {
                     aria-label={`Edit user branch for ${r.email}`}
                   >
                     <option value="">None</option>
-                    {activeBranches.map((b) => (
+                    {branchOptions(r.branch_id).map((b) => (
                       <option key={b.id} value={b.id}>
-                        {b.code}
+                        {b.code}{b.is_active === false ? ' [inactive]' : ''}
                       </option>
                     ))}
                   </select>
@@ -1679,9 +1501,9 @@ export default function Page() {
                     aria-label={`Edit user department for ${r.email}`}
                   >
                     <option value="">None</option>
-                    {activeDepartments(r.branch_id || undefined).map((d) => (
+                    {departmentOptions(r.branch_id || undefined, r.department_id).map((d) => (
                       <option key={d.id} value={d.id}>
-                        {d.name}
+                        {d.name}{d.is_active === false ? ' [inactive]' : ''}
                       </option>
                     ))}
                   </select>
@@ -1706,9 +1528,13 @@ export default function Page() {
                   r.record_scope || '—'
                 )}
               </td>
-              <td>{r.is_active ? 'Yes' : 'No'}</td>
+              <td>
+                <span className={r.is_active ? 'user-manage-status' : 'user-manage-status is-off'}>
+                  {r.is_active ? 'Active' : 'Inactive'}
+                </span>
+              </td>
               {canWrite && (
-                <td>
+                <td className="user-manage-actions">
                   <button
                     type="button"
                     className="btn-ok"
@@ -1752,6 +1578,191 @@ export default function Page() {
           ))}
         </tbody>
       </table>
+      </div>
+      </section>
+
+      <CashierPresencePanel />
+
+      {canWrite && (
+        <details className="user-manage-more">
+          <summary>Custom roles</summary>
+        <form onSubmit={createCustomRole} className="user-manage-more-body">
+          <p className="muted" style={{ margin: 0 }}>
+            Add a role for this company and choose what that role can open. Deactivate keeps people
+            who already have it, and stops new assignments. A role cannot be deleted while someone
+            still uses it.
+          </p>
+          <input
+            value={roleForm.key}
+            onChange={(e) => setRoleForm({ ...roleForm, key: e.target.value })}
+            placeholder="Role code, for example warehouse_lead"
+            required
+            aria-label="Custom role key"
+          />
+          <input
+            value={roleForm.label}
+            onChange={(e) => setRoleForm({ ...roleForm, label: e.target.value })}
+            placeholder="Display label"
+            required
+            aria-label="Custom role label"
+          />
+          <PermissionGrid value={createPerms} onChange={setCreatePerms} industry={meIndustry} />
+          <button
+            type="submit"
+            className="btn-ok"
+            disabled={busy || !roleForm.key.trim() || !roleForm.label.trim() || !Object.keys(createPerms).length}
+            aria-label="Create custom role"
+          >
+            {busy ? 'Saving…' : 'Create custom role'}
+          </button>
+          <select
+            value={roleManageFilter}
+            onChange={(e) =>
+              setRoleManageFilter(e.target.value as 'all' | 'active' | 'inactive')
+            }
+            title="Filter manage custom role list by status"
+            aria-label="Custom role status filter"
+          >
+            <option value="all">All statuses</option>
+            <option value="active">Active only</option>
+            <option value="inactive">Inactive only</option>
+          </select>
+          <ul className="user-manage-role-list">
+            {managedCustomRoles.map((r) => (
+              <li key={r.role} className="user-manage-role-row">
+                {r.label}
+                {r.is_active === false ? (
+                  <span className="muted" style={{ marginLeft: 6 }}>
+                    Inactive
+                  </span>
+                ) : null}
+                {r.is_active === false ? (
+                  <button
+                    type="button"
+                    className="btn-ok"
+                    style={{ marginLeft: 8 }}
+                    onClick={() => setCustomRoleActive(r.role, true)}
+                   aria-label={`Activate custom role ${r.role}`}>
+                    Activate
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn-danger"
+                    style={{ marginLeft: 8 }}
+                    onClick={() => setCustomRoleActive(r.role, false)}
+                   aria-label={`Deactivate custom role ${r.role}`}>
+                    Deactivate
+                  </button>
+                )}
+                <button
+                  type="button"
+                  style={{ marginLeft: 8 }}
+                  onClick={() => {
+                    setPermRole(r.role);
+                    setPermMap(pickAssignablePerms(r.permissions, meIndustry));
+                    setError('');
+                    setMessage('');
+                  }}
+                  aria-label={`Edit permissions for custom role ${r.role}`}
+                >
+                  Edit permissions
+                </button>
+                <button
+                  type="button"
+                  style={{ marginLeft: 8 }}
+                  onClick={() => deleteCustomRole(r.role)}
+                 aria-label={`Delete custom role ${r.role}`}>
+                  Delete
+                </button>
+              </li>
+            ))}
+            {!managedCustomRoles.length && (
+              <li className="muted">No custom roles for this filter. Choose All statuses, or create a role with a code and at least one permission.</li>
+            )}
+          </ul>
+        </form>
+        </details>
+      )}
+
+      {canWrite && (
+        <details className="user-manage-more">
+          <summary>Import from CSV</summary>
+        <div className="user-manage-more-body">
+          <p className="muted" style={{ margin: 0 }}>
+            Download the spreadsheet template, fill one person per row, check it, then import.
+            If one row is invalid, nothing is imported.
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" onClick={downloadImportTemplate} aria-label="Download user CSV template">
+              Download CSV template
+            </button>
+          </div>
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            aria-label="User CSV import file"
+            onChange={(e) => {
+              setImportFile(e.target.files?.[0] || null);
+              setImportReport(null);
+            }}
+          />
+          {importFile && <p className="muted">Selected: {importFile.name}</p>}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => runUserImport(true)}
+              disabled={!importFile || importBusy}
+              aria-label="Validate user CSV import"
+            >
+              {importBusy ? 'Working…' : 'Validate'}
+            </button>
+            <button
+              type="button"
+              onClick={() => runUserImport(false)}
+              disabled={!importFile || importBusy || !importReport?.can_commit}
+              aria-label="Import valid user CSV rows"
+            >
+              Import valid rows
+            </button>
+          </div>
+          {importReport && (
+            <div>
+              <p className="muted">
+                {importReport.total_rows} rows · {importReport.valid_rows} valid ·{' '}
+                {importReport.error_rows} errors
+                {importReport.imported != null ? ` · imported ${importReport.imported}` : ''}
+              </p>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Line</th>
+                    <th>Email</th>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Errors</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {importReport.rows.map((r) => (
+                    <tr key={`${r.line}-${r.email}`}>
+                      <td>{r.line}</td>
+                      <td>{r.email || '—'}</td>
+                      <td>{r.full_name || '—'}</td>
+                      <td>{r.role || '—'}</td>
+                      <td style={{ color: r.ok ? 'var(--brand, #4AB012)' : '#b91c1c' }}>{r.ok ? 'OK' : 'Error'}</td>
+                      <td>{r.errors?.length ? r.errors.join('; ') : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+        </details>
+      )}
+
       {canWrite && permRole ? (
         <FormModal
           title={`Edit permissions: ${permRole}`}
@@ -1773,6 +1784,6 @@ export default function Page() {
           </button>
         </FormModal>
       ) : null}
-    </>
+    </div>
   );
 }

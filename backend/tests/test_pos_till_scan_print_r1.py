@@ -65,6 +65,14 @@ def test_pay_prints_receipt_once():
     assert "Allow pop-ups" not in (ROOT / "frontend/app/(dashboard)/printers/page.tsx").read_text(encoding="utf-8")
     assert "Choose a printer before the receipt can print." not in pos
     assert "PosPrintStatus" not in pos
+    assert 'aria-label="POS receipt paper"' in pos
+    assert "This size changes only the browser receipt" not in pos
+    assert "A paired till agent uses the paper size stored on that printer" not in pos
+    assert "Pay prints the customer receipt on this roll" not in pos
+    printers_page = (ROOT / "frontend/app/(dashboard)/printers/page.tsx").read_text(encoding="utf-8")
+    assert "agent_id" in printers_page
+    assert "printer is ready" not in printers_page.lower()
+    assert "Pay prints the customer receipt on the size you pick here" not in printers_page
     assert "setMessage(`Scanned" not in pos
     assert "barcode matches" not in pos
 

@@ -7,6 +7,7 @@ import { currencySign, formatWhen, plainLabel } from '../../../lib/format';
 import { AmountField } from '../../../components/AmountField';
 import { useStoreContext } from '../../../lib/storeContext';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
+import './ai-ui.css';
 
 function amountText(value: unknown): string {
   if (value == null || value === '') return 'not found';
@@ -70,8 +71,8 @@ export default function Page() {
         setChatAvailable(Boolean(r.data?.chat_available));
         setAiStatusNote(
           r.data?.chat_available
-            ? 'Chat is configured for this environment.'
-            : 'No external LLM is used. Chat stays off until a provider is configured. Rule-based insights below use this company’s data only.',
+            ? 'You can ask a question on this screen. Chat is limited to the configured provider and is not a complete assistant.'
+            : 'No external LLM is used. Chat stays off until a provider is configured. Rule-based insights use this company’s data only.',
         );
       })
       .catch(() => {
@@ -183,9 +184,9 @@ export default function Page() {
     try {
       const r = await api('/ai/security/alerts?scan=true');
       setAlerts(r.data?.alerts || []);
+      const rows = r.data?.alerts || [];
       setA(
-        (r.data?.alerts || [])
-          .map((x: any) => `[${x.risk_score}] ${x.kind}: ${x.title}`)
+        rows
           .map((x: any) => `${x.title || plainLabel(x.kind)} (risk ${x.risk_score ?? '—'})`)
           .join('\n') || 'No security alerts'
       );
@@ -626,24 +627,56 @@ export default function Page() {
   const hasPoMatch = Boolean(draftDocPurchaseOrderId.trim());
 
   return (
-    <>
-      <h1>AI Assistant</h1>
-      <p className="muted">
+    <div className="ai-ui">
+      <h1>Load insights</h1>
+      <p className="muted ai-ui-lead">
         {aiStatusNote ||
-          'Answers use this company’s records. Check a draft before you save it.'}
+          'Start with insights. They use this company’s records and do not need a chat provider.'}
       </p>
-      <div className="card">
+      <div className="ai-ui-actions">
+        <button aria-label="Load AI insights" onClick={loadInsights}>Load insights</button>
+        <button aria-label="Email AI insight digest" onClick={emailInsightDigest} disabled={digestBusy}>
+          {digestBusy ? 'Emailing digest…' : 'Email digest to me'}
+        </button>
+      </div>
+      {error && <p className="ai-ui-alert" role="alert">{error}</p>}
+      {message && <p className="ai-ui-ok" role="status">{message}</p>}
+      {a ? (
+        <pre className="ai-ui-answer">{a}</pre>
+      ) : (
+        <p className="muted ai-ui-note">
+          {chatAvailable
+            ? 'Type a question and choose Ask.'
+            : 'Choose Load insights to see notes from this company’s sales, expenses, and stock.'}
+        </p>
+      )}
+      {alerts.length > 0 && (
+        <ul className="ai-ui-list">
+          {alerts.map((x) => (
+            <li key={x.id}>
+              <strong>{x.risk_score}</strong> {plainLabel(x.kind)} — {x.title}
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="card ai-ui-ask">
+        <h2>Ask a question</h2>
+        <p className="muted ai-ui-note">Chat stays off until a provider is configured. A blank question is not sent.</p>
         <textarea
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          style={{ width: '100%', minHeight: 100 }}
           placeholder="Ask a business question, report prompt, or customer query e.g. best customers / outstanding balance"
           aria-label="AI chat message"
         />
-        <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <button onClick={go} aria-label="Ask AI chat" disabled={!chatAvailable} title={chatAvailable ? 'Ask' : 'Chat is not configured'}>
+        <div className="ai-ui-actions">
+          <button onClick={go} aria-label="Ask AI chat" disabled={!chatAvailable || !q.trim()} title={chatAvailable ? 'Ask' : 'Chat is not configured'}>
             Ask
           </button>
+        </div>
+      </div>
+      <details className="card ai-ui-advanced">
+        <summary>Reports</summary>
+        <div className="ai-ui-form">
           <button onClick={generateReport} aria-label="Generate AI report">
             Generate report
           </button>
@@ -671,6 +704,11 @@ export default function Page() {
           >
             Save template
           </button>
+        </div>
+      </details>
+      <details className="card ai-ui-advanced">
+        <summary>Customer assist</summary>
+        <div className="ai-ui-form">
           <select
             value={assistCustomerId}
             onChange={(e) => setAssistCustomerId(e.target.value)}
@@ -689,7 +727,12 @@ export default function Page() {
           <button onClick={customerAssist} aria-label="Customer assist">
             Customer assist
           </button>
-          <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+        </div>
+      </details>
+      <details className="card ai-ui-advanced">
+        <summary>Read a document</summary>
+        <div className="ai-ui-form">
+          <label className="ai-ui-file">
             Document type
             <select
               aria-label="Document type"
@@ -866,10 +909,11 @@ export default function Page() {
           >
             {draftPiBusy ? 'Creating draft PI…' : 'Create draft purchase invoice'}
           </button>
-          <button aria-label="Load AI insights" onClick={loadInsights}>Load insights</button>
-          <button aria-label="Email AI insight digest" onClick={emailInsightDigest} disabled={digestBusy}>
-            {digestBusy ? 'Emailing digest…' : 'Email digest to me'}
-          </button>
+        </div>
+      </details>
+      <details className="card ai-ui-advanced">
+        <summary>Stock predictions</summary>
+        <div className="ai-ui-form">
           <button
             onClick={loadInventoryPredictions}
             disabled={predBusy}
@@ -921,6 +965,11 @@ export default function Page() {
             />
             Include open PRs
           </label>
+        </div>
+      </details>
+      <details className="card ai-ui-advanced">
+        <summary>Sales and expenses</summary>
+        <div className="ai-ui-form">
           <input
             type="date"
             value={analysisFromDate}
@@ -941,9 +990,15 @@ export default function Page() {
           <button onClick={loadExpenseAnalysis} aria-label="Expense analysis">
             Expense analysis
           </button>
+        </div>
+      </details>
+      <details className="card ai-ui-advanced">
+        <summary>Security alerts</summary>
+        <div className="ai-ui-form">
           <button aria-label="Load AI security alerts" onClick={loadSecurityAlerts}>Security alerts</button>
         </div>
-        <p className="muted" style={{ marginTop: 8, fontSize: 12 }}>
+      </details>
+        <p className="muted ai-ui-note">
           Weekly AI insight digests are sent to active company and super admins every Monday at 07:00 UTC.
           Use <strong>Email digest to me</strong> to preview the tenant-scoped email with your account.
           {' '}
@@ -954,19 +1009,6 @@ export default function Page() {
           the extracted amount/payee/category into a pending expense — open{' '}
           <Link href="/expenses">Expenses</Link> to review (requires expenses write).
         </p>
-        {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-        {message && <p style={{ color: 'var(--deep-green, #006B2E)' }}>{message}</p>}
-        {a && <pre style={{ whiteSpace: 'pre-wrap' }}>{a}</pre>}
-        {alerts.length > 0 && (
-          <ul>
-            {alerts.map((x) => (
-              <li key={x.id}>
-                <strong>{x.risk_score}</strong> {x.kind} — {x.title}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </>
+    </div>
   );
 }

@@ -1,0 +1,52 @@
+/* Tenant reports layout. Prefix report-ui- so other screens are untouched. */
+.report-ui-page {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.report-ui-page .list-table-wrap {
+  overflow: auto;
+  max-width: 100%;
+  max-height: 70vh;
+}
+
+@media (max-width: 900px) {
+  .report-ui-page .reports-layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .report-ui-page .reports-main {
+    order: -1;
+  }
+
+  .report-ui-page .reports-filters {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .report-ui-page .reports-filters label > input,
+  .report-ui-page .reports-filters label > select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .report-ui-page .reports-actions {
+    width: 100%;
+  }
+
+  .report-ui-page {
+    overflow-x: hidden;
+  }
+
+  .report-ui-page .reports-filters label > input,
+  .report-ui-page .reports-filters label > select,
+  .report-ui-page .reports-actions button,
+  .report-ui-page .reports-nav-cat {
+    min-height: 44px;
+  }
+
+  .report-ui-page .reports-actions button {
+    width: 100%;
+  }
+}

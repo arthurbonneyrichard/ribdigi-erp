@@ -103,6 +103,8 @@ def test_pos_exposes_counted_cash_close_without_changing_sign_out():
     assert "actual_cash: Number(session.expected_cash || 0)" in helper
     assert "export async function countAndCloseOpenShift" in helper
     assert "before closing this shift" in helper
+    sign_out = helper.split("export async function closeShiftForSignOut", 1)[1]
+    assert "Leave the shift open when the queue cannot be read." in sign_out
     assert 'aria-label="Counted cash"' in page
     assert 'aria-label="Cash count notes"' in page
     assert 'aria-label="Record cash count and close shift"' in page

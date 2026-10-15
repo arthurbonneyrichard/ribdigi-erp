@@ -60,6 +60,27 @@ async def test_cashier_api_denies_back_office_modules(client):
     )
     assert adjust.status_code == 403
 
+    supplier_pay = await ac.post(
+        "/api/v1/suppliers/00000000-0000-4000-8000-000000000099/payments",
+        headers=headers,
+        json={
+            "supplier_id": "00000000-0000-4000-8000-000000000099",
+            "amount": 1,
+        },
+    )
+    assert supplier_pay.status_code == 403, supplier_pay.text
+
+    admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    admin_pay = await ac.post(
+        "/api/v1/suppliers/00000000-0000-4000-8000-000000000099/payments",
+        headers=admin,
+        json={
+            "supplier_id": "00000000-0000-4000-8000-000000000099",
+            "amount": 1,
+        },
+    )
+    assert admin_pay.status_code == 404, admin_pay.text
+
 
 @pytest.mark.asyncio
 async def test_cashier_can_use_pos_search(client):

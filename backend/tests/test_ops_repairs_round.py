@@ -24,6 +24,32 @@ def test_staff_guide_follows_industry_and_role():
     assert "Mobile Money" in text
     assert "Patients and visits" not in text
     assert "cashier" in text
+    assert "offline complete" not in text.lower()
+    assert "certified" not in text.lower()
+    assert "pharmacy" not in text.lower()
+    hotel = "\n".join(
+        guide_lines(
+            company_name="Alpha Hotel",
+            industry="hotel",
+            enabled_modules=["hotel", "fmcg"],
+            role="company_admin",
+            permissions={"hotel": ["read", "write"]},
+        )
+    )
+    assert "business type: hotel" in hotel.lower()
+    assert "book a stay" in hotel.lower()
+    assert "schemes, routes" not in hotel.lower()
+    restaurant = "\n".join(
+        guide_lines(
+            company_name="Alpha Restaurant",
+            industry="restaurant",
+            enabled_modules=["restaurant"],
+            role="company_admin",
+            permissions={"restaurant": ["read", "write"]},
+        )
+    )
+    assert "business type: restaurant" in restaurant.lower()
+    assert "send the order to the kitchen" in restaurant.lower()
     pharmacy = "\n".join(
         guide_lines(
             company_name="Alpha Pharmacy",

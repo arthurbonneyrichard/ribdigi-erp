@@ -30,6 +30,13 @@ type Printer = {
   status: string;
 };
 
+type PrintAgentRow = {
+  id: string;
+  label: string;
+  paired: boolean;
+  is_active: boolean;
+};
+
 export default function PrinterSettingsPage() {
   const [rows, setRows] = useState<Printer[]>([]);
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
@@ -42,7 +49,9 @@ export default function PrinterSettingsPage() {
   const [printerAddOpen, setPrinterAddOpen] = useState(false);
   const [pairing, setPairing] = useState('');
   const [installedName, setInstalledName] = useState('');
+  const [installedPaper, setInstalledPaper] = useState('80mm');
   const [showEmailSms, setShowEmailSms] = useState(false);
+  const [agents, setAgents] = useState<PrintAgentRow[]>([]);
   const [form, setForm] = useState({
     name: '',
     connection_type: 'browser_dialog',
@@ -52,17 +61,20 @@ export default function PrinterSettingsPage() {
     copies: 1,
     host: '',
     port: 9100,
+    agent_id: '',
   });
 
   const load = useCallback(async () => {
     try {
-      const [caps, printers, storeRes, me, emailSms] = await Promise.all([
+      const [caps, printers, storeRes, me, emailSms, agentRes] = await Promise.all([
         api('/printers/capabilities').catch(() => ({ data: null })),
         api('/printers'),
         api('/stores').catch(() => ({ data: [] })),
         getMe().catch(() => ({ data: {} })),
         api('/printers/receipt-email-sms').catch(() => ({ data: { show_email_sms: false } })),
+        api('/printers/agents').catch(() => ({ data: [] })),
       ]);
+      setAgents(Array.isArray(agentRes.data) ? agentRes.data : []);
       setShowEmailSms(emailSms.data?.show_email_sms === true);
       const savedIndustry = (me.data?.industry as string | null | undefined) || null;
       const options = resolvePrinterPurposes(savedIndustry, caps.data?.purposes || null);
@@ -135,7 +147,7 @@ export default function PrinterSettingsPage() {
         body: JSON.stringify({
           name,
           connection_type: 'browser_dialog',
-          paper: '80mm',
+          paper: installedPaper === '58mm' || installedPaper === 'a4' ? installedPaper : '80mm',
           purposes: ['customer_receipt'],
           copies: 1,
           is_default: !hasDefault,
@@ -172,20 +184,39 @@ export default function PrinterSettingsPage() {
     setError('');
     setNotice('');
     try {
+      const name = form.name.trim();
+      const host = form.host.trim();
+      const agentId = form.agent_id.trim();
+      if (!name) {
+        setError('Enter a printer name.');
+        return;
+      }
+      if (form.connection_type === 'network' && !host) {
+        setError('Enter the network printer host.');
+        return;
+      }
+      if (form.connection_type === 'print_agent' && !agentId) {
+        setError('Choose a paired till agent. Issue a pairing code and enter it on the till first.');
+        return;
+      }
+      const body: Record<string, unknown> = {
+        name,
+        connection_type: form.connection_type,
+        store_id: form.store_id.trim() || null,
+        paper: form.paper === '58mm' || form.paper === 'a4' ? form.paper : '80mm',
+        purposes: form.purposes.filter((p) => purposeOptions.includes(p)),
+        copies: Math.min(9, Math.max(1, Number(form.copies) || 1)),
+      };
+      if (form.connection_type === 'network') {
+        body.host = host;
+        body.port = Number(form.port) || 9100;
+      }
+      if (form.connection_type === 'print_agent') body.agent_id = agentId;
       await api('/printers', {
         method: 'POST',
-        body: JSON.stringify({
-          name: form.name,
-          connection_type: form.connection_type,
-          store_id: form.store_id || null,
-          paper: form.paper,
-          purposes: form.purposes.filter((p) => purposeOptions.includes(p)),
-          copies: form.copies,
-          host: form.connection_type === 'network' ? form.host : null,
-          port: form.connection_type === 'network' ? form.port : 9100,
-        }),
+        body: JSON.stringify(body),
       });
-      setForm((f) => ({ ...f, name: '', host: '' }));
+      setForm((f) => ({ ...f, name: '', host: '', agent_id: '' }));
       setPrinterAddOpen(false);
       setNotice('Printer saved.');
       await load();
@@ -246,16 +277,19 @@ export default function PrinterSettingsPage() {
           method: 'POST',
           body: JSON.stringify({ status: 'printed' }),
         });
-        setNotice('Test printed. This printer is ready.');
+        setNotice('The print dialog opened. Choose the printer there. This does not confirm that paper came out.');
         await load();
         return;
       }
       if (job.status === 'printed') {
-        setNotice('Test printed. This printer is ready.');
+        setNotice('The server sent the test to the printer. This does not confirm that paper came out.');
         await load();
         return;
       }
-      setError(`Test queued as ${job.status || 'queued'} (queued is not printed)`);
+      setNotice(
+        `Test queued (${job.status || 'queued'}). Queued is not printed. This does not confirm that paper came out.`
+      );
+      await load();
     } catch (err: any) {
       setNotice('');
       setError(err?.message || 'Test print failed');
@@ -269,9 +303,14 @@ export default function PrinterSettingsPage() {
     try {
       const r = await api('/printers/agents/pairing-codes', {
         method: 'POST',
-        body: JSON.stringify({ label: form.name || 'Till agent', store_id: form.store_id || null }),
+        body: JSON.stringify({
+          label: form.name.trim() || 'Till agent',
+          store_id: form.store_id.trim() || null,
+        }),
       });
       setPairing(r.data?.pairing_code || '');
+      setNotice('Enter this code on the till agent within 15 minutes, then refresh and choose that agent.');
+      await load();
     } catch (err: any) {
       setNotice('');
       setError(err?.message || 'Pairing failed');
@@ -282,12 +321,12 @@ export default function PrinterSettingsPage() {
 
   const linked = rows.filter((row) => row.is_enabled);
   return (
-    <div className="work">
+    <div className="work print-ui-page">
       <div className="list-page-head">
         <div>
           <h1>Printers</h1>
           <p className="muted" style={{ margin: '6px 0 0' }}>
-            Link the printer on this computer in three steps. Pay then prints the customer receipt once.
+            Link a printer in three steps. The size next to Pay only changes the browser receipt. A paired till agent uses the paper size stored on that printer.
             {industry ? ` Set up for ${industryLabel(industry)}.` : ''}
           </p>
         </div>
@@ -316,7 +355,7 @@ export default function PrinterSettingsPage() {
             <b>2</b>
             <div>
               <h3>Type the name you saw</h3>
-              <p className="muted">Use the same spelling as the print dialog. That name is what Pay uses.</p>
+              <p className="muted">Use the same spelling as the print dialog. Step 3 stores that name and a paper size on the printer. The size next to Pay only changes the browser receipt.</p>
               <div className="print-actions">
                 <label>
                   Printer name
@@ -336,19 +375,34 @@ export default function PrinterSettingsPage() {
               <h3>Use it for POS receipts</h3>
               <p className="muted">
                 {linked.length
-                  ? `${linked.length} printer${linked.length === 1 ? '' : 's'} ready. Pay prints one receipt to the linked printer.`
-                  : 'Nothing is linked yet. Add the name from step 2, then Pay can print.'}
+                  ? `${linked.length} printer${linked.length === 1 ? '' : 's'} linked. Browser receipts use the size next to Pay. A paired till agent uses the paper size stored on that printer.`
+                  : 'Nothing is linked yet. Type the name from step 2, then add it.'}
               </p>
-              <div className="print-actions">
-                <button
-                  type="button"
-                  className="list-btn-primary"
-                  onClick={addInstalledPrinter}
-                  disabled={busy || !installedName.trim()}
-                  aria-label="Add to printers used for POS"
-                >
-                  Add to printers used for POS
-                </button>
+              <div className="print-ui-row">
+                <label className="print-ui-paper">
+                  Paper
+                  <select
+                    value={installedPaper === '58mm' || installedPaper === 'a4' ? installedPaper : '80mm'}
+                    onChange={(e) => setInstalledPaper(e.target.value)}
+                    aria-label="Till printer paper size"
+                  >
+                    <option value="80mm">80mm receipt</option>
+                    <option value="58mm">58mm receipt</option>
+                    <option value="a4">A4 invoice</option>
+                  </select>
+                </label>
+                <div className="print-ui-actions">
+                  <button
+                    type="button"
+                    className="btn-ok"
+                    onClick={addInstalledPrinter}
+                    disabled={busy || !installedName.trim()}
+                    aria-label="Add to printers used for POS"
+                  >
+                    Add to printers used for POS
+                  </button>
+                </div>
+                <p className="print-ui-help">58mm and 80mm are receipt rolls stored on this printer. A4 is a full page, and a receipt job still uses 80mm. A paired till agent uses this stored size. The size next to Pay only changes the browser receipt.</p>
               </div>
             </div>
           </li>
@@ -377,7 +431,7 @@ export default function PrinterSettingsPage() {
             <h2 style={{ margin: 0 }}>Printers in use</h2>
             <p className="muted" style={{ margin: '6px 0 0' }}>
               Receipt, invoice, and barcode
-              {purposeOptions.includes('kitchen') ? ', plus kitchen and bar' : ''}. A sale still completes if a printer is offline.
+              {purposeOptions.includes('kitchen') ? ', plus kitchen and bar' : ''}. Paper on each row is the size a till agent or network printer uses for POS. Sales invoice Print uses the paper beside that button in the browser. Barcode labels use copies and symbology only. Neither of those buttons sends a job to a till agent. A sale still completes if a printer is offline.
             </p>
           </div>
           <button type="button" onClick={() => setPrinterAddOpen(true)} aria-label="Add printer">
@@ -387,7 +441,7 @@ export default function PrinterSettingsPage() {
       {pairing ? (
         <div className="card" style={{ marginBottom: 16 }}>
           <strong>Pairing code (shown once):</strong> <code>{pairing}</code>
-          <p className="muted">Enter this on the till agent within 15 minutes. Do not put tokens in the repo.</p>
+          <p className="muted">Enter this code on the till agent within 15 minutes, then choose that agent in the form. Do not put tokens in the repo.</p>
         </div>
       ) : null}
 
@@ -398,7 +452,7 @@ export default function PrinterSettingsPage() {
         dirty={Boolean(form.name.trim() || form.host.trim())}
         onClose={() => setPrinterAddOpen(false)}
       >
-        <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))' }}>
+        <div className="print-ui-form">
           <label>
             Friendly name
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -427,13 +481,18 @@ export default function PrinterSettingsPage() {
             </select>
           </label>
           )}
-          <label>
+          <label className="print-ui-paper">
             Paper
-            <select value={form.paper} onChange={(e) => setForm({ ...form, paper: e.target.value })}>
-              <option value="80mm">80mm</option>
-              <option value="58mm">58mm</option>
+            <select
+              value={form.paper}
+              onChange={(e) => setForm({ ...form, paper: e.target.value })}
+              aria-label="New printer paper size"
+            >
+              <option value="80mm">80mm receipt</option>
+              <option value="58mm">58mm receipt</option>
               <option value="a4">A4 invoice</option>
             </select>
+            <span className="print-ui-help">58mm and 80mm are receipt rolls stored on this printer. A4 is a full page, and a receipt job still uses 80mm. A paired till agent uses this stored size. The size next to Pay only changes the browser receipt.</span>
           </label>
           <label>
             Copies
@@ -445,6 +504,30 @@ export default function PrinterSettingsPage() {
               onChange={(e) => setForm({ ...form, copies: Number(e.target.value) || 1 })}
             />
           </label>
+          {form.connection_type === 'print_agent' ? (
+            <label>
+              Paired till agent
+              <select
+                value={form.agent_id}
+                aria-label="Paired till agent"
+                onChange={(e) => setForm({ ...form, agent_id: e.target.value })}
+              >
+                <option value="">Choose a paired agent</option>
+                {agents
+                  .filter((row) => row.paired && row.is_active)
+                  .map((row) => (
+                    <option key={row.id} value={row.id}>
+                      {row.label || 'Till agent'}
+                    </option>
+                  ))}
+              </select>
+              {agents.some((row) => row.paired && row.is_active) ? null : (
+                <span className="print-ui-help">
+                  No till agent is paired yet. Issue a pairing code, enter it on the till within 15 minutes, then refresh this list.
+                </span>
+              )}
+            </label>
+          ) : null}
           {form.connection_type === 'network' ? (
             <>
               <label>
@@ -474,17 +557,37 @@ export default function PrinterSettingsPage() {
             </label>
           ))}
         </div>
+        {pairing ? (
+          <p className="print-ui-help" style={{ marginTop: 12 }}>
+            Pairing code (shown once): <code>{pairing}</code>. Enter it on the till within 15 minutes, then refresh and choose that agent.
+          </p>
+        ) : null}
         <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button type="button" disabled={busy || !form.name} onClick={createPrinter}>
+          <button
+            type="button"
+            disabled={
+              busy ||
+              !form.name.trim() ||
+              (form.connection_type === 'network' && !form.host.trim()) ||
+              (form.connection_type === 'print_agent' && !form.agent_id.trim())
+            }
+            onClick={createPrinter}
+          >
             Save printer
           </button>
           <button type="button" disabled={busy} onClick={issuePairing}>
             Issue till pairing code
           </button>
+          {form.connection_type === 'print_agent' ? (
+            <button type="button" disabled={busy} aria-label="Refresh paired till agents" onClick={() => void load()}>
+              Refresh paired till agents
+            </button>
+          ) : null}
         </div>
       </FormModal>
       ) : null}
 
+      <div className="print-ui-list">
       <table className="table">
         <thead>
           <tr>
@@ -499,7 +602,7 @@ export default function PrinterSettingsPage() {
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={6}>No printer linked yet. Use the three steps above.</td>
+              <td colSpan={6}>No printer is linked yet. Type the name from step 2 and add it, or add a network printer or a paired till agent.</td>
             </tr>
           ) : null}
           {rows.map((row) => (
@@ -509,17 +612,35 @@ export default function PrinterSettingsPage() {
                 {row.is_default ? ' · Default' : ''}
               </td>
               <td>{connectionLabel(row.connection_type)}</td>
-              <td>{row.paper}</td>
+              <td>
+                <div className="print-ui-row">
+                  <label className="print-ui-paper">
+                    Paper
+                    <select
+                      value={row.paper === '58mm' || row.paper === 'a4' ? row.paper : '80mm'}
+                      aria-label={`Printer paper ${row.name}`}
+                      disabled={busy}
+                      onChange={(e) => patchPrinter(row.id, { paper: e.target.value })}
+                    >
+                      <option value="80mm">80mm receipt</option>
+                      <option value="58mm">58mm receipt</option>
+                      <option value="a4">A4 invoice</option>
+                    </select>
+                  </label>
+                  <div className="print-ui-actions">
+                    <button type="button" className="btn-ok" disabled={busy} onClick={() => testPrint(row.id)}>
+                      Print test page
+                    </button>
+                  </div>
+                </div>
+              </td>
               <td>
                 {filterListedPrinterPurposes(row.purposes, purposeOptions)
                   .map((p) => printerPurposeLabel(p))
                   .join(', ')}
               </td>
-              <td>{row.is_enabled ? 'Ready' : 'Off'}</td>
+              <td>{row.is_enabled ? 'On' : 'Off'}</td>
               <td className="erp-row-actions">
-                <button type="button" disabled={busy} onClick={() => testPrint(row.id)}>
-                  Test
-                </button>
                 <button
                   type="button"
                   disabled={busy}
@@ -541,6 +662,7 @@ export default function PrinterSettingsPage() {
           ))}
         </tbody>
       </table>
+      </div>
       </div>
     </div>
   );

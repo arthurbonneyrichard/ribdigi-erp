@@ -25,6 +25,15 @@ python agent.py
 
 Do **not** commit tokens or `.env` files.
 
+## Offline sale journal
+
+`python agent.py` also listens on `127.0.0.1:8765` (override with `RIBDIGI_OFFLINE_PORT`). Point of Sale writes each queued sale there. The file is outside the browser:
+
+- `RIBDIGI_OFFLINE_JOURNAL`, or
+- `%LOCALAPPDATA%\Ribdigi\pos-offline-journal.json` on Windows
+
+`python agent.py journal` runs only that listener. It does not need `RIBDIGI_AGENT_TOKEN` and it does not upload the sale. Clearing site data does not delete the file. Recovery works only when this process was running at the time the sale was saved, and the file is still on this PC. A private window with no journal file cannot recover the sale. The browser device id is still not strong device binding.
+
 ## Hardware still required
 
 This stub prints to stdout and marks jobs `printed`. Real ESC/POS, CUPS, or

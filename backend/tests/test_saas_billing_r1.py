@@ -104,6 +104,8 @@ async def test_consented_renewal_charges_once(client):
     assert rows[0]["status"] == "paid"
     assert rows[0]["currency"] == "GHS"
     assert rows[0]["amount"] == 499
+    assert rows[0]["description"] == "Professional monthly subscription"
+    assert rows[0]["period_end"]
     account = await ac.get("/api/v1/billing/account", headers=headers)
     body = account.json()["data"]
     assert body["billing_status"] == "active"
@@ -404,6 +406,33 @@ async def test_tenant_sees_only_assigned_plan_amount(client):
     assert checkout.status_code == 422, checkout.text
     catalog = await ac.get("/api/v1/platform/billing/plans", headers=admin)
     assert catalog.status_code == 403
+
+
+async def test_active_company_without_billing_profile_shows_package_only(client):
+    ac, seed = client
+    admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    account = await ac.get("/api/v1/billing/account", headers=admin)
+    assert account.status_code == 200, account.text
+    body = account.json()["data"]
+    assert body["tenant_status"] == "active"
+    assert body["billing_status"] == "active"
+    assert "trial ends" not in body["access_note"].lower()
+    assert "read-only" not in body["access_note"].lower()
+    assert body["plan"]["name"] == "Professional"
+    assert body["plan"]["code"] == ""
+    assert body["plan"]["amount"] is None
+    plans = await ac.get("/api/v1/billing/plans", headers=admin)
+    assert plans.status_code == 200, plans.text
+    assert plans.json()["data"] == []
+    consent = await ac.post(
+        "/api/v1/billing/consent",
+        json={"plan_code": "professional-month", "accept": True},
+        headers=admin,
+    )
+    assert consent.status_code == 422, consent.text
+    invoices = await ac.get("/api/v1/billing/invoices", headers=admin)
+    assert invoices.status_code == 200, invoices.text
+    assert invoices.json()["data"] == []
 
 
 async def test_owner_reactivate_does_not_charge(client):

@@ -568,10 +568,43 @@ async def supplier_statement(db: AsyncSession, tenant_id: str, supplier_id: str)
             .order_by(m.SupplierPayment.created_at.asc())
         )
     ).scalars().all()
+    invoices = (
+        await db.execute(
+            select(m.PurchaseInvoice)
+            .where(
+                m.PurchaseInvoice.tenant_id == tenant_id,
+                m.PurchaseInvoice.supplier_id == supplier_id,
+            )
+            .order_by(m.PurchaseInvoice.created_at.asc())
+        )
+    ).scalars().all()
+    invoiced_po_ids = {
+        inv.purchase_order_id
+        for inv in invoices
+        if inv.purchase_order_id and inv.status != "cancelled"
+    }
 
     lines = []
+    open_due = 0.0
+    for inv in invoices:
+        if inv.status == "cancelled":
+            continue
+        due = max(money_json(inv.total_amount) - money_json(inv.paid_amount), 0)
+        if inv.status in ("unpaid", "partial", "overdue"):
+            open_due = money_json(round(open_due + due, 2))
+        lines.append(
+            {
+                "date": inv.invoice_date or inv.created_at,
+                "type": "purchase_invoice",
+                "reference": inv.invoice_number,
+                "debit": money_json(0),
+                "credit": money_json(inv.total_amount),
+                "status": inv.status,
+                "balance_due": money_json(due),
+            }
+        )
     for po in orders:
-        if po.status == "cancelled":
+        if po.status == "cancelled" or po.id in invoiced_po_ids:
             continue
         lines.append(
             {
@@ -605,6 +638,7 @@ async def supplier_statement(db: AsyncSession, tenant_id: str, supplier_id: str)
             "name": supplier.name,
             "balance": money_json(supplier.balance),
         },
+        "outstanding_balance": money_json(open_due),
         "lines": lines,
     }
 

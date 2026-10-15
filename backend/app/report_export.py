@@ -503,6 +503,16 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
     raise HTTPException(status_code=400, detail=f"Unsupported report type: {report_type}")
 
 
+def aggregate_store_ids(
+    store_id: str | None, store_ids: list[str] | None
+) -> list[str] | None:
+    """A chosen store is one id. An assigned-store list stays a list. Unrestricted stays None."""
+    chosen = str(store_id or "").strip() or None
+    if chosen:
+        return [chosen]
+    return store_ids
+
+
 def _flatten_dict(payload: dict, prefix: str = "") -> dict:
     out: dict[str, Any] = {}
     for key, value in payload.items():
@@ -537,6 +547,8 @@ async def build_report_payload(
     department_id: str | None = None,
     store_ids: list[str] | None = None,
     include_cost: bool = True,
+    status: str | None = None,
+    reason: str | None = None,
 ) -> Any:
     # Defense in depth: /reports/export report_type Query Literal → 422 on blank/unknown.
     if report_type not in EXPORTABLE:
@@ -621,6 +633,8 @@ async def build_report_payload(
             tenant_id,
             from_date=fd,
             to_date=td,
+            reason=reason or None,
+            status=status or None,
             store_id=store_id or None,
             store_ids=store_ids,
         )
@@ -631,7 +645,7 @@ async def build_report_payload(
             from_date=fd,
             to_date=td,
             department_id=department_id or None,
-            store_ids=store_ids,
+            store_ids=aggregate_store_ids(store_id, store_ids),
         )
     if report_type == "sales_by_department":
         return await reports_svc.sales_by_department(
@@ -640,7 +654,7 @@ async def build_report_payload(
             from_date=fd,
             to_date=td,
             department_id=department_id or None,
-            store_ids=store_ids,
+            store_ids=aggregate_store_ids(store_id, store_ids),
         )
     if report_type == "inventory_balance":
         return await reports_svc.inventory_balance(
@@ -699,6 +713,7 @@ async def build_report_payload(
             tenant_id,
             from_date=fd,
             to_date=td,
+            status=status or None,
             store_id=store_id or None,
             store_ids=store_ids,
         )
@@ -712,7 +727,7 @@ async def build_report_payload(
             store_id=store_id or None,
             store_ids=store_ids,
             variance_only=True,
-            status="completed",
+            status=status or "completed",
         )
     if report_type == "purchases_summary":
         return await reports_svc.purchases_summary(
@@ -740,6 +755,7 @@ async def build_report_payload(
             tenant_id,
             from_date=fd,
             to_date=td,
+            status=status or None,
             warehouse_id=warehouse_id or None,
             store_id=store_id or None,
             store_ids=store_ids,
@@ -750,6 +766,8 @@ async def build_report_payload(
             tenant_id,
             from_date=fd,
             to_date=td,
+            reason=reason or None,
+            status=status or None,
             warehouse_id=warehouse_id or None,
             store_id=store_id or None,
             store_ids=store_ids,

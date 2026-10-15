@@ -31,6 +31,7 @@ import {
   sortByKey,
   sortProducts,
 } from '../../../lib/listPages';
+import './inv-ui.css';
 
 const FormModal = dynamic(() => import('../../../components/FormModal'), { ssr: false });
 
@@ -166,12 +167,17 @@ function uniqueById<T extends { id?: string }>(rows: T[]): T[] {
   return out;
 }
 
-function lotNumberForExpiry(batch: string, expiry: string): string | null {
-  const lot = batch.trim();
-  if (lot) return lot;
-  const day = expiry.trim().replace(/-/g, '');
-  if (!day) return null;
-  return `LOT-${day}`;
+function catalogProductName(rows: any[], productId: unknown, embedded?: unknown): string {
+  const direct = String(embedded ?? '').trim();
+  if (direct) return direct;
+  const id = String(productId ?? '').trim();
+  if (!id) return '';
+  const row = rows.find((p) => String(p?.id) === id);
+  return String(row?.name || '').trim();
+}
+
+function countLineKey(item: { id?: unknown }): string {
+  return String(item?.id ?? '').trim();
 }
 
 function activeCatalogVariants(rows: any[]): any[] {
@@ -249,13 +255,16 @@ function warehouseRowIsLow(r: {
 
 function StockStatusBadge({ product }: { product: any }) {
   const status = stockStatusOf(product);
-  const colors: Record<string, { bg: string; fg: string; text: string }> = {
-    out: { bg: '#fee2e2', fg: '#991b1b', text: 'Out of stock' },
-    red: { bg: '#ffedd5', fg: '#c2410c', text: 'Low stock' },
-    yellow: { bg: '#fef9c3', fg: '#a16207', text: 'Near reorder' },
-    green: { bg: '#eaf8d8', fg: '#006B2E', text: 'OK' },
+  const colors: Record<string, { bg: string; fg: string }> = {
+    out: { bg: '#fee2e2', fg: '#991b1b' },
+    red: { bg: '#ffedd5', fg: '#c2410c' },
+    yellow: { bg: '#fef9c3', fg: '#a16207' },
+    green: { bg: '#eaf8d8', fg: '#006B2E' },
   };
   const c = colors[status] || colors.green;
+  const apiText =
+    product.stock_status_label ||
+    (status === 'out' ? 'out_of_stock' : status === 'red' ? 'low' : status === 'yellow' ? 'near_reorder' : 'ok');
   return (
     <span
       title={`Stock ${product.stock_qty ?? 0} · floor ${Math.max(Number(product.minimum_stock ?? 0), Number(product.reorder_level ?? 0))}`}
@@ -283,7 +292,7 @@ function StockStatusBadge({ product }: { product: any }) {
         }}
       />
       {product.stock_qty ?? 0}
-      <span style={{ fontWeight: 500, opacity: 0.85 }}>({c.text})</span>
+      <span style={{ fontWeight: 500, opacity: 0.85 }}>({apiText})</span>
     </span>
   );
 }
@@ -360,6 +369,13 @@ export default function Page() {
     setMvWarehouseId((cur: string) => (hideWarehouseUx ? '' : pick(cur)));
   }, [hideWarehouseUx, scopeStoreId, storeWarehouses]);
   const [selectedId, setSelectedId] = useState('');
+  const [adjustTargetId, setAdjustTargetId] = useState('');
+  const [outTargetId, setOutTargetId] = useState('');
+  const [outLots, setOutLots] = useState<any[]>([]);
+  const [expiryTargetId, setExpiryTargetId] = useState('');
+  const [openingTargetId, setOpeningTargetId] = useState('');
+  const [receiveTargetId, setReceiveTargetId] = useState('');
+  const [batchTargetId, setBatchTargetId] = useState('');
   const [productManageFilter, setProductManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [categoryManageFilter, setCategoryManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [brandManageFilter, setBrandManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -836,6 +852,21 @@ export default function Page() {
     else setPriceTiers([]);
     setStockVariantId('');
     setOpeningVariantId('');
+  }
+
+  async function loadOutLots(productId: string) {
+    const id = productId.trim();
+    setOutBatchId('');
+    if (!id) {
+      setOutLots([]);
+      return;
+    }
+    const b = await apiOptional(`/products/${id}/batches`);
+    if (!b.error && Array.isArray(b.data)) {
+      setOutLots(b.data.filter((row: any) => !row?.product_id || String(row.product_id) === id));
+    } else {
+      setOutLots([]);
+    }
   }
 
   useEffect(() => {
@@ -1611,7 +1642,9 @@ export default function Page() {
       setActiveCount(r.data);
       const qtys: Record<string, string> = {};
       for (const item of r.data.items || []) {
-        qtys[item.product_id] = String(item.expected_qty ?? 0);
+        const key = countLineKey(item);
+        if (!key) continue;
+        qtys[key] = String(item.expected_qty ?? 0);
       }
       setCountQtys(qtys);
       setCountNotes('');
@@ -1634,9 +1667,11 @@ export default function Page() {
       const qtys: Record<string, string> = {};
       const notes: Record<string, string> = {};
       for (const item of r.data.items || []) {
-        qtys[item.product_id] =
+        const key = countLineKey(item);
+        if (!key) continue;
+        qtys[key] =
           item.counted_qty == null ? String(item.expected_qty ?? 0) : String(item.counted_qty);
-        notes[item.product_id] = item.notes || '';
+        notes[key] = item.notes || '';
       }
       setCountQtys(qtys);
       setCountLineNotes(notes);
@@ -1652,11 +1687,14 @@ export default function Page() {
     setFormFlash({});
     setSaveBusy(true);
     try {
-      const items = (activeCount.items || []).map((item: any) => ({
-        product_id: String(item.product_id).trim(),
-        counted_qty: Number(countQtys[item.product_id] ?? item.expected_qty ?? 0),
-        notes: (countLineNotes[item.product_id] || '').trim() || null,
-      }));
+      const items = (activeCount.items || []).map((item: any) => {
+        const key = countLineKey(item);
+        return {
+          product_id: String(item.product_id).trim(),
+          counted_qty: Number((key ? countQtys[key] : undefined) ?? item.expected_qty ?? 0),
+          notes: ((key ? countLineNotes[key] : '') || '').trim() || null,
+        };
+      });
       const r = await api(`/inventory/stock-counts/${activeCount.id}/items`, {
         method: 'PATCH',
         body: JSON.stringify({ items }),
@@ -1677,11 +1715,14 @@ export default function Page() {
     setFormFlash({});
     setSaveBusy(true);
     try {
-      const items = (activeCount.items || []).map((item: any) => ({
-        product_id: String(item.product_id).trim(),
-        counted_qty: Number(countQtys[item.product_id] ?? item.expected_qty ?? 0),
-        notes: (countLineNotes[item.product_id] || '').trim() || null,
-      }));
+      const items = (activeCount.items || []).map((item: any) => {
+        const key = countLineKey(item);
+        return {
+          product_id: String(item.product_id).trim(),
+          counted_qty: Number((key ? countQtys[key] : undefined) ?? item.expected_qty ?? 0),
+          notes: ((key ? countLineNotes[key] : '') || '').trim() || null,
+        };
+      });
       await api(`/inventory/stock-counts/${activeCount.id}/items`, {
         method: 'PATCH',
         body: JSON.stringify({ items }),
@@ -1759,10 +1800,8 @@ export default function Page() {
     }
     setSaveBusy(true);
     try {
-      const lotNumber = wantsExpiry
-        ? lotNumberForExpiry(createOpeningBatch, createOpeningExpiry || createOpeningMfg)
-        : createOpeningBatch.trim() || null;
-      const tracksBatches = Boolean(lotNumber);
+      const lotNumber = createOpeningBatch.trim() || null;
+      const tracksBatches = Boolean(lotNumber || createOpeningExpiry.trim() || createOpeningMfg.trim());
       const r = await api('/products', {
         method: 'POST',
         body: JSON.stringify({
@@ -1913,7 +1952,7 @@ export default function Page() {
     if (saveBusy) return;
     setError('');
     setFormFlash({});
-    const productId = selectedId.trim();
+    const productId = expiryTargetId.trim();
     if (!productId) {
       setFormFlash({ err: 'Select a product' });
       return;
@@ -1933,7 +1972,7 @@ export default function Page() {
       setFormFlash({ err: 'Enter an expiry date' });
       return;
     }
-    const batch = lotNumberForExpiry(lotBatch, expiry);
+    const batch = lotBatch.trim() || null;
     const product = products.find((p) => p.id === productId);
     const useOpening = Number(product?.stock_qty ?? 0) <= 0;
     setSaveBusy(true);
@@ -1958,7 +1997,7 @@ export default function Page() {
           setFormFlash({ err: 'Server did not confirm opening stock' });
           return;
         }
-        setFormFlash({ ok: `Expiry saved on lot ${batch} · opening ${r.data.reference}` });
+        setFormFlash({ ok: `Expiry saved${batch ? ` on lot ${batch}` : ''} · opening ${r.data.reference}` });
       } else {
         const r = await api('/inventory/stock-in', {
           method: 'POST',
@@ -1974,7 +2013,7 @@ export default function Page() {
           setFormFlash({ err: 'Server did not confirm the lot' });
           return;
         }
-        setFormFlash({ ok: `Expiry saved on lot ${batch} — on-hand ${r.data.stock_qty}` });
+        setFormFlash({ ok: `Expiry saved${batch ? ` on lot ${batch}` : ''} — on-hand ${r.data.stock_qty}` });
       }
       setLotQty('');
       setLotExpiry('');
@@ -2691,11 +2730,12 @@ export default function Page() {
     }
   }
 
-  async function stockInBatch(opts?: { requireBatch?: boolean }) {
+  async function stockInBatch(opts?: { requireBatch?: boolean; productId?: string }) {
     if (saveBusy) return;
     setError('');
     setFormFlash({});
-    if (!selectedId) {
+    const productId = (opts?.productId || '').trim();
+    if (!productId) {
       setFormFlash({ err: 'Select a product' });
       return;
     }
@@ -2718,13 +2758,13 @@ export default function Page() {
       const r = await api('/inventory/stock-in', {
         method: 'POST',
         body: JSON.stringify({
-          product_id: selectedId.trim(),
+          product_id: productId,
           quantity: qty,
           unit_id: stockUnitId.trim() || null,
           warehouse_id: stockWarehouseId.trim() || null || wh,
           variant_id: stockVariantId.trim() || null,
           notes: stockNotes.trim() || null,
-          batch_number: batchNumber.trim() || null || lotNumberForExpiry(batchNumber, expiryDate),
+          batch_number: batchNumber.trim() || null,
           manufacturing_date: mfgDate.trim() || null,
           expiry_date: expiryDate.trim() || null,
           reference_type: stockRefType.trim() || null,
@@ -2741,7 +2781,7 @@ export default function Page() {
       setExpiryDate('');
       setStockNotes('');
       await refresh();
-      await refreshSelected(selectedId);
+      await refreshSelected(productId);
       if (whStockWarehouseId) await loadWarehouseStock();
     } catch (err: any) {
       setFormFlash({ err: err.message || 'Could not receive stock' });
@@ -2755,7 +2795,8 @@ export default function Page() {
     setError('');
     setMessage('');
     setFormFlash({});
-    if (!selectedId) {
+    const productId = openingTargetId.trim();
+    if (!productId) {
       setFormFlash({ err: 'Select a product' });
       return;
     }
@@ -2776,12 +2817,12 @@ export default function Page() {
     setSaveBusy(true);
     try {
       const line: Record<string, unknown> = {
-        product_id: selectedId.trim(),
+        product_id: productId,
         quantity: qty,
         unit_id: openingUnitId.trim() || null,
         warehouse_id: openingWarehouseId.trim() || openingWhId || null,
         variant_id: openingVariantId.trim() || null,
-        batch_number: openingBatch.trim() || null || lotNumberForExpiry(openingBatch, openingExpiry || openingMfg),
+        batch_number: openingBatch.trim() || null,
         manufacturing_date: openingMfg.trim() || null,
         expiry_date: openingExpiry.trim() || null,
         notes: openingLineNotes.trim() || null,
@@ -2810,7 +2851,7 @@ export default function Page() {
       setOpeningNotes('');
       setOpeningLineNotes('');
       await refresh();
-      await refreshSelected(selectedId);
+      await refreshSelected(productId);
       setTab('opening');
     } catch (err: any) {
       setFormFlash({ err: err.message || 'Could not post opening stock' });
@@ -2824,7 +2865,8 @@ export default function Page() {
     setError('');
     setMessage('');
     setFormFlash({});
-    if (!selectedId) {
+    const productId = adjustTargetId.trim();
+    if (!productId) {
       setFormFlash({ err: 'Select a product' });
       return;
     }
@@ -2844,7 +2886,7 @@ export default function Page() {
     setSaveBusy(true);
     try {
       const reason = adjReason;
-      const r = await api(`/inventory/adjust/${selectedId}`, {
+      const r = await api(`/inventory/adjust/${productId}`, {
         method: 'POST',
         body: JSON.stringify({
           quantity: qty,
@@ -2874,7 +2916,8 @@ export default function Page() {
     setError('');
     setMessage('');
     setFormFlash({});
-    if (!selectedId) {
+    const productId = outTargetId.trim();
+    if (!productId) {
       setFormFlash({ err: 'Select a product' });
       return;
     }
@@ -2887,13 +2930,18 @@ export default function Page() {
       setFormFlash({ err: 'Quantity must be a positive number' });
       return;
     }
+    const batchId = outBatchId.trim();
+    if (batchId && !outLots.some((b) => String(b.id) === batchId)) {
+      setFormFlash({ err: 'Pick a batch that belongs to this product' });
+      return;
+    }
     setSaveBusy(true);
     try {
       const r = await api('/inventory/stock-out', {
         method: 'POST',
         body: JSON.stringify({
           // trim so Stock out (UuidIdValue product_id) does not 422 on whitespace
-          product_id: selectedId.trim(),
+          product_id: productId,
           quantity: qty,
           reference_type: outRefType,
           reference_id: outRefId.trim() || null,
@@ -2901,7 +2949,7 @@ export default function Page() {
           warehouse_id: outWarehouseId.trim() || null,
           variant_id: outVariantId.trim() || null,
           unit_id: outUnitId.trim() || null,
-          batch_id: outBatchId.trim() || null,
+          batch_id: batchId || null,
         }),
       });
       if (r.data?.stock_qty == null) {
@@ -3008,6 +3056,7 @@ export default function Page() {
   }
 
   const selected = products.find((p) => p.id === selectedId);
+  const openingProduct = products.find((p) => String(p.id) === openingTargetId);
   const managedProducts = products.filter((p) => {
     if (productManageFilter === 'all') return true;
     const active = p.is_active !== false;
@@ -3246,7 +3295,7 @@ export default function Page() {
     ? (lowStockPayload?.warehouse_low_stock || []).map((w: any) => ({
         key: `w-${w.product_id}-${w.warehouse_id || ''}`,
         id: w.product_id,
-        name: w.name,
+        name: w.product_name || w.name || '',
         sku: w.sku,
         category: w.category || '—',
         qty: w.quantity,
@@ -3256,7 +3305,7 @@ export default function Page() {
     : (lowStockPayload?.products || []).map((p: any) => ({
         key: `p-${p.id}`,
         id: p.id,
-        name: p.name,
+        name: p.product_name || p.name || '',
         sku: p.sku,
         category: p.category || '—',
         qty: p.stock_qty,
@@ -3269,50 +3318,80 @@ export default function Page() {
   });
 
   return (
-    <>
+    <div className="inv-ui-page">
       <h1>{VIEW_TITLE[tab]}</h1>
-      <p className="muted">
+      <p className="muted inv-ui-lead">
         {hotelOps
-          ? 'Linen, toiletries, F&B, and cleaning supplies use the same inventory ledger as the rest of the hotel.'
-          : 'Products, catalog, batches, stock, transfers, expiry, counts, history, and adjustments'}
+          ? 'Linen, toiletries, F&B, and cleaning supplies use the same inventory ledger as the rest of the hotel. '
+          : ''}
+        Start with products, then categories, brands, and units, then variants, then stock: warehouse stock, adjust, count, history, low stock, expiry, and batches.
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        {(
-          [
-            ['products', 'Products'],
-            ['labels', 'Labels'],
-            ['lookup', 'Lookup'],
-            ['import', 'Import'],
-            ['categories', 'Categories'],
-            ['brands', 'Brands'],
-            ['units', 'Units'],
-            ['variants', 'Variants'],
-            ['batches', 'Batches'],
-            ['opening', 'Opening stock'],
-            ['stockout', 'Stock out'],
-            ['lowstock', 'Low stock'],
-            ['whstock', 'Manage stock'],
-            ['transfers', 'Stock transfer'],
-            ['expiry', 'Expiry'],
-            ['counts', 'Stock count'],
-            ['movements', 'Stock history'],
-            ['adjust', 'Adjust stock'],
-          ] as const
-        )
-          .filter(([id]) => id !== 'transfers' || retailTransfers)
-          .map(([id, label]) => (
-          <button
-            key={id}
-            onClick={() => selectTab(id)}
-            disabled={tab === id}
-            aria-label={`Show inventory ${id} tab`}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="inv-ui-nav">
+        <div className="inv-ui-nav-group">
+          <p className="inv-ui-nav-label">Products</p>
+          <div className="inv-ui-nav-row">
+            <button type="button" onClick={() => selectTab('products')} disabled={tab === 'products'} aria-label="Show inventory products tab">Products</button>
+          </div>
+        </div>
+        <div className="inv-ui-nav-group">
+          <p className="inv-ui-nav-label">Catalog</p>
+          <div className="inv-ui-nav-row">
+            {(
+              [
+                ['categories', 'Categories'],
+                ['brands', 'Brands'],
+                ['units', 'Units'],
+                ['variants', 'Variants'],
+              ] as const
+            ).map(([id, label]) => (
+              <button key={id} type="button" onClick={() => selectTab(id)} disabled={tab === id} aria-label={`Show inventory ${id} tab`}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="inv-ui-nav-group">
+          <p className="inv-ui-nav-label">Stock</p>
+          <div className="inv-ui-nav-row">
+            {(
+              [
+                ['whstock', 'Warehouse stock'],
+                ['adjust', 'Adjust stock'],
+                ['counts', 'Stock count'],
+                ['movements', 'Stock history'],
+                ['lowstock', 'Low stock'],
+                ['expiry', 'Expiry'],
+                ['batches', 'Batches'],
+              ] as const
+            ).map(([id, label]) => (
+              <button key={id} type="button" onClick={() => selectTab(id)} disabled={tab === id} aria-label={`Show inventory ${id} tab`}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <details className="inv-ui-more">
+          <summary>More inventory tools</summary>
+          <div className="inv-ui-nav-row">
+            {(
+              [
+                ['labels', 'Labels'],
+                ['lookup', 'Lookup'],
+                ['import', 'Import'],
+                ['opening', 'Opening stock'],
+                ['stockout', 'Stock out'],
+                ...(retailTransfers ? [['transfers', 'Stock transfer'] as [Tab, string]] : []),
+              ] as [Tab, string][]
+            ).map(([id, label]) => (
+              <button key={id} type="button" onClick={() => selectTab(id)} disabled={tab === id} aria-label={`Show inventory ${id} tab`}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </details>
       </div>
 
       {tab !== 'products' &&
@@ -3703,10 +3782,9 @@ export default function Page() {
             {productPaged.total === 0 ? (
               <div className="list-empty">
                 <p style={{ margin: 0 }}>
-                  {managedProducts.length === 0 ? 'No products yet.' : 'No products match these filters.'}
-                </p>
-                <p className="muted" style={{ margin: '8px 0 0' }}>
-                  Add a product to sell it at POS and keep stock.
+                  {managedProducts.length === 0
+                    ? 'No products yet. Add a product to sell it and track stock.'
+                    : 'No products match these filters. Clear the filters or add a product.'}
                 </p>
                 <button
                   type="button"
@@ -4758,10 +4836,7 @@ export default function Page() {
           </div>
           {visibleCategories.length === 0 ? (
             <div className="cat-empty">
-              <p style={{ margin: 0 }}>No categories yet.</p>
-              <p className="muted" style={{ margin: '8px 0 0' }}>
-                Add a main category, then nest others under it.
-              </p>
+              <p style={{ margin: 0 }}>No categories yet. Add a category, then use it on products.</p>
               <button type="button" style={{ marginTop: 12 }} onClick={openCategoryCreate}>
                 Add category
               </button>
@@ -4992,10 +5067,7 @@ export default function Page() {
           </div>
           {visibleBrands.length === 0 ? (
             <div className="cat-empty">
-              <p style={{ margin: 0 }}>No brands yet.</p>
-              <p className="muted" style={{ margin: '8px 0 0' }}>
-                Add a brand, then assign it on products.
-              </p>
+              <p style={{ margin: 0 }}>No brands yet. Add a brand, then assign it on products.</p>
               <button type="button" style={{ marginTop: 12 }} onClick={openBrandCreate}>
                 Add brand
               </button>
@@ -5180,10 +5252,7 @@ export default function Page() {
           </div>
           {visibleUnits.length === 0 ? (
             <div className="cat-empty">
-              <p style={{ margin: 0 }}>No units yet.</p>
-              <p className="muted" style={{ margin: '8px 0 0' }}>
-                Add a main unit, then nest conversions under it.
-              </p>
+              <p style={{ margin: 0 }}>No units yet. Add a main unit, then nest conversions under it.</p>
               <button type="button" style={{ marginTop: 12 }} onClick={openUnitCreate}>
                 Add unit
               </button>
@@ -5390,10 +5459,7 @@ export default function Page() {
             </div>
           ) : visibleVariants.length === 0 ? (
             <div className="cat-empty">
-              <p style={{ margin: 0 }}>No variants yet.</p>
-              <p className="muted" style={{ margin: '8px 0 0' }}>
-                Choose the parent product, then add size, color, or other options.
-              </p>
+              <p style={{ margin: 0 }}>No variants yet. Choose the parent product, then add size, color, or other options.</p>
               <button type="button" style={{ marginTop: 12 }} onClick={openVariantCreate} disabled={!products.length}>
                 Add variant
               </button>
@@ -5606,6 +5672,9 @@ export default function Page() {
               type="button"
               onClick={() => {
                 setFormFlash({});
+                setBatchTargetId('');
+                setBatchNumber('');
+                setStockVariantId('');
                 setBatchDrawerOpen(true);
               }}
               aria-label="Receive batch"
@@ -5648,15 +5717,15 @@ export default function Page() {
           ) : null}
           {visibleBatches.length === 0 ? (
             <div className="cat-empty">
-              <p style={{ margin: 0 }}>No batches yet.</p>
-              <p className="muted" style={{ margin: '8px 0 0' }}>
-                Receive stock with a batch number, location, and optional expiry.
-              </p>
+              <p style={{ margin: 0 }}>No batches yet. Receive a batch with a product, location, and optional expiry.</p>
               <button
                 type="button"
                 style={{ marginTop: 12 }}
                 onClick={() => {
                   setFormFlash({});
+                  setBatchTargetId('');
+                  setBatchNumber('');
+                  setStockVariantId('');
                   setBatchDrawerOpen(true);
                 }}
               >
@@ -5678,13 +5747,16 @@ export default function Page() {
                 </thead>
                 <tbody>
                   {visibleBatches.map((b) => {
-                    const prod = products.find((p) => p.id === b.product_id);
                     const wh = warehouses.find((w) => w.id === b.warehouse_id);
                     const vr = variants.find((v) => v.id === b.variant_id);
                     const hold = pharmacyOps ? openHoldFor(b) : null;
                     return (
                       <tr key={b.id}>
-                        <td data-label="Product">{prod?.name || prod?.sku || '—'}</td>
+                        <td data-label="Product">
+                          <span className="inv-ui-name">
+                            {catalogProductName(products, b.product_id, b.product_name) || 'Product name is not on this lot.'}
+                          </span>
+                        </td>
                         <td data-label="Batch">
                           <div className="cat-name-cell">
                             <strong>{b.batch_number}</strong>
@@ -5753,8 +5825,11 @@ export default function Page() {
                 </label>
                 <select
                   id="batch-product"
-                  value={selectedId}
-                  onChange={(e) => setSelectedId(e.target.value)}
+                  value={batchTargetId}
+                  onChange={(e) => {
+                    setBatchTargetId(e.target.value);
+                    setStockVariantId('');
+                  }}
                   aria-label="Batch product"
                 >
                   <option value="">Select product</option>
@@ -5824,16 +5899,13 @@ export default function Page() {
                 </select>
                 <select
                   value={stockVariantId}
-                  onChange={(e) => {
-                    const id = e.target.value;
-                    setStockVariantId(id);
-                    const row = variants.find((v) => v.id === id);
-                    if (row?.product_id) setSelectedId(row.product_id);
-                  }}
+                  onChange={(e) => setStockVariantId(e.target.value)}
                   aria-label="Stock-in variant"
                 >
                   <option value="">Variant (optional)</option>
-                  {selectorVariants.map((v) => (
+                  {selectorVariants
+                    .filter((v) => !batchTargetId || String(v.product_id) === batchTargetId)
+                    .map((v) => (
                     <option key={v.id} value={v.id}>
                       {variantOptionLabel(v, products)}
                     </option>
@@ -5861,8 +5933,8 @@ export default function Page() {
                   <button
                     type="button"
                     className="btn-ok"
-                    onClick={() => stockInBatch({ requireBatch: true })}
-                    disabled={!selectedId || !batchNumber.trim() || saveBusy}
+                    onClick={() => stockInBatch({ requireBatch: true, productId: batchTargetId })}
+                    disabled={!batchTargetId || !batchNumber.trim() || saveBusy}
                     aria-label="Receive batch"
                   >
                     {saveBusy ? 'Saving…' : 'Receive batch'}
@@ -5891,6 +5963,8 @@ export default function Page() {
               type="button"
               onClick={() => {
                 setFormFlash({});
+                setOpeningTargetId('');
+                setOpeningVariantId('');
                 setOpeningDrawerOpen(true);
               }}
               aria-label="Post opening stock"
@@ -5908,15 +5982,16 @@ export default function Page() {
           </div>
           {visibleOpening.length === 0 ? (
             <div className="cat-empty">
-              <p style={{ margin: 0 }}>No opening stock posted yet.</p>
-              <p className="muted" style={{ margin: '8px 0 0' }}>
-                Set starting on-hand quantity for go-live. The document number is assigned when you save.
+              <p style={{ margin: 0 }}>
+                No opening stock posted yet. Post opening stock for go-live; the document number is assigned when you save.
               </p>
               <button
                 type="button"
                 style={{ marginTop: 12 }}
                 onClick={() => {
                   setFormFlash({});
+                  setOpeningTargetId('');
+                  setOpeningVariantId('');
                   setOpeningDrawerOpen(true);
                 }}
               >
@@ -5937,11 +6012,13 @@ export default function Page() {
                 </thead>
                 <tbody>
                   {visibleOpening.map((m) => {
-                    const p = products.find((x) => x.id === m.product_id);
+                    const p = products.find((x) => String(x.id) === String(m.product_id));
                     return (
                       <tr key={m.id}>
                         <td data-label="Product">
-                          <strong className="list-prod-name">{displayProductName(p?.name)}</strong>
+                          <strong className="inv-ui-name">
+                            {catalogProductName(products, m.product_id, m.product_name) || 'Product name is not on this receipt.'}
+                          </strong>
                         </td>
                         <td data-label="SKU" className="list-secondary">
                           {p?.sku || '—'}
@@ -5971,7 +6048,7 @@ export default function Page() {
                     type="button"
                     className="btn-ok"
                     onClick={postOpeningStock}
-                    disabled={!selectedId || saveBusy}
+                    disabled={!openingTargetId || saveBusy}
                     aria-label="Post opening stock"
                   >
                     {saveBusy ? 'Saving…' : 'Post opening stock'}
@@ -5990,33 +6067,17 @@ export default function Page() {
               }
             >
                 <div className="erp-form-grid form-grid">
-                <p className="muted inv-child span-2" style={{ margin: 0 }}>
-                  Number {invNumbering.opening_stock_numbering?.preview || 'assigned when you save'}
-                </p>
-                <input value={osPrefix} onChange={(e) => setOsPrefix(e.target.value)} aria-label="Opening stock number prefix" placeholder="Prefix" />
-                <input value={osNext} onChange={(e) => setOsNext(e.target.value)} aria-label="Opening stock next number" placeholder="Next #" />
-                <input value={xferNumPrefix} onChange={(e) => setXferNumPrefix(e.target.value)} aria-label="Stock transfer number prefix" placeholder="Transfer prefix" />
-                <input value={xferNumNext} onChange={(e) => setXferNumNext(e.target.value)} aria-label="Stock transfer next number" placeholder="Next #" />
-                <input value={countNumPrefix} onChange={(e) => setCountNumPrefix(e.target.value)} aria-label="Stock count number prefix" placeholder="Count prefix" />
-                <input value={countNumNext} onChange={(e) => setCountNumNext(e.target.value)} aria-label="Stock count next number" placeholder="Next #" />
-                <button type="button" onClick={saveInventoryNumbering} aria-label="Save inventory numbering">
-                  Save numbering
-                </button>
-                <input
-                  className="span-2"
-                  readOnly
-                  value={invNumbering.opening_stock_numbering?.preview || ''}
-                  placeholder="Assigned when you save"
-                  aria-label="Opening stock reference"
-                />
                 <div className="field">
                 <label className="muted" htmlFor="opening-product">
                   Product
                 </label>
                 <select
                   id="opening-product"
-                  value={selectedId}
-                  onChange={(e) => setSelectedId(e.target.value)}
+                  value={openingTargetId}
+                  onChange={(e) => {
+                    setOpeningTargetId(e.target.value);
+                    setOpeningVariantId('');
+                  }}
                   aria-label="Opening stock product"
                 >
                   <option value="">Select product</option>
@@ -6061,16 +6122,13 @@ export default function Page() {
                 </select>
                 <select
                   value={openingVariantId}
-                  onChange={(e) => {
-                    const id = e.target.value;
-                    setOpeningVariantId(id);
-                    const row = variants.find((v) => v.id === id);
-                    if (row?.product_id) setSelectedId(row.product_id);
-                  }}
+                  onChange={(e) => setOpeningVariantId(e.target.value)}
                   aria-label="Opening stock variant"
                 >
                   <option value="">Variant (optional)</option>
-                  {selectorVariants.map((v) => (
+                  {selectorVariants
+                    .filter((v) => !openingTargetId || String(v.product_id) === openingTargetId)
+                    .map((v) => (
                     <option key={v.id} value={v.id}>
                       {variantOptionLabel(v, products)}
                     </option>
@@ -6080,7 +6138,7 @@ export default function Page() {
                   inline
                   value={openingUnitCost}
                   onChange={(e) => setOpeningUnitCost(e.target.value)}
-                  placeholder={`Unit cost (default ${selected?.cost_price ?? 0})`}
+                  placeholder={`Unit cost (default ${openingProduct?.cost_price ?? 0})`}
                   aria-label="Opening stock unit cost"
                 />
                 <input
@@ -6128,6 +6186,30 @@ export default function Page() {
                   />
                   Post inventory journal
                 </label>
+                <details className="inv-ui-settings">
+                  <summary>Document numbering</summary>
+                  <div className="inv-ui-settings-grid">
+                <p className="muted inv-child span-2" style={{ margin: 0 }}>
+                  Number {invNumbering.opening_stock_numbering?.preview || 'assigned when you save'}
+                </p>
+                <input value={osPrefix} onChange={(e) => setOsPrefix(e.target.value)} aria-label="Opening stock number prefix" placeholder="Prefix" />
+                <input value={osNext} onChange={(e) => setOsNext(e.target.value)} aria-label="Opening stock next number" placeholder="Next #" />
+                <input value={xferNumPrefix} onChange={(e) => setXferNumPrefix(e.target.value)} aria-label="Stock transfer number prefix" placeholder="Transfer prefix" />
+                <input value={xferNumNext} onChange={(e) => setXferNumNext(e.target.value)} aria-label="Stock transfer next number" placeholder="Next #" />
+                <input value={countNumPrefix} onChange={(e) => setCountNumPrefix(e.target.value)} aria-label="Stock count number prefix" placeholder="Count prefix" />
+                <input value={countNumNext} onChange={(e) => setCountNumNext(e.target.value)} aria-label="Stock count next number" placeholder="Next #" />
+                <button type="button" onClick={saveInventoryNumbering} aria-label="Save inventory numbering">
+                  Save numbering
+                </button>
+                <input
+                  className="span-2"
+                  readOnly
+                  value={invNumbering.opening_stock_numbering?.preview || ''}
+                  placeholder="Assigned when you save"
+                  aria-label="Opening stock reference"
+                />
+                  </div>
+                </details>
                 </div>
             </FormModal>
           ) : null}
@@ -6145,6 +6227,10 @@ export default function Page() {
               onClick={() => {
                 setFormFlash({});
                 setExpiryFailed(false);
+                setExpiryTargetId('');
+                setLotBatch('');
+                setLotQty('');
+                setLotExpiry('');
                 setExpiryDrawerOpen(true);
               }}
               aria-label="Set expiry"
@@ -6177,19 +6263,20 @@ export default function Page() {
             <div className="cat-empty">
               <p style={{ margin: 0 }}>
                 {expiryWhen === 'expired'
-                  ? 'No expired lots on hand.'
+                  ? 'No expired lots on hand. Set expiry on the lot that is already in stock.'
                   : expiryWhen === 'soon'
-                    ? 'No lots expiring in the next 30 days.'
-                    : 'No batches expiring in the next year.'}
-              </p>
-              <p className="muted" style={{ margin: '8px 0 0' }}>
-                After you add a product, set expiry here with quantity and warehouse. Expiry is stored on the lot, not the product header.
+                    ? 'No lots expiring in the next 30 days. Set expiry when you receive the next lot.'
+                    : 'No batches expiring in the next year. Set expiry when you receive a lot.'}
               </p>
               <button
                 type="button"
                 style={{ marginTop: 12 }}
                 onClick={() => {
                   setFormFlash({});
+                  setExpiryTargetId('');
+                  setLotBatch('');
+                  setLotQty('');
+                  setLotExpiry('');
                   setExpiryDrawerOpen(true);
                 }}
                 aria-label="Set expiry"
@@ -6207,21 +6294,41 @@ export default function Page() {
                     <th>Qty</th>
                     <th>Expiry</th>
                     <th>Location</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {visibleExpiring.map((b) => {
-                    const prod = products.find((p) => p.id === b.product_id);
                     const wh = warehouses.find((w) => w.id === b.warehouse_id);
+                    const lotName = catalogProductName(products, b.product_id, b.product_name);
                     return (
                       <tr key={b.id}>
                         <td data-label="Batch">
                           <strong>{b.batch_number}</strong>
                         </td>
-                        <td data-label="Product">{prod?.name || 'Unknown product'}</td>
+                        <td data-label="Product">
+                          <span className="inv-ui-name">{lotName || 'Product name is not on this lot.'}</span>
+                        </td>
                         <td data-label="Qty">{b.quantity}</td>
                         <td data-label="Expiry">{b.expiry_date ? String(b.expiry_date).slice(0, 10) : '—'}</td>
                         <td data-label="Location">{wh ? wh.name || wh.code : '—'}</td>
+                        <td className="cat-actions" data-label="Actions">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setExpiryTargetId(String(b.product_id || ''));
+                              setLotBatch(String(b.batch_number || ''));
+                              setLotWh(String(b.warehouse_id || ''));
+                              setLotExpiry(b.expiry_date ? String(b.expiry_date).slice(0, 10) : '');
+                              setLotQty('');
+                              setFormFlash({});
+                              setExpiryDrawerOpen(true);
+                            }}
+                            aria-label={`Set expiry ${b.id}`}
+                          >
+                            Use this lot
+                          </button>
+                        </td>
                       </tr>
                     );
                   })}
@@ -6244,7 +6351,7 @@ export default function Page() {
                     type="button"
                     className="btn-ok"
                     onClick={recordExpiryLot}
-                    disabled={!selectedId || saveBusy}
+                    disabled={!expiryTargetId || saveBusy}
                     aria-label="Save expiry lot"
                   >
                     {saveBusy ? 'Saving…' : 'Save expiry'}
@@ -6272,8 +6379,11 @@ export default function Page() {
               </label>
               <select
                 id="expiry-product"
-                value={selectedId}
-                onChange={(e) => setSelectedId(e.target.value)}
+                value={expiryTargetId}
+                onChange={(e) => {
+                  setExpiryTargetId(e.target.value);
+                  setLotBatch('');
+                }}
                 aria-label="Expiry product"
               >
                 <option value="">Select product</option>
@@ -6436,9 +6546,6 @@ export default function Page() {
               dirty={countFormDirty}
               onClose={() => setCountDrawerOpen(false)}
             >
-                <p className="muted inv-child" style={{ margin: 0 }}>
-                  Number {invNumbering.stock_count_numbering?.preview || 'assigned when you save'}
-                </p>
                 {!hideWarehouseUx ? (
                 <select
                   value={countWarehouseId}
@@ -6461,6 +6568,12 @@ export default function Page() {
                   placeholder="Notes (optional)"
                   aria-label="Stock count notes"
                 />
+                <details className="inv-ui-settings">
+                  <summary>Document numbering</summary>
+                  <p className="muted inv-child" style={{ margin: '8px 0 0' }}>
+                    Number {invNumbering.stock_count_numbering?.preview || 'assigned when you save'}
+                  </p>
+                </details>
                 <div className="cat-save-row">
                   <button
                     type="button"
@@ -6486,13 +6599,22 @@ export default function Page() {
           ) : null}
           {activeCount ? (
             <>
-              <div className="inv-drawer-back" onClick={() => !saveBusy && setActiveCount(null)} aria-hidden />
+              <div className="inv-drawer-back" onClick={() => {
+                if (saveBusy) return;
+                setActiveCount(null);
+                setCountQtys({});
+                setCountLineNotes({});
+              }} aria-hidden />
               <aside className="inv-drawer drawer" aria-label="Stock count details" style={{ width: 'min(560px,100vw)' }}>
                 <div className="inv-drawer-head">
                   <h3>
                     {activeCount.count_number} — {activeCount.status}
                   </h3>
-                  <button type="button" onClick={() => setActiveCount(null)} disabled={saveBusy}>
+                  <button type="button" onClick={() => {
+                    setActiveCount(null);
+                    setCountQtys({});
+                    setCountLineNotes({});
+                  }} disabled={saveBusy}>
                     Close
                   </button>
                 </div>
@@ -6512,9 +6634,7 @@ export default function Page() {
                       {(activeCount.items || []).map((item: any) => (
                         <tr key={item.id}>
                           <td data-label="Product">
-                            <strong className="list-prod-name">
-                              {displayProductName(item.product_name)}
-                            </strong>
+                            <strong className="inv-ui-name">{item.product_name || 'Product name is not on this count line.'}</strong>
                           </td>
                           <td data-label="SKU" className="list-secondary">
                             {item.product_sku || '—'}
@@ -6522,20 +6642,25 @@ export default function Page() {
                           <td data-label="Expected">{item.expected_qty}</td>
                           <td data-label="Counted">
                             <input
-                              value={countQtys[item.product_id] ?? ''}
+                              value={countQtys[countLineKey(item)] ?? ''}
                               disabled={activeCount.status !== 'draft'}
-                              onChange={(e) => setCountQtys({ ...countQtys, [item.product_id]: e.target.value })}
+                              onChange={(e) => {
+                                const key = countLineKey(item);
+                                const value = e.target.value;
+                                if (!key) return;
+                                setCountQtys((prev) => ({ ...prev, [key]: value }));
+                              }}
                               aria-label={`Counted qty ${item.product_sku || item.product_id}`}
                             />
                             <input
-                              value={countLineNotes[item.product_id] ?? ''}
+                              value={countLineNotes[countLineKey(item)] ?? ''}
                               disabled={activeCount.status !== 'draft'}
-                              onChange={(e) =>
-                                setCountLineNotes({
-                                  ...countLineNotes,
-                                  [item.product_id]: e.target.value,
-                                })
-                              }
+                              onChange={(e) => {
+                                const key = countLineKey(item);
+                                const value = e.target.value;
+                                if (!key) return;
+                                setCountLineNotes((prev) => ({ ...prev, [key]: value }));
+                              }}
                               placeholder="Stock count line notes"
                               aria-label={`Stock count line notes ${item.product_sku || item.product_id}`}
                             />
@@ -6675,11 +6800,7 @@ export default function Page() {
           </p>
           {visibleMovements.length === 0 ? (
             <div className="cat-empty">
-              <p style={{ margin: 0 }}>No stock history yet.</p>
-              <p className="muted" style={{ margin: '8px 0 0' }}>
-                Receives, issues, counts, transfers, and adjustments appear here. Records are kept for
-                audit.
-              </p>
+              <p style={{ margin: 0 }}>No stock history yet. Receive, issue, count, transfer, or adjust stock and the record appears here.</p>
             </div>
           ) : (
             <div className="cat-table-wrap">
@@ -6698,7 +6819,7 @@ export default function Page() {
                     <tr key={mv.id}>
                       <td data-label="When">{mv.created_at ? String(mv.created_at).slice(0, 19) : '—'}</td>
                       <td data-label="Product">
-                        <strong className="list-prod-name">{displayProductName(mv.product_name)}</strong>
+                        <strong className="inv-ui-name">{mv.product_name || 'Product name is not on this movement.'}</strong>
                         <div className="muted inv-child">
                           {mv.reason || '—'} · {mv.quantity_before} → {mv.quantity_after}
                         </div>
@@ -6724,6 +6845,10 @@ export default function Page() {
               onClick={() => {
                 setFormFlash({});
                 setAdjConfirming(false);
+                setAdjustTargetId('');
+                setAdjQty('');
+                setAdjReason('');
+                setAdjNotes('');
                 setAdjustDrawerOpen(true);
               }}
               aria-label="Adjust stock"
@@ -6776,9 +6901,12 @@ export default function Page() {
                           <button
                             type="button"
                             onClick={() => {
-                              setSelectedId(p.id);
+                              setAdjustTargetId(p.id);
                               setFormFlash({});
                               setAdjConfirming(false);
+                              setAdjQty('');
+                              setAdjReason('');
+                              setAdjNotes('');
                               setAdjustDrawerOpen(true);
                             }}
                             aria-label={`Adjust ${p.name}`}
@@ -6808,9 +6936,9 @@ export default function Page() {
                 </label>
                 <select
                   id="adj-product"
-                  value={selectedId}
+                  value={adjustTargetId}
                   onChange={(e) => {
-                    setSelectedId(e.target.value);
+                    setAdjustTargetId(e.target.value);
                     setAdjConfirming(false);
                   }}
                   aria-label="Adjustment product"
@@ -6881,7 +7009,7 @@ export default function Page() {
                     type="button"
                     className="btn-ok"
                     onClick={postStockAdjust}
-                    disabled={!selectedId || !adjReason || saveBusy}
+                    disabled={!adjustTargetId || !adjReason || saveBusy}
                     aria-label="Post stock adjustment"
                   >
                     {saveBusy ? 'Saving…' : adjConfirming ? 'Confirm adjustment' : 'Post adjustment'}
@@ -6910,6 +7038,10 @@ export default function Page() {
               type="button"
               onClick={() => {
                 setFormFlash({});
+                setOutTargetId('');
+                setOutBatchId('');
+                setOutLots([]);
+                setOutVariantId('');
                 setStockOutDrawerOpen(true);
               }}
               aria-label="Issue stock"
@@ -6929,8 +7061,13 @@ export default function Page() {
               onClose={() => setStockOutDrawerOpen(false)}
             >
                 <select
-                  value={selectedId}
-                  onChange={(e) => setSelectedId(e.target.value)}
+                  value={outTargetId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setOutTargetId(id);
+                    setOutVariantId('');
+                    loadOutLots(id);
+                  }}
                   aria-label="Stock-out product"
                 >
                   <option value="">Select product</option>
@@ -6987,14 +7124,11 @@ export default function Page() {
                     <option key={u.id} value={u.id}>{u.name}</option>
                   ))}
                 </select>
-                <select value={outVariantId} onChange={(e) => {
-                  const id = e.target.value;
-                  setOutVariantId(id);
-                  const row = variants.find((v) => v.id === id);
-                  if (row?.product_id) setSelectedId(row.product_id);
-                }} aria-label="Stock-out variant">
+                <select value={outVariantId} onChange={(e) => setOutVariantId(e.target.value)} aria-label="Stock-out variant">
                   <option value="">Variant (optional)</option>
-                  {selectorVariants.map((v) => (
+                  {selectorVariants
+                    .filter((v) => !outTargetId || String(v.product_id) === outTargetId)
+                    .map((v) => (
                     <option key={v.id} value={v.id}>
                       {variantOptionLabel(v, products)}
                     </option>
@@ -7002,7 +7136,7 @@ export default function Page() {
                 </select>
                 <select value={outBatchId} onChange={(e) => setOutBatchId(e.target.value)} aria-label="Stock-out batch">
                   <option value="">Earliest expiry (automatic)</option>
-                  {batches
+                  {outLots
                     .filter((b) => Number(b.quantity) > 0)
                     .map((b) => (
                       <option key={b.id} value={b.id}>
@@ -7021,7 +7155,7 @@ export default function Page() {
                     type="button"
                     className="btn-ok"
                     onClick={postStockOut}
-                    disabled={!selectedId || !outRefType || saveBusy}
+                    disabled={!outTargetId || !outRefType || saveBusy}
                     aria-label="Post stock out"
                   >
                     {saveBusy ? 'Saving…' : 'Post stock out'}
@@ -7071,7 +7205,7 @@ export default function Page() {
             </div>
           ) : lowStockRows.length === 0 ? (
             <div className="list-empty">
-              <p>No products are in the low-stock band.</p>
+              <p>Receive stock or raise the reorder level when a product should appear in the low-stock band.</p>
             </div>
           ) : (
             <div className="list-table-wrap">
@@ -7090,7 +7224,7 @@ export default function Page() {
                 <tbody>
                   {lowStockRows.map((row: any) => (
                     <tr key={row.key}>
-                      <td data-label="Product"><span className="list-prod-name">{displayProductName(row.name)}</span></td>
+                      <td data-label="Product"><span className="inv-ui-name">{row.name || 'Product name is not on this low-stock row.'}</span></td>
                       <td data-label="SKU" className="list-secondary">{row.sku}</td>
                       <td data-label="Category" className="list-secondary">{row.category}</td>
                       <td data-label="Qty on hand" className="list-qty-low">{row.qty}</td>
@@ -7104,6 +7238,7 @@ export default function Page() {
                             setDrawerOpen(true);
                             setProductEditMode(false);
                             setFormFlash({});
+                            selectTab('products');
                           }}
                         >
                           View
@@ -7127,6 +7262,9 @@ export default function Page() {
                 type="button"
                 onClick={() => {
                   setFormFlash({});
+                  setReceiveTargetId('');
+                  setBatchNumber('');
+                  setExpiryDate('');
                   setReceiveDrawerOpen(true);
                 }}
                 aria-label="Receive stock"
@@ -7217,12 +7355,11 @@ export default function Page() {
             </div>
           ) : visibleWhRows.length === 0 ? (
             <div className="cat-empty">
-              <p style={{ margin: 0 }}>{whLowOnly ? 'No low-stock products here.' : 'No stock rows yet.'}</p>
-              {!whLowOnly ? (
-                <p className="muted" style={{ margin: '8px 0 0' }}>
-                  Receive stock into this location, or include zero-quantity rows.
-                </p>
-              ) : null}
+              <p style={{ margin: 0 }}>
+                {whLowOnly
+                  ? 'Clear the low-stock filter or pick another location when nothing is low here.'
+                  : 'Receive stock into this location to add the first stock row.'}
+              </p>
             </div>
           ) : (
             <div className="cat-table-wrap">
@@ -7240,7 +7377,7 @@ export default function Page() {
                   {visibleWhRows.map((r) => (
                     <tr key={r.product_id}>
                       <td data-label="Product">
-                        <strong className="list-prod-name">{displayProductName(r.name)}</strong>
+                        <strong className="inv-ui-name">{r.name || 'Product name is not on this stock row.'}</strong>
                       </td>
                       <td data-label="SKU" className="list-secondary">{r.sku || '—'}</td>
                       <td data-label="Qty">{r.quantity}</td>
@@ -7248,11 +7385,7 @@ export default function Page() {
                         {r.low_stock_floor ?? r.reorder_level} / {r.reorder_qty}
                       </td>
                       <td data-label="Status" style={{ color: r.is_out_of_stock || warehouseRowIsLow(r) ? '#b91c1c' : undefined }}>
-                        {r.is_out_of_stock || Number(r.quantity) <= 0
-                          ? 'Out of stock'
-                          : warehouseRowIsLow(r)
-                            ? 'Low'
-                            : 'OK'}
+                        {r.stock_status_label || r.stock_status || 'ok'}
                       </td>
                     </tr>
                   ))}
@@ -7268,8 +7401,8 @@ export default function Page() {
               onClose={() => setReceiveDrawerOpen(false)}
             >
                 <select
-                  value={selectedId}
-                  onChange={(e) => setSelectedId(e.target.value)}
+                  value={receiveTargetId}
+                  onChange={(e) => setReceiveTargetId(e.target.value)}
                   aria-label="Receive stock product"
                 >
                   <option value="">Select product</option>
@@ -7321,9 +7454,9 @@ export default function Page() {
                     type="button"
                     onClick={() => {
                       if (whStockWarehouseId) setStockWarehouseId(whStockWarehouseId);
-                      stockInBatch();
+                      stockInBatch({ productId: receiveTargetId });
                     }}
-                    disabled={!selectedId || !whStockWarehouseId || saveBusy}
+                    disabled={!receiveTargetId || !whStockWarehouseId || saveBusy}
                     aria-label="Receive stock"
                   >
                     {saveBusy ? 'Saving…' : 'Receive stock'}
@@ -7733,9 +7866,6 @@ export default function Page() {
                 setXferConfirming(false);
               }}
             >
-            <p className="muted inv-child" style={{ margin: 0 }}>
-                  Number {invNumbering.stock_transfer_numbering?.preview || 'assigned when you save'}
-                </p>
                 <label className="muted">From store / warehouse</label>
                 <select
                   value={xferFromWh}
@@ -7855,6 +7985,12 @@ export default function Page() {
                   placeholder="Notes (optional)"
                   aria-label="Stock transfer notes"
                 />
+                <details className="inv-ui-settings">
+                  <summary>Document numbering</summary>
+                  <p className="muted inv-child" style={{ margin: '8px 0 0' }}>
+                    Number {invNumbering.stock_transfer_numbering?.preview || 'assigned when you save'}
+                  </p>
+                </details>
                 {xferConfirming ? (
                   <p className="muted" style={{ margin: 0 }}>
                     Confirm: {warehouseLabel(xferFromWh)} → {warehouseLabel(xferToWh)}
@@ -7897,6 +8033,6 @@ export default function Page() {
           ) : null}
         </div>
       )}
-    </>
+    </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '../../../lib/api';
+import './integ-ui.css';
 
 const WEBHOOK_EVENTS = [
   'sale.created',
@@ -158,6 +159,10 @@ export default function Page() {
     setError('');
     setMessage('');
     setRevealedSecret('');
+    if (!hookUrl.trim()) {
+      setError('Enter the webhook URL.');
+      return;
+    }
     if (!hookEvents.length) {
       setError('Select at least one webhook event');
       return;
@@ -191,11 +196,17 @@ export default function Page() {
     setError('');
     try {
       const r = await api(`/webhooks/${id}/test`, { method: 'POST', body: '{}' });
-      setMessage(
-        `Test delivery: ${r.data?.status || 'unknown'}` +
-          (r.data?.response_status != null ? ` (HTTP ${r.data.response_status})` : '') +
-          (r.data?.error ? ` — ${r.data.error}` : '')
-      );
+      const status = String(r.data?.status || 'unknown');
+      const detail =
+        `Test delivery: ${status}` +
+        (r.data?.response_status != null ? ` (HTTP ${r.data.response_status})` : '') +
+        (r.data?.error ? ` — ${r.data.error}` : '');
+      if (status === 'failed' || r.data?.error) {
+        setMessage('');
+        setError(`The test did not succeed. ${detail}`);
+      } else {
+        setMessage(detail);
+      }
       await refresh();
       if (deliveriesFor === id) {
         await loadDeliveries(id);
@@ -228,11 +239,16 @@ export default function Page() {
         method: 'POST',
         body: '{}',
       });
-      setMessage(
-        `Retry: ${r.data?.status || 'unknown'}` +
-          (r.data?.response_status != null ? ` (HTTP ${r.data.response_status})` : '') +
-          (r.data?.error ? ` — ${r.data.error}` : '')
-      );
+      const status = String(r.data?.status || 'unknown');
+      const detail =
+        `Retry: ${status}` +
+        (r.data?.response_status != null ? ` (HTTP ${r.data.response_status})` : '') +
+        (r.data?.error ? ` — ${r.data.error}` : '');
+      if (status === 'failed' || r.data?.error) {
+        setError(`The retry did not succeed. ${detail}`);
+      } else {
+        setMessage(detail);
+      }
       await refresh();
       await loadDeliveries(webhookId);
     } catch (err: any) {
@@ -300,20 +316,16 @@ export default function Page() {
   });
 
   return (
-    <>
-      <h1>Integrations</h1>
-      <p className="muted">
-        API keys and outbound webhooks for company admins (BR-18.1 / BR-18.6). Secrets are shown
-        once at create/rotate — store them securely.
+    <div className="integ-ui">
+      <h1>Create an API key</h1>
+      <p className="muted integ-ui-lead">
+        Type a name, then create the key. Copy it when it appears. It is shown only this once.
       </p>
-      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
+      {error && <p className="integ-ui-alert" role="alert">{error}</p>}
+      {message && <p className="integ-ui-ok" role="status">{message}</p>}
 
       {(revealedKey || revealedSecret) && (
-        <div
-          className="card"
-          style={{ marginBottom: 16, borderLeft: '4px solid #ca8a04', maxWidth: 720 }}
-        >
+        <div className="card integ-ui-secret">
           <h2 style={{ marginTop: 0 }}>Copy secret now</h2>
           {revealedKey && (
             <>
@@ -350,14 +362,13 @@ export default function Page() {
         </div>
       )}
 
-      <div className="erp-split">
+      <div className="integ-ui-layout">
       <section className="card" aria-labelledby="integrations-api-keys-heading">
         <h2 id="integrations-api-keys-heading">API keys</h2>
-        <p className="muted">
-          Authenticate with <code>X-API-Key</code> or <code>Authorization: Bearer</code>. Default
-          permissions are read-only inventory/sales/purchasing/customers/reports.
+        <p className="muted integ-ui-note">
+          Send the key as X-API-Key or Authorization Bearer. A new key can read inventory, sales, purchasing, customers, and reports.
         </p>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+        <div className="integ-ui-form">
           <input
             value={keyName}
             onChange={(e) => setKeyName(e.target.value)}
@@ -395,8 +406,8 @@ export default function Page() {
           <option value="active">Active only</option>
           <option value="revoked">Revoked only</option>
           <option value="expired">Expired only</option>
-        </select>
-        <div style={{ overflowX: 'auto' }}>
+          </select>
+        <div className="integ-ui-scroll">
         <table>
           <thead>
             <tr>
@@ -416,7 +427,8 @@ export default function Page() {
                 </td>
                 <td>{k.status}</td>
                 <td>{k.request_count ?? 0}</td>
-                <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                <td>
+                  <div className="integ-ui-row-actions">
                   <button type="button" onClick={() => loadUsage(k.id)} aria-label={`View API key usage ${k.id}`}>
                     Usage
                   </button>
@@ -429,13 +441,16 @@ export default function Page() {
                       Revoke
                     </button>
                   )}
+                  </div>
                 </td>
               </tr>
             ))}
             {!managedKeys.length && (
               <tr>
                 <td colSpan={5} className="muted">
-                  No API keys for this filter
+                  {keys.length
+                    ? 'No API keys for this filter. Choose All statuses, or create a key above.'
+                    : 'No API keys yet. Type a name, then choose Create API key.'}
                 </td>
               </tr>
             )}
@@ -443,25 +458,22 @@ export default function Page() {
         </table>
         </div>
         {usage && (
-          <p className="muted" style={{ marginTop: 8 }}>
-            Usage for selected key: {JSON.stringify(usage)}
+          <p className="muted integ-ui-note">
+            {usage.name || 'This key'} has been used {usage.request_count ?? 0} time(s).
+            {usage.last_used_at
+              ? ` Last used ${String(usage.last_used_at)}.`
+              : ' It has not been used yet.'}
+            {usage.expires_at ? ` Expires ${String(usage.expires_at)}.` : ''}
           </p>
         )}
       </section>
 
       <section className="card" aria-labelledby="integrations-webhooks-heading">
-        <h2 id="integrations-webhooks-heading">Webhooks</h2>
-        <p className="muted">
-          Outbound HTTPS deliveries signed with <code>X-Ribdigi-Signature</code> (HMAC-SHA256). Live
-          fan-out today: <code>webhook.test</code>, <code>sale.created</code> (invoice + POS),{' '}
-          <code>sale.paid</code> (AR payment + settled POS), <code>customer.created</code>,{' '}
-          <code>supplier.created</code>, <code>purchase.order.created</code>,{' '}
-          <code>purchase.grn.received</code>, <code>expense.approved</code>, <code>stock.low</code>,{' '}
-          <code>stock.in</code> (manual / non-GRN inbound; GRN uses <code>purchase.grn.received</code>{' '}
-          only), <code>stock.out</code> (manual / non-POS-invoice outbound),{' '}
-          <code>tenant.suspended</code>, <code>user.login</code> (interactive auth only; not refresh).
+        <h2 id="integrations-webhooks-heading">Send a webhook</h2>
+        <p className="muted integ-ui-note">
+          Enter the URL that should receive events. A blank signing secret is generated for you. Copy it when it appears.
         </p>
-        <details style={{ marginBottom: 12 }}>
+        <details className="integ-ui-advanced">
           <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Verify signature (subscriber)</summary>
           <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
             <p className="muted" style={{ margin: 0 }}>
@@ -536,10 +548,8 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
           aria-label="Webhook description"
           style={{ width: '100%', marginBottom: 8 }}
         />
-        <p className="muted" style={{ marginBottom: 4 }}>
-          Events
-        </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+        <p className="muted integ-ui-note">Events</p>
+        <div className="integ-ui-events">
           {WEBHOOK_EVENTS.map((ev) => (
             <label key={ev} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
               <input
@@ -552,7 +562,7 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
             </label>
           ))}
         </div>
-        <button type="button" onClick={createWebhook} disabled={busy || !hookUrl} aria-label="Create webhook">
+        <button type="button" onClick={createWebhook} disabled={busy || !hookUrl.trim()} aria-label="Create webhook">
           Create webhook
         </button>
 
@@ -570,7 +580,7 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
           <option value="inactive">Inactive only</option>
         </select>
 
-        <div style={{ overflowX: 'auto', marginTop: 16 }}>
+        <div className="integ-ui-scroll">
         <table>
           <thead>
             <tr>
@@ -602,7 +612,8 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
                   {h.failure_count ? ` · fails ${h.failure_count}` : ''}
                   {h.last_status_code != null ? ` · HTTP ${h.last_status_code}` : ''}
                 </td>
-                <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                <td>
+                  <div className="integ-ui-row-actions">
                   <button
                     type="button"
                     onClick={() => testWebhook(h.id)}
@@ -622,13 +633,16 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
                   <button type="button" onClick={() => deleteWebhook(h.id)} aria-label={`Delete webhook ${h.id}`}>
                     Delete
                   </button>
+                  </div>
                 </td>
               </tr>
             ))}
             {!managedHooks.length && (
               <tr>
                 <td colSpan={4} className="muted">
-                  {hooks.length ? 'No webhooks for this filter' : 'No webhooks yet'}
+                  {hooks.length
+                    ? 'No webhooks match this status. Choose All statuses, or enter a URL above.'
+                    : 'No webhooks yet. Enter an https URL, choose at least one event, then choose Create webhook.'}
                 </td>
               </tr>
             )}
@@ -669,8 +683,8 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
               <option value="delivered">Delivered only</option>
               <option value="failed">Failed only</option>
             </select>
-            {deliveriesBusy ? <p className="muted">Loading…</p> : null}
-            <div style={{ overflowX: 'auto' }}>
+            {deliveriesBusy ? <p className="muted">Loading deliveries…</p> : null}
+            <div className="integ-ui-scroll">
             <table className="table">
               <thead>
                 <tr>
@@ -715,8 +729,8 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
                   <tr>
                     <td colSpan={7} className="muted">
                       {deliveries.length
-                        ? 'No deliveries for this filter'
-                        : 'No deliveries yet — click Test to create one'}
+                        ? 'No deliveries for this filter. Choose All statuses.'
+                        : 'No deliveries yet. Choose Test on this webhook to send one.'}
                     </td>
                   </tr>
                 )}
@@ -735,6 +749,6 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
         )}
       </section>
       </div>
-    </>
+    </div>
   );
 }

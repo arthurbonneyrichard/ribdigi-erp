@@ -32,6 +32,16 @@ _INDUSTRY_STEPS: dict[str, list[str]] = {
         "Both channels share the same catalog and stock.",
         "A retail sale must stay on POS. A wholesale order must stay on the sales desk.",
     ],
+    "hotel": [
+        "Add rooms and guests, then book a stay.",
+        "Check-in and check-out keep the room status in step with the reservation.",
+        "Folio charges stay on the hotel desk. That desk needs the internet.",
+    ],
+    "restaurant": [
+        "Save tables, then save an order for dine-in, takeaway, or delivery.",
+        "Send the order to the kitchen, then complete it when it is served.",
+        "Recipes tie a menu item to ingredients. The restaurant desk needs the internet.",
+    ],
 }
 
 _MODULE_STEPS: dict[str, str] = {

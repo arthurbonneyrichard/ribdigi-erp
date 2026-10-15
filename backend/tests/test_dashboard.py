@@ -273,3 +273,104 @@ async def test_pharmacy_dashboard_desk_counts(db_session, seeded):
     assert desk_after["expired_lots"] == desk["expired_lots"] + 1
     assert desk_after["expiring_soon"] == desk["expiring_soon"] + 1
     assert desk_after["on_hand_lots"] == desk["on_hand_lots"] + 3
+
+
+@pytest.mark.asyncio
+async def test_dashboard_purchases_count_recorded_bills_not_drafts(db_session, seeded):
+    """Headline Purchases is to-date recorded bills plus legacy purchase transactions.
+
+    Draft and cancelled invoices, and unbilled purchase orders, do not count.
+    A bill dated last year still counts: the tile is not a today or month window.
+    """
+    from datetime import datetime, timedelta
+
+    from app.dashboard import RECORDED_PURCHASE_INVOICE_STATUSES
+
+    t1 = seeded["t1"].id
+    t2 = seeded["t2"].id
+    supplier = m.Party(tenant_id=t1, name="Desk Supplier", kind="supplier")
+    other = m.Party(tenant_id=t2, name="Other Supplier", kind="supplier")
+    store_a = m.Store(tenant_id=t1, name="Accra", code="ACC-DASH")
+    store_b = m.Store(tenant_id=t1, name="Tema", code="TEM-DASH")
+    db_session.add_all([supplier, other, store_a, store_b])
+    await db_session.flush()
+
+    old = datetime.utcnow() - timedelta(days=400)
+    db_session.add_all(
+        [
+            m.PurchaseInvoice(
+                tenant_id=t1,
+                supplier_id=supplier.id,
+                invoice_number="PINV-DASH-OLD",
+                status="unpaid",
+                invoice_date=old,
+                subtotal=377.20,
+                total_amount=377.20,
+                paid_amount=0,
+                store_id=store_a.id,
+            ),
+            m.PurchaseInvoice(
+                tenant_id=t1,
+                supplier_id=supplier.id,
+                invoice_number="PINV-DASH-PAID",
+                status="paid",
+                invoice_date=datetime.utcnow(),
+                subtotal=138,
+                total_amount=138,
+                paid_amount=138,
+                store_id=store_b.id,
+            ),
+            m.PurchaseInvoice(
+                tenant_id=t1,
+                supplier_id=supplier.id,
+                invoice_number="PINV-DASH-DRAFT",
+                status="draft",
+                invoice_date=datetime.utcnow(),
+                subtotal=50,
+                total_amount=50,
+                store_id=store_a.id,
+            ),
+            m.PurchaseInvoice(
+                tenant_id=t1,
+                supplier_id=supplier.id,
+                invoice_number="PINV-DASH-CANCEL",
+                status="cancelled",
+                invoice_date=datetime.utcnow(),
+                subtotal=25,
+                total_amount=25,
+                store_id=store_a.id,
+            ),
+            m.PurchaseInvoice(
+                tenant_id=t2,
+                supplier_id=other.id,
+                invoice_number="PINV-DASH-OTHER",
+                status="unpaid",
+                invoice_date=datetime.utcnow(),
+                subtotal=999,
+                total_amount=999,
+            ),
+            m.PurchaseOrder(
+                tenant_id=t1,
+                supplier_id=supplier.id,
+                po_number="PO-DASH-1",
+                status="received",
+                total_amount=943,
+            ),
+            m.Transaction(
+                tenant_id=t1,
+                tx_type="purchase",
+                reference="PUR-DASH-LEGACY",
+                total=10,
+                subtotal=10,
+                tax=0,
+            ),
+        ]
+    )
+    await db_session.commit()
+
+    data = await build_dashboard(db_session, t1)
+    assert set(RECORDED_PURCHASE_INVOICE_STATUSES) == {"unpaid", "partial", "paid", "overdue"}
+    assert data["total_purchases"] == pytest.approx(377.20 + 138 + 10)
+
+    scoped = await build_dashboard(db_session, t1, store_id=store_a.id)
+    assert scoped["total_purchases"] == pytest.approx(377.20)

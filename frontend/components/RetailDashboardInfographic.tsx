@@ -140,7 +140,7 @@ export default function RetailDashboardInfographic({ storeId }: { storeId?: stri
               <div className="label">Sales today</div>
               <div className="val">{num(cmp.sales_today)}</div>
               <p className="hint" style={{ marginTop: 6, fontSize: 12 }}>
-                Yesterday {num(cmp.sales_yesterday)} ({pctLabel(cmp.sales_today_pct)} vs yday)
+                Yesterday {num(cmp.sales_yesterday)}. Change versus yesterday: {pctLabel(cmp.sales_today_pct)}.
               </p>
             </div>
             <div className="stat s-sales">
@@ -148,13 +148,16 @@ export default function RetailDashboardInfographic({ storeId }: { storeId?: stri
               <div className="label">Sales this month</div>
               <div className="val">{num(cmp.sales_mtd)}</div>
               <p className="hint" style={{ marginTop: 6, fontSize: 12 }}>
-                Last month {num(cmp.sales_prev_month)} ({pctLabel(cmp.sales_mtd_pct)} vs last mo)
+                Last month {num(cmp.sales_prev_month)}. Change versus last month: {pctLabel(cmp.sales_mtd_pct)}.
               </p>
             </div>
             <div className="stat s-sales">
               <span className="rail" />
-              <div className="label">Total Sales</div>
+              <div className="label">Total sales</div>
               <div className="val">{num(d.total_sales)}</div>
+              <p className="hint" style={{ marginTop: 6, fontSize: 12 }}>
+                Recorded sales
+              </p>
             </div>
             <div className="stat">
               <div className="label">Products</div>

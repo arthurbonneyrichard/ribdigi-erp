@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api, clearSessionAndRedirect, idleTimeoutMs, setAuthTokens } from '../lib/api';
-import { explainOfflineAccess, probeApi } from '../lib/connectivity';
+import { api, clearSessionAndRedirect, idleTimeoutMs, setAuthTokens, unreachableApiMessage } from '../lib/api';
+import { explainOfflineAccess, probeApi, UNPREPARED_OFFLINE } from '../lib/connectivity';
 import { bumpLastActivity, hasStoredActivity, isIdleExpired, resetIdleWriteThrottle } from '../lib/idleSession';
 import { getAccessTokenSync, hydrateAuth } from '../lib/authStorage';
 import { getMe, invalidateMeCache } from '../lib/meCache';
@@ -77,13 +77,15 @@ export default function Login() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    async function look() {
       try {
         await hydrateAuth();
         if (cancelled) return;
         const phase = await probeApi();
         if (cancelled) return;
-        if (phase === 'online' && getAccessTokenSync()) {
+        if (phase === 'online') {
+          setError((prev) => (prev === UNPREPARED_OFFLINE ? '' : prev));
+          if (!getAccessTokenSync()) return;
           try {
             const me = await getMe();
             if (cancelled) return;
@@ -94,17 +96,27 @@ export default function Login() {
             }
             if (String(me.data?.role || '') === 'cashier') router.replace('/pos');
           } catch (err) {
-            if ((err as { status?: number }).status === undefined) await openPreparedTill();
+            const again = await probeApi();
+            if ((err as { status?: number }).status === undefined && again !== 'online') {
+              await openPreparedTill();
+            }
           }
           return;
         }
-        if (phase !== 'online') await openPreparedTill();
+        await openPreparedTill();
       } catch {
-        if (!cancelled) setError(explainOfflineAccess(null).message);
+        if (cancelled) return;
+        const phase = await probeApi().catch(() => 'api_down' as const);
+        if (phase !== 'online') setError(explainOfflineAccess(null).message);
       }
-    })();
+    }
+    void look();
+    const timer = window.setInterval(() => {
+      void look();
+    }, 4000);
     return () => {
       cancelled = true;
+      window.clearInterval(timer);
     };
   }, [router]);
 
@@ -270,7 +282,9 @@ export default function Login() {
       }
       const raw = String(err.message || '');
       if (!raw || /failed to fetch|networkerror|load failed|did not respond|could not reach the server|you are offline/i.test(raw)) {
-        await openPreparedTill();
+        const again = await probeApi();
+        if (again !== 'online') await openPreparedTill();
+        else setError(unreachableApiMessage('/auth/login'));
         return;
       }
       setError(raw || 'Login failed');

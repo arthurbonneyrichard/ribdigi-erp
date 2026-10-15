@@ -16,6 +16,7 @@ import pytest
 from sqlalchemy import func, select
 
 from app import models as m
+from app.offline_pos import OFFLINE_COMPLETE_MISSING
 from tests.conftest import auth_headers, set_tenant_industry
 
 
@@ -611,5 +612,7 @@ async def test_policy_reports_server_grants_and_online_only_workflows(client):
     data = r.json()["data"]
     assert data["grant_issuer"] == "server"
     assert data["offline_complete_claimed"] is False
+    assert "max_sync_retries" not in data
+    assert OFFLINE_COMPLETE_MISSING in data["limitations"]
     assert "platform_admin" in data["not_offline"]
     assert set(data["offline_tenders"]) == {"bank_transfer", "card", "cash", "credit", "mobile_money"}

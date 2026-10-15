@@ -7,9 +7,6 @@ export type IndustryKey = (typeof INDUSTRIES)[number];
 /** Customer industries a new company can choose. Platform software is not in this list. */
 export const PROVISION_INDUSTRIES = ['retail', 'hotel', 'restaurant'] as const;
 
-/** Stored on older companies. Not offered when creating a company and not a sidebar item. */
-export const LEGACY_INDUSTRIES = ['pharmacy'] as const;
-
 export const INDUSTRY_LABELS: Record<string, string> = {
   retail: 'Retail',
   mart: 'Mart',
@@ -25,6 +22,9 @@ export const INDUSTRY_LABELS: Record<string, string> = {
   manufacturing: 'Manufacturing',
   hospital: 'Hospital',
 };
+
+/** Stored on older companies. Not offered when creating a company and not a sidebar item. */
+export const LEGACY_INDUSTRIES = ['pharmacy'] as const;
 
 export function normalizeIndustry(value?: string | null): string | null {
   const raw = String(value || '')

@@ -143,7 +143,8 @@ export async function closeShiftForSignOut(): Promise<void> {
       );
       if (unsynced.length) return;
     } catch {
-      /* queue unreadable: server totals still authoritative */
+      // Leave the shift open when the queue cannot be read.
+      return;
     }
     await api(`/pos/sessions/${session.session_id}/close`, {
       method: 'POST',

@@ -89,4 +89,5 @@ test('service worker reloads POS from cache, including page data, and never touc
   assert.match(sw, /\/_next\/static\//);
   assert.doesNotMatch(sw, /indexedDB/);
   assert.doesNotMatch(sw, /sync_queue/);
+  assert.match(sw, /pathname\.startsWith\('\/api\/'\)/);
 });

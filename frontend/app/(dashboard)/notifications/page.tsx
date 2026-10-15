@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
+import './notify-ui.css';
 
 type Note = {
   id: string;
@@ -72,6 +73,7 @@ export default function Page() {
   const [prefs, setPrefs] = useState<any>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [prefsError, setPrefsError] = useState('');
   const [platformAudience, setPlatformAudience] = useState(false);
 
   useEffect(() => {
@@ -93,10 +95,17 @@ export default function Page() {
     try {
       const settings = await api('/notifications/settings');
       setPrefs(settings.data);
+      setPrefsError('');
     } catch (err: any) {
       setPrefs(null);
-      if (err?.message) setError(err.message);
+      setPrefsError(err?.message || 'Channel preferences could not be loaded. Refresh this page to try again.');
     }
+  }
+
+  function categoryLabel(id: string): string {
+    const chip = chips.find((c) => c.id === id);
+    if (chip) return chip.label;
+    return id.split('_').join(' ');
   }
 
   useEffect(() => {
@@ -173,24 +182,32 @@ export default function Page() {
     }
   }
 
+  const emptyCopy =
+    status === 'unread'
+      ? platformAudience
+        ? 'No unread alerts. Choose All (90 days) to see older platform notices.'
+        : 'No unread alerts. Choose All (90 days) to see older ones, or Scan due alerts to look for payments and quotations.'
+      : platformAudience
+        ? 'Nothing matches this view. Choose All platform or another type above.'
+        : 'Nothing matches this view. Choose All types, or Scan due alerts to look for payments and quotations.';
+
   return (
-    <>
-      <h1>Notifications</h1>
-      <p className="muted">
-        In-app notification center — unread badge, category filters, mark read/unread, and 90-day
-        history. Channel preferences for dashboard / email / SMS per type.
+    <div className="notify-ui">
+      <h1>Unread alerts</h1>
+      <p className="muted notify-ui-lead">
+        Start with unread items. Mark one read when you have dealt with it. All (90 days) keeps the recent history.
       </p>
       {platformAudience ? (
-        <p className="muted">
+        <p className="muted notify-ui-note">
           Platform Owner notices only: provisioning, platform security, staff accounts, administrator
           password resets, and other platform actions. Stock, orders, payments, and POS stay on
           tenant notification lists.
         </p>
       ) : null}
-      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
+      {error && <p className="notify-ui-alert" role="alert">{error}</p>}
+      {message && <p className="notify-ui-ok" role="status">{message}</p>}
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+      <div className="notify-ui-actions">
         <button
           onClick={() => setStatus('unread')}
           disabled={status === 'unread'}
@@ -227,48 +244,55 @@ export default function Page() {
         ))}
       </div>
 
+      <div className="notify-ui-scroll">
       <table className="table">
         <thead>
           <tr>
-            <th>Category</th>
+            <th>Type</th>
             <th>Title</th>
             <th>Message</th>
             <th>Status</th>
-            <th></th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
             <tr>
               <td colSpan={5} className="muted">
-                {status === 'unread'
-                  ? 'No unread notifications. Switch to All (90 days) to see history.'
-                  : 'No notifications in this filter.'}
+                {emptyCopy}
               </td>
             </tr>
           ) : (
             rows.map((n) => (
             <tr key={n.id}>
-              <td>{n.category}</td>
+              <td>{categoryLabel(n.category)}</td>
               <td>{n.title}</td>
               <td>{n.message}</td>
-              <td>{n.status}</td>
+              <td>{n.status === 'unread' ? 'Unread' : 'Read'}</td>
               <td>
+                <div className="notify-ui-row-actions">
                 {n.status === 'unread' ? (
                   <button onClick={() => markRead(n.id)} aria-label={`Mark notification ${n.id} read`}>Mark read</button>
                 ) : (
                   <button onClick={() => markUnread(n.id)} aria-label={`Mark notification ${n.id} unread`}>Mark unread</button>
                 )}
+                </div>
               </td>
             </tr>
             ))
           )}
         </tbody>
       </table>
+      </div>
 
-      {prefs && (
-        <div className="card" style={{ marginTop: 16 }}>
-          <h3>Channel preferences</h3>
+      <details className="card notify-ui-advanced">
+        <summary>Channel preferences</summary>
+        <p className="muted notify-ui-note">
+          Choose whether each type also sends email or SMS. Dashboard stays the in-app list.
+        </p>
+        {prefsError ? <p className="notify-ui-alert" role="alert">{prefsError}</p> : null}
+        {prefs ? (
+          <div className="notify-ui-scroll">
           <table className="table" aria-label="Channel preferences">
             <thead>
               <tr>
@@ -285,7 +309,7 @@ export default function Page() {
                 )
                 .map(([cat, channels]: any) => (
                 <tr key={cat}>
-                  <td>{cat}</td>
+                  <td>{categoryLabel(cat)}</td>
                   {(['dashboard', 'email', 'sms'] as const).map((ch) => (
                     <td key={ch}>
                       <button
@@ -301,12 +325,11 @@ export default function Page() {
               ))}
             </tbody>
           </table>
-          <p className="muted">
-            Email uses SMTP (or console in dev). SMS uses Twilio when configured, otherwise console
-            fallback. Set your phone on Company settings for SMS tests.
-          </p>
-        </div>
-      )}
-    </>
+          </div>
+        ) : (
+          <p className="muted notify-ui-note">Channel preferences load with this page. Refresh if the switches are missing.</p>
+        )}
+      </details>
+    </div>
   );
 }

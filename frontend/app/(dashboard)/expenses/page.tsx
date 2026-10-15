@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import FormModal from '../../../components/FormModal';
 import AttachmentPreview from '../../../components/AttachmentPreview';
 import { api, getAccessToken } from '../../../lib/api';
 import { formatMoney, formatWhen, plainLabel } from '../../../lib/format';
@@ -46,6 +45,8 @@ type Expense = {
   payee?: string;
   reference?: string;
   status: string;
+  expense_date?: string | null;
+  created_at?: string | null;
   rejection_reason?: string;
   approval_comment?: string | null;
   has_attachment?: boolean;
@@ -146,8 +147,10 @@ export default function Page() {
   const [supplierId, setSupplierId] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [createBusy, setCreateBusy] = useState(false);
-  const [expenseAddOpen, setExpenseAddOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [rowBusyId, setRowBusyId] = useState<string | null>(null);
+  const formatPrefs = useCompanyFormat();
 
   async function refresh() {
     const storeTrim = (storeId || ctxStoreId || '').trim();
@@ -325,7 +328,6 @@ export default function Page() {
       setReference('');
       setExpenseDate('');
       setSupplierId('');
-      setExpenseAddOpen(false);
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -518,7 +520,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({ reason }),
       });
-      setMessage('Expense voided (reason stored on the record)');
+      setMessage('Expense rejected (reason stored on the record)');
       setRejectReason('');
       await refresh();
     } catch (err: any) {
@@ -630,6 +632,9 @@ export default function Page() {
           ? `OCR ready (${r.data.engine}) — ${r.data.warnings[0]}`
           : `OCR suggestions ready (${r.data?.engine || 'ocr'}, confidence ${r.data?.confidence ?? 0})`,
       );
+      window.setTimeout(() => {
+        document.getElementById('expense-ocr')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 0);
     } catch (err: any) {
       setError(err.message);
     }
@@ -682,6 +687,9 @@ export default function Page() {
       department_id: r.department_id || '',
       had_department: Boolean(r.department_id),
     });
+    window.setTimeout(() => {
+      document.getElementById('expense-edit')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 0);
   }
 
   function cancelEdit() {
@@ -815,272 +823,215 @@ export default function Page() {
     .reduce((s, r) => s + Number(r.amount || 0), 0);
 
   return (
-    <div className="work">
+    <div className="work expenses-page">
       <div className="list-page-head">
         <div>
           <h1 style={{ margin: 0 }}>Expenses</h1>
-          <p className="muted">
-            Record what the company paid. Small amounts are approved automatically. Attach the receipt
-            on the list. Tax on supplier bills is handled under Purchases. Other income below is money
-            the company received, separate from a sale.
+          <p className="muted expenses-lead">
+            Submit an expense with the form below. It stays pending until someone approves or rejects it.
           </p>
         </div>
-        <div className="work-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div className="work-actions">
           <button
             type="button"
-            onClick={() => document.getElementById('budgets')?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={() => {
+              setToolsOpen(true);
+              setCategoriesOpen(true);
+              window.setTimeout(() => {
+                document.getElementById('budgets')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }, 50);
+            }}
             aria-label="Manage expense categories"
           >
             Categories
           </button>
-          <button type="button" className="list-btn-primary" onClick={() => setExpenseAddOpen(true)} aria-label="Add expense">
-            Add expense
-          </button>
         </div>
       </div>
-
-      <div className="card" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <input value={expPrefix} onChange={(e) => setExpPrefix(e.target.value)} aria-label="Expense number prefix" placeholder="Prefix" />
-        <input value={expNext} onChange={(e) => setExpNext(e.target.value)} aria-label="Expense next number" placeholder="Next #" />
-        <button
-          type="button"
-          aria-label="Save expense numbering"
-          onClick={() => {
-            const prefix = expPrefix.trim();
-            const next = expNext.trim();
-            const numbering: { prefix?: string; next_number?: number } = {};
-            if (prefix) numbering.prefix = prefix;
-            if (next) numbering.next_number = Number(next);
-            const body = Object.keys(numbering).length ? { expense_numbering: numbering } : {};
-            api('/expenses/settings', { method: 'PATCH', body: JSON.stringify(body) }).catch((err) =>
-              setError(err.message || 'Could not save numbering'),
-            );
-          }}
-        >
-          Save numbering
-        </button>
-      </div>
-
-      <div className="card" id="expense-register" style={{ marginBottom: 16 }}>
-        <h2 style={{ marginTop: 0 }}>Paid and unpaid expenses</h2>
-        <p className="muted">Paid means it is approved and recorded. Unpaid means it is still waiting for approval.</p>
-      <div className="erp-toolbar">
-        <input
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search payee, category, description…"
-          aria-label="Search expenses"
-        />
-        <select
-          value={expenseManageFilter}
-          onChange={(e) =>
-            setExpenseManageFilter(
-              e.target.value as 'all' | 'pending' | 'approved' | 'rejected'
-            )
-          }
-          title="Filter expense list by status"
-          aria-label="Expense status filter"
-        >
-          <option value="all">All</option>
-          <option value="approved">Paid</option>
-          <option value="pending">Unpaid</option>
-          <option value="rejected">Voided</option>
-        </select>
-      </div>
-      <table className="table compact">
-        <thead>
-          <tr>
-            <th>Category</th>
-            <th>Paid to</th>
-            <th>What for</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th>Receipt</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {managedExpenses.length === 0 ? (
-            <tr>
-              <td colSpan={7} className="muted">
-                {expenseManageFilter === 'all' ? 'No expenses match this search' : 'No expenses for this filter'}
-              </td>
-            </tr>
-          ) : (
-            managedExpenses.map((r) => (
-            <tr key={r.id}>
-              <td>{r.category}</td>
-              <td>{r.payee || '—'}</td>
-              <td>
-                {r.description}
-                {r.rejection_reason ? (
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    Void: {r.rejection_reason}
-                  </div>
-                ) : null}
-              </td>
-              <td>{formatMoney(r.amount)}</td>
-              <td>
-                {r.status === 'approved'
-                  ? 'Posted'
-                  : r.status === 'rejected'
-                    ? 'Voided'
-                    : 'Waiting'}
-              </td>
-              <td>
-                {r.has_attachment ? (
-                  <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
-                    <button
-                    type="button"
-                    aria-label={`Preview expense attachment ${r.id}`}
-                    onClick={() =>
-                      setAttachPreview({
-                        apiPath: `/expenses/${r.id}/attachment`,
-                        title: `Receipt — ${r.reference || r.description || r.id.slice(0, 8)}`,
-                      })
-                    }
-                  >
-                    Preview
-                  </button>
-                    <button onClick={() => downloadAttachment(r.id)} aria-label="Download expense attachment">
-                      Download
-                    </button>
-                    <button onClick={() => suggestOcr(r.id)} aria-label={`Suggest expense OCR ${r.id}`}>OCR</button>
-                    <button onClick={() => removeAttachment(r.id)} aria-label={`Remove expense attachment ${r.id}`}>Remove</button>
-                  </span>
-                ) : (
-                  <label style={{ cursor: 'pointer' }}>
-                    <span className="muted">Upload</span>
-                    <input
-                      type="file"
-                      style={{ display: 'none' }}
-                      aria-label={`Upload expense attachment ${r.id}`}
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) uploadAttachment(r.id, f);
-                        e.target.value = '';
-                      }}
-                    />
-                  </label>
-                )}
-              </td>
-              <td>
-                <div className="erp-row-actions">
-                {(r.status === 'pending' || r.status === 'rejected') && (
-                  <button
-                    type="button"
-                    onClick={() => startEdit(r)}
-                    aria-label={`Edit expense ${r.id}`}
-                    disabled={rowBusyId === r.id}
-                  >
-                    Edit
-                  </button>
-                )}
-                {r.status === 'pending' && (
-                  <>
-                    <button
-                      className="btn-ok"
-                      onClick={() => approve(r.id)}
-                      aria-label="Approve expense"
-                      disabled={rowBusyId === r.id}
-                    >
-                      Approve
-                    </button>
-                    <button
-                      className="btn-danger"
-                      onClick={() => reject(r.id)}
-                      aria-label={`Reject expense ${r.id}`}
-                      disabled={!rejectReason.trim() || rowBusyId === r.id}
-                      title={
-                        rejectReason.trim()
-                          ? 'Void expense'
-                          : 'Enter a void reason first'
-                      }
-                    >
-                      Void
-                    </button>
-                  </>
-                )}
-                {r.status === 'rejected' && (
-                  <button
-                    className="btn-danger"
-                    type="button"
-                    onClick={() => removeExpense(r.id)}
-                    disabled={rowBusyId === r.id}
-                    aria-label={`Remove voided expense ${r.id}`}
-                  >
-                    Remove
-                  </button>
-                )}
-                </div>
-              </td>
-            </tr>
-          ))
-          )}
-        </tbody>
-      </table>
-      </div>
-      <div className="card cat-panel" style={{ marginBottom: 16 }}>
-        <h3>Other income</h3>
-        <div className="erp-form-grid">
-          <input value={incomeDesc} onChange={(e) => setIncomeDesc(e.target.value)} placeholder="Description" aria-label="Income description" />
-          <AmountField value={incomeAmount} onChange={(e) => setIncomeAmount(e.target.value)} placeholder="Amount" aria-label="Income amount" />
-          <input value={incomePayer} onChange={(e) => setIncomePayer(e.target.value)} placeholder="Payer (optional)" aria-label="Income payer" />
-          <button
-            type="button"
-            onClick={async () => {
-              setError('');
-              try {
-                await api('/incomes', {
-                  method: 'POST',
-                  body: JSON.stringify({
-                    description: incomeDesc.trim(),
-                    amount: Number(incomeAmount),
-                    payer: incomePayer.trim() || null,
-                    payment_method: paymentMethod,
-                    liquid_account_id: liquidAccountId.trim() || null,
-                  }),
-                });
-                setIncomeDesc('');
-                setIncomeAmount('');
-                setIncomePayer('');
-                await refresh();
-                setMessage('Income posted to the ledger');
-              } catch (err: any) {
-                setError(err.message);
-              }
-            }}
-            aria-label="Post other income"
+      <div className="card" id="expense-register">
+        <div className="expenses-section-head">
+          <h2>Expense list</h2>
+          <p className="muted">Approve or reject a pending expense from this list. A reject reason is required.</p>
+        </div>
+        <div className="expenses-decide">
+          <label>
+            Approve comment
+            <input
+              value={approveComment}
+              onChange={(e) => setApproveComment(e.target.value)}
+              placeholder="Optional note when you approve"
+              aria-label="Expense approve comment"
+              title="Optional comment (1–500 chars; letters/digits required); blank omits"
+            />
+          </label>
+          <label>
+            Reject reason
+            <input
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Required before Reject"
+              aria-label="Expense reject reason"
+              title="Required reason for reject (1–500 chars; letters/digits required)"
+            />
+          </label>
+        </div>
+        <p className="muted expenses-hint">An approve comment is optional. Type a reject reason before you reject.</p>
+        <div className="erp-toolbar">
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search payee, category, description…"
+            aria-label="Search expenses"
+          />
+          <select
+            value={expenseManageFilter}
+            onChange={(e) =>
+              setExpenseManageFilter(
+                e.target.value as 'all' | 'pending' | 'approved' | 'rejected'
+              )
+            }
+            title="Filter expense list by status"
+            aria-label="Expense status filter"
           >
-            Post income
-          </button>
+            <option value="all">All</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
         </div>
         <div className="list-table-wrap">
-          <table className="table">
-            <thead>
+        <table className="table compact">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Payee</th>
+              <th>Category</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {managedExpenses.length === 0 ? (
               <tr>
-                <th>Date</th>
-                <th>Description</th>
-                <th>Payer</th>
-                <th>Amount</th>
+                <td colSpan={6} className="muted">
+                  {expenseManageFilter !== 'all'
+                    ? 'No expenses for this filter. Choose All to see every expense.'
+                    : searchQuery.trim()
+                      ? 'No expenses match this search. Try a payee, category, or amount.'
+                      : 'No expenses yet. Fill in the form above and submit one.'}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {incomes.map((row) => (
-                <tr key={row.id}>
-                  <td>{formatWhen(row.income_date) || '—'}</td>
-                  <td>{row.description}</td>
-                  <td>{row.payer || '—'}</td>
-                  <td>{formatMoney(row.amount)}</td>
-                </tr>
-              ))}
-              {incomes.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="muted">No other income recorded</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+            ) : (
+              managedExpenses.map((r) => (
+              <tr key={r.id}>
+                <td className="expenses-nowrap">{formatWhen(r.expense_date || r.created_at, formatPrefs) || '—'}</td>
+                <td>
+                  {r.payee || '—'}
+                  {r.description ? <span className="expenses-payee-sub">{r.description}</span> : null}
+                </td>
+                <td>{r.category}</td>
+                <td className="expenses-nowrap">{formatMoney(r.amount)}</td>
+                <td>
+                  <span className={`expenses-status expenses-status-${r.status || 'pending'}`}>
+                    {r.status || 'pending'}
+                  </span>
+                  {r.rejection_reason ? (
+                    <span className="expenses-payee-sub">Reason: {r.rejection_reason}</span>
+                  ) : null}
+                </td>
+                <td>
+                  <div className="expenses-actions">
+                    <div className="expenses-actions-row">
+                      {r.has_attachment ? (
+                        <>
+                          <button
+                            type="button"
+                            aria-label={`Preview expense attachment ${r.id}`}
+                            onClick={() =>
+                              setAttachPreview({
+                                apiPath: `/expenses/${r.id}/attachment`,
+                                title: `Receipt — ${r.reference || r.description || r.id.slice(0, 8)}`,
+                              })
+                            }
+                          >
+                            Preview
+                          </button>
+                          <button onClick={() => downloadAttachment(r.id)} aria-label="Download expense attachment">
+                            Download
+                          </button>
+                          <button onClick={() => suggestOcr(r.id)} aria-label={`Suggest expense OCR ${r.id}`}>OCR</button>
+                          <button onClick={() => removeAttachment(r.id)} aria-label={`Remove expense attachment ${r.id}`}>Remove</button>
+                        </>
+                      ) : (
+                        <label className="expenses-upload">
+                          Upload receipt
+                          <input
+                            type="file"
+                            aria-label={`Upload expense attachment ${r.id}`}
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) uploadAttachment(r.id, f);
+                              e.target.value = '';
+                            }}
+                          />
+                        </label>
+                      )}
+                    </div>
+                    <div className="expenses-actions-row">
+                      {(r.status === 'pending' || r.status === 'rejected') && (
+                        <button
+                          type="button"
+                          onClick={() => startEdit(r)}
+                          aria-label={`Edit expense ${r.id}`}
+                          disabled={rowBusyId === r.id}
+                        >
+                          Edit
+                        </button>
+                      )}
+                      {r.status === 'pending' && (
+                        <>
+                          <button
+                            className="btn-ok"
+                            onClick={() => approve(r.id)}
+                            aria-label="Approve expense"
+                            disabled={rowBusyId === r.id}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            className="btn-danger"
+                            onClick={() => reject(r.id)}
+                            aria-label={`Reject expense ${r.id}`}
+                            disabled={!rejectReason.trim() || rowBusyId === r.id}
+                            title={
+                              rejectReason.trim()
+                                ? 'Reject expense'
+                                : 'Enter a reject reason first'
+                            }
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
+                      {r.status === 'rejected' && (
+                        <button
+                          className="btn-danger"
+                          type="button"
+                          onClick={() => removeExpense(r.id)}
+                          disabled={rowBusyId === r.id}
+                          aria-label={`Remove voided expense ${r.id}`}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            ))
+            )}
+          </tbody>
+        </table>
         </div>
       </div>
       {error && <p className="erp-banner err" role="alert">{error}</p>}
@@ -1088,27 +1039,44 @@ export default function Page() {
 
       <div className="erp-kpis">
         <div className="card">
-          <div className="muted">Posted this list</div>
+          <div className="muted">Approved</div>
           <div className="kpi">{formatMoney(approvedSpend)}</div>
         </div>
         <div className="card">
-          <div className="muted">Waiting approval</div>
+          <div className="muted">Pending</div>
           <div className="kpi">{formatMoney(pendingSpend)}</div>
         </div>
         <div className="card">
-          <div className="muted">Rows</div>
+          <div className="muted">Expenses</div>
           <div className="kpi">{rows.length}</div>
         </div>
       </div>
 
-      {expenseAddOpen ? (
-      <FormModal
-        title="Add expense"
-        busy={createBusy}
-        dirty={Boolean(amount.trim() || description.trim() || payee.trim() || reference.trim())}
-        onClose={() => setExpenseAddOpen(false)}
-      >
-        <div className="erp-form-grid">
+      <div className="card expenses-submit-card" id="submit-expense">
+        <div className="expenses-section-head">
+          <h2>Submit an expense</h2>
+          <p className="muted">Date, amount, category, payee, description, and how it was paid.</p>
+        </div>
+        <div className="erp-form-grid expenses-submit">
+          <label>
+            Date
+          <input
+            type="date"
+            value={expenseDate}
+            onChange={(e) => setExpenseDate(e.target.value)}
+            aria-label="Expense date"
+            title="Expense date (optional YYYY-MM-DD)"
+          />
+          </label>
+          <label>
+            Amount
+          <AmountField
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="Amount paid"
+            aria-label="Expense amount"
+          />
+          </label>
           <label>
             Category
           <select
@@ -1129,16 +1097,7 @@ export default function Page() {
           </select>
           </label>
           <label>
-            Amount
-          <AmountField
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="Amount paid"
-            aria-label="Expense amount"
-          />
-          </label>
-          <label>
-            Paid to
+            Payee
           <input
             value={payee}
             onChange={(e) => setPayee(e.target.value)}
@@ -1147,16 +1106,16 @@ export default function Page() {
           />
           </label>
           <label>
-            What for
+            Description
           <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Short description"
+            placeholder="What this expense was for"
             aria-label="Expense description"
           />
           </label>
           <label>
-            Paid with
+            Payment method
           <select
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(e.target.value)}
@@ -1169,20 +1128,8 @@ export default function Page() {
             <option value="mobile_money">Mobile Money (MoMo)</option>
           </select>
           </label>
-          <label>
-            Date
-          <input
-            type="date"
-            value={expenseDate}
-            onChange={(e) => setExpenseDate(e.target.value)}
-            aria-label="Expense date"
-            title="Expense date (optional YYYY-MM-DD)"
-          />
-          </label>
-          <details className="span-2" style={{ gridColumn: '1 / -1' }}>
-            <summary className="muted" style={{ cursor: 'pointer', fontWeight: 700 }}>
-              Optional: supplier name, receipt later, cash account, location
-            </summary>
+          <details className="expenses-optional">
+            <summary>Optional details</summary>
             <div className="erp-form-grid" style={{ marginTop: 10 }}>
           <label>
             Copy supplier name
@@ -1308,12 +1255,55 @@ export default function Page() {
             onClick={createExpense}
             disabled={createBusy || !categoryId || !amount}
           >
-            {createBusy ? 'Saving…' : 'Save expense'}
+            {createBusy ? 'Submitting…' : 'Submit expense'}
           </button>
         </div>
-      </FormModal>
-      ) : null}
+      </div>
 
+      <details
+        className="expenses-tools"
+        id="expense-tools"
+        open={toolsOpen}
+        onToggle={(e) => {
+          if (e.target !== e.currentTarget) return;
+          setToolsOpen((e.currentTarget as HTMLDetailsElement).open);
+        }}
+      >
+        <summary aria-label="Expense categories, schedules, approval rules, and numbering">
+          Categories, schedules, approval rules, and numbering
+        </summary>
+        <div className="expenses-tools-body">
+          <div className="card expenses-numbering-card">
+            <h3>Expense numbers</h3>
+            <p className="muted">Prefix and next number used when an expense is saved.</p>
+            <div className="expenses-numbering">
+              <label>
+                Prefix
+                <input value={expPrefix} onChange={(e) => setExpPrefix(e.target.value)} aria-label="Expense number prefix" placeholder="Prefix" />
+              </label>
+              <label>
+                Next number
+                <input value={expNext} onChange={(e) => setExpNext(e.target.value)} aria-label="Expense next number" placeholder="Next #" />
+              </label>
+              <button
+                type="button"
+                aria-label="Save expense numbering"
+                onClick={() => {
+                  const prefix = expPrefix.trim();
+                  const next = expNext.trim();
+                  const numbering: { prefix?: string; next_number?: number } = {};
+                  if (prefix) numbering.prefix = prefix;
+                  if (next) numbering.next_number = Number(next);
+                  const body = Object.keys(numbering).length ? { expense_numbering: numbering } : {};
+                  api('/expenses/settings', { method: 'PATCH', body: JSON.stringify(body) }).catch((err) =>
+                    setError(err.message || 'Could not save numbering'),
+                  );
+                }}
+              >
+                Save numbering
+              </button>
+            </div>
+          </div>
       <div className="erp-split">
       <details className="erp-advanced" id="approval-matrix">
         <summary>Approval rules</summary>
@@ -1324,10 +1314,7 @@ export default function Page() {
           People in that role can be emailed when an expense is waiting. They can turn that off under Notifications.
         </p>
         {levels.map((lvl, idx) => (
-          <div
-            key={idx}
-            style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}
-          >
+          <div key={idx} className="expenses-level-row">
             <span className="muted">Step {idx + 1}</span>
             <AmountField
               inline
@@ -1341,7 +1328,6 @@ export default function Page() {
               onChange={(e) => updateLevel(idx, { label: e.target.value })}
               placeholder="Label"
               title="Optional level label (1–120 chars; letters/digits required)"
-              style={{ width: 140 }}
               aria-label={`Expense approval level ${idx + 1} label`}
             />
             <input
@@ -1356,7 +1342,6 @@ export default function Page() {
               }
               placeholder="Who can approve"
               list="expense-approval-system-roles"
-              style={{ minWidth: 220, flex: 1 }}
               aria-label={`Expense approval level ${idx + 1} roles`}
             />
             <button
@@ -1374,7 +1359,7 @@ export default function Page() {
             <option key={r} value={r} />
           ))}
         </datalist>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="expenses-actions-row expenses-actions-start">
           <button type="button" onClick={addLevel} disabled={levels.length >= 5} aria-label="Add expense approval level">
             Add step
           </button>
@@ -1384,35 +1369,40 @@ export default function Page() {
         </div>
       </div>
       </details>
-      <details className="erp-advanced" id="budgets" open>
+      <details
+        className="erp-advanced"
+        id="budgets"
+        open={categoriesOpen}
+        onToggle={(e) => {
+          if (e.target !== e.currentTarget) return;
+          setCategoriesOpen((e.currentTarget as HTMLDetailsElement).open);
+        }}
+      >
         <summary>Categories and monthly budgets</summary>
       <div className="card" style={{ marginBottom: 0, boxShadow: 'none', border: 0, padding: '0 0 8px' }}>
         <h3>Categories and monthly budgets</h3>
         <p className="muted">
           Set a monthly budget for each category. Reports compare spending with that budget.
         </p>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+        <div className="expenses-inline-fields">
           <input
             value={newCatCode}
             onChange={(e) => setNewCatCode(e.target.value)}
             placeholder="Code"
             aria-label="Expense category code"
             title="Expense category code (1–40 chars; letters/digits required)"
-            style={{ width: 90 }}
           />
           <input
             aria-label="Expense category name"
             value={newCatName}
             onChange={(e) => setNewCatName(e.target.value)}
             placeholder="Name"
-            style={{ minWidth: 140 }}
           />
           <input
             value={newCatBudget}
             onChange={(e) => setNewCatBudget(e.target.value)}
             placeholder="Monthly budget"
             aria-label="Expense category monthly budget"
-            style={{ width: 120 }}
           />
           <select
             value={newCatAccountId}
@@ -1473,7 +1463,7 @@ export default function Page() {
                       setBudgetDrafts((prev) => ({ ...prev, [c.id]: e.target.value }))
                     }
                     aria-label={`Edit expense category budget ${c.code}`}
-                    style={{ width: 110 }}
+                    className="expenses-budget-input"
                   />
                 </td>
                 <td>
@@ -1493,7 +1483,8 @@ export default function Page() {
                   </select>
                 </td>
                 <td>{c.is_active === false ? 'No' : 'Yes'}</td>
-                <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <td>
+                  <div className="expenses-actions-row">
                   <button
                     type="button"
                     onClick={() => saveCategoryBudget(c)}
@@ -1518,6 +1509,7 @@ export default function Page() {
                   >
                     {c.is_active === false ? 'Activate' : 'Deactivate'}
                   </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -1543,7 +1535,6 @@ export default function Page() {
             placeholder="Required before Skip next"
             aria-label="Skip next reason"
             title="Required reason for Skip next (1–500 chars; letters/digits required)"
-            style={{ minWidth: 280 }}
           />
         </label>
         <p className="muted" style={{ marginTop: 0, marginBottom: 10 }}>
@@ -1651,7 +1642,7 @@ export default function Page() {
                 </option>
               ))}
           </select>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div className="expenses-actions-row work-span">
             {recEditId ? (
               <>
                 <button type="button" onClick={saveRecurringEdit} disabled={!recCategoryId || recBusy} aria-label="Save recurring expense schedule">
@@ -1700,7 +1691,7 @@ export default function Page() {
             {managedRecurring.length === 0 && (
               <tr>
                 <td colSpan={7} className="muted">
-                  No recurring schedules yet
+                  No recurring schedules yet. Fill in the fields above and create a schedule.
                 </td>
               </tr>
             )}
@@ -1722,7 +1713,8 @@ export default function Page() {
                   {formatWhen(r.next_run_at) || '—'}
                 </td>
                 <td>{r.is_active ? 'On' : 'Off'}</td>
-                <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <td>
+                  <div className="expenses-actions-row">
                   <button type="button" onClick={() => startRecurringEdit(r)} aria-label={`Edit recurring expense schedule ${r.id}`}>
                     Edit schedule
                   </button>
@@ -1754,6 +1746,7 @@ export default function Page() {
                   >
                     {r.is_active ? 'Deactivate' : 'Activate'}
                   </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -1762,40 +1755,76 @@ export default function Page() {
       </div>
       </details>
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <label>
-          Approve comment{' '}
-          <input
-            value={approveComment}
-            onChange={(e) => setApproveComment(e.target.value)}
-            placeholder="Optional note when you approve"
-            aria-label="Expense approve comment"
-            title="Optional comment (1–500 chars; letters/digits required); blank omits"
-            style={{ minWidth: 280 }}
-          />
-        </label>
-        <p className="muted" style={{ marginTop: 6 }}>
-          Optional. Shown with the approval.
-        </p>
-        <label style={{ display: 'block', marginTop: 12 }}>
-          Void reason{' '}
-          <input
-            value={rejectReason}
-            onChange={(e) => setRejectReason(e.target.value)}
-            placeholder="Required before Reject"
-            aria-label="Expense reject reason"
-            title="Required reason for Void (1–500 chars; letters/digits required)"
-            style={{ minWidth: 280 }}
-          />
-        </label>
-        <p className="muted" style={{ marginTop: 6 }}>
-          Required before you void an expense. The reason is kept with the record.
-        </p>
       </div>
+      <div className="card cat-panel expenses-income">
+        <h3>Other income</h3>
+        <p className="muted">Money the company received that is not a sale. It is separate from an expense.</p>
+        <div className="erp-form-grid">
+          <input value={incomeDesc} onChange={(e) => setIncomeDesc(e.target.value)} placeholder="Description" aria-label="Income description" />
+          <AmountField value={incomeAmount} onChange={(e) => setIncomeAmount(e.target.value)} placeholder="Amount" aria-label="Income amount" />
+          <input value={incomePayer} onChange={(e) => setIncomePayer(e.target.value)} placeholder="Payer (optional)" aria-label="Income payer" />
+          <button
+            type="button"
+            onClick={async () => {
+              setError('');
+              try {
+                await api('/incomes', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    description: incomeDesc.trim(),
+                    amount: Number(incomeAmount),
+                    payer: incomePayer.trim() || null,
+                    payment_method: paymentMethod,
+                    liquid_account_id: liquidAccountId.trim() || null,
+                  }),
+                });
+                setIncomeDesc('');
+                setIncomeAmount('');
+                setIncomePayer('');
+                await refresh();
+                setMessage('Income posted to the ledger');
+              } catch (err: any) {
+                setError(err.message);
+              }
+            }}
+            aria-label="Post other income"
+          >
+            Post income
+          </button>
+        </div>
+        <div className="list-table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Payer</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {incomes.map((row) => (
+                <tr key={row.id}>
+                  <td>{formatWhen(row.income_date) || '—'}</td>
+                  <td>{row.description}</td>
+                  <td>{row.payer || '—'}</td>
+                  <td>{formatMoney(row.amount)}</td>
+                </tr>
+              ))}
+              {incomes.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="muted">No other income recorded. Enter a description and amount, then post income.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
+        </div>
+      </details>
 
       {ocrDraft && ocrFor && (
-        <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card" id="expense-ocr">
           <h3>Suggestions from the receipt</h3>
           <p className="muted">
             Check these fields before you apply them.
@@ -1831,8 +1860,8 @@ export default function Page() {
               placeholder="Date YYYY-MM-DD"
               aria-label="Expense OCR date"
             />
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" aria-label="Apply expense OCR suggestion" onClick={applyOcr}>
+            <div className="expenses-actions-row">
+              <button type="button" className="btn-ok" aria-label="Apply expense OCR suggestion" onClick={applyOcr}>
                 Apply to expense
               </button>
               <button
@@ -1852,7 +1881,7 @@ export default function Page() {
       )}
 
       {editDraft && editFor && (
-        <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card" id="expense-edit">
           <h3>Edit expense</h3>
           <p className="muted" style={{ marginTop: 0 }}>
             Change the amount or payee before this expense is approved.
@@ -1967,7 +1996,7 @@ export default function Page() {
               <option value="cheque">Cheque</option>
               <option value="mobile_money">Mobile Money (MoMo)</option>
             </select>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div className="expenses-actions-row">
               <button type="button" onClick={saveEdit} disabled={editBusy} aria-label="Save expense changes">
                 {editBusy ? 'Saving…' : 'Save changes'}
               </button>

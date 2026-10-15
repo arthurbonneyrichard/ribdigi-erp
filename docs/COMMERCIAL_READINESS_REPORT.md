@@ -1,6 +1,196 @@
 # RIBDIGI ERP COMMERCIAL READINESS REPORT
 
-**Date:** 2026-09-17 (historical scorecard). **2026-10-13 addendum** is the latest retail result. Earlier addenda stay below.
+**Date:** 2026-09-17 (historical scorecard). **15 October 2026 UTC** is the latest result. Earlier addenda stay below. The 2026-10-05 section still says **Not ready for market**.
+
+## 15 October 2026 UTC
+
+**Not a general release. Not certified. Not Offline Complete.** `offline_complete_claimed` stays false. This pass did not commit, push, deploy, migrate, charge a payment, reset a password, sign in `cashier@offline-drill-oct13.example`, close `SHIFT-2026-0001`, `SHIFT-2026-0002`, or `SHIFT-2026-0007`, mark `PINV-2026-0001` or `PINV-2026-0002` paid, or receive `PO-2026-0002`. `ribdigi_erp` was not overwritten.
+
+| Area | Status | Why it did not move |
+| --- | --- | --- |
+| Security | Blocked | The local in-memory auth suites from 2026-10-14 were not re-run. The cashier permission file was re-run because supplier payments changed. A local copy of `ribdigi_erp` was dumped and restored into a disposable database, then that database was dropped. A signed-in browser, the live site, the full backend suite, and an external test were not executed. |
+| Retail | Not ready | A cashier can no longer record a supplier payment. No signed-in retail sale was walked from receipt through sale, stock, tender, journal, and report. |
+| Offline POS | Incomplete | The queue test now covers prepare, sell, close the browser database, and one replay of the same `client_request_id`. A closed browser still cannot be promised to upload. The device id is not strong binding. A private window with no till-agent journal cannot recover sales. Wallet, gift card, and loyalty stay online-only. Credit stays on the server-reviewed queue. |
+| Hotel | Not ready | Not tested in this pass. |
+| Restaurant | Not ready | Not tested in this pass. |
+
+### Verified fixes
+
+- `POST /suppliers/{supplier_id}/payments` now requires `credit:read` as well as `credit:write`. Till credit is `credit:write` only, so a cashier is refused. From `backend`, `PYTHONPATH=.`, `RATE_LIMIT_BACKEND=memory`, Python 3.12, no `--timeout`: `pytest tests/test_cashier_pos_only.py -q --tb=short`. Result: **4 passed** in 6.44s, exit 0. The cashier post returned 403. The company-admin post to a supplier that does not exist returned 404, so the extra check did not lock out an administrator. In-memory SQLite. `ribdigi_erp` was not opened by pytest.
+- Offline queue: prepare a grant, queue a cash sale, close IndexedDB, read the sale back, flush once, flush again. The fake API is called once, with the same `client_request_id`, and one row is synced. From `frontend`: `npm run test:offline`. Result: **21 passed**, 0 failed, exit 0. That includes “offline complete stays missing” and the till-journal read-back after IndexedDB is cleared. `offline_complete_claimed` in `backend/app/offline_pos.py` is still false.
+
+### Commands and results — local restore drill
+
+This is a local copy of `ribdigi_erp`. It is not a production restore and not an authorized `.ribbak` restore. Tool version inside `ribdigi-erp-postgres-1`: `pg_dump` and `pg_restore` **PostgreSQL 16.14**. Role `ribdigi`. No password was printed.
+
+1. `docker exec ribdigi-erp-postgres-1 psql -U ribdigi -d ribdigi_erp -c "SELECT current_database();"` returned `ribdigi_erp`.
+2. `docker exec ribdigi-erp-postgres-1 pg_dump -U ribdigi -d ribdigi_erp -Fc --no-owner --no-acl -f /tmp/ribdigi_drill_20261015.dump` wrote 1007203 bytes. The dump file was inside the container, outside the application database.
+3. The name `ribdigi_drill_20261015` was checked against `ribdigi_erp`, `production`, and `staging`, then created. `current_database()` on it returned `ribdigi_drill_20261015`.
+4. `docker exec ribdigi-erp-postgres-1 pg_restore -U ribdigi -d ribdigi_drill_20261015 --no-owner --no-acl --exit-on-error /tmp/ribdigi_drill_20261015.dump` exited 0.
+5. On the disposable database: users 9, tenants 6, sales 40, journal entries 50. Those counts matched a following read-only count on `ribdigi_erp` after `current_database()` again returned `ribdigi_erp`. Users, journals, sales, and stock rows without a tenant: 0. Journal or stock rows whose creator belongs to another tenant: 0. Sales belonged to 3 tenants.
+6. `DROP DATABASE ribdigi_drill_20261015` from database `postgres`, then the dump file was removed. A later list no longer contains that name. `current_database()` on `ribdigi_erp` still returned `ribdigi_erp`.
+
+### Failed checks
+
+None in the cashier file or the offline suite.
+
+### Not run
+
+- Signed-in retail single-store walkthrough reconciling receipt, sale, stock, tender, journal, and report.
+- Signed-in retail multi-store walkthrough.
+- Signed-in hotel walkthrough.
+- Signed-in restaurant walkthrough.
+- Full backend suite. The 2026-10-14 auth, permission, isolation, 2FA, rate-limit, and upload results were not repeated.
+- Live `https://erp.ribdigihouse.com/api/v1/health`.
+- External penetration test.
+- Browser-closed upload, private-window recovery without the till-agent journal, and strong device binding.
+- A production or `.ribbak` restore.
+
+### Environmental blockers
+
+- The browser at `http://127.0.0.1:3000/` is the login form. The drill cashier was not signed in. No password script was written. That is why Retail stays Not ready.
+
+### Accepted operating limitations
+
+- A closed browser is not guaranteed to upload a queued sale. Private browsing and cleared site data cannot recover the queue unless the till-agent journal was running when the sale was saved. A browser device id is not strong device binding. The service worker does not cache `/api/`.
+- Wallet, gift card, and loyalty stay online-only. Credit stays on the server-reviewed queue.
+- A sales officer who already has `credit:read` and `credit:write` can still record a supplier payment. An inventory officer still cannot, because that role has no credit permission.
+- `offline_complete_claimed` stays false.
+- Paystack and Flutterwave host locks, secret prefix checks, and the unpaid-until-signed-confirmation rule were not loosened. Brand `#4AB012` was not changed. New-company industries remain retail, hotel, and restaurant. FMCG was not restored.
+
+### Code changed in this pass
+
+`backend/app/api.py` (supplier payment requires `credit:read`), `backend/tests/test_cashier_pos_only.py` (cashier 403 and company-admin 404), and `frontend/lib/posOfflineQueue.test.ts` (restart then one replay). Customer payment and POS credit were not narrowed.
+
+## 2026-10-14 evening reassessment
+
+**Not a general release. Not certified. Not Offline Complete.** `offline_complete_claimed` stays false. This pass did not commit, push, deploy, migrate, or write `ribdigi_erp`. `backend/app/api.py` and `tests/test_pos_sale_replay_r1.py` were not edited. Replay stays with the other pass.
+
+| Area | Status | Why it did not move |
+| --- | --- | --- |
+| Security | Blocked | The previously unexecuted auth, permission, isolation, 2FA, upload, and hotel cross-tenant tests passed after one login-copy repair. The full backend suite, a signed-in walkthrough, the live site, an external test, and an authorized restore were not executed. |
+| Retail | Not ready | `http://127.0.0.1:3000/` is the login form. No signed-in single-store or multi-store walkthrough. |
+| Offline POS | Incomplete | `npm run test:offline` passed 20. A closed browser still cannot be promised to upload. The device id is not strong binding. A private window with no till-agent journal cannot recover sales. |
+| Hotel | Not ready | Hotel API tests passed in memory. No signed-in hotel walkthrough. |
+| Restaurant | Not ready | No signed-in restaurant walkthrough. |
+
+### Verified fixes
+
+- Login, when the health probe is still online but the sign-in request cannot reach the server, shows `unreachableApiMessage('/auth/login')`. A leftover `X-Tenant-ID` still does not choose the workspace. Re-run: `tests/test_login_stale_session_header_l1.py` **3 passed** in 6.36s. In-memory SQLite. `ribdigi_erp` was not opened.
+- Gift-card and loyalty issue, redemption, refund, and reversal stay on 2150, 2160, 6100, and 6110. An inactive bank account 1010 rejects card and Mobile Money instead of debiting till cash 1000. An inactive loyalty account 2160 rejects that tender even when a cash account id is sent. Drawer expected cash for a split of cash 4, Mobile Money 11, and bank transfer 15 is opening cash plus 4 only. Forged and cross-company account ids stay 404. The file now has 10 tests. They passed inside the combined run below. No change was required in the sale-replay section of `api.py`.
+
+### Commands and results
+
+From `backend`, `PYTHONPATH=.`, `RATE_LIMIT_BACKEND=memory`, Python 3.12, no `--timeout`: password reset, email verification, stale login header, TOTP, 2FA code and disable-password OpenAPI, users and roles, custom roles, cashier POS limits, backup restore isolation, storage, product import, user import, expense OCR, purchase OCR, company logo, attachment preview, hotel and FMCG security audit, and payment GL routing. First result: **1 failed, 99 passed**, 1502 warnings, 201.44s, exit 1. The failure was `test_login_client_omits_stale_session_headers` because the login page no longer called `unreachableApiMessage('/auth/login')`. After that call was restored, the login file passed as above. The other 99 were not re-run after the repair. Those tests use in-memory SQLite. `ribdigi_erp` was not opened. Rate-limit tests were not in this command; they remain the earlier same-day result inside `tests/test_security_middleware.py` (part of the 99 passed in 210.51s).
+
+From `frontend`: `npm run test:offline`. Result: **20 passed**, 0 failed, 1165ms, exit 0. That run includes “offline complete stays missing” and “queued sale is read back from the till journal after IndexedDB is cleared”.
+
+`GET http://127.0.0.1:3000/` returned 200. The HTML contains Login tenant, Login email, Login password, and Sign in. No password was entered. The drill cashier was not signed in. The Docker frontend image was not rebuilt, so this browser tab does not show the login-copy edit.
+
+### Failed checks
+
+None remain in the commands above after the login-copy repair. The first combined run failed one source assertion, which was repaired and re-run.
+
+### Not run
+
+- Signed-in retail single-store walkthrough.
+- Signed-in retail multi-store walkthrough.
+- Signed-in hotel walkthrough.
+- Signed-in restaurant walkthrough.
+- Full backend suite.
+- Live `https://erp.ribdigihouse.com/api/v1/health`.
+- A second proof of two POS inserts at the same moment. That replay file was left to the other pass.
+- Browser-closed upload, private-window recovery, and strong device binding.
+
+### Environmental blockers
+
+- Isolated PostgreSQL restore: **Blocked**. `docker exec ribdigi-erp-postgres-1` reports `psql`, `pg_dump`, and `pg_restore` PostgreSQL 16.14. The backend mount `/data/backups` is Docker volume `ribdigi-erp_backup_data` and `ls -la` shows only `.` and `..`. No `.ribbak`, `.dump`, or `.backup` file was found in this tree. No disposable database was created. `ribdigi_erp` was not dumped and was not overwritten.
+
+### Accepted operating limitations
+
+- A gift-card refund credits liability 2150. It does not restore the plastic card balance.
+- A closed browser is not guaranteed to upload a queued sale. Private browsing and cleared site data cannot recover the queue unless the till-agent journal was running when the sale was saved. A browser device id is not strong device binding.
+- Drawer expected cash does not include gift card, loyalty, card, Mobile Money, or bank transfer.
+- `offline_complete_claimed` stays false.
+
+### Code changed in this pass
+
+`backend/tests/test_payment_gl_routing.py` (inactive bank and loyalty accounts, and a non-cash drawer total) and `frontend/app/page.tsx` (login unreachable-server copy). Paystack and Flutterwave host locks, secret prefix checks, and the unpaid-until-signed-confirmation rule were not loosened. Brand `#4AB012` was not changed. FMCG was not restored as a new-company industry.
+
+## 2026-10-14 later reassessment
+
+**Not a general release. Not certified. Not a verified live site.** `offline_complete_claimed` stays false.
+
+| Area | Status | Why it did not move |
+| --- | --- | --- |
+| Security | Blocked | Named auth, isolation, 2FA, rate-limit, upload, job, and infra tests passed. The full suite, a signed-in walkthrough, the live site, and an authorized restore were not executed. |
+| Retail | Not ready | Single-store and multi-store signed-in walkthroughs were not run. |
+| Offline POS | Incomplete | In-memory replay and the till-agent journal file passed. A closed browser still cannot be promised to upload. The device id is not strong binding. |
+| Hotel | Not ready | No signed-in hotel walkthrough. |
+| Restaurant | Not ready | No signed-in restaurant walkthrough. |
+
+### Verified fixes
+
+- Gift-card and loyalty issue, redemption, refund, and reversal stay on 2150, 2160, 6100, and 6110. A cash account id on those tenders does not post till cash. A split tender’s drawer cash is only the cash portion. A cross-company account id and a forged id return 404. A revenue account id and a non-cash refund aimed at till cash return 400. The 9 tests in `tests/test_payment_gl_routing.py` passed inside the combined run whose only failures were the two replay tests named below. In-memory SQLite. `ribdigi_erp` was not opened.
+- A lost POS response with the same `client_request_id` returns the original sale: one tender set, one stock movement, one journal. A different quantity, including an offline sale and a queued quote, returns HTTP 409 `CLIENT_REQUEST_REUSED`. A missed lookup that then hits the unique key returns the original sale. Two retries after the sale is committed both return that sale. Command from `backend`, `PYTHONPATH=.`, Python 3.12: `pytest tests/test_pos_sale_replay_r1.py tests/test_pos_sale_client_request_id_idempotent.py tests/test_offline_pos_grants.py::test_offline_quote_capture_is_idempotent -q --tb=line`. Result: **7 passed** in 32.03s. The first run of the two overlapping-insert tests returned “That record already exists.” The flush handler was then taught to wait for the winning sale. Two inserts at the same moment still share this fixture’s one SQLite connection, so that shape was not claimed as a second proof.
+- Till-agent journal: `pytest tests/test_pos_offline_journal_r1.py -q --tb=line --noconftest` from `backend`. Result: **4 passed** in 0.70s. The same `client_request_id` keeps the original payload. A later write does not replace the commercial terms. Password fields are not stored in the file.
+- Security command from `backend`, `PYTHONPATH=.`, `RATE_LIMIT_BACKEND=memory`, Python 3.12, no `--timeout`: auth sessions, login 2FA, WebAuthn, tenant isolation, tenant isolation matrix, attachment paths, user-store RBAC, staff-guide permission, offline POS isolation, security middleware, OWASP smoke, OWASP O1, OWASP T1, expense attachments, product images, and brand logo. Result: **99 passed** in 210.51s, exit 0. Those rate-limit tests call `rate_limiter.reset_for_tests()`. Job path and tenant infra privacy: **10 passed** in 32.15s, exit 0.
+
+### Failed checks
+
+None in the commands above after the replay flush fix. The first replay run failed two tests with HTTP 409 detail “That record already exists.” That was repaired and the replay file then passed.
+
+### Not run
+
+- Signed-in retail single-store walkthrough.
+- Signed-in retail multi-store walkthrough.
+- Signed-in hotel walkthrough.
+- Signed-in restaurant walkthrough.
+- One live retail sale reconciled from receipt through report. The earlier read-only check of `POS20260036` was not repeated.
+- Frontend `npm run test:offline`. Offline frontend code was not changed. The prior result remains 20 passed.
+- Full backend suite.
+- Live `https://erp.ribdigihouse.com/api/v1/health`.
+
+`GET http://127.0.0.1:3000/` returned 200. The HTML contains Login tenant, Login email, and Sign in. No non-drill test credential was already known. The drill cashier was not signed in. No password was printed.
+
+### Environmental blockers
+
+- Isolated PostgreSQL restore: **Blocked**. Client tools inside the already-running `ribdigi-erp-postgres-1` are `psql`, `pg_dump`, and `pg_restore` PostgreSQL 16.14. `/data/backups` on `ribdigi-erp-backend-1` is empty. No `.ribbak` file was in this tree. No disposable database was created. `ribdigi_erp` was not dumped and was not overwritten.
+
+### Accepted operating limitations
+
+- A gift-card refund credits liability 2150. It does not restore the plastic card balance. A sales return has no card-code column, and no migration was added.
+- A quote retry that omits `unit_price` matches the stored quote. The first request’s override price is not compared, because a quotation has no stored fingerprint and no migration was added.
+- A closed browser is not guaranteed to upload a queued sale. Private browsing and cleared site data cannot recover the queue unless the till-agent journal was running when the sale was saved. A browser device id is not strong device binding.
+- Drawer expected cash does not include gift card, loyalty, card, Mobile Money, or bank transfer.
+
+### Code changed in this pass
+
+`backend/app/accounting.py` refund routing, `backend/app/api.py` sale and quote replay, `backend/app/schemas.py` comment, `backend/tests/test_payment_gl_routing.py`, and new `backend/tests/test_pos_sale_replay_r1.py`. Paystack and Flutterwave host locks, secret prefix checks, and the unpaid-until-signed-confirmation rule were not loosened. Brand `#4AB012` was not changed.
+
+## 2026-10-14 addendum (security and money review)
+
+**Not a general release. Not certified.** `offline_complete_claimed` stays false. This pass did not deploy, commit, or write `ribdigi_erp`.
+
+### What changed
+
+A gift-card or loyalty tender that also sent a cash-account id could post that cash account. The sale path now drops that account id for gift card and loyalty, and the journal still debits 2150 or 2160. Mobile Money, card, and bank transfer still refuse a till-cash account id (`1000`) with HTTP 400. Issuing a gift card still debits expense 6100 and credits 2150, because that screen does not collect money. Selling a card for cash is not a separate posting. That policy is unresolved and was not reclassified.
+
+### Verified in this pass
+
+- `tests/test_payment_gl_routing.py`: **6 passed** in 15.87s, including the new cash-account override case. In-memory SQLite. `ribdigi_erp` was not opened by pytest.
+- Dashboard purchases: `tests/test_dashboard.py::test_dashboard_purchases_count_recorded_bills_not_drafts` **passed** in the 2-test run (6.01s). Recorded bills are unpaid, partial, paid, and overdue. Drafts stay out. Purchase orders are not added on top of bills.
+- Last active company admin: `tests/test_users_roles.py::test_last_company_admin_cannot_be_deactivated_or_reassigned` **passed** in that same run.
+- Alembic script heads: `['20261011_0138']` only.
+- Read-only on `127.0.0.1`, after `current_database()` returned `ribdigi_erp`: 0 duplicate `(tenant_id, client_request_id)` pairs, 0 unbalanced journals. Sale `POS20260036` is one completed row, total 5.75, tax 0.75, one cash tender 5.75, one stock-out of 1, one posted journal (debit 7.75, credit 7.75: cash 1000 5.75, COGS 5000 2.00, inventory 1200 2.00, revenue 4000 5.00, tax 2100 0.75). A lost-response replay was not executed. `SHIFT-2026-0001`, `SHIFT-2026-0002`, and `SHIFT-2026-0007` were not updated.
+- `http://127.0.0.1:3000/` was the login form. No password was entered.
+
+### Not run or blocked
+
+- Signed-in retail, hotel, and restaurant walkthroughs: **Not run**.
+- Offline queue suite: **Not run** in this pass. Offline Complete stays missing.
+- Live `https://erp.ribdigihouse.com/api/v1/health`: **Not run**.
+- Isolated restore: **Blocked**. `pg_dump` and `pg_restore` are not on PATH. No disposable database was created. `ribdigi_erp` was not restored over.
 
 ## 2026-10-13 addendum (retail count-and-close)
 
@@ -33,6 +223,8 @@
 - Signed-in single-store and multi-store retail walkthrough beyond this one POS sale.
 - Live site was not tested.
 - One local offline POS sale was walked on company `offline-drill-oct13`: prepare online, disconnect, sell cash, reload, reconnect, sync. Sale, stock, balanced journal, tender, and open shift totals matched. Offline mode is not certified.
+- The company dashboard lists each cashier as a card: online or offline, store, open shift, and sales waiting to sync. Offline POS remains the only offline surface. `offline_complete_claimed` stays false.
+- Offline Complete remains missing because the browser device id is not strong device binding, a private window with no till-agent journal on this PC cannot recover those sales, saved sales upload only while the Point of Sale page is open and signed in, and a live site has not been tested.
 
 ## 2026-10-05 addendum (local production tree)
 

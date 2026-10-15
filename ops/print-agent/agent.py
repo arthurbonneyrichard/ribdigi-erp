@@ -79,8 +79,23 @@ def loop() -> None:
         time.sleep(3)
 
 
+def _start_journal() -> None:
+    from journal import serve_forever, serve_in_thread
+
+    if len(sys.argv) >= 2 and sys.argv[1] == "journal":
+        serve_forever()
+        return
+    try:
+        serve_in_thread()
+    except OSError as exc:
+        print(f"offline sale journal not listening: {exc}", file=sys.stderr)
+
+
 if __name__ == "__main__":
-    if len(sys.argv) >= 3 and sys.argv[1] == "pair":
+    if len(sys.argv) >= 2 and sys.argv[1] == "journal":
+        _start_journal()
+    elif len(sys.argv) >= 3 and sys.argv[1] == "pair":
         pair(sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else "Till")
     else:
+        _start_journal()
         loop()

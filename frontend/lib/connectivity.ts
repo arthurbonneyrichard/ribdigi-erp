@@ -26,6 +26,10 @@ export const EXPIRED_OFFLINE =
 export const PREPARED_OFFLINE =
   'This device is prepared for offline POS. Sign-in needs a connection, so open Point of Sale to keep selling. Saved sales stay on this device.';
 
+/** Why Offline Complete is still missing. Do not shorten this into a completion claim. */
+export const OFFLINE_COMPLETE_MISSING =
+  'Offline Complete remains missing because the browser device id is not strong device binding, a private window with no till-agent journal on this PC cannot recover those sales, saved sales upload only while the Point of Sale page is open and signed in, and a live site has not been tested.';
+
 const listeners = new Set<(snap: LinkSnapshot) => void>();
 let navigatorOnline = typeof navigator === 'undefined' ? true : navigator.onLine;
 let apiReachable: boolean | null = null;
@@ -69,7 +73,7 @@ export function linkStatusText(snap: LinkSnapshot = getLinkSnapshot()): { label:
   if (snap.phase === 'sync_failed') {
     return {
       label: 'Sync failed',
-      detail: snap.syncError || 'Saved sales stay on this device. Use Send saved sales on Point of Sale.',
+      detail: snap.syncError || 'Saved sales stay on this device and will be sent automatically.',
     };
   }
   if (snap.phase === 'api_down') {
@@ -81,8 +85,11 @@ export function linkStatusText(snap: LinkSnapshot = getLinkSnapshot()): { label:
   if (snap.phase === 'offline') {
     return { label: 'Offline', detail: waiting || 'No internet connection.' };
   }
-  const sent = snap.lastSyncAt ? 'Last send is recorded on Point of Sale.' : 'Server reachable.';
-  return { label: 'Online', detail: waiting ? `${waiting}. ${sent}` : sent };
+  if (waiting) {
+    return { label: 'Online', detail: `${waiting}. They will be sent automatically.` };
+  }
+  const sent = snap.lastSyncAt ? 'Saved sales are up to date.' : 'Server reachable.';
+  return { label: 'Online', detail: sent };
 }
 
 export function explainOfflineAccess(
@@ -97,6 +104,56 @@ export function explainOfflineAccess(
     return { prepared: false, message: EXPIRED_OFFLINE };
   }
   return { prepared: true, message: PREPARED_OFFLINE };
+}
+
+export const CATALOG_NOT_SAVED = 'The product list was not saved on this device.';
+
+export const PREPARING_OFFLINE = 'Preparing this device for offline selling.';
+
+/** Shown after grant, catalog, and IndexedDB all succeed. */
+export const OFFLINE_READY = 'Offline ready';
+
+const REVOKED_PANEL =
+  'Not prepared. Offline selling was turned off on this device. Sign in online. Saved sales stay on this device.';
+
+/**
+ * Till status for offline selling.
+ * The exact unprepared sentence is used only when this device still has no grant.
+ */
+export function offlineSellingStatus(input: {
+  grantId?: string | null;
+  catalogSaved?: boolean;
+  valid?: boolean;
+  revoked?: boolean;
+  online?: boolean;
+  preparing?: boolean;
+  failure?: string | null;
+}): string {
+  const hasGrant = Boolean(input.grantId);
+  if (hasGrant && input.catalogSaved && input.valid) return OFFLINE_READY;
+  if (input.preparing) return PREPARING_OFFLINE;
+  if (hasGrant && input.valid === false) {
+    return input.revoked ? REVOKED_PANEL : `Not prepared. ${EXPIRED_OFFLINE}`;
+  }
+  if (!hasGrant) {
+    const failure = String(input.failure || '').trim();
+    if (input.online && !failure) return PREPARING_OFFLINE;
+    if (!failure) return UNPREPARED_OFFLINE;
+    return failure.includes(UNPREPARED_OFFLINE) ? failure : `${failure} ${UNPREPARED_OFFLINE}`;
+  }
+  const failure = String(input.failure || '').trim();
+  if (failure && !failure.includes(UNPREPARED_OFFLINE)) return failure;
+  return CATALOG_NOT_SAVED;
+}
+
+/** Plain prepare failure. The unprepared sentence is appended only when no grant was saved. */
+export function describePrepareFailure(err: unknown, hasGrant: boolean): string {
+  const raw = (err instanceof Error ? err.message : String(err || '')).trim();
+  const reason =
+    raw.split(UNPREPARED_OFFLINE).join('').replace(/\s+/g, ' ').trim() ||
+    (hasGrant ? CATALOG_NOT_SAVED : 'Offline selling could not be prepared.');
+  if (hasGrant || reason.includes(UNPREPARED_OFFLINE)) return reason;
+  return `${reason} ${UNPREPARED_OFFLINE}`;
 }
 
 function emit() {

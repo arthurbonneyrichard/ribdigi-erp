@@ -135,10 +135,10 @@ def normalize_industry(industry: str | None, *, required: bool = True) -> str | 
 
 
 def assert_industry_selectable(industry: str, *, previous: str | None = None) -> None:
-    """Restaurant, Hotel, and FMCG are selectable. RETIRED_PROVISION_INDUSTRIES is empty.
+    """New companies choose retail, hotel, or restaurant.
 
-    A code added to that set later is rejected on create and on a change away
-    from a company that already stores it.
+    RETIRED_PROVISION_INDUSTRIES is empty. A code added there later is rejected
+    on create and on a change away from a company that already stores it.
     """
     if industry not in RETIRED_PROVISION_INDUSTRIES:
         return
@@ -148,8 +148,8 @@ def assert_industry_selectable(industry: str, *, previous: str | None = None) ->
     raise HTTPException(
         status_code=400,
         detail=(
-            "Hotel and FMCG are not available when creating or changing a company. "
-            "A company that already uses that business type keeps its records."
+            "That business type is not available when creating or changing a company. "
+            "A company that already uses it keeps its records."
         ),
     )
 

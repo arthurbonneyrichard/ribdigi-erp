@@ -128,6 +128,9 @@ async def test_admin_sees_cashier_offline_duration_and_cashier_cannot_list(clien
     assert alpha["offline_duration_seconds"] is not None
     assert alpha["offline_duration_seconds"] >= 12 * 60 - 5
     assert alpha["user_id"] == alpha_cashier_id
+    assert alpha["pending_queue_count"] == 1
+    assert alpha["email"] == "cashier@alpha.example.com"
+    assert alpha["shift_status"] == "none"
 
     mgr = await ac.get("/api/v1/users/cashier-presence", headers=manager)
     assert mgr.status_code == 200, mgr.text
