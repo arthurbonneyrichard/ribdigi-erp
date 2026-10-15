@@ -70,6 +70,7 @@ class BillingGateway:
         currency: str,
         reference: str,
         email: str,
+        tenant_id: str | None = None,
     ) -> ChargeResult:
         return ChargeResult(False, None, "Billing provider is not configured")
 
@@ -81,6 +82,7 @@ class BillingGateway:
         currency: str,
         reference: str,
         callback_url: str,
+        tenant_id: str | None = None,
     ) -> CheckoutResult:
         return CheckoutResult(False, None, reference, "Billing provider is not configured")
 
@@ -115,6 +117,7 @@ class MockGateway(BillingGateway):
         currency: str,
         reference: str,
         email: str,
+        tenant_id: str | None = None,
     ) -> ChargeResult:
         if not self.configured():
             return ChargeResult(False, None, "sandbox_disabled")
@@ -138,6 +141,7 @@ class MockGateway(BillingGateway):
         currency: str,
         reference: str,
         callback_url: str,
+        tenant_id: str | None = None,
     ) -> CheckoutResult:
         if not self.configured():
             return CheckoutResult(False, None, reference, "sandbox_disabled")
@@ -190,6 +194,7 @@ class PaystackGateway(BillingGateway):
         currency: str,
         reference: str,
         email: str,
+        tenant_id: str | None = None,
     ) -> ChargeResult:
         if not self.configured():
             return ChargeResult(False, None, "paystack_not_configured")
@@ -200,6 +205,9 @@ class PaystackGateway(BillingGateway):
             "currency": currency,
             "reference": reference,
         }
+        company = _company_metadata(tenant_id)
+        if company:
+            payload["metadata"] = company
         try:
             response = httpx.post(
                 f"{self.base_url}/transaction/charge_authorization",
@@ -237,6 +245,7 @@ class PaystackGateway(BillingGateway):
         currency: str,
         reference: str,
         callback_url: str,
+        tenant_id: str | None = None,
     ) -> CheckoutResult:
         if not self.configured():
             return CheckoutResult(False, None, reference, "paystack_not_configured")
@@ -247,6 +256,9 @@ class PaystackGateway(BillingGateway):
             "reference": reference,
             "callback_url": callback_url,
         }
+        company = _company_metadata(tenant_id)
+        if company:
+            payload["metadata"] = company
         try:
             response = httpx.post(
                 f"{self.base_url}/transaction/initialize",
@@ -271,6 +283,14 @@ _FLUTTERWAVE_COUNTRY = {
     "ZAR": "ZA",
     "GBP": "GB",
 }
+
+
+def _company_metadata(tenant_id: str | None) -> dict | None:
+    """Echo the company id so a later webhook can prove which tenant was charged."""
+    company = str(tenant_id or "").strip()
+    if not company:
+        return None
+    return {"tenant_id": company}
 
 
 def _major_amount(amount_minor: int):
@@ -325,6 +345,7 @@ class FlutterwaveGateway(BillingGateway):
         currency: str,
         reference: str,
         email: str,
+        tenant_id: str | None = None,
     ) -> ChargeResult:
         if not self.configured():
             return ChargeResult(False, None, "flutterwave_not_configured")
@@ -343,6 +364,9 @@ class FlutterwaveGateway(BillingGateway):
             "email": email,
             "tx_ref": reference,
         }
+        company = _company_metadata(tenant_id)
+        if company:
+            payload["meta"] = company
         try:
             response = httpx.post(
                 f"{self.base_url}/v3/tokenized-charges",
@@ -373,6 +397,7 @@ class FlutterwaveGateway(BillingGateway):
         currency: str,
         reference: str,
         callback_url: str,
+        tenant_id: str | None = None,
     ) -> CheckoutResult:
         if not self.configured():
             return CheckoutResult(False, None, reference, "flutterwave_not_configured")
@@ -383,6 +408,9 @@ class FlutterwaveGateway(BillingGateway):
             "redirect_url": callback_url,
             "customer": {"email": email},
         }
+        company = _company_metadata(tenant_id)
+        if company:
+            payload["meta"] = company
         try:
             response = httpx.post(
                 f"{self.base_url}/v3/payments",
@@ -479,6 +507,7 @@ class CustomGateway(BillingGateway):
         currency: str,
         reference: str,
         email: str,
+        tenant_id: str | None = None,
     ) -> ChargeResult:
         if not self.configured():
             return ChargeResult(False, None, "gateway_not_configured")
@@ -495,6 +524,9 @@ class CustomGateway(BillingGateway):
             "reference": reference,
             "email": email,
         }
+        company = _company_metadata(tenant_id)
+        if company:
+            payload["metadata"] = company
         try:
             response = httpx.post(
                 f"{self.base_url}/charge",
@@ -525,6 +557,7 @@ class CustomGateway(BillingGateway):
         currency: str,
         reference: str,
         callback_url: str,
+        tenant_id: str | None = None,
     ) -> CheckoutResult:
         if not self.configured():
             return CheckoutResult(False, None, reference, "gateway_not_configured")
@@ -536,6 +569,9 @@ class CustomGateway(BillingGateway):
             "reference": reference,
             "callback_url": callback_url,
         }
+        company = _company_metadata(tenant_id)
+        if company:
+            payload["metadata"] = company
         try:
             response = httpx.post(
                 f"{self.base_url}/checkout",
@@ -817,6 +853,7 @@ def normalize_webhook_event(provider: str, event: dict) -> dict:
         token = raw_token if raw_token.startswith("flw_") else f"flw_{raw_token}"
     customer = data.get("customer") if isinstance(data.get("customer"), dict) else {}
     customer_code = str(customer.get("customer_code") or customer.get("id") or "").strip()
+    meta = data.get("meta") if isinstance(data.get("meta"), dict) else {}
     return {
         "id": event.get("id") or data.get("id"),
         "event": mapped,
@@ -827,7 +864,7 @@ def normalize_webhook_event(provider: str, event: dict) -> dict:
             "currency": data.get("currency"),
             "status": "success" if mapped == "charge.success" else status,
             "gateway_reference": str(data.get("flw_ref") or data.get("id") or ""),
-            "tenant_id": data.get("tenant_id"),
+            "tenant_id": data.get("tenant_id") or meta.get("tenant_id"),
             "authorization": {"authorization_code": token, "reusable": True} if token else {},
             "customer": {"customer_code": customer_code} if customer_code else {},
         },

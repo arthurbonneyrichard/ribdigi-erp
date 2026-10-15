@@ -521,6 +521,24 @@ async def test_pending_charge_waits_for_webhook(client, monkeypatch):
         await db.commit()
     assert second["charged"] == 0
     assert await _attempt_count(seed["t1"].id) == 1
+    omitted = {
+        "id": "evt-pending-omitted",
+        "event": "charge.success",
+        "data": {"reference": invoices[0]["idempotency_key"]},
+    }
+    raw_omitted = json.dumps(omitted, separators=(",", ":")).encode()
+    omitted_res = await ac.post(
+        "/api/v1/billing/webhooks/mock",
+        content=raw_omitted,
+        headers={
+            "x-ribdigi-billing-signature": sign_mock_webhook(raw_omitted),
+            "content-type": "application/json",
+        },
+    )
+    assert omitted_res.status_code == 200, omitted_res.text
+    assert omitted_res.json()["data"]["outcome"] == "mismatch"
+    still_open = (await ac.get("/api/v1/billing/invoices", headers=headers)).json()["data"]
+    assert still_open[0]["status"] == "open"
     event = {
         "id": "evt-pending-fail",
         "event": "charge.failed",
@@ -615,6 +633,21 @@ async def test_checkout_return_saves_method_only_after_provider_confirmation(cli
     assert await _invoice_count(seed["t1"].id) == before
     invoices = (await ac.get("/api/v1/billing/invoices", headers=headers)).json()["data"]
     assert all(row["status"] != "paid" for row in invoices)
+    omitted_auth = await _post_mock_webhook(
+        ac,
+        {
+            "event": "charge.success",
+            "data": {
+                "id": 9000,
+                "reference": reference,
+                "status": "success",
+                "authorization": {"authorization_code": "AUTH_omitted01", "reusable": True},
+            },
+        },
+    )
+    assert omitted_auth.json()["data"]["outcome"] == "mismatch"
+    omitted_profile = (await ac.get("/api/v1/billing/account", headers=headers)).json()["data"]
+    assert omitted_profile["authorization_present"] is False
     withheld = await _post_mock_webhook(
         ac,
         {

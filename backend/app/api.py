@@ -3272,6 +3272,35 @@ async def _serialize_user_with_stores(db: AsyncSession, tenant_id: str, user: m.
     return rows[0]
 
 
+def _user_shares_actor_stores(payload: dict, *, actor_id: str, allowed: list[str] | None) -> bool:
+    """A store-scoped viewer sees people assigned to those stores.
+
+    No membership still means every store in this company. Someone assigned
+    only to other stores is omitted. Privileged viewers pass ``allowed=None``.
+    """
+    if allowed is None or payload.get("id") == actor_id:
+        return True
+    ids = payload.get("store_ids") or []
+    if not ids:
+        return True
+    return bool(set(allowed).intersection(ids))
+
+
+async def _reject_user_outside_actor_stores(
+    db: AsyncSession, claims: dict, user: m.User
+) -> None:
+    from app import store_access as store_access_svc
+
+    allowed = await store_access_svc.assigned_store_ids(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+    )
+    if allowed is None or user.id == claims["sub"]:
+        return
+    payload = await _serialize_user_with_stores(db, claims["tenant_id"], user)
+    if not _user_shares_actor_stores(payload, actor_id=claims["sub"], allowed=allowed):
+        raise HTTPException(status_code=404, detail="User not found")
+
+
 async def _revoke_user_sessions(db: AsyncSession, *, tenant_id: str, user_id: str) -> int:
     now = datetime.utcnow()
     sessions = (
@@ -3599,8 +3628,21 @@ async def users(
     claims=Depends(require_permission("users", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """List tenant users. Optional is_active / branch_id / store_id filters."""
+    """List tenant users. Optional is_active / branch_id / store_id filters.
+
+    A viewer assigned to specific stores does not receive staff who are
+    assigned only to other stores. Company-wide staff with no membership
+    stay visible. Privileged roles still see the whole company.
+    """
     from app import store_access as store_access_svc
+
+    actor_stores = await store_access_svc.assigned_store_ids(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+    )
+    if store_id:
+        await store_access_svc.assert_store_access(
+            db, tenant_id=claims["tenant_id"], user_id=claims["sub"], store_id=store_id
+        )
 
     stmt = (
         select(m.User)
@@ -3617,8 +3659,12 @@ async def users(
     if not is_platform_role(actor_role):
         rows = [u for u in rows if not is_platform_role(u.role)]
     payloads = await _serialize_users_with_stores(db, claims["tenant_id"], rows)
+    payloads = [
+        p
+        for p in payloads
+        if _user_shares_actor_stores(p, actor_id=claims["sub"], allowed=actor_stores)
+    ]
     if store_id:
-        await store_access_svc.get_tenant_store(db, claims["tenant_id"], store_id)
         payloads = [p for p in payloads if store_id in (p.get("store_ids") or [])]
     return env(payloads)
 
@@ -3633,9 +3679,13 @@ async def users_cashier_presence(
     Cashiers do not have users:read, so they cannot list other cashiers.
     Rows are limited to the signed-in tenant.
     """
+    from app import store_access as store_access_svc
     from app.cashier_presence import list_cashier_presence
 
-    return env(await list_cashier_presence(db, claims["tenant_id"]))
+    allowed = await store_access_svc.assigned_store_ids(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+    )
+    return env(await list_cashier_presence(db, claims["tenant_id"], store_ids=allowed))
 
 
 @api.get("/users/import/template")
@@ -3712,6 +3762,7 @@ async def get_user(
     user = await _get_tenant_user(
         db, claims["tenant_id"], user_id, actor_role=claims.get("role")
     )
+    await _reject_user_outside_actor_stores(db, claims, user)
     return env(await _serialize_user_with_stores(db, claims["tenant_id"], user))
 
 
@@ -3724,7 +3775,8 @@ async def get_user_stores(
     """List store memberships for a user (empty = all stores / grandfather)."""
     from app import store_access as store_access_svc
 
-    await _get_tenant_user(db, claims["tenant_id"], user_id, actor_role=claims.get("role"))
+    target = await _get_tenant_user(db, claims["tenant_id"], user_id, actor_role=claims.get("role"))
+    await _reject_user_outside_actor_stores(db, claims, target)
     rows = await store_access_svc.list_memberships(
         db, tenant_id=claims["tenant_id"], user_id=user_id, active_only=True
     )
@@ -3751,7 +3803,8 @@ async def put_user_stores(
     from app import store_access as store_access_svc
     from app import audit as audit_svc
 
-    await _get_tenant_user(db, claims["tenant_id"], user_id, actor_role=claims.get("role"))
+    target = await _get_tenant_user(db, claims["tenant_id"], user_id, actor_role=claims.get("role"))
+    await _reject_user_outside_actor_stores(db, claims, target)
     rows = await store_access_svc.replace_memberships(
         db,
         tenant_id=claims["tenant_id"],
@@ -3889,6 +3942,7 @@ async def confirm_user_email(
     user = await _get_tenant_user(
         db, claims["tenant_id"], user_id, actor_role=claims.get("role")
     )
+    await _reject_user_outside_actor_stores(db, claims, user)
     user.email_verified = True
     await audit_svc.record_event(
         db,
@@ -3917,6 +3971,7 @@ async def update_user(
     user = await _get_tenant_user(
         db, claims["tenant_id"], user_id, actor_role=claims.get("role")
     )
+    await _reject_user_outside_actor_stores(db, claims, user)
     changes: dict = {}
 
     if payload.full_name is not None:
@@ -4083,6 +4138,7 @@ async def deactivate_user(
     user = await _get_tenant_user(
         db, claims["tenant_id"], user_id, actor_role=claims.get("role")
     )
+    await _reject_user_outside_actor_stores(db, claims, user)
     if user.id == claims["sub"]:
         raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
     await user_accounts_svc.require_remaining_company_admin(
@@ -4123,6 +4179,10 @@ async def delete_user_account(
     db: AsyncSession = Depends(get_db),
 ):
     """Permanently delete a tenant staff account (company admin / users write)."""
+    target = await _get_tenant_user(
+        db, claims["tenant_id"], user_id, actor_role=claims.get("role")
+    )
+    await _reject_user_outside_actor_stores(db, claims, target)
     snapshot = await user_accounts_svc.delete_tenant_user(
         db,
         tenant_id=claims["tenant_id"],

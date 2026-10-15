@@ -1,6 +1,6 @@
 # Offline POS (not Offline Complete)
 
-**Status:** Offline Complete remains **MISSING**. Offline Complete remains missing because the browser device id is not strong device binding, a private window with no till-agent journal on this PC cannot recover those sales, saved sales upload only while the Point of Sale page is open and signed in, and a live site has not been tested. This document describes the POS-only queue that flushes into existing `POST /api/v1/pos/sales` (`client_request_id` idempotency). There is no second sync stack, and inventory / reports / hotel are **not** offline.
+**Status:** The supported POS queue is **Ready**. Offline Complete remains **MISSING**. Offline Complete remains missing because the browser device id is not strong device binding, a private window with no till-agent journal on this PC cannot recover those sales, saved sales upload only while the Point of Sale page is open and signed in, and a live site has not been tested. This document describes the POS-only queue that flushes into existing `POST /api/v1/pos/sales` (`client_request_id` idempotency). There is no second sync stack, and inventory / reports / hotel are **not** offline.
 
 ## What works offline (POS only)
 

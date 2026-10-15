@@ -577,6 +577,7 @@ async def start_checkout(db: AsyncSession, tenant: m.Tenant, *, plan_code: str, 
         email=email,
         amount_minor=minor_units(billable_price(account, plan)[0]),
         currency=billable_price(account, plan)[1],
+        tenant_id=tenant.id,
         reference=reference,
         callback_url=checkout_path(),
     )
@@ -943,6 +944,7 @@ async def charge_invoice(
         currency=invoice.currency,
         reference=invoice.idempotency_key,
         email=email,
+        tenant_id=tenant.id,
     )
     if result.ok:
         attempt.status = "succeeded"
@@ -1247,6 +1249,44 @@ def _supplied_minor(value) -> int | None:
         return -1
 
 
+def _event_tenant_id(data: dict) -> str:
+    """Company id on the charge, including gateway metadata echoes."""
+    direct = str(data.get("tenant_id") or "").strip()
+    if direct:
+        return direct
+    for key in ("metadata", "meta"):
+        bag = data.get(key)
+        if isinstance(bag, dict):
+            nested = str(bag.get("tenant_id") or "").strip()
+            if nested:
+                return nested
+    return ""
+
+
+def _charge_identity_matches(
+    data: dict,
+    *,
+    tenant_id: str,
+    expected_minor: int,
+    expected_currency: str,
+) -> bool:
+    """Paid and saved authorizations require company, amount, and currency.
+
+    A missing field is not a match. A signed body that only names a reference
+    must not mark another company's invoice paid.
+    """
+    supplied_minor = _supplied_minor(data.get("amount"))
+    currency = str(data.get("currency") or "").strip().upper()
+    tenant = _event_tenant_id(data)
+    if not tenant or supplied_minor is None or not currency:
+        return False
+    return (
+        tenant == str(tenant_id)
+        and supplied_minor == expected_minor
+        and currency == str(expected_currency or "").strip().upper()
+    )
+
+
 async def _checkout_account(
     db: AsyncSession, reference: str
 ) -> tuple[m.TenantBillingAccount, m.PlatformBillingPlan] | None:
@@ -1280,13 +1320,12 @@ async def apply_webhook(db: AsyncSession, *, provider: str, event: dict) -> dict
     outcome = "ignored"
     event_tenant_id = invoice.tenant_id if invoice else None
     if invoice and event_type in {"charge.success", "charge.failed"}:
-        expected_minor = minor_units(money(invoice.amount))
-        supplied_minor = _supplied_minor(data.get("amount"))
-        currency = str(data.get("currency") or "").upper()
-        tenant_ok = not data.get("tenant_id") or str(data.get("tenant_id")) == invoice.tenant_id
-        amount_ok = supplied_minor is None or supplied_minor == expected_minor
-        currency_ok = not currency or currency == invoice.currency.upper()
-        if not (tenant_ok and amount_ok and currency_ok):
+        if not _charge_identity_matches(
+            data,
+            tenant_id=invoice.tenant_id,
+            expected_minor=minor_units(money(invoice.amount)),
+            expected_currency=invoice.currency,
+        ):
             outcome = "mismatch"
         elif event_type == "charge.success":
             if invoice.status != "paid":
@@ -1345,13 +1384,13 @@ async def apply_webhook(db: AsyncSession, *, provider: str, event: dict) -> dict
             event_tenant_id = account.tenant_id
             status = str(data.get("status") or "").strip().lower()
             price, price_currency = billable_price(account, plan)
-            supplied_minor = _supplied_minor(data.get("amount"))
-            currency = str(data.get("currency") or "").upper()
-            tenant_ok = not data.get("tenant_id") or str(data.get("tenant_id")) == account.tenant_id
-            amount_ok = supplied_minor is None or supplied_minor == minor_units(price)
-            currency_ok = not currency or currency == price_currency
             auth = _reusable_authorization(data) if status in {"", "success"} else None
-            if not (tenant_ok and amount_ok and currency_ok):
+            if not _charge_identity_matches(
+                data,
+                tenant_id=account.tenant_id,
+                expected_minor=minor_units(price),
+                expected_currency=price_currency,
+            ):
                 outcome = "mismatch"
             elif auth:
                 account.gateway_provider = provider

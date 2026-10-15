@@ -134,3 +134,17 @@ async def test_pos_sale_arithmetic_fixture_posts_once(client, db_session):
     credit_total = sum(pair[1] for pair in by_code.values())
     assert debit_total == pytest.approx(credit_total)
     assert debit_total == pytest.approx(340)
+
+    receipt = await ac.get(f"/api/v1/pos/sales/{sale_id}/receipt", headers=headers)
+    assert receipt.status_code == 200, receipt.text
+    receipt_body = receipt.json()["data"]
+    assert float(receipt_body.get("total") or 0) == pytest.approx(220)
+    receipt_text = receipt_body.get("text") or ""
+    assert "220" in receipt_text
+
+    admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    report = await ac.get("/api/v1/reports/sales/daily", headers=admin)
+    assert report.status_code == 200, report.text
+    daily = report.json()["data"]
+    assert float(daily["pos_revenue"]) == pytest.approx(220)
+    assert float(daily["total_revenue"]) == pytest.approx(220)

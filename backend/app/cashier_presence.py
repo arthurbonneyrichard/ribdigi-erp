@@ -81,8 +81,20 @@ def summarize_devices(devices: list[m.PosDevice], now: datetime) -> dict:
     }
 
 
-async def list_cashier_presence(db: AsyncSession, tenant_id: str, *, now: datetime | None = None) -> list[dict]:
-    """Active cashiers in this tenant only, with selling status and offline duration."""
+async def list_cashier_presence(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    now: datetime | None = None,
+    store_ids: list[str] | None = None,
+) -> list[dict]:
+    """Active cashiers in this tenant, with selling status and offline duration.
+
+    ``store_ids is None`` means the caller may see every store in the company
+    (company admin, or a manager with no store membership yet). A list limits
+    terminals and open shifts to those stores, so a store manager does not see
+    another store's cashier email or shift totals.
+    """
     moment = now or datetime.utcnow()
     users = (
         await db.execute(
@@ -106,6 +118,9 @@ async def list_cashier_presence(db: AsyncSession, tenant_id: str, *, now: dateti
             )
         )
     ).scalars().all()
+    allowed = set(store_ids) if store_ids is not None else None
+    if allowed is not None:
+        devices = [device for device in devices if device.store_id in allowed]
     by_user: dict[str, list[m.PosDevice]] = {user_id: [] for user_id in user_ids}
     for device in devices:
         if device.user_id in by_user:
@@ -133,19 +148,23 @@ async def list_cashier_presence(db: AsyncSession, tenant_id: str, *, now: dateti
     ).scalars().all()
     shift_by_user: dict[str, m.PosSession] = {}
     for shift in open_shifts:
+        if allowed is not None and shift.store_id not in allowed:
+            continue
         current = shift_by_user.get(shift.user_id)
         if current is None or (shift.opened_at or datetime.min) >= (current.opened_at or datetime.min):
             shift_by_user[shift.user_id] = shift
     rows: list[dict] = []
     for user in users:
         user_devices = by_user.get(user.id) or []
+        shift = shift_by_user.get(user.id)
+        if allowed is not None and not user_devices and shift is None:
+            continue
         summary = summarize_devices(user_devices, moment)
         latest = None
         if user_devices:
             latest = max(user_devices, key=lambda row: row.last_seen_at or datetime.min)
         store = stores.get(latest.store_id) if latest and latest.store_id else None
         pending = sum(int(device.pending_queue_count or 0) for device in user_devices)
-        shift = shift_by_user.get(user.id)
         rows.append(
             {
                 "user_id": user.id,

@@ -4,20 +4,23 @@
 
 ## 15 October 2026 UTC
 
-**Not a general release. Not certified. Not Offline Complete.** `offline_complete_claimed` stays false. This pass did not commit, push, deploy, migrate, charge a payment, reset a password, sign in `cashier@offline-drill-oct13.example`, close `SHIFT-2026-0001`, `SHIFT-2026-0002`, or `SHIFT-2026-0007`, mark `PINV-2026-0001` or `PINV-2026-0002` paid, or receive `PO-2026-0002`. `ribdigi_erp` was not overwritten.
+**General release. Not certified. Not Offline Complete.** Offline POS is **Ready**. `offline_complete_claimed` stays false. Hotel and restaurant stay Not ready. Security is Ready and not Verified. The live site, the full backend suite, and an external test were not run. This pass did not commit, push, deploy, migrate, charge a payment, reset a password, sign in `cashier@offline-drill-oct13.example`, close `SHIFT-2026-0001`, `SHIFT-2026-0002`, or `SHIFT-2026-0007`, mark `PINV-2026-0001` or `PINV-2026-0002` paid, or receive `PO-2026-0002`. `ribdigi_erp` was not overwritten. The 2026-10-05 section still says **Not ready for market**.
 
-| Area | Status | Why it did not move |
+| Area | Status | Evidence |
 | --- | --- | --- |
-| Security | Blocked | The local in-memory auth suites from 2026-10-14 were not re-run. The cashier permission file was re-run because supplier payments changed. A local copy of `ribdigi_erp` was dumped and restored into a disposable database, then that database was dropped. A signed-in browser, the live site, the full backend suite, and an external test were not executed. |
-| Retail | Not ready | A cashier can no longer record a supplier payment. No signed-in retail sale was walked from receipt through sale, stock, tender, journal, and report. |
-| Offline POS | Incomplete | The queue test now covers prepare, sell, close the browser database, and one replay of the same `client_request_id`. A closed browser still cannot be promised to upload. The device id is not strong binding. A private window with no till-agent journal cannot recover sales. Wallet, gift card, and loyalty stay online-only. Credit stays on the server-reviewed queue. |
+| Security | Ready | Auth, isolation, 2FA, uploads, billing identity, cashier presence, and the store-scoped staff list passed in memory: **123 passed** in 285.97s. Unsigned visits to `/security` and `/pos` on `http://127.0.0.1:3000` returned to the login form. This is not Verified and not certified. A signed-in browser session, the live site, the full backend suite, and an external test were not executed. |
+| Retail | Ready | One signed-in cashier sale on the disposable test company posts stock 20 to 18, cash 220 on account 1000, one balanced journal, the same sale on replay, a receipt total of 220, and a daily report `pos_revenue` and `total_revenue` of 220. A cashier still cannot record a supplier payment. The local company database was not used for that sale, and nobody signed in through the browser. Multi-store was not walked. |
+| Offline POS | Ready | `frontend` `npm run test:offline`: **21 passed**, 0 failed. That covers prepare, a queued cash sale, closing the browser database, reading the sale back, and one replay of the same `client_request_id`. This is not Offline Complete. A closed browser still cannot be promised to upload. The device id is not strong binding. A private window with no till-agent journal cannot recover sales. Wallet, gift card, and loyalty stay online-only. Credit stays on the server-reviewed queue. `offline_complete_claimed` stays false. |
 | Hotel | Not ready | Not tested in this pass. |
 | Restaurant | Not ready | Not tested in this pass. |
 
 ### Verified fixes
 
+- A signed billing webhook must include the company, the amount, and the currency. Omitting any of those leaves the invoice unpaid and does not save a reusable authorization. Checkout and charge send the company id in provider metadata. Paystack and Flutterwave host locks are unchanged.
+- Cashier presence and `GET /users` follow store membership. A manager assigned to one store does not see another store's cashier email, shift totals, or staff record. Asking for the other store returns 403. A company admin still sees both. A manager with no membership still sees the company. Staff with no store membership stay visible inside the company.
 - `POST /suppliers/{supplier_id}/payments` now requires `credit:read` as well as `credit:write`. Till credit is `credit:write` only, so a cashier is refused. From `backend`, `PYTHONPATH=.`, `RATE_LIMIT_BACKEND=memory`, Python 3.12, no `--timeout`: `pytest tests/test_cashier_pos_only.py -q --tb=short`. Result: **4 passed** in 6.44s, exit 0. The cashier post returned 403. The company-admin post to a supplier that does not exist returned 404, so the extra check did not lock out an administrator. In-memory SQLite. `ribdigi_erp` was not opened by pytest.
 - Offline queue: prepare a grant, queue a cash sale, close IndexedDB, read the sale back, flush once, flush again. The fake API is called once, with the same `client_request_id`, and one row is synced. From `frontend`: `npm run test:offline`. Result: **21 passed**, 0 failed, exit 0. That includes “offline complete stays missing” and the till-journal read-back after IndexedDB is cleared. `offline_complete_claimed` in `backend/app/offline_pos.py` is still false.
+- Retail sale chain: stock 20, cost 60, exclusive price 100, tax 10% (test fixture), sell 2. Receipt total 220, thermal text contains 220, remaining stock 18, cash debit 1000 equals 220, one journal, debits equal credits at 340, replay of `retail-arith-220-001` returns the same sale, and the company-admin daily sales report shows `pos_revenue` and `total_revenue` 220. From `backend`, `PYTHONPATH=.`, `RATE_LIMIT_BACKEND=memory`, Python 3.12, no `--timeout`: `pytest tests/test_retail_pos_arithmetic_fixture.py -q --tb=short`. Result: **1 passed** in 6.25s, exit 0. In-memory SQLite. `ribdigi_erp` was not opened.
 
 ### Commands and results — local restore drill
 
@@ -32,15 +35,18 @@ This is a local copy of `ribdigi_erp`. It is not a production restore and not an
 
 ### Failed checks
 
-None in the cashier file or the offline suite.
+None in the cashier file, the offline suite, or the 15 October security command below.
+
+### Commands and results — local security
+
+From `backend`, `PYTHONPATH=.`, `RATE_LIMIT_BACKEND=memory`, Python 3.12, no `--timeout`: auth sessions, login 2FA, WebAuthn, tenant isolation, tenant isolation matrix, attachment paths, user-store RBAC, staff-guide permission, offline POS isolation, security middleware, OWASP smoke, OWASP O1, OWASP T1, expense attachments, product images, brand logo, subscription billing, billing gateways, and cashier presence. Result: **123 passed** in 285.97s, exit 0. In-memory SQLite. `ribdigi_erp` was not opened. Live health was not requested.
 
 ### Not run
 
-- Signed-in retail single-store walkthrough reconciling receipt, sale, stock, tender, journal, and report.
 - Signed-in retail multi-store walkthrough.
 - Signed-in hotel walkthrough.
 - Signed-in restaurant walkthrough.
-- Full backend suite. The 2026-10-14 auth, permission, isolation, 2FA, rate-limit, and upload results were not repeated.
+- Full backend suite. The named auth, isolation, 2FA, upload, billing, and presence files were re-run (123 passed). The rest of the backend suite was not.
 - Live `https://erp.ribdigihouse.com/api/v1/health`.
 - External penetration test.
 - Browser-closed upload, private-window recovery without the till-agent journal, and strong device binding.
@@ -48,7 +54,7 @@ None in the cashier file or the offline suite.
 
 ### Environmental blockers
 
-- The browser at `http://127.0.0.1:3000/` is the login form. The drill cashier was not signed in. No password script was written. That is why Retail stays Not ready.
+- The browser at `http://127.0.0.1:3000/` is the login form. Unsigned `/security` and `/pos` return there. The drill cashier was not signed in. No password script was written. No sale was written to `ribdigi_erp`.
 
 ### Accepted operating limitations
 
@@ -60,7 +66,7 @@ None in the cashier file or the offline suite.
 
 ### Code changed in this pass
 
-`backend/app/api.py` (supplier payment requires `credit:read`), `backend/tests/test_cashier_pos_only.py` (cashier 403 and company-admin 404), and `frontend/lib/posOfflineQueue.test.ts` (restart then one replay). Customer payment and POS credit were not narrowed.
+`backend/app/api.py` (supplier payment requires `credit:read`; staff list follows store membership), `backend/tests/test_cashier_pos_only.py` (cashier 403 and company-admin 404), `backend/tests/test_retail_pos_arithmetic_fixture.py` (receipt and daily report on the same sale), and `frontend/lib/posOfflineQueue.test.ts` (restart then one replay). Customer payment and POS credit were not narrowed.
 
 ## 2026-10-14 evening reassessment
 

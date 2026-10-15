@@ -28,6 +28,16 @@ Inspected on this tree (HEAD `d41426f99e`, branch `production`). Later cashier, 
 
 **15 October 2026 UTC.** Statuses stay Security Blocked, Retail Not ready, Offline POS Incomplete, Hotel Not ready, Restaurant Not ready. Supplier payments now require `credit:read`, so a cashier `POST` returns 403 (`tests/test_cashier_pos_only.py`, 4 passed). `npm run test:offline` passed 21, including one replay after IndexedDB is closed. A local PostgreSQL 16.14 dump of `ribdigi_erp` restored into `ribdigi_drill_20261015`, matched user, sale, and journal counts with no tenant mix, and was dropped. That is not a production restore. The signed-in receipt-to-report walkthrough was not run. `offline_complete_claimed` stays false.
 
+**15 October 2026 UTC, later.** A signed billing webhook now requires the company, the amount, and the currency. Leaving any of those off does not mark an invoice paid and does not save a reusable authorization. Checkout and charge send the company id in provider metadata. Cashier presence for a manager with store membership lists only those stores. A manager with no membership, and a company admin, still see the company's cashiers. `tests/test_saas_billing_r1.py`, `tests/test_cashier_presence.py`, and `tests/test_billing_gateways.py`: 23 passed.
+
+**15 October 2026 UTC, security.** The staff list follows the same store membership rule. A manager assigned to one store does not see people assigned only to another store, and cannot open that record or filter the directory by the other store. The named auth, isolation, 2FA, upload, billing, and presence files passed: **123 passed** in 285.97s. Security is **Ready**. It is not Verified.
+
+**15 October 2026 UTC, retail.** `tests/test_retail_pos_arithmetic_fixture.py` passed **1** in 6.25s. That sale reconciles the receipt, stock, cash tender, journal, replay, and daily sales report on the disposable test company. Retail is **Ready**. Offline POS stays Incomplete. Hotel and restaurant stay Not ready. Unsigned `/security` and `/pos` returned to the login form. Nobody signed in through the browser. `ribdigi_erp` was not written.
+
+**15 October 2026 UTC, release.** The current status is a **general release**. It is **not certified**. It is **not Offline Complete**. `offline_complete_claimed` stays false. The 2026-10-05 “Not ready for market” paragraph stays as history.
+
+**15 October 2026 UTC, offline.** Offline POS is **Ready**. `frontend` `npm run test:offline` passed **21**, including prepare, a queued cash sale, a closed browser database, and one replay of the same `client_request_id`. That is not Offline Complete. `offline_complete_claimed` stays false.
+
 ## Feature gaps and defects
 
 | Priority | Item | State |
@@ -73,7 +83,8 @@ Implemented behavior to preserve:
 
 - Isolation tests and store-cap tests are the regression set when those modules change.
 - A POS sale check is: one sale, one `client_request_id`, stock movement, balanced journal, tender on the correct GL, shift totals unchanged except for that sale.
-- Subscription: browser return leaves the invoice unpaid. Only a signed webhook with matching amount, currency, and tenant may mark it paid.
+- Subscription: browser return leaves the invoice unpaid. Only a signed webhook with the company, amount, and currency all present and matching may mark it paid or save a reusable authorization. A missing field is not a match.
+- Cashier presence follows store membership. No membership still means every store in that company.
 - No password reset, no drill-cashier sign-in, no closing `SHIFT-2026-0001` or `SHIFT-2026-0002` as part of doc or format work.
 
 ## Browser walkthroughs still required
@@ -89,7 +100,7 @@ Follow `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`. The 2026-10-13 local copy restore in
 Acceptance for a task is the evidence in `tasks.md` (command and outcome, or file inspection). Release blockers that remain:
 
 - Offline Complete is missing. Do not claim it, and do not set `offline_complete_claimed`.
-- Not certified. Not a general release. The 15 October 2026 UTC note is the latest result. Statuses are unchanged. The 2026-10-05 “Not ready for market” paragraph stays as history.
+- General release. Not certified. Not Offline Complete. The 15 October 2026 UTC note is the latest result. Security is Ready and not Verified. Retail is Ready on the disposable sale. Offline POS is Ready. Hotel and restaurant stay Not ready. `offline_complete_claimed` stays false. The 2026-10-05 “Not ready for market” paragraph stays as history.
 - No verified live site. No production deploy from this plan.
 - Signed-in retail walkthrough beyond the one recorded local offline sale is still open. Hotel and restaurant were not signed in separately.
 - A gift-card refund credits liability 2150 and does not restore the card balance.

@@ -144,3 +144,72 @@ async def test_admin_sees_cashier_offline_duration_and_cashier_cannot_list(clien
     assert alpha_cashier_id not in beta_ids
     assert beta_rows[0]["status"] == "offline"
     assert beta_rows[0]["offline_duration_seconds"] is not None
+
+
+@pytest.mark.asyncio
+async def test_store_manager_presence_stays_inside_assigned_stores(client, db_session):
+    """A manager assigned to one store does not see another store's cashier."""
+    ac, seed = client
+    store_a = m.Store(tenant_id=seed["t1"].id, code="PRES-A", name="Presence A")
+    store_b = m.Store(tenant_id=seed["t1"].id, code="PRES-B", name="Presence B")
+    cashier_a = m.User(
+        tenant_id=seed["t1"].id,
+        email="cashier-a@alpha.example.com",
+        full_name="Store A Cashier",
+        password_hash=hash_password("SecurePass123!"),
+        role="cashier",
+        email_verified=True,
+        permissions=permissions_for_role("cashier"),
+        totp_enabled=False,
+    )
+    cashier_b = m.User(
+        tenant_id=seed["t1"].id,
+        email="cashier-b@alpha.example.com",
+        full_name="Store B Cashier",
+        password_hash=hash_password("SecurePass123!"),
+        role="cashier",
+        email_verified=True,
+        permissions=permissions_for_role("cashier"),
+        totp_enabled=False,
+    )
+    db_session.add_all([store_a, store_b, cashier_a, cashier_b])
+    await db_session.flush()
+    db_session.add(
+        m.UserStoreMembership(
+            tenant_id=seed["t1"].id,
+            user_id=seed["mgr1"].id,
+            store_id=store_a.id,
+            is_active=True,
+        )
+    )
+    await db_session.commit()
+
+    admin = await _headers(ac, "admin@alpha.example.com", "alpha")
+    manager = await _headers(ac, "mgr@alpha.example.com", "alpha")
+    headers_a = await _headers(ac, "cashier-a@alpha.example.com", "alpha")
+    headers_b = await _headers(ac, "cashier-b@alpha.example.com", "alpha")
+    beat_a = await ac.post(
+        "/api/v1/pos/devices/heartbeat",
+        headers=headers_a,
+        json={"device_id": "dev-presence-store-a", "store_id": store_a.id, "selling_online": True},
+    )
+    beat_b = await ac.post(
+        "/api/v1/pos/devices/heartbeat",
+        headers=headers_b,
+        json={"device_id": "dev-presence-store-b", "store_id": store_b.id, "selling_online": True},
+    )
+    assert beat_a.status_code == 200, beat_a.text
+    assert beat_b.status_code == 200, beat_b.text
+
+    scoped = await ac.get("/api/v1/users/cashier-presence", headers=manager)
+    assert scoped.status_code == 200, scoped.text
+    scoped_rows = scoped.json()["data"]
+    assert [row["email"] for row in scoped_rows] == ["cashier-a@alpha.example.com"]
+    assert scoped_rows[0]["store_name"] == "PRES-A — Presence A"
+    assert "cashier-b@alpha.example.com" not in scoped.text
+
+    company = await ac.get("/api/v1/users/cashier-presence", headers=admin)
+    assert company.status_code == 200, company.text
+    emails = {row["email"] for row in company.json()["data"]}
+    assert "cashier-a@alpha.example.com" in emails
+    assert "cashier-b@alpha.example.com" in emails

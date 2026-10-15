@@ -84,3 +84,75 @@ async def test_cashier_pos_store_membership_enforced(client, db_session):
     assert allowed.status_code == 200, allowed.text
     assert (allowed.json()["data"].get("store_id") or store_a) == store_a
     _ = tenant_id  # seeded tenant used via auth headers
+
+
+@pytest.mark.asyncio
+async def test_store_manager_user_list_stays_inside_assigned_stores(client):
+    ac, seed = client
+    admin = await _admin(ac, seed)
+    manager = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    store_a = await ac.post(
+        "/api/v1/stores",
+        headers=admin,
+        json={"name": "Roster A", "code": "ROSTER-A"},
+    )
+    store_b = await ac.post(
+        "/api/v1/stores",
+        headers=admin,
+        json={"name": "Roster B", "code": "ROSTER-B"},
+    )
+    if store_a.status_code >= 400 or store_b.status_code >= 400:
+        pytest.skip("Need two stores under entitlement to test staff isolation")
+    id_a = store_a.json()["data"]["id"]
+    id_b = store_b.json()["data"]["id"]
+
+    created_a = await ac.post(
+        "/api/v1/users",
+        headers=admin,
+        json={
+            "email": "roster-a@alpha.example.com",
+            "full_name": "Roster A Cashier",
+            "password": "SecurePass123!",
+            "role": "cashier",
+            "store_ids": [id_a],
+        },
+    )
+    created_b = await ac.post(
+        "/api/v1/users",
+        headers=admin,
+        json={
+            "email": "roster-b@alpha.example.com",
+            "full_name": "Roster B Cashier",
+            "password": "SecurePass123!",
+            "role": "cashier",
+            "store_ids": [id_b],
+        },
+    )
+    assert created_a.status_code == 200, created_a.text
+    assert created_b.status_code == 200, created_b.text
+    user_b = created_b.json()["data"]["id"]
+
+    assigned = await ac.put(
+        f"/api/v1/users/{seed['mgr1'].id}/stores",
+        headers=admin,
+        json={"store_ids": [id_a]},
+    )
+    assert assigned.status_code == 200, assigned.text
+
+    listed = await ac.get("/api/v1/users", headers=manager)
+    assert listed.status_code == 200, listed.text
+    emails = {row["email"] for row in listed.json()["data"]}
+    assert "roster-a@alpha.example.com" in emails
+    assert "roster-b@alpha.example.com" not in emails
+
+    hidden = await ac.get(f"/api/v1/users/{user_b}", headers=manager)
+    assert hidden.status_code == 404, hidden.text
+
+    other_store = await ac.get(f"/api/v1/users?store_id={id_b}", headers=manager)
+    assert other_store.status_code == 403, other_store.text
+
+    company = await ac.get("/api/v1/users", headers=admin)
+    company_emails = {row["email"] for row in company.json()["data"]}
+    assert "roster-a@alpha.example.com" in company_emails
+    assert "roster-b@alpha.example.com" in company_emails
