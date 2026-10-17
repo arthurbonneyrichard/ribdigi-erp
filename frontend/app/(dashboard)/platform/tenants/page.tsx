@@ -747,7 +747,7 @@ export default function PlatformTenantsPage() {
                 type="password"
                 value={form.admin_password}
                 onChange={(e) => setForm((f) => ({ ...f, admin_password: e.target.value }))}
-                placeholder="Min 8 chars, upper/lower/number/symbol"
+                placeholder="Min 8 chars; upper, lower, number, symbol (! @ # …); no spaces"
                 aria-label="Tenant admin password"
                 required
               />

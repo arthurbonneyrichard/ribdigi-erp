@@ -18,7 +18,8 @@ _password = TypeAdapter(TenantAdminPasswordValue)
 def test_tenant_admin_password_value_schema():
     assert _password.validate_python("  Tip248Pass!  ") == "Tip248Pass!"
     assert _password.validate_python("a" * 128) == "a" * 128
-    for bad in ("", " ", "!!!", "http://evil", "a@b", "pass word", "a" * 129):
+    assert _password.validate_python("SecurePass123@") == "SecurePass123@"
+    for bad in ("", " ", "!!!", "http://evil", "pass word", "a" * 129):
         with pytest.raises(ValidationError):
             _password.validate_python(bad)
 
@@ -31,7 +32,7 @@ def test_tenant_admin_password_value_schema():
         }
     )
     assert ok.admin_password == "SecurePass123!"
-    for bad in ("", "!!!", "http://evil", "a@b", "pass word"):
+    for bad in ("", "!!!", "http://evil", "pass word"):
         with pytest.raises(ValidationError):
             TenantCreate.model_validate(
                 {
@@ -71,7 +72,7 @@ async def test_tenant_admin_password_api_blank_invalid_422(client, seeded):
     headers = await platform_owner_headers(ac, seed)
     suffix = uuid4().hex[:8]
 
-    for bad in ("", "!!!", "http://evil", "a@b", "pass word"):
+    for bad in ("", "!!!", "http://evil", "pass word"):
         resp = await ac.post(
             "/api/v1/tenants",
             headers=headers,

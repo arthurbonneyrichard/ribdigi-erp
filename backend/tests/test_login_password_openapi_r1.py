@@ -16,7 +16,7 @@ _password = TypeAdapter(LoginPasswordValue)
 def test_login_password_value_schema():
     assert _password.validate_python("  Tip252Pass!  ") == "Tip252Pass!"
     assert _password.validate_python("a" * 128) == "a" * 128
-    for bad in ("", " ", "!!!", "http://evil", "a@b", "pass word", "a" * 129):
+    for bad in ("", " ", "!!!", "http://evil", "pass word", "a" * 129):
         with pytest.raises(ValidationError):
             _password.validate_python(bad)
 
@@ -28,7 +28,7 @@ def test_login_password_value_schema():
         }
     )
     assert ok.password == "SecurePass123!"
-    for bad in ("", "!!!", "http://evil", "a@b", "pass word"):
+    for bad in ("", "!!!", "http://evil", "pass word"):
         with pytest.raises(ValidationError):
             Login.model_validate(
                 {
@@ -60,7 +60,7 @@ def test_login_password_ui_and_docs():
 async def test_login_password_api_blank_invalid_422(client, seeded):
     ac, _seed = client
 
-    for bad in ("", "!!!", "http://evil", "a@b", "pass word"):
+    for bad in ("", "!!!", "http://evil", "pass word"):
         resp = await ac.post(
             "/api/v1/auth/login",
             json={

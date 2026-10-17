@@ -5795,6 +5795,25 @@ PlatformStaffFullNameValue = Annotated[
 ]
 
 
+def _require_account_password_secret(value: str, *, label: str = "password") -> str:
+    """Shared OpenAPI honesty for account passwords (1–128).
+
+    Allows ``@`` and other symbols (strength often uses ``@``). Rejects blank,
+    whitespace, and URL-shaped ``://`` garbage. Letter/digit required.
+    """
+    if not value:
+        raise ValueError(f"{label} must be a non-empty secret (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError(f"{label} must be a non-empty secret (1–128 chars)")
+    if any(ch.isspace() for ch in value):
+        raise ValueError(f"{label} must not contain spaces")
+    if "://" in value:
+        raise ValueError(f"{label} must not look like a URL")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError(f"{label} must be a non-empty secret (1–128 chars)")
+    return value
+
+
 def coerce_platform_staff_password_value(value: object) -> object:
     """Pydantic BeforeValidator: strip; blank stays blank for password 422."""
     if value is None:
@@ -5805,23 +5824,15 @@ def coerce_platform_staff_password_value(value: object) -> object:
 
 
 def validate_platform_staff_password_value(value: str) -> str:
-    """AfterValidator: platform staff password; blank/URL/@/spaces → 422 (1–128).
+    """AfterValidator: platform staff password; blank/URL/spaces → 422 (1–128).
 
-    Allows punctuation used in fixtures (e.g. Tip246Pass!); rejects empty/URL garbage.
+    Allows ``@`` and other symbols (e.g. Tip246Pass!, SecurePass123@).
     Strength (8+ upper/lower/digit/symbol) remains service validate_password_strength.
     """
-    if not value:
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if len(value) > 128:
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if not re.search(r"[A-Za-z0-9]", value):
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    return value
+    return _require_account_password_secret(value, label="password")
 
 
-# Platform staff create password — 1–128; ≥1 letter/digit; no :// / @ / spaces.
+# Platform staff create password — 1–128; ≥1 letter/digit; no :// / spaces (``@`` OK).
 PlatformStaffPasswordValue = Annotated[
     str,
     BeforeValidator(coerce_platform_staff_password_value),
@@ -5839,23 +5850,15 @@ def coerce_user_password_value(value: object) -> object:
 
 
 def validate_user_password_value(value: str) -> str:
-    """AfterValidator: tenant user password; blank/URL/@/spaces → 422 (1–128).
+    """AfterValidator: tenant user password; blank/URL/spaces → 422 (1–128).
 
-    Allows punctuation used in fixtures (e.g. Tip247Pass!); rejects empty/URL garbage.
+    Allows ``@`` and other symbols (e.g. Tip247Pass!, SecurePass123@).
     Strength (8+ upper/lower/digit/symbol) remains service validate_password_strength.
     """
-    if not value:
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if len(value) > 128:
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if not re.search(r"[A-Za-z0-9]", value):
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    return value
+    return _require_account_password_secret(value, label="password")
 
 
-# Tenant user create/PATCH password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-3).
+# Tenant user create/PATCH password — 1–128; ≥1 letter/digit; no :// / spaces (BR-3).
 UserPasswordValue = Annotated[
     str,
     BeforeValidator(coerce_user_password_value),
@@ -5873,23 +5876,15 @@ def coerce_tenant_admin_password_value(value: object) -> object:
 
 
 def validate_tenant_admin_password_value(value: str) -> str:
-    """AfterValidator: tenant create admin password; blank/URL/@/spaces → 422 (1–128).
+    """AfterValidator: tenant create admin password; blank/URL/spaces → 422 (1–128).
 
-    Allows punctuation used in fixtures (e.g. Tip248Pass!); rejects empty/URL garbage.
+    Allows ``@`` and other symbols (e.g. Tip248Pass!, SecurePass123@).
     Strength (8+ upper/lower/digit/symbol) remains service validate_password_strength.
     """
-    if not value:
-        raise ValueError("admin password must be a non-empty secret (1–128 chars)")
-    if len(value) > 128:
-        raise ValueError("admin password must be a non-empty secret (1–128 chars)")
-    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
-        raise ValueError("admin password must be a non-empty secret (1–128 chars)")
-    if not re.search(r"[A-Za-z0-9]", value):
-        raise ValueError("admin password must be a non-empty secret (1–128 chars)")
-    return value
+    return _require_account_password_secret(value, label="admin password")
 
 
-# Tenant create admin password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-1).
+# Tenant create admin password — 1–128; ≥1 letter/digit; no :// / spaces (BR-1).
 TenantAdminPasswordValue = Annotated[
     str,
     BeforeValidator(coerce_tenant_admin_password_value),
@@ -5907,23 +5902,15 @@ def coerce_password_reset_new_password_value(value: object) -> object:
 
 
 def validate_password_reset_new_password_value(value: str) -> str:
-    """AfterValidator: password-reset new_password; blank/URL/@/spaces → 422 (1–128).
+    """AfterValidator: password-reset new_password; blank/URL/spaces → 422 (1–128).
 
-    Allows punctuation used in fixtures (e.g. Tip250Pass!); rejects empty/URL garbage.
+    Allows ``@`` and other symbols (e.g. Tip250Pass!, SecurePass123@).
     Strength (8+ upper/lower/digit/symbol) remains service validate_password_strength.
     """
-    if not value:
-        raise ValueError("new_password must be a non-empty secret (1–128 chars)")
-    if len(value) > 128:
-        raise ValueError("new_password must be a non-empty secret (1–128 chars)")
-    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
-        raise ValueError("new_password must be a non-empty secret (1–128 chars)")
-    if not re.search(r"[A-Za-z0-9]", value):
-        raise ValueError("new_password must be a non-empty secret (1–128 chars)")
-    return value
+    return _require_account_password_secret(value, label="new_password")
 
 
-# Password reset confirm new_password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-19).
+# Password reset confirm new_password — 1–128; ≥1 letter/digit; no :// / spaces (BR-19).
 PasswordResetNewPasswordValue = Annotated[
     str,
     BeforeValidator(coerce_password_reset_new_password_value),
@@ -6077,23 +6064,15 @@ def coerce_login_password_value(value: object) -> object:
 
 
 def validate_login_password_value(value: str) -> str:
-    """AfterValidator: login password; blank/URL/@/spaces → 422 (1–128).
+    """AfterValidator: login password; blank/URL/spaces → 422 (1–128).
 
-    Allows punctuation used in fixtures (e.g. Tip252Pass!); rejects empty/URL garbage.
+    Allows ``@`` and other symbols (e.g. Tip252Pass!, SecurePass123@).
     Authenticity remains verify_password → **401**.
     """
-    if not value:
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if len(value) > 128:
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if not re.search(r"[A-Za-z0-9]", value):
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    return value
+    return _require_account_password_secret(value, label="password")
 
 
-# Login password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-19).
+# Login password — 1–128; ≥1 letter/digit; no :// / spaces (BR-19).
 LoginPasswordValue = Annotated[
     str,
     BeforeValidator(coerce_login_password_value),
@@ -6111,23 +6090,15 @@ def coerce_two_factor_disable_password_value(value: object) -> object:
 
 
 def validate_two_factor_disable_password_value(value: str) -> str:
-    """AfterValidator: 2FA disable password; blank/URL/@/spaces → 422 (1–128).
+    """AfterValidator: 2FA disable password; blank/URL/spaces → 422 (1–128).
 
-    Allows punctuation used in fixtures (e.g. Tip253Pass!); rejects empty/URL garbage.
+    Allows ``@`` and other symbols (e.g. Tip253Pass!, SecurePass123@).
     Authenticity remains verify_password → **401**.
     """
-    if not value:
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if len(value) > 128:
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if not re.search(r"[A-Za-z0-9]", value):
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    return value
+    return _require_account_password_secret(value, label="password")
 
 
-# 2FA disable password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-19).
+# 2FA disable password — 1–128; ≥1 letter/digit; no :// / spaces (BR-19).
 TwoFactorDisablePasswordValue = Annotated[
     str,
     BeforeValidator(coerce_two_factor_disable_password_value),

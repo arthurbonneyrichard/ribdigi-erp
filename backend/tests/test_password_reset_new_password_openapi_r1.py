@@ -18,7 +18,7 @@ _password = TypeAdapter(PasswordResetNewPasswordValue)
 def test_password_reset_new_password_value_schema():
     assert _password.validate_python("  Tip250Pass!  ") == "Tip250Pass!"
     assert _password.validate_python("a" * 128) == "a" * 128
-    for bad in ("", " ", "!!!", "http://evil", "a@b", "pass word", "a" * 129):
+    for bad in ("", " ", "!!!", "http://evil", "pass word", "a" * 129):
         with pytest.raises(ValidationError):
             _password.validate_python(bad)
 
@@ -26,7 +26,7 @@ def test_password_reset_new_password_value_schema():
         {"token": "tok", "new_password": "  SecurePass123!  "}
     )
     assert ok.new_password == "SecurePass123!"
-    for bad in ("", "!!!", "http://evil", "a@b", "pass word"):
+    for bad in ("", "!!!", "http://evil", "pass word"):
         with pytest.raises(ValidationError):
             PasswordResetConfirm.model_validate({"token": "tok", "new_password": bad})
     with pytest.raises(ValidationError):
@@ -54,7 +54,7 @@ async def test_password_reset_new_password_api_blank_invalid_422(client, seeded)
     suffix = uuid4().hex[:8]
     email = "mgr@alpha.example.com"
 
-    for bad in ("", "!!!", "http://evil", "a@b", "pass word"):
+    for bad in ("", "!!!", "http://evil", "pass word"):
         resp = await ac.post(
             "/api/v1/auth/password-reset",
             json={"token": f"tip250-bad-{suffix}", "new_password": bad},

@@ -19,7 +19,7 @@ _password = TypeAdapter(PlatformStaffPasswordValue)
 def test_platform_staff_password_value_schema():
     assert _password.validate_python("  Tip246Pass!  ") == "Tip246Pass!"
     assert _password.validate_python("a" * 128) == "a" * 128
-    for bad in ("", " ", "!!!", "http://evil", "a@b", "pass word", "a" * 129):
+    for bad in ("", " ", "!!!", "http://evil", "pass word", "a" * 129):
         with pytest.raises(ValidationError):
             _password.validate_python(bad)
 
@@ -31,7 +31,7 @@ def test_platform_staff_password_value_schema():
         }
     )
     assert ok.password == "SecurePass123!"
-    for bad in ("", "!!!", "http://evil", "a@b", "pass word"):
+    for bad in ("", "!!!", "http://evil", "pass word"):
         with pytest.raises(ValidationError):
             PlatformStaffCreate.model_validate(
                 {
@@ -78,7 +78,7 @@ async def test_platform_staff_password_api_blank_invalid_422(client, seeded):
     )
     suffix = uuid4().hex[:8]
 
-    for bad in ("", "!!!", "http://evil", "a@b", "pass word"):
+    for bad in ("", "!!!", "http://evil", "pass word"):
         resp = await ac.post(
             "/api/v1/platform/staff",
             headers=admin,

@@ -19,7 +19,7 @@ _password = TypeAdapter(UserPasswordValue)
 def test_user_password_value_schema():
     assert _password.validate_python("  Tip247Pass!  ") == "Tip247Pass!"
     assert _password.validate_python("a" * 128) == "a" * 128
-    for bad in ("", " ", "!!!", "http://evil", "a@b", "pass word", "a" * 129):
+    for bad in ("", " ", "!!!", "http://evil", "pass word", "a" * 129):
         with pytest.raises(ValidationError):
             _password.validate_python(bad)
 
@@ -31,7 +31,7 @@ def test_user_password_value_schema():
         }
     )
     assert ok.password == "SecurePass123!"
-    for bad in ("", "!!!", "http://evil", "a@b", "pass word"):
+    for bad in ("", "!!!", "http://evil", "pass word"):
         with pytest.raises(ValidationError):
             UserCreate.model_validate(
                 {
@@ -52,7 +52,7 @@ def test_user_password_value_schema():
     assert patch_omit.password is None
     patch_ok = UserUpdate.model_validate({"password": "  SecurePass123!  "})
     assert patch_ok.password == "SecurePass123!"
-    for bad in ("", "!!!", "http://evil", "a@b", "pass word"):
+    for bad in ("", "!!!", "http://evil", "pass word"):
         with pytest.raises(ValidationError):
             UserUpdate.model_validate({"password": bad})
 
@@ -80,7 +80,7 @@ async def test_user_password_api_blank_invalid_422(client, seeded):
     )
     suffix = uuid4().hex[:8]
 
-    for bad in ("", "!!!", "http://evil", "a@b", "pass word"):
+    for bad in ("", "!!!", "http://evil", "pass word"):
         resp = await ac.post(
             "/api/v1/users",
             headers=admin,
