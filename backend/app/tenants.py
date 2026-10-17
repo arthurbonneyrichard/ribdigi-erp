@@ -603,67 +603,48 @@ def _tenant_scoped_tables():
     return tables
 
 
-async def _break_tenant_fk_cycles(db: AsyncSession, tenant_id: str) -> None:
-    """Clear cyclic nullable FKs so ordered deletes can remove a used company.
+async def _null_tenant_nullable_fks(db: AsyncSession, tenant_id: str) -> None:
+    """Null every nullable FK on tenant-scoped rows so cyclic graphs can be deleted.
 
-    ``sort_tables`` cannot order ``users`` ↔ ``branches`` ↔ ``departments``
-    (and store/warehouse managers pointing at users). Null those links first.
-    Self-referential catalog trees are cleared the same way.
+    PostgreSQL enforces FKs; ``sort_tables`` drops ordering edges for cycles such as
+    ``users`` ↔ ``branches`` ↔ ``departments``. Clearing all nullable FKs first
+    (managers, heads, self-refs, optional document links) leaves a DAG of
+    required FKs that ordered deletes can remove.
     """
     from sqlalchemy import update
 
-    await db.execute(
-        update(m.Branch)
-        .where(m.Branch.tenant_id == tenant_id)
-        .values(manager_id=None)
-    )
-    await db.execute(
-        update(m.Department)
-        .where(m.Department.tenant_id == tenant_id)
-        .values(head_user_id=None)
-    )
-    await db.execute(
-        update(m.Store)
-        .where(m.Store.tenant_id == tenant_id)
-        .values(manager_id=None)
-    )
-    await db.execute(
-        update(m.Warehouse)
-        .where(m.Warehouse.tenant_id == tenant_id)
-        .values(manager_id=None)
-    )
-    await db.execute(
-        update(m.User)
-        .where(m.User.tenant_id == tenant_id)
-        .values(branch_id=None, department_id=None)
-    )
-    if hasattr(m, "ProductCategory"):
-        await db.execute(
-            update(m.ProductCategory)
-            .where(m.ProductCategory.tenant_id == tenant_id)
-            .values(parent_id=None)
-        )
-    if hasattr(m, "UnitOfMeasure"):
-        await db.execute(
-            update(m.UnitOfMeasure)
-            .where(m.UnitOfMeasure.tenant_id == tenant_id)
-            .values(base_unit_id=None)
-        )
+    for table in _tenant_scoped_tables():
+        values: dict[str, None] = {}
+        for col in table.columns:
+            if col.name == "tenant_id" or not col.nullable or not col.foreign_keys:
+                continue
+            values[col.name] = None
+        if not values:
+            continue
+        await db.execute(update(table).where(table.c.tenant_id == tenant_id).values(**values))
 
 
 async def purge_tenant_records(db: AsyncSession, tenant: m.Tenant) -> None:
     """Delete every row scoped to this tenant, then the tenant row.
 
-    Tables are ordered so dependents go first. Cyclic nullable FKs are cleared
-    first so a company with org and catalog records can still be removed.
-    The platform deletion log is not included: it has no ``tenant_id`` column.
-    A failure raises 409 and the caller rolls the transaction back.
+    Nullable FKs are cleared first. Deletes then run in dependency order, with
+    savepoint retries so a temporary parent/child ordering miss on Postgres
+    cannot abort the whole purge. The platform deletion log has no ``tenant_id``
+    and is left in place. A failure raises 409 and the caller rolls back.
     """
-    from sqlalchemy import delete
+    import logging
+    import warnings
+
+    from sqlalchemy import delete, func, select
+    from sqlalchemy.exc import IntegrityError
     from sqlalchemy.schema import sort_tables
 
+    log = logging.getLogger("ribdigi.tenants")
+    tables = _tenant_scoped_tables()
     try:
-        ordered = list(reversed(sort_tables(_tenant_scoped_tables())))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            ordered = list(reversed(sort_tables(tables)))
     except Exception as exc:
         raise HTTPException(
             status_code=500,
@@ -671,12 +652,58 @@ async def purge_tenant_records(db: AsyncSession, tenant: m.Tenant) -> None:
         ) from exc
 
     try:
-        await _break_tenant_fk_cycles(db, tenant.id)
-        for table in ordered:
-            await db.execute(delete(table).where(table.c.tenant_id == tenant.id))
+        await _null_tenant_nullable_fks(db, tenant.id)
+        await db.flush()
+
+        # Multi-pass delete with savepoints: each failed table is skipped until
+        # its dependents are gone. Caps prevent infinite loops.
+        remaining = {table.name: table for table in ordered}
+        for _pass in range(len(ordered) + 4):
+            if not remaining:
+                break
+            progressed = False
+            for name in list(remaining):
+                table = remaining[name]
+                try:
+                    async with db.begin_nested():
+                        result = await db.execute(
+                            delete(table).where(table.c.tenant_id == tenant.id)
+                        )
+                    remaining.pop(name, None)
+                    progressed = True
+                    if result.rowcount:
+                        log.debug(
+                            "purge tenant %s deleted %s rows from %s",
+                            tenant.id,
+                            result.rowcount,
+                            name,
+                        )
+                except IntegrityError:
+                    continue
+            if not progressed:
+                break
+
+        if remaining:
+            leftovers = []
+            for name, table in remaining.items():
+                count = (
+                    await db.execute(
+                        select(func.count()).select_from(table).where(table.c.tenant_id == tenant.id)
+                    )
+                ).scalar_one()
+                if int(count or 0) > 0:
+                    leftovers.append(f"{name}:{count}")
+            if leftovers:
+                raise RuntimeError(
+                    "tenant purge left rows after multipass delete: " + ", ".join(leftovers[:12])
+                )
+
         await db.delete(tenant)
         await db.flush()
+    except HTTPException:
+        raise
     except Exception as exc:
+        log.exception("tenant purge failed for %s", getattr(tenant, "id", None))
         raise HTTPException(
             status_code=409,
             detail=(
