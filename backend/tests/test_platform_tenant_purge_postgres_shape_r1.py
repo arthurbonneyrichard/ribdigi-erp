@@ -122,6 +122,27 @@ async def test_owner_purge_with_fk_enforcement(client, seeded, db_engine, _sqlit
     )
     assert journal.status_code == 200, journal.text
 
+    # Expense + customer create more account/party FKs that block naive deletes.
+    expense = await ac.post(
+        "/api/v1/expenses",
+        headers=tenant_headers,
+        json={
+            "category": "Office",
+            "description": f"Purge expense {suffix}",
+            "amount": 12.5,
+            "payment_method": "cash",
+            "liquid_account_id": cash["id"],
+        },
+    )
+    assert expense.status_code == 200, expense.text
+
+    customer = await ac.post(
+        "/api/v1/customers",
+        headers=tenant_headers,
+        json={"name": f"Purge Cust {suffix}", "email": f"cust-{suffix}@example.com"},
+    )
+    assert customer.status_code == 200, customer.text
+
     deleted = await ac.post(
         f"/api/v1/tenants/{slug}/delete",
         headers=owner,

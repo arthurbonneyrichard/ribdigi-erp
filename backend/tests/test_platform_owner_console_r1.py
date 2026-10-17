@@ -358,6 +358,9 @@ async def test_platform_directory_and_activity_skip_store_ops(client, seeded, db
     ):
         assert key in row
     assert row["admin_email"] == "admin@alpha.example.com"
+    usage = await ac.get(f"/api/v1/tenants/{seed['t1'].slug}/usage", headers=admin)
+    assert usage.status_code == 200, usage.text
+    assert usage.json()["data"]["admin_email"] == "admin@alpha.example.com"
     blob = directory.text.lower()
     for banned in ("total_sales", "low_stock", "pos_sale", "stock_qty"):
         assert banned not in blob

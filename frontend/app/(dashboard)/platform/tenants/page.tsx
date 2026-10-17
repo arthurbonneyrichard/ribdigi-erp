@@ -255,7 +255,17 @@ export default function PlatformTenantsPage() {
         const row = r.data as TenantRow;
         if (!row || typeof row !== 'object') return;
         setTenants((prev) =>
-          prev.map((t) => (t.id === sel.id ? { ...t, ...row, id: t.id, slug: t.slug || row.slug } : t))
+          prev.map((t) =>
+            t.id === sel.id
+              ? {
+                  ...t,
+                  ...row,
+                  id: t.id,
+                  slug: t.slug || row.slug,
+                  admin_email: row.admin_email || t.admin_email || null,
+                }
+              : t
+          )
         );
       })
       .catch(() => undefined);
@@ -843,8 +853,14 @@ export default function PlatformTenantsPage() {
               role="status"
             >
               Managing <strong>{selected.company_name}</strong> — workspace/slug:{' '}
-              <code>{selected.slug}</code>. Scroll to the panel below or use the highlighted
-              section under the table.
+              <code>{selected.slug}</code>
+              {selected.admin_email ? (
+                <>
+                  {' '}
+                  — admin email: <strong>{selected.admin_email}</strong>
+                </>
+              ) : null}
+              . Scroll to the panel below or use the highlighted section under the table.
             </div>
           ) : null}
 
@@ -985,7 +1001,6 @@ export default function PlatformTenantsPage() {
               Subscription & features — {selected.company_name}
               <span className="muted" style={{ fontWeight: 600, fontSize: 13, marginLeft: 8 }}>
                 slug: {selected.slug}
-                {selected.admin_email ? ` · admin: ${selected.admin_email}` : null}
               </span>
               <button
                 type="button"
@@ -999,6 +1014,18 @@ export default function PlatformTenantsPage() {
                 Close
               </button>
             </h2>
+            <p style={{ margin: '0 0 12px', fontSize: 14 }}>
+              Administrator email:{' '}
+              <strong aria-label="Tenant administrator email">
+                {selected.admin_email || '—'}
+              </strong>
+              {selected.email &&
+              selected.email !== selected.admin_email ? (
+                <span className="muted" style={{ marginLeft: 12 }}>
+                  Company contact: {selected.email}
+                </span>
+              ) : null}
+            </p>
             <div className="plat-stats" style={{ marginBottom: 16 }}>
               <div className="plat-stat">
                 <span>Assigned</span>

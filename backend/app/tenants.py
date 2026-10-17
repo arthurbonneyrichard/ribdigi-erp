@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
@@ -14,6 +15,8 @@ from app import packages as packages_svc
 from app import schema_compat
 from app.config import settings
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
+
+_SAFE_IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 VALID_STATUSES = frozenset({"trial", "active", "grace", "suspended"})
 # Platform owner workspace — never suspend/delete (lockout recovery).
@@ -288,6 +291,19 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
     }
 
 
+async def tenant_admin_email(db: AsyncSession, tenant_id: str) -> str | None:
+    """Earliest company_admin email for that tenant (create-account login)."""
+    email = (
+        await db.execute(
+            select(m.User.email)
+            .where(m.User.tenant_id == tenant_id, m.User.role == "company_admin")
+            .order_by(m.User.created_at.asc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    return str(email) if email else None
+
+
 async def serialize_tenant_with_store_usage(db: AsyncSession, tenant: m.Tenant) -> dict:
     """Tenant serialize + live store usage counts (for /usage and entitlement UIs)."""
     from app import store_entitlements as store_ent_svc
@@ -295,6 +311,7 @@ async def serialize_tenant_with_store_usage(db: AsyncSession, tenant: m.Tenant) 
     data = serialize_tenant(tenant)
     store_usage = await store_ent_svc.get_store_usage(db, tenant)
     data["store_usage"] = store_usage
+    data["admin_email"] = await tenant_admin_email(db, tenant.id)
     sub = dict(data.get("subscription") or {})
     sub.update(
         {
@@ -603,72 +620,161 @@ def _tenant_scoped_tables():
     return tables
 
 
+def _quote_ident(name: str) -> str:
+    if not _SAFE_IDENT.match(name or ""):
+        raise ValueError(f"unsafe SQL identifier: {name!r}")
+    return f'"{name}"'
+
+
+async def _db_tenant_scoped_table_names(db: AsyncSession) -> list[str]:
+    """Live tables with a tenant_id column (ORM + any legacy/reflected tables)."""
+
+    def _names(sync_conn) -> list[str]:
+        from sqlalchemy import inspect as sa_inspect
+
+        insp = sa_inspect(sync_conn)
+        names: list[str] = []
+        for tname in insp.get_table_names():
+            if not _SAFE_IDENT.match(tname):
+                continue
+            cols = {c["name"] for c in insp.get_columns(tname)}
+            if "tenant_id" in cols:
+                names.append(tname)
+        return sorted(names)
+
+    conn = await db.connection()
+    return await conn.run_sync(_names)
+
+
+async def _db_nullable_fk_columns(db: AsyncSession, table_name: str) -> list[str]:
+    """Nullable FK column names on a live table (excluding tenant_id)."""
+
+    def _cols(sync_conn) -> list[str]:
+        from sqlalchemy import inspect as sa_inspect
+
+        insp = sa_inspect(sync_conn)
+        col_meta = {c["name"]: c for c in insp.get_columns(table_name)}
+        out: list[str] = []
+        for fk in insp.get_foreign_keys(table_name):
+            for col in fk.get("constrained_columns") or ():
+                if col == "tenant_id" or not _SAFE_IDENT.match(col):
+                    continue
+                if col_meta.get(col, {}).get("nullable", True):
+                    out.append(col)
+        seen: set[str] = set()
+        unique: list[str] = []
+        for col in out:
+            if col not in seen:
+                seen.add(col)
+                unique.append(col)
+        return unique
+
+    conn = await db.connection()
+    return await conn.run_sync(_cols)
+
+
 async def _null_tenant_nullable_fks(db: AsyncSession, tenant_id: str) -> None:
     """Null every nullable FK on tenant-scoped rows so cyclic graphs can be deleted.
 
-    PostgreSQL enforces FKs; ``sort_tables`` drops ordering edges for cycles such as
-    ``users`` ↔ ``branches`` ↔ ``departments``. Clearing all nullable FKs first
-    (managers, heads, self-refs, optional document links) leaves a DAG of
-    required FKs that ordered deletes can remove.
+    Uses live DB metadata (not only ORM) so Postgres leftover/legacy tables and
+    FKs are cleared. ``sort_tables`` drops ordering edges for cycles such as
+    ``users`` ↔ ``branches`` ↔ ``departments``; clearing nullable FKs first
+    leaves a DAG of required FKs that multipass deletes can remove.
     """
-    from sqlalchemy import update
+    from sqlalchemy import text
 
-    for table in _tenant_scoped_tables():
-        values: dict[str, None] = {}
-        for col in table.columns:
-            if col.name == "tenant_id" or not col.nullable or not col.foreign_keys:
-                continue
-            values[col.name] = None
-        if not values:
+    table_names = await _db_tenant_scoped_table_names(db)
+    if not table_names:
+        table_names = [t.name for t in _tenant_scoped_tables()]
+
+    for tname in table_names:
+        fk_cols = await _db_nullable_fk_columns(db, tname)
+        if not fk_cols:
+            orm = next((t for t in _tenant_scoped_tables() if t.name == tname), None)
+            if orm is not None:
+                fk_cols = [
+                    col.name
+                    for col in orm.columns
+                    if col.name != "tenant_id"
+                    and col.nullable
+                    and col.foreign_keys
+                    and _SAFE_IDENT.match(col.name)
+                ]
+        if not fk_cols:
             continue
-        await db.execute(update(table).where(table.c.tenant_id == tenant_id).values(**values))
+        assignments = ", ".join(f"{_quote_ident(c)}=NULL" for c in fk_cols)
+        sql = (
+            f"UPDATE {_quote_ident(tname)} SET {assignments} "
+            f"WHERE {_quote_ident('tenant_id')} = :tid"
+        )
+        await db.execute(text(sql), {"tid": tenant_id})
 
 
 async def purge_tenant_records(db: AsyncSession, tenant: m.Tenant) -> None:
     """Delete every row scoped to this tenant, then the tenant row.
 
-    Nullable FKs are cleared first. Deletes then run in dependency order, with
-    savepoint retries so a temporary parent/child ordering miss on Postgres
-    cannot abort the whole purge. The platform deletion log has no ``tenant_id``
-    and is left in place. A failure raises 409 and the caller rolls back.
+    Nullable FKs are cleared first (live DB metadata). Deletes then run in
+    dependency order with savepoint retries so a temporary parent/child
+    ordering miss on Postgres cannot abort the whole purge. Tables that exist
+    only in the database (legacy) are included when they have ``tenant_id``.
+    The platform deletion log has no ``tenant_id`` and is left in place.
+    A failure raises 409 and the caller rolls back.
     """
     import logging
     import warnings
 
-    from sqlalchemy import delete, func, select
+    from sqlalchemy import delete, text
     from sqlalchemy.exc import IntegrityError
     from sqlalchemy.schema import sort_tables
 
     log = logging.getLogger("ribdigi.tenants")
-    tables = _tenant_scoped_tables()
+    orm_tables = _tenant_scoped_tables()
+    orm_by_name = {t.name: t for t in orm_tables}
+    live_names = await _db_tenant_scoped_table_names(db)
+    if not live_names:
+        live_names = list(orm_by_name.keys())
+
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            ordered = list(reversed(sort_tables(tables)))
+            ordered_orm = list(reversed(sort_tables(orm_tables)))
     except Exception as exc:
         raise HTTPException(
             status_code=500,
             detail=f"Unable to order tenant tables for delete: {exc}",
         ) from exc
 
+    ordered_names: list[str] = [t.name for t in ordered_orm]
+    for name in live_names:
+        if name not in ordered_names:
+            # Unknown/legacy tables first so dependents of ORM parents clear early.
+            ordered_names.insert(0, name)
+
     try:
         await _null_tenant_nullable_fks(db, tenant.id)
         await db.flush()
 
-        # Multi-pass delete with savepoints: each failed table is skipped until
-        # its dependents are gone. Caps prevent infinite loops.
-        remaining = {table.name: table for table in ordered}
-        for _pass in range(len(ordered) + 4):
+        remaining = {name: name for name in ordered_names}
+        for _pass in range(len(ordered_names) + 8):
             if not remaining:
                 break
             progressed = False
             for name in list(remaining):
-                table = remaining[name]
                 try:
                     async with db.begin_nested():
-                        result = await db.execute(
-                            delete(table).where(table.c.tenant_id == tenant.id)
-                        )
+                        table = orm_by_name.get(name)
+                        if table is not None:
+                            result = await db.execute(
+                                delete(table).where(table.c.tenant_id == tenant.id)
+                            )
+                        else:
+                            result = await db.execute(
+                                text(
+                                    f"DELETE FROM {_quote_ident(name)} "
+                                    f"WHERE {_quote_ident('tenant_id')} = :tid"
+                                ),
+                                {"tid": tenant.id},
+                            )
                     remaining.pop(name, None)
                     progressed = True
                     if result.rowcount:
@@ -683,20 +789,23 @@ async def purge_tenant_records(db: AsyncSession, tenant: m.Tenant) -> None:
             if not progressed:
                 break
 
-        if remaining:
-            leftovers = []
-            for name, table in remaining.items():
-                count = (
-                    await db.execute(
-                        select(func.count()).select_from(table).where(table.c.tenant_id == tenant.id)
-                    )
-                ).scalar_one()
-                if int(count or 0) > 0:
-                    leftovers.append(f"{name}:{count}")
-            if leftovers:
-                raise RuntimeError(
-                    "tenant purge left rows after multipass delete: " + ", ".join(leftovers[:12])
+        leftovers: list[str] = []
+        for name in live_names:
+            count = (
+                await db.execute(
+                    text(
+                        f"SELECT COUNT(*) FROM {_quote_ident(name)} "
+                        f"WHERE {_quote_ident('tenant_id')} = :tid"
+                    ),
+                    {"tid": tenant.id},
                 )
+            ).scalar_one()
+            if int(count or 0) > 0:
+                leftovers.append(f"{name}:{count}")
+        if leftovers:
+            raise RuntimeError(
+                "tenant purge left rows after multipass delete: " + ", ".join(leftovers[:12])
+            )
 
         await db.delete(tenant)
         await db.flush()
@@ -704,13 +813,14 @@ async def purge_tenant_records(db: AsyncSession, tenant: m.Tenant) -> None:
         raise
     except Exception as exc:
         log.exception("tenant purge failed for %s", getattr(tenant, "id", None))
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                "Cannot delete this tenant because some records could not be removed. "
-                "Suspend the tenant instead, or contact support."
-            ),
-        ) from exc
+        cause = str(exc).strip()
+        detail = (
+            "Cannot delete this tenant because some records could not be removed. "
+            "Suspend the tenant instead, or contact support."
+        )
+        if cause.startswith("tenant purge left rows"):
+            detail = f"{detail} ({cause})"
+        raise HTTPException(status_code=409, detail=detail) from exc
 
 
 def _remove_tenant_files(tenant_id: str) -> str | None:
