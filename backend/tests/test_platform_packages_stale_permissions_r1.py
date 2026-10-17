@@ -34,7 +34,7 @@ async def test_stale_permissions_snapshot_still_allows_package_assign(client, db
             "email": email,
             "full_name": f"Stale Perms {suffix}",
             "password": "SecurePass123!",
-            "role": "platform_support",
+            "role": "platform_finance",
         },
     )
     assert created.status_code == 200, created.text
@@ -47,7 +47,7 @@ async def test_stale_permissions_snapshot_still_allows_package_assign(client, db
     # Simulate a pre-catalog snapshot that only had read (the live 403 root cause).
     user.permissions = {
         "platform": ["read"],
-        "platform_tenants": ["read", "write"],
+        "platform_tenants": ["read"],
         "platform_packages": ["read"],
         "platform_reports": ["read"],
         "users": ["read"],
@@ -57,16 +57,16 @@ async def test_stale_permissions_snapshot_still_allows_package_assign(client, db
     }
     await db_session.commit()
 
-    support = await auth_headers(ac, email=email, tenant_slug="alpha")
-    me = await ac.get("/api/v1/me", headers=support)
+    finance = await auth_headers(ac, email=email, tenant_slug="alpha")
+    me = await ac.get("/api/v1/me", headers=finance)
     assert me.status_code == 200, me.text
     assert "write" in (me.json()["data"].get("permissions") or {}).get("platform_packages", [])
-    catalog = permissions_for_role("platform_support")["platform_packages"]
+    catalog = permissions_for_role("platform_finance")["platform_packages"]
     assert "write" in catalog
 
     assigned = await ac.post(
         f"/api/v1/tenants/{seed['t1'].slug}/subscription",
-        headers=support,
+        headers=finance,
         json={"package_code": "starter", "term_value": 1, "term_unit": "months"},
     )
     assert assigned.status_code == 200, assigned.text

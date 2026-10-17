@@ -317,10 +317,14 @@ def require_platform_permission(module: str, action: str = "read"):
         # Evaluate against the role catalog only — ignore stale User.permissions
         # snapshots that can strip write after ROLE_PERMISSIONS grows.
         if not has_permission(role, module, action, overrides=None):
-            raise HTTPException(
-                status_code=403,
-                detail=f"Missing platform permission: {module}:{action}",
-            )
+            if module == "platform_packages" and action == "write":
+                detail = (
+                    "Package and feature-module changes require a platform admin or "
+                    "owner. Contact your admin to assign a package or update modules."
+                )
+            else:
+                detail = f"Missing platform permission: {module}:{action}"
+            raise HTTPException(status_code=403, detail=detail)
         return claims
 
     return dep

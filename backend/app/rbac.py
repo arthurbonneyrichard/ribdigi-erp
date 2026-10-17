@@ -21,8 +21,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
     "platform_support": {
         "platform": ["read"],
         "platform_tenants": ["read", "write"],
-        # Assign package/term and feature modules for a company (same as finance).
-        "platform_packages": ["read", "write"],
+        # Packages/modules: read-only — assign/change requires owner, admin, or finance.
+        "platform_packages": ["read"],
         "platform_reports": ["read"],
         "users": ["read"],
         "notifications": ["read"],

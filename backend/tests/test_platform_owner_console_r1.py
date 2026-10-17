@@ -48,6 +48,8 @@ def test_platform_console_ui_keeps_working_controls():
     assert "(industry)" not in page
     assert "plat-feedback-dock" in page
     assert "plat-feedback-dock" in css
+    assert "platformPackagesWriteDeniedMessage" in page
+    assert "Contact a platform admin or owner" in page
     head = page.split("type SubscriptionInfo", 1)[0]
     assert "Retail, Hotel, and Restaurant" in head
     for removed in ("fmcg", "hospital", "pharmacy", "wholesale"):

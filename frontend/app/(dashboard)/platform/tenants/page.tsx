@@ -15,6 +15,17 @@ import { useCompanyFormat } from '../../../../lib/useCompanyFormat';
 /** New companies: Retail, Hotel, and Restaurant. */
 const CREATE_INDUSTRIES = [...PROVISION_INDUSTRIES] as const;
 
+function platformPackagesWriteDeniedMessage(raw: unknown): string | null {
+  const text = String(raw || '');
+  if (
+    /platform_packages:write/i.test(text) ||
+    (/package/i.test(text) && /contact/i.test(text) && /admin/i.test(text))
+  ) {
+    return 'Contact a platform admin or owner to assign a package or change feature modules.';
+  }
+  return null;
+}
+
 type SubscriptionInfo = {
   package_code?: string;
   package_name?: string;
@@ -509,7 +520,11 @@ export default function PlatformTenantsPage() {
       await refresh({ force: true });
       setSelectedId(r.data?.id || selected.id);
     } catch (err: any) {
-      setError(err.message || 'Assign subscription failed');
+      setError(
+        platformPackagesWriteDeniedMessage(err?.message) ||
+          err.message ||
+          'Assign subscription failed'
+      );
     } finally {
       setBusy(null);
     }
@@ -531,7 +546,11 @@ export default function PlatformTenantsPage() {
       setMessage(`Updated feature modules for ${selected.company_name}`);
       await refresh({ force: true });
     } catch (err: any) {
-      setError(err.message || 'Update modules failed');
+      setError(
+        platformPackagesWriteDeniedMessage(err?.message) ||
+          err.message ||
+          'Update modules failed'
+      );
     } finally {
       setBusy(null);
     }
@@ -551,7 +570,11 @@ export default function PlatformTenantsPage() {
       setMessage(`Reset modules to package default for ${selected.company_name}`);
       await refresh({ force: true });
     } catch (err: any) {
-      setError(err.message || 'Reset modules failed');
+      setError(
+        platformPackagesWriteDeniedMessage(err?.message) ||
+          err.message ||
+          'Reset modules failed'
+      );
     } finally {
       setBusy(null);
     }
