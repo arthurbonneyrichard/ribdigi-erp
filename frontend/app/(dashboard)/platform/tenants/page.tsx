@@ -69,6 +69,7 @@ type TenantRow = {
   store_count?: number;
   branch_count?: number;
   account_status?: string;
+  admin_email?: string | null;
 };
 
 type PackageInfo = {
@@ -147,6 +148,7 @@ export default function PlatformTenantsPage() {
   const [moduleDraft, setModuleDraft] = useState<string[]>([]);
   const [suspendReason, setSuspendReason] = useState('');
   const [deleteConfirmSlug, setDeleteConfirmSlug] = useState('');
+  const [adminPasswordDraft, setAdminPasswordDraft] = useState('');
   const [overrideDraft, setOverrideDraft] = useState('');
   const [industryDraft, setIndustryDraft] = useState('');
   const [industryReason, setIndustryReason] = useState('');
@@ -561,22 +563,31 @@ export default function PlatformTenantsPage() {
   async function resetTenantAdminPassword(row?: TenantRow) {
     const target = row || selected;
     if (!target) return;
+    const typed = adminPasswordDraft.trim();
+    const adminEmail = target.admin_email || 'the company administrator';
     const ok = window.confirm(
-      `Send a password reset link to the administrator of ${target.company_name}?\n\nThe current password is not shown, and a new password is not displayed here.`
+      typed
+        ? `Set a new password for ${adminEmail} on ${target.company_name}?\n\nTell them this password yourself. It is not shown again after you save.`
+        : `Send a password reset link to ${adminEmail} on ${target.company_name}?\n\nLeave the temporary password blank to email a link instead.`
     );
     if (!ok) return;
     setBusy(target.id);
     setError('');
     setMessage('');
     try {
+      const body = typed ? { new_password: typed } : {};
       const res = await api(`/tenants/${target.slug || target.id}/admin-password-reset`, {
         method: 'POST',
-        body: JSON.stringify({}),
+        body: JSON.stringify(body),
       });
       const when = res.data?.initiated_at ? ` at ${fmtDate(res.data.initiated_at)}` : '';
+      const emailed = res.data?.email || adminEmail;
       setMessage(
-        `Password reset requested for the administrator of ${target.company_name}${when}. A reset link was emailed. No password is shown.`
+        res.data?.password_set
+          ? `Password updated for ${emailed} on ${target.company_name}${when}. Tell them the password you entered; it is not shown here.`
+          : `Password reset link sent to ${emailed} for ${target.company_name}${when}.`
       );
+      setAdminPasswordDraft('');
       await refresh({ force: true });
     } catch (err: any) {
       setError(err.message || 'Password reset failed');
@@ -841,6 +852,7 @@ export default function PlatformTenantsPage() {
             <thead>
               <tr>
                 <th>Tenant</th>
+                <th>Admin email</th>
                 <th>Status</th>
                 <th>Industry</th>
                 <th>Store mode</th>
@@ -860,6 +872,9 @@ export default function PlatformTenantsPage() {
                       <div className="muted" style={{ fontSize: 12 }}>
                         {t.slug}
                       </div>
+                    </td>
+                    <td style={{ fontSize: 13 }}>
+                      {t.admin_email || '—'}
                     </td>
                     <td>
                       <span className={`status-pill ${statusClass(t.status)}`} style={{ margin: 0 }}>
@@ -970,6 +985,7 @@ export default function PlatformTenantsPage() {
               Subscription & features — {selected.company_name}
               <span className="muted" style={{ fontWeight: 600, fontSize: 13, marginLeft: 8 }}>
                 slug: {selected.slug}
+                {selected.admin_email ? ` · admin: ${selected.admin_email}` : null}
               </span>
               <button
                 type="button"
@@ -1337,15 +1353,37 @@ export default function PlatformTenantsPage() {
               Dashboard, notifications, and security stay on.
             </p>
             {canDeleteTenant ? (
-              <div className="plat-actions" style={{ marginTop: 8 }}>
-                <button
-                  type="button"
-                  disabled={busy === selected.id}
-                  onClick={() => resetTenantAdminPassword(selected)}
-                  aria-label={`Reset administrator password for ${selected.company_name}`}
-                >
-                  Reset administrator password
-                </button>
+              <div style={{ marginTop: 12 }}>
+                <p style={{ margin: '0 0 8px', fontSize: 13 }}>
+                  Administrator email:{' '}
+                  <strong>{selected.admin_email || 'No company administrator'}</strong>
+                </p>
+                <div className="plat-actions" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                  <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <span>Temporary password</span>
+                    <input
+                      type="password"
+                      value={adminPasswordDraft}
+                      onChange={(e) => setAdminPasswordDraft(e.target.value)}
+                      placeholder="Leave blank to email a reset link"
+                      aria-label="Tenant administrator temporary password"
+                      autoComplete="new-password"
+                      style={{ minWidth: 220 }}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    disabled={busy === selected.id}
+                    onClick={() => resetTenantAdminPassword(selected)}
+                    aria-label={`Reset administrator password for ${selected.company_name}`}
+                  >
+                    {adminPasswordDraft.trim() ? 'Set administrator password' : 'Email reset link'}
+                  </button>
+                </div>
+                <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                  Enter a temporary password to set it for them, or leave blank to email a reset link.
+                  The password is never shown back on this page.
+                </p>
               </div>
             ) : null}
             <div

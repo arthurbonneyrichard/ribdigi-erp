@@ -262,14 +262,23 @@ async def build_platform_directory(db: AsyncSession) -> list[dict[str, Any]]:
     )
     admins = (
         await db.execute(
-            select(m.User.tenant_id, m.User.email_verified, m.User.created_at).where(
-                m.User.role == "company_admin"
+            select(
+                m.User.tenant_id,
+                m.User.email,
+                m.User.email_verified,
+                m.User.created_at,
             )
+            .where(m.User.role == "company_admin")
+            .order_by(m.User.created_at.asc())
         )
     ).all()
     admin_state: dict[str, list[bool]] = {}
-    for tenant_id, verified, _created in admins:
+    admin_emails: dict[str, str] = {}
+    for tenant_id, email, verified, _created in admins:
         admin_state.setdefault(tenant_id, []).append(bool(verified))
+        # Earliest company_admin email is the account used to create the tenant.
+        if tenant_id not in admin_emails and email:
+            admin_emails[tenant_id] = str(email)
 
     rows = []
     for tenant in tenants:
@@ -293,6 +302,7 @@ async def build_platform_directory(db: AsyncSession) -> list[dict[str, Any]]:
                 "store_count": int(store_counts.get(tenant.id) or 0),
                 "branch_count": int(branch_counts.get(tenant.id) or 0),
                 "created_at": tenant.created_at,
+                "admin_email": admin_emails.get(tenant.id),
                 "account_status": account_status,
                 "provisioning_status": account_status,
             }

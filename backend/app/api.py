@@ -1420,7 +1420,7 @@ async def tenant_admin_password_reset(
     claims=Depends(require_platform_permission("platform_tenants", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Start a one-time reset for that tenant's administrator. No password is returned."""
+    """Reset that tenant's administrator password. The new password is never returned."""
     if not is_platform_owner_role(claims.get("role")):
         raise HTTPException(
             status_code=403,
@@ -1432,6 +1432,7 @@ async def tenant_admin_password_reset(
         tenant,
         actor_id=claims["sub"],
         user_id=payload.user_id,
+        new_password=payload.new_password,
     )
     await audit_svc.record_event(
         db,
@@ -1447,6 +1448,8 @@ async def tenant_admin_password_reset(
             "initiated_by": claims["sub"],
             "initiated_at": result["initiated_at"],
             "sessions_revoked": result["sessions_revoked"],
+            "password_set": bool(result.get("password_set")),
+            "email_sent": bool(result.get("email_sent")),
         },
     )
     await notifications_svc.notify_platform_event(
@@ -1461,7 +1464,12 @@ async def tenant_admin_password_reset(
         entity_id=result["user_id"],
     )
     await db.commit()
-    return env(result, "Password reset link sent to the tenant administrator")
+    message = (
+        "Administrator password updated"
+        if result.get("password_set")
+        else "Password reset link sent to the tenant administrator"
+    )
+    return env(result, message)
 
 
 @api.patch("/tenants/{tenant_ref}/modules")

@@ -26,6 +26,11 @@ def test_platform_tenant_delete_ui_wired():
     assert "const canHardDeleteTenant = canDeleteTenant" in plat
     assert "meRole === 'platform_admin'" not in plat
     assert "Only the software owner can delete a company." in plat
+    assert "Admin email" in plat
+    assert "t.admin_email" in plat
+    assert "new_password: typed" in plat
+    assert 'aria-label="Tenant administrator temporary password"' in plat
+    assert "Set administrator password" in plat
 
 
 @pytest.mark.asyncio
@@ -270,5 +275,80 @@ async def test_delete_leaves_the_other_tenant(client, seeded):
             "password": "SecurePass123!",
             "tenant_id": drop,
         },
+    )
+    assert gone.status_code == 404, gone.text
+
+
+@pytest.mark.asyncio
+async def test_owner_can_delete_tenant_with_org_records(client, seeded):
+    """FK cycles (branch manager → user) must not block platform hard-delete."""
+    ac, seed = client
+    owner = await _owner(ac, seed)
+    suffix = uuid4().hex[:8]
+    slug = f"org-del-{suffix}"
+    email = f"org-{suffix}@deleteco.example.com"
+    await _create_company(ac, owner, slug=slug, email=email)
+    verified = await ac.post(f"/api/v1/tenants/{slug}/verify-admin", headers=owner)
+    assert verified.status_code == 200, verified.text
+    tenant_headers = await auth_headers(ac, email=email, tenant_slug=slug)
+
+    me = await ac.get("/api/v1/me", headers=tenant_headers)
+    assert me.status_code == 200, me.text
+    admin_user_id = me.json()["data"]["id"]
+
+    branch = await ac.post(
+        "/api/v1/branches",
+        headers=tenant_headers,
+        json={
+            "name": f"HQ {suffix}",
+            "code": f"HQ{suffix[:6].upper()}",
+            "manager_id": admin_user_id,
+        },
+    )
+    assert branch.status_code == 200, branch.text
+    branch_id = branch.json()["data"]["id"]
+
+    # Point the admin at the branch so users ↔ branches cycle exists.
+    assigned = await ac.patch(
+        f"/api/v1/users/{admin_user_id}",
+        headers=tenant_headers,
+        json={"branch_id": branch_id},
+    )
+    assert assigned.status_code == 200, assigned.text
+
+    stores = await ac.get("/api/v1/stores", headers=tenant_headers)
+    assert stores.status_code == 200, stores.text
+    store_rows = stores.json()["data"]
+    assert store_rows, "provisioned tenant should have a default store"
+    store_id = store_rows[0]["id"]
+    store_patch = await ac.patch(
+        f"/api/v1/stores/{store_id}",
+        headers=tenant_headers,
+        json={"manager_id": admin_user_id},
+    )
+    assert store_patch.status_code == 200, store_patch.text
+
+    product = await ac.post(
+        "/api/v1/products",
+        headers=tenant_headers,
+        json={"name": f"Org item {suffix}"},
+    )
+    assert product.status_code == 200, product.text
+
+    deleted = await ac.post(
+        f"/api/v1/tenants/{slug}/delete",
+        headers=owner,
+        json={"confirm_slug": slug},
+    )
+    assert deleted.status_code == 200, deleted.text
+    assert deleted.json()["data"]["slug"] == slug
+
+    listed = await ac.get("/api/v1/tenants", headers=owner)
+    assert listed.status_code == 200, listed.text
+    assert slug not in {row["slug"] for row in listed.json()["data"]}
+
+    gone = await ac.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": "SecurePass123!", "tenant_id": slug},
     )
     assert gone.status_code == 404, gone.text

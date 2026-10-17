@@ -940,9 +940,11 @@ class TenantSubscriptionAssign(BaseModel):
 
 
 class TenantAdminPasswordReset(BaseModel):
-    """Platform Owner starts a reset for that tenant's company administrator.
+    """Platform Owner resets that tenant's company administrator password.
 
-    No password field — the existing one-time reset link is emailed.
+    Omit ``new_password`` to email a one-time reset link. Provide
+    ``new_password`` to set a temporary password immediately (not returned).
+    Unknown keys (including ``password``) are **422**.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -950,6 +952,8 @@ class TenantAdminPasswordReset(BaseModel):
     # omit → the tenant's administrator (earliest company_admin).
     # A user id from another tenant is rejected by the service.
     user_id: UuidIdValue | None = None
+    # omit/`null` → email reset link; blank/garbage → **422**.
+    new_password: TenantAdminPasswordValue | None = None
 
 
 class TenantIndustryChange(BaseModel):

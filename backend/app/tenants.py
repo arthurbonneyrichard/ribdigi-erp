@@ -603,12 +603,61 @@ def _tenant_scoped_tables():
     return tables
 
 
+async def _break_tenant_fk_cycles(db: AsyncSession, tenant_id: str) -> None:
+    """Clear cyclic nullable FKs so ordered deletes can remove a used company.
+
+    ``sort_tables`` cannot order ``users`` ↔ ``branches`` ↔ ``departments``
+    (and store/warehouse managers pointing at users). Null those links first.
+    Self-referential catalog trees are cleared the same way.
+    """
+    from sqlalchemy import update
+
+    await db.execute(
+        update(m.Branch)
+        .where(m.Branch.tenant_id == tenant_id)
+        .values(manager_id=None)
+    )
+    await db.execute(
+        update(m.Department)
+        .where(m.Department.tenant_id == tenant_id)
+        .values(head_user_id=None)
+    )
+    await db.execute(
+        update(m.Store)
+        .where(m.Store.tenant_id == tenant_id)
+        .values(manager_id=None)
+    )
+    await db.execute(
+        update(m.Warehouse)
+        .where(m.Warehouse.tenant_id == tenant_id)
+        .values(manager_id=None)
+    )
+    await db.execute(
+        update(m.User)
+        .where(m.User.tenant_id == tenant_id)
+        .values(branch_id=None, department_id=None)
+    )
+    if hasattr(m, "ProductCategory"):
+        await db.execute(
+            update(m.ProductCategory)
+            .where(m.ProductCategory.tenant_id == tenant_id)
+            .values(parent_id=None)
+        )
+    if hasattr(m, "UnitOfMeasure"):
+        await db.execute(
+            update(m.UnitOfMeasure)
+            .where(m.UnitOfMeasure.tenant_id == tenant_id)
+            .values(base_unit_id=None)
+        )
+
+
 async def purge_tenant_records(db: AsyncSession, tenant: m.Tenant) -> None:
     """Delete every row scoped to this tenant, then the tenant row.
 
-    Tables are ordered so dependents go first. The platform deletion log is
-    not included: it has no ``tenant_id`` column. A failure raises 409 and
-    the caller rolls the transaction back.
+    Tables are ordered so dependents go first. Cyclic nullable FKs are cleared
+    first so a company with org and catalog records can still be removed.
+    The platform deletion log is not included: it has no ``tenant_id`` column.
+    A failure raises 409 and the caller rolls the transaction back.
     """
     from sqlalchemy import delete
     from sqlalchemy.schema import sort_tables
@@ -622,6 +671,7 @@ async def purge_tenant_records(db: AsyncSession, tenant: m.Tenant) -> None:
         ) from exc
 
     try:
+        await _break_tenant_fk_cycles(db, tenant.id)
         for table in ordered:
             await db.execute(delete(table).where(table.c.tenant_id == tenant.id))
         await db.delete(tenant)
@@ -1162,14 +1212,18 @@ async def request_admin_password_reset(
     *,
     actor_id: str,
     user_id: str | None = None,
+    new_password: str | None = None,
 ) -> dict:
-    """Email a single-use reset link to this tenant's company administrator.
+    """Reset that tenant's company administrator password for the software owner.
 
-    Does not return the current password, a new password, or the raw token.
-    Existing sessions for that administrator are revoked.
+    When ``new_password`` is set, the password is changed immediately and sessions
+    are revoked. When it is omitted, a single-use reset link is emailed instead.
+    Does not return the current password, the new password, or the raw token.
     """
+    import asyncio
+
     from app import emailer
-    from app.security import issue_one_time_token
+    from app.security import hash_password, issue_one_time_token, validate_password_strength
 
     if user_id:
         user = await db.get(m.User, user_id)
@@ -1192,16 +1246,6 @@ async def request_admin_password_reset(
             raise HTTPException(status_code=404, detail="Tenant administrator not found")
 
     now = datetime.utcnow()
-    raw, token_hash, expires = issue_one_time_token()
-    db.add(
-        m.AuthToken(
-            tenant_id=tenant.id,
-            user_id=user.id,
-            purpose="password_reset",
-            token_hash=token_hash,
-            expires_at=expires,
-        )
-    )
     sessions = (
         await db.execute(
             select(m.AuthSession).where(
@@ -1213,16 +1257,38 @@ async def request_admin_password_reset(
     ).scalars().all()
     for session in sessions:
         session.revoked_at = now
-    await db.flush()
 
+    password_set = False
     email_sent = False
     email_error = None
-    try:
-        result = await emailer.send_password_reset_email(to=user.email, token=raw, tenant=tenant)
-        email_sent = bool(result.sent)
-        email_error = result.error
-    except Exception:
-        email_error = "send_failed"
+    typed = (new_password or "").strip()
+    if typed:
+        validate_password_strength(typed)
+        user.password_hash = await asyncio.to_thread(hash_password, typed)
+        user.failed_login_attempts = 0
+        user.locked_until = None
+        password_set = True
+        await db.flush()
+    else:
+        raw, token_hash, expires = issue_one_time_token()
+        db.add(
+            m.AuthToken(
+                tenant_id=tenant.id,
+                user_id=user.id,
+                purpose="password_reset",
+                token_hash=token_hash,
+                expires_at=expires,
+            )
+        )
+        await db.flush()
+        try:
+            result = await emailer.send_password_reset_email(
+                to=user.email, token=raw, tenant=tenant
+            )
+            email_sent = bool(result.sent)
+            email_error = result.error
+        except Exception:
+            email_error = "send_failed"
 
     return {
         "tenant_id": tenant.id,
@@ -1232,6 +1298,7 @@ async def request_admin_password_reset(
         "initiated_by": actor_id,
         "initiated_at": now.isoformat() + "Z",
         "sessions_revoked": len(sessions),
+        "password_set": password_set,
         "email_sent": email_sent,
         "email_error": email_error,
     }

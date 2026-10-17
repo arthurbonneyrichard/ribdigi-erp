@@ -238,6 +238,62 @@ async def test_tenant_admin_reset_is_scoped_and_hides_passwords(client, seeded, 
 
 
 @pytest.mark.asyncio
+async def test_owner_can_set_tenant_admin_password(client, seeded):
+    """Omit new_password → email link path; set new_password → login works; never echo secret."""
+    ac, seed = client
+    owner = await _owner(ac, seed)
+    suffix = uuid4().hex[:8]
+    slug = f"pwd-set-{suffix}"
+    email = f"pwd-{suffix}@deleteco.example.com"
+    created = await ac.post(
+        "/api/v1/tenants",
+        headers=owner,
+        json={
+            "company_name": f"Pwd Co {suffix}",
+            "slug": slug,
+            "admin_email": email,
+            "admin_password": "SecurePass123!",
+            "industry": "retail",
+            "currency": "GHS",
+        },
+    )
+    assert created.status_code == 200, created.text
+    verified = await ac.post(f"/api/v1/tenants/{slug}/verify-admin", headers=owner)
+    assert verified.status_code == 200, verified.text
+
+    directory = await ac.get("/api/v1/platform/directory", headers=owner)
+    assert directory.status_code == 200, directory.text
+    row = next(item for item in directory.json()["data"] if item["slug"] == slug)
+    assert row["admin_email"] == email
+
+    temporary = f"TempReset{suffix}!"
+    set_pwd = await ac.post(
+        f"/api/v1/tenants/{slug}/admin-password-reset",
+        headers=owner,
+        json={"new_password": temporary},
+    )
+    assert set_pwd.status_code == 200, set_pwd.text
+    body = set_pwd.json()["data"]
+    assert body["password_set"] is True
+    assert body["email"] == email
+    assert temporary not in set_pwd.text
+    assert _forbidden_password_keys(body) == []
+
+    old_login = await ac.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": "SecurePass123!", "tenant_id": slug},
+    )
+    assert old_login.status_code == 401, old_login.text
+
+    new_login = await ac.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": temporary, "tenant_id": slug},
+    )
+    assert new_login.status_code == 200, new_login.text
+    assert new_login.json()["data"].get("access_token")
+
+
+@pytest.mark.asyncio
 async def test_modules_follow_tenant_industry(client, seeded, db_session):
     ac, seed = client
     admin = await _owner(ac, seed)
@@ -298,8 +354,10 @@ async def test_platform_directory_and_activity_skip_store_ops(client, seeded, db
         "branch_count",
         "created_at",
         "account_status",
+        "admin_email",
     ):
         assert key in row
+    assert row["admin_email"] == "admin@alpha.example.com"
     blob = directory.text.lower()
     for banned in ("total_sales", "low_stock", "pos_sale", "stock_qty"):
         assert banned not in blob

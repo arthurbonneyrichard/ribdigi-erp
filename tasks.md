@@ -4,6 +4,12 @@ IDs are stable. Status values: Not started, In progress, Blocked, Implemented aw
 
 Evidence is a command outcome or a file inspection. Prior results cited from `docs/COMMERCIAL_READINESS_REPORT.md` or `docs/RETAIL_FEATURE_MATRIX.md` were not re-run for this file. Do not treat a loaded screen as a finished module.
 
+## 17 October 2026 UTC
+
+| ID | Priority | Finding | Required fix | Status | Acceptance criteria | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| T-OWN-17 | P0 | Software owner could not hard-delete a company with org FK cycles; directory hid create-account email; admin reset was link-only | Clear cyclic manager/branch/dept FKs before purge; expose `admin_email` on platform directory; allow `new_password` on admin-password-reset (never echo) | Done | Owner deletes a tenant with branch manager + store manager + product. Directory shows admin email. Set password logs in; bare `password` stays 422 | From `backend`, `PYTHONPATH=.`, `RATE_LIMIT_BACKEND=memory`, Python 3.12: `pytest tests/test_platform_tenant_delete_r1.py tests/test_platform_owner_console_r1.py -q --tb=line`. **17 passed** in 77.16s. In-memory SQLite. `ribdigi_erp` was not opened |
+
 ## 15 October 2026 UTC
 
 | ID | Priority | Finding | Required fix | Status | Acceptance criteria | Evidence |
