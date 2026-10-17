@@ -37,6 +37,7 @@ def test_platform_console_ui_keeps_working_controls():
     notes = (ROOT / "frontend/app/(dashboard)/notifications/page.tsx").read_text(encoding="utf-8")
     shell = (ROOT / "frontend/components/Shell.tsx").read_text(encoding="utf-8")
     nav = (ROOT / "frontend/lib/tenantNav.ts").read_text(encoding="utf-8")
+    css = (ROOT / "frontend/app/globals.css").read_text(encoding="utf-8")
     assert "Platform activity" in overview
     assert "Tenants by status" in overview
     assert "Tenants by industry" in overview
@@ -45,6 +46,8 @@ def test_platform_console_ui_keeps_working_controls():
     assert "admin-password-reset" in page
     assert "industryAllowsModule(selected.industry, mod)" in page
     assert "(industry)" not in page
+    assert "plat-feedback-dock" in page
+    assert "plat-feedback-dock" in css
     head = page.split("type SubscriptionInfo", 1)[0]
     assert "Retail, Hotel, and Restaurant" in head
     for removed in ("fmcg", "hospital", "pharmacy", "wholesale"):

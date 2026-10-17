@@ -109,9 +109,10 @@ async def test_platform_staff_create_and_reports(client, db_session):
     )
     assert deny_staff.status_code == 403, deny_staff.text
 
-    deny_assign = await ac.post(
+    # Support may assign package/term (platform_packages:write in ROLE_PERMISSIONS).
+    ok_assign = await ac.post(
         f"/api/v1/tenants/{seed['t1'].slug}/subscription",
         headers=support_headers,
         json={"package_code": "starter", "term_value": 1, "term_unit": "months"},
     )
-    assert deny_assign.status_code == 403, deny_assign.text
+    assert ok_assign.status_code == 200, ok_assign.text

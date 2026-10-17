@@ -3143,7 +3143,13 @@ async def download_staff_guide(
 @api.get("/me")
 async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db)):
     user = await db.get(m.User, claims["sub"])
-    perms = user.permissions or permissions_for_role(user.role)
+    from app.rbac import is_platform_role
+
+    # Platform roles: live catalog (same as require_platform_permission).
+    if is_platform_role(user.role):
+        perms = permissions_for_role(user.role)
+    else:
+        perms = user.permissions or permissions_for_role(user.role)
     tenant = await db.get(m.Tenant, claims["tenant_id"])
     usage = packages_svc.usage_snapshot(tenant) if tenant else None
     live_industry = packages_svc.canonicalize_industry(getattr(tenant, "industry", None) if tenant else None)

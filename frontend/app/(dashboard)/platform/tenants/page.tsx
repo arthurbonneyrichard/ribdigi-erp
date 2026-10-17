@@ -154,6 +154,7 @@ export default function PlatformTenantsPage() {
   const [industryReason, setIndustryReason] = useState('');
   const [meRole, setMeRole] = useState('');
   const managePanelRef = useRef<HTMLDivElement | null>(null);
+  const feedbackRef = useRef<HTMLDivElement | null>(null);
 
   const selected = useMemo(
     () => tenants.find((t) => t.id === selectedId) || null,
@@ -606,6 +607,11 @@ export default function PlatformTenantsPage() {
     }
   }
 
+  useEffect(() => {
+    if (!(error || message)) return;
+    feedbackRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [error, message]);
+
   if (!ready && !error) {
     return (
       <>
@@ -666,13 +672,6 @@ export default function PlatformTenantsPage() {
             <strong>{stats.suspended}</strong>
           </div>
         </div>
-
-        {error && (
-          <p className="login-error" role="alert">
-            {error}
-          </p>
-        )}
-        {message && <p className="plat-msg">{message}</p>}
 
         <div className="plat-panel">
           <h2>Create tenant</h2>
@@ -1468,6 +1467,21 @@ export default function PlatformTenantsPage() {
           </div>
         )}
       </div>
+
+      {(error || message) && (
+        <div
+          ref={feedbackRef}
+          className="plat-feedback-dock"
+          aria-live="polite"
+        >
+          {error ? (
+            <p className="login-error" role="alert">
+              {error}
+            </p>
+          ) : null}
+          {message ? <p className="plat-msg">{message}</p> : null}
+        </div>
+      )}
     </>
   );
 }

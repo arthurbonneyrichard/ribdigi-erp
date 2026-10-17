@@ -239,7 +239,6 @@ async def current_claims(
     tenant = await tenants_svc.ensure_trial_state(db, tenant)
     if tenant.status == "suspended":
         from app.tenants import PROTECTED_TENANT_SLUGS
-        from app.rbac import is_platform_role
 
         slug = (tenant.slug or "").strip().lower()
         tid = (tenant.id or "").strip().lower()
@@ -250,7 +249,12 @@ async def current_claims(
         ):
             raise HTTPException(status_code=403, detail="Tenant suspended or missing")
 
-    data["permissions"] = user.permissions or permissions_for_role(user.role)
+    # Platform catalog roles: always use ROLE_PERMISSIONS. Persisted User.permissions
+    # snapshots go stale when the catalog gains modules (e.g. platform_packages:write).
+    if is_platform_role(user.role):
+        data["permissions"] = permissions_for_role(user.role)
+    else:
+        data["permissions"] = user.permissions or permissions_for_role(user.role)
     data["email_verified"] = user.email_verified
     data["totp_enabled"] = bool(user.totp_enabled)
     data["tenant_status"] = tenant.status
@@ -310,10 +314,9 @@ def require_platform_permission(module: str, action: str = "read"):
         role = claims.get("role") or ""
         if not is_platform_role(role):
             raise HTTPException(status_code=403, detail="Platform staff access required")
-        overrides = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
-        if overrides and overrides.get("*") == ["*"]:
-            return claims
-        if not has_permission(role, module, action, overrides=overrides):
+        # Evaluate against the role catalog only — ignore stale User.permissions
+        # snapshots that can strip write after ROLE_PERMISSIONS grows.
+        if not has_permission(role, module, action, overrides=None):
             raise HTTPException(
                 status_code=403,
                 detail=f"Missing platform permission: {module}:{action}",
