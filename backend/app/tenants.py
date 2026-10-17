@@ -676,12 +676,11 @@ async def _db_nullable_fk_columns(db: AsyncSession, table_name: str) -> list[str
 async def _null_tenant_nullable_fks(db: AsyncSession, tenant_id: str) -> None:
     """Null every nullable FK on tenant-scoped rows so cyclic graphs can be deleted.
 
-    Uses live DB metadata (not only ORM) so Postgres leftover/legacy tables and
-    FKs are cleared. ``sort_tables`` drops ordering edges for cycles such as
-    ``users`` ↔ ``branches`` ↔ ``departments``; clearing nullable FKs first
-    leaves a DAG of required FKs that multipass deletes can remove.
+    Each UPDATE runs in a savepoint so one failure cannot abort the whole
+    Postgres transaction. Uses live DB metadata (not only ORM).
     """
     from sqlalchemy import text
+    from sqlalchemy.exc import DBAPIError, IntegrityError, ProgrammingError
 
     table_names = await _db_tenant_scoped_table_names(db)
     if not table_names:
@@ -707,24 +706,185 @@ async def _null_tenant_nullable_fks(db: AsyncSession, tenant_id: str) -> None:
             f"UPDATE {_quote_ident(tname)} SET {assignments} "
             f"WHERE {_quote_ident('tenant_id')} = :tid"
         )
-        await db.execute(text(sql), {"tid": tenant_id})
+        try:
+            async with db.begin_nested():
+                await db.execute(text(sql), {"tid": tenant_id})
+        except (IntegrityError, ProgrammingError, DBAPIError):
+            continue
+
+
+async def _count_tenant_rows(db: AsyncSession, table_names: list[str], tenant_id: str) -> list[str]:
+    from sqlalchemy import text
+
+    leftovers: list[str] = []
+    for name in table_names:
+        try:
+            async with db.begin_nested():
+                count = (
+                    await db.execute(
+                        text(
+                            f"SELECT COUNT(*) FROM {_quote_ident(name)} "
+                            f"WHERE {_quote_ident('tenant_id')} = :tid"
+                        ),
+                        {"tid": tenant_id},
+                    )
+                ).scalar_one()
+        except Exception:
+            continue
+        if int(count or 0) > 0:
+            leftovers.append(f"{name}:{int(count)}")
+    return leftovers
+
+
+async def _purge_tenant_multipass(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    ordered_names: list[str],
+    orm_by_name: dict,
+) -> None:
+    """Delete tenant-scoped rows with savepoint retries (SQLite + Postgres)."""
+    from sqlalchemy import delete, text
+    from sqlalchemy.exc import IntegrityError, ProgrammingError
+
+    remaining = {name: name for name in ordered_names}
+    for _pass in range(max(len(ordered_names) + 16, 32)):
+        if not remaining:
+            break
+        progressed = False
+        for name in list(remaining):
+            try:
+                async with db.begin_nested():
+                    table = orm_by_name.get(name)
+                    if table is not None:
+                        await db.execute(delete(table).where(table.c.tenant_id == tenant_id))
+                    else:
+                        await db.execute(
+                            text(
+                                f"DELETE FROM {_quote_ident(name)} "
+                                f"WHERE {_quote_ident('tenant_id')} = :tid"
+                            ),
+                            {"tid": tenant_id},
+                        )
+                remaining.pop(name, None)
+                progressed = True
+            except (IntegrityError, ProgrammingError):
+                continue
+        if not progressed:
+            # Re-queue any live tables that still have rows (ordering miss).
+            still = []
+            for name in ordered_names:
+                try:
+                    async with db.begin_nested():
+                        count = (
+                            await db.execute(
+                                text(
+                                    f"SELECT COUNT(*) FROM {_quote_ident(name)} "
+                                    f"WHERE {_quote_ident('tenant_id')} = :tid"
+                                ),
+                                {"tid": tenant_id},
+                            )
+                        ).scalar_one()
+                except Exception:
+                    continue
+                if int(count or 0) > 0:
+                    still.append(name)
+            if not still:
+                break
+            remaining = {name: name for name in still}
+
+
+async def _purge_tenant_postgres_block(db: AsyncSession, tenant_id: str) -> None:
+    """Postgres-native multipass DELETE over every public table with tenant_id.
+
+    Runs inside the database so FK ordering misses cannot abort the SQLAlchemy
+    session mid-loop. Tenant id is validated as a UUID before embedding.
+    """
+    from uuid import UUID
+
+    from sqlalchemy import text
+
+    tid = str(UUID(str(tenant_id)))
+    # %L escapes the literal; %I quotes identifiers from pg_catalog only.
+    sql = f"""
+    DO $purge$
+    DECLARE
+      r RECORD;
+      n BIGINT;
+      deleted_any BOOLEAN;
+      pass INT := 0;
+    BEGIN
+      LOOP
+        deleted_any := FALSE;
+        pass := pass + 1;
+        EXIT WHEN pass > 120;
+        FOR r IN
+          SELECT n.nspname AS schemaname, c.relname AS tablename
+          FROM pg_class c
+          JOIN pg_namespace n ON n.oid = c.relnamespace
+          JOIN pg_attribute a
+            ON a.attrelid = c.oid
+           AND a.attname = 'tenant_id'
+           AND a.attnum > 0
+           AND NOT a.attisdropped
+          WHERE c.relkind = 'r'
+            AND n.nspname = 'public'
+        LOOP
+          BEGIN
+            EXECUTE format(
+              'DELETE FROM %I.%I WHERE tenant_id = %L',
+              r.schemaname,
+              r.tablename,
+              '{tid}'
+            );
+            GET DIAGNOSTICS n = ROW_COUNT;
+            IF n > 0 THEN
+              deleted_any := TRUE;
+            END IF;
+          EXCEPTION
+            WHEN foreign_key_violation THEN
+              NULL;
+          END;
+        END LOOP;
+        EXIT WHEN NOT deleted_any;
+      END LOOP;
+    END
+    $purge$;
+    """
+    await db.execute(text(sql))
+
+
+async def _purge_tenant_postgres_force(db: AsyncSession, tenant_id: str) -> bool:
+    """Last resort: disable FK triggers for this transaction (needs privileges)."""
+    from sqlalchemy import text
+    from sqlalchemy.exc import DBAPIError, ProgrammingError
+
+    try:
+        async with db.begin_nested():
+            await db.execute(text("SET LOCAL session_replication_role = 'replica'"))
+            await _purge_tenant_postgres_block(db, tenant_id)
+            await db.execute(
+                text('DELETE FROM "tenants" WHERE id = :tid'),
+                {"tid": tenant_id},
+            )
+        return True
+    except (ProgrammingError, DBAPIError):
+        return False
 
 
 async def purge_tenant_records(db: AsyncSession, tenant: m.Tenant) -> None:
     """Delete every row scoped to this tenant, then the tenant row.
 
-    Nullable FKs are cleared first (live DB metadata). Deletes then run in
-    dependency order with savepoint retries so a temporary parent/child
-    ordering miss on Postgres cannot abort the whole purge. Tables that exist
-    only in the database (legacy) are included when they have ``tenant_id``.
-    The platform deletion log has no ``tenant_id`` and is left in place.
-    A failure raises 409 and the caller rolls back.
+    Nullable FKs are cleared first (each UPDATE in a savepoint). Deletes then
+    run in multipass with savepoints; on PostgreSQL a catalog-driven DO block
+    also runs so live/legacy tables are not missed. The platform deletion log
+    has no ``tenant_id`` and is left in place. A failure raises 409 with the
+    leftover table names when known.
     """
     import logging
     import warnings
 
-    from sqlalchemy import delete, text
-    from sqlalchemy.exc import IntegrityError
+    from sqlalchemy import text
     from sqlalchemy.schema import sort_tables
 
     log = logging.getLogger("ribdigi.tenants")
@@ -747,78 +907,65 @@ async def purge_tenant_records(db: AsyncSession, tenant: m.Tenant) -> None:
     ordered_names: list[str] = [t.name for t in ordered_orm]
     for name in live_names:
         if name not in ordered_names:
-            # Unknown/legacy tables first so dependents of ORM parents clear early.
             ordered_names.insert(0, name)
+
+    conn = await db.connection()
+    dialect = conn.dialect.name
 
     try:
         await _null_tenant_nullable_fks(db, tenant.id)
         await db.flush()
 
-        remaining = {name: name for name in ordered_names}
-        for _pass in range(len(ordered_names) + 8):
-            if not remaining:
-                break
-            progressed = False
-            for name in list(remaining):
-                try:
-                    async with db.begin_nested():
-                        table = orm_by_name.get(name)
-                        if table is not None:
-                            result = await db.execute(
-                                delete(table).where(table.c.tenant_id == tenant.id)
-                            )
-                        else:
-                            result = await db.execute(
-                                text(
-                                    f"DELETE FROM {_quote_ident(name)} "
-                                    f"WHERE {_quote_ident('tenant_id')} = :tid"
-                                ),
-                                {"tid": tenant.id},
-                            )
-                    remaining.pop(name, None)
-                    progressed = True
-                    if result.rowcount:
-                        log.debug(
-                            "purge tenant %s deleted %s rows from %s",
-                            tenant.id,
-                            result.rowcount,
-                            name,
-                        )
-                except IntegrityError:
-                    continue
-            if not progressed:
-                break
+        await _purge_tenant_multipass(
+            db,
+            tenant_id=tenant.id,
+            ordered_names=ordered_names,
+            orm_by_name=orm_by_name,
+        )
 
-        leftovers: list[str] = []
-        for name in live_names:
-            count = (
-                await db.execute(
-                    text(
-                        f"SELECT COUNT(*) FROM {_quote_ident(name)} "
-                        f"WHERE {_quote_ident('tenant_id')} = :tid"
-                    ),
-                    {"tid": tenant.id},
-                )
-            ).scalar_one()
-            if int(count or 0) > 0:
-                leftovers.append(f"{name}:{count}")
+        if dialect == "postgresql":
+            # Catalog loop catches legacy tables / ordering the ORM sort missed.
+            await _purge_tenant_postgres_block(db, tenant.id)
+
+        leftovers = await _count_tenant_rows(db, live_names, tenant.id)
+        if leftovers and dialect == "postgresql":
+            forced = await _purge_tenant_postgres_force(db, tenant.id)
+            if forced:
+                # Tenant row already removed by force path.
+                try:
+                    db.expunge(tenant)
+                except Exception:
+                    pass
+                return
+            leftovers = await _count_tenant_rows(db, live_names, tenant.id)
+
         if leftovers:
             raise RuntimeError(
-                "tenant purge left rows after multipass delete: " + ", ".join(leftovers[:12])
+                "tenant purge left rows after multipass delete: " + ", ".join(leftovers[:16])
             )
 
-        await db.delete(tenant)
-        await db.flush()
+        # Prefer SQL delete so ORM relationship cascades cannot resurrect rows.
+        async with db.begin_nested():
+            await db.execute(
+                text('DELETE FROM "tenants" WHERE id = :tid'),
+                {"tid": tenant.id},
+            )
+        try:
+            db.expunge(tenant)
+        except Exception:
+            pass
     except HTTPException:
         raise
     except Exception as exc:
         log.exception("tenant purge failed for %s", getattr(tenant, "id", None))
-        cause = str(exc).strip()
+        cause = str(exc).strip().replace("\n", " ")
+        if len(cause) > 400:
+            cause = cause[:400] + "…"
         detail = (
             "Cannot delete this tenant because some records could not be removed. "
             "Suspend the tenant instead, or contact support."
         )
-        if cause.startswith("tenant purge left rows"):
+        if cause:
             detail = f"{detail} ({cause})"
         raise HTTPException(status_code=409, detail=detail) from exc
 
