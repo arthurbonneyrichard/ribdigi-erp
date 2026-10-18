@@ -27,6 +27,60 @@
   color: var(--deep-green, #006B2E);
 }
 
+.purchase-ui-page .cat-table-wrap .table,
+.purchase-ui-page .list-table-wrap .table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 560px;
+  white-space: normal;
+}
+
+.purchase-ui-page td.col-actions,
+.purchase-ui-page td.purch-actions,
+.purchase-ui-page td.cat-actions {
+  width: 8rem;
+  max-width: 8rem;
+  text-align: right;
+  white-space: nowrap;
+  vertical-align: middle;
+  overflow: visible;
+}
+
+.purchase-ui-page .table th.col-num,
+.purchase-ui-page .table td.col-num {
+  width: 6.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.purchase-ui-page .table th.col-status,
+.purchase-ui-page .table td.col-status {
+  width: 6.75rem;
+  white-space: nowrap;
+}
+
+.purchase-ui-page .table th.col-text,
+.purchase-ui-page .table td.col-text {
+  white-space: normal;
+  overflow: visible;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.purchase-ui-page .table th.col-id,
+.purchase-ui-page .table td.col-id {
+  width: 7.5rem;
+}
+
+.purchase-ui-page .erp-row-actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
 .purchase-ui-actions {
   margin-bottom: 12px;
 }
@@ -99,19 +153,15 @@
     min-width: 0;
   }
 
-  .purchase-ui-page .purch-actions,
-  .purchase-ui-page .cat-actions {
-    display: flex;
-    flex-wrap: wrap;
-    white-space: normal;
-    gap: 8px;
+  .purchase-ui-page td.purch-actions,
+  .purchase-ui-page td.cat-actions,
+  .purchase-ui-page td.col-actions {
+    white-space: nowrap;
   }
 
-  .purchase-ui-page .table td.purch-actions button,
-  .purchase-ui-page .table td.purch-actions a,
-  .purchase-ui-page .table td.cat-actions button,
-  .purchase-ui-page .table td.cat-actions a {
-    white-space: normal;
+  .purchase-ui-page .erp-row-actions {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
   }
 
   .purchase-ui-page {

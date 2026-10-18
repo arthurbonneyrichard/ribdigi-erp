@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
+import StatusChip from '../../../../components/StatusChip';
 
 const OWNER_ROLES = ['super_admin', 'platform_owner'];
 
@@ -16,6 +17,7 @@ type PlatformSettings = {
   billing_max_attempts: number;
   live_charges: boolean;
   source?: string;
+  editable?: boolean;
   billing?: {
     provider?: string | null;
     configured?: boolean;
@@ -24,7 +26,60 @@ type PlatformSettings = {
     gateway_enabled?: boolean;
     gateway_tested?: boolean;
   };
+  auth?: {
+    login_2fa_enabled?: boolean;
+    totp_enforced_roles?: string[];
+    webauthn_rp_id?: string | null;
+    access_ttl_minutes?: number;
+    refresh_ttl_days?: number;
+  };
+  services?: {
+    rate_limit_enabled?: boolean;
+    rate_limit_backend?: string;
+    rate_limit_per_minute?: number;
+    rate_limit_read_per_minute?: number;
+    rate_limit_auth_per_minute?: number;
+    metrics_enabled?: boolean;
+    request_log_enabled?: boolean;
+    celery_enabled?: boolean;
+    email_enabled?: boolean;
+    sms_enabled?: boolean;
+    ai_enabled?: boolean;
+    ai_provider?: string;
+    ai_security_monitor_enabled?: boolean;
+    bank_feed_sync_enabled?: boolean;
+    storage_backend?: string;
+  };
+  backup?: {
+    retention_count?: number;
+    interval_minutes?: number;
+    encryption_configured?: boolean;
+  };
+  audit?: {
+    retention_years?: number;
+    cold_archive_after_days?: number;
+    http_middleware_enabled?: boolean;
+  };
+  deploy?: {
+    app_env?: string;
+    release_channel?: string;
+    build_id?: string;
+    frontend_url?: string | null;
+  };
 };
+
+function Flag({ on, onLabel = 'On', offLabel = 'Off' }: { on?: boolean; onLabel?: string; offLabel?: string }) {
+  return <StatusChip value={on ? 'yes' : 'no'} label={on ? onLabel : offLabel} />;
+}
+
+function SettingRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <tr>
+      <th scope="row">{label}</th>
+      <td>{children}</td>
+    </tr>
+  );
+}
 
 export default function PlatformSettingsPage() {
   const router = useRouter();
@@ -58,7 +113,13 @@ export default function PlatformSettingsPage() {
   if (!ready && !error) return <p className="muted">Loading platform settings…</p>;
 
   const billing = data?.billing || {};
+  const auth = data?.auth || {};
+  const services = data?.services || {};
+  const backup = data?.backup || {};
+  const audit = data?.audit || {};
+  const deploy = data?.deploy || {};
   const reminders = (data?.billing_reminder_days || []).join(', ');
+  const totpRoles = (auth.totp_enforced_roles || []).join(', ') || '—';
 
   return (
     <div className="plat">
@@ -67,10 +128,16 @@ export default function PlatformSettingsPage() {
           <p className="plat-kicker">Software owner</p>
           <h1>Platform settings</h1>
           <p className="plat-sub">
-            Read-only. These values are set in the server environment. No keys or secrets are shown
-            here.
+            Read-only operations posture from the server environment. No keys or secrets are shown.
+            Change values in deploy env, then restart API workers.
           </p>
         </div>
+        {data ? (
+          <div className="plat-filters" aria-label="Settings source">
+            <span className="plat-chip active">{data.source || 'environment'}</span>
+            <span className="plat-chip">{data.editable ? 'Editable' : 'Read-only'}</span>
+          </div>
+        ) : null}
       </header>
 
       {error && (
@@ -81,63 +148,174 @@ export default function PlatformSettingsPage() {
 
       {data && (
         <>
-          <div className="plat-stats" aria-label="Platform settings">
+          <div className="plat-stats" aria-label="Subscription lifecycle">
             <div className="plat-stat">
               <span>Trial days</span>
               <strong>{data.trial_days}</strong>
             </div>
             <div className="plat-stat">
-              <span>Trial grace days</span>
+              <span>Trial grace</span>
               <strong>{data.grace_days}</strong>
             </div>
             <div className="plat-stat">
-              <span>Billing grace days</span>
+              <span>Billing grace</span>
               <strong>{data.billing_grace_days}</strong>
             </div>
             <div className="plat-stat">
-              <span>Billing max attempts</span>
+              <span>Max attempts</span>
               <strong>{data.billing_max_attempts}</strong>
             </div>
             <div className="plat-stat">
-              <span>Billing reminder days</span>
-              <strong>{reminders || '—'}</strong>
-              <p className="muted">Days before renewal.</p>
+              <span>Reminder days</span>
+              <strong style={{ fontSize: 18 }}>{reminders || '—'}</strong>
+              <p className="muted">Before renewal</p>
             </div>
           </div>
 
           <div className="plat-panel">
             <h2>Billing gateway</h2>
-            <table className="table">
-              <tbody>
-                <tr>
-                  <th>Provider</th>
-                  <td>{billing.provider || 'Not set'}</td>
-                </tr>
-                <tr>
-                  <th>Configured</th>
-                  <td>{billing.configured ? 'Yes' : 'No'}</td>
-                </tr>
-                <tr>
-                  <th>Mode</th>
-                  <td>{billing.gateway_mode || '—'}</td>
-                </tr>
-                <tr>
-                  <th>Enabled</th>
-                  <td>{billing.gateway_enabled ? 'Yes' : 'No'}</td>
-                </tr>
-                <tr>
-                  <th>Tested</th>
-                  <td>{billing.gateway_tested ? 'Yes' : 'No'}</td>
-                </tr>
-                <tr>
-                  <th>Live charges</th>
-                  <td>{data.live_charges ? 'On' : 'Off'}</td>
-                </tr>
-              </tbody>
-            </table>
+            <div className="list-table-wrap">
+              <table className="table" aria-label="Billing gateway status">
+                <tbody>
+                  <SettingRow label="Provider">{billing.provider || 'Not set'}</SettingRow>
+                  <SettingRow label="Configured">
+                    <Flag on={billing.configured} onLabel="Yes" offLabel="No" />
+                  </SettingRow>
+                  <SettingRow label="Mode">{billing.gateway_mode || '—'}</SettingRow>
+                  <SettingRow label="Enabled">
+                    <Flag on={billing.gateway_enabled} />
+                  </SettingRow>
+                  <SettingRow label="Tested">
+                    <Flag on={billing.gateway_tested} onLabel="Yes" offLabel="No" />
+                  </SettingRow>
+                  <SettingRow label="Live charges">
+                    <Flag on={data.live_charges} onLabel="On" offLabel="Off" />
+                  </SettingRow>
+                </tbody>
+              </table>
+            </div>
             {!data.live_charges ? (
-              <p className="muted">Live charges are off. Paid self-serve checkout is not live.</p>
+              <p className="muted" style={{ marginTop: 12 }}>
+                Live charges are off. Paid self-serve checkout is not live until a tested live gateway
+                is configured on Billing.
+              </p>
             ) : null}
+          </div>
+
+          <div className="plat-panel">
+            <h2>Security & access</h2>
+            <div className="list-table-wrap">
+              <table className="table" aria-label="Security and access settings">
+                <tbody>
+                  <SettingRow label="Login 2FA">
+                    <Flag on={auth.login_2fa_enabled} onLabel="Required" offLabel="Optional" />
+                  </SettingRow>
+                  <SettingRow label="TOTP enforced roles">{totpRoles}</SettingRow>
+                  <SettingRow label="Passkey RP ID">{auth.webauthn_rp_id || '—'}</SettingRow>
+                  <SettingRow label="Access session TTL">
+                    {auth.access_ttl_minutes != null ? `${auth.access_ttl_minutes} min` : '—'}
+                  </SettingRow>
+                  <SettingRow label="Refresh session TTL">
+                    {auth.refresh_ttl_days != null ? `${auth.refresh_ttl_days} days` : '—'}
+                  </SettingRow>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="plat-panel">
+            <h2>System services</h2>
+            <div className="list-table-wrap">
+              <table className="table" aria-label="System service settings">
+                <tbody>
+                  <SettingRow label="Rate limiting">
+                    <Flag on={services.rate_limit_enabled} />
+                  </SettingRow>
+                  <SettingRow label="Rate limit backend">{services.rate_limit_backend || '—'}</SettingRow>
+                  <SettingRow label="Rate limits / min">
+                    {[
+                      services.rate_limit_per_minute != null ? `all ${services.rate_limit_per_minute}` : null,
+                      services.rate_limit_read_per_minute != null
+                        ? `read ${services.rate_limit_read_per_minute}`
+                        : null,
+                      services.rate_limit_auth_per_minute != null
+                        ? `auth ${services.rate_limit_auth_per_minute}`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ') || '—'}
+                  </SettingRow>
+                  <SettingRow label="Metrics">
+                    <Flag on={services.metrics_enabled} />
+                  </SettingRow>
+                  <SettingRow label="Request log">
+                    <Flag on={services.request_log_enabled} />
+                  </SettingRow>
+                  <SettingRow label="Celery">
+                    <Flag on={services.celery_enabled} />
+                  </SettingRow>
+                  <SettingRow label="Platform email">
+                    <Flag on={services.email_enabled} />
+                  </SettingRow>
+                  <SettingRow label="Platform SMS">
+                    <Flag on={services.sms_enabled} />
+                  </SettingRow>
+                  <SettingRow label="AI assistant">
+                    <Flag on={services.ai_enabled} />
+                  </SettingRow>
+                  <SettingRow label="AI provider">{services.ai_provider || 'none'}</SettingRow>
+                  <SettingRow label="AI security monitor">
+                    <Flag on={services.ai_security_monitor_enabled} />
+                  </SettingRow>
+                  <SettingRow label="Bank feed sync">
+                    <Flag on={services.bank_feed_sync_enabled} />
+                  </SettingRow>
+                  <SettingRow label="Storage backend">{services.storage_backend || '—'}</SettingRow>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="plat-panel">
+            <h2>Backup & audit</h2>
+            <div className="list-table-wrap">
+              <table className="table" aria-label="Backup and audit settings">
+                <tbody>
+                  <SettingRow label="Backup retention">{backup.retention_count ?? '—'}</SettingRow>
+                  <SettingRow label="Backup interval">
+                    {backup.interval_minutes != null ? `${backup.interval_minutes} min` : '—'}
+                  </SettingRow>
+                  <SettingRow label="Backup encryption">
+                    <Flag on={backup.encryption_configured} onLabel="Configured" offLabel="Not set" />
+                  </SettingRow>
+                  <SettingRow label="Audit retention">
+                    {audit.retention_years != null ? `${audit.retention_years} years` : '—'}
+                  </SettingRow>
+                  <SettingRow label="Cold archive after">
+                    {audit.cold_archive_after_days != null
+                      ? `${audit.cold_archive_after_days} days`
+                      : '—'}
+                  </SettingRow>
+                  <SettingRow label="HTTP audit middleware">
+                    <Flag on={audit.http_middleware_enabled} />
+                  </SettingRow>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="plat-panel">
+            <h2>Deploy identity</h2>
+            <div className="list-table-wrap">
+              <table className="table" aria-label="Deploy identity">
+                <tbody>
+                  <SettingRow label="App environment">{deploy.app_env || '—'}</SettingRow>
+                  <SettingRow label="Release channel">{deploy.release_channel || '—'}</SettingRow>
+                  <SettingRow label="Build ID">{deploy.build_id || '—'}</SettingRow>
+                  <SettingRow label="Frontend URL">{deploy.frontend_url || '—'}</SettingRow>
+                </tbody>
+              </table>
+            </div>
           </div>
         </>
       )}
@@ -152,10 +330,28 @@ export default function PlatformSettingsPage() {
             <p className="muted">Change the gateway, plans, and subscriptions.</p>
           </li>
           <li>
+            <Link href="/jobs" aria-label="Open scheduled jobs">
+              Jobs
+            </Link>
+            <p className="muted">Run sync jobs and Celery workers.</p>
+          </li>
+          <li>
             <Link href="/security" aria-label="Open security settings">
               Security
             </Link>
             <p className="muted">Two-factor and passkeys for this account.</p>
+          </li>
+          <li>
+            <Link href="/platform" aria-label="Open platform health console">
+              Platform console
+            </Link>
+            <p className="muted">Tenant health, revenue, and attention queue.</p>
+          </li>
+          <li>
+            <Link href="/platform/reports" aria-label="Open platform reports">
+              Platform reports
+            </Link>
+            <p className="muted">Export summary, subscriptions, packages, and trials.</p>
           </li>
         </ul>
       </div>

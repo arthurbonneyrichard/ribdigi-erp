@@ -83,13 +83,50 @@
   word-break: break-word;
 }
 
-.inv-ui-page .cat-actions,
-.inv-ui-page td.cat-actions {
+.inv-ui-page .list-table-wrap .table,
+.inv-ui-page .cat-table-wrap .table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 560px;
   white-space: normal;
 }
 
-.inv-ui-page .cat-actions button {
-  white-space: normal;
+.inv-ui-page .cat-actions,
+.inv-ui-page td.cat-actions,
+.inv-ui-page td.col-actions {
+  width: 8rem;
+  max-width: 8rem;
+  text-align: right;
+  white-space: nowrap;
+  vertical-align: middle;
+  overflow: visible;
+}
+
+.inv-ui-page .cat-actions,
+.inv-ui-page .erp-row-actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.inv-ui-page .table th.col-num,
+.inv-ui-page .table td.col-num {
+  width: 6.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.inv-ui-page .table th.col-id,
+.inv-ui-page .table td.col-id {
+  width: 7.5rem;
+}
+
+.inv-ui-page .cat-actions button,
+.inv-ui-page .erp-row-actions button {
+  white-space: nowrap;
 }
 
 .inv-ui-settings {

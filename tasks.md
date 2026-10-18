@@ -16,7 +16,7 @@ Evidence is a command outcome or a file inspection. Prior results cited from `do
 | --- | --- | --- | --- | --- | --- | --- |
 | T-POWN-01 | P1 | Owner billing APIs for attention / manual payment / retry / restore had no UI (docs claimed they did) | Wire Needs attention on `/platform/billing` | Done | Aria-labeled list + Record/Retry/Restore + manual payment form; UI smoke + reactivate API | Attention UI + prior platform batch **56 passed**. Docs `docs/PLATFORM_OWNER_*.md` |
 | T-POWN-02 | P0 | Live gateway secrets / commercial collection | Product fail-closed COMPLETE; live secrets OPS outside matrix | Done | Mock blocked in prod; config/test/enable path; no invented revenue | Gateway + saas_billing suites; PRODUCTION_READINESS ops note |
-| T-POWN-03 | P1 | No `/platform/settings` | Read-only ops settings page + GET API | Done | Owner 200; non-owner 403; nav owner-only | `test_platform_owner_completion_r1.py` |
+| T-POWN-03 | P1 | No `/platform/settings` | Read-only ops settings (lifecycle, gateway, auth, services, backup/audit, deploy) | Done | Owner 200; non-owner 403; nav owner-only; no secrets | `test_platform_owner_completion_r1.py` |
 | T-POWN-04 | P1 | Dashboard invented MRR risk | Paid SaaS invoice totals by currency only | Done | `paid_revenue_by_currency` from status=paid | completion suite |
 | T-POWN-05 | P2 | Reports no CSV export | Export endpoint + Export CSV button | Done | CSV download path + UI aria | completion suite |
 | T-POWN-08 | P2 | Tenant list client-only search | Server `q` + industry on GET /tenants | Done | Filter matches company/slug | completion suite |

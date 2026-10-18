@@ -14,8 +14,8 @@
 
 ## What the completion suite proves
 
-- `GET /platform/settings` (owner OK; non-owner 403)
-- Platform settings page + nav (owner-only)
+- `GET /platform/settings` (owner OK; non-owner 403; secret-free auth/services/backup/audit/deploy)
+- Platform settings page + nav (owner-only; Docker Next compile verified `/platform/settings` → 200)
 - Reports CSV export + Export button
 - Dashboard `paid_revenue_by_currency` from paid invoices only
 - Tenants list `q` filter

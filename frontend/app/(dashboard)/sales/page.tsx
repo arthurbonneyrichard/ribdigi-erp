@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import FormModal from '../../../components/FormModal';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
+import RowActions, { type RowActionItem } from '../../../components/RowActions';
+import StatusChip from '../../../components/StatusChip';
 import { api, getAccessToken } from '../../../lib/api';
 import { openReceiptPrintWindow } from '../../../lib/posReceiptPrint';
 import { formatMoney, formatNumber, formatWhen, plainLabel, type FormatPrefs } from '../../../lib/format';
@@ -1096,39 +1098,90 @@ export default function Page() {
   const quoteCols = 5 + (showChannel ? 1 : 0) + (showQuoteReject ? 1 : 0);
   const orderCols = 5 + (showChannel ? 1 : 0) + (showStore ? 1 : 0) + (showReserved ? 1 : 0);
   const invoiceCols = 5 + (showChannel ? 1 : 0) + (showStore ? 1 : 0);
-  function invoicePrintControls(invoiceId: string, invoiceNumber: string, variant: 'list' | 'drawer') {
+  function printInvoice(invoiceId: string, invoiceNumber: string, variant: 'list' | 'drawer' = 'list') {
     const paper = invoicePaper;
     const fail = (err: { message?: string }) => {
       const text = err?.message || 'Print failed';
       if (variant === 'drawer') alert(text);
       else setError(text);
     };
-    const printChosen = () => {
-      const task =
-        paper === 'a4'
-          ? downloadInvoicePdf(invoiceId, invoiceNumber, 'a4')
-          : downloadInvoicePdf(invoiceId, invoiceNumber, 'thermal', paper);
-      task
-        .then(() =>
-          setMessage(
-            paper === 'a4' ? `Downloaded A4 ${invoiceNumber}` : `Downloaded ${paper} receipt ${invoiceNumber}`
-          )
+    const task =
+      paper === 'a4'
+        ? downloadInvoicePdf(invoiceId, invoiceNumber, 'a4')
+        : downloadInvoicePdf(invoiceId, invoiceNumber, 'thermal', paper);
+    task
+      .then(() =>
+        setMessage(
+          paper === 'a4' ? `Downloaded A4 ${invoiceNumber}` : `Downloaded ${paper} receipt ${invoiceNumber}`
         )
-        .catch(fail);
+      )
+      .catch(fail);
+  }
+
+  function previewInvoice(invoiceId: string, variant: 'list' | 'drawer' = 'list') {
+    const paper = invoicePaper;
+    const fail = (err: { message?: string }) => {
+      const text = err?.message || 'Print failed';
+      if (variant === 'drawer') alert(text);
+      else setError(text);
     };
-    const previewChosen = () =>
-      previewInvoicePdf(invoiceId, paper === 'a4' ? 'a4' : 'thermal', paper === '58mm' ? '58mm' : '80mm').catch(fail);
+    previewInvoicePdf(invoiceId, paper === 'a4' ? 'a4' : 'thermal', paper === '58mm' ? '58mm' : '80mm').catch(fail);
+  }
+
+  function invoicePaperBar() {
+    return (
+      <div className="sales-paper-bar">
+        <label className="print-ui-paper">
+          Paper
+          <select
+            value={invoicePaper}
+            onChange={(e) => {
+              const next = e.target.value;
+              setInvoicePaper(next === '58mm' || next === '80mm' ? next : 'a4');
+            }}
+            aria-label="Sales invoice paper size"
+          >
+            <option value="a4">A4 invoice</option>
+            <option value="80mm">80mm receipt</option>
+            <option value="58mm">58mm receipt</option>
+          </select>
+        </label>
+        <p className="print-ui-help">
+          Choose A4 for a full invoice, or 58mm or 80mm for a receipt slip. Print from the row menu uses this size.
+        </p>
+      </div>
+    );
+  }
+
+  function invoicePrintControls(invoiceId: string, invoiceNumber: string, variant: 'list' | 'drawer') {
+    if (variant === 'list') {
+      return (
+        <div className="print-ui-actions">
+          <button
+            type="button"
+            className="btn-ok"
+            aria-label={invoicePaper === 'a4' ? 'Print sales invoice A4' : 'Print sales invoice thermal'}
+            onClick={() => printInvoice(invoiceId, invoiceNumber, 'list')}
+          >
+            {invoicePaper === 'a4' ? 'Print A4' : `Print ${invoicePaper}`}
+          </button>
+          <button type="button" onClick={() => previewInvoice(invoiceId, 'list')} aria-label={`Preview sales invoice ${invoiceId}`}>
+            Preview
+          </button>
+        </div>
+      );
+    }
     return (
       <div className="print-ui-row">
         <label className="print-ui-paper">
           Paper
           <select
-            value={paper}
+            value={invoicePaper}
             onChange={(e) => {
               const next = e.target.value;
               setInvoicePaper(next === '58mm' || next === '80mm' ? next : 'a4');
             }}
-            aria-label={variant === 'drawer' ? 'Invoice paper size' : 'Sales invoice paper size'}
+            aria-label="Invoice paper size"
           >
             <option value="a4">A4 invoice</option>
             <option value="80mm">80mm receipt</option>
@@ -1136,35 +1189,17 @@ export default function Page() {
           </select>
         </label>
         <div className="print-ui-actions">
-          {variant === 'list' && paper === 'a4' ? (
-            <button type="button" className="btn-ok" aria-label="Print sales invoice A4" onClick={printChosen}>
-              Print A4 invoice
-            </button>
-          ) : null}
-          {variant === 'list' && paper !== 'a4' ? (
-            <button type="button" className="btn-ok" aria-label="Print sales invoice thermal" onClick={printChosen}>
-              {`Print ${paper} receipt`}
-            </button>
-          ) : null}
-          {variant === 'drawer' && paper === 'a4' ? (
-            <button type="button" className="btn-ok" aria-label="Print invoice A4" onClick={printChosen}>
-              Print A4 invoice
-            </button>
-          ) : null}
-          {variant === 'drawer' && paper !== 'a4' ? (
-            <button type="button" className="btn-ok" aria-label="Print invoice thermal" onClick={printChosen}>
-              {`Print ${paper} receipt`}
-            </button>
-          ) : null}
-          {variant === 'list' ? (
-            <button type="button" onClick={previewChosen} aria-label={`Preview sales invoice ${invoiceId}`}>
-              Preview
-            </button>
-          ) : (
-            <button type="button" onClick={previewChosen} aria-label="Preview invoice">
-              Preview
-            </button>
-          )}
+          <button
+            type="button"
+            className="btn-ok"
+            aria-label={invoicePaper === 'a4' ? 'Print invoice A4' : 'Print invoice thermal'}
+            onClick={() => printInvoice(invoiceId, invoiceNumber, 'drawer')}
+          >
+            {invoicePaper === 'a4' ? 'Print A4 invoice' : `Print ${invoicePaper} receipt`}
+          </button>
+          <button type="button" onClick={() => previewInvoice(invoiceId, 'drawer')} aria-label="Preview invoice">
+            Preview
+          </button>
         </div>
       </div>
     );
@@ -1933,35 +1968,40 @@ export default function Page() {
               <thead>
                 <tr>
                   <th>Name</th>
-                  <th>Phone</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th className="col-id">Phone</th>
+                  <th className="col-status">Status</th>
+                  <th className="col-actions">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {customers.map((c) => (
                   <tr key={c.id}>
                     <td>{c.name}</td>
-                    <td>{c.phone || '—'}</td>
-                    <td>{c.status || 'active'}</td>
-                    <td className="erp-row-actions">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCustomerId(c.id);
-                          setComposerOpen(false);
-                          setCustomerFormOpen(true);
-                        }}
-                      >
-                        Open
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Toggle customer active status"
-                        onClick={() => setCustomerActive((c.status || 'active') === 'inactive', c.id)}
-                      >
-                        {(c.status || 'active') === 'inactive' ? 'Activate' : 'Deactivate'}
-                      </button>
+                    <td className="col-id">{c.phone || '—'}</td>
+                    <td className="col-status"><StatusChip value={c.status || 'active'} /></td>
+                    <td className="col-actions">
+                      <RowActions
+                        label={`More actions for ${c.name}`}
+                        primaryMax={1}
+                        items={[
+                          {
+                            key: 'open',
+                            label: 'Open',
+                            onClick: () => {
+                              setCustomerId(c.id);
+                              setComposerOpen(false);
+                              setCustomerFormOpen(true);
+                            },
+                          },
+                          {
+                            key: 'toggle',
+                            label: (c.status || 'active') === 'inactive' ? 'Activate' : 'Deactivate',
+                            variant: (c.status || 'active') === 'inactive' ? 'ok' : 'danger',
+                            ariaLabel: 'Toggle customer active status',
+                            onClick: () => setCustomerActive((c.status || 'active') === 'inactive', c.id),
+                          },
+                        ]}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -1978,17 +2018,17 @@ export default function Page() {
 
       {tab === 'made' && (
         <div className="list-table-wrap">
-          <p className="print-ui-help">Choose A4 for a full invoice, or 58mm or 80mm for a receipt slip, then press Print. The file downloads so the browser can print it.</p>
+          {invoicePaperBar()}
           <table className="table">
             <thead>
               <tr>
-                <th>When</th>
-                <th>Number</th>
+                <th className="col-date">When</th>
+                <th className="col-id">Number</th>
                 <th>Customer</th>
                 <th>Where</th>
-                <th>Status</th>
-                <th>Total</th>
-                <th>Actions</th>
+                <th className="col-status">Status</th>
+                <th className="col-num">Total</th>
+                <th className="col-actions">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -2007,51 +2047,55 @@ export default function Page() {
                 const canReturn = Boolean(
                   inv && ['posted', 'sent', 'partial', 'paid', 'overdue'].includes(inv.status)
                 );
-                return (
-                <tr key={`${row.source}-${row.id}`}>
-                  <td>{formatWhen(row.when, fmt)}</td>
-                  <td>{row.number}</td>
-                  <td>{row.customer || 'Walk-in'}</td>
-                  <td>{saleWords(row.source)}</td>
-                  <td>{saleWords(row.status)}</td>
-                  <td>{formatMoney(row.total, fmt, row.currency)}</td>
-                  <td className="erp-row-actions">
-                    {invoiceId ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (inv) {
-                            setSelected(inv);
-                            return;
-                          }
-                          api(`/sales/invoices/${invoiceId}`)
-                            .then((r) => setSelected(r.data))
-                            .catch((err) => setError(err.message));
-                        }}
-                        aria-label={`View sales invoice ${invoiceId}`}
-                      >
-                        View
-                      </button>
-                    ) : null}
-                    {canPrint && invoiceId ? invoicePrintControls(invoiceId, invoiceNumber, 'list') : null}
-                    <button
-                      type="button"
-                      onClick={() => reprintSale(row)}
-                      disabled={reprintingId === row.id}
-                      aria-label={`Reprint sale ${row.number || row.id}`}
-                    >
-                      {reprintingId === row.id ? 'Reprint…' : 'Reprint'}
-                    </button>
-                    {canEmail && invoiceId ? (
-                      <button
-                        type="button"
-                        onClick={() => act(`/sales/invoices/${invoiceId}/send`, 'Invoice emailed')}
-                        aria-label={inv?.emailed_at ? 'Resend invoice email' : 'Email invoice'}
-                      >
-                        {inv?.emailed_at ? 'Resend email' : 'Email'}
-                      </button>
-                    ) : null}
-                    {canPay && inv ? (
+                const madeActions: RowActionItem[] = [
+                  {
+                    key: 'view',
+                    label: 'View',
+                    hidden: !invoiceId,
+                    ariaLabel: `View sales invoice ${invoiceId}`,
+                    onClick: () => {
+                      if (inv) {
+                        setSelected(inv);
+                        return;
+                      }
+                      api(`/sales/invoices/${invoiceId}`)
+                        .then((r) => setSelected(r.data))
+                        .catch((err) => setError(err.message));
+                    },
+                  },
+                  {
+                    key: 'print',
+                    label: invoicePaper === 'a4' ? 'Print A4' : `Print ${invoicePaper}`,
+                    variant: 'ok',
+                    hidden: !(canPrint && invoiceId),
+                    ariaLabel: invoicePaper === 'a4' ? 'Print sales invoice A4' : 'Print sales invoice thermal',
+                    onClick: () => printInvoice(invoiceId, invoiceNumber, 'list'),
+                  },
+                  {
+                    key: 'preview',
+                    label: 'Preview',
+                    hidden: !(canPrint && invoiceId),
+                    ariaLabel: `Preview sales invoice ${invoiceId}`,
+                    onClick: () => previewInvoice(invoiceId, 'list'),
+                  },
+                  {
+                    key: 'reprint',
+                    label: reprintingId === row.id ? 'Reprint…' : 'Reprint',
+                    disabled: reprintingId === row.id,
+                    ariaLabel: `Reprint sale ${row.number || row.id}`,
+                    onClick: () => reprintSale(row),
+                  },
+                  {
+                    key: 'email',
+                    label: inv?.emailed_at ? 'Resend email' : 'Email',
+                    hidden: !(canEmail && invoiceId),
+                    ariaLabel: inv?.emailed_at ? 'Resend invoice email' : 'Email invoice',
+                    onClick: () => act(`/sales/invoices/${invoiceId}/send`, 'Invoice emailed'),
+                  },
+                  {
+                    key: 'pay',
+                    hidden: !canPay || !inv,
+                    node: inv ? (
                       <>
                         <AmountField
                           inline
@@ -2072,16 +2116,26 @@ export default function Page() {
                           Pay
                         </button>
                       </>
-                    ) : null}
-                    {canReturn && inv ? (
-                      <button
-                        type="button"
-                        onClick={() => openReturnForInvoice(inv)}
-                        aria-label={`Create sales return ${inv.id}`}
-                      >
-                        Return
-                      </button>
-                    ) : null}
+                    ) : null,
+                  },
+                  {
+                    key: 'return',
+                    label: 'Return',
+                    hidden: !canReturn || !inv,
+                    ariaLabel: `Create sales return ${inv?.id || ''}`,
+                    onClick: () => inv && openReturnForInvoice(inv),
+                  },
+                ];
+                return (
+                <tr key={`${row.source}-${row.id}`}>
+                  <td className="col-date">{formatWhen(row.when, fmt)}</td>
+                  <td className="col-id">{row.number}</td>
+                  <td>{row.customer || 'Walk-in'}</td>
+                  <td>{saleWords(row.source)}</td>
+                  <td className="col-status"><StatusChip value={row.status} label={saleWords(row.status)} /></td>
+                  <td className="col-num">{formatMoney(row.total, fmt, row.currency)}</td>
+                  <td className="col-actions">
+                    <RowActions label={`More actions for ${row.number || row.id}`} primaryMax={1} items={madeActions} />
                   </td>
                 </tr>
                 );
@@ -2162,89 +2216,89 @@ export default function Page() {
         <table className="table">
           <thead>
             <tr>
-              <th>Number</th>
+              <th className="col-id">Number</th>
               {showChannel ? <th>Channel</th> : null}
-              <th>Status</th>
-              <th>Total</th>
-              <th>Valid until</th>
-              {showQuoteReject ? <th>Reject reason</th> : null}
-              <th>Actions</th>
+              <th className="col-status">Status</th>
+              <th className="col-num">Total</th>
+              <th className="col-date">Valid until</th>
+              {showQuoteReject ? <th className="col-text">Reject reason</th> : null}
+              <th className="col-actions">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {managedQuotations.map((q) => (
+            {managedQuotations.map((q) => {
+              const quoteActions: RowActionItem[] = [
+                {
+                  key: 'view',
+                  label: 'View',
+                  ariaLabel: `View quotation ${q.id}`,
+                  onClick: () => setSelected(q),
+                },
+                {
+                  key: 'email',
+                  label: 'Email',
+                  hidden: q.status !== 'draft',
+                  ariaLabel: 'Email quotation',
+                  onClick: () => act(`/sales/quotations/${q.id}/send`, 'Quotation emailed'),
+                },
+                {
+                  key: 'resend',
+                  label: 'Resend',
+                  hidden: q.status !== 'sent',
+                  ariaLabel: 'Resend quotation email',
+                  onClick: () => act(`/sales/quotations/${q.id}/send`, 'Quotation re-emailed'),
+                },
+                {
+                  key: 'accept',
+                  label: 'Accept',
+                  variant: 'ok',
+                  hidden: !['draft', 'sent'].includes(q.status),
+                  ariaLabel: `Accept quotation ${q.id}`,
+                  onClick: () => act(`/sales/quotations/${q.id}/accept`, 'Accepted'),
+                },
+                {
+                  key: 'reject',
+                  label: 'Reject',
+                  variant: 'danger',
+                  hidden: !['draft', 'sent'].includes(q.status),
+                  disabled: !quoteRejectReason.trim(),
+                  title: quoteRejectReason.trim()
+                    ? 'Reject quotation'
+                    : 'Enter a reject reason before rejecting',
+                  ariaLabel: `Reject quotation ${q.id}`,
+                  onClick: () => act(`/sales/quotations/${q.id}/reject`, 'Rejected'),
+                },
+                {
+                  key: 'to-order',
+                  label: '→ Order',
+                  variant: 'ok',
+                  hidden: !['draft', 'sent', 'accepted'].includes(q.status),
+                  ariaLabel: `Convert quotation to order ${q.id}`,
+                  onClick: () => act(`/sales/quotations/${q.id}/convert-order`, 'Order'),
+                },
+                {
+                  key: 'to-invoice',
+                  label: '→ Invoice',
+                  variant: 'ok',
+                  hidden: !['draft', 'sent', 'accepted'].includes(q.status),
+                  ariaLabel: `Convert quotation to invoice ${q.id}`,
+                  onClick: () => act(`/sales/quotations/${q.id}/convert-invoice`, 'Invoice'),
+                },
+              ];
+              return (
               <tr key={q.id}>
-                <td>{q.quotation_number}</td>
+                <td className="col-id">{q.quotation_number}</td>
                 {showChannel ? <td>{channelLabel(q.sales_channel)}</td> : null}
-                <td>{saleWords(q.status)}</td>
-                <td>{formatMoney(q.total_amount, fmt, q.currency)}</td>
-                <td>{q.valid_until ? formatWhen(q.valid_until, fmt) : '—'}</td>
-                {showQuoteReject ? <td>{q.rejection_reason || '—'}</td> : null}
-                <td className="erp-row-actions">
-                  <button onClick={() => setSelected(q)} aria-label={`View quotation ${q.id}`}>View</button>
-                  {q.status === 'draft' && (
-                    <button
-                      onClick={() => act(`/sales/quotations/${q.id}/send`, 'Quotation emailed')}
-                      aria-label="Email quotation"
-                    >
-                      Email
-                    </button>
-                  )}
-                  {q.status === 'sent' && (
-                    <button
-                      onClick={() => act(`/sales/quotations/${q.id}/send`, 'Quotation re-emailed')}
-                      aria-label="Resend quotation email"
-                    >
-                      Resend
-                    </button>
-                  )}
-                  {['draft', 'sent'].includes(q.status) && (
-                    <>
-                      <button
-                        className="btn-ok"
-                        onClick={() => act(`/sales/quotations/${q.id}/accept`, 'Accepted')}
-                        aria-label={`Accept quotation ${q.id}`}
-                      >
-                        Accept
-                      </button>
-                      <button
-                        className="btn-danger"
-                        onClick={() => act(`/sales/quotations/${q.id}/reject`, 'Rejected')}
-                        aria-label={`Reject quotation ${q.id}`}
-                        disabled={!quoteRejectReason.trim()}
-                        title={
-                          quoteRejectReason.trim()
-                            ? 'Reject quotation'
-                            : 'Enter a reject reason before rejecting'
-                        }
-                      >
-                        Reject
-                      </button>
-                    </>
-                  )}
-                  {['draft', 'sent', 'accepted'].includes(q.status) && (
-                    <>
-                      <button
-                        type="button"
-                        className="btn-ok"
-                        onClick={() => act(`/sales/quotations/${q.id}/convert-order`, 'Order')}
-                        aria-label={`Convert quotation to order ${q.id}`}
-                      >
-                        → Order
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-ok"
-                        onClick={() => act(`/sales/quotations/${q.id}/convert-invoice`, 'Invoice')}
-                        aria-label={`Convert quotation to invoice ${q.id}`}
-                      >
-                        → Invoice
-                      </button>
-                    </>
-                  )}
+                <td className="col-status"><StatusChip value={q.status} label={saleWords(q.status)} /></td>
+                <td className="col-num">{formatMoney(q.total_amount, fmt, q.currency)}</td>
+                <td className="col-date">{q.valid_until ? formatWhen(q.valid_until, fmt) : '—'}</td>
+                {showQuoteReject ? <td className="col-text">{q.rejection_reason || '—'}</td> : null}
+                <td className="col-actions">
+                  <RowActions label={`More actions for ${q.quotation_number || q.id}`} primaryMax={1} items={quoteActions} />
                 </td>
               </tr>
-            ))}
+              );
+            })}
             {managedQuotations.length === 0 && (
               <tr>
                 <td colSpan={quoteCols} className="muted">
@@ -2314,114 +2368,111 @@ export default function Page() {
           <table className="table">
           <thead>
             <tr>
-              <th>Number</th>
+              <th className="col-id">Number</th>
               {showChannel ? <th>Channel</th> : null}
-              <th>Status</th>
+              <th className="col-status">Status</th>
               {showStore ? <th>Store</th> : null}
-              {showReserved ? <th>Reserved</th> : null}
-              <th>Delivery</th>
-              <th>Total</th>
-              <th>Actions</th>
+              {showReserved ? <th className="col-num">Reserved</th> : null}
+              <th className="col-text">Delivery</th>
+              <th className="col-num">Total</th>
+              <th className="col-actions">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {managedOrders.map((o) => (
+            {managedOrders.map((o) => {
+              const orderActions: RowActionItem[] = [
+                {
+                  key: 'view',
+                  label: 'View',
+                  ariaLabel: `View sales order ${o.id}`,
+                  onClick: () => setSelected(o),
+                },
+                {
+                  key: 'confirm',
+                  label: 'Confirm',
+                  variant: 'ok',
+                  hidden: o.status !== 'draft',
+                  ariaLabel: `Confirm sales order ${o.id}`,
+                  onClick: () =>
+                    act(
+                      `/sales/orders/${o.id}/confirm`,
+                      'Confirmed',
+                      storeId.trim() || o.store_id
+                        ? {
+                            store_id: (storeId.trim() || o.store_id) as string,
+                            delivery_date: deliveryDate.trim() || null,
+                            ...(deliveryAddress.trim()
+                              ? { delivery_address: deliveryAddress.trim() }
+                              : {}),
+                          }
+                        : {}
+                    ),
+                },
+                {
+                  key: 'process',
+                  label: 'Process',
+                  variant: 'ok',
+                  hidden: !o.can_process,
+                  ariaLabel: `Process sales order ${o.id}`,
+                  onClick: () => act(`/sales/orders/${o.id}/process`, 'Processing'),
+                },
+                {
+                  key: 'ship',
+                  label: 'Ship',
+                  variant: 'ok',
+                  hidden: !o.can_ship,
+                  ariaLabel: `Ship sales order ${o.id}`,
+                  onClick: () => act(`/sales/orders/${o.id}/ship`, 'Shipped'),
+                },
+                {
+                  key: 'deliver',
+                  label: 'Deliver',
+                  variant: 'ok',
+                  hidden: !o.can_deliver,
+                  ariaLabel: `Deliver sales order ${o.id}`,
+                  onClick: () => act(`/sales/orders/${o.id}/deliver`, 'Delivered'),
+                },
+                {
+                  key: 'to-invoice',
+                  label: '→ Invoice',
+                  variant: 'ok',
+                  hidden: !o.can_invoice,
+                  ariaLabel: `Convert sales order to invoice ${o.id}`,
+                  onClick: () => act(`/sales/orders/${o.id}/convert-invoice`, 'Invoice'),
+                },
+                {
+                  key: 'cancel',
+                  label: 'Cancel',
+                  variant: 'danger',
+                  hidden: !o.can_cancel,
+                  ariaLabel: `Cancel sales order ${o.id}`,
+                  onClick: () => act(`/sales/orders/${o.id}/cancel`, 'Cancelled'),
+                },
+              ];
+              return (
               <tr key={o.id}>
-                <td>{o.order_number}</td>
+                <td className="col-id">{o.order_number}</td>
                 {showChannel ? <td>{channelLabel(o.sales_channel)}</td> : null}
-                <td>{saleWords(o.status)}</td>
+                <td className="col-status"><StatusChip value={o.status} label={saleWords(o.status)} /></td>
                 {showStore ? <td>{storeName(o.store_id) || '—'}</td> : null}
                 {showReserved ? (
-                <td>
+                <td className="col-num">
                   {o.reservation_status
                     ? `${formatNumber(o.reserved_qty ?? 0, fmt)} ${saleWords(o.reservation_status)}`
                     : '—'}
                 </td>
                 ) : null}
-                <td>
+                <td className="col-text">
                   {o.delivery_date ? formatWhen(o.delivery_date, fmt) : '—'}
                   {o.delivery_address ? ` · ${o.delivery_address}` : ''}
                 </td>
-                <td>{formatMoney(o.total_amount, fmt, o.currency)}</td>
-                <td className="erp-row-actions">
-                  <button onClick={() => setSelected(o)} aria-label={`View sales order ${o.id}`}>View</button>
-                  {o.status === 'draft' && (
-                    <button
-                      type="button"
-                      className="btn-ok"
-                      onClick={() =>
-                        act(
-                          `/sales/orders/${o.id}/confirm`,
-                          'Confirmed',
-                          storeId.trim() || o.store_id
-                            ? {
-                                store_id: (storeId.trim() || o.store_id) as string,
-                                delivery_date: deliveryDate.trim() || null,
-                                // Omit blank delivery so Confirm does not 422 (AddressValue).
-                                ...(deliveryAddress.trim()
-                                  ? { delivery_address: deliveryAddress.trim() }
-                                  : {}),
-                              }
-                            : {}
-                        )
-                      }
-                      aria-label={`Confirm sales order ${o.id}`}
-                    >
-                      Confirm
-                    </button>
-                  )}
-                  {o.can_process && (
-                    <button
-                      type="button"
-                      className="btn-ok"
-                      onClick={() => act(`/sales/orders/${o.id}/process`, 'Processing')}
-                      aria-label={`Process sales order ${o.id}`}
-                    >
-                      Process
-                    </button>
-                  )}
-                  {o.can_ship && (
-                    <button
-                      type="button"
-                      className="btn-ok"
-                      onClick={() => act(`/sales/orders/${o.id}/ship`, 'Shipped')}
-                      aria-label={`Ship sales order ${o.id}`}
-                    >
-                      Ship
-                    </button>
-                  )}
-                  {o.can_deliver && (
-                    <button
-                      type="button"
-                      className="btn-ok"
-                      onClick={() => act(`/sales/orders/${o.id}/deliver`, 'Delivered')}
-                      aria-label={`Deliver sales order ${o.id}`}
-                    >
-                      Deliver
-                    </button>
-                  )}
-                  {o.can_invoice && (
-                    <button
-                      type="button"
-                      className="btn-ok"
-                      onClick={() => act(`/sales/orders/${o.id}/convert-invoice`, 'Invoice')}
-                      aria-label={`Convert sales order to invoice ${o.id}`}
-                    >
-                      → Invoice
-                    </button>
-                  )}
-                  {o.can_cancel && (
-                    <button
-                      className="btn-danger"
-                      onClick={() => act(`/sales/orders/${o.id}/cancel`, 'Cancelled')}
-                      aria-label={`Cancel sales order ${o.id}`}
-                    >
-                      Cancel
-                    </button>
-                  )}
+                <td className="col-num">{formatMoney(o.total_amount, fmt, o.currency)}</td>
+                <td className="col-actions">
+                  <RowActions label={`More actions for ${o.order_number || o.id}`} primaryMax={1} items={orderActions} />
                 </td>
               </tr>
-            ))}
+              );
+            })}
             {managedOrders.length === 0 && (
               <tr>
                 <td colSpan={orderCols} className="muted">
@@ -2508,83 +2559,89 @@ export default function Page() {
           <option value="cancelled">Cancelled only</option>
         </select>
         <div className="list-table-wrap">
-        <p className="print-ui-help">Choose A4 for a full invoice, or 58mm or 80mm for a receipt slip, then press Print. The file downloads so the browser can print it.</p>
+        {invoicePaperBar()}
         <table className="table">
           <thead>
             <tr>
-              <th>Number</th>
+              <th className="col-id">Number</th>
               {showChannel ? <th>Channel</th> : null}
-              <th>Status</th>
+              <th className="col-status">Status</th>
               {showStore ? <th>Store</th> : null}
-              <th>Total</th>
-              <th>Paid</th>
-              <th>Actions</th>
+              <th className="col-num">Total</th>
+              <th className="col-num">Paid</th>
+              <th className="col-actions">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {managedInvoices.map((inv) => (
-              <tr key={inv.id}>
-                <td>{inv.invoice_number}</td>
-                {showChannel ? <td>{channelLabel(inv.sales_channel)}</td> : null}
-                <td>{saleWords(inv.status)}</td>
-                {showStore ? <td>{storeName(inv.store_id) || '—'}</td> : null}
-                <td>{formatMoney(inv.total_amount, fmt, inv.currency)}</td>
-                <td>{formatMoney(inv.paid_amount, fmt, inv.currency)}</td>
-                <td className="erp-row-actions">
-                  <button onClick={() => setSelected(inv)} aria-label={`View sales invoice ${inv.id}`}>View</button>
-                  {inv.status === 'draft' && (
-                    <>
-                      <button
-                        type="button"
-                        className="btn-ok"
-                        onClick={() => postInvoice(inv)}
-                        aria-label={`Post sales invoice ${inv.id}`}
-                      >
-                        Post
-                      </button>
-                      <button
-                        className="btn-danger"
-                        onClick={() => act(`/sales/invoices/${inv.id}/cancel`, 'Cancelled')}
-                        aria-label={`Cancel sales invoice ${inv.id}`}
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  )}
-                  {inv.can_print && (
-                    <>
-                      {invoicePrintControls(inv.id, inv.invoice_number, 'list')}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          reprintSale({
-                            id: inv.id,
-                            source: 'invoice',
-                            invoice_id: inv.id,
-                            number: inv.invoice_number,
-                          })
-                        }
-                        disabled={reprintingId === inv.id}
-                        aria-label={`Reprint sales invoice ${inv.id}`}
-                      >
-                        {reprintingId === inv.id ? 'Reprint…' : 'Reprint'}
-                      </button>
-                    </>
-                  )}
-                  {inv.can_email && (
-                    <button
-                      onClick={() => act(`/sales/invoices/${inv.id}/send`, 'Invoice emailed')}
-                      aria-label={inv.emailed_at ? 'Resend invoice email' : 'Email invoice'}
-                    >
-                      {inv.emailed_at ? 'Resend email' : 'Email'}
-                    </button>
-                  )}
-                  {inv.status === 'overdue' && (
-                    <span className="muted" style={{ alignSelf: 'center' }}>
-                      {inv.days_overdue} days overdue
-                    </span>
-                  )}
-                  {['posted', 'sent', 'partial', 'overdue'].includes(inv.status) && (
+            {managedInvoices.map((inv) => {
+              const invoiceActions: RowActionItem[] = [
+                {
+                  key: 'view',
+                  label: 'View',
+                  ariaLabel: `View sales invoice ${inv.id}`,
+                  onClick: () => setSelected(inv),
+                },
+                {
+                  key: 'post',
+                  label: 'Post',
+                  variant: 'ok',
+                  hidden: inv.status !== 'draft',
+                  ariaLabel: `Post sales invoice ${inv.id}`,
+                  onClick: () => postInvoice(inv),
+                },
+                {
+                  key: 'cancel',
+                  label: 'Cancel',
+                  variant: 'danger',
+                  hidden: inv.status !== 'draft',
+                  ariaLabel: `Cancel sales invoice ${inv.id}`,
+                  onClick: () => act(`/sales/invoices/${inv.id}/cancel`, 'Cancelled'),
+                },
+                {
+                  key: 'print',
+                  label: invoicePaper === 'a4' ? 'Print A4' : `Print ${invoicePaper}`,
+                  variant: 'ok',
+                  hidden: !inv.can_print,
+                  ariaLabel: invoicePaper === 'a4' ? 'Print sales invoice A4' : 'Print sales invoice thermal',
+                  onClick: () => printInvoice(inv.id, inv.invoice_number, 'list'),
+                },
+                {
+                  key: 'preview',
+                  label: 'Preview',
+                  hidden: !inv.can_print,
+                  ariaLabel: `Preview sales invoice ${inv.id}`,
+                  onClick: () => previewInvoice(inv.id, 'list'),
+                },
+                {
+                  key: 'reprint',
+                  label: reprintingId === inv.id ? 'Reprint…' : 'Reprint',
+                  hidden: !inv.can_print,
+                  disabled: reprintingId === inv.id,
+                  ariaLabel: `Reprint sales invoice ${inv.id}`,
+                  onClick: () =>
+                    reprintSale({
+                      id: inv.id,
+                      source: 'invoice',
+                      invoice_id: inv.id,
+                      number: inv.invoice_number,
+                    }),
+                },
+                {
+                  key: 'email',
+                  label: inv.emailed_at ? 'Resend email' : 'Email',
+                  hidden: !inv.can_email,
+                  ariaLabel: inv.emailed_at ? 'Resend invoice email' : 'Email invoice',
+                  onClick: () => act(`/sales/invoices/${inv.id}/send`, 'Invoice emailed'),
+                },
+                {
+                  key: 'overdue',
+                  hidden: inv.status !== 'overdue',
+                  node: <span className="muted">{inv.days_overdue} days overdue</span>,
+                },
+                {
+                  key: 'pay',
+                  hidden: !['posted', 'sent', 'partial', 'overdue'].includes(inv.status),
+                  node: (
                     <>
                       <AmountField
                         inline
@@ -2598,25 +2655,37 @@ export default function Page() {
                         aria-label={`Sales invoice pay amount ${inv.invoice_number || inv.id}`}
                       />
                       <button
+                        type="button"
                         onClick={() => pay(inv, payAmounts[inv.id] || '')}
                         aria-label={`Pay sales invoice ${inv.id}`}
                       >
                         Pay
                       </button>
                     </>
-                  )}
-                  {['posted', 'sent', 'partial', 'paid', 'overdue'].includes(inv.status) && (
-                    <button
-                      type="button"
-                      onClick={() => openReturnForInvoice(inv)}
-                      aria-label={`Create sales return ${inv.id}`}
-                    >
-                      Return
-                    </button>
-                  )}
+                  ),
+                },
+                {
+                  key: 'return',
+                  label: 'Return',
+                  hidden: !['posted', 'sent', 'partial', 'paid', 'overdue'].includes(inv.status),
+                  ariaLabel: `Create sales return ${inv.id}`,
+                  onClick: () => openReturnForInvoice(inv),
+                },
+              ];
+              return (
+              <tr key={inv.id}>
+                <td className="col-id">{inv.invoice_number}</td>
+                {showChannel ? <td>{channelLabel(inv.sales_channel)}</td> : null}
+                <td className="col-status"><StatusChip value={inv.status} label={saleWords(inv.status)} /></td>
+                {showStore ? <td>{storeName(inv.store_id) || '—'}</td> : null}
+                <td className="col-num">{formatMoney(inv.total_amount, fmt, inv.currency)}</td>
+                <td className="col-num">{formatMoney(inv.paid_amount, fmt, inv.currency)}</td>
+                <td className="col-actions">
+                  <RowActions label={`More actions for ${inv.invoice_number || inv.id}`} primaryMax={1} items={invoiceActions} />
                 </td>
               </tr>
-            ))}
+              );
+            })}
             {managedInvoices.length === 0 && (
               <tr>
                 <td colSpan={invoiceCols} className="muted">
@@ -2681,25 +2750,25 @@ export default function Page() {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Code</th>
+                  <th className="col-id">Code</th>
                   <th>Name</th>
-                  <th>Type</th>
-                  <th>Amount</th>
-                  <th>Min spend</th>
-                  <th>Active</th>
-                  <th>Used</th>
+                  <th className="col-status">Type</th>
+                  <th className="col-num">Amount</th>
+                  <th className="col-num">Min spend</th>
+                  <th className="col-status">Active</th>
+                  <th className="col-num">Used</th>
                 </tr>
               </thead>
               <tbody>
                 {coupons.map((c) => (
                   <tr key={c.id}>
-                    <td>{c.code}</td>
+                    <td className="col-id">{c.code}</td>
                     <td>{c.name}</td>
-                    <td>{saleWords(c.discount_type)}</td>
-                    <td>{c.discount_type === 'percent' ? `${formatNumber(c.amount, fmt)}%` : formatMoney(c.amount, fmt)}</td>
-                    <td>{formatMoney(c.min_spend, fmt)}</td>
-                    <td>{c.is_active ? 'Yes' : 'No'}</td>
-                    <td>{c.redemption_count ?? 0}</td>
+                    <td className="col-status"><StatusChip value={c.discount_type} label={saleWords(c.discount_type)} /></td>
+                    <td className="col-num">{c.discount_type === 'percent' ? `${formatNumber(c.amount, fmt)}%` : formatMoney(c.amount, fmt)}</td>
+                    <td className="col-num">{formatMoney(c.min_spend, fmt)}</td>
+                    <td className="col-status"><StatusChip value={c.is_active ? 'active' : 'inactive'} label={c.is_active ? 'Yes' : 'No'} /></td>
+                    <td className="col-num">{c.redemption_count ?? 0}</td>
                   </tr>
                 ))}
                 {coupons.length === 0 && (
@@ -2896,68 +2965,73 @@ export default function Page() {
         <table className="table">
           <thead>
             <tr>
-              <th>Number</th>
-              <th>Credit note</th>
-              <th>Status</th>
+              <th className="col-id">Number</th>
+              <th className="col-id">Credit note</th>
+              <th className="col-status">Status</th>
               <th>Settlement</th>
-              <th>Reason</th>
-              <th>Total</th>
-              <th>Actions</th>
+              <th className="col-status">Reason</th>
+              <th className="col-num">Total</th>
+              <th className="col-actions">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {managedReturns.map((r) => (
+            {managedReturns.map((r) => {
+              const returnActions: RowActionItem[] = [
+                {
+                  key: 'view',
+                  label: 'View',
+                  ariaLabel: `View sales return ${r.id}`,
+                  onClick: () => setSelected(r),
+                },
+                {
+                  key: 'post-credit',
+                  label: 'Post credit',
+                  variant: 'ok',
+                  hidden: r.status !== 'draft',
+                  ariaLabel: `Post sales return credit ${r.id}`,
+                  onClick: () =>
+                    act(`/sales/returns/${r.id}/post`, 'Posted (credit)', {
+                      settlement_method: 'adjust',
+                    }),
+                },
+                {
+                  key: 'post-refund',
+                  label: 'Post + refund',
+                  variant: 'ok',
+                  hidden: r.status !== 'draft',
+                  ariaLabel: `Post sales return refund ${r.id}`,
+                  onClick: () =>
+                    act(`/sales/returns/${r.id}/post`, 'Posted (refund)', {
+                      settlement_method: 'refund',
+                      payment_method: 'cash',
+                    }),
+                },
+                {
+                  key: 'cancel',
+                  label: 'Cancel',
+                  variant: 'danger',
+                  hidden: r.status !== 'draft',
+                  ariaLabel: `Cancel sales return ${r.id}`,
+                  onClick: () => act(`/sales/returns/${r.id}/cancel`, 'Cancelled'),
+                },
+              ];
+              return (
               <tr key={r.id}>
-                <td>{r.return_number}</td>
-                <td>{r.credit_note_number || '—'}</td>
-                <td>{saleWords(r.status)}</td>
+                <td className="col-id">{r.return_number}</td>
+                <td className="col-id">{r.credit_note_number || '—'}</td>
+                <td className="col-status"><StatusChip value={r.status} label={saleWords(r.status)} /></td>
                 <td>
                   {r.settlement_method ? saleWords(r.settlement_method) : '—'}
                   {r.refunded_amount > 0 ? ` · ${formatMoney(r.refunded_amount, fmt, r.currency)}` : ''}
                 </td>
-                <td>{saleWords(r.reason)}</td>
-                <td>{formatMoney(r.total_amount, fmt, r.currency)}</td>
-                <td className="erp-row-actions">
-                  <button onClick={() => setSelected(r)} aria-label={`View sales return ${r.id}`}>View</button>
-                  {r.status === 'draft' && (
-                    <>
-                      <button
-                        type="button"
-                        className="btn-ok"
-                        aria-label={`Post sales return credit ${r.id}`}
-                        onClick={() =>
-                          act(`/sales/returns/${r.id}/post`, 'Posted (credit)', {
-                            settlement_method: 'adjust',
-                          })
-                        }
-                      >
-                        Post credit
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-ok"
-                        aria-label={`Post sales return refund ${r.id}`}
-                        onClick={() =>
-                          act(`/sales/returns/${r.id}/post`, 'Posted (refund)', {
-                            settlement_method: 'refund',
-                            payment_method: 'cash',
-                          })
-                        }
-                      >
-                        Post + refund
-                      </button>
-                      <button
-                        className="btn-danger"
-                        onClick={() => act(`/sales/returns/${r.id}/cancel`, 'Cancelled')}
-                        aria-label={`Cancel sales return ${r.id}`}
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  )}
+                <td className="col-status">{saleWords(r.reason)}</td>
+                <td className="col-num">{formatMoney(r.total_amount, fmt, r.currency)}</td>
+                <td className="col-actions">
+                  <RowActions label={`More actions for ${r.return_number || r.id}`} primaryMax={1} items={returnActions} />
                 </td>
               </tr>
-            ))}
+              );
+            })}
             {managedReturns.length === 0 && (
               <tr>
                 <td colSpan={7} className="muted">
@@ -3019,19 +3093,20 @@ export default function Page() {
               {selected.delivery_note_number ? ` · Delivery note ${selected.delivery_note_number}` : ''}
             </p>
           ) : null}
+          <div className="list-table-wrap">
           <table className="table">
             <thead>
               <tr>
                 <th>Product</th>
-                <th>SKU</th>
-                <th>Qty</th>
-                {showFilled ? <th>Filled</th> : null}
-                <th>Price</th>
-                <th>Tax</th>
-                <th>Discount</th>
-                {showCondition ? <th>Condition</th> : null}
-                <th>Tax amount</th>
-                <th>Line total</th>
+                <th className="col-id">SKU</th>
+                <th className="col-num">Qty</th>
+                {showFilled ? <th className="col-num">Filled</th> : null}
+                <th className="col-num">Price</th>
+                <th className="col-num">Tax</th>
+                <th className="col-num">Discount</th>
+                {showCondition ? <th className="col-status">Condition</th> : null}
+                <th className="col-num">Tax amount</th>
+                <th className="col-num">Line total</th>
               </tr>
             </thead>
             <tbody>
@@ -3039,21 +3114,21 @@ export default function Page() {
                 const prod = products.find((p) => p.id === it.product_id);
                 return (
                 <tr key={it.id}>
-                  <td>
+                  <td className="col-text">
                     {prod?.name || 'Product'}
                     {it.is_reverse_charge ? ' · Reverse charge' : ''}
                   </td>
-                  <td>{prod?.sku || '—'}</td>
-                  <td>{formatNumber(it.quantity, fmt)}</td>
-                  {showFilled ? <td>{it.qty_fulfilled != null ? formatNumber(it.qty_fulfilled, fmt) : '—'}</td> : null}
-                  <td>{formatMoney(it.unit_price, fmt, selected?.currency)}</td>
-                  <td>{it.tax_rate != null ? `${formatNumber(it.tax_rate, fmt)}%` : '—'}</td>
-                  <td>
+                  <td className="col-id">{prod?.sku || '—'}</td>
+                  <td className="col-num">{formatNumber(it.quantity, fmt)}</td>
+                  {showFilled ? <td className="col-num">{it.qty_fulfilled != null ? formatNumber(it.qty_fulfilled, fmt) : '—'}</td> : null}
+                  <td className="col-num">{formatMoney(it.unit_price, fmt, selected?.currency)}</td>
+                  <td className="col-num">{it.tax_rate != null ? `${formatNumber(it.tax_rate, fmt)}%` : '—'}</td>
+                  <td className="col-num">
                     {it.discount_type === 'percent' ? formatNumber(it.discount ?? 0, fmt) : formatMoney(it.discount ?? 0, fmt, selected?.currency)}
                     {it.discount_type === 'percent' ? ` (${formatNumber(it.discount_percent, fmt)}%)` : ''}
                   </td>
-                  {showCondition ? <td>{it.condition ? saleWords(it.condition) : '—'}</td> : null}
-                  <td>
+                  {showCondition ? <td className="col-status">{it.condition ? saleWords(it.condition) : '—'}</td> : null}
+                  <td className="col-num">
                     {formatMoney(it.line_tax ?? 0, fmt, selected?.currency)}
                     {(it.tax_components || []).length
                       ? ` (${(it.tax_components || [])
@@ -3061,12 +3136,13 @@ export default function Page() {
                           .join(', ')})`
                       : ''}
                   </td>
-                  <td>{formatMoney(it.line_total, fmt, selected?.currency)}</td>
+                  <td className="col-num">{formatMoney(it.line_total, fmt, selected?.currency)}</td>
                 </tr>
                 );
               })}
             </tbody>
           </table>
+          </div>
           {selected.order_number && selected.can_fulfill ? (
             <div style={{ marginTop: 12 }}>
               <h4 style={{ margin: '8px 0' }}>Partial fill</h4>

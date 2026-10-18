@@ -64,15 +64,70 @@
   -webkit-overflow-scrolling: touch;
 }
 
-.sales-ui-page .table {
-  min-width: 640px;
+.sales-ui-page .list-table-wrap .table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 560px;
+  white-space: normal;
 }
 
 .sales-ui-page .erp-row-actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  white-space: nowrap;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.sales-ui-page td.col-actions,
+.sales-ui-page td.erp-row-actions {
+  width: 8rem;
+  max-width: 8rem;
+  text-align: right;
+  white-space: nowrap;
+  vertical-align: middle;
+  overflow: visible;
+}
+
+.sales-ui-page .table th.col-num,
+.sales-ui-page .table td.col-num {
+  width: 6.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sales-ui-page .table th.col-status,
+.sales-ui-page .table td.col-status {
+  width: 6.75rem;
+  white-space: nowrap;
+}
+
+.sales-ui-page .table th.col-text,
+.sales-ui-page .table td.col-text {
+  white-space: normal;
+  overflow: visible;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.sales-ui-page .table th.col-id,
+.sales-ui-page .table td.col-id {
+  width: 7.5rem;
+}
+
+.sales-ui-page .table th.col-date,
+.sales-ui-page .table td.col-date {
+  width: 8rem;
+}
+
+.sales-ui-page .sales-paper-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  white-space: normal;
+  align-items: flex-end;
+  gap: 10px 14px;
+  margin: 0 0 10px;
 }
 
 .sales-ui-page .card,
@@ -196,13 +251,13 @@
   }
 
   .sales-ui-page .erp-row-actions {
-    flex-wrap: wrap;
-    justify-content: flex-start;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
   }
 
   .sales-ui-page .erp-row-actions button {
     width: auto;
-    max-width: 100%;
-    min-height: 40px;
+    max-width: none;
+    min-height: 36px;
   }
 }

@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import FormModal from '../../../components/FormModal';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import AttachmentPreview from '../../../components/AttachmentPreview';
+import RowActions, { type RowActionItem } from '../../../components/RowActions';
+import StatusChip from '../../../components/StatusChip';
 import { api, getAccessToken } from '../../../lib/api';
 import { AmountField } from '../../../components/AmountField';
 import { getMe } from '../../../lib/meCache';
@@ -582,16 +584,6 @@ export default function Page() {
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
   }, []);
-
-  useEffect(() => {
-    const grn = grns.find((g) => g.id === grnId);
-    if (grn?.items?.length) {
-      setGrnItemId(grn.items[0].id);
-      setReturnQty(String(grn.items[0].accepted_qty || 1));
-    } else {
-      setGrnItemId('');
-    }
-  }, [grnId, grns]);
 
   async function createSupplier() {
     if (saveBusy) return;
@@ -1881,21 +1873,69 @@ export default function Page() {
           <table className="table">
             <thead>
               <tr>
-                <th>Number</th>
-                <th>Status</th>
-                <th>Approval</th>
+                <th className="col-id">Number</th>
+                <th className="col-status">Status</th>
+                <th className="col-status">Approval</th>
                 <th>Department</th>
-                <th>Lines</th>
-                <th>Reject reason</th>
-                <th>Actions</th>
+                <th className="col-text">Lines</th>
+                <th className="col-text">Reject reason</th>
+                <th className="col-actions">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {managedRequests.map((r) => (
+              {managedRequests.map((r) => {
+                const prActions: RowActionItem[] = [
+                  {
+                    key: 'submit',
+                    label: 'Submit',
+                    hidden: r.status !== 'draft',
+                    disabled: prBusy === `submit:${r.id}`,
+                    ariaLabel: `Submit purchase request ${r.id}`,
+                    onClick: () => prAction(r.id, 'submit'),
+                  },
+                  {
+                    key: 'approve',
+                    label: `Approve L${r.awaiting_level || r.approval_step || 1}`,
+                    variant: 'ok',
+                    hidden: r.status !== 'pending',
+                    disabled: prBusy === `approve:${r.id}`,
+                    ariaLabel: `Approve purchase request ${r.id}`,
+                    onClick: () => prAction(r.id, 'approve'),
+                  },
+                  {
+                    key: 'reject',
+                    label: 'Reject',
+                    variant: 'danger',
+                    hidden: r.status !== 'pending',
+                    disabled: prBusy === `reject:${r.id}` || !prRejectReason.trim(),
+                    title: prRejectReason.trim()
+                      ? 'Reject purchase request'
+                      : 'Enter a reject reason before rejecting',
+                    ariaLabel: `Reject purchase request ${r.id}`,
+                    onClick: () => prAction(r.id, 'reject'),
+                  },
+                  {
+                    key: 'convert',
+                    label: 'Convert to PO',
+                    variant: 'ok',
+                    hidden: r.status !== 'approved',
+                    disabled: prBusy === `convert:${r.id}`,
+                    ariaLabel: `Convert purchase request ${r.id}`,
+                    onClick: () => prAction(r.id, 'convert'),
+                  },
+                  {
+                    key: 'converted',
+                    hidden: r.status !== 'converted',
+                    node: (
+                      <span className="muted">{r.converted_po_id ? 'PO linked' : 'Converted'}</span>
+                    ),
+                  },
+                ];
+                return (
                 <tr key={r.id}>
-                  <td>{r.request_number}</td>
-                  <td>{r.status}</td>
-                  <td>
+                  <td className="col-id">{r.request_number}</td>
+                  <td className="col-status"><StatusChip value={r.status} /></td>
+                  <td className="col-status">
                     {r.status === 'pending'
                       ? `L${r.awaiting_level || r.approval_step || 1}/${r.approval_steps_required || 1}`
                       : r.approval_steps_required
@@ -1903,66 +1943,18 @@ export default function Page() {
                         : '—'}
                   </td>
                   <td>{r.department || '—'}</td>
-                  <td>
+                  <td className="col-text">
                     {(r.items || [])
                       .map((i) => `${productName(i.product_id)} × ${i.quantity}`)
                       .join(', ') || '—'}
                   </td>
-                  <td className="muted">{r.rejection_reason || '—'}</td>
-                  <td className="purch-actions">
-                    {r.status === 'draft' && (
-                      <button
-                        type="button"
-                        disabled={prBusy === `submit:${r.id}`}
-                        onClick={() => prAction(r.id, 'submit')}
-                        aria-label={`Submit purchase request ${r.id}`}
-                      >
-                        Submit
-                      </button>
-                    )}
-                    {r.status === 'pending' && (
-                      <>
-                        <button
-                          type="button"
-                          className="btn-ok"
-                          disabled={prBusy === `approve:${r.id}`}
-                          onClick={() => prAction(r.id, 'approve')}
-                          aria-label={`Approve purchase request ${r.id}`}
-                        >
-                          Approve L{r.awaiting_level || r.approval_step || 1}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-danger"
-                          disabled={prBusy === `reject:${r.id}` || !prRejectReason.trim()}
-                          onClick={() => prAction(r.id, 'reject')}
-                          aria-label={`Reject purchase request ${r.id}`}
-                          title={
-                            prRejectReason.trim()
-                              ? 'Reject purchase request'
-                              : 'Enter a reject reason before rejecting'
-                          }
-                        >
-                          Reject
-                        </button>
-                      </>
-                    )}
-                    {r.status === 'approved' && (
-                      <button
-                        type="button"
-                        disabled={prBusy === `convert:${r.id}`}
-                        onClick={() => prAction(r.id, 'convert')}
-                        aria-label={`Convert purchase request ${r.id}`}
-                      >
-                        Convert to PO
-                      </button>
-                    )}
-                    {r.status === 'converted' && (
-                      <span className="muted">{r.converted_po_id ? 'PO linked' : 'Converted'}</span>
-                    )}
+                  <td className="col-text muted">{r.rejection_reason || '—'}</td>
+                  <td className="col-actions">
+                    <RowActions label={`More actions for ${r.request_number || r.id}`} primaryMax={1} items={prActions} />
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {managedRequests.length === 0 && (
                 <tr>
                   <td colSpan={7} className="muted">
@@ -2036,29 +2028,51 @@ export default function Page() {
                 <thead>
                   <tr>
                     <th>Name</th>
-                    <th>Code</th>
-                    <th>Status</th>
-                    <th>Open bills</th>
-                    <th>Actions</th>
+                    <th className="col-id">Code</th>
+                    <th className="col-status">Status</th>
+                    <th className="col-num">Open bills</th>
+                    <th className="col-actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredSuppliers.map((s) => {
                     const owed = openBillSummary(s.id);
+                    const supplierActions: RowActionItem[] = [
+                      {
+                        key: 'manage',
+                        label: 'Manage',
+                        ariaLabel: `Manage ${s.name}`,
+                        onClick: () => setSupplierId(s.id),
+                      },
+                      {
+                        key: 'balance',
+                        label: 'Balance',
+                        ariaLabel: `Balance for ${s.name}`,
+                        onClick: () => {
+                          window.location.href = `/credit?kind=payable&supplier=${s.id}`;
+                        },
+                      },
+                      {
+                        key: 'pay',
+                        label: 'Record payment',
+                        ariaLabel: `Record payment for ${s.name}`,
+                        onClick: () => {
+                          window.location.href = `/credit?kind=payable&panel=pay&supplier=${s.id}`;
+                        },
+                      },
+                    ];
                     return (
                     <tr key={s.id}>
                       <td data-label="Name"><strong>{s.name}</strong></td>
-                      <td data-label="Code">{s.code || '—'}</td>
-                      <td data-label="Status">{s.status === 'inactive' ? 'Inactive' : 'Active'}</td>
-                      <td data-label="Open bills">
-                        {owed.count === 0 ? 'No open bills' : `${owed.count} open · ${owed.due.toFixed(2)}`}
+                      <td className="col-id" data-label="Code">{s.code || '—'}</td>
+                      <td className="col-status" data-label="Status">
+                        <StatusChip value={s.status === 'inactive' ? 'inactive' : 'active'} />
                       </td>
-                      <td className="cat-actions">
-                        <button type="button" onClick={() => setSupplierId(s.id)} aria-label={`Manage ${s.name}`}>
-                          Manage
-                        </button>
-                        <a href={`/credit?kind=payable&supplier=${s.id}`}>Balance for {s.name}</a>
-                        <a href={`/credit?kind=payable&panel=pay&supplier=${s.id}`}>Record payment for {s.name}</a>
+                      <td className="col-num" data-label="Open bills">
+                        {owed.count === 0 ? '—' : `${owed.count} · ${owed.due.toFixed(2)}`}
+                      </td>
+                      <td className="col-actions">
+                        <RowActions label={`More actions for ${s.name}`} primaryMax={1} items={supplierActions} />
                       </td>
                     </tr>
                     );
@@ -2591,19 +2605,62 @@ export default function Page() {
           <table className="table">
             <thead>
               <tr>
-                <th>PO</th>
+                <th className="col-id">PO</th>
                 <th>Supplier</th>
-                <th>Status</th>
-                <th>Rev</th>
-                <th>Total</th>
-                <th>Notes</th>
-                <th>Actions</th>
+                <th className="col-status">Status</th>
+                <th className="col-num">Rev</th>
+                <th className="col-num">Total</th>
+                <th className="col-text">Notes</th>
+                <th className="col-actions">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {managedOrders.map((o) => (
+              {managedOrders.map((o) => {
+                const poActions: RowActionItem[] = [
+                  {
+                    key: 'email',
+                    label: 'Email',
+                    hidden: o.status !== 'draft',
+                    ariaLabel: 'Email purchase order',
+                    onClick: () => sendPo(o.id),
+                  },
+                  {
+                    key: 'resend',
+                    label: 'Resend',
+                    hidden: o.status !== 'sent',
+                    ariaLabel: 'Resend purchase order email',
+                    onClick: () => sendPo(o.id, true),
+                  },
+                  {
+                    key: 'amend',
+                    label: 'Amend',
+                    hidden: !o.can_amend,
+                    ariaLabel: `Amend purchase order ${o.id}`,
+                    onClick: () => openAmend(o),
+                  },
+                  {
+                    key: 'receive',
+                    label: 'Receive goods',
+                    variant: 'ok',
+                    hidden: !(o.status === 'sent' || o.status === 'partially_received'),
+                    ariaLabel: `Receive all for purchase order ${o.id}`,
+                    onClick: () => {
+                      focusReceivedOrder(o);
+                      selectTab('grn');
+                    },
+                  },
+                  {
+                    key: 'cancel',
+                    label: 'Cancel',
+                    variant: 'danger',
+                    hidden: !o.can_cancel,
+                    ariaLabel: `Cancel purchase order ${o.id}`,
+                    onClick: () => cancelPo(o),
+                  },
+                ];
+                return (
                 <tr key={o.id}>
-                  <td>
+                  <td className="col-id">
                     <button
                       onClick={() => openAmend(o)}
                       style={{ background: 'none', border: 0, color: 'var(--deep-green, #006B2E)', cursor: 'pointer' }}
@@ -2613,58 +2670,18 @@ export default function Page() {
                     </button>
                   </td>
                   <td>{supplierNameOf(o.supplier_id)}</td>
-                  <td>{o.status}</td>
-                  <td>{o.revision_no ?? 0}</td>
-                  <td>{o.total_amount}</td>
-                  <td className="muted" style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>
+                  <td className="col-status"><StatusChip value={o.status} /></td>
+                  <td className="col-num">{o.revision_no ?? 0}</td>
+                  <td className="col-num">{o.total_amount}</td>
+                  <td className="col-text muted">
                     {o.notes || '—'}
                   </td>
-                  <td className="purch-actions">
-                    {o.status === 'draft' && (
-                      <button onClick={() => sendPo(o.id)} aria-label="Email purchase order">
-                        Email
-                      </button>
-                    )}
-                    {o.status === 'sent' && (
-                      <button onClick={() => sendPo(o.id, true)} aria-label="Resend purchase order email">
-                        Resend
-                      </button>
-                    )}
-                    {o.can_amend && (
-                      <button
-                        type="button"
-                        onClick={() => openAmend(o)}
-                        aria-label={`Amend purchase order ${o.id}`}
-                      >
-                        Amend
-                      </button>
-                    )}
-                    {(o.status === 'sent' || o.status === 'partially_received') && (
-                      <button
-                        type="button"
-                        className="btn-ok"
-                        onClick={() => {
-                          focusReceivedOrder(o);
-                          selectTab('grn');
-                        }}
-                        aria-label={`Receive all for purchase order ${o.id}`}
-                      >
-                        Receive goods
-                      </button>
-                    )}
-                    {o.can_cancel && (
-                      <button
-                        type="button"
-                        className="btn-danger"
-                        onClick={() => cancelPo(o)}
-                        aria-label={`Cancel purchase order ${o.id}`}
-                      >
-                        Cancel
-                      </button>
-                    )}
+                  <td className="col-actions">
+                    <RowActions label={`More actions for ${o.po_number || o.id}`} primaryMax={1} items={poActions} />
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {managedOrders.length === 0 && (
                 <tr>
                   <td colSpan={7} className="muted">
@@ -3379,14 +3396,14 @@ export default function Page() {
         <table className="table cat-table">
           <thead>
             <tr>
-              <th>GRN</th>
-              <th>PO</th>
+              <th className="col-id">GRN</th>
+              <th className="col-id">PO</th>
               <th>Supplier</th>
-              <th>Date</th>
-              <th>Status</th>
-              <th>Accepted</th>
-              <th>Rejected</th>
-              <th />
+              <th className="col-date">Date</th>
+              <th className="col-status">Status</th>
+              <th className="col-num">Accepted</th>
+              <th className="col-num">Rejected</th>
+              <th className="col-actions">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -3396,32 +3413,37 @@ export default function Page() {
               const billed = invoices.some(
                 (inv) => inv.goods_receipt_id === g.id && inv.status !== 'cancelled',
               );
+              const grnActions: RowActionItem[] = [
+                {
+                  key: 'bill',
+                  label: 'Add purchase',
+                  variant: 'ok',
+                  ariaLabel: `Create supplier bill from ${g.grn_number}`,
+                  hidden: !(accepted > 0 && !billed),
+                  onClick: () => {
+                    setInvoiceGrnId(g.id);
+                    setBillCreateOpen(true);
+                    selectTab('invoices');
+                  },
+                },
+              ];
               return (
                 <tr key={g.id}>
-                  <td data-label="GRN">{g.grn_number}</td>
-                  <td data-label="PO">{poNumberOf(g.purchase_order_id)}</td>
-                  <td>{supplierNameOf(g.supplier_id, g.purchase_order_id)}</td>
-                  <td>{g.created_at ? String(g.created_at).slice(0, 10) : '—'}</td>
-                  <td>{g.status}</td>
-                  <td>{accepted}</td>
-                  <td>{rejected}</td>
-                  <td>
-                    {accepted > 0 && !billed ? (
-                      <button
-                        type="button"
-                        className="btn-ok"
-                        onClick={() => {
-                          setInvoiceGrnId(g.id);
-                          setBillCreateOpen(true);
-                          selectTab('invoices');
-                        }}
-                        aria-label={`Create supplier bill from ${g.grn_number}`}
-                      >
-                        Add purchase
-                      </button>
-                    ) : billed ? (
+                  <td className="col-id" data-label="GRN">{g.grn_number}</td>
+                  <td className="col-id" data-label="PO">{poNumberOf(g.purchase_order_id)}</td>
+                  <td data-label="Supplier">{supplierNameOf(g.supplier_id, g.purchase_order_id)}</td>
+                  <td className="col-date" data-label="Date">{g.created_at ? String(g.created_at).slice(0, 10) : '—'}</td>
+                  <td className="col-status" data-label="Status">
+                    <StatusChip value={g.status} />
+                  </td>
+                  <td className="col-num" data-label="Accepted">{accepted}</td>
+                  <td className="col-num" data-label="Rejected">{rejected}</td>
+                  <td className="col-actions">
+                    {billed ? (
                       <span className="muted">Billed</span>
-                    ) : null}
+                    ) : (
+                      <RowActions label={`More actions for ${g.grn_number}`} primaryMax={1} items={grnActions} />
+                    )}
                   </td>
                 </tr>
               );
@@ -3445,23 +3467,25 @@ export default function Page() {
           <table className="table cat-table">
             <thead>
               <tr>
-                <th>Date</th>
+                <th className="col-date">Date</th>
                 <th>Type</th>
-                <th>Number</th>
+                <th className="col-id">Number</th>
                 <th>Supplier</th>
-                <th>Status</th>
-                <th>Amount / qty</th>
+                <th className="col-status">Status</th>
+                <th className="col-num">Amount / qty</th>
               </tr>
             </thead>
             <tbody>
               {purchaseHistory.map((row) => (
                 <tr key={row.key}>
-                  <td>{row.at ? String(row.at).slice(0, 10) : '—'}</td>
+                  <td className="col-date">{row.at ? String(row.at).slice(0, 10) : '—'}</td>
                   <td>{row.kind}</td>
-                  <td>{row.ref}</td>
+                  <td className="col-id">{row.ref}</td>
                   <td>{row.party}</td>
-                  <td>{row.status}</td>
-                  <td>{row.amount || '—'}</td>
+                  <td className="col-status">
+                    <StatusChip value={row.status} />
+                  </td>
+                  <td className="col-num">{row.amount || '—'}</td>
                 </tr>
               ))}
               {purchaseHistory.length === 0 && (
@@ -3967,24 +3991,101 @@ export default function Page() {
         <table className="table">
           <thead>
             <tr>
-              <th>Invoice</th>
+              <th className="col-id">Invoice</th>
               <th>Supplier</th>
-              <th>Supplier #</th>
-              <th>Status</th>
-              <th>Currency</th>
-              <th>Total</th>
-              <th>RC</th>
-              <th>Due</th>
-              <th>AP posted</th>
-              <th>File</th>
-              <th>Notes</th>
-              <th>Actions</th>
+              <th className="col-id">Supplier #</th>
+              <th className="col-status">Status</th>
+              <th className="col-status">Currency</th>
+              <th className="col-num">Total</th>
+              <th className="col-num">RC</th>
+              <th className="col-num">Due</th>
+              <th className="col-status">AP posted</th>
+              <th className="col-status">File</th>
+              <th className="col-text">Notes</th>
+              <th className="col-actions">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {managedInvoices.map((inv) => (
+            {managedInvoices.map((inv) => {
+              const piActions: RowActionItem[] = [
+                {
+                  key: 'approve',
+                  label: 'Approve',
+                  variant: 'ok',
+                  hidden: inv.status !== 'draft',
+                  ariaLabel: `Approve purchase invoice ${inv.id}`,
+                  onClick: () => approveInvoice(inv.id),
+                },
+                {
+                  key: 'cancel',
+                  label: 'Cancel',
+                  variant: 'danger',
+                  hidden: !inv.can_cancel,
+                  ariaLabel: `Cancel purchase invoice ${inv.id}`,
+                  onClick: () => cancelInvoice(inv),
+                },
+                {
+                  key: 'pay',
+                  label: 'Record payment',
+                  hidden: !(
+                    (inv.status === 'unpaid' || inv.status === 'partial' || inv.status === 'overdue') &&
+                    inv.supplier_id
+                  ),
+                  ariaLabel: `Record payment for supplier bill ${inv.id}`,
+                  onClick: () => {
+                    window.location.href = `/credit?kind=payable&panel=pay&supplier=${inv.supplier_id}&bill=${inv.id}`;
+                  },
+                },
+                {
+                  key: 'upload',
+                  node: (
+                    <label style={{ cursor: 'pointer', display: 'block', width: '100%' }}>
+                      <span className="muted" style={{ textDecoration: 'underline' }}>
+                        Upload
+                      </span>
+                      <input
+                        type="file"
+                        accept="application/pdf,image/png,image/jpeg,image/webp,image/gif"
+                        style={{ display: 'none' }}
+                        aria-label={`Upload purchase invoice attachment ${inv.id}`}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) uploadInvoiceAttachment(inv.id, file);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  ),
+                },
+                {
+                  key: 'preview',
+                  label: 'Preview',
+                  hidden: !inv.has_attachment,
+                  ariaLabel: `Preview purchase invoice attachment ${inv.id}`,
+                  onClick: () =>
+                    setAttachPreview({
+                      apiPath: `/purchasing/invoices/${inv.id}/attachment`,
+                      title: `Invoice attachment — ${inv.invoice_number || inv.id.slice(0, 8)}`,
+                    }),
+                },
+                {
+                  key: 'download',
+                  label: 'Download',
+                  hidden: !inv.has_attachment,
+                  ariaLabel: 'Download purchase invoice attachment',
+                  onClick: () => downloadInvoiceAttachment(inv.id),
+                },
+                {
+                  key: 'ocr',
+                  label: 'OCR',
+                  hidden: !(inv.has_attachment && inv.status === 'draft'),
+                  ariaLabel: `Suggest purchase invoice OCR ${inv.id}`,
+                  onClick: () => suggestInvoiceOcr(inv.id),
+                },
+              ];
+              return (
               <tr key={inv.id}>
-                <td>
+                <td className="col-id">
                   <button
                     type="button"
                     onClick={async () => {
@@ -4007,88 +4108,35 @@ export default function Page() {
                   </button>
                 </td>
                 <td>{billSupplierName(inv)}</td>
-                <td>{inv.supplier_invoice_number || '—'}</td>
-                <td>{inv.status}</td>
-                <td>
+                <td className="col-id">{inv.supplier_invoice_number || '—'}</td>
+                <td className="col-status"><StatusChip value={inv.status} /></td>
+                <td className="col-status">
                   {inv.currency
                     ? `${inv.currency}${inv.exchange_rate != null ? ` @ ${inv.exchange_rate}` : ''}`
                     : '—'}
                 </td>
-                <td>{inv.total_amount}</td>
-                <td>
+                <td className="col-num">{inv.total_amount}</td>
+                <td className="col-num">
                   {inv.is_reverse_charge
                     ? `${inv.reverse_charge_tax ?? 0}`
                     : inv.tax_amount ?? '—'}
                 </td>
-                <td>{inv.balance_due}</td>
-                <td>{inv.ap_posted ? 'yes' : 'no (via GRN)'}</td>
-                <td>{inv.has_attachment ? 'yes' : '—'}</td>
-                <td className="muted" style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>
+                <td className="col-num">{inv.balance_due}</td>
+                <td className="col-status">
+                  <StatusChip value={inv.ap_posted ? 'posted' : 'draft'} label={inv.ap_posted ? 'Posted' : 'Via GRN'} />
+                </td>
+                <td className="col-status">
+                  {inv.has_attachment ? <StatusChip value="active" label="Yes" /> : '—'}
+                </td>
+                <td className="col-text muted">
                   {inv.notes || '—'}
                 </td>
-                <td className="purch-actions">
-                  {inv.status === 'draft' && (
-                    <button className="btn-ok" onClick={() => approveInvoice(inv.id)} aria-label={`Approve purchase invoice ${inv.id}`}>Approve</button>
-                  )}
-                  {inv.can_cancel && (
-                    <button
-                      type="button"
-                      className="btn-danger"
-                      onClick={() => cancelInvoice(inv)}
-                      aria-label={`Cancel purchase invoice ${inv.id}`}
-                    >
-                      Cancel
-                    </button>
-                  )}
-                  {(inv.status === 'unpaid' || inv.status === 'partial' || inv.status === 'overdue') && inv.supplier_id ? (
-                    <a href={`/credit?kind=payable&panel=pay&supplier=${inv.supplier_id}&bill=${inv.id}`} aria-label={`Record payment for supplier bill ${inv.id}`}>
-                      Record payment
-                    </a>
-                  ) : null}
-                  <label style={{ cursor: 'pointer' }}>
-                    <span className="muted" style={{ textDecoration: 'underline' }}>
-                      Upload
-                    </span>
-                    <input
-                      type="file"
-                      accept="application/pdf,image/png,image/jpeg,image/webp,image/gif"
-                      style={{ display: 'none' }}
-                      aria-label={`Upload purchase invoice attachment ${inv.id}`}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) uploadInvoiceAttachment(inv.id, file);
-                        e.target.value = '';
-                      }}
-                    />
-                  </label>
-                  {inv.has_attachment && (
-                    <>
-                      <button
-                        type="button"
-                        aria-label={`Preview purchase invoice attachment ${inv.id}`}
-                        onClick={() =>
-                          setAttachPreview({
-                            apiPath: `/purchasing/invoices/${inv.id}/attachment`,
-                            title: `Invoice attachment — ${inv.invoice_number || inv.id.slice(0, 8)}`,
-                          })
-                        }
-                      >
-                        Preview
-                      </button>
-                      <button
-                        onClick={() => downloadInvoiceAttachment(inv.id)}
-                        aria-label="Download purchase invoice attachment"
-                      >
-                        Download
-                      </button>
-                      {inv.status === 'draft' && (
-                        <button onClick={() => suggestInvoiceOcr(inv.id)} aria-label={`Suggest purchase invoice OCR ${inv.id}`}>OCR</button>
-                      )}
-                    </>
-                  )}
+                <td className="col-actions">
+                  <RowActions label={`More actions for ${inv.invoice_number || inv.id}`} primaryMax={1} items={piActions} />
                 </td>
               </tr>
-            ))}
+              );
+            })}
             {managedInvoices.length === 0 && (
               <tr>
                 <td colSpan={12} className="muted">
@@ -4403,74 +4451,80 @@ export default function Page() {
         <table className="table">
           <thead>
             <tr>
-              <th>Return</th>
+              <th className="col-id">Return</th>
               <th>Supplier</th>
-              <th>Debit note</th>
-              <th>Reason</th>
-              <th>Status</th>
-              <th>Discount</th>
-              <th>Total</th>
-              <th>Notes</th>
-              <th>Actions</th>
+              <th className="col-id">Debit note</th>
+              <th className="col-status">Reason</th>
+              <th className="col-status">Status</th>
+              <th className="col-num">Discount</th>
+              <th className="col-num">Total</th>
+              <th className="col-text">Notes</th>
+              <th className="col-actions">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {managedReturns.map((r) => (
+            {managedReturns.map((r) => {
+              const returnActions: RowActionItem[] = [
+                {
+                  key: 'post',
+                  label: 'Post',
+                  variant: 'ok',
+                  hidden: r.status !== 'draft',
+                  ariaLabel: `Post purchase return ${r.id}`,
+                  onClick: () => postReturn(r.id),
+                },
+                {
+                  key: 'cancel',
+                  label: 'Cancel',
+                  variant: 'danger',
+                  hidden: r.status !== 'draft',
+                  ariaLabel: `Cancel purchase return ${r.id}`,
+                  onClick: () => cancelReturn(r),
+                },
+                {
+                  key: 'print',
+                  label: 'Print',
+                  ariaLabel: `Print purchase return ${r.id}`,
+                  onClick: () => {
+                    const token = getAccessToken();
+                    const tenant = localStorage.getItem('tenant');
+                    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+                    fetch(`${base}/purchasing/returns/${r.id}/print`, {
+                      headers: {
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                        ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+                      },
+                    })
+                      .then((res) => res.text())
+                      .then((html) => {
+                        const w = window.open('', '_blank');
+                        if (w) {
+                          w.document.write(html);
+                          w.document.close();
+                        }
+                      })
+                      .catch((err) => setError(String(err)));
+                  },
+                },
+              ];
+              return (
               <tr key={r.id}>
-                <td>{r.return_number}</td>
+                <td className="col-id">{r.return_number}</td>
                 <td>{supplierNameOf(r.supplier_id || grns.find((g) => g.id === r.goods_receipt_id)?.supplier_id, grns.find((g) => g.id === r.goods_receipt_id)?.purchase_order_id)}</td>
-                <td>{r.debit_note_number || '—'}</td>
-                <td>{r.reason}</td>
-                <td>{r.status}</td>
-                <td>{r.discount_amount ?? 0}</td>
-                <td>{r.total_amount}</td>
-                <td className="muted" style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>
+                <td className="col-id">{r.debit_note_number || '—'}</td>
+                <td className="col-status"><StatusChip value={r.reason} /></td>
+                <td className="col-status"><StatusChip value={r.status} /></td>
+                <td className="col-num">{r.discount_amount ?? 0}</td>
+                <td className="col-num">{r.total_amount}</td>
+                <td className="col-text muted">
                   {r.notes || '—'}
                 </td>
-                <td className="purch-actions">
-                  {r.status === 'draft' && (
-                    <>
-                      <button type="button" className="btn-ok" onClick={() => postReturn(r.id)} aria-label={`Post purchase return ${r.id}`}>
-                        Post
-                      </button>
-                      <button
-                        className="btn-danger"
-                        onClick={() => cancelReturn(r)}
-                        aria-label={`Cancel purchase return ${r.id}`}
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const token = getAccessToken();
-                      const tenant = localStorage.getItem('tenant');
-                      const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-                      fetch(`${base}/purchasing/returns/${r.id}/print`, {
-                        headers: {
-                          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-                        },
-                      })
-                        .then((res) => res.text())
-                        .then((html) => {
-                          const w = window.open('', '_blank');
-                          if (w) {
-                            w.document.write(html);
-                            w.document.close();
-                          }
-                        })
-                        .catch((err) => setError(String(err)));
-                    }}
-                    aria-label={`Print purchase return ${r.id}`}
-                  >
-                    Print
-                  </button>
+                <td className="col-actions">
+                  <RowActions label={`More actions for ${r.return_number || r.id}`} primaryMax={1} items={returnActions} />
                 </td>
               </tr>
-            ))}
+              );
+            })}
             {managedReturns.length === 0 && (
               <tr>
                 <td colSpan={9} className="muted">

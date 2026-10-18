@@ -40,7 +40,7 @@ Ops-only steps (live gateway secrets, production deploy) are **out of the featur
 | Support | COMPLETE | 0 | 0 | 0 | Desk suite |
 | Security | COMPLETE | 1 | 1 | 0 | RBAC + reason/slug confirm; shared 2FA |
 | Audit Logs | COMPLETE | 0 | 0 | 0 | Shared audit |
-| Settings | COMPLETE | 1 | 1 | 0 | `/platform/settings` read-only ops config |
+| Settings | COMPLETE | 1 | 1 | 0 | `/platform/settings` read-only ops: lifecycle, gateway, auth, services, backup/audit, deploy |
 | System Health | COMPLETE | 0 | 0 | 0 | `/platform/health` + Jobs |
 | Backup and Restore | COMPLETE | 0 | 0 | 0 | Logical MVP (tenant backups); DR runbooks |
 | UI/UX | COMPLETE | 1 | 1 | 0 | Settings + exports + attention + invoices |

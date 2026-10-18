@@ -9,6 +9,8 @@ import { getPrefetched, peekPrefetch } from '../../../lib/prefetchCache';
 import { pageLoadStarted } from '../../../lib/navTiming';
 import PageSkeleton from '../../../components/PageSkeleton';
 import { AmountField } from '../../../components/AmountField';
+import RowActions, { type RowActionItem } from '../../../components/RowActions';
+import StatusChip from '../../../components/StatusChip';
 import { useStoreContext } from '../../../lib/storeContext';
 import { isHotelIndustry, tenantIsMultiStore } from '../../../lib/tenantNav';
 import { normalizeIndustry, usesStoreStockTransfers, usesWholesaleTrade } from '../../../lib/industries';
@@ -500,7 +502,6 @@ export default function Page() {
     null
   );
   const [lookupStock, setLookupStock] = useState<any | null>(null);
-  const [productMenuId, setProductMenuId] = useState('');
   const [labelPick, setLabelPick] = useState<Record<string, boolean>>({});
 
   const [catName, setCatName] = useState('');
@@ -510,24 +511,20 @@ export default function Page() {
   const [catDrawerOpen, setCatDrawerOpen] = useState(false);
   const [catEditId, setCatEditId] = useState('');
   const [catTaxAdvanced, setCatTaxAdvanced] = useState(false);
-  const [catMenuId, setCatMenuId] = useState('');
   const [catCollapsed, setCatCollapsed] = useState<Record<string, boolean>>({});
   const [brandSearch, setBrandSearch] = useState('');
   const [brandDrawerOpen, setBrandDrawerOpen] = useState(false);
   const [brandEditId, setBrandEditId] = useState('');
   const [brandAdvanced, setBrandAdvanced] = useState(false);
-  const [brandMenuId, setBrandMenuId] = useState('');
   const [unitSearch, setUnitSearch] = useState('');
   const [unitDrawerOpen, setUnitDrawerOpen] = useState(false);
   const [unitEditId, setUnitEditId] = useState('');
   const [unitAdvanced, setUnitAdvanced] = useState(false);
-  const [unitMenuId, setUnitMenuId] = useState('');
   const [unitCollapsed, setUnitCollapsed] = useState<Record<string, boolean>>({});
   const [variantSearch, setVariantSearch] = useState('');
   const [variantDrawerOpen, setVariantDrawerOpen] = useState(false);
   const [variantEditId, setVariantEditId] = useState('');
   const [variantAdvanced, setVariantAdvanced] = useState(false);
-  const [variantMenuId, setVariantMenuId] = useState('');
   const [variantCost, setVariantCost] = useState('');
   const [variantPrice, setVariantPrice] = useState('');
   const [taxRates, setTaxRates] = useState<any[]>([]);
@@ -2327,7 +2324,6 @@ export default function Page() {
     const productId = variantApiProductId(variantId);
     if (!productId) return;
     setError('');
-    setVariantMenuId('');
     if (
       !window.confirm(
         'Deactivate this variant? The product stays in the catalog. You can activate the variant again later.',
@@ -2351,7 +2347,6 @@ export default function Page() {
     const productId = variantApiProductId(variantId);
     if (!productId) return;
     setError('');
-    setVariantMenuId('');
     try {
       await api(`/products/${productId}/variants/${variantId}`, {
         method: 'PATCH',
@@ -2482,7 +2477,6 @@ export default function Page() {
     setBrandDescription(row.description || '');
     setBrandAdvanced(Boolean(row.description) || Boolean(row.has_logo));
     setFormFlash({});
-    setBrandMenuId('');
     setBrandDrawerOpen(true);
   }
 
@@ -2523,7 +2517,6 @@ export default function Page() {
 
   async function setBrandActive(row: any, isActive: boolean) {
     setError('');
-    setBrandMenuId('');
     if (
       !isActive &&
       !window.confirm(
@@ -2566,7 +2559,6 @@ export default function Page() {
     setUnitRatio(String(row.conversion_ratio ?? 1));
     setUnitAdvanced(Boolean(row.base_unit_id));
     setFormFlash({});
-    setUnitMenuId('');
     setUnitDrawerOpen(true);
   }
 
@@ -2612,7 +2604,6 @@ export default function Page() {
 
   async function setUnitActive(row: any, isActive: boolean) {
     setError('');
-    setUnitMenuId('');
     if (
       !isActive &&
       !window.confirm(
@@ -2669,7 +2660,6 @@ export default function Page() {
     setVariantPrice(String(row.selling_price ?? ''));
     setVariantAdvanced(Boolean(row.size || row.color || row.flavor || row.dosage || row.barcode));
     setFormFlash({});
-    setVariantMenuId('');
     setVariantDrawerOpen(true);
   }
 
@@ -2987,7 +2977,6 @@ export default function Page() {
     setCatTaxRateId(row.tax_rate_id || '');
     setCatTaxAdvanced(Boolean(row.tax_rate_id));
     setFormFlash({});
-    setCatMenuId('');
     setCatDrawerOpen(true);
   }
 
@@ -3029,7 +3018,6 @@ export default function Page() {
 
   async function setCategoryActive(row: any, isActive: boolean) {
     setError('');
-    setCatMenuId('');
     if (
       !isActive &&
       !window.confirm(
@@ -3851,7 +3839,7 @@ export default function Page() {
                           Brand{productSort === 'brand' ? (productSortDir === 1 ? ' ↑' : ' ↓') : ''}
                         </button>
                       </th>
-                      <th aria-sort={productSort === 'price' ? (productSortDir === 1 ? 'ascending' : 'descending') : 'none'}>
+                      <th className="col-num" aria-sort={productSort === 'price' ? (productSortDir === 1 ? 'ascending' : 'descending') : 'none'}>
                         <button
                           type="button"
                           className="list-sort"
@@ -3863,7 +3851,7 @@ export default function Page() {
                           Selling Price{productSort === 'price' ? (productSortDir === 1 ? ' ↑' : ' ↓') : ''}
                         </button>
                       </th>
-                      <th aria-sort={productSort === 'qty' ? (productSortDir === 1 ? 'ascending' : 'descending') : 'none'}>
+                      <th className="col-num" aria-sort={productSort === 'qty' ? (productSortDir === 1 ? 'ascending' : 'descending') : 'none'}>
                         <button
                           type="button"
                           className="list-sort"
@@ -3875,13 +3863,75 @@ export default function Page() {
                           Qty{productSort === 'qty' ? (productSortDir === 1 ? ' ↑' : ' ↓') : ''}
                         </button>
                       </th>
-                      <th>Actions</th>
+                      <th className="col-actions">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {productPaged.rows.map((p) => {
                       const st = stockStatusOf(p);
                       const img = p.image_url || p.thumbnail_url || p.photo_url;
+                      const productActions: RowActionItem[] = [
+                        {
+                          key: 'view',
+                          label: 'View',
+                          ariaLabel: `Open product ${p.name}`,
+                          onClick: () => {
+                            setSelectedId(p.id);
+                            setDrawerOpen(true);
+                            setProductEditMode(false);
+                            setFormFlash({});
+                          },
+                        },
+                        {
+                          key: 'select',
+                          label: 'Select',
+                          ariaLabel: `Select inventory product ${p.id}`,
+                          onClick: () => {
+                            setSelectedId(p.id);
+                            setDrawerOpen(true);
+                            setProductEditMode(false);
+                            setFormFlash({});
+                          },
+                        },
+                        {
+                          key: 'edit',
+                          label: 'Edit',
+                          ariaLabel: `Edit product ${p.name}`,
+                          onClick: () => {
+                            setSelectedId(p.id);
+                            setDrawerOpen(true);
+                            setProductEditMode(true);
+                            setFormFlash({});
+                          },
+                        },
+                        {
+                          key: 'barcode',
+                          label: 'Generate barcode',
+                          ariaLabel: `Generate barcode for ${p.name}`,
+                          onClick: () => {
+                            setSelectedId(p.id);
+                            generateBarcode(p.id);
+                          },
+                        },
+                        {
+                          key: 'qr',
+                          label: 'Generate QR',
+                          ariaLabel: `Generate QR for ${p.name}`,
+                          onClick: () => {
+                            setSelectedId(p.id);
+                            generateQr(p.id);
+                          },
+                        },
+                        {
+                          key: 'label',
+                          label: 'Print label',
+                          ariaLabel: `Print barcode label for ${p.name}`,
+                          onClick: () => {
+                            setSelectedId(p.id);
+                            printBarcodeLabel(p.id);
+                          },
+                        },
+                      ];
                       return (
                         <tr key={p.id}>
                           <td data-label="Product">
@@ -3901,96 +3951,15 @@ export default function Page() {
                               </span>
                             </div>
                           </td>
-                          <td data-label="SKU" className="list-secondary">{p.sku || '—'}</td>
+                          <td data-label="SKU" className="list-secondary col-id">{p.sku || '—'}</td>
                           <td data-label="Category" className="list-secondary">{p.category || '—'}</td>
                           <td data-label="Brand" className="list-secondary">{p.brand || '—'}</td>
-                          <td data-label="Selling Price">{p.selling_price ?? 0}</td>
-                          <td data-label="Qty" className={st === 'out' || st === 'red' ? 'list-qty-low' : undefined}>
+                          <td data-label="Selling Price" className="col-num">{p.selling_price ?? 0}</td>
+                          <td data-label="Qty" className={`col-num${st === 'out' || st === 'red' ? ' list-qty-low' : ''}`}>
                             <StockStatusBadge product={p} />
                           </td>
-                          <td className="cat-actions">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedId(p.id);
-                                setDrawerOpen(true);
-                                setProductEditMode(false);
-                                setFormFlash({});
-                              }}
-                              aria-label={`Open product ${p.name}`}
-                            >
-                              View
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedId(p.id);
-                                setDrawerOpen(true);
-                                setProductEditMode(false);
-                                setFormFlash({});
-                              }}
-                              aria-label={`Select inventory product ${p.id}`}
-                            >
-                              Select
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedId(p.id);
-                                setDrawerOpen(true);
-                                setProductEditMode(true);
-                                setFormFlash({});
-                              }}
-                              aria-label={`Edit product ${p.name}`}
-                            >
-                              Edit
-                            </button>
-                            <div className="cat-menu">
-                              <button
-                                type="button"
-                                aria-label={`More actions for ${p.name}`}
-                                onClick={() => setProductMenuId(productMenuId === p.id ? '' : p.id)}
-                              >
-                                ···
-                              </button>
-                              {productMenuId === p.id ? (
-                                <div className="cat-menu-pop">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedId(p.id);
-                                      generateBarcode(p.id);
-                                      setProductMenuId('');
-                                    }}
-                                    aria-label={`Generate barcode for ${p.name}`}
-                                  >
-                                    Generate barcode
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedId(p.id);
-                                      generateQr(p.id);
-                                      setProductMenuId('');
-                                    }}
-                                    aria-label={`Generate QR for ${p.name}`}
-                                  >
-                                    Generate QR
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedId(p.id);
-                                      printBarcodeLabel(p.id);
-                                      setProductMenuId('');
-                                    }}
-                                    aria-label={`Print barcode label for ${p.name}`}
-                                  >
-                                    Print label
-                                  </button>
-                                </div>
-                              ) : null}
-                            </div>
+                          <td className="col-actions" data-label="Actions">
+                            <RowActions label={`More actions for ${p.name}`} primaryMax={1} items={productActions} />
                           </td>
                         </tr>
                       );
@@ -4755,9 +4724,9 @@ export default function Page() {
                     />
                   </th>
                   <th>Product</th>
-                  <th>SKU</th>
-                  <th>Barcode</th>
-                  <th>Actions</th>
+                  <th className="col-id">SKU</th>
+                  <th className="col-id">Barcode</th>
+                  <th className="col-actions">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -4765,7 +4734,28 @@ export default function Page() {
                   const q = productSearch.trim().toLowerCase();
                   if (!q) return true;
                   return `${p.name || ''} ${p.sku || ''} ${p.barcode || ''}`.toLowerCase().includes(q);
-                }).map((p) => (
+                }).map((p) => {
+                  const labelActions: RowActionItem[] = [
+                    {
+                      key: 'barcode',
+                      label: 'Generate barcode',
+                      ariaLabel: `Generate barcode for ${p.name}`,
+                      onClick: () => generateBarcode(p.id),
+                    },
+                    {
+                      key: 'qr',
+                      label: 'Generate QR',
+                      ariaLabel: `Generate QR for ${p.name}`,
+                      onClick: () => generateQr(p.id),
+                    },
+                    {
+                      key: 'print',
+                      label: 'Print label',
+                      ariaLabel: `Print barcode label for ${p.name}`,
+                      onClick: () => printBarcodeLabel(p.id),
+                    },
+                  ];
+                  return (
                   <tr key={p.id}>
                     <td>
                       <input
@@ -4776,21 +4766,14 @@ export default function Page() {
                       />
                     </td>
                     <td data-label="Product">{displayProductName(p.name)}</td>
-                    <td data-label="SKU" className="list-secondary">{p.sku || '—'}</td>
-                    <td data-label="Barcode" className="list-secondary">{p.barcode || '—'}</td>
-                    <td className="cat-actions">
-                      <button type="button" onClick={() => generateBarcode(p.id)} aria-label={`Generate barcode for ${p.name}`}>
-                        Generate barcode
-                      </button>
-                      <button type="button" onClick={() => generateQr(p.id)} aria-label={`Generate QR for ${p.name}`}>
-                        Generate QR
-                      </button>
-                      <button type="button" onClick={() => printBarcodeLabel(p.id)} aria-label={`Print barcode label for ${p.name}`}>
-                        Print label
-                      </button>
+                    <td data-label="SKU" className="col-id list-secondary">{p.sku || '—'}</td>
+                    <td data-label="Barcode" className="col-id list-secondary">{p.barcode || '—'}</td>
+                    <td className="col-actions">
+                      <RowActions label={`More actions for ${p.name}`} primaryMax={1} items={labelActions} />
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
                 {managedProducts.filter((p) => {
                   const q = productSearch.trim().toLowerCase();
                   if (!q) return true;
@@ -4848,8 +4831,8 @@ export default function Page() {
                   <tr>
                     <th>Name</th>
                     <th>Parent</th>
-                    <th>Status</th>
-                    <th />
+                    <th className="col-status">Status</th>
+                    <th className="col-actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -4857,6 +4840,24 @@ export default function Page() {
                     const depth = Math.max(0, Number(c.depth) || 0);
                     const hasKids = categories.some((x) => x.parent_id === c.id);
                     const collapsed = Boolean(catCollapsed[c.id]);
+                    const catActions: RowActionItem[] = [
+                      {
+                        key: 'edit',
+                        label: 'Edit',
+                        ariaLabel: `Edit ${c.name}`,
+                        onClick: () => openCategoryEdit(c),
+                      },
+                      {
+                        key: 'toggle',
+                        label: c.is_active === false ? 'Activate' : 'Deactivate',
+                        variant: c.is_active === false ? 'ok' : 'danger',
+                        ariaLabel:
+                          c.is_active === false
+                            ? `Activate category ${c.id}`
+                            : `Deactivate category ${c.id}`,
+                        onClick: () => setCategoryActive(c, c.is_active === false),
+                      },
+                    ];
                     return (
                       <tr key={c.id}>
                         <td data-label="Name">
@@ -4882,33 +4883,11 @@ export default function Page() {
                           </div>
                         </td>
                         <td data-label="Parent">{categoryParentName(categories, c.parent_id)}</td>
-                        <td data-label="Status">{c.is_active === false ? 'Inactive' : 'Active'}</td>
-                        <td className="cat-actions">
-                          <button type="button" onClick={() => openCategoryEdit(c)} aria-label={`Edit ${c.name}`}>
-                            Edit
-                          </button>
-                          <div className="cat-menu">
-                            <button
-                              type="button"
-                              aria-label={`More actions for ${c.name}`}
-                              onClick={() => setCatMenuId(catMenuId === c.id ? '' : c.id)}
-                            >
-                              ⋯
-                            </button>
-                            {catMenuId === c.id ? (
-                              <div className="cat-menu-pop">
-                                {c.is_active === false ? (
-                                  <button type="button" className="btn-ok" aria-label={`Activate category ${c.id}`} onClick={() => setCategoryActive(c, true)}>
-                                    Activate
-                                  </button>
-                                ) : (
-                                  <button type="button" className="btn-danger" aria-label={`Deactivate category ${c.id}`} onClick={() => setCategoryActive(c, false)}>
-                                    Deactivate
-                                  </button>
-                                )}
-                              </div>
-                            ) : null}
-                          </div>
+                        <td className="col-status" data-label="Status">
+                          <StatusChip value={c.is_active === false ? 'inactive' : 'active'} />
+                        </td>
+                        <td className="col-actions">
+                          <RowActions label={`More actions for ${c.name}`} primaryMax={1} items={catActions} />
                         </td>
                       </tr>
                     );
@@ -5078,12 +5057,40 @@ export default function Page() {
                 <thead>
                   <tr>
                     <th>Name</th>
-                    <th>Status</th>
-                    <th />
+                    <th className="col-status">Status</th>
+                    <th className="col-actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {visibleBrands.map((b) => (
+                  {visibleBrands.map((b) => {
+                    const brandActions: RowActionItem[] = [
+                      {
+                        key: 'edit',
+                        label: 'Edit',
+                        ariaLabel: `Edit ${b.name}`,
+                        onClick: () => openBrandEdit(b),
+                      },
+                      {
+                        key: 'logo',
+                        label: 'Upload logo',
+                        ariaLabel: `Brand logo file ${b.id}`,
+                        onClick: () => {
+                          const input = document.getElementById(`brand-logo-${b.id}`) as HTMLInputElement | null;
+                          input?.click();
+                        },
+                      },
+                      {
+                        key: 'toggle',
+                        label: b.is_active === false ? 'Activate' : 'Deactivate',
+                        variant: b.is_active === false ? 'ok' : 'danger',
+                        ariaLabel:
+                          b.is_active === false
+                            ? `Activate brand ${b.id}`
+                            : `Deactivate brand ${b.id}`,
+                        onClick: () => setBrandActive(b, b.is_active === false),
+                      },
+                    ];
+                    return (
                     <tr key={b.id}>
                       <td data-label="Name">
                         <div className="cat-name-cell">
@@ -5098,48 +5105,29 @@ export default function Page() {
                             />
                           ) : null}
                           <strong>{b.name}</strong>
+                          <input
+                            id={`brand-logo-${b.id}`}
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp,image/gif"
+                            aria-label={`Brand logo file ${b.id}`}
+                            hidden
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) uploadBrandLogo(b.id, file);
+                              e.target.value = '';
+                            }}
+                          />
                         </div>
                       </td>
-                      <td data-label="Status">{b.is_active === false ? 'Inactive' : 'Active'}</td>
-                      <td className="cat-actions">
-                        <button type="button" onClick={() => openBrandEdit(b)} aria-label={`Edit ${b.name}`}>
-                          Edit
-                        </button>
-                        <input
-                          type="file"
-                          accept="image/png,image/jpeg,image/webp,image/gif"
-                          aria-label={`Brand logo file ${b.id}`}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) uploadBrandLogo(b.id, file);
-                            e.target.value = '';
-                          }}
-                        />
-                        <div className="cat-menu">
-                          <button
-                            type="button"
-                            aria-label={`More actions for ${b.name}`}
-                            onClick={() => setBrandMenuId(brandMenuId === b.id ? '' : b.id)}
-                          >
-                            ···
-                          </button>
-                          {brandMenuId === b.id ? (
-                            <div className="cat-menu-pop">
-                              {b.is_active === false ? (
-                                <button type="button" className="btn-ok" aria-label={`Activate brand ${b.id}`} onClick={() => setBrandActive(b, true)}>
-                                  Activate
-                                </button>
-                              ) : (
-                                <button type="button" className="btn-danger" aria-label={`Deactivate brand ${b.id}`} onClick={() => setBrandActive(b, false)}>
-                                  Deactivate
-                                </button>
-                              )}
-                            </div>
-                          ) : null}
-                        </div>
+                      <td className="col-status" data-label="Status">
+                        <StatusChip value={b.is_active === false ? 'inactive' : 'active'} />
+                      </td>
+                      <td className="col-actions">
+                        <RowActions label={`More actions for ${b.name}`} primaryMax={1} items={brandActions} />
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -5264,8 +5252,8 @@ export default function Page() {
                   <tr>
                     <th>Name</th>
                     <th>Parent</th>
-                    <th>Status</th>
-                    <th />
+                    <th className="col-status">Status</th>
+                    <th className="col-actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -5273,6 +5261,24 @@ export default function Page() {
                     const depth = unitDepthOf(units, u);
                     const hasKids = units.some((x) => x.base_unit_id === u.id);
                     const collapsed = Boolean(unitCollapsed[u.id]);
+                    const unitActions: RowActionItem[] = [
+                      {
+                        key: 'edit',
+                        label: 'Edit',
+                        ariaLabel: `Edit ${u.name}`,
+                        onClick: () => openUnitEdit(u),
+                      },
+                      {
+                        key: 'toggle',
+                        label: u.is_active === false ? 'Activate' : 'Deactivate',
+                        variant: u.is_active === false ? 'ok' : 'danger',
+                        ariaLabel:
+                          u.is_active === false
+                            ? `Activate unit ${u.id}`
+                            : `Deactivate unit ${u.id}`,
+                        onClick: () => setUnitActive(u, u.is_active === false),
+                      },
+                    ];
                     return (
                       <tr key={u.id}>
                         <td data-label="Name">
@@ -5298,33 +5304,11 @@ export default function Page() {
                           </div>
                         </td>
                         <td data-label="Parent">{unitParentName(units, u.base_unit_id)}</td>
-                        <td data-label="Status">{u.is_active === false ? 'Inactive' : 'Active'}</td>
-                        <td className="cat-actions">
-                          <button type="button" onClick={() => openUnitEdit(u)} aria-label={`Edit ${u.name}`}>
-                            Edit
-                          </button>
-                          <div className="cat-menu">
-                            <button
-                              type="button"
-                              aria-label={`More actions for ${u.name}`}
-                              onClick={() => setUnitMenuId(unitMenuId === u.id ? '' : u.id)}
-                            >
-                              ···
-                            </button>
-                            {unitMenuId === u.id ? (
-                              <div className="cat-menu-pop">
-                                {u.is_active === false ? (
-                                  <button type="button" className="btn-ok" aria-label={`Activate unit ${u.id}`} onClick={() => setUnitActive(u, true)}>
-                                    Activate
-                                  </button>
-                                ) : (
-                                  <button type="button" className="btn-danger" aria-label={`Deactivate unit ${u.id}`} onClick={() => setUnitActive(u, false)}>
-                                    Deactivate
-                                  </button>
-                                )}
-                              </div>
-                            ) : null}
-                          </div>
+                        <td className="col-status" data-label="Status">
+                          <StatusChip value={u.is_active === false ? 'inactive' : 'active'} />
+                        </td>
+                        <td className="col-actions">
+                          <RowActions label={`More actions for ${u.name}`} primaryMax={1} items={unitActions} />
                         </td>
                       </tr>
                     );
@@ -5471,12 +5455,52 @@ export default function Page() {
                   <tr>
                     <th>Name</th>
                     <th>Parent</th>
-                    <th>Status</th>
-                    <th />
+                    <th className="col-num">Selling</th>
+                    <th className="col-num">Cost</th>
+                    <th className="col-status">Status</th>
+                    <th className="col-actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {visibleVariants.map((v) => (
+                  {visibleVariants.map((v) => {
+                    const variantActions: RowActionItem[] = [
+                      {
+                        key: 'edit',
+                        label: 'Edit',
+                        ariaLabel: `Edit ${v.name}`,
+                        onClick: () => openVariantEdit(v),
+                      },
+                      {
+                        key: 'toggle',
+                        label: v.is_active === false ? 'Activate' : 'Deactivate',
+                        variant: v.is_active === false ? 'ok' : 'danger',
+                        ariaLabel:
+                          v.is_active === false
+                            ? `Activate variant ${v.id}`
+                            : `Deactivate variant ${v.id}`,
+                        onClick: () =>
+                          v.is_active === false ? activateVariant(v.id) : deactivateVariant(v.id),
+                      },
+                      {
+                        key: 'barcode',
+                        label: 'Generate barcode',
+                        ariaLabel: `Generate variant barcode ${v.id}`,
+                        onClick: () => generateVariantBarcode(v.id),
+                      },
+                      {
+                        key: 'qr',
+                        label: 'Generate QR',
+                        ariaLabel: `Generate variant QR ${v.id}`,
+                        onClick: () => generateVariantQr(v.id),
+                      },
+                      {
+                        key: 'label',
+                        label: 'Label',
+                        ariaLabel: `Print variant barcode label ${v.id}`,
+                        onClick: () => printVariantBarcodeLabel(v.id),
+                      },
+                    ];
+                    return (
                     <tr key={v.id}>
                       <td data-label="Name">
                         <div className="cat-name-cell">
@@ -5486,47 +5510,21 @@ export default function Page() {
                       <td data-label="Parent">
                         {products.find((p) => p.id === v.product_id)?.name || '—'}
                       </td>
-                      <td data-label="Status">{v.is_active === false ? 'Inactive' : 'Active'}</td>
-                      <td className="cat-actions">
-                        <button type="button" onClick={() => openVariantEdit(v)} aria-label={`Edit ${v.name}`}>
-                          Edit
-                        </button>
+                      <td className="col-num" data-label="Selling">
                         <AmountField inline readOnly value={v.selling_price ?? ''} aria-label={`Variant selling price ${v.name || v.id}`} />
+                      </td>
+                      <td className="col-num" data-label="Cost">
                         <AmountField inline readOnly value={v.cost_price ?? ''} aria-label={`Variant cost price ${v.name || v.id}`} />
-                        <div className="cat-menu">
-                          <button
-                            type="button"
-                            aria-label={`More actions for ${v.name}`}
-                            onClick={() => setVariantMenuId(variantMenuId === v.id ? '' : v.id)}
-                          >
-                            ···
-                          </button>
-                          {variantMenuId === v.id ? (
-                            <div className="cat-menu-pop">
-                              {v.is_active === false ? (
-                                <button type="button" className="btn-ok" aria-label={`Activate variant ${v.id}`} onClick={() => activateVariant(v.id)}>
-                                  Activate
-                                </button>
-                              ) : (
-                                <button type="button" className="btn-danger" aria-label={`Deactivate variant ${v.id}`} onClick={() => deactivateVariant(v.id)}>
-                                  Deactivate
-                                </button>
-                              )}
-                              <button type="button" onClick={() => generateVariantBarcode(v.id)} aria-label={`Generate variant barcode ${v.id}`}>
-                                Generate barcode
-                              </button>
-                              <button type="button" onClick={() => generateVariantQr(v.id)} aria-label={`Generate variant QR ${v.id}`}>
-                                Generate QR
-                              </button>
-                              <button type="button" onClick={() => printVariantBarcodeLabel(v.id)} aria-label={`Print variant barcode label ${v.id}`}>
-                                Label
-                              </button>
-                            </div>
-                          ) : null}
-                        </div>
+                      </td>
+                      <td className="col-status" data-label="Status">
+                        <StatusChip value={v.is_active === false ? 'inactive' : 'active'} />
+                      </td>
+                      <td className="col-actions">
+                        <RowActions label={`More actions for ${v.name}`} primaryMax={1} items={variantActions} />
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -6289,45 +6287,47 @@ export default function Page() {
               <table className="table cat-table">
                 <thead>
                   <tr>
-                    <th>Batch</th>
+                    <th className="col-id">Batch</th>
                     <th>Product</th>
-                    <th>Qty</th>
-                    <th>Expiry</th>
+                    <th className="col-num">Qty</th>
+                    <th className="col-date">Expiry</th>
                     <th>Location</th>
-                    <th>Actions</th>
+                    <th className="col-actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {visibleExpiring.map((b) => {
                     const wh = warehouses.find((w) => w.id === b.warehouse_id);
                     const lotName = catalogProductName(products, b.product_id, b.product_name);
+                    const lotActions: RowActionItem[] = [
+                      {
+                        key: 'use',
+                        label: 'Use this lot',
+                        ariaLabel: `Set expiry ${b.id}`,
+                        onClick: () => {
+                          setExpiryTargetId(String(b.product_id || ''));
+                          setLotBatch(String(b.batch_number || ''));
+                          setLotWh(String(b.warehouse_id || ''));
+                          setLotExpiry(b.expiry_date ? String(b.expiry_date).slice(0, 10) : '');
+                          setLotQty('');
+                          setFormFlash({});
+                          setExpiryDrawerOpen(true);
+                        },
+                      },
+                    ];
                     return (
                       <tr key={b.id}>
-                        <td data-label="Batch">
+                        <td className="col-id" data-label="Batch">
                           <strong>{b.batch_number}</strong>
                         </td>
                         <td data-label="Product">
                           <span className="inv-ui-name">{lotName || 'Product name is not on this lot.'}</span>
                         </td>
-                        <td data-label="Qty">{b.quantity}</td>
-                        <td data-label="Expiry">{b.expiry_date ? String(b.expiry_date).slice(0, 10) : '—'}</td>
+                        <td className="col-num" data-label="Qty">{b.quantity}</td>
+                        <td className="col-date" data-label="Expiry">{b.expiry_date ? String(b.expiry_date).slice(0, 10) : '—'}</td>
                         <td data-label="Location">{wh ? wh.name || wh.code : '—'}</td>
-                        <td className="cat-actions" data-label="Actions">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setExpiryTargetId(String(b.product_id || ''));
-                              setLotBatch(String(b.batch_number || ''));
-                              setLotWh(String(b.warehouse_id || ''));
-                              setLotExpiry(b.expiry_date ? String(b.expiry_date).slice(0, 10) : '');
-                              setLotQty('');
-                              setFormFlash({});
-                              setExpiryDrawerOpen(true);
-                            }}
-                            aria-label={`Set expiry ${b.id}`}
-                          >
-                            Use this lot
-                          </button>
+                        <td className="col-actions" data-label="Actions">
+                          <RowActions label={`More actions for lot ${b.batch_number}`} primaryMax={1} items={lotActions} />
                         </td>
                       </tr>
                     );
@@ -6501,40 +6501,48 @@ export default function Page() {
               <table className="table cat-table">
                 <thead>
                   <tr>
-                    <th>Number</th>
-                    <th>Status</th>
-                    <th>Items</th>
-                    <th />
+                    <th className="col-id">Number</th>
+                    <th className="col-status">Status</th>
+                    <th className="col-num">Items</th>
+                    <th className="col-actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {visibleCounts.map((c) => (
+                  {visibleCounts.map((c) => {
+                    const countActions: RowActionItem[] = [
+                      {
+                        key: 'open',
+                        label: 'Open',
+                        ariaLabel: `Open stock count ${c.id}`,
+                        onClick: () => openCount(c.id),
+                      },
+                      {
+                        key: 'cancel',
+                        label: 'Cancel',
+                        variant: 'danger',
+                        ariaLabel: `Cancel stock count ${c.id}`,
+                        hidden: !(c.can_cancel || c.status === 'draft'),
+                        onClick: () => cancelStockCount(c.id, c.count_number),
+                      },
+                    ];
+                    return (
                     <tr key={c.id}>
-                      <td data-label="Number">
+                      <td className="col-id" data-label="Number">
                         <strong>{c.count_number}</strong>
                         <div className="muted inv-child">{c.notes || ''}</div>
                       </td>
-                      <td data-label="Status">{c.status}</td>
-                      <td data-label="Items">
+                      <td className="col-status" data-label="Status">
+                        <StatusChip value={c.status} />
+                      </td>
+                      <td className="col-num" data-label="Items">
                         {c.counted_item_count}/{c.item_count}
                       </td>
-                      <td className="cat-actions">
-                        <button type="button" onClick={() => openCount(c.id)} aria-label={`Open stock count ${c.id}`}>
-                          Open
-                        </button>
-                        {(c.can_cancel || c.status === 'draft') && (
-                          <button
-                            type="button"
-                            className="btn-danger"
-                            onClick={() => cancelStockCount(c.id, c.count_number)}
-                            aria-label={`Cancel stock count ${c.id}`}
-                          >
-                            Cancel
-                          </button>
-                        )}
+                      <td className="col-actions">
+                        <RowActions label={`More actions for count ${c.count_number}`} primaryMax={1} items={countActions} />
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -6884,38 +6892,42 @@ export default function Page() {
                   <thead>
                     <tr>
                       <th>Product</th>
-                      <th>SKU</th>
-                      <th>Qty</th>
-                      <th>Actions</th>
+                      <th className="col-id">SKU</th>
+                      <th className="col-num">Qty</th>
+                      <th className="col-actions">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {adjustVisible.map((p) => (
+                    {adjustVisible.map((p) => {
+                      const adjustActions: RowActionItem[] = [
+                        {
+                          key: 'adjust',
+                          label: 'Adjust',
+                          ariaLabel: `Adjust ${p.name}`,
+                          onClick: () => {
+                            setAdjustTargetId(p.id);
+                            setFormFlash({});
+                            setAdjConfirming(false);
+                            setAdjQty('');
+                            setAdjReason('');
+                            setAdjNotes('');
+                            setAdjustDrawerOpen(true);
+                          },
+                        },
+                      ];
+                      return (
                       <tr key={p.id}>
                         <td data-label="Product">
                           <strong className="list-prod-name">{displayProductName(p.name)}</strong>
                         </td>
-                        <td data-label="SKU" className="list-secondary">{p.sku || '—'}</td>
-                        <td data-label="Qty">{p.stock_qty ?? 0}</td>
-                        <td className="cat-actions">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAdjustTargetId(p.id);
-                              setFormFlash({});
-                              setAdjConfirming(false);
-                              setAdjQty('');
-                              setAdjReason('');
-                              setAdjNotes('');
-                              setAdjustDrawerOpen(true);
-                            }}
-                            aria-label={`Adjust ${p.name}`}
-                          >
-                            Adjust
-                          </button>
+                        <td data-label="SKU" className="col-id list-secondary">{p.sku || '—'}</td>
+                        <td data-label="Qty" className="col-num">{p.stock_qty ?? 0}</td>
+                        <td className="col-actions">
+                          <RowActions label={`More actions for ${p.name}`} primaryMax={1} items={adjustActions} />
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -7213,39 +7225,46 @@ export default function Page() {
                 <thead>
                   <tr>
                     <th>Product</th>
-                    <th>SKU</th>
+                    <th className="col-id">SKU</th>
                     <th>Category</th>
-                    <th>Qty on hand</th>
-                    <th>Reorder/min</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+                    <th className="col-num">Qty on hand</th>
+                    <th className="col-num">Reorder/min</th>
+                    <th className="col-status">Status</th>
+                    <th className="col-actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {lowStockRows.map((row: any) => (
+                  {lowStockRows.map((row: any) => {
+                    const lowActions: RowActionItem[] = [
+                      {
+                        key: 'view',
+                        label: 'View',
+                        ariaLabel: `View ${row.name || row.id}`,
+                        onClick: () => {
+                          setSelectedId(row.id);
+                          setDrawerOpen(true);
+                          setProductEditMode(false);
+                          setFormFlash({});
+                          selectTab('products');
+                        },
+                      },
+                    ];
+                    return (
                     <tr key={row.key}>
                       <td data-label="Product"><span className="inv-ui-name">{row.name || 'Product name is not on this low-stock row.'}</span></td>
-                      <td data-label="SKU" className="list-secondary">{row.sku}</td>
+                      <td data-label="SKU" className="col-id list-secondary">{row.sku}</td>
                       <td data-label="Category" className="list-secondary">{row.category}</td>
-                      <td data-label="Qty on hand" className="list-qty-low">{row.qty}</td>
-                      <td data-label="Reorder/min">{row.floor}</td>
-                      <td data-label="Status">{row.status}</td>
-                      <td className="cat-actions">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedId(row.id);
-                            setDrawerOpen(true);
-                            setProductEditMode(false);
-                            setFormFlash({});
-                            selectTab('products');
-                          }}
-                        >
-                          View
-                        </button>
+                      <td data-label="Qty on hand" className="col-num list-qty-low">{row.qty}</td>
+                      <td data-label="Reorder/min" className="col-num">{row.floor}</td>
+                      <td className="col-status" data-label="Status">
+                        <StatusChip value={row.status} />
+                      </td>
+                      <td className="col-actions">
+                        <RowActions label={`More actions for ${row.name || row.id}`} primaryMax={1} items={lowActions} />
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -7667,104 +7686,99 @@ export default function Page() {
                   <tr>
                     <th>From store / warehouse</th>
                     <th>To store / warehouse</th>
-                    <th>Products</th>
-                    <th>Qty</th>
-                    <th>Reference</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th />
+                    <th className="col-num">Products</th>
+                    <th className="col-num">Qty</th>
+                    <th className="col-id">Reference</th>
+                    <th className="col-date">Date</th>
+                    <th className="col-status">Status</th>
+                    <th className="col-actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {xferPaged.rows.map((t) => (
+                  {xferPaged.rows.map((t) => {
+                    const xferActions: RowActionItem[] = [
+                      {
+                        key: 'lines',
+                        label: xferDetailId === t.id ? 'Hide lines' : 'Lines',
+                        ariaLabel: `${xferDetailId === t.id ? 'Hide' : 'Show'} stock transfer lines ${t.id}`,
+                        onClick: () => setXferDetailId(xferDetailId === t.id ? '' : t.id),
+                      },
+                      {
+                        key: 'submit',
+                        label: 'Submit',
+                        variant: 'ok',
+                        disabled: saveBusy,
+                        ariaLabel: `Submit stock transfer ${t.id}`,
+                        hidden: t.status !== 'draft',
+                        onClick: () => transferAct(t.id, 'submit'),
+                      },
+                      {
+                        key: 'approve',
+                        label: 'Approve',
+                        variant: 'ok',
+                        disabled: saveBusy,
+                        ariaLabel: `Approve stock transfer ${t.id}`,
+                        hidden: !(t.status === 'requested' && !t.fully_approved),
+                        onClick: () => transferAct(t.id, 'approve'),
+                      },
+                      {
+                        key: 'ship',
+                        label: 'Ship',
+                        variant: 'ok',
+                        disabled: saveBusy,
+                        ariaLabel: `Ship stock transfer ${t.id}`,
+                        hidden: !t.can_ship,
+                        onClick: () => transferAct(t.id, 'ship'),
+                      },
+                      {
+                        key: 'receive',
+                        label: 'Receive',
+                        variant: 'ok',
+                        disabled: saveBusy,
+                        ariaLabel: `Receive stock transfer ${t.id}`,
+                        hidden: t.status !== 'in_transit',
+                        onClick: () => transferAct(t.id, 'receive'),
+                      },
+                      {
+                        key: 'cancel',
+                        label: 'Cancel',
+                        variant: 'danger',
+                        disabled: saveBusy,
+                        ariaLabel: `Cancel stock transfer ${t.id}`,
+                        hidden: !['draft', 'requested', 'in_transit'].includes(t.status),
+                        onClick: () => transferAct(t.id, 'cancel'),
+                      },
+                      {
+                        key: 'reject',
+                        label: 'Reject',
+                        variant: 'danger',
+                        disabled: saveBusy,
+                        ariaLabel: `Reject stock transfer ${t.id}`,
+                        hidden: !(t.status === 'requested' && !t.fully_approved),
+                        onClick: () => transferAct(t.id, 'reject'),
+                      },
+                    ];
+                    return (
                     <Fragment key={t.id}>
                     <tr>
                       <td data-label="From">{warehouseLabel(t.from_warehouse_id)}</td>
                       <td data-label="To">{warehouseLabel(t.to_warehouse_id)}</td>
-                      <td data-label="Products">{transferProductCount(t)}</td>
-                      <td data-label="Qty">{transferQtyTotal(t)}</td>
-                      <td data-label="Reference">
+                      <td className="col-num" data-label="Products">{transferProductCount(t)}</td>
+                      <td className="col-num" data-label="Qty">{transferQtyTotal(t)}</td>
+                      <td className="col-id" data-label="Reference">
                         <strong>{t.transfer_number}</strong>
                         <div className="muted inv-child">{t.rejection_reason || ''}</div>
                       </td>
-                      <td data-label="Date">{formatTransferDate(t.created_at)}</td>
-                      <td data-label="Status">
-                        <span className={`xfer-status xfer-status--${t.status || 'draft'}`}>{t.status}</span>
+                      <td className="col-date" data-label="Date">{formatTransferDate(t.created_at)}</td>
+                      <td className="col-status" data-label="Status">
+                        <StatusChip value={t.status || 'draft'} />
                       </td>
-                      <td className="cat-actions">
-                        <button
-                          type="button"
-                          onClick={() => setXferDetailId(xferDetailId === t.id ? '' : t.id)}
-                          aria-label={`${xferDetailId === t.id ? 'Hide' : 'Show'} stock transfer lines ${t.id}`}
-                        >
-                          {xferDetailId === t.id ? 'Hide lines' : 'Lines'}
-                        </button>
-                        {t.status === 'draft' && (
-                          <button
-                            type="button"
-                            className="btn-ok"
-                            onClick={() => transferAct(t.id, 'submit')}
-                            disabled={saveBusy}
-                            aria-label={`Submit stock transfer ${t.id}`}
-                          >
-                            Submit
-                          </button>
-                        )}
-                        {t.status === 'requested' && !t.fully_approved && (
-                          <button
-                            type="button"
-                            className="btn-ok"
-                            onClick={() => transferAct(t.id, 'approve')}
-                            disabled={saveBusy}
-                            aria-label={`Approve stock transfer ${t.id}`}
-                          >
-                            Approve
-                          </button>
-                        )}
-                        {t.can_ship && (
-                          <button
-                            type="button"
-                            className="btn-ok"
-                            onClick={() => transferAct(t.id, 'ship')}
-                            disabled={saveBusy}
-                            aria-label={`Ship stock transfer ${t.id}`}
-                          >
-                            Ship
-                          </button>
-                        )}
-                        {t.status === 'in_transit' && (
-                          <button
-                            type="button"
-                            className="btn-ok"
-                            onClick={() => transferAct(t.id, 'receive')}
-                            disabled={saveBusy}
-                            aria-label={`Receive stock transfer ${t.id}`}
-                          >
-                            Receive
-                          </button>
-                        )}
-                        {['draft', 'requested', 'in_transit'].includes(t.status) && (
-                          <button
-                            type="button"
-                            className="btn-danger"
-                            onClick={() => transferAct(t.id, 'cancel')}
-                            disabled={saveBusy}
-                            aria-label={`Cancel stock transfer ${t.id}`}
-                          >
-                            Cancel
-                          </button>
-                        )}
-                        {t.status === 'requested' && !t.fully_approved && (
-                          <button
-                            type="button"
-                            className="btn-danger"
-                            onClick={() => transferAct(t.id, 'reject')}
-                            disabled={saveBusy}
-                            aria-label={`Reject stock transfer ${t.id}`}
-                          >
-                            Reject
-                          </button>
-                        )}
+                      <td className="col-actions">
+                        <RowActions
+                          label={`More actions for transfer ${t.transfer_number}`}
+                          primaryMax={1}
+                          items={xferActions}
+                        />
                       </td>
                     </tr>
                     {xferDetailId === t.id ? (
@@ -7808,7 +7822,8 @@ export default function Page() {
                       </tr>
                     ) : null}
                     </Fragment>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

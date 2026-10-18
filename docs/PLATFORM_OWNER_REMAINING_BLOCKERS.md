@@ -13,7 +13,7 @@ These are **not** incomplete product features. The console is COMPLETE; these ar
 
 ## Closed this completion batch
 
-- Unified `/platform/settings` (read-only ops config)
+- Unified `/platform/settings` (read-only ops: lifecycle, gateway, auth, services, backup/audit, deploy)
 - Platform reports CSV export
 - Dashboard paid SaaS revenue from paid invoices (no invented MRR)
 - Tenant list server `q` + industry filters

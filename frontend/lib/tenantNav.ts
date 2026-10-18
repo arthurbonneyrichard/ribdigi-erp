@@ -527,15 +527,18 @@ export function unauthorizedNavRedirect(
   allowed: string[] | '*',
   industry?: string | null,
 ): string | null {
-  if (!role || allowed === '*') return null;
+  if (!role) return null;
   const path = navPathname(pathname);
-  if (role === 'cashier' && (path === '/gift-cards' || path.startsWith('/gift-cards/'))) {
-    return '/pos';
+  const home = roleHomePath(role, industry);
+  // Role path blocks (cashier /customers, /gift-cards) apply even when the module is allowed.
+  if (!navItemVisibleForRole(role, path)) {
+    if (path === navPathname(home)) return null;
+    return home;
   }
+  if (allowed === '*') return null;
   const mod = navModuleForPath(path);
   if (!mod) return null;
   if (allowed.includes(mod)) return null;
-  const home = roleHomePath(role, industry);
   if (path === navPathname(home)) return null;
   return home;
 }

@@ -20,7 +20,7 @@
 | Live gateway secrets in env | OPS | Outside matrix — configure when authorized |
 | Automatic renewal fail-closed | COMPLETE | Consent + webhook confirmation |
 | Platform reports + CSV | COMPLETE | Paid revenue honest; export wired |
-| Settings page | COMPLETE | `/platform/settings` read-only |
+| Settings page | COMPLETE | `/platform/settings` read-only ops posture (lifecycle, gateway, auth, services, backup/audit, deploy) |
 | Tenant search | COMPLETE | `q` + industry on GET /tenants |
 | Audit logs | COMPLETE | Sensitive actions audited |
 | Migrations | COMPLETE (code) | Apply on target env before deploy |

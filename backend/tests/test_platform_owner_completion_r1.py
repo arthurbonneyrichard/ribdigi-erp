@@ -50,12 +50,22 @@ async def test_platform_settings_owner_read_only_no_secrets(client):
         "billing_max_attempts",
         "billing",
         "live_charges",
+        "auth",
+        "services",
+        "backup",
+        "audit",
+        "deploy",
     ):
         assert key in data, key
     assert isinstance(data["live_charges"], bool)
     assert data["live_charges"] is False  # test env never has a live, tested gateway
     assert isinstance(data["billing_reminder_days"], list)
     assert data["editable"] is False
+    assert data["source"] == "environment"
+    assert isinstance(data["auth"]["login_2fa_enabled"], bool)
+    assert isinstance(data["services"]["rate_limit_enabled"], bool)
+    assert isinstance(data["backup"]["encryption_configured"], bool)
+    assert data["deploy"]["app_env"]
     for key in _walk_keys(data):
         assert not any(word in key for word in _SECRET_WORDS), key
 
@@ -223,7 +233,14 @@ def test_owner_dashboard_ui_smoke():
     assert "Platform settings" in settings
     assert 'href="/platform/billing"' in settings
     assert 'href="/security"' in settings
+    assert 'href="/jobs"' in settings
+    assert 'href="/platform/reports"' in settings
     assert "Read-only" in settings
+    assert "Billing gateway" in settings
+    assert "Security & access" in settings
+    assert "System services" in settings
+    assert "Backup & audit" in settings
+    assert "Deploy identity" in settings
     assert "<input" not in settings  # read-only page
 
     nav = (ROOT / "frontend/lib/tenantNav.ts").read_text(encoding="utf-8")
