@@ -7453,6 +7453,9 @@ async def print_sales_invoice(
             public["template"] = "thermal"
             public["paper"] = paper
             public["text"] = text
+            public["html"] = invoice_print_svc.render_invoice_thermal_html(
+                payload, paper=paper
+            )
             return env(public)
         if fmt == "text":
             return PlainTextResponse(text, media_type="text/plain; charset=utf-8")

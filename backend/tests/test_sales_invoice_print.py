@@ -104,6 +104,8 @@ async def test_print_route_a4_thermal_and_guards(client, db_session, seeded):
     assert js.status_code == 200
     assert js.json()["data"]["invoice_number"]
     assert "SALES INVOICE" in js.json()["data"]["text"]
+    assert "SALES INVOICE" in (js.json()["data"].get("html") or "")
+    assert "font-weight:700" in (js.json()["data"].get("html") or "")
 
     # Foreign tenant cannot print
     beta = await auth_headers(ac, email="cashier@beta.example.com", tenant_slug="beta")

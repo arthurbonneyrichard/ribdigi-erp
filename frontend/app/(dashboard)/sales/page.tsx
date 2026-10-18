@@ -836,7 +836,10 @@ export default function Page() {
           const printedDoc = await api(
             `/sales/invoices/${sourceId}/print?template=thermal&format=json&paper=${encodeURIComponent(paper)}`
           );
-          printed = openReceiptPrintWindow(undefined, String(printedDoc.data?.text || ''));
+          printed = openReceiptPrintWindow(
+            printedDoc.data?.html,
+            String(printedDoc.data?.text || '')
+          );
         }
       }
       if (!printed) throw new Error('Reprint could not open the print dialog.');

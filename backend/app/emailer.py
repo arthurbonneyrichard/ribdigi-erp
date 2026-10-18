@@ -507,6 +507,32 @@ def _fmt_money(value: Any) -> str:
         return "0.00"
 
 
+def _doc_line_row(*cells: str, right_from: int = 1) -> str:
+    from app.print_branding import DOC_TD_RIGHT, DOC_TD_STYLE
+
+    parts: list[str] = []
+    for i, cell in enumerate(cells):
+        style = DOC_TD_RIGHT if i >= right_from else DOC_TD_STYLE
+        parts.append(f'<td style="{style}">{html.escape(str(cell))}</td>')
+    return f"<tr>{''.join(parts)}</tr>"
+
+
+def _doc_meta_block(html_inner: str) -> str:
+    from app.print_branding import DOC_META_STYLE
+
+    return f'<div style="{DOC_META_STYLE}">{html_inner}</div>'
+
+
+def _doc_totals_block(lines: list[str], *, total_line: str) -> str:
+    from app.print_branding import DOC_TOTALS_STYLE
+
+    body = "<br/>".join(lines)
+    return (
+        f'<div style="{DOC_TOTALS_STYLE}">{body}<br/>'
+        f'<strong style="color:#003d1f;font-size:15px;">{total_line}</strong></div>'
+    )
+
+
 def render_quotation_bodies(
     *,
     company_name: str,
@@ -515,6 +541,8 @@ def render_quotation_bodies(
     quotation: dict[str, Any],
     tenant: Any | None = None,
 ) -> tuple[str, str]:
+    from app.print_branding import document_table_html
+
     number = quotation.get("quotation_number") or ""
     valid = quotation.get("valid_until")
     valid_s = str(valid)[:10] if valid else "—"
@@ -536,8 +564,7 @@ def render_quotation_bodies(
         total = _fmt_money(item.get("line_total"))
         lines.append(f"  - {desc}: qty {qty} × {currency} {price} = {currency} {total}")
         html_rows.append(
-            f"<tr><td>{html.escape(str(desc))}</td><td>{html.escape(str(qty))}</td>"
-            f"<td>{html.escape(currency)} {price}</td><td>{html.escape(currency)} {total}</td></tr>"
+            _doc_line_row(str(desc), str(qty), f"{currency} {price}", f"{currency} {total}")
         )
     lines.extend(
         [
@@ -553,18 +580,25 @@ def render_quotation_bodies(
     lines.append("\nThank you for your business.")
     text = "\n".join(lines)
     inner = (
-        f"<p>From <strong>{html.escape(company_name)}</strong><br/>"
-        f"To {html.escape(str(customer_name))}<br/>Valid until {html.escape(valid_s)}</p>"
-        '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;">'
-        "<thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Line</th></tr></thead>"
-        f"<tbody>{''.join(html_rows)}</tbody></table>"
-        f"<p>Subtotal: {html.escape(currency)} {_fmt_money(quotation.get('subtotal'))}<br/>"
-        f"Tax: {html.escape(currency)} {_fmt_money(quotation.get('tax_amount'))}<br/>"
-        f"Discount: {html.escape(currency)} {_fmt_money(quotation.get('discount_amount'))}<br/>"
-        f"<strong>Total: {html.escape(currency)} {_fmt_money(quotation.get('total_amount'))}</strong></p>"
+        _doc_meta_block(
+            f"From <strong>{html.escape(company_name)}</strong><br/>"
+            f"To {html.escape(str(customer_name))}<br/>Valid until {html.escape(valid_s)}"
+        )
+        + document_table_html(
+            headers=["Item", "Qty", "Price", "Line"],
+            rows_html="".join(html_rows),
+        )
+        + _doc_totals_block(
+            [
+                f"Subtotal: {html.escape(currency)} {_fmt_money(quotation.get('subtotal'))}",
+                f"Tax: {html.escape(currency)} {_fmt_money(quotation.get('tax_amount'))}",
+                f"Discount: {html.escape(currency)} {_fmt_money(quotation.get('discount_amount'))}",
+            ],
+            total_line=f"Total: {html.escape(currency)} {_fmt_money(quotation.get('total_amount'))}",
+        )
     )
     if quotation.get("notes"):
-        inner += f"<p>Notes: {html.escape(str(quotation['notes']))}</p>"
+        inner += f"<p style=\"margin:14px 0 0;color:#4d5d56;\">Notes: {html.escape(str(quotation['notes']))}</p>"
     branded = render_branded_html(
         body_html=inner,
         company_name=company_name,
@@ -605,6 +639,8 @@ def render_purchase_order_bodies(
     purchase_order: dict[str, Any],
     tenant: Any | None = None,
 ) -> tuple[str, str]:
+    from app.print_branding import document_table_html
+
     number = purchase_order.get("po_number") or ""
     due = purchase_order.get("due_date")
     due_s = str(due)[:10] if due else "—"
@@ -637,10 +673,14 @@ def render_purchase_order_bodies(
         )
         disc_cell = _fmt_money(disc) if disc else "—"
         html_rows.append(
-            f"<tr><td>{html.escape(str(desc))}</td><td>{html.escape(str(qty))}</td>"
-            f"<td>{html.escape(currency)} {price}</td>"
-            f"<td>{tax}%</td><td>{html.escape(currency)} {disc_cell}</td>"
-            f"<td>{html.escape(currency)} {total}</td></tr>"
+            _doc_line_row(
+                str(desc),
+                str(qty),
+                f"{currency} {price}",
+                f"{tax}%",
+                f"{currency} {disc_cell}",
+                f"{currency} {total}",
+            )
         )
     lines.extend(
         [
@@ -658,18 +698,27 @@ def render_purchase_order_bodies(
         f"<br/>Delivery address: {html.escape(delivery_address)}" if delivery_address else ""
     )
     inner = (
-        f"<p>From <strong>{html.escape(company_name)}</strong><br/>"
-        f"To {html.escape(str(supplier_name))}<br/>Due {html.escape(due_s)}"
-        f"{delivery_html}</p>"
-        '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;">'
-        "<thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Tax</th><th>Discount</th><th>Line</th></tr></thead>"
-        f"<tbody>{''.join(html_rows)}</tbody></table>"
-        f"<p>Subtotal: {html.escape(currency)} {_fmt_money(purchase_order.get('subtotal'))}<br/>"
-        f"Tax: {html.escape(currency)} {_fmt_money(purchase_order.get('tax_amount'))}<br/>"
-        f"<strong>Total: {html.escape(currency)} {_fmt_money(purchase_order.get('total_amount'))}</strong></p>"
+        _doc_meta_block(
+            f"From <strong>{html.escape(company_name)}</strong><br/>"
+            f"To {html.escape(str(supplier_name))}<br/>Due {html.escape(due_s)}"
+            f"{delivery_html}"
+        )
+        + document_table_html(
+            headers=["Item", "Qty", "Price", "Tax", "Discount", "Line"],
+            rows_html="".join(html_rows),
+        )
+        + _doc_totals_block(
+            [
+                f"Subtotal: {html.escape(currency)} {_fmt_money(purchase_order.get('subtotal'))}",
+                f"Tax: {html.escape(currency)} {_fmt_money(purchase_order.get('tax_amount'))}",
+            ],
+            total_line=(
+                f"Total: {html.escape(currency)} {_fmt_money(purchase_order.get('total_amount'))}"
+            ),
+        )
     )
     if purchase_order.get("notes"):
-        inner += f"<p>Notes: {html.escape(str(purchase_order['notes']))}</p>"
+        inner += f"<p style=\"margin:14px 0 0;color:#4d5d56;\">Notes: {html.escape(str(purchase_order['notes']))}</p>"
     branded = render_branded_html(
         body_html=inner,
         company_name=company_name,
@@ -715,6 +764,8 @@ def render_sales_invoice_bodies(
     invoice: dict[str, Any],
     tenant: Any | None = None,
 ) -> tuple[str, str]:
+    from app.print_branding import document_table_html
+
     number = invoice.get("invoice_number") or ""
     due = invoice.get("due_date")
     due_s = str(due)[:10] if due else "—"
@@ -739,9 +790,13 @@ def render_sales_invoice_bodies(
             f"  - {desc}: qty {qty} × {currency} {price} (tax {tax}%) = {currency} {total}"
         )
         html_rows.append(
-            f"<tr><td>{html.escape(str(desc))}</td><td>{html.escape(str(qty))}</td>"
-            f"<td>{html.escape(currency)} {price}</td>"
-            f"<td>{tax}%</td><td>{html.escape(currency)} {total}</td></tr>"
+            _doc_line_row(
+                str(desc),
+                str(qty),
+                f"{currency} {price}",
+                f"{tax}%",
+                f"{currency} {total}",
+            )
         )
     lines.extend(
         [
@@ -759,20 +814,27 @@ def render_sales_invoice_bodies(
     lines.append("\nThank you for your business.")
     text = "\n".join(lines)
     inner = (
-        f"<p>From <strong>{html.escape(company_name)}</strong><br/>"
-        f"To {html.escape(str(customer_name))}<br/>Due {html.escape(due_s)}</p>"
-        '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;">'
-        "<thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Tax</th><th>Line</th></tr></thead>"
-        f"<tbody>{''.join(html_rows)}</tbody></table>"
-        f"<p>Subtotal: {html.escape(currency)} {_fmt_money(invoice.get('subtotal'))}<br/>"
-        f"Tax: {html.escape(currency)} {_fmt_money(invoice.get('tax_amount'))}<br/>"
-        f"Discount: {html.escape(currency)} {_fmt_money(invoice.get('discount_amount'))}<br/>"
-        f"<strong>Total: {html.escape(currency)} {_fmt_money(invoice.get('total_amount'))}</strong><br/>"
-        f"Paid: {html.escape(currency)} {_fmt_money(invoice.get('paid_amount'))}<br/>"
-        f"Balance due: {html.escape(currency)} {_fmt_money(invoice.get('balance_due'))}</p>"
+        _doc_meta_block(
+            f"From <strong>{html.escape(company_name)}</strong><br/>"
+            f"To {html.escape(str(customer_name))}<br/>Due {html.escape(due_s)}"
+        )
+        + document_table_html(
+            headers=["Item", "Qty", "Price", "Tax", "Line"],
+            rows_html="".join(html_rows),
+        )
+        + _doc_totals_block(
+            [
+                f"Subtotal: {html.escape(currency)} {_fmt_money(invoice.get('subtotal'))}",
+                f"Tax: {html.escape(currency)} {_fmt_money(invoice.get('tax_amount'))}",
+                f"Discount: {html.escape(currency)} {_fmt_money(invoice.get('discount_amount'))}",
+                f"Paid: {html.escape(currency)} {_fmt_money(invoice.get('paid_amount'))}",
+                f"Balance due: {html.escape(currency)} {_fmt_money(invoice.get('balance_due'))}",
+            ],
+            total_line=f"Total: {html.escape(currency)} {_fmt_money(invoice.get('total_amount'))}",
+        )
     )
     if invoice.get("notes"):
-        inner += f"<p>Notes: {html.escape(str(invoice['notes']))}</p>"
+        inner += f"<p style=\"margin:14px 0 0;color:#4d5d56;\">Notes: {html.escape(str(invoice['notes']))}</p>"
     branded = render_branded_html(
         body_html=inner,
         company_name=company_name,

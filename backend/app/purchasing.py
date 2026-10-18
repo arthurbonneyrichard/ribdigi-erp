@@ -1463,28 +1463,38 @@ async def serialize_purchase_return(db: AsyncSession, ret: m.PurchaseReturn) -> 
 
 
 def purchase_return_print_html(ret: dict, *, supplier_name: str = "", company_name: str = "") -> str:
+    from app.print_branding import POWERED_BY_RIBDIGI, document_print_shell
+
     rows = "".join(
         f"<tr><td>{html.escape(str(i.get('product_id') or ''))}</td>"
-        f"<td>{i.get('quantity')}</td><td>{i.get('unit_price')}</td>"
-        f"<td>{i.get('line_total')}</td></tr>"
+        f'<td class="r">{html.escape(str(i.get("quantity") or ""))}</td>'
+        f'<td class="r">{html.escape(str(i.get("unit_price") or ""))}</td>'
+        f'<td class="r">{html.escape(str(i.get("line_total") or ""))}</td></tr>'
         for i in (ret.get("items") or [])
     )
-    return f"""<!doctype html><html><head><meta charset="utf-8"/>
-<title>{html.escape(str(ret.get('debit_note_number') or ret.get('return_number') or 'Return'))}</title>
-<style>body{{font-family:Arial,sans-serif;margin:24px;color:#10211b}}
-table{{width:100%;border-collapse:collapse}}td,th{{border:1px solid #d4e5c4;padding:6px;text-align:left}}
-@media print{{.toolbar{{display:none}}}}</style></head><body>
-<div class="toolbar"><button onclick="window.print()">Print</button></div>
-<h1>{html.escape(company_name or 'Purchase return')}</h1>
-<p>Return {html.escape(str(ret.get('return_number') or ''))}
- · Debit note {html.escape(str(ret.get('debit_note_number') or '—'))}</p>
-<p>Supplier {html.escape(supplier_name or str(ret.get('supplier_id') or ''))}
- · Reason {html.escape(str(ret.get('reason') or ''))}
- · Status {html.escape(str(ret.get('status') or ''))}</p>
-<table><thead><tr><th>Product</th><th>Qty</th><th>Unit</th><th>Total</th></tr></thead>
-<tbody>{rows}</tbody></table>
-<p>Total {html.escape(str(ret.get('total_amount') or 0))}</p>
-</body></html>"""
+    return_no = str(ret.get("return_number") or "")
+    debit_no = str(ret.get("debit_note_number") or "—")
+    title = f"Purchase return {return_no}".strip() or "Purchase return"
+    body = (
+        f'<div class="meta">'
+        f"Return <strong>{html.escape(return_no)}</strong>"
+        f" · Debit note <strong>{html.escape(debit_no)}</strong><br/>"
+        f"Supplier {html.escape(supplier_name or str(ret.get('supplier_id') or ''))}<br/>"
+        f"Reason {html.escape(str(ret.get('reason') or ''))}"
+        f" · Status {html.escape(str(ret.get('status') or '').upper())}"
+        f"</div>"
+        '<table class="doc"><thead><tr>'
+        "<th>Product</th><th>Qty</th><th>Unit</th><th>Total</th>"
+        f"</tr></thead><tbody>{rows}</tbody></table>"
+        f'<div class="totals"><strong>Total {html.escape(str(ret.get("total_amount") or 0))}</strong></div>'
+        f'<div class="foot"><div class="powered">{html.escape(POWERED_BY_RIBDIGI)}</div></div>'
+    )
+    return document_print_shell(
+        title=title,
+        company_name=company_name or "RIBDIGI ERP",
+        subtitle=f"Debit note {debit_no}",
+        body_html=body,
+    )
 
 
 async def cancel_purchase_return(

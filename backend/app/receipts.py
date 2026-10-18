@@ -333,7 +333,9 @@ def render_thermal_html(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     slip = "48mm" if narrow else "72mm"
     font = "12px" if narrow else "13px"
     bits: list[str] = []
-    bits.append(_html_mid(str(receipt.get("company_name") or "RIBDIGI ERP")))
+    bits.append(
+        f'<div class="co mid">{html.escape(str(receipt.get("company_name") or "RIBDIGI ERP"))}</div>'
+    )
     if receipt.get("store_name"):
         bits.append(_html_mid(str(receipt["store_name"])))
     if receipt.get("company_address"):
@@ -347,7 +349,7 @@ def render_thermal_html(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
         bits.append(_html_mid(str(receipt["company_website"])))
     if receipt.get("print_header"):
         for part in _wrap(str(receipt["print_header"]), 26 if narrow else 32):
-            bits.append(_html_mid(part))
+            bits.append(f'<div class="hdr mid">{html.escape(part)}</div>')
     bits.append('<div class="rule"></div>')
     meta: list[str] = []
     meta.append(_html_pair("Receipt no.", str(receipt.get("reference") or "")))
@@ -389,7 +391,11 @@ def render_thermal_html(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     discount_amount = money_json(receipt.get("discount_amount") or 0)
     if discount_amount > 0:
         totals.append(_html_pair("Discount", f"-{_money(discount_amount)}"))
-    totals.append(_html_pair(f"TOTAL {currency}".strip(), _money(receipt.get("total") or 0)))
+    totals.append(
+        "<tr class=\"tot\">"
+        f"<td>{html.escape(f'TOTAL {currency}'.strip())}</td>"
+        f'<td class="r">{html.escape(_money(receipt.get("total") or 0))}</td></tr>'
+    )
     bits.append(f'<table class="grid">{"".join(totals)}</table>')
     bits.append('<div class="gap"></div>')
     payments = receipt.get("payments") or []
@@ -424,7 +430,7 @@ def render_thermal_html(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
         settle.append(_html_pair("Invoice", str(receipt.get("invoice_number"))))
     if settle:
         bits.append(f'<table class="grid">{"".join(settle)}</table>')
-    bits.append('<div class="rule"></div>')
+    bits.append('<div class="rule brand"></div>')
     footer = str(receipt.get("print_footer") or "Thank you")
     for part in _wrap(footer, 26 if narrow else 32):
         bits.append(_html_mid(part))
@@ -432,18 +438,22 @@ def render_thermal_html(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     bits.append('<div class="feed">&nbsp;</div>')
     style = (
         f"@page{{margin:0;size:{page} auto}}"
-        f"html,body{{margin:0;padding:0;width:{page};max-width:{page}}}"
+        f"html,body{{margin:0;padding:0;width:{page};max-width:{page};color:#10211b}}"
         f".slip{{width:{slip};max-width:{page};margin:0 auto;box-sizing:border-box;"
         "font-family:'Courier New',ui-monospace,monospace;font-weight:700;"
-        f"font-size:{font};line-height:1.15;overflow:visible}}"
+        f"font-size:{font};line-height:1.15;overflow:visible;color:#10211b}}"
         ".mid{text-align:center;overflow-wrap:anywhere}"
-        ".rule{border-top:1px dashed #111;margin:1mm 0}"
+        ".co{letter-spacing:.02em}"
+        ".hdr{color:#2f7a0c}"
+        ".rule{border-top:1px dashed #4ab012;margin:1.2mm 0}"
+        ".rule.brand{border-top:1.5px solid #4ab012}"
         "table.grid{width:100%;border-collapse:collapse;margin:0 auto}"
         f"td{{font-weight:700;font-size:{font};padding:0;vertical-align:top;overflow-wrap:anywhere}}"
         "td.q{width:2.2em;text-align:right;padding-right:1mm}"
         "td.r{text-align:right;padding-left:1mm}"
+        "tr.tot td{padding-top:0.6mm;border-top:1px solid #003d1f}"
         ".powered{text-align:center;font-size:2.5px;font-weight:700;line-height:1.2;"
-        "margin-top:1mm;overflow-wrap:anywhere}"
+        "margin-top:1mm;overflow-wrap:anywhere;color:#4ab012}"
         ".gap{height:2mm}"
         ".feed{height:20mm;line-height:20mm;font-size:1px;overflow:hidden}"
     )
