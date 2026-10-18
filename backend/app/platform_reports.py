@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import csv
+import io
 from datetime import datetime
 from typing import Any
 
@@ -13,8 +15,11 @@ from app import packages as packages_svc
 from app import schema_compat
 from app import store_entitlements as store_ent_svc
 from app import tenants as tenants_svc
+from app.honesty import money_json
 
 _OPEN_TICKET_STATUSES = ("new", "in_progress", "waiting_for_tenant")
+# Billing accounts that need owner attention (payment missing, retrying, or in grace).
+_BILLING_ATTENTION_STATUSES = ("payment_required", "past_due", "grace_period")
 
 # Platform dashboard activity. Operational modules (pos, sales, inventory, …) are excluded.
 PLATFORM_ACTIVITY: tuple[tuple[str, str], ...] = (
@@ -66,13 +71,60 @@ async def build_platform_summary(db: AsyncSession) -> dict[str, Any]:
             )
             or 0
         )
-    return {
+    body = {
         "generated_at": datetime.utcnow().isoformat() + "Z",
         "tenant_count": len(rows),
         "by_status": by_status,
         "by_package": by_package,
         "open_support_tickets": open_support_tickets,
     }
+    body.update(await _paid_billing_figures(db))
+    return body
+
+
+async def _paid_billing_figures(db: AsyncSession) -> dict[str, Any]:
+    """Real SaaS billing figures only. No MRR: plan interval is not assumed.
+
+    Revenue is the lifetime sum of invoices the gateway webhook marked ``paid``,
+    grouped by currency (currencies are never added together).
+    """
+    out: dict[str, Any] = {
+        "paid_invoice_count": 0,
+        "paid_revenue_by_currency": {},
+        "active_billing_accounts": 0,
+        "attention_count": 0,
+    }
+    if await schema_compat.table_column_names(db, "tenant_billing_invoices"):
+        paid = (
+            await db.execute(
+                select(
+                    m.TenantBillingInvoice.currency,
+                    func.count(),
+                    func.sum(m.TenantBillingInvoice.amount),
+                )
+                .where(m.TenantBillingInvoice.status == "paid")
+                .group_by(m.TenantBillingInvoice.currency)
+            )
+        ).all()
+        out["paid_invoice_count"] = sum(int(count or 0) for _cur, count, _sum in paid)
+        out["paid_revenue_by_currency"] = {
+            (cur or "").upper(): money_json(total) for cur, _count, total in sorted(paid, key=lambda r: r[0] or "") if cur
+        }
+    if await schema_compat.table_column_names(db, "tenant_billing_accounts"):
+        by_billing = dict(
+            (
+                await db.execute(
+                    select(m.TenantBillingAccount.billing_status, func.count()).group_by(
+                        m.TenantBillingAccount.billing_status
+                    )
+                )
+            ).all()
+        )
+        out["active_billing_accounts"] = int(by_billing.get("active") or 0)
+        out["attention_count"] = sum(
+            int(by_billing.get(key) or 0) for key in _BILLING_ATTENTION_STATUSES
+        )
+    return out
 
 
 async def build_subscription_usage_report(db: AsyncSession) -> dict[str, Any]:
@@ -191,6 +243,80 @@ async def build_all_platform_reports(db: AsyncSession) -> dict[str, Any]:
             await db.execute(select(m.Tenant).order_by(m.Tenant.company_name.asc()))
         ).scalars().all()],
     }
+
+
+PLATFORM_REPORT_EXPORTS = ("summary", "subscriptions", "packages", "trials")
+
+
+def _csv_cell(value: Any) -> Any:
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if value is None:
+        return ""
+    if isinstance(value, str) and value[:1] in ("=", "+", "-", "@"):
+        # Company names are tenant-entered; keep spreadsheets from running them as formulas.
+        return "'" + value
+    return value
+
+
+def _csv_text(headers: list[str], rows: list[dict[str, Any]]) -> str:
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=headers, extrasaction="ignore", lineterminator="\n")
+    writer.writeheader()
+    for row in rows:
+        writer.writerow({key: _csv_cell(row.get(key)) for key in headers})
+    return buf.getvalue()
+
+
+async def build_platform_report_csv(
+    db: AsyncSession, report: str, *, within_days: int = 45
+) -> tuple[str, str]:
+    """CSV text + filename for one cross-tenant report. Same data as the JSON reports."""
+    stamp = datetime.utcnow().strftime("%Y%m%d")
+    if report == "summary":
+        data = await build_platform_summary(db)
+        rows: list[dict[str, Any]] = [
+            {"metric": "tenant_count", "value": data["tenant_count"]},
+            {"metric": "open_support_tickets", "value": data["open_support_tickets"]},
+            {"metric": "paid_invoice_count", "value": data["paid_invoice_count"]},
+            {"metric": "active_billing_accounts", "value": data["active_billing_accounts"]},
+            {"metric": "attention_count", "value": data["attention_count"]},
+        ]
+        rows += [
+            {"metric": f"tenants_{key}", "value": val} for key, val in sorted(data["by_status"].items())
+        ]
+        rows += [
+            {"metric": f"package_{key}", "value": val}
+            for key, val in sorted(data["by_package"].items())
+        ]
+        rows += [
+            {"metric": f"paid_revenue_{cur}", "value": val}
+            for cur, val in sorted(data["paid_revenue_by_currency"].items())
+        ]
+        text = _csv_text(["metric", "value"], rows)
+    elif report == "subscriptions":
+        data = await build_subscription_usage_report(db)
+        headers = [
+            "slug", "company_name", "status", "package_code", "package_name", "term_value",
+            "term_unit", "months_assigned", "months_used", "months_remaining",
+            "days_remaining", "renewal_due", "amount", "currency",
+        ]
+        text = _csv_text(headers, data["rows"])
+    elif report == "packages":
+        data = await build_package_distribution_report(db)
+        headers = [
+            "package_code", "package_name", "tenant_count", "active", "trial", "grace", "suspended",
+        ]
+        text = _csv_text(headers, data["packages"])
+    elif report == "trials":
+        data = await build_trial_expirations_report(db, within_days=within_days)
+        headers = [
+            "slug", "company_name", "status", "package_code", "kind", "ends_at", "days_remaining",
+        ]
+        text = _csv_text(headers, data["rows"])
+    else:
+        raise ValueError(f"unknown platform report: {report}")
+    return text, f"platform-{report}-{stamp}.csv"
 
 
 def _safe_details(details: dict | None) -> dict:

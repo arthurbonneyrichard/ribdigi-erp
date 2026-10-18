@@ -42,7 +42,8 @@ def test_pr_item_product_id_schema():
 def test_pr_item_product_id_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Purchase request product"' in page
-    assert "product_id: prProductId.trim()" in page
+    assert 'aria-label="Add purchase request product"' in page
+    assert "product_id: line.productId.trim()" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "PR item product_id OpenAPI" in agents
     assert "UuidIdValue" in agents

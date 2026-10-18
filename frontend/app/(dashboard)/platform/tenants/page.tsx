@@ -140,6 +140,7 @@ export default function PlatformTenantsPage() {
   const [packages, setPackages] = useState<PackageInfo[]>([]);
   const [packageable, setPackageable] = useState<string[]>([]);
   const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
   const [form, setForm] = useState(emptyCreate);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -299,8 +300,17 @@ export default function PlatformTenantsPage() {
   }, [tenants]);
 
   const visible = useMemo(
-    () => (filter === 'all' ? tenants : tenants.filter((t) => t.status === filter)),
-    [tenants, filter]
+    () => {
+      const needle = search.trim().toLowerCase();
+      return tenants.filter(
+        (t) =>
+          (filter === 'all' || t.status === filter) &&
+          (!needle ||
+            String(t.company_name || '').toLowerCase().includes(needle) ||
+            String(t.slug || '').toLowerCase().includes(needle)),
+      );
+    },
+    [tenants, filter, search]
   );
 
   async function createTenant(e: React.FormEvent) {
@@ -658,6 +668,13 @@ export default function PlatformTenantsPage() {
             </p>
           </div>
           <div className="plat-filters" role="group" aria-label="Tenant status">
+            <input
+              type="search"
+              aria-label="Search tenants"
+              placeholder="Search company or slug"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
             {['all', 'active', 'trial', 'grace', 'suspended'].map((s) => (
               <button
                 key={s}

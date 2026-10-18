@@ -9,7 +9,7 @@ from pydantic import EmailStr, TypeAdapter, ValidationError as PydanticValidatio
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Annotated
+from typing import Annotated, Literal
 import asyncio
 import logging
 
@@ -1086,10 +1086,14 @@ async def tenant_me_logo_delete(
 @api.get("/tenants")
 async def tenants_list(
     status: Annotated[TenantStatusFilterValue | None, Query()] = None,
+    # Company name / slug contains (case-insensitive); omit or blank → all.
+    q: Annotated[str | None, Query(max_length=120)] = None,
+    # Known industry key (retail, hotel, …); unknown → **422**.
+    industry: Annotated[str | None, Query(max_length=40)] = None,
     claims=Depends(require_platform_permission("platform_tenants", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = await tenants_svc.list_tenants(db, status=status)
+    rows = await tenants_svc.list_tenants(db, status=status, q=q, industry=industry)
     return env([tenants_svc.serialize_tenant(t) for t in rows])
 
 
@@ -2008,6 +2012,38 @@ async def platform_reports_trials(
             db, within_days=max(1, min(within_days, 365))
         )
     )
+
+
+@api.get("/platform/reports/export")
+async def platform_reports_export(
+    report: Annotated[
+        Literal["summary", "subscriptions", "packages", "trials"], Query()
+    ] = "summary",
+    within_days: Annotated[int, Query(ge=1, le=365)] = 45,
+    claims=Depends(require_platform_permission("platform_reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    text, filename = await platform_reports_svc.build_platform_report_csv(
+        db, report, within_days=within_days
+    )
+    return Response(
+        content=text,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@api.get("/platform/settings")
+async def platform_settings_get(
+    claims=Depends(require_platform_permission("platform", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    # Operational config is for the software owner only (same gate as billing).
+    if not is_platform_owner_role(claims.get("role")):
+        raise HTTPException(status_code=403, detail="Only the platform owner can view platform settings")
+    from app import platform_settings as platform_settings_svc
+
+    return env(await platform_settings_svc.build_platform_settings(db))
 
 
 @api.get("/settings/email")

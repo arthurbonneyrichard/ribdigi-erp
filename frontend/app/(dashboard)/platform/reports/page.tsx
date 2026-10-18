@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatNumber } from '../../../../lib/format';
+import { apiFetch } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
 import { getPrefetched } from '../../../../lib/prefetchCache';
 import { subscriptionAmountLabel } from '../../../../lib/platformBilling';
@@ -35,6 +36,28 @@ export default function PlatformReportsPage() {
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
+
+  async function exportCsv(report: 'summary' | 'subscriptions' | 'packages' | 'trials') {
+    setError('');
+    try {
+      const res = await apiFetch(`/platform/reports/export?report=${report}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || body.message || 'Export failed');
+      }
+      const blob = await res.blob();
+      const cd = res.headers.get('Content-Disposition') || '';
+      const match = cd.match(/filename="?([^"]+)"?/);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = match?.[1] || `platform-${report}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setError(e.message || 'Export failed');
+    }
+  }
 
   useEffect(() => {
     (async () => {
@@ -84,6 +107,28 @@ export default function PlatformReportsPage() {
             {error}
           </p>
         )}
+
+        <div className="plat-panel">
+          <h2>Export CSV</h2>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Download platform report data as CSV. Revenue figures come from paid subscription
+            invoices only.
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" className="btn-primary" aria-label="Export platform summary CSV" onClick={() => exportCsv('summary')}>
+              Summary
+            </button>
+            <button type="button" className="btn-primary" aria-label="Export platform subscriptions CSV" onClick={() => exportCsv('subscriptions')}>
+              Subscriptions
+            </button>
+            <button type="button" className="btn-primary" aria-label="Export platform packages CSV" onClick={() => exportCsv('packages')}>
+              Packages
+            </button>
+            <button type="button" className="btn-primary" aria-label="Export platform trials CSV" onClick={() => exportCsv('trials')}>
+              Trials and renewals
+            </button>
+          </div>
+        </div>
 
         <div className="plat-stats">
           <div className="plat-stat">

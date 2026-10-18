@@ -562,4 +562,11 @@ test('software owner sidebar keeps platform console items and role limits', () =
   assert.equal(finance.includes('/platform/reports'), true);
   assert.equal(finance.includes('/platform/tenants'), true);
   assert.equal(finance.includes('/jobs'), true);
+
+  // Platform settings are owner-only in the sidebar.
+  assert.equal(owner.includes('/platform/settings'), true);
+  assert.equal(legacy.includes('/platform/settings'), true);
+  assert.equal(admin.includes('/platform/settings'), false);
+  assert.equal(support.includes('/platform/settings'), false);
+  assert.equal(finance.includes('/platform/settings'), false);
 });

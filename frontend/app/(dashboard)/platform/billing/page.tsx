@@ -57,6 +57,34 @@ type CompanyRow = {
   renews: string | null;
 };
 
+type AttentionRow = {
+  slug?: string | null;
+  company_name?: string | null;
+  tenant_status?: string | null;
+  billing_status?: string | null;
+  authorization_present?: boolean;
+  access_note?: string | null;
+  plan?: {
+    amount?: number | null;
+    currency?: string | null;
+    name?: string | null;
+    code?: string | null;
+  } | null;
+};
+
+type InvoiceRow = {
+  id?: string;
+  status?: string;
+  amount?: number | null;
+  currency?: string | null;
+  description?: string | null;
+  period_start?: string | null;
+  period_end?: string | null;
+  paid_at?: string | null;
+  created_at?: string | null;
+  gateway_reference?: string | null;
+};
+
 export default function PlatformBillingPage() {
   const router = useRouter();
   const prefs = useCompanyFormat();
@@ -92,10 +120,22 @@ export default function PlatformBillingPage() {
   const [gatewaySecret, setGatewaySecret] = useState('');
   const [gatewayHook, setGatewayHook] = useState('');
   const [gatewayView, setGatewayView] = useState<Record<string, unknown> | null>(null);
+  const [attention, setAttention] = useState<AttentionRow[]>([]);
+  const [paySlug, setPaySlug] = useState('');
+  const [payAmount, setPayAmount] = useState('');
+  const [payCurrency, setPayCurrency] = useState('GHS');
+  const [payReference, setPayReference] = useState('');
+  const [payNote, setPayNote] = useState('');
+  const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
 
   async function loadPackages() {
     const res = await api('/platform/billing/plans');
     setPackages((res?.data || []) as PackageRow[]);
+  }
+
+  async function loadAttention() {
+    const res = await api('/platform/billing/attention');
+    setAttention((res?.data || []) as AttentionRow[]);
   }
 
   async function loadCompanies() {
@@ -127,6 +167,12 @@ export default function PlatformBillingPage() {
           await loadPackages();
         } catch (err: unknown) {
           const detail = err instanceof Error ? err.message : 'Could not load packages';
+          if (!cancelled) setError(detail);
+        }
+        try {
+          await loadAttention();
+        } catch (err: unknown) {
+          const detail = err instanceof Error ? err.message : 'Could not load billing attention';
           if (!cancelled) setError(detail);
         }
         try {
@@ -171,6 +217,25 @@ export default function PlatformBillingPage() {
     setAmount(selected.amount == null ? '' : formatNumber(selected.amount, prefs));
   }, [selectedSlug, selected?.amount, prefs]);
 
+  useEffect(() => {
+    if (!canCreate || !selectedSlug) {
+      setInvoices([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api(`/platform/billing/tenants/${encodeURIComponent(selectedSlug)}`);
+        if (!cancelled) setInvoices((res?.data?.invoices || []) as InvoiceRow[]);
+      } catch {
+        if (!cancelled) setInvoices([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [canCreate, selectedSlug]);
+
   function choose(row: CompanyRow) {
     setSelectedSlug(row.slug);
     setPackageCode(PACKAGES.some((item) => item.code === row.package_code) ? row.package_code : 'professional');
@@ -179,6 +244,109 @@ export default function PlatformBillingPage() {
     setLinkedPlan('');
     setError('');
     setMessage('');
+  }
+
+  function beginManualPayment(row: AttentionRow) {
+    const slug = String(row.slug || '').trim();
+    if (!slug) return;
+    setPaySlug(slug);
+    const planAmount = row.plan?.amount;
+    setPayAmount(planAmount == null ? '' : formatNumber(planAmount, prefs));
+    setPayCurrency(String(row.plan?.currency || 'GHS').toUpperCase() === 'USD' ? 'USD' : 'GHS');
+    setPayReference('');
+    setPayNote('');
+    setError('');
+    setMessage('');
+  }
+
+  async function recordManualPayment(event: FormEvent) {
+    event.preventDefault();
+    if (!canCreate || !paySlug) return;
+    const parsed = subscriptionAmountToSend(payAmount, 'professional', prefs);
+    if ('error' in parsed) {
+      setError(parsed.error);
+      return;
+    }
+    const reference = payReference.trim();
+    if (reference.length < 2) {
+      setError('Payment reference is required.');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const body: Record<string, unknown> = {
+        amount: parsed.amount,
+        currency: payCurrency,
+        reference,
+      };
+      const note = payNote.trim();
+      if (note) body.note = note;
+      await api(`/platform/billing/tenants/${encodeURIComponent(paySlug)}/payments`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+      setMessage(`Manual payment recorded for ${paySlug}.`);
+      setPaySlug('');
+      setPayReference('');
+      setPayNote('');
+      await loadCompanies();
+      await loadAttention();
+    } catch (err: unknown) {
+      const detail = err instanceof Error ? err.message : 'Could not record the payment';
+      setError(detail);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function retryBilling(slug: string) {
+    if (!canCreate || !slug) return;
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const res = await api(`/platform/billing/tenants/${encodeURIComponent(slug)}/retry`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+      const outcome = res?.data?.outcome ?? res?.data;
+      setMessage(`Retry processed for ${slug}${outcome ? `: ${String(outcome)}` : ''}.`);
+      await loadCompanies();
+      await loadAttention();
+    } catch (err: unknown) {
+      const detail = err instanceof Error ? err.message : 'Could not retry the charge';
+      setError(detail);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function restoreBillingAccess(slug: string) {
+    if (!canCreate || !slug) return;
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const res = await api(`/platform/billing/tenants/${encodeURIComponent(slug)}/reactivate`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+      const charged = res?.data?.charged;
+      setMessage(
+        charged === false
+          ? `Access restored for ${slug}. No charge was created.`
+          : `Access restored for ${slug}.`,
+      );
+      await loadCompanies();
+      await loadAttention();
+    } catch (err: unknown) {
+      const detail = err instanceof Error ? err.message : 'Could not restore access';
+      setError(detail);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function assign(event: FormEvent) {
@@ -507,6 +675,152 @@ export default function PlatformBillingPage() {
         </p>
       )}
       {message && <p>{message}</p>}
+      {canCreate && (
+        <div className="plat-panel">
+          <h2>Needs attention</h2>
+          <p className="plat-sub">
+            Past-due, grace, payment-required, and suspended billing accounts. Recording a payment
+            requires amount and currency that match the assigned plan. Restore access does not create
+            a charge.
+          </p>
+          {attention.length === 0 ? (
+            <p className="muted">No companies need billing attention.</p>
+          ) : (
+            <table className="table" aria-label="Billing attention list">
+              <thead>
+                <tr>
+                  <th>Company</th>
+                  <th>Billing status</th>
+                  <th>Plan</th>
+                  <th>Auth</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {attention.map((row) => {
+                  const slug = String(row.slug || '');
+                  const planLabel = row.plan?.name || row.plan?.code || '—';
+                  const planAmt =
+                    row.plan?.amount == null
+                      ? '—'
+                      : subscriptionAmountLabel(
+                          row.plan.amount,
+                          row.plan.currency,
+                          formatNumber(row.plan.amount, prefs),
+                        );
+                  return (
+                    <tr key={`${slug}-${row.billing_status || 'attention'}`}>
+                      <td>
+                        {row.company_name || slug || '—'}
+                        {row.tenant_status ? (
+                          <span className="muted"> ({plainLabel(row.tenant_status)})</span>
+                        ) : null}
+                      </td>
+                      <td>{plainLabel(row.billing_status || '')}</td>
+                      <td>
+                        {planLabel} · {planAmt}
+                      </td>
+                      <td>{row.authorization_present ? 'Saved' : 'None'}</td>
+                      <td className="pkg-actions">
+                        <button
+                          type="button"
+                          aria-label={`Record manual payment ${slug}`}
+                          onClick={() => beginManualPayment(row)}
+                          disabled={busy || !slug}
+                        >
+                          Record payment
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Retry billing charge ${slug}`}
+                          onClick={() => retryBilling(slug)}
+                          disabled={busy || !slug || !row.authorization_present}
+                        >
+                          Retry charge
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-ok"
+                          aria-label={`Restore billing access ${slug}`}
+                          onClick={() => restoreBillingAccess(slug)}
+                          disabled={busy || !slug}
+                        >
+                          Restore access
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+          {paySlug ? (
+            <form className="plat-form" onSubmit={recordManualPayment}>
+              <h3>Manual payment — {paySlug}</h3>
+              <p className="muted">Amount and currency must match the assigned billing plan.</p>
+              <label>
+                <span>Amount</span>
+                <AmountField
+                  aria-label="Manual billing payment amount"
+                  currency={payCurrency}
+                  inputMode="decimal"
+                  value={payAmount}
+                  onChange={(event) => setPayAmount(event.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                <span>Currency</span>
+                <select
+                  aria-label="Manual billing payment currency"
+                  value={payCurrency}
+                  onChange={(event) => setPayCurrency(event.target.value)}
+                >
+                  <option value="GHS">GHS</option>
+                  <option value="USD">USD</option>
+                </select>
+              </label>
+              <label>
+                <span>Reference</span>
+                <input
+                  aria-label="Manual billing payment reference"
+                  value={payReference}
+                  onChange={(event) => setPayReference(event.target.value)}
+                  required
+                  minLength={2}
+                />
+              </label>
+              <label>
+                <span>Note</span>
+                <input
+                  aria-label="Manual billing payment note"
+                  value={payNote}
+                  onChange={(event) => setPayNote(event.target.value)}
+                />
+              </label>
+              <button
+                aria-label="Save manual billing payment"
+                className="btn-primary"
+                type="submit"
+                disabled={busy}
+              >
+                {busy ? 'Saving…' : 'Save payment'}
+              </button>
+              <button
+                type="button"
+                aria-label="Cancel manual billing payment"
+                onClick={() => {
+                  setPaySlug('');
+                  setPayReference('');
+                  setPayNote('');
+                }}
+              >
+                Cancel
+              </button>
+            </form>
+          ) : null}
+        </div>
+      )}
       {canAssign && selected && (
         <div className="plat-panel">
           <h2>Assign plan</h2>
@@ -804,6 +1118,52 @@ export default function PlatformBillingPage() {
           </table>
         )}
       </div>
+      {canCreate && selectedSlug ? (
+        <div className="plat-panel">
+          <h2>Subscription invoices — {selected?.company_name || selectedSlug}</h2>
+          <p className="muted">
+            Settled SaaS invoices for this company. PDF email remains on the company billing page when
+            configured; this list is the owner ledger view.
+          </p>
+          {invoices.length === 0 ? (
+            <p className="muted">No subscription invoices yet.</p>
+          ) : (
+            <table className="table" aria-label="Owner subscription invoices">
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Amount</th>
+                  <th>Description</th>
+                  <th>Period</th>
+                  <th>Paid</th>
+                  <th>Reference</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoices.map((inv) => (
+                  <tr key={inv.id || `${inv.created_at}-${inv.amount}`}>
+                    <td>{plainLabel(inv.status || '')}</td>
+                    <td>
+                      {subscriptionAmountLabel(
+                        inv.amount ?? null,
+                        inv.currency,
+                        formatNumber(inv.amount, prefs),
+                      )}
+                    </td>
+                    <td>{inv.description || '—'}</td>
+                    <td>
+                      {formatWhen(inv.period_start, prefs) || '—'} →{' '}
+                      {formatWhen(inv.period_end, prefs) || '—'}
+                    </td>
+                    <td>{formatWhen(inv.paid_at, prefs) || '—'}</td>
+                    <td>{inv.gateway_reference || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

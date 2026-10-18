@@ -226,12 +226,15 @@ export const PLATFORM_NAV_ITEMS: NavItem[] = [
   ['Billing', '/platform/billing', 'platform'],
   ['Staff', '/platform/staff', 'platform_staff'],
   ['Reports', '/platform/reports', 'platform_reports'],
+  ['Settings', '/platform/settings', 'platform'],
   ['Jobs', '/jobs', 'jobs'],
   ['Notifications', '/notifications', 'notifications'],
   ['Audit', '/audit', 'audit'],
   ['Security', '/security', 'security'],
   ['Support Desk', '/platform/support', 'support'],
 ];
+
+const PLATFORM_OWNER_NAV_ROLES = new Set(['super_admin', 'platform_owner']);
 
 const PLATFORM_SUPPORT_NAV_ROLES = new Set([
   'super_admin',
@@ -246,7 +249,9 @@ export function platformNavItemsForRole(
   permissions: Record<string, string[]> | null | undefined,
 ): NavItem[] {
   const allowed = navAllowlistFromPermissions(permissions);
-  return PLATFORM_NAV_ITEMS.filter(([, , module]) => {
+  return PLATFORM_NAV_ITEMS.filter(([, href, module]) => {
+    // Operational settings are for the software owner only (API also enforces this).
+    if (href === '/platform/settings') return PLATFORM_OWNER_NAV_ROLES.has(role);
     if (module === 'support') return PLATFORM_SUPPORT_NAV_ROLES.has(role);
     if (module === 'platform' || module === 'platform_tenants' || module === 'jobs') return true;
     if (allowed === '*') return true;

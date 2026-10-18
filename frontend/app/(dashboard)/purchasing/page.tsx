@@ -45,12 +45,118 @@ type BillLineDraft = {
   discount: string;
 };
 
+type PoLineDraft = {
+  key: string;
+  productId: string;
+  unitId: string;
+  qty: string;
+  unitPrice: string;
+  discount: string;
+};
+
+type AmendLineDraft = {
+  key: string;
+  productId: string;
+  unitId: string;
+  qty: string;
+  unitPrice: string;
+  discount: string;
+  taxRate: string;
+};
+
+type PrLineDraft = {
+  key: string;
+  productId: string;
+  qty: string;
+  notes: string;
+};
+
+type ReturnLineDraft = {
+  key: string;
+  grnItemId: string;
+  qty: string;
+};
+
 function newBillLineKey() {
   return `bl-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function emptyBillLine(): BillLineDraft {
   return { key: newBillLineKey(), productId: '', qty: '1', unitCost: '0', taxRate: '', discount: '0' };
+}
+
+function emptyPoLine(): PoLineDraft {
+  return {
+    key: `po-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    productId: '',
+    unitId: '',
+    qty: '10',
+    unitPrice: '0',
+    discount: '0',
+  };
+}
+
+function emptyAmendLine(): AmendLineDraft {
+  return {
+    key: `am-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    productId: '',
+    unitId: '',
+    qty: '1',
+    unitPrice: '0',
+    discount: '0',
+    taxRate: '',
+  };
+}
+
+function amendLinesFromPo(po: PurchaseOrder): AmendLineDraft[] {
+  const rows = (po.items || []).map((line) => ({
+    key: line.id,
+    productId: line.product_id,
+    unitId: line.unit_id || '',
+    qty: String(line.quantity ?? ''),
+    unitPrice: String(line.unit_price ?? ''),
+    discount: String(line.discount ?? 0),
+    taxRate: line.tax_rate == null ? '' : String(line.tax_rate),
+  }));
+  return rows.length ? rows : [emptyAmendLine()];
+}
+
+function emptyReturnLine(): ReturnLineDraft {
+  return {
+    key: `ret-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    grnItemId: '',
+    qty: '',
+  };
+}
+
+function emptyPrLine(): PrLineDraft {
+  return {
+    key: `pr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    productId: '',
+    qty: '10',
+    notes: '',
+  };
+}
+
+function ensureTrailingBlank<T extends { productId: string }>(rows: T[], makeBlank: () => T): T[] {
+  if (!rows.length) return [makeBlank()];
+  if (rows[rows.length - 1].productId.trim()) return [...rows, makeBlank()];
+  return rows;
+}
+
+function isValidPoLine(line: PoLineDraft) {
+  const qty = Number(line.qty);
+  const unit = Number(line.unitPrice);
+  const disc = Number(line.discount);
+  return (
+    Boolean(line.productId.trim()) &&
+    Number.isFinite(qty) &&
+    qty > 0 &&
+    Number.isFinite(unit) &&
+    unit >= 0 &&
+    Number.isFinite(disc) &&
+    disc >= 0
+  );
 }
 
 function billLineMerch(line: BillLineDraft) {
@@ -377,28 +483,19 @@ export default function Page() {
   const [supplierLat, setSupplierLat] = useState('');
   const [supplierLng, setSupplierLng] = useState('');
   const [supplierTermsDays, setSupplierTermsDays] = useState('30');
-  const [productId, setProductId] = useState('');
-  const [unitId, setUnitId] = useState('');
-  const [qty, setQty] = useState('10');
-  const [unitPrice, setUnitPrice] = useState('0');
-  const [lineDiscount, setLineDiscount] = useState('0');
+  const [poLines, setPoLines] = useState<PoLineDraft[]>(() => [emptyPoLine()]);
   const [poDeliveryAddress, setPoDeliveryAddress] = useState('');
   const [poNotes, setPoNotes] = useState('');
-  const [amendQty, setAmendQty] = useState('');
-  const [amendPrice, setAmendPrice] = useState('');
-  const [amendDiscount, setAmendDiscount] = useState('0');
-  const [amendUnitId, setAmendUnitId] = useState('');
+  const [amendLines, setAmendLines] = useState<AmendLineDraft[]>(() => [emptyAmendLine()]);
   const [amendNotes, setAmendNotes] = useState('');
   const [amendDeliveryAddress, setAmendDeliveryAddress] = useState('');
   const [amendDueDate, setAmendDueDate] = useState('');
   const [amendReason, setAmendReason] = useState('');
   const [amendNotify, setAmendNotify] = useState(false);
   const [prSupplierId, setPrSupplierId] = useState('');
-  const [prProductId, setPrProductId] = useState('');
-  const [prQty, setPrQty] = useState('10');
+  const [prLines, setPrLines] = useState<PrLineDraft[]>(() => [emptyPrLine()]);
   const [prDepartment, setPrDepartment] = useState('');
   const [prNotes, setPrNotes] = useState('');
-  const [prItemNotes, setPrItemNotes] = useState('');
   const [prRequiredDate, setPrRequiredDate] = useState('');
   const [prBusy, setPrBusy] = useState('');
   const [prRejectReason, setPrRejectReason] = useState('');
@@ -412,8 +509,7 @@ export default function Page() {
     { roles: ['company_admin', 'super_admin'], label: 'Company Admin' },
   ]);
   const [grnId, setGrnId] = useState('');
-  const [grnItemId, setGrnItemId] = useState('');
-  const [returnQty, setReturnQty] = useState('1');
+  const [returnLines, setReturnLines] = useState<ReturnLineDraft[]>(() => [emptyReturnLine()]);
   const [returnReason, setReturnReason] = useState('');
   const [returnNotes, setReturnNotes] = useState('');
   const [invoiceGrnId, setInvoiceGrnId] = useState('');
@@ -486,11 +582,6 @@ export default function Page() {
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
   }, []);
-
-  useEffect(() => {
-    const product = products.find((p) => p.id === productId);
-    if (product) setUnitPrice(String(product.cost_price ?? 0));
-  }, [productId, products]);
 
   useEffect(() => {
     const grn = grns.find((g) => g.id === grnId);
@@ -571,6 +662,15 @@ export default function Page() {
 
   async function createPo() {
     if (saveBusy) return;
+    const lines = poLines.filter(isValidPoLine);
+    if (!supplierId.trim()) {
+      setError('Select a supplier first.');
+      return;
+    }
+    if (!lines.length) {
+      setError('Add at least one product line with quantity and unit price.');
+      return;
+    }
     setError('');
     setMessage('');
     setSaveBusy(true);
@@ -583,23 +683,21 @@ export default function Page() {
           delivery_address: poDeliveryAddress.trim() || null,
           notes: poNotes.trim() || null,
           warehouse_id: warehouseId.trim() || null,
-          items: [
-            {
-              product_id: productId.trim(),
-              quantity: Number(qty),
-              unit_id: unitId.trim() || null,
-              unit_price: Number(unitPrice),
-              discount: Math.max(0, Number(lineDiscount) || 0),
-              // tax is resolved from product or company default
-            },
-          ],
+          items: lines.map((line) => ({
+            product_id: line.productId.trim(),
+            quantity: Number(line.qty),
+            unit_id: line.unitId.trim() || null,
+            unit_price: Number(line.unitPrice),
+            discount: Math.max(0, Number(line.discount) || 0),
+            // tax is resolved from product or company default
+          })),
         }),
       });
       setMessage(`Created ${r.data.po_number}`);
       setPoDeliveryAddress('');
       setPoNotes('');
       setWarehouseId('');
-      setLineDiscount('0');
+      setPoLines([emptyPoLine()]);
       await refresh();
       setSelected(r.data);
       setTab('orders');
@@ -679,11 +777,7 @@ export default function Page() {
       };
     }
     setReceiveDrafts(drafts);
-    const line = po.items?.[0];
-    setAmendQty(String(line?.quantity ?? ''));
-    setAmendPrice(String(line?.unit_price ?? ''));
-    setAmendDiscount(String(line?.discount ?? 0));
-    setAmendUnitId(line?.unit_id || '');
+    setAmendLines(amendLinesFromPo(po));
     setAmendNotes(po.notes || '');
     setAmendDeliveryAddress(po.delivery_address || '');
     setAmendDueDate(po.due_date ? String(po.due_date).slice(0, 10) : '');
@@ -700,8 +794,12 @@ export default function Page() {
       setError('Enter an amendment reason before saving');
       return;
     }
+    const lines = amendLines.filter((line) => line.productId.trim());
+    if (!lines.length) {
+      setError('Add at least one product before saving the amendment');
+      return;
+    }
     try {
-      const line = selected.items[0];
       const r = await api(`/purchasing/orders/${selected.id}/amend`, {
         method: 'POST',
         body: JSON.stringify({
@@ -717,16 +815,14 @@ export default function Page() {
           ...(amendNotify && amendEmailTo.trim()
             ? { to: amendEmailTo.trim() }
             : {}),
-          items: [
-            {
-              product_id: line.product_id,
-              quantity: Number(amendQty) || line.quantity,
-              unit_id: amendUnitId.trim() || line.unit_id || null,
-              unit_price: Number(amendPrice) || line.unit_price,
-              discount: Math.max(0, Number(amendDiscount) || 0),
-              ...(line.tax_rate != null ? { tax_rate: Number(line.tax_rate) } : {}),
-            },
-          ],
+          items: lines.map((line) => ({
+            product_id: line.productId.trim(),
+            quantity: Number(line.qty),
+            unit_id: line.unitId.trim() || null,
+            unit_price: Number(line.unitPrice),
+            discount: Math.max(0, Number(line.discount) || 0),
+            ...(line.taxRate.trim() ? { tax_rate: Number(line.taxRate) } : {}),
+          })),
         }),
       });
       const rev = r.data?.revision_no ?? r.data?.amendment?.revision_no;
@@ -734,6 +830,7 @@ export default function Page() {
       setAmendReason('');
       await refresh();
       setSelected(r.data);
+      if (r.data?.items) setAmendLines(amendLinesFromPo(r.data));
     } catch (err: any) {
       setError(friendlyPurchaseError(err));
     }
@@ -786,7 +883,8 @@ export default function Page() {
           items,
         }),
       });
-      setMessage(`Posted ${r.data.grn_number}`);
+      setMessage(`Posted ${r.data.grn_number}. Add the supplier bill for every accepted line.`);
+      if (r.data?.id) setInvoiceGrnId(String(r.data.id));
       setGrnNotes('');
       await refresh();
       const updated = await api(`/purchasing/orders/${po.id}`);
@@ -864,9 +962,10 @@ export default function Page() {
       const rejectedLines = (r.data.items || []).filter((x: GrnItem) => (x.rejected_qty || 0) > 0);
       setMessage(
         rejectedLines.length
-          ? `Posted ${r.data.grn_number} (${rejectedLines.length} line(s) with rejected qty)`
-          : `Posted ${r.data.grn_number}`
+          ? `Posted ${r.data.grn_number} (${rejectedLines.length} line(s) with rejected qty). Add the supplier bill for every accepted line.`
+          : `Posted ${r.data.grn_number}. Add the supplier bill for every accepted line.`
       );
+      if (r.data?.id) setInvoiceGrnId(String(r.data.id));
       setGrnNotes('');
       await refresh();
       const updated = await api(`/purchasing/orders/${po.id}`);
@@ -888,16 +987,23 @@ export default function Page() {
       setError('Select a return reason');
       return;
     }
-    const line = (selectedGrn?.items || []).find((i) => i.id === grnItemId);
-    const remaining = Number(line?.remaining_return_qty ?? line?.accepted_qty ?? 0);
-    const qty = Number(returnQty);
-    if (!Number.isFinite(qty) || qty <= 0) {
-      setError('Return quantity must be positive');
+    const lines = returnLines.filter((line) => line.grnItemId.trim() && Number(line.qty) > 0);
+    if (!lines.length) {
+      setError('Enter a return quantity on at least one product');
       return;
     }
-    if (qty > remaining + 1e-9) {
-      setError(`Return quantity cannot exceed remaining accepted qty (${remaining})`);
-      return;
+    for (const line of lines) {
+      const source = (selectedGrn?.items || []).find((i) => i.id === line.grnItemId);
+      const remaining = Number(source?.remaining_return_qty ?? source?.accepted_qty ?? 0);
+      const qty = Number(line.qty);
+      if (!Number.isFinite(qty) || qty <= 0) {
+        setError('Return quantity must be positive');
+        return;
+      }
+      if (qty > remaining + 1e-9) {
+        setError(`Return quantity cannot exceed remaining accepted qty (${remaining})`);
+        return;
+      }
     }
     setSaveBusy(true);
     try {
@@ -908,7 +1014,10 @@ export default function Page() {
           goods_receipt_id: grnId.trim(),
           reason: returnReason,
           notes: returnNotes.trim() || null,
-          items: [{ goods_receipt_item_id: grnItemId.trim(), quantity: Number(returnQty) }],
+          items: lines.map((line) => ({
+            goods_receipt_item_id: line.grnItemId.trim(),
+            quantity: Number(line.qty),
+          })),
         }),
       });
       setMessage(`Return ${r.data.return_number} drafted`);
@@ -1190,6 +1299,11 @@ export default function Page() {
 
   async function createRequest() {
     if (saveBusy) return;
+    const lines = prLines.filter((line) => line.productId.trim() && Number(line.qty) > 0);
+    if (!lines.length) {
+      setError('Add at least one product line.');
+      return;
+    }
     setError('');
     setMessage('');
     setSaveBusy(true);
@@ -1201,18 +1315,16 @@ export default function Page() {
           department: prDepartment.trim() || null,
           notes: prNotes.trim() || null,
           required_date: prRequiredDate.trim() || null,
-          items: [
-            {
-              product_id: prProductId.trim(),
-              quantity: Number(prQty) || 1,
-              notes: prItemNotes.trim() || null,
-            },
-          ],
+          items: lines.map((line) => ({
+            product_id: line.productId.trim(),
+            quantity: Number(line.qty) || 1,
+            notes: line.notes.trim() || null,
+          })),
         }),
       });
       setMessage(`Created ${r.data.request_number}`);
       setPrNotes('');
-      setPrItemNotes('');
+      setPrLines([emptyPrLine()]);
       setPrRequiredDate('');
       await refresh();
       setTab('requests');
@@ -1573,7 +1685,7 @@ export default function Page() {
           <FormModal
             title="Create purchase request"
             busy={saveBusy}
-            dirty={Boolean(prProductId || prNotes.trim() || prDepartment.trim())}
+            dirty={Boolean(prLines.some((line) => line.productId.trim()) || prNotes.trim() || prDepartment.trim())}
             onClose={() => setPrCreateOpen(false)}
           >
             <div className="erp-form-grid">
@@ -1591,26 +1703,6 @@ export default function Page() {
                   </option>
                 ))}
               </select>
-              <select
-                value={prProductId}
-                onChange={(e) => setPrProductId(e.target.value)}
-                aria-label="Purchase request product"
-              >
-                <option value="">Select product</option>
-                {products
-                  .filter((p) => p.is_active !== false)
-                  .map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.sku})
-                  </option>
-                ))}
-              </select>
-              <input
-                value={prQty}
-                onChange={(e) => setPrQty(e.target.value)}
-                placeholder="Quantity"
-                aria-label="Purchase request quantity"
-              />
               <input
                 value={prDepartment}
                 onChange={(e) => setPrDepartment(e.target.value)}
@@ -1633,16 +1725,109 @@ export default function Page() {
                 aria-label="Purchase request notes"
                 title="Optional notes (1–500 chars; letters/digits required)"
               />
-              <input
-                value={prItemNotes}
-                onChange={(e) => setPrItemNotes(e.target.value)}
-                placeholder="Line notes (optional)"
-                aria-label="Purchase request line notes"
-                title="Optional per-line notes (1–500 chars; letters/digits required)"
-              />
+            </div>
+            <p className="muted" style={{ marginTop: 8 }}>
+              Add every product for this supplier. Choosing a product opens the next line.
+            </p>
+            <div className="cat-table-wrap" style={{ marginTop: 8 }}>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>Line notes</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {prLines.map((line) => (
+                    <tr key={line.key}>
+                      <td>
+                        <select
+                          value={line.productId}
+                          onChange={(e) => {
+                            const productId = e.target.value;
+                            setPrLines((rows) =>
+                              ensureTrailingBlank(
+                                rows.map((row) =>
+                                  row.key === line.key ? { ...row, productId } : row,
+                                ),
+                                emptyPrLine,
+                              ),
+                            );
+                          }}
+                          aria-label="Purchase request product"
+                        >
+                          <option value="">Select product</option>
+                          {products
+                            .filter((p) => p.is_active !== false)
+                            .map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.name} ({p.sku})
+                              </option>
+                            ))}
+                        </select>
+                      </td>
+                      <td>
+                        <input
+                          value={line.qty}
+                          onChange={(e) =>
+                            setPrLines((rows) =>
+                              rows.map((row) =>
+                                row.key === line.key ? { ...row, qty: e.target.value } : row,
+                              ),
+                            )
+                          }
+                          placeholder="Quantity"
+                          aria-label="Purchase request quantity"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          value={line.notes}
+                          onChange={(e) =>
+                            setPrLines((rows) =>
+                              rows.map((row) =>
+                                row.key === line.key ? { ...row, notes: e.target.value } : row,
+                              ),
+                            )
+                          }
+                          placeholder="Line notes (optional)"
+                          aria-label="Purchase request line notes"
+                          title="Optional per-line notes (1–500 chars; letters/digits required)"
+                        />
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPrLines((rows) =>
+                              rows.length <= 1
+                                ? [emptyPrLine()]
+                                : rows.filter((row) => row.key !== line.key),
+                            )
+                          }
+                          aria-label="Remove purchase request line"
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+              <button
+                type="button"
+                onClick={() => setPrLines((rows) => [...rows, emptyPrLine()])}
+                aria-label="Add purchase request product"
+              >
+                Add product
+              </button>
               <button
                 onClick={createRequest}
-                disabled={!prProductId || saveBusy}
+                disabled={!prLines.some((line) => line.productId.trim()) || saveBusy}
                 aria-label="Create draft purchase request"
               >
                 {saveBusy ? 'Saving…' : 'Create draft PR'}
@@ -2139,7 +2324,12 @@ export default function Page() {
       <FormModal
         title="Add purchase order"
         busy={saveBusy}
-        dirty={Boolean(supplierId || productId || poNotes.trim() || poDeliveryAddress.trim())}
+        dirty={Boolean(
+          supplierId ||
+            poNotes.trim() ||
+            poDeliveryAddress.trim() ||
+            poLines.some((line) => line.productId.trim()),
+        )}
         onClose={() => setPoCreateOpen(false)}
       >
         <div className="erp-form-grid">
@@ -2158,54 +2348,6 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <select
-            value={productId}
-            onChange={(e) => setProductId(e.target.value)}
-            aria-label="PO product"
-          >
-            <option value="">Select product</option>
-            {products
-              .filter((p) => p.is_active !== false)
-              .map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} ({p.sku})
-              </option>
-            ))}
-          </select>
-          <select
-            value={unitId}
-            onChange={(e) => setUnitId(e.target.value)}
-            aria-label="PO unit"
-          >
-            <option value="">Unit (product default)</option>
-            {units.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.code} — {u.name}
-              </option>
-            ))}
-          </select>
-          <input
-            value={qty}
-            onChange={(e) => setQty(e.target.value)}
-            placeholder="Quantity"
-            aria-label="Purchase order quantity"
-          />
-          <AmountField
-            inline
-            value={unitPrice}
-            onChange={(e) => setUnitPrice(e.target.value)}
-            placeholder="Unit price"
-            aria-label="Purchase order unit price"
-          />
-          <input
-            value={lineDiscount}
-            onChange={(e) => setLineDiscount(e.target.value)}
-            placeholder="Line discount"
-            type="number"
-            min={0}
-            step="0.01"
-            aria-label="Purchase order line discount"
-          />
           <input
             value={poDeliveryAddress}
             onChange={(e) => setPoDeliveryAddress(e.target.value)}
@@ -2230,16 +2372,164 @@ export default function Page() {
             </select>
           </label>
           ) : null}
+          <span className="muted span-2">
+            Add one or more product lines from this supplier. Use Add product for each extra line.
+          </span>
+        </div>
+        <div className="cat-table-wrap" style={{ marginTop: 12 }}>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Unit</th>
+                <th>Qty</th>
+                <th>Unit price</th>
+                <th>Discount</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {poLines.map((line) => (
+                <tr key={line.key}>
+                  <td>
+                    <select
+                      value={line.productId}
+                      onChange={(e) => {
+                        const nextProductId = e.target.value;
+                        const product = products.find((p) => p.id === nextProductId);
+                        setPoLines((rows) =>
+                          ensureTrailingBlank(
+                            rows.map((row) =>
+                              row.key === line.key
+                                ? {
+                                    ...row,
+                                    productId: nextProductId,
+                                    unitPrice: product
+                                      ? String(product.cost_price ?? 0)
+                                      : row.unitPrice,
+                                  }
+                                : row,
+                            ),
+                            emptyPoLine,
+                          ),
+                        );
+                      }}
+                      aria-label="PO product"
+                    >
+                      <option value="">Select product</option>
+                      {products
+                        .filter((p) => p.is_active !== false)
+                        .map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} ({p.sku})
+                          </option>
+                        ))}
+                    </select>
+                  </td>
+                  <td>
+                    <select
+                      value={line.unitId}
+                      onChange={(e) =>
+                        setPoLines((rows) =>
+                          rows.map((row) =>
+                            row.key === line.key ? { ...row, unitId: e.target.value } : row,
+                          ),
+                        )
+                      }
+                      aria-label="PO unit"
+                    >
+                      <option value="">Unit (product default)</option>
+                      {units.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.code} — {u.name}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
+                    <input
+                      value={line.qty}
+                      onChange={(e) =>
+                        setPoLines((rows) =>
+                          rows.map((row) =>
+                            row.key === line.key ? { ...row, qty: e.target.value } : row,
+                          ),
+                        )
+                      }
+                      placeholder="Quantity"
+                      aria-label="Purchase order quantity"
+                    />
+                  </td>
+                  <td>
+                    <AmountField
+                      inline
+                      value={line.unitPrice}
+                      onChange={(e) =>
+                        setPoLines((rows) =>
+                          rows.map((row) =>
+                            row.key === line.key ? { ...row, unitPrice: e.target.value } : row,
+                          ),
+                        )
+                      }
+                      placeholder="Unit price"
+                      aria-label="Purchase order unit price"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={line.discount}
+                      onChange={(e) =>
+                        setPoLines((rows) =>
+                          rows.map((row) =>
+                            row.key === line.key ? { ...row, discount: e.target.value } : row,
+                          ),
+                        )
+                      }
+                      placeholder="Line discount"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      aria-label="Purchase order line discount"
+                    />
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPoLines((rows) =>
+                          rows.length <= 1
+                            ? [emptyPoLine()]
+                            : rows.filter((row) => row.key !== line.key),
+                        )
+                      }
+                      aria-label="Remove purchase order line"
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+          <button
+            type="button"
+            onClick={() => setPoLines((rows) => [...rows, emptyPoLine()])}
+            aria-label="Add purchase order product"
+          >
+            Add product
+          </button>
           <button
             className="btn-primary"
             onClick={createPo}
-            disabled={!supplierId || !productId || saveBusy}
+            disabled={!supplierId || !poLines.some(isValidPoLine) || saveBusy}
             aria-label="Create draft PO"
           >
             {saveBusy ? 'Saving…' : 'Create purchase order'}
           </button>
-          {message ? <p className="form-flash ok">{message}</p> : null}
         </div>
+        {message ? <p className="form-flash ok">{message}</p> : null}
       </FormModal>
       ) : null}
 
@@ -2350,8 +2640,16 @@ export default function Page() {
                       </button>
                     )}
                     {(o.status === 'sent' || o.status === 'partially_received') && (
-                      <button type="button" className="btn-ok" onClick={() => receiveAll(o)} aria-label={`Receive all for purchase order ${o.id}`}>
-                        Receive all
+                      <button
+                        type="button"
+                        className="btn-ok"
+                        onClick={() => {
+                          focusReceivedOrder(o);
+                          selectTab('grn');
+                        }}
+                        aria-label={`Receive all for purchase order ${o.id}`}
+                      >
+                        Receive goods
                       </button>
                     )}
                     {o.can_cancel && (
@@ -2637,41 +2935,193 @@ export default function Page() {
                 )}
               {selected.can_amend && (
                 <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
-                  <h4 style={{ margin: 0 }}>Amend (first line)</h4>
-                  <select
-                    value={amendUnitId}
-                    onChange={(e) => setAmendUnitId(e.target.value)}
-                    aria-label="PO unit"
+                  <h4 style={{ margin: 0 }}>Amend every product</h4>
+                  <p className="muted" style={{ margin: 0 }}>
+                    Saving replaces the order lines with this list. Add or remove products before any goods are received.
+                  </p>
+                  <div className="cat-table-wrap">
+                    <table className="table compact">
+                      <thead>
+                        <tr>
+                          <th>Product</th>
+                          <th>Unit</th>
+                          <th>Qty</th>
+                          <th>Price</th>
+                          <th>Discount</th>
+                          <th />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {amendLines.map((line, index) => (
+                          <tr key={line.key}>
+                            <td>
+                              <select
+                                aria-label={index === 0 ? 'PO amend product' : `PO amend product ${index + 1}`}
+                                value={line.productId}
+                                onChange={(e) => {
+                                  const productId = e.target.value;
+                                  const product = products.find((p) => p.id === productId);
+                                  setAmendLines((rows) =>
+                                    rows.map((row) =>
+                                      row.key === line.key
+                                        ? {
+                                            ...row,
+                                            productId,
+                                            unitPrice: product ? String(product.cost_price ?? row.unitPrice) : row.unitPrice,
+                                          }
+                                        : row,
+                                    ),
+                                  );
+                                }}
+                              >
+                                <option value="">Select product</option>
+                                {products
+                                  .filter((p) => p.is_active !== false)
+                                  .map((p) => (
+                                    <option key={p.id} value={p.id}>
+                                      {p.name}
+                                    </option>
+                                  ))}
+                              </select>
+                            </td>
+                            <td>
+                              {index === 0 ? (
+                                <select
+                                  value={line.unitId}
+                                  onChange={(e) =>
+                                    setAmendLines((rows) =>
+                                      rows.map((row) => (row.key === line.key ? { ...row, unitId: e.target.value } : row)),
+                                    )
+                                  }
+                                  aria-label="PO unit"
+                                >
+                                  <option value="">Unit (product default)</option>
+                                  {units.map((u) => (
+                                    <option key={u.id} value={u.id}>
+                                      {u.code}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <select
+                                  value={line.unitId}
+                                  onChange={(e) =>
+                                    setAmendLines((rows) =>
+                                      rows.map((row) => (row.key === line.key ? { ...row, unitId: e.target.value } : row)),
+                                    )
+                                  }
+                                  aria-label={`PO unit ${index + 1}`}
+                                >
+                                  <option value="">Unit (product default)</option>
+                                  {units.map((u) => (
+                                    <option key={u.id} value={u.id}>
+                                      {u.code}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+                            </td>
+                            <td>
+                              <input
+                                value={line.qty}
+                                onChange={(e) =>
+                                  setAmendLines((rows) =>
+                                    rows.map((row) => (row.key === line.key ? { ...row, qty: e.target.value } : row)),
+                                  )
+                                }
+                                placeholder="Quantity"
+                                aria-label={index === 0 ? 'PO amend quantity' : `PO amend quantity ${index + 1}`}
+                              />
+                            </td>
+                            <td>
+                              {index === 0 ? (
+                                <AmountField
+                                  inline
+                                  value={line.unitPrice}
+                                  onChange={(e) =>
+                                    setAmendLines((rows) =>
+                                      rows.map((row) =>
+                                        row.key === line.key ? { ...row, unitPrice: e.target.value } : row,
+                                      ),
+                                    )
+                                  }
+                                  placeholder="Unit price"
+                                  aria-label="PO amend unit price"
+                                />
+                              ) : (
+                                <AmountField
+                                  inline
+                                  value={line.unitPrice}
+                                  onChange={(e) =>
+                                    setAmendLines((rows) =>
+                                      rows.map((row) =>
+                                        row.key === line.key ? { ...row, unitPrice: e.target.value } : row,
+                                      ),
+                                    )
+                                  }
+                                  placeholder="Unit price"
+                                  aria-label={`PO amend unit price ${index + 1}`}
+                                />
+                              )}
+                            </td>
+                            <td>
+                              {index === 0 ? (
+                                <input
+                                  value={line.discount}
+                                  onChange={(e) =>
+                                    setAmendLines((rows) =>
+                                      rows.map((row) =>
+                                        row.key === line.key ? { ...row, discount: e.target.value } : row,
+                                      ),
+                                    )
+                                  }
+                                  placeholder="Line discount"
+                                  type="number"
+                                  min={0}
+                                  step="0.01"
+                                  aria-label="PO amend line discount"
+                                />
+                              ) : (
+                                <input
+                                  value={line.discount}
+                                  onChange={(e) =>
+                                    setAmendLines((rows) =>
+                                      rows.map((row) =>
+                                        row.key === line.key ? { ...row, discount: e.target.value } : row,
+                                      ),
+                                    )
+                                  }
+                                  placeholder="Line discount"
+                                  type="number"
+                                  min={0}
+                                  step="0.01"
+                                  aria-label={`PO amend line discount ${index + 1}`}
+                                />
+                              )}
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="btn-danger"
+                                disabled={amendLines.length < 2}
+                                onClick={() => setAmendLines((rows) => rows.filter((row) => row.key !== line.key))}
+                                aria-label={`Remove amend product ${index + 1}`}
+                              >
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAmendLines((rows) => [...rows, emptyAmendLine()])}
+                    aria-label="Add purchase order amend product"
                   >
-                    <option value="">Unit (product default)</option>
-                    {units.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.code}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    value={amendQty}
-                    onChange={(e) => setAmendQty(e.target.value)}
-                    placeholder="Quantity"
-                    aria-label="PO amend quantity"
-                  />
-                  <AmountField
-                    inline
-                    value={amendPrice}
-                    onChange={(e) => setAmendPrice(e.target.value)}
-                    placeholder="Unit price"
-                    aria-label="PO amend unit price"
-                  />
-                  <input
-                    value={amendDiscount}
-                    onChange={(e) => setAmendDiscount(e.target.value)}
-                    placeholder="Line discount"
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    aria-label="PO amend line discount"
-                  />
+                    Add product
+                  </button>
                   <input
                     value={amendNotes}
                     onChange={(e) => setAmendNotes(e.target.value)}
@@ -2936,12 +3386,16 @@ export default function Page() {
               <th>Status</th>
               <th>Accepted</th>
               <th>Rejected</th>
+              <th />
             </tr>
           </thead>
           <tbody>
             {grns.map((g) => {
               const accepted = (g.items || []).reduce((s, i) => s + Number(i.accepted_qty || 0), 0);
               const rejected = (g.items || []).reduce((s, i) => s + Number(i.rejected_qty || 0), 0);
+              const billed = invoices.some(
+                (inv) => inv.goods_receipt_id === g.id && inv.status !== 'cancelled',
+              );
               return (
                 <tr key={g.id}>
                   <td data-label="GRN">{g.grn_number}</td>
@@ -2951,6 +3405,24 @@ export default function Page() {
                   <td>{g.status}</td>
                   <td>{accepted}</td>
                   <td>{rejected}</td>
+                  <td>
+                    {accepted > 0 && !billed ? (
+                      <button
+                        type="button"
+                        className="btn-ok"
+                        onClick={() => {
+                          setInvoiceGrnId(g.id);
+                          setBillCreateOpen(true);
+                          selectTab('invoices');
+                        }}
+                        aria-label={`Create supplier bill from ${g.grn_number}`}
+                      >
+                        Add purchase
+                      </button>
+                    ) : billed ? (
+                      <span className="muted">Billed</span>
+                    ) : null}
+                  </td>
                 </tr>
               );
             })}
@@ -3106,6 +3578,20 @@ export default function Page() {
             From-GRN lines inherit proportional PO discounts; leave header at 0 to mirror them on the
             invoice total. Currency/FX apply when paying foreign supplier invoices (Credit).
           </span>
+          {(() => {
+            const billGrn = grns.find((g) => g.id === invoiceGrnId);
+            const lines = (billGrn?.items || []).filter((i) => Number(i.accepted_qty || 0) > 0);
+            if (!billGrn || !lines.length) return null;
+            return (
+              <ul className="muted span-2" style={{ margin: 0, paddingLeft: 18 }}>
+                {lines.map((line) => (
+                  <li key={line.id}>
+                    {productNameOf(line.product_id)} · accepted {line.accepted_qty}
+                  </li>
+                ))}
+              </ul>
+            );
+          })()}
           <button
             onClick={createInvoiceFromGrn}
             disabled={!invoiceGrnId || saveBusy}
@@ -3236,14 +3722,17 @@ export default function Page() {
                         const productId = e.target.value;
                         const product = products.find((p) => p.id === productId);
                         setBillLines((rows) =>
-                          rows.map((row) =>
-                            row.key === line.key
-                              ? {
-                                  ...row,
-                                  productId,
-                                  unitCost: product ? String(product.cost_price ?? 0) : row.unitCost,
-                                }
-                              : row,
+                          ensureTrailingBlank(
+                            rows.map((row) =>
+                              row.key === line.key
+                                ? {
+                                    ...row,
+                                    productId,
+                                    unitCost: product ? String(product.cost_price ?? 0) : row.unitCost,
+                                  }
+                                : row,
+                            ),
+                            emptyBillLine,
                           ),
                         );
                       }}
@@ -3759,13 +4248,25 @@ export default function Page() {
       <FormModal
         title="Create purchase return"
         busy={saveBusy}
-        dirty={Boolean(grnId || returnReason || returnNotes.trim())}
+        dirty={Boolean(grnId || returnReason || returnNotes.trim() || returnLines.some((line) => Number(line.qty) > 0))}
         onClose={() => setReturnCreateOpen(false)}
       >
         <div className="erp-form-grid">
           <select
             value={grnId}
-            onChange={(e) => setGrnId(e.target.value)}
+            onChange={(e) => {
+              const nextId = e.target.value;
+              setGrnId(nextId);
+              const receipt = grns.find((g) => g.id === nextId);
+              const eligible = (receipt?.items || []).filter(
+                (item) => Number(item.remaining_return_qty ?? item.accepted_qty ?? 0) > 0
+              );
+              setReturnLines(
+                eligible.length
+                  ? eligible.map((item) => ({ key: item.id, grnItemId: item.id, qty: '' }))
+                  : [emptyReturnLine()]
+              );
+            }}
             aria-label="Return from GRN"
           >
             <option value="">Select GRN</option>
@@ -3775,19 +4276,65 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <select
-            value={grnItemId}
-            onChange={(e) => setGrnItemId(e.target.value)}
-            disabled={!selectedGrn}
-            aria-label="Purchase return GRN line"
-          >
-            <option value="">Select GRN line</option>
-            {(selectedGrn?.items || []).map((i) => (
-              <option key={i.id} value={i.id}>
-                {i.product_id} (remaining {i.remaining_return_qty ?? i.accepted_qty})
-              </option>
-            ))}
-          </select>
+          <p className="muted" style={{ margin: '4px 0 0' }}>
+            Enter a quantity for every product you are sending back. Leave the other lines blank.
+          </p>
+          {returnLines.map((line, index) => {
+            const source = (selectedGrn?.items || []).find((item) => item.id === line.grnItemId);
+            const remaining = source?.remaining_return_qty ?? source?.accepted_qty;
+            const lineOptions = (
+              <>
+                <option value="">Select GRN line</option>
+                {(selectedGrn?.items || []).map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {productName(item.product_id)} (remaining {item.remaining_return_qty ?? item.accepted_qty})
+                  </option>
+                ))}
+              </>
+            );
+            const onLine = (grnItemId: string) =>
+              setReturnLines((rows) => rows.map((row) => (row.key === line.key ? { ...row, grnItemId } : row)));
+            const onQty = (qty: string) =>
+              setReturnLines((rows) => rows.map((row) => (row.key === line.key ? { ...row, qty } : row)));
+            return (
+              <div key={line.key} className="erp-form-grid">
+                {index === 0 ? (
+                  <select
+                    value={line.grnItemId}
+                    onChange={(e) => onLine(e.target.value)}
+                    disabled={!selectedGrn}
+                    aria-label="Purchase return GRN line"
+                  >
+                    {lineOptions}
+                  </select>
+                ) : (
+                  <select
+                    value={line.grnItemId}
+                    onChange={(e) => onLine(e.target.value)}
+                    disabled={!selectedGrn}
+                    aria-label={`Purchase return GRN line ${index + 1}`}
+                  >
+                    {lineOptions}
+                  </select>
+                )}
+                {index === 0 ? (
+                  <input
+                    value={line.qty}
+                    onChange={(e) => onQty(e.target.value)}
+                    placeholder={remaining == null ? 'Return qty' : `Return qty (max ${remaining})`}
+                    aria-label="Purchase return quantity"
+                  />
+                ) : (
+                  <input
+                    value={line.qty}
+                    onChange={(e) => onQty(e.target.value)}
+                    placeholder={remaining == null ? 'Return qty' : `Return qty (max ${remaining})`}
+                    aria-label={`Purchase return quantity ${index + 1}`}
+                  />
+                )}
+              </div>
+            );
+          })}
           <select
             value={returnReason}
             onChange={(e) => setReturnReason(e.target.value)}
@@ -3801,12 +4348,6 @@ export default function Page() {
             <option value="other">Other</option>
           </select>
           <input
-            value={returnQty}
-            onChange={(e) => setReturnQty(e.target.value)}
-            placeholder="Return qty"
-            aria-label="Purchase return quantity"
-          />
-          <input
             value={returnNotes}
             onChange={(e) => setReturnNotes(e.target.value)}
             placeholder="Notes (optional)"
@@ -3815,7 +4356,7 @@ export default function Page() {
           />
           <button
             onClick={createReturn}
-            disabled={!grnId || !grnItemId || !returnReason || saveBusy}
+            disabled={!grnId || !returnReason || saveBusy || !returnLines.some((line) => line.grnItemId.trim() && Number(line.qty) > 0)}
             aria-label="Create purchase return"
           >
             {saveBusy ? 'Saving…' : 'Draft return'}

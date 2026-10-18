@@ -27,7 +27,18 @@ type PlatformSummary = {
   tenant_count?: number;
   by_package?: Record<string, number>;
   open_support_tickets?: number;
+  paid_invoice_count?: number;
+  paid_revenue_by_currency?: Record<string, number>;
+  active_billing_accounts?: number;
+  attention_count?: number;
 };
+
+function fmtMoney(currency: string, amount: number) {
+  return `${currency} ${Number(amount || 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
 
 const PLATFORM_ROLES = [
   'super_admin',
@@ -42,6 +53,7 @@ const CONSOLE_NOTES: Record<string, string> = {
   '/platform/billing': 'Company plans, amounts, and subscription terms.',
   '/platform/staff': 'Platform staff accounts. Owner actions stay with the software owner.',
   '/platform/reports': 'Subscriptions, packages, trials, and cross-tenant usage.',
+  '/platform/settings': 'Trial, grace, and billing retry settings, and gateway status.',
   '/jobs': 'Scheduled jobs. Viewing is open to platform staff; running a job stays with the owner.',
   '/notifications': 'Platform notifications.',
   '/audit': 'Audit log.',
@@ -205,6 +217,11 @@ export default function PlatformConsole() {
     : null;
   const openTickets = typeof summary?.open_support_tickets === 'number' ? summary.open_support_tickets : null;
   const canOpenDesk = tools.some(([, href]) => href === '/platform/support');
+  const paidCount = typeof summary?.paid_invoice_count === 'number' ? summary.paid_invoice_count : null;
+  const paidRevenue = Object.entries(summary?.paid_revenue_by_currency || {});
+  const activeBilling =
+    typeof summary?.active_billing_accounts === 'number' ? summary.active_billing_accounts : null;
+  const attention = typeof summary?.attention_count === 'number' ? summary.attention_count : null;
 
   const industries = useMemo(() => {
     const tally = new Map<string, number>();
@@ -280,6 +297,39 @@ export default function PlatformConsole() {
             {openTickets == null ? <p className="muted">Open ticket count did not load.</p> : null}
           </div>
         )}
+      </div>
+
+      <div className="plat-stats" aria-label="Platform billing">
+        <Link href="/platform/billing" className="plat-stat">
+          <span>Paid revenue (all time)</span>
+          {summary == null ? (
+            <>
+              <strong>—</strong>
+              <p className="muted">Revenue did not load.</p>
+            </>
+          ) : paidRevenue.length === 0 ? (
+            <>
+              <strong>—</strong>
+              <p className="muted">No paid subscription invoices yet.</p>
+            </>
+          ) : (
+            paidRevenue.map(([currency, amount]) => (
+              <strong key={currency}>{fmtMoney(currency, amount)}</strong>
+            ))
+          )}
+        </Link>
+        <Link href="/platform/billing" className="plat-stat">
+          <span>Paid invoices</span>
+          <strong>{paidCount == null ? '—' : paidCount}</strong>
+        </Link>
+        <Link href="/platform/billing" className="plat-stat ok">
+          <span>Active billing accounts</span>
+          <strong>{activeBilling == null ? '—' : activeBilling}</strong>
+        </Link>
+        <Link href="/platform/billing" className="plat-stat bad">
+          <span>Billing needs attention</span>
+          <strong>{attention == null ? '—' : attention}</strong>
+        </Link>
       </div>
 
       <div className="plat-stats">

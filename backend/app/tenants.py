@@ -6,7 +6,7 @@ import re
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -1588,8 +1588,29 @@ async def request_admin_password_reset(
     }
 
 
-async def list_tenants(db: AsyncSession, *, status: str | None = None, limit: int = 100) -> list[m.Tenant]:
-    q = select(m.Tenant).order_by(m.Tenant.created_at.desc()).limit(min(max(limit, 1), 500))
+async def list_tenants(
+    db: AsyncSession,
+    *,
+    status: str | None = None,
+    limit: int = 100,
+    q: str | None = None,
+    industry: str | None = None,
+) -> list[m.Tenant]:
+    stmt = select(m.Tenant).order_by(m.Tenant.created_at.desc()).limit(min(max(limit, 1), 500))
+    needle = (q or "").strip().lower()
+    if needle:
+        like = "%" + needle.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+        stmt = stmt.where(
+            or_(
+                func.lower(m.Tenant.company_name).like(like, escape="\\"),
+                func.lower(m.Tenant.slug).like(like, escape="\\"),
+            )
+        )
+    industry_key = (industry or "").strip().lower()
+    if industry_key:
+        if industry_key not in INDUSTRY_LABELS:
+            raise HTTPException(status_code=422, detail="Invalid industry filter")
+        stmt = stmt.where(m.Tenant.industry == industry_key)
     # Schema TenantStatusFilterValue rejects blank/invalid → 422; keep allow-list
     # defense-in-depth (no silent empty equality filter / blank→all).
     if status is not None:
@@ -1601,8 +1622,8 @@ async def list_tenants(db: AsyncSession, *, status: str | None = None, limit: in
         else:
             status = key
     if status:
-        q = q.where(m.Tenant.status == status)
-    return list((await db.execute(q)).scalars().all())
+        stmt = stmt.where(m.Tenant.status == status)
+    return list((await db.execute(stmt)).scalars().all())
 
 
 async def ensure_tenant_owns(
