@@ -475,8 +475,7 @@ async def apply_line_items_stock(
                         status_code=409,
                         detail={
                             "code": "INSUFFICIENT_AVAILABLE_STOCK",
-                            "message": "Insufficient available stock (on hand minus reserved orders and "
-                            "other POS devices' offline allocations)",
+                            "message": "Not enough stock available. Some of it is reserved for orders or for another till.",
                             "product_id": product_id,
                             "warehouse_id": warehouse_id,
                             "available": avail,

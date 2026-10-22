@@ -1482,7 +1482,7 @@ export default function Page() {
               value={newGroupCode}
               onChange={(e) => setNewGroupCode(e.target.value)}
               placeholder="Code (optional)"
-              title="Customer group code (optional; 1–40 chars; blank → slug from name)"
+              title="Group code (optional; made from the name if blank)"
               style={{ width: 140 }}
             />
             <input
@@ -1581,14 +1581,14 @@ export default function Page() {
             onChange={(e) => setCustomerName(e.target.value)}
             placeholder="New customer"
             aria-label="Customer name"
-            title="Customer name (1–180 chars; letters/digits required)"
+            title="Customer name"
           />
           <input
             value={customerCode}
             onChange={(e) => setCustomerCode(e.target.value)}
             placeholder="Code"
             aria-label="Customer code"
-            title="Customer code (optional; 1–64 chars; letters/digits required)"
+            title="Customer code"
             style={{ width: 100 }}
           />
           <select
@@ -1605,7 +1605,7 @@ export default function Page() {
             onChange={(e) => setCustomerCategory(e.target.value)}
             placeholder="Category"
             aria-label="Customer category"
-            title="Customer category (optional; 1–80 chars; letters/digits required)"
+            title="Customer category"
             style={{ width: 120 }}
           />
           <select
@@ -1901,7 +1901,7 @@ export default function Page() {
             onChange={(e) => setDocNotes(e.target.value)}
             placeholder="Notes (optional)"
             aria-label="Sales document notes"
-            title="Optional notes (1–500 chars; letters/digits required)"
+            title="Optional notes"
             style={{ minWidth: 180 }}
           />
         </div>
@@ -2918,7 +2918,7 @@ export default function Page() {
             onChange={(e) => setReturnNotes(e.target.value)}
             placeholder="Return notes (optional)"
             aria-label="Sales return notes"
-            title="Optional notes (1–500 chars; letters/digits required)"
+            title="Optional notes"
             style={{ minWidth: 220 }}
           />
           <button

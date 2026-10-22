@@ -494,7 +494,8 @@ export default function Page() {
       label: 'Total Sales',
       val: moneyNum(sales),
       href: links.sales || '/sales',
-      sub: `Recorded sales. Today ${moneyNum(cmp.sales_today)}, ${pctLabel(cmp.sales_today_pct)} versus yesterday. This month ${moneyNum(cmp.sales_mtd)}, ${pctLabel(cmp.sales_mtd_pct)} versus last month.`,
+      // Early in the day "-100% versus yesterday" reads as a collapse; say there are no sales yet instead.
+      sub: `Recorded sales. ${Number(cmp.sales_today || 0) > 0 ? `Today ${moneyNum(cmp.sales_today)}, ${pctLabel(cmp.sales_today_pct)} versus yesterday.` : 'No sales yet today.'} This month ${moneyNum(cmp.sales_mtd)}, ${pctLabel(cmp.sales_mtd_pct)} versus last month.`,
     },
     {
       cls: 's-buy',

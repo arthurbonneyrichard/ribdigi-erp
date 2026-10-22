@@ -854,7 +854,7 @@ export default function Page() {
                   type="date"
                   value={histFromDate}
                   onChange={(e) => setHistFromDate(e.target.value)}
-                  title="History from date (YYYY-MM-DD)"
+                  title="History from date"
                   aria-label="Credit history from date"
                 />
               </label>
@@ -864,7 +864,7 @@ export default function Page() {
                   type="date"
                   value={histToDate}
                   onChange={(e) => setHistToDate(e.target.value)}
-                  title="History to date (YYYY-MM-DD)"
+                  title="History to date"
                   aria-label="Credit history to date"
                 />
               </label>
@@ -946,7 +946,7 @@ export default function Page() {
                 onChange={(e) => setPayReference(e.target.value)}
                 placeholder="Optional"
                 aria-label="Payment reference"
-                title="Optional reference (1–100 chars; letters/digits required)"
+                title="Optional reference"
               />
             </label>
             <label>
@@ -956,7 +956,7 @@ export default function Page() {
                 onChange={(e) => setPayNotes(e.target.value)}
                 placeholder="Optional"
                 aria-label="Payment notes"
-                title="Optional notes (1–500 chars; letters/digits required)"
+                title="Optional notes"
               />
             </label>
             {payMethod === 'cheque' ? (

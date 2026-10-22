@@ -130,7 +130,7 @@ export default function Page() {
     <>
       <PageHeader
         title="Departments"
-        subtitle="Tenant-scoped departments. Names must be unique in this company. Assign users on User Management."
+        subtitle="Departments in your company. Each name must be unique. Assign staff to them in User Management."
         actions={
           canWrite ? (
             <button

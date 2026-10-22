@@ -1621,7 +1621,7 @@ export default function Page() {
                   value={lvl.label || ''}
                   onChange={(e) => updatePrLevel(idx, { label: e.target.value })}
                   placeholder="Label"
-                  title="Optional level label (1–120 chars; letters/digits required)"
+                  title="Optional level label"
                   aria-label={`PR approval level ${idx + 1} label`}
                 />
                 <input
@@ -1698,13 +1698,13 @@ export default function Page() {
                 onChange={(e) => setPrDepartment(e.target.value)}
                 placeholder="Requesting department (optional)"
                 aria-label="Purchase request department"
-                title="Requesting department (optional; 1–120 chars; letters/digits required)"
+                title="Requesting department"
               />
               <input
                 aria-label="Purchase request required date"
                 type="text"
                 placeholder="YYYY-MM-DD"
-                title="Required by date (optional YYYY-MM-DD)"
+                title="Required by date (optional)"
                 value={prRequiredDate}
                 onChange={(e) => setPrRequiredDate(e.target.value)}
               />
@@ -1713,7 +1713,7 @@ export default function Page() {
                 onChange={(e) => setPrNotes(e.target.value)}
                 placeholder="Notes (optional)"
                 aria-label="Purchase request notes"
-                title="Optional notes (1–500 chars; letters/digits required)"
+                title="Optional notes"
               />
             </div>
             <p className="muted" style={{ marginTop: 8 }}>
@@ -1784,7 +1784,7 @@ export default function Page() {
                           }
                           placeholder="Line notes (optional)"
                           aria-label="Purchase request line notes"
-                          title="Optional per-line notes (1–500 chars; letters/digits required)"
+                          title="Optional per-line notes"
                         />
                       </td>
                       <td>
@@ -1834,7 +1834,7 @@ export default function Page() {
                 onChange={(e) => setPrRejectReason(e.target.value)}
                 placeholder="Required before Reject"
                 aria-label="Purchase request reject reason"
-                title="Required reason for Reject (1–500 chars; letters/digits required)"
+                title="Required reason for Reject"
               />
             </label>
             <p className="muted" style={{ marginTop: 6 }}>
@@ -2095,7 +2095,7 @@ export default function Page() {
               onChange={(e) => setSupplierName(e.target.value)}
               placeholder="Supplier name"
               aria-label="Supplier name"
-              title="Supplier name (1–180 chars; letters/digits required)"
+              title="Supplier name"
             />
           </label>
           <label className="field">
@@ -2105,7 +2105,7 @@ export default function Page() {
               onChange={(e) => setSupplierCode(e.target.value)}
               placeholder="Optional code"
               aria-label="Supplier code"
-              title="Supplier code (optional; 1–64 chars; letters/digits required)"
+              title="Supplier code"
             />
           </label>
           <label className="field">
@@ -2130,7 +2130,7 @@ export default function Page() {
               onChange={(e) => setSupplierCategory(e.target.value)}
               placeholder="Optional category"
               aria-label="Supplier category"
-              title="Supplier category (optional; 1–80 chars; letters/digits required)"
+              title="Supplier category"
             />
           </label>
           <label className="field">
@@ -2160,7 +2160,7 @@ export default function Page() {
             <input
               value={supplierPhone}
               onChange={(e) => setSupplierPhone(e.target.value)}
-              placeholder="E.164 e.g. +233…"
+              placeholder="e.g. +233 24 123 4567"
               aria-label="Supplier phone"
             />
           </label>
@@ -2371,7 +2371,7 @@ export default function Page() {
             onChange={(e) => setPoNotes(e.target.value)}
             placeholder="PO notes (optional)"
             aria-label="PO notes"
-            title="Optional notes (1–500 chars; letters/digits required)"
+            title="Optional notes"
           />
           {!hideWarehouseUx ? (
           <label className="field">
@@ -2547,27 +2547,23 @@ export default function Page() {
 
           <div className="card">
             <label className="field">
-              <span>Cancel reason</span>
+              <span>Reason for cancelling an order</span>
               <input
                 className="purch-reason"
                 value={poCancelReason}
                 onChange={(e) => setPoCancelReason(e.target.value)}
-                placeholder="Required before Cancel"
-                title="Required cancel reason (1–500 chars; letters/digits required)"
+                placeholder="Needed before you press Cancel on an order"
                 aria-label="Purchase order cancel reason"
               />
             </label>
-            <p className="muted" style={{ marginTop: 6 }}>
-              Saved on the purchase order notes.
-            </p>
             <label className="field" style={{ marginTop: 8 }}>
-              <span>Email override</span>
+              <span>Email the order to</span>
               <input
                 type="email"
                 className="purch-reason"
                 value={poEmailTo}
                 onChange={(e) => setPoEmailTo(e.target.value)}
-                placeholder="Optional to= (omit → supplier email)"
+                placeholder="Send to a different email (optional)"
                 aria-label="Purchase order email override to"
               />
             </label>
@@ -2835,7 +2831,7 @@ export default function Page() {
                                   style={{ minWidth: 140 }}
                                   value={draft.reason}
                                   placeholder="Damaged / wrong item…"
-                                  title="Required when rejecting qty (1–500 chars; letters/digits required)"
+                                  title="Required when rejecting qty"
                                   aria-label={`GRN rejection reason ${i.id}`}
                                   onChange={(e) =>
                                     setReceiveDrafts((prev) => ({
@@ -2855,7 +2851,7 @@ export default function Page() {
                                   value={draft.batch}
                                   placeholder={tracks ? 'Batch required' : 'Batch (opt)'}
                                   aria-label="GRN batch number"
-                                  title="Batch / lot number (1–80 chars; required when product tracks batches)"
+                                  title="Batch or lot number (needed for products tracked by batch)"
                                   onChange={(e) =>
                                     setReceiveDrafts((prev) => ({
                                       ...prev,
@@ -2874,7 +2870,7 @@ export default function Page() {
                                   style={{ width: 120 }}
                                   type="text"
                                   placeholder="YYYY-MM-DD"
-                                  title="Manufacturing date (optional YYYY-MM-DD)"
+                                  title="Manufacturing date (optional)"
                                   value={draft.mfg}
                                   onChange={(e) =>
                                     setReceiveDrafts((prev) => ({
@@ -2894,7 +2890,7 @@ export default function Page() {
                                   style={{ width: 120 }}
                                   type="text"
                                   placeholder="YYYY-MM-DD"
-                                  title="Expiry date (optional YYYY-MM-DD)"
+                                  title="Expiry date (optional)"
                                   value={draft.expiry}
                                   onChange={(e) =>
                                     setReceiveDrafts((prev) => ({
@@ -2923,7 +2919,7 @@ export default function Page() {
                       onChange={(e) => setGrnNotes(e.target.value)}
                       placeholder="GRN notes (optional)"
                       aria-label="GRN notes"
-                      title="Optional notes (1–500 chars; letters/digits required)"
+                      title="Optional notes"
                       style={{ minWidth: 220 }}
                     />
                     <button
@@ -3142,7 +3138,7 @@ export default function Page() {
                     onChange={(e) => setAmendNotes(e.target.value)}
                     placeholder="Notes"
                     aria-label="PO amend notes"
-                    title="Optional notes (1–500 chars; letters/digits required); blank clears"
+                    title="Notes (optional)"
                   />
                   <input
                     value={amendDeliveryAddress}
@@ -3154,7 +3150,7 @@ export default function Page() {
                     aria-label="PO amend due date"
                     type="text"
                     placeholder="YYYY-MM-DD"
-                    title="Due date (optional YYYY-MM-DD; blank leaves prior)"
+                    title="Due date (optional; leave blank to keep the current date)"
                     value={amendDueDate}
                     onChange={(e) => setAmendDueDate(e.target.value)}
                   />
@@ -3162,7 +3158,7 @@ export default function Page() {
                     value={amendReason}
                     onChange={(e) => setAmendReason(e.target.value)}
                     placeholder="Required amendment reason"
-                    title="Required amendment reason (1–500 chars; letters/digits required)"
+                    title="Required amendment reason"
                     aria-label="Purchase order amend reason"
                   />
                   <p className="muted" style={{ margin: 0 }}>
@@ -3551,21 +3547,21 @@ export default function Page() {
             onChange={(e) => setSupplierInvoiceNo(e.target.value)}
             placeholder="Supplier invoice #"
             aria-label="Supplier invoice number"
-            title="Optional supplier invoice # (1–100 chars; letters/digits required)"
+            title="Optional supplier invoice #"
           />
           <input
             value={invNotes}
             onChange={(e) => setInvNotes(e.target.value)}
             placeholder="Notes (optional)"
             aria-label="Purchase invoice notes"
-            title="Optional notes (1–500 chars; letters/digits required)"
+            title="Optional notes"
           />
           <input
             value={invAttachmentUrl}
             onChange={(e) => setInvAttachmentUrl(e.target.value)}
             placeholder="Attachment URL (optional https://…)"
             aria-label="Purchase invoice attachment URL"
-            title="Optional absolute http(s) URL; http only for localhost (blank = none)"
+            title="Web link to the bill (optional, must start with https://)"
           />
           <input
             value={grnInvHeaderDiscount}
@@ -3583,7 +3579,7 @@ export default function Page() {
             aria-label="Purchase invoice currency"
             pattern="[A-Z]{3}"
             maxLength={3}
-            title="ISO-4217 currency (blank = company base)"
+            title="Currency (leave blank for your company currency)"
             style={{ width: 140 }}
           />
           <input
@@ -3666,21 +3662,21 @@ export default function Page() {
             onChange={(e) => setSupplierInvoiceNo(e.target.value)}
             placeholder="Supplier invoice #"
             aria-label="Supplier invoice number"
-            title="Optional supplier invoice # (1–100 chars; letters/digits required)"
+            title="Optional supplier invoice #"
           />
           <input
             value={invNotes}
             onChange={(e) => setInvNotes(e.target.value)}
             placeholder="Notes (optional)"
             aria-label="Purchase invoice notes"
-            title="Optional notes (1–500 chars; letters/digits required)"
+            title="Optional notes"
           />
           <input
             value={invAttachmentUrl}
             onChange={(e) => setInvAttachmentUrl(e.target.value)}
             placeholder="Attachment URL (optional https://…)"
             aria-label="Purchase invoice attachment URL"
-            title="Optional absolute http(s) URL; http only for localhost (blank = none)"
+            title="Web link to the bill (optional, must start with https://)"
           />
           <input
             value={invCurrency}
@@ -3689,7 +3685,7 @@ export default function Page() {
             aria-label="Purchase invoice currency"
             pattern="[A-Z]{3}"
             maxLength={3}
-            title="ISO-4217 currency (blank = company base)"
+            title="Currency (leave blank for your company currency)"
             style={{ width: 140 }}
           />
           <input
@@ -3907,7 +3903,7 @@ export default function Page() {
                   }
                   placeholder="Supplier invoice #"
                   aria-label="Supplier invoice number"
-                  title="Optional supplier invoice # (1–100 chars; letters/digits required)"
+                  title="Optional supplier invoice #"
                 />
                 <input
                   aria-label="Purchase invoice OCR date"
@@ -3920,7 +3916,7 @@ export default function Page() {
                   onChange={(e) => setOcrDraft({ ...ocrDraft, notes: e.target.value })}
                   placeholder="Notes"
                   aria-label="Purchase invoice OCR notes"
-                  title="Optional notes (1–500 chars; letters/digits required)"
+                  title="Optional notes"
                 />
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button type="button" onClick={applyInvoiceOcr} aria-label="Apply purchase invoice OCR">
@@ -3949,7 +3945,7 @@ export default function Page() {
               value={piCancelReason}
               onChange={(e) => setPiCancelReason(e.target.value)}
               placeholder="Required before Cancel"
-              title="Required cancel reason (1–500 chars; letters/digits required)"
+              title="Required cancel reason"
               aria-label="Purchase invoice cancel reason"
             />
           </label>
@@ -4398,7 +4394,7 @@ export default function Page() {
             onChange={(e) => setReturnNotes(e.target.value)}
             placeholder="Notes (optional)"
             aria-label="Purchase return notes"
-            title="Optional notes (1–500 chars; letters/digits required)"
+            title="Optional notes"
           />
           <button
             onClick={createReturn}
@@ -4418,7 +4414,7 @@ export default function Page() {
             value={prCancelReason}
             onChange={(e) => setPrCancelReason(e.target.value)}
             placeholder="Required before Cancel"
-            title="Required cancel reason (1–500 chars; letters/digits required)"
+            title="Required cancel reason"
             aria-label="Purchase return cancel reason"
           />
         </label>

@@ -43,7 +43,7 @@ type Invoice = {
 };
 
 const HONESTY =
-  'A return from the payment page leaves the invoice unpaid until that gateway confirms a reusable authorization. This page is not a production charge.';
+  'An invoice is marked paid only after the payment provider confirms the payment.';
 
 const STATUS_LABELS: Record<string, string> = {
   trialing: 'Trial',

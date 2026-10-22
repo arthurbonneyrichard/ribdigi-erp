@@ -814,8 +814,8 @@ export default function Page() {
       setFefoStrict(!!r.data?.fefo_strict_warehouse);
       setMessage(
         next
-          ? 'FEFO strict warehouse mode on (no unassigned-batch fallback)'
-          : 'FEFO strict warehouse mode off',
+          ? 'Earliest-expiry batches are now taken only from each warehouse'
+          : 'Earliest-expiry batches can come from any warehouse',
       );
     } catch (err: any) {
       setError(err.message);
@@ -925,8 +925,8 @@ export default function Page() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <label className="muted">
-          <input type="checkbox" checked={fefoStrict} onChange={() => toggleFefo()} aria-label="FEFO strict warehouse" /> FEFO
-          strict warehouse (stock-out only from batches tagged to that warehouse)
+          <input type="checkbox" checked={fefoStrict} onChange={() => toggleFefo()} aria-label="FEFO strict warehouse" /> Sell
+          earliest-expiry batches from the same warehouse only (FEFO)
         </label>
       </div>
 
@@ -939,7 +939,7 @@ export default function Page() {
               onChange={(e) => setBrCode(e.target.value)}
               placeholder="Code"
               aria-label="Branch code"
-              title="Branch code (1–40 chars; letters/digits required)"
+              title="Branch code"
               disabled={!!editBrId}
             />
             <input
@@ -947,7 +947,7 @@ export default function Page() {
               onChange={(e) => setBrName(e.target.value)}
               placeholder="Name"
               aria-label={editBrId ? 'Edit branch name' : 'Branch name'}
-              title="Branch name (1–150 chars; letters/digits required)"
+              title="Branch name"
             />
             <input
               value={brAddress}
@@ -958,7 +958,7 @@ export default function Page() {
             <input
               value={brPhone}
               onChange={(e) => setBrPhone(e.target.value)}
-              placeholder="Phone (optional, E.164 e.g. +233...)"
+              placeholder="Phone (optional), e.g. +233 24 123 4567"
               aria-label="Branch phone"
             />
             <input
@@ -1009,7 +1009,7 @@ export default function Page() {
               onChange={(e) => setDeptCode(e.target.value)}
               placeholder="Code"
               aria-label="Department code"
-              title="Department code (1–40 chars; letters/digits required)"
+              title="Department code"
               disabled={!!editDeptId}
             />
             <input
@@ -1017,7 +1017,7 @@ export default function Page() {
               onChange={(e) => setDeptName(e.target.value)}
               placeholder="Name (e.g. Sales)"
               aria-label={editDeptId ? 'Edit department name' : 'Department name'}
-              title="Department name (1–150 chars; letters/digits required)"
+              title="Department name"
             />
             <select
               value={deptBranchId}
@@ -1081,14 +1081,14 @@ export default function Page() {
               onChange={(e) => setCode(e.target.value)}
               placeholder="Code"
               aria-label="Store code"
-              title="Store code (1–50 chars; letters/digits required)"
+              title="Store code"
             />
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Name"
               aria-label="Store name"
-              title="Store name (1–150 chars; letters/digits required)"
+              title="Store name"
             />
             <input
               value={address}
@@ -1099,7 +1099,7 @@ export default function Page() {
             <input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="Phone (optional, E.164 e.g. +233...)"
+              placeholder="Phone (optional), e.g. +233 24 123 4567"
               aria-label="Store phone"
             />
             <select
@@ -1151,7 +1151,7 @@ export default function Page() {
               onChange={(e) => setWhCode(e.target.value)}
               placeholder="Code"
               aria-label="Warehouse code"
-              title="Warehouse code (1–50 chars; letters/digits required)"
+              title="Warehouse code"
               disabled={!!editWhId}
             />
             <input
@@ -1159,7 +1159,7 @@ export default function Page() {
               onChange={(e) => setWhName(e.target.value)}
               placeholder="Name"
               aria-label={editWhId ? 'Edit warehouse name' : 'Warehouse name'}
-              title="Warehouse name (1–150 chars; letters/digits required)"
+              title="Warehouse name"
             />
             <select
               value={whType}
@@ -1397,7 +1397,7 @@ export default function Page() {
       </div>
 
       <h3 id="branches" style={{ marginTop: 16 }}>Branches</h3>
-      <p className="muted">Code, manager, address, and contact; deactivate without data loss (BR-2.2).</p>
+      <p className="muted">Code, manager, address and contact. Deactivating keeps the history.</p>
       <select
         value={branchManageFilter}
         onChange={(e) => setBranchManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
@@ -1452,7 +1452,7 @@ export default function Page() {
       </table>
 
       <h3 style={{ marginTop: 16 }}>Departments</h3>
-      <p className="muted">Code, optional branch, department head; soft deactivate (BR-2.5).</p>
+      <p className="muted">Code, branch (optional) and department head. Deactivating keeps the history.</p>
       <select
         value={departmentManageFilter}
         onChange={(e) => setDepartmentManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
@@ -1513,7 +1513,7 @@ export default function Page() {
       </table>
 
       <h3 id="stores" style={{ marginTop: 16 }}>Stores</h3>
-      <p className="muted">Manager, branch, hours, and warehouse link (BR-2.3). Soft-deactivate hides the store from POS and new sales without deleting history.</p>
+      <p className="muted">Manager, branch, opening hours and warehouse. Deactivating hides the store from the till and new sales, and keeps its history.</p>
       {entitlement && (
         <div
           className="plat-stat"
@@ -1633,7 +1633,7 @@ export default function Page() {
               onChange={(e) => setEditName(e.target.value)}
               placeholder="Name"
               aria-label="Edit store name"
-              title="Store name (1–150 chars; letters/digits required)"
+              title="Store name"
             />
             <input
               value={editAddress}
@@ -1644,7 +1644,7 @@ export default function Page() {
             <input
               value={editPhone}
               onChange={(e) => setEditPhone(e.target.value)}
-              placeholder="Phone (optional, E.164 e.g. +233...)"
+              placeholder="Phone (optional), e.g. +233 24 123 4567"
               aria-label="Store phone"
             />
             <select
@@ -1763,8 +1763,8 @@ export default function Page() {
 
       <h3 style={{ marginTop: 16 }}>Warehouses</h3>
       <p className="muted">
-        Type, manager, address, and capacity (BR-2.4). Soft-deactivate hides the warehouse from new
-        stock ops without deleting history.
+        Type, manager, address and capacity. Deactivating hides the warehouse from new stock
+        movements and keeps its history.
       </p>
       <select
         value={warehouseManageFilter}
@@ -1841,7 +1841,7 @@ export default function Page() {
 
       <h3 style={{ marginTop: 16 }}>Transfers</h3>
       <p className="muted">
-        Dual approval: source store manager → destination store manager, then ship / receive.
+        The sending store's manager and the receiving store's manager both approve, then the stock is shipped and received.
       </p>
       <div className="card" style={{ marginBottom: 12 }}>
         <label>
@@ -1850,13 +1850,13 @@ export default function Page() {
             value={xferRejectReason}
             onChange={(e) => setXferRejectReason(e.target.value)}
             placeholder="Required before Reject or Cancel"
-            title="Required reject/cancel reason (1–500 chars; letters/digits required)"
+            title="Required reject/cancel reason"
             aria-label="Stock transfer reject reason"
             style={{ minWidth: 280 }}
           />
         </label>
         <p className="muted" style={{ marginTop: 6 }}>
-          Used by Reject and Cancel (stored as <code>rejection_reason</code>; status → cancelled).
+          Required when you reject or cancel a transfer.
         </p>
       </div>
       <div className="cat-toolbar" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>

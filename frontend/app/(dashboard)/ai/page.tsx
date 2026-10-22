@@ -777,14 +777,14 @@ export default function Page() {
             type="date"
             value={draftDocDate}
             onChange={(e) => setDraftDocDate(e.target.value)}
-            title="Draft expense / purchase invoice date (YYYY-MM-DD)"
+            title="Draft expense / purchase invoice date"
             aria-label="AI document draft date"
           />
           <input
             value={draftDocDescription}
             onChange={(e) => setDraftDocDescription(e.target.value)}
             placeholder="Expense description (optional)"
-            title="Optional AI draft expense description (1–500 chars; letters/digits required)"
+            title="Optional AI draft expense description"
             aria-label="AI document expense description"
             style={{ minWidth: 200 }}
           />
@@ -936,7 +936,7 @@ export default function Page() {
             onChange={(e) => setMinConfidence(e.target.value)}
             placeholder="Min confidence 0–1"
             aria-label="AI prediction min confidence"
-            title="Optional confidence floor for draft PRs (0–1 finite; blank → 0)"
+            title="Only include suggestions at least this certain (0 to 1, optional)"
             style={{ width: 140 }}
           />
           <input
@@ -944,7 +944,7 @@ export default function Page() {
             onChange={(e) => setPredictionNotes(e.target.value)}
             placeholder="Prediction notes (optional)"
             aria-label="AI low-stock prediction notes"
-            title="Optional notes for draft PRs (1–500 chars; letters/digits required)"
+            title="Notes for the purchase request (optional)"
             style={{ minWidth: 200 }}
           />
           <input
@@ -952,7 +952,7 @@ export default function Page() {
             onChange={(e) => setPredictionRiskReason(e.target.value)}
             placeholder="Risk reason override (optional)"
             aria-label="AI prediction risk reason"
-            title="Optional risk_reason override for prediction lines (1–500 chars; letters/digits required)"
+            title="Reason shown on each suggested line (optional)"
             style={{ minWidth: 200 }}
           />
           <label
@@ -976,14 +976,14 @@ export default function Page() {
             type="date"
             value={analysisFromDate}
             onChange={(e) => setAnalysisFromDate(e.target.value)}
-            title="Analysis from date (YYYY-MM-DD)"
+            title="Analysis from date"
             aria-label="AI analysis from date"
           />
           <input
             type="date"
             value={analysisToDate}
             onChange={(e) => setAnalysisToDate(e.target.value)}
-            title="Analysis to date (YYYY-MM-DD)"
+            title="Analysis to date"
             aria-label="AI analysis to date"
           />
           <button onClick={loadSalesAnalysis} aria-label="Sales analysis">

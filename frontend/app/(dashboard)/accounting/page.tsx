@@ -1094,7 +1094,7 @@ export default function Page() {
     <div className="work">
       <PageHeader
         title="Accounting"
-        subtitle="One company ledger. Sales, expenses, and supplier bills post here — this is not a second set of books. Income, expenses, and supplier bills for this company. Use the tabs to see accounts, cash, bank matching, and cheques."
+        subtitle="Sales, expenses and supplier bills post here automatically. Use the tabs for accounts, cash and bank, bank matching and cheques."
       />
       <div className="card" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input value={journalPrefix} onChange={(e) => setJournalPrefix(e.target.value)} aria-label="Journal number prefix" placeholder="Journal prefix" />
@@ -1242,14 +1242,14 @@ export default function Page() {
                 onChange={(e) => setCloseThrough(e.target.value)}
                 placeholder="Through date YYYY-MM-DD"
                 aria-label="Period close through date"
-                title="Period close through date (YYYY-MM-DD)"
+                title="Period close through date"
               />
               <input
                 value={periodReason}
                 onChange={(e) => setPeriodReason(e.target.value)}
                 placeholder="Required close / reopen reason"
                 style={{ minWidth: 280 }}
-                title="Required close/reopen reason (1–500 chars; letters/digits required)"
+                title="Required close/reopen reason"
                 aria-label="Period close or reopen reason"
               />
               <button type="button" className="btn-danger" onClick={closeBooks} aria-label="Close books">
@@ -1277,21 +1277,21 @@ export default function Page() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Description"
                 aria-label="Journal description"
-                title="Journal description (2–500 chars; letters/digits required)"
+                title="Journal description"
               />
               <input
                 value={journalRef}
                 onChange={(e) => setJournalRef(e.target.value)}
                 placeholder="Reference (optional)"
                 aria-label="Journal reference"
-                title="Optional reference (1–100 chars; letters/digits required)"
+                title="Optional reference"
               />
               <input
                 value={entryDate}
                 onChange={(e) => setEntryDate(e.target.value)}
                 placeholder="Entry date YYYY-MM-DD (optional)"
                 aria-label="Journal entry date"
-                title="Journal entry date (optional YYYY-MM-DD; blank → now)"
+                title="Entry date (optional; today if blank)"
               />
               <table className="table" aria-label="Manual journal lines">
                 <thead>
@@ -1370,7 +1370,7 @@ export default function Page() {
                           placeholder="Optional"
                           style={{ width: 140 }}
                           aria-label={`Journal line ${idx + 1} description`}
-                          title="Optional line description (1–500 chars; letters/digits required)"
+                          title="Optional line description"
                         />
                       </td>
                       <td>
@@ -1469,7 +1469,7 @@ export default function Page() {
                   onChange={(e) => setCoaOpenNotes(e.target.value)}
                   placeholder="Notes (optional)"
                   aria-label="Opening balance notes"
-                  title="Optional notes (1–500 chars; letters/digits required)"
+                  title="Optional notes"
                 />
                 {coaOpenLines.length > 0 && (
                   <ul style={{ margin: 0, paddingLeft: 18 }}>
@@ -1534,7 +1534,7 @@ export default function Page() {
               placeholder="Display name"
               disabled={!editAcctId}
               aria-label="Edit account name"
-              title="Account display name (1–150 chars; letters/digits required)"
+              title="Account display name"
             />
             <button
               type="button"
@@ -1713,14 +1713,14 @@ export default function Page() {
                   type="date"
                   value={pnlFrom}
                   onChange={(e) => setPnlFrom(e.target.value)}
-                  title="From date (YYYY-MM-DD)"
+                  title="From date"
                   aria-label="P&L from date"
                 />
                 <input
                   type="date"
                   value={pnlTo}
                   onChange={(e) => setPnlTo(e.target.value)}
-                  title="To date (YYYY-MM-DD)"
+                  title="To date"
                   aria-label="P&L to date"
                 />
                 <select
@@ -2136,7 +2136,7 @@ export default function Page() {
                 onChange={(e) => setXferNotes(e.target.value)}
                 placeholder="Notes"
                 aria-label="Cash transfer notes"
-                title="Optional notes (1–500 chars; letters/digits required)"
+                title="Optional notes"
               />
               <button type="button" className="btn-ok" onClick={postTransfer} aria-label="Post cash transfer">
                 Post
@@ -2245,14 +2245,14 @@ export default function Page() {
                 type="date"
                 value={stmtDate}
                 onChange={(e) => setStmtDate(e.target.value)}
-                title="Statement date (YYYY-MM-DD)"
+                title="Statement date"
                 aria-label="Statement date"
               />
               <input
                 type="date"
                 value={lineTxnDate}
                 onChange={(e) => setLineTxnDate(e.target.value)}
-                title="Statement line txn date (YYYY-MM-DD)"
+                title="Statement line txn date"
                 aria-label="Statement line txn date"
               />
               <AmountField
@@ -2278,14 +2278,14 @@ export default function Page() {
                 onChange={(e) => setLineDesc(e.target.value)}
                 placeholder="Line desc"
                 aria-label="Statement line description"
-                title="Optional line description (1–500 chars; letters/digits required)"
+                title="Optional line description"
               />
               <input
                 value={lineExternalRef}
                 onChange={(e) => setLineExternalRef(e.target.value)}
                 placeholder="Line external ref (optional)"
                 aria-label="Statement line external ref"
-                title="Optional external ref (1–120 chars; letters/digits required)"
+                title="Optional external ref"
               />
             </div>
             <input
@@ -2293,7 +2293,7 @@ export default function Page() {
               onChange={(e) => setStmtNotes(e.target.value)}
               placeholder="Statement notes (optional)"
               aria-label="Statement notes"
-              title="Optional statement notes (1–500 chars; letters/digits required)"
+              title="Optional statement notes"
             />
             <button
               onClick={createStatement}
@@ -2323,7 +2323,7 @@ export default function Page() {
           </div>
 
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
-            <h3>Bank API connections</h3>
+            <h3>Bank connections</h3>
             <p className="muted">
               Connect a cash or bank account so new bank lines can be brought in. Turning a connection
               off pauses those updates. Remove deletes the connection.
@@ -2341,8 +2341,8 @@ export default function Page() {
               aria-label="Bank external account id"
               value={connExtId}
               onChange={(e) => setConnExtId(e.target.value)}
-              placeholder="External account id"
-              title="Provider account id (1–120 chars; letters/digits required)"
+              placeholder="Bank account ID"
+              title="The account ID from your bank feed"
             />
             {connProvider === 'http_json' && (
               <>
@@ -2427,7 +2427,7 @@ export default function Page() {
               ))}
               {!managedConnections.length && (
                 <li className="muted">
-                  {connections.length ? 'No connections for this filter' : 'No API connections yet'}
+                  {connections.length ? 'No connections for this filter' : 'No bank connections yet'}
                 </li>
               )}
             </ul>
@@ -2566,7 +2566,7 @@ export default function Page() {
                   onChange={(e) => setClearGroupNotes(e.target.value)}
                   placeholder="Clear-group notes (optional)"
                   aria-label="Clear-group notes"
-                  title="Optional clear-group notes (1–500 chars; letters/digits required)"
+                  title="Optional clear-group notes"
                   style={{ display: 'block', width: '100%', marginBottom: 8 }}
                 />
                 <button
@@ -2692,8 +2692,8 @@ export default function Page() {
       {tab === 'cheques' && (
         <>
           <p className="muted">
-            Received cheques post to 1020 then deposit/clear to Bank. Issued cheques post to 2015 until
-            cleared against Bank.
+            Received cheques are held until you deposit them and they clear. Cheques you issue stay
+            outstanding until they clear at the bank.
           </p>
           <div className="card" style={{ marginBottom: 12, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
             <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
@@ -2739,7 +2739,7 @@ export default function Page() {
                 value={chequeActionReason}
                 onChange={(e) => setChequeActionReason(e.target.value)}
                 placeholder="Required before Bounce or Cancel"
-                title="Required bounce/cancel reason (1–500 chars; letters/digits required)"
+                title="Required bounce/cancel reason"
                 aria-label="Cheque bounce cancel reason"
                 style={{ minWidth: 280 }}
               />
@@ -2854,7 +2854,7 @@ export default function Page() {
                 placeholder="Code (e.g. 1001)"
                 style={{ width: '100%' }}
                 aria-label="Account code"
-                title="Account code (1–30 chars: letters, digits, _ or -)"
+                title="Account code"
                 disabled={Boolean(editAcctId)}
                 aria-invalid={Boolean(acctFieldErrors.code)}
               />
@@ -2874,7 +2874,7 @@ export default function Page() {
                 }}
                 placeholder="Name (e.g. Petty Cash)"
                 aria-label="Account name"
-                title="Account display name (1–150 chars; letters/digits required)"
+                title="Account display name"
                 aria-invalid={Boolean(acctFieldErrors.name)}
               />
             </label>

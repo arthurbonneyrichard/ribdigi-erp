@@ -382,7 +382,7 @@ export default function Page() {
             value={keyExpires}
             onChange={(e) => setKeyExpires(e.target.value)}
             placeholder="YYYY-MM-DD or ISO datetime"
-            title="Optional expiry (YYYY-MM-DD or ISO datetime)"
+            title="Expiry date (optional)"
             aria-label="API key expiry"
           />
           <button
