@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     OFFLINE_AUTH_HOURS_DEFAULT: int = 168
     OFFLINE_AUTH_HOURS_MIN: int = 1
     OFFLINE_AUTH_HOURS_MAX: int = 168
+    # Another till's offline stock reservation only holds stock back from this till while that
+    # device has checked in (POS heartbeat, every 60 s online) within this many hours. Abandoned
+    # browsers and phones stop blocking sales after it; a till that just lost internet keeps its share.
+    OFFLINE_RESERVATION_STALE_HOURS: int = 4
     # Existing env files may still set this. The till does not park a sale after this many tries.
     OFFLINE_SYNC_MAX_RETRIES: int = 8
     REDIS_URL: str = "redis://redis:6379/0"

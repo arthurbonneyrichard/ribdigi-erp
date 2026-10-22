@@ -272,12 +272,22 @@ async def outstanding_by_product(
     product_ids: set[str] | None = None,
     exclude_device_id: str | None = None,
 ) -> dict[str, float]:
-    """Unsold allocated qty on active grants, by product (other devices only when excluded)."""
+    """Unsold allocated qty on active grants, by product (other devices only when excluded).
+
+    Only devices seen within OFFLINE_RESERVATION_STALE_HOURS count: a reservation left by a
+    browser or phone that stopped checking in no longer blocks other tills.
+    """
     now = _utcnow()
+    seen_after = now - timedelta(hours=max(1, int(settings.OFFLINE_RESERVATION_STALE_HOURS or 4)))
+    recent_devices = select(m.PosDevice.device_id).where(
+        m.PosDevice.tenant_id == tenant_id,
+        m.PosDevice.last_seen_at >= seen_after,
+    )
     stmt = (
         select(m.OfflineStockAllocation.product_id, func.coalesce(func.sum(_outstanding_expr()), 0))
         .join(m.OfflineGrant, m.OfflineGrant.id == m.OfflineStockAllocation.grant_id)
         .where(*_active_allocation_filters(tenant_id, now))
+        .where(m.OfflineStockAllocation.device_id.in_(recent_devices))
         .group_by(m.OfflineStockAllocation.product_id)
     )
     if warehouse_id:
