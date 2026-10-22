@@ -858,7 +858,7 @@ export default function Page() {
               onChange={(e) => setApproveComment(e.target.value)}
               placeholder="Optional note when you approve"
               aria-label="Expense approve comment"
-              title="Optional comment (1–500 chars; letters/digits required); blank omits"
+              title="Optional comment; blank omits"
             />
           </label>
           <label>
@@ -868,7 +868,7 @@ export default function Page() {
               onChange={(e) => setRejectReason(e.target.value)}
               placeholder="Required before Reject"
               aria-label="Expense reject reason"
-              title="Required reason for reject (1–500 chars; letters/digits required)"
+              title="Required reason for reject"
             />
           </label>
         </div>
@@ -1063,7 +1063,7 @@ export default function Page() {
             value={expenseDate}
             onChange={(e) => setExpenseDate(e.target.value)}
             aria-label="Expense date"
-            title="Expense date (optional YYYY-MM-DD)"
+            title="Expense date (optional)"
           />
           </label>
           <label>
@@ -1325,7 +1325,7 @@ export default function Page() {
               value={lvl.label || ''}
               onChange={(e) => updateLevel(idx, { label: e.target.value })}
               placeholder="Label"
-              title="Optional level label (1–120 chars; letters/digits required)"
+              title="Optional level label"
               aria-label={`Expense approval level ${idx + 1} label`}
             />
             <input
@@ -1388,7 +1388,7 @@ export default function Page() {
             onChange={(e) => setNewCatCode(e.target.value)}
             placeholder="Code"
             aria-label="Expense category code"
-            title="Expense category code (1–40 chars; letters/digits required)"
+            title="Expense category code"
           />
           <input
             aria-label="Expense category name"
@@ -1532,7 +1532,7 @@ export default function Page() {
             onChange={(e) => setSkipNextReason(e.target.value)}
             placeholder="Required before Skip next"
             aria-label="Skip next reason"
-            title="Required reason for Skip next (1–500 chars; letters/digits required)"
+            title="Required reason for Skip next"
           />
         </label>
         <p className="muted" style={{ marginTop: 0, marginBottom: 10 }}>

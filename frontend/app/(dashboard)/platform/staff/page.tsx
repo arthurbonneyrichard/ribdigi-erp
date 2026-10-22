@@ -361,7 +361,7 @@ export default function PlatformStaffPage() {
               <input
                 value={form.phone}
                 onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                placeholder="Phone (E.164 e.g. +233...)"
+                placeholder="Phone, e.g. +233 24 123 4567"
                 aria-label="Platform staff phone"
               />
             </label>
@@ -437,7 +437,7 @@ export default function PlatformStaffPage() {
                 <input
                   value={editForm.phone}
                   onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
-                  placeholder="Phone (E.164 e.g. +233...). Leave blank to keep current."
+                  placeholder="Phone, e.g. +233 24 123 4567 (leave blank to keep current)"
                   aria-label="Edit platform staff phone"
                 />
               </label>

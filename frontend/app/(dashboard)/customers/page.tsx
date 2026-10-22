@@ -350,7 +350,7 @@ export default function Page() {
     <div className="card cat-panel">
       <PageHeader
         title="Customers"
-        subtitle="Tenant customer master for this company. Used on sales documents — not hotel guest CRM."
+        subtitle="Your customers, used on quotes, orders and invoices."
         actions={
           <button type="button" className="list-btn-primary" onClick={openAdd} aria-label="Add customer">
             Add customer

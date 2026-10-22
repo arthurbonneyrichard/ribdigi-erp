@@ -211,6 +211,9 @@ export function formatElapsed(seconds: number | null | undefined): string {
 }
 
 const PLAIN_LABELS: Record<string, string> = {
+  pos: 'POS',
+  ai: 'AI',
+  ecommerce: 'Online store',
   trialing: 'Trial',
   trial: 'Trial',
   active: 'Active',

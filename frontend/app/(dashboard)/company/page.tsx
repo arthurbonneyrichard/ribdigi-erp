@@ -7,7 +7,6 @@ import { getMe, invalidateMeCache } from '../../../lib/meCache';
 import { formatDateTime, formatNumber, formatWhen, plainLabel, rememberFormatPrefs } from '../../../lib/format';
 import { canDownloadStaffGuide, industryLabel } from '../../../lib/industries';
 import { TAX_COUNTRIES } from '../../../lib/taxCountries';
-import { OFFLINE_COMPLETE_MISSING } from '../../../lib/connectivity';
 
 const FISCAL_MMDD = /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 
@@ -677,7 +676,7 @@ export default function Page() {
         </p>
       )}
       <p className="muted">
-        Status: {plainLabel(tenant.status)} · Sign-in name: {tenant.slug}
+        Status: {plainLabel(tenant.status)} · Company code for sign-in: {tenant.slug}
         {tenant.days_remaining != null && tenant.status === 'trial'
           ? ` · Trial days left: ${tenant.days_remaining}`
           : ''}
@@ -741,7 +740,7 @@ export default function Page() {
               id="company-phone"
               value={tenant.phone || ''}
               onChange={(e) => setTenant({ ...tenant, phone: e.target.value })}
-              placeholder="Phone (E.164 e.g. +233...)"
+              placeholder="Phone, e.g. +233 24 123 4567"
               aria-label="Company phone"
             />
           </div>
@@ -816,7 +815,7 @@ export default function Page() {
           </div>
           <h3 className="company-page-span">Date and number format</h3>
           <p className="muted company-page-span" style={{ margin: 0 }}>
-            Date, number, and time display for this company (BR-20.2).
+            How dates, numbers and times appear.
           </p>
           <div className="company-page-field">
             <label htmlFor="company-date-format">Company date format</label>
@@ -1003,7 +1002,7 @@ export default function Page() {
                     placeholder={emailStatus.has_password ? '••••••••' : ''}
                     autoComplete="new-password"
                     aria-label="Company SMTP password"
-                    title="SMTP password (1–128 chars; omit blank to keep)"
+                    title="SMTP password"
                   />
                 </div>
                 <div className="company-page-field">
@@ -1142,7 +1141,7 @@ export default function Page() {
                     placeholder={smsStatus.has_auth_token ? '••••••••' : ''}
                     autoComplete="new-password"
                     aria-label="Company SMS auth token"
-                    title="Twilio auth token (1–128 chars; omit blank to keep)"
+                    title="Twilio auth token"
                   />
                 </div>
                 <div className="company-page-field">
@@ -1153,7 +1152,7 @@ export default function Page() {
                     onChange={(e) => setProfileFullName(e.target.value)}
                     placeholder="Full name"
                     aria-label="Profile full name"
-                    title="Profile full name (1–150 chars; letters/digits required)"
+                    title="Profile full name"
                   />
                 </div>
                 <div className="company-page-field">
@@ -1162,7 +1161,7 @@ export default function Page() {
                     id="company-profile-phone"
                     value={profilePhone}
                     onChange={(e) => setProfilePhone(e.target.value)}
-                    placeholder="Your mobile (E.164 e.g. +233...)"
+                    placeholder="Your mobile, e.g. +233 24 123 4567"
                     aria-label="Profile phone for SMS test"
                   />
                 </div>
@@ -1318,7 +1317,7 @@ export default function Page() {
                 value={printHeader}
                 onChange={(e) => setPrintHeader(e.target.value)}
                 placeholder="Tagline under company name"
-                title="Optional header (1–200 chars; letters/digits required); blank clears"
+                title="Optional header; blank clears"
                 aria-label="Print branding header text"
               />
             </div>
@@ -1329,7 +1328,7 @@ export default function Page() {
                 value={printFooter}
                 onChange={(e) => setPrintFooter(e.target.value)}
                 placeholder="Thank you line"
-                title="Optional footer (1–300 chars; letters/digits required); blank clears"
+                title="Optional footer; blank clears"
                 aria-label="Print branding footer text"
               />
             </div>
@@ -1512,7 +1511,7 @@ export default function Page() {
         <div className="card">
           <h2>Users</h2>
           <p className="muted" style={{ margin: 0 }}>
-            Settings → Users: add staff for this company (same API as User Management).
+            Add and manage staff in Settings → Users.
           </p>
           <a href="/users#create-user" aria-label="Add User">
             Add User
@@ -1624,7 +1623,7 @@ export default function Page() {
                 title="Hours a signed-in device may sell offline (1–168)"
               />
               <p className="muted" style={{ margin: 0 }}>
-                {OFFLINE_COMPLETE_MISSING}
+                How long a signed-in till may keep selling without internet. Offline sales upload when the till is back online with the Point of Sale page open.
               </p>
             </div>
             <div className="company-page-actions company-page-span">
@@ -1687,10 +1686,6 @@ export default function Page() {
 
       <section className="card company-page-danger" aria-labelledby="company-suspension-title">
         <h2 id="company-suspension-title">Suspension</h2>
-        <p className="muted">
-          A company administrator cannot suspend this company from this page. Only a platform owner can do that,
-          from the platform console, and a reason is required there. This page has no control for it, so it cannot be pressed by accident.
-        </p>
         <p className="muted" style={{ marginBottom: 0 }}>
           Current status: {plainLabel(tenant.status)}.
         </p>

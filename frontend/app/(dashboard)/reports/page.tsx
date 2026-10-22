@@ -146,6 +146,12 @@ function isoDateOrEmpty(value: string): string {
   return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? trimmed : '';
 }
 
+// Readable store/branch name for report headers; never a raw id.
+function placeLabel(rows: any[], id: unknown, kind: 'store' | 'branch'): string {
+  const row = (rows || []).find((r) => String(r?.id) === String(id));
+  return row?.name ? String(row.name) : kind === 'store' ? 'Selected store' : 'Selected branch';
+}
+
 function fmtDate(value: unknown): string {
   if (value === null || value === undefined || value === '') return '—';
   return formatWhen(String(value)) || '—';
@@ -1079,7 +1085,7 @@ export default function Page() {
                       type="date"
                       value={fromDate}
                       onChange={(e) => setFromDate(e.target.value)}
-                      title="From date (YYYY-MM-DD)"
+                      title="From date"
                       aria-label="Report from date"
                     />
                   </label>
@@ -1089,7 +1095,7 @@ export default function Page() {
                       type="date"
                       value={toDate}
                       onChange={(e) => setToDate(e.target.value)}
-                      title="To date (YYYY-MM-DD)"
+                      title="To date"
                       aria-label="Report to date"
                     />
                   </label>
@@ -1802,7 +1808,7 @@ export default function Page() {
         <>
           <p className="muted">
             Top customers by revenue (invoices + POS)
-            {data.store_id ? ` · store ${String(data.store_id).slice(0, 8)}…` : ''}
+            {data.store_id ? ` · ${placeLabel(stores, data.store_id, 'store')}` : ''}
           </p>
           <div className="grid">
             <div className="card">
@@ -2014,9 +2020,9 @@ export default function Page() {
                 <input
                   value={suggestNotes}
                   onChange={(e) => setSuggestNotes(e.target.value)}
-                  placeholder="Draft PR notes (optional)"
+                  placeholder="Notes for the purchase request (optional)"
                   aria-label="Low-stock suggestion notes"
-                  title="Optional notes for draft PRs (1–500 chars; letters/digits required)"
+                  title="Notes for the purchase request (optional)"
                   style={{ minWidth: 200 }}
                 />
                 <button
@@ -2034,7 +2040,7 @@ export default function Page() {
               {data.out_of_stock_count != null || data.lowStock?.out_of_stock_count != null
                 ? ` · out of stock ${data.out_of_stock_count ?? data.lowStock?.out_of_stock_count}`
                 : ''}
-              . Select lines to raise draft purchase requests. Submit/approve remains in Purchasing.
+              . Select items to create draft purchase requests, then approve them in Purchasing.
             </p>
             {(data.suggestions?.lines || []).length === 0 ? (
               <p className="muted">No actionable low-stock lines (or all already on an open PR).</p>
@@ -2732,11 +2738,11 @@ export default function Page() {
       {tab === 'cashflow' && data && (
         <>
           <p className="muted">
-            Liquid GL cash movements
-            {data.store_id ? ` · store ${String(data.store_id).slice(0, 8)}…` : ''}
-            {data.branch_id ? ` · branch ${String(data.branch_id).slice(0, 8)}…` : ''}
+            Cash and bank movements
+            {data.store_id ? ` · ${placeLabel(stores, data.store_id, 'store')}` : ''}
+            {data.branch_id ? ` · ${placeLabel(branches, data.branch_id, 'branch')}` : ''}
             {data.store_id || data.branch_id
-              ? ' (attributable operating cash; HQ transfers/openings omitted)'
+              ? ' (this location only; head-office transfers and opening balances are not included)'
               : ''}
           </p>
           <div className="grid">
@@ -2802,10 +2808,10 @@ export default function Page() {
         <>
           <p className="muted">
             {data.mode === 'journals'
-              ? 'Period / location from posted journals'
-              : 'Lifetime account balances'}
-            {data.store_id ? ` · store ${data.store_id.slice(0, 8)}…` : ''}
-            {data.branch_id ? ` · branch ${data.branch_id.slice(0, 8)}…` : ''}
+              ? 'For the selected period'
+              : 'All-time balances'}
+            {data.store_id ? ` · ${placeLabel(stores, data.store_id, 'store')}` : ''}
+            {data.branch_id ? ` · ${placeLabel(branches, data.branch_id, 'branch')}` : ''}
           </p>
           <div className="grid">
             <div className="card">
@@ -2864,15 +2870,14 @@ export default function Page() {
       {tab === 'trialbalance' && data && (
         <>
           <p className="muted">
-            As of {data.as_of}
-            {data.mode === 'journals' ? ' · reconstructed from posted journals' : ' · live balances'}
-            {data.store_id ? ` · store ${String(data.store_id).slice(0, 8)}…` : ''}
-            {data.branch_id ? ` · branch ${String(data.branch_id).slice(0, 8)}…` : ''}
+            As of {fmtDate(data.as_of)}
+            {data.store_id ? ` · ${placeLabel(stores, data.store_id, 'store')}` : ''}
+            {data.branch_id ? ` · ${placeLabel(branches, data.branch_id, 'branch')}` : ''}
             {data.store_id || data.branch_id
-              ? ' · attributable journals only (sales / POS / expenses / returns)'
+              ? ' · this location only (sales, till, expenses, returns)'
               : ''}
             {' · '}
-            Balanced: {String(data.balanced)} | Dr {fmtMoney(data.total_debit)} / Cr {fmtMoney(data.total_credit)}
+            {data.balanced ? 'Balanced' : 'Not balanced'} · Debit {fmtMoney(data.total_debit)} · Credit {fmtMoney(data.total_credit)}
           </p>
           <div className="list-table-wrap">
           <table className="table">
@@ -2952,15 +2957,14 @@ export default function Page() {
       {tab === 'balancesheet' && data && (
         <>
           <p className="muted">
-            As of {data.as_of}
-            {data.mode === 'journals' ? ' · reconstructed from posted journals' : ' · live balances'}
-            {data.store_id ? ` · store ${String(data.store_id).slice(0, 8)}…` : ''}
-            {data.branch_id ? ` · branch ${String(data.branch_id).slice(0, 8)}…` : ''}
+            As of {fmtDate(data.as_of)}
+            {data.store_id ? ` · ${placeLabel(stores, data.store_id, 'store')}` : ''}
+            {data.branch_id ? ` · ${placeLabel(branches, data.branch_id, 'branch')}` : ''}
             {data.store_id || data.branch_id
-              ? ' · attributable journals only (sales / POS / expenses / returns)'
+              ? ' · this location only (sales, till, expenses, returns)'
               : ''}
             {data.compare
-              ? ` · compare ${data.compare.mode} (${data.compare.as_of})`
+              ? ` · compared with ${String(data.compare.mode).replace(/_/g, ' ')} (${fmtDate(data.compare.as_of)})`
               : ''}
           </p>
           <div className="grid">
@@ -3028,7 +3032,7 @@ export default function Page() {
       {tab === 'schedules' && (
         <>
           <p className="muted">
-            Email a saved report every day or once a week. The hour is UTC.
+            Email a saved report every day or once a week. Times are in GMT (Ghana time).
           </p>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <input
@@ -3085,7 +3089,7 @@ export default function Page() {
                 </select>
               )}
               <label>
-                Hour UTC{' '}
+                Hour (GMT){' '}
                 <input
                   type="number"
                   min={0}

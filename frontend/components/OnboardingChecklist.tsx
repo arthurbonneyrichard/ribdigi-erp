@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/api';
 
@@ -31,6 +32,7 @@ export default function OnboardingChecklist({
   canManage: boolean;
 }) {
   const [data, setData] = useState<Checklist | null>(null);
+  const onDashboard = (usePathname() || '').startsWith('/dashboard');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState(true);
@@ -69,7 +71,8 @@ export default function OnboardingChecklist({
   const pct = Math.max(0, Math.min(100, Number(data.progress_pct) || 0));
 
   if (!data.visible) {
-    if (!(canManage && data.dismissed && pct < 100)) return null;
+    // A dismissed checklist is offered again on the dashboard only, not above every page.
+    if (!(canManage && data.dismissed && pct < 100) || !onDashboard) return null;
     return (
       <div
         className="card no-print"
@@ -83,7 +86,7 @@ export default function OnboardingChecklist({
         data-testid="onboarding-checklist-restore"
       >
         <span className="muted" style={{ flex: 1, minWidth: 160 }}>
-          Checklist dismissed ({pct}% complete).
+          Getting started: {pct}% done.
         </span>
         <button
           type="button"
@@ -91,7 +94,7 @@ export default function OnboardingChecklist({
           onClick={() => run('/onboarding/checklist/restore')}
           aria-label="Restore onboarding checklist"
         >
-          Restore checklist
+          Show steps
         </button>
         {error && <p style={{ color: '#b91c1c', margin: 0, width: '100%' }}>{error}</p>}
       </div>

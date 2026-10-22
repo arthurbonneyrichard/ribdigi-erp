@@ -240,7 +240,7 @@ export default function Page() {
     <div className="work">
       <PageHeader
         title="Tax"
-        subtitle="Default rate applies unless a product or line overrides it. Inclusive means the price already contains tax; exclusive means tax is added on top. This screen previews — the server amount on the sale or bill is the one that posts. Changing a rate does not rewrite past invoices. Ghana GRA mapping is available when the company jurisdiction is Ghana (export only — not e-filed)."
+        subtitle="The default rate applies unless a product or line uses a different one. Inclusive means the price already contains tax; exclusive means tax is added on top. Changing a rate does not change past invoices. A Ghana VAT summary is available for export when your tax country is Ghana."
         actions={
           <button type="button" className="list-btn-primary" onClick={() => setTaxAddOpen(true)} aria-label="Add a tax rate">
             Add a tax rate
@@ -257,14 +257,14 @@ export default function Page() {
             type="date"
             value={fromDate}
             onChange={(e) => setFromDate(e.target.value)}
-            title="From date (YYYY-MM-DD)"
+            title="From date"
             aria-label="Tax from date"
           />
           <input
             type="date"
             value={toDate}
             onChange={(e) => setToDate(e.target.value)}
-            title="To date (YYYY-MM-DD)"
+            title="To date"
             aria-label="Tax to date"
           />
           <select
@@ -364,7 +364,7 @@ export default function Page() {
               rows={3}
               placeholder='Only if you use split GST components'
               aria-label="Tax rate components JSON"
-              title="JSON array of {code,name,rate,basis}; code/name omit or non-empty (blank/!!!/URL → 422); basis net|compound"
+              title="Advanced: the parts of this tax in JSON, e.g. [{&quot;name&quot;:&quot;NHIL&quot;,&quot;rate&quot;:2.5}]"
             />
             </details>
             <button type="button" aria-label="Add tax rate" onClick={createRate} disabled={!name.trim() || rateBusy}>
@@ -375,7 +375,7 @@ export default function Page() {
         ) : null}
         <div className="card">
           <h3>Preview with default rate</h3>
-          <p className="muted">Estimate only. Posted documents use the server calculation.</p>
+          <p className="muted">An estimate. The amount on a saved sale or bill is final.</p>
           <AmountField
             value={calcAmount}
             onChange={(e) => setCalcAmount(e.target.value)}

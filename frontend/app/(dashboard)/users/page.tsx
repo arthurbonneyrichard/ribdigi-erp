@@ -975,7 +975,7 @@ export default function Page() {
             <input
               value={editForm.phone}
               onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-              placeholder="Phone (optional, E.164 e.g. +233...)"
+              placeholder="Phone (optional), e.g. +233 24 123 4567"
               aria-label="Edit user phone"
             />
             <select
@@ -1007,7 +1007,7 @@ export default function Page() {
       {canWrite ? (
         <form id="create-user" className="card user-manage-card" onSubmit={createUser}>
           <h2>Add user</h2>
-          <p className="muted">Full name, email, password, role, and phone. Branch, department, and record scope are optional.</p>
+          <p className="muted">Name, email, a temporary password, role and phone. Branch, department and record access are optional.</p>
           <div className="user-manage-fields">
             <label className="user-manage-field">
               <span>Full name</span>
@@ -1212,7 +1212,7 @@ export default function Page() {
               onChange={(e) => setStoreForm({ ...storeForm, code: e.target.value })}
               placeholder="Code"
               aria-label="Store code"
-              title="Store code (1–50 chars; letters/digits required)"
+              title="Store code"
               required
             />
             <input
@@ -1220,7 +1220,7 @@ export default function Page() {
               onChange={(e) => setStoreForm({ ...storeForm, name: e.target.value })}
               placeholder="Name"
               aria-label="Store name"
-              title="Store name (1–150 chars; letters/digits required)"
+              title="Store name"
               required
             />
             <input
@@ -1232,7 +1232,7 @@ export default function Page() {
             <input
               value={storeForm.phone}
               onChange={(e) => setStoreForm({ ...storeForm, phone: e.target.value })}
-              placeholder="Phone (optional, E.164 e.g. +233...)"
+              placeholder="Phone (optional), e.g. +233 24 123 4567"
               aria-label="Store phone"
             />
             <select

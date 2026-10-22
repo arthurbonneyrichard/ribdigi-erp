@@ -495,7 +495,7 @@ export default function Page() {
             value={passkeyName}
             onChange={(e) => setPasskeyName(e.target.value)}
             placeholder="Passkey name"
-            title="Optional label (1–120 chars; letters/digits required)"
+            title="Optional label"
           />
           <button type="button" onClick={registerPasskey} aria-label="Add passkey">
             Add passkey

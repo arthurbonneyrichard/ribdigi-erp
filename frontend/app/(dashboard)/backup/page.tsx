@@ -282,7 +282,7 @@ export default function Page() {
             onChange={(e) => setBackupNotes(e.target.value)}
             placeholder="Backup notes (optional)"
             aria-label="Backup notes"
-            title="Optional notes (1–500 chars; letters/digits required)"
+            title="Optional notes"
           />
         </label>
         <button disabled={busy} onClick={createBackup} aria-label="Create backup now">
@@ -511,14 +511,14 @@ export default function Page() {
               />
             </label>
             <label>
-              Hour UTC
+              Hour (GMT)
               <input
                 type="number"
                 min={0}
                 max={23}
                 value={settings.hour_utc ?? 2}
                 onChange={(e) => setSettings({ ...settings, hour_utc: e.target.value })}
-                placeholder="Hour UTC"
+                placeholder="Hour (GMT)"
                 aria-label="Backup hour UTC"
               />
             </label>

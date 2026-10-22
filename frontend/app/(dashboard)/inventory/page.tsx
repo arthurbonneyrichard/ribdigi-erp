@@ -1787,7 +1787,7 @@ export default function Page() {
     if (wantsExpiry && !wantsOpening) {
       setFormFlash({ err: hideWarehouseUx
         ? 'Expiry is stored on a lot, not the product. Enter quantity with the expiry date.'
-        : 'Expiry is stored on a warehouse lot, not the product. Enter quantity and location with the expiry date.' });
+        : 'Enter the quantity and location together with the expiry date.' });
       setCreateOpenStockOpen(true);
       setCreateExpiryOpen(true);
       return;
@@ -3327,7 +3327,7 @@ export default function Page() {
     <div className="inv-ui-page">
       <PageHeader
         title={VIEW_TITLE[tab]}
-        subtitle={`${hotelOps ? 'Linen, toiletries, F&B, and cleaning supplies use the same inventory ledger as the rest of the hotel. ' : ''}Start with products, then categories, brands, and units, then variants, then stock: warehouse stock, adjust, count, history, low stock, expiry, and batches.`}
+        subtitle={hotelOps ? 'Linen, toiletries, F&B and cleaning supplies use the same stock records as the rest of the hotel.' : undefined}
       />
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
@@ -3465,9 +3465,8 @@ export default function Page() {
         <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 12 }}>
           <h3>Product lookup</h3>
           <p className="muted" style={{ margin: 0 }}>
-            Scan a barcode or search by name/SKU (GET /inventory/products/lookup). Selecting a hit
-            loads per-warehouse stock (GET /products/:id/warehouse-stock) and sets the product for
-            other Inventory actions.
+            Scan a barcode or search by name or SKU. Choose a result to see its stock in each
+            warehouse.
           </p>
           <div className="erp-form-grid" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <input
@@ -4053,37 +4052,36 @@ export default function Page() {
               }
             >
             <div className="erp-form-grid">
-            <h3 className="muted span-2" style={{ margin: 0, fontWeight: 600 }}>New catalog item</h3>
             <input
               value={productName}
               onChange={(e) => setProductName(e.target.value)}
               placeholder="Name"
               aria-label="Product name"
-              title="Product name (1–200 chars; letters/digits required)"
+              title="Product name"
             />
             <input
               value={productSku}
               onChange={(e) => setProductSku(e.target.value)}
               placeholder="SKU (auto if blank)"
               aria-label="Product SKU"
-              title="Optional SKU (1–100 chars: letters, digits, . _ -; blank → auto)"
+              title="Optional SKU"
             />
             <input
               value={productBarcode}
               onChange={(e) => setProductBarcode(e.target.value)}
               placeholder="Barcode (optional)"
               aria-label="Product barcode"
-              title="Optional barcode (4–48 chars: letters, numbers, - . _)"
+              title="Optional barcode"
             />
             <p className="muted span-2" style={{ margin: 0 }}>
-              Leave blank to generate after save (Actions, product form, or Labels). Existing unique barcodes are not overwritten.
+              Leave blank to create one later.
             </p>
             <textarea
               value={productDescription}
               onChange={(e) => setProductDescription(e.target.value)}
               placeholder="Description (optional)"
               aria-label="Product description"
-              title="Optional description (1–500 chars; letters/digits required)"
+              title="Optional description"
               rows={2}
             />
             {pharmacyOps ? (
@@ -4093,7 +4091,7 @@ export default function Page() {
                   onChange={(e) => setProductDosage(e.target.value)}
                   placeholder="Dosage instructions (optional)"
                   aria-label="Product dosage instructions"
-                  title="Optional dosage instructions (1–500 chars)"
+                  title="Dosage instructions (optional)"
                   rows={2}
                 />
                 <label className="muted span-2">
@@ -4108,7 +4106,7 @@ export default function Page() {
               </>
             ) : null}
           <div className="product-price-field">
-                      <label className="product-price-label" htmlFor="add-product-actual-price">Actual price</label>
+                      <label className="product-price-label" htmlFor="add-product-actual-price">Cost price</label>
                       <AmountField
                         id="add-product-actual-price"
                         type="number"
@@ -4266,8 +4264,8 @@ export default function Page() {
             </select>
             <p className="muted span-2">
               {hideWarehouseUx
-                ? 'Expiry is stored on a lot, not the product header. Enter quantity and expiry together — or save the product and set them from the product panel / Expiry tab.'
-                : 'Expiry is stored on a warehouse lot, not the product header. Enter quantity, location, and expiry together — or save the product and set them from the product panel / Expiry tab.'}
+                ? 'For items with an expiry date, enter the quantity and expiry together, or add them later from the Expiry tab.'
+                : 'For items with an expiry date, enter the quantity, location and expiry together, or add them later from the Expiry tab.'}
             </p>
             <div className="field">
             <label className="muted">Expiry date</label>
@@ -4531,7 +4529,7 @@ export default function Page() {
                     <input value={editReorder} onChange={(e) => setEditReorder(e.target.value)} aria-label="Edit product reorder level" />
                     </div>
                     <div className="field">
-                    <label className="muted">Actual price</label>
+                    <label className="muted">Cost price</label>
                     <AmountField value={editCost} onChange={(e) => setEditCost(e.target.value)} aria-label="Edit product cost price" />
                     </div>
                     <div className="field">
@@ -4677,7 +4675,7 @@ export default function Page() {
             <div>
               <h2 style={{ margin: 0 }}>Barcode / QR labels</h2>
               <p className="muted" style={{ margin: '4px 0 0' }}>
-                Generate a unique barcode or QR for selected products (name + SKU/barcode only), then print via the existing label sheet.
+                Create a barcode or QR code for the selected products, then print the labels.
               </p>
             </div>
           </div>
@@ -4928,7 +4926,7 @@ export default function Page() {
                   onChange={(e) => setCatName(e.target.value)}
                   placeholder="Name"
                   aria-label="Category name"
-                  title="Category name (1–120 chars; letters/digits required)"
+                  title="Category name"
                 />
                 <label className="muted" htmlFor="cat-parent-field">
                   Parent
@@ -5164,7 +5162,7 @@ export default function Page() {
                   onChange={(e) => setBrandName(e.target.value)}
                   placeholder="Name"
                   aria-label="Brand name"
-                  title="Brand name (1–120 chars; letters/digits required)"
+                  title="Brand name"
                 />
                 <button
                   type="button"
@@ -5185,7 +5183,7 @@ export default function Page() {
                       onChange={(e) => setBrandDescription(e.target.value)}
                       placeholder="Description (optional)"
                       aria-label="Brand description"
-                      title="Optional description (1–500 chars; letters/digits required)"
+                      title="Optional description"
                       rows={2}
                     />
                     {brandEditId ? (
@@ -5349,7 +5347,7 @@ export default function Page() {
                   onChange={(e) => setUnitName(e.target.value)}
                   placeholder="Name"
                   aria-label="Unit name"
-                  title="Unit name (1–80 chars; letters/digits required)"
+                  title="Unit name"
                 />
                 <label className="muted" htmlFor="unit-parent-field">
                   Parent
@@ -5568,7 +5566,7 @@ export default function Page() {
                   onChange={(e) => setVariantName(e.target.value)}
                   placeholder="Name"
                   aria-label="Variant name"
-                  title="Variant name (1–120 chars; letters/digits required)"
+                  title="Variant name"
                 />
                 <label className="muted" htmlFor="variant-parent-product">
                   Parent product
@@ -5602,42 +5600,42 @@ export default function Page() {
                       onChange={(e) => setVariantSku(e.target.value)}
                       placeholder="SKU (auto if blank)"
                       aria-label="Variant SKU"
-                      title="Optional SKU (1–100 chars: letters, digits, . _ -; blank → auto)"
+                      title="Optional SKU"
                     />
                     <input
                       value={variantBarcode}
                       onChange={(e) => setVariantBarcode(e.target.value)}
                       placeholder="Barcode (optional)"
                       aria-label="Variant barcode"
-                      title="Optional barcode (4–48 chars: letters, numbers, - . _)"
+                      title="Optional barcode"
                     />
                     <input
                       value={variantSize}
                       onChange={(e) => setVariantSize(e.target.value)}
                       placeholder="Size (optional)"
                       aria-label="Variant size"
-                      title="Optional size (1–80 chars; letters/digits required)"
+                      title="Optional size"
                     />
                     <input
                       value={variantColor}
                       onChange={(e) => setVariantColor(e.target.value)}
                       placeholder="Color (optional)"
                       aria-label="Variant color"
-                      title="Optional color (1–80 chars; letters/digits required)"
+                      title="Optional color"
                     />
                     <input
                       value={variantFlavor}
                       onChange={(e) => setVariantFlavor(e.target.value)}
                       placeholder="Flavor (optional)"
                       aria-label="Variant flavor"
-                      title="Optional flavor (1–80 chars; letters/digits required)"
+                      title="Optional flavor"
                     />
                     <input
                       value={variantDosage}
                       onChange={(e) => setVariantDosage(e.target.value)}
                       placeholder="Dosage (optional)"
                       aria-label="Variant dosage"
-                      title="Optional dosage (1–80 chars; letters/digits required)"
+                      title="Optional dosage"
                     />
                     <AmountField
                       inline

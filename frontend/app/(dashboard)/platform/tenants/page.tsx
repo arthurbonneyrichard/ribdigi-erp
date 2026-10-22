@@ -866,7 +866,7 @@ export default function PlatformTenantsPage() {
                 value={suspendReason}
                 onChange={(e) => setSuspendReason(e.target.value)}
                 placeholder="Required before Suspend"
-                title="Required suspend reason (1–500 chars; letters/digits required)"
+                title="Required suspend reason"
                 aria-label="Tenant suspend reason"
                 style={{ minWidth: 280 }}
               />
@@ -1263,7 +1263,7 @@ export default function PlatformTenantsPage() {
                   aria-label="Subscription start date"
                   type="text"
                   placeholder="YYYY-MM-DD (blank = now)"
-                  title="Optional subscription start (YYYY-MM-DD or ISO; blank = now)"
+                  title="Start date (optional; today if blank)"
                   value={subForm.start_at}
                   onChange={(e) => setSubForm((f) => ({ ...f, start_at: e.target.value }))}
                 />

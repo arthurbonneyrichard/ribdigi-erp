@@ -323,7 +323,6 @@ export default function HelpSupportPage() {
       {guideError ? <p className="plat-msg desk-alert" role="alert">{guideError}</p> : null}
       <section className="plat-panel" aria-label="Help topics">
         <div className="desk-panel-head"><h2>Help topics</h2></div>
-        <p className="muted">A new company chooses retail, hotel, or restaurant. These topics follow the business type already saved for this company.</p>
         {categories.length === 0 ? (
           <p className="muted">Topics appear here once this page has loaded your company.</p>
         ) : (
