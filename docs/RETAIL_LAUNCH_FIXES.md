@@ -13,6 +13,13 @@ Shared tick-list version (same items): https://claude.ai/artifact/FejAxZsxg9NJxu
 Verified fixed in the working copy (not committed yet): 1.1, 1.2, 1.3, 1.4, 1.7, 1.8, 3.1, 3.3, 4.7.
 Still open: 1.5 (phone sidebar arrow), 1.6 (credit race: a slow first `refresh()` with `kind === 'receivable'` sets the first customer as `partyId` after the switch to Payables — ignore stale refresh results or only load credit when `partyId` is in the current kind's list), all of section 2, 3.2 (8 tests left), 3.4 (`test_dokploy_source_revision` needs `git`; skip when missing), 4.1–4.6. 4.3: `/legal/terms` and `/legal/privacy` exist and login links to them, but the local dev server returns 404 until `next dev` is restarted — confirm after restart.
 
+## Full test run and follow-up fix, 22 Oct 2026 (late evening)
+
+- Full backend suite: 3,012 passed, 26 failed; re-run on the committed code leaves **5 real failures + 1 out of scope** (pharmacy industry test).
+- The 5 were a **regression from the 1.1 guard**: `create_store` auto-creates `WH-<store code>`, so "Add warehouse" for a new store was refused ("This store already has a warehouse"). Fixed (uncommitted) in `backend/app/warehouses.py` `_assert_store_warehouse_unique`: the owner's own warehouse replaces the store's default while that default is unused (no stock on hand, no movements); the default is unlinked and deactivated. A default that holds stock, or any other linked warehouse, still blocks. Two new tests in `backend/tests/test_store_warehouse_pick_r1.py`; 27 warehouse/store/POS tests pass.
+- Live check: create store → add its own warehouse works; till sales pass (one transient 500 seen while the dev server reloaded, not reproduced in 9 further sales).
+- **To do:** commit `backend/app/warehouses.py` and the test file on `main`, then promote to `production`.
+
 ## Recheck 22 Oct 2026, 20:30
 
 - All fixes are committed and **pushed to `origin/production`** (`97f5f7cc27`, `f9047fda2d`, `47745b746a`), so Dokploy has likely deployed them. `main` is 88 commits behind `production`: merge `production` back into `main` so new work starts from the shipped code (AGENTS.md).

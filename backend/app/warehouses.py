@@ -71,21 +71,61 @@ async def _assert_store_warehouse_unique(
     *,
     exclude_id: str | None = None,
 ) -> None:
-    """A store may have at most one linked warehouse. POS `warehouse_for_store` needs one row."""
+    """A store may have at most one linked warehouse. POS `warehouse_for_store` needs one row.
+
+    `create_store` adds a default `WH-<store code>` warehouse. Linking the owner's
+    own warehouse replaces that default while it is still unused (no stock on hand,
+    no movements): the default is unlinked and deactivated. Any other linked
+    warehouse blocks the link.
+    """
     if not store_id:
         return
-    stmt = select(m.Warehouse.id).where(
+    stmt = select(m.Warehouse).where(
         m.Warehouse.tenant_id == tenant_id,
         m.Warehouse.store_id == store_id,
     )
     if exclude_id:
         stmt = stmt.where(m.Warehouse.id != exclude_id)
-    existing = (await db.execute(stmt.limit(1))).scalar_one_or_none()
-    if existing:
-        raise HTTPException(
-            status_code=400,
-            detail="This store already has a warehouse. Unlink the other warehouse first.",
+    existing = (await db.execute(stmt)).scalars().all()
+    if not existing:
+        return
+    store_code = (
+        await db.execute(select(m.Store.code).where(m.Store.id == store_id, m.Store.tenant_id == tenant_id))
+    ).scalar_one_or_none()
+    default_code = f"WH-{store_code}".upper() if store_code else None
+    for wh in existing:
+        if not default_code or (wh.code or "").upper() != default_code or not await _warehouse_unused(db, tenant_id, wh.id):
+            raise HTTPException(
+                status_code=400,
+                detail="This store already has a warehouse. Unlink the other warehouse first.",
+            )
+    for wh in existing:
+        wh.store_id = None
+        wh.is_active = False
+    await db.flush()
+
+
+async def _warehouse_unused(db: AsyncSession, tenant_id: str, warehouse_id: str) -> bool:
+    on_hand = (
+        await db.execute(
+            select(m.WarehouseStock.id).where(
+                m.WarehouseStock.tenant_id == tenant_id,
+                m.WarehouseStock.warehouse_id == warehouse_id,
+                m.WarehouseStock.quantity != 0,
+            ).limit(1)
         )
+    ).scalar_one_or_none()
+    if on_hand:
+        return False
+    moved = (
+        await db.execute(
+            select(m.StockMovement.id).where(
+                m.StockMovement.tenant_id == tenant_id,
+                m.StockMovement.warehouse_id == warehouse_id,
+            ).limit(1)
+        )
+    ).scalar_one_or_none()
+    return moved is None
 
 
 async def get_warehouse(db: AsyncSession, tenant_id: str, warehouse_id: str) -> m.Warehouse:
