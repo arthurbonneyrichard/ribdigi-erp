@@ -34,7 +34,7 @@ def test_credit_aging_kind_ui_and_docs():
     assert "setKind('payable')" in page
     assert "Receivables" in page
     assert "Payables" in page
-    assert "/credit/aging?kind=${kind}" in page
+    assert "/credit/aging?kind=${startKind}" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Credit aging kind OpenAPI" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
