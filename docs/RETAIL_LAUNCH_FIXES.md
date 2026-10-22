@@ -13,6 +13,13 @@ Shared tick-list version (same items): https://claude.ai/artifact/FejAxZsxg9NJxu
 Verified fixed in the working copy (not committed yet): 1.1, 1.2, 1.3, 1.4, 1.7, 1.8, 3.1, 3.3, 4.7.
 Still open: 1.5 (phone sidebar arrow), 1.6 (credit race: a slow first `refresh()` with `kind === 'receivable'` sets the first customer as `partyId` after the switch to Payables — ignore stale refresh results or only load credit when `partyId` is in the current kind's list), all of section 2, 3.2 (8 tests left), 3.4 (`test_dokploy_source_revision` needs `git`; skip when missing), 4.1–4.6. 4.3: `/legal/terms` and `/legal/privacy` exist and login links to them, but the local dev server returns 404 until `next dev` is restarted — confirm after restart.
 
+## Recheck 22 Oct 2026, 20:30
+
+- All fixes are committed and **pushed to `origin/production`** (`97f5f7cc27`, `f9047fda2d`, `47745b746a`), so Dokploy has likely deployed them. `main` is 88 commits behind `production`: merge `production` back into `main` so new work starts from the shipped code (AGENTS.md).
+- Re-verified on the committed code: 1.1 till sales on a two-warehouse store, 1.2 dashboard expenses 140.00, 1.3 owner titles light, 1.4 Sales header spaced, 1.5 phone gutter on 5 pages, 1.6 Credit switch (normal and fast) with no 404, 1.7 no pharmacy 403, 1.8 shop can close its ticket, 4.7 no helper errors.
+- 4.3 done: terms and privacy are full pages (effective 22 Oct 2026, operator, Accra address, email, fees, refunds, liability, termination, export, Ghana law, Act 843). Still advised: a lawyer's review and registration with Ghana's Data Protection Commission.
+- Still open: 2.2 and 2.3 (live database check and migrations, only on the live server), 4.1 email, 4.2 payment keys, 4.4 security settings, 4.5 AI chat, 4.6 SMS. These are empty in the local stack; set them in the Dokploy environment.
+
 ## Fixed 22 Oct 2026, ~21:00 (uncommitted, in this working copy)
 
 - **1.1** `backend/app/stores.py` `warehouse_for_store`: prefers an active warehouse, then the store's own `WH-<store code>`, then code. New tests `backend/tests/test_store_warehouse_pick_r1.py`. Existing data: `backend/scripts/fix_duplicate_store_warehouses.py` (dry run; `--apply` unlinks extra warehouses and prints their stock).
@@ -93,7 +100,7 @@ Still open: 1.5 (phone sidebar arrow), 1.6 (credit race: a slow first `refresh()
 
 The production folder is on a **detached HEAD with ~88 changed files**. These fixes exist but are not committed.
 
-### [ ] 2.1 Commit the database-column mapping fix
+### [x] 2.1 Commit the database-column mapping fix
 - **Problem (fixed locally):** Add supplier, add customer, create sales invoice, custom roles, recurring expenses, PO amend and AI query logging failed with `NotNullViolationError` because the DB had NOT NULL columns the models did not map (`parties.created_at/updated_at`, `sales_invoices.credit_limit_overridden`, `stock_reservations.updated_at`, `purchase_order_amendments.revision`, `recurring_expenses.skip_next`, `custom_roles.slug`, `ai_queries.message/answer`). `backend/app/models.py` and `backend/app/sales.py` now map them; a schema check finds no remaining unmapped NOT NULL columns.
 - **Fix:** Commit on `main`, run tests, merge to `production`.
 - **Check:** After deploy: add a supplier, add a customer, create and post a sales invoice.
