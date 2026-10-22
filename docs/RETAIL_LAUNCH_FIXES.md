@@ -4,6 +4,10 @@ Audit of Ribdigi ERP for **retail shops, Help & Support, and the software-owner 
 
 Shared tick-list version (same items): https://claude.ai/artifact/FejAxZsxg9NJxuYDx8uL51
 
+## Recheck 22 Oct 2026, 19:50 UTC
+
+- **4.3 in-repo.** `/legal/terms` and `/legal/privacy` now name Ribdigi House at Weija Old Barrier, Accra; effective 22 October 2026; fees/renewal/refunds; liability cap; termination and data export; Ghana law; retention; Act 843 controller/processor split. Registered company number is not invented. Lawyer review stays owner.
+
 ## Recheck 22 Oct 2026, 19:30
 
 Verified fixed in the working copy (not committed yet): 1.1, 1.2, 1.3, 1.4, 1.7, 1.8, 3.1, 3.3, 4.7.
@@ -150,14 +154,14 @@ Full run: **2,979 passed, 55 failed** (run with the whole repo mounted). None of
 - Paystack and Flutterwave are supported (`backend/app/billing_gateway.py`), but the owner console says paid self-serve checkout is not live.
 - **Fix:** Add live gateway keys and test one real payment, or invoice shops manually.
 
-### [ ] 4.3 HIGH: Terms of Service and Privacy Policy
-- No terms/privacy pages for the ERP itself (only storefront policies). Add both and link them from login and sign-up.
+### [x] 4.3 HIGH: Terms of Service and Privacy Policy
+- Pages exist at `/legal/terms` and `/legal/privacy` and are linked from login. In-repo copy now includes provider address, effective date, fees/renewal/refunds, liability, termination/export, Ghana law, retention, and Act 843. Lawyer review and a registered company number stay owner.
 
 ### [ ] 4.4 MEDIUM: confirm production security settings
 - Strong `JWT_SECRET_KEY` (production already rejects weak ones), `LOGIN_2FA_ENABLED=true`, `PUBLIC_APP_URL`, error monitoring (`SENTRY_DSN` empty).
 
-### [ ] 4.5 LOW: AI chat
-- Answers 503 "not configured". Configure an approved provider (`AI_ENABLED`, `AI_PROVIDER`) or hide AI chat from paying shops. Rule-based insights already work.
+### [x] 4.5 LOW: AI chat
+- Chat is hidden unless `chat_available`. Configure an approved provider (`AI_ENABLED`, `AI_PROVIDER`) to show it. Rule-based insights already work.
 
 ### [ ] 4.6 LOW: SMS
 - Twilio not configured → no SMS receipts/alerts. Configure it or don't advertise SMS.

@@ -674,10 +674,11 @@
 }
 .login-legal a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .login-legal a:hover{color:var(--brand)}
-.legal-doc{max-width:40rem;text-align:left}
+.legal-doc{max-width:44rem;text-align:left}
 .legal-doc .login-heading{text-align:left}
 .legal-doc-body{display:grid;gap:12px;margin:16px 0;color:var(--sand);font-size:14px;line-height:1.55;font-weight:500}
 .legal-doc-body p{margin:0}
+.legal-doc-body h2{margin:8px 0 0;color:var(--sand);font-size:15px;font-weight:700}
 
 @media(max-width:480px){
   .login{padding:26px 18px 20px;border-radius:18px;width:min(420px,100%)}

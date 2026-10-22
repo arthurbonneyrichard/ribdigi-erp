@@ -139,6 +139,15 @@ def test_launch_ui_source_fixes():
     privacy = (ROOT / "frontend/app/legal/privacy/page.tsx").read_text(encoding="utf-8")
     assert "Terms of Service" in terms
     assert "Privacy Policy" in privacy
+    assert "Weija Old Barrier, Accra, Ghana" in terms
+    assert "Weija Old Barrier, Accra, Ghana" in privacy
+    assert "Effective 22 October 2026" in terms
+    assert "Fees, renewal, and refunds" in terms
+    assert "Liability" in terms
+    assert "Termination and data export" in terms
+    assert "laws of Ghana" in terms
+    assert "Data Protection Act, 2012 (Act 843)" in privacy
+    assert "Retention" in privacy
     journal = (ROOT / "frontend/lib/posOfflineJournal.ts").read_text(encoding="utf-8")
     assert "return null;" in journal
     assert "8765" in journal
