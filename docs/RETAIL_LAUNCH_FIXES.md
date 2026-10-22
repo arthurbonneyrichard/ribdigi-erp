@@ -4,6 +4,16 @@ Audit of Ribdigi ERP for **retail shops, Help & Support, and the software-owner 
 
 Shared tick-list version (same items): https://claude.ai/artifact/FejAxZsxg9NJxuYDx8uL51
 
+## Later on 22–23 Oct 2026 (all on `main` and deployed to `production`)
+
+- **Deploys were failing** since 22 Oct 19:23: `backend/Dockerfile` and the `migrate` service in `docker-compose.dokploy.yml` required the Alembic head to be exactly `20261011_0138`. Both now require exactly one head of the form `YYYYMMDD_NNNN (head)` (`0a68fff516`). Backup to R2 first, then deployed (`f61b9a01ac`).
+- **Live database** (read-only check): `cash_transfers` and `ai_security_alerts` were missing and `purchase_requests.supplier_id` was NOT NULL. Migration `20261022_0143` creates/relaxes them (skipped where already fine) and adds `tenant_billing_accounts.price_override_amount/currency`. After deploy: 0 unmapped required columns, 0 missing tables or columns (`f0e8835a4d`, deployed `4e760ad8c9`).
+- **Category form** no longer asks "unsaved changes?" after a save (`7ab4ea05b2`).
+- **Offline till reservations**: another device's reserved stock only blocks other tills while that device checked in within `OFFLINE_RESERVATION_STALE_HOURS` (default 4); abandoned browsers no longer make the till refuse in-stock items (`1f77e55c1e`).
+- **Till cart** moved to the right on desktop (`56cd0cff4f`).
+- **Professional wording** across retail screens: no BR codes, API paths, field names, E.164/UTC jargon or id fragments; plain intros; 107 tooltips cleaned; clear till stock error; "No sales yet today" (`43fb76f242`).
+- **Known gap (not changed):** the till hides its shift panel (shift report, cash count) on screen; shifts close automatically at sign-out at the expected cash amount. Decide whether cashiers need an end-of-day cash count on the till.
+
 ## Recheck 22 Oct 2026, 19:50 UTC
 
 - **4.3 in-repo.** `/legal/terms` and `/legal/privacy` now name Ribdigi House at Weija Old Barrier, Accra; effective 22 October 2026; fees/renewal/refunds; liability cap; termination and data export; Ghana law; retention; Act 843 controller/processor split. Registered company number is not invented. Lawyer review stays owner.
@@ -112,7 +122,7 @@ The production folder is on a **detached HEAD with ~88 changed files**. These fi
 - **Fix:** Commit on `main`, run tests, merge to `production`.
 - **Check:** After deploy: add a supplier, add a customer, create and post a sales invoice.
 
-### [ ] 2.2 Check the live database for the same column problem
+### [x] 2.2 Check the live database for the same column problem
 - **Fix:** On the live Postgres run:
   ```sql
   SELECT table_name, column_name FROM information_schema.columns
@@ -122,7 +132,7 @@ The production folder is on a **detached HEAD with ~88 changed files**. These fi
   ```
 - **Check:** Every column returned is mapped in the deployed `models.py`.
 
-### [ ] 2.3 Run migrations on the live server
+### [x] 2.3 Run migrations on the live server
 - **Fix:** `alembic upgrade head` in the backend container after deploying.
 - **Check:** `alembic current` shows `20261022_0142 (head)` (same as local).
 
