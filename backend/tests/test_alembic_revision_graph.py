@@ -66,12 +66,12 @@ def test_single_head_linear_chain():
             merges.append((name, rev, down))
         referenced.update(_parents(down))
     heads = ids - referenced
-    # One head, 20261022_0142, after storefront media and the hybrid-schema
-    # relax. The only join remains 20261008_0136, which merges the
+    # One head, 20261022_0143, after storefront media, the hybrid-schema relax,
+    # and restoring tables the live database skipped. The only join remains 20261008_0136, which merges the
     # offline-grant head 20261003_0134 with the restaurant/billing head
     # 20261008_0135.
     assert len(heads) == 1, heads
-    assert heads == {"20261022_0142"}
+    assert heads == {"20261022_0143"}
     assert len(merges) == 1, merges
     _merge_name, merge_rev, merge_parents = merges[0]
     assert merge_rev == "20261008_0136"
@@ -82,6 +82,7 @@ def test_single_head_linear_chain():
     assert any(rev == "20261021_0140" and down == "20261021_0139" for _n, rev, down in rows)
     assert any(rev == "20261021_0141" and down == "20261021_0140" for _n, rev, down in rows)
     assert any(rev == "20261022_0142" and down == "20261021_0141" for _n, rev, down in rows)
+    assert any(rev == "20261022_0143" and down == "20261022_0142" for _n, rev, down in rows)
     children: dict[str | None, list[str]] = defaultdict(list)
     for _name, rev, down in rows:
         for parent in _parents(down):

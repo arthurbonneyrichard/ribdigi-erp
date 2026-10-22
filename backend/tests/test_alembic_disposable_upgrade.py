@@ -303,7 +303,7 @@ def test_alembic_upgrade_head_on_disposable_database():
                 _refuse(current)
                 cur.execute("SELECT version_num FROM alembic_version")
                 versions = [row[0] for row in cur.fetchall()]
-                assert versions == ["20261022_0142"]
+                assert versions == ["20261022_0143"]
                 cur.execute(
                     "SELECT column_name FROM information_schema.columns "
                     "WHERE table_schema = 'public' AND table_name = 'auth_sessions'"
