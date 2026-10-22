@@ -273,8 +273,6 @@ async def test_status_transitions_reopen_and_staff_reply(client, monkeypatch):
         },
     )
     ticket_id = created.json()["data"]["ticket"]["id"]
-    early_close = await ac.post(f"/api/v1/support/tickets/{ticket_id}/close", headers=cashier)
-    assert early_close.status_code == 409, early_close.text
 
     resolved = await ac.patch(
         f"/api/v1/support/desk/tickets/{ticket_id}",

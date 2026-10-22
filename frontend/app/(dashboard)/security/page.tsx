@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { api, isAbortError } from '../../../lib/api';
 import { getPrefetched } from '../../../lib/prefetchCache';
 import { pageLoadStarted } from '../../../lib/navTiming';
+import PageHeader from '../../../components/PageHeader';
 import PageSkeleton from '../../../components/PageSkeleton';
 
 import { closeShiftForSignOut } from '../../../lib/cashierShift';
@@ -305,12 +306,14 @@ export default function Page() {
 
   return (
     <div className="security-ui">
-      <h1>{twoFactorOn ? 'Two-factor sign-in is on' : 'Turn on two-factor'}</h1>
-      <p className="muted security-ui-lead">
-        {twoFactorOn
-          ? 'Your authenticator app is required at sign-in. Review the devices below, then change your password if you need to.'
-          : 'Start here. Scan the QR code with an authenticator app, then enter the code it shows.'}
-      </p>
+      <PageHeader
+        title={twoFactorOn ? 'Two-factor sign-in is on' : 'Turn on two-factor'}
+        subtitle={
+          twoFactorOn
+            ? 'Your authenticator app is required at sign-in. Review the devices below, then change your password if you need to.'
+            : 'Start here. Scan the QR code with an authenticator app, then enter the code it shows.'
+        }
+      />
       {error && <p className="security-ui-alert" role="alert">{error}</p>}
       {message && <p className="security-ui-ok" role="status">{message}</p>}
       {bootLoading && !status ? <PageSkeleton label="Loading security…" cards={4} /> : null}

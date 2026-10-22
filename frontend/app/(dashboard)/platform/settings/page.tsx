@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
+import PageHeader from '../../../../components/PageHeader';
 import StatusChip from '../../../../components/StatusChip';
 
 const OWNER_ROLES = ['super_admin', 'platform_owner'];
@@ -123,22 +124,22 @@ export default function PlatformSettingsPage() {
 
   return (
     <div className="plat">
-      <header className="plat-hero">
-        <div>
-          <p className="plat-kicker">Software owner</p>
-          <h1>Platform settings</h1>
-          <p className="plat-sub">
-            Read-only operations posture from the server environment. No keys or secrets are shown.
-            Change values in deploy env, then restart API workers.
-          </p>
-        </div>
-        {data ? (
-          <div className="plat-filters" aria-label="Settings source">
-            <span className="plat-chip active">{data.source || 'environment'}</span>
-            <span className="plat-chip">{data.editable ? 'Editable' : 'Read-only'}</span>
-          </div>
-        ) : null}
-      </header>
+      <PageHeader
+        className="plat-hero"
+        kicker="Software owner"
+        kickerClassName="plat-kicker"
+        title="Platform settings"
+        subtitle="Read-only operations posture from the server environment. No keys or secrets are shown. Change values in deploy env, then restart API workers."
+        subtitleClassName="plat-sub"
+        actions={
+          data ? (
+            <div className="plat-filters" aria-label="Settings source">
+              <span className="plat-chip active">{data.source || 'environment'}</span>
+              <span className="plat-chip">{data.editable ? 'Editable' : 'Read-only'}</span>
+            </div>
+          ) : undefined
+        }
+      />
 
       {error && (
         <p className="login-error" role="alert">

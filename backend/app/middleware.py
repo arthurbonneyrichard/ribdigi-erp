@@ -11,6 +11,18 @@ from starlette.responses import JSONResponse, Response
 from app.config import settings
 from app.rate_limit import rate_limiter
 
+STOREFRONT_WRITE_PREFIXES = (
+    "/api/v1/storefront/cart",
+    "/api/v1/storefront/checkout",
+    "/api/v1/storefront/payments/webhook",
+)
+
+STOREFRONT_PUBLIC_PREFIXES = (
+    "/api/v1/storefront/bootstrap",
+    "/api/v1/storefront/orders",
+    "/api/v1/storefront/account",
+)
+
 AUTH_PATH_PREFIXES = (
     "/api/v1/auth/login",
     "/api/v1/auth/refresh",
@@ -20,6 +32,8 @@ AUTH_PATH_PREFIXES = (
     "/api/v1/auth/verify-email",
     "/api/v1/auth/resend-verification",
     "/api/v1/tenants",
+    "/api/v1/storefront/account/login",
+    "/api/v1/storefront/account/register",
 )
 
 
@@ -73,6 +87,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     def _limit_for_path(self, path: str, method: str = "GET") -> int:
         if any(path.startswith(p) for p in AUTH_PATH_PREFIXES):
+            return settings.RATE_LIMIT_AUTH_PER_MINUTE
+        if any(path.startswith(p) for p in STOREFRONT_WRITE_PREFIXES + STOREFRONT_PUBLIC_PREFIXES):
             return settings.RATE_LIMIT_AUTH_PER_MINUTE
         if method.upper() in {"GET", "HEAD"}:
             return settings.RATE_LIMIT_READ_PER_MINUTE

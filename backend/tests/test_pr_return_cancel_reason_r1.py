@@ -24,7 +24,7 @@ def test_pr_return_cancel_reason_ui_wired():
     assert "cancelReturn" in page
     assert "/purchasing/returns/${ret.id}/cancel" in page or "/purchasing/returns/${" in page
     assert 'aria-label="Purchase return cancel reason"' in page
-    assert "aria-label={`Cancel purchase return ${r.id}`}" in page
+    assert "ariaLabel: `Cancel purchase return ${r.id}`" in page
 
 
 async def _super(ac, seed):

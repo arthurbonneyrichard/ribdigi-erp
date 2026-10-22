@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AttachmentPreview from '../../../components/AttachmentPreview';
+import PageHeader from '../../../components/PageHeader';
 import { api, getAccessToken } from '../../../lib/api';
 import { formatMoney, formatWhen, plainLabel } from '../../../lib/format';
 import { AmountField } from '../../../components/AmountField';
@@ -824,14 +825,11 @@ export default function Page() {
 
   return (
     <div className="work expenses-page">
-      <div className="list-page-head">
-        <div>
-          <h1 style={{ margin: 0 }}>Expenses</h1>
-          <p className="muted expenses-lead">
-            Submit an expense with the form below. It stays pending until someone approves or rejects it.
-          </p>
-        </div>
-        <div className="work-actions">
+      <PageHeader
+        title="Expenses"
+        subtitle="Submit an expense with the form below. It stays pending until someone approves or rejects it."
+        subtitleClassName="muted expenses-lead"
+        actions={
           <button
             type="button"
             onClick={() => {
@@ -845,8 +843,8 @@ export default function Page() {
           >
             Categories
           </button>
-        </div>
-      </div>
+        }
+      />
       <div className="card" id="expense-register">
         <div className="expenses-section-head">
           <h2>Expense list</h2>

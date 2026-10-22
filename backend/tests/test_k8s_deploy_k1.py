@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from tests.ops_evidence import write_ops_evidence
+
 ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE_DIR = Path("/opt/ribdigi/artifacts/k8s")
 EVIDENCE_FILE = EVIDENCE_DIR / "stage26_k1_deploy_fidelity.json"
@@ -111,7 +113,6 @@ def test_kubernetes_gate_complete_mvp_and_evidence():
     assert "deploy:" not in ci
     assert "kubectl" not in ci.lower()
 
-    EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
     payload = {
         "stage": "26",
         "workstream": "K1",
@@ -124,8 +125,8 @@ def test_kubernetes_gate_complete_mvp_and_evidence():
         "live_staging_apply_claimed": False,
         "probe_readiness": "/api/v1/health/ready",
     }
-    EVIDENCE_FILE.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    loaded = json.loads(EVIDENCE_FILE.read_text(encoding="utf-8"))
+    written = write_ops_evidence(EVIDENCE_FILE, json.dumps(payload, indent=2) + "\n")
+    loaded = json.loads(written.read_text(encoding="utf-8"))
     assert loaded["passed"] is True
     assert loaded["gha_staging_deploy_deferred"] is True
     assert loaded["live_staging_apply_claimed"] is False

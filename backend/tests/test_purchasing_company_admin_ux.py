@@ -34,7 +34,11 @@ def test_purchasing_nav_distinguishes_receive_goods_and_supplier_bills():
     assert "/reports?tab=purchases" not in shell
     assert "['Purchases', '/purchasing?tab=invoices'" not in shell
     assert "Purchase Goods" not in shell
-    assert "Supplier → Purchase Order → Receive Goods → Supplier Bill → Payment → Balance" in page
+    assert "1 Suppliers" in page
+    assert "2 Orders" in page
+    assert "3 Receive goods" in page
+    assert "4 Supplier bills" in page
+    assert "5 Returns" in page
     assert "['grn', 'Receive Goods']" in page
     assert "['invoices', 'Supplier Bills']" in page
     assert "['history', 'History']" in page

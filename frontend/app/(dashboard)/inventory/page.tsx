@@ -3,6 +3,8 @@
 import dynamic from 'next/dynamic';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import EmptyState from '../../../components/EmptyState';
+import PageHeader from '../../../components/PageHeader';
 import { api, apiOptional, isAbortError, getAccessToken, apiRoot, tenantHeaderValue } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { getPrefetched, peekPrefetch } from '../../../lib/prefetchCache';
@@ -692,9 +694,13 @@ export default function Page() {
           } else {
             setLotRegister(Array.isArray(lots.data) ? lots.data : []);
           }
-          const holds = await apiOptional('/pharmacy/batch-holds', req);
-          if ((holds as { aborted?: boolean }).aborted) return;
-          setLotHolds(!holds.error && Array.isArray(holds.data) ? holds.data : []);
+          if (pharmacyOps) {
+            const holds = await apiOptional('/pharmacy/batch-holds', req);
+            if ((holds as { aborted?: boolean }).aborted) return;
+            setLotHolds(!holds.error && Array.isArray(holds.data) ? holds.data : []);
+          } else {
+            setLotHolds([]);
+          }
         })(),
       );
     }
@@ -1895,8 +1901,12 @@ export default function Page() {
   async function reloadLotRegister() {
     const lots = await apiOptional('/inventory/batches');
     if (!lots.error && Array.isArray(lots.data)) setLotRegister(lots.data);
-    const holds = await apiOptional('/pharmacy/batch-holds');
-    setLotHolds(!holds.error && Array.isArray(holds.data) ? holds.data : []);
+    if (pharmacyOps) {
+      const holds = await apiOptional('/pharmacy/batch-holds');
+      setLotHolds(!holds.error && Array.isArray(holds.data) ? holds.data : []);
+    } else {
+      setLotHolds([]);
+    }
   }
 
   async function placeLotHold() {
@@ -3307,13 +3317,10 @@ export default function Page() {
 
   return (
     <div className="inv-ui-page">
-      <h1>{VIEW_TITLE[tab]}</h1>
-      <p className="muted inv-ui-lead">
-        {hotelOps
-          ? 'Linen, toiletries, F&B, and cleaning supplies use the same inventory ledger as the rest of the hotel. '
-          : ''}
-        Start with products, then categories, brands, and units, then variants, then stock: warehouse stock, adjust, count, history, low stock, expiry, and batches.
-      </p>
+      <PageHeader
+        title={VIEW_TITLE[tab]}
+        subtitle={`${hotelOps ? 'Linen, toiletries, F&B, and cleaning supplies use the same inventory ledger as the rest of the hotel. ' : ''}Start with products, then categories, brands, and units, then variants, then stock: warehouse stock, adjust, count, history, low stock, expiry, and batches.`}
+      />
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
@@ -3664,7 +3671,7 @@ export default function Page() {
         <>
           {bootLoading && products.length === 0 ? <PageSkeleton label="Loading products…" cards={3} /> : null}
           <div className="card cat-panel">
-            <div className="list-page-head">
+            <div className="list-page-head page-head">
               <div>
                 <h2 style={{ margin: 0 }}>Product List</h2>
                 <p className="muted" style={{ margin: '4px 0 0' }}>
@@ -3768,24 +3775,25 @@ export default function Page() {
               </select>
             </div>
             {productPaged.total === 0 ? (
-              <div className="list-empty">
-                <p style={{ margin: 0 }}>
-                  {managedProducts.length === 0
+              <EmptyState
+                title={
+                  managedProducts.length === 0
                     ? 'No products yet. Add a product to sell it and track stock.'
-                    : 'No products match these filters. Clear the filters or add a product.'}
-                </p>
-                <button
-                  type="button"
-                  className="list-btn-primary"
-                  style={{ marginTop: 12 }}
-                  onClick={() => {
-                    setFormFlash({});
-                    setProductAddOpen(true);
-                  }}
-                >
-                  Add Product
-                </button>
-              </div>
+                    : 'No products match these filters. Clear the filters or add a product.'
+                }
+                action={
+                  <button
+                    type="button"
+                    className="list-btn-primary"
+                    onClick={() => {
+                      setFormFlash({});
+                      setProductAddOpen(true);
+                    }}
+                  >
+                    Add Product
+                  </button>
+                }
+              />
             ) : (
               <div className="list-table-wrap">
                 <table className="table cat-table">
@@ -4657,7 +4665,7 @@ export default function Page() {
 
       {tab === 'labels' && (
         <div className="card cat-panel">
-          <div className="list-page-head">
+          <div className="list-page-head page-head">
             <div>
               <h2 style={{ margin: 0 }}>Barcode / QR labels</h2>
               <p className="muted" style={{ margin: '4px 0 0' }}>
@@ -7190,7 +7198,7 @@ export default function Page() {
 
       {tab === 'lowstock' && (
         <div className="card cat-panel">
-          <div className="list-page-head">
+          <div className="list-page-head page-head">
             <div>
               <h2 style={{ margin: 0 }}>Low stock</h2>
               <p className="muted" style={{ margin: '4px 0 0' }}>
@@ -7209,16 +7217,16 @@ export default function Page() {
           {lowStockBusy ? (
             <p className="muted">Loading…</p>
           ) : !lowStockPayload ? (
-            <div className="list-empty">
-              <p>Could not load low stock.</p>
-              <button type="button" onClick={() => loadLowStock()} aria-label="Retry low stock">
-                Retry
-              </button>
-            </div>
+            <EmptyState
+              title="Could not load low stock."
+              action={
+                <button type="button" onClick={() => loadLowStock()} aria-label="Retry low stock">
+                  Retry
+                </button>
+              }
+            />
           ) : lowStockRows.length === 0 ? (
-            <div className="list-empty">
-              <p>Receive stock or raise the reorder level when a product should appear in the low-stock band.</p>
-            </div>
+            <EmptyState title="Receive stock or raise the reorder level when a product should appear in the low-stock band." />
           ) : (
             <div className="list-table-wrap">
               <table className="table cat-table">
@@ -7559,7 +7567,7 @@ export default function Page() {
 
       {tab === 'transfers' && retailTransfers && (
         <div className="card cat-panel">
-          <div className="list-page-head cat-head">
+          <div className="list-page-head page-head cat-head">
             <div>
               <h2 style={{ margin: 0 }}>Stock Transfer</h2>
               <p className="muted" style={{ margin: '4px 0 0' }}>
@@ -7659,26 +7667,24 @@ export default function Page() {
             </p>
           ) : null}
           {!xferBusy && visibleTransfers.length === 0 ? (
-            <div className="list-empty cat-empty">
-              <p style={{ margin: 0 }}>
-                {transfers.length === 0 ? 'No transfers yet.' : 'No stock transfers for this filter'}
-              </p>
-              <p className="muted" style={{ margin: '8px 0 0' }}>
-                Create a transfer, approve, ship, then receive at the destination.
-              </p>
-              <button
-                type="button"
-                className="list-btn-primary"
-                style={{ marginTop: 12 }}
-                onClick={() => {
-                  setFormFlash({});
-                  setXferConfirming(false);
-                  setXferDrawerOpen(true);
-                }}
-              >
-                Add Transfer
-              </button>
-            </div>
+            <EmptyState
+              className="cat-empty"
+              title={transfers.length === 0 ? 'No transfers yet.' : 'No stock transfers for this filter'}
+              detail="Create a transfer, approve, ship, then receive at the destination."
+              action={
+                <button
+                  type="button"
+                  className="list-btn-primary"
+                  onClick={() => {
+                    setFormFlash({});
+                    setXferConfirming(false);
+                    setXferDrawerOpen(true);
+                  }}
+                >
+                  Add Transfer
+                </button>
+              }
+            />
           ) : !xferBusy ? (
             <div className="list-table-wrap cat-table-wrap">
               <table className="table cat-table">

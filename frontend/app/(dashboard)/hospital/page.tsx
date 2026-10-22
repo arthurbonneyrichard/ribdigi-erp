@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { moduleEnabledForTenant } from '../../../lib/industryModules';
@@ -56,8 +57,10 @@ export default function HospitalPage() {
 
   return (
     <main className="page">
-      <h1>Hospital</h1>
-      <p>Patients and visits for this hospital. This is not a diagnosis or insurance desk.</p>
+      <PageHeader
+        title="Hospital"
+        subtitle="Patients and visits for this hospital. This is not a diagnosis or insurance desk."
+      />
       {error ? <p role="alert">{error}</p> : null}
       <form onSubmit={addPatient}>
         <label>

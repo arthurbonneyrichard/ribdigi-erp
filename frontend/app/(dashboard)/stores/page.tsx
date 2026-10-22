@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import FormModal from '../../../components/FormModal';
+import PageHeader from '../../../components/PageHeader';
 import { api, apiOptional } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { isHotelIndustry } from '../../../lib/tenantNav';
@@ -908,17 +909,17 @@ export default function Page() {
 
   return (
     <div className="work">
-      <div className="list-page-head">
-        <div>
-          <h1>Multi-Store</h1>
-          <p className="muted">Branches, departments, stores, warehouses, FEFO mode, and transfers</p>
-        </div>
-        {canCreateStore ? (
-          <button type="button" className="list-btn-primary" onClick={() => setStoreAddOpen(true)} aria-label="Create store">
-            Create store
-          </button>
-        ) : null}
-      </div>
+      <PageHeader
+        title="Multi-Store"
+        subtitle="Branches, departments, stores, warehouses, FEFO mode, and transfers"
+        actions={
+          canCreateStore ? (
+            <button type="button" className="list-btn-primary" onClick={() => setStoreAddOpen(true)} aria-label="Create store">
+              Create store
+            </button>
+          ) : undefined
+        }
+      />
       {error && <p className="erp-banner err" role="alert">{error}</p>}
       {message && <p className="erp-banner ok" role="status">{message}</p>}
 

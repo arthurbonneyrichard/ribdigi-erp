@@ -174,11 +174,15 @@ export function filterNavForStoreMode(items: NavItem[], multiStore = true): NavI
   return items.filter(([, href, module]) => !isStoreNetworkNavItem(href, module));
 }
 
-/** Gift cards stay on retail. POS and the sales ledger follow the industries that use them. */
+/** Gift cards stay on retail. POS and the sales ledger follow the industries that use them.
+ * Online store (`/ecommerce`) is a Settings item, not a Sales/POS sibling. */
 export function industryNavHrefOk(href: string, industry: string | null | undefined): boolean {
   const path = (href.split('?')[0] || '').split('#')[0];
   const ind = normalizeIndustry(industry);
   if (path === '/gift-cards') return ind === 'retail';
+  if (path === '/ecommerce' || path.startsWith('/ecommerce/')) {
+    return ind === 'retail' || ind === 'pharmacy';
+  }
   if (path === '/pos') {
     return ind === 'retail' || ind === 'hotel' || ind === 'restaurant';
   }
@@ -310,6 +314,11 @@ export function industryFeatureBlock(
   if (path === '/prescriptions' || path.startsWith('/prescriptions/')) {
     if (normalizeIndustry(industry) !== 'pharmacy') {
       return 'This feature is not available for this company.';
+    }
+  }
+  if (path === '/ecommerce' || path.startsWith('/ecommerce/')) {
+    if (!moduleEnabledForTenant(enabledModules, industry, 'ecommerce')) {
+      return 'Online store is not available for this company.';
     }
   }
   if (path === '/gift-cards' || path.startsWith('/gift-cards/')) {
@@ -446,6 +455,7 @@ export const NAV_MODULE_BY_PATH: Record<string, string> = {
   '/customers': 'sales',
   '/pos': 'pos',
   '/gift-cards': 'pos',
+  '/ecommerce': 'ecommerce',
   '/purchasing': 'purchasing',
   '/expenses': 'expenses',
   '/accounting': 'accounting',

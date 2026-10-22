@@ -11,6 +11,7 @@ import { invalidatePrefetchCache } from '../lib/prefetchCache';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import LoginBrandLogo from '../components/LoginBrandLogo';
+import LoginLegalLinks from '../components/LoginLegalLinks';
 import { loadUserTheme } from '../lib/theme';
 import { openShiftForSignedInUser } from '../lib/cashierShift';
 
@@ -491,6 +492,7 @@ export default function Login() {
             A Ribdigi House Product
           </a>
         </p>
+        <LoginLegalLinks />
       </div>
     </div>
   );

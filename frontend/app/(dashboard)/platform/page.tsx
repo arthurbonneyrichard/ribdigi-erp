@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { getPrefetched } from '../../../lib/prefetchCache';
@@ -240,16 +241,14 @@ export default function PlatformConsole() {
 
   return (
     <div className="plat">
-      <header className="plat-hero">
-        <div>
-          <p className="plat-kicker">Software owner</p>
-          <h1>Platform console</h1>
-          <p className="plat-sub">
-            Platform activity and workspace totals. Subscriptions, modules, usage, and store
-            entitlement are on the Tenant page. Paid self-serve checkout is not live.
-          </p>
-        </div>
-      </header>
+      <PageHeader
+        className="plat-hero"
+        kicker="Software owner"
+        kickerClassName="plat-kicker"
+        title="Platform console"
+        subtitle="Platform activity and workspace totals. Subscriptions, modules, usage, and store entitlement are on the Tenant page. Paid self-serve checkout is not live."
+        subtitleClassName="plat-sub"
+      />
 
       {error && (
         <p className="login-error" role="alert">

@@ -6,7 +6,7 @@ Do not treat this file as a second copy of `AGENTS.md`. `AGENTS.md` is the alway
 
 ## Stack and tenancy
 
-- Backend: FastAPI, async SQLAlchemy, Alembic. One migration head (`20261011_0138` at inspection). Apply with `alembic upgrade head` only. Do not `create_all` or stamp a live database. Keep migration history.
+- Backend: FastAPI, async SQLAlchemy, Alembic. One migration head (`20261022_0142` at inspection). Apply with `alembic upgrade head` only. Do not `create_all` or stamp a live database. Keep migration history. Do not migrate live `ribdigi_erp` from this work.
 - Frontend: Next.js 14 App Router (`next` 14.2.35) and React 18 (`react` 18.3.1).
 - Tenancy is shared-schema. Every tenant-owned row carries `tenant_id`. The JWT tenant is the scope. `X-Tenant-ID`, when sent, must be that tenant’s UUID. Queries do not trust a client-supplied tenant. Company and Tenant are the same profile for this product. See `docs/ADR_001_TENANCY.md`.
 
@@ -21,7 +21,7 @@ Do not treat this file as a second copy of `AGENTS.md`. `AGENTS.md` is the alway
 
 - Company data stays on the server-side tenant. Permissions are enforced on the API, not by hiding a button alone.
 - Store caps use `store_entitlements`. `NULL` means unlimited. Create and activate count **active** stores. A downgrade does not delete stores; it sets `over_entitlement` and blocks further creates and activations.
-- A store must not have two warehouses with the same `store_id` (`stores.warehouse_for_store` expects one row).
+- A store must not have two warehouses with the same `store_id`. Warehouse create and edit refuse a second link. `warehouse_for_store` returns one row (lowest code) if leftover duplicates exist, so a till sale does not 500.
 
 ## Payments
 
@@ -31,6 +31,7 @@ Do not treat this file as a second copy of `AGENTS.md`. `AGENTS.md` is the alway
 - Gift-card and loyalty tenders debit `2150` and `2160`. A cash-account id on those tenders is ignored. Any other non-cash tender that resolves to till cash `1000` is rejected. An inactive bank account `1010` rejects card and Mobile Money. An inactive `2160` rejects a loyalty tender. Neither case is posted to till cash. Issuing a gift card still debits expense `6100` and credits `2150` because that screen does not collect cash. Loyalty issuance debits `6110` and credits `2160`. Reversing that award debits `2160` and credits `6110`.
 - A gift-card or loyalty refund credits `2150` or `2160` and ignores a client account id. Any other non-cash refund that resolves to till cash `1000` is rejected. That refund journal does not put the amount back on the plastic card balance, because a return has no card code. Drawer cash includes only method `cash`.
 - A subscription invoice becomes paid only when a signed webhook matches amount, currency, and tenant. Do not invent gateway secrets or call a live processor.
+- Tenant ecommerce uses each company's verified hostname. Host and X-Forwarded-Host are not trusted without that mapping. The ERP catalog is opt-in. Storefront payments are recorded separately from Ribdigi subscription billing. A checkout return URL does not mark an online order paid. Offline Complete stays false. No wallet or escrow.
 - Supplier payments (`POST /suppliers/{id}/payments`) require `credit:read` as well as `credit:write`. Till credit is `credit:write` only, so a cashier cannot record a supplier payment. Customer payments and POS credit stay on `credit:write` or `sales:write`.
 
 ## Offline POS

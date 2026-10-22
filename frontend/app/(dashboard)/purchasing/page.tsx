@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import FormModal from '../../../components/FormModal';
+import PageHeader from '../../../components/PageHeader';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import AttachmentPreview from '../../../components/AttachmentPreview';
 import RowActions, { type RowActionItem } from '../../../components/RowActions';
@@ -1552,22 +1553,19 @@ export default function Page() {
 
   return (
     <div className="purch-desk purchase-ui-page">
-      <div className="cat-head">
-        <div>
-          <h1>Purchasing</h1>
-          <p className="purchase-ui-path">
-            <span>1 Suppliers</span>
-            <span>2 Orders</span>
-            <span>3 Receive goods</span>
-            <span>4 Supplier bills</span>
-            <span>5 Returns</span>
-          </p>
-          <p className="purchase-ui-links">
-            <a href="/credit?kind=payable">Supplier balances</a>
-            <a href="/credit?kind=payable&panel=pay">Record a supplier payment</a>
-          </p>
-        </div>
-      </div>
+      <PageHeader className="cat-head" title="Purchasing">
+        <p className="purchase-ui-path">
+          <span>1 Suppliers</span>
+          <span>2 Orders</span>
+          <span>3 Receive goods</span>
+          <span>4 Supplier bills</span>
+          <span>5 Returns</span>
+        </p>
+        <p className="purchase-ui-links">
+          <a href="/credit?kind=payable">Supplier balances</a>
+          <a href="/credit?kind=payable&panel=pay">Record a supplier payment</a>
+        </p>
+      </PageHeader>
       {error ? <p className="form-flash err">{error}</p> : null}
       {message ? <p className="form-flash ok">{message}</p> : null}
 

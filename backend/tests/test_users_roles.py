@@ -219,7 +219,7 @@ def test_user_management_create_button_wired_for_company_admin():
     assert 'aria-label="Create user"' in users
     assert "users:write" in users
     assert "users-perm-msg" in users
-    assert "list-page-head" in users
+    assert "PageHeader" in users
     assert "list-btn-primary" in users
     assert "users-add-btn" in css
     assert "@media(max-width:720px)" in css

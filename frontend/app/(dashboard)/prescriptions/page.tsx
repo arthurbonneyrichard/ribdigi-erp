@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import FormModal from '../../../components/FormModal';
+import PageHeader from '../../../components/PageHeader';
 import { api, apiRoot, getAccessToken } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { normalizeIndustry } from '../../../lib/industries';
@@ -346,8 +347,7 @@ export default function PrescriptionsPage() {
   if (allowed === false) {
     return (
       <>
-        <h1>Prescriptions</h1>
-        <p className="muted">{error || 'Not available for this business type.'}</p>
+        <PageHeader title="Prescriptions" subtitle={error || 'Not available for this business type.'} />
         <p>
           <Link href="/dashboard">Back to dashboard</Link>
         </p>
@@ -360,12 +360,10 @@ export default function PrescriptionsPage() {
 
   return (
     <>
-      <h1>Prescriptions</h1>
-      <p className="muted">
-        Counter prescription lifecycle: receive, pharmacist approve, then partial or full dispense
-        (stock uses FEFO). This is not a hospital, clinic, or HIS module. POS can fill an approved
-        Rx against Rx-only products.
-      </p>
+      <PageHeader
+        title="Prescriptions"
+        subtitle="Counter prescription lifecycle: receive, pharmacist approve, then partial or full dispense (stock uses FEFO). This is not a hospital, clinic, or HIS module. POS can fill an approved Rx against Rx-only products."
+      />
       {error ? <p style={{ color: '#b91c1c' }}>{error}</p> : null}
       {message ? <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p> : null}
 

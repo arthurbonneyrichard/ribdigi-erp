@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from tests.ops_evidence import write_ops_evidence
+
 ROOT = Path(__file__).resolve().parents[2]
 CHECKLIST = ROOT / "ops" / "postgres" / "pitr-drill-checklist.json"
 EVIDENCE_DIR = Path("/opt/ribdigi/artifacts/dr")
@@ -62,7 +64,6 @@ def test_ops_postgres_readme_cites_r1():
 
 
 def test_pitr_pack_evidence_honest():
-    EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
     payload = {
         "stage": "28",
         "workstream": "R1",
@@ -74,8 +75,8 @@ def test_pitr_pack_evidence_honest():
         "doc": "docs/PITR_DRILL_PACK_MVP.md",
         "runbook": "docs/DR_WAL_PITR_RUNBOOK.md",
     }
-    EVIDENCE_FILE.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    loaded = json.loads(EVIDENCE_FILE.read_text(encoding="utf-8"))
+    written = write_ops_evidence(EVIDENCE_FILE, json.dumps(payload, indent=2) + "\n")
+    loaded = json.loads(written.read_text(encoding="utf-8"))
     assert loaded["passed"] is True
     assert loaded["operator_pitr_drill_executed"] is False
     assert loaded["ci_pitr_success_claimed"] is False

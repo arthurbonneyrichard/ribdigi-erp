@@ -286,3 +286,46 @@ async def test_stock_in_persists_expiry_without_batch_number(client, db_session)
     )
     assert found
     assert str(found["expiry_date"])[:10] == exp.isoformat()
+
+
+@pytest.mark.asyncio
+async def test_product_create_opening_stock_does_not_double(client, db_session):
+    """Create-with-qty zeros the inserted on-hand before apply_stock_change."""
+    ac, seed = client
+    headers = await _admin(ac, seed)
+    units = await ac.get("/api/v1/catalog/units", headers=headers)
+    pcs_id = next(u["id"] for u in units.json()["data"] if u["code"] == "PCS")
+    created = await ac.post(
+        "/api/v1/products",
+        headers=headers,
+        json={
+            "name": "Create Open Widget",
+            "sku": "OPEN-CREATE-1",
+            "cost_price": 2,
+            "selling_price": 4,
+            "stock_qty": 8,
+            "unit_id": pcs_id,
+        },
+    )
+    assert created.status_code == 200, created.text
+    body = created.json()["data"]
+    assert float(body["stock_qty"]) == 8.0
+    pid = body["id"]
+
+    listed = await ac.get(f"/api/v1/products/{pid}", headers=headers)
+    assert listed.status_code == 200, listed.text
+    assert float(listed.json()["data"]["stock_qty"]) == 8.0
+
+    movements = (
+        await db_session.execute(
+            select(m.StockMovement).where(
+                m.StockMovement.tenant_id == seed["t1"].id,
+                m.StockMovement.product_id == pid,
+                m.StockMovement.movement_type == "opening_stock",
+            )
+        )
+    ).scalars().all()
+    assert len(movements) == 1
+    assert float(movements[0].quantity) == 8.0
+    assert float(movements[0].quantity_before) == 0.0
+    assert float(movements[0].quantity_after) == 8.0

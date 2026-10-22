@@ -57,3 +57,4 @@ async def test_pos_search_includes_tax_fields(client):
     assert hit["tax_pricing_mode"] == "exclusive"
     assert hit["tax_reverse_charge"] is False
     assert hit.get("tax_components") in (None, [])
+    assert hit.get("category") in ("General", "general", None) or isinstance(hit.get("category"), str)

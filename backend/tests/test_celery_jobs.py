@@ -20,6 +20,8 @@ EXPECTED_HANDLERS = {
     "scan_ai_security_alerts",
     "send_weekly_ai_insight_digest",
     "process_subscription_renewals",
+    "expire_ecommerce_reservations",
+    "sync_ecommerce_connectors",
 }
 
 EXPECTED_BEAT = {
@@ -39,6 +41,8 @@ EXPECTED_BEAT = {
     "scan-ai-security-alerts",
     "send-weekly-ai-insight-digest",
     "process-subscription-renewals",
+    "expire-ecommerce-reservations",
+    "sync-ecommerce-connectors",
 }
 
 

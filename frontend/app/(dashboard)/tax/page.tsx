@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import FormModal from '../../../components/FormModal';
+import PageHeader from '../../../components/PageHeader';
 import { api, getAccessToken } from '../../../lib/api';
 import { AmountField } from '../../../components/AmountField';
 import { formatMoney } from '../../../lib/format';
@@ -237,20 +238,15 @@ export default function Page() {
 
   return (
     <div className="work">
-      <div className="list-page-head">
-        <div>
-      <h1>Tax</h1>
-      <p className="muted">
-        Default rate applies unless a product or line overrides it. Inclusive means the price already
-        contains tax; exclusive means tax is added on top. This screen previews — the server amount on
-        the sale or bill is the one that posts. Changing a rate does not rewrite past invoices.
-        Ghana GRA mapping is available when the company jurisdiction is Ghana (export only — not e-filed).
-      </p>
-        </div>
-        <button type="button" className="list-btn-primary" onClick={() => setTaxAddOpen(true)} aria-label="Add a tax rate">
-          Add a tax rate
-        </button>
-      </div>
+      <PageHeader
+        title="Tax"
+        subtitle="Default rate applies unless a product or line overrides it. Inclusive means the price already contains tax; exclusive means tax is added on top. This screen previews — the server amount on the sale or bill is the one that posts. Changing a rate does not rewrite past invoices. Ghana GRA mapping is available when the company jurisdiction is Ghana (export only — not e-filed)."
+        actions={
+          <button type="button" className="list-btn-primary" onClick={() => setTaxAddOpen(true)} aria-label="Add a tax rate">
+            Add a tax rate
+          </button>
+        }
+      />
       {error && <p className="erp-banner err" role="alert">{error}</p>}
       {message && <p className="erp-banner ok" role="status">{message}</p>}
 

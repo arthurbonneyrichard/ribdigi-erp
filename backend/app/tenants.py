@@ -324,6 +324,9 @@ async def serialize_tenant_with_store_usage(db: AsyncSession, tenant: m.Tenant) 
         }
     )
     data["subscription"] = sub
+    from app import ecommerce as ecom
+
+    data["ecommerce_health"] = await ecom.serialize_ecommerce_health(db, tenant)
     return data
 
 

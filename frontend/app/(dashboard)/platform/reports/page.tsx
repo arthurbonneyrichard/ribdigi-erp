@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatNumber } from '../../../../lib/format';
+import PageHeader from '../../../../components/PageHeader';
 import { apiFetch } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
 import { getPrefetched } from '../../../../lib/prefetchCache';
@@ -91,16 +92,14 @@ export default function PlatformReportsPage() {
   return (
     <>
       <div className="plat">
-        <header className="plat-hero">
-          <div>
-            <p className="plat-kicker">Software owner</p>
-            <h1>Platform reports</h1>
-            <p className="plat-sub">
-              Cross-tenant overview: status mix, package distribution, subscription usage, and
-              upcoming renewals / trial endings.
-            </p>
-          </div>
-        </header>
+        <PageHeader
+          className="plat-hero"
+          kicker="Software owner"
+          kickerClassName="plat-kicker"
+          title="Platform reports"
+          subtitle="Cross-tenant overview: status mix, package distribution, subscription usage, and upcoming renewals / trial endings."
+          subtitleClassName="plat-sub"
+        />
 
         {error && (
           <p className="login-error" role="alert">

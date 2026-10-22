@@ -151,9 +151,11 @@ async def build_dashboard(
         m.Expense.tenant_id == tenant_id,
         m.Expense.status == "approved",
     )
-    from app.reports import apply_store_scope
+    from app.reports import apply_store_scope, apply_store_scope_or_unassigned
 
-    expenses_stmt = apply_store_scope(expenses_stmt, m.Expense.store_id, store_id, store_ids)
+    expenses_stmt = apply_store_scope_or_unassigned(
+        expenses_stmt, m.Expense.store_id, store_id, store_ids
+    )
     expenses = money_json(await scalar(expenses_stmt))
     # Never SELECT the full Product mapper row — live DBs can omit later catalog
     # columns while still having extra company_id.

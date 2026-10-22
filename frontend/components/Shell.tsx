@@ -95,6 +95,7 @@ const TENANT_ITEMS: NavItem[] = [
   ['Notifications', '/notifications', 'notifications'],
   ['Audit', '/audit', 'audit'],
   ['Backup', '/backup', 'backup'],
+  ['Online store', '/ecommerce', 'ecommerce'],
   ['Integrations', '/integrations', 'integrations'],
   ['Security', '/security', 'security'],
   ['Printers', '/printers', 'printers'],
@@ -174,6 +175,7 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
     items: [
       ['Company', '/company', 'company'],
       ['Subscription billing', '/company/billing', 'company'],
+      ['Online store', '/ecommerce', 'ecommerce'],
       ['Integrations', '/integrations', 'integrations'],
       ['Security', '/security', 'security'],
       ['Printers', '/printers', 'printers'],
@@ -236,6 +238,7 @@ const ROLE_NAV_MODULES: Record<string, string[] | '*'> = {
     'security',
     'printers',
     'support',
+    'ecommerce',
   ],
   sales_officer: [
     'dashboard',
@@ -252,6 +255,7 @@ const ROLE_NAV_MODULES: Record<string, string[] | '*'> = {
     'ai',
     'security',
     'support',
+    'ecommerce',
   ],
   inventory_officer: [
     'dashboard',
@@ -343,6 +347,12 @@ const ICONS: Record<string, React.ReactNode> = {
       <circle cx="9" cy="21" r="1" />
       <circle cx="20" cy="21" r="1" />
       <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+    </>
+  ),
+  ecommerce: (
+    <>
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
     </>
   ),
   printers: (

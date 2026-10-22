@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from tests.ops_evidence import write_ops_evidence
+
 ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE_DIR = Path("/opt/ribdigi/artifacts/dr")
 EVIDENCE_FILE = EVIDENCE_DIR / "stage26_w1_wal_pitr_strategy.json"
@@ -80,7 +82,6 @@ def test_wal_gate_complete_mvp_and_evidence():
     # Remaining honesty — live operator drill still post-MVP
     assert "operator" in pr.lower() or "staging" in pr.lower() or "Remaining" in pr
 
-    EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
     payload = {
         "stage": "26",
         "workstream": "W1",
@@ -98,8 +99,8 @@ def test_wal_gate_complete_mvp_and_evidence():
         "automatic_ribbak_s3_upload": False,
         "operator_pitr_drill_executed": False,
     }
-    EVIDENCE_FILE.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    loaded = json.loads(EVIDENCE_FILE.read_text(encoding="utf-8"))
+    written = write_ops_evidence(EVIDENCE_FILE, json.dumps(payload, indent=2) + "\n")
+    loaded = json.loads(written.read_text(encoding="utf-8"))
     assert loaded["passed"] is True
     assert loaded["operator_pitr_drill_required"] is True
     assert loaded["wal_pitr_deferred_in_ci"] is True

@@ -28,7 +28,7 @@ def test_sales_quotation_reject_reason_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Quotation reject reason"' in page
     assert "quoteRejectReason" in page
-    assert 'aria-label={`Reject quotation ${q.id}`}' in page
+    assert "ariaLabel: `Reject quotation ${q.id}`" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "SalesQuotationRejectReasonValue" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")

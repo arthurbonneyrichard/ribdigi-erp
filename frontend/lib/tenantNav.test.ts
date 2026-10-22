@@ -473,6 +473,75 @@ test('restaurant nav shows floor and kitchen and hides hotel rooms', () => {
   );
 });
 
+test('online store is a settings item, not a sales or POS sibling', () => {
+  const shell = readFileSync(new URL('../components/Shell.tsx', import.meta.url), 'utf8');
+  const salesStart = shell.indexOf("id: 'sales'");
+  const purchasesStart = shell.indexOf("id: 'purchases'");
+  const settingsStart = shell.indexOf("id: 'settings'");
+  const industryStart = shell.indexOf("id: 'industry'");
+  assert.ok(salesStart >= 0 && purchasesStart > salesStart);
+  assert.ok(settingsStart >= 0 && industryStart > settingsStart);
+  const salesGroup = shell.slice(salesStart, purchasesStart);
+  const settingsGroup = shell.slice(settingsStart, industryStart);
+  assert.equal(salesGroup.includes("/ecommerce"), false);
+  assert.equal(salesGroup.includes('Online store'), false);
+  assert.equal(settingsGroup.includes("['Online store', '/ecommerce', 'ecommerce']"), true);
+  assert.equal(industryNavHrefOk('/ecommerce', 'retail'), true);
+  assert.equal(industryNavHrefOk('/ecommerce', 'hotel'), false);
+  assert.equal(industryNavHrefOk('/ecommerce', 'restaurant'), false);
+  assert.equal(industryFeatureBlock('/ecommerce', 'retail', ['ecommerce']), null);
+  assert.equal(
+    industryFeatureBlock('/ecommerce', 'hotel', ['hotel', 'ecommerce']),
+    'Online store is not available for this company.',
+  );
+  assert.equal(
+    industryFeatureBlock('/ecommerce', 'restaurant', ['restaurant']),
+    'Online store is not available for this company.',
+  );
+
+  const groups: NavGroup[] = [
+    {
+      id: 'sales',
+      label: 'Sales and POS',
+      items: [
+        ['Sales', '/sales', 'sales'],
+        ['POS', '/pos', 'pos'],
+      ],
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      items: [
+        ['Company', '/company', 'company'],
+        ['Online store', '/ecommerce', 'ecommerce'],
+        ['Security', '/security', 'security'],
+      ],
+    },
+  ];
+  const visible: NavItem[] = [
+    ['Sales', '/sales', 'sales'],
+    ['POS', '/pos', 'pos'],
+    ['Online store', '/ecommerce', 'ecommerce'],
+    ['Company', '/company', 'company'],
+    ['Security', '/security', 'security'],
+  ];
+  const retail = groupedTenantNav(groups, visible, 'retail');
+  const sales = retail.find((g) => g.id === 'sales');
+  const settings = retail.find((g) => g.id === 'settings');
+  assert.ok(sales);
+  assert.ok(settings);
+  assert.deepEqual(
+    sales.items.map(([, href]) => href),
+    ['/sales', '/pos'],
+  );
+  assert.equal(settings.items.some(([, href]) => href === '/ecommerce'), true);
+  const hotel = groupedTenantNav(groups, visible, 'hotel');
+  assert.equal(
+    hotel.some((g) => g.items.some(([, href]) => href === '/ecommerce')),
+    false,
+  );
+});
+
 test('software owner sidebar keeps platform console items and role limits', () => {
   const kept = filterNavForIndustry(
     [

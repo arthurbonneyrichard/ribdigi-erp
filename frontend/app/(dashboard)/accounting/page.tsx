@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import AttachmentPreview from '../../../components/AttachmentPreview';
 import FormModal from '../../../components/FormModal';
+import PageHeader from '../../../components/PageHeader';
 import { api, getAccessToken } from '../../../lib/api';
 import { currencySign, formatWhen, plainLabel } from '../../../lib/format';
 import { AmountField } from '../../../components/AmountField';
@@ -1091,11 +1092,10 @@ export default function Page() {
 
   return (
     <div className="work">
-      <div className="list-page-head">
-        <div>
-          <h1>Accounting</h1>
-        </div>
-      </div>
+      <PageHeader
+        title="Accounting"
+        subtitle="One company ledger. Sales, expenses, and supplier bills post here — this is not a second set of books. Income, expenses, and supplier bills for this company. Use the tabs to see accounts, cash, bank matching, and cheques."
+      />
       <div className="card" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input value={journalPrefix} onChange={(e) => setJournalPrefix(e.target.value)} aria-label="Journal number prefix" placeholder="Journal prefix" />
         <input value={journalNext} onChange={(e) => setJournalNext(e.target.value)} aria-label="Journal next number" placeholder="Next #" />
@@ -1105,10 +1105,6 @@ export default function Page() {
           Save numbering
         </button>
       </div>
-      <p className="muted">
-        One company ledger. Sales, expenses, and supplier bills post here — this is not a second set of books.
-        Income, expenses, and supplier bills for this company. Use the tabs to see accounts, cash, bank matching, and cheques.
-      </p>
       {loading && <p className="muted">Loading accounting…</p>}
       {error && <p className="erp-banner err" role="alert">{error}</p>}
       {message && <p className="erp-banner ok" role="status">{message}</p>}

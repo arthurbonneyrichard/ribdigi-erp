@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
+import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { moduleEnabledForTenant } from '../../../lib/industryModules';
@@ -148,8 +149,10 @@ export default function RestaurantPage() {
 
   return (
     <main className="page">
-      <h1>Restaurant</h1>
-      <p>Dine-in, takeaway, and delivery. Kitchen tickets follow each item station. Completing an order deducts recipe ingredients.</p>
+      <PageHeader
+        title="Restaurant"
+        subtitle="Dine-in, takeaway, and delivery. Kitchen tickets follow each item station. Completing an order deducts recipe ingredients."
+      />
       {error && <p role="alert">{error}</p>}
       {message && <p>{message}</p>}
       {show('dashboard') && summary && (

@@ -66,7 +66,15 @@ async def available_qty(
         exclude_device_id=exclude_offline_device_id,
     )
     on_hand = money_json(on_hand - offline_held)
-    return money_json(on_hand - reserved)
+    from app.ecommerce import active_ecommerce_reserved_qty
+
+    online_held = await active_ecommerce_reserved_qty(
+        db,
+        tenant_id=tenant_id,
+        warehouse_id=warehouse_id,
+        product_id=product_id,
+    )
+    return money_json(on_hand - reserved - online_held)
 
 
 async def list_order_reservations(

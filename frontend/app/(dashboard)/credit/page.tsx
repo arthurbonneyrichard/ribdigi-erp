@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import EmptyState from '../../../components/EmptyState';
+import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
 import { formatMoney, formatWhen } from '../../../lib/format';
 import { AmountField } from '../../../components/AmountField';
@@ -241,6 +243,11 @@ export default function Page() {
 
   useEffect(() => {
     if (urlKind !== kind) {
+      setPartyId('');
+      setCreditInfo(null);
+      setStatement(null);
+      setHistory(null);
+      setSchedule(null);
       setKind(urlKind);
       return;
     }
@@ -259,6 +266,11 @@ export default function Page() {
   }, [retryAfterSec]);
 
   function selectKind(next: 'receivable' | 'payable') {
+    setPartyId('');
+    setCreditInfo(null);
+    setStatement(null);
+    setHistory(null);
+    setSchedule(null);
     if (next === 'receivable') setKind('receivable');
     else setKind('payable');
     const panel = next === 'payable' ? searchParams.get('panel') : null;
@@ -622,24 +634,23 @@ export default function Page() {
 
   return (
     <div className="credit-page work">
-      <div className="list-page-head credit-head">
-        <div>
-      <h1>
-        {kind === 'receivable'
-          ? 'Customer credit'
-          : payPanel
-            ? 'Supplier payments'
-            : 'Supplier balances'}
-      </h1>
-      <p className="muted">
-        {kind === 'receivable'
-          ? 'Choose the customer, check what they owe, then record the payment. Oldest open invoices are paid first.'
-          : payPanel
-            ? 'Choose the supplier, check what you owe, then record the payment. This records money going out.'
-            : 'What this company still owes suppliers. Purchase orders stay separate until a bill is posted.'}
-      </p>
-        </div>
-      </div>
+      <PageHeader
+        className="credit-head"
+        title={
+          kind === 'receivable'
+            ? 'Customer credit'
+            : payPanel
+              ? 'Supplier payments'
+              : 'Supplier balances'
+        }
+        subtitle={
+          kind === 'receivable'
+            ? 'Choose the customer, check what they owe, then record the payment. Oldest open invoices are paid first.'
+            : payPanel
+              ? 'Choose the supplier, check what you owe, then record the payment. This records money going out.'
+              : 'What this company still owes suppliers. Purchase orders stay separate until a bill is posted.'
+        }
+      />
       {error && (
         <p className="erp-banner err" role="alert">
           {error}{' '}
@@ -1064,16 +1075,16 @@ export default function Page() {
       </div>
 
       {loadState === 'error' ? (
-        <div className="list-empty" role="alert">
-          <p>Balances could not be loaded. Use Retry — totals are not shown as zero.</p>
-        </div>
+        <EmptyState
+          className="list-empty"
+          role="alert"
+          title="Balances could not be loaded. Use Retry — totals are not shown as zero."
+        />
       ) : null}
       {loadState === 'empty' && kind === 'payable' ? (
-        <div className="list-empty">
-          <p>No supplier bills with a remaining balance.</p>
-        </div>
+        <EmptyState className="list-empty" title="No supplier bills with a remaining balance." />
       ) : null}
-      <div className="list-page-head credit-parties-head">
+      <div className="list-page-head page-head credit-parties-head">
         <h2>{kind === 'receivable' ? 'Customers' : 'Suppliers'}</h2>
       </div>
       <div className="list-table-wrap credit-parties">

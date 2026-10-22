@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
 import './integ-ui.css';
 
@@ -317,10 +318,10 @@ export default function Page() {
 
   return (
     <div className="integ-ui">
-      <h1>Create an API key</h1>
-      <p className="muted integ-ui-lead">
-        Type a name, then create the key. Copy it when it appears. It is shown only this once.
-      </p>
+      <PageHeader
+        title="Create an API key"
+        subtitle="Type a name, then create the key. Copy it when it appears. It is shown only this once."
+      />
       {error && <p className="integ-ui-alert" role="alert">{error}</p>}
       {message && <p className="integ-ui-ok" role="status">{message}</p>}
 

@@ -355,7 +355,7 @@ Service `apply_print_branding_update` remains defense-in-depth **400** for templ
 **Store entitlements:** Package catalog `max_stores` (`null` = unlimited). Platform `PATCH /tenants/{ref}/store-entitlement` `{ max_stores_override }` / `{ clear: true }`. Tenant admin `PATCH /tenants/me/store-limit` `{ store_limit }` (null = full entitlement; cannot exceed entitlement). `GET /stores/entitlement` returns usage. `POST /stores` and reactivate enforce active-store count (403 `STORE_LIMIT_REACHED`); downgrades never delete stores.
 
 **Feature modules:** `PATCH /tenants/{tenant_ref}/modules`  
-`{ "enabled_modules": ["dashboard","pos",...] }` or `{ "reset_to_package": true }`. `enabled_modules` items are schema `Literal` of `PACKAGEABLE_MODULES` (strip/lower; blank/unknown/`platform` → **422**). Always-on modules (`dashboard`, `notifications`, `security`) are merged by the service if omitted. Same item Literal applies on `POST /tenants/{ref}/subscription` when `enabled_modules` is sent.
+`{ "enabled_modules": ["dashboard","pos",...] }` or `{ "reset_to_package": true }`. `enabled_modules` items are schema `Literal` of `PACKAGEABLE_MODULES` (strip/lower; blank/unknown/`platform` → **422**). Always-on modules (`dashboard`, `notifications`, `security`) are merged by the service if omitted. Same item Literal applies on `POST /tenants/{ref}/subscription` when `enabled_modules` is sent. `ecommerce` is packageable on trial/professional/enterprise for retail (and existing pharmacy) only.
 
 **Usage detail:** `GET /tenants/{tenant_ref}/usage`  
 Packages: `trial` | `starter` | `professional` | `enterprise`. Disabled modules return `403 PACKAGE_FEATURE_DISABLED`.
@@ -1628,13 +1628,19 @@ Celery reliability admin surface (see `docs/CELERY_RELIABILITY_RUNBOOK.md`).
 Returns `celery_enabled`, broker/result URLs, `task_always_eager`, sorted handler names in `jobs`, and beat interval map in `beat`.
 
 ### 15B.2 Run job
-**Endpoint:** `POST /jobs/{job_name}/run` — Path `job_name` schema `Literal` of `JOB_HANDLERS` keys (`JobNameValue` + strip/lower; blank/unknown → **422** — was late **404**). Allow-list defense-in-depth if Literal and handlers drift.  
+**Endpoint:** `POST /jobs/{job_name}/run` — Path `job_name` schema `Literal` of `JOB_HANDLERS` keys (`JobNameValue` + strip/lower; blank/unknown → **422** — was late **404**). Allow-list defense-in-depth if Literal and handlers drift. Includes `expire_ecommerce_reservations` and `sync_ecommerce_connectors`.  
 **Query:** `enqueue=true` to push to Celery (requires `CELERY_ENABLED`)  
 **Roles:** `super_admin`, `platform_owner`
 
 Sync run returns handler result payload. Jobs UI **Run sync** / **Enqueue** (`aria-label`s per job).
 
 **UI:** Shell → **Jobs** (`/jobs`).
+
+---
+
+## 15D. Tenant ecommerce
+
+Staff `/ecommerce` (module `ecommerce`:read/write). Public `/storefront/*` resolves the company only from a verified domain mapping or a staff preview token. Host / X-Forwarded-Host alone is rejected (`STOREFRONT_HOST_UNKNOWN`). `POST /ecommerce/domains` `hostname` ∈ `WebsiteHostnameValue` (hostname or https website URL; `www.` stripped; remote `http` / reserved Ribdigi host / blank → **422**). `DELETE /ecommerce/domains/{id}` unlinks. Connector `store_url` ∈ `WebhookUrlValue`. Catalog bootstrap accepts `q` ∈ `CatalogSearchValue` (omit → unfiltered; blank/`!!!`/`http://…` → **422**), `category` ∈ `ProductCategoryLabelValue`, `product_id`, `page`, `page_size` and returns `variants[]`. `product_id` ∈ `UuidIdValue` (omit → full catalog; unknown published id → empty catalog; blank/non-UUID → **422**). Cart items accept optional `variant_id`. Cart/tracking tokens and Query `preview_token` ∈ `StorefrontSecretTokenValue` (omit/`null` → verified-host path; blank/`!!!`/`http://…` → **422**). Storefront accounts (`POST /storefront/account/register|login|logout`, `GET /storefront/account/orders`) are shopper rows, not ERP users; send `X-Storefront-Shopper`. Register and login password ∈ `UserPasswordValue`. Policies ∈ `StorefrontPolicyValue` (1–4000; blank/`!!!`/`http://…` → **422**). Storefront media: `POST|GET|DELETE /ecommerce/media/{logo|banner|favicon}` (staff) and public `GET /storefront/media/{kind}` plus `GET /storefront/products/{id}/image` for published catalog images. Media is separate from the ERP sidebar logo. Checkout return does not mark paid. Signed webhook Path `provider` ∈ mock|paystack|flutterwave. Staff fulfill advances packed → dispatched → delivered and best-effort PUTs Woo `woo:{id}` order status and stock. Staff return posts the existing sales-return refund. `GET /tenants/{ref}/usage` includes `ecommerce_health` without domain tokens or gateway secrets. WooCommerce is the only implemented website connector. See `docs/ECOMMERCE.md`.
 
 ---
 

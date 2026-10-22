@@ -137,6 +137,8 @@ type Product = {
   is_low_stock?: boolean;
   is_out_of_stock?: boolean;
   kind?: string;
+  category?: string | null;
+  category_id?: string | null;
   has_image?: boolean;
   rx_only?: boolean;
   nearest_expiry_date?: string | null;
@@ -411,6 +413,7 @@ export default function Page() {
   useCompanyFormat();
   const [q, setQ] = useState('');
   const [rows, setRows] = useState<Product[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [session, setSession] = useState<Session | null>(null);
   const [shifts, setShifts] = useState<any[]>([]);
@@ -464,6 +467,8 @@ export default function Page() {
     balance_due?: number;
     invoice_number?: string | null;
     offline?: QueuedSale;
+    lines?: Array<{ name: string; quantity: number; unit: number; line: number }>;
+    total?: number;
   } | null>(null);
   const [reprintTarget, setReprintTarget] = useState<
     | { offline: true; rec: QueuedSale; lines: Array<{ name: string; quantity: number; unit: number }>; store: string }
@@ -554,6 +559,33 @@ export default function Page() {
   const cartDiscountAmount = cartTotals.discount;
   const cartTotal = cartTotals.due;
   const cartCount = useMemo(() => cart.reduce((sum, c) => sum + c.quantity, 0), [cart]);
+  const catalogCategories = useMemo(() => {
+    const names = new Set<string>();
+    for (const row of rows) {
+      const label = String(row.category || '').trim();
+      if (label) names.add(label);
+    }
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+  }, [rows]);
+  const visibleRows = useMemo(() => {
+    if (!categoryFilter) return rows;
+    return rows.filter((row) => String(row.category || '').trim() === categoryFilter);
+  }, [rows, categoryFilter]);
+
+  function receiptPreviewFromCart() {
+    return {
+      lines: cart.map((c) => {
+        const unit = groupUnitPrice(Number(c.selling_price));
+        return {
+          name: c.name,
+          quantity: c.quantity,
+          unit,
+          line: Math.round(unit * c.quantity * 100) / 100,
+        };
+      }),
+      total: cartTotal,
+    };
+  }
   const selectedCustomer = useMemo(
     () => customers.find((c) => c.id === customerId) || null,
     [customers, customerId],
@@ -1378,6 +1410,38 @@ export default function Page() {
     setCart((prev) => prev.filter((p) => p.id !== id));
   }
 
+  function applyKeypad(key: string) {
+    const append = (current: string) => {
+      const raw = String(current || '');
+      if (key === 'C') return '';
+      if (key === '⌫') return raw.slice(0, -1);
+      if (key === '.' && raw.includes('.')) return raw;
+      if (key === '00') return raw ? `${raw}00` : '0';
+      if (raw === '0' && key !== '.') return key;
+      return `${raw}${key}`;
+    };
+    if (splitTender || paymentMethod === 'cash') {
+      const next = append(String(cashTender || ''));
+      setCashTender(next);
+      if (splitTender) {
+        const cash = Number(next);
+        if (Number.isFinite(cash)) {
+          setCardTender(String(Math.max(0, Math.round((cartTotal - cash) * 100) / 100)));
+        }
+      }
+      return;
+    }
+    if (paymentMethod === 'credit') {
+      setAmountPaidNow(append(String(amountPaidNow || '')));
+      return;
+    }
+    const last = cart[cart.length - 1];
+    if (!last) return;
+    const next = append(String(last.quantity));
+    const qty = Math.floor(Number(next) || 0);
+    if (Number.isFinite(qty)) setLineQty(last.id, qty);
+  }
+
   function clearCart() {
     setCart([]);
     setCartDiscount('');
@@ -1655,13 +1719,19 @@ export default function Page() {
           payload: { ...body, total: cartTotal },
           allocation_override: allocationOverride,
         });
+        const preview = receiptPreviewFromCart();
         clearCart();
         clearCustomer();
         setGiftCardCode('');
         setCreditOverrideReason('');
         setSplitTender(false);
         setAllocationOverride(false);
-        setLastSale({ id: queued.id, reference: queued.local_receipt_number, offline: queued });
+        setLastSale({
+          id: queued.id,
+          reference: queued.local_receipt_number,
+          offline: queued,
+          ...preview,
+        });
         setReprintTarget({
           offline: true,
           rec: queued,
@@ -1741,6 +1811,7 @@ export default function Page() {
       if (!r?.data?.id || !r?.data?.reference) {
         throw new Error(r?.message || 'Sale failed');
       }
+      const preview = receiptPreviewFromCart();
       clearCart();
       clearCustomer();
       setGiftCardCode('');
@@ -1755,6 +1826,7 @@ export default function Page() {
         paid_amount: r.data.paid_amount,
         balance_due: r.data.balance_due,
         invoice_number: r.data.invoice_number,
+        ...preview,
       });
       setReprintTarget({ offline: false, id: r.data.id });
       setPayAsReprint(true);
@@ -2409,6 +2481,7 @@ export default function Page() {
                 disabled={!session}
                 onClick={() => {
                   setQ('');
+                  setCategoryFilter('');
                   browse('').catch((err) => setError(err.message));
                 }}
                 aria-label="Browse all POS products"
@@ -2416,6 +2489,38 @@ export default function Page() {
                 All
               </button>
             </form>
+            {session && catalogCategories.length > 0 ? (
+              <nav className="tpos-cats" aria-label="POS product categories">
+                <p className="tpos-cats-crumb">
+                  {categoryFilter ? `All / ${categoryFilter}` : 'All products'}
+                </p>
+                <div className="tpos-cats-row" role="tablist">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={!categoryFilter}
+                    className={`tpos-cat${categoryFilter ? '' : ' is-on'}`}
+                    onClick={() => setCategoryFilter('')}
+                    aria-label="Show all POS categories"
+                  >
+                    All
+                  </button>
+                  {catalogCategories.map((name) => (
+                    <button
+                      key={name}
+                      type="button"
+                      role="tab"
+                      aria-selected={categoryFilter === name}
+                      className={`tpos-cat${categoryFilter === name ? ' is-on' : ''}`}
+                      onClick={() => setCategoryFilter(name)}
+                      aria-label={`Show ${name} products`}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </nav>
+            ) : null}
 
             {!session && (
               <div className="tpos-empty">
@@ -2478,14 +2583,18 @@ export default function Page() {
               </div>
             )}
 
-            {session && !catalogLoading && rows.length === 0 && (
+            {session && !catalogLoading && visibleRows.length === 0 && (
               <div className="tpos-empty">
-                <p>Search again, or tap All to see products you can sell.</p>
+                <p>
+                  {rows.length && categoryFilter
+                    ? `No ${categoryFilter} items in this search. Choose another category or tap All.`
+                    : 'Search again, or tap All to see products you can sell.'}
+                </p>
               </div>
             )}
 
             <div className="tpos-grid">
-              {rows.map((r) => {
+              {visibleRows.map((r) => {
                 const out = Number(r.stock_qty) <= 0 || Boolean(r.is_out_of_stock);
                 const low = Boolean(r.is_low_stock) && !out;
                 const inCart = cart.find((c) => c.id === r.id)?.quantity || 0;
@@ -2493,7 +2602,7 @@ export default function Page() {
                   <button
                     key={r.id}
                     type="button"
-                    className={`tpos-tile${out ? ' out' : ''}`}
+                    className={`tpos-tile${out ? ' out' : ''}${inCart > 0 ? ' in-cart' : ''}`}
                     onClick={() => addToCart(r)}
                     disabled={!session || out}
                     aria-label={`Add ${r.name}`}
@@ -2606,6 +2715,27 @@ export default function Page() {
                 <div className="tpos-cart-empty">
                   <p>Scan or search, then tap a product to add it.</p>
                 </div>
+              ) : cart.length === 0 && payAsReprint && lastSale?.lines?.length ? (
+                <div className="tpos-receipt-preview" aria-label="Last receipt preview">
+                  <p className="tpos-receipt-preview-head">
+                    Receipt {lastSale.reference}
+                    {lastSale.offline ? ' · pending sync' : ''}
+                  </p>
+                  <ul>
+                    {lastSale.lines.map((line, i) => (
+                      <li key={`${line.name}-${i}`}>
+                        <span>
+                          {line.quantity} × {line.name}
+                        </span>
+                        <strong>{money(line.line)}</strong>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="tpos-receipt-preview-total">
+                    <span>Total</span>
+                    <strong>{money(Number(lastSale.total || 0))}</strong>
+                  </p>
+                </div>
               ) : (
                 <div className="tpos-order-head" aria-hidden>
                   <span>Product</span>
@@ -2630,14 +2760,16 @@ export default function Page() {
                     <div className="tpos-cart-product">
                       <strong className="tpos-cart-name" title={c.name}>
                         <span className="tpos-cart-name-text">{c.name}</span>
+                      </strong>
+                      <span className="tpos-cart-line-sub">
                         {c.rx_only ? <span className="tpos-cart-flag">Prescription</span> : null}
                         {stockOut ? (
                           <span className="tpos-cart-flag tpos-cart-flag-out">Out</span>
                         ) : c.is_low_stock ? (
                           <span className="tpos-cart-flag tpos-cart-flag-low">Low</span>
                         ) : null}
-                      </strong>
-                      <span className="tpos-cart-unit">{money(unit)} each</span>
+                        <span className="tpos-cart-unit">{money(unit)} each</span>
+                      </span>
                     </div>
                     <div className="tpos-qty pos-ui-qty">
                       <button
@@ -2916,6 +3048,22 @@ export default function Page() {
                 )}
               </div>
               <div className="tpos-cart-actions">
+                <div className="tpos-keypad" role="group" aria-label="POS keypad">
+                  {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map((key) => (
+                    <button
+                      key={key}
+                      type="button"
+                      className="tpos-key"
+                      disabled={!session || payAsReprint}
+                      onClick={() => applyKeypad(key)}
+                      aria-label={
+                        key === 'C' ? 'Clear keypad value' : key === '⌫' ? 'Delete last keypad digit' : `Keypad ${key}`
+                      }
+                    >
+                      {key}
+                    </button>
+                  ))}
+                </div>
                 <div className="print-ui-row">
                   <label className="print-ui-paper">
                     Receipt paper
@@ -2935,6 +3083,17 @@ export default function Page() {
                   className="tpos-btn tpos-btn-pay"
                   onClick={payAsReprint ? reprintLastReceipt : checkout}
                   disabled={payAsReprint ? !!receiptBusy : !cart.length || !session || busy}
+                  title={
+                    payAsReprint
+                      ? ''
+                      : !session
+                        ? 'Open a POS shift before charging'
+                        : !cart.length
+                          ? 'Add a product before charging'
+                          : busy
+                            ? 'This sale is already being saved'
+                            : ''
+                  }
                   aria-label={payAsReprint ? 'Print' : 'Charge'}
                 >
                   {payAsReprint

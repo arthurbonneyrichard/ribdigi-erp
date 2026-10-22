@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import PageHeader from '../../../components/PageHeader';
 import { api, getAccessToken } from '../../../lib/api';
 import './backup-ui.css';
 
@@ -245,10 +246,10 @@ export default function Page() {
 
   return (
     <div className="backup-ui">
-      <h1>Create a backup</h1>
-      <p className="muted backup-ui-lead">
-        This saves an encrypted copy for this company only. A failed job stays failed. Starting the job is not the same as a finished backup.
-      </p>
+      <PageHeader
+        title="Create a backup"
+        subtitle="This saves an encrypted copy for this company only. A failed job stays failed. Starting the job is not the same as a finished backup."
+      />
       {error && (
         <p role="alert" className="backup-ui-alert">
           {error}

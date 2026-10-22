@@ -127,16 +127,20 @@ async def require_active_store(db: AsyncSession, tenant_id: str, store_id: str) 
 
 
 async def warehouse_for_store(db: AsyncSession, tenant_id: str, store_id: str) -> m.Warehouse:
-    wh = (
+    # A store may already have two warehouse rows from an older link. Pick one
+    # instead of raising MultipleResultsFound on POS sale.
+    rows = (
         await db.execute(
-            select(m.Warehouse).where(
+            select(m.Warehouse)
+            .where(
                 m.Warehouse.tenant_id == tenant_id,
                 m.Warehouse.store_id == store_id,
             )
+            .order_by(m.Warehouse.code.asc(), m.Warehouse.id.asc())
         )
-    ).scalar_one_or_none()
-    if wh:
-        return wh
+    ).scalars().all()
+    if rows:
+        return rows[0]
     store = await get_store(db, tenant_id, store_id)
     wh = m.Warehouse(
         tenant_id=tenant_id,

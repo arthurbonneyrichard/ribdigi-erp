@@ -6,13 +6,15 @@ import { normalizeIndustry } from './industries';
  * and `INDUSTRY_MODULE_ALLOWLIST`. Shared/core modules are never blocked here.
  */
 
-export const INDUSTRY_SPECIFIC_MODULES = ['hotel', 'fmcg', 'hospital', 'restaurant'] as const;
+export const INDUSTRY_SPECIFIC_MODULES = ['hotel', 'fmcg', 'hospital', 'restaurant', 'ecommerce'] as const;
 
 export type IndustrySpecificModule = (typeof INDUSTRY_SPECIFIC_MODULES)[number];
 
 const ALLOWLIST: Record<string, ReadonlySet<string>> = {
   hotel: new Set(['hotel']),
   restaurant: new Set(['restaurant']),
+  retail: new Set(['ecommerce']),
+  pharmacy: new Set(['ecommerce']),
 };
 
 export function industryAllowsModule(

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import FormModal from '../../../components/FormModal';
 import { useSearchParams } from 'next/navigation';
+import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { moduleEnabledForTenant } from '../../../lib/industryModules';
@@ -322,7 +323,7 @@ export default function FmcgPage() {
   if (moduleAllowed === false) {
     return (
       <>
-        <h1>FMCG</h1>
+        <PageHeader title="FMCG" />
         <p className="login-error" role="alert">
           {error ||
             'FMCG module is not available for this business type. Switch the company industry to FMCG (and ensure the package includes fmcg) to use trade schemes and routes.'}
@@ -333,10 +334,10 @@ export default function FmcgPage() {
 
   return (
     <>
-      <h1>FMCG management</h1>
-      <p className="muted">
-        Manage trade schemes, distribution routes, and near-expiry awareness for fast-moving goods.
-      </p>
+      <PageHeader
+        title="FMCG management"
+        subtitle="Manage trade schemes, distribution routes, and near-expiry awareness for fast-moving goods."
+      />
       {error && (
         <p className="login-error" role="alert">
           {error}

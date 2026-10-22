@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import PageHeader from '../../../components/PageHeader';
 import { api, apiFetch } from '../../../lib/api';
 import { formatWhen, plainLabel } from '../../../lib/format';
 import { getMe } from '../../../lib/meCache';
@@ -289,11 +290,10 @@ export default function Page() {
 
   return (
     <div className="audit-ui">
-      <h1>Audit</h1>
-      <p className="muted audit-ui-lead">
-        Who did what, and when. Open a record when a link is shown. These entries cannot be edited
-        or deleted.
-      </p>
+      <PageHeader
+        title="Audit"
+        subtitle="Who did what, and when. Open a record when a link is shown. These entries cannot be edited or deleted."
+      />
       {error && <p className="audit-ui-alert">{error}</p>}
       {message && <p className="audit-ui-ok">{message}</p>}
 

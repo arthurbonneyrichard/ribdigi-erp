@@ -6,7 +6,9 @@
 
 import type { QueuedSale } from './posOffline';
 
-const DEFAULT_BASE = 'http://127.0.0.1:8765';
+/** Local till-agent journal. Call `setOutsideJournalBase` with this only when the helper is installed. */
+export const TILL_JOURNAL_DEFAULT_BASE = 'http://127.0.0.1:8765';
+const DEFAULT_BASE = TILL_JOURNAL_DEFAULT_BASE;
 const SECRET_KEYS = new Set([
   'password',
   'admin_password',
@@ -30,8 +32,8 @@ export function setOutsideJournalBase(url: string | null): void {
 
 function journalBase(): string | null {
   if (baseOverride !== undefined) return baseOverride;
-  if (typeof window === 'undefined') return null;
-  return DEFAULT_BASE;
+  // Do not probe 127.0.0.1:8765 unless a till helper URL was set. The agent is optional.
+  return null;
 }
 
 function scrub(value: unknown): unknown {

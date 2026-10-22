@@ -28,7 +28,7 @@ def test_purchase_invoice_cancel_reason_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Purchase invoice cancel reason"' in page
     assert "piCancelReason" in page
-    assert "aria-label={`Cancel purchase invoice ${inv.id}`}" in page
+    assert "ariaLabel: `Cancel purchase invoice ${inv.id}`" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "PurchaseInvoiceCancelReasonValue" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")

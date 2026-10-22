@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { api } from '../../../../lib/api';
 import { formatNumber, formatWhen, plainLabel } from '../../../../lib/format';
 import { AmountField } from '../../../../components/AmountField';
+import PageHeader from '../../../../components/PageHeader';
 import { getMe } from '../../../../lib/meCache';
 import {
   canAssignSubscription,
@@ -567,16 +568,14 @@ export default function PlatformBillingPage() {
 
   return (
     <div className="plat">
-      <header className="plat-hero">
-        <div>
-          <p className="plat-kicker">Software owner</p>
-          <h1>Billing</h1>
-          <p className="plat-sub">
-            Each company, the plan assigned to it, and the term. Assigning a plan does not mark an
-            invoice paid.
-          </p>
-        </div>
-      </header>
+      <PageHeader
+        className="plat-hero"
+        kicker="Software owner"
+        kickerClassName="plat-kicker"
+        title="Billing"
+        subtitle="Each company, the plan assigned to it, and the term. Assigning a plan does not mark an invoice paid."
+        subtitleClassName="plat-sub"
+      />
       {canCreate && (
         <div className="plat-panel">
           <h2>Payment gateway</h2>

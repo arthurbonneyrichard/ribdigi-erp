@@ -5,7 +5,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
+from tests.ops_evidence import write_ops_evidence
 
 ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE_DIR = Path("/opt/ribdigi/artifacts/monitoring")
@@ -94,7 +96,6 @@ def test_monitoring_gate_complete_mvp_and_evidence():
     assert "Grafana" in pr or "PagerDuty" in pr
     assert "SIEM" in pr
 
-    EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
     payload = {
         "workstream": "M1",
         "passed": True,
@@ -106,8 +107,8 @@ def test_monitoring_gate_complete_mvp_and_evidence():
         "prometheus": "ops/prometheus/prometheus.yml",
         "alerts": "ops/prometheus/alerts/ribdigi.yml",
     }
-    EVIDENCE_FILE.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    loaded = json.loads(EVIDENCE_FILE.read_text(encoding="utf-8"))
+    written = write_ops_evidence(EVIDENCE_FILE, json.dumps(payload, indent=2) + "\n")
+    loaded = json.loads(written.read_text(encoding="utf-8"))
     assert loaded["passed"] is True
     assert loaded["hosted_grafana_claimed"] is False
     assert loaded["pagerduty_wired"] is False

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import FormModal from '../../../../components/FormModal';
+import PageHeader from '../../../../components/PageHeader';
 import { api } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
 import { getPrefetched } from '../../../../lib/prefetchCache';
@@ -281,15 +282,14 @@ export default function PlatformStaffPage() {
   return (
     <>
       <div className="plat">
-        <header className="plat-hero">
-          <div>
-            <p className="plat-kicker">Software owner</p>
-            <h1>Platform staff</h1>
-            <p className="plat-sub">
-              Invite RIBDIGI staff who open the software owner dashboard.
-            </p>
-          </div>
-        </header>
+        <PageHeader
+          className="plat-hero"
+          kicker="Software owner"
+          kickerClassName="plat-kicker"
+          title="Platform staff"
+          subtitle="Invite RIBDIGI staff who open the software owner dashboard."
+          subtitleClassName="plat-sub"
+        />
 
         {error && (
           <p className="login-error" role="alert">

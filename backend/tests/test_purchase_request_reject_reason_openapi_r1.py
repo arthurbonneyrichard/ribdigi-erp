@@ -28,7 +28,7 @@ def test_purchase_request_reject_reason_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Purchase request reject reason"' in page
     assert "prRejectReason" in page
-    assert 'aria-label={`Reject purchase request ${r.id}`}' in page
+    assert "ariaLabel: `Reject purchase request ${r.id}`" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "PurchaseRequestRejectReasonValue" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")

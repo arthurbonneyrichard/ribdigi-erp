@@ -22,7 +22,7 @@ def test_po_amend_reason_ui_wired():
     assert "Required amendment reason" in page
     assert 'aria-label="Purchase order amend reason"' in page
     assert 'aria-label="Save purchase order amendment"' in page
-    assert "aria-label={`Amend purchase order ${o.id}`}" in page
+    assert "ariaLabel: `Amend purchase order ${o.id}`" in page
     assert "Enter an amendment reason before saving" in page
     assert "reason: amendReason.trim() || null" not in page
     assert "reason," in page or "reason\n" in page

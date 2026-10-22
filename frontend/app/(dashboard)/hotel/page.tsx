@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
+import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { moduleEnabledForTenant } from '../../../lib/industryModules';
@@ -871,8 +872,7 @@ export default function HotelPage() {
   if (moduleAllowed === null) {
     return (
       <>
-        <h1>Hotel management</h1>
-        <p className="muted">Loading hotel data…</p>
+        <PageHeader title="Hotel management" subtitle="Loading hotel data…" />
       </>
     );
   }
@@ -880,7 +880,7 @@ export default function HotelPage() {
   if (moduleAllowed === false) {
     return (
       <>
-        <h1>Hotel</h1>
+        <PageHeader title="Hotel" />
         <p className="login-error" role="alert">
           {error ||
             'Hotel module is not available for this business type. Switch the company industry to Hotel (and ensure the package includes hotel) to use rooms and reservations.'}
@@ -891,23 +891,27 @@ export default function HotelPage() {
 
   return (
     <>
-      <h1>Hotel management</h1>
-      <p className="muted">
-        {tab === 'dashboard' && 'Occupancy, arrivals, and alerts for today.'}
-        {tab === 'reservations' && 'Search rooms, then book a stay. Same room cannot overlap.'}
-        {tab === 'front-desk' && 'Check guests in and out, and log requests.'}
-        {tab === 'rooms' && 'Room list, nightly rates, and rate plans.'}
-        {tab === 'housekeeping' && 'Cleaning tasks and lost-and-found notes.'}
-        {tab === 'maintenance' && 'Repair tickets. Dated blocks only close those nights.'}
-        {tab === 'guests' && 'Guest profiles, stay history, and merge duplicates.'}
-        {tab === 'billing' && 'Guest bills and payment notes. Cards are not charged here.'}
-        {tab === 'cashier' && 'Open a shift and post night audit. Payment notes only.'}
-        {tab === 'supplies' && 'Hotel stock uses the same inventory as the rest of the business.'}
-        {tab === 'services' && 'Extras (laundry, spa) posted onto a guest bill.'}
-        {tab === 'reports' && 'Occupancy, revenue, and stock on hand.'}
-        {tab === 'events' && 'Banquets and meeting space. Optional room hold blocks that room.'}
-        {tab === 'settings' && 'Property name, check-in times, and fees.'}
-      </p>
+      <PageHeader
+        title="Hotel management"
+        subtitle={
+          ({
+            dashboard: 'Occupancy, arrivals, and alerts for today.',
+            reservations: 'Search rooms, then book a stay. Same room cannot overlap.',
+            'front-desk': 'Check guests in and out, and log requests.',
+            rooms: 'Room list, nightly rates, and rate plans.',
+            housekeeping: 'Cleaning tasks and lost-and-found notes.',
+            maintenance: 'Repair tickets. Dated blocks only close those nights.',
+            guests: 'Guest profiles, stay history, and merge duplicates.',
+            billing: 'Guest bills and payment notes. Cards are not charged here.',
+            cashier: 'Open a shift and post night audit. Payment notes only.',
+            supplies: 'Hotel stock uses the same inventory as the rest of the business.',
+            services: 'Extras (laundry, spa) posted onto a guest bill.',
+            reports: 'Occupancy, revenue, and stock on hand.',
+            events: 'Banquets and meeting space. Optional room hold blocks that room.',
+            settings: 'Property name, check-in times, and fees.',
+          } as Record<string, string>)[tab]
+        }
+      />
       {error && (
         <p className="hotel-banner warn" role="alert">
           {error}
@@ -1947,7 +1951,7 @@ export default function HotelPage() {
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="list-page-head">
+        <div className="list-page-head page-head">
           <h2 style={{ margin: 0 }}>Reservations</h2>
           <select value={listKind} onChange={(e) => setListKind(e.target.value)} aria-label="Hotel reservation list filter">
             <option value="">All</option>

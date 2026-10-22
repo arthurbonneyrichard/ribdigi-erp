@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
 import { AmountField } from '../../../components/AmountField';
 import { formatMoney } from '../../../lib/format';
@@ -46,8 +47,10 @@ export default function GiftCardsPage() {
 
   return (
     <main className="page">
-      <h1>Gift cards</h1>
-      <p>Issue a card, then enter that code in Gift card code at POS. The balance stays a liability until the card is spent. One loyalty point equals one currency unit. A named customer earns 1% of the sale.</p>
+      <PageHeader
+        title="Gift cards"
+        subtitle="Issue a card, then enter that code in Gift card code at POS. The balance stays a liability until the card is spent. One loyalty point equals one currency unit. A named customer earns 1% of the sale."
+      />
       {error ? <p role="alert">{error}</p> : null}
       <form onSubmit={issue}>
         <label>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import PageHeader from '../../../../components/PageHeader';
 import { api } from '../../../../lib/api';
 import { billingGatewayLabel } from '../../../../lib/billingStatus';
 import { currencySign, formatDate, formatDateTime, formatMoney, formatNumber, type FormatPrefs } from '../../../../lib/format';
@@ -303,10 +304,11 @@ export default function SubscriptionBillingPage() {
 
   return (
     <main className="page billing-page">
-      <header className="billing-page-head">
-        <h1>Subscription</h1>
-        <p className="muted">This is your Ribdigi ERP plan. It is separate from payments you take from your own customers.</p>
-      </header>
+      <PageHeader
+        className="billing-page-head"
+        title="Subscription"
+        subtitle="This is your Ribdigi ERP plan. It is separate from payments you take from your own customers."
+      />
       {error && <p role="alert">{error}</p>}
       {message && <p>{message}</p>}
       <section className="card billing-page-card">

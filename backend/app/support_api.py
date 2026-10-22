@@ -242,10 +242,10 @@ async def support_ticket_close(
     db: AsyncSession = Depends(get_db),
 ):
     ticket = await svc.require_ticket(db, claims, ticket_id)
-    if ticket.status != "resolved":
+    if ticket.status == "closed":
         raise HTTPException(
             status_code=409,
-            detail={"code": "INVALID_STATUS_TRANSITION", "message": "Only a resolved ticket can be closed"},
+            detail={"code": "INVALID_STATUS_TRANSITION", "message": "This ticket is already closed"},
         )
     await svc.apply_status(db, actor_from(request, claims), ticket, "closed")
     await db.commit()

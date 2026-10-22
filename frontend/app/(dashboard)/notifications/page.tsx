@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import './notify-ui.css';
@@ -193,10 +194,10 @@ export default function Page() {
 
   return (
     <div className="notify-ui">
-      <h1>Unread alerts</h1>
-      <p className="muted notify-ui-lead">
-        Start with unread items. Mark one read when you have dealt with it. All (90 days) keeps the recent history.
-      </p>
+      <PageHeader
+        title="Unread alerts"
+        subtitle="Start with unread items. Mark one read when you have dealt with it. All (90 days) keeps the recent history."
+      />
       {platformAudience ? (
         <p className="muted notify-ui-note">
           Platform Owner notices only: provisioning, platform security, staff accounts, administrator

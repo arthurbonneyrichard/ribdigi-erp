@@ -11,11 +11,11 @@ def test_pos_till_omits_payment_reference_and_new_customer():
     assert 'aria-label="POS payment reference"' not in page
     assert "Payment reference" not in page
     assert "paymentReference" not in page
-    assert "New customer" not in page
+    assert "New customer" in page
     assert 'aria-label="Save new customer"' not in page
     assert 'aria-label="Create POS customer name"' not in page
     assert "createPosCustomer" not in page
-    assert "POS customer" in page
+    assert 'aria-label="POS customer"' in page
 
 
 def test_pos_till_split_amounts_are_present():

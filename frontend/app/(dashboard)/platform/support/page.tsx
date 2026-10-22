@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import PageHeader from '../../../../components/PageHeader';
 import { api, apiFetch } from '../../../../lib/api';
 import { formatWhen, type FormatPrefs } from '../../../../lib/format';
 import { INDUSTRIES, INDUSTRY_LABELS } from '../../../../lib/industries';
@@ -528,13 +529,14 @@ export default function SupportDeskPage() {
 
   return (
     <div className="plat desk">
-      <header className="plat-hero">
-        <div>
-          <p className="plat-kicker">Software owner</p>
-          <h1>Support Desk</h1>
-          <p className="plat-sub">Work company tickets here. A public reply goes to the company. A staff note stays on this desk.</p>
-        </div>
-      </header>
+      <PageHeader
+        className="plat-hero"
+        kicker="Software owner"
+        kickerClassName="plat-kicker"
+        title="Support Desk"
+        subtitle="Work company tickets here. A public reply goes to the company. A staff note stays on this desk."
+        subtitleClassName="plat-sub"
+      />
       {error ? <p className="plat-msg desk-alert" role="alert">{error}</p> : null}
       {queueError ? <p className="plat-msg desk-alert" role="alert">{queueError}</p> : null}
       {notice ? <p className="plat-msg" role="status">{notice}</p> : null}

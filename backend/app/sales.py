@@ -821,8 +821,7 @@ async def post_sales_invoice(
             },
         )
     )
-    # Transient flag for API response (not persisted)
-    invoice.credit_limit_overridden = bool(override_info)  # type: ignore[attr-defined]
+    invoice.credit_limit_overridden = bool(override_info)
     return invoice
 
 

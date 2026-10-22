@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useCallback, useEffect, useState } from 'react';
+import PageHeader from '../../../components/PageHeader';
 import { api, apiFetch } from '../../../lib/api';
 import { formatWhen, type FormatPrefs } from '../../../lib/format';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
@@ -306,16 +307,19 @@ export default function HelpSupportPage() {
 
   return (
     <div className="plat desk help">
-      <header className="plat-hero">
-        <div>
-          <p className="plat-kicker">Help</p>
-          <h1>Help & Support</h1>
-          <p className="plat-sub">Find a topic, open the guide, or send a ticket if you still need help.</p>
-        </div>
-        <button type="button" className="btn btn-primary" onClick={() => void openGuide()} disabled={guideBusy} aria-label="Open staff guide">
-          {guideBusy ? 'Opening the guide…' : 'Open the guide'}
-        </button>
-      </header>
+      <PageHeader
+        className="plat-hero"
+        kicker="Help"
+        kickerClassName="plat-kicker"
+        title="Help & Support"
+        subtitle="Find a topic, open the guide, or send a ticket if you still need help."
+        subtitleClassName="plat-sub"
+        actions={
+          <button type="button" className="btn btn-primary" onClick={() => void openGuide()} disabled={guideBusy} aria-label="Open staff guide">
+            {guideBusy ? 'Opening the guide…' : 'Open the guide'}
+          </button>
+        }
+      />
       {guideError ? <p className="plat-msg desk-alert" role="alert">{guideError}</p> : null}
       <section className="plat-panel" aria-label="Help topics">
         <div className="desk-panel-head"><h2>Help topics</h2></div>
@@ -508,8 +512,8 @@ export default function HelpSupportPage() {
                 ) : (
                   <p className="muted">This ticket is closed. Ask support to reopen it if you still need help.</p>
                 )}
-                {detail.ticket.status === 'resolved' ? (
-                  <button className="btn btn-ok" type="button" disabled={busy} aria-label="Close resolved ticket" onClick={closeTicket}>
+                {detail.ticket.status !== 'closed' ? (
+                  <button className="btn btn-ok" type="button" disabled={busy} aria-label="Close ticket" onClick={closeTicket}>
                     Close ticket
                   </button>
                 ) : null}

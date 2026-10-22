@@ -119,6 +119,20 @@ def process_subscription_renewals() -> dict:
     return jobs_svc.run_async(jobs_svc.job_process_subscription_renewals())
 
 
+@celery.task(name="app.tasks.expire_ecommerce_reservations")
+def expire_ecommerce_reservations() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    return jobs_svc.run_async(jobs_svc.job_expire_ecommerce_reservations())
+
+
+@celery.task(name="app.tasks.sync_ecommerce_connectors")
+def sync_ecommerce_connectors() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    return jobs_svc.run_async(jobs_svc.job_sync_ecommerce_connectors())
+
+
 @celery.task(name="app.tasks.deliver_support_outbox")
 def deliver_support_outbox() -> dict:
     if not settings.CELERY_ENABLED:

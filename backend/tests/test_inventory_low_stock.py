@@ -60,7 +60,7 @@ async def _product(db_session, tenant_id: str, *, sku: str, name: str, **kwargs)
 def test_manage_stock_low_filter_ui_empty_vs_error():
     inv = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert "warehouseRowIsLow" in inv
-    assert "No low-stock products here." in inv
+    assert "Clear the low-stock filter or pick another location when nothing is low here." in inv
     assert 'aria-label="Retry warehouse stock"' in inv
     assert "Could not load stock for this location." in inv
     assert "whStockFailed" in inv

@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
 import { formatMoney, formatWhen } from '../../../lib/format';
 import { AmountField } from '../../../components/AmountField';
@@ -67,12 +68,10 @@ export default function BillingNoticePage() {
 
   return (
     <div className="work">
-      <div className="list-page-head">
-        <div>
-          <h1>Payment notice</h1>
-          <p className="muted">Record a payment you already received. The amount, method, and reference stay in the list.</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Payment notice"
+        subtitle="Record a payment you already received. The amount, method, and reference stay in the list."
+      />
       {error && <p className="erp-banner err" role="alert">{error}</p>}
       {message && <p className="erp-banner ok" role="status">{message}</p>}
       <div className="work-pair">

@@ -12,7 +12,7 @@ In scope: the running FastAPI and Next.js app on branch `production`. Out of sco
 
 Inspected on this tree (HEAD `d41426f99e`, branch `production`). Later cashier, offline, and company-format edits were uncommitted and were not treated as a release.
 
-- Shared-schema `tenant_id` (`docs/ADR_001_TENANCY.md`). Alembic is a single head, `20261011_0138`.
+- Shared-schema `tenant_id` (`docs/ADR_001_TENANCY.md`). Alembic is a single head, `20261022_0142` (hybrid extra NOT NULL defaults; after storefront media `20261021_0141`). Do not apply it to live `ribdigi_erp` from this plan.
 - Industries a new company can choose: retail, hotel, restaurant. Sidebar industry group is hotel and restaurant only. Pharmacy is absent from `Shell.tsx`.
 - Store entitlements count active stores and do not delete stores on downgrade (`backend/app/store_entitlements.py`).
 - POS offline queue flushes to `POST /pos/sales` with `client_request_id`. Policy field `offline_complete_claimed` is false (`backend/app/offline_pos.py`).
@@ -66,7 +66,7 @@ Inspected on this tree (HEAD `d41426f99e`, branch `production`). Later cashier, 
 
 ## Migrations
 
-No new migration is required for the company-format refresh. Format columns already exist on the tenant profile. Future schema changes go through Alembic `upgrade head` against a confirmed disposable database only. The live app database name `ribdigi_erp` on `127.0.0.1` is not a migration target in this plan.
+`20261022_0142` relaxes extra NOT NULL columns a different checkout added on the local Docker DB (`SET DEFAULT` / `DROP NOT NULL` if present; add `sales_invoices.credit_limit_overridden` only because this tree now maps it). Apply to local Docker only. Future schema changes go through Alembic `upgrade head` against a confirmed disposable database only. The live app database name `ribdigi_erp` on `127.0.0.1` is not a migration target in this plan.
 
 ## Offline prepare, auth, queue, and sync
 
@@ -96,6 +96,36 @@ Not done: sign in as company admin and as cashier on a local retail company; con
 Follow `docs/DR_LOGICAL_BACKUP_RUNBOOK.md`. The 2026-10-13 local copy restore into `ribdigi_restore_drill` is recorded and was dropped. It was not a production backup. On 15 October 2026 UTC, `pg_dump` and `pg_restore` PostgreSQL 16.14 inside `ribdigi-erp-postgres-1` copied local `ribdigi_erp` into disposable database `ribdigi_drill_20261015`. Counts matched and tenant-mix checks were zero. That database and the dump file were removed. `ribdigi_erp` was not overwritten. No `.ribbak` restore was run. Do not restore over `ribdigi_erp`.
 
 ## Acceptance and release blockers
+
+**21 October 2026 UTC, ecommerce.** Retail trial/professional/enterprise can enable a built-in storefront and a WooCommerce connector on a verified tenant domain. Starter and hotel/restaurant stay gated. Live DNS, TLS certificates, and live processor secrets stay owner tasks. Offline Complete stays missing.
+
+**21 October 2026 UTC, ecommerce verification.** In-memory ecommerce + jobs OpenAPI/Celery suites passed. Frontend typecheck and production build include `/ecommerce` and `/storefront`. A disposable-company preview is the only ready path. Public pilot stays BLOCKED on owner DNS, TLS, and a tenant webhook. `ribdigi_erp` was not migrated.
+
+**21 October 2026 UTC, ecommerce completion.** Remaining in-repo gaps closed: owner health without secrets, domain re-verify on TXT loss, catalog search/category/pagination, packed/dispatched/delivered, posted-invoice return/refund, forged webhook and duplicate Woo order tests. Still BLOCKED: live DNS, TLS certificates, live processor secrets, public hostname pilot. Offline Complete stays missing.
+
+**21 October 2026 UTC, ecommerce shoppers / variants / Woo outbound.** In-repo PARTIALs closed: storefront shopper accounts (not ERP users), variant cart/order/reservation lines, best-effort Woo PUT for `woo:{id}` order status and stock. Still BLOCKED: live DNS, TLS certificates, live processor secrets, public hostname pilot. Offline Complete stays missing.
+
+**21 October 2026 UTC, website linking.** Domain create accepts a hostname or https website URL, can link the company website, and can unlink. WooCommerce connector save/disconnect is on the Online store desk. Reserved Ribdigi hosts stay rejected. Live DNS, TLS, and live processor secrets stay owner tasks.
+
+**21 October 2026 UTC, Online store desk.** Staff `/ecommerce` is organized into storefront, website/domains, catalog, orders, payments, and Woo connector cards using the shared desk tokens. Shopper `/storefront` chrome uses the same brand variables but stays on `sf-*` classes. Checkout and payment rules were not rewritten.
+
+**21 October 2026 UTC, Online store Settings nav.** Online store left Sales and POS and now sits in Settings next to Company, Security, Printers, and Integrations. `/ecommerce` is unchanged. Retail + package gate stays. Hotel and restaurant still do not see it unless entitled. Desk status, website link/unlink, copy TXT, reserved-host copy, and Woo connect/disconnect were tightened on the same page. Checkout, payments, reservations, POS posting, and the offline queue were not rewritten. `offline_complete_claimed` stays false.
+
+**21 October 2026 UTC, storefront shopper UI.** Public `/storefront` now uses shared forest/brand chrome, hero, product page, cart qty/remove, empty/error states, and honest payment copy. Staff `/ecommerce` gained a package-denied empty state, warehouse hint, catalog search, and HTTPS-ready honesty. Checkout and reservation rules were not rewritten. Live DNS/TLS/gateway stay BLOCKED. `offline_complete_claimed` stays false.
+
+**21 October 2026 UTC, storefront media.** Settings `/ecommerce` uploads a storefront logo, banner, and favicon (separate from the ERP sidebar logo). Public shop shows them via `/storefront/media/*` and published product images via `/storefront/products/{id}/image`. Empty until uploaded. Migration `20261021_0141` is in-repo only — not applied to live `ribdigi_erp`. Live DNS/TLS/gateway stay BLOCKED. `offline_complete_claimed` stays false.
+
+**22 October 2026 UTC, hybrid schema.** Local Docker Postgres was migrated by another checkout that added NOT NULL columns this tree does not fill. `20261022_0142` sets defaults or drops NOT NULL when those columns exist, and maps `sales_invoices.credit_limit_overridden`. Apply on local Docker only. Live `ribdigi_erp` / Dokploy stay unmigrated. `offline_complete_claimed` stays false.
+
+**22 October 2026 UTC, retail launch checklist.** Owner file `Ribdigi Retail Launch Checklist.md` is a stub; the full 22-item bar is in the sibling HTML export. In-repo bugs closed this pass: one warehouse per store + POS pick-one, dashboard company-wide expenses, owner title contrast, sales path spacing, phone sidebar padding, credit party clear, retail batch-holds skip, shop ticket close, legal pages on login, skip till-agent 8765 unless set, hide AI chat when off. Test import + stale head/COA/`available_qty` repaired; ~42 redesign UI-text tests still open. Still BLOCKED: commit/deploy, live Dokploy migrate, SMTP, live billing, production secrets, SMS, signed-in walk, Offline Complete. `offline_complete_claimed` stays false.
+
+**22 October 2026 UTC, launch tests.** Redesign screen-text tests now read the current desks (`RowActions` `ariaLabel`, path steps, POS Charge/Print, warehouse low-stock empty copy). Ops evidence writes to `/opt/ribdigi` when possible and otherwise a temp file; disposable Alembic skips only when local Postgres is missing or cannot create `ribdigi_alembic_head_verify` (does not swallow assertion failures). Still BLOCKED: commit/deploy, live Dokploy migrate, SMTP, live billing, production secrets, SMS, signed-in walk, Offline Complete. `offline_complete_claimed` stays false.
+
+**21 October 2026 UTC, dashboard clock.** The company dashboard greeting clock digits are 3rem (was 2rem after desk compact). POS has no header clock. Greeting copy, cart, and catalog sizes were not changed. Signed-in walkthrough was not run. Offline Complete stays missing.
+
+**21 October 2026 UTC, POS layout.** The till workspace is cart-left / catalog-right, with category chips, a compact keypad, and a last-receipt preview after Pay. Sale posting, tenders, and the offline queue were not rewritten. Signed-in walkthrough was not run. Offline Complete stays missing.
+
+**21 October 2026 UTC, ERP desk language.** Shared spacing tokens, PageHeader, and EmptyState were applied so tenant desks match the compact POS reference. Remaining tenant and platform desk titles now use PageHeader. Page-level empty panels on ecommerce, customers, credit, reports, and inventory use EmptyState. Table-cell empty rows stay in place. Dashboard decorative sun/cloud is hidden. Sidebar collapse chevron is unchanged. POS till chrome, login, and storefront stay on their own layouts. Business rules, payments, and Offline Complete were not rewritten.
 
 Acceptance for a task is the evidence in `tasks.md` (command and outcome, or file inspection). Release blockers that remain:
 

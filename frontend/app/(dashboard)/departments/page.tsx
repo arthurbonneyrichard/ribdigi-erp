@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import FormModal from '../../../components/FormModal';
+import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 
@@ -127,16 +128,11 @@ export default function Page() {
 
   return (
     <>
-      <div className="list-page-head">
-        <div>
-          <h1 style={{ margin: 0 }}>Departments</h1>
-          <p className="muted" style={{ margin: '4px 0 0' }}>
-            Tenant-scoped departments. Names must be unique in this company. Assign users on User
-            Management.
-          </p>
-        </div>
-        {canWrite ? (
-          <div className="list-head-actions">
+      <PageHeader
+        title="Departments"
+        subtitle="Tenant-scoped departments. Names must be unique in this company. Assign users on User Management."
+        actions={
+          canWrite ? (
             <button
               type="button"
               className="list-btn-primary"
@@ -145,9 +141,9 @@ export default function Page() {
             >
               Create department
             </button>
-          </div>
-        ) : null}
-      </div>
+          ) : undefined
+        }
+      />
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 

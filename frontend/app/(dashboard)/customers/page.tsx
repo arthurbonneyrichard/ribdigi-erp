@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import FormModal from '../../../components/FormModal';
+import EmptyState from '../../../components/EmptyState';
+import PageHeader from '../../../components/PageHeader';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import { api } from '../../../lib/api';
 import { currencySign } from '../../../lib/format';
@@ -346,19 +348,15 @@ export default function Page() {
 
   return (
     <div className="card cat-panel">
-      <div className="list-page-head">
-        <div>
-          <h1 style={{ margin: 0 }}>Customers</h1>
-          <p className="muted" style={{ margin: '4px 0 0' }}>
-            Tenant customer master for this company. Used on sales documents — not hotel guest CRM.
-          </p>
-        </div>
-        <div className="list-head-actions">
+      <PageHeader
+        title="Customers"
+        subtitle="Tenant customer master for this company. Used on sales documents — not hotel guest CRM."
+        actions={
           <button type="button" className="list-btn-primary" onClick={openAdd} aria-label="Add customer">
             Add customer
           </button>
-        </div>
-      </div>
+        }
+      />
       {message ? (
         <p className="list-toast ok" role="status">
           {message}
@@ -412,17 +410,15 @@ export default function Page() {
       {loading ? (
         <p className="muted">Loading customers…</p>
       ) : paged.total === 0 ? (
-        <div className="list-empty">
-          <p style={{ margin: 0 }}>
-            {customers.length === 0 ? 'No customers yet.' : 'No customers match these filters.'}
-          </p>
-          <p className="muted" style={{ margin: '8px 0 0' }}>
-            Add a customer to use them on quotations, orders, and invoices.
-          </p>
-          <button type="button" className="list-btn-primary" style={{ marginTop: 12 }} onClick={openAdd}>
-            Add customer
-          </button>
-        </div>
+        <EmptyState
+          title={customers.length === 0 ? 'No customers yet.' : 'No customers match these filters.'}
+          detail="Add a customer to use them on quotations, orders, and invoices."
+          action={
+            <button type="button" className="list-btn-primary" onClick={openAdd}>
+              Add customer
+            </button>
+          }
+        />
       ) : (
         <div className="list-table-wrap">
           <table className="table cat-table">
@@ -535,7 +531,7 @@ export default function Page() {
 
       {accountId ? (
         <div className="card" style={{ marginTop: 16 }} aria-label="Customer account">
-          <div className="list-page-head">
+          <div className="list-page-head page-head">
             <div>
               <h2 style={{ margin: 0 }}>Account · {accountName}</h2>
               <p className="muted" style={{ margin: '4px 0 0' }}>

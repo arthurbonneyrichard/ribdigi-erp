@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import CashierPresencePanel from '../../../components/CashierPresencePanel';
 import FormModal from '../../../components/FormModal';
+import PageHeader from '../../../components/PageHeader';
 import { api, apiFetch } from '../../../lib/api';
 import { industryAllowsModule } from '../../../lib/industryModules';
 import { getMe } from '../../../lib/meCache';
@@ -912,38 +913,36 @@ export default function Page() {
 
   return (
     <div className="user-manage">
-      <div className="list-page-head">
-        <div>
-          <h1 style={{ margin: 0 }}>User Management</h1>
-          <p className="muted user-manage-lead">
-            See who can sign in, then add a person with a name, email, password, and role.
-            Deactivate stops sign-in and keeps their history.
-          </p>
-        </div>
-        {(canWrite || (canWriteStores && !hideStoreUx)) ? (
-        <div className="list-head-actions">
-          {canWrite ? (
-            <button type="button" className="list-btn-primary" onClick={focusAddUser} aria-label="Add User">
-              Add user
-            </button>
-          ) : null}
-          {canWriteStores && !hideStoreUx ? (
-            <button
-              type="button"
-              className="list-btn-primary"
-              onClick={() => {
-                setError('');
-                setMessage('');
-                setStoreAddOpen(true);
-              }}
-              aria-label="Create store"
-            >
-              Create store
-            </button>
-          ) : null}
-        </div>
-        ) : null}
-      </div>
+      <PageHeader
+        title="User Management"
+        subtitle="See who can sign in, then add a person with a name, email, password, and role. Deactivate stops sign-in and keeps their history."
+        subtitleClassName="muted user-manage-lead"
+        actions={
+          (canWrite || (canWriteStores && !hideStoreUx)) ? (
+            <>
+              {canWrite ? (
+                <button type="button" className="list-btn-primary" onClick={focusAddUser} aria-label="Add User">
+                  Add user
+                </button>
+              ) : null}
+              {canWriteStores && !hideStoreUx ? (
+                <button
+                  type="button"
+                  className="list-btn-primary"
+                  onClick={() => {
+                    setError('');
+                    setMessage('');
+                    setStoreAddOpen(true);
+                  }}
+                  aria-label="Create store"
+                >
+                  Create store
+                </button>
+              ) : null}
+            </>
+          ) : undefined
+        }
+      />
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
       {permChecked && !canWrite ? (

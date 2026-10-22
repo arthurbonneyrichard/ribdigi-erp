@@ -265,6 +265,55 @@ async def job_process_subscription_renewals() -> dict:
             return {"ok": False, "error": "job_failed"}
 
 
+async def job_expire_ecommerce_reservations() -> dict:
+    from app import ecommerce as ecom
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        expired = await ecom.expire_due_reservations(db, tenant_id)
+        return {"expired": expired}
+
+    return await _for_each_tenant(work)
+
+
+async def job_sync_ecommerce_connectors() -> dict:
+    from app import ecommerce as ecom
+    from app import ecommerce_connectors as connectors_svc
+    from sqlalchemy import select
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        retried = await connectors_svc.retry_failed_syncs(db, tenant_id)
+        tenant = await ecom.get_tenant(db, tenant_id)
+        due = (
+            await db.execute(
+                select(m.EcommerceConnector).where(
+                    m.EcommerceConnector.tenant_id == tenant_id,
+                    m.EcommerceConnector.is_enabled.is_(True),
+                    m.EcommerceConnector.platform == "woocommerce",
+                )
+            )
+        ).scalars().all()
+        ran = 0
+        for connector in due:
+            running = (
+                await db.execute(
+                    select(m.EcommerceSyncJob).where(
+                        m.EcommerceSyncJob.tenant_id == tenant_id,
+                        m.EcommerceSyncJob.connector_id == connector.id,
+                        m.EcommerceSyncJob.status == "running",
+                    )
+                )
+            ).scalar_one_or_none()
+            if running is not None:
+                continue
+            await connectors_svc.run_connector_sync(
+                db, tenant=tenant, connector=connector, kind="products"
+            )
+            ran += 1
+        return {"retried": retried, "synced": ran}
+
+    return await _for_each_tenant(work)
+
+
 JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "scan_low_stock": job_scan_low_stock,
     "scan_payment_due": job_scan_payment_due,
@@ -282,6 +331,8 @@ JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "scan_ai_security_alerts": job_scan_ai_security_alerts,
     "send_weekly_ai_insight_digest": job_send_weekly_ai_insight_digest,
     "process_subscription_renewals": job_process_subscription_renewals,
+    "expire_ecommerce_reservations": job_expire_ecommerce_reservations,
+    "sync_ecommerce_connectors": job_sync_ecommerce_connectors,
 }
 
 

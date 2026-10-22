@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import PageHeader from '../../../components/PageHeader';
 import { api, getAccessToken } from '../../../lib/api';
 import { currencySign, formatWhen, plainLabel } from '../../../lib/format';
 import { AmountField } from '../../../components/AmountField';
@@ -628,11 +629,10 @@ export default function Page() {
 
   return (
     <div className="ai-ui">
-      <h1>Load insights</h1>
-      <p className="muted ai-ui-lead">
-        {aiStatusNote ||
-          'Start with insights. They use this company’s records and do not need a chat provider.'}
-      </p>
+      <PageHeader
+        title="Load insights"
+        subtitle={aiStatusNote || 'Start with insights. They use this company’s records and do not need a chat provider.'}
+      />
       <div className="ai-ui-actions">
         <button aria-label="Load AI insights" onClick={loadInsights}>Load insights</button>
         <button aria-label="Email AI insight digest" onClick={emailInsightDigest} disabled={digestBusy}>
@@ -659,6 +659,7 @@ export default function Page() {
           ))}
         </ul>
       )}
+      {chatAvailable ? (
       <div className="card ai-ui-ask">
         <h2>Ask a question</h2>
         <p className="muted ai-ui-note">Chat stays off until a provider is configured. A blank question is not sent.</p>
@@ -674,6 +675,7 @@ export default function Page() {
           </button>
         </div>
       </div>
+      ) : null}
       <details className="card ai-ui-advanced">
         <summary>Reports</summary>
         <div className="ai-ui-form">

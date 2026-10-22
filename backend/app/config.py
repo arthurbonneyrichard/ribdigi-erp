@@ -98,6 +98,7 @@ class Settings(BaseSettings):
     CELERY_BACKUP_INTERVAL_MINUTES: int = 60
     CELERY_TRIAL_INTERVAL_MINUTES: int = 60
     CELERY_BILLING_INTERVAL_MINUTES: int = 60
+    CELERY_ECOMMERCE_INTERVAL_MINUTES: int = 15
     # SaaS subscription billing (tenants paying for Ribdigi). mock | paystack | flutterwave.
     # mock never charges in production. A live provider charges only with its secret.
     BILLING_PROVIDER: str = "mock"

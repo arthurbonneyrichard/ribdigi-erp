@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import FormModal from '../../../components/FormModal';
+import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
 import { openReceiptPrintWindow } from '../../../lib/posReceiptPrint';
 import { industryLabel } from '../../../lib/industries';
@@ -322,15 +323,10 @@ export default function PrinterSettingsPage() {
   const linked = rows.filter((row) => row.is_enabled);
   return (
     <div className="work print-ui-page">
-      <div className="list-page-head">
-        <div>
-          <h1>Printers</h1>
-          <p className="muted" style={{ margin: '6px 0 0' }}>
-            Link a printer in three steps. The size next to Pay only changes the browser receipt. A paired till agent uses the paper size stored on that printer.
-            {industry ? ` Set up for ${industryLabel(industry)}.` : ''}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Printers"
+        subtitle={`Link a printer in three steps. The size next to Pay only changes the browser receipt. A paired till agent uses the paper size stored on that printer.${industry ? ` Set up for ${industryLabel(industry)}.` : ''}`}
+      />
       {error ? <p className="erp-banner err">{error}</p> : null}
       {notice ? <p className="erp-banner ok">{notice}</p> : null}
       <div className="card">
@@ -426,7 +422,7 @@ export default function PrinterSettingsPage() {
         </label>
       </div>
       <div className="card">
-        <div className="list-page-head">
+        <div className="list-page-head page-head">
           <div>
             <h2 style={{ margin: 0 }}>Printers in use</h2>
             <p className="muted" style={{ margin: '6px 0 0' }}>

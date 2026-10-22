@@ -22,7 +22,7 @@ def test_so_cancel_reason_ui_wired():
     assert "path.includes('/orders/') && path.endsWith('/cancel')" in page
     assert "setSoCancelReason" in page
     assert 'aria-label="Sales order cancel reason"' in page
-    assert "aria-label={`Cancel sales order ${o.id}`}" in page
+    assert "ariaLabel: `Cancel sales order ${o.id}`" in page
 
 
 async def _admin(ac, seed):

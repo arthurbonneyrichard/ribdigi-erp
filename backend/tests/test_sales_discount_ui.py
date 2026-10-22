@@ -13,7 +13,7 @@ def test_sales_discount_ui_wired():
     assert "discount_type: lineDiscountType" in sales
     assert 'placeholder="Line discount"' in sales
     assert 'placeholder="Header discount"' in sales
-    assert "<th>Discount</th>" in sales
+    assert '<th className="col-num">Discount</th>' in sales
     assert "selected.discount_amount" in sales
 
     api_docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")

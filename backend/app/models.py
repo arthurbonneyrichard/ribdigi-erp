@@ -1009,6 +1009,10 @@ class SalesInvoice(Base):
     emailed_to: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    # Hybrid DBs (other-tree migrate) may already have this NOT NULL without a default.
+    credit_limit_overridden: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
 
 
 class SalesInvoiceItem(Base):
@@ -2990,3 +2994,265 @@ class SupportEmailOutbox(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     failed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class EcommerceStorefront(Base):
+    """One built-in storefront per tenant. Catalog publish stays opt-in."""
+
+    __tablename__ = "ecommerce_storefronts"
+    __table_args__ = (UniqueConstraint("tenant_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    is_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    tagline: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    announcement: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    support_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    support_phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    fulfillment_warehouse_id: Mapped[str | None] = mapped_column(
+        ForeignKey("warehouses.id"), nullable=True, index=True
+    )
+    fulfillment_store_id: Mapped[str | None] = mapped_column(
+        ForeignKey("stores.id"), nullable=True, index=True
+    )
+    allow_delivery: Mapped[bool] = mapped_column(Boolean, default=True)
+    allow_pickup: Mapped[bool] = mapped_column(Boolean, default=True)
+    pickup_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    delivery_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    policy_shipping: Mapped[str | None] = mapped_column(Text, nullable=True)
+    policy_returns: Mapped[str | None] = mapped_column(Text, nullable=True)
+    policy_privacy: Mapped[str | None] = mapped_column(Text, nullable=True)
+    logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    banner_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    favicon_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    reservation_minutes: Mapped[int] = mapped_column(Integer, default=30)
+    preview_token: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class EcommerceDomain(Base):
+    """Verified custom hostname. Host headers are never trusted without this row."""
+
+    __tablename__ = "ecommerce_domains"
+    __table_args__ = (
+        UniqueConstraint("hostname", name="uq_ecommerce_domains_hostname"),
+        Index("ix_ecommerce_domains_tenant_status", "tenant_id", "status"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    hostname: Mapped[str] = mapped_column(String(253))
+    status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
+    # pending | verified
+    https_ready: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_primary: Mapped[bool] = mapped_column(Boolean, default=False)
+    redirect_to_id: Mapped[str | None] = mapped_column(
+        ForeignKey("ecommerce_domains.id"), nullable=True
+    )
+    verification_token: Mapped[str] = mapped_column(String(80))
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class EcommerceListing(Base):
+    """Opt-in catalog publication. Products are unpublished until a row is created."""
+
+    __tablename__ = "ecommerce_listings"
+    __table_args__ = (UniqueConstraint("tenant_id", "product_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    is_published: Mapped[bool] = mapped_column(Boolean, default=False)
+    online_price: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    stock_buffer: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    fulfillment_warehouse_id: Mapped[str | None] = mapped_column(
+        ForeignKey("warehouses.id"), nullable=True, index=True
+    )
+    external_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class EcommerceShopper(Base):
+    """Storefront customer. Separate from ERP staff User rows."""
+
+    __tablename__ = "ecommerce_shoppers"
+    __table_args__ = (UniqueConstraint("tenant_id", "email"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    email: Mapped[str] = mapped_column(String(255))
+    password_hash: Mapped[str] = mapped_column(String(255))
+    name: Mapped[str] = mapped_column(String(180))
+    party_id: Mapped[str | None] = mapped_column(ForeignKey("parties.id"), nullable=True)
+    session_token: Mapped[str | None] = mapped_column(String(80), unique=True, nullable=True, index=True)
+    session_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class EcommerceCart(Base):
+    __tablename__ = "ecommerce_carts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    token: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class EcommerceCartItem(Base):
+    __tablename__ = "ecommerce_cart_items"
+    __table_args__ = (UniqueConstraint("cart_id", "product_id", "variant_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    cart_id: Mapped[str] = mapped_column(ForeignKey("ecommerce_carts.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    variant_id: Mapped[str | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3), default=1)
+    unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+
+
+class EcommerceOrder(Base):
+    __tablename__ = "ecommerce_orders"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "order_number"),
+        UniqueConstraint("tenant_id", "tracking_token"),
+        UniqueConstraint("tenant_id", "external_id"),
+        Index("ix_ecommerce_orders_tenant_status", "tenant_id", "status"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    order_number: Mapped[str] = mapped_column(String(40), index=True)
+    tracking_token: Mapped[str] = mapped_column(String(80), index=True)
+    status: Mapped[str] = mapped_column(String(30), default="awaiting_payment", index=True)
+    # awaiting_payment | paid | fulfilled | cancelled | expired
+    fulfillment: Mapped[str] = mapped_column(String(20), default="delivery")
+    guest_name: Mapped[str] = mapped_column(String(180))
+    guest_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    guest_phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    delivery_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tax_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    total_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    currency: Mapped[str] = mapped_column(String(10), default="GHS")
+    party_id: Mapped[str | None] = mapped_column(ForeignKey("parties.id"), nullable=True)
+    sales_invoice_id: Mapped[str | None] = mapped_column(
+        ForeignKey("sales_invoices.id"), nullable=True, index=True
+    )
+    payment_reference: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    payment_provider: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    reserved_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    external_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    warehouse_id: Mapped[str | None] = mapped_column(ForeignKey("warehouses.id"), nullable=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True)
+    shopper_id: Mapped[str | None] = mapped_column(ForeignKey("ecommerce_shoppers.id"), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class EcommerceOrderItem(Base):
+    __tablename__ = "ecommerce_order_items"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    order_id: Mapped[str] = mapped_column(ForeignKey("ecommerce_orders.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    variant_id: Mapped[str | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+
+
+class EcommerceReservation(Base):
+    """Online hold that POS available_qty also subtracts."""
+
+    __tablename__ = "ecommerce_reservations"
+    __table_args__ = (Index("ix_ecommerce_reservations_active", "tenant_id", "status", "warehouse_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    order_id: Mapped[str] = mapped_column(ForeignKey("ecommerce_orders.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    variant_id: Mapped[str | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True)
+    warehouse_id: Mapped[str] = mapped_column(ForeignKey("warehouses.id"), index=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    status: Mapped[str] = mapped_column(String(20), default="active", index=True)
+    # active | released | consumed
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    released_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class EcommerceGateway(Base):
+    """Tenant storefront processor. Separate from Ribdigi subscription billing."""
+
+    __tablename__ = "ecommerce_gateways"
+    __table_args__ = (UniqueConstraint("tenant_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    provider: Mapped[str] = mapped_column(String(40), default="mock")
+    mode: Mapped[str] = mapped_column(String(10), default="test")
+    secret_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    webhook_secret_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    public_key_hint: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    last_test_ok: Mapped[bool] = mapped_column(Boolean, default=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class EcommercePaymentEvent(Base):
+    __tablename__ = "ecommerce_payment_events"
+    __table_args__ = (UniqueConstraint("tenant_id", "provider", "event_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    provider: Mapped[str] = mapped_column(String(40))
+    event_id: Mapped[str] = mapped_column(String(120))
+    order_id: Mapped[str | None] = mapped_column(ForeignKey("ecommerce_orders.id"), nullable=True)
+    payload_digest: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class EcommerceConnector(Base):
+    __tablename__ = "ecommerce_connectors"
+    __table_args__ = (UniqueConstraint("tenant_id", "platform"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    platform: Mapped[str] = mapped_column(String(40))
+    is_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    store_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    credentials_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_sync_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    next_sync_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    last_error: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class EcommerceSyncJob(Base):
+    __tablename__ = "ecommerce_sync_jobs"
+    __table_args__ = (Index("ix_ecommerce_sync_jobs_tenant", "tenant_id", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    connector_id: Mapped[str] = mapped_column(ForeignKey("ecommerce_connectors.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(40))
+    status: Mapped[str] = mapped_column(String(20), default="queued", index=True)
+    # queued | running | succeeded | failed
+    attempt: Mapped[int] = mapped_column(Integer, default=1)
+    stats: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    error: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    next_retry_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

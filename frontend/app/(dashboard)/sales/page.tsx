@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import FormModal from '../../../components/FormModal';
+import PageHeader from '../../../components/PageHeader';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import RowActions, { type RowActionItem } from '../../../components/RowActions';
 import StatusChip from '../../../components/StatusChip';
@@ -1345,23 +1346,20 @@ export default function Page() {
 
   return (
     <div className="sales-desk work sales-ui-page">
-      <header className="sales-desk-head">
-        <div>
-          <h1>Sales</h1>
-          <p className="sales-ui-path">
-            <span>1 Customers</span>
-            <span>2 Quotes</span>
-            <span>3 Orders</span>
-            <span>4 Invoices</span>
-            <span>5 Returns</span>
-          </p>
-          <p className="sales-ui-note">
-            {wholesaleOps
-              ? 'Quotes and orders are not sales until they are invoiced. Coupons and gift cards are codes, not a card charge.'
-              : 'Coupons and gift cards are codes, not a card charge.'}
-          </p>
-        </div>
-      </header>
+      <PageHeader className="sales-desk-head" title="Sales">
+        <p className="sales-ui-path">
+          <span>1 Customers</span>
+          <span>2 Quotes</span>
+          <span>3 Orders</span>
+          <span>4 Invoices</span>
+          <span>5 Returns</span>
+        </p>
+        <p className="sales-ui-note">
+          {wholesaleOps
+            ? 'Quotes and orders are not sales until they are invoiced. Coupons and gift cards are codes, not a card charge.'
+            : 'Coupons and gift cards are codes, not a card charge.'}
+        </p>
+      </PageHeader>
 
       <nav className="sales-toolbar sales-ui-nav" aria-label="Sales workflow">
         {(

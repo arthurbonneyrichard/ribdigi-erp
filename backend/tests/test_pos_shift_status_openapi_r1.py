@@ -35,7 +35,7 @@ def test_pos_shift_status_ui_and_docs():
     assert 'aria-label="POS shift status filter"' in page
     assert 'value="open"' in page
     assert 'value="closed"' in page
-    assert "No shifts for this filter" in page
+    assert "No shifts yet." in page
     assert "Recent shifts" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "POS shift status Query OpenAPI" in agents

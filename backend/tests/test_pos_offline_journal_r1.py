@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "ops" / "print-agent"))
-
-import journal  # noqa: E402
+_JOURNAL = ROOT / "ops" / "print-agent" / "journal.py"
+_SPEC = importlib.util.spec_from_file_location("ribdigi_till_offline_journal", _JOURNAL)
+assert _SPEC and _SPEC.loader
+journal = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(journal)
 
 
 @pytest.fixture

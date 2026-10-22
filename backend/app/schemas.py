@@ -334,6 +334,7 @@ PackageableModuleValue = Annotated[
         "customers",
         "suppliers",
         "printers",
+        "ecommerce",
     ],
     BeforeValidator(coerce_package_code_value),
 ]
@@ -4238,6 +4239,8 @@ JobNameValue = Annotated[
         "retry_due_webhooks",
         "scan_ai_security_alerts",
         "send_weekly_ai_insight_digest",
+        "expire_ecommerce_reservations",
+        "sync_ecommerce_connectors",
     ],
     BeforeValidator(coerce_package_code_value),
 ]
@@ -4778,6 +4781,64 @@ SmtpHostValue = Annotated[
 ]
 
 
+def coerce_website_hostname_value(value: object) -> object:
+    """Pydantic BeforeValidator: hostname or https website URL → host; blank stays blank."""
+    if value is None or not isinstance(value, str):
+        return value
+    raw = value.strip()
+    if not raw:
+        return raw
+    if "://" in raw:
+        from urllib.parse import urlparse
+
+        parsed = urlparse(raw)
+        host = (parsed.hostname or "").lower()
+        local = {"localhost", "127.0.0.1", "testserver", "host.docker.internal"}
+        if parsed.scheme not in {"http", "https"} or not host:
+            return raw
+        if parsed.scheme == "http" and host not in local:
+            return raw
+        raw = host
+    if raw.startswith("www."):
+        raw = raw[4:]
+    return raw.lower().rstrip(".")
+
+
+def validate_website_hostname_value(value: str) -> str:
+    """AfterValidator: public DNS hostname; URL/blank/garbage/reserved Ribdigi host → 422."""
+    if not value:
+        raise ValueError("website must be a hostname or https URL you control")
+    if len(value) > 253:
+        raise ValueError("website must be a hostname or https URL you control")
+    lowered = value.lower()
+    if "://" in lowered or "@" in lowered or any(ch.isspace() for ch in value):
+        raise ValueError("website must be a hostname or https URL you control")
+    if lowered in {
+        "localhost",
+        "127.0.0.1",
+        "ribdigi.com",
+        "www.ribdigi.com",
+        "ribdigihouse.com",
+        "www.ribdigihouse.com",
+        "erp.ribdigihouse.com",
+    } or lowered.endswith((".ribdigi.com", ".ribdigihouse.com")):
+        raise ValueError("website must be a hostname you control, not a Ribdigi host")
+    if not re.fullmatch(
+        r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?",
+        lowered,
+    ):
+        raise ValueError("website must be a hostname or https URL you control")
+    return lowered
+
+
+# Online-store domain link — hostname or https website URL (scheme stripped).
+WebsiteHostnameValue = Annotated[
+    str,
+    BeforeValidator(coerce_website_hostname_value),
+    AfterValidator(validate_website_hostname_value),
+]
+
+
 def coerce_bank_account_number_value(value: object) -> object:
     """Pydantic BeforeValidator: strip; blank stays blank for account_number 422."""
     if value is None:
@@ -5028,6 +5089,67 @@ ProductCategoryLabelValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_product_category_label_value),
+]
+
+
+def validate_storefront_policy_value(value: str) -> str:
+    """AfterValidator: storefront policy body; blank/URL/garbage → 422 (1–4000)."""
+    if not value:
+        raise ValueError("storefront policy must be a non-empty narrative (1–4000 chars)")
+    if len(value) > 4000:
+        raise ValueError("storefront policy must be a non-empty narrative (1–4000 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("storefront policy must be a non-empty narrative (1–4000 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("storefront policy must be a non-empty narrative (1–4000 chars)")
+    return value
+
+
+# Storefront shipping / returns / privacy policy Text; keep ≤4000 at API boundary.
+StorefrontPolicyValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_storefront_policy_value),
+]
+
+
+def validate_catalog_search_value(value: str) -> str:
+    """AfterValidator: public catalog search; blank/URL/garbage → 422 (1–80)."""
+    if not value:
+        raise ValueError("catalog search must be a non-empty query (1–80 chars)")
+    if len(value) > 80:
+        raise ValueError("catalog search must be a non-empty query (1–80 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("catalog search must be a non-empty query (1–80 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("catalog search must be a non-empty query (1–80 chars)")
+    return value
+
+
+# Public GET /storefront/bootstrap Query q; omit → unfiltered; blank/garbage → 422.
+CatalogSearchValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_catalog_search_value),
+]
+
+
+def validate_storefront_secret_token_value(value: str) -> str:
+    """AfterValidator: cart / tracking token; blank/URL/spaces → 422 (8–80)."""
+    if not value or len(value) < 8 or len(value) > 80:
+        raise ValueError("storefront token must be 8–80 characters")
+    if "://" in value or "@" in value or " " in value:
+        raise ValueError("storefront token must be 8–80 characters")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("storefront token must be 8–80 characters")
+    return value
+
+
+# Cart token + order tracking token path/body + optional preview_token Query.
+StorefrontSecretTokenValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_storefront_secret_token_value),
 ]
 
 

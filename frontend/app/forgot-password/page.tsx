@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { api } from '../../lib/api';
 import { useSearchParams } from 'next/navigation';
 import LoginBrandLogo from '../../components/LoginBrandLogo';
+import LoginLegalLinks from '../../components/LoginLegalLinks';
 
 function ForgotPasswordForm() {
   const params = useSearchParams();
@@ -131,6 +132,7 @@ function ForgotPasswordForm() {
             A Ribdigi House Product
           </a>
         </p>
+        <LoginLegalLinks />
       </div>
     </div>
   );

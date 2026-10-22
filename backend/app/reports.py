@@ -24,6 +24,17 @@ def apply_store_scope(stmt, column, store_id: str | None, store_ids: list[str] |
     return stmt
 
 
+def apply_store_scope_or_unassigned(stmt, column, store_id: str | None, store_ids: list[str] | None):
+    """Store filter that also keeps company-wide rows (`column IS NULL`)."""
+    if store_id:
+        return stmt.where(or_(column == store_id, column.is_(None)))
+    if store_ids is not None:
+        if not store_ids:
+            return stmt.where(column.is_(None))
+        return stmt.where(or_(column.in_(store_ids), column.is_(None)))
+    return stmt
+
+
 COMPLETED_SALE_STATUSES = ("posted", "sent", "partial", "paid", "overdue")
 
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import PageHeader from '../../../../components/PageHeader';
 import { api } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
 import { getPrefetched } from '../../../../lib/prefetchCache';
@@ -81,6 +82,14 @@ type TenantRow = {
   branch_count?: number;
   account_status?: string;
   admin_email?: string | null;
+  ecommerce_health?: {
+    entitled?: boolean;
+    storefront_enabled?: boolean;
+    open_orders?: number;
+    domains?: { hostname: string; display_status?: string; https_ready?: boolean }[];
+    connectors?: { platform: string; enabled?: boolean; last_error?: string | null }[];
+    gateway?: { configured?: boolean; provider?: string | null; mode?: string };
+  };
 };
 
 type PackageInfo = {
@@ -658,37 +667,37 @@ export default function PlatformTenantsPage() {
   return (
     <>
       <div className="plat">
-        <header className="plat-hero">
-          <div>
-            <p className="plat-kicker">Software owner</p>
-            <h1>Tenants</h1>
-            <p className="plat-sub">
-              Create a workspace and manage its subscription, stores, and account. Paid self-serve
-              checkout is not live — this page assigns entitlements only.
-            </p>
-          </div>
-          <div className="plat-filters" role="group" aria-label="Tenant status">
-            <input
-              type="search"
-              aria-label="Search tenants"
-              placeholder="Search company or slug"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            {['all', 'active', 'trial', 'grace', 'suspended'].map((s) => (
-              <button
-                key={s}
-                type="button"
-                className={filter === s ? 'plat-chip active' : 'plat-chip'}
-                aria-pressed={filter === s}
-                aria-label={s === 'all' ? 'Tenant status all' : `Tenant status ${s}`}
-                onClick={() => setFilter(s)}
-              >
-                {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
-              </button>
-            ))}
-          </div>
-        </header>
+        <PageHeader
+          className="plat-hero"
+          kicker="Software owner"
+          kickerClassName="plat-kicker"
+          title="Tenants"
+          subtitle="Create a workspace and manage its subscription, stores, and account. Paid self-serve checkout is not live — this page assigns entitlements only."
+          subtitleClassName="plat-sub"
+          actions={
+            <div className="plat-filters" role="group" aria-label="Tenant status">
+              <input
+                type="search"
+                aria-label="Search tenants"
+                placeholder="Search company or slug"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              {['all', 'active', 'trial', 'grace', 'suspended'].map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className={filter === s ? 'plat-chip active' : 'plat-chip'}
+                  aria-pressed={filter === s}
+                  aria-label={s === 'all' ? 'Tenant status all' : `Tenant status ${s}`}
+                  onClick={() => setFilter(s)}
+                >
+                  {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </div>
+          }
+        />
 
         <div className="plat-stats">
           <div className="plat-stat">
@@ -1064,6 +1073,18 @@ export default function PlatformTenantsPage() {
                   Company contact: {selected.email}
                 </span>
               ) : null}
+            </p>
+            <p className="muted" style={{ fontSize: 13, margin: '0 0 12px' }} aria-label="Tenant ecommerce health">
+              Online store:{' '}
+              {selected.ecommerce_health
+                ? `${selected.ecommerce_health.entitled ? 'entitled' : 'not entitled'} · ${
+                    selected.ecommerce_health.storefront_enabled ? 'enabled' : 'disabled'
+                  } · ${(selected.ecommerce_health.domains || [])
+                    .map((d) => `${d.hostname} ${d.display_status || ''}`)
+                    .join(', ') || 'no domain'} · gateway ${
+                    selected.ecommerce_health.gateway?.configured ? 'configured' : 'not configured'
+                  }`
+                : 'health not loaded'}
             </p>
             <div className="plat-stats" style={{ marginBottom: 16 }}>
               <div className="plat-stat">

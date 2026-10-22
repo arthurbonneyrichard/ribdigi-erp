@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import PageHeader from '../../../components/PageHeader';
 import { api, apiFetch, apiOptional } from '../../../lib/api';
 import { getMe, invalidateMeCache } from '../../../lib/meCache';
 import { formatDateTime, formatNumber, formatWhen, plainLabel, rememberFormatPrefs } from '../../../lib/format';
@@ -640,7 +641,7 @@ export default function Page() {
   if (!tenant) {
     return (
       <>
-        <h1>Company</h1>
+        <PageHeader title="Company" subtitle="Company profile could not be loaded." />
         {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
         {loadBusy ? (
           <p className="muted">Loading…</p>
@@ -665,11 +666,10 @@ export default function Page() {
 
   return (
     <div className="company-page">
-      <h1>Company</h1>
-      <p className="muted company-page-lead">
-        Start with the company profile. Email and SMS sit together below it. Logo, print, tax, fiscal year,
-        store allocation, and inactivity timeout are in their own sections.
-      </p>
+      <PageHeader
+        title="Company"
+        subtitle="Start with the company profile. Email and SMS sit together below it. Logo, print, tax, fiscal year, store allocation, and inactivity timeout are in their own sections."
+      />
       {!industryValid && (
         <p className="login-error" role="alert">
           This company&apos;s business type is not recognized. A platform owner must set it to Retail, Hotel,
@@ -892,6 +892,10 @@ export default function Page() {
               placeholder="Website (https://…)"
               aria-label="Company website"
             />
+            <p className="muted" style={{ margin: '6px 0 0' }}>
+              This is the public company URL. Link it for the built-in storefront on{' '}
+              <a href="/ecommerce">Online store</a>.
+            </p>
           </div>
           <div className="company-page-field">
             <label htmlFor="company-contact-person">Company contact person</label>

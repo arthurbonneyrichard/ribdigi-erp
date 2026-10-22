@@ -22,7 +22,7 @@ def test_po_cancel_reason_ui_wired():
     assert "JSON.stringify({ reason })" in page
     assert "setPoCancelReason" in page
     assert 'aria-label="Purchase order cancel reason"' in page
-    assert "aria-label={`Cancel purchase order ${o.id}`}" in page
+    assert "ariaLabel: `Cancel purchase order ${o.id}`" in page
 
 
 async def _admin(ac, seed):

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 
@@ -94,8 +95,7 @@ export default function Page() {
   if (ready && !allowed) {
     return (
       <>
-        <h1>Jobs</h1>
-        <p className="muted">This area is only available to Ribdigi House operators.</p>
+        <PageHeader title="Jobs" subtitle="This area is only available to Ribdigi House operators." />
       </>
     );
   }
@@ -105,11 +105,10 @@ export default function Page() {
 
   return (
     <>
-      <h1>Jobs</h1>
-      <p className="muted">
-        Background job handlers and schedules for Ribdigi House operators.
-        Platform staff can view; roles with platform write can run or enqueue.
-      </p>
+      <PageHeader
+        title="Jobs"
+        subtitle="Background job handlers and schedules for Ribdigi House operators. Platform staff can view; roles with platform write can run or enqueue."
+      />
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 

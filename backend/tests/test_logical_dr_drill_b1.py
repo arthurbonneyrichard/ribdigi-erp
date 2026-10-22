@@ -17,6 +17,7 @@ from sqlalchemy import select
 from app import backup as backup_svc
 from app import models as m
 from tests.conftest import auth_headers
+from tests.ops_evidence import write_ops_evidence
 
 ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE_DIR = Path("/opt/ribdigi/artifacts/dr")
@@ -121,7 +122,6 @@ async def test_logical_dr_drill_end_to_end_with_evidence(
     actions = {row.action for row in audits}
     assert actions >= {"restore_dry_run", "restore_apply", "restore_verify"}
 
-    EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
     evidence = {
         "stage": "23",
         "workstream": "B1",
@@ -136,8 +136,8 @@ async def test_logical_dr_drill_end_to_end_with_evidence(
         "wal_pitr_deferred": True,
         "operator_pitr_drill_executed": False,
     }
-    EVIDENCE_FILE.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
-    loaded = json.loads(EVIDENCE_FILE.read_text(encoding="utf-8"))
+    written = write_ops_evidence(EVIDENCE_FILE, json.dumps(evidence, indent=2) + "\n")
+    loaded = json.loads(written.read_text(encoding="utf-8"))
     assert loaded["passed"] is True
     assert loaded["workstream"] == "B1"
     assert loaded["wal_pitr_deferred"] is True

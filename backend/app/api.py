@@ -418,6 +418,10 @@ api.include_router(restaurant_api_mod.router)
 from app import support_api as support_api_mod
 
 api.include_router(support_api_mod.router)
+from app import ecommerce_api as ecommerce_api_mod
+
+api.include_router(ecommerce_api_mod.staff)
+api.include_router(ecommerce_api_mod.storefront)
 logger = logging.getLogger("ribdigi.api")
 
 
@@ -10610,6 +10614,8 @@ async def pos_search(
             "name": p.name,
             "sku": p.sku,
             "barcode": p.barcode,
+            "category": (getattr(p, "category", None) or "").strip() or None,
+            "category_id": getattr(p, "category_id", None),
             "cost_price": money_json(p.cost_price or 0),
             "selling_price": money_json(p.selling_price or 0),
             "stock_qty": money_json(p.stock_qty or 0),
@@ -10627,6 +10633,8 @@ async def pos_search(
             "name": v.name,
             "sku": v.sku,
             "barcode": v.barcode,
+            "category": (getattr(parent, "category", None) or "").strip() or None if parent is not None else None,
+            "category_id": getattr(parent, "category_id", None) if parent is not None else None,
             "cost_price": money_json(
                 v.cost_price
                 if v.cost_price is not None

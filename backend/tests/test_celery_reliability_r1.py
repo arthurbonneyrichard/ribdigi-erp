@@ -13,6 +13,7 @@ from app.celery_app import celery
 from app import jobs as jobs_svc
 from app.main import app
 from app.rate_limit import rate_limiter
+from tests.ops_evidence import write_ops_evidence
 
 ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE_DIR = Path("/opt/ribdigi/artifacts/ops")
@@ -36,6 +37,8 @@ EXPECTED_HANDLERS = {
     "scan_ai_security_alerts",
     "send_weekly_ai_insight_digest",
     "process_subscription_renewals",
+    "expire_ecommerce_reservations",
+    "sync_ecommerce_connectors",
 }
 
 
@@ -130,7 +133,6 @@ def test_production_readiness_gate_and_evidence():
     assert "test_celery_reliability_r1.py" in pr
     assert "AI nightly" in pr
 
-    EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
     payload = {
         "workstream": "R1",
         "passed": True,
@@ -144,8 +146,8 @@ def test_production_readiness_gate_and_evidence():
         "deep_health": True,
         "jobs_beat_parity": True,
     }
-    EVIDENCE_FILE.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    loaded = json.loads(EVIDENCE_FILE.read_text(encoding="utf-8"))
+    written = write_ops_evidence(EVIDENCE_FILE, json.dumps(payload, indent=2) + "\n")
+    loaded = json.loads(written.read_text(encoding="utf-8"))
     assert loaded["passed"] is True
     assert loaded["live_broker_soak_executed"] is False
     assert loaded["ai_nightly_claimed"] is False

@@ -64,6 +64,30 @@ async def _assert_store(db: AsyncSession, tenant_id: str, store_id: str | None) 
     return store.id
 
 
+async def _assert_store_warehouse_unique(
+    db: AsyncSession,
+    tenant_id: str,
+    store_id: str | None,
+    *,
+    exclude_id: str | None = None,
+) -> None:
+    """A store may have at most one linked warehouse. POS `warehouse_for_store` needs one row."""
+    if not store_id:
+        return
+    stmt = select(m.Warehouse.id).where(
+        m.Warehouse.tenant_id == tenant_id,
+        m.Warehouse.store_id == store_id,
+    )
+    if exclude_id:
+        stmt = stmt.where(m.Warehouse.id != exclude_id)
+    existing = (await db.execute(stmt.limit(1))).scalar_one_or_none()
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="This store already has a warehouse. Unlink the other warehouse first.",
+        )
+
+
 async def get_warehouse(db: AsyncSession, tenant_id: str, warehouse_id: str) -> m.Warehouse:
     row = (
         await db.execute(
@@ -116,11 +140,13 @@ async def create_warehouse(
         raise HTTPException(status_code=409, detail="Warehouse code already in use")
     if capacity is not None and capacity < 0:
         raise HTTPException(status_code=400, detail="capacity must be >= 0")
+    linked_store = await _assert_store(db, tenant_id, store_id)
+    await _assert_store_warehouse_unique(db, tenant_id, linked_store)
     row = m.Warehouse(
         tenant_id=tenant_id,
         name=name_clean,
         code=code_clean,
-        store_id=await _assert_store(db, tenant_id, store_id),
+        store_id=linked_store,
         warehouse_type=_normalize_type(warehouse_type),
         manager_id=await _assert_tenant_user(db, tenant_id, manager_id),
         address=optional_honest_narrative(address, label="warehouse address", max_length=500),
@@ -155,7 +181,9 @@ async def update_warehouse(
     if clear_store:
         row.store_id = None
     elif store_id is not None:
-        row.store_id = await _assert_store(db, tenant_id, store_id)
+        linked_store = await _assert_store(db, tenant_id, store_id)
+        await _assert_store_warehouse_unique(db, tenant_id, linked_store, exclude_id=row.id)
+        row.store_id = linked_store
     if warehouse_type is not None:
         row.warehouse_type = _normalize_type(warehouse_type)
     if clear_manager:

@@ -182,8 +182,13 @@ async def _login_against_head_schema_async(database_name: str) -> None:
 
 def test_alembic_upgrade_head_on_disposable_database():
     _refuse(DISPOSABLE_DB)
-    kwargs = _admin_kwargs()
-    admin = psycopg2.connect(dbname="postgres", **kwargs)
+    try:
+        kwargs = _admin_kwargs()
+        admin = psycopg2.connect(dbname="postgres", **kwargs)
+    except SystemExit as exc:
+        pytest.skip(f"local disposable Postgres is not configured: {exc}")
+    except psycopg2.OperationalError as exc:
+        pytest.skip(f"local disposable Postgres is not available: {exc}")
     admin.autocommit = True
     try:
         with admin.cursor() as cur:
@@ -196,8 +201,11 @@ def test_alembic_upgrade_head_on_disposable_database():
                 "WHERE datname = %s AND pid <> pg_backend_pid()",
                 (DISPOSABLE_DB,),
             )
-            cur.execute(f"DROP DATABASE IF EXISTS {DISPOSABLE_DB}")
-            cur.execute(f"CREATE DATABASE {DISPOSABLE_DB}")
+            try:
+                cur.execute(f"DROP DATABASE IF EXISTS {DISPOSABLE_DB}")
+                cur.execute(f"CREATE DATABASE {DISPOSABLE_DB}")
+            except psycopg2.Error as exc:
+                pytest.skip(f"cannot create disposable database {DISPOSABLE_DB}: {exc}")
     finally:
         admin.close()
 
@@ -295,7 +303,7 @@ def test_alembic_upgrade_head_on_disposable_database():
                 _refuse(current)
                 cur.execute("SELECT version_num FROM alembic_version")
                 versions = [row[0] for row in cur.fetchall()]
-                assert versions == ["20261011_0138"]
+                assert versions == ["20261022_0142"]
                 cur.execute(
                     "SELECT column_name FROM information_schema.columns "
                     "WHERE table_schema = 'public' AND table_name = 'auth_sessions'"

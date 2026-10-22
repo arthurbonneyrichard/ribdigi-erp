@@ -510,7 +510,7 @@ export default function Page() {
       label: 'Expenses',
       val: moneyNum(expenses),
       href: links.expenses || '/expenses',
-      sub: 'Approved expenses',
+      sub: 'Approved expenses, including company-wide',
     },
     {
       cls: 's-net',

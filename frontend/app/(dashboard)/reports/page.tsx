@@ -20,6 +20,8 @@ import { getMe } from '../../../lib/meCache';
 import { tenantIsMultiStore } from '../../../lib/tenantNav';
 import { useStoreContext } from '../../../lib/storeContext';
 import OfflineProvisionalNotice from '../../../components/OfflineProvisionalNotice';
+import EmptyState from '../../../components/EmptyState';
+import PageHeader from '../../../components/PageHeader';
 import './report-ui.css';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -982,10 +984,11 @@ export default function Page() {
 
   return (
     <div className="report-ui-page">
-      <h1 className="no-print">Reports</h1>
-      <p className="muted no-print">
-        Totals for this company. Choose a report, set the dates, then Generate. Export and print use the same filters.
-      </p>
+      <PageHeader
+        className="no-print"
+        title="Reports"
+        subtitle="Totals for this company. Choose a report, set the dates, then Generate. Export and print use the same filters."
+      />
       <div className="no-print">
         <OfflineProvisionalNotice />
       </div>
@@ -1658,9 +1661,7 @@ export default function Page() {
             </p>
           ) : null}
           {!loadingTabs[tab] && tab !== 'schedules' && !data && !error ? (
-            <div className="list-empty">
-              <p>Set the dates and filters you need, then choose Generate.</p>
-            </div>
+            <EmptyState title="Set the dates and filters you need, then choose Generate." />
           ) : null}
 
       {tab === 'summary' && data && (
