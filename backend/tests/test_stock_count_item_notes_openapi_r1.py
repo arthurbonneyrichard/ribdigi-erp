@@ -39,7 +39,7 @@ def test_stock_count_item_notes_schema():
 def test_stock_count_item_notes_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert "countLineNotes" in page
-    assert "(countLineNotes[item.product_id] || '').trim() || null" in page
+    assert "((key ? countLineNotes[key] : '') || '').trim() || null" in page
     assert 'aria-label="Save count lines"' in page
     assert "Stock count line notes" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

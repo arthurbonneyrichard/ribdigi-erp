@@ -148,7 +148,7 @@ def test_money_json_wired_batch26():
 
     res_avail = inspect.getsource(reservations_mod.available_qty)
     assert "on_hand = money_json(row.quantity or 0)" in res_avail
-    assert "return money_json(on_hand - reserved)" in res_avail
+    assert "return money_json(on_hand - reserved - online_held)" in res_avail
 
     ar_src = inspect.getsource(cheques_mod._reverse_customer_payment)
     assert "settlement = money_json(round(amount + discount, 2))" in ar_src

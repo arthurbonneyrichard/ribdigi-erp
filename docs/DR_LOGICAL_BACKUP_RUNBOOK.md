@@ -44,7 +44,51 @@ Infrastructure PITR targets are documented under Stage 26 W1 (`docs/DR_WAL_PITR_
 7. **Audit** — confirm `restore_dry_run` / `restore_apply` / `restore_verify` events under `module=backup`.
 8. **Pass criteria** — `proof.ok == true`, spot-check UI (catalog / customer), no cross-tenant leakage.
 
-Automated coverage: `backend/tests/test_backup_restore_proof_b1.py`, `backend/tests/test_backup_media_b1.py` (Stage 10 B1 media), `backend/tests/test_backup_schedule_b1.py` (Stage 18 B1 schedule / retention / failure notify), `backend/tests/test_logical_dr_drill_b1.py` (Stage 23 B1 commercial MVP drill gate + evidence artifact).
+Automated coverage: `backend/tests/test_backup_restore_proof_b1.py`, `backend/tests/test_backup_media_b1.py` (Stage 10 B1 media), `backend/tests/test_backup_schedule_b1.py` (Stage 18 B1 schedule / retention / failure notify), `backend/tests/test_logical_dr_drill_b1.py` (Stage 23 B1 commercial MVP drill gate + evidence artifact), `backend/tests/test_backup_restore_isolation_r1.py` (2026-10-04 isolated sqlite drill).
+
+## Isolated sqlite drill (2026-10-04)
+
+This drill does not restore production. It uses the pytest in-memory sqlite engine and a temp `BACKUP_DIR`.
+
+From `backend` on system Python 3.12:
+
+```
+python -m pytest tests/test_backup_restore_isolation_r1.py -q --tb=short
+```
+
+Result on 2026-10-04: **2 passed** in 5.44s (exit 0). An earlier run, before the store and failed-store assertions, was 2 passed in 8.25s.
+
+The tests create a store, a warehouse linked to that store, a POS sale, a recorded `mobile_money` tender, a stock movement, and an audit row on one tenant, plus a queued offline conflict, then `POST /api/v1/backup`. Dry-run restore returns `valid` true and `applied` false, with the source company name and store/transaction counts. After corrupting those rows, clearing the warehouse `store_id`, and adding a second queued event, `POST /api/v1/backup/{id}/restore` with `confirm_text` `RESTORE` restores the first tenant's product, stock, sale, payment, movement, store, and warehouse link and keeps `tenant_id`. `POST /backup/{id}/verify` with `sample_limit` 100 returns `proof.ok`. The other tenant's product, invoice, store, company name, and company id stay unchanged. The tenant row itself is not rewritten. The pre-backup audit row remains. Both queued events remain because offline sync events are not in `DATASET_SPECS`; dismissing the first conflict still returns 200. A forced integrity failure returns **409** and does not leave the sentinel product name or sentinel store name committed.
+
+Offline POS stays the only offline surface. This drill does not make the rest of the ERP available offline.
+
+
+## Isolated Postgres restore (2026-10-05) — blocked
+
+Checked 2026-10-05. Postgres is listening on 127.0.0.1:5432. That listener is Docker container `ribdigi-erp-postgres-1`. The only application database is `ribdigi_erp` (plus `postgres`, `template0`, and `template1`). There is no disposable database. `/data/backups` inside `ribdigi-erp-backend-1` is empty. No `.ribbak` archive was found in the production tree. This session did not create a backup, did not restore, and did not read or change rows in `ribdigi_erp`.
+
+The 2026-10-04 sqlite result (2 passed, 5.44s) is not an operator Postgres restore. The green 2026-10-05 full pytest (2855 passed, 1 skipped, ended 2026-10-05T10:09:14Z) does not close this gate. No disposable database was created on `ribdigi-erp-postgres-1`, because that server holds the live local `ribdigi_erp` database.
+
+Prerequisites, all required before a rehearsal starts:
+
+- A Postgres instance that is not `ribdigi-erp-postgres-1` and not a production or staging server.
+- A new empty database on that instance. Do not copy `ribdigi_erp`.
+- A throwaway API process whose `DATABASE_URL` and `BACKUP_DIR` point only at that database and a private backup directory.
+- One `.ribbak` created by that API from tenant data it just wrote. An empty database with no backup is not a restore.
+
+Operator steps:
+
+1. Start the throwaway API against the disposable database only.
+2. Create a tenant, a store, and one queued offline sale on that API.
+3. `POST /api/v1/backup`. Record backup id and checksum.
+4. Corrupt one disposable row.
+5. Dry-run `POST /api/v1/backup/{id}/restore` and confirm `applied` is false.
+6. Apply with `confirm_text` `RESTORE`.
+7. `POST /api/v1/backup/{id}/verify` and confirm the other tenant, if any, is unchanged.
+8. Write backup id, checksum, dry-run, apply, and verify into this runbook. Label the result as a disposable rehearsal, not a production restore.
+
+Do not restore into `ribdigi_erp` or any production or staging data.
+
 
 ## Schedule, retention, and failure alerts (Stage 18 B1)
 
@@ -75,3 +119,7 @@ Automated coverage: `backend/tests/test_backup_restore_proof_b1.py`, `backend/te
 Record date, operator, `backup_id`, checksum, dry-run/apply/verify outcomes, and any mismatches in the ops incident or change log after each quarterly drill.
 
 Stage 23 B1 CI/harness evidence: when `test_logical_dr_drill_b1.py` passes, it writes `/opt/ribdigi/artifacts/dr/stage23_b1_logical_drill.json` with `passed`, `backup_id`, checksum, proof flags, and `wal_pitr_deferred=true`.
+
+## Deleted companies and retained backups
+
+Deleting a company removes its live database rows, uploaded files, and the on-disk logical backup folder for that company. It does **not** erase copies that are already inside an older `.ribbak` archive, an offsite object that was uploaded before the delete, or a Postgres WAL / base-backup window. Those copies age out when backup retention deletes the archive (`retention_count` on the backup schedule) or when the operator's WAL retention expires. Do not tell a customer that a backup copy disappeared at the moment of deletion.

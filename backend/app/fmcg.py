@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from fastapi import HTTPException
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,6 +15,14 @@ from app.honesty import money_json, optional_honest_narrative, require_honest_na
 SCHEME_TYPES = frozenset({"percent", "fixed", "bxgy"})
 VISIT_DAYS = frozenset({"mon", "tue", "wed", "thu", "fri", "sat", "sun"})
 DELIVERY_STATUSES = frozenset({"pending", "delivered", "failed", "skipped"})
+
+
+class FmcgPackConvert(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    product_id: str = Field(min_length=1)
+    from_unit_id: str = Field(min_length=1)
+    quantity: float = Field(gt=0)
 
 
 def _as_date(value: date | datetime | str | None) -> date | None:
@@ -718,4 +727,41 @@ async def list_assignments(
         (a, p.name if p else None, r.code if r else None)
         for a, p, r in rows
     ]
+
+
+async def convert_pack(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    product_id: str,
+    from_unit_id: str,
+    quantity: float,
+) -> dict:
+    """Convert carton/pack/piece quantity into the product stock unit.
+
+    Units must share a root base. This does not move stock.
+    """
+    from app.uom import to_stock_qty
+
+    product = (
+        await db.execute(
+            select(m.Product).where(m.Product.id == product_id, m.Product.tenant_id == tenant_id)
+        )
+    ).scalar_one_or_none()
+    if product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+    qty_base, entered_unit, entered_qty = await to_stock_qty(
+        db,
+        tenant_id=tenant_id,
+        quantity=quantity,
+        from_unit_id=from_unit_id,
+        product=product,
+    )
+    return {
+        "product_id": product.id,
+        "quantity_entered": money_json(entered_qty),
+        "quantity_base": money_json(qty_base),
+        "from_unit_id": entered_unit,
+        "stock_unit_id": product.unit_id,
+    }
 

@@ -1,0 +1,181 @@
+.purchase-ui-page {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.purchase-ui-path,
+.purchase-ui-links,
+.purchase-ui-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  min-width: 0;
+}
+
+.purchase-ui-path {
+  margin: 8px 0 0;
+}
+
+.purchase-ui-links {
+  margin: 6px 0 0;
+}
+
+.purchase-ui-links a,
+.purchase-ui-page .purch-actions a,
+.purchase-ui-page .cat-actions a {
+  color: var(--deep-green, #006B2E);
+}
+
+.purchase-ui-page .cat-table-wrap .table,
+.purchase-ui-page .list-table-wrap .table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 560px;
+  white-space: normal;
+}
+
+.purchase-ui-page td.col-actions,
+.purchase-ui-page td.purch-actions,
+.purchase-ui-page td.cat-actions {
+  width: 8rem;
+  max-width: 8rem;
+  text-align: right;
+  white-space: nowrap;
+  vertical-align: middle;
+  overflow: visible;
+}
+
+.purchase-ui-page .table th.col-num,
+.purchase-ui-page .table td.col-num {
+  width: 6.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.purchase-ui-page .table th.col-status,
+.purchase-ui-page .table td.col-status {
+  width: 6.75rem;
+  white-space: nowrap;
+}
+
+.purchase-ui-page .table th.col-text,
+.purchase-ui-page .table td.col-text {
+  white-space: normal;
+  overflow: visible;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.purchase-ui-page .table th.col-id,
+.purchase-ui-page .table td.col-id {
+  width: 7.5rem;
+}
+
+.purchase-ui-page .erp-row-actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.purchase-ui-actions {
+  margin-bottom: 12px;
+}
+
+.purchase-ui-settings {
+  margin: 0 0 12px;
+  min-width: 0;
+}
+
+.purchase-ui-settings > summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.purchase-ui-page.purch-desk .card,
+.purchase-ui-page .cat-table-wrap,
+.purchase-ui-scroll {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.purchase-ui-lead {
+  margin: 0 0 10px;
+}
+
+.purchase-ui-bills {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+
+.purchase-ui-bill {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  margin: 0;
+}
+
+.purchase-ui-bill a {
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .purchase-ui-page .erp-form-grid,
+  .purchase-ui-page .erp-split,
+  .purchase-ui-page .purch-level-row,
+  .purchase-ui-page .purchase-ui-actions,
+  .purchase-ui-page .cat-toolbar,
+  .purchase-ui-page .purch-filter-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 0;
+  }
+
+  .purchase-ui-page .erp-form-grid > *,
+  .purchase-ui-page input,
+  .purchase-ui-page select,
+  .purchase-ui-page textarea,
+  .purchase-ui-page button,
+  .purchase-ui-page .purch-actions,
+  .purchase-ui-page .cat-actions {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .purchase-ui-page td.purch-actions,
+  .purchase-ui-page td.cat-actions,
+  .purchase-ui-page td.col-actions {
+    white-space: nowrap;
+  }
+
+  .purchase-ui-page .erp-row-actions {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+  }
+
+  .purchase-ui-page {
+    overflow-x: hidden;
+  }
+
+  .purchase-ui-page .erp-form-grid input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  .purchase-ui-page .erp-form-grid select,
+  .purchase-ui-page .erp-form-grid textarea,
+  .purchase-ui-page .erp-form-grid > button,
+  .purchase-ui-page .purchase-ui-actions > button,
+  .purchase-ui-page .cat-toolbar > button,
+  .purchase-ui-page .purch-filter-row > select {
+    width: 100%;
+    min-height: 44px;
+  }
+}

@@ -23,7 +23,8 @@
 13. [Notifications](#13-notifications)
 14. [AI Business Assistant](#14-ai-business-assistant)
 15. [System Settings](#15-system-settings)
-16. [Troubleshooting & FAQs](#16-troubleshooting--faqs)
+16. [Printers and kitchen tickets](#16-printers-and-kitchen-tickets)
+17. [Troubleshooting & FAQs](#17-troubleshooting--faqs)
 
 ---
 
@@ -1188,6 +1189,16 @@ Download the RIBDIGI mobile app for:
 - Receiving push notifications
 
 > **Download:** Available on App Store and Google Play. Search "RIBDIGI ERP".
+
+---
+
+## 16. Printers and kitchen tickets
+
+Company Admins configure destinations under **Settings → Printers**. See `docs/PRINTER_SETUP.md`.
+
+The browser cannot list every OS printer. Use the print dialog, a paired till agent, or a private network printer. Checkout does not wait for hardware; receipt numbers are issued by the server. Reprint does not create a new sale.
+
+Restaurant tenants may set a **prep station** (kitchen or bar) on a category or product. Mixed orders print separate tickets for the same sale, without payment details on prep tickets.
 
 ---
 

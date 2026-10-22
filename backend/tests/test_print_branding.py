@@ -129,12 +129,12 @@ async def test_print_settings_and_invoice_branding(client, db_session, seeded, t
 def test_powered_by_line_uses_brand_green_in_pdf():
     from app.print_branding import build_text_pdf, style_powered_by_line
 
-    assert style_powered_by_line("Powered by RIBDIGI", 8)[2] == (0.290, 0.690, 0.071)
-    assert style_powered_by_line("  Powered by RIBDIGI  ", 8)[2] == (0.290, 0.690, 0.071)
+    assert style_powered_by_line("Powered by RIBDIGI ERP", 8)[2] == (0.290, 0.690, 0.071)
+    assert style_powered_by_line("  Powered by RIBDIGI ERP  ", 8)[2] == (0.290, 0.690, 0.071)
     assert len(style_powered_by_line("Other footer", 8)) == 2
 
     pdf = build_text_pdf(
-        [style_powered_by_line("Powered by RIBDIGI", 8)],
+        [style_powered_by_line("Powered by RIBDIGI ERP", 8)],
         page_width=226.77,
         page_height=400,
         mono=True,

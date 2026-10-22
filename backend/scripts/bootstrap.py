@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -37,6 +38,22 @@ def _print_migration_fingerprint() -> None:
     print(f"bootstrap: RIBDIGI_RELEASE_CHANNEL={channel}")
     print(f"bootstrap: RIBDIGI_BUILD_ID(runtime)={runtime_build}")
     print(f"bootstrap: RIBDIGI_BUILD_ID(image)={build}")
+    stale_ids = {
+        "20261003-live-test-store-scope",
+        "20261008-alembic-single-head-0136",
+        "missing",
+        "unknown",
+        "dev",
+    }
+    if settings.APP_ENV.lower() == "production" and (
+        build in stale_ids or not re.fullmatch(r"[0-9a-f]{12}", build)
+    ):
+        print(
+            "bootstrap: ERROR image build id is not the source git revision "
+            f"({build}). Rebuild the Compose service with no cache.",
+            file=sys.stderr,
+        )
+        sys.exit(7)
     if settings.APP_ENV.lower() == "production" and channel != "production":
         print(
             "bootstrap: ERROR production APP_ENV requires RIBDIGI_RELEASE_CHANNEL=production "

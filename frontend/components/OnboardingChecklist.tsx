@@ -72,7 +72,7 @@ export default function OnboardingChecklist({
     if (!(canManage && data.dismissed && pct < 100)) return null;
     return (
       <div
-        className="card"
+        className="card no-print"
         style={{
           marginBottom: 16,
           display: 'flex',
@@ -100,7 +100,7 @@ export default function OnboardingChecklist({
 
   return (
     <div
-      className="card"
+      className="card no-print"
       style={{ marginBottom: 16, display: 'grid', gap: 10 }}
       data-testid="onboarding-checklist"
     >

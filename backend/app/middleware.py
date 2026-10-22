@@ -11,6 +11,18 @@ from starlette.responses import JSONResponse, Response
 from app.config import settings
 from app.rate_limit import rate_limiter
 
+STOREFRONT_WRITE_PREFIXES = (
+    "/api/v1/storefront/cart",
+    "/api/v1/storefront/checkout",
+    "/api/v1/storefront/payments/webhook",
+)
+
+STOREFRONT_PUBLIC_PREFIXES = (
+    "/api/v1/storefront/bootstrap",
+    "/api/v1/storefront/orders",
+    "/api/v1/storefront/account",
+)
+
 AUTH_PATH_PREFIXES = (
     "/api/v1/auth/login",
     "/api/v1/auth/refresh",
@@ -20,6 +32,8 @@ AUTH_PATH_PREFIXES = (
     "/api/v1/auth/verify-email",
     "/api/v1/auth/resend-verification",
     "/api/v1/tenants",
+    "/api/v1/storefront/account/login",
+    "/api/v1/storefront/account/register",
 )
 
 
@@ -71,9 +85,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         raw = (request.headers.get("x-tenant-id") or "").strip()
         return raw or "anon"
 
-    def _limit_for_path(self, path: str) -> int:
+    def _limit_for_path(self, path: str, method: str = "GET") -> int:
         if any(path.startswith(p) for p in AUTH_PATH_PREFIXES):
             return settings.RATE_LIMIT_AUTH_PER_MINUTE
+        if any(path.startswith(p) for p in STOREFRONT_WRITE_PREFIXES + STOREFRONT_PUBLIC_PREFIXES):
+            return settings.RATE_LIMIT_AUTH_PER_MINUTE
+        if method.upper() in {"GET", "HEAD"}:
+            return settings.RATE_LIMIT_READ_PER_MINUTE
         return settings.RATE_LIMIT_PER_MINUTE
 
     # Kept for unit tests that call the memory path directly
@@ -88,8 +106,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         path = request.url.path
-        limit = self._limit_for_path(path)
-        kind = "auth" if any(path.startswith(p) for p in AUTH_PATH_PREFIXES) else "api"
+        method = request.method.upper()
+        limit = self._limit_for_path(path, method)
+        if any(path.startswith(p) for p in AUTH_PATH_PREFIXES):
+            kind = "auth"
+        elif method in {"GET", "HEAD"}:
+            kind = "read"
+        else:
+            kind = "api"
         key = f"{self._client_ip(request)}:{kind}:{self._tenant_scope(request)}"
         allowed, retry_after, remaining = await rate_limiter.allow(key, limit)
         if not allowed:
@@ -105,13 +129,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     "Retry-After": str(retry_after),
                     "X-RateLimit-Limit": str(limit),
                     "X-RateLimit-Remaining": "0",
-                    "X-RateLimit-Backend": rate_limiter.backend,
                 },
             )
         response = await call_next(request)
         response.headers.setdefault("X-RateLimit-Limit", str(limit))
         response.headers.setdefault("X-RateLimit-Remaining", str(remaining))
-        response.headers.setdefault("X-RateLimit-Backend", rate_limiter.backend)
         return response
 
 

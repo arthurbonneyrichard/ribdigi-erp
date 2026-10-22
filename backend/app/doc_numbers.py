@@ -7,15 +7,39 @@ from datetime import datetime
 from typing import Any
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.honesty import require_honest_narrative
+from app.schema_compat import table_column_names
+
+_IDENT = re.compile(r"^[a-z_][a-z0-9_]*$")
+# POS/SHIFT prefixes are server-locked; clients cannot choose or rewind the series.
+# PO / GRN / supplier-bill prefixes match that lock so create payloads cannot pick numbers.
+LOCKED_SERIES_PREFIXES = {
+    "pos_sale": "POS",
+    "pos_session": "SHIFT",
+    "purchase_order": "PO",
+    "grn": "GRN",
+    "purchase_invoice": "PINV",
+}
 
 _SEQ_RE = re.compile(r"-(\d+)$")
 _PREFIX_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,19}$")
 SERIES_PAD = 4
+# Sales documents print as INV20260001. Other series keep PREFIX-YYYY-NNNN.
+JOINED_SERIES_KINDS = frozenset(
+    {
+        "sales_invoice",
+        "quotation",
+        "sales_order",
+        "sales_return",
+        "credit_note",
+        "customer_payment",
+        "pos_sale",
+    }
+)
 
 # kind -> default prefix + uniqueness model/column (JSON kinds use document_numbering)
 SERIES_KINDS: dict[str, dict[str, Any]] = {
@@ -108,12 +132,17 @@ SERIES_KINDS: dict[str, dict[str, Any]] = {
         "storage": "json",
         "model": m.Transaction,
         "field": "reference",
+        "extra_eq": {"tx_type": "pos_sale"},
+        # Independent series per company when live tables have company_id.
+        "company_scoped": True,
     },
     "pos_session": {
         "default_prefix": "SHIFT",
         "storage": "json",
         "model": m.PosSession,
         "field": "session_number",
+        # UniqueConstraint(tenant_id, session_number) — tenant-wide series.
+        "company_scoped": False,
     },
     "stock_transfer": {
         "default_prefix": "TR",
@@ -160,9 +189,28 @@ def format_daily_number(prefix: str, day: str | None = None, seq: int = 1) -> st
     return f"{prefix}{day_part}-{max(int(seq), 1):03d}"
 
 
-def format_series_number(prefix: str, year: int, seq: int, *, pad: int = SERIES_PAD) -> str:
-    """Build INV-2026-0001 style series numbers."""
-    return f"{prefix}-{int(year)}-{max(int(seq), 1):0{int(pad)}d}"
+def format_series_number(
+    prefix: str, year: int, seq: int, *, pad: int = SERIES_PAD, joined: bool = False
+) -> str:
+    """Build INV-2026-0001, or INV20260001 when joined."""
+    body = f"{max(int(seq), 1):0{int(pad)}d}"
+    if joined:
+        return f"{prefix}{int(year)}{body}"
+    return f"{prefix}-{int(year)}-{body}"
+
+
+def _series_seq(ref: str, prefix: str, year: int) -> int | None:
+    """Sequence from PREFIX-YYYY-NNNN or PREFIXYYYYNNNN."""
+    text = str(ref or "")
+    hyphen = f"{prefix}-{int(year)}-"
+    if text.startswith(hyphen):
+        tail = text[len(hyphen) :]
+        return int(tail) if tail.isdigit() else None
+    joined = f"{prefix}{int(year)}"
+    if text.startswith(joined):
+        tail = text[len(joined) :]
+        return int(tail) if tail.isdigit() else None
+    return None
 
 
 def normalize_prefix(prefix: str | None, *, default: str = "INV") -> str:
@@ -188,7 +236,9 @@ def _json_bucket(tenant: m.Tenant) -> dict:
     return dict(raw) if isinstance(raw, dict) else {}
 
 
-def _read_state(tenant: m.Tenant, kind: str) -> tuple[str, int, int | None]:
+def _read_state(
+    tenant: m.Tenant, kind: str, *, company_id: str | None = None
+) -> tuple[str, int, int | None]:
     meta = SERIES_KINDS[kind]
     default_prefix = meta["default_prefix"]
     if meta["storage"] == "columns":
@@ -197,13 +247,29 @@ def _read_state(tenant: m.Tenant, kind: str) -> tuple[str, int, int | None]:
         year = getattr(tenant, "sales_invoice_number_year", None)
         return prefix, next_seq, year
     bucket = _json_bucket(tenant).get(kind) or {}
+    if not isinstance(bucket, dict):
+        bucket = {}
     prefix = bucket.get("prefix") or default_prefix
     next_seq = int(bucket.get("next") or 1)
     year = bucket.get("year")
+    if company_id:
+        by_co = bucket.get("companies") if isinstance(bucket.get("companies"), dict) else {}
+        scoped = by_co.get(company_id) if isinstance(by_co.get(company_id), dict) else {}
+        if scoped:
+            next_seq = int(scoped.get("next") or next_seq or 1)
+            year = scoped.get("year") if scoped.get("year") is not None else year
     return prefix, next_seq, int(year) if year is not None else None
 
 
-def _write_state(tenant: m.Tenant, kind: str, *, prefix: str, next_seq: int, year: int) -> None:
+def _write_state(
+    tenant: m.Tenant,
+    kind: str,
+    *,
+    prefix: str,
+    next_seq: int,
+    year: int,
+    company_id: str | None = None,
+) -> None:
     meta = SERIES_KINDS[kind]
     if meta["storage"] == "columns":
         tenant.sales_invoice_number_prefix = prefix
@@ -211,29 +277,52 @@ def _write_state(tenant: m.Tenant, kind: str, *, prefix: str, next_seq: int, yea
         tenant.sales_invoice_number_year = year
         return
     data = _json_bucket(tenant)
-    data[kind] = {"prefix": prefix, "next": next_seq, "year": year}
+    bucket = data.get(kind) if isinstance(data.get(kind), dict) else {}
+    bucket = dict(bucket)
+    bucket["prefix"] = prefix
+    bucket["next"] = next_seq
+    bucket["year"] = year
+    if company_id:
+        companies = bucket.get("companies") if isinstance(bucket.get("companies"), dict) else {}
+        companies = dict(companies)
+        companies[company_id] = {"next": next_seq, "year": year}
+        bucket["companies"] = companies
+    data[kind] = bucket
     tenant.document_numbering = data
 
 
-def numbering_settings(tenant: m.Tenant, kind: str, *, as_of: datetime | None = None) -> dict:
+def numbering_settings(
+    tenant: m.Tenant,
+    kind: str,
+    *,
+    as_of: datetime | None = None,
+    company_id: str | None = None,
+) -> dict:
     """Serialize numbering config + next preview for one document kind (no side effects)."""
     if kind not in SERIES_KINDS:
         raise HTTPException(status_code=400, detail=f"Unknown numbering kind: {kind}")
     now = as_of or datetime.utcnow()
     year = now.year
-    raw_prefix, next_seq, stored_year = _read_state(tenant, kind)
-    prefix = normalize_prefix(raw_prefix, default=SERIES_KINDS[kind]["default_prefix"])
+    locked = LOCKED_SERIES_PREFIXES.get(kind)
+    scope = company_id if SERIES_KINDS[kind].get("company_scoped") else None
+    raw_prefix, next_seq, stored_year = _read_state(tenant, kind, company_id=scope)
+    prefix = locked or normalize_prefix(raw_prefix, default=SERIES_KINDS[kind]["default_prefix"])
     if stored_year is not None and int(stored_year) != year:
         next_seq = 1
     next_seq = max(int(next_seq), 1)
+    server_allocated = kind in LOCKED_SERIES_PREFIXES
+    joined = kind in JOINED_SERIES_KINDS
+    pattern = f"{prefix}{{YYYY}}{{NNNN}}" if joined else f"{prefix}-{{YYYY}}-{{NNNN}}"
     return {
         "kind": kind,
         "prefix": prefix,
         "next_number": next_seq,
         "year": year,
         "pad": SERIES_PAD,
-        "pattern": f"{prefix}-{{YYYY}}-{{NNNN}}",
-        "preview": format_series_number(prefix, year, next_seq),
+        "pattern": pattern,
+        "preview": format_series_number(prefix, year, next_seq, joined=joined),
+        "server_allocated": server_allocated,
+        "editable": not server_allocated,
     }
 
 
@@ -255,8 +344,14 @@ def apply_numbering_update(
 ) -> dict:
     if kind not in SERIES_KINDS:
         raise HTTPException(status_code=400, detail=f"Unknown numbering kind: {kind}")
+    locked = LOCKED_SERIES_PREFIXES.get(kind)
+    if locked and kind in ("pos_sale", "pos_session"):
+        raise HTTPException(
+            status_code=400,
+            detail="POS and shift numbers are allocated by the server and cannot be set from the client",
+        )
     year = (as_of or datetime.utcnow()).year
-    clean = normalize_prefix(prefix, default=SERIES_KINDS[kind]["default_prefix"])
+    clean = locked or normalize_prefix(prefix, default=SERIES_KINDS[kind]["default_prefix"])
     _write_state(tenant, kind, prefix=clean, next_seq=max(int(next_number), 1), year=year)
     return numbering_settings(tenant, kind, as_of=as_of)
 
@@ -290,14 +385,44 @@ async def next_daily_number(
     return format_daily_number(prefix, day, seq)
 
 
-async def next_pos_sale_number(db: AsyncSession, tenant_id: str) -> str:
-    """Allocate next POS sale reference from tenant year series (default POS-YYYY-NNNN)."""
-    return await next_series_document_number(db, tenant_id, "pos_sale")
+async def resolve_pos_company_id(
+    db: AsyncSession, tenant_id: str, store_id: str | None = None
+) -> str | None:
+    """Company for POS numbering: store.company_id when present, else tenant default."""
+    if store_id and _IDENT.match(store_id):
+        cols = await table_column_names(db, "stores")
+        if "company_id" in cols:
+            row = (
+                await db.execute(
+                    text(
+                        "SELECT company_id FROM stores WHERE id = :sid AND tenant_id = :tid"
+                    ),
+                    {"sid": store_id, "tid": tenant_id},
+                )
+            ).first()
+            if row and row[0]:
+                return str(row[0])
+    from app.schema_compat import resolve_tenant_company_id
+
+    return await resolve_tenant_company_id(db, tenant_id)
 
 
-async def next_pos_session_number(db: AsyncSession, tenant_id: str) -> str:
-    """Allocate next POS shift session number (default SHIFT-YYYY-NNNN)."""
-    return await next_series_document_number(db, tenant_id, "pos_session")
+async def next_pos_sale_number(
+    db: AsyncSession, tenant_id: str, *, company_id: str | None = None
+) -> str:
+    """Allocate next POS sale reference (POSYYYYNNNN) for this tenant/company."""
+    return await next_series_document_number(
+        db, tenant_id, "pos_sale", company_id=company_id
+    )
+
+
+async def next_pos_session_number(
+    db: AsyncSession, tenant_id: str, *, company_id: str | None = None
+) -> str:
+    """Allocate next POS shift session number (SHIFT-YYYY-NNNN). Unique per tenant."""
+    return await next_series_document_number(
+        db, tenant_id, "pos_session", company_id=company_id
+    )
 
 
 async def next_stock_transfer_number(db: AsyncSession, tenant_id: str) -> str:
@@ -320,39 +445,174 @@ async def next_opening_stock_number(db: AsyncSession, tenant_id: str) -> str:
     return await next_series_document_number(db, tenant_id, "opening_stock")
 
 
-async def next_series_document_number(db: AsyncSession, tenant_id: str, kind: str) -> str:
-    """Allocate next `{prefix}-{YYYY}-{NNNN}` for the given document kind."""
+async def _resolve_series_company_id(
+    db: AsyncSession, tenant_id: str, kind: str, company_id: str | None
+) -> str | None:
+    meta = SERIES_KINDS[kind]
+    if not meta.get("company_scoped"):
+        return None
+    table = meta["model"].__tablename__
+    if not _IDENT.match(table):
+        return None
+    cols = await table_column_names(db, table)
+    if "company_id" not in cols:
+        return None
+    if company_id:
+        return company_id
+    from app.schema_compat import resolve_tenant_company_id
+
+    return await resolve_tenant_company_id(db, tenant_id)
+
+
+async def _series_values(
+    db: AsyncSession,
+    *,
+    table: str,
+    column: str,
+    tenant_id: str,
+    like_prefix: str,
+    company_id: str | None,
+    extra_eq: dict[str, Any] | None,
+) -> list[str]:
+    if not _IDENT.match(table) or not _IDENT.match(column):
+        raise HTTPException(status_code=500, detail="Invalid numbering target")
+    cols = await table_column_names(db, table)
+    if not cols or column not in cols or "tenant_id" not in cols:
+        return []
+    clauses = ["tenant_id = :tid", f"{column} LIKE :pat"]
+    params: dict[str, Any] = {"tid": tenant_id, "pat": f"{like_prefix}%"}
+    if extra_eq:
+        for key, value in extra_eq.items():
+            if key in cols and _IDENT.match(key):
+                clauses.append(f"{key} = :{key}")
+                params[key] = value
+    if company_id and "company_id" in cols:
+        clauses.append("company_id = :cid")
+        params["cid"] = company_id
+    rows = (
+        await db.execute(
+            text(f"SELECT {column} FROM {table} WHERE {' AND '.join(clauses)}"),
+            params,
+        )
+    ).scalars().all()
+    return [str(v) for v in rows if v is not None]
+
+
+async def _series_taken(
+    db: AsyncSession,
+    *,
+    table: str,
+    column: str,
+    tenant_id: str,
+    candidate: str,
+    company_id: str | None,
+    extra_eq: dict[str, Any] | None,
+) -> bool:
+    if not _IDENT.match(table) or not _IDENT.match(column):
+        raise HTTPException(status_code=500, detail="Invalid numbering target")
+    cols = await table_column_names(db, table)
+    if not cols or column not in cols or "tenant_id" not in cols:
+        return False
+    clauses = ["tenant_id = :tid", f"{column} = :num"]
+    params: dict[str, Any] = {"tid": tenant_id, "num": candidate}
+    if extra_eq:
+        for key, value in extra_eq.items():
+            if key in cols and _IDENT.match(key):
+                clauses.append(f"{key} = :{key}")
+                params[key] = value
+    if company_id and "company_id" in cols:
+        clauses.append("company_id = :cid")
+        params["cid"] = company_id
+    found = (
+        await db.execute(
+            text(f"SELECT 1 FROM {table} WHERE {' AND '.join(clauses)} LIMIT 1"),
+            params,
+        )
+    ).first()
+    return found is not None
+
+
+async def next_series_document_number(
+    db: AsyncSession,
+    tenant_id: str,
+    kind: str,
+    *,
+    company_id: str | None = None,
+) -> str:
+    """Allocate the next document number for the given kind.
+
+    Sales kinds join the prefix, year, and sequence (INV20260001). Other kinds
+    stay PREFIX-YYYY-NNNN. POS/SHIFT prefixes are locked. Sequence is advanced
+    under a tenant row lock and skips numbers that already exist so historic
+    documents are preserved.
+    """
     if kind not in SERIES_KINDS:
         raise HTTPException(status_code=400, detail=f"Unknown numbering kind: {kind}")
     meta = SERIES_KINDS[kind]
     model = meta["model"]
     field_name = meta["field"]
-    number_col = getattr(model, field_name)
+    table = model.__tablename__
+    extra_eq = meta.get("extra_eq") if isinstance(meta.get("extra_eq"), dict) else None
 
     tenant = (
         await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id).with_for_update())
     ).scalar_one()
     year = datetime.utcnow().year
-    raw_prefix, next_seq, stored_year = _read_state(tenant, kind)
-    prefix = normalize_prefix(raw_prefix, default=meta["default_prefix"])
+    scope_company = await _resolve_series_company_id(db, tenant_id, kind, company_id)
+    raw_prefix, next_seq, stored_year = _read_state(tenant, kind, company_id=scope_company)
+    prefix = LOCKED_SERIES_PREFIXES.get(kind) or normalize_prefix(
+        raw_prefix, default=meta["default_prefix"]
+    )
     if stored_year is None or int(stored_year) != year:
         next_seq = 1
         stored_year = year
 
+    like_prefixes = [f"{prefix}-{year}-"]
+    joined = kind in JOINED_SERIES_KINDS
+    if joined:
+        like_prefixes.append(f"{prefix}{year}")
+    existing: list[str] = []
+    for like_prefix in like_prefixes:
+        existing.extend(
+            await _series_values(
+                db,
+                table=table,
+                column=field_name,
+                tenant_id=tenant_id,
+                like_prefix=like_prefix,
+                company_id=scope_company,
+                extra_eq=extra_eq,
+            )
+        )
+    existing_max = 0
+    for ref in existing:
+        found = _series_seq(ref, prefix, year)
+        if found:
+            existing_max = max(existing_max, found)
+    next_seq = max(int(next_seq), existing_max + 1, 1)
+
     for _ in range(10_000):
         seq = max(int(next_seq), 1)
-        candidate = format_series_number(prefix, year, seq)
+        candidate = format_series_number(prefix, year, seq, joined=joined)
         next_seq = seq + 1
-        _write_state(tenant, kind, prefix=prefix, next_seq=next_seq, year=year)
-        exists = (
-            await db.execute(
-                select(model.id).where(
-                    model.tenant_id == tenant_id,
-                    number_col == candidate,
-                )
-            )
-        ).scalar_one_or_none()
-        if not exists:
+        _write_state(
+            tenant,
+            kind,
+            prefix=prefix,
+            next_seq=next_seq,
+            year=year,
+            company_id=scope_company,
+        )
+        taken = await _series_taken(
+            db,
+            table=table,
+            column=field_name,
+            tenant_id=tenant_id,
+            candidate=candidate,
+            company_id=scope_company,
+            extra_eq=extra_eq,
+        )
+        if not taken:
             await db.flush()
             return candidate
 

@@ -9,6 +9,7 @@ from app.barcodes import (
     normalize_barcode,
     render_barcode_png,
     render_code128_png,
+    render_qr_png,
     suggest_barcode,
     suggest_barcode_from_sku,
     upca_check_digit,
@@ -90,9 +91,24 @@ def test_label_html_uses_logo_brand_chrome():
         png_data_uri="data:image/png;base64,AA==",
         copies=1,
         symbology="code128",
+        qr_png_data_uri="data:image/png;base64,QR==",
     )
     assert "background: #003d1f" in page
     assert "background: #4ab012" in page
     assert "color: #10211b" in page
+    assert "SKU W-1" in page
+    assert "Widget" in page
+    assert "WIDGET1" in page
+    assert "code128" in page
+    assert "alt=\"qr\"" in page
+    assert "GHS" not in page
+    assert "12.50" not in page
+    assert "Acme" not in page
     assert "#0f172a" not in page
     assert "#0f766e" not in page
+
+
+def test_render_qr_png():
+    png = render_qr_png("WATER-500")
+    assert png[:8] == b"\x89PNG\r\n\x1a\n"
+    assert len(png) > 100

@@ -8,9 +8,9 @@ export const viewport = {
 };
 
 export const metadata = {
+  metadataBase: new URL('https://erp.ribdigihouse.com'),
   title: 'RIBDIGI ERP',
   description: 'One System. Total Business Control. A Ribdigi House Product.',
-  themeColor: '#4AB012',
   applicationName: 'RIBDIGI ERP',
   icons: {
     icon: [

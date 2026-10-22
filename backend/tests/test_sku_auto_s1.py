@@ -52,7 +52,7 @@ async def test_product_and_variant_sku_auto_and_manual(client):
         json={"name": "Large"},
     )
     assert v_auto.status_code == 200, v_auto.text
-    assert v_auto.json()["data"]["sku"].startswith("SKU-")
+    assert v_auto.json()["data"]["sku"].startswith("VAR-")
     assert v_auto.json()["data"]["sku"] != auto_data["sku"]
 
     v_manual = await ac.post(

@@ -50,7 +50,7 @@ def test_honesty_defense_money_docs_and_agents():
     assert "money_json" in standards
     assert "Decimal" in standards
 
-    platform = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
+    platform = (ROOT / "frontend/app/(dashboard)/platform/tenants/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Tenant company name"' in platform
     assert 'aria-label="Tenant currency"' in platform
     assert 'aria-label="Tenant admin email"' in platform

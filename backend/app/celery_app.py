@@ -43,6 +43,12 @@ celery.conf.update(
                 run_every=max(1, int(settings.CELERY_QUOTATION_EXPIRY_INTERVAL_MINUTES)) * 60.0
             ),
         },
+        "scan-batch-expiry": {
+            "task": "app.tasks.scan_batch_expiry",
+            "schedule": schedule(
+                run_every=max(1, int(settings.CELERY_BATCH_EXPIRY_INTERVAL_MINUTES)) * 60.0
+            ),
+        },
         "scan-recurring-expense-due": {
             "task": "app.tasks.scan_recurring_expense_due",
             "schedule": schedule(
@@ -100,6 +106,28 @@ celery.conf.update(
         "send-weekly-ai-insight-digest": {
             "task": "app.tasks.send_weekly_ai_insight_digest",
             "schedule": crontab(minute=0, hour=7, day_of_week="monday"),
+        },
+        "process-subscription-renewals": {
+            "task": "app.tasks.process_subscription_renewals",
+            "schedule": schedule(
+                run_every=max(1, int(settings.CELERY_BILLING_INTERVAL_MINUTES)) * 60.0
+            ),
+        },
+        "expire-ecommerce-reservations": {
+            "task": "app.tasks.expire_ecommerce_reservations",
+            "schedule": schedule(
+                run_every=max(1, int(settings.CELERY_ECOMMERCE_INTERVAL_MINUTES)) * 60.0
+            ),
+        },
+        "sync-ecommerce-connectors": {
+            "task": "app.tasks.sync_ecommerce_connectors",
+            "schedule": schedule(
+                run_every=max(1, int(settings.CELERY_ECOMMERCE_INTERVAL_MINUTES)) * 60.0
+            ),
+        },
+        "deliver-support-outbox": {
+            "task": "app.tasks.deliver_support_outbox",
+            "schedule": schedule(run_every=60.0),
         },
     },
 )

@@ -21,6 +21,8 @@ def test_store_soft_deactivate_ui_wired():
     assert "storeManageFilter" in stores
     assert 'aria-label="Store status filter"' in stores
     assert "managedStores" in stores
+    assert "storeBusy" in stores
+    assert "Creating store" in stores
     sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert "s.is_active !== false" in sales
 

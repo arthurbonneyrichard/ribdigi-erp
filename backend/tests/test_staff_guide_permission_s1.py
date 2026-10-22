@@ -60,6 +60,14 @@ def test_guide_route_checks_staff_guide_permission():
     assert "/staff-guide" in route
     assert "Only a company administrator" not in route
     dash = (ROOT / "frontend/app/(dashboard)/dashboard/page.tsx").read_text(encoding="utf-8")
-    assert "canDownloadStaffGuide" in dash
-    assert "/staff-guide" in dash
+    assert "canDownloadStaffGuide" not in dash
+    assert "/staff-guide" not in dash
+    assert "A Ribdigi House product" in dash
     assert "role === 'company_admin' &&" not in dash
+    company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
+    assert "canDownloadStaffGuide" in company
+    assert "/staff-guide" in company
+    shell = (ROOT / "frontend/components/Shell.tsx").read_text(encoding="utf-8")
+    assert "staff-guide" not in shell
+    assert "Staff User Guide" not in shell
+    assert "Staff user guide" not in shell

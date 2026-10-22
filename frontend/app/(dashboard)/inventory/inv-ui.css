@@ -1,0 +1,218 @@
+/* Inventory screen layout. Prefix inv-ui- only. Brand stays var(--brand) #4AB012. */
+
+.inv-ui-page {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.inv-ui-lead {
+  margin: 0 0 16px;
+  max-width: 70ch;
+}
+
+.inv-ui-nav {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.inv-ui-nav-label {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted, #4d5d56);
+}
+
+.inv-ui-nav-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inv-ui-nav-row button[disabled] {
+  background: var(--brand, #4ab012);
+  color: #fff;
+  border-color: var(--brand, #4ab012);
+}
+
+.inv-ui-more {
+  border: 1px solid var(--line, #d4e5c4);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: var(--sand, #f5f7ec);
+}
+
+.inv-ui-more summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.inv-ui-more .inv-ui-nav-row {
+  margin-top: 8px;
+}
+
+.inv-ui-page .card,
+.inv-ui-page .cat-panel {
+  max-width: 100%;
+  min-width: 0;
+  overflow: visible;
+}
+
+.inv-ui-page .cat-table-wrap,
+.inv-ui-page .list-table-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.inv-ui-page .table {
+  overflow: visible;
+}
+
+.inv-ui-page .list-prod-name,
+.inv-ui-page .inv-ui-name {
+  display: inline;
+  text-transform: none;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  max-width: none;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.inv-ui-page .list-table-wrap .table,
+.inv-ui-page .cat-table-wrap .table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 560px;
+  white-space: normal;
+}
+
+.inv-ui-page .cat-actions,
+.inv-ui-page td.cat-actions,
+.inv-ui-page td.col-actions {
+  width: 8rem;
+  max-width: 8rem;
+  text-align: right;
+  white-space: nowrap;
+  vertical-align: middle;
+  overflow: visible;
+}
+
+.inv-ui-page .cat-actions,
+.inv-ui-page .erp-row-actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.inv-ui-page .table th.col-num,
+.inv-ui-page .table td.col-num {
+  width: 6.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.inv-ui-page .table th.col-id,
+.inv-ui-page .table td.col-id {
+  width: 7.5rem;
+}
+
+.inv-ui-page .cat-actions button,
+.inv-ui-page .erp-row-actions button {
+  white-space: nowrap;
+}
+
+.inv-ui-settings {
+  grid-column: 1 / -1;
+  border: 1px solid var(--line, #d4e5c4);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: var(--mist, #f2f7ec);
+}
+
+.inv-ui-settings summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.inv-ui-settings-grid {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.inv-ui-page .cat-empty p,
+.inv-ui-page .list-empty p {
+  max-width: 62ch;
+}
+
+@media (min-width: 720px) {
+  .inv-ui-settings-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 800px) {
+  .inv-ui-page .erp-form-grid,
+  .inv-ui-page .form-grid,
+  .inv-ui-page .cat-toolbar,
+  .inv-ui-page .list-toolbar,
+  .inv-ui-page .cat-head,
+  .inv-ui-page .list-page-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    min-width: 0;
+  }
+
+  .inv-ui-page .span-2,
+  .inv-ui-page .field {
+    grid-column: 1 / -1;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .inv-ui-page input,
+  .inv-ui-page select,
+  .inv-ui-page textarea,
+  .inv-ui-page button {
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .inv-ui-page input,
+  .inv-ui-page select,
+  .inv-ui-page textarea {
+    width: 100%;
+  }
+
+  .inv-ui-page {
+    overflow-x: hidden;
+  }
+
+  .inv-ui-page input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  .inv-ui-page select,
+  .inv-ui-page textarea,
+  .inv-ui-page .erp-form-grid > button,
+  .inv-ui-page .cat-toolbar > button,
+  .inv-ui-page .list-toolbar > button,
+  .inv-ui-page .cat-head > button,
+  .inv-ui-page .list-page-head > button {
+    min-height: 44px;
+  }
+
+  .inv-ui-page .table input,
+  .inv-ui-page .table select,
+  .inv-ui-page .table button {
+    width: auto;
+    max-width: 100%;
+  }
+}

@@ -76,7 +76,7 @@ def test_honesty_batch35_docs_and_agents():
     )
     assert 'aria-label="Party contact primary"' in contacts
 
-    platform = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
+    platform = (ROOT / "frontend/app/(dashboard)/platform/tenants/page.tsx").read_text(encoding="utf-8")
     assert "Platform feature module ${mod}" in platform
 
     reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")

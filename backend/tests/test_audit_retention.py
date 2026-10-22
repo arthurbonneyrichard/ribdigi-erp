@@ -103,7 +103,10 @@ async def test_cold_archive_copies_aged_rows_and_marks_archived(
     assert again.json()["data"]["archived"] == 0
 
     blocked = await ac.delete(f"/api/v1/audit-logs/{old.id}", headers=headers)
-    assert blocked.status_code == 405
+    # The delete route exists so the id is validated, then reject_mutation
+    # refuses the write. 403 is the block; 405 would mean the route is absent.
+    assert blocked.status_code == 403
+    assert "cannot be edited or deleted" in str(blocked.json().get("detail"))
 
 
 @pytest.mark.asyncio

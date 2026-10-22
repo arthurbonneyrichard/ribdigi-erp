@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pyotp
 import pytest
 
@@ -14,6 +16,18 @@ def test_pct_change():
     assert _pct_change(110, 100) == 10.0
     assert _pct_change(0, 0) is None
     assert _pct_change(5, 0) == 100.0
+
+
+def test_dashboard_product_query_skips_unmigrated_pharmacy_columns():
+    import inspect
+
+    src = inspect.getsource(build_dashboard)
+    assert "select(m.Product).where" not in src
+    assert "table_column_names" in src
+    assert "minimum_stock" in src
+    assert "rx_only = :rx" in src
+    assert "pharmacy_desk" in src
+    assert "awaiting_review" in src
 
 
 async def _super(ac, seed):
@@ -77,6 +91,17 @@ async def test_dashboard_comparisons_top_products_and_alerts(client, db_session,
     # Force low / out of stock product
     seed["p1"].stock_qty = 0
     seed["p1"].reorder_level = 5
+    low_p = m.Product(
+        tenant_id=seed["t1"].id,
+        name="Low Widget",
+        sku="A-LOW",
+        cost_price=1,
+        selling_price=2,
+        stock_qty=2,
+        reorder_level=5,
+        is_active=True,
+    )
+    db_session.add(low_p)
     await db_session.commit()
 
     res = await ac.get("/api/v1/dashboard", headers=admin)
@@ -87,6 +112,20 @@ async def test_dashboard_comparisons_top_products_and_alerts(client, db_session,
     assert data["products"] >= 1
     assert data["out_of_stock"] >= 1
     assert data["low_stock"] >= 1
+    assert data["links"]["sales"] == "/sales"
+    assert data["links"]["low_stock"] == "/inventory?tab=lowstock"
+    assert data["links"]["out_of_stock"] == "/inventory?tab=products&stock=oos"
+    assert data["links"]["customers"] == "/customers"
+    assert data["links"]["expiring"] == "/inventory?tab=expiry"
+    assert data["links"]["credit"] == "/credit"
+    assert data["links"]["ar_total_due"] == "/credit?kind=receivable"
+    assert data["links"]["ap_total_due"] == "/credit?kind=payable"
+    assert "ar_total_due" in data
+    assert "ap_total_due" in data
+    assert "credit_outstanding" in data
+    assert data["credit_outstanding"] == pytest.approx(
+        float(data["ar_total_due"]) + float(data["ap_total_due"])
+    )
     assert "comparisons" in data
     assert data["comparisons"]["sales_today"] >= 100
     assert data["comparisons"]["sales_yesterday"] >= 40
@@ -97,8 +136,65 @@ async def test_dashboard_comparisons_top_products_and_alerts(client, db_session,
     assert data["top_products_by_revenue"]
     assert data["top_products_by_revenue"][0]["product_id"] == seed["p1"].id
     assert data["top_products_by_revenue"][0]["revenue"] >= 140
-    assert data["links"]["sales"] == "/sales"
-    assert data["links"]["low_stock"] == "/reports"
+    assert "gross_profit_7d" in data
+    assert "gross_profit_30d" in data
+    assert data.get("rx_queue") is None
+
+
+def test_dashboard_page_surfaces_load_errors():
+    text = (Path(__file__).resolve().parents[2] / "frontend/app/(dashboard)/dashboard/page.tsx").read_text(
+        encoding="utf-8"
+    )
+    assert "setDashError" in text
+    assert "Retry dashboard" in text
+    assert "api(`/dashboard${qs}`)" in text
+    assert "out_of_stock" in text
+    assert "/inventory?tab=lowstock" in text
+    assert "/inventory?tab=products&stock=oos" in text
+    assert "label: 'Products'" not in text
+    assert "label: 'Low stock'" not in text
+    assert "label: 'Expiring soon'" not in text
+    health = text[text.find("Inventory health") : text.find("Cash flow")]
+    assert "Low stock" in health
+    assert "Out of stock" in health
+    assert "Expiring soon" in health
+    assert "lots expiring within 30 days" in health
+    assert "label: 'Posted returns'" not in text
+    assert "label: 'Suppliers'" not in text
+    assert "label: 'Customers'" not in text
+    assert "label: 'Credit'" not in text
+    assert "ar_total_due" in text
+    assert "ap_total_due" in text
+    assert "credit_outstanding" in text
+    headline = text[text.find("const stats = [") : text.find("const liveIndustry")]
+    assert "label: 'Gross profit'" in headline
+    assert "dash-kpis" in text
+    assert "Batches" not in headline
+    assert "featureCards.length > 0" in text
+    assert "industryHomePath" in text
+    assert "const home = industryHomePath(ind);" in text
+    assert "router.replace(home)" in text
+    home_src = (
+        Path(__file__).resolve().parents[2] / "frontend/lib/industryDashboard.ts"
+    ).read_text(encoding="utf-8")
+    assert "export function industryHomePath" in home_src
+    assert "if (ind === 'hotel') return '/hotel';" in home_src
+    assert "if (ind === 'restaurant') return '/restaurant';" in home_src
+    assert "return '/dashboard';" in home_src
+    assert "Retail operations" not in text
+    assert "label: 'Gross profit'" in text
+    assert "rx_queue" in text
+    assert "aria-label=\"Pharmacy\"" in text
+    assert "New prescription" in text
+    assert "Pharmacy POS" in text
+    assert "/inventory?tab=expiry&when=soon" in text
+    assert "/inventory?tab=expiry&when=expired" in text
+    assert "/prescriptions?holds=quarantine#lot-holds" in text
+    assert "/prescriptions?holds=recall#lot-holds" in text
+    assert "pharmacy_desk?.on_hand_lots" in text
+    assert "Daily sales (7d)" in text
+    assert "Revenue trend (30d)" in text
+    assert "Monthly sales (12 mo)" in text
 
 
 @pytest.mark.asyncio
@@ -110,5 +206,171 @@ async def test_build_dashboard_direct(db_session, seeded):
         "top_products_by_revenue",
         "out_of_stock",
         "expiring_soon",
+        "ar_total_due",
+        "ap_total_due",
+        "credit_outstanding",
         "links",
+        "industry",
+        "industry_home",
+        "industry_features",
     }
+    assert data["credit_outstanding"] == pytest.approx(
+        float(data["ar_total_due"]) + float(data["ap_total_due"])
+    )
+    assert data["industry"] == "retail"
+    assert data["industry_home"] == "/dashboard"
+    assert data["pharmacy_desk"] is None
+    assert isinstance(data["industry_features"], list)
+
+
+@pytest.mark.asyncio
+async def test_pharmacy_dashboard_desk_counts(db_session, seeded):
+    tenant = await db_session.get(m.Tenant, seeded["t1"].id)
+    tenant.industry = "pharmacy"
+    await db_session.commit()
+    data = await build_dashboard(db_session, seeded["t1"].id)
+    desk = data["pharmacy_desk"]
+    assert desk["awaiting_review"] == 0
+    assert desk["ready_to_dispense"] == 0
+    assert desk["partially_dispensed"] == 0
+    assert desk["returns_today"] == 0
+    assert "expired_lots" in desk
+    assert "on_hand_lots" in desk
+    assert "quarantined" in desk
+    assert "recalled" in desk
+    assert "pending_purchase_orders" in desk
+    from datetime import datetime, timedelta
+
+    now = datetime.utcnow()
+    db_session.add_all(
+        [
+            m.ProductBatch(
+                tenant_id=seeded["t1"].id,
+                product_id=seeded["p1"].id,
+                batch_number="DESK-EXP",
+                quantity=2,
+                expiry_date=now - timedelta(days=3),
+            ),
+            m.ProductBatch(
+                tenant_id=seeded["t1"].id,
+                product_id=seeded["p1"].id,
+                batch_number="DESK-SOON",
+                quantity=2,
+                expiry_date=now + timedelta(days=10),
+            ),
+            m.ProductBatch(
+                tenant_id=seeded["t1"].id,
+                product_id=seeded["p1"].id,
+                batch_number="DESK-LATER",
+                quantity=2,
+                expiry_date=now + timedelta(days=90),
+            ),
+        ]
+    )
+    await db_session.commit()
+    after = await build_dashboard(db_session, seeded["t1"].id)
+    desk_after = after["pharmacy_desk"]
+    assert desk_after["expired_lots"] == desk["expired_lots"] + 1
+    assert desk_after["expiring_soon"] == desk["expiring_soon"] + 1
+    assert desk_after["on_hand_lots"] == desk["on_hand_lots"] + 3
+
+
+@pytest.mark.asyncio
+async def test_dashboard_purchases_count_recorded_bills_not_drafts(db_session, seeded):
+    """Headline Purchases is to-date recorded bills plus legacy purchase transactions.
+
+    Draft and cancelled invoices, and unbilled purchase orders, do not count.
+    A bill dated last year still counts: the tile is not a today or month window.
+    """
+    from datetime import datetime, timedelta
+
+    from app.dashboard import RECORDED_PURCHASE_INVOICE_STATUSES
+
+    t1 = seeded["t1"].id
+    t2 = seeded["t2"].id
+    supplier = m.Party(tenant_id=t1, name="Desk Supplier", kind="supplier")
+    other = m.Party(tenant_id=t2, name="Other Supplier", kind="supplier")
+    store_a = m.Store(tenant_id=t1, name="Accra", code="ACC-DASH")
+    store_b = m.Store(tenant_id=t1, name="Tema", code="TEM-DASH")
+    db_session.add_all([supplier, other, store_a, store_b])
+    await db_session.flush()
+
+    old = datetime.utcnow() - timedelta(days=400)
+    db_session.add_all(
+        [
+            m.PurchaseInvoice(
+                tenant_id=t1,
+                supplier_id=supplier.id,
+                invoice_number="PINV-DASH-OLD",
+                status="unpaid",
+                invoice_date=old,
+                subtotal=377.20,
+                total_amount=377.20,
+                paid_amount=0,
+                store_id=store_a.id,
+            ),
+            m.PurchaseInvoice(
+                tenant_id=t1,
+                supplier_id=supplier.id,
+                invoice_number="PINV-DASH-PAID",
+                status="paid",
+                invoice_date=datetime.utcnow(),
+                subtotal=138,
+                total_amount=138,
+                paid_amount=138,
+                store_id=store_b.id,
+            ),
+            m.PurchaseInvoice(
+                tenant_id=t1,
+                supplier_id=supplier.id,
+                invoice_number="PINV-DASH-DRAFT",
+                status="draft",
+                invoice_date=datetime.utcnow(),
+                subtotal=50,
+                total_amount=50,
+                store_id=store_a.id,
+            ),
+            m.PurchaseInvoice(
+                tenant_id=t1,
+                supplier_id=supplier.id,
+                invoice_number="PINV-DASH-CANCEL",
+                status="cancelled",
+                invoice_date=datetime.utcnow(),
+                subtotal=25,
+                total_amount=25,
+                store_id=store_a.id,
+            ),
+            m.PurchaseInvoice(
+                tenant_id=t2,
+                supplier_id=other.id,
+                invoice_number="PINV-DASH-OTHER",
+                status="unpaid",
+                invoice_date=datetime.utcnow(),
+                subtotal=999,
+                total_amount=999,
+            ),
+            m.PurchaseOrder(
+                tenant_id=t1,
+                supplier_id=supplier.id,
+                po_number="PO-DASH-1",
+                status="received",
+                total_amount=943,
+            ),
+            m.Transaction(
+                tenant_id=t1,
+                tx_type="purchase",
+                reference="PUR-DASH-LEGACY",
+                total=10,
+                subtotal=10,
+                tax=0,
+            ),
+        ]
+    )
+    await db_session.commit()
+
+    data = await build_dashboard(db_session, t1)
+    assert set(RECORDED_PURCHASE_INVOICE_STATUSES) == {"unpaid", "partial", "paid", "overdue"}
+    assert data["total_purchases"] == pytest.approx(377.20 + 138 + 10)
+
+    scoped = await build_dashboard(db_session, t1, store_id=store_a.id)
+    assert scoped["total_purchases"] == pytest.approx(377.20)

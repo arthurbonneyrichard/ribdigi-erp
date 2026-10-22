@@ -20,7 +20,7 @@ def test_stock_count_cancel_reason_ui_wired():
     assert "countCancelReason" in inv
     assert "Required before Cancel" in inv
     assert 'aria-label="Stock count cancel reason"' in inv
-    assert "aria-label={`Cancel stock count ${c.id}`}" in inv
+    assert "ariaLabel: `Cancel stock count ${c.id}`" in inv
     assert "Enter a cancel reason before cancelling a stock count" in inv
     assert "JSON.stringify({ reason })" in inv
     assert "setCountCancelReason" in inv

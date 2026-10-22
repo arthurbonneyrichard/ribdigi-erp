@@ -34,7 +34,7 @@ def test_stock_transfer_reject_reason_ui_and_docs():
     assert 'aria-label="Stock transfer reject reason"' in inv
     assert 'aria-label="Stock transfer reject reason"' in stores
     assert "xferRejectReason" in inv
-    assert "aria-label={`Reject stock transfer ${t.id}`}" in inv
+    assert "ariaLabel: `Reject stock transfer ${t.id}`" in inv
     assert "aria-label={`Reject stock transfer ${t.id}`}" in stores
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "StockTransferRejectReasonValue" in agents

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import FormModal from '../../../../components/FormModal';
+import PageHeader from '../../../../components/PageHeader';
 import { api } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
 import { getPrefetched } from '../../../../lib/prefetchCache';
@@ -29,7 +31,6 @@ const PLATFORM_ROLES = [
 export default function PlatformStaffPage() {
   const router = useRouter();
   const [staff, setStaff] = useState<Staff[]>([]);
-  const [appUsers, setAppUsers] = useState<Staff[]>([]);
   const [roles, setRoles] = useState<RoleOpt[]>([]);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -41,10 +42,11 @@ export default function PlatformStaffPage() {
     role: 'platform_support',
     phone: '',
   });
-  const [grantRole, setGrantRole] = useState('platform_support');
   const [busy, setBusy] = useState(false);
+  const [staffAddOpen, setStaffAddOpen] = useState(false);
   const [meRole, setMeRole] = useState('');
-  const [meId, setMeId] = useState('');
+  const [grantUserId, setGrantUserId] = useState('');
+  const [grantRole, setGrantRole] = useState('platform_support');
   const [editingId, setEditingId] = useState('');
   const [editForm, setEditForm] = useState({
     full_name: '',
@@ -58,21 +60,18 @@ export default function PlatformStaffPage() {
 
   async function refresh(options?: { force?: boolean }) {
     const force = Boolean(options?.force);
-    const [me, s, r, a] = await Promise.all([
+    const [me, s, r] = await Promise.all([
       getMe({ force }),
       getPrefetched('/platform/staff', { force }),
       getPrefetched('/platform/roles', { force }),
-      getPrefetched('/platform/app-users', { force }),
     ]);
     if (!PLATFORM_ROLES.includes(me.data?.role)) {
       router.replace('/dashboard');
       return;
     }
     setMeRole(me.data?.role || '');
-    setMeId(String(me.data?.id || '').trim());
     setStaff(s.data || []);
     setRoles((r.data || []).map((x: any) => ({ key: x.key, label: x.label })));
-    setAppUsers(a.data || []);
     setReady(true);
   }
 
@@ -83,6 +82,7 @@ export default function PlatformStaffPage() {
 
   async function createStaff(e: React.FormEvent) {
     e.preventDefault();
+    if (busy) return;
     const fullName = form.full_name.trim();
     const trimmedPassword = form.password.trim();
     if (!fullName) {
@@ -116,6 +116,7 @@ export default function PlatformStaffPage() {
         }),
       });
       setForm({ email: '', full_name: '', password: '', role: 'platform_support', phone: '' });
+      setStaffAddOpen(false);
       const sent = Boolean(r.data?.verification_email?.sent);
       setMessage(
         sent
@@ -252,25 +253,6 @@ export default function PlatformStaffPage() {
     }
   }
 
-  async function grantAccess(row: Staff) {
-    setBusy(true);
-    setError('');
-    setMessage('');
-    try {
-      await api('/platform/staff/grant', {
-        method: 'POST',
-        // trim so Grant dashboard (UuidIdValue user_id) does not 422 on whitespace
-        body: JSON.stringify({ user_id: String(row.id).trim(), role: grantRole }),
-      });
-      setMessage(`Granted software owner dashboard to ${row.full_name}`);
-      await refresh({ force: true });
-    } catch (err: any) {
-      setError(err.message || 'Grant failed');
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function revokeAccess(row: Staff) {
     setBusy(true);
     setError('');
@@ -289,31 +271,6 @@ export default function PlatformStaffPage() {
     }
   }
 
-  async function deleteStaff(row: Staff) {
-    if (meId && row.id === meId) {
-      setError('You cannot delete your own account.');
-      setMessage('');
-      return;
-    }
-    const ok = window.confirm(
-      `Delete ${row.full_name} (${row.email}) permanently?\n\nThis removes the account from the staff directory. This cannot be undone.`
-    );
-    if (!ok) return;
-    setBusy(true);
-    setError('');
-    setMessage('');
-    try {
-      await api(`/platform/staff/${String(row.id).trim()}`, { method: 'DELETE' });
-      if (editingId === row.id) setEditingId('');
-      setMessage(`Deleted ${row.full_name}`);
-      await refresh({ force: true });
-    } catch (err: any) {
-      setError(err.message || 'Delete failed');
-    } finally {
-      setBusy(false);
-    }
-  }
-
   if (!ready && !error) {
     return (
       <>
@@ -325,16 +282,14 @@ export default function PlatformStaffPage() {
   return (
     <>
       <div className="plat">
-        <header className="plat-hero">
-          <div>
-            <p className="plat-kicker">Software owner</p>
-            <h1>Platform staff</h1>
-            <p className="plat-sub">
-              Invite RIBDIGI staff, or grant an existing app user permission to open the software
-              owner dashboard (platform console).
-            </p>
-          </div>
-        </header>
+        <PageHeader
+          className="plat-hero"
+          kicker="Software owner"
+          kickerClassName="plat-kicker"
+          title="Platform staff"
+          subtitle="Invite RIBDIGI staff who open the software owner dashboard."
+          subtitleClassName="plat-sub"
+        />
 
         {error && (
           <p className="login-error" role="alert">
@@ -343,8 +298,18 @@ export default function PlatformStaffPage() {
         )}
         {message && <p className="plat-msg">{message}</p>}
 
-        <div className="plat-panel">
-          <h2>Add staff user</h2>
+        <div style={{ marginBottom: 12 }}>
+          <button type="button" className="list-btn-primary" onClick={() => setStaffAddOpen(true)} aria-label="Add staff user">
+            Add staff user
+          </button>
+        </div>
+        {staffAddOpen ? (
+        <FormModal
+          title="Add staff user"
+          busy={busy}
+          dirty={Boolean(form.full_name.trim() || form.email.trim() || form.password.trim())}
+          onClose={() => setStaffAddOpen(false)}
+        >
           <form className="plat-form" onSubmit={createStaff}>
             <label>
               <span>Full name</span>
@@ -408,74 +373,15 @@ export default function PlatformStaffPage() {
               {busy ? 'Saving…' : 'Create staff'}
             </button>
           </form>
-        </div>
-
-        <div className="plat-panel">
-          <h2>App users → software owner dashboard</h2>
-          <p className="muted" style={{ marginTop: 0 }}>
-            Workspace app users without platform roles. Grant a platform role so they land on the
-            software owner console after login.
-          </p>
-          <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
-            <span>Grant as</span>
-            <select
-              value={grantRole}
-              onChange={(e) => setGrantRole(e.target.value)}
-              disabled={busy}
-              aria-label="Platform grant role"
-            >
-              {roles
-                .filter((r) => r.key !== 'super_admin')
-                .map((r) => (
-                  <option key={r.key} value={r.key}>
-                    {r.label}
-                  </option>
-                ))}
-            </select>
-          </label>
-          {appUsers.length === 0 ? (
-            <p className="muted">No app users without dashboard access on this workspace.</p>
-          ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Current role</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {appUsers.map((u) => (
-                  <tr key={u.id}>
-                    <td className="plat-co">{u.full_name}</td>
-                    <td>{u.email}</td>
-                    <td>
-                      <code>{u.role}</code>
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        disabled={busy || u.is_active === false}
-                        onClick={() => grantAccess(u)}
-                        aria-label="Grant dashboard"
-                      >
-                        Grant dashboard
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+        </FormModal>
+        ) : null}
 
         <div className="plat-panel">
           <h2>Staff directory</h2>
           <p className="muted" style={{ marginTop: 0 }}>
-            The platform owner can edit a staff account, set a new password, or delete the account.
-            Leave the password blank when editing to keep the current one. Deactivate keeps the
-            account; Delete removes it permanently.
+            The platform owner can edit a staff account or set a new password. Leave the password
+            blank when editing to keep the current one. Deactivate keeps the account signed out but
+            listed.
           </p>
           {canEditStaff && editingId ? (
             <form className="plat-form" onSubmit={saveEdit} style={{ marginBottom: 16 }}>
@@ -647,17 +553,6 @@ export default function PlatformStaffPage() {
                           Revoke dashboard
                         </button>
                       )}
-                      {canEditStaff && u.id !== meId && (
-                        <button
-                          type="button"
-                          className="btn-danger"
-                          disabled={busy}
-                          onClick={() => deleteStaff(u)}
-                          aria-label={`Delete platform staff ${u.email}`}
-                        >
-                          Delete
-                        </button>
-                      )}
                     </div>
                   </td>
                 </tr>
@@ -665,6 +560,38 @@ export default function PlatformStaffPage() {
             </tbody>
           </table>
         </div>
+        <form
+          className="card"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setError('');
+            setMessage('');
+            try {
+              await api('/platform/staff/grant', {
+                method: 'POST',
+                body: JSON.stringify({ user_id: grantUserId.trim(), role: grantRole }),
+              });
+              setMessage('Dashboard access granted');
+              await refresh({ force: true });
+            } catch (err: any) {
+              setError(err.message || 'Could not grant access');
+            }
+          }}
+        >
+          <h2>Grant as</h2>
+          <select value={grantUserId} onChange={(e) => setGrantUserId(e.target.value)} aria-label="Grant access user">
+            <option value="">Select user</option>
+            {staff.map((u) => (
+              <option key={u.id} value={u.id}>{u.full_name}</option>
+            ))}
+          </select>
+          <select value={grantRole} onChange={(e) => setGrantRole(e.target.value)} aria-label="Platform grant role">
+            {PLATFORM_ROLES.map((role) => (
+              <option key={role} value={role}>{role}</option>
+            ))}
+          </select>
+          <button type="submit">Grant as</button>
+        </form>
       </div>
     </>
   );

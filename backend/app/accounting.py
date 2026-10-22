@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -23,13 +23,18 @@ DEFAULT_ACCOUNTS = [
     ("2000", "Accounts Payable", "liability", False, False),
     ("2015", "Cheques Payable", "liability", False, False),
     ("2100", "Tax Payable", "liability", False, False),
+    ("2150", "Gift Cards Outstanding", "liability", False, False),
+    ("2160", "Loyalty Points Outstanding", "liability", False, False),
     ("3000", "Owner's Equity", "equity", False, False),
     ("4000", "Sales Revenue", "income", False, False),
     ("4100", "Sales Discounts", "expense", False, False),
     ("4200", "Purchase Discounts Taken", "income", False, False),
     ("4300", "FX Gain/Loss", "income", False, False),
+    ("4400", "Other Income", "income", False, False),
     ("5000", "Cost of Goods Sold", "expense", False, False),
     ("6000", "Operating Expenses", "expense", False, False),
+    ("6100", "Gift Card Promotions", "expense", False, False),
+    ("6110", "Loyalty Promotions", "expense", False, False),
 ]
 
 
@@ -49,6 +54,8 @@ BANK_SETTLEMENT_METHODS = frozenset(
         "credit_card",
         "debit_card",
         "wallet",
+        "mobile_money",
+        "momo",
         "ach",
         "wire",
         "eft",
@@ -90,10 +97,17 @@ def supplier_payment_credit_gl(payment_method: str | None) -> tuple[str, str]:
 
 
 def pos_debit_account_for_payment_method(payment_method: str | None) -> tuple[str, str]:
-    """POS receivable side: cash till, bank (card/etc), cheques clearing, or AR for credit sales."""
-    method = (payment_method or "cash").strip().lower()
+    """POS receivable side: cash till, bank (card/etc), cheques clearing, or AR for credit sales.
+
+    Gift cards and loyalty points are stored value. They debit liability, never till cash.
+    """
+    method = (payment_method or "cash").strip().lower().replace("-", "_").replace(" ", "_")
     if method == "credit":
         return "1100", "AR"
+    if method in {"gift_card", "giftcard"}:
+        return "2150", "Gift Cards Outstanding"
+    if method == "loyalty":
+        return "2160", "Loyalty Points Outstanding"
     return liquid_gl_for_payment_method(method)
 
 
@@ -247,6 +261,16 @@ def fiscal_period_bounds(
         start = _safe_calendar_date(as_of.year - 1, mm, dd)
         end = start_this_year
     return datetime.combine(start, time.min), datetime.combine(end, time.min)
+
+
+def fiscal_year_display_label(fiscal_year_start: str | None, *, as_of: date | None = None) -> str:
+    """Friendly FY label for Company profile (does not replace MM-DD storage)."""
+    start_dt, end_dt = fiscal_period_bounds(fiscal_year_start, as_of=as_of)
+    start = start_dt.date()
+    last = (end_dt - timedelta(seconds=1)).date()
+    if start.month == 1 and start.day == 1:
+        return f"FY {start.year}"
+    return f"FY {start.year}/{str(last.year)[-2:]}"
 
 
 def in_current_fiscal_period(
@@ -945,18 +969,35 @@ async def post_sales_return_refund_journal(
     payment_method: str = "cash",
     liquid_account_id: str | None = None,
 ) -> m.JournalEntry:
-    """Pay out customer credit from a return: Dr AR, Cr cash/bank."""
+    """Pay out customer credit from a return: Dr AR, Cr the tender's own account.
+
+    Gift cards and loyalty credit 2150 / 2160. A client account id cannot move
+    those credits onto till cash or any other account. Any other non-cash tender
+    that resolves to till cash 1000 is rejected.
+    """
     await ensure_default_accounts(db, tenant_id)
     amount = money_json(round(money_json(amount), 2))
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Refund amount must be positive")
-    liquid_code, liquid_label = await resolve_settlement_gl(
-        db,
-        tenant_id,
-        payment_method,
-        liquid_account_id=liquid_account_id,
-        outflow=True,
-    )
+    method = (payment_method or "cash").strip().lower().replace("-", "_").replace(" ", "_")
+    stored_value = method in {"gift_card", "giftcard", "loyalty"}
+    if stored_value:
+        # Same rule as a sale: the liability account is fixed. Ignore a supplied
+        # cash, bank, or other account id instead of posting it.
+        liquid_code, liquid_label = pos_debit_account_for_payment_method(method)
+    else:
+        liquid_code, liquid_label = await resolve_settlement_gl(
+            db,
+            tenant_id,
+            payment_method,
+            liquid_account_id=liquid_account_id,
+            outflow=True,
+        )
+        if liquid_code == "1000" and method != "cash":
+            raise HTTPException(
+                status_code=400,
+                detail="This tender cannot credit till cash",
+            )
     cn = getattr(sales_return, "credit_note_number", None) or sales_return.return_number
     lines = [
         {"account_code": "1100", "debit": amount, "credit": 0, "description": "Clear AR credit for refund"},
@@ -1337,6 +1378,18 @@ async def post_expense_journal(
     user_id: str,
     expense: m.Expense,
 ) -> m.JournalEntry:
+    existing = (
+        await db.execute(
+            select(m.JournalEntry).where(
+                m.JournalEntry.tenant_id == tenant_id,
+                m.JournalEntry.source_type == "expense",
+                m.JournalEntry.source_id == expense.id,
+                m.JournalEntry.status == "posted",
+            )
+        )
+    ).scalar_one_or_none()
+    if existing:
+        return existing
     await ensure_default_accounts(db, tenant_id)
     amount = money_json(expense.amount)
     liquid_code, liquid_label = await resolve_settlement_gl(
@@ -1408,15 +1461,22 @@ async def post_pos_sale_journal(
     lines: list[dict] = []
     debit_sum = 0.0
     for tender in tenders:
-        method = (tender.get("payment_method") or "cash").strip().lower()
+        method = (tender.get("payment_method") or "cash").strip().lower().replace("-", "_").replace(" ", "_")
         part = money_json(round(money_json(tender.get("amount") or 0), 2))
         if part <= 0:
             continue
-        liquid_id = tender.get("liquid_account_id")
+        # Gift cards and loyalty are liability, even if a cash account id is sent.
+        stored_value = method in {"gift_card", "giftcard", "loyalty"}
+        liquid_id = None if stored_value else tender.get("liquid_account_id")
         if liquid_id and method != "credit":
             code, label = await resolve_settlement_gl(
                 db, tenant_id, method, liquid_account_id=liquid_id, outflow=False
             )
+            if code == "1000" and method != "cash":
+                raise HTTPException(
+                    status_code=400,
+                    detail="This tender cannot debit till cash",
+                )
         else:
             code, label = pos_debit_account_for_payment_method(method)
         lines.append(
@@ -1476,6 +1536,7 @@ async def trial_balance(
     as_of: datetime | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    limit_store_ids: list[str] | None = None,
 ) -> dict:
     """Trial balance (BR-10.6 / BR-14.5).
 
@@ -1493,7 +1554,7 @@ async def trial_balance(
     ).scalars().all()
 
     store_ids = await _pnl_store_ids(
-        db, tenant_id, store_id=store_id, branch_id=branch_id
+        db, tenant_id, store_id=store_id, branch_id=branch_id, limit_store_ids=limit_store_ids
     )
     location_filter = store_ids is not None
     effective_as_of = as_of
@@ -1584,6 +1645,7 @@ async def _pnl_store_ids(
     *,
     store_id: str | None,
     branch_id: str | None,
+    limit_store_ids: list[str] | None = None,
 ) -> list[str] | None:
     """Resolve store ids for location-filtered P&L; None means no location filter."""
     if store_id:
@@ -1601,6 +1663,15 @@ async def _pnl_store_ids(
             raise HTTPException(
                 status_code=400,
                 detail="store_id is not in the requested branch",
+            )
+        if limit_store_ids is not None and store.id not in set(limit_store_ids):
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "STORE_ACCESS_DENIED",
+                    "message": "You are not assigned to this store",
+                    "store_id": store.id,
+                },
             )
         return [store.id]
     if branch_id:
@@ -1622,7 +1693,13 @@ async def _pnl_store_ids(
                 )
             )
         ).scalars().all()
-        return list(rows)
+        ids = list(rows)
+        if limit_store_ids is not None:
+            allow = set(limit_store_ids)
+            ids = [sid for sid in ids if sid in allow]
+        return ids
+    if limit_store_ids is not None:
+        return list(limit_store_ids)
     return None
 
 
@@ -1784,6 +1861,7 @@ async def profit_and_loss(
     to_date: datetime | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    limit_store_ids: list[str] | None = None,
 ) -> dict:
     """P&L with revenue, COGS (5000), gross profit, and operating expenses (BR-10.6 / BR-14.5).
 
@@ -1793,7 +1871,7 @@ async def profit_and_loss(
     attributable to the store(s); unattributable journals are excluded.
     """
     store_ids = await _pnl_store_ids(
-        db, tenant_id, store_id=store_id, branch_id=branch_id
+        db, tenant_id, store_id=store_id, branch_id=branch_id, limit_store_ids=limit_store_ids
     )
     use_journals = bool(from_date or to_date or store_ids is not None)
 
@@ -1903,3 +1981,81 @@ async def profit_and_loss(
         branch_id=branch_id,
         mode="journals",
     )
+
+
+async def account_statement(
+    db: AsyncSession,
+    tenant_id: str,
+    account_id: str,
+    *,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+) -> dict:
+    """Ledger statement for one CoA account from posted journals (not hardcoded)."""
+    await ensure_default_accounts(db, tenant_id)
+    account = (
+        await db.execute(
+            select(m.Account).where(
+                m.Account.id == account_id,
+                m.Account.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    stmt = (
+        select(m.JournalEntryLine, m.JournalEntry)
+        .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
+        .where(
+            m.JournalEntryLine.tenant_id == tenant_id,
+            m.JournalEntry.tenant_id == tenant_id,
+            m.JournalEntryLine.account_id == account.id,
+            m.JournalEntry.status == "posted",
+        )
+        .order_by(m.JournalEntry.entry_date.asc(), m.JournalEntry.created_at.asc())
+    )
+    rows = (await db.execute(stmt)).all()
+    opening = 0.0
+    lines_out: list[dict] = []
+    running = 0.0
+    for line, entry in rows:
+        delta = _signed_balance_delta(
+            account.account_type,
+            money_json(line.debit),
+            money_json(line.credit),
+        )
+        when = entry.entry_date
+        if from_date and when < from_date:
+            opening = money_json(round(opening + delta, 2))
+            continue
+        if to_date and when > to_date:
+            continue
+        running = money_json(round((opening if not lines_out else running) + delta, 2))
+        if not lines_out:
+            running = money_json(round(opening + delta, 2))
+        lines_out.append(
+            {
+                "date": when,
+                "entry_number": entry.entry_number,
+                "journal_entry_id": entry.id,
+                "source_type": entry.source_type,
+                "description": line.description or entry.description,
+                "debit": money_json(line.debit),
+                "credit": money_json(line.credit),
+                "balance": running,
+            }
+        )
+    if not lines_out:
+        running = money_json(opening)
+    return {
+        "account_id": account.id,
+        "code": account.code,
+        "name": account.name,
+        "account_type": account.account_type,
+        "opening_balance": money_json(opening),
+        "closing_balance": money_json(running),
+        "from_date": from_date,
+        "to_date": to_date,
+        "lines": lines_out,
+    }

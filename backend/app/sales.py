@@ -177,6 +177,9 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
         "reverse_charge_tax": money_json(getattr(invoice, "reverse_charge_tax", 0) or 0),
         "is_reverse_charge": bool(getattr(invoice, "is_reverse_charge", False)),
         "discount_amount": money_json(invoice.discount_amount),
+        "discount_type": getattr(invoice, "discount_type", None) or "fixed",
+        "discount_percent": money_json(getattr(invoice, "discount_percent", None) or 0),
+        "coupon_id": getattr(invoice, "coupon_id", None),
         "total_amount": money_json(invoice.total_amount),
         "paid_amount": money_json(invoice.paid_amount),
         "balance_due": balance_due,
@@ -188,6 +191,7 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
         "due_date": invoice.due_date,
         "emailed_at": invoice.emailed_at,
         "emailed_to": invoice.emailed_to,
+        "sales_channel": getattr(invoice, "sales_channel", None) or "retail",
         "created_at": invoice.created_at,
         "days_overdue": overdue_days if status == "overdue" else 0,
         "can_print": status in SALES_INVOICE_BILLED,
@@ -204,6 +208,8 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
                 "tax_rate": money_json(i.tax_rate),
                 "tax_supply_class": getattr(i, "tax_supply_class", None) or "standard",
                 "discount": money_json(i.discount),
+                "discount_type": getattr(i, "discount_type", None) or "fixed",
+                "discount_percent": money_json(getattr(i, "discount_percent", None) or 0),
                 "line_subtotal": money_json(getattr(i, "line_subtotal", None) or 0),
                 "line_tax": money_json(_line_tax_value(i)),
                 "is_reverse_charge": bool(getattr(i, "is_reverse_charge", False)),
@@ -291,15 +297,24 @@ async def create_sales_invoice(
     customer_id: str,
     items: list[dict],
     discount_amount: float = 0,
+    discount_type: str | None = "fixed",
+    discount_percent: float = 0,
     notes: str | None = None,
     store_id: str | None = None,
     currency: str | None = None,
     exchange_rate: float | None = None,
     is_reverse_charge: bool = False,
+    coupon_code: str | None = None,
+    sales_channel: str | None = None,
 ) -> m.SalesInvoice:
     if not items:
         raise HTTPException(status_code=400, detail="Invoice requires at least one line item")
     await require_active_customer(db, tenant_id, customer_id)
+    from app.trade import assert_moq, resolve_document_channel
+
+    channel = await resolve_document_channel(
+        db, tenant_id=tenant_id, requested=sales_channel, source="invoice"
+    )
 
     from app.fx import resolve_rate
 
@@ -310,9 +325,15 @@ async def create_sales_invoice(
         from app import stores as stores_svc
 
         store = await stores_svc.require_active_store(db, tenant_id, store_id)
+        from app import store_access as store_access_svc
+
+        await store_access_svc.assert_store_access(
+            db, tenant_id=tenant_id, user_id=user_id, store_id=store.id
+        )
         resolved_store_id = store.id
 
     from app.uom import resolve_line_unit
+    from app.sale_discounts import resolve_discount
 
     header_rc = bool(is_reverse_charge)
     subtotal = 0.0
@@ -321,15 +342,16 @@ async def create_sales_invoice(
     prepared: list[tuple[dict, float]] = []
     for item in items:
         product, variant, unit_price = await resolve_sale_line(
-            db, tenant_id, item, customer_id=customer_id
+            db, tenant_id, item, customer_id=customer_id, sales_channel=channel
         )
-        unit_id, qty, _qty_base = await resolve_line_unit(
+        unit_id, qty, qty_base = await resolve_line_unit(
             db,
             tenant_id=tenant_id,
             product=product,
             unit_id=item.get("unit_id"),
             quantity=money_json(item["quantity"]),
         )
+        assert_moq(product, qty_base or qty, channel)
         explicit = item.get("tax_rate")
         if explicit is not None:
             spec = await resolve_product_tax(
@@ -338,16 +360,15 @@ async def create_sales_invoice(
         else:
             spec = await resolve_product_tax(db, tenant_id, product, explicit_rate=None)
         line_amount = qty * money_json(unit_price)
-        breakdown = spec.compute_breakdown(line_amount)
-        line_sub = money_json(breakdown["net"])
-        line_tax = money_json(breakdown["tax"])
-        line_is_rc = header_rc or bool(spec.is_reverse_charge)
-        # Customer-charged line: exclude tax when reverse charge (header or rate).
-        if line_is_rc:
-            line_total = line_sub
-        else:
-            line_total = money_json(breakdown["gross"])
+        line_amount = money_json(round(line_amount, 2))
         discount = money_json(item.get("discount") or 0)
+        discount, line_disc_type, line_disc_pct = resolve_discount(
+            base_amount=line_amount,
+            discount=discount,
+            discount_type=item.get("discount_type") or "fixed",
+            discount_percent=item.get("discount_percent") or 0,
+            label="Line discount",
+        )
         if discount <= 0:
             try:
                 from app import fmcg as fmcg_svc
@@ -365,9 +386,19 @@ async def create_sales_invoice(
                     )
                     if scheme_disc > 0:
                         discount = money_json(min(scheme_disc, line_amount))
+                        line_disc_type = "fixed"
+                        line_disc_pct = 0
             except Exception:
                 pass
-        line_total = max(line_total - discount, 0)
+        taxable_base = money_json(round(line_amount - discount, 2))
+        breakdown = spec.compute_breakdown(taxable_base)
+        line_sub = money_json(breakdown["net"])
+        line_tax = money_json(breakdown["tax"])
+        line_is_rc = header_rc or bool(spec.is_reverse_charge)
+        if line_is_rc:
+            line_total = line_sub
+        else:
+            line_total = money_json(breakdown["gross"])
         subtotal += line_sub
         if line_is_rc:
             reverse_charge_tax += line_tax
@@ -382,6 +413,8 @@ async def create_sales_invoice(
                     "unit_id": unit_id,
                     "unit_price": unit_price,
                     "discount": discount,
+                    "discount_type": line_disc_type,
+                    "discount_percent": line_disc_pct,
                     "tax_rate": spec.rate_pct,
                     "tax_supply_class": spec.supply_class,
                     "line_subtotal": line_sub,
@@ -393,8 +426,39 @@ async def create_sales_invoice(
             )
         )
 
-    discount_amount = money_json(discount_amount or 0)
-    total = max(subtotal + tax_total - discount_amount, 0)
+    header_base = money_json(round(subtotal + tax_total, 2))
+    coupon_id = None
+    coupon_meta = None
+    if coupon_code and str(coupon_code).strip():
+        from app import coupons as coupons_svc
+
+        product_ids = [p[0]["product_id"] for p in prepared]
+        cat_ids = []
+        for p, _lt in prepared:
+            prod = await db.get(m.Product, p["product_id"])
+            if prod and prod.category_id:
+                cat_ids.append(prod.category_id)
+        coupon_meta = await coupons_svc.apply_coupon(
+            db,
+            tenant_id=tenant_id,
+            code=coupon_code,
+            header_base=header_base,
+            product_ids=product_ids,
+            category_ids=cat_ids,
+            customer_id=customer_id,
+        )
+        discount_amount = coupon_meta["discount_amount"]
+        discount_type = coupon_meta["discount_type"]
+        discount_percent = coupon_meta["discount_percent"]
+        coupon_id = coupon_meta["coupon_id"]
+    discount_amount, header_disc_type, header_disc_pct = resolve_discount(
+        base_amount=header_base,
+        discount=discount_amount or 0,
+        discount_type=discount_type,
+        discount_percent=discount_percent or 0,
+        label="Sale discount",
+    )
+    total = max(header_base - discount_amount, 0)
 
     invoice = m.SalesInvoice(
         tenant_id=tenant_id,
@@ -406,6 +470,8 @@ async def create_sales_invoice(
         reverse_charge_tax=money_json(round(reverse_charge_tax, 2)),
         is_reverse_charge=header_rc,
         discount_amount=discount_amount,
+        discount_type=header_disc_type,
+        discount_percent=header_disc_pct,
         total_amount=total,
         paid_amount=0,
         currency=cur,
@@ -413,6 +479,8 @@ async def create_sales_invoice(
         notes=optional_honest_narrative(notes, label="sales invoice notes"),
         created_by=user_id,
         store_id=resolved_store_id,
+        coupon_id=coupon_id,
+        sales_channel=channel,
     )
     db.add(invoice)
     await db.flush()
@@ -430,12 +498,28 @@ async def create_sales_invoice(
                 tax_rate=item.get("tax_rate", 0),
                 tax_supply_class=item.get("tax_supply_class") or "standard",
                 discount=item.get("discount", 0),
+                discount_type=item.get("discount_type") or "fixed",
+                discount_percent=item.get("discount_percent") or 0,
                 line_subtotal=item.get("line_subtotal") or 0,
                 line_tax=item.get("line_tax") or 0,
                 is_reverse_charge=bool(item.get("is_reverse_charge")),
                 tax_components=item.get("tax_components"),
                 line_total=line_total,
             )
+        )
+
+    if coupon_meta:
+        from app import coupons as coupons_svc
+
+        await coupons_svc.record_redemption(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            coupon_id=coupon_meta["coupon_id"],
+            amount=discount_amount,
+            customer_id=customer_id,
+            source_type="sales_invoice",
+            source_id=invoice.id,
         )
 
     db.add(
@@ -449,6 +533,115 @@ async def create_sales_invoice(
                 "invoice_number": invoice.invoice_number,
                 "total": money_json(invoice.total_amount),
                 "is_reverse_charge": header_rc,
+            },
+        )
+    )
+    return invoice
+
+
+async def open_ar_from_pos_sale(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    customer: m.Party,
+    tx: m.Transaction,
+    priced_items: list[dict],
+    subtotal: float,
+    tax_amount: float,
+    total: float,
+    paid_amount: float,
+    cart_discount: float = 0,
+    cart_disc_type: str = "fixed",
+    cart_disc_pct: float = 0,
+    coupon_id: str | None = None,
+    store_id: str | None = None,
+) -> m.SalesInvoice:
+    """Open the existing AR invoice for a POS on-account tender.
+
+    Does not post a second sales journal or move stock — POS already did both.
+    Does not change ``customer.balance``; the POS path increments it by the credit tender.
+    """
+    from app.credit import default_due_date, party_terms_days
+    from app.doc_numbers import next_sales_invoice_number
+    from app.fx import resolve_rate
+
+    invoice_total = money_json(round(money_json(total or 0), 2))
+    collected = money_json(round(min(money_json(paid_amount or 0), invoice_total), 2))
+    if invoice_total <= 0 or collected + 1e-9 >= invoice_total:
+        raise HTTPException(status_code=400, detail="POS credit invoice requires an outstanding balance")
+    lines = [row for row in (priced_items or []) if row.get("product_id")]
+    if not lines:
+        raise HTTPException(status_code=400, detail="POS credit invoice requires at least one product line")
+
+    tenant = await db.get(m.Tenant, tenant_id)
+    cur, rate = await resolve_rate(
+        db, tenant_id, getattr(tenant, "currency", None) if tenant else None
+    )
+    now = datetime.utcnow()
+    invoice = m.SalesInvoice(
+        tenant_id=tenant_id,
+        invoice_number=await next_sales_invoice_number(db, tenant_id),
+        customer_id=customer.id,
+        status="posted",
+        subtotal=money_json(subtotal),
+        tax_amount=money_json(tax_amount),
+        discount_amount=money_json(cart_discount),
+        discount_type=cart_disc_type or "fixed",
+        discount_percent=money_json(cart_disc_pct or 0),
+        total_amount=invoice_total,
+        paid_amount=collected,
+        currency=cur,
+        exchange_rate=rate,
+        notes=optional_honest_narrative(
+            f"POS {tx.reference}", label="sales invoice notes"
+        ),
+        created_by=user_id,
+        store_id=store_id,
+        posted_at=now,
+        due_date=default_due_date(now, party_terms_days(customer)),
+        coupon_id=coupon_id,
+    )
+    db.add(invoice)
+    await db.flush()
+    for item in lines:
+        db.add(
+            m.SalesInvoiceItem(
+                tenant_id=tenant_id,
+                sales_invoice_id=invoice.id,
+                product_id=item["product_id"],
+                variant_id=item.get("variant_id"),
+                quantity=money_json(item.get("quantity") or 0),
+                unit_id=item.get("unit_id"),
+                unit_price=money_json(item.get("unit_price") or 0),
+                tax_rate=money_json(item.get("tax_rate") or 0),
+                tax_supply_class=item.get("tax_supply_class") or "standard",
+                discount=money_json(item.get("discount") or 0),
+                discount_type=item.get("discount_type") or "fixed",
+                discount_percent=money_json(item.get("discount_percent") or 0),
+                line_subtotal=money_json(item.get("line_subtotal") or 0),
+                line_tax=money_json(item.get("line_tax") or 0),
+                is_reverse_charge=bool(item.get("is_reverse_charge")),
+                tax_components=item.get("tax_components"),
+                line_total=money_json(item.get("line_total") or 0),
+            )
+        )
+    apply_invoice_status(invoice, leave_draft=True, as_of=now)
+    invoice.updated_at = now
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="invoice_created",
+            entity="sales_invoice",
+            entity_id=invoice.id,
+            details={
+                "invoice_number": invoice.invoice_number,
+                "total": money_json(invoice.total_amount),
+                "paid_amount": money_json(invoice.paid_amount),
+                "source": "pos_sale",
+                "transaction_id": tx.id,
+                "reference": tx.reference,
             },
         )
     )
@@ -510,7 +703,24 @@ async def post_sales_invoice(
             db, tenant_id=tenant_id, order_id=invoice.sales_order_id
         )
 
+    fulfilled_left: dict[str, float] = {}
+    if invoice.sales_order_id:
+        from app.sales_docs import list_order_items
+
+        for line in await list_order_items(db, tenant_id, invoice.sales_order_id):
+            pid = line.product_id
+            fulfilled_left[pid] = money_json(
+                fulfilled_left.get(pid, 0) + money_json(getattr(line, "qty_fulfilled", 0) or 0)
+            )
+
     for item in items:
+        qty = money_json(item.quantity)
+        already = money_json(fulfilled_left.get(item.product_id, 0))
+        skip = min(qty, already)
+        fulfilled_left[item.product_id] = money_json(already - skip)
+        issue_qty = money_json(qty - skip)
+        if issue_qty <= 1e-9:
+            continue
         if warehouse_id:
             await allocate_unlocated_stock(
                 db,
@@ -523,7 +733,7 @@ async def post_sales_invoice(
             tenant_id=tenant_id,
             user_id=user_id,
             product_id=item.product_id,
-            quantity=money_json(item.quantity),
+            quantity=money_json(item.quantity) if skip <= 1e-9 else issue_qty,
             unit_id=item.unit_id,
             notes=f"Invoice {invoice.invoice_number}",
             variant_id=item.variant_id,
@@ -611,8 +821,7 @@ async def post_sales_invoice(
             },
         )
     )
-    # Transient flag for API response (not persisted)
-    invoice.credit_limit_overridden = bool(override_info)  # type: ignore[attr-defined]
+    invoice.credit_limit_overridden = bool(override_info)
     return invoice
 
 

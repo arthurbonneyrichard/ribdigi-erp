@@ -16,14 +16,155 @@ DEFAULT_FOOTER_INVOICE = "Thank you for your business."
 DEFAULT_FOOTER_RECEIPT = "Thank you"
 # Logo leaf / CSS --brand (#4AB012) as PDF device RGB (0–1).
 BRAND_GREEN_RGB: tuple[float, float, float] = (0.290, 0.690, 0.071)
-POWERED_BY_RIBDIGI = "Powered by RIBDIGI"
+# CSS --forest (#003D1F) as PDF device RGB (0–1).
+FOREST_RGB: tuple[float, float, float] = (0.000, 0.239, 0.122)
+# CSS --ink (#10211B) as PDF device RGB (0–1).
+INK_RGB: tuple[float, float, float] = (0.063, 0.129, 0.106)
+POWERED_BY_RIBDIGI = "Powered by RIBDIGI ERP"
+
+# Shared HTML chrome for email / browser document tables (inline styles for clients).
+DOC_TABLE_STYLE = (
+    "border-collapse:collapse;width:100%;margin:16px 0;"
+    "font-family:Arial,Helvetica,sans-serif;font-size:13px;"
+)
+DOC_TH_STYLE = (
+    "background:#003d1f;color:#ffffff;text-align:left;padding:10px 12px;"
+    "font-weight:700;border:0;"
+)
+DOC_TD_STYLE = "padding:9px 12px;border-bottom:1px solid #d4e5c4;color:#10211b;vertical-align:top;"
+DOC_TD_RIGHT = DOC_TD_STYLE + "text-align:right;white-space:nowrap;"
+DOC_TOTALS_STYLE = (
+    "margin:8px 0 0;padding:14px 16px;background:#f2f7ec;border:1px solid #d4e5c4;"
+    "border-radius:8px;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.55;"
+)
+DOC_META_STYLE = (
+    "margin:0 0 12px;padding:12px 14px;background:#f5f7ec;border-left:3px solid #4ab012;"
+    "font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;color:#10211b;"
+)
+
+
+def document_table_html(*, headers: list[str], rows_html: str) -> str:
+    """Brand-styled line-item table for email / printable HTML bodies."""
+    import html as html_mod
+
+    ths = "".join(
+        f'<th style="{DOC_TH_STYLE}">{html_mod.escape(h)}</th>' for h in headers
+    )
+    return (
+        f'<table role="presentation" cellspacing="0" cellpadding="0" style="{DOC_TABLE_STYLE}">'
+        f"<thead><tr>{ths}</tr></thead>"
+        f"<tbody>{rows_html}</tbody></table>"
+    )
+
+
+def document_print_shell(
+    *,
+    title: str,
+    company_name: str,
+    body_html: str,
+    subtitle: str | None = None,
+) -> str:
+    """Browser-printable HTML document with forest header + brand accent."""
+    import html as html_mod
+
+    company_esc = html_mod.escape(company_name or "RIBDIGI ERP")
+    title_esc = html_mod.escape(title)
+    sub_html = (
+        f'<p class="doc-sub">{html_mod.escape(subtitle)}</p>' if subtitle else ""
+    )
+    return f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>{title_esc}</title>
+<style>
+  :root {{
+    --brand: #4ab012; --forest: #003d1f; --ink: #10211b; --muted: #4d5d56;
+    --line: #d4e5c4; --mist: #f2f7ec; --sand: #f5f7ec;
+  }}
+  * {{ box-sizing: border-box; }}
+  body {{
+    margin: 0; color: var(--ink);
+    font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+    background: linear-gradient(180deg, #e8f2df 0%, #f5f7ec 40%, #fff 100%);
+  }}
+  .toolbar {{
+    position: sticky; top: 0; z-index: 2;
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: 12px 18px; background: var(--forest); color: #fff;
+    border-bottom: 3px solid var(--brand);
+  }}
+  .toolbar button {{
+    background: var(--brand); color: #fff; border: 0; border-radius: 8px;
+    padding: 10px 16px; font-weight: 700; cursor: pointer;
+  }}
+  .sheet {{
+    max-width: 820px; margin: 24px auto; padding: 0 16px 40px;
+  }}
+  .card {{
+    background: #fff; border: 1px solid var(--line); border-radius: 12px;
+    overflow: hidden; box-shadow: 0 8px 24px rgba(0, 61, 31, 0.06);
+  }}
+  .doc-head {{
+    padding: 22px 28px; background: var(--forest); color: #fff;
+    border-bottom: 3px solid var(--brand);
+  }}
+  .doc-head h1 {{
+    margin: 0; font-size: 22px; letter-spacing: .02em; font-weight: 800;
+  }}
+  .doc-sub {{ margin: 6px 0 0; color: #c8e86a; font-size: 13px; }}
+  .doc-body {{ padding: 24px 28px; }}
+  .doc-body h2 {{
+    margin: 0 0 12px; font-size: 15px; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--forest);
+  }}
+  table.doc {{ width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13px; }}
+  table.doc th {{
+    background: var(--forest); color: #fff; text-align: left;
+    padding: 10px 12px; font-weight: 700;
+  }}
+  table.doc td {{
+    padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top;
+  }}
+  table.doc td.r {{ text-align: right; white-space: nowrap; }}
+  .meta {{
+    margin: 0 0 16px; padding: 12px 14px; background: var(--sand);
+    border-left: 3px solid var(--brand); font-size: 13px; line-height: 1.5;
+  }}
+  .totals {{
+    margin: 8px 0 0; padding: 14px 16px; background: var(--mist);
+    border: 1px solid var(--line); border-radius: 8px; font-size: 13px; line-height: 1.55;
+  }}
+  .totals strong {{ color: var(--forest); font-size: 15px; }}
+  .foot {{
+    margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--line);
+    color: var(--muted); font-size: 12px; text-align: center;
+  }}
+  .powered {{ color: var(--brand); font-weight: 700; font-size: 11px; margin-top: 6px; }}
+  @media print {{
+    body {{ background: #fff; }}
+    .toolbar {{ display: none; }}
+    .sheet {{ margin: 0; max-width: none; padding: 0; }}
+    .card {{ box-shadow: none; border: 0; border-radius: 0; }}
+  }}
+</style>
+</head>
+<body>
+  <div class="toolbar">
+    <div>{company_esc}</div>
+    <button type="button" onclick="window.print()">Print</button>
+  </div>
+  <div class="sheet"><div class="card">
+    <div class="doc-head"><h1>{title_esc}</h1>{sub_html}</div>
+    <div class="doc-body">{body_html}</div>
+  </div></div>
+</body></html>"""
 
 
 def style_powered_by_line(
     text: str,
     size: int = 8,
 ) -> tuple[str, int] | tuple[str, int, tuple[float, float, float]]:
-    """Paint the shared 'Powered by RIBDIGI' footer in brand green when matched."""
+    """Paint the shared 'Powered by RIBDIGI ERP' footer in brand green when matched."""
     raw = (text or "").strip()
     if raw == POWERED_BY_RIBDIGI:
         return (POWERED_BY_RIBDIGI, size, BRAND_GREEN_RGB)
@@ -146,6 +287,18 @@ def load_logo_jpeg(
         return None
 
 
+def _pdf_font_objects(*, mono: bool, bold: bool) -> tuple[bytes, bytes]:
+    if mono:
+        regular = b"/Courier-Bold" if bold else b"/Courier"
+        heavy = b"/Courier-Bold"
+    else:
+        regular = b"/Helvetica-Bold" if bold else b"/Helvetica"
+        heavy = b"/Helvetica-Bold"
+    f1 = b"<< /Type /Font /Subtype /Type1 /BaseFont " + regular + b" >>"
+    f2 = b"<< /Type /Font /Subtype /Type1 /BaseFont " + heavy + b" >>"
+    return f1, f2
+
+
 def build_text_pdf(
     lines: list[tuple[str, int] | tuple[str, int, tuple[float, float, float]]],
     *,
@@ -153,6 +306,7 @@ def build_text_pdf(
     page_height: float,
     margin: float = 40,
     mono: bool = False,
+    bold: bool = False,
     logo: tuple[bytes, int, int] | None = None,
     logo_max_pt: float = 80,
 ) -> bytes:
@@ -224,12 +378,9 @@ def build_text_pdf(
             ).encode(),
         )
         obj(4, f"<< /Length {len(stream)} >>\nstream\n".encode() + stream + b"\nendstream")
-        if mono:
-            obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>")
-            obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold >>")
-        else:
-            obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
-            obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>")
+        f1, f2 = _pdf_font_objects(mono=mono, bold=bold)
+        obj(5, f1)
+        obj(6, f2)
         obj(
             7,
             (
@@ -252,12 +403,9 @@ def build_text_pdf(
             ).encode(),
         )
         obj(4, f"<< /Length {len(stream)} >>\nstream\n".encode() + stream + b"\nendstream")
-        if mono:
-            obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>")
-            obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold >>")
-        else:
-            obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
-            obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>")
+        f1, f2 = _pdf_font_objects(mono=mono, bold=bold)
+        obj(5, f1)
+        obj(6, f2)
         n_objs = 6
 
     out = bytearray(b"%PDF-1.4\n")

@@ -23,3 +23,4 @@ def test_valid_categories():
     assert "expense_approval" in VALID_CATEGORIES
     assert "new_order" in VALID_CATEGORIES
     assert "purchase_received" in VALID_CATEGORIES
+    assert "batch_expiry" in VALID_CATEGORIES

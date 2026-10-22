@@ -2,15 +2,55 @@
 
 from __future__ import annotations
 
+import csv
+import io
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app import packages as packages_svc
+from app import schema_compat
+from app import store_entitlements as store_ent_svc
 from app import tenants as tenants_svc
+from app.honesty import money_json
+
+_OPEN_TICKET_STATUSES = ("new", "in_progress", "waiting_for_tenant")
+# Billing accounts that need owner attention (payment missing, retrying, or in grace).
+_BILLING_ATTENTION_STATUSES = ("payment_required", "past_due", "grace_period")
+
+# Platform dashboard activity. Operational modules (pos, sales, inventory, …) are excluded.
+PLATFORM_ACTIVITY: tuple[tuple[str, str], ...] = (
+    ("tenants", "tenant_created"),
+    ("tenants", "industry_changed"),
+    ("tenants", "assign_subscription"),
+    ("tenants", "update_modules"),
+    ("tenants", "admin_password_reset_requested"),
+    ("platform_staff", "create"),
+    ("platform_staff", "update"),
+    ("platform_staff", "delete"),
+    ("platform_staff", "grant_dashboard"),
+    ("platform_staff", "revoke_dashboard"),
+    ("platform_staff", "email_verified"),
+    ("billing", "billing_plan_created"),
+    ("billing", "billing_plan_updated"),
+    ("billing", "billing_plan_deleted"),
+)
+
+_SECRET_DETAIL_KEYS = frozenset(
+    {
+        "password",
+        "admin_password",
+        "new_password",
+        "password_hash",
+        "token",
+        "reset_token",
+        "secret",
+        "totp_secret",
+    }
+)
 
 
 async def build_platform_summary(db: AsyncSession) -> dict[str, Any]:
@@ -21,19 +61,81 @@ async def build_platform_summary(db: AsyncSession) -> dict[str, Any]:
         by_status[t.status] = by_status.get(t.status, 0) + 1
         code = getattr(t, "package_code", None) or "trial"
         by_package[code] = by_package.get(code, 0) + 1
-    return {
+    open_support_tickets = 0
+    if await schema_compat.table_column_names(db, "support_tickets"):
+        open_support_tickets = int(
+            await db.scalar(
+                select(func.count())
+                .select_from(m.SupportTicket)
+                .where(m.SupportTicket.status.in_(_OPEN_TICKET_STATUSES))
+            )
+            or 0
+        )
+    body = {
         "generated_at": datetime.utcnow().isoformat() + "Z",
         "tenant_count": len(rows),
         "by_status": by_status,
         "by_package": by_package,
+        "open_support_tickets": open_support_tickets,
     }
+    body.update(await _paid_billing_figures(db))
+    return body
+
+
+async def _paid_billing_figures(db: AsyncSession) -> dict[str, Any]:
+    """Real SaaS billing figures only. No MRR: plan interval is not assumed.
+
+    Revenue is the lifetime sum of invoices the gateway webhook marked ``paid``,
+    grouped by currency (currencies are never added together).
+    """
+    out: dict[str, Any] = {
+        "paid_invoice_count": 0,
+        "paid_revenue_by_currency": {},
+        "active_billing_accounts": 0,
+        "attention_count": 0,
+    }
+    if await schema_compat.table_column_names(db, "tenant_billing_invoices"):
+        paid = (
+            await db.execute(
+                select(
+                    m.TenantBillingInvoice.currency,
+                    func.count(),
+                    func.sum(m.TenantBillingInvoice.amount),
+                )
+                .where(m.TenantBillingInvoice.status == "paid")
+                .group_by(m.TenantBillingInvoice.currency)
+            )
+        ).all()
+        out["paid_invoice_count"] = sum(int(count or 0) for _cur, count, _sum in paid)
+        out["paid_revenue_by_currency"] = {
+            (cur or "").upper(): money_json(total) for cur, _count, total in sorted(paid, key=lambda r: r[0] or "") if cur
+        }
+    if await schema_compat.table_column_names(db, "tenant_billing_accounts"):
+        by_billing = dict(
+            (
+                await db.execute(
+                    select(m.TenantBillingAccount.billing_status, func.count()).group_by(
+                        m.TenantBillingAccount.billing_status
+                    )
+                )
+            ).all()
+        )
+        out["active_billing_accounts"] = int(by_billing.get("active") or 0)
+        out["attention_count"] = sum(
+            int(by_billing.get(key) or 0) for key in _BILLING_ATTENTION_STATUSES
+        )
+    return out
 
 
 async def build_subscription_usage_report(db: AsyncSession) -> dict[str, Any]:
+    from app.saas_billing import company_billing_roster
+
     rows = (await db.execute(select(m.Tenant).order_by(m.Tenant.company_name.asc()))).scalars().all()
+    priced = {row["slug"]: row for row in await company_billing_roster(db)}
     items = []
     for t in rows:
         usage = packages_svc.usage_snapshot(t)
+        bill = priced.get(t.slug) or {}
         items.append(
             {
                 "tenant_id": t.id,
@@ -50,6 +152,8 @@ async def build_subscription_usage_report(db: AsyncSession) -> dict[str, Any]:
                 "years_remaining": usage.get("years_remaining"),
                 "days_remaining": usage.get("days_remaining"),
                 "renewal_due": usage.get("subscription_ends_at"),
+                "amount": bill.get("amount"),
+                "currency": bill.get("currency"),
             }
         )
     items.sort(
@@ -139,3 +243,228 @@ async def build_all_platform_reports(db: AsyncSession) -> dict[str, Any]:
             await db.execute(select(m.Tenant).order_by(m.Tenant.company_name.asc()))
         ).scalars().all()],
     }
+
+
+PLATFORM_REPORT_EXPORTS = ("summary", "subscriptions", "packages", "trials")
+
+
+def _csv_cell(value: Any) -> Any:
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if value is None:
+        return ""
+    if isinstance(value, str) and value[:1] in ("=", "+", "-", "@"):
+        # Company names are tenant-entered; keep spreadsheets from running them as formulas.
+        return "'" + value
+    return value
+
+
+def _csv_text(headers: list[str], rows: list[dict[str, Any]]) -> str:
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=headers, extrasaction="ignore", lineterminator="\n")
+    writer.writeheader()
+    for row in rows:
+        writer.writerow({key: _csv_cell(row.get(key)) for key in headers})
+    return buf.getvalue()
+
+
+async def build_platform_report_csv(
+    db: AsyncSession, report: str, *, within_days: int = 45
+) -> tuple[str, str]:
+    """CSV text + filename for one cross-tenant report. Same data as the JSON reports."""
+    stamp = datetime.utcnow().strftime("%Y%m%d")
+    if report == "summary":
+        data = await build_platform_summary(db)
+        rows: list[dict[str, Any]] = [
+            {"metric": "tenant_count", "value": data["tenant_count"]},
+            {"metric": "open_support_tickets", "value": data["open_support_tickets"]},
+            {"metric": "paid_invoice_count", "value": data["paid_invoice_count"]},
+            {"metric": "active_billing_accounts", "value": data["active_billing_accounts"]},
+            {"metric": "attention_count", "value": data["attention_count"]},
+        ]
+        rows += [
+            {"metric": f"tenants_{key}", "value": val} for key, val in sorted(data["by_status"].items())
+        ]
+        rows += [
+            {"metric": f"package_{key}", "value": val}
+            for key, val in sorted(data["by_package"].items())
+        ]
+        rows += [
+            {"metric": f"paid_revenue_{cur}", "value": val}
+            for cur, val in sorted(data["paid_revenue_by_currency"].items())
+        ]
+        text = _csv_text(["metric", "value"], rows)
+    elif report == "subscriptions":
+        data = await build_subscription_usage_report(db)
+        headers = [
+            "slug", "company_name", "status", "package_code", "package_name", "term_value",
+            "term_unit", "months_assigned", "months_used", "months_remaining",
+            "days_remaining", "renewal_due", "amount", "currency",
+        ]
+        text = _csv_text(headers, data["rows"])
+    elif report == "packages":
+        data = await build_package_distribution_report(db)
+        headers = [
+            "package_code", "package_name", "tenant_count", "active", "trial", "grace", "suspended",
+        ]
+        text = _csv_text(headers, data["packages"])
+    elif report == "trials":
+        data = await build_trial_expirations_report(db, within_days=within_days)
+        headers = [
+            "slug", "company_name", "status", "package_code", "kind", "ends_at", "days_remaining",
+        ]
+        text = _csv_text(headers, data["rows"])
+    else:
+        raise ValueError(f"unknown platform report: {report}")
+    return text, f"platform-{report}-{stamp}.csv"
+
+
+def _safe_details(details: dict | None) -> dict:
+    raw = details if isinstance(details, dict) else {}
+    return {k: v for k, v in raw.items() if str(k).lower() not in _SECRET_DETAIL_KEYS}
+
+
+def _activity_summary(module: str, action: str, details: dict) -> str:
+    name = details.get("slug") or details.get("email") or details.get("full_name") or ""
+    if action == "tenant_created":
+        return f"Tenant created{f' ({name})' if name else ''}"
+    if action == "industry_changed":
+        return f"Industry changed to {details.get('industry') or 'unknown'}"
+    if action == "assign_subscription":
+        code = details.get("package_code") or "package"
+        amount = details.get("amount")
+        if amount is not None:
+            return f"Package set to {code} at {amount}"
+        return f"Package set to {code}"
+    if action == "billing_plan_created":
+        code = details.get("code") or ""
+        return f"Package created{f' ({code})' if code else ''}"
+    if action == "billing_plan_updated":
+        code = details.get("code") or ""
+        return f"Package updated{f' ({code})' if code else ''}"
+    if action == "billing_plan_deleted":
+        code = details.get("code") or ""
+        return f"Package deleted{f' ({code})' if code else ''}"
+    if action == "update_modules":
+        return "Feature modules updated"
+    if action == "admin_password_reset_requested":
+        return "Tenant administrator password reset requested"
+    if module == "platform_staff" and action == "create":
+        return f"Staff account created{f' ({name})' if name else ''}"
+    if module == "platform_staff" and action == "update":
+        return "Staff account updated"
+    if module == "platform_staff" and action == "delete":
+        return f"Staff account deleted{f' ({name})' if name else ''}"
+    if module == "platform_staff" and action == "grant_dashboard":
+        return f"Staff dashboard access granted{f' ({name})' if name else ''}"
+    if module == "platform_staff" and action == "revoke_dashboard":
+        return f"Staff dashboard access revoked{f' ({name})' if name else ''}"
+    if module == "platform_staff" and action == "email_verified":
+        return f"Staff account verified{f' ({name})' if name else ''}"
+    return f"{module} {action}"
+
+
+async def build_platform_directory(db: AsyncSession) -> list[dict[str, Any]]:
+    """Platform-level tenant summary. No sales, stock, orders, or payments."""
+    tenants = (
+        await db.execute(select(m.Tenant).order_by(m.Tenant.company_name.asc()))
+    ).scalars().all()
+    user_counts = dict(
+        (
+            await db.execute(select(m.User.tenant_id, func.count()).group_by(m.User.tenant_id))
+        ).all()
+    )
+    store_counts = dict(
+        (
+            await db.execute(select(m.Store.tenant_id, func.count()).group_by(m.Store.tenant_id))
+        ).all()
+    )
+    branch_counts = dict(
+        (
+            await db.execute(
+                select(m.Branch.tenant_id, func.count()).group_by(m.Branch.tenant_id)
+            )
+        ).all()
+    )
+    admins = (
+        await db.execute(
+            select(
+                m.User.tenant_id,
+                m.User.email,
+                m.User.email_verified,
+                m.User.created_at,
+            )
+            .where(m.User.role == "company_admin")
+            .order_by(m.User.created_at.asc())
+        )
+    ).all()
+    admin_state: dict[str, list[bool]] = {}
+    admin_emails: dict[str, str] = {}
+    for tenant_id, email, verified, _created in admins:
+        admin_state.setdefault(tenant_id, []).append(bool(verified))
+        # Earliest company_admin email is the account used to create the tenant.
+        if tenant_id not in admin_emails and email:
+            admin_emails[tenant_id] = str(email)
+
+    rows = []
+    for tenant in tenants:
+        flags = admin_state.get(tenant.id) or []
+        if not flags:
+            account_status = "no_administrator"
+        elif all(flags):
+            account_status = "verified"
+        else:
+            account_status = "pending_verification"
+        rows.append(
+            {
+                "id": tenant.id,
+                "company_name": tenant.company_name,
+                "slug": tenant.slug,
+                "status": tenant.status,
+                "industry": tenant.industry,
+                "industry_label": tenants_svc.industry_label(getattr(tenant, "industry", None)),
+                "store_mode": "multi" if store_ent_svc.is_multi_store(tenant) else "single",
+                "user_count": int(user_counts.get(tenant.id) or 0),
+                "store_count": int(store_counts.get(tenant.id) or 0),
+                "branch_count": int(branch_counts.get(tenant.id) or 0),
+                "created_at": tenant.created_at,
+                "admin_email": admin_emails.get(tenant.id),
+                "account_status": account_status,
+                "provisioning_status": account_status,
+            }
+        )
+    return rows
+
+
+async def build_platform_activity(db: AsyncSession, *, limit: int = 50) -> list[dict[str, Any]]:
+    """Cross-tenant platform events only (not store operational audit)."""
+    clauses = [
+        and_(m.AuditLog.module == module, m.AuditLog.action == action)
+        for module, action in PLATFORM_ACTIVITY
+    ]
+    rows = (
+        await db.execute(
+            select(m.AuditLog)
+            .where(or_(*clauses))
+            .order_by(m.AuditLog.created_at.desc())
+            .limit(min(max(int(limit or 50), 1), 200))
+        )
+    ).scalars().all()
+    items = []
+    for row in rows:
+        details = _safe_details(row.details if isinstance(row.details, dict) else {})
+        items.append(
+            {
+                "id": row.id,
+                "created_at": row.created_at,
+                "tenant_id": row.tenant_id,
+                "actor_user_id": row.user_id,
+                "module": row.module,
+                "action": row.action,
+                "entity": row.entity,
+                "entity_id": row.entity_id,
+                "summary": _activity_summary(row.module, row.action, details),
+                "details": details,
+            }
+        )
+    return items

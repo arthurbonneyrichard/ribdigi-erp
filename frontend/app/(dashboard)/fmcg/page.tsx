@@ -1,6 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import FormModal from '../../../components/FormModal';
+import { useSearchParams } from 'next/navigation';
+import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { moduleEnabledForTenant } from '../../../lib/industryModules';
@@ -79,6 +82,9 @@ const SCHEME_TYPES = ['percent', 'fixed', 'bxgy'];
 const VISIT_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 export default function FmcgPage() {
+  const searchParams = useSearchParams();
+  const tab = (searchParams?.get('tab') || '').trim().toLowerCase();
+  const show = (section: string) => !tab || tab === section;
   const [moduleAllowed, setModuleAllowed] = useState<boolean | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [schemes, setSchemes] = useState<Scheme[]>([]);
@@ -94,6 +100,8 @@ export default function FmcgPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [schemeAddOpen, setSchemeAddOpen] = useState(false);
+  const [routeAddOpen, setRouteAddOpen] = useState(false);
   const [schemeForm, setSchemeForm] = useState({
     code: '',
     name: '',
@@ -115,6 +123,10 @@ export default function FmcgPage() {
     sequence: '1',
     visit_day: '',
   });
+  const [products, setProducts] = useState<{ id: string; name?: string; sku?: string }[]>([]);
+  const [units, setUnits] = useState<{ id: string; name?: string; code?: string }[]>([]);
+  const [packForm, setPackForm] = useState({ product_id: '', from_unit_id: '', quantity: '1' });
+  const [packResult, setPackResult] = useState('');
 
   async function refresh(routeId?: string) {
     const activeRoute = routeId ?? selectedRouteId;
@@ -164,6 +176,10 @@ export default function FmcgPage() {
           return;
         }
         await refresh();
+        const [prod, unit] = await Promise.all([api('/products'), api('/catalog/units')]);
+        if (!active) return;
+        setProducts(Array.isArray(prod.data) ? prod.data : []);
+        setUnits(Array.isArray(unit.data) ? unit.data : []);
       } catch (err: any) {
         if (active) setError(err.message || 'Failed to load FMCG');
       }
@@ -176,6 +192,7 @@ export default function FmcgPage() {
 
   async function createScheme(e: React.FormEvent) {
     e.preventDefault();
+    if (busy) return;
     setBusy(true);
     setError('');
     setMessage('');
@@ -204,6 +221,7 @@ export default function FmcgPage() {
         ends_on: '',
       });
       setMessage('Trade scheme created');
+      setSchemeAddOpen(false);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not create scheme');
@@ -232,6 +250,7 @@ export default function FmcgPage() {
 
   async function createRoute(e: React.FormEvent) {
     e.preventDefault();
+    if (busy) return;
     setBusy(true);
     setError('');
     setMessage('');
@@ -247,6 +266,7 @@ export default function FmcgPage() {
       });
       setRouteForm({ code: '', name: '', driver_name: '', vehicle: '' });
       setMessage('Route created');
+      setRouteAddOpen(false);
       const newId = res.data?.id || '';
       if (newId) setSelectedRouteId(newId);
       await refresh(newId || undefined);
@@ -303,7 +323,7 @@ export default function FmcgPage() {
   if (moduleAllowed === false) {
     return (
       <>
-        <h1>FMCG</h1>
+        <PageHeader title="FMCG" />
         <p className="login-error" role="alert">
           {error ||
             'FMCG module is not available for this business type. Switch the company industry to FMCG (and ensure the package includes fmcg) to use trade schemes and routes.'}
@@ -314,10 +334,10 @@ export default function FmcgPage() {
 
   return (
     <>
-      <h1>FMCG</h1>
-      <p className="muted">
-        Manage trade schemes, distribution routes, and near-expiry awareness for fast-moving goods.
-      </p>
+      <PageHeader
+        title="FMCG management"
+        subtitle="Manage trade schemes, distribution routes, and near-expiry awareness for fast-moving goods."
+      />
       {error && (
         <p className="login-error" role="alert">
           {error}
@@ -347,8 +367,20 @@ export default function FmcgPage() {
         </div>
       )}
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h2>Add trade scheme</h2>
+      {show('schemes') && (
+      <>
+      <div style={{ marginBottom: 12 }}>
+        <button type="button" className="list-btn-primary" onClick={() => setSchemeAddOpen(true)} aria-label="Add trade scheme">
+          Add trade scheme
+        </button>
+      </div>
+      {schemeAddOpen ? (
+      <FormModal
+        title="Add trade scheme"
+        busy={busy}
+        dirty={Boolean(schemeForm.code.trim() || schemeForm.name.trim())}
+        onClose={() => setSchemeAddOpen(false)}
+      >
         <form
           onSubmit={createScheme}
           style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))' }}
@@ -440,7 +472,8 @@ export default function FmcgPage() {
             </button>
           </div>
         </form>
-      </div>
+      </FormModal>
+      ) : null}
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h2>Trade schemes</h2>
@@ -498,9 +531,23 @@ export default function FmcgPage() {
           </tbody>
         </table>
       </div>
+      </>
+      )}
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h2>Add distribution route</h2>
+      {show('routes') && (
+      <>
+      <div style={{ marginBottom: 12 }}>
+        <button type="button" className="list-btn-primary" onClick={() => setRouteAddOpen(true)} aria-label="Add distribution route">
+          Add distribution route
+        </button>
+      </div>
+      {routeAddOpen ? (
+      <FormModal
+        title="Add distribution route"
+        busy={busy}
+        dirty={Boolean(routeForm.code.trim() || routeForm.name.trim())}
+        onClose={() => setRouteAddOpen(false)}
+      >
         <form
           onSubmit={createRoute}
           style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}
@@ -545,6 +592,10 @@ export default function FmcgPage() {
             </button>
           </div>
         </form>
+      </FormModal>
+      ) : null}
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h2>Distribution routes</h2>
         <table className="table" style={{ marginTop: 12 }}>
           <thead>
             <tr>
@@ -809,7 +860,11 @@ export default function FmcgPage() {
           </tbody>
         </table>
       </div>
+      </>
+      )}
 
+      {show('deliveries') && (
+      <>
       <div className="card" style={{ marginTop: 16 }}>
         <h2>Dispatches</h2>
         <button
@@ -954,6 +1009,104 @@ export default function FmcgPage() {
           </tbody>
         </table>
       </div>
+      </>
+      )}
+
+      {show('packs') && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <h2>Pack convert</h2>
+          <p className="muted">
+            Convert a carton, pack, or piece quantity into the product stock unit. This does not move stock.
+          </p>
+          {!products.length && (
+            <p className="muted">No products yet. Add products in Inventory before converting packs.</p>
+          )}
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (busy) return;
+              setBusy(true);
+              setError('');
+              setMessage('');
+              setPackResult('');
+              try {
+                const res = await api('/fmcg/pack-convert', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    product_id: packForm.product_id.trim(),
+                    from_unit_id: packForm.from_unit_id.trim(),
+                    quantity: Number(packForm.quantity),
+                  }),
+                });
+                const row = res.data || {};
+                setPackResult(
+                  `Entered ${row.quantity_entered ?? packForm.quantity} converts to ${row.quantity_base ?? '—'} stock units.`,
+                );
+                setMessage('Pack converted');
+              } catch (err: any) {
+                setError(err.message || 'Pack convert failed');
+              } finally {
+                setBusy(false);
+              }
+            }}
+            style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))' }}
+          >
+            <label>
+              <span>Product</span>
+              <select
+                value={packForm.product_id}
+                onChange={(e) => setPackForm((f) => ({ ...f, product_id: e.target.value }))}
+                aria-label="FMCG pack product"
+                required
+              >
+                <option value="">Select product</option>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.sku ? `${p.sku} · ` : ''}
+                    {p.name || p.id}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>From unit</span>
+              <select
+                value={packForm.from_unit_id}
+                onChange={(e) => setPackForm((f) => ({ ...f, from_unit_id: e.target.value }))}
+                aria-label="FMCG pack from unit"
+                required
+              >
+                <option value="">Select unit</option>
+                {units.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.code ? `${u.code} · ` : ''}
+                    {u.name || u.id}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Quantity</span>
+              <input
+                type="number"
+                min="0"
+                step="any"
+                value={packForm.quantity}
+                onChange={(e) => setPackForm((f) => ({ ...f, quantity: e.target.value }))}
+                aria-label="FMCG pack quantity"
+                required
+              />
+            </label>
+            <div style={{ alignSelf: 'end' }}>
+              <button type="submit" disabled={busy || !products.length} aria-label="Convert FMCG pack">
+                {busy ? 'Converting…' : 'Convert pack'}
+              </button>
+            </div>
+          </form>
+          {packResult && <p role="status">{packResult}</p>}
+          {!units.length && <p className="muted">No units of measure yet.</p>}
+        </div>
+      )}
 
     </>
   );

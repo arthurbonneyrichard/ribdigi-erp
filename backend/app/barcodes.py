@@ -168,6 +168,39 @@ def render_code128_png(code: str, *, module_height: float = 14.0) -> bytes:
     return render_barcode_png(code, symbology="code128", module_height=module_height)
 
 
+def render_qr_png(payload: str, *, box_size: int = 6, border: int = 2) -> bytes:
+    """QR PNG for shelf labels / scanner fallback. Payload is barcode or SKU."""
+    import qrcode
+    from qrcode.constants import ERROR_CORRECT_M
+
+    text = str(payload or "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="QR payload is empty")
+    qr = qrcode.QRCode(
+        version=None,
+        error_correction=ERROR_CORRECT_M,
+        box_size=max(2, int(box_size or 6)),
+        border=max(1, int(border or 2)),
+    )
+    qr.add_data(text)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def label_image_data_uris(code: str, *, symbology: str) -> tuple[str, str]:
+    import base64
+
+    bar = render_barcode_png(code, symbology=symbology)
+    qr = render_qr_png(code)
+    return (
+        "data:image/png;base64," + base64.b64encode(bar).decode("ascii"),
+        "data:image/png;base64," + base64.b64encode(qr).decode("ascii"),
+    )
+
+
 def suggest_barcode_from_sku(sku: str) -> str:
     raw = re.sub(r"[^A-Za-z0-9\-._]", "", (sku or "").strip().upper())
     if len(raw) < 4:
@@ -286,20 +319,27 @@ def label_html(
     png_data_uri: str,
     copies: int = 1,
     symbology: str | None = None,
+    qr_png_data_uri: str | None = None,
 ) -> str:
     copies = max(1, min(int(copies or 1), 40))
-    price_txt = f"{currency} {price:,.2f}"
-    sym = normalize_symbology(symbology) if symbology else detect_symbology(barcode_value)
+    _ = (price, currency, company_name)  # labels are name + SKU/barcode only
+    qr_block = (
+        f'<img class="qr" src="{qr_png_data_uri}" alt="qr"/>'
+        if qr_png_data_uri
+        else ""
+    )
+    code_text = html.escape(str(barcode_value or sku))
+    sym_text = html.escape((symbology or "code128").strip().lower() or "code128")
     cards = []
-    for _ in range(copies):
+    for _copy in range(copies):
         cards.append(
             f"""
             <div class="label">
-              <div class="co">{html.escape(company_name)}</div>
               <div class="name">{html.escape(product_name)}</div>
-              <div class="price">{html.escape(price_txt)}</div>
               <img src="{png_data_uri}" alt="barcode"/>
-              <div class="meta">{html.escape(sym.upper())} · SKU {html.escape(sku)} · {html.escape(barcode_value)}</div>
+              {qr_block}
+              <div class="meta">SKU {html.escape(sku)}</div>
+              <div class="meta">{code_text} · {sym_text}</div>
             </div>
             """
         )
@@ -321,6 +361,7 @@ def label_html(
     .name {{ font-size: 12px; font-weight: 800; text-align: center; line-height: 1.2; }}
     .price {{ font-size: 14px; font-weight: 800; }}
     img {{ width: 100%; max-width: 54mm; height: auto; }}
+    img.qr {{ width: 22mm; max-width: 22mm; height: auto; }}
     .meta {{ font-size: 9px; color: #4d5d56; text-align: center; word-break: break-all; }}
     .toolbar {{
       position: sticky; top: 0; background: #003d1f; color: #fff; padding: 10px 14px;
@@ -336,7 +377,7 @@ def label_html(
 <body>
   <div class="toolbar">
     <div>
-      <strong>Barcode labels</strong>
+      <strong>Barcode / QR labels</strong>
       <span style="opacity:.8;font-size:12px;margin-left:8px">Printed {html.escape(datetime.utcnow().strftime("%Y-%m-%d %H:%M"))}</span>
     </div>
     <button onclick="window.print()">Print labels</button>

@@ -71,24 +71,20 @@ def test_grace_in_valid_statuses():
 
 
 def test_industries_cover_brd():
-    for item in (
-        "retail",
-        "pharmacy",
-        "restaurant",
-        "bakery",
-        "wholesale",
-        "manufacturing",
-        "distribution",
-        "general_trading",
-    ):
-        assert item in VALID_INDUSTRIES
+    assert VALID_INDUSTRIES == frozenset({"retail", "hotel", "restaurant"})
+    for removed in ("pharmacy", "wholesale", "retail_wholesale", "fmcg", "hospital", "bakery", "mart"):
+        assert removed not in VALID_INDUSTRIES
 
 
 def test_normalize_industry_accepts_and_rejects():
     from app.tenants import normalize_industry
 
     assert normalize_industry("Retail") == "retail"
-    assert normalize_industry("  PHARMACY ") == "pharmacy"
+    assert normalize_industry("Hotel") == "hotel"
+    assert normalize_industry("Restaurant") == "restaurant"
+    with pytest.raises(HTTPException) as removed:
+        normalize_industry("  PHARMACY ")
+    assert removed.value.status_code == 400
     with pytest.raises(HTTPException) as exc:
         normalize_industry("spaceships")
     assert exc.value.status_code == 400
@@ -121,7 +117,7 @@ async def test_create_tenant_rejects_invalid_industry(client):
         json={
             "company_name": "Good Industry Co",
             "slug": "good-industry-co",
-            "industry": "Wholesale",
+            "industry": "Restaurant",
             "currency": "GHS",
             "admin_email": "admin@good-industry.example.com",
             "admin_password": "SecurePass123!",

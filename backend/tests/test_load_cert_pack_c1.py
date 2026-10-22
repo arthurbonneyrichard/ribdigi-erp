@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from tests.ops_evidence import write_ops_evidence
+
 ROOT = Path(__file__).resolve().parents[2]
 CHECKLIST = ROOT / "ops" / "loadtest" / "1000vu-cert-checklist.json"
 RUN_EXAMPLE = ROOT / "ops" / "loadtest" / "operator_1000vu_run.example.json"
@@ -108,7 +110,6 @@ def test_load_cert_pack_evidence_and_readiness():
     assert "operator" in load_gate.lower() or "staging" in load_gate.lower()
 
     mapping = json.loads(CHECKLIST.read_text(encoding="utf-8"))
-    EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
     payload = {
         "stage": "28",
         "workstream": "C1",
@@ -125,8 +126,8 @@ def test_load_cert_pack_evidence_and_readiness():
         "pass_criteria": mapping["pass_criteria"],
         "deferred": mapping["deferred"],
     }
-    EVIDENCE_FILE.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    loaded = json.loads(EVIDENCE_FILE.read_text(encoding="utf-8"))
+    written = write_ops_evidence(EVIDENCE_FILE, json.dumps(payload, indent=2) + "\n")
+    loaded = json.loads(written.read_text(encoding="utf-8"))
     assert loaded["passed"] is True
     assert loaded["operator_1000vu_executed"] is False
     assert loaded["ci_1000vu_certificate_claimed"] is False

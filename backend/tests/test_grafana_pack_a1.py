@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from tests.ops_evidence import write_ops_evidence
+
 ROOT = Path(__file__).resolve().parents[2]
 DASHBOARD = ROOT / "ops" / "grafana" / "dashboard-ribdigi-mvp.json.example"
 ALERTMANAGER = ROOT / "ops" / "grafana" / "alertmanager.yml.example"
@@ -86,7 +88,6 @@ def test_grafana_pack_evidence_honest():
     assert "Remaining" in mon_gate or "hosted" in mon_gate.lower()
     assert "PagerDuty" in mon_gate or "SIEM" in mon_gate or "hosted" in mon_gate.lower()
 
-    EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
     payload = {
         "stage": "28",
         "workstream": "A1",
@@ -100,8 +101,8 @@ def test_grafana_pack_evidence_honest():
         "siem_claimed": False,
         "packaging_complete": True,
     }
-    EVIDENCE_FILE.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    loaded = json.loads(EVIDENCE_FILE.read_text(encoding="utf-8"))
+    written = write_ops_evidence(EVIDENCE_FILE, json.dumps(payload, indent=2) + "\n")
+    loaded = json.loads(written.read_text(encoding="utf-8"))
     assert loaded["passed"] is True
     assert loaded["hosted_grafana_claimed"] is False
     assert loaded["pagerduty_wired"] is False

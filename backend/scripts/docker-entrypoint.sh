@@ -11,8 +11,31 @@ MIG107=/app/alembic/versions/20260917_0107_pos_devices.py
 echo "entrypoint: start $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 if [ -f "$BUILD_ID_FILE" ]; then
   echo "entrypoint: image build-id=$(cat "$BUILD_ID_FILE")"
+  BUILD_ID=$(tr -d '\r\n' < "$BUILD_ID_FILE")
+  case "$BUILD_ID" in
+    ""|unknown|dev|20261003-live-test-store-scope|20261008-alembic-single-head-0136)
+      echo "entrypoint: FATAL stale image build-id=${BUILD_ID}" >&2
+      exit 20
+      ;;
+  esac
+  if ! printf '%s\n' "$BUILD_ID" | grep -Eq '^[0-9a-f]{12}$'; then
+    echo "entrypoint: FATAL build-id is not a 12-character git sha (${BUILD_ID})" >&2
+    exit 20
+  fi
+elif [ "${RIBDIGI_ALLOW_MISSING_BUILD_ID:-}" = "1" ]; then
+  # Local compose bind-mounts ./backend over /app, which hides the image file.
+  echo "entrypoint: local source mount has no image build-id; continuing" >&2
+  BUILD_ID=local-bind-mount
 else
-  echo "entrypoint: WARNING missing $BUILD_ID_FILE" >&2
+  echo "entrypoint: FATAL missing $BUILD_ID_FILE" >&2
+  exit 19
+fi
+export RIBDIGI_BUILD_ID="$BUILD_ID"
+echo "entrypoint: source-revision=${BUILD_ID}"
+MERGE=/app/alembic/versions/20261008_0136_merge_offline_and_restaurant_heads.py
+if [ ! -f "$MERGE" ]; then
+  echo "entrypoint: FATAL missing $MERGE (Alembic graph is not the single head)" >&2
+  exit 18
 fi
 
 if [ ! -f "$OVL" ]; then

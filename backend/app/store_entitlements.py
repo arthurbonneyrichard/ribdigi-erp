@@ -9,6 +9,9 @@ Downgrades never delete stores; they only block new creates / activations while 
 
 from __future__ import annotations
 
+import asyncio
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import HTTPException
@@ -19,6 +22,27 @@ from app import models as m
 from app import packages as packages_svc
 
 STORE_LIMIT_REACHED = "STORE_LIMIT_REACHED"
+# Platform create "Multi-store" default when no explicit override (Professional catalog).
+MULTI_STORE_DEFAULT_CAP = 10
+
+# One lock per tenant in this process. Postgres also uses SELECT … FOR UPDATE.
+# SQLite (including the test StaticPool) does not honor that row lock, so two
+# concurrent creates can both read the same active-store count unless this
+# guard is held through commit.
+_quota_guard = asyncio.Lock()
+_quota_locks: dict[str, asyncio.Lock] = {}
+
+
+@asynccontextmanager
+async def tenant_store_quota_guard(tenant_id: str) -> AsyncIterator[None]:
+    """Hold through the quota check and the commit that inserts the store."""
+    async with _quota_guard:
+        lock = _quota_locks.get(tenant_id)
+        if lock is None:
+            lock = asyncio.Lock()
+            _quota_locks[tenant_id] = lock
+    async with lock:
+        yield
 
 
 def package_max_stores(package_code: str | None) -> int | None:
@@ -50,6 +74,54 @@ def subscription_store_entitlement(tenant: m.Tenant) -> int | None:
     if override is not None:
         return int(override)
     return package_max_stores(getattr(tenant, "package_code", None))
+
+
+def is_multi_store(tenant: m.Tenant) -> bool:
+    """True when subscription entitlement allows more than one store (or unlimited).
+
+    Uses platform entitlement (override or package), not company store_limit allocation.
+    None / unlimited counts as multi-store. UI may hide switchers; APIs still enforce.
+    """
+    limit = subscription_store_entitlement(tenant)
+    return limit is None or int(limit) > 1
+
+
+def ui_store_flags(tenant: m.Tenant | None) -> dict[str, Any]:
+    """Flags for /me and UIs. Never a substitute for create/activate enforcement."""
+    if tenant is None:
+        return {"max_stores": None, "multi_store": False, "unlimited_stores": False}
+    limit = subscription_store_entitlement(tenant)
+    unlimited = limit is None
+    return {
+        "max_stores": limit,
+        "multi_store": unlimited or int(limit) > 1,
+        "unlimited_stores": unlimited,
+    }
+
+
+def resolve_create_max_stores_override(
+    store_mode: str | None,
+    max_stores_override: int | None,
+) -> int:
+    """Persist an override so single-store tenants cannot create extra stores.
+
+    single → 1 (even if a later package would allow more, until platform changes it).
+    multi → explicit override (>= 2) or Professional default 10.
+    """
+    mode = (store_mode or "single").strip().lower()
+    if mode == "single":
+        return 1
+    if mode != "multi":
+        raise HTTPException(status_code=422, detail="store_mode must be single or multi")
+    if max_stores_override is None:
+        return MULTI_STORE_DEFAULT_CAP
+    cap = int(max_stores_override)
+    if cap <= 1:
+        raise HTTPException(
+            status_code=422,
+            detail="multi-store max_stores_override must be >= 2 (omit for 10)",
+        )
+    return cap
 
 
 def effective_store_limit(tenant: m.Tenant) -> int | None:
@@ -111,6 +183,9 @@ async def get_store_usage(db: AsyncSession, tenant: m.Tenant) -> dict[str, Any]:
         "stores_remaining": remaining,
         "over_entitlement": over,
         "unlimited": effective is None,
+        "max_stores": entitlement,
+        "multi_store": entitlement is None or int(entitlement) > 1,
+        "unlimited_stores": entitlement is None,
     }
 
 

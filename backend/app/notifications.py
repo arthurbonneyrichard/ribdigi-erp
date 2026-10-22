@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
@@ -20,16 +21,43 @@ DEFAULT_PREFERENCES = {
     "credit_limit": {"dashboard": True, "email": False, "sms": False},
     "purchase_received": {"dashboard": True, "email": False, "sms": False},
     "payment_due": {"dashboard": True, "email": True, "sms": False},
-    "quotation_expiry": {"dashboard": True, "email": False, "sms": False},
-    "recurring_expense_due": {"dashboard": True, "email": True, "sms": False},
+        "quotation_expiry": {"dashboard": True, "email": False, "sms": False},
+        "batch_expiry": {"dashboard": True, "email": True, "sms": False},
+        "recurring_expense_due": {"dashboard": True, "email": True, "sms": False},
     "new_order": {"dashboard": True, "email": False, "sms": False},
     "transfer": {"dashboard": True, "email": False, "sms": False},
     "billing": {"dashboard": True, "email": True, "sms": False},
     "security": {"dashboard": True, "email": True, "sms": False},
     "system": {"dashboard": True, "email": False, "sms": False},
+    "platform": {"dashboard": True, "email": False, "sms": False},
+    "provisioning": {"dashboard": True, "email": True, "sms": False},
+    "platform_security": {"dashboard": True, "email": True, "sms": False},
+    "staff_account": {"dashboard": True, "email": False, "sms": False},
+    "admin_password_reset": {"dashboard": True, "email": True, "sms": False},
 }
 
 VALID_CATEGORIES = set(DEFAULT_PREFERENCES.keys())
+
+# Store/POS operational alerts. Hidden from Platform Owner lists; still delivered
+# to tenant users. Audience is the viewer's role, not a global mute.
+OPERATIONAL_STORE_CATEGORIES = frozenset(
+    {
+        "low_stock",
+        "expense_approval",
+        "shift_variance",
+        "credit_limit",
+        "purchase_received",
+        "payment_due",
+        "quotation_expiry",
+        "batch_expiry",
+        "recurring_expense_due",
+        "new_order",
+        "transfer",
+    }
+)
+PLATFORM_AUDIENCE_CATEGORIES = frozenset(VALID_CATEGORIES - OPERATIONAL_STORE_CATEGORIES)
+
+logger = logging.getLogger(__name__)
 
 # BR-5.5 — low-stock alerts target inventory + store managers (admins included for visibility).
 LOW_STOCK_NOTIFY_ROLES = (
@@ -280,6 +308,45 @@ async def create_notification(
     return note
 
 
+def audience_for_role(role: str | None) -> str | None:
+    """Platform staff see platform-audience events only. Tenant roles are unscoped."""
+    from app.rbac import is_platform_role
+
+    if is_platform_role(role):
+        return "platform"
+    return None
+
+
+async def notify_platform_event(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    title: str,
+    message: str,
+    category: str = "platform",
+    entity_type: str | None = None,
+    entity_id: str | None = None,
+) -> m.Notification | None:
+    """In-app note for Platform Owner staff. Failures must not roll back the action."""
+    cat = category if category in PLATFORM_AUDIENCE_CATEGORIES else "platform"
+    try:
+        from app.rbac import PLATFORM_ROLES
+
+        return await create_notification(
+            db,
+            tenant_id=tenant_id,
+            category=cat,
+            title=title,
+            message=message,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            roles=sorted(PLATFORM_ROLES),
+        )
+    except Exception:
+        logger.exception("platform notification failed category=%s", cat)
+        return None
+
+
 async def list_notifications(
     db: AsyncSession,
     *,
@@ -288,8 +355,13 @@ async def list_notifications(
     status: str | None = None,
     category: str | None = None,
     limit: int = 100,
+    audience: str | None = None,
 ) -> list[m.Notification]:
+    if audience == "platform" and category and category not in PLATFORM_AUDIENCE_CATEGORIES:
+        return []
     stmt = select(m.Notification).where(m.Notification.tenant_id == tenant_id)
+    if audience == "platform":
+        stmt = stmt.where(m.Notification.category.in_(tuple(PLATFORM_AUDIENCE_CATEGORIES)))
     if user_id:
         stmt = stmt.where(
             or_(m.Notification.user_id == user_id, m.Notification.user_id.is_(None))
@@ -316,15 +388,37 @@ async def list_notifications(
     return (await db.execute(stmt)).scalars().all()
 
 
-async def unread_count(db: AsyncSession, tenant_id: str, user_id: str | None = None) -> int:
+async def unread_count(
+    db: AsyncSession,
+    tenant_id: str,
+    user_id: str | None = None,
+    *,
+    audience: str | None = None,
+) -> int:
     rows = await list_notifications(
-        db, tenant_id=tenant_id, user_id=user_id, status="unread", limit=500
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        status="unread",
+        limit=500,
+        audience=audience,
     )
     return len(rows)
 
 
+def _visible_to_audience(note: m.Notification, audience: str | None) -> bool:
+    if audience == "platform" and (note.category or "") not in PLATFORM_AUDIENCE_CATEGORIES:
+        return False
+    return True
+
+
 async def mark_read(
-    db: AsyncSession, *, tenant_id: str, notification_id: str, user_id: str | None = None
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    notification_id: str,
+    user_id: str | None = None,
+    audience: str | None = None,
 ) -> m.Notification:
     note = (
         await db.execute(
@@ -334,7 +428,7 @@ async def mark_read(
             )
         )
     ).scalar_one_or_none()
-    if not note:
+    if not note or not _visible_to_audience(note, audience):
         raise HTTPException(status_code=404, detail="Notification not found")
     if user_id and note.user_id and note.user_id != user_id:
         raise HTTPException(status_code=403, detail="Notification belongs to another user")
@@ -344,7 +438,12 @@ async def mark_read(
 
 
 async def mark_unread(
-    db: AsyncSession, *, tenant_id: str, notification_id: str, user_id: str | None = None
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    notification_id: str,
+    user_id: str | None = None,
+    audience: str | None = None,
 ) -> m.Notification:
     note = (
         await db.execute(
@@ -354,7 +453,7 @@ async def mark_unread(
             )
         )
     ).scalar_one_or_none()
-    if not note:
+    if not note or not _visible_to_audience(note, audience):
         raise HTTPException(status_code=404, detail="Notification not found")
     if user_id and note.user_id and note.user_id != user_id:
         raise HTTPException(status_code=403, detail="Notification belongs to another user")
@@ -363,9 +462,20 @@ async def mark_unread(
     return note
 
 
-async def mark_all_read(db: AsyncSession, *, tenant_id: str, user_id: str | None = None) -> int:
+async def mark_all_read(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str | None = None,
+    audience: str | None = None,
+) -> int:
     rows = await list_notifications(
-        db, tenant_id=tenant_id, user_id=user_id, status="unread", limit=500
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        status="unread",
+        limit=500,
+        audience=audience,
     )
     for note in rows:
         note.status = "read"
@@ -730,6 +840,63 @@ async def scan_recurring_expense_due(db: AsyncSession, tenant_id: str, within_da
             message=message,
             entity_type="recurring_expense",
             entity_id=row.id,
+        )
+        created += 1
+    return created
+
+
+async def scan_batch_expiry(db: AsyncSession, tenant_id: str, within_days: int = 30) -> int:
+    """Notify for on-hand batches expiring within ``within_days`` (including already expired)."""
+    from app.catalog import list_expiring_batches
+
+    created = 0
+    batches = await list_expiring_batches(db, tenant_id, within_days=within_days)
+    now = datetime.utcnow()
+    product_ids = {b.product_id for b in batches}
+    products: dict[str, m.Product] = {}
+    if product_ids:
+        rows = (
+            await db.execute(
+                select(m.Product).where(
+                    m.Product.tenant_id == tenant_id,
+                    m.Product.id.in_(product_ids),
+                )
+            )
+        ).scalars().all()
+        products = {p.id: p for p in rows}
+    for batch in batches:
+        existing = (
+            await db.execute(
+                select(m.Notification).where(
+                    m.Notification.tenant_id == tenant_id,
+                    m.Notification.category == "batch_expiry",
+                    m.Notification.entity_id == batch.id,
+                    m.Notification.status == "unread",
+                )
+            )
+        ).scalar_one_or_none()
+        if existing:
+            continue
+        product = products.get(batch.product_id)
+        sku = product.sku if product else batch.product_id[:8]
+        name = product.name if product else "Product"
+        expiry = batch.expiry_date
+        until_label = expiry.date().isoformat() if expiry else "unknown"
+        past = bool(expiry and expiry <= now)
+        qty = money_json(batch.quantity or 0)
+        await create_notification(
+            db,
+            tenant_id=tenant_id,
+            category="batch_expiry",
+            title="Batch expired" if past else "Batch expiring soon",
+            message=(
+                f"{name} ({sku}) lot {batch.batch_number} "
+                f"({qty} on hand) "
+                + (f"expired on {until_label}." if past else f"expires on {until_label}.")
+            ),
+            entity_type="product_batch",
+            entity_id=batch.id,
+            roles=list(LOW_STOCK_NOTIFY_ROLES),
         )
         created += 1
     return created

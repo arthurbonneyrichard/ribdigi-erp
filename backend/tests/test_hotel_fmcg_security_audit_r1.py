@@ -246,87 +246,65 @@ async def test_hotel_cross_tenant_isolation(client, seeded, db_session):
 async def test_fmcg_cross_tenant_isolation_and_e2e(client, seeded, db_session):
     ac, seed = client
     await set_tenant_industry(db_session, seed["t1"], "fmcg")
-    code = pyotp.TOTP(seed["super_totp_secret"]).now()
-    alpha = await auth_headers(
-        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
-    )
+    alpha = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
     beta = await _beta_hotel_admin(ac, seed, db_session, industry="fmcg")
     suffix = uuid4().hex[:6]
+    foreign_id = str(uuid4())
 
     scheme = await ac.post(
         "/api/v1/fmcg/schemes",
         headers=alpha,
         json={"code": f"ISO{suffix}", "name": "Iso", "scheme_type": "percent", "value": 5},
     )
-    assert scheme.status_code == 200
-    scheme_id = scheme.json()["data"]["id"]
+    assert scheme.status_code == 403, scheme.text
+    assert scheme.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
 
     route = await ac.post(
         "/api/v1/fmcg/routes",
         headers=alpha,
         json={"code": f"IR{suffix}", "name": f"Iso Route {suffix}"},
     )
-    assert route.status_code == 200
-    route_id = route.json()["data"]["id"]
+    assert route.status_code == 403, route.text
+    assert route.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
 
-    # Beta list must not include alpha schemes/routes
     beta_schemes = await ac.get("/api/v1/fmcg/schemes", headers=beta)
-    assert beta_schemes.status_code == 200
-    assert all(s["id"] != scheme_id for s in beta_schemes.json()["data"])
+    assert beta_schemes.status_code == 403, beta_schemes.text
+    assert beta_schemes.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
+    assert suffix not in beta_schemes.text
     beta_routes = await ac.get("/api/v1/fmcg/routes", headers=beta)
-    assert beta_routes.status_code == 200
-    assert all(r["id"] != route_id for r in beta_routes.json()["data"])
+    assert beta_routes.status_code == 403, beta_routes.text
+    assert beta_routes.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
+    assert suffix not in beta_routes.text
 
-    # IDOR
-    assert (
-        await ac.patch(
-            f"/api/v1/fmcg/schemes/{scheme_id}",
-            headers=beta,
-            json={"is_active": False},
-        )
-    ).status_code == 404
-    assert (await ac.get(f"/api/v1/fmcg/routes/{route_id}/stops", headers=beta)).status_code == 404
+    beta_patch = await ac.patch(
+        f"/api/v1/fmcg/schemes/{foreign_id}",
+        headers=beta,
+        json={"is_active": False},
+    )
+    assert beta_patch.status_code == 403, beta_patch.text
+    assert beta_patch.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
+    beta_stops = await ac.get(f"/api/v1/fmcg/routes/{foreign_id}/stops", headers=beta)
+    assert beta_stops.status_code == 403, beta_stops.text
+    assert beta_stops.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
 
-    # FMCG distribution E2E on alpha: customer → assignment → stop → dispatch → delivery
     customer = await ac.post(
         "/api/v1/customers",
         headers=alpha,
         json={"name": f"Distro {suffix}", "profile_type": "registered"},
     )
-    assert customer.status_code == 200
-    customer_id = customer.json()["data"]["id"]
+    assert customer.status_code == 200, customer.text
     assign = await ac.post(
         "/api/v1/fmcg/assignments",
         headers=alpha,
-        json={"customer_id": customer_id, "route_id": route_id, "salesperson_name": "Rep"},
+        json={"customer_id": customer.json()["data"]["id"], "route_id": foreign_id, "salesperson_name": "Rep"},
     )
-    assert assign.status_code == 200
-    stop = await ac.post(
-        f"/api/v1/fmcg/routes/{route_id}/stops",
-        headers=alpha,
-        json={"customer_id": customer_id, "sequence": 1, "visit_day": "tue"},
-    )
-    assert stop.status_code == 200
-    dispatch = await ac.post(
-        "/api/v1/fmcg/dispatches",
-        headers=alpha,
-        json={"route_id": route_id},
-    )
-    assert dispatch.status_code == 200
-    delivered = await ac.patch(
-        f"/api/v1/fmcg/stops/{stop.json()['data']['id']}/delivery",
-        headers=alpha,
-        json={"delivery_status": "delivered"},
-    )
-    assert delivered.status_code == 200
-    closed = await ac.post(
-        f"/api/v1/fmcg/dispatches/{dispatch.json()['data']['id']}/close",
-        headers=alpha,
-        json={},
-    )
-    assert closed.status_code == 200
+    assert assign.status_code == 403, assign.text
+    assert assign.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
 
-    # Core product isolation still holds for FMCG tenants
     products = await ac.get("/api/v1/products", headers=alpha)
-    assert products.status_code == 200
+    assert products.status_code == 200, products.text
     assert all(p.get("name") != "Beta Widget" for p in products.json()["data"])
+    beta_products = await ac.get("/api/v1/products", headers=beta)
+    assert beta_products.status_code == 200, beta_products.text
+    assert all(p.get("name") != "Alpha Widget" for p in beta_products.json()["data"])
+    assert f"Distro {suffix}" not in beta_products.text

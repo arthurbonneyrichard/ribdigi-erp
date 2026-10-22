@@ -21,6 +21,8 @@ def test_brand_code_value_schema():
         with pytest.raises(ValidationError):
             _code.validate_python(bad)
 
+    omit = BrandCreate.model_validate({"name": "Acme Co"})
+    assert omit.code is None
     ok = BrandCreate.model_validate({"code": "  ACME  ", "name": "Acme Co"})
     assert ok.code == "ACME"
     with pytest.raises(ValidationError):
@@ -36,14 +38,14 @@ def test_brand_code_value_schema():
 
 def test_brand_code_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
-    assert 'aria-label="Brand code"' in page
-    assert "code: brandCode.trim()" in page
+    assert "Brand created" in page
+    assert "code: brandCode.trim()" not in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Brand code OpenAPI" in agents
     assert "BrandCodeValue" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "BrandCodeValue" in docs
-    assert "Brand code" in docs
+    assert "BRD-NNNN" in docs
 
 
 @pytest.mark.asyncio

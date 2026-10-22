@@ -61,10 +61,11 @@ def test_ar_ap_payment_method_ui_and_docs():
     assert 'value="bank_transfer"' in credit
     assert 'value="card"' in credit
     assert 'value="cheque"' in credit
+    assert 'value="mobile_money"' in credit
     assert "/customers/" in credit and "/payments" in credit
     assert "/suppliers/" in credit and "/payments" in credit
     api = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
-    assert 'Literal["cash","bank_transfer","card","cheque"]' in api
+    assert 'Literal["cash","bank_transfer","card","cheque","mobile_money"]' in api
     assert "422" in api
     assert "/customers/{customer_id}/payments" in api
     assert "/suppliers/{supplier_id}/payments" in api

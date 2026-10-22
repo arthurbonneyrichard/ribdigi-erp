@@ -31,7 +31,7 @@ def test_purchase_order_amend_reason_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Purchase order amend reason"' in page
     assert 'aria-label="Save purchase order amendment"' in page
-    assert "aria-label={`Amend purchase order ${o.id}`}" in page
+    assert "ariaLabel: `Amend purchase order ${o.id}`" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "PurchaseOrderAmendReasonValue" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")

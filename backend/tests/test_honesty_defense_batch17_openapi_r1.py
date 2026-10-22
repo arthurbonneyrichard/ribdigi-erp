@@ -96,7 +96,7 @@ def test_honesty_batch17_docs_and_agents():
     integrations = (ROOT / "frontend/app/(dashboard)/integrations/page.tsx").read_text(encoding="utf-8")
     assert "Test webhook" in integrations
 
-    platform = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
+    platform = (ROOT / "frontend/app/(dashboard)/platform/tenants/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Assign package and term"' in platform
     assert 'aria-label="Save store entitlement override"' in platform
     assert "Reset feature modules to package default" in platform

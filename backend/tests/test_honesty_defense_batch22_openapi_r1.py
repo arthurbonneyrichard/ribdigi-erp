@@ -113,7 +113,7 @@ def test_money_json_wired_batch22():
     assert 'row["quantity"] = money_json(round(row["quantity"], 3))' in xfer_src
 
     inv_src = inspect.getsource(inventory_mod.list_warehouse_stock)
-    assert "money_json(max(reorder_qty, money_json(round(reorder - qty, 3))))" in inv_src
+    assert "money_json(max(reorder_qty, money_json(round(floor - qty, 3))))" in inv_src
     assert 'INSUFFICIENT_WAREHOUSE_STOCK' in inspect.getsource(
         inventory_mod.apply_warehouse_stock_change
     )

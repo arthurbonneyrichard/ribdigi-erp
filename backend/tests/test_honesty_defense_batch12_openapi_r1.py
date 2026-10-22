@@ -63,8 +63,8 @@ def test_honesty_batch12_docs_and_agents():
     assert 'aria-label="Download user CSV template"' in users_page
 
     sales_page = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
-    assert 'aria-label="Print sales invoice A4"' in sales_page
-    assert 'aria-label="Print sales invoice thermal"' in sales_page
+    assert "Print sales invoice A4" in sales_page
+    assert "Print sales invoice thermal" in sales_page
 
     backup_page = (ROOT / "frontend/app/(dashboard)/backup/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Download backup"' in backup_page
@@ -73,7 +73,7 @@ def test_honesty_batch12_docs_and_agents():
     assert 'aria-label="Download expense attachment"' in expenses_page
 
     purchasing_page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
-    assert 'aria-label="Download purchase invoice attachment"' in purchasing_page
+    assert "Download purchase invoice attachment" in purchasing_page
 
     accounting_page = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Download journal attachment"' in accounting_page

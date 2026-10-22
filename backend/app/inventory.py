@@ -78,7 +78,9 @@ async def apply_warehouse_stock_change(
             status_code=409,
             detail={
                 "code": "INSUFFICIENT_WAREHOUSE_STOCK",
-                "message": "Insufficient stock at source warehouse",
+                "message": "Out of stock at this store"
+                if before <= 0
+                else "Insufficient stock at this store",
                 "available": money_json(before),
                 "requested": money_json(abs(money_json(quantity_delta))),
                 "warehouse_id": warehouse_id,
@@ -97,7 +99,11 @@ async def allocate_unlocated_stock(
     warehouse_id: str,
     product_id: str,
 ) -> None:
-    """If product has consolidated stock but no warehouse rows, park it at warehouse_id."""
+    """Park consolidated stock that is not on a warehouse row.
+
+    A warehouse row already at zero stays zero. Search shows that quantity,
+    and the sale must reject it instead of filling the row from product.stock_qty.
+    """
     located = money_json(
         (
             await db.execute(
@@ -109,6 +115,19 @@ async def allocate_unlocated_stock(
         ).scalar()
         or 0
     )
+    here = (
+        await db.execute(
+            select(m.WarehouseStock).where(
+                m.WarehouseStock.tenant_id == tenant_id,
+                m.WarehouseStock.warehouse_id == warehouse_id,
+                m.WarehouseStock.product_id == product_id,
+            )
+        )
+    ).scalar_one_or_none()
+    # A store already recorded at zero must not absorb unlocated product qty
+    # during a sale. Search shows that zero; the sale has to reject it.
+    if here is not None and money_json(here.quantity or 0) <= 0:
+        return
     product = (
         await db.execute(
             select(m.Product).where(m.Product.id == product_id, m.Product.tenant_id == tenant_id)
@@ -259,8 +278,13 @@ async def apply_stock_change(
     product.stock_qty = after
     if warehouse_id:
         from app.warehouses import require_active_warehouse
+        from app import store_access as store_access_svc
 
         await require_active_warehouse(db, tenant_id, warehouse_id)
+        if user_id:
+            await store_access_svc.assert_warehouse_access(
+                db, tenant_id=tenant_id, user_id=user_id, warehouse_id=warehouse_id
+            )
         await apply_warehouse_stock_change(
             db,
             tenant_id=tenant_id,
@@ -378,8 +402,13 @@ async def apply_line_items_stock(
     reference_id: str,
     outbound: bool,
     warehouse_id: str | None = None,
+    offline_device_id: str | None = None,
 ) -> None:
-    """Apply stock for transaction payload items: [{product_id, quantity, unit_id?, variant_id?}]."""
+    """Apply stock for transaction payload items: [{product_id, quantity, unit_id?, variant_id?}].
+
+    Outbound availability excludes stock allocated to *other* offline POS devices;
+    ``offline_device_id`` is the selling device, whose own slice stays sellable.
+    """
     if not items:
         return
     from app.catalog import get_variant, stock_out_with_batch
@@ -392,13 +421,68 @@ async def apply_line_items_stock(
         if not product_id or qty <= 0:
             raise HTTPException(status_code=400, detail="Each line item needs product_id and positive quantity")
         if outbound:
-            if warehouse_id:
+            if warehouse_id and reference_type != "pos_sale":
                 await allocate_unlocated_stock(
                     db,
                     tenant_id=tenant_id,
                     warehouse_id=warehouse_id,
                     product_id=product_id,
                 )
+            if warehouse_id:
+                from app.catalog import get_product
+                from app.reservations import available_qty
+                from app.uom import to_stock_qty
+
+                product = await get_product(db, tenant_id, product_id)
+                stock_qty, _u, _e = await to_stock_qty(
+                    db,
+                    tenant_id=tenant_id,
+                    quantity=qty,
+                    from_unit_id=unit_id,
+                    product=product,
+                )
+                avail = await available_qty(
+                    db,
+                    tenant_id=tenant_id,
+                    warehouse_id=warehouse_id,
+                    product_id=product_id,
+                    exclude_offline_device_id=offline_device_id,
+                )
+                on_hand_row = (
+                    await db.execute(
+                        select(m.WarehouseStock).where(
+                            m.WarehouseStock.tenant_id == tenant_id,
+                            m.WarehouseStock.warehouse_id == warehouse_id,
+                            m.WarehouseStock.product_id == product_id,
+                        )
+                    )
+                ).scalar_one_or_none()
+                on_hand = money_json(on_hand_row.quantity or 0) if on_hand_row else 0
+                if avail + 1e-9 < stock_qty:
+                    if money_json(avail) <= 0 and on_hand <= 0:
+                        raise HTTPException(
+                            status_code=409,
+                            detail={
+                                "code": "INSUFFICIENT_WAREHOUSE_STOCK",
+                                "message": "Out of stock at this store",
+                                "product_id": product_id,
+                                "warehouse_id": warehouse_id,
+                                "available": avail,
+                                "requested": stock_qty,
+                            },
+                        )
+                    raise HTTPException(
+                        status_code=409,
+                        detail={
+                            "code": "INSUFFICIENT_AVAILABLE_STOCK",
+                            "message": "Insufficient available stock (on hand minus reserved orders and "
+                            "other POS devices' offline allocations)",
+                            "product_id": product_id,
+                            "warehouse_id": warehouse_id,
+                            "available": avail,
+                            "requested": stock_qty,
+                        },
+                    )
             await stock_out_with_batch(
                 db,
                 tenant_id=tenant_id,
@@ -408,6 +492,7 @@ async def apply_line_items_stock(
                 unit_id=unit_id,
                 variant_id=variant_id,
                 warehouse_id=warehouse_id,
+                batch_id=item.get("batch_id"),
                 notes=f"{reference_type} {reference_id}",
                 reference_type=reference_type,
                 reference_id=reference_id,
@@ -448,47 +533,55 @@ async def list_warehouse_stock(
     *,
     include_zero: bool = False,
 ) -> dict:
-    """BR-5.4 — per-warehouse on-hand + reorder policy (inventory:read)."""
+    """BR-5.4 — per-warehouse on-hand + reorder policy (inventory:read).
+
+    Start from active tenant products (not inner-join stock rows). A missing
+    warehouse_stocks balance is quantity 0 — it is not omitted when
+    ``include_zero`` is true.
+
+    Low stock uses location max(minimum_stock, reorder_level) when that floor
+    is set; otherwise the product floor. Qty ≤ 0 is out of stock, not low.
+    """
+    from app.catalog_meta import serialize_location_stock
     from app.warehouses import get_warehouse
 
     wh = await get_warehouse(db, tenant_id, warehouse_id)
-    stmt = (
-        select(m.WarehouseStock, m.Product)
-        .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
-        .where(
-            m.WarehouseStock.tenant_id == tenant_id,
-            m.WarehouseStock.warehouse_id == wh.id,
+    products = (
+        await db.execute(
+            select(m.Product)
+            .where(
+                m.Product.tenant_id == tenant_id,
+                m.Product.is_active.is_(True),
+            )
+            .order_by(m.Product.name)
         )
-        .order_by(m.Product.name)
-    )
-    if not include_zero:
-        stmt = stmt.where(
-            (m.WarehouseStock.quantity > 0) | (m.WarehouseStock.reorder_level > 0)
+    ).scalars().all()
+    stock_rows = (
+        await db.execute(
+            select(m.WarehouseStock).where(
+                m.WarehouseStock.tenant_id == tenant_id,
+                m.WarehouseStock.warehouse_id == wh.id,
+            )
         )
-    rows = (await db.execute(stmt)).all()
+    ).scalars().all()
+    stock_by_product = {row.product_id: row for row in stock_rows}
     items = []
-    for stock, product in rows:
-        qty = money_json(stock.quantity)
-        reorder = money_json(stock.reorder_level)
-        reorder_qty = money_json(stock.reorder_qty)
-        items.append(
-            {
-                "product_id": product.id,
-                "sku": product.sku,
-                "name": product.name,
-                "quantity": qty,
-                "reorder_level": reorder,
-                "reorder_qty": reorder_qty,
-                "below_reorder": reorder > 0 and qty <= reorder,
-                "suggested_order_qty": (
-                    money_json(max(reorder_qty, money_json(round(reorder - qty, 3))))
-                    if reorder > 0 and qty <= reorder
-                    else reorder_qty
-                ),
-                "warehouse_id": wh.id,
-                "consolidated_stock": money_json(product.stock_qty),
-            }
-        )
+    for product in products:
+        stock = stock_by_product.get(product.id)
+        item = serialize_location_stock(product=product, warehouse=wh, stock=stock)
+        qty = item["quantity"]
+        loc_reorder = item["reorder_level"]
+        loc_min = item["minimum_stock"]
+        if not include_zero and not (qty > 0 or loc_reorder > 0 or loc_min > 0):
+            continue
+        if item["is_low_stock"]:
+            reorder_qty = item["reorder_qty"]
+            floor = item["low_stock_floor"]
+            reorder = floor
+            via_floor = money_json(max(reorder_qty, money_json(round(floor - qty, 3))))
+            via_reorder = money_json(max(reorder_qty, money_json(round(reorder - qty, 3))))
+            item["suggested_order_qty"] = via_floor if via_floor == via_reorder else via_reorder
+        items.append(item)
     return {
         "warehouse_id": wh.id,
         "warehouse_code": wh.code,
@@ -529,19 +622,9 @@ async def set_warehouse_reorder_policy(
     row.reorder_level = max(money_json(reorder_level or 0), 0)
     row.reorder_qty = max(money_json(reorder_qty or 0), 0)
     await db.flush()
-    qty = money_json(row.quantity)
-    reorder = money_json(row.reorder_level)
-    return {
-        "product_id": product.id,
-        "sku": product.sku,
-        "name": product.name,
-        "quantity": qty,
-        "reorder_level": reorder,
-        "reorder_qty": money_json(row.reorder_qty),
-        "below_reorder": reorder > 0 and qty <= reorder,
-        "warehouse_id": wh.id,
-        "store_id": wh.store_id,
-    }
+    from app.catalog_meta import serialize_location_stock
+
+    return serialize_location_stock(product=product, warehouse=wh, stock=row)
 
 
 async def lookup_products(
@@ -628,29 +711,53 @@ async def list_product_warehouse_stock(
             (m.WarehouseStock.quantity > 0) | (m.WarehouseStock.reorder_level > 0)
         )
     rows = (await db.execute(stmt)).all()
-    items = []
-    for stock, wh in rows:
-        qty = money_json(stock.quantity)
-        reorder = money_json(stock.reorder_level)
-        items.append(
-            {
-                "warehouse_id": wh.id,
-                "warehouse_code": wh.code,
-                "warehouse_name": wh.name,
-                "store_id": wh.store_id,
-                "quantity": qty,
-                "reorder_level": reorder,
-                "reorder_qty": money_json(stock.reorder_qty),
-                "below_reorder": reorder > 0 and qty <= reorder,
-            }
-        )
+    from app.catalog_meta import serialize_location_stock
+
+    items = [
+        serialize_location_stock(product=product, warehouse=wh, stock=stock)
+        for stock, wh in rows
+    ]
     return {
         "product_id": product.id,
-        "sku": product.sku,
         "name": product.name,
+        "sku": product.sku,
         "consolidated_stock": money_json(product.stock_qty),
         "reorder_level": money_json(product.reorder_level or 0),
         "count": len(items),
         "items": items,
         "total_quantity": money_json(round(sum(i["quantity"] for i in items), 3)),
     }
+
+
+async def store_warehouse_on_hand(
+    db: AsyncSession,
+    tenant_id: str,
+    store_id: str,
+    product_ids: set[str],
+) -> dict[str, float]:
+    """Store-warehouse quantity by product_id. Missing rows are 0. Does not create warehouses."""
+    if not product_ids:
+        return {}
+    wh = (
+        await db.execute(
+            select(m.Warehouse).where(
+                m.Warehouse.tenant_id == tenant_id,
+                m.Warehouse.store_id == store_id,
+            )
+        )
+    ).scalar_one_or_none()
+    qty = {pid: 0.0 for pid in product_ids}
+    if not wh:
+        return qty
+    rows = (
+        await db.execute(
+            select(m.WarehouseStock).where(
+                m.WarehouseStock.tenant_id == tenant_id,
+                m.WarehouseStock.warehouse_id == wh.id,
+                m.WarehouseStock.product_id.in_(product_ids),
+            )
+        )
+    ).scalars().all()
+    for row in rows:
+        qty[row.product_id] = money_json(row.quantity or 0)
+    return qty

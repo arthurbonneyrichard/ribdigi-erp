@@ -32,9 +32,12 @@ def test_pos_session_open_store_id_schema():
 
 def test_pos_session_open_store_id_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
+    helper = (ROOT / "frontend/lib/cashierShift.ts").read_text(encoding="utf-8")
     assert 'aria-label="POS store"' in page
-    assert "store_id: storeId.trim() || null" in page
-    assert 'aria-label="Open shift"' in page
+    assert "openShiftForSignedInUser" in page
+    assert "store_id: storeId.trim() || null" in helper
+    assert "opening_cash: 0" in helper
+    assert 'aria-label="Open shift"' not in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "POS session open store_id OpenAPI" in agents
     assert "UuidIdValue" in agents

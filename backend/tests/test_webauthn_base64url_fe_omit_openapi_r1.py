@@ -169,7 +169,7 @@ def test_webauthn_base64url_fe_omit_ui_and_docs():
 
     pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="POS customer name"' in pos
-    assert "customer_name: name.trim() || null" in pos
+    assert "customer_name: customerName.trim() || null" in pos
 
     sec = (ROOT / "frontend/app/(dashboard)/security/page.tsx").read_text(encoding="utf-8")
     assert "bufferToBase64url" in sec or "credentialToJson" in sec

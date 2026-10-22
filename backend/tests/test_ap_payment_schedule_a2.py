@@ -183,10 +183,14 @@ async def test_supplier_payment_schedule_api(client, db_session):
     assert r.status_code == 200, r.text
     data = r.json()["data"]
     assert data["supplier"]["id"] == supplier.id
-    assert abs(float(data["total_due"]) - 280) < 0.01  # 150 + 90 + 40
+    # Billed invoices are total_due. Unbilled PO value is commitment_total.
+    assert abs(float(data["total_due"]) - 240) < 0.01  # 150 + 90
+    assert abs(float(data["commitment_total"]) - 40) < 0.01
     nums = [i["document_number"] for i in data["items"]]
     assert nums.index("PI-SCH-1") < nums.index("PI-SCH-2")
-    assert nums.index("PI-SCH-2") < nums.index("PO-SCH-1")
+    assert "PO-SCH-1" not in nums
+    commitments = [i["document_number"] for i in data["commitments"]]
+    assert "PO-SCH-1" in commitments
     first = data["items"][0]
     assert first["document_number"] == "PI-SCH-1"
     assert abs(float(first["balance_due"]) - 150) < 0.01

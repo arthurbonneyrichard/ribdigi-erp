@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import re
 import secrets
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
@@ -108,9 +109,11 @@ async def _claims_from_api_key(
         "read_only": tenants_svc.is_read_only(tenant),
         "package_code": getattr(tenant, "package_code", None) or "trial",
         "enabled_modules": packages_svc.resolve_enabled_modules(tenant),
-        "industry": getattr(tenant, "industry", None) or "retail",
+        "industry": packages_svc.canonicalize_industry(getattr(tenant, "industry", None)) or "",
         "branch_id": None,
         "department_id": None,
+        "store_ids": None,
+        "store_scope": "all",
         "record_scope": "all",
         "scope_user_ids": None,
         "auth_method": "api_key",
@@ -236,7 +239,6 @@ async def current_claims(
     tenant = await tenants_svc.ensure_trial_state(db, tenant)
     if tenant.status == "suspended":
         from app.tenants import PROTECTED_TENANT_SLUGS
-        from app.rbac import is_platform_role
 
         slug = (tenant.slug or "").strip().lower()
         tid = (tenant.id or "").strip().lower()
@@ -247,7 +249,12 @@ async def current_claims(
         ):
             raise HTTPException(status_code=403, detail="Tenant suspended or missing")
 
-    data["permissions"] = user.permissions or permissions_for_role(user.role)
+    # Platform catalog roles: always use ROLE_PERMISSIONS. Persisted User.permissions
+    # snapshots go stale when the catalog gains modules (e.g. platform_packages:write).
+    if is_platform_role(user.role):
+        data["permissions"] = permissions_for_role(user.role)
+    else:
+        data["permissions"] = user.permissions or permissions_for_role(user.role)
     data["email_verified"] = user.email_verified
     data["totp_enabled"] = bool(user.totp_enabled)
     data["tenant_status"] = tenant.status
@@ -256,9 +263,14 @@ async def current_claims(
 
     data["package_code"] = getattr(tenant, "package_code", None) or "trial"
     data["enabled_modules"] = packages_svc.resolve_enabled_modules(tenant)
-    data["industry"] = getattr(tenant, "industry", None) or "retail"
+    data["industry"] = packages_svc.canonicalize_industry(getattr(tenant, "industry", None)) or ""
     data["branch_id"] = getattr(user, "branch_id", None)
     data["department_id"] = getattr(user, "department_id", None)
+    from app import store_access as store_access_svc
+
+    await store_access_svc.bind_location_scope(
+        db, tenant_id=tenant_id, user_id=user_id, claims=data
+    )
     from app.rbac import record_scope_from_permissions
     from app import org_units as org_units_svc
 
@@ -302,17 +314,49 @@ def require_platform_permission(module: str, action: str = "read"):
         role = claims.get("role") or ""
         if not is_platform_role(role):
             raise HTTPException(status_code=403, detail="Platform staff access required")
-        overrides = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
-        if overrides and overrides.get("*") == ["*"]:
-            return claims
-        if not has_permission(role, module, action, overrides=overrides):
-            raise HTTPException(
-                status_code=403,
-                detail=f"Missing platform permission: {module}:{action}",
-            )
+        # Evaluate against the role catalog only — ignore stale User.permissions
+        # snapshots that can strip write after ROLE_PERMISSIONS grows.
+        if not has_permission(role, module, action, overrides=None):
+            if module == "platform_packages" and action == "write":
+                detail = (
+                    "Package and feature-module changes require a platform admin or "
+                    "owner. Contact your admin to assign a package or update modules."
+                )
+            else:
+                detail = f"Missing platform permission: {module}:{action}"
+            raise HTTPException(status_code=403, detail=detail)
         return claims
 
     return dep
+
+
+async def optional_platform_ops_claims(
+    request: Request,
+    creds: HTTPAuthorizationCredentials | None = Depends(bearer),
+    x_tenant_id: Annotated[str | None, Header(alias="X-Tenant-ID")] = None,
+    x_api_key: Annotated[str | None, Header(alias="X-API-Key")] = None,
+    db: AsyncSession = Depends(get_db),
+) -> dict | None:
+    """Platform staff claims, or None (probes and tenant callers stay anonymous).
+
+    Invalid tenant/API-key headers are ignored so liveness probes never 422.
+    """
+    if not creds and not (x_api_key or "").strip():
+        return None
+    tenant_header = (x_tenant_id or "").strip() or None
+    if tenant_header:
+        try:
+            uuid.UUID(tenant_header)
+        except ValueError:
+            tenant_header = None
+    key_header = (x_api_key or "").strip() or None
+    try:
+        claims = await current_claims(request, creds, tenant_header, key_header, db)
+    except HTTPException:
+        return None
+    if not is_platform_role(claims.get("role")):
+        return None
+    return claims
 
 
 def require_permission(module: str, action: str = "read"):
@@ -330,7 +374,7 @@ def require_permission(module: str, action: str = "read"):
             from app import packages as packages_svc
 
             mod = (module or "").strip().lower()
-            industry = (claims.get("industry") or "retail").strip().lower()
+            industry = packages_svc.canonicalize_industry(claims.get("industry"))
             if (
                 mod
                 and mod in packages_svc.INDUSTRY_SPECIFIC_MODULES

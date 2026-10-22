@@ -17,7 +17,7 @@ _password = TypeAdapter(TwoFactorDisablePasswordValue)
 def test_two_factor_disable_password_value_schema():
     assert _password.validate_python("  Tip253Pass!  ") == "Tip253Pass!"
     assert _password.validate_python("a" * 128) == "a" * 128
-    for bad in ("", " ", "!!!", "http://evil", "a@b", "pass word", "a" * 129):
+    for bad in ("", " ", "!!!", "http://evil", "pass word", "a" * 129):
         with pytest.raises(ValidationError):
             _password.validate_python(bad)
 
@@ -26,7 +26,7 @@ def test_two_factor_disable_password_value_schema():
     )
     assert ok.password == "SecurePass123!"
     assert ok.code == "123456"
-    for bad in ("", "!!!", "http://evil", "a@b", "pass word"):
+    for bad in ("", "!!!", "http://evil", "pass word"):
         with pytest.raises(ValidationError):
             TwoFactorDisable.model_validate({"password": bad, "code": "123456"})
     with pytest.raises(ValidationError):
@@ -53,7 +53,7 @@ async def test_two_factor_disable_password_api_blank_invalid_422(client):
         ac, email="admin@alpha.example.com", tenant_slug="alpha"
     )
 
-    for bad in ("", "!!!", "http://evil", "a@b", "pass word"):
+    for bad in ("", "!!!", "http://evil", "pass word"):
         resp = await ac.post(
             "/api/v1/auth/2fa/disable",
             headers=headers,

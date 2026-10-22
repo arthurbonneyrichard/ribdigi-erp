@@ -12,6 +12,7 @@ from httpx import ASGITransport
 from app.main import app
 from loadtest.config import TARGETS
 from loadtest.runner import run_baseline
+from tests.ops_evidence import write_ops_evidence
 
 ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE_DIR = Path("/opt/ribdigi/artifacts/loadtest")
@@ -31,7 +32,6 @@ async def test_c1_capacity_evidence_artifact(client, db_session):
     await catalog_meta_svc.ensure_default_catalog(db_session, seed["t1"].id)
     await db_session.commit()
 
-    EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
     transport = ASGITransport(app=app)
 
     smoke = await run_baseline(
@@ -87,8 +87,8 @@ async def test_c1_capacity_evidence_artifact(client, db_session):
         "staging_locust_deferred": True,
         "stage18_smoke_artifact": "stage18_t1_baseline_smoke.json",
     }
-    EVIDENCE_FILE.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    loaded = json.loads(EVIDENCE_FILE.read_text(encoding="utf-8"))
+    written = write_ops_evidence(EVIDENCE_FILE, json.dumps(payload, indent=2) + "\n")
+    loaded = json.loads(written.read_text(encoding="utf-8"))
     assert loaded["passed"] is True
     assert loaded["operator_1000vu_required"] is True
     assert loaded["profiles"]["ci_capacity"]["passed"] is True

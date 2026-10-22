@@ -31,7 +31,7 @@ def test_stock_count_cancel_reason_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Stock count cancel reason"' in page
     assert "countCancelReason" in page
-    assert "aria-label={`Cancel stock count ${c.id}`}" in page
+    assert "ariaLabel: `Cancel stock count ${c.id}`" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "StockCountCancelReasonValue" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")

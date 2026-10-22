@@ -2,10 +2,25 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { api } from '../../../lib/api';
+import { formatDate, formatMoney, formatTime } from '../../../lib/format';
 import { getMe } from '../../../lib/meCache';
+import { industryLabel, normalizeIndustry } from '../../../lib/industries';
+import {
+  dashboardLayout,
+  filterIndustryDashboardFeatures,
+  industryDashboardFeatures,
+  industryHomePath,
+  isSoftwareOwnerIndustry,
+  softwareOwnerDashboardPath,
+  type IndustryDashboardFeature,
+} from '../../../lib/industryDashboard';
+import { WholesaleDeskCards } from '../../../components/IndustryDashboardViews';
+import { DailyBars, TrendLine } from '../../../components/RetailDashboardInfographic';
+import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import { useStoreContext } from '../../../lib/storeContext';
-import { canDownloadStaffGuide } from '../../../lib/industries';
+import OfflineProvisionalNotice from '../../../components/OfflineProvisionalNotice';
 
 type Subscription = {
   status?: string;
@@ -34,6 +49,11 @@ type Dash = {
   expiring_soon?: number;
   customers?: number;
   suppliers?: number;
+  ar_total_due?: number;
+  ap_total_due?: number;
+  credit_outstanding?: number;
+  ar_open_parties?: number;
+  ap_open_parties?: number;
   comparisons?: {
     sales_today?: number;
     sales_yesterday?: number;
@@ -44,6 +64,17 @@ type Dash = {
   };
   monthly_sales?: { label: string; total: number }[];
   daily_sales?: { label: string; sales: number; profit: number }[];
+  gross_profit_7d?: number;
+  gross_profit_30d?: number;
+  rx_queue?: {
+    received?: number;
+    review?: number;
+    approved?: number;
+    dispensed?: number;
+    cancelled?: number;
+    open?: number;
+  } | null;
+  rx_only_count?: number | null;
   recent_sales?: { reference: string; date: string; total: number; customer: string; type: string }[];
   top_products_by_revenue?: TopProduct[];
   top_products_by_quantity?: TopProduct[];
@@ -52,6 +83,34 @@ type Dash = {
   scope?: string;
   store_id?: string | null;
   store_name?: string | null;
+  industry?: string | null;
+  industry_home?: string | null;
+  industry_features?: IndustryDashboardFeature[];
+  dashboard_layout?: string;
+  show_retail_operations?: boolean;
+  returns_count?: number;
+  wholesale_desk?: {
+    open_quotes?: number;
+    open_orders?: number;
+    reserved_qty?: number;
+    ar_total_due?: number;
+  } | null;
+  pharmacy_desk?: {
+    sales_today?: number;
+    returns_today?: number;
+    awaiting_review?: number;
+    ready_to_dispense?: number;
+    partially_dispensed?: number;
+    low_stock?: number;
+    out_of_stock?: number;
+    expiring_soon?: number;
+    expired_lots?: number;
+    on_hand_lots?: number;
+    quarantined?: number;
+    recalled?: number;
+    pending_purchase_orders?: number;
+    rx_only_count?: number;
+  } | null;
 };
 
 // Monochrome line icons for panel headings (same style as the sidebar).
@@ -68,12 +127,6 @@ const PANEL_ICONS: Record<string, React.ReactNode> = {
       <circle cx="9" cy="7" r="4" />
       <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
       <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </>
-  ),
-  pie: (
-    <>
-      <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
-      <path d="M22 12A10 10 0 0 0 12 2v10z" />
     </>
   ),
   daily: (
@@ -128,70 +181,6 @@ function PanelIcon({ name }: { name: string }) {
   );
 }
 
-function DailyBars({
-  data,
-  field,
-  color,
-}: {
-  data: { label: string; sales: number; profit: number }[];
-  field: 'sales' | 'profit';
-  color: string;
-}) {
-  const n = data.length || 1;
-  const max = Math.max(1, ...data.map((x) => x[field] || 0));
-  const slot = 300 / n;
-  const bw = Math.min(26, slot * 0.55);
-  return (
-    <svg viewBox="0 0 300 172" width="100%" height="172" role="img" aria-label={`Daily ${field}`}>
-      <line x1="8" y1="138" x2="292" y2="138" stroke="#D4E5C4" />
-      {data.map((t, i) => {
-        const v = t[field] || 0;
-        const h = Math.max(0, (v / max) * 112);
-        const x = i * slot + (slot - bw) / 2;
-        const y = 138 - h;
-        return (
-          <g key={t.label + i}>
-            <rect x={x} y={y} width={bw} height={h} rx={5} fill={color} />
-            <text x={x + bw / 2} y={y - 5} textAnchor="middle" className="vbar-val">
-              {v ? new Intl.NumberFormat().format(Math.round(v)) : ''}
-            </text>
-            <text x={x + bw / 2} y={156} textAnchor="middle" className="vbar-label">
-              {t.label}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
-function TrendLine({
-  data,
-  color,
-}: {
-  data: { label: string; sales: number }[];
-  color: string;
-}) {
-  const max = Math.max(1, ...data.map((x) => x.sales || 0));
-  const pts = data.map((t, i) => {
-    const x = data.length <= 1 ? 150 : (i / (data.length - 1)) * 284 + 8;
-    const y = 138 - ((t.sales || 0) / max) * 112;
-    return `${x},${y}`;
-  });
-  return (
-    <svg viewBox="0 0 300 172" width="100%" height="172" role="img" aria-label="30-day sales">
-      <line x1="8" y1="138" x2="292" y2="138" stroke="#D4E5C4" />
-      <polyline fill="none" stroke={color} strokeWidth="2.5" points={pts.join(' ')} />
-      <text x="8" y="156" className="vbar-label">
-        {data[0]?.label || ''}
-      </text>
-      <text x="292" y="156" textAnchor="end" className="vbar-label">
-        {data[data.length - 1]?.label || ''}
-      </text>
-    </svg>
-  );
-}
-
 function MonthlyBars({ data }: { data: { label: string; total: number }[] }) {
   const n = data.length || 1;
   const max = Math.max(1, ...data.map((x) => x.total || 0));
@@ -226,26 +215,6 @@ function pctLabel(pct?: number | null) {
   return `${sign}${pct}%`;
 }
 
-function polar(cx: number, cy: number, r: number, angle: number): [number, number] {
-  return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
-}
-
-function pieSlices(items: { label: string; value: number; color: string }[], cx: number, cy: number, r: number) {
-  const total = items.reduce((s, i) => s + i.value, 0);
-  if (total <= 0) return [];
-  let a = -Math.PI / 2;
-  return items.map((it) => {
-    const frac = it.value / total;
-    const a2 = a + frac * 2 * Math.PI;
-    const [x1, y1] = polar(cx, cy, r, a);
-    const [x2, y2] = polar(cx, cy, r, a2);
-    const large = frac > 0.5 ? 1 : 0;
-    const path = `M${cx} ${cy} L${x1.toFixed(2)} ${y1.toFixed(2)} A${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`;
-    a = a2;
-    return { path, color: it.color };
-  });
-}
-
 function subStatus(sub?: Subscription) {
   const status = sub?.status;
   const days = sub?.days_remaining;
@@ -270,10 +239,32 @@ function num(v?: number) {
   return new Intl.NumberFormat().format(Math.round((v || 0) * 100) / 100);
 }
 
+function moneyNum(v?: number) {
+  return formatMoney(v ?? 0);
+}
+
 function timeOfDay(hour: number): { greeting: string; icon: string; sub: string } {
   if (hour < 12) return { greeting: 'Good morning', icon: '\u2600\ufe0f', sub: 'A bright new day for your business.' };
   if (hour < 18) return { greeting: 'Good afternoon', icon: '\u26c5', sub: 'Keep the momentum going strong.' };
   return { greeting: 'Good evening', icon: '\ud83c\udf19', sub: "Here's how today wrapped up." };
+}
+
+function greetingClockFace(now: Date, timeFormat: string | null | undefined) {
+  const hours24 = now.getHours();
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  if (timeFormat === '12h') {
+    const h12 = hours24 % 12 || 12;
+    return {
+      hours: String(h12),
+      minutes,
+      meridiem: hours24 < 12 ? 'AM' : 'PM',
+    };
+  }
+  return {
+    hours: String(hours24).padStart(2, '0'),
+    minutes,
+    meridiem: null as string | null,
+  };
 }
 
 // Donut / ring geometry
@@ -283,87 +274,175 @@ function arc(fraction: number, radius: number) {
 }
 
 export default function Page() {
+  const router = useRouter();
   const { storeId: headerStoreId } = useStoreContext();
   const [d, setD] = useState<Dash>({});
   const [now, setNow] = useState<Date | null>(null);
   const [fullName, setFullName] = useState('');
-  const [canGuide, setCanGuide] = useState(false);
-  const [guideBusy, setGuideBusy] = useState(false);
-  const [guideError, setGuideError] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [dashStatus, setDashStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [dashError, setDashError] = useState('');
+  const [dashTick, setDashTick] = useState(0);
+  const [hotelHome, setHotelHome] = useState(false);
+  const [industry, setIndustry] = useState<string | null>(null);
+  const [industryRaw, setIndustryRaw] = useState<string | null>(null);
+  const [accountRole, setAccountRole] = useState('');
+  const [meReady, setMeReady] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+    getMe()
+      .then((me) => {
+        if (cancelled) return;
+        const role = String(me.data?.role || '');
+        const raw = String(me.data?.industry_raw || me.data?.industry || '').trim() || null;
+        setAccountRole(role);
+        setIndustryRaw(raw);
+        const ind = normalizeIndustry(me.data?.industry);
+        setIndustry(ind);
+        if (role === 'cashier') {
+          router.replace('/pos');
+          return;
+        }
+        if (softwareOwnerDashboardPath(role, raw)) {
+          setHotelHome(false);
+          return;
+        }
+        const home = industryHomePath(ind);
+        if (home !== '/dashboard' && home !== '/platform') {
+          setHotelHome(true);
+          router.replace(home);
+        } else {
+          setHotelHome(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setIndustry(null);
+      })
+      .finally(() => {
+        if (!cancelled) setMeReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
+  useEffect(() => {
+    if (!meReady || accountRole === 'cashier' || hotelHome) return;
+    let cancelled = false;
     setNow(new Date());
+    setDashStatus('loading');
+    setDashError('');
     const qs = headerStoreId ? `?store_id=${encodeURIComponent(headerStoreId)}` : '';
     api(`/dashboard${qs}`)
-      .then((r) => setD(r.data || {}))
-      .catch(() => {});
-  }, [headerStoreId]);
+      .then((r) => {
+        if (cancelled) return;
+        setD(r.data || {});
+        setDashStatus('ready');
+        const payloadIndustry = normalizeIndustry((r.data || {}).industry);
+        if (payloadIndustry) setIndustry(payloadIndustry);
+        const rawPayload = String((r.data || {}).industry || '').trim();
+        if (isSoftwareOwnerIndustry(rawPayload)) setIndustryRaw(rawPayload);
+        const payloadHome = industryHomePath((r.data || {}).industry);
+        const serverHome = (r.data || {}).industry_home;
+        const home = serverHome && serverHome !== '/dashboard' ? serverHome : payloadHome;
+        if (home === '/platform') return;
+        if (home && home !== '/dashboard') {
+          setHotelHome(true);
+          router.replace(home);
+        }
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setD({});
+        setDashError(err instanceof Error ? err.message : 'Unable to load dashboard');
+        setDashStatus('error');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [headerStoreId, dashTick, hotelHome, meReady, accountRole]);
 
   useEffect(() => {
     getMe()
       .then((r) => {
         setFullName(r.data?.full_name || '');
-        setCanGuide(canDownloadStaffGuide(r.data?.role, r.data?.permissions));
+        setCompanyName(String(r.data?.company_name || r.data?.tenant?.company_name || '').trim());
       })
-      .catch(() => {});
+      .catch(() => {
+        setCompanyName('');
+      });
   }, []);
 
-  async function downloadStaffGuide() {
-    setGuideError('');
-    setGuideBusy(true);
-    try {
-      const token = localStorage.getItem('token') || '';
-      const tenant = localStorage.getItem('tenant') || '';
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-      const headers: Record<string, string> = {};
-      if (token) headers.Authorization = `Bearer ${token}`;
-      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tenant)) {
-        headers['X-Tenant-ID'] = tenant;
-      }
-      const response = await fetch(`${apiBase.replace(/\/$/, '')}/staff-guide`, {
-        headers,
-        cache: 'no-store',
-      });
-      const type = (response.headers.get('content-type') || '').toLowerCase();
-      if (!response.ok || !type.includes('pdf')) {
-        let detail = 'Could not download the guide.';
-        try {
-          const body = await response.json();
-          const raw = body?.detail;
-          if (typeof raw === 'string') detail = raw;
-          else if (raw?.message) detail = String(raw.message);
-        } catch {
-          if (response.status === 401) detail = 'Sign in required';
-          if (response.status === 403) detail = 'Missing permission: staff_guide:download';
-        }
-        setGuideError(detail);
-        return;
-      }
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'RIBDIGI-ERP-Customer-User-Guide.pdf';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-    } catch {
-      setGuideError('Could not download the guide.');
-    } finally {
-      setGuideBusy(false);
-    }
-  }
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let lastTenant = localStorage.getItem('tenant') || '';
+    const applyTenantChange = () => {
+      const next = localStorage.getItem('tenant') || '';
+      if (next === lastTenant) return;
+      lastTenant = next;
+      void getMe({ force: true })
+        .then((r) => {
+          setCompanyName(String(r.data?.company_name || r.data?.tenant?.company_name || '').trim());
+          const role = String(r.data?.role || '');
+          const raw = String(r.data?.industry_raw || r.data?.industry || '').trim() || null;
+          setAccountRole(role);
+          setIndustryRaw(raw);
+          const ind = normalizeIndustry(r.data?.industry);
+          setIndustry(ind);
+          setD({});
+          setDashStatus('loading');
+          if (role === 'cashier') {
+            router.replace('/pos');
+            return;
+          }
+          if (softwareOwnerDashboardPath(role, raw)) {
+            setHotelHome(false);
+            return;
+          }
+          const home = industryHomePath(ind);
+          if (home !== '/dashboard' && home !== '/platform') {
+            setHotelHome(true);
+            router.replace(home);
+          } else {
+            setHotelHome(false);
+            setDashTick((n) => n + 1);
+          }
+        })
+        .catch(() => undefined);
+    };
+    window.addEventListener('storage', applyTenantChange);
+    const id = window.setInterval(applyTenantChange, 800);
+    return () => {
+      window.removeEventListener('storage', applyTenantChange);
+      window.clearInterval(id);
+    };
+  }, [router]);
 
-  const firstName = fullName.trim().split(/\s+/)[0] || '';
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+    tick();
+    let intervalId = 0;
+    const delay = 60_000 - (Date.now() % 60_000);
+    const timeoutId = window.setTimeout(() => {
+      tick();
+      intervalId = window.setInterval(tick, 60_000);
+    }, delay);
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  const signedInName = fullName.trim();
+  const formatPrefs = useCompanyFormat();
 
   const tod = useMemo(() => timeOfDay(now ? now.getHours() : 9), [now]);
-  const dateLabel = useMemo(
-    () =>
-      now
-        ? now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-        : '',
-    [now],
+  const dateLabel = useMemo(() => (now ? formatDate(now, formatPrefs) : ''), [now, formatPrefs]);
+  const timeLabel = useMemo(() => (now ? formatTime(now, formatPrefs) : ''), [now, formatPrefs]);
+  const clockFace = useMemo(
+    () => (now ? greetingClockFace(now, formatPrefs?.time_format) : null),
+    [now, formatPrefs]
   );
 
   const sub = d.subscription;
@@ -377,7 +456,7 @@ export default function Page() {
   const low = d.low_stock || 0;
   const oos = d.out_of_stock || 0;
   const expiring = d.expiring_soon || 0;
-  const inStock = Math.max(0, products - low);
+  const inStock = Math.max(0, products - low - oos);
   const customers = d.customers || 0;
   const suppliers = d.suppliers || 0;
   const cmp = d.comparisons || {};
@@ -408,33 +487,104 @@ export default function Page() {
   const dailyEmpty = daily.every((x) => !x.sales && !x.profit);
   const recent = d.recent_sales || [];
 
-  const finItems = [
-    { label: 'Sales', value: sales, color: '#4AB012' },
-    { label: 'Purchases', value: purchases, color: '#38bdf8' },
-    { label: 'Expenses', value: expenses, color: '#fb7185' },
-  ].filter((x) => x.value > 0);
-  const finTotal = finItems.reduce((s, i) => s + i.value, 0);
-  const finSlices = pieSlices(finItems, 70, 70, 66);
-
   const stats = [
     {
       cls: 's-sales',
       ico: '\ud83d\udcb0',
       label: 'Total Sales',
-      val: num(sales),
+      val: moneyNum(sales),
       href: links.sales || '/sales',
-      sub: `Today ${num(cmp.sales_today)} (${pctLabel(cmp.sales_today_pct)} vs yday) · MTD ${num(cmp.sales_mtd)} (${pctLabel(cmp.sales_mtd_pct)} vs last mo)`,
+      sub: `Recorded sales. Today ${moneyNum(cmp.sales_today)}, ${pctLabel(cmp.sales_today_pct)} versus yesterday. This month ${moneyNum(cmp.sales_mtd)}, ${pctLabel(cmp.sales_mtd_pct)} versus last month.`,
     },
-    { cls: 's-buy', ico: '\ud83d\uded2', label: 'Purchases', val: num(purchases), href: links.purchases || '/purchasing' },
-    { cls: 's-exp', ico: '\ud83e\udde7', label: 'Expenses', val: num(expenses), href: links.expenses || '/expenses' },
-    { cls: 's-net', ico: '\ud83d\udcc8', label: 'Net Position', val: num(net), href: links.reports_sales || '/reports' },
+    {
+      cls: 's-buy',
+      ico: '\ud83d\uded2',
+      label: 'Purchases',
+      val: moneyNum(purchases),
+      href: links.purchases || '/purchasing',
+      sub: 'Recorded purchases',
+    },
+    {
+      cls: 's-exp',
+      ico: '\ud83e\udde7',
+      label: 'Expenses',
+      val: moneyNum(expenses),
+      href: links.expenses || '/expenses',
+      sub: 'Approved expenses, including company-wide',
+    },
+    {
+      cls: 's-net',
+      ico: '\ud83d\udcc8',
+      label: 'Net position',
+      val: moneyNum(net),
+      href: links.reports_sales || '/reports',
+      sub: 'Sales minus purchases minus expenses',
+    },
+    {
+      cls: 's-sales',
+      ico: '\ud83d\udcc8',
+      label: 'Gross profit',
+      val: moneyNum(d.gross_profit_7d),
+      href: links.reports_sales || '/reports',
+      sub: `Sale price minus product cost, last 7 days. Last 30 days ${moneyNum(d.gross_profit_30d)}.`,
+    },
   ];
 
-  const countStats = [
-    { label: 'Customers', val: customers, href: links.customers || '/sales' },
-    { label: 'Suppliers', val: suppliers, href: links.suppliers || '/purchasing' },
-    { label: 'Products', val: products, href: links.products || '/inventory' },
-  ];
+  const serverLayout = typeof d.dashboard_layout === 'string' ? d.dashboard_layout : '';
+  const rawIndustry = industryRaw || (typeof d.industry === 'string' ? d.industry : null) || industry;
+  const ownerHome = softwareOwnerDashboardPath(accountRole, rawIndustry);
+  const platformLayout = serverLayout === 'platform' || isSoftwareOwnerIndustry(rawIndustry);
+  const layout = serverLayout || (meReady ? dashboardLayout(d.industry || industry) : '');
+
+  useEffect(() => {
+    if (!ownerHome) return;
+    router.replace(ownerHome);
+  }, [ownerHome, router]);
+  const liveIndustry = normalizeIndustry(d.industry) || industry;
+  const featureCards = filterIndustryDashboardFeatures(
+    d.industry_features && d.industry_features.length
+      ? d.industry_features
+      : industryDashboardFeatures(liveIndustry),
+    liveIndustry
+  ).filter((f) => f.id !== 'pos' && f.id !== 'inventory' && f.id !== 'customers');
+
+  if (ownerHome || platformLayout) {
+    return (
+      <p className="muted" role="status">
+        {ownerHome
+          ? 'Opening platform console…'
+          : accountRole
+            ? 'This workspace uses the platform console.'
+            : 'Loading dashboard…'}
+      </p>
+    );
+  }
+
+  if (!meReady && !serverLayout) {
+    return (
+      <p className="muted" role="status">
+        Loading dashboard…
+      </p>
+    );
+  }
+
+  if (accountRole === 'cashier') {
+    return (
+      <p className="muted" role="status">
+        Opening POS…
+      </p>
+    );
+  }
+
+  const awayHome = industryHomePath(d.industry || industry);
+  if (awayHome !== '/platform' && (hotelHome || (awayHome && awayHome !== '/dashboard'))) {
+    const opening = awayHome === '/restaurant' ? 'restaurant' : 'hotel';
+    return (
+      <p className="muted" role="status">
+        Opening {opening} dashboard…
+      </p>
+    );
+  }
 
   return (
     <>
@@ -448,46 +598,78 @@ export default function Page() {
               <span aria-hidden>{status.icon}</span> {status.label}
             </span>
           )}
-          <h1 className="greet">
-            {tod.greeting}
-            {firstName ? `, ${firstName}` : ''} <span className="wave">{tod.icon}</span>
-          </h1>
-          <p className="greet-sub">{tod.sub}</p>
+          <div className="greet-row">
+            <div className="greet-copy">
+              <h1 className="greet">
+                {tod.greeting}
+                {signedInName ? `, ${signedInName}` : ''}{' '}
+                <span className="wave">{tod.icon}</span>
+              </h1>
+              <p className="greet-sub">{tod.sub}</p>
+            </div>
+            {timeLabel && clockFace ? (
+              <div className="greet-clock">
+                <span className="greet-clock-kicker" aria-hidden="true">Local time</span>
+                <time
+                  className="greet-time"
+                  dateTime={now ? now.toISOString() : undefined}
+                  aria-label={`Dashboard greeting time, ${timeLabel}`}
+                >
+                  <span className="greet-face" aria-hidden="true">
+                    <span className="greet-digit">{clockFace.hours}</span>
+                    <span className="greet-colon">:</span>
+                    <span className="greet-digit">{clockFace.minutes}</span>
+                  </span>
+                  {clockFace.meridiem ? (
+                    <span className="greet-meridiem" aria-hidden="true">{clockFace.meridiem}</span>
+                  ) : null}
+                </time>
+              </div>
+            ) : null}
+          </div>
           <p className="greet-date">{dateLabel}</p>
+          <OfflineProvisionalNotice />
+          {liveIndustry && liveIndustry !== 'retail' && (
+            <p className="greet-date">{industryLabel(liveIndustry)} dashboard</p>
+          )}
           {sub?.status === 'trial' && sub?.trial_ends_at && (
-            <p className="greet-date">Trial ends {fmtDate(sub.trial_ends_at)}</p>
+            <p className="greet-date">Trial ends {formatDate(sub.trial_ends_at, formatPrefs)}</p>
           )}
           {sub?.status === 'grace' && sub?.grace_ends_at && (
-            <p className="greet-date">Grace period ends {fmtDate(sub.grace_ends_at)}</p>
+            <p className="greet-date">Grace period ends {formatDate(sub.grace_ends_at, formatPrefs)}</p>
+          )}
+          {dashStatus === 'loading' && (
+            <p className="greet-date" role="status">
+              Loading dashboard…
+            </p>
+          )}
+          {dashStatus === 'error' && (
+            <p className="greet-date" role="alert">
+              {dashError || 'Unable to load dashboard'}{' '}
+              <button type="button" onClick={() => setDashTick((n) => n + 1)} aria-label="Retry dashboard">
+                Retry
+              </button>
+            </p>
           )}
         </section>
-
-        {canGuide && (
-          <details className="card" style={{ marginTop: 16 }}>
-            <summary style={{ cursor: 'pointer', fontWeight: 700 }}>Staff user guide</summary>
-            <p className="muted" style={{ marginTop: 8 }}>
-              Step-by-step for adding products, stock, sales, the till, and purchasing.
-            </p>
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={downloadStaffGuide}
-              disabled={guideBusy}
-              aria-label="Download staff user guide PDF"
-            >
-              {guideBusy ? 'Preparing…' : 'Download user guide (PDF)'}
-            </button>
-            {guideError && (
-              <p className="login-error" role="alert" style={{ marginTop: 8 }}>
-                {guideError}
-              </p>
-            )}
-          </details>
-        )}
-
-        <section className="stat-grid">
+        {dashStatus !== 'ready' ? (
+          <section className="stat-grid" aria-busy={dashStatus === 'loading'}>
+            <div className="stat">
+              <div className="label">{dashStatus === 'error' ? 'Figures hidden until reload succeeds' : 'Waiting for figures'}</div>
+              <div className="val">{dashStatus === 'error' ? '—' : '…'}</div>
+            </div>
+          </section>
+        ) : (
+        <>
+        <section className="stat-grid dash-kpis">
           {stats.map((s) => (
-            <Link className={`stat ${s.cls}`} key={s.label} href={s.href} style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link
+              className={`stat ${s.cls}`}
+              key={s.label}
+              href={s.href}
+              style={{ textDecoration: 'none', color: 'inherit' }}
+              aria-label={`${s.label}: ${s.val}${s.sub ? `. ${s.sub}` : ''}`}
+            >
               <span className="rail" />
               <div className="ico">{s.ico}</div>
               <div className="label">{s.label}</div>
@@ -497,20 +679,67 @@ export default function Page() {
           ))}
         </section>
 
-        <section className="stat-grid" style={{ marginTop: 12 }}>
-          {countStats.map((s) => (
-            <Link className="stat" key={s.label} href={s.href} style={{ textDecoration: 'none', color: 'inherit' }}>
-              <div className="label">{s.label}</div>
-              <div className="val">{num(s.val)}</div>
-            </Link>
-          ))}
-          <Link className="stat" href={links.low_stock || '/reports'} style={{ textDecoration: 'none', color: 'inherit' }}>
-            <div className="label">Inventory alerts</div>
-            <div className="val" style={{ fontSize: 16 }}>
-              Low {num(low)} · OOS {num(oos)} · Exp {num(expiring)}
+        {liveIndustry === 'pharmacy' && d.pharmacy_desk && (
+          <section aria-label="Pharmacy" style={{ marginTop: 16 }}>
+            <h2 style={{ margin: '0 0 8px', fontSize: 18 }}>Pharmacy</h2>
+            <div className="stat-grid">
+              {[
+                { label: "Today's pharmacy sales", val: moneyNum(d.pharmacy_desk.sales_today), href: '/reports' },
+                { label: "Today's returns", val: num(d.pharmacy_desk.returns_today), href: '/sales' },
+                { label: 'Awaiting review', val: num(d.pharmacy_desk.awaiting_review), href: '/prescriptions?status=review' },
+                { label: 'Ready to dispense', val: num(d.pharmacy_desk.ready_to_dispense), href: '/prescriptions?status=approved' },
+                { label: 'Partially dispensed', val: num(d.pharmacy_desk.partially_dispensed), href: '/prescriptions?status=partially_dispensed' },
+                { label: 'Low-stock medicines', val: num(d.pharmacy_desk.low_stock), href: '/inventory?tab=lowstock' },
+                { label: 'Out of stock', val: num(d.pharmacy_desk.out_of_stock), href: '/inventory?tab=products&stock=oos' },
+                { label: 'Nearing expiry', val: num(d.pharmacy_desk.expiring_soon), href: '/inventory?tab=expiry&when=soon' },
+                { label: 'Expired lots', val: num(d.pharmacy_desk.expired_lots), href: '/inventory?tab=expiry&when=expired' },
+                { label: 'Quarantined', val: num(d.pharmacy_desk.quarantined), href: '/prescriptions?holds=quarantine#lot-holds' },
+                { label: 'Recalled', val: num(d.pharmacy_desk.recalled), href: '/prescriptions?holds=recall#lot-holds' },
+                { label: 'Pending purchase orders', val: num(d.pharmacy_desk.pending_purchase_orders), href: '/purchasing' },
+              ].map((card) => (
+                <Link className="stat" key={card.label} href={card.href} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <div className="label">{card.label}</div>
+                  <div className="val">{card.val}</div>
+                </Link>
+              ))}
             </div>
-          </Link>
-        </section>
+            <div className="plat-actions" style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <Link href="/prescriptions?new=1">New prescription</Link>
+              <Link href="/prescriptions?status=approved">Dispense prescription</Link>
+              <Link href="/inventory?tab=products">New medicine</Link>
+              <Link href="/purchasing">Receive stock</Link>
+              <Link href="/pos">Pharmacy POS</Link>
+              <Link href="/reports">Pharmacy reports</Link>
+            </div>
+          </section>
+        )}
+
+        {featureCards.length > 0 && (
+          <section className="stat-grid" style={{ marginTop: 12 }} aria-label="Company shortcuts">
+            {featureCards.map((f) => {
+              let value = 'Open';
+              if (f.id === 'expiry_lots') value = num(expiring);
+              if (f.id === 'batches') value = num(d.pharmacy_desk?.on_hand_lots ?? 0);
+              if (f.id === 'prescriptions') value = num(d.rx_queue?.open ?? 0);
+              if (f.id === 'rx_products') value = num(d.rx_only_count ?? 0);
+              return (
+              <Link
+                className="stat"
+                key={f.id}
+                href={f.href}
+                style={{ textDecoration: 'none', color: 'inherit' }}
+              >
+                <div className="label">{f.label}</div>
+                <div className="val">{value}</div>
+              </Link>
+              );
+            })}
+          </section>
+        )}
+
+        {(layout === 'wholesale' || layout === 'retail_wholesale') && (
+          <WholesaleDeskCards status={dashStatus} desk={d.wholesale_desk} />
+        )}
 
         <section className="info-grid">
           <div className="panel">
@@ -560,7 +789,8 @@ export default function Page() {
               Inventory health
             </h3>
             <p className="hint">
-              In-stock vs reorder · <Link href={links.products || '/inventory'}>Inventory</Link>
+              In stock, low stock, out of stock, and lots expiring within 30 days ·{' '}
+              <Link href={links.products || '/inventory'}>Inventory</Link>
             </p>
             <div className="health">
               <svg width="130" height="130" viewBox="0 0 130 130" role="img" aria-label="Inventory health">
@@ -588,17 +818,17 @@ export default function Page() {
                   <span className="dot" style={{ background: '#4AB012', width: 12, height: 12, borderRadius: 4 }} />
                   In stock&nbsp;<b>{num(inStock)}</b>
                 </span>
-                <Link className="pill" href={links.low_stock || '/reports'} style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <span className="dot" style={{ background: '#fb7185', width: 12, height: 12, borderRadius: 4 }} />
+                <Link className="pill" href={links.low_stock || '/inventory?tab=lowstock'}>
+                  <span className="dot" style={{ background: '#f59e0b', width: 12, height: 12, borderRadius: 4 }} />
                   Low stock&nbsp;<b>{num(low)}</b>
                 </Link>
-                <Link className="pill" href={links.products || '/inventory'} style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <span className="dot" style={{ background: '#f59e0b', width: 12, height: 12, borderRadius: 4 }} />
+                <Link className="pill" href={links.out_of_stock || '/inventory?tab=products&stock=oos'}>
+                  <span className="dot" style={{ background: '#ef4444', width: 12, height: 12, borderRadius: 4 }} />
                   Out of stock&nbsp;<b>{num(oos)}</b>
                 </Link>
-                <Link className="pill" href={links.expiring || '/inventory'} style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <span className="dot" style={{ background: '#13612E', width: 12, height: 12, borderRadius: 4 }} />
-                  Expiring (30d)&nbsp;<b>{num(expiring)}</b>
+                <Link className="pill" href={links.expiring || '/inventory?tab=expiry'}>
+                  <span className="dot" style={{ background: '#fb923c', width: 12, height: 12, borderRadius: 4 }} />
+                  Expiring soon&nbsp;<b>{num(expiring)}</b>
                 </Link>
               </div>
             </div>
@@ -632,41 +862,6 @@ export default function Page() {
                 ))}
               </div>
             )}
-          </div>
-
-          <div className="panel">
-            <h3>
-              <PanelIcon name="pie" />
-              Revenue vs costs
-            </h3>
-            <p className="hint">Share of sales, purchases &amp; expenses</p>
-            <div className="mix">
-              <svg width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="Revenue vs costs">
-                {finTotal <= 0 ? (
-                  <circle cx="70" cy="70" r="66" fill="#EAF8D8" />
-                ) : finItems.length === 1 ? (
-                  <circle cx="70" cy="70" r="66" fill={finItems[0].color} />
-                ) : (
-                  finSlices.map((s, i) => <path key={i} d={s.path} fill={s.color} stroke="#fff" strokeWidth="1.5" />)
-                )}
-              </svg>
-              <div className="legend">
-                {finTotal <= 0 ? (
-                  <span className="li">No financial activity yet</span>
-                ) : (
-                  [
-                    { label: 'Sales', value: sales, color: '#4AB012' },
-                    { label: 'Purchases', value: purchases, color: '#38bdf8' },
-                    { label: 'Expenses', value: expenses, color: '#fb7185' },
-                  ].map((it) => (
-                    <span className="li" key={it.label}>
-                      <span className="dot" style={{ background: it.color }} /> {it.label} ·{' '}
-                      <b>&nbsp;{num(it.value)}</b>
-                    </span>
-                  ))
-                )}
-              </div>
-            </div>
           </div>
 
           <div className="panel">
@@ -749,7 +944,7 @@ export default function Page() {
                     <td>{p.name}</td>
                     <td>{p.sku || '—'}</td>
                     <td style={{ textAlign: 'right' }}>{num(p.quantity)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{num(p.revenue)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{moneyNum(p.revenue)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -783,13 +978,16 @@ export default function Page() {
                     <td>{s.customer}</td>
                     <td>{s.type === 'pos_sale' ? 'POS' : 'Sale'}</td>
                     <td>{fmtDate(s.date)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{num(s.total)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{moneyNum(s.total)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
         </section>
+        <p className="muted">A Ribdigi House product</p>
+        </>
+        )}
       </div>
     </>
   );

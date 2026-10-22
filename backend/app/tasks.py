@@ -28,6 +28,13 @@ def scan_quotation_expiry() -> dict:
     return jobs_svc.run_async(jobs_svc.job_scan_quotation_expiry())
 
 
+@celery.task(name="app.tasks.scan_batch_expiry")
+def scan_batch_expiry() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    return jobs_svc.run_async(jobs_svc.job_scan_batch_expiry())
+
+
 @celery.task(name="app.tasks.scan_recurring_expense_due")
 def scan_recurring_expense_due() -> dict:
     if not settings.CELERY_ENABLED:
@@ -103,6 +110,36 @@ def send_weekly_ai_insight_digest() -> dict:
     if not settings.CELERY_ENABLED:
         return {"skipped": True, "reason": "CELERY_ENABLED=false"}
     return jobs_svc.run_async(jobs_svc.job_send_weekly_ai_insight_digest())
+
+
+@celery.task(name="app.tasks.process_subscription_renewals")
+def process_subscription_renewals() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    return jobs_svc.run_async(jobs_svc.job_process_subscription_renewals())
+
+
+@celery.task(name="app.tasks.expire_ecommerce_reservations")
+def expire_ecommerce_reservations() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    return jobs_svc.run_async(jobs_svc.job_expire_ecommerce_reservations())
+
+
+@celery.task(name="app.tasks.sync_ecommerce_connectors")
+def sync_ecommerce_connectors() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    return jobs_svc.run_async(jobs_svc.job_sync_ecommerce_connectors())
+
+
+@celery.task(name="app.tasks.deliver_support_outbox")
+def deliver_support_outbox() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    from app.support_tickets import deliver_outbox_job
+
+    return jobs_svc.run_async(deliver_outbox_job())
 
 
 @celery.task(name="app.tasks.run_named_job")

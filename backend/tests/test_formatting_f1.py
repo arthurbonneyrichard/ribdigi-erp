@@ -92,6 +92,19 @@ async def test_formatting_patch_get_and_isolation(client):
     again = await ac.get("/api/v1/tenants/me", headers=headers)
     assert again.json()["data"]["date_format"] == "MM/DD/YYYY"
 
+    me = await ac.get("/api/v1/me", headers=headers)
+    assert me.status_code == 200, me.text
+    assert me.json()["data"]["date_format"] == "MM/DD/YYYY"
+    assert me.json()["data"]["time_format"] == "12h"
+
+    cashier = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
+    cashier_me = await ac.get("/api/v1/me", headers=cashier)
+    assert cashier_me.status_code == 200, cashier_me.text
+    assert cashier_me.json()["data"]["date_format"] == "MM/DD/YYYY"
+    assert cashier_me.json()["data"]["decimal_separator"] == ","
+    denied = await ac.get("/api/v1/tenants/me", headers=cashier)
+    assert denied.status_code == 403
+
     bad = await ac.patch(
         "/api/v1/tenants/me",
         headers=headers,

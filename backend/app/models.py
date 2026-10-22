@@ -6,6 +6,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     JSON,
     Numeric,
@@ -66,7 +67,7 @@ class Tenant(Base):
     # e.g. 2/10 net 30 → pct=2, days=10 (0 disables)
     early_pay_discount_pct: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     early_pay_discount_days: Mapped[int] = mapped_column(Integer, default=0)
-    # Sales invoice numbers: {prefix}-{YYYY}-{NNNN} (series resets each calendar year)
+    # Sales invoice numbers: {prefix}{YYYY}{NNNN} (series resets each calendar year)
     sales_invoice_number_prefix: Mapped[str] = mapped_column(String(20), default="INV")
     sales_invoice_number_next: Mapped[int] = mapped_column(Integer, default=1)
     sales_invoice_number_year: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -101,6 +102,9 @@ class Tenant(Base):
     # Subscription store quotas (Company == Tenant): null override/limit → package / full entitlement
     max_stores_override: Mapped[int | None] = mapped_column(Integer, nullable=True)
     store_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Offline POS auth window in hours (default 168 = 7 days, aligned with refresh-token policy).
+    # Configurable 1–168; not hardcoded in the POS client.
+    offline_auth_hours: Mapped[int] = mapped_column(Integer, default=168, server_default="168")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -280,6 +284,7 @@ class WarehouseStock(Base):
     warehouse_id: Mapped[str] = mapped_column(ForeignKey("warehouses.id"), index=True)
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
     quantity: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    minimum_stock: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     reorder_level: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     reorder_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
 
@@ -295,6 +300,8 @@ class ProductCategory(Base):
     name: Mapped[str] = mapped_column(String(120))
     tax_rate_id: Mapped[str | None] = mapped_column(ForeignKey("tax_rates.id"), nullable=True, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Optional restaurant prep routing: kitchen | bar | null (retail unused)
+    prep_station: Mapped[str | None] = mapped_column(String(20), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -353,12 +360,37 @@ class Product(Base):
     height: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)
     stock_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     reorder_level: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    minimum_stock: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     tax_rate_id: Mapped[str | None] = mapped_column(ForeignKey("tax_rates.id"), nullable=True)
     tax_exempt: Mapped[bool] = mapped_column(Boolean, default=False)
     # standard | zero_rated | exempt (tax_exempt kept in sync with exempt)
     tax_supply_class: Mapped[str] = mapped_column(String(20), default="standard")
     tracks_batches: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Pharmacy catalog extras (unused by mart/retail/hotel UI).
+    dosage_instructions: Mapped[str | None] = mapped_column(Text, nullable=True)
+    rx_only: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Wholesale MOQ in stockkeeping qty; 0 = no minimum (retail POS ignores it).
+    min_order_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    # Optional restaurant prep routing; overrides category when set
+    prep_station: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+
+
+class ProductPriceTier(Base):
+    """Qty break (and optional customer-group) wholesale unit price."""
+
+    __tablename__ = "product_price_tiers"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    customer_group_id: Mapped[str | None] = mapped_column(
+        ForeignKey("customer_groups.id"), nullable=True, index=True
+    )
+    min_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=1)
+    unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class ProductVariant(Base):
@@ -474,6 +506,8 @@ class Party(Base):
     customer_group_id: Mapped[str | None] = mapped_column(
         ForeignKey("customer_groups.id"), nullable=True, index=True
     )
+    # 1 point = 1 currency unit. Earned on POS sales; spent as a loyalty tender.
+    loyalty_points: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
 
 
 class PartyContact(Base):
@@ -955,6 +989,8 @@ class SalesInvoice(Base):
     # Header override: force reverse-charge memo for all lines (purchase parity).
     is_reverse_charge: Mapped[bool] = mapped_column(Boolean, default=False)
     discount_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    discount_type: Mapped[str] = mapped_column(String(16), default="fixed")
+    discount_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     total_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     paid_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     # Document currency; exchange_rate converts 1 doc unit → base (locked at create).
@@ -967,10 +1003,16 @@ class SalesInvoice(Base):
     due_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     quotation_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     sales_order_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    coupon_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    sales_channel: Mapped[str] = mapped_column(String(20), default="retail")
     emailed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     emailed_to: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    # Hybrid DBs (other-tree migrate) may already have this NOT NULL without a default.
+    credit_limit_overridden: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
 
 
 class SalesInvoiceItem(Base):
@@ -987,6 +1029,8 @@ class SalesInvoiceItem(Base):
     tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     tax_supply_class: Mapped[str] = mapped_column(String(20), default="standard")
     discount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    discount_type: Mapped[str] = mapped_column(String(16), default="fixed")
+    discount_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     line_subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     line_tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     is_reverse_charge: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -1094,6 +1138,8 @@ class PosSession(Base):
     expected_cash: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     actual_cash: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     cash_sales: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    cash_in: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    cash_out: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     card_sales: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     other_sales: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     total_sales: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
@@ -1102,6 +1148,22 @@ class PosSession(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     opened_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class PosCashMovement(Base):
+    """Cash in / cash out against an open POS shift (drops, pickups, paid-outs)."""
+
+    __tablename__ = "pos_cash_movements"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    session_id: Mapped[str] = mapped_column(ForeignKey("pos_sessions.id"), index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    movement_type: Mapped[str] = mapped_column(String(20), index=True)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    reason: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class PosPayment(Base):
@@ -1136,9 +1198,86 @@ class PosDevice(Base):
     app_version: Mapped[str | None] = mapped_column(String(40), nullable=True)
     user_agent: Mapped[str | None] = mapped_column(String(300), nullable=True)
     pending_queue_count: Mapped[int] = mapped_column(Integer, default=0)
+    offline_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Last POS selling pill: True while the cashier's browser is online.
+    selling_online: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Set when selling_online flips to false; cleared on the next online heartbeat.
+    offline_since: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class OfflineGrant(Base):
+    """Server-issued, device-bound offline POS authorization.
+
+    Sales created on the device between ``issued_at`` and ``valid_until`` (or
+    ``revoked_at`` when earlier) may sync later. Expiry blocks new offline sales
+    on the device; it never invalidates sales recorded inside the window.
+    """
+
+    __tablename__ = "offline_grants"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    device_id: Mapped[str] = mapped_column(String(64), index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    warehouse_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    industry: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    allowed_actions: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    can_override_allocation: Mapped[bool] = mapped_column(Boolean, default=False)
+    issued_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    valid_until: Mapped[datetime] = mapped_column(DateTime, index=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    revoke_reason: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class OfflineStockAllocation(Base):
+    """Per-device stock slice for offline selling under one grant."""
+
+    __tablename__ = "offline_stock_allocations"
+    __table_args__ = (UniqueConstraint("grant_id", "product_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    grant_id: Mapped[str] = mapped_column(ForeignKey("offline_grants.id"), index=True)
+    device_id: Mapped[str] = mapped_column(String(64), index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True)
+    warehouse_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    allocated_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    sold_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    released_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class OfflineSyncEvent(Base):
+    """Audit trail for offline POS sync (created_at, user, device, result, conflict).
+
+    Does not hold funds. Payment rows on the sale remain details-only.
+    """
+
+    __tablename__ = "offline_sync_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    device_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    client_request_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    sale_id: Mapped[str | None] = mapped_column(ForeignKey("transactions.id"), nullable=True, index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    offline_created_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    result: Mapped[str] = mapped_column(String(40), default="pending", index=True)
+    conflict_code: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    details: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    resolution: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    resolved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    resolution_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
 class JournalEntry(Base):
@@ -1361,7 +1500,10 @@ class WebAuthnChallenge(Base):
 
 class SalesQuotation(Base):
     __tablename__ = "sales_quotations"
-    __table_args__ = (UniqueConstraint("tenant_id", "quotation_number"),)
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "quotation_number"),
+        UniqueConstraint("tenant_id", "client_request_id", name="uq_sales_quotations_tenant_client_request"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -1371,6 +1513,8 @@ class SalesQuotation(Base):
     subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     discount_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    discount_type: Mapped[str] = mapped_column(String(16), default="fixed")
+    discount_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     total_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     valid_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -1380,6 +1524,8 @@ class SalesQuotation(Base):
     converted_invoice_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     emailed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     emailed_to: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    sales_channel: Mapped[str] = mapped_column(String(20), default="wholesale")
+    client_request_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -1397,6 +1543,8 @@ class SalesQuotationItem(Base):
     unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     discount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    discount_type: Mapped[str] = mapped_column(String(16), default="fixed")
+    discount_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
 
 
@@ -1416,6 +1564,8 @@ class SalesOrder(Base):
     subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     discount_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    discount_type: Mapped[str] = mapped_column(String(16), default="fixed")
+    discount_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     total_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
@@ -1424,6 +1574,8 @@ class SalesOrder(Base):
     processing_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     shipped_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     delivered_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    delivery_note_number: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
+    sales_channel: Mapped[str] = mapped_column(String(20), default="wholesale")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -1459,10 +1611,13 @@ class SalesOrderItem(Base):
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
     variant_id: Mapped[str | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True, index=True)
     quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    qty_fulfilled: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     unit_id: Mapped[str | None] = mapped_column(ForeignKey("units_of_measure.id"), nullable=True, index=True)
     unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     discount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    discount_type: Mapped[str] = mapped_column(String(16), default="fixed")
+    discount_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
 
 
@@ -1563,6 +1718,8 @@ class PurchaseInvoice(Base):
     supplier_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
     purchase_order_id: Mapped[str | None] = mapped_column(ForeignKey("purchase_orders.id"), nullable=True, index=True)
     goods_receipt_id: Mapped[str | None] = mapped_column(ForeignKey("goods_receipts.id"), nullable=True, index=True)
+    warehouse_id: Mapped[str | None] = mapped_column(ForeignKey("warehouses.id"), nullable=True, index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
     supplier_invoice_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
     status: Mapped[str] = mapped_column(String(30), default="draft", index=True)
     # draft -> unpaid -> partial/paid | cancelled; overdue derived when past due
@@ -1595,6 +1752,7 @@ class PurchaseInvoiceItem(Base):
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
     purchase_invoice_id: Mapped[str] = mapped_column(ForeignKey("purchase_invoices.id"), index=True)
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    line_no: Mapped[int] = mapped_column(Integer, default=0)
     quantity: Mapped[float] = mapped_column(Numeric(14, 3))
     unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
@@ -1770,6 +1928,9 @@ class HotelGuest(Base):
     preferences: Mapped[str | None] = mapped_column(Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    consent_marketing: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    travel_agent: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    loyalty_tier: Mapped[str | None] = mapped_column(String(40), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -1781,6 +1942,7 @@ class HotelSettings(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), unique=True, index=True)
+    property_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
     check_in_time: Mapped[str] = mapped_column(String(8), default="14:00", server_default="14:00")
     check_out_time: Mapped[str] = mapped_column(String(8), default="11:00", server_default="11:00")
     cancellation_hours: Mapped[int] = mapped_column(Integer, default=24, server_default="24")
@@ -1839,6 +2001,9 @@ class HotelReservation(Base):
     group_id: Mapped[str | None] = mapped_column(
         ForeignKey("hotel_reservation_groups.id"), nullable=True, index=True
     )
+    rate_plan_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    discount_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0, server_default="0")
+    discount_authorized_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -1918,6 +2083,7 @@ class HotelHousekeepingTask(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    due_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -1935,10 +2101,145 @@ class HotelMaintenanceTicket(Base):
     priority: Mapped[str] = mapped_column(String(20), default="normal")
     status: Mapped[str] = mapped_column(String(20), default="open", index=True)
     block_room: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    ooo_starts_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    ooo_ends_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     assigned_to: Mapped[str | None] = mapped_column(String(150), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HotelService(Base):
+    """Billable hotel extras (restaurant, laundry, transport, spa) posted to folios."""
+
+    __tablename__ = "hotel_services"
+    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    code: Mapped[str] = mapped_column(String(40))
+    name: Mapped[str] = mapped_column(String(150))
+    category: Mapped[str] = mapped_column(String(40), default="extra", index=True)
+    unit_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tax_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HotelRatePlan(Base):
+    """Configurable room rate plan (seasonal / weekday / promotional)."""
+
+    __tablename__ = "hotel_rate_plans"
+    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    code: Mapped[str] = mapped_column(String(40))
+    name: Mapped[str] = mapped_column(String(150))
+    room_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    weekday_only: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    weekend_only: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    min_nights: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    starts_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    ends_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HotelGuestRequest(Base):
+    """Front-desk guest request (wake-up, service, note)."""
+
+    __tablename__ = "hotel_guest_requests"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    reservation_id: Mapped[str | None] = mapped_column(
+        ForeignKey("hotel_reservations.id"), nullable=True, index=True
+    )
+    room_id: Mapped[str | None] = mapped_column(ForeignKey("hotel_rooms.id"), nullable=True, index=True)
+    kind: Mapped[str] = mapped_column(String(40), default="service", index=True)
+    title: Mapped[str] = mapped_column(String(150))
+    status: Mapped[str] = mapped_column(String(20), default="open", index=True)
+    due_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HotelLostFound(Base):
+    """Lost-and-found / room damage record."""
+
+    __tablename__ = "hotel_lost_found"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    room_id: Mapped[str | None] = mapped_column(ForeignKey("hotel_rooms.id"), nullable=True, index=True)
+    kind: Mapped[str] = mapped_column(String(20), default="lost", index=True)
+    description: Mapped[str] = mapped_column(String(500))
+    status: Mapped[str] = mapped_column(String(20), default="open", index=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HotelCashierShift(Base):
+    """Cashier shift open/close — payment information totals only."""
+
+    __tablename__ = "hotel_cashier_shifts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    opened_by: Mapped[str] = mapped_column(String(36), index=True)
+    opened_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    opening_float: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    closed_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    closing_float: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    payments_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="open", index=True)
+
+
+class HotelNightAudit(Base):
+    """End-of-day snapshot and business-date close."""
+
+    __tablename__ = "hotel_night_audits"
+    __table_args__ = (UniqueConstraint("tenant_id", "business_date"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    business_date: Mapped[date] = mapped_column(Date, index=True)
+    snapshot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HotelEvent(Base):
+    """Banquet / event booking. Optional room_id blocks that room for the dates."""
+
+    __tablename__ = "hotel_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    title: Mapped[str] = mapped_column(String(150))
+    space_name: Mapped[str] = mapped_column(String(120))
+    starts_on: Mapped[date] = mapped_column(Date, index=True)
+    ends_on: Mapped[date] = mapped_column(Date, index=True)
+    expected_guests: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    status: Mapped[str] = mapped_column(String(20), default="inquiry", index=True)
+    room_id: Mapped[str | None] = mapped_column(ForeignKey("hotel_rooms.id"), nullable=True, index=True)
+    guest_id: Mapped[str | None] = mapped_column(ForeignKey("hotel_guests.id"), nullable=True, index=True)
+    deposit_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -2043,3 +2344,915 @@ class FmcgCustomerAssignment(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PrintAgent(Base):
+    """Paired till-side print agent (secret stored hashed; never returned after pair)."""
+
+    __tablename__ = "print_agents"
+    __table_args__ = (UniqueConstraint("tenant_id", "label", "store_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    label: Mapped[str] = mapped_column(String(120))
+    token_hash: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    pairing_code_hash: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    pairing_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class Printer(Base):
+    """Tenant printer destination (browser dialog, paired agent, or allowlisted network)."""
+
+    __tablename__ = "printers"
+    __table_args__ = (UniqueConstraint("tenant_id", "name"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    agent_id: Mapped[str | None] = mapped_column(ForeignKey("print_agents.id"), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    # browser_dialog | print_agent | network
+    connection_type: Mapped[str] = mapped_column(String(30), default="browser_dialog")
+    paper: Mapped[str] = mapped_column(String(20), default="80mm")
+    purposes: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    copies: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    is_enabled: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    # Network ESC/POS: host/port set only via printers:write; never from POS/browser
+    host: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    port: Mapped[int] = mapped_column(Integer, default=9100, server_default="9100")
+    status: Mapped[str] = mapped_column(String(20), default="unknown", server_default="unknown")
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PrintJob(Base):
+    """Queued print work. Queued is not Printed. Retry does not create a new sale."""
+
+    __tablename__ = "print_jobs"
+    __table_args__ = (UniqueConstraint("tenant_id", "idempotency_key"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    printer_id: Mapped[str] = mapped_column(ForeignKey("printers.id"), index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    # pos_sale | sales_invoice | test | barcode
+    source_type: Mapped[str] = mapped_column(String(40), index=True)
+    source_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    # customer_receipt | invoice | kitchen | bar | barcode
+    purpose: Mapped[str] = mapped_column(String(40), index=True)
+    # queued | claimed | printing | printed | failed | cancelled | browser_pending
+    status: Mapped[str] = mapped_column(String(30), default="queued", index=True)
+    copies: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    attempt_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    idempotency_key: Mapped[str] = mapped_column(String(180), index=True)
+    reprint_of_job_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    payload: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    claimed_by_agent_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    claimed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    printed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class SalesCoupon(Base):
+    __tablename__ = "sales_coupons"
+    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    code: Mapped[str] = mapped_column(String(32), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    discount_type: Mapped[str] = mapped_column(String(16), default="percent")
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    min_spend: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    starts_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    ends_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    max_redemptions: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    per_customer_limit: Mapped[int] = mapped_column(Integer, default=0)
+    eligible_product_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    eligible_category_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class SalesCouponRedemption(Base):
+    __tablename__ = "sales_coupon_redemptions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    coupon_id: Mapped[str] = mapped_column(ForeignKey("sales_coupons.id"), index=True)
+    customer_id: Mapped[str | None] = mapped_column(ForeignKey("parties.id"), nullable=True, index=True)
+    source_type: Mapped[str] = mapped_column(String(40))
+    source_id: Mapped[str] = mapped_column(String(36), index=True)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class OtherIncome(Base):
+    __tablename__ = "other_incomes"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    description: Mapped[str] = mapped_column(Text, default="")
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    income_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    payment_method: Mapped[str] = mapped_column(String(40), default="cash")
+    liquid_account_id: Mapped[str | None] = mapped_column(ForeignKey("accounts.id"), nullable=True)
+    payer: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    reference: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    status: Mapped[str] = mapped_column(String(30), default="posted")
+    journal_entry_id: Mapped[str | None] = mapped_column(ForeignKey("journal_entries.id"), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class Prescription(Base):
+    """Pharmacy Rx record with counter statuses — not a clinic/HIS diagnosis module."""
+
+    __tablename__ = "prescriptions"
+    __table_args__ = (UniqueConstraint("tenant_id", "rx_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    rx_number: Mapped[str] = mapped_column(String(50), index=True)
+    customer_id: Mapped[str | None] = mapped_column(ForeignKey("parties.id"), nullable=True, index=True)
+    sale_id: Mapped[str | None] = mapped_column(ForeignKey("sales_invoices.id"), nullable=True, index=True)
+    prescriber_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="received")
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    approved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    dispensed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PrescriptionItem(Base):
+    __tablename__ = "prescription_items"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    prescription_id: Mapped[str] = mapped_column(ForeignKey("prescriptions.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    variant_id: Mapped[str | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True, index=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    qty_dispensed: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    dosage_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class BatchHold(Base):
+    """Quarantine/recall hold on a lot — pharmacy counter, not a regulator recall feed."""
+
+    __tablename__ = "batch_holds"
+    __table_args__ = (UniqueConstraint("tenant_id", "batch_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    batch_id: Mapped[str] = mapped_column(ForeignKey("product_batches.id"), index=True)
+    hold_type: Mapped[str] = mapped_column(String(20), default="quarantine")
+    status: Mapped[str] = mapped_column(String(20), default="open")
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    released_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class PrescriptionAttachment(Base):
+    __tablename__ = "prescription_attachments"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    prescription_id: Mapped[str] = mapped_column(ForeignKey("prescriptions.id"), index=True)
+    storage_key: Mapped[str] = mapped_column(String(500))
+    content_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    original_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GiftCard(Base):
+    """Stored-value card. Balance is tenant-scoped and never shared."""
+
+    __tablename__ = "gift_cards"
+    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    code: Mapped[str] = mapped_column(String(32), index=True)
+    balance: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    status: Mapped[str] = mapped_column(String(20), default="active")
+    issued_to_party_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HospitalPatient(Base):
+    __tablename__ = "hospital_patients"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(180))
+    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HospitalEncounter(Base):
+    """A visit. Not a diagnosis coder, insurer, or operating-theatre record."""
+
+    __tablename__ = "hospital_encounters"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    patient_id: Mapped[str] = mapped_column(ForeignKey("hospital_patients.id"), index=True)
+    reason: Mapped[str] = mapped_column(String(240))
+    status: Mapped[str] = mapped_column(String(20), default="open")
+    opened_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class CheckoutPaymentNotice(Base):
+    """Recorded payment information. No card capture and no fabricated subscription revenue."""
+
+    __tablename__ = "checkout_payment_notices"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    method: Mapped[str] = mapped_column(String(40))
+    reference: Mapped[str] = mapped_column(String(100))
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    funds_captured: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PrintJobAttempt(Base):
+    __tablename__ = "print_job_attempts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    job_id: Mapped[str] = mapped_column(ForeignKey("print_jobs.id"), index=True)
+    status: Mapped[str] = mapped_column(String(30))
+    detail: Mapped[str | None] = mapped_column(Text, nullable=True)
+    actor_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PlatformBillingPlan(Base):
+    """Software-owner price for an ERP package. Not a customer sale."""
+
+    __tablename__ = "platform_billing_plans"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    code: Mapped[str] = mapped_column(String(40), unique=True, index=True)
+    package_code: Mapped[str] = mapped_column(String(40), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    interval: Mapped[str] = mapped_column(String(16))
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    currency: Mapped[str] = mapped_column(String(3), default="GHS")
+    trial_days: Mapped[int] = mapped_column(Integer, default=14)
+    grace_days: Mapped[int] = mapped_column(Integer, default=7)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class TenantBillingAccount(Base):
+    """One SaaS billing profile per tenant. Stores gateway references, never card data."""
+
+    __tablename__ = "tenant_billing_accounts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), unique=True, index=True)
+    plan_id: Mapped[str | None] = mapped_column(
+        ForeignKey("platform_billing_plans.id"), nullable=True
+    )
+    billing_status: Mapped[str] = mapped_column(String(32), default="trialing")
+    auto_renew: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    consent_version: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    consent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    consent_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    consent_plan_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    consent_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    consent_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    price_override_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    price_override_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    consent_interval: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    gateway_provider: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    gateway_customer_ref: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    gateway_authorization_ref: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    paid_through: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    next_renewal_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    next_retry_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    canceled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    grace_ends_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_notice_key: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class TenantBillingInvoice(Base):
+    __tablename__ = "tenant_billing_invoices"
+    __table_args__ = (UniqueConstraint("idempotency_key", name="uq_tenant_billing_invoice_key"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    account_id: Mapped[str] = mapped_column(ForeignKey("tenant_billing_accounts.id"), index=True)
+    plan_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    idempotency_key: Mapped[str] = mapped_column(String(160))
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    currency: Mapped[str] = mapped_column(String(3))
+    status: Mapped[str] = mapped_column(String(16), default="open")
+    period_start: Mapped[datetime] = mapped_column(DateTime)
+    period_end: Mapped[datetime] = mapped_column(DateTime)
+    gateway_reference: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class TenantBillingAttempt(Base):
+    __tablename__ = "tenant_billing_attempts"
+    __table_args__ = (
+        UniqueConstraint("invoice_id", "attempt_number", name="uq_tenant_billing_attempt"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    invoice_id: Mapped[str] = mapped_column(ForeignKey("tenant_billing_invoices.id"), index=True)
+    attempt_number: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(16), default="pending")
+    failure_reason: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    gateway_reference: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PlatformTenantDeletion(Base):
+    """Minimal record that a company was deleted. No tenant foreign key.
+
+    The column is ``deleted_tenant_id`` so the tenant-scoped purge, which
+    deletes every table that has ``tenant_id``, leaves this row in place.
+    Do not store the company name, user names, or payment tokens here.
+    """
+
+    __tablename__ = "platform_tenant_deletions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    deleted_tenant_id: Mapped[str] = mapped_column(String(36), index=True)
+    actor_user_id: Mapped[str] = mapped_column(String(36))
+    status: Mapped[str] = mapped_column(String(16), default="pending")
+    error_code: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class TenantBillingEvent(Base):
+    """Processed gateway webhook id. Raw card payloads are not stored."""
+
+    __tablename__ = "tenant_billing_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    provider: Mapped[str] = mapped_column(String(32))
+    gateway_event_id: Mapped[str] = mapped_column(String(160), unique=True, index=True)
+    tenant_id: Mapped[str | None] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
+    invoice_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    event_type: Mapped[str] = mapped_column(String(80))
+    outcome: Mapped[str] = mapped_column(String(40))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PlatformBillingGateway(Base):
+    """One platform-wide subscription gateway. Secrets are ciphertext only."""
+
+    __tablename__ = "platform_billing_gateways"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    provider: Mapped[str] = mapped_column(String(32), default="mock")
+    mode: Mapped[str] = mapped_column(String(16), default="sandbox")
+    api_base_url: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    secret_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    webhook_secret_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    last_test_ok: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    last_test_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_test_message: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    last_webhook_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_webhook_outcome: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    updated_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class RestaurantTable(Base):
+    __tablename__ = "restaurant_tables"
+    __table_args__ = (UniqueConstraint("tenant_id", "code", name="uq_restaurant_table_code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    code: Mapped[str] = mapped_column(String(40))
+    name: Mapped[str] = mapped_column(String(120))
+    seats: Mapped[int] = mapped_column(Integer, default=2)
+    status: Mapped[str] = mapped_column(String(20), default="available")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class RestaurantModifierGroup(Base):
+    __tablename__ = "restaurant_modifier_groups"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class RestaurantModifier(Base):
+    __tablename__ = "restaurant_modifiers"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    group_id: Mapped[str] = mapped_column(ForeignKey("restaurant_modifier_groups.id"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class RestaurantRecipe(Base):
+    __tablename__ = "restaurant_recipes"
+    __table_args__ = (UniqueConstraint("tenant_id", "product_id", name="uq_restaurant_recipe_product"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    name: Mapped[str] = mapped_column(String(160))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class RestaurantRecipeLine(Base):
+    __tablename__ = "restaurant_recipe_lines"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    recipe_id: Mapped[str] = mapped_column(ForeignKey("restaurant_recipes.id"), index=True)
+    ingredient_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+
+
+class RestaurantOrder(Base):
+    __tablename__ = "restaurant_orders"
+    __table_args__ = (UniqueConstraint("tenant_id", "order_number", name="uq_restaurant_order_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    order_number: Mapped[str] = mapped_column(String(40))
+    service_mode: Mapped[str] = mapped_column(String(20))
+    table_id: Mapped[str | None] = mapped_column(ForeignKey("restaurant_tables.id"), nullable=True)
+    customer_name: Mapped[str | None] = mapped_column(String(180), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="open")
+    payment_method: Mapped[str] = mapped_column(String(32), default="cash")
+    subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    total_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class RestaurantOrderLine(Base):
+    __tablename__ = "restaurant_order_lines"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    order_id: Mapped[str] = mapped_column(ForeignKey("restaurant_orders.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    station: Mapped[str] = mapped_column(String(20), default="kitchen")
+
+
+class RestaurantOrderModifier(Base):
+    __tablename__ = "restaurant_order_modifiers"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    line_id: Mapped[str] = mapped_column(ForeignKey("restaurant_order_lines.id"), index=True)
+    modifier_id: Mapped[str] = mapped_column(ForeignKey("restaurant_modifiers.id"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+
+
+class RestaurantKitchenTicket(Base):
+    __tablename__ = "restaurant_kitchen_tickets"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    order_id: Mapped[str] = mapped_column(ForeignKey("restaurant_orders.id"), index=True)
+    station: Mapped[str] = mapped_column(String(20), default="kitchen")
+    status: Mapped[str] = mapped_column(String(20), default="queued")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class SupportTicketSequence(Base):
+    """Per-year counter for RIB-YYYY-NNNNNN references. No tenant_id (global)."""
+
+    __tablename__ = "support_ticket_sequences"
+
+    year: Mapped[int] = mapped_column(Integer, primary_key=True)
+    next_number: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class SupportNotificationRecipient(Base):
+    """Software-owner support inbox. No tenant_id so company purge cannot delete it."""
+
+    __tablename__ = "support_notification_recipients"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    last_test_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    last_test_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_test_error: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    updated_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class SupportTicket(Base):
+    __tablename__ = "support_tickets"
+    __table_args__ = (
+        UniqueConstraint("reference", name="uq_support_tickets_reference"),
+        Index("ix_support_tickets_tenant_status", "tenant_id", "status"),
+        Index("ix_support_tickets_created_at", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    reference: Mapped[str] = mapped_column(String(20), nullable=False)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    created_by: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    subject: Mapped[str] = mapped_column(String(200))
+    description: Mapped[str] = mapped_column(Text)
+    category: Mapped[str] = mapped_column(String(40), index=True)
+    priority: Mapped[str] = mapped_column(String(20), default="normal", index=True)
+    status: Mapped[str] = mapped_column(String(32), default="new", index=True)
+    assignee_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    assigned_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    resolved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    closed_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+
+
+class SupportTicketMessage(Base):
+    __tablename__ = "support_ticket_messages"
+    __table_args__ = (Index("ix_support_messages_ticket", "ticket_id", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    ticket_id: Mapped[str] = mapped_column(ForeignKey("support_tickets.id"), index=True)
+    author_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    visibility: Mapped[str] = mapped_column(String(20), default="public")  # public | internal
+    body: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class SupportTicketAttachment(Base):
+    __tablename__ = "support_ticket_attachments"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    ticket_id: Mapped[str] = mapped_column(ForeignKey("support_tickets.id"), index=True)
+    message_id: Mapped[str | None] = mapped_column(ForeignKey("support_ticket_messages.id"), nullable=True)
+    storage_key: Mapped[str] = mapped_column(String(500))
+    filename: Mapped[str] = mapped_column(String(200))
+    content_type: Mapped[str] = mapped_column(String(80))
+    size_bytes: Mapped[int] = mapped_column(Integer)
+    uploaded_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class SupportTicketEvent(Base):
+    __tablename__ = "support_ticket_events"
+    __table_args__ = (Index("ix_support_events_ticket", "ticket_id", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    ticket_id: Mapped[str] = mapped_column(ForeignKey("support_tickets.id"), index=True)
+    actor_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    action: Mapped[str] = mapped_column(String(80))
+    before: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    after: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class SupportEmailOutbox(Base):
+    __tablename__ = "support_email_outbox"
+    __table_args__ = (
+        UniqueConstraint("idempotency_key", name="uq_support_email_outbox_idempotency"),
+        Index("ix_support_email_outbox_status", "status"),
+        Index("ix_support_email_outbox_recipient", "recipient_email"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str | None] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
+    ticket_id: Mapped[str | None] = mapped_column(ForeignKey("support_tickets.id"), nullable=True, index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(220))
+    event_type: Mapped[str] = mapped_column(String(40))
+    recipient_email: Mapped[str] = mapped_column(String(255))
+    subject: Mapped[str] = mapped_column(String(200))
+    body_text: Mapped[str] = mapped_column(Text)
+    link_url: Mapped[str] = mapped_column(String(500), default="")
+    status: Mapped[str] = mapped_column(String(20), default="pending")  # pending | sending | sent | failed
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    last_error: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    failed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class EcommerceStorefront(Base):
+    """One built-in storefront per tenant. Catalog publish stays opt-in."""
+
+    __tablename__ = "ecommerce_storefronts"
+    __table_args__ = (UniqueConstraint("tenant_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    is_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    tagline: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    announcement: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    support_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    support_phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    fulfillment_warehouse_id: Mapped[str | None] = mapped_column(
+        ForeignKey("warehouses.id"), nullable=True, index=True
+    )
+    fulfillment_store_id: Mapped[str | None] = mapped_column(
+        ForeignKey("stores.id"), nullable=True, index=True
+    )
+    allow_delivery: Mapped[bool] = mapped_column(Boolean, default=True)
+    allow_pickup: Mapped[bool] = mapped_column(Boolean, default=True)
+    pickup_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    delivery_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    policy_shipping: Mapped[str | None] = mapped_column(Text, nullable=True)
+    policy_returns: Mapped[str | None] = mapped_column(Text, nullable=True)
+    policy_privacy: Mapped[str | None] = mapped_column(Text, nullable=True)
+    logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    banner_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    favicon_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    reservation_minutes: Mapped[int] = mapped_column(Integer, default=30)
+    preview_token: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class EcommerceDomain(Base):
+    """Verified custom hostname. Host headers are never trusted without this row."""
+
+    __tablename__ = "ecommerce_domains"
+    __table_args__ = (
+        UniqueConstraint("hostname", name="uq_ecommerce_domains_hostname"),
+        Index("ix_ecommerce_domains_tenant_status", "tenant_id", "status"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    hostname: Mapped[str] = mapped_column(String(253))
+    status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
+    # pending | verified
+    https_ready: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_primary: Mapped[bool] = mapped_column(Boolean, default=False)
+    redirect_to_id: Mapped[str | None] = mapped_column(
+        ForeignKey("ecommerce_domains.id"), nullable=True
+    )
+    verification_token: Mapped[str] = mapped_column(String(80))
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class EcommerceListing(Base):
+    """Opt-in catalog publication. Products are unpublished until a row is created."""
+
+    __tablename__ = "ecommerce_listings"
+    __table_args__ = (UniqueConstraint("tenant_id", "product_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    is_published: Mapped[bool] = mapped_column(Boolean, default=False)
+    online_price: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    stock_buffer: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    fulfillment_warehouse_id: Mapped[str | None] = mapped_column(
+        ForeignKey("warehouses.id"), nullable=True, index=True
+    )
+    external_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class EcommerceShopper(Base):
+    """Storefront customer. Separate from ERP staff User rows."""
+
+    __tablename__ = "ecommerce_shoppers"
+    __table_args__ = (UniqueConstraint("tenant_id", "email"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    email: Mapped[str] = mapped_column(String(255))
+    password_hash: Mapped[str] = mapped_column(String(255))
+    name: Mapped[str] = mapped_column(String(180))
+    party_id: Mapped[str | None] = mapped_column(ForeignKey("parties.id"), nullable=True)
+    session_token: Mapped[str | None] = mapped_column(String(80), unique=True, nullable=True, index=True)
+    session_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class EcommerceCart(Base):
+    __tablename__ = "ecommerce_carts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    token: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class EcommerceCartItem(Base):
+    __tablename__ = "ecommerce_cart_items"
+    __table_args__ = (UniqueConstraint("cart_id", "product_id", "variant_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    cart_id: Mapped[str] = mapped_column(ForeignKey("ecommerce_carts.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    variant_id: Mapped[str | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3), default=1)
+    unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+
+
+class EcommerceOrder(Base):
+    __tablename__ = "ecommerce_orders"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "order_number"),
+        UniqueConstraint("tenant_id", "tracking_token"),
+        UniqueConstraint("tenant_id", "external_id"),
+        Index("ix_ecommerce_orders_tenant_status", "tenant_id", "status"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    order_number: Mapped[str] = mapped_column(String(40), index=True)
+    tracking_token: Mapped[str] = mapped_column(String(80), index=True)
+    status: Mapped[str] = mapped_column(String(30), default="awaiting_payment", index=True)
+    # awaiting_payment | paid | fulfilled | cancelled | expired
+    fulfillment: Mapped[str] = mapped_column(String(20), default="delivery")
+    guest_name: Mapped[str] = mapped_column(String(180))
+    guest_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    guest_phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    delivery_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tax_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    total_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    currency: Mapped[str] = mapped_column(String(10), default="GHS")
+    party_id: Mapped[str | None] = mapped_column(ForeignKey("parties.id"), nullable=True)
+    sales_invoice_id: Mapped[str | None] = mapped_column(
+        ForeignKey("sales_invoices.id"), nullable=True, index=True
+    )
+    payment_reference: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    payment_provider: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    reserved_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    external_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    warehouse_id: Mapped[str | None] = mapped_column(ForeignKey("warehouses.id"), nullable=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True)
+    shopper_id: Mapped[str | None] = mapped_column(ForeignKey("ecommerce_shoppers.id"), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class EcommerceOrderItem(Base):
+    __tablename__ = "ecommerce_order_items"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    order_id: Mapped[str] = mapped_column(ForeignKey("ecommerce_orders.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    variant_id: Mapped[str | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+
+
+class EcommerceReservation(Base):
+    """Online hold that POS available_qty also subtracts."""
+
+    __tablename__ = "ecommerce_reservations"
+    __table_args__ = (Index("ix_ecommerce_reservations_active", "tenant_id", "status", "warehouse_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    order_id: Mapped[str] = mapped_column(ForeignKey("ecommerce_orders.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    variant_id: Mapped[str | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True)
+    warehouse_id: Mapped[str] = mapped_column(ForeignKey("warehouses.id"), index=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    status: Mapped[str] = mapped_column(String(20), default="active", index=True)
+    # active | released | consumed
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    released_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class EcommerceGateway(Base):
+    """Tenant storefront processor. Separate from Ribdigi subscription billing."""
+
+    __tablename__ = "ecommerce_gateways"
+    __table_args__ = (UniqueConstraint("tenant_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    provider: Mapped[str] = mapped_column(String(40), default="mock")
+    mode: Mapped[str] = mapped_column(String(10), default="test")
+    secret_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    webhook_secret_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    public_key_hint: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    last_test_ok: Mapped[bool] = mapped_column(Boolean, default=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class EcommercePaymentEvent(Base):
+    __tablename__ = "ecommerce_payment_events"
+    __table_args__ = (UniqueConstraint("tenant_id", "provider", "event_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    provider: Mapped[str] = mapped_column(String(40))
+    event_id: Mapped[str] = mapped_column(String(120))
+    order_id: Mapped[str | None] = mapped_column(ForeignKey("ecommerce_orders.id"), nullable=True)
+    payload_digest: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class EcommerceConnector(Base):
+    __tablename__ = "ecommerce_connectors"
+    __table_args__ = (UniqueConstraint("tenant_id", "platform"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    platform: Mapped[str] = mapped_column(String(40))
+    is_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    store_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    credentials_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_sync_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    next_sync_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    last_error: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class EcommerceSyncJob(Base):
+    __tablename__ = "ecommerce_sync_jobs"
+    __table_args__ = (Index("ix_ecommerce_sync_jobs_tenant", "tenant_id", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    connector_id: Mapped[str] = mapped_column(ForeignKey("ecommerce_connectors.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(40))
+    status: Mapped[str] = mapped_column(String(20), default="queued", index=True)
+    # queued | running | succeeded | failed
+    attempt: Mapped[int] = mapped_column(Integer, default=1)
+    stats: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    error: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    next_retry_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

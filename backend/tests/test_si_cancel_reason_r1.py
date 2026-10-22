@@ -22,7 +22,7 @@ def test_si_cancel_reason_ui_wired():
     assert "path.includes('/invoices/') && path.endsWith('/cancel')" in page
     assert "setSiCancelReason" in page
     assert 'aria-label="Sales invoice cancel reason"' in page
-    assert "aria-label={`Cancel sales invoice ${inv.id}`}" in page
+    assert "ariaLabel: `Cancel sales invoice ${inv.id}`" in page
 
 
 async def _admin(ac, seed):

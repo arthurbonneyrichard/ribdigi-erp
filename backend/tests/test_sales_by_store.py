@@ -76,3 +76,52 @@ async def test_sales_by_store_aggregates_invoice_and_pos(db_session, seeded):
     assert row["pos_revenue"] == 40.0
     assert row["revenue"] == 150.0
     assert result["total_revenue"] == 150.0
+
+
+@pytest.mark.asyncio
+async def test_sales_by_store_hides_other_assigned_store(db_session, seeded):
+    tenant_id = seeded["t1"].id
+    keep = m.Store(tenant_id=tenant_id, name="Keep", code="KEEP", is_active=True)
+    other = m.Store(tenant_id=tenant_id, name="Other", code="OTHR", is_active=True)
+    db_session.add_all([keep, other])
+    await db_session.flush()
+    party = m.Party(tenant_id=tenant_id, name="Buyer", kind="customer", credit_limit=0)
+    db_session.add(party)
+    await db_session.flush()
+    db_session.add_all(
+        [
+            m.SalesInvoice(
+                tenant_id=tenant_id,
+                invoice_number="INV-KEEP",
+                customer_id=party.id,
+                status="posted",
+                subtotal=10,
+                tax_amount=0,
+                total_amount=10,
+                paid_amount=0,
+                store_id=keep.id,
+                posted_at=datetime.utcnow(),
+                created_by=seeded["admin1"].id,
+            ),
+            m.SalesInvoice(
+                tenant_id=tenant_id,
+                invoice_number="INV-OTHER",
+                customer_id=party.id,
+                status="posted",
+                subtotal=90,
+                tax_amount=0,
+                total_amount=90,
+                paid_amount=0,
+                store_id=other.id,
+                posted_at=datetime.utcnow(),
+                created_by=seeded["admin1"].id,
+            ),
+        ]
+    )
+    await db_session.commit()
+
+    result = await reports_svc.sales_by_store(db_session, tenant_id, store_ids=[keep.id])
+    ids = {row.get("store_id") for row in result["stores"]}
+    assert keep.id in ids
+    assert other.id not in ids
+    assert result["total_revenue"] == 10.0

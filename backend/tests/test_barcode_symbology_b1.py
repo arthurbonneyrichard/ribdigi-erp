@@ -61,3 +61,44 @@ async def test_generate_ean13_and_png(client, db_session):
     )
     assert label.status_code == 200, label.text
     assert "UPC-A" in label.text or "UPCA" in label.text or "upca" in label.text.lower()
+
+
+@pytest.mark.asyncio
+async def test_generate_without_force_keeps_existing_and_isolates_tenants(client):
+    ac, seed = client
+    headers = await _admin(ac, seed)
+    product = seed["p1"]
+
+    first = await ac.post(
+        f"/api/v1/products/{product.id}/barcode/generate?symbology=code128",
+        headers=headers,
+    )
+    assert first.status_code == 200, first.text
+    code = first.json()["data"]["barcode"]
+    assert code
+
+    again = await ac.post(
+        f"/api/v1/products/{product.id}/barcode/generate?symbology=code128",
+        headers=headers,
+    )
+    assert again.status_code == 200, again.text
+    assert again.json()["data"]["barcode"] == code
+    assert "already" in again.json()["message"].lower()
+
+    cashier = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
+    forbidden = await ac.post(
+        f"/api/v1/products/{product.id}/barcode/generate",
+        headers=cashier,
+    )
+    assert forbidden.status_code == 403, forbidden.text
+    readable = await ac.get(f"/api/v1/products/{product.id}/qr.png", headers=cashier)
+    assert readable.status_code == 200, readable.text
+
+    beta = await auth_headers(ac, email="cashier@beta.example.com", tenant_slug="beta")
+    isolated = await ac.get(f"/api/v1/products/{product.id}/qr.png", headers=beta)
+    assert isolated.status_code == 404, isolated.text
+    isolated_gen = await ac.post(
+        f"/api/v1/products/{product.id}/barcode/generate",
+        headers=beta,
+    )
+    assert isolated_gen.status_code in (403, 404), isolated_gen.text

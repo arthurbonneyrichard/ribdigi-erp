@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
+import './notify-ui.css';
 
 type Note = {
   id: string;
@@ -13,6 +16,39 @@ type Note = {
 };
 
 /** BR-4.4 category chips — maps to backend notification categories. */
+const PLATFORM_ROLES = new Set([
+  'super_admin',
+  'platform_owner',
+  'platform_admin',
+  'platform_support',
+  'platform_finance',
+]);
+
+/** Store operations stay on the tenant notification list. */
+const OPERATIONAL_CATEGORIES = new Set([
+  'low_stock',
+  'new_order',
+  'payment_due',
+  'purchase_received',
+  'credit_limit',
+  'shift_variance',
+  'expense_approval',
+  'quotation_expiry',
+  'batch_expiry',
+  'recurring_expense_due',
+  'transfer',
+]);
+
+const PLATFORM_CATEGORY_CHIPS: { id: string; label: string }[] = [
+  { id: '', label: 'All platform' },
+  { id: 'provisioning', label: 'Provisioning' },
+  { id: 'platform_security', label: 'Platform security' },
+  { id: 'staff_account', label: 'Staff accounts' },
+  { id: 'admin_password_reset', label: 'Password resets' },
+  { id: 'platform', label: 'Platform actions' },
+  { id: 'security', label: 'Security' },
+];
+
 const CATEGORY_CHIPS: { id: string; label: string }[] = [
   { id: '', label: 'All types' },
   { id: 'low_stock', label: 'Stock' },
@@ -23,6 +59,7 @@ const CATEGORY_CHIPS: { id: string; label: string }[] = [
   { id: 'shift_variance', label: 'POS' },
   { id: 'expense_approval', label: 'Expenses' },
   { id: 'quotation_expiry', label: 'Quotations' },
+  { id: 'batch_expiry', label: 'Expiry' },
   { id: 'recurring_expense_due', label: 'Recurring' },
   { id: 'transfer', label: 'Transfers' },
   { id: 'system', label: 'System' },
@@ -37,6 +74,16 @@ export default function Page() {
   const [prefs, setPrefs] = useState<any>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [prefsError, setPrefsError] = useState('');
+  const [platformAudience, setPlatformAudience] = useState(false);
+
+  useEffect(() => {
+    getMe()
+      .then((me) => setPlatformAudience(PLATFORM_ROLES.has(me.data?.role || '')))
+      .catch(() => setPlatformAudience(false));
+  }, []);
+
+  const chips = platformAudience ? PLATFORM_CATEGORY_CHIPS : CATEGORY_CHIPS;
 
   async function refresh() {
     const params = new URLSearchParams();
@@ -49,10 +96,17 @@ export default function Page() {
     try {
       const settings = await api('/notifications/settings');
       setPrefs(settings.data);
+      setPrefsError('');
     } catch (err: any) {
       setPrefs(null);
-      if (err?.message) setError(err.message);
+      setPrefsError(err?.message || 'Channel preferences could not be loaded. Refresh this page to try again.');
     }
+  }
+
+  function categoryLabel(id: string): string {
+    const chip = chips.find((c) => c.id === id);
+    if (chip) return chip.label;
+    return id.split('_').join(' ');
   }
 
   useEffect(() => {
@@ -129,17 +183,32 @@ export default function Page() {
     }
   }
 
-  return (
-    <>
-      <h1>Notifications</h1>
-      <p className="muted">
-        In-app notification center — unread badge, category filters, mark read/unread, and 90-day
-        history. Channel preferences for dashboard / email / SMS per type.
-      </p>
-      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
+  const emptyCopy =
+    status === 'unread'
+      ? platformAudience
+        ? 'No unread alerts. Choose All (90 days) to see older platform notices.'
+        : 'No unread alerts. Choose All (90 days) to see older ones, or Scan due alerts to look for payments and quotations.'
+      : platformAudience
+        ? 'Nothing matches this view. Choose All platform or another type above.'
+        : 'Nothing matches this view. Choose All types, or Scan due alerts to look for payments and quotations.';
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+  return (
+    <div className="notify-ui">
+      <PageHeader
+        title="Unread alerts"
+        subtitle="Start with unread items. Mark one read when you have dealt with it. All (90 days) keeps the recent history."
+      />
+      {platformAudience ? (
+        <p className="muted notify-ui-note">
+          Platform Owner notices only: provisioning, platform security, staff accounts, administrator
+          password resets, and other platform actions. Stock, orders, payments, and POS stay on
+          tenant notification lists.
+        </p>
+      ) : null}
+      {error && <p className="notify-ui-alert" role="alert">{error}</p>}
+      {message && <p className="notify-ui-ok" role="status">{message}</p>}
+
+      <div className="notify-ui-actions">
         <button
           onClick={() => setStatus('unread')}
           disabled={status === 'unread'}
@@ -155,13 +224,15 @@ export default function Page() {
           All (90 days)
         </button>
         <button onClick={markAll} aria-label="Mark all notifications read">Mark all read</button>
-        <button onClick={scanDue} aria-label="Scan due notification alerts">
-          Scan due alerts
-        </button>
+        {!platformAudience ? (
+          <button onClick={scanDue} aria-label="Scan due notification alerts">
+            Scan due alerts
+          </button>
+        ) : null}
       </div>
 
       <div className="notif-chips" aria-label="Filter by category">
-        {CATEGORY_CHIPS.map((c) => (
+        {chips.map((c) => (
           <button
             key={c.id || 'all'}
             type="button"
@@ -174,48 +245,55 @@ export default function Page() {
         ))}
       </div>
 
+      <div className="notify-ui-scroll">
       <table className="table">
         <thead>
           <tr>
-            <th>Category</th>
+            <th>Type</th>
             <th>Title</th>
             <th>Message</th>
             <th>Status</th>
-            <th></th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
             <tr>
               <td colSpan={5} className="muted">
-                {status === 'unread'
-                  ? 'No unread notifications. Switch to All (90 days) to see history.'
-                  : 'No notifications in this filter.'}
+                {emptyCopy}
               </td>
             </tr>
           ) : (
             rows.map((n) => (
             <tr key={n.id}>
-              <td>{n.category}</td>
+              <td>{categoryLabel(n.category)}</td>
               <td>{n.title}</td>
               <td>{n.message}</td>
-              <td>{n.status}</td>
+              <td>{n.status === 'unread' ? 'Unread' : 'Read'}</td>
               <td>
+                <div className="notify-ui-row-actions">
                 {n.status === 'unread' ? (
                   <button onClick={() => markRead(n.id)} aria-label={`Mark notification ${n.id} read`}>Mark read</button>
                 ) : (
                   <button onClick={() => markUnread(n.id)} aria-label={`Mark notification ${n.id} unread`}>Mark unread</button>
                 )}
+                </div>
               </td>
             </tr>
             ))
           )}
         </tbody>
       </table>
+      </div>
 
-      {prefs && (
-        <div className="card" style={{ marginTop: 16 }}>
-          <h3>Channel preferences</h3>
+      <details className="card notify-ui-advanced">
+        <summary>Channel preferences</summary>
+        <p className="muted notify-ui-note">
+          Choose whether each type also sends email or SMS. Dashboard stays the in-app list.
+        </p>
+        {prefsError ? <p className="notify-ui-alert" role="alert">{prefsError}</p> : null}
+        {prefs ? (
+          <div className="notify-ui-scroll">
           <table className="table" aria-label="Channel preferences">
             <thead>
               <tr>
@@ -226,9 +304,13 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {Object.entries(prefs).map(([cat, channels]: any) => (
+              {Object.entries(prefs)
+                .filter(([cat]) =>
+                  platformAudience ? !OPERATIONAL_CATEGORIES.has(cat) : true
+                )
+                .map(([cat, channels]: any) => (
                 <tr key={cat}>
-                  <td>{cat}</td>
+                  <td>{categoryLabel(cat)}</td>
                   {(['dashboard', 'email', 'sms'] as const).map((ch) => (
                     <td key={ch}>
                       <button
@@ -244,12 +326,11 @@ export default function Page() {
               ))}
             </tbody>
           </table>
-          <p className="muted">
-            Email uses SMTP (or console in dev). SMS uses Twilio when configured, otherwise console
-            fallback. Set your phone on Company settings for SMS tests.
-          </p>
-        </div>
-      )}
-    </>
+          </div>
+        ) : (
+          <p className="muted notify-ui-note">Channel preferences load with this page. Refresh if the switches are missing.</p>
+        )}
+      </details>
+    </div>
   );
 }

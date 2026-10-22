@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import FormModal from '../../../components/FormModal';
+import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 
@@ -27,18 +29,23 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [deptAddOpen, setDeptAddOpen] = useState(false);
   const [canWrite, setCanWrite] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
-  async function refresh(search = q) {
-    const me = await getMe();
-    const perms = (me.data?.permissions || {}) as Record<string, string[]>;
-    setCanWrite(canWriteUsers(me.data?.role || '', perms));
+  async function loadList(search = q) {
     const params = new URLSearchParams();
     if (search.trim()) params.set('q', search.trim());
     const qs = params.toString() ? `?${params.toString()}` : '';
     const res = await api(`/departments${qs}`);
     setRows(res.data || []);
+  }
+
+  async function refresh(search = q) {
+    const me = await getMe();
+    const perms = (me.data?.permissions || {}) as Record<string, string[]>;
+    setCanWrite(canWriteUsers(me.data?.role || '', perms));
+    await loadList(search);
   }
 
   useEffect(() => {
@@ -75,17 +82,17 @@ export default function Page() {
       setCode('');
       setName('');
       setMessage('Department created');
+      setDeptAddOpen(false);
       if (created?.data?.id) {
         setRows((prev) => {
           const next = prev.filter((r) => r.id !== created.data.id);
           return [created.data, ...next];
         });
       }
-      setBusy(false);
-      setSubmitting(false);
-      await refresh();
+      await loadList();
     } catch (err: any) {
       setError(err.message || 'Department was not created');
+    } finally {
       setBusy(false);
       setSubmitting(false);
     }
@@ -121,11 +128,22 @@ export default function Page() {
 
   return (
     <>
-      <h1>Departments</h1>
-      <p className="muted">
-        Tenant-scoped departments. Names must be unique in this company. Assign users on User
-        Management.
-      </p>
+      <PageHeader
+        title="Departments"
+        subtitle="Tenant-scoped departments. Names must be unique in this company. Assign users on User Management."
+        actions={
+          canWrite ? (
+            <button
+              type="button"
+              className="list-btn-primary"
+              onClick={() => setDeptAddOpen(true)}
+              aria-label="Create department"
+            >
+              Create department
+            </button>
+          ) : undefined
+        }
+      />
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
@@ -154,16 +172,20 @@ export default function Page() {
         </select>
       </div>
 
-      {canWrite && (
-        <form className="card" onSubmit={createDept} style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
-          <h2 style={{ fontSize: 18, margin: 0 }}>Create department</h2>
+      {canWrite && deptAddOpen ? (
+        <FormModal
+          title="Create department"
+          busy={busy || submitting}
+          dirty={Boolean(name.trim() || code.trim())}
+          onClose={() => setDeptAddOpen(false)}
+        >
+        <form onSubmit={createDept} style={{ display: 'grid', gap: 8 }}>
           <input
             value={code}
             onChange={(e) => setCode(e.target.value)}
             placeholder="Code (e.g. SALES)"
             aria-label="Department code"
-            required
-          />
+            />
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -174,8 +196,11 @@ export default function Page() {
           <button type="submit" disabled={busy || submitting} aria-label="Create department">
             {busy ? 'Saving…' : 'Create department'}
           </button>
+          {message ? <p className="form-flash ok" role="status">{message}</p> : null}
+          {error ? <p className="form-flash err" role="alert">{error}</p> : null}
         </form>
-      )}
+        </FormModal>
+      ) : null}
 
       <table className="table">
         <thead>

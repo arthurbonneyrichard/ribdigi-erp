@@ -15,9 +15,12 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_pos_receipt_to_ui_and_docs():
     pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
-    assert 'aria-label="POS receipt override to"' in pos
-    assert 'aria-label="Email last receipt"' in pos
-    assert 'aria-label="SMS last receipt"' in pos
+    assert "const [showReceiptEmailSms, setShowReceiptEmailSms] = useState(false);" in pos
+    gate = pos.index("showReceiptEmailSms && !lastSale.offline")
+    shown = pos[gate : gate + 1400]
+    assert 'aria-label="POS receipt override to"' in shown
+    assert 'aria-label="Email last receipt"' in shown
+    assert 'aria-label="SMS last receipt"' in shown
     assert "receiptTo" in pos
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "POS receipt send Query `to` OpenAPI" in agents

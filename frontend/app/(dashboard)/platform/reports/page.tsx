@@ -2,8 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatNumber } from '../../../../lib/format';
+import PageHeader from '../../../../components/PageHeader';
+import { apiFetch } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
 import { getPrefetched } from '../../../../lib/prefetchCache';
+import { subscriptionAmountLabel } from '../../../../lib/platformBilling';
+import { useCompanyFormat } from '../../../../lib/useCompanyFormat';
 
 const PLATFORM_ROLES = [
   'super_admin',
@@ -28,9 +33,32 @@ function fmtDate(value?: string | null) {
 
 export default function PlatformReportsPage() {
   const router = useRouter();
+  const prefs = useCompanyFormat();
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
+
+  async function exportCsv(report: 'summary' | 'subscriptions' | 'packages' | 'trials') {
+    setError('');
+    try {
+      const res = await apiFetch(`/platform/reports/export?report=${report}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || body.message || 'Export failed');
+      }
+      const blob = await res.blob();
+      const cd = res.headers.get('Content-Disposition') || '';
+      const match = cd.match(/filename="?([^"]+)"?/);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = match?.[1] || `platform-${report}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setError(e.message || 'Export failed');
+    }
+  }
 
   useEffect(() => {
     (async () => {
@@ -64,22 +92,42 @@ export default function PlatformReportsPage() {
   return (
     <>
       <div className="plat">
-        <header className="plat-hero">
-          <div>
-            <p className="plat-kicker">Software owner</p>
-            <h1>Platform reports</h1>
-            <p className="plat-sub">
-              Cross-tenant overview: status mix, package distribution, subscription usage, and
-              upcoming renewals / trial endings.
-            </p>
-          </div>
-        </header>
+        <PageHeader
+          className="plat-hero"
+          kicker="Software owner"
+          kickerClassName="plat-kicker"
+          title="Platform reports"
+          subtitle="Cross-tenant overview: status mix, package distribution, subscription usage, and upcoming renewals / trial endings."
+          subtitleClassName="plat-sub"
+        />
 
         {error && (
           <p className="login-error" role="alert">
             {error}
           </p>
         )}
+
+        <div className="plat-panel">
+          <h2>Export CSV</h2>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Download platform report data as CSV. Revenue figures come from paid subscription
+            invoices only.
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" className="btn-primary" aria-label="Export platform summary CSV" onClick={() => exportCsv('summary')}>
+              Summary
+            </button>
+            <button type="button" className="btn-primary" aria-label="Export platform subscriptions CSV" onClick={() => exportCsv('subscriptions')}>
+              Subscriptions
+            </button>
+            <button type="button" className="btn-primary" aria-label="Export platform packages CSV" onClick={() => exportCsv('packages')}>
+              Packages
+            </button>
+            <button type="button" className="btn-primary" aria-label="Export platform trials CSV" onClick={() => exportCsv('trials')}>
+              Trials and renewals
+            </button>
+          </div>
+        </div>
 
         <div className="plat-stats">
           <div className="plat-stat">
@@ -129,6 +177,7 @@ export default function PlatformReportsPage() {
               <tr>
                 <th>Company</th>
                 <th>Package</th>
+                <th>Amount</th>
                 <th>Used</th>
                 <th>Remaining</th>
                 <th>Renewal</th>
@@ -145,6 +194,13 @@ export default function PlatformReportsPage() {
                     </div>
                   </td>
                   <td>{r.package_name || r.package_code}</td>
+                  <td>
+                    {subscriptionAmountLabel(
+                      r.amount,
+                      r.currency,
+                      r.amount == null ? '' : formatNumber(r.amount, prefs),
+                    )}
+                  </td>
                   <td>{r.months_used ?? 0} mo</td>
                   <td>
                     {r.months_remaining != null ? `${r.months_remaining} mo` : '—'}

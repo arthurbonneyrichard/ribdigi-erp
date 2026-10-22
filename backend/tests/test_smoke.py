@@ -27,8 +27,26 @@ def test_rbac_admin_has_all():
 
 def test_rbac_cashier_denied_inventory_write():
     assert has_permission("cashier", "pos", "write")
+    assert has_permission("cashier", "pos", "read")
+    assert has_permission("cashier", "dashboard", "read")
+    assert has_permission("cashier", "credit", "write")
+    assert not has_permission("cashier", "credit", "read")
     assert not has_permission("cashier", "inventory", "write")
     assert not has_permission("cashier", "accounting", "write")
+    assert not has_permission("cashier", "accounting", "read")
+    assert not has_permission("cashier", "purchasing", "read")
+    assert not has_permission("cashier", "purchasing", "write")
+    assert not has_permission("cashier", "reports", "read")
+    assert not has_permission("cashier", "users", "read")
+    assert not has_permission("cashier", "users", "write")
+    assert not has_permission("cashier", "tax", "read")
+    assert not has_permission("cashier", "expenses", "write")
+    # Tenant admins stay unlocked.
+    assert has_permission("company_admin", "users", "write")
+    assert has_permission("company_admin", "accounting", "write")
+    # Hotel cashier is a distinct role.
+    assert has_permission("hotel_cashier", "hotel", "write")
+    assert has_permission("hotel_cashier", "pos", "write")
 
 
 def test_rbac_inventory_officer():

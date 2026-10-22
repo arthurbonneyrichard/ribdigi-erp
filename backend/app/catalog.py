@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import uuid
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
@@ -132,12 +133,14 @@ async def resolve_sale_line(
     item: dict,
     *,
     customer_id: str | None = None,
+    sales_channel: str | None = None,
 ) -> tuple[m.Product, m.ProductVariant | None, float]:
     """Validate product/variant and resolve unit price (variant price wins when set).
 
-    When ``unit_price`` is omitted, list/variant price is used. If ``customer_id``
-    is set and that customer belongs to an active group, the group's discount
-    percent is applied (BR-7.1). Explicit ``unit_price`` is treated as an override.
+    When ``unit_price`` is omitted, list/variant price is used. Wholesale channel
+    then applies qty/group price tiers. If ``customer_id`` is set and that
+    customer belongs to an active group, the group's discount percent is applied
+    (BR-7.1). Explicit ``unit_price`` is treated as an override.
     """
     product = await get_product(db, tenant_id, item["product_id"])
     if not product.is_active:
@@ -157,36 +160,103 @@ async def resolve_sale_line(
             unit_price = money_json(variant.selling_price or 0)
         else:
             unit_price = money_json(product.selling_price or 0)
+        group_id = None
+        group_pct = 0.0
         if customer_id:
             from app.customer_groups import apply_discount, customer_group_discount
 
-            pct, _group = await customer_group_discount(db, tenant_id, customer_id)
-            if pct:
-                unit_price = apply_discount(unit_price, pct)
+            group_pct, group = await customer_group_discount(db, tenant_id, customer_id)
+            group_id = getattr(group, "id", None) if group else None
+        if (sales_channel or "").strip().lower() == "wholesale":
+            from app.trade import best_tier_price
+
+            qty = money_json(item.get("quantity") or 0)
+            tier = await best_tier_price(
+                db,
+                tenant_id=tenant_id,
+                product_id=product.id,
+                quantity=qty,
+                customer_group_id=group_id,
+            )
+            if tier is not None:
+                unit_price = tier
+        if group_pct:
+            from app.customer_groups import apply_discount
+
+            unit_price = apply_discount(unit_price, group_pct)
     return product, variant, unit_price
+
+
+async def _live_product_company_id(
+    db: AsyncSession, tenant_id: str, product_id: str
+) -> str | None:
+    """Copy the parent product's company_id when the live table has that column.
+
+    Do not invent a second company via LIMIT 1 — that drops rows on company joins.
+    """
+    names = await schema_compat.table_column_names(db, "products")
+    if "company_id" not in names:
+        return None
+    rows = await schema_compat.fetch_live_dicts(
+        db,
+        "products",
+        "id = :id AND tenant_id = :tid",
+        {"id": product_id, "tid": tenant_id},
+    )
+    if not rows:
+        return None
+    cid = rows[0].get("company_id")
+    return str(cid) if cid else None
 
 
 async def list_variants(
     db: AsyncSession,
     tenant_id: str,
-    product_id: str,
+    product_id: str | None = None,
     *,
     is_active: bool | None = None,
+    q: str | None = None,
+    limit: int | None = None,
 ) -> list[m.ProductVariant]:
-    await get_product(db, tenant_id, product_id)
-    extra = "product_id = :pid"
-    params = {"pid": product_id}
-    if is_active is not None:
-        extra += " AND is_active = :ia"
+    """List variants for one product, or the whole tenant when product_id is omitted.
+
+    Tenant isolation is tenant_id only. Do not INNER JOIN products/companies —
+    NULL company_id (legacy rows) and variants of other products must remain.
+    """
+    extra_parts: list[str] = []
+    params: dict = {}
+    if product_id:
+        await get_product(db, tenant_id, product_id)
+        extra_parts.append("product_id = :pid")
+        params["pid"] = product_id
+    names = await schema_compat.table_column_names(db, "product_variants")
+    if is_active is not None and "is_active" in names:
+        extra_parts.append("is_active = :ia")
         params["ia"] = bool(is_active)
-    return await schema_compat.list_mapped(
+    q_clean = (q or "").strip()
+    if q_clean:
+        extra_parts.append(
+            "(name ILIKE :q OR sku ILIKE :q OR COALESCE(barcode, '') ILIKE :q)"
+        )
+        params["q"] = f"%{q_clean}%"
+    extra = " AND ".join(extra_parts)
+    rows = await schema_compat.list_mapped(
         db,
         m.ProductVariant,
         tenant_id=tenant_id,
         extra=extra,
         extra_params=params,
-        order_by="name",
+        order_by="name" if "name" in names else None,
+        limit=limit,
     )
+    seen: set[str] = set()
+    unique: list[m.ProductVariant] = []
+    for row in rows:
+        if not row.id or row.id in seen:
+            continue
+        seen.add(row.id)
+        unique.append(row)
+    return unique
 
 
 def _clean_attr(value: str | None) -> str | None:
@@ -213,7 +283,7 @@ async def create_variant(
     name = require_honest_narrative(name, label="variant name", max_length=120)
     sku_norm = normalize_sku(sku)
     if not sku_norm:
-        sku_norm = await allocate_sku(db, tenant_id, prefix="SKU")
+        sku_norm = await allocate_sku(db, tenant_id, prefix="VAR")
     else:
         await assert_sku_available(db, tenant_id, sku_norm)
     sku = sku_norm
@@ -226,26 +296,32 @@ async def create_variant(
             db, tenant_id=tenant_id, barcode_value=barcode_norm
         )
 
+    values = {
+        "tenant_id": tenant_id,
+        "product_id": product.id,
+        "name": name,
+        "sku": sku,
+        "barcode": barcode_norm,
+        "size": _clean_attr(size),
+        "color": _clean_attr(color),
+        "flavor": _clean_attr(flavor),
+        "dosage": _clean_attr(dosage),
+        "cost_price": money_json(cost_price if cost_price is not None else product.cost_price or 0),
+        "selling_price": money_json(
+            selling_price if selling_price is not None else product.selling_price or 0
+        ),
+        "stock_qty": 0,
+        "is_active": True,
+    }
+    var_names = await schema_compat.table_column_names(db, "product_variants")
+    if "company_id" in var_names:
+        company_id = await _live_product_company_id(db, tenant_id, product.id)
+        if company_id:
+            values["company_id"] = company_id
     variant = await schema_compat.insert_and_get(
         db,
         m.ProductVariant,
-        {
-            "tenant_id": tenant_id,
-            "product_id": product.id,
-            "name": name,
-            "sku": sku,
-            "barcode": barcode_norm,
-            "size": _clean_attr(size),
-            "color": _clean_attr(color),
-            "flavor": _clean_attr(flavor),
-            "dosage": _clean_attr(dosage),
-            "cost_price": money_json(cost_price if cost_price is not None else product.cost_price or 0),
-            "selling_price": money_json(
-                selling_price if selling_price is not None else product.selling_price or 0
-            ),
-            "stock_qty": 0,
-            "is_active": True,
-        },
+        values,
     )
     if variant is None:
         raise HTTPException(status_code=500, detail="The server could not complete this request.")
@@ -387,6 +463,50 @@ async def list_expiring_batches(
     ).scalars().all()
 
 
+async def nearest_saleable_expiry_map(
+    db: AsyncSession,
+    tenant_id: str,
+    product_ids: set[str],
+    *,
+    pharmacy: bool,
+) -> dict[str, str]:
+    """Earliest unexpired, unheld lot date per product. Pharmacy POS only."""
+    if not pharmacy or not product_ids:
+        return {}
+    now = datetime.utcnow()
+    rows = list(
+        (
+            await db.execute(
+                select(m.ProductBatch)
+                .where(
+                    m.ProductBatch.tenant_id == tenant_id,
+                    m.ProductBatch.product_id.in_(list(product_ids)),
+                    m.ProductBatch.quantity > 0,
+                    m.ProductBatch.expiry_date.is_not(None),
+                    m.ProductBatch.expiry_date >= now,
+                )
+                .order_by(m.ProductBatch.expiry_date.asc())
+            )
+        ).scalars().all()
+    )
+    from app import pharmacy as pharmacy_svc
+
+    held = await pharmacy_svc.open_hold_batch_ids(db, tenant_id, [b.id for b in rows])
+    out: dict[str, str] = {}
+    for batch in rows:
+        if batch.product_id in out or batch.id in held:
+            continue
+        exp = batch.expiry_date
+        out[batch.product_id] = exp.date().isoformat() if exp else exp.isoformat()
+    return out
+
+
+def allocate_lot_number(when: datetime | None = None) -> str:
+    """Lot id for dated stock when the caller omitted batch_number (1–80, alphanumeric)."""
+    stamp = (when or datetime.utcnow()).strftime("%Y%m%d")
+    return f"LOT-{stamp}-{uuid.uuid4().hex[:4].upper()}"
+
+
 async def _find_batch(
     db: AsyncSession,
     *,
@@ -444,13 +564,15 @@ async def stock_in_with_batch(
         if variant.product_id != product.id:
             raise HTTPException(status_code=400, detail="Variant does not belong to product")
 
-    if product.tracks_batches and not (batch_number or "").strip():
-        raise HTTPException(status_code=400, detail="batch_number required for batch-tracked products")
-
     # OpenAPI BatchNumberValue → 422; service defense-in-depth → 400.
     batch_number = optional_honest_narrative(
         batch_number, label="batch number", max_length=80
     )
+    if not batch_number and (expiry_date or manufacturing_date):
+        # Expiry lives on ProductBatch, not Product. Dates without a lot were dropped.
+        batch_number = allocate_lot_number(expiry_date or manufacturing_date)
+    if product.tracks_batches and not (batch_number or "").strip():
+        raise HTTPException(status_code=400, detail="batch_number required for batch-tracked products")
     # OpenAPI StockInReferenceTypeValue / StockMovementReferenceIdValue → 422.
     reference_type = optional_honest_narrative(
         reference_type, label="stock-in reference type", max_length=50
@@ -567,6 +689,24 @@ async def stock_out_with_batch(
 
     remaining = quantity
     consumed: list[dict] = []
+    now = datetime.utcnow()
+    tenant = (
+        await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))
+    ).scalar_one_or_none()
+    from app.packages import canonicalize_industry
+    from app import pharmacy as pharmacy_svc
+
+    hard_expiry = canonicalize_industry(getattr(tenant, "industry", None) if tenant else None) in {"pharmacy", "fmcg"}
+
+    def _blocked(batch: m.ProductBatch, held: set[str]) -> str | None:
+        if batch.id in held:
+            return "BATCH_ON_HOLD"
+        exp = batch.expiry_date
+        if exp:
+            exp_day = exp.date() if hasattr(exp, "date") else exp
+            if exp_day < now.date():
+                return "BATCH_EXPIRED"
+        return None
 
     if batch_id:
         batch = (
@@ -582,6 +722,21 @@ async def stock_out_with_batch(
         ).scalar_one_or_none()
         if not batch:
             raise HTTPException(status_code=404, detail="Batch not found")
+        held = await pharmacy_svc.open_hold_batch_ids(db, tenant_id, [batch.id])
+        blocked = _blocked(batch, held)
+        if blocked:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": blocked,
+                    "message": (
+                        "Lot is quarantined or recalled"
+                        if blocked == "BATCH_ON_HOLD"
+                        else "Lot has expired and cannot be sold"
+                    ),
+                    "batch_id": batch.id,
+                },
+            )
         avail = money_json(batch.quantity or 0)
         if avail + 1e-9 < quantity:
             raise HTTPException(status_code=409, detail="Insufficient batch quantity")
@@ -608,9 +763,6 @@ async def stock_out_with_batch(
         if variant:
             stmt = stmt.where(m.ProductBatch.variant_id == variant.id)
         if warehouse_id:
-            tenant = (
-                await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))
-            ).scalar_one_or_none()
             strict = bool(tenant and getattr(tenant, "fefo_strict_warehouse", False))
             if strict:
                 stmt = stmt.where(m.ProductBatch.warehouse_id == warehouse_id)
@@ -619,10 +771,12 @@ async def stock_out_with_batch(
                     (m.ProductBatch.warehouse_id == warehouse_id)
                     | (m.ProductBatch.warehouse_id.is_(None))
                 )
-        batches = (await db.execute(stmt)).scalars().all()
+        batches = list((await db.execute(stmt)).scalars().all())
+        held = await pharmacy_svc.open_hold_batch_ids(db, tenant_id, [b.id for b in batches])
+        saleable = [b for b in batches if not _blocked(b, held)]
         primary_batch_id = None
-        if batches:
-            for batch in batches:
+        if saleable:
+            for batch in saleable:
                 if remaining <= 1e-9:
                     break
                 take = min(money_json(batch.quantity or 0), remaining)
@@ -643,6 +797,14 @@ async def stock_out_with_batch(
                         "shortfall": money_json(remaining),
                     },
                 )
+        elif batches and not saleable and (product.tracks_batches or hard_expiry or consumed):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "NO_SALEABLE_BATCH",
+                    "message": "Lots exist but all are expired, quarantined, or recalled",
+                },
+            )
 
     notes = optional_honest_narrative(notes, label="stock movement notes")
     # OpenAPI StockMovementReferenceIdValue → 422; stock-out type is Literal at schema.

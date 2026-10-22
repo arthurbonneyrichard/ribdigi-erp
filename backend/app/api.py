@@ -7,8 +7,10 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, Query, 
 from fastapi.responses import FileResponse, PlainTextResponse, Response
 from pydantic import EmailStr, TypeAdapter, ValidationError as PydanticValidationError
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Annotated
+from typing import Annotated, Literal
+import asyncio
 import logging
 
 from app import models as m
@@ -19,6 +21,7 @@ from app.rbac import (
     VALID_ROLES,
     apply_created_by_scope,
     assert_record_access,
+    has_explicit_permission,
     list_role_catalog,
     normalize_record_scope,
     permissions_for_role,
@@ -67,6 +70,7 @@ from app import catalog_meta as catalog_meta_svc
 from app import product_images as product_images_svc
 from app import party_contacts as party_contacts_svc
 from app import barcodes as barcodes_svc
+from app import printers_api as printers_api_mod
 from app.config import settings
 from app.schemas import (
     BrandCreate,
@@ -100,6 +104,8 @@ from app.schemas import (
     SalesQuotationStatusValue,
     SalesOrderStatusValue,
     ReturnReportStatusValue,
+    ReportExportStatusValue,
+    ReportExportReasonValue,
     TenantStatusFilterValue,
     ApiKeyStatusFilterValue,
     ApiKeyCreate,
@@ -114,6 +120,7 @@ from app.schemas import (
     AuditActionValue,
     TenantRefValue,
     RoleKeyValue,
+    RoleRefValue,
     BankStatementNotesValue,
     AuditEntityValue,
     ProductBarcodeValue,
@@ -184,13 +191,19 @@ from app.schemas import (
     FmcgTradeSchemeActiveUpdate,
     FmcgTradeSchemeCreate,
     HotelCheckoutBody,
+    HotelFolioServiceChargeCreate,
     HotelGroupReservationCreate,
+    HotelReservationUpdate,
+    HotelServiceCreate,
+    HotelServiceUpdate,
     HotelSettingsUpdate,
     HotelExtendStay,
     HotelFolioChargeCreate,
+    HotelFolioChargeTransfer,
     HotelFolioChargeVoid,
     HotelFolioPaymentCreate,
     HotelGuestCreate,
+    HotelGuestMerge,
     HotelGuestUpdate,
     HotelHousekeepingComplete,
     HotelHousekeepingCreate,
@@ -198,11 +211,18 @@ from app.schemas import (
     HotelMaintenanceCreate,
     HotelMoveRoom,
     HotelReservationCreate,
+    HotelReservationDuplicate,
     HotelRoomCreate,
     HotelRoomUpdate,
     HotelReservationStatusValue,
     HotelRoomStatusValue,
     HotelHousekeepingStatusValue,
+    HotelRatePlanCreate,
+    HotelGuestRequestCreate,
+    HotelLostFoundCreate,
+    HotelCashierShiftOpen,
+    HotelCashierShiftClose,
+    HotelEventCreate,
     JournalCreate,
     JournalUnpost,
     ChequeLifecycleReason,
@@ -227,13 +247,24 @@ from app.schemas import (
     PasswordResetRequest,
     PosSaleCreate,
     PosDeviceHeartbeat,
+    PosOfflineAuthorize,
+    PosOfflineDeviceBlock,
+    PosOfflineResolve,
+    PosOfflineStatusQuery,
     PosSessionClose,
     PosSessionOpen,
+    PosCashMovementCreate,
     PosDrawerOpen,
+    PrescriptionCreate,
+    PrescriptionStatusUpdate,
+    PrescriptionDispense,
+    BatchHoldCreate,
+    BatchHoldRelease,
     ProductCategoryCreate,
     ProductCategoryUpdate,
     ProductCreate,
     ProductImagePrimaryUpdate,
+    ProductPriceTierCreate,
     ProductVariantCreate,
     ProductVariantUpdate,
     ProfileUpdate,
@@ -258,10 +289,15 @@ from app.schemas import (
     RecurringSkipNext,
     RefreshRequest,
     SalesInvoiceCreate,
+    CouponCreate,
+    CouponUpdate,
+    CouponValidate,
+    OtherIncomeCreate,
     SalesOrderCreate,
     SalesOrderCancel,
     SalesInvoiceCancel,
     SalesOrderConfirm,
+    SalesOrderFulfill,
     SalesQuotationCreate,
     SalesQuotationReject,
     SalesReturnCreate,
@@ -290,8 +326,10 @@ from app.schemas import (
     TenantProfileUpdate,
     TenantSuspendRequest,
     TenantDeleteConfirm,
+    TenantSelfDeleteConfirm,
     TenantSubscriptionAssign,
     TenantModulesUpdate,
+    TenantAdminPasswordReset,
     TenantIndustryChange,
     TenantStoreLimitUpdate,
     TenantMaxStoresOverrideUpdate,
@@ -301,6 +339,7 @@ from app.schemas import (
     SmsSettingsUpdate,
     TwoFactorConfirm,
     TwoFactorDisable,
+    ChangePasswordRequest,
     TwoFactorVerify,
     WebAuthnLoginOptions,
     WebAuthnLoginVerify,
@@ -331,6 +370,7 @@ from app.security import (
     hash_token,
     issue_one_time_token,
     issue_refresh_token,
+    optional_platform_ops_claims,
     require_permission,
     require_platform_permission,
     require_roles,
@@ -342,10 +382,46 @@ from app import platform_staff as platform_staff_svc
 from app import platform_reports as platform_reports_svc
 from app import user_accounts as user_accounts_svc
 from app import hotel as hotel_svc
+from app import hotel_pms as hotel_pms_svc
 from app import fmcg as fmcg_svc
-from app.rbac import PLATFORM_ROLES, is_platform_owner_role, is_platform_role
+from app import pharmacy as pharmacy_svc
+from app.rbac import (
+    PLATFORM_ROLES,
+    is_platform_owner_role,
+    is_platform_role,
+    is_platform_tenant_delete_role,
+)
 
 api = APIRouter(prefix="/api/v1")
+
+
+def require_pos_permission(action: str = "read"):
+    """POS storefront permission plus the industry desk. Wholesale and FMCG stay off the till."""
+
+    async def dep(claims: dict = Depends(require_permission("pos", action))) -> dict:
+        from app.industry_dashboard import assert_pos_for_industry
+
+        assert_pos_for_industry(claims)
+        return claims
+
+    return dep
+
+
+api.include_router(printers_api_mod.router)
+from app import commerce_extras_api as commerce_extras_api_mod
+from app import billing_api as billing_api_mod
+from app import restaurant_api as restaurant_api_mod
+
+api.include_router(commerce_extras_api_mod.router)
+api.include_router(billing_api_mod.router)
+api.include_router(restaurant_api_mod.router)
+from app import support_api as support_api_mod
+
+api.include_router(support_api_mod.router)
+from app import ecommerce_api as ecommerce_api_mod
+
+api.include_router(ecommerce_api_mod.staff)
+api.include_router(ecommerce_api_mod.storefront)
 logger = logging.getLogger("ribdigi.api")
 
 
@@ -529,6 +605,20 @@ async def seed_tenant_defaults(db: AsyncSession, tenant_id: str) -> None:
 
 
 
+async def _optional_login_step(db: AsyncSession, label: str, work):
+    """Run audit, webhook, or passkey lookup without failing authentication.
+
+    A missing table or column (database behind Alembic head) raises during these
+    writes. Password, tenant, and 2FA checks stay outside this helper.
+    """
+    try:
+        async with db.begin_nested():
+            return await work()
+    except SQLAlchemyError:
+        logger.exception("login continued without optional %s", label)
+        return None
+
+
 async def create_session(
     db: AsyncSession,
     *,
@@ -549,64 +639,114 @@ async def create_session(
         expires_at=refresh_exp,
     )
     db.add(session)
+    await db.flush()
     # Interactive login only — refresh must not fan out user.login.
     if login_method:
-        await webhooks_svc.emit_event(
+        await _optional_login_step(
             db,
-            tenant_id=user.tenant_id,
-            event="user.login",
-            data={
-                "user_id": user.id,
-                "email": user.email,
-                "role": user.role,
-                "method": login_method,
-                "session_id": session.id,
-                "ip": session.ip_address,
-            },
+            "user.login webhook",
+            lambda: webhooks_svc.emit_event(
+                db,
+                tenant_id=user.tenant_id,
+                event="user.login",
+                data={
+                    "user_id": user.id,
+                    "email": user.email,
+                    "role": user.role,
+                    "method": login_method,
+                    "session_id": session.id,
+                    "ip": session.ip_address,
+                },
+            ),
         )
     return access, refresh_raw
 
 
 @api.get("/health")
-async def health(request: Request, deep: bool = False):
-    """Liveness by default; pass deep=true for dependency checks (DB/Redis/broker)."""
+async def health(
+    request: Request,
+    deep: bool = False,
+    ops_claims: dict | None = Depends(optional_platform_ops_claims),
+):
+    """Liveness. Deep dependency payloads are platform-ops only."""
     from fastapi.responses import JSONResponse
 
     from app import health as health_svc
 
+    expose = ops_claims is not None
     factory = getattr(request.app.state, "session_factory", None)
-    body, status_code = await health_svc.assemble_health(deep=deep, session_factory=factory)
+    body, status_code = await health_svc.assemble_health(
+        deep=bool(deep) and expose,
+        session_factory=factory,
+        expose_diagnostics=expose,
+    )
     if status_code != 200:
         return JSONResponse(
             status_code=status_code,
             content={
                 "success": False,
                 "data": body,
-                "message": "Service unhealthy",
+                "message": body.get("message") or "Service unhealthy",
             },
         )
-    return env(body)
+    return env(body, body.get("message") or "Operation completed successfully")
 
 
 @api.get("/health/ready")
-async def health_ready(request: Request):
-    """Readiness probe — always runs deep dependency checks."""
+async def health_ready(
+    request: Request,
+    ops_claims: dict | None = Depends(optional_platform_ops_claims),
+):
+    """Readiness probe. Public body is generic; platform ops receive dependency checks."""
     from fastapi.responses import JSONResponse
 
     from app import health as health_svc
 
+    expose = ops_claims is not None
     factory = getattr(request.app.state, "session_factory", None)
-    body, status_code = await health_svc.assemble_health(deep=True, session_factory=factory)
+    body, status_code = await health_svc.assemble_health(
+        deep=True,
+        session_factory=factory,
+        expose_diagnostics=expose,
+    )
     if status_code != 200:
         return JSONResponse(
             status_code=status_code,
             content={
                 "success": False,
                 "data": body,
-                "message": "Service not ready",
+                "message": body.get("message") or "Service not ready",
             },
         )
-    return env(body, "Ready")
+    return env(body, body.get("message") or "Ready")
+
+
+@api.get("/platform/health")
+async def platform_health(
+    request: Request,
+    claims=Depends(require_platform_permission("platform", "read")),
+):
+    """Platform Owner / ops diagnostics (DB, broker, build identity)."""
+    from fastapi.responses import JSONResponse
+
+    from app import health as health_svc
+
+    factory = getattr(request.app.state, "session_factory", None)
+    body, status_code = await health_svc.assemble_health(
+        deep=True,
+        session_factory=factory,
+        expose_diagnostics=True,
+    )
+    if status_code != 200:
+        return JSONResponse(
+            status_code=status_code,
+            content={
+                "success": False,
+                "data": body,
+                "message": body.get("message") or "Service unhealthy",
+            },
+        )
+    return env(body, body.get("message") or "Ready")
 
 
 @api.get("/metrics")
@@ -649,8 +789,11 @@ async def create_tenant(
         raise HTTPException(status_code=409, detail="Tenant slug exists")
 
     industry = tenants_svc.normalize_industry(payload.industry)
+    tenants_svc.assert_industry_selectable(industry)
     trial_end = tenants_svc.default_trial_ends_at()
     now = datetime.utcnow()
+    from app import store_entitlements as store_ent_svc
+
     try:
         tenant = m.Tenant(
             slug=slug,
@@ -666,6 +809,9 @@ async def create_tenant(
             subscription_starts_at=now,
             subscription_ends_at=trial_end,
             package_assigned_at=now,
+            max_stores_override=store_ent_svc.resolve_create_max_stores_override(
+                payload.store_mode, payload.max_stores_override
+            ),
         )
         db.add(tenant)
         await db.flush()
@@ -708,6 +854,18 @@ async def create_tenant(
     except Exception as exc:
         await db.rollback()
         logger.exception("tenant create failed slug=%s", slug)
+        try:
+            await notifications_svc.notify_platform_event(
+                db,
+                tenant_id=claims["tenant_id"],
+                category="provisioning",
+                title="Tenant provisioning failed",
+                message=f"Could not provision tenant '{slug}'.",
+                entity_type="tenant",
+            )
+            await db.commit()
+        except Exception:
+            logger.exception("provisioning failure notification failed slug=%s", slug)
         raise http_exception_for_tenant_create_failure(exc) from None
 
     try:
@@ -784,6 +942,7 @@ async def tenant_me_update(
         thousand_separator=payload.thousand_separator,
         time_format=payload.time_format,
         inactivity_timeout_minutes=payload.inactivity_timeout_minutes,
+        offline_auth_hours=payload.offline_auth_hours,
     )
     await audit_svc.record_event(
         db,
@@ -801,28 +960,16 @@ async def tenant_me_update(
 
 @api.post("/tenants/me/suspend")
 async def tenant_me_suspend(
-    payload: TenantSuspendRequest,
-    claims=Depends(require_roles("company_admin", "super_admin")),
-    db: AsyncSession = Depends(get_db),
+    _claims=Depends(require_roles("company_admin", "super_admin")),
 ):
-    tenants_svc.assert_writable(claims)
-    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
-    reason_s = require_honest_narrative(payload.reason, label="suspension reason")
-    tenant = await tenants_svc.suspend_tenant(
-        db, tenant, reason=reason_s, suspended_by=claims["sub"]
+    """Tenant Admin cannot self-suspend. Use platform tenant APIs instead."""
+    raise HTTPException(
+        status_code=403,
+        detail=(
+            "Company users cannot suspend the tenant. "
+            "Only platform_owner/super_admin may suspend via platform tenant APIs."
+        ),
     )
-    await audit_svc.record_event(
-        db,
-        tenant_id=claims["tenant_id"],
-        user_id=claims["sub"],
-        module="tenants",
-        action="suspend",
-        entity="tenant",
-        entity_id=tenant.id,
-        details={"reason": reason_s},
-    )
-    await db.commit()
-    return env(tenants_svc.serialize_tenant(tenant), "Tenant suspended; sessions revoked")
 
 
 @api.post("/tenants/me/activate")
@@ -943,10 +1090,14 @@ async def tenant_me_logo_delete(
 @api.get("/tenants")
 async def tenants_list(
     status: Annotated[TenantStatusFilterValue | None, Query()] = None,
+    # Company name / slug contains (case-insensitive); omit or blank → all.
+    q: Annotated[str | None, Query(max_length=120)] = None,
+    # Known industry key (retail, hotel, …); unknown → **422**.
+    industry: Annotated[str | None, Query(max_length=40)] = None,
     claims=Depends(require_platform_permission("platform_tenants", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = await tenants_svc.list_tenants(db, status=status)
+    rows = await tenants_svc.list_tenants(db, status=status, q=q, industry=industry)
     return env([tenants_svc.serialize_tenant(t) for t in rows])
 
 
@@ -998,6 +1149,20 @@ async def tenant_activate_by_ref(
     return env(tenants_svc.serialize_tenant(tenant), "Tenant activated")
 
 
+@api.post("/tenants/me/delete")
+async def tenant_delete_self(
+    payload: TenantSelfDeleteConfirm,
+    claims=Depends(require_roles("company_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Tenant users cannot delete a company. The software owner deletes from the platform desk."""
+    del payload, claims, db
+    raise HTTPException(
+        status_code=403,
+        detail="Only the software owner can delete a tenant",
+    )
+
+
 @api.post("/tenants/{tenant_ref}/delete")
 async def tenant_delete_by_ref(
     tenant_ref: TenantRefValue,
@@ -1005,11 +1170,11 @@ async def tenant_delete_by_ref(
     claims=Depends(require_platform_permission("platform_tenants", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Permanently delete a company tenant (platform owner only)."""
-    if not is_platform_owner_role(claims.get("role")):
+    """Permanently delete a company tenant. Software owner only."""
+    if not is_platform_tenant_delete_role(claims.get("role")):
         raise HTTPException(
             status_code=403,
-            detail="Only the platform owner can delete a tenant",
+            detail="Only the software owner can delete a tenant",
         )
     tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
     snapshot = await tenants_svc.delete_tenant(
@@ -1034,6 +1199,7 @@ async def tenant_delete_by_ref(
         },
     )
     await db.commit()
+    tenants_svc._remove_tenant_files(snapshot["id"])
     return env(snapshot, "Tenant deleted")
 
 
@@ -1169,6 +1335,17 @@ async def tenant_assign_subscription(
         apply_max_stores_override="max_stores_override" in data,
         clear_max_stores_override=bool(data.get("clear_max_stores_override")),
     )
+    if "amount" in data and data.get("amount") is not None:
+        from app import saas_billing as billing_svc
+
+        await billing_svc.record_assigned_subscription_amount(
+            db,
+            tenant,
+            package_code=payload.package_code,
+            term_unit=payload.term_unit,
+            amount=data["amount"],
+            plan_code=data.get("plan_code"),
+        )
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
@@ -1184,6 +1361,7 @@ async def tenant_assign_subscription(
             "term_unit": payload.term_unit,
             "max_stores_override": getattr(tenant, "max_stores_override", None),
             "max_stores_override_prev": prev_override,
+            "amount": money_json(data["amount"]) if data.get("amount") is not None else None,
         },
     )
     await db.commit()
@@ -1208,6 +1386,8 @@ async def tenant_update_industry(
         )
     tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
     previous = getattr(tenant, "industry", None)
+    next_industry = tenants_svc.normalize_industry(payload.industry)
+    tenants_svc.assert_industry_selectable(next_industry or "", previous=previous)
     reason = require_honest_narrative(payload.reason, label="business type change reason")
     tenant = await tenants_svc.update_profile(
         db, tenant, industry=payload.industry
@@ -1228,8 +1408,76 @@ async def tenant_update_industry(
             "reason": reason,
         },
     )
+    await notifications_svc.notify_platform_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        category="platform",
+        title="Tenant industry changed",
+        message=f"{tenant.company_name} business type is now {tenant.industry}.",
+        entity_type="tenant",
+        entity_id=tenant.id,
+    )
     await db.commit()
     return env(tenants_svc.serialize_tenant(tenant), "Business type updated")
+
+
+@api.post("/tenants/{tenant_ref}/admin-password-reset")
+async def tenant_admin_password_reset(
+    tenant_ref: TenantRefValue,
+    payload: TenantAdminPasswordReset,
+    claims=Depends(require_platform_permission("platform_tenants", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Reset that tenant's administrator password. The new password is never returned."""
+    if not is_platform_owner_role(claims.get("role")):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the platform owner can reset a tenant administrator password",
+        )
+    tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
+    result = await tenants_svc.request_admin_password_reset(
+        db,
+        tenant,
+        actor_id=claims["sub"],
+        user_id=payload.user_id,
+        new_password=payload.new_password,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="tenants",
+        action="admin_password_reset_requested",
+        entity="user",
+        entity_id=result["user_id"],
+        details={
+            "target_tenant": tenant.id,
+            "target_user_id": result["user_id"],
+            "initiated_by": claims["sub"],
+            "initiated_at": result["initiated_at"],
+            "sessions_revoked": result["sessions_revoked"],
+            "password_set": bool(result.get("password_set")),
+            "email_sent": bool(result.get("email_sent")),
+        },
+    )
+    await notifications_svc.notify_platform_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        category="admin_password_reset",
+        title="Tenant administrator password reset",
+        message=(
+            f"A password reset was requested for the administrator of {tenant.company_name}."
+        ),
+        entity_type="user",
+        entity_id=result["user_id"],
+    )
+    await db.commit()
+    message = (
+        "Administrator password updated"
+        if result.get("password_set")
+        else "Password reset link sent to the tenant administrator"
+    )
+    return env(result, message)
 
 
 @api.patch("/tenants/{tenant_ref}/modules")
@@ -1265,6 +1513,15 @@ async def tenant_update_modules(
             "reset_to_package": payload.reset_to_package,
             "enabled_modules": tenant.enabled_modules,
         },
+    )
+    await notifications_svc.notify_platform_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        category="platform",
+        title="Tenant modules updated",
+        message=f"Feature modules were updated for {tenant.company_name}.",
+        entity_type="tenant",
+        entity_id=tenant.id,
     )
     await db.commit()
     return env(tenants_svc.serialize_tenant(tenant), "Tenant modules updated")
@@ -1409,6 +1666,15 @@ async def platform_staff_create(
         entity_id=user.id,
         details={"email": user.email, "role": user.role, "email_verified": False},
     )
+    await notifications_svc.notify_platform_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        category="staff_account",
+        title="Platform staff account created",
+        message=f"{user.full_name} ({user.email}) was added as {user.role}.",
+        entity_type="user",
+        entity_id=user.id,
+    )
     tenant = await db.get(m.Tenant, claims["tenant_id"])
     email_info = await _issue_email_verification(db, user, tenant)
     data = platform_staff_svc.serialize_staff(user)
@@ -1442,6 +1708,15 @@ async def platform_staff_verify_email(
         entity="user",
         entity_id=user.id,
         details={"email": user.email},
+    )
+    await notifications_svc.notify_platform_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        category="staff_account",
+        title="Platform staff account verified",
+        message=f"{user.full_name} ({user.email}) was verified by the platform owner.",
+        entity_type="user",
+        entity_id=user.id,
     )
     await db.commit()
     return env(platform_staff_svc.serialize_staff(user), "Staff account verified. They can sign in.")
@@ -1506,6 +1781,15 @@ async def platform_staff_grant(
         entity_id=user.id,
         details={"from_role": prev_role, "to_role": user.role, "email": user.email},
     )
+    await notifications_svc.notify_platform_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        category="staff_account",
+        title="Platform staff access granted",
+        message=f"{user.full_name} ({user.email}) was granted {user.role} dashboard access.",
+        entity_type="user",
+        entity_id=user.id,
+    )
     await db.commit()
     return env(
         platform_staff_svc.serialize_staff(user),
@@ -1549,6 +1833,15 @@ async def platform_staff_revoke(
         entity="user",
         entity_id=user.id,
         details={"role": user.role, "email": user.email},
+    )
+    await notifications_svc.notify_platform_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        category="staff_account",
+        title="Platform staff access revoked",
+        message=f"Dashboard access was revoked for {user.full_name} ({user.email}).",
+        entity_type="user",
+        entity_id=user.id,
     )
     await db.commit()
     return env(
@@ -1604,6 +1897,15 @@ async def platform_staff_update(
             "password_changed": payload.password is not None,
         },
     )
+    await notifications_svc.notify_platform_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        category="staff_account",
+        title="Platform staff account updated",
+        message=f"{user.full_name} ({user.email}) was updated.",
+        entity_type="user",
+        entity_id=user.id,
+    )
     await db.commit()
     return env(platform_staff_svc.serialize_staff(user), "Platform staff updated")
 
@@ -1630,10 +1932,44 @@ async def platform_staff_delete(
         action="delete",
         entity="user",
         entity_id=snapshot["id"],
-        details={"email": snapshot["email"], "role": snapshot["role"], "full_name": snapshot["full_name"]},
+        details={
+            "email": snapshot["email"],
+            "role": snapshot["role"],
+            "full_name": snapshot["full_name"],
+            "marked_deleted": True,
+            "access_revoked": True,
+        },
+    )
+    await notifications_svc.notify_platform_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        category="staff_account",
+        title="Platform staff account deleted",
+        message=f"{snapshot['full_name']} ({snapshot['email']}) was removed from platform staff.",
+        entity_type="user",
+        entity_id=snapshot["id"],
     )
     await db.commit()
     return env(snapshot, "Platform staff account deleted")
+
+
+@api.get("/platform/directory")
+async def platform_directory(
+    claims=Depends(require_platform_permission("platform_tenants", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Platform-level tenant summary (no store operational metrics)."""
+    return env(await platform_reports_svc.build_platform_directory(db))
+
+
+@api.get("/platform/activity")
+async def platform_activity(
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    claims=Depends(require_platform_permission("platform_tenants", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Platform events: tenants, packages, staff, and admin password resets."""
+    return env(await platform_reports_svc.build_platform_activity(db, limit=limit))
 
 
 @api.get("/platform/reports")
@@ -1680,6 +2016,38 @@ async def platform_reports_trials(
             db, within_days=max(1, min(within_days, 365))
         )
     )
+
+
+@api.get("/platform/reports/export")
+async def platform_reports_export(
+    report: Annotated[
+        Literal["summary", "subscriptions", "packages", "trials"], Query()
+    ] = "summary",
+    within_days: Annotated[int, Query(ge=1, le=365)] = 45,
+    claims=Depends(require_platform_permission("platform_reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    text, filename = await platform_reports_svc.build_platform_report_csv(
+        db, report, within_days=within_days
+    )
+    return Response(
+        content=text,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@api.get("/platform/settings")
+async def platform_settings_get(
+    claims=Depends(require_platform_permission("platform", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    # Operational config is for the software owner only (same gate as billing).
+    if not is_platform_owner_role(claims.get("role")):
+        raise HTTPException(status_code=403, detail="Only the platform owner can view platform settings")
+    from app import platform_settings as platform_settings_svc
+
+    return env(await platform_settings_svc.build_platform_settings(db))
 
 
 @api.get("/settings/email")
@@ -1794,7 +2162,7 @@ async def settings_sms_patch(
 
 @api.get("/settings/storage")
 async def settings_storage_get(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_platform_permission("platform", "read")),
 ):
     return env(storage_svc.storage_status())
 
@@ -1886,44 +2254,77 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
     if user and user.locked_until and user.locked_until > datetime.utcnow():
         raise HTTPException(status_code=423, detail="Account temporarily locked")
 
-    if not user or not user.is_active or not verify_password(payload.password, user.password_hash):
+    password_ok = False
+    if user and user.is_active:
+        password_ok = await asyncio.to_thread(
+            verify_password, payload.password, user.password_hash
+        )
+    if not user or not user.is_active or not password_ok:
         if user:
             user.failed_login_attempts = int(user.failed_login_attempts or 0) + 1
             if user.failed_login_attempts >= 5:
-                user.locked_until = datetime.utcnow() + __import__("datetime").timedelta(minutes=30)
+                user.locked_until = datetime.utcnow() + timedelta(minutes=30)
                 user.failed_login_attempts = 0
-            await audit_svc.record_event(
-                db,
-                tenant_id=tenant_id,
-                user_id=user.id,
-                module="auth",
-                action="login_failed",
-                entity="user",
-                entity_id=user.id,
-                details={"email": payload.email},
-                ip_address=request.client.host if request.client else None,
-                user_agent=request.headers.get("user-agent"),
-            )
-            await db.commit()
+            try:
+                await db.flush()
+            except SQLAlchemyError:
+                await db.rollback()
+                logger.exception("login failed-attempt update skipped")
+            else:
+                await _optional_login_step(
+                    db,
+                    "login_failed audit",
+                    lambda: audit_svc.record_event(
+                        db,
+                        tenant_id=tenant_id,
+                        user_id=user.id,
+                        module="auth",
+                        action="login_failed",
+                        entity="user",
+                        entity_id=user.id,
+                        details={"email": payload.email},
+                        ip_address=request.client.host if request.client else None,
+                        user_agent=request.headers.get("user-agent"),
+                    ),
+                )
+                try:
+                    await db.commit()
+                except SQLAlchemyError:
+                    await db.rollback()
+                    logger.exception("login failed-attempt commit skipped")
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     user.failed_login_attempts = 0
     user.locked_until = None
 
     if not user.email_verified:
-        await audit_svc.record_event(
-            db,
-            tenant_id=tenant_id,
-            user_id=user.id,
-            module="auth",
-            action="login_blocked_unverified",
-            entity="user",
-            entity_id=user.id,
-            details={"email": user.email},
-            ip_address=request.client.host if request.client else None,
-            user_agent=request.headers.get("user-agent"),
-        )
-        await db.commit()
+        try:
+            await db.flush()
+        except SQLAlchemyError:
+            await db.rollback()
+            logger.exception("login unverified update skipped")
+        else:
+            await _optional_login_step(
+                db,
+                "login_blocked_unverified audit",
+                lambda: audit_svc.record_event(
+                    db,
+                    tenant_id=tenant_id,
+                    user_id=user.id,
+                    module="auth",
+                    action="login_blocked_unverified",
+                    entity="user",
+                    entity_id=user.id,
+                    details={"email": user.email},
+                    ip_address=request.client.host if request.client else None,
+                    user_agent=request.headers.get("user-agent"),
+                ),
+            )
+            try:
+                await db.commit()
+            except SQLAlchemyError:
+                await db.rollback()
+                logger.exception("login unverified commit skipped")
         raise HTTPException(
             status_code=403,
             detail={
@@ -1934,7 +2335,13 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
 
     from app import webauthn_svc as webauthn
 
-    has_webauthn = await webauthn.user_has_webauthn(db, user.id)
+    has_webauthn = bool(
+        await _optional_login_step(
+            db,
+            "webauthn lookup",
+            lambda: webauthn.user_has_webauthn(db, user.id),
+        )
+    )
     needs_2fa = totp_svc.login_2fa_enabled() and (bool(user.totp_enabled) or has_webauthn)
     methods: list[str] = []
     if user.totp_enabled:
@@ -1948,37 +2355,65 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
             ok = await totp_svc.verify_user_second_factor(db, user, payload.totp_code)
             if not ok:
                 user.failed_login_attempts = int(user.failed_login_attempts or 0) + 1
-                await audit_svc.record_event(
-                    db,
-                    tenant_id=tenant_id,
-                    user_id=user.id,
-                    module="auth",
-                    action="2fa_failed",
-                    entity="user",
-                    entity_id=user.id,
-                    details={"email": user.email},
-                    ip_address=request.client.host if request.client else None,
-                    user_agent=request.headers.get("user-agent"),
-                )
-                await db.commit()
+                try:
+                    await db.flush()
+                except SQLAlchemyError:
+                    await db.rollback()
+                    logger.exception("login 2fa-failed update skipped")
+                else:
+                    await _optional_login_step(
+                        db,
+                        "2fa_failed audit",
+                        lambda: audit_svc.record_event(
+                            db,
+                            tenant_id=tenant_id,
+                            user_id=user.id,
+                            module="auth",
+                            action="2fa_failed",
+                            entity="user",
+                            entity_id=user.id,
+                            details={"email": user.email},
+                            ip_address=request.client.host if request.client else None,
+                            user_agent=request.headers.get("user-agent"),
+                        ),
+                    )
+                    try:
+                        await db.commit()
+                    except SQLAlchemyError:
+                        await db.rollback()
+                        logger.exception("login 2fa-failed commit skipped")
                 raise HTTPException(status_code=401, detail="Invalid 2FA code")
         elif not payload.totp_code:
             challenge = totp_svc.create_challenge_token(
                 user_id=user.id, tenant_id=tenant_id, role=user.role
             )
-            await audit_svc.record_event(
-                db,
-                tenant_id=tenant_id,
-                user_id=user.id,
-                module="auth",
-                action="2fa_challenge",
-                entity="user",
-                entity_id=user.id,
-                details={"email": user.email, "methods": methods},
-                ip_address=request.client.host if request.client else None,
-                user_agent=request.headers.get("user-agent"),
-            )
-            await db.commit()
+            try:
+                await db.flush()
+            except SQLAlchemyError:
+                await db.rollback()
+                logger.exception("login 2fa-challenge update skipped")
+            else:
+                await _optional_login_step(
+                    db,
+                    "2fa_challenge audit",
+                    lambda: audit_svc.record_event(
+                        db,
+                        tenant_id=tenant_id,
+                        user_id=user.id,
+                        module="auth",
+                        action="2fa_challenge",
+                        entity="user",
+                        entity_id=user.id,
+                        details={"email": user.email, "methods": methods},
+                        ip_address=request.client.host if request.client else None,
+                        user_agent=request.headers.get("user-agent"),
+                    ),
+                )
+                try:
+                    await db.commit()
+                except SQLAlchemyError:
+                    await db.rollback()
+                    logger.exception("login 2fa-challenge commit skipped")
             return env(
                 {
                     "requires_2fa": True,
@@ -2006,20 +2441,24 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
         request=request,
         login_method="totp" if (needs_2fa and payload.totp_code) else "password",
     )
-    await audit_svc.record_event(
+    await _optional_login_step(
         db,
-        tenant_id=tenant_id,
-        user_id=user.id,
-        module="auth",
-        action="login",
-        entity="user",
-        entity_id=user.id,
-        details={"email": user.email, "totp": bool(user.totp_enabled), "webauthn": has_webauthn},
-        ip_address=request.client.host if request.client else None,
-        user_agent=request.headers.get("user-agent"),
+        "login audit",
+        lambda: audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user.id,
+            module="auth",
+            action="login",
+            entity="user",
+            entity_id=user.id,
+            details={"email": user.email, "totp": bool(user.totp_enabled), "webauthn": has_webauthn},
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        ),
     )
     await db.commit()
-    has_mfa = await webauthn.user_has_mfa(db, user)
+    has_mfa = bool(user.totp_enabled) or has_webauthn
     return env(
         {
             "access_token": access,
@@ -2050,34 +2489,46 @@ async def auth_2fa_verify(payload: TwoFactorVerify, request: Request, db: AsyncS
         raise HTTPException(status_code=400, detail="2FA is not enabled for this user")
     ok = await totp_svc.verify_user_second_factor(db, user, payload.code)
     if not ok:
-        await audit_svc.record_event(
+        await _optional_login_step(
             db,
-            tenant_id=user.tenant_id,
-            user_id=user.id,
-            module="auth",
-            action="2fa_failed",
-            entity="user",
-            entity_id=user.id,
-            ip_address=request.client.host if request.client else None,
-            user_agent=request.headers.get("user-agent"),
+            "2fa_failed audit",
+            lambda: audit_svc.record_event(
+                db,
+                tenant_id=user.tenant_id,
+                user_id=user.id,
+                module="auth",
+                action="2fa_failed",
+                entity="user",
+                entity_id=user.id,
+                ip_address=request.client.host if request.client else None,
+                user_agent=request.headers.get("user-agent"),
+            ),
         )
-        await db.commit()
+        try:
+            await db.commit()
+        except SQLAlchemyError:
+            await db.rollback()
+            logger.exception("2fa verify failed-attempt commit skipped")
         raise HTTPException(status_code=401, detail="Invalid 2FA code")
 
     access, refresh = await create_session(
         db, user=user, request=request, login_method="totp"
     )
-    await audit_svc.record_event(
+    await _optional_login_step(
         db,
-        tenant_id=user.tenant_id,
-        user_id=user.id,
-        module="auth",
-        action="login",
-        entity="user",
-        entity_id=user.id,
-        details={"email": user.email, "totp": True},
-        ip_address=request.client.host if request.client else None,
-        user_agent=request.headers.get("user-agent"),
+        "login audit",
+        lambda: audit_svc.record_event(
+            db,
+            tenant_id=user.tenant_id,
+            user_id=user.id,
+            module="auth",
+            action="login",
+            entity="user",
+            entity_id=user.id,
+            details={"email": user.email, "totp": True},
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        ),
     )
     await db.commit()
     return env(
@@ -2227,17 +2678,21 @@ async def webauthn_login_verify(
     access, refresh = await create_session(
         db, user=user, request=request, login_method="webauthn"
     )
-    await audit_svc.record_event(
+    await _optional_login_step(
         db,
-        tenant_id=user.tenant_id,
-        user_id=user.id,
-        module="auth",
-        action="login",
-        entity="user",
-        entity_id=user.id,
-        details={"email": user.email, "webauthn": True},
-        ip_address=request.client.host if request.client else None,
-        user_agent=request.headers.get("user-agent"),
+        "login audit",
+        lambda: audit_svc.record_event(
+            db,
+            tenant_id=user.tenant_id,
+            user_id=user.id,
+            module="auth",
+            action="login",
+            entity="user",
+            entity_id=user.id,
+            details={"email": user.email, "webauthn": True},
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        ),
     )
     await db.commit()
     return env(
@@ -2342,7 +2797,7 @@ async def auth_2fa_disable(
             status_code=400,
             detail="2FA cannot be disabled for this role",
         )
-    if not verify_password(payload.password, user.password_hash):
+    if not await asyncio.to_thread(verify_password, payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid password")
     ok = await totp_svc.verify_user_second_factor(db, user, payload.code)
     if not ok:
@@ -2465,6 +2920,86 @@ async def revoke_session(
     session.revoked_at = datetime.utcnow()
     await db.commit()
     return env({"id": session_id, "revoked": True})
+
+
+@api.post("/auth/change-password")
+async def change_password(
+    payload: ChangePasswordRequest,
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
+):
+    """Reauthenticate with the current password, then rotate it and revoke other sessions."""
+    user = await db.get(m.User, claims["sub"])
+    if not user or user.tenant_id != claims["tenant_id"]:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not await asyncio.to_thread(
+        verify_password, payload.current_password, user.password_hash
+    ):
+        raise HTTPException(status_code=401, detail="Current password is incorrect")
+    validate_password_strength(payload.new_password)
+    if payload.new_password == payload.current_password:
+        raise HTTPException(status_code=400, detail="New password must be different")
+    user.password_hash = hash_password(payload.new_password)
+    now = datetime.utcnow()
+    current_jti = claims.get("jti")
+    sessions = (
+        await db.execute(
+            select(m.AuthSession).where(
+                m.AuthSession.user_id == user.id,
+                m.AuthSession.tenant_id == claims["tenant_id"],
+                m.AuthSession.revoked_at.is_(None),
+            )
+        )
+    ).scalars().all()
+    revoked = 0
+    for session in sessions:
+        if session.jti != current_jti:
+            session.revoked_at = now
+            revoked += 1
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="security",
+        action="password_changed",
+        entity="user",
+        entity_id=user.id,
+        details={"other_sessions_revoked": revoked},
+    )
+    await db.commit()
+    return env({"other_sessions_revoked": revoked}, "Password updated. Other devices were signed out.")
+
+
+@api.post("/auth/sessions/revoke-others")
+async def revoke_other_sessions(claims=Depends(current_claims), db: AsyncSession = Depends(get_db)):
+    now = datetime.utcnow()
+    current_jti = claims.get("jti")
+    sessions = (
+        await db.execute(
+            select(m.AuthSession).where(
+                m.AuthSession.user_id == claims["sub"],
+                m.AuthSession.tenant_id == claims["tenant_id"],
+                m.AuthSession.revoked_at.is_(None),
+            )
+        )
+    ).scalars().all()
+    revoked = 0
+    for session in sessions:
+        if session.jti != current_jti:
+            session.revoked_at = now
+            revoked += 1
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="security",
+        action="sessions_revoked_others",
+        entity="user",
+        entity_id=claims["sub"],
+        details={"revoked": revoked},
+    )
+    await db.commit()
+    return env({"revoked": revoked}, f"Signed out {revoked} other session(s).")
 
 
 @api.post("/auth/password-reset-request")
@@ -2628,25 +3163,45 @@ STAFF_GUIDE_PATHS = (
 @api.get("/staff-guide")
 async def download_staff_guide(
     claims=Depends(require_permission("staff_guide", "download")),
+    db: AsyncSession = Depends(get_db),
 ):
-    """Authenticated tenant download of the staff user guide (not Company Admin only)."""
-    for path in STAFF_GUIDE_PATHS:
-        if path.is_file():
-            return FileResponse(
-                path,
-                media_type="application/pdf",
-                filename=STAFF_GUIDE_NAME,
-                headers={"Cache-Control": "private, no-store"},
-            )
-    raise HTTPException(status_code=404, detail="Guide file is not available")
+    """PDF for this tenant's industry, enabled modules, and the caller's role."""
+    from app.staff_guide import build_staff_guide_pdf
+
+    pdf = await build_staff_guide_pdf(db, claims)
+    filename = f"{(claims.get('tenant_id') or 'company')[:8]}-staff-guide.pdf"
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "private, no-store",
+        },
+    )
 
 
 @api.get("/me")
 async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db)):
     user = await db.get(m.User, claims["sub"])
-    perms = user.permissions or permissions_for_role(user.role)
+    from app.rbac import is_platform_role
+
+    # Platform roles: live catalog (same as require_platform_permission).
+    if is_platform_role(user.role):
+        perms = permissions_for_role(user.role)
+    else:
+        perms = user.permissions or permissions_for_role(user.role)
     tenant = await db.get(m.Tenant, claims["tenant_id"])
     usage = packages_svc.usage_snapshot(tenant) if tenant else None
+    live_industry = packages_svc.canonicalize_industry(getattr(tenant, "industry", None) if tenant else None)
+    live_modules = packages_svc.resolve_enabled_modules(tenant) if tenant else []
+    raw_industry = (getattr(tenant, "industry", None) if tenant else None)
+    from app import store_access as store_access_svc
+    from app import store_entitlements as store_ent_svc
+
+    loc = await store_access_svc.bind_location_scope(
+        db, tenant_id=claims["tenant_id"], user_id=user.id, claims={}
+    )
+    assigned = loc.get("store_ids")
     return env(
         {
             "id": user.id,
@@ -2655,22 +3210,42 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             "phone": user.phone,
             "role": user.role,
             "tenant_id": user.tenant_id,
+            "branch_id": getattr(user, "branch_id", None),
+            "department_id": getattr(user, "department_id", None),
+            "store_id": assigned[0] if assigned else None,
+            "store_ids": assigned,
+            "store_scope": loc.get("store_scope"),
             "email_verified": user.email_verified,
             "permissions": perms,
             "record_scope": record_scope_from_permissions(user.role, perms if isinstance(perms, dict) else None),
             "package_code": claims.get("package_code") or (getattr(tenant, "package_code", None) if tenant else "trial"),
-            "enabled_modules": claims.get("enabled_modules")
-            or (packages_svc.resolve_enabled_modules(tenant) if tenant else []),
-            "industry": claims.get("industry")
-            or (getattr(tenant, "industry", None) if tenant else "retail")
-            or "retail",
+            "enabled_modules": live_modules,
+            "industry": live_industry,
+            "industry_raw": (str(raw_industry).strip() if raw_industry else None) or None,
+            "industry_valid": live_industry is not None,
             "subscription": usage,
+            **store_ent_svc.ui_store_flags(tenant),
             "inactivity_timeout_minutes": int(
                 getattr(tenant, "inactivity_timeout_minutes", None) or 30
             )
             if tenant
             else 30,
+            "offline_auth_hours": int(getattr(tenant, "offline_auth_hours", None) or 168)
+            if tenant
+            else 168,
+            "branch_id": getattr(user, "branch_id", None),
+            "store_ids": claims.get("store_ids"),
+            "store_scope": claims.get("store_scope") or "all",
             "company_name": getattr(tenant, "company_name", None) if tenant else None,
+            "currency": (getattr(tenant, "currency", None) or "GHS") if tenant else "GHS",
+            "date_format": (getattr(tenant, "date_format", None) or "DD/MM/YYYY") if tenant else "DD/MM/YYYY",
+            "decimal_separator": (getattr(tenant, "decimal_separator", None) or ".") if tenant else ".",
+            "thousand_separator": (
+                getattr(tenant, "thousand_separator", None)
+                if tenant and getattr(tenant, "thousand_separator", None) is not None
+                else ","
+            ),
+            "time_format": (getattr(tenant, "time_format", None) or "24h") if tenant else "24h",
             "has_logo": bool(getattr(tenant, "logo_url", None)) if tenant else False,
             **totp_svc.status_payload(user),
         }
@@ -2732,6 +3307,54 @@ async def _get_tenant_user(
     return user
 
 
+async def _serialize_users_with_stores(
+    db: AsyncSession, tenant_id: str, users: list[m.User]
+) -> list[dict]:
+    from app import store_access as store_access_svc
+
+    mapping = await store_access_svc.memberships_by_user_ids(
+        db, tenant_id=tenant_id, user_ids=[u.id for u in users]
+    )
+    return [
+        store_access_svc.with_store_fields(serialize_user(u), mapping.get(u.id, []))
+        for u in users
+    ]
+
+
+async def _serialize_user_with_stores(db: AsyncSession, tenant_id: str, user: m.User) -> dict:
+    rows = await _serialize_users_with_stores(db, tenant_id, [user])
+    return rows[0]
+
+
+def _user_shares_actor_stores(payload: dict, *, actor_id: str, allowed: list[str] | None) -> bool:
+    """A store-scoped viewer sees people assigned to those stores.
+
+    No membership still means every store in this company. Someone assigned
+    only to other stores is omitted. Privileged viewers pass ``allowed=None``.
+    """
+    if allowed is None or payload.get("id") == actor_id:
+        return True
+    ids = payload.get("store_ids") or []
+    if not ids:
+        return True
+    return bool(set(allowed).intersection(ids))
+
+
+async def _reject_user_outside_actor_stores(
+    db: AsyncSession, claims: dict, user: m.User
+) -> None:
+    from app import store_access as store_access_svc
+
+    allowed = await store_access_svc.assigned_store_ids(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+    )
+    if allowed is None or user.id == claims["sub"]:
+        return
+    payload = await _serialize_user_with_stores(db, claims["tenant_id"], user)
+    if not _user_shares_actor_stores(payload, actor_id=claims["sub"], allowed=allowed):
+        raise HTTPException(status_code=404, detail="User not found")
+
+
 async def _revoke_user_sessions(db: AsyncSession, *, tenant_id: str, user_id: str) -> int:
     now = datetime.utcnow()
     sessions = (
@@ -2764,14 +3387,16 @@ async def roles_catalog(
 
 @api.get("/roles/{role}")
 async def role_detail(
-    role: RoleKeyValue,
+    role: RoleRefValue,
     claims=Depends(require_permission("users", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    industry = await custom_roles_svc.tenant_industry(db, claims["tenant_id"])
     if role in VALID_ROLES:
-        catalog = {row["role"]: row for row in list_role_catalog()}
-        return env(catalog[role])
-    custom = await custom_roles_svc.get_custom_role(
+        if not custom_roles_svc.system_role_visible_for_industry(role, industry):
+            raise HTTPException(status_code=404, detail="Role not found")
+        return env(custom_roles_svc.serialize_system_role_for_tenant(role, industry))
+    custom = await custom_roles_svc.get_custom_role_ref(
         db, claims["tenant_id"], role, active_only=False
     )
     if not custom:
@@ -2813,7 +3438,7 @@ async def create_custom_role(
 
 @api.patch("/roles/{role}")
 async def update_custom_role(
-    role: RoleKeyValue,
+    role: RoleRefValue,
     payload: CustomRoleUpdate,
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
@@ -2822,10 +3447,15 @@ async def update_custom_role(
         raise HTTPException(status_code=403, detail="Only company admins can update custom roles")
     if role in VALID_ROLES:
         raise HTTPException(status_code=400, detail="System roles are immutable")
+    existing = await custom_roles_svc.get_custom_role_ref(
+        db, claims["tenant_id"], role, active_only=False
+    )
+    if not existing:
+        raise HTTPException(status_code=404, detail="Role not found")
     row = await custom_roles_svc.update_custom_role(
         db,
         tenant_id=claims["tenant_id"],
-        key=role,
+        key=existing.key,
         label=payload.label,
         permissions=payload.permissions,
         record_scope=payload.record_scope,
@@ -2847,7 +3477,7 @@ async def update_custom_role(
 
 @api.delete("/roles/{role}")
 async def delete_custom_role(
-    role: RoleKeyValue,
+    role: RoleRefValue,
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -2855,11 +3485,13 @@ async def delete_custom_role(
         raise HTTPException(status_code=403, detail="Only company admins can delete custom roles")
     if role in VALID_ROLES:
         raise HTTPException(status_code=400, detail="System roles cannot be deleted")
-    existing = await custom_roles_svc.get_custom_role(
+    existing = await custom_roles_svc.get_custom_role_ref(
         db, claims["tenant_id"], role, active_only=False
     )
-    entity_id = existing.id if existing else role
-    await custom_roles_svc.delete_custom_role(db, tenant_id=claims["tenant_id"], key=role)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Role not found")
+    entity_id = existing.id
+    await custom_roles_svc.delete_custom_role(db, tenant_id=claims["tenant_id"], key=existing.key)
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
@@ -2871,7 +3503,7 @@ async def delete_custom_role(
         details={"key": role},
     )
     await db.commit()
-    return env({"role": role}, "Custom role deleted")
+    return env({"role": existing.key}, "Custom role deleted")
 
 
 @api.get("/branches")
@@ -3045,10 +3677,27 @@ async def update_department(
 @api.get("/users")
 async def users(
     is_active: bool | None = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("users", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """List tenant users. Optional is_active filters soft-deactivated rows (Users manage UI)."""
+    """List tenant users. Optional is_active / branch_id / store_id filters.
+
+    A viewer assigned to specific stores does not receive staff who are
+    assigned only to other stores. Company-wide staff with no membership
+    stay visible. Privileged roles still see the whole company.
+    """
+    from app import store_access as store_access_svc
+
+    actor_stores = await store_access_svc.assigned_store_ids(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+    )
+    if store_id:
+        await store_access_svc.assert_store_access(
+            db, tenant_id=claims["tenant_id"], user_id=claims["sub"], store_id=store_id
+        )
+
     stmt = (
         select(m.User)
         .where(m.User.tenant_id == claims["tenant_id"])
@@ -3056,11 +3705,41 @@ async def users(
     )
     if is_active is not None:
         stmt = stmt.where(m.User.is_active.is_(bool(is_active)))
-    rows = (await db.execute(stmt)).scalars().all()
+    if branch_id:
+        await org_units_svc.get_branch(db, claims["tenant_id"], branch_id)
+        stmt = stmt.where(m.User.branch_id == branch_id)
+    rows = list((await db.execute(stmt)).scalars().all())
     actor_role = claims.get("role") or ""
     if not is_platform_role(actor_role):
         rows = [u for u in rows if not is_platform_role(u.role)]
-    return env([serialize_user(u) for u in rows])
+    payloads = await _serialize_users_with_stores(db, claims["tenant_id"], rows)
+    payloads = [
+        p
+        for p in payloads
+        if _user_shares_actor_stores(p, actor_id=claims["sub"], allowed=actor_stores)
+    ]
+    if store_id:
+        payloads = [p for p in payloads if store_id in (p.get("store_ids") or [])]
+    return env(payloads)
+
+
+@api.get("/users/cashier-presence")
+async def users_cashier_presence(
+    claims=Depends(require_permission("users", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Cashiers' POS selling status for roles that already manage users.
+
+    Cashiers do not have users:read, so they cannot list other cashiers.
+    Rows are limited to the signed-in tenant.
+    """
+    from app import store_access as store_access_svc
+    from app.cashier_presence import list_cashier_presence
+
+    allowed = await store_access_svc.assigned_store_ids(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+    )
+    return env(await list_cashier_presence(db, claims["tenant_id"], store_ids=allowed))
 
 
 @api.get("/users/import/template")
@@ -3137,7 +3816,8 @@ async def get_user(
     user = await _get_tenant_user(
         db, claims["tenant_id"], user_id, actor_role=claims.get("role")
     )
-    return env(serialize_user(user))
+    await _reject_user_outside_actor_stores(db, claims, user)
+    return env(await _serialize_user_with_stores(db, claims["tenant_id"], user))
 
 
 @api.get("/users/{user_id}/stores")
@@ -3149,7 +3829,8 @@ async def get_user_stores(
     """List store memberships for a user (empty = all stores / grandfather)."""
     from app import store_access as store_access_svc
 
-    await _get_tenant_user(db, claims["tenant_id"], user_id, actor_role=claims.get("role"))
+    target = await _get_tenant_user(db, claims["tenant_id"], user_id, actor_role=claims.get("role"))
+    await _reject_user_outside_actor_stores(db, claims, target)
     rows = await store_access_svc.list_memberships(
         db, tenant_id=claims["tenant_id"], user_id=user_id, active_only=True
     )
@@ -3176,7 +3857,8 @@ async def put_user_stores(
     from app import store_access as store_access_svc
     from app import audit as audit_svc
 
-    await _get_tenant_user(db, claims["tenant_id"], user_id, actor_role=claims.get("role"))
+    target = await _get_tenant_user(db, claims["tenant_id"], user_id, actor_role=claims.get("role"))
+    await _reject_user_outside_actor_stores(db, claims, target)
     rows = await store_access_svc.replace_memberships(
         db,
         tenant_id=claims["tenant_id"],
@@ -3269,6 +3951,18 @@ async def add_user(
     )
     db.add(user)
     await db.flush()
+    from app import store_access as store_access_svc
+
+    store_ids = await store_access_svc.assign_stores_on_create(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=user.id,
+        role=role_key,
+        store_id=payload.store_id,
+        store_ids=list(payload.store_ids or []),
+        actor_user_id=claims.get("sub"),
+    )
+
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
@@ -3277,11 +3971,17 @@ async def add_user(
         action="user_created",
         entity="user",
         entity_id=user.id,
-        details={"email": user.email, "role": user.role, "email_verified": True},
+        details={
+            "email": user.email,
+            "role": user.role,
+            "email_verified": True,
+            "store_ids": store_ids,
+        },
     )
     await db.commit()
+    user_payload = store_access_svc.with_store_fields(serialize_user(user), store_ids)
     return env(
-        {"id": user.id, "user": serialize_user(user)},
+        {"id": user.id, "user": user_payload},
         "User created. They can sign in with this workspace.",
     )
 
@@ -3296,6 +3996,7 @@ async def confirm_user_email(
     user = await _get_tenant_user(
         db, claims["tenant_id"], user_id, actor_role=claims.get("role")
     )
+    await _reject_user_outside_actor_stores(db, claims, user)
     user.email_verified = True
     await audit_svc.record_event(
         db,
@@ -3308,7 +4009,10 @@ async def confirm_user_email(
         details={"email": user.email},
     )
     await db.commit()
-    return env(serialize_user(user), "User can sign in. Email verification is not required.")
+    return env(
+        await _serialize_user_with_stores(db, claims["tenant_id"], user),
+        "User can sign in. Email verification is not required.",
+    )
 
 
 @api.patch("/users/{user_id}")
@@ -3321,6 +4025,7 @@ async def update_user(
     user = await _get_tenant_user(
         db, claims["tenant_id"], user_id, actor_role=claims.get("role")
     )
+    await _reject_user_outside_actor_stores(db, claims, user)
     changes: dict = {}
 
     if payload.full_name is not None:
@@ -3339,10 +4044,21 @@ async def update_user(
         role_key, role_perms = await custom_roles_svc.resolve_role_assignment(
             db, claims["tenant_id"], payload.role
         )
-        if role_key == "super_admin" and claims.get("role") != "super_admin":
-            raise HTTPException(status_code=403, detail="Only super_admin can assign super_admin")
+        if is_platform_role(role_key):
+            raise HTTPException(
+                status_code=400,
+                detail="Assign platform roles via POST /platform/staff (not tenant /users)",
+            )
         if user.id == claims["sub"] and role_key != user.role:
             raise HTTPException(status_code=400, detail="Cannot change your own role")
+        await user_accounts_svc.require_remaining_company_admin(
+            db,
+            tenant_id=claims["tenant_id"],
+            user=user,
+            next_role=role_key,
+            next_active=bool(user.is_active) if payload.is_active is None else bool(payload.is_active),
+            action="reassign",
+        )
         if user.role != role_key:
             changes["role"] = {"from": user.role, "to": role_key}
             prev_scope = None
@@ -3363,6 +4079,14 @@ async def update_user(
     if payload.is_active is not None:
         if user.id == claims["sub"] and payload.is_active is False:
             raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
+        if payload.role is None:
+            await user_accounts_svc.require_remaining_company_admin(
+                db,
+                tenant_id=claims["tenant_id"],
+                user=user,
+                next_active=bool(payload.is_active),
+                action="deactivate",
+            )
         if bool(user.is_active) != bool(payload.is_active):
             user.is_active = bool(payload.is_active)
             changes["is_active"] = user.is_active
@@ -3404,9 +4128,42 @@ async def update_user(
         if user.department_id != department_id:
             user.department_id = department_id
             changes["department_id"] = department_id
+        if "branch_id" in changes:
+            from app import store_access as store_access_svc
+
+            pruned = await store_access_svc.prune_memberships_for_branch(
+                db,
+                tenant_id=claims["tenant_id"],
+                user_id=user.id,
+                branch_id=user.branch_id,
+                actor_user_id=claims.get("sub"),
+            )
+            if pruned is not None:
+                changes["store_ids"] = [r.store_id for r in pruned]
+
+    if payload.clear_store or payload.store_id is not None or payload.store_ids is not None:
+        from app import store_access as store_access_svc
+
+        if payload.clear_store:
+            desired_stores: list[str] = []
+        elif payload.store_ids is not None:
+            desired_stores = store_access_svc.merge_store_ids(payload.store_id, list(payload.store_ids))
+        else:
+            desired_stores = [payload.store_id] if payload.store_id else []
+        rows = await store_access_svc.replace_memberships(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=user.id,
+            store_ids=desired_stores,
+            actor_user_id=claims.get("sub"),
+        )
+        changes["store_ids"] = [r.store_id for r in rows]
 
     if not changes:
-        return env(serialize_user(user), "No changes")
+        return env(
+            await _serialize_user_with_stores(db, claims["tenant_id"], user),
+            "No changes",
+        )
 
     await audit_svc.record_event(
         db,
@@ -3419,7 +4176,10 @@ async def update_user(
         details=changes,
     )
     await db.commit()
-    return env(serialize_user(user), "User updated")
+    return env(
+        await _serialize_user_with_stores(db, claims["tenant_id"], user),
+        "User updated",
+    )
 
 
 @api.delete("/users/{user_id}")
@@ -3432,10 +4192,21 @@ async def deactivate_user(
     user = await _get_tenant_user(
         db, claims["tenant_id"], user_id, actor_role=claims.get("role")
     )
+    await _reject_user_outside_actor_stores(db, claims, user)
     if user.id == claims["sub"]:
         raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
+    await user_accounts_svc.require_remaining_company_admin(
+        db,
+        tenant_id=claims["tenant_id"],
+        user=user,
+        next_active=False,
+        action="deactivate",
+    )
     if not user.is_active:
-        return env(serialize_user(user), "User already inactive")
+        return env(
+            await _serialize_user_with_stores(db, claims["tenant_id"], user),
+            "User already inactive",
+        )
     user.is_active = False
     revoked = await _revoke_user_sessions(db, tenant_id=claims["tenant_id"], user_id=user.id)
     await audit_svc.record_event(
@@ -3449,7 +4220,10 @@ async def deactivate_user(
         details={"email": user.email, "sessions_revoked": revoked},
     )
     await db.commit()
-    return env(serialize_user(user), "User deactivated")
+    return env(
+        await _serialize_user_with_stores(db, claims["tenant_id"], user),
+        "User deactivated",
+    )
 
 
 @api.delete("/users/{user_id}/account")
@@ -3459,6 +4233,10 @@ async def delete_user_account(
     db: AsyncSession = Depends(get_db),
 ):
     """Permanently delete a tenant staff account (company admin / users write)."""
+    target = await _get_tenant_user(
+        db, claims["tenant_id"], user_id, actor_role=claims.get("role")
+    )
+    await _reject_user_outside_actor_stores(db, claims, target)
     snapshot = await user_accounts_svc.delete_tenant_user(
         db,
         tenant_id=claims["tenant_id"],
@@ -3486,29 +4264,86 @@ async def dashboard(
     db: AsyncSession = Depends(get_db),
 ):
     from app.dashboard import build_dashboard
+    from app import store_access as store_access_svc
 
-    return env(await build_dashboard(db, claims["tenant_id"], store_id=store_id))
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
+    return env(
+        await build_dashboard(
+            db,
+            claims["tenant_id"],
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
+        )
+    )
 
 
 @api.get("/products")
 async def products(
     is_active: bool | None = None,
+    rx_only: bool | None = None,
+    q: Annotated[ProductSearchQueryValue, Query()] = "",
+    limit: int | None = Query(default=None, ge=1, le=500),
+    offset: int = Query(default=0, ge=0, le=100_000),
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     """List products. Optional is_active filters soft-deactivated rows (Inventory manage UI)."""
     await catalog_meta_svc.ensure_default_catalog(db, claims["tenant_id"])
-    extra = ""
+    extra_parts: list[str] = []
     params: dict = {}
     if is_active is not None:
-        extra = "is_active = :ia"
+        extra_parts.append("is_active = :ia")
         params["ia"] = bool(is_active)
+    if rx_only is not None:
+        extra_parts.append("rx_only = :rx")
+        params["rx"] = bool(rx_only)
+    q_clean = (q or "").strip()
+    if q_clean:
+        extra_parts.append("(name ILIKE :q OR sku ILIKE :q OR COALESCE(barcode, '') ILIKE :q)")
+        params["q"] = f"%{q_clean}%"
+    extra = " AND ".join(extra_parts)
     from app import schema_compat
 
     rows = await schema_compat.list_mapped(
-        db, m.Product, tenant_id=claims["tenant_id"], extra=extra, extra_params=params, order_by="name"
+        db,
+        m.Product,
+        tenant_id=claims["tenant_id"],
+        extra=extra,
+        extra_params=params,
+        order_by="name",
+        limit=limit,
+        offset=offset,
     )
-    return env([catalog_meta_svc.serialize_product(p) for p in rows])
+    return env(await catalog_meta_svc.serialize_products_list(db, claims["tenant_id"], rows))
+
+
+@api.get("/products/variants")
+async def list_tenant_product_variants(
+    is_active: bool | None = None,
+    q: Annotated[ProductSearchQueryValue, Query()] = "",
+    limit: int | None = Query(default=500, ge=1, le=500),
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """List every variant for the current tenant (inventory variant roster).
+
+    Not scoped to an open product. Optional is_active / q filter. Tenant isolation
+    is tenant_id only — no company_id inner join that would drop legacy rows.
+    """
+    rows = await catalog_svc.list_variants(
+        db,
+        claims["tenant_id"],
+        None,
+        is_active=is_active,
+        q=q or None,
+        limit=limit,
+    )
+    return env([catalog_svc.serialize_variant(v) for v in rows])
 
 
 @api.post("/products")
@@ -3556,6 +4391,12 @@ async def add_product(
         data["description"] = optional_honest_narrative(
             data["description"], label="product description"
         )
+    if data.get("dosage_instructions") is not None:
+        data["dosage_instructions"] = optional_honest_narrative(
+            data["dosage_instructions"], label="dosage instructions"
+        )
+    data["rx_only"] = bool(data.get("rx_only"))
+    data["min_order_qty"] = money_json(data.get("min_order_qty") or 0)
     for dim in ("weight", "length", "width", "height"):
         if data.get(dim) is not None:
             data[dim] = money_json(data[dim])
@@ -3575,6 +4416,7 @@ async def add_product(
             **data,
             "id": uid(),
             "tenant_id": claims["tenant_id"],
+            "created_by": claims["sub"],
             "reserved_qty": 0,
             "minimum_stock": data.get("reorder_level") or 0,
         },
@@ -3584,7 +4426,11 @@ async def add_product(
     await db.flush()
     if money_json(product.stock_qty or 0) > 0:
         opening = money_json(product.stock_qty)
-        product.stock_qty = 0
+        # get_mapped returns a detached row. Assigning stock_qty here does not
+        # UPDATE the table, so the locked re-read in apply_stock_change would
+        # add the opening quantity on top of the inserted on-hand.
+        await schema_compat.update_matching_row(db, "products", product.id, {"stock_qty": 0})
+        await db.flush()
         await apply_stock_change(
             db,
             tenant_id=claims["tenant_id"],
@@ -3598,7 +4444,10 @@ async def add_product(
         )
     await db.commit()
     fresh = await schema_compat.get_mapped(db, m.Product, product.id)
-    return env(catalog_meta_svc.serialize_product(fresh or product), "Product created")
+    listed = await catalog_meta_svc.serialize_products_list(
+        db, claims["tenant_id"], [fresh or product]
+    )
+    return env(listed[0] if listed else catalog_meta_svc.serialize_product(fresh or product), "Product created")
 
 
 @api.get("/products/import/template")
@@ -3698,6 +4547,59 @@ async def get_product(
     return env(catalog_meta_svc.serialize_product(product))
 
 
+@api.get("/products/{product_id}/price-tiers")
+async def list_product_price_tiers(
+    product_id: UuidIdValue,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import trade as trade_svc
+    from app.catalog import get_product
+
+    await get_product(db, claims["tenant_id"], product_id)
+    rows = await trade_svc.list_price_tiers(
+        db, tenant_id=claims["tenant_id"], product_id=product_id
+    )
+    return env([trade_svc.serialize_tier(r) for r in rows])
+
+
+@api.post("/products/{product_id}/price-tiers")
+async def create_product_price_tier(
+    product_id: UuidIdValue,
+    payload: ProductPriceTierCreate,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import trade as trade_svc
+
+    row = await trade_svc.create_price_tier(
+        db,
+        tenant_id=claims["tenant_id"],
+        product_id=product_id,
+        min_qty=payload.min_qty,
+        unit_price=payload.unit_price,
+        customer_group_id=payload.customer_group_id,
+    )
+    await db.commit()
+    return env(trade_svc.serialize_tier(row), "Price tier saved")
+
+
+@api.delete("/products/{product_id}/price-tiers/{tier_id}")
+async def delete_product_price_tier(
+    product_id: UuidIdValue,
+    tier_id: UuidIdValue,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import trade as trade_svc
+
+    await trade_svc.delete_price_tier(
+        db, tenant_id=claims["tenant_id"], product_id=product_id, tier_id=tier_id
+    )
+    await db.commit()
+    return env({"id": tier_id, "deleted": True}, "Price tier deleted")
+
+
 @api.patch("/products/{product_id}")
 async def patch_product(
     product_id: UuidIdValue,
@@ -3732,11 +4634,15 @@ async def patch_product(
         "tax_supply_class",
         "tax_exempt",
         "tracks_batches",
+        "dosage_instructions",
+        "rx_only",
+        "min_order_qty",
         "is_active",
         "weight",
         "length",
         "width",
         "height",
+        "prep_station",
     )
     before = {key: getattr(product, key, None) for key in tracked}
 
@@ -3795,7 +4701,7 @@ async def patch_product(
                     exclude_product_id=product.id,
                 )
             product.barcode = code
-        elif key in {"cost_price", "selling_price", "reorder_level"} and value is not None:
+        elif key in {"cost_price", "selling_price", "reorder_level", "min_order_qty"} and value is not None:
             setattr(product, key, money_json(value))
         elif key == "description":
             from app.honesty import optional_honest_narrative
@@ -3820,8 +4726,25 @@ async def patch_product(
             sync_product_tax_flags(product, tax_exempt=bool(value))
         elif key == "tracks_batches" and value is not None:
             product.tracks_batches = bool(value)
+        elif key == "dosage_instructions":
+            from app.honesty import optional_honest_narrative
+
+            if value is None:
+                product.dosage_instructions = None
+            else:
+                product.dosage_instructions = optional_honest_narrative(
+                    value, label="dosage instructions"
+                )
+        elif key == "rx_only" and value is not None:
+            product.rx_only = bool(value)
         elif key == "is_active" and value is not None:
             product.is_active = bool(value)
+        elif key == "prep_station":
+            from app.printers import normalize_prep_station
+
+            product.prep_station = normalize_prep_station(value)
+        elif key == "clear_prep_station" and value:
+            product.prep_station = None
 
     after = {key: getattr(product, key, None) for key in tracked}
 
@@ -3891,6 +4814,7 @@ async def catalog_create_category(
         name=payload.name,
         parent_id=payload.parent_id,
         tax_rate_id=payload.tax_rate_id,
+        prep_station=payload.prep_station,
     )
     await db.commit()
     rows = await catalog_meta_svc.list_categories(db, claims["tenant_id"])
@@ -3920,6 +4844,8 @@ async def catalog_patch_category(
         is_active=data.get("is_active"),
         clear_parent=clear_parent,
         clear_tax_rate=clear_tax_rate,
+        prep_station=data.get("prep_station"),
+        clear_prep_station=bool(data.get("clear_prep_station")),
     )
     await db.commit()
     # Return enriched tree fields for the updated row
@@ -4420,6 +5346,33 @@ async def product_barcode_png(
     )
 
 
+@api.get("/products/{product_id}/qr.png")
+async def product_qr_png(
+    product_id: UuidIdValue,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    product = (
+        await db.execute(
+            select(m.Product).where(
+                m.Product.id == product_id,
+                m.Product.tenant_id == claims["tenant_id"],
+            )
+        )
+    ).scalar_one_or_none()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    code = product.barcode or product.sku
+    if not code:
+        raise HTTPException(status_code=404, detail="No barcode or SKU available")
+    png = barcodes_svc.render_qr_png(str(code))
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={"Content-Disposition": f'inline; filename="qr-{product.sku}.png"'},
+    )
+
+
 @api.get("/products/{product_id}/barcode/label")
 async def product_barcode_label(
     product_id: UuidIdValue,
@@ -4429,9 +5382,7 @@ async def product_barcode_label(
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Printable HTML label sheet (Code128 / EAN-13 / UPC-A) for shelf / price tags."""
-    import base64
-
+    """Printable HTML label sheet (barcode + QR) for shelf / price tags."""
     product = (
         await db.execute(
             select(m.Product).where(
@@ -4451,8 +5402,7 @@ async def product_barcode_label(
         if symbology
         else barcodes_svc.detect_symbology(str(code))
     )
-    png = barcodes_svc.render_barcode_png(str(code), symbology=sym)
-    data_uri = "data:image/png;base64," + base64.b64encode(png).decode("ascii")
+    data_uri, qr_uri = barcodes_svc.label_image_data_uris(str(code), symbology=sym)
     page = barcodes_svc.label_html(
         company_name=(tenant.company_name if tenant else "RIBDIGI ERP"),
         product_name=product.name,
@@ -4463,21 +5413,41 @@ async def product_barcode_label(
         png_data_uri=data_uri,
         copies=copies,
         symbology=sym,
+        qr_png_data_uri=qr_uri,
     )
     return Response(content=page, media_type="text/html; charset=utf-8")
 
 
 @api.get("/inventory/low-stock")
-async def lowstock(claims=Depends(require_permission("inventory", "read")), db: AsyncSession = Depends(get_db)):
-    rows = (
-        await db.execute(
-            select(m.Product).where(
-                m.Product.tenant_id == claims["tenant_id"],
-                m.Product.stock_qty <= m.Product.reorder_level,
-            )
-        )
-    ).scalars().all()
-    return env(rows)
+async def lowstock(
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import store_access as store_access_svc
+
+    await store_access_svc.assert_store_access(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], store_id=store_id
+    )
+    await store_access_svc.assert_warehouse_access(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], warehouse_id=warehouse_id
+    )
+    data = await reports_svc.inventory_low_stock(
+        db, claims["tenant_id"], store_id=store_id, warehouse_id=warehouse_id
+    )
+    allowed = await store_access_svc.assigned_store_ids(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+    )
+    if allowed is not None:
+        rows = [
+            r
+            for r in (data.get("warehouse_low_stock") or [])
+            if not r.get("store_id") or r.get("store_id") in allowed
+        ]
+        data["warehouse_low_stock"] = rows
+        data["warehouse_count"] = len(rows)
+    return env(data)
 
 
 @api.get("/inventory/movements")
@@ -4496,6 +5466,14 @@ async def movements(
     db: AsyncSession = Depends(get_db),
 ):
     """Immutable stock movement history (BR-5.3). No DELETE endpoint."""
+    from app import store_access as store_access_svc
+
+    await store_access_svc.assert_store_access(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], store_id=store_id
+    )
+    await store_access_svc.assert_warehouse_access(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], warehouse_id=warehouse_id
+    )
     return env(
         await reports_svc.inventory_movements(
             db,
@@ -4645,6 +5623,14 @@ async def adjust(
             status_code=400,
             detail=f"reason must be one of {sorted(STOCK_ADJUSTMENT_REASONS)}",
         )
+    from app import store_access as store_access_svc
+
+    await store_access_svc.require_location_warehouse(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        warehouse_id=payload.warehouse_id or None,
+    )
     product = await apply_stock_change(
         db,
         tenant_id=claims["tenant_id"],
@@ -4676,6 +5662,14 @@ async def stock_in(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    await store_access_svc.require_location_warehouse(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        warehouse_id=payload.warehouse_id,
+    )
     result = await catalog_svc.stock_in_with_batch(
         db,
         tenant_id=claims["tenant_id"],
@@ -4704,6 +5698,15 @@ async def opening_stock_post(
 ):
     """BR-5.2 — initialize on-hand stock (go-live / fiscal year) with optional equity journal."""
     from app import opening_stock as opening_stock_svc
+    from app import store_access as store_access_svc
+
+    for line in payload.lines:
+        await store_access_svc.require_location_warehouse(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            warehouse_id=line.warehouse_id,
+        )
 
     result = await opening_stock_svc.post_opening_stock(
         db,
@@ -4761,6 +5764,14 @@ async def stock_out(
     ref_id = optional_honest_narrative(
         payload.reference_id, label="stock movement reference id", max_length=36
     )
+    from app import store_access as store_access_svc
+
+    await store_access_svc.require_location_warehouse(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        warehouse_id=payload.warehouse_id,
+    )
     result = await catalog_svc.stock_out_with_batch(
         db,
         tenant_id=claims["tenant_id"],
@@ -4790,9 +5801,16 @@ async def inventory_warehouse_stock(
 ):
     """BR-5.4 — view on-hand + reorder policy for one warehouse."""
     from app import inventory as inventory_svc
+    from app import store_access as store_access_svc
 
     if not (warehouse_id or "").strip():
         raise HTTPException(status_code=400, detail="warehouse_id is required")
+    await store_access_svc.assert_warehouse_access(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        warehouse_id=warehouse_id.strip(),
+    )
     return env(
         await inventory_svc.list_warehouse_stock(
             db,
@@ -4811,7 +5829,14 @@ async def inventory_warehouse_stock_reorder(
 ):
     """BR-5.4 — set per-warehouse reorder level/qty."""
     from app import inventory as inventory_svc
+    from app import store_access as store_access_svc
 
+    await store_access_svc.assert_warehouse_access(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        warehouse_id=payload.warehouse_id,
+    )
     row = await inventory_svc.set_warehouse_reorder_policy(
         db,
         tenant_id=claims["tenant_id"],
@@ -4888,13 +5913,23 @@ async def create_product_variant(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    variant = await catalog_svc.create_variant(
-        db,
-        tenant_id=claims["tenant_id"],
-        product_id=product_id,
-        **payload.model_dump(),
-    )
-    await db.commit()
+    variant = None
+    try:
+        variant = await catalog_svc.create_variant(
+            db,
+            tenant_id=claims["tenant_id"],
+            product_id=product_id,
+            **payload.model_dump(exclude_none=True),
+        )
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="A variant with this SKU or barcode already exists for this company",
+        )
+    if variant is None:
+        raise HTTPException(status_code=500, detail="The server could not complete this request.")
     return env(catalog_svc.serialize_variant(variant), "Variant created")
 
 
@@ -4960,7 +5995,11 @@ async def variant_barcode_generate(
         seed=f"{variant.id}:{variant.sku}",
         exclude_variant_id=variant.id,
     )
-    variant.barcode = candidate
+    from app import schema_compat
+
+    variant = await schema_compat.apply_updates(
+        db, m.ProductVariant, variant.id, {"barcode": candidate}
+    )
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
@@ -4976,10 +6015,9 @@ async def variant_barcode_generate(
             "symbology": sym,
         },
     )
-    await db.commit()
-    await db.refresh(variant)
     out = catalog_svc.serialize_variant(variant)
     out["symbology"] = sym
+    await db.commit()
     return env(out, "Barcode generated")
 
 
@@ -5011,6 +6049,28 @@ async def variant_barcode_png(
     )
 
 
+@api.get("/products/{product_id}/variants/{variant_id}/qr.png")
+async def variant_qr_png(
+    product_id: UuidIdValue,
+    variant_id: UuidIdValue,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
+    variant = await catalog_svc.get_variant(db, claims["tenant_id"], variant_id)
+    if variant.product_id != product.id:
+        raise HTTPException(status_code=404, detail="Variant not found")
+    code = variant.barcode or variant.sku
+    if not code:
+        raise HTTPException(status_code=404, detail="No barcode or SKU available")
+    png = barcodes_svc.render_qr_png(str(code))
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={"Content-Disposition": f'inline; filename="qr-{variant.sku}.png"'},
+    )
+
+
 @api.get("/products/{product_id}/variants/{variant_id}/barcode/label")
 async def variant_barcode_label(
     product_id: UuidIdValue,
@@ -5021,8 +6081,6 @@ async def variant_barcode_label(
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    import base64
-
     product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
     variant = await catalog_svc.get_variant(db, claims["tenant_id"], variant_id)
     if variant.product_id != product.id:
@@ -5036,8 +6094,7 @@ async def variant_barcode_label(
         if symbology
         else barcodes_svc.detect_symbology(str(code))
     )
-    png = barcodes_svc.render_barcode_png(str(code), symbology=sym)
-    data_uri = "data:image/png;base64," + base64.b64encode(png).decode("ascii")
+    data_uri, qr_uri = barcodes_svc.label_image_data_uris(str(code), symbology=sym)
     page = barcodes_svc.label_html(
         company_name=(tenant.company_name if tenant else "RIBDIGI ERP"),
         product_name=f"{product.name} / {variant.name}",
@@ -5048,6 +6105,7 @@ async def variant_barcode_label(
         png_data_uri=data_uri,
         copies=copies,
         symbology=sym,
+        qr_png_data_uri=qr_uri,
     )
     return Response(content=page, media_type="text/html; charset=utf-8")
 
@@ -5077,6 +6135,16 @@ async def list_product_batches(
 ):
     await catalog_svc.get_product(db, claims["tenant_id"], product_id)
     rows = await catalog_svc.list_batches(db, claims["tenant_id"], product_id=product_id)
+    return env([catalog_svc.serialize_batch(b) for b in rows])
+
+
+@api.get("/inventory/batches")
+async def inventory_batches_list(
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """On-hand lots for the company. Product batch routes stay per product."""
+    rows = await catalog_svc.list_batches(db, claims["tenant_id"])
     return env([catalog_svc.serialize_batch(b) for b in rows])
 
 
@@ -5135,7 +6203,9 @@ def _serialize_party(row: m.Party, group: m.CustomerGroup | None = None) -> dict
         "credit_limit": money_json(row.credit_limit),
         "payment_terms_days": int(getattr(row, "payment_terms_days", None) or 30),
         "balance": money_json(row.balance),
+        "loyalty_points": money_json(getattr(row, "loyalty_points", 0) or 0),
         "customer_group_id": getattr(row, "customer_group_id", None),
+        "company_id": getattr(row, "company_id", None),
     }
     if group is not None:
         from app.customer_groups import serialize_group
@@ -5252,9 +6322,11 @@ async def list_customer_groups(
 ):
     """List customer groups. Optional is_active filters soft-deactivated rows (Sales manage UI)."""
     from app import customer_groups as customer_groups_svc
+    from app import schema_compat
 
+    company_id = await schema_compat.resolve_tenant_company_id(db, claims["tenant_id"])
     rows = await customer_groups_svc.list_groups(
-        db, claims["tenant_id"], is_active=is_active
+        db, claims["tenant_id"], is_active=is_active, company_id=company_id
     )
     await db.commit()
     return env([customer_groups_svc.serialize_group(r) for r in rows])
@@ -5276,7 +6348,7 @@ async def create_customer_group(
         discount_percent=payload.discount_percent,
     )
     await db.commit()
-    await db.refresh(row)
+    # create_group returns a loaded row that is not in this Session (raw insert).
     return env(customer_groups_svc.serialize_group(row))
 
 
@@ -5308,19 +6380,15 @@ async def customers(
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    from app import customer_groups as customer_groups_svc
+    from app import customers as customers_svc
 
-    await customer_groups_svc.ensure_default_groups(db, claims["tenant_id"])
-    q = select(m.Party).where(
-        m.Party.tenant_id == claims["tenant_id"], m.Party.kind == "customer"
-    )
     # Schema PartyStatusValue rejects blank/invalid → 422; keep allow-list defense-in-depth.
+    st = None
     if status:
         st = status.strip().lower()
         if st not in _PARTY_STATUSES:
             raise HTTPException(status_code=422, detail="Invalid status filter")
-        q = q.where(m.Party.status == st)
-    rows = (await db.execute(q)).scalars().all()
+    rows = await customers_svc.list_customers(db, claims, status=st)
     group_ids = {r.customer_group_id for r in rows if r.customer_group_id}
     groups: dict[str, m.CustomerGroup] = {}
     if group_ids:
@@ -5345,24 +6413,10 @@ async def get_customer(
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    from app import customer_groups as customer_groups_svc
+    from app import customers as customers_svc
 
-    party = (
-        await db.execute(
-            select(m.Party).where(
-                m.Party.id == customer_id,
-                m.Party.tenant_id == claims["tenant_id"],
-                m.Party.kind == "customer",
-            )
-        )
-    ).scalar_one_or_none()
-    if not party:
-        raise HTTPException(status_code=404, detail="Customer not found")
-    group = None
-    if party.customer_group_id:
-        group = await customer_groups_svc.get_group(
-            db, claims["tenant_id"], party.customer_group_id
-        )
+    party = await customers_svc.get_customer(db, claims, customer_id)
+    group = await customers_svc.load_group(db, claims["tenant_id"], party.customer_group_id)
     data = await _party_with_contacts(db, party, group=group)
     await db.commit()
     return env(data)
@@ -5374,21 +6428,11 @@ async def add_customer(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    from app import customer_groups as customer_groups_svc
+    from app import customers as customers_svc
 
     data = _normalize_party_profile(payload.model_dump(), kind="customer")
-    group_id = data.pop("customer_group_id", None)
-    if group_id:
-        await customer_groups_svc.require_active_group(db, claims["tenant_id"], group_id)
     await _ensure_party_code_unique(db, claims["tenant_id"], data.get("code"))
-    party = m.Party(
-        tenant_id=claims["tenant_id"],
-        kind="customer",
-        customer_group_id=group_id,
-        **data,
-    )
-    db.add(party)
-    await db.flush()
+    party, group = await customers_svc.create_customer(db, claims, data)
     await webhooks_svc.emit_event(
         db,
         tenant_id=claims["tenant_id"],
@@ -5401,12 +6445,6 @@ async def add_customer(
         },
     )
     await db.commit()
-    await db.refresh(party)
-    group = None
-    if party.customer_group_id:
-        group = await customer_groups_svc.get_group(
-            db, claims["tenant_id"], party.customer_group_id
-        )
     return env(_serialize_party(party, group))
 
 
@@ -5417,25 +6455,19 @@ async def patch_customer(
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    from app import customer_groups as customer_groups_svc
+    from app import customers as customers_svc
 
-    party = (
-        await db.execute(
-            select(m.Party).where(
-                m.Party.id == customer_id,
-                m.Party.tenant_id == claims["tenant_id"],
-                m.Party.kind == "customer",
-            )
-        )
-    ).scalar_one_or_none()
-    if not party:
-        raise HTTPException(status_code=404, detail="Customer not found")
+    party = await customers_svc.get_customer(db, claims, customer_id)
     data = _normalize_party_profile(payload.model_dump(exclude_unset=True), kind="customer")
+    data.pop("tenant_id", None)
+    data.pop("company_id", None)
+    _tenant_id, company_id, _party_cols = await customers_svc.ownership_from_auth(db, claims)
     if "customer_group_id" in data:
         group_id = data["customer_group_id"]
-        if group_id:
-            await customer_groups_svc.require_active_group(db, claims["tenant_id"], group_id)
-        party.customer_group_id = group_id
+        group = await customers_svc.resolve_assignable_group(
+            db, tenant_id=claims["tenant_id"], group_id=group_id, company_id=company_id
+        )
+        party.customer_group_id = group.id if group else None
         data.pop("customer_group_id")
     if "code" in data:
         await _ensure_party_code_unique(
@@ -5445,11 +6477,7 @@ async def patch_customer(
         setattr(party, key, value)
     await db.commit()
     await db.refresh(party)
-    group = None
-    if party.customer_group_id:
-        group = await customer_groups_svc.get_group(
-            db, claims["tenant_id"], party.customer_group_id
-        )
+    group = await customers_svc.load_group(db, claims["tenant_id"], party.customer_group_id)
     return env(_serialize_party(party, group))
 
 
@@ -5574,11 +6602,15 @@ async def product_price_for_customer(
     # (was free `str`; garbage could reach party/variant lookup).
     customer_id: Annotated[UuidIdValue | None, Query()] = None,
     variant_id: Annotated[UuidIdValue | None, Query()] = None,
+    # omit → no qty break; ≤0 → 422. Wholesale channel uses this for price tiers.
+    quantity: Annotated[float | None, Query()] = None,
+    sales_channel: Annotated[str | None, Query()] = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     from app.catalog import get_product, get_variant, resolve_sale_line
     from app import customer_groups as customer_groups_svc
+    from app.trade import resolve_document_channel
 
     product = await get_product(db, claims["tenant_id"], product_id)
     variant = None
@@ -5587,11 +6619,25 @@ async def product_price_for_customer(
     list_price = money_json(
         (variant.selling_price if variant is not None else product.selling_price) or 0
     )
+    channel = await resolve_document_channel(
+        db,
+        tenant_id=claims["tenant_id"],
+        requested=sales_channel,
+        source="order",
+    )
+    item: dict = {"product_id": product_id, "variant_id": variant_id}
+    qty = None
+    if quantity is not None:
+        qty = money_json(quantity)
+        if qty <= 0:
+            raise HTTPException(status_code=422, detail="quantity must be greater than zero")
+        item["quantity"] = qty
     _product, _variant, unit_price = await resolve_sale_line(
         db,
         claims["tenant_id"],
-        {"product_id": product_id, "variant_id": variant_id},
+        item,
         customer_id=customer_id,
+        sales_channel=channel,
     )
     pct, group = await customer_groups_svc.customer_group_discount(
         db, claims["tenant_id"], customer_id
@@ -5602,6 +6648,8 @@ async def product_price_for_customer(
             "variant_id": variant_id,
             "customer_id": customer_id,
             "list_price": list_price,
+            "quantity": qty,
+            "sales_channel": channel,
             "unit_price": unit_price,
             "discount_percent": pct,
             "customer_group": customer_groups_svc.serialize_group(group) if group else None,
@@ -5964,6 +7012,105 @@ async def list_sales_invoices(
     return env([await sales_svc.serialize_invoice(db, inv) for inv in rows])
 
 
+@api.get("/sales/made")
+async def list_sales_made(
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Completed invoices plus register sales. Draft invoices stay on the Invoices tab.
+
+    A register sale that already created an invoice is listed once, as the invoice.
+    """
+    from app.rbac import record_scope_for_claims
+
+    inv_stmt = (
+        select(m.SalesInvoice)
+        .where(
+            m.SalesInvoice.tenant_id == claims["tenant_id"],
+            m.SalesInvoice.status != "draft",
+        )
+        .order_by(m.SalesInvoice.created_at.desc())
+    )
+    inv_stmt = apply_created_by_scope(inv_stmt, m.SalesInvoice, claims)
+    invoices = (await db.execute(inv_stmt)).scalars().all()
+    invoice_ids = {inv.id for inv in invoices}
+
+    tx_stmt = (
+        select(m.Transaction)
+        .where(
+            m.Transaction.tenant_id == claims["tenant_id"],
+            m.Transaction.tx_type.in_(("sale", "pos_sale")),
+        )
+        .order_by(m.Transaction.created_at.desc())
+    )
+    transactions = (await db.execute(tx_stmt)).scalars().all()
+    scope_ids = claims.get("scope_user_ids")
+    if scope_ids is None and record_scope_for_claims(claims) != "all":
+        scope_ids = [str(claims.get("sub") or "")]
+    elif scope_ids is not None:
+        scope_ids = [str(x) for x in scope_ids]
+
+    party_ids = {inv.customer_id for inv in invoices if inv.customer_id}
+    party_ids.update(tx.party_id for tx in transactions if tx.party_id)
+    names: dict[str, str] = {}
+    if party_ids:
+        parties = (
+            await db.execute(
+                select(m.Party).where(
+                    m.Party.tenant_id == claims["tenant_id"],
+                    m.Party.id.in_(list(party_ids)),
+                )
+            )
+        ).scalars().all()
+        names = {p.id: p.name for p in parties}
+
+    rows: list[dict] = []
+    for inv in invoices:
+        when = inv.posted_at or inv.created_at
+        rows.append(
+            {
+                "id": inv.id,
+                "source": "invoice",
+                "number": inv.invoice_number,
+                "customer": names.get(inv.customer_id) or "Customer",
+                "when": when.isoformat() if when else None,
+                "status": inv.status,
+                "total": money_json(inv.total_amount or 0),
+                "invoice_id": inv.id,
+                "_sort": when or datetime.min,
+            }
+        )
+    for tx in transactions:
+        payload = tx.payload or {}
+        linked = payload.get("sales_invoice_id")
+        if linked and linked in invoice_ids:
+            continue
+        if scope_ids is not None:
+            cashier = str(payload.get("cashier_user_id") or "")
+            if cashier not in scope_ids:
+                continue
+        when = tx.created_at
+        customer = names.get(tx.party_id) if tx.party_id else None
+        customer = customer or payload.get("customer_name") or "Walk-in"
+        rows.append(
+            {
+                "id": tx.id,
+                "source": "register",
+                "number": tx.reference,
+                "customer": customer,
+                "when": when.isoformat() if when else None,
+                "status": tx.status or "completed",
+                "total": money_json(tx.total or 0),
+                "invoice_id": linked,
+                "_sort": when or datetime.min,
+            }
+        )
+    rows.sort(key=lambda row: row["_sort"], reverse=True)
+    for row in rows:
+        row.pop("_sort", None)
+    return env(rows)
+
+
 @api.get("/sales/settings")
 async def sales_settings(
     claims=Depends(require_permission("sales", "read")),
@@ -6176,15 +7323,87 @@ async def create_sales_invoice(
         user_id=claims["sub"],
         customer_id=payload.customer_id,
         discount_amount=payload.discount_amount,
+        discount_type=payload.discount_type,
+        discount_percent=payload.discount_percent,
         notes=payload.notes,
         store_id=payload.store_id,
         currency=payload.currency,
         exchange_rate=payload.exchange_rate,
         is_reverse_charge=bool(payload.is_reverse_charge),
+        coupon_code=payload.coupon_code,
+        sales_channel=payload.sales_channel,
         items=[i.model_dump() for i in payload.items],
     )
     await db.commit()
     return env(await sales_svc.serialize_invoice(db, invoice), "Sales invoice created as draft")
+
+
+@api.get("/sales/coupons")
+async def list_sales_coupons(
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import coupons as coupons_svc
+
+    return env(await coupons_svc.list_coupons(db, claims["tenant_id"]))
+
+
+@api.post("/sales/coupons")
+async def create_sales_coupon(
+    payload: CouponCreate,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import coupons as coupons_svc
+
+    row = await coupons_svc.create_coupon(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        payload=payload.model_dump(),
+    )
+    await db.commit()
+    return env(coupons_svc.serialize_coupon(row, redemption_count=0), "Coupon created")
+
+
+@api.patch("/sales/coupons/{coupon_id}")
+async def patch_sales_coupon(
+    coupon_id: UuidIdValue,
+    payload: CouponUpdate,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import coupons as coupons_svc
+
+    row = await coupons_svc.update_coupon(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        coupon_id=coupon_id,
+        payload=payload.model_dump(exclude_unset=True),
+    )
+    await db.commit()
+    return env(coupons_svc.serialize_coupon(row), "Coupon updated")
+
+
+@api.post("/sales/coupons/validate")
+async def validate_sales_coupon(
+    payload: CouponValidate,
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import coupons as coupons_svc
+
+    data = await coupons_svc.apply_coupon(
+        db,
+        tenant_id=claims["tenant_id"],
+        code=payload.code,
+        header_base=payload.header_base,
+        product_ids=payload.product_ids,
+        category_ids=payload.category_ids,
+        customer_id=payload.customer_id,
+    )
+    return env(data, "Coupon is valid")
 
 
 @api.get("/sales/invoices/{invoice_id}")
@@ -6238,6 +7457,9 @@ async def print_sales_invoice(
             public["template"] = "thermal"
             public["paper"] = paper
             public["text"] = text
+            public["html"] = invoice_print_svc.render_invoice_thermal_html(
+                payload, paper=paper
+            )
             return env(public)
         if fmt == "text":
             return PlainTextResponse(text, media_type="text/plain; charset=utf-8")
@@ -6394,24 +7616,211 @@ async def list_quotations(
     return env([await sales_docs_svc.serialize_quotation(db, q) for q in rows])
 
 
+def _client_request_reused() -> HTTPException:
+    return HTTPException(
+        status_code=409,
+        detail={
+            "code": "CLIENT_REQUEST_REUSED",
+            "message": "This client_request_id was already used for a different request.",
+        },
+    )
+
+
+def _sale_request_fingerprint(payload: PosSaleCreate) -> dict:
+    """Commercial contents of a POS retry. Session and device fields stay out."""
+    items = []
+    for item in payload.items:
+        items.append(
+            {
+                "product_id": str(item.product_id),
+                "variant_id": str(item.variant_id) if item.variant_id else None,
+                "quantity": money_json(item.quantity),
+                "unit_price": money_json(item.unit_price) if item.unit_price is not None else None,
+            }
+        )
+    payments = None
+    if payload.payments:
+        payments = [
+            {
+                "payment_method": str(p.payment_method),
+                "amount": money_json(p.amount),
+                "reference": (p.reference or None),
+            }
+            for p in payload.payments
+        ]
+    return {
+        "party_id": str(payload.party_id) if payload.party_id else None,
+        "payment_method": str(payload.payment_method or "cash"),
+        "payments": payments,
+        "discount_amount": money_json(payload.discount_amount or 0),
+        "discount_type": str(payload.discount_type or "fixed"),
+        "discount_percent": money_json(payload.discount_percent or 0),
+        "coupon_code": (payload.coupon_code or None),
+        "items": items,
+    }
+
+
+def _assert_sale_replay(existing: m.Transaction, payload: PosSaleCreate) -> None:
+    incoming = _sale_request_fingerprint(payload)
+    stored = None
+    if isinstance(existing.payload, dict):
+        stored = existing.payload.get("request_fingerprint")
+    if stored != incoming:
+        raise _client_request_reused()
+
+
+def _pos_replay_response(existing: m.Transaction, client_request_id: str):
+    return env(
+        {
+            "id": existing.id,
+            "reference": existing.reference,
+            "total": money_json(existing.total or 0),
+            "status": existing.status,
+            "idempotent_replay": True,
+            "client_request_id": client_request_id,
+        },
+        "POS sale already recorded",
+    )
+
+
+_POS_REPLAY_LOCKS: dict[tuple[str, str], asyncio.Lock] = {}
+
+
+def _pos_replay_lock(tenant_id: str, client_request_id: str) -> asyncio.Lock:
+    """One in-process lock per tenant and client_request_id.
+
+    The unique constraint still guards other processes. This lock lets the
+    loser wait until the winner commits, then read that sale.
+    """
+    key = (str(tenant_id), str(client_request_id))
+    lock = _POS_REPLAY_LOCKS.get(key)
+    if lock is None:
+        lock = asyncio.Lock()
+        _POS_REPLAY_LOCKS[key] = lock
+    return lock
+
+
+async def _pos_sale_replay_after_conflict(db, tenant_id, client_request_id, payload):
+    """Return the original sale after a unique-key race, once that sale is visible."""
+    await db.rollback()
+    if not client_request_id:
+        return None
+    for attempt in range(20):
+        existing = await _find_existing_pos_sale(db, tenant_id, client_request_id)
+        if existing is not None:
+            _assert_sale_replay(existing, payload)
+            return _pos_replay_response(existing, client_request_id)
+        # End this read so the next one can see the winner's commit.
+        await db.rollback()
+        await asyncio.sleep(0 if attempt < 4 else 0.02)
+    return None
+
+
+async def _find_existing_pos_sale(db: AsyncSession, tenant_id: str, client_request_id: str | None):
+    if not client_request_id:
+        return None
+    return (
+        await db.execute(
+            select(m.Transaction).where(
+                m.Transaction.tenant_id == tenant_id,
+                m.Transaction.client_request_id == client_request_id,
+                m.Transaction.tx_type == "pos_sale",
+            )
+        )
+    ).scalar_one_or_none()
+
+
+async def _find_existing_quote(db: AsyncSession, tenant_id: str, client_request_id: str | None):
+    if not client_request_id:
+        return None
+    return (
+        await db.execute(
+            select(m.SalesQuotation).where(
+                m.SalesQuotation.tenant_id == tenant_id,
+                m.SalesQuotation.client_request_id == client_request_id,
+            )
+        )
+    ).scalar_one_or_none()
+
+
+async def _assert_quote_replay(db: AsyncSession, quote: m.SalesQuotation, payload: SalesQuotationCreate) -> None:
+    """Reject a reused quote id when the customer, lines, or discount differ.
+
+    A retry that omits unit price still matches. The client is asking for the
+    price already stored on the quote. An explicit price that differs is rejected.
+    """
+    if str(quote.customer_id) != str(payload.customer_id):
+        raise _client_request_reused()
+    if str(quote.discount_type or "fixed") != str(payload.discount_type or "fixed"):
+        raise _client_request_reused()
+    if abs(money_json(quote.discount_percent or 0) - money_json(payload.discount_percent or 0)) > 0.001:
+        raise _client_request_reused()
+    if str(payload.discount_type or "fixed") == "fixed":
+        if abs(money_json(quote.discount_amount or 0) - money_json(payload.discount_amount or 0)) > 0.01:
+            raise _client_request_reused()
+    stored_notes = (quote.notes or "").strip()
+    incoming_notes = (payload.notes or "").strip() if payload.notes else ""
+    if stored_notes != incoming_notes:
+        raise _client_request_reused()
+    rows = await sales_docs_svc.list_quotation_items(db, quote.tenant_id, quote.id)
+    if len(rows) != len(payload.items):
+        raise _client_request_reused()
+    stored = {
+        (str(row.product_id), str(row.variant_id) if row.variant_id else ""): row
+        for row in rows
+    }
+    for item in payload.items:
+        key = (str(item.product_id), str(item.variant_id) if item.variant_id else "")
+        row = stored.get(key)
+        if row is None or abs(money_json(row.quantity) - money_json(item.quantity)) > 0.001:
+            raise _client_request_reused()
+        if item.unit_price is not None and abs(money_json(row.unit_price) - money_json(item.unit_price)) > 0.001:
+            raise _client_request_reused()
+
+
 @api.post("/sales/quotations")
 async def create_quotation(
     payload: SalesQuotationCreate,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    client_request_id = (payload.client_request_id or "").strip() or None
+
+    prior = await _find_existing_quote(db, claims["tenant_id"], client_request_id)
+    if prior is not None:
+        await _assert_quote_replay(db, prior, payload)
+        data = await sales_docs_svc.serialize_quotation(db, prior)
+        data["idempotent_replay"] = True
+        return env(data, "Quotation already recorded")
     quote = await sales_docs_svc.create_quotation(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         customer_id=payload.customer_id,
         discount_amount=payload.discount_amount,
+        discount_type=payload.discount_type,
+        discount_percent=payload.discount_percent,
         notes=payload.notes,
         valid_days=payload.valid_days,
         items=[i.model_dump() for i in payload.items],
+        sales_channel=payload.sales_channel,
     )
-    await db.commit()
-    return env(await sales_docs_svc.serialize_quotation(db, quote), "Quotation created")
+    if client_request_id:
+        quote.client_request_id = client_request_id
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        prior = await _find_existing_quote(db, claims["tenant_id"], client_request_id)
+        if prior is None:
+            raise
+        await _assert_quote_replay(db, prior, payload)
+        data = await sales_docs_svc.serialize_quotation(db, prior)
+        data["idempotent_replay"] = True
+        return env(data, "Quotation already recorded")
+    data = await sales_docs_svc.serialize_quotation(db, quote)
+    data["idempotent_replay"] = False
+    return env(data, "Quotation created")
 
 
 @api.get("/sales/quotations/{quotation_id}")
@@ -6569,8 +7978,11 @@ async def create_sales_order(
         delivery_date=reports_svc.parse_date(payload.delivery_date),
         delivery_address=payload.delivery_address,
         discount_amount=payload.discount_amount,
+        discount_type=payload.discount_type,
+        discount_percent=payload.discount_percent,
         notes=payload.notes,
         items=[i.model_dump() for i in payload.items],
+        sales_channel=payload.sales_channel,
     )
     await db.commit()
     return env(await sales_docs_svc.serialize_order(db, order), "Sales order created")
@@ -6600,6 +8012,7 @@ async def confirm_sales_order(
         db,
         claims["tenant_id"],
         order_id,
+        user_id=claims["sub"],
         store_id=payload.store_id,
         delivery_date=reports_svc.parse_date(payload.delivery_date),
         delivery_address=payload.delivery_address,
@@ -6632,6 +8045,25 @@ async def ship_sales_order(
     order = await sales_docs_svc.ship_order(db, claims["tenant_id"], order_id)
     await db.commit()
     return env(await sales_docs_svc.serialize_order(db, order), "Order shipped")
+
+
+@api.post("/sales/orders/{order_id}/fulfill")
+async def fulfill_sales_order(
+    order_id: UuidIdValue,
+    payload: SalesOrderFulfill,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
+    assert_record_access(claims, existing.created_by)
+    order = await sales_docs_svc.fulfill_order(
+        db,
+        tenant_id=claims["tenant_id"],
+        order_id=order_id,
+        items=[i.model_dump() for i in payload.items],
+    )
+    await db.commit()
+    return env(await sales_docs_svc.serialize_order(db, order), "Order fulfilled")
 
 
 @api.post("/sales/orders/{order_id}/deliver")
@@ -6764,6 +8196,21 @@ async def post_sales_return(
         settlement_method=payload.settlement_method,
         payment_method=payload.payment_method,
         liquid_account_id=payload.liquid_account_id,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="sales",
+        action="sales_return_post",
+        entity="sales_return",
+        entity_id=ret.id,
+        details={
+            "return_number": getattr(ret, "return_number", None),
+            "credit_note_number": getattr(ret, "credit_note_number", None),
+            "sales_invoice_id": getattr(ret, "sales_invoice_id", None),
+            "restock": getattr(ret, "restock", None),
+        },
     )
     await db.commit()
     return env(
@@ -7390,6 +8837,25 @@ async def get_purchase_return(
     return env(await purchasing_svc.serialize_purchase_return(db, ret))
 
 
+@api.get("/purchasing/returns/{return_id}/print")
+async def print_purchase_return(
+    return_id: UuidIdValue,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    ret = await purchasing_svc.get_purchase_return(db, claims["tenant_id"], return_id)
+    assert_record_access(claims, ret.created_by)
+    data = await purchasing_svc.serialize_purchase_return(db, ret)
+    supplier = await purchasing_svc.get_supplier(db, claims["tenant_id"], ret.supplier_id)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    html_page = purchasing_svc.purchase_return_print_html(
+        data,
+        supplier_name=supplier.name,
+        company_name=tenant.company_name or "",
+    )
+    return Response(content=html_page, media_type="text/html; charset=utf-8")
+
+
 @api.post("/purchasing/returns/{return_id}/post")
 async def post_purchase_return(
     return_id: UuidIdValue,
@@ -7485,6 +8951,8 @@ async def create_purchase_invoice(
         is_reverse_charge=bool(payload.is_reverse_charge),
         currency=payload.currency,
         exchange_rate=payload.exchange_rate,
+        warehouse_id=payload.warehouse_id,
+        store_id=payload.store_id,
         items=[i.model_dump() for i in payload.items] if payload.items else None,
     )
     await db.commit()
@@ -7673,7 +9141,7 @@ async def delete_purchase_invoice_attachment(
 
 @api.get("/pos/stores")
 async def pos_stores(
-    claims=Depends(require_permission("pos", "read")),
+    claims=Depends(require_pos_permission("read")),
     db: AsyncSession = Depends(get_db),
 ):
     """Active stores available for POS shift open (cashiers may lack stores:read)."""
@@ -7706,34 +9174,246 @@ async def pos_stores(
     )
 
 
+@api.get("/pos/offline-policy")
+async def pos_offline_policy(
+    claims=Depends(require_pos_permission("read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Configurable offline POS window + honest workflow limitations. Not Offline Complete."""
+    from app import offline_pos as offline_pos_svc
+    from app import tenants as tenants_svc
+
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    data = offline_pos_svc.policy_payload(tenant)
+    data["store_ids"] = claims.get("store_ids")
+    data["store_scope"] = claims.get("store_scope") or "all"
+    data["branch_id"] = claims.get("branch_id")
+    return env(data)
+
+
+@api.post("/pos/offline/authorize")
+async def pos_offline_authorize(
+    payload: PosOfflineAuthorize,
+    claims=Depends(require_pos_permission("write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Online revalidation → server-issued, device-bound offline grant and stock slice."""
+    from app import offline_pos as offline_pos_svc
+
+    grant, allocations = await offline_pos_svc.issue_grant(
+        db,
+        claims=claims,
+        device_id=payload.device_id,
+        store_id=payload.store_id,
+        pending_items=payload.pending_items,
+        allocation_pct=payload.allocation_pct,
+        label=payload.label,
+        app_version=payload.app_version,
+        pending_queue_count=payload.pending_queue_count,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="pos",
+        action="offline_grant_issued",
+        entity="offline_grant",
+        entity_id=grant.id,
+        details={
+            "device_id": payload.device_id,
+            "store_id": payload.store_id,
+            "valid_until": grant.valid_until.isoformat(),
+            "allocation_products": len(allocations),
+        },
+    )
+    await db.commit()
+    return env(offline_pos_svc.serialize_grant(grant, allocations), "Offline access revalidated")
+
+
+@api.post("/pos/offline/status")
+async def pos_offline_status(
+    payload: PosOfflineStatusQuery,
+    claims=Depends(require_pos_permission("read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Grant expiry, allocation remaining, other devices' pending count, and conflict resolutions."""
+    from app import offline_pos as offline_pos_svc
+
+    data = await offline_pos_svc.device_status(
+        db,
+        claims=claims,
+        device_id=payload.device_id,
+        client_request_ids=list(payload.client_request_ids or []),
+    )
+    return env(data)
+
+
+@api.get("/pos/offline/catalog")
+async def pos_offline_catalog(
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    claims=Depends(require_pos_permission("write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Store-scoped catalogue + permitted customers for the encrypted device cache."""
+    from app import offline_pos as offline_pos_svc
+
+    data = await offline_pos_svc.offline_catalog(db, claims=claims, store_id=store_id)
+    await db.commit()
+    return env(data)
+
+
+@api.post("/pos/offline/release")
+async def pos_offline_release(
+    payload: PosOfflineStatusQuery,
+    claims=Depends(require_pos_permission("write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return this device's unsold stock slice (sign-out / end of shift). Queued sales stay valid."""
+    from app import offline_pos as offline_pos_svc
+
+    released = await offline_pos_svc.release_device(
+        db, tenant_id=claims["tenant_id"], device_id=payload.device_id, reason="released"
+    )
+    await db.commit()
+    return env({"device_id": payload.device_id, "grants_released": released})
+
+
+@api.get("/pos/offline/conflicts")
+async def pos_offline_conflicts(
+    device_id: Annotated[str | None, Query(max_length=64)] = None,
+    include_resolved: bool = False,
+    claims=Depends(require_pos_permission("read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Offline sales needing attention. Managers (pos:approve) see their stores; cashiers their own."""
+    from app import offline_pos as offline_pos_svc
+
+    rows = await offline_pos_svc.list_events(
+        db, claims=claims, device_id=device_id, open_only=not include_resolved
+    )
+    return env([offline_pos_svc.serialize_event(r) for r in rows])
+
+
+@api.post("/pos/offline/conflicts/{event_id}/resolve")
+async def pos_offline_resolve(
+    event_id: UuidIdValue,
+    payload: PosOfflineResolve,
+    claims=Depends(require_pos_permission("read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Approve or dismiss a conflicted offline sale. The record is kept either way."""
+    from app import offline_pos as offline_pos_svc
+
+    row = await offline_pos_svc.resolve_event(
+        db, claims=claims, event_id=event_id, action=payload.action, note=payload.note
+    )
+    await db.commit()
+    return env(offline_pos_svc.serialize_event(row), "Resolution recorded")
+
+
+@api.post("/pos/offline/devices/{device_id}/block")
+async def pos_offline_block_device(
+    device_id: str,
+    payload: PosOfflineDeviceBlock,
+    claims=Depends(require_pos_permission("read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Block or unblock a device from offline selling; blocking revokes its grant (pos:approve)."""
+    from app import offline_pos as offline_pos_svc
+    from app import store_access as store_access_svc
+
+    if not offline_pos_svc.claims_can(claims, "pos", "approve"):
+        raise HTTPException(status_code=403, detail="Missing permission: pos:approve")
+    existing = (
+        await db.execute(
+            select(m.PosDevice).where(
+                m.PosDevice.tenant_id == claims["tenant_id"],
+                m.PosDevice.device_id == device_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if existing is not None and existing.store_id:
+        await store_access_svc.assert_store_access(
+            db, tenant_id=claims["tenant_id"], user_id=claims["sub"], store_id=existing.store_id
+        )
+    row = await offline_pos_svc.set_device_blocked(
+        db, tenant_id=claims["tenant_id"], device_id=device_id, blocked=payload.blocked
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="pos",
+        action="offline_device_blocked" if payload.blocked else "offline_device_unblocked",
+        entity="pos_device",
+        entity_id=row.id,
+        details={"device_id": device_id},
+    )
+    await db.commit()
+    return env(_serialize_pos_device(row))
+
+
+@api.get("/pos/offline/provisional")
+async def pos_offline_provisional(
+    claims=Depends(require_permission("dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Whether any device still holds unsynced offline sales (reports/stock are provisional)."""
+    from app import offline_pos as offline_pos_svc
+    from app import store_access as store_access_svc
+
+    allowed = await store_access_svc.assigned_store_ids(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+    )
+    data = await offline_pos_svc.store_pending_summary(
+        db, tenant_id=claims["tenant_id"], store_ids=allowed
+    )
+    return env(data)
+
+
 @api.post("/pos/sessions/open")
 async def pos_open_session(
     payload: PosSessionOpen,
-    claims=Depends(require_permission("pos", "write")),
+    claims=Depends(require_pos_permission("write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.industry_dashboard import assert_pos_for_industry
+
+    assert_pos_for_industry(claims)
     from app import store_access as store_access_svc
 
-    await store_access_svc.assert_store_access(
+    store_id = await store_access_svc.resolve_requested_store_id(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
-        store_id=payload.store_id,
+        client_store_id=payload.store_id,
     )
-    session = await pos_svc.open_session(
-        db,
-        tenant_id=claims["tenant_id"],
-        user_id=claims["sub"],
-        store_id=payload.store_id,
-        opening_cash=payload.opening_cash,
-    )
-    await db.commit()
+    try:
+        session = await pos_svc.open_session(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            store_id=store_id,
+            opening_cash=payload.opening_cash,
+        )
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        existing = await pos_svc.get_open_session_for_user(
+            db, claims["tenant_id"], claims["sub"]
+        )
+        if existing:
+            return env(
+                await pos_svc.serialize_session(db, existing),
+                "POS shift already open",
+            )
+        raise
     return env(await pos_svc.serialize_session(db, session), "POS shift opened")
 
 
 @api.get("/pos/sessions/current")
 async def pos_current_session(
-    claims=Depends(require_permission("pos", "read")),
+    claims=Depends(require_pos_permission("read")),
     db: AsyncSession = Depends(get_db),
 ):
     session = await pos_svc.get_open_session_for_user(db, claims["tenant_id"], claims["sub"])
@@ -7745,7 +9425,7 @@ async def pos_current_session(
 @api.get("/pos/sessions")
 async def pos_list_sessions(
     status: Annotated[PosSessionStatusFilterValue | None, Query()] = None,
-    claims=Depends(require_permission("pos", "read")),
+    claims=Depends(require_pos_permission("read")),
     db: AsyncSession = Depends(get_db),
 ):
     # Schema PosSessionStatusFilterValue rejects blank/invalid → 422; keep allow-list
@@ -7767,7 +9447,29 @@ async def pos_list_sessions(
             )
         else:
             stmt = stmt.where(m.PosSession.status == wanted)
+    role = (claims.get("role") or "").strip().lower()
+    if role == "cashier":
+        stmt = stmt.where(m.PosSession.user_id == claims["sub"])
+    else:
+        from app import store_access as store_access_svc
+
+        allowed = await store_access_svc.assigned_store_ids(
+            db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+        )
+        if allowed is not None:
+            stmt = stmt.where(
+                (m.PosSession.user_id == claims["sub"])
+                | (m.PosSession.store_id.in_(allowed))
+            )
     rows = (await db.execute(stmt)).scalars().all()
+    from app import store_access as store_access_svc
+
+    allowed = await store_access_svc.assigned_store_ids(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+    )
+    if allowed is not None:
+        allow = set(allowed)
+        rows = [s for s in rows if not s.store_id or s.store_id in allow]
     return env([await pos_svc.serialize_session(db, s) for s in rows])
 
 
@@ -7775,9 +9477,19 @@ async def pos_list_sessions(
 async def pos_close_session(
     session_id: UuidIdValue,
     payload: PosSessionClose,
-    claims=Depends(require_permission("pos", "write")),
+    claims=Depends(require_pos_permission("write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    session = await pos_svc.get_session(db, claims["tenant_id"], session_id)
+    pos_svc.assert_can_operate_session(session, claims)
+    await store_access_svc.assert_store_access(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=session.store_id,
+    )
     session = await pos_svc.close_session(
         db,
         tenant_id=claims["tenant_id"],
@@ -7793,7 +9505,7 @@ async def pos_close_session(
 @api.get("/pos/sessions/{session_id}/drawer")
 async def pos_session_drawer(
     session_id: UuidIdValue,
-    claims=Depends(require_permission("pos", "read")),
+    claims=Depends(require_pos_permission("read")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import cash_drawer as cash_drawer_svc
@@ -7810,7 +9522,7 @@ async def pos_session_drawer(
 async def pos_open_cash_drawer(
     session_id: UuidIdValue,
     payload: PosDrawerOpen,
-    claims=Depends(require_permission("pos", "write")),
+    claims=Depends(require_pos_permission("write")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import cash_drawer as cash_drawer_svc
@@ -7846,28 +9558,98 @@ async def pos_open_cash_drawer(
     return env(result, result.get("message") or "Drawer command issued")
 
 
+@api.get("/pos/sessions/{session_id}/movements")
+async def pos_list_cash_movements(
+    session_id: UuidIdValue,
+    claims=Depends(require_pos_permission("read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import store_access as store_access_svc
+
+    session = await pos_svc.get_session(db, claims["tenant_id"], session_id)
+    pos_svc.assert_can_operate_session(session, claims)
+    await store_access_svc.assert_store_access(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=session.store_id,
+    )
+    return env(await pos_svc.list_cash_movements(db, session))
+
+
+@api.post("/pos/sessions/{session_id}/movements")
+async def pos_record_cash_movement(
+    session_id: UuidIdValue,
+    payload: PosCashMovementCreate,
+    claims=Depends(require_pos_permission("write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import store_access as store_access_svc
+
+    session = await pos_svc.get_session(db, claims["tenant_id"], session_id)
+    pos_svc.assert_can_operate_session(session, claims)
+    await store_access_svc.assert_store_access(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=session.store_id,
+    )
+    row = await pos_svc.record_cash_movement(
+        db,
+        session=session,
+        user_id=claims["sub"],
+        movement_type=payload.movement_type,
+        amount=payload.amount,
+        reason=payload.reason,
+    )
+    await db.commit()
+    return env(
+        {
+            "movement": pos_svc.serialize_cash_movement(row),
+            "session": await pos_svc.serialize_session(db, session),
+        },
+        "Cash movement recorded",
+    )
+
+
 @api.get("/pos/sessions/{session_id}/report")
 async def pos_session_report(
     session_id: UuidIdValue,
-    claims=Depends(require_permission("pos", "read")),
+    claims=Depends(require_pos_permission("read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
     session = await pos_svc.get_session(db, claims["tenant_id"], session_id)
+    pos_svc.assert_can_operate_session(session, claims)
+    await store_access_svc.assert_store_access(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=session.store_id,
+    )
     return env(await pos_svc.shift_report(db, session))
 
 
 @api.get("/pos/settings")
 async def pos_settings(
-    claims=Depends(require_permission("pos", "read")),
+    store_id: UuidIdValue | None = None,
+    claims=Depends(require_pos_permission("read")),
     db: AsyncSession = Depends(get_db),
 ):
-    from app.doc_numbers import numbering_settings
+    from app.doc_numbers import numbering_settings, resolve_pos_company_id
 
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    company_id = await resolve_pos_company_id(db, claims["tenant_id"], store_id)
+    from app.printers import pos_show_receipt_email_sms
+
     return env(
         {
-            "pos_sale_numbering": numbering_settings(tenant, "pos_sale"),
+            "pos_sale_numbering": numbering_settings(
+                tenant, "pos_sale", company_id=company_id
+            ),
             "pos_session_numbering": numbering_settings(tenant, "pos_session"),
+            "show_receipt_email_sms": pos_show_receipt_email_sms(tenant),
         }
     )
 
@@ -7875,35 +9657,13 @@ async def pos_settings(
 @api.patch("/pos/settings")
 async def update_pos_settings(
     payload: PosSettingsUpdate,
-    claims=Depends(require_permission("pos", "write")),
+    claims=Depends(require_pos_permission("write")),
     db: AsyncSession = Depends(get_db),
 ):
-    from app.doc_numbers import apply_numbering_update, numbering_settings
-
-    if payload.pos_sale_numbering is None and payload.pos_session_numbering is None:
-        raise HTTPException(status_code=400, detail="No numbering fields to update")
-    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
-    if payload.pos_sale_numbering is not None:
-        apply_numbering_update(
-            tenant,
-            "pos_sale",
-            prefix=payload.pos_sale_numbering.prefix,
-            next_number=payload.pos_sale_numbering.next_number,
-        )
-    if payload.pos_session_numbering is not None:
-        apply_numbering_update(
-            tenant,
-            "pos_session",
-            prefix=payload.pos_session_numbering.prefix,
-            next_number=payload.pos_session_numbering.next_number,
-        )
-    await db.commit()
-    return env(
-        {
-            "pos_sale_numbering": numbering_settings(tenant, "pos_sale"),
-            "pos_session_numbering": numbering_settings(tenant, "pos_session"),
-        },
-        "POS document numbering updated",
+    _ = payload
+    raise HTTPException(
+        status_code=400,
+        detail="POS and shift numbers are allocated by the server and cannot be set from the client",
     )
 
 
@@ -7917,6 +9677,9 @@ def _serialize_pos_device(row: m.PosDevice) -> dict:
         "app_version": row.app_version,
         "user_agent": row.user_agent,
         "pending_queue_count": int(row.pending_queue_count or 0),
+        "offline_blocked": bool(getattr(row, "offline_blocked", False)),
+        "selling_online": bool(row.selling_online) if row.selling_online is not None else True,
+        "offline_since": row.offline_since.isoformat() + "Z" if row.offline_since else None,
         "last_seen_at": row.last_seen_at.isoformat() + "Z" if row.last_seen_at else None,
         "created_at": row.created_at.isoformat() + "Z" if row.created_at else None,
         "updated_at": row.updated_at.isoformat() + "Z" if row.updated_at else None,
@@ -7927,11 +9690,22 @@ def _serialize_pos_device(row: m.PosDevice) -> dict:
 async def pos_device_heartbeat(
     payload: PosDeviceHeartbeat,
     request: Request,
-    claims=Depends(require_permission("pos", "write")),
+    claims=Depends(require_pos_permission("write")),
     db: AsyncSession = Depends(get_db),
 ):
     """Upsert POS terminal last-seen (application monitoring only; not MDM)."""
+    from app import store_access as store_access_svc
+
+    from app.cashier_presence import note_selling_state
+
+    await store_access_svc.assert_store_access(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=payload.store_id,
+    )
     now = datetime.utcnow()
+    selling_online = True if payload.selling_online is None else bool(payload.selling_online)
     row = (
         await db.execute(
             select(m.PosDevice).where(
@@ -7951,10 +9725,9 @@ async def pos_device_heartbeat(
             app_version=payload.app_version,
             user_agent=ua,
             pending_queue_count=payload.pending_queue_count,
-            last_seen_at=now,
             created_at=now,
-            updated_at=now,
         )
+        note_selling_state(row, selling_online=selling_online, now=now)
         db.add(row)
     else:
         row.label = payload.label if payload.label is not None else row.label
@@ -7965,8 +9738,7 @@ async def pos_device_heartbeat(
             row.app_version = payload.app_version
         row.user_agent = ua or row.user_agent
         row.pending_queue_count = payload.pending_queue_count
-        row.last_seen_at = now
-        row.updated_at = now
+        note_selling_state(row, selling_online=selling_online, now=now)
     await db.commit()
     await db.refresh(row)
     return env(_serialize_pos_device(row), "Device heartbeat recorded")
@@ -7974,40 +9746,87 @@ async def pos_device_heartbeat(
 
 @api.get("/pos/devices")
 async def list_pos_devices(
-    claims=Depends(require_permission("pos", "read")),
+    claims=Depends(require_pos_permission("read")),
     db: AsyncSession = Depends(get_db),
 ):
     """List POS terminals by last-seen (managers/admins with pos:read)."""
-    rows = (
-        await db.execute(
-            select(m.PosDevice)
-            .where(m.PosDevice.tenant_id == claims["tenant_id"])
-            .order_by(m.PosDevice.last_seen_at.desc())
-            .limit(200)
-        )
-    ).scalars().all()
+    from app import store_access as store_access_svc
+
+    stmt = (
+        select(m.PosDevice)
+        .where(m.PosDevice.tenant_id == claims["tenant_id"])
+        .order_by(m.PosDevice.last_seen_at.desc())
+        .limit(200)
+    )
+    allowed = await store_access_svc.assigned_store_ids(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+    )
+    if allowed is not None:
+        stmt = stmt.where(m.PosDevice.store_id.in_(allowed))
+    rows = (await db.execute(stmt)).scalars().all()
     return env([_serialize_pos_device(r) for r in rows])
 
 
 @api.post("/pos/sales")
 async def pos_sale(
     payload: PosSaleCreate,
-    claims=Depends(require_permission("pos", "write")),
+    claims=Depends(require_pos_permission("write")),
     db: AsyncSession = Depends(get_db),
 ):
-    # Idempotent offline/retry: same client_request_id → original sale, never a duplicate.
+    def sale_totals(tx):
+        return {
+            "subtotal": money_json(tx.subtotal),
+            "tax": money_json(tx.tax),
+            "total": money_json(tx.total),
+        }
+
+    offline_sync = bool(payload.offline_sync or payload.offline_created_at)
+    if not offline_sync:
+        return await _pos_sale_impl(payload, claims, db, sale_totals=sale_totals)
+    from app import offline_pos as offline_pos_svc
+
+    try:
+        return await _pos_sale_impl(payload, claims, db, sale_totals=sale_totals)
+    except HTTPException as exc:
+        # Any rejection of a queued sale is kept as a visible conflict with the full
+        # request, so an authorised user can resolve it. The device keeps its copy too.
+        await db.rollback()
+        store_id = None
+        if payload.session_id:
+            sess = await db.get(m.PosSession, payload.session_id)
+            if sess is not None and sess.tenant_id == claims["tenant_id"]:
+                store_id = sess.store_id
+        event = await offline_pos_svc.record_sync_failure(
+            db,
+            claims=claims,
+            request=payload.model_dump(mode="json"),
+            exc=exc,
+            store_id=store_id,
+        )
+        await db.commit()
+        raise offline_pos_svc.exception_with_event(exc, event) from None
+
+
+async def _pos_sale_impl(payload: PosSaleCreate, claims: dict, db: AsyncSession, sale_totals=None):
     client_request_id = (payload.client_request_id or "").strip() or None
+    if not client_request_id:
+        return await _pos_sale_impl_body(payload, claims, db, sale_totals=sale_totals)
+    async with _pos_replay_lock(claims["tenant_id"], client_request_id):
+        return await _pos_sale_impl_body(payload, claims, db, sale_totals=sale_totals)
+
+
+async def _pos_sale_impl_body(payload: PosSaleCreate, claims: dict, db: AsyncSession, sale_totals=None):
+    from app.industry_dashboard import assert_pos_for_industry
+
+    assert_pos_for_industry(claims)
+    # Same client_request_id returns the original sale only when the commercial
+    # request matches. Different contents are rejected. Never a second sale.
+    client_request_id = (payload.client_request_id or "").strip() or None
+    request_fingerprint = _sale_request_fingerprint(payload) if client_request_id else None
     if client_request_id:
-        existing = (
-            await db.execute(
-                select(m.Transaction).where(
-                    m.Transaction.tenant_id == claims["tenant_id"],
-                    m.Transaction.client_request_id == client_request_id,
-                    m.Transaction.tx_type == "pos_sale",
-                )
-            )
-        ).scalar_one_or_none()
+        existing = await _find_existing_pos_sale(db, claims["tenant_id"], client_request_id)
         if existing:
+            _assert_sale_replay(existing, payload)
             return env(
                 {
                     "id": existing.id,
@@ -8020,15 +9839,73 @@ async def pos_sale(
                 "POS sale already recorded",
             )
 
-    session = await pos_svc.require_open_session(
-        db,
-        tenant_id=claims["tenant_id"],
-        user_id=claims["sub"],
-        session_id=payload.session_id,
-    )
     items = [i.model_dump() for i in payload.items]
+    offline_sync = bool(payload.offline_sync or payload.offline_created_at)
+    offline_grant = None
+    resolution = None
+    original_session_id = None
+    if offline_sync:
+        from app import offline_pos as offline_pos_svc
+        from app import tenants as tenants_svc
+
+        offline_created = offline_pos_svc.parse_offline_created_at(payload.offline_created_at)
+        resolution = await offline_pos_svc.load_resolution(
+            db,
+            tenant_id=claims["tenant_id"],
+            client_request_id=client_request_id,
+            event_id=payload.resolution_event_id,
+        )
+        approved = resolution.resolution if resolution is not None else None
+        session, original_session_id = await offline_pos_svc.resolve_sync_session(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            session_id=payload.session_id,
+        )
+        offline_grant = await offline_pos_svc.validate_sale_grant(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            device_id=payload.device_id,
+            grant_id=payload.offline_grant_id,
+            offline_created_at=offline_created,
+            window_approved=approved == "approve_outside_window",
+        )
+        if approved == "approve_server_price":
+            for item in items:
+                item.pop("unit_price", None)
+        tenant_row = await tenants_svc.get_tenant(db, claims["tenant_id"])
+        await offline_pos_svc.preflight_offline_sale(
+            db,
+            tenant=tenant_row,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            store_id=session.store_id,
+            items=items,
+            customer_id=payload.party_id,
+            offline_created_at=offline_created,
+            device_id=payload.device_id,
+            client_request_id=client_request_id,
+            accept_server_price=approved == "approve_server_price",
+        )
+        if offline_grant is not None:
+            await offline_pos_svc.check_grant_allocation(
+                db,
+                grant=offline_grant,
+                qty_by_product=offline_pos_svc.qty_by_product(items),
+                override_requested=bool(payload.allocation_override),
+                override_approved=approved == "approve_allocation_override",
+            )
+    else:
+        session = await pos_svc.require_open_session(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            session_id=payload.session_id,
+        )
     from app.tax import resolve_product_tax
     from app.catalog import resolve_sale_line
+    from app.sale_discounts import resolve_discount
 
     subtotal = 0.0
     tax_total = 0.0
@@ -8042,12 +9919,17 @@ async def pos_sale(
             customer_id=payload.party_id,
         )
         spec = await resolve_product_tax(db, claims["tenant_id"], product)
-        line_discount = money_json(round(money_json(item.get("discount") or 0), 2))
-        if line_discount < 0:
-            raise HTTPException(status_code=400, detail="Line discount must be >= 0")
         gross_before_discount = money_json(round(
             money_json(item["quantity"]) * money_json(unit_price), 2
         ))
+        line_discount = money_json(round(money_json(item.get("discount") or 0), 2))
+        line_discount, line_disc_type, line_disc_pct = resolve_discount(
+            base_amount=gross_before_discount,
+            discount=line_discount,
+            discount_type=item.get("discount_type") or "fixed",
+            discount_percent=item.get("discount_percent") or 0,
+            label="Line discount",
+        )
         if line_discount <= 0:
             try:
                 from app import fmcg as fmcg_svc
@@ -8065,10 +9947,10 @@ async def pos_sale(
                     )
                     if scheme_disc > 0:
                         line_discount = money_json(min(scheme_disc, gross_before_discount))
+                        line_disc_type = "fixed"
+                        line_disc_pct = 0
             except Exception:
                 pass
-        if line_discount > gross_before_discount + 1e-9:
-            raise HTTPException(status_code=400, detail="Line discount exceeds line amount")
         taxable_base = money_json(round(gross_before_discount - line_discount, 2))
         line_sub, line_tax, line_gross = spec.compute_amounts(taxable_base)
         subtotal += line_sub
@@ -8083,6 +9965,8 @@ async def pos_sale(
                 "sku": variant.sku if variant else product.sku,
                 "unit_price": unit_price,
                 "discount": line_discount,
+                "discount_type": line_disc_type,
+                "discount_percent": line_disc_pct,
                 "tax_rate": spec.rate_pct,
                 "tax_supply_class": spec.supply_class,
                 "line_subtotal": line_sub,
@@ -8091,12 +9975,39 @@ async def pos_sale(
                 "is_reverse_charge": spec.is_reverse_charge,
             }
         )
-    cart_discount = money_json(round(money_json(payload.discount_amount or 0), 2))
-    if cart_discount < 0:
-        raise HTTPException(status_code=400, detail="discount_amount must be >= 0")
-    max_cart_discount = money_json(round(subtotal + tax_total, 2))
-    if cart_discount > max_cart_discount + 1e-9:
-        raise HTTPException(status_code=400, detail="Cart discount exceeds sale total")
+    header_base = money_json(round(subtotal + tax_total, 2))
+    coupon_meta = None
+    if payload.coupon_code and str(payload.coupon_code).strip():
+        from app import coupons as coupons_svc
+
+        cat_ids = []
+        for item in priced_items:
+            prod = await db.get(m.Product, item.get("product_id"))
+            if prod and prod.category_id:
+                cat_ids.append(prod.category_id)
+        coupon_meta = await coupons_svc.apply_coupon(
+            db,
+            tenant_id=claims["tenant_id"],
+            code=payload.coupon_code,
+            header_base=header_base,
+            product_ids=[i.get("product_id") for i in priced_items],
+            category_ids=cat_ids,
+            customer_id=payload.party_id,
+        )
+        cart_discount, cart_disc_type, cart_disc_pct = (
+            coupon_meta["discount_amount"],
+            coupon_meta["discount_type"],
+            coupon_meta["discount_percent"],
+        )
+    else:
+        cart_discount = money_json(round(money_json(payload.discount_amount or 0), 2))
+        cart_discount, cart_disc_type, cart_disc_pct = resolve_discount(
+            base_amount=header_base,
+            discount=cart_discount,
+            discount_type=payload.discount_type,
+            discount_percent=payload.discount_percent or 0,
+            label="Cart discount",
+        )
     total = money_json(round(subtotal + tax_total - cart_discount, 2))
 
     payments = pos_svc.resolve_sale_payments(
@@ -8104,13 +10015,38 @@ async def pos_sale(
         payment_method=payload.payment_method,
         payments=[p.model_dump() for p in payload.payments] if payload.payments else None,
     )
+    if offline_sync:
+        offline_pos_svc.assert_offline_tenders(payments)
+    from app import loyalty_gift as loyalty_gift_svc
+
+    await loyalty_gift_svc.settle_pos_tenders(
+        db,
+        tenant_id=claims["tenant_id"],
+        party_id=payload.party_id,
+        payments=payments,
+    )
     payment_method = pos_svc.primary_payment_method(payments)
     credit_amount = pos_svc.credit_portion(payments)
+    settlement = pos_svc.sale_settlement(total=total, payments=payments)
+    if credit_amount > 0:
+        from app.rbac import has_permission
+
+        role = claims.get("role", "")
+        perms = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
+        if not has_permission(role, "credit", "write", overrides=perms):
+            raise HTTPException(status_code=403, detail="Missing permission: credit:write")
     if credit_amount > 0 and not payload.party_id:
         raise HTTPException(
             status_code=400,
             detail="Select a customer for credit sales",
         )
+    credit_override = bool(payload.override_credit_limit)
+    credit_override_allowed = None
+    credit_override_reason = payload.override_reason
+    if resolution is not None and resolution.resolution == "approve_credit_override":
+        credit_override = True
+        credit_override_allowed = True
+        credit_override_reason = resolution.resolution_note
 
     party = None
     # OpenAPI PosCustomerNameValue → 422; service defense-in-depth → 400.
@@ -8123,8 +10059,7 @@ async def pos_sale(
         from app.sales import require_active_customer
 
         party = await require_active_customer(db, claims["tenant_id"], payload.party_id)
-        if not customer_name:
-            customer_name = party.name
+        customer_name = party.name
 
     pos_override_info = None
     if party is not None and credit_amount > 0:
@@ -8133,13 +10068,23 @@ async def pos_sale(
         pos_override_info = enforce_customer_credit_limit(
             party,
             amount=money_json(credit_amount),
-            override=bool(payload.override_credit_limit),
-            override_allowed=claims_may_override_credit(claims),
-            override_reason=payload.override_reason,
+            override=credit_override,
+            override_allowed=(
+                credit_override_allowed
+                if credit_override_allowed is not None
+                else claims_may_override_credit(claims)
+            ),
+            override_reason=credit_override_reason,
             extra={"source": "pos_sale"},
         )
 
-    ref = await pos_svc.next_pos_sale_number(db, claims["tenant_id"])
+    ref = await pos_svc.next_pos_sale_number(
+        db,
+        claims["tenant_id"],
+        company_id=await pos_svc.resolve_pos_company_id(
+            db, claims["tenant_id"], session.store_id
+        ),
+    )
     body = payload.model_dump()
     body.pop("items", None)
     body.pop("session_id", None)
@@ -8147,9 +10092,28 @@ async def pos_sale(
     body.pop("payments", None)
     body.pop("customer_name", None)
     body.pop("discount_amount", None)
+    body.pop("discount_type", None)
+    body.pop("discount_percent", None)
+    body.pop("coupon_code", None)
     body.pop("override_credit_limit", None)
     body.pop("override_reason", None)
     body.pop("client_request_id", None)
+    body.pop("device_id", None)
+    body.pop("offline_created_at", None)
+    body.pop("offline_sync", None)
+    body.pop("offline_grant_id", None)
+    body.pop("resolution_event_id", None)
+    body.pop("allocation_override", None)
+    body.pop("local_receipt_number", None)
+    body.pop("prescription_id", None)
+
+    from app.trade import assert_channel_allowed, default_sales_channel
+
+    pos_channel = assert_channel_allowed(
+        claims.get("industry"),
+        default_sales_channel(claims.get("industry"), source="pos"),
+        source="pos",
+    )
     body["payload"] = {
         "items": priced_items,
         "payment_method": payment_method,
@@ -8157,8 +10121,29 @@ async def pos_sale(
         "session_id": session.id,
         "customer_name": customer_name,
         "discount_amount": cart_discount,
+        "discount_type": cart_disc_type,
+        "discount_percent": cart_disc_pct,
         "line_discounts": money_json(round(line_discounts, 2)),
         "client_request_id": client_request_id,
+        "coupon_code": (coupon_meta or {}).get("code"),
+        "coupon_id": (coupon_meta or {}).get("coupon_id"),
+        "offline_sync": bool(offline_sync),
+        "offline_created_at": str(payload.offline_created_at) if payload.offline_created_at else None,
+        "offline_grant_id": offline_grant.id if offline_grant is not None else None,
+        "offline_legacy_no_grant": bool(offline_sync and offline_grant is None),
+        "offline_resolution": resolution.resolution if resolution is not None else None,
+        "offline_resolution_event_id": resolution.id if resolution is not None else None,
+        "local_receipt_number": payload.local_receipt_number,
+        "original_session_id": original_session_id,
+        "device_id": payload.device_id,
+        "request_fingerprint": request_fingerprint,
+        "cashier_user_id": claims.get("sub"),
+        "paid_amount": settlement["paid_amount"],
+        "credit_amount": settlement["credit_amount"],
+        "balance_due": settlement["balance_due"],
+        "payment_status": settlement["payment_status"],
+        "prescription_id": payload.prescription_id,
+        "sales_channel": pos_channel,
     }
     tx = m.Transaction(
         tenant_id=claims["tenant_id"],
@@ -8175,7 +10160,30 @@ async def pos_sale(
         payload=body["payload"],
     )
     db.add(tx)
-    await db.flush()
+    try:
+        await db.flush()
+    except IntegrityError:
+        # Unique (tenant, client_request_id) fires on flush when a concurrent
+        # retry already inserted the sale. Compare contents before replaying.
+        replay = await _pos_sale_replay_after_conflict(
+            db, claims["tenant_id"], client_request_id, payload
+        )
+        if replay is not None:
+            return replay
+        raise
+    if coupon_meta:
+        from app import coupons as coupons_svc
+
+        await coupons_svc.record_redemption(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            coupon_id=coupon_meta["coupon_id"],
+            amount=cart_discount,
+            customer_id=payload.party_id,
+            source_type="pos_sale",
+            source_id=tx.id,
+        )
     payment_rows = await pos_svc.record_pos_payments(
         db,
         tenant_id=claims["tenant_id"],
@@ -8188,6 +10196,14 @@ async def pos_sale(
         wh = await stores_svc.warehouse_for_store(db, claims["tenant_id"], session.store_id)
         warehouse_id = wh.id
 
+    await pharmacy_svc.assert_pos_prescription(
+        db,
+        tenant_id=claims["tenant_id"],
+        industry=claims.get("industry"),
+        prescription_id=payload.prescription_id,
+        items=items,
+    )
+
     await apply_line_items_stock(
         db,
         tenant_id=claims["tenant_id"],
@@ -8198,15 +10214,77 @@ async def pos_sale(
         reference_id=tx.id,
         outbound=True,
         warehouse_id=warehouse_id,
+        offline_device_id=payload.device_id,
+    )
+    from app import offline_pos as offline_alloc_svc
+
+    sold_qty = offline_alloc_svc.qty_by_product(items)
+    allocation_remaining = None
+    if offline_grant is not None:
+        await offline_alloc_svc.consume_grant_allocation(
+            db, grant=offline_grant, qty_by_product=sold_qty
+        )
+    elif not offline_sync:
+        allocation_remaining = await offline_alloc_svc.consume_online_allocation(
+            db,
+            tenant_id=claims["tenant_id"],
+            device_id=payload.device_id,
+            qty_by_product=sold_qty,
+        )
+    await pharmacy_svc.apply_pos_dispense(
+        db,
+        tenant_id=claims["tenant_id"],
+        industry=claims.get("industry"),
+        prescription_id=payload.prescription_id,
+        sale_id=tx.id,
+        items=items,
+        user_id=claims["sub"],
     )
     await pos_svc.apply_sale_to_session(
         session, total=total, payment_method=payment_method, payments=payments
     )
+    await loyalty_gift_svc.award_sale_points(
+        db,
+        tenant_id=claims["tenant_id"],
+        party_id=payload.party_id,
+        total=total,
+        payments=payments,
+    )
 
+    ar_invoice = None
     if payload.party_id and credit_amount > 0:
         party = await db.get(m.Party, payload.party_id)
         if party and party.tenant_id == claims["tenant_id"]:
             party.balance = money_json(party.balance or 0) + money_json(credit_amount)
+            from app.sales import open_ar_from_pos_sale
+
+            ar_invoice = await open_ar_from_pos_sale(
+                db,
+                tenant_id=claims["tenant_id"],
+                user_id=claims["sub"],
+                customer=party,
+                tx=tx,
+                priced_items=priced_items,
+                subtotal=money_json(round(subtotal, 2)),
+                tax_amount=money_json(round(tax_total, 2)),
+                total=money_json(total),
+                paid_amount=settlement["paid_amount"],
+                cart_discount=cart_discount,
+                cart_disc_type=cart_disc_type,
+                cart_disc_pct=cart_disc_pct,
+                coupon_id=(coupon_meta or {}).get("coupon_id"),
+                store_id=session.store_id,
+            )
+            if ar_invoice is not None and hasattr(ar_invoice, "sales_channel"):
+                ar_invoice.sales_channel = pos_channel
+            payload_map = dict(tx.payload or {})
+            payload_map["sales_invoice_id"] = ar_invoice.id
+            payload_map["invoice_number"] = ar_invoice.invoice_number
+            payload_map["invoice_status"] = ar_invoice.status
+            tx.payload = payload_map
+            from sqlalchemy.orm.attributes import flag_modified
+
+            flag_modified(tx, "payload")
 
     from app.accounting import post_pos_sale_journal
 
@@ -8283,26 +10361,145 @@ async def pos_sale(
                 "source": "pos",
             },
         )
-    await db.commit()
+    print_jobs_out: list[dict] = []
+    try:
+        from app import printers as printers_svc
+
+        tenant_row = await tenants_svc.get_tenant(db, claims["tenant_id"])
+        store_row = None
+        if session.store_id:
+            store_row = await db.get(m.Store, session.store_id)
+        print_rows = await printers_svc.enqueue_pos_sale_prints(
+            db,
+            tenant_id=claims["tenant_id"],
+            tx=tx,
+            user_id=claims.get("sub"),
+            store_id=session.store_id,
+            tenant=tenant_row,
+            store=store_row,
+        )
+        print_jobs_out = [printers_svc.serialize_job(j) for j in print_rows]
+    except Exception:
+        logger.exception("POS print enqueue failed sale_id=%s", tx.id)
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="pos",
+        action="pos_checkout",
+        entity="transaction",
+        entity_id=tx.id,
+        details={
+            "reference": ref,
+            "session_id": session.id,
+            "store_id": session.store_id,
+            "total": money_json(tx.total or 0),
+            "subtotal": money_json(tx.subtotal or 0),
+            "tax": money_json(tx.tax or 0),
+            "discount_amount": money_json(cart_discount),
+            "line_discounts": money_json(round(line_discounts, 2)),
+            "coupon_code": (coupon_meta or {}).get("code"),
+            "payment_method": payment_method,
+            "party_id": payload.party_id,
+            "item_count": len(priced_items),
+        },
+    )
+    if money_json(cart_discount) > 0 or money_json(round(line_discounts, 2)) > 0:
+        await audit_svc.record_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            module="pos",
+            action="pos_discount",
+            entity="transaction",
+            entity_id=tx.id,
+            details={
+                "reference": ref,
+                "discount_amount": money_json(cart_discount),
+                "line_discounts": money_json(round(line_discounts, 2)),
+                "coupon_code": (coupon_meta or {}).get("code"),
+                "discount_type": cart_disc_type,
+            },
+        )
+    if offline_sync:
+        from app import offline_pos as offline_pos_svc
+
+        await offline_pos_svc.record_sync_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims.get("sub"),
+            device_id=payload.device_id,
+            client_request_id=client_request_id,
+            sale_id=tx.id,
+            store_id=session.store_id,
+            offline_created_at=offline_pos_svc.parse_offline_created_at(
+                payload.offline_created_at
+            ),
+            result="synced",
+            details={
+                "reference": ref,
+                "local_receipt_number": payload.local_receipt_number,
+                "grant_id": offline_grant.id if offline_grant is not None else None,
+                "legacy_no_grant": offline_grant is None,
+                "resolution": resolution.resolution if resolution is not None else None,
+                "original_session_id": original_session_id,
+            },
+        )
+        await offline_pos_svc.close_events_for_synced_sale(
+            db,
+            tenant_id=claims["tenant_id"],
+            client_request_id=client_request_id,
+            sale_id=tx.id,
+        )
+    try:
+        await db.commit()
+    except IntegrityError:
+        replay = await _pos_sale_replay_after_conflict(
+            db, claims["tenant_id"], client_request_id, payload
+        )
+        if replay is not None:
+            return replay
+        raise
     payload_out = {
         "id": tx.id,
         "reference": ref,
         "session_id": session.id,
-        "subtotal": money_json(tx.subtotal),
-        "tax": money_json(tx.tax),
-        "total": money_json(tx.total),
+        **(sale_totals(tx) if sale_totals else {
+            "subtotal": money_json(tx.subtotal),
+            "tax": money_json(tx.tax),
+            "total": money_json(tx.total),
+        }),
         "discount_amount": money_json(cart_discount),
         "line_discounts": money_json(round(line_discounts, 2)),
         "payment_method": payment_method,
         "payments": [pos_svc.serialize_payment(p) for p in payment_rows],
         "customer_name": customer_name,
         "party_id": payload.party_id,
+        "paid_amount": settlement["paid_amount"],
+        "credit_amount": settlement["credit_amount"],
+        "balance_due": settlement["balance_due"],
+        "payment_status": settlement["payment_status"],
+        "sales_invoice_id": ar_invoice.id if ar_invoice is not None else None,
+        "invoice_number": ar_invoice.invoice_number if ar_invoice is not None else None,
         "credit_limit_overridden": bool(pos_override_info),
         "client_request_id": client_request_id,
         "idempotent_replay": False,
+        "sales_channel": pos_channel,
+        "prescription_id": payload.prescription_id,
+        "local_receipt_number": payload.local_receipt_number,
+        "offline_sync": bool(offline_sync),
+        "original_session_id": original_session_id,
     }
+    if allocation_remaining is not None:
+        payload_out["offline_allocation_remaining"] = allocation_remaining
     if drawer is not None:
         payload_out["drawer"] = drawer
+    payload_out["print_jobs"] = print_jobs_out
+    payload_out["print_browser_fallback"] = True
+    payload_out["print_note"] = (
+        "Queued is not printed. The browser cannot list OS printers; "
+        "use the print dialog, a paired till agent, or an allowlisted network printer."
+    )
     return env(payload_out, "POS sale recorded")
 
 
@@ -8310,10 +10507,13 @@ async def pos_sale(
 async def pos_search(
     q: Annotated[ProductSearchQueryValue, Query()] = "",
     barcode: Annotated[ProductBarcodeValue | None, Query()] = None,
-    claims=Depends(require_permission("pos", "read")),
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    claims=Depends(require_pos_permission("read")),
     db: AsyncSession = Depends(get_db),
 ):
-    from app.tax import resolve_product_tax
+    from app.tax import resolve_products_tax_map
+    from app import store_access as store_access_svc
+    from app.inventory import store_warehouse_on_hand
 
     stmt = select(m.Product).where(
         m.Product.tenant_id == claims["tenant_id"],
@@ -8336,42 +10536,13 @@ async def pos_search(
             | m.Product.sku.ilike(like)
             | m.Product.barcode.ilike(like)
         )
+    if not barcode_key and not q_clean:
+        stmt = stmt.order_by(m.Product.name)
     products = (await db.execute(stmt.limit(48))).scalars().all()
     product_by_id = {p.id: p for p in products}
-    tax_cache: dict[str, dict] = {}
 
-    async def tax_fields_for(product: m.Product) -> dict:
-        cached = tax_cache.get(product.id)
-        if cached is not None:
-            return cached
-        spec = await resolve_product_tax(db, claims["tenant_id"], product)
-        payload = {
-            "tax_rate_pct": money_json(spec.rate_pct or 0),
-            "tax_pricing_mode": (spec.pricing_mode or "exclusive"),
-            "tax_reverse_charge": bool(spec.is_reverse_charge),
-            "tax_components": list(spec.components) if spec.components else None,
-            "tax_supply_class": spec.supply_class,
-        }
-        tax_cache[product.id] = payload
-        return payload
-
-    out = []
-    for p in products:
-        row = {
-            "id": p.id,
-            "product_id": p.id,
-            "variant_id": None,
-            "name": p.name,
-            "sku": p.sku,
-            "barcode": p.barcode,
-            "cost_price": money_json(p.cost_price or 0),
-            "selling_price": money_json(p.selling_price or 0),
-            "stock_qty": money_json(p.stock_qty or 0),
-            "kind": "product",
-            "has_image": bool(p.image_url),
-        }
-        row.update(await tax_fields_for(p))
-        out.append(row)
+    out_products = list(products)
+    variants: list = []
     # Also surface matching variants for barcode/SKU search
     vstmt = select(m.ProductVariant).where(
         m.ProductVariant.tenant_id == claims["tenant_id"],
@@ -8407,37 +10578,134 @@ async def pos_search(
             ).scalars().all()
             for parent in parents:
                 product_by_id[parent.id] = parent
-        for v in variants:
-            parent = product_by_id.get(v.product_id)
-            row = {
-                "id": v.id,
-                "product_id": v.product_id,
-                "variant_id": v.id,
-                "name": v.name,
-                "sku": v.sku,
-                "barcode": v.barcode,
-                "cost_price": money_json(
-                    v.cost_price
-                    if v.cost_price is not None
-                    else (parent.cost_price if parent is not None and parent.cost_price is not None else 0)
-                ),
-                "selling_price": money_json(v.selling_price or 0),
-                "stock_qty": money_json(v.stock_qty or 0),
-                "kind": "variant",
-                "has_image": False,
+
+    specs = await resolve_products_tax_map(db, claims["tenant_id"], list(product_by_id.values()))
+
+    def tax_fields_for(product: m.Product | None) -> dict:
+        if product is None:
+            return {
+                "tax_rate_pct": 0.0,
+                "tax_pricing_mode": "exclusive",
+                "tax_reverse_charge": False,
+                "tax_components": None,
             }
-            if parent is not None:
-                row.update(await tax_fields_for(parent))
-            else:
-                row.update(
-                    {
-                        "tax_rate_pct": 0.0,
-                        "tax_pricing_mode": "exclusive",
-                        "tax_reverse_charge": False,
-                        "tax_components": None,
-                    }
+        spec = specs.get(product.id)
+        if spec is None:
+            return {
+                "tax_rate_pct": 0.0,
+                "tax_pricing_mode": "exclusive",
+                "tax_reverse_charge": False,
+                "tax_components": None,
+            }
+        return {
+            "tax_rate_pct": money_json(spec.rate_pct or 0),
+            "tax_pricing_mode": (spec.pricing_mode or "exclusive"),
+            "tax_reverse_charge": bool(spec.is_reverse_charge),
+            "tax_components": list(spec.components) if spec.components else None,
+            "tax_supply_class": spec.supply_class,
+        }
+
+    out = []
+    for p in out_products:
+        row = {
+            "id": p.id,
+            "product_id": p.id,
+            "variant_id": None,
+            "name": p.name,
+            "sku": p.sku,
+            "barcode": p.barcode,
+            "category": (getattr(p, "category", None) or "").strip() or None,
+            "category_id": getattr(p, "category_id", None),
+            "cost_price": money_json(p.cost_price or 0),
+            "selling_price": money_json(p.selling_price or 0),
+            "stock_qty": money_json(p.stock_qty or 0),
+            "kind": "product",
+            "has_image": bool(p.image_url),
+        }
+        row.update(tax_fields_for(p))
+        out.append(row)
+    for v in variants:
+        parent = product_by_id.get(v.product_id)
+        row = {
+            "id": v.id,
+            "product_id": v.product_id,
+            "variant_id": v.id,
+            "name": v.name,
+            "sku": v.sku,
+            "barcode": v.barcode,
+            "category": (getattr(parent, "category", None) or "").strip() or None if parent is not None else None,
+            "category_id": getattr(parent, "category_id", None) if parent is not None else None,
+            "cost_price": money_json(
+                v.cost_price
+                if v.cost_price is not None
+                else (parent.cost_price if parent is not None and parent.cost_price is not None else 0)
+            ),
+            "selling_price": money_json(v.selling_price or 0),
+            "stock_qty": money_json(v.stock_qty or 0),
+            "kind": "variant",
+            "has_image": False,
+        }
+        row.update(tax_fields_for(parent))
+        out.append(row)
+
+    scoped_store = (store_id or "").strip() or None
+    open_session = await pos_svc.get_open_session_for_user(
+        db, claims["tenant_id"], claims["sub"]
+    )
+    session_store = (getattr(open_session, "store_id", None) or "").strip() or None
+    if session_store:
+        scoped_store = session_store
+    if scoped_store:
+        await stores_svc.get_store(db, claims["tenant_id"], scoped_store)
+        await store_access_svc.assert_store_access(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            store_id=scoped_store,
+        )
+        product_ids = {str(r.get("product_id") or "") for r in out if r.get("product_id")}
+        warehouse_qty = await store_warehouse_on_hand(
+            db, claims["tenant_id"], scoped_store, product_ids
+        )
+        for r in out:
+            pid = str(r.get("product_id") or "")
+            parent = product_by_id.get(pid)
+            r["stock_qty"] = money_json(warehouse_qty.get(pid, 0))
+            r.update(
+                catalog_meta_svc.pos_stock_flags(
+                    r["stock_qty"],
+                    minimum_stock=getattr(parent, "minimum_stock", 0) if parent is not None else 0,
+                    reorder_level=parent.reorder_level if parent is not None else 0,
                 )
-            out.append(row)
+            )
+    else:
+        for r in out:
+            pid = str(r.get("product_id") or "")
+            parent = product_by_id.get(pid)
+            r.update(
+                catalog_meta_svc.pos_stock_flags(
+                    r["stock_qty"],
+                    minimum_stock=getattr(parent, "minimum_stock", 0) if parent is not None else 0,
+                    reorder_level=parent.reorder_level if parent is not None else 0,
+                )
+            )
+    from app.packages import canonicalize_industry as _canon_industry
+
+    pharmacy_pos = _canon_industry(claims.get("industry")) == "pharmacy"
+    if pharmacy_pos:
+        from app.catalog import nearest_saleable_expiry_map
+
+        expiry_map = await nearest_saleable_expiry_map(
+            db,
+            claims["tenant_id"],
+            {str(r.get("product_id") or "") for r in out if r.get("product_id")},
+            pharmacy=True,
+        )
+        for r in out:
+            pid = str(r.get("product_id") or "")
+            parent = product_by_id.get(pid)
+            r["rx_only"] = bool(getattr(parent, "rx_only", False)) if parent is not None else False
+            r["nearest_expiry_date"] = expiry_map.get(pid)
     return env(out[:40])
 
 
@@ -8446,9 +10714,9 @@ async def pos_receipt(
     sale_id: UuidIdValue,
     # omit → json; blank/invalid → 422 (was `format or "json"`)
     format: Annotated[ReceiptPrintFormatValue, Query()] = "json",
-    # omit → branding default; blank/invalid → 422 (was silent branding fallback)
+    # omit → receipt printer paper, else branding default; blank/invalid → 422
     paper: Annotated[ReceiptPaperValue | None, Query()] = None,
-    claims=Depends(require_permission("pos", "read")),
+    claims=Depends(require_pos_permission("read")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import receipts as receipts_svc
@@ -8464,11 +10732,25 @@ async def pos_receipt(
         await tenants_svc.get_tenant(db, claims["tenant_id"])
     )
     fmt = format
-    paper = paper if paper is not None else branding["default_receipt_paper"]
+    if paper is None:
+        from app import printers as printers_svc
+
+        for printer in await printers_svc.matching_printers(
+            db,
+            tenant_id=claims["tenant_id"],
+            store_id=receipt.get("store_id"),
+            purpose="customer_receipt",
+        ):
+            if printer.paper in {"58mm", "80mm"}:
+                paper = printer.paper
+                break
+    if paper is None:
+        paper = branding["default_receipt_paper"]
     if fmt == "json":
         public = {k: v for k, v in receipt.items() if k != "logo_key"}
         public["paper"] = paper
         public["text"] = receipts_svc.render_thermal_text(receipt, paper=paper)
+        public["html"] = receipts_svc.render_thermal_html(receipt, paper=paper)
         from app import cash_drawer as cash_drawer_svc
 
         public["drawer_kick_base64"] = cash_drawer_svc.kick_base64()
@@ -8489,6 +10771,23 @@ async def pos_receipt(
     raise HTTPException(status_code=400, detail="format must be json, text, or pdf")
 
 
+@api.get("/pos/sales/{sale_id}/print-jobs")
+async def pos_sale_print_jobs(
+    sale_id: UuidIdValue,
+    claims=Depends(require_pos_permission("read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import printers as printers_svc
+
+    tx = await db.get(m.Transaction, sale_id)
+    if not tx or tx.tenant_id != claims["tenant_id"] or tx.tx_type != "pos_sale":
+        raise HTTPException(status_code=404, detail="POS sale not found")
+    rows = await printers_svc.list_jobs(
+        db, tenant_id=claims["tenant_id"], source_id=sale_id
+    )
+    return env([printers_svc.serialize_job(r, include_payload=True) for r in rows])
+
+
 @api.post("/pos/sales/{sale_id}/receipt/send")
 async def pos_receipt_send(
     sale_id: UuidIdValue,
@@ -8499,7 +10798,7 @@ async def pos_receipt_send(
     to: Annotated[ReceiptOverrideToValue | None, Query()] = None,
     # omit → 80mm; blank/invalid → 422 (was silent 80mm for garbage)
     paper: Annotated[ReceiptPaperValue, Query()] = "80mm",
-    claims=Depends(require_permission("pos", "write")),
+    claims=Depends(require_pos_permission("write")),
     db: AsyncSession = Depends(get_db),
 ):
     """Send digital receipt via email or SMS."""
@@ -8540,9 +10839,7 @@ async def pos_receipt_send(
         if not recipient:
             raise HTTPException(status_code=400, detail="No email recipient")
         tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
-        import html as html_lib
-
-        inner = f'<pre style="font-family:monospace;white-space:pre-wrap;">{html_lib.escape(text)}</pre>'
+        inner = receipts_svc.render_thermal_html(receipt, paper=paper)
         branded = emailer.render_branded_html(
             body_html=inner,
             company_name=getattr(tenant, "company_name", None),
@@ -8875,6 +11172,68 @@ async def generate_recurring_expenses(
     )
 
 
+@api.get("/incomes")
+async def list_other_incomes(
+    claims=Depends(require_permission("expenses", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import other_income as income_svc
+
+    rows = await income_svc.list_incomes(db, claims["tenant_id"])
+    return env([income_svc.serialize_income(r) for r in rows])
+
+
+@api.post("/incomes")
+async def add_other_income(
+    payload: OtherIncomeCreate,
+    claims=Depends(require_permission("expenses", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import other_income as income_svc
+    from app.accounting import ensure_default_accounts
+
+    await ensure_default_accounts(db, claims["tenant_id"])
+    row = await income_svc.create_income(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        payload=payload.model_dump(),
+    )
+    await db.commit()
+    return env(income_svc.serialize_income(row), "Income posted")
+
+
+@api.get("/incomes")
+async def list_other_incomes(
+    claims=Depends(require_permission("expenses", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import other_income as income_svc
+
+    rows = await income_svc.list_incomes(db, claims["tenant_id"])
+    return env([income_svc.serialize_income(r) for r in rows])
+
+
+@api.post("/incomes")
+async def add_other_income(
+    payload: OtherIncomeCreate,
+    claims=Depends(require_permission("expenses", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import other_income as income_svc
+    from app.accounting import ensure_default_accounts
+
+    await ensure_default_accounts(db, claims["tenant_id"])
+    row = await income_svc.create_income(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        payload=payload.model_dump(),
+    )
+    await db.commit()
+    return env(income_svc.serialize_income(row), "Income posted")
+
+
 @api.get("/expenses")
 async def expenses(
     status: Annotated[ExpenseStatusFilterValue | None, Query()] = None,
@@ -9170,9 +11529,26 @@ async def accounts(
     """List COA accounts. Optional is_active filters soft-deactivated rows (Accounting manage UI)."""
     from app.accounting import ensure_default_accounts
     from app import bank_recon as bank_recon_svc
+    from app import cash_transfers as cash_xfer_svc
+    from app import schema_compat
 
     await ensure_default_accounts(db, claims["tenant_id"])
     await db.commit()
+    names = await schema_compat.table_column_names(db, "accounts")
+    if "tenant_id" in names:
+        where = "tenant_id = :tid"
+        params: dict = {"tid": claims["tenant_id"]}
+        if is_active is not None and "is_active" in names:
+            where += " AND is_active = :active"
+            params["active"] = bool(is_active)
+        company_id = await schema_compat.resolve_tenant_company_id(db, claims["tenant_id"])
+        if company_id and "company_id" in names:
+            where += " AND (company_id = :cid OR company_id IS NULL)"
+            params["cid"] = company_id
+        if "code" in names:
+            where += " ORDER BY code"
+        live = await schema_compat.fetch_live_dicts(db, "accounts", where, params)
+        return env([cash_xfer_svc.serialize_account(r) for r in live])
     stmt = (
         select(m.Account)
         .where(m.Account.tenant_id == claims["tenant_id"])
@@ -9203,6 +11579,7 @@ async def create_account(
         bank_name=payload.bank_name,
         account_number=payload.account_number,
         bank_branch=payload.bank_branch,
+        parent_id=payload.parent_id,
     )
     await audit_svc.record_event(
         db,
@@ -9241,6 +11618,7 @@ async def patch_account(
         account_number=data.get("account_number"),
         bank_branch=data.get("bank_branch"),
         is_active=data.get("is_active"),
+        parent_id=data.get("parent_id") if "parent_id" in data else None,
     )
     await audit_svc.record_event(
         db,
@@ -10153,6 +12531,28 @@ async def delete_journal_attachment(
     return env(await accounting_svc.serialize_journal(db, entry), "Attachment removed")
 
 
+async def _financial_location_kwargs(
+    db: AsyncSession, claims: dict, store_id: str | None, branch_id: str | None
+) -> dict:
+    from app import store_access as store_access_svc
+
+    if store_id:
+        await store_access_svc.assert_store_access(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            store_id=store_id,
+        )
+    allowed = await store_access_svc.assigned_store_ids(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+    )
+    return {
+        "store_id": store_id or None,
+        "branch_id": branch_id or None,
+        "limit_store_ids": allowed,
+    }
+
+
 @api.get("/accounting/trial-balance")
 async def get_trial_balance(
     as_of: Annotated[IsoDateQueryValue | None, Query()] = None,
@@ -10167,13 +12567,13 @@ async def get_trial_balance(
 
     await ensure_default_accounts(db, claims["tenant_id"])
     await db.commit()
+    loc = await _financial_location_kwargs(db, claims, store_id, branch_id)
     return env(
         await trial_balance(
             db,
             claims["tenant_id"],
             as_of=reports_svc.parse_date(as_of, end_of_day=True),
-            store_id=store_id or None,
-            branch_id=branch_id or None,
+            **loc,
         )
     )
 
@@ -10192,14 +12592,14 @@ async def get_profit_loss(
 
     await ensure_default_accounts(db, claims["tenant_id"])
     await db.commit()
+    loc = await _financial_location_kwargs(db, claims, store_id, branch_id)
     return env(
         await profit_and_loss(
             db,
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
-            store_id=store_id or None,
-            branch_id=branch_id or None,
+            **loc,
         )
     )
 
@@ -10217,14 +12617,14 @@ async def report_profit_loss(
 
     await ensure_default_accounts(db, claims["tenant_id"])
     await db.commit()
+    loc = await _financial_location_kwargs(db, claims, store_id, branch_id)
     return env(
         await profit_and_loss(
             db,
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
-            store_id=store_id or None,
-            branch_id=branch_id or None,
+            **loc,
         )
     )
 
@@ -10255,14 +12655,14 @@ async def report_cash_flow(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    loc = await _financial_location_kwargs(db, claims, store_id, branch_id)
     return env(
         await reports_svc.cash_flow(
             db,
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
-            store_id=store_id,
-            branch_id=branch_id,
+            **loc,
         )
     )
 
@@ -10277,14 +12677,14 @@ async def report_balance_sheet(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    loc = await _financial_location_kwargs(db, claims, store_id, branch_id)
     return env(
         await reports_svc.balance_sheet(
             db,
             claims["tenant_id"],
             as_of=reports_svc.parse_date(as_of, end_of_day=True),
             compare=compare,
-            store_id=store_id or None,
-            branch_id=branch_id or None,
+            **loc,
         )
     )
 
@@ -10298,14 +12698,56 @@ async def accounting_balance_sheet(
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    loc = await _financial_location_kwargs(db, claims, store_id, branch_id)
     return env(
         await reports_svc.balance_sheet(
             db,
             claims["tenant_id"],
             as_of=reports_svc.parse_date(as_of, end_of_day=True),
             compare=compare,
-            store_id=store_id or None,
-            branch_id=branch_id or None,
+            **loc,
+        )
+    )
+
+
+@api.get("/accounting/accounts/{account_id}/statement")
+async def accounting_account_statement(
+    account_id: UuidIdValue,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.accounting import account_statement
+
+    return env(
+        await account_statement(
+            db,
+            claims["tenant_id"],
+            account_id,
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        )
+    )
+
+
+@api.get("/reports/account-statement")
+async def reports_account_statement(
+    account_id: UuidIdValue,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.accounting import account_statement
+
+    return env(
+        await account_statement(
+            db,
+            claims["tenant_id"],
+            account_id,
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
         )
     )
 
@@ -10337,9 +12779,35 @@ async def reports_export(
     # omit → no compare; blank/invalid → 422 (same Literal as balance-sheet routes)
     compare: Annotated[BalanceSheetCompareValue | None, Query()] = None,
     department_id: Annotated[UuidIdValue | None, Query()] = None,
+    # omit → report default (stock counts stay completed; others stay unfiltered).
+    # blank/unknown → 422. A status valid here but not for that report is still 422 in the service.
+    status: Annotated[ReportExportStatusValue | None, Query()] = None,
+    reason: Annotated[ReportExportReasonValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    await store_access_svc.assert_store_access(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
+    await store_access_svc.assert_warehouse_access(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        warehouse_id=warehouse_id,
+    )
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
+    from app.sales_reports import may_see_sales_cost
+
     content, media, filename = await report_export_svc.export_report(
         db,
         claims["tenant_id"],
@@ -10352,13 +12820,17 @@ async def reports_export(
         month=month,
         warehouse_id=warehouse_id,
         jurisdiction=jurisdiction,
-        store_id=store_id or None,
+        store_id=scope["store_id"],
+        store_ids=scope["store_ids"],
         branch_id=branch_id or None,
         category_id=category_id or None,
         days=days,
         as_of=as_of or None,
         compare=compare or None,
         department_id=department_id or None,
+        status=status or None,
+        reason=reason or None,
+        include_cost=may_see_sales_cost(claims),
     )
     return Response(
         content=content,
@@ -10494,12 +12966,21 @@ async def report_sales_daily(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.sales_daily(
             db,
             claims["tenant_id"],
             reports_svc.parse_date(date),
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -10515,13 +12996,22 @@ async def report_sales_monthly(
     db: AsyncSession = Depends(get_db),
 ):
     now = datetime.utcnow()
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.sales_monthly(
             db,
             claims["tenant_id"],
             year or now.year,
             month or now.month,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -10538,14 +13028,26 @@ async def report_sales_products(
     db: AsyncSession = Depends(get_db),
 ):
     """BR-14.1 — product sales with optional store / category filters."""
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
+    from app.sales_reports import may_see_sales_cost
+
     return env(
         await reports_svc.sales_by_product(
             db,
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
             category_id=category_id or None,
+            include_cost=may_see_sales_cost(claims),
         )
     )
 
@@ -10560,13 +13062,22 @@ async def report_sales_customers(
     db: AsyncSession = Depends(get_db),
 ):
     """BR-14.1 — top customers by revenue and sale frequency."""
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.sales_by_customer(
             db,
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
             limit=limit,
         )
     )
@@ -10586,6 +13097,14 @@ async def report_sales_returns(
     db: AsyncSession = Depends(get_db),
 ):
     """BR-14.1 — sales return summary by reason / customer."""
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.sales_returns_summary(
             db,
@@ -10595,7 +13114,8 @@ async def report_sales_returns(
             customer_id=customer_id or None,
             reason=reason,
             status=status,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -10611,6 +13131,14 @@ async def report_sales_salesperson(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.sales_by_salesperson(
             db,
@@ -10618,7 +13146,8 @@ async def report_sales_salesperson(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             department_id=department_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -10628,9 +13157,19 @@ async def report_sales_by_store(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     department_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
+    chosen = scope["store_id"]
     return env(
         await reports_svc.sales_by_store(
             db,
@@ -10638,6 +13177,7 @@ async def report_sales_by_store(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             department_id=department_id or None,
+            store_ids=[chosen] if chosen else scope["store_ids"],
         )
     )
 
@@ -10647,10 +13187,20 @@ async def report_sales_by_department(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     department_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     """BR-2.5 — sales aggregated by seller department; optional department filter."""
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
+    chosen = scope["store_id"]
     return env(
         await reports_svc.sales_by_department(
             db,
@@ -10658,6 +13208,183 @@ async def report_sales_by_department(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             department_id=department_id or None,
+            store_ids=[chosen] if chosen else scope["store_ids"],
+        )
+    )
+
+
+async def _sales_report_scope(db, claims, store_id):
+    from app import store_access as store_access_svc
+
+    return await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
+
+
+@api.get("/reports/sales/transactions")
+async def report_sales_transactions(
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import reports as reports_svc
+    from app import sales_reports as sales_reports_svc
+
+    scope = await _sales_report_scope(db, claims, store_id)
+    return env(
+        await sales_reports_svc.completed_sales(
+            db,
+            claims,
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
+        )
+    )
+
+
+@api.get("/reports/sales/lines")
+async def report_sales_lines(
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    category_id: Annotated[UuidIdValue | None, Query()] = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import reports as reports_svc
+    from app import sales_reports as sales_reports_svc
+
+    scope = await _sales_report_scope(db, claims, store_id)
+    return env(
+        await sales_reports_svc.product_lines(
+            db,
+            claims,
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
+            category_id=category_id or None,
+            include_cost=sales_reports_svc.may_see_sales_cost(claims),
+        )
+    )
+
+
+@api.get("/reports/sales/payments")
+async def report_sales_payments(
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import reports as reports_svc
+    from app import sales_reports as sales_reports_svc
+
+    scope = await _sales_report_scope(db, claims, store_id)
+    return env(
+        await sales_reports_svc.payment_methods(
+            db,
+            claims,
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
+        )
+    )
+
+
+@api.get("/reports/sales/discounts")
+async def report_sales_discounts(
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import reports as reports_svc
+    from app import sales_reports as sales_reports_svc
+
+    scope = await _sales_report_scope(db, claims, store_id)
+    return env(
+        await sales_reports_svc.discount_lines(
+            db,
+            claims,
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
+        )
+    )
+
+
+@api.get("/reports/sales/pos")
+async def report_sales_pos(
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import reports as reports_svc
+    from app import sales_reports as sales_reports_svc
+    from app.industry_dashboard import assert_pos_for_industry
+
+    assert_pos_for_industry(claims)
+    scope = await _sales_report_scope(db, claims, store_id)
+    return env(
+        await sales_reports_svc.pos_sales(
+            db,
+            claims,
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
+        )
+    )
+
+
+@api.get("/reports/sales/quotations")
+async def report_sales_quotations(
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import reports as reports_svc
+    from app import sales_reports as sales_reports_svc
+
+    sales_reports_svc.assert_quotation_reports(claims)
+    return env(
+        await sales_reports_svc.quotations_report(
+            db,
+            claims,
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        )
+    )
+
+
+@api.get("/reports/sales/credit")
+async def report_sales_credit(
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import sales_reports as sales_reports_svc
+
+    scope = await _sales_report_scope(db, claims, store_id)
+    return env(
+        await sales_reports_svc.credit_outstanding(
+            db,
+            claims,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -10670,12 +13397,21 @@ async def report_inventory_balance(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.inventory_balance(
             db,
             claims["tenant_id"],
             warehouse_id=warehouse_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -10689,13 +13425,22 @@ async def report_inventory_valuation(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.inventory_valuation(
             db,
             claims["tenant_id"],
             method=method,
             warehouse_id=warehouse_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -10714,6 +13459,14 @@ async def report_inventory_movements(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.inventory_movements(
             db,
@@ -10722,7 +13475,8 @@ async def report_inventory_movements(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             warehouse_id=warehouse_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
             movement_type=movement_type or None,
             created_by=created_by or None,
             reason=reason or None,
@@ -10739,9 +13493,21 @@ async def report_low_stock(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.inventory_low_stock(
-            db, claims["tenant_id"], store_id=store_id, warehouse_id=warehouse_id
+            db,
+            claims["tenant_id"],
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
+            warehouse_id=warehouse_id,
         )
     )
 
@@ -10757,13 +13523,40 @@ async def report_inventory_expiry(
     db: AsyncSession = Depends(get_db),
 ):
     """BR-14.2 — batches nearing expiry (pharmacy/food)."""
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.inventory_expiry(
             db,
             claims["tenant_id"],
             within_days=days,
             warehouse_id=warehouse_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
+        )
+    )
+
+
+@api.get("/reports/pharmacy/rx-activity")
+async def report_pharmacy_rx_activity(
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    pharmacy_svc.assert_pharmacy_industry(claims)
+    return env(
+        await reports_svc.pharmacy_rx_activity(
+            db,
+            claims["tenant_id"],
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date),
         )
     )
 
@@ -10782,6 +13575,14 @@ async def report_inventory_transfers(
     db: AsyncSession = Depends(get_db),
 ):
     """BR-13.2 — inter-store transfer history and aggregates."""
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.inventory_transfers(
             db,
@@ -10791,7 +13592,8 @@ async def report_inventory_transfers(
             status=status,
             from_store_id=from_store_id or None,
             to_store_id=to_store_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -10809,6 +13611,14 @@ async def report_inventory_stock_counts(
     db: AsyncSession = Depends(get_db),
 ):
     """BR-5.2 — physical stock count variance report."""
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.inventory_stock_counts(
             db,
@@ -10816,7 +13626,8 @@ async def report_inventory_stock_counts(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             warehouse_id=warehouse_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
             variance_only=variance_only,
             status=status,
         )
@@ -10834,6 +13645,14 @@ async def report_purchases_summary(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.purchases_summary(
             db,
@@ -10841,7 +13660,8 @@ async def report_purchases_summary(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             warehouse_id=warehouse_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -10858,6 +13678,14 @@ async def report_purchases_suppliers(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.purchases_by_supplier(
             db,
@@ -10866,7 +13694,8 @@ async def report_purchases_suppliers(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             warehouse_id=warehouse_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -10883,6 +13712,14 @@ async def report_purchases_pending_orders(
     db: AsyncSession = Depends(get_db),
 ):
     """BR-14.3 — POs not yet fully received (draft/sent/partially_received)."""
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.purchases_pending_orders(
             db,
@@ -10892,7 +13729,8 @@ async def report_purchases_pending_orders(
             supplier_id=supplier_id or None,
             status=status,
             warehouse_id=warehouse_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -10910,6 +13748,14 @@ async def report_purchases_returns(
     db: AsyncSession = Depends(get_db),
 ):
     """BR-14.3 — purchase return summary by reason / supplier."""
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.purchases_returns_summary(
             db,
@@ -10920,7 +13766,8 @@ async def report_purchases_returns(
             reason=reason,
             status=status,
             warehouse_id=warehouse_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -10938,6 +13785,14 @@ async def report_expenses_summary(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.expenses_summary(
             db,
@@ -10947,7 +13802,8 @@ async def report_expenses_summary(
             category_id=category_id or None,
             branch_id=branch_id or None,
             department_id=department_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -10963,6 +13819,14 @@ async def report_expenses_budget_vs_actual(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.budget_vs_actual(
             db,
@@ -10972,7 +13836,8 @@ async def report_expenses_budget_vs_actual(
             category_id=category_id or None,
             branch_id=branch_id or None,
             department_id=department_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -10985,6 +13850,13 @@ async def credit_aging(
 ):
     # Schema CreditAgingKindValue rejects blank/invalid → 422 (no silent AR for "Payable"/garbage).
     if kind == "payable":
+        # credit:write implies credit:read in has_permission; cashiers use write at the till
+        # and must not see supplier AP aging.
+        role = claims.get("role") or ""
+        overrides = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
+        credit_overrides = {"credit": overrides["credit"]} if overrides and "credit" in overrides else overrides
+        if not has_explicit_permission(role, "credit", "read", overrides=credit_overrides):
+            raise HTTPException(status_code=403, detail="Missing permission: credit:read")
         return env(await credit_svc.ap_aging(db, claims["tenant_id"]))
     return env(await credit_svc.ar_aging(db, claims["tenant_id"]))
 
@@ -11198,7 +14070,7 @@ async def supplier_history(
 async def update_customer_credit_limit(
     customer_id: UuidIdValue,
     payload: CreditLimitUpdate,
-    claims=Depends(require_permission("credit", "write")),
+    claims=Depends(require_permission("credit", "approve")),
     db: AsyncSession = Depends(get_db),
 ):
     customer = (
@@ -11215,6 +14087,19 @@ async def update_customer_credit_limit(
     customer.credit_limit = payload.credit_limit
     if payload.payment_terms_days is not None:
         customer.payment_terms_days = payload.payment_terms_days
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="credit",
+        action="credit_limit_update",
+        entity="customer",
+        entity_id=customer.id,
+        details={
+            "credit_limit": money_json(customer.credit_limit),
+            "payment_terms_days": int(customer.payment_terms_days or 30),
+        },
+    )
     await db.commit()
     return env(
         {
@@ -11400,6 +14285,13 @@ async def supplier_payment(
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.rbac import has_explicit_permission
+
+    role = claims.get("role", "")
+    overrides = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
+    # Till credit is credit:write only. Supplier payments also need credit:read.
+    if not has_explicit_permission(role, "credit", "read", overrides=overrides):
+        raise HTTPException(status_code=403, detail="Missing permission: credit:read")
     payment = await purchasing_svc.record_supplier_payment(
         db,
         tenant_id=claims["tenant_id"],
@@ -11599,13 +14491,22 @@ async def reports_tax(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await tax_svc.tax_report(
             db,
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -11621,10 +14522,19 @@ async def reports_tax_filing(
     db: AsyncSession = Depends(get_db),
 ):
     from app import tax_filings as tax_filings_svc
+    from app import store_access as store_access_svc
 
     # Schema TaxFilingJurisdictionValue rejects blank/unknown → 422 (blank was silent omit).
     fd = reports_svc.parse_date(from_date)
     td = reports_svc.parse_date(to_date, end_of_day=True)
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
+    sid = scope["store_id"]
+    sids = scope["store_ids"]
     if jurisdiction:
         return env(
             await tax_filings_svc.government_filing_pack(
@@ -11633,7 +14543,8 @@ async def reports_tax_filing(
                 from_date=fd,
                 to_date=td,
                 jurisdiction=jurisdiction,
-                store_id=store_id or None,
+                store_id=sid,
+                store_ids=sids,
             )
         )
     # Default: neutral pack + government section for tenant jurisdiction when supported
@@ -11647,7 +14558,8 @@ async def reports_tax_filing(
                 from_date=fd,
                 to_date=td,
                 jurisdiction=juris,
-                store_id=store_id or None,
+                store_id=sid,
+                store_ids=sids,
             )
         )
     except HTTPException as exc:
@@ -11657,7 +14569,8 @@ async def reports_tax_filing(
                 claims["tenant_id"],
                 from_date=fd,
                 to_date=td,
-                store_id=store_id or None,
+                store_id=sid,
+                store_ids=sids,
             )
             pack["jurisdiction"] = juris
             pack["government"] = None
@@ -11695,11 +14608,15 @@ async def stores(
 ):
     """List stores. Optional is_active filters soft-deactivated rows (Multi-Store manage UI)."""
     from app import cash_drawer as cash_drawer_svc
+    from app import store_access as store_access_svc
 
     stmt = select(m.Store).where(m.Store.tenant_id == claims["tenant_id"])
     if is_active is not None:
         stmt = stmt.where(m.Store.is_active.is_(bool(is_active)))
-    rows = (await db.execute(stmt)).scalars().all()
+    rows = list((await db.execute(stmt)).scalars().all())
+    rows = await store_access_svc.filter_stores_for_user(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], stores=rows
+    )
     return env(
         [
             stores_svc.serialize_store(
@@ -11720,58 +14637,59 @@ async def add_store(
     from app import cash_drawer as cash_drawer_svc
     from app import store_entitlements as store_ent_svc
 
-    try:
-        store = await stores_svc.create_store(
-            db,
-            tenant_id=claims["tenant_id"],
-            name=payload.name,
-            code=payload.code,
-            address=payload.address,
-            phone=payload.phone,
-            manager_id=payload.manager_id,
-            branch_id=payload.branch_id,
-            operating_hours=(
-                payload.operating_hours.model_dump(exclude_none=True)
-                if payload.operating_hours is not None
-                else None
-            ),
-        )
-    except HTTPException as exc:
-        if (
-            isinstance(exc.detail, dict)
-            and exc.detail.get("code") == store_ent_svc.STORE_LIMIT_REACHED
-        ):
-            await audit_svc.record_event(
+    async with store_ent_svc.tenant_store_quota_guard(claims["tenant_id"]):
+        try:
+            store = await stores_svc.create_store(
                 db,
                 tenant_id=claims["tenant_id"],
-                user_id=claims["sub"],
-                module="stores",
-                action="create_rejected_limit",
-                entity="store",
-                entity_id=None,
-                details=dict(exc.detail),
+                name=payload.name,
+                code=payload.code,
+                address=payload.address,
+                phone=payload.phone,
+                manager_id=payload.manager_id,
+                branch_id=payload.branch_id,
+                operating_hours=(
+                    payload.operating_hours.model_dump(exclude_none=True)
+                    if payload.operating_hours is not None
+                    else None
+                ),
             )
-            await db.commit()
-        raise
-    await audit_svc.record_event(
-        db,
-        tenant_id=claims["tenant_id"],
-        user_id=claims["sub"],
-        module="stores",
-        action="create",
-        entity="store",
-        entity_id=store.id,
-        details={"code": store.code, "name": store.name},
-    )
-    await db.commit()
-    await db.refresh(store)
-    return env(
-        stores_svc.serialize_store(
-            store,
-            drawer=cash_drawer_svc.serialize_drawer_settings(store),
-        ),
-        "Store created with warehouse",
-    )
+        except HTTPException as exc:
+            if (
+                isinstance(exc.detail, dict)
+                and exc.detail.get("code") == store_ent_svc.STORE_LIMIT_REACHED
+            ):
+                await audit_svc.record_event(
+                    db,
+                    tenant_id=claims["tenant_id"],
+                    user_id=claims["sub"],
+                    module="stores",
+                    action="create_rejected_limit",
+                    entity="store",
+                    entity_id=None,
+                    details=dict(exc.detail),
+                )
+                await db.commit()
+            raise
+        await audit_svc.record_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            module="stores",
+            action="create",
+            entity="store",
+            entity_id=store.id,
+            details={"code": store.code, "name": store.name},
+        )
+        await db.commit()
+        await db.refresh(store)
+        return env(
+            stores_svc.serialize_store(
+                store,
+                drawer=cash_drawer_svc.serialize_drawer_settings(store),
+            ),
+            "Store created with warehouse",
+        )
 
 
 @api.patch("/stores/{store_id}")
@@ -12293,11 +15211,18 @@ async def warehouses(
 ):
     """List warehouses. Optional is_active filters soft-deactivated rows (Multi-Store manage UI)."""
     from app import warehouses as warehouses_svc
+    from app import store_access as store_access_svc
 
     stmt = select(m.Warehouse).where(m.Warehouse.tenant_id == claims["tenant_id"])
     if is_active is not None:
         stmt = stmt.where(m.Warehouse.is_active.is_(bool(is_active)))
-    rows = (await db.execute(stmt)).scalars().all()
+    rows = list((await db.execute(stmt)).scalars().all())
+    allowed = await store_access_svc.assigned_store_ids(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+    )
+    if allowed is not None:
+        allow = set(allowed)
+        rows = [r for r in rows if not r.store_id or r.store_id in allow]
     return env([warehouses_svc.serialize_warehouse(r) for r in rows])
 
 
@@ -12308,8 +15233,15 @@ async def get_warehouse(
     db: AsyncSession = Depends(get_db),
 ):
     from app import warehouses as warehouses_svc
+    from app import store_access as store_access_svc
 
     row = await warehouses_svc.get_warehouse(db, claims["tenant_id"], warehouse_id)
+    await store_access_svc.assert_warehouse_access(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        warehouse_id=row.id,
+    )
     return env(warehouses_svc.serialize_warehouse(row))
 
 
@@ -12320,7 +15252,14 @@ async def add_warehouse(
     db: AsyncSession = Depends(get_db),
 ):
     from app import warehouses as warehouses_svc
+    from app import store_access as store_access_svc
 
+    await store_access_svc.assert_store_access(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=payload.store_id,
+    )
     warehouse = await warehouses_svc.create_warehouse(
         db,
         tenant_id=claims["tenant_id"],
@@ -12367,16 +15306,68 @@ async def patch_warehouse(
 
 
 @api.get("/reports/summary")
-async def report(claims=Depends(require_permission("reports", "read")), db: AsyncSession = Depends(get_db)):
-    dash = await dashboard(claims, db)
-    now = datetime.utcnow()
-    daily = await reports_svc.sales_daily(db, claims["tenant_id"], now)
-    monthly = await reports_svc.sales_monthly(db, claims["tenant_id"], now.year, now.month)
-    low = await reports_svc.inventory_low_stock(db, claims["tenant_id"])
-    expenses = await reports_svc.expenses_summary(db, claims["tenant_id"])
+async def report(
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Tenant-scoped summary. Company == tenant in this schema (no separate company_id).
+
+    Do not call the ``/dashboard`` FastAPI route: its first argument is ``store_id``,
+    so ``dashboard(claims, db)`` shifts args and raises (caught as a generic 500).
+    """
+    from app.dashboard import build_dashboard
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
+    sid = scope["store_id"]
+    sids = scope["store_ids"]
+    dash = await build_dashboard(
+        db, claims["tenant_id"], store_id=sid, store_ids=sids
+    )
+    day = reports_svc.parse_date(to_date or from_date) or datetime.utcnow()
+    daily = await reports_svc.sales_daily(
+        db, claims["tenant_id"], day, store_id=sid, store_ids=sids
+    )
+    monthly = await reports_svc.sales_monthly(
+        db, claims["tenant_id"], day.year, day.month, store_id=sid, store_ids=sids
+    )
+    low = await reports_svc.inventory_low_stock(
+        db, claims["tenant_id"], store_id=sid, store_ids=sids
+    )
+    expenses = await reports_svc.expenses_summary(
+        db,
+        claims["tenant_id"],
+        from_date=reports_svc.parse_date(from_date),
+        to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        store_id=sid,
+        store_ids=sids,
+    )
+    prod_from = reports_svc.parse_date(from_date)
+    prod_to = reports_svc.parse_date(to_date, end_of_day=True)
+    if prod_from is None and prod_to is None:
+        prod_from, prod_to = reports_svc.month_bounds(day.year, day.month)
+    from app.sales_reports import may_see_sales_cost
+
+    products_sold = await reports_svc.sales_by_product(
+        db,
+        claims["tenant_id"],
+        from_date=prod_from,
+        to_date=prod_to,
+        store_id=sid,
+        store_ids=sids,
+        include_cost=may_see_sales_cost(claims),
+    )
     return env(
         {
-            **(dash.get("data") if isinstance(dash, dict) and "data" in dash else {}),
+            **(dash if isinstance(dash, dict) else {}),
             "today_sales": daily,
             "month_sales": {
                 "total_revenue": monthly["total_revenue"],
@@ -12384,6 +15375,7 @@ async def report(claims=Depends(require_permission("reports", "read")), db: Asyn
                 "invoice_count": monthly["invoice_count"],
                 "pos_count": monthly["pos_count"],
             },
+            "products_sold": products_sold,
             "low_stock_report": low,
             "expenses_summary": {
                 "total_amount": expenses["total_amount"],
@@ -12405,6 +15397,7 @@ async def notifications(
     db: AsyncSession = Depends(get_db),
 ):
     lim = max(1, min(int(limit or 100), 200))
+    audience = notifications_svc.audience_for_role(claims.get("role"))
     rows = await notifications_svc.list_notifications(
         db,
         tenant_id=claims["tenant_id"],
@@ -12412,6 +15405,7 @@ async def notifications(
         status=status,
         category=category,
         limit=lim,
+        audience=audience,
     )
     return env([notifications_svc.serialize_notification(n) for n in rows])
 
@@ -12421,7 +15415,12 @@ async def notifications_unread_count(
     claims=Depends(require_permission("notifications", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    count = await notifications_svc.unread_count(db, claims["tenant_id"], claims["sub"])
+    count = await notifications_svc.unread_count(
+        db,
+        claims["tenant_id"],
+        claims["sub"],
+        audience=notifications_svc.audience_for_role(claims.get("role")),
+    )
     return env({"count": count})
 
 
@@ -12432,7 +15431,11 @@ async def notification_read(
     db: AsyncSession = Depends(get_db),
 ):
     note = await notifications_svc.mark_read(
-        db, tenant_id=claims["tenant_id"], notification_id=nid, user_id=claims["sub"]
+        db,
+        tenant_id=claims["tenant_id"],
+        notification_id=nid,
+        user_id=claims["sub"],
+        audience=notifications_svc.audience_for_role(claims.get("role")),
     )
     await db.commit()
     return env(notifications_svc.serialize_notification(note), "Marked read")
@@ -12445,7 +15448,11 @@ async def notification_unread(
     db: AsyncSession = Depends(get_db),
 ):
     note = await notifications_svc.mark_unread(
-        db, tenant_id=claims["tenant_id"], notification_id=nid, user_id=claims["sub"]
+        db,
+        tenant_id=claims["tenant_id"],
+        notification_id=nid,
+        user_id=claims["sub"],
+        audience=notifications_svc.audience_for_role(claims.get("role")),
     )
     await db.commit()
     return env(notifications_svc.serialize_notification(note), "Marked unread")
@@ -12457,7 +15464,10 @@ async def notifications_read_all(
     db: AsyncSession = Depends(get_db),
 ):
     count = await notifications_svc.mark_all_read(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        audience=notifications_svc.audience_for_role(claims.get("role")),
     )
     await db.commit()
     return env({"marked": count}, "All notifications marked read")
@@ -12495,16 +15505,23 @@ async def scan_due_notifications(
 ):
     payment_due = await notifications_svc.scan_payment_due(db, claims["tenant_id"])
     quotation_expiry = await notifications_svc.scan_quotation_expiry(db, claims["tenant_id"])
+    batch_expiry = await notifications_svc.scan_batch_expiry(db, claims["tenant_id"])
     recurring_expense_due = await notifications_svc.scan_recurring_expense_due(
         db, claims["tenant_id"]
     )
     await db.commit()
-    total = int(payment_due) + int(quotation_expiry) + int(recurring_expense_due)
+    total = (
+        int(payment_due)
+        + int(quotation_expiry)
+        + int(batch_expiry)
+        + int(recurring_expense_due)
+    )
     return env(
         {
             "created": total,
             "payment_due": payment_due,
             "quotation_expiry": quotation_expiry,
+            "batch_expiry": batch_expiry,
             "recurring_expense_due": recurring_expense_due,
         },
         f"Created {total} due notification(s)",
@@ -12513,7 +15530,7 @@ async def scan_due_notifications(
 
 @api.get("/jobs")
 async def list_jobs(
-    claims=Depends(require_roles("super_admin", "company_admin", "platform_owner")),
+    claims=Depends(require_platform_permission("platform", "read")),
 ):
     from app.config import settings as app_settings
     from app import jobs as jobs_svc
@@ -12529,10 +15546,12 @@ async def list_jobs(
                 "scan_low_stock_minutes": app_settings.CELERY_LOW_STOCK_INTERVAL_MINUTES,
                 "scan_payment_due_minutes": app_settings.CELERY_PAYMENT_DUE_INTERVAL_MINUTES,
                 "scan_quotation_expiry_minutes": app_settings.CELERY_QUOTATION_EXPIRY_INTERVAL_MINUTES,
+                "scan_batch_expiry_minutes": app_settings.CELERY_BATCH_EXPIRY_INTERVAL_MINUTES,
                 "scan_recurring_expense_due_minutes": app_settings.CELERY_RECURRING_NOTIFY_INTERVAL_MINUTES,
                 "generate_recurring_expenses_minutes": app_settings.CELERY_RECURRING_INTERVAL_MINUTES,
                 "run_due_backups_minutes": app_settings.CELERY_BACKUP_INTERVAL_MINUTES,
                 "scan_trial_lifecycle_minutes": app_settings.CELERY_TRIAL_INTERVAL_MINUTES,
+                "process_subscription_renewals_minutes": app_settings.CELERY_BILLING_INTERVAL_MINUTES,
                 "run_due_report_emails_minutes": app_settings.CELERY_REPORT_EMAIL_INTERVAL_MINUTES,
                 "refresh_fx_rates_minutes": app_settings.CELERY_FX_INTERVAL_MINUTES,
                 "sync_bank_feeds_minutes": app_settings.CELERY_BANK_FEED_INTERVAL_MINUTES,
@@ -12549,20 +15568,20 @@ async def list_jobs(
 async def run_job_now(
     job_name: Annotated[JobNameValue, Path()],
     enqueue: bool = False,
-    claims=Depends(require_roles("super_admin", "platform_owner")),
+    claims=Depends(require_platform_permission("platform", "write")),
 ):
-    """Run a scheduled job immediately (sync) or enqueue to Celery."""
+    """Run a scheduled job immediately (sync) or enqueue to Celery (platform ops only)."""
     from app import jobs as jobs_svc
     from app.config import settings as app_settings
 
     # Schema JobNameValue rejects unknown/blank path → 422 (was late **404**).
     # Keep allow-list defense-in-depth if Literal and JOB_HANDLERS drift.
     if job_name not in jobs_svc.JOB_HANDLERS:
-        raise HTTPException(status_code=422, detail=f"Unknown job: {job_name}")
+        raise HTTPException(status_code=422, detail="Unknown job")
 
     if enqueue:
         if not app_settings.CELERY_ENABLED:
-            raise HTTPException(status_code=503, detail="CELERY_ENABLED is false")
+            raise HTTPException(status_code=503, detail="Background processing is not available.")
         from app.tasks import run_named_job
 
         async_result = run_named_job.delay(job_name)
@@ -12778,7 +15797,13 @@ async def backup_create(
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()
-    return env(backup_svc.serialize_job(job), "Backup created")
+    serialized = backup_svc.serialize_job(job)
+    if job.status != "completed":
+        return env(
+            serialized,
+            f"Backup job {job.status}; download is available only after completed",
+        )
+    return env(serialized, "Backup created")
 
 
 @api.post("/backup/run-due")
@@ -12791,9 +15816,11 @@ async def backup_run_due(
         db, tenant_id=claims["tenant_id"], user_id=claims.get("sub")
     )
     await db.commit()
-    if result.get("ran"):
+    if result.get("ran") and result.get("reason") == "created":
         return env(result, "Scheduled backup created")
-    return env(result)
+    if result.get("ran"):
+        return env(result, "Scheduled backup ran")
+    return env(result, result.get("reason") or "Scheduled backup did not run")
 
 
 @api.get("/backup/{backup_id}")
@@ -12893,12 +15920,15 @@ async def backup_restore(
     body = payload or BackupRestoreBody()
     dry_run = bool(body.dry_run)
     confirm = bool(body.confirm)
+    # Tenant-scoped logical upsert only (claims.tenant_id + archive tenant_id).
+    # company_admin / super_admin may apply to their own tenant after confirm_text=RESTORE.
     report = await backup_svc.restore_backup(
         db,
         tenant_id=claims["tenant_id"],
         backup_id=backup_id,
         dry_run=dry_run or not confirm,
         confirm=confirm and not dry_run,
+        user_id=claims.get("sub"),
     )
     await audit_svc.record_event(
         db,
@@ -13369,8 +16399,20 @@ async def ai_chat(
 @api.get("/ai/insights")
 async def insights(claims=Depends(require_permission("ai", "read")), db: AsyncSession = Depends(get_db)):
     from app.dashboard import build_dashboard
+    from app import store_access as store_access_svc
 
-    dash = await build_dashboard(db, claims["tenant_id"])
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=None,
+    )
+    dash = await build_dashboard(
+        db,
+        claims["tenant_id"],
+        store_id=scope["store_id"],
+        store_ids=scope["store_ids"],
+    )
     data = await ai_svc.handle_insights(db, claims=claims, dash=dash)
     return env(data)
 
@@ -13593,6 +16635,20 @@ async def ai_reports_generate(
     """BR-21.7 constrained NL / structured report generation (JSON preview)."""
     # Schema AiReportsGenerateBody rejects unknown keys / bad format|type /
     # missing prompt|template_id|report_type → 422.
+    from app import store_access as store_access_svc
+
+    raw_filters = payload.filters or payload.params
+    requested_store = None
+    if isinstance(raw_filters, dict):
+        requested_store = raw_filters.get("store_id")
+    elif raw_filters is not None:
+        requested_store = getattr(raw_filters, "store_id", None)
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=requested_store,
+    )
     data = await ai_reports_svc.generate_report(
         db,
         tenant_id=claims["tenant_id"],
@@ -13603,6 +16659,7 @@ async def ai_reports_generate(
         report_type=payload.report_type,
         period=payload.period,
         filters=payload.filters or payload.params,
+        store_ids=scope["store_ids"],
     )
     return env(data, "Report generated")
 
@@ -13616,6 +16673,20 @@ async def ai_reports_export(
     """Export a generated AI report as csv/pdf/xlsx."""
     # Schema AiReportsExportBody rejects unknown keys / bad format|type /
     # missing prompt|template_id|report_type → 422.
+    from app import store_access as store_access_svc
+
+    raw_filters = payload.params or payload.filters
+    requested_store = None
+    if isinstance(raw_filters, dict):
+        requested_store = raw_filters.get("store_id")
+    elif raw_filters is not None:
+        requested_store = getattr(raw_filters, "store_id", None)
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=requested_store,
+    )
     content, media, filename, _meta = await ai_reports_svc.export_from_intent(
         db,
         tenant_id=claims["tenant_id"],
@@ -13626,6 +16697,7 @@ async def ai_reports_export(
         report_type=payload.report_type,
         period=payload.period,
         params=payload.params or payload.filters,
+        store_ids=scope["store_ids"],
     )
     return Response(
         content=content,
@@ -13685,16 +16757,18 @@ async def ai_report_templates_delete(
 
 @api.get("/hotel/summary")
 async def hotel_summary(
+    on_date: IsoDateQueryValue | None = None,
     claims=Depends(require_permission("hotel", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return env(await hotel_svc.summary(db, tenant_id=claims["tenant_id"]))
+    return env(await hotel_svc.summary(db, tenant_id=claims["tenant_id"], on_date=on_date))
 
 
 @api.get("/hotel/availability")
 async def hotel_availability(
     check_in_date: IsoDateQueryValue,
     check_out_date: IsoDateQueryValue,
+    room_type: Annotated[str | None, Query()] = None,
     claims=Depends(require_permission("hotel", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -13703,6 +16777,7 @@ async def hotel_availability(
         tenant_id=claims["tenant_id"],
         check_in_date=check_in_date,
         check_out_date=check_out_date,
+        room_type=room_type,
     )
     return env([hotel_svc.serialize_room(r) for r in rows])
 
@@ -13818,6 +16893,9 @@ async def hotel_guests_create(
         company_name=payload.company_name,
         preferences=payload.preferences,
         notes=payload.notes,
+        consent_marketing=payload.consent_marketing,
+        travel_agent=payload.travel_agent,
+        loyalty_tier=payload.loyalty_tier,
     )
     await audit_svc.record_event(
         db,
@@ -13858,6 +16936,42 @@ async def hotel_guests_update(
     )
     await db.commit()
     return env(hotel_svc.serialize_guest(row), "Guest updated")
+
+
+@api.get("/hotel/guests/{guest_id}/history")
+async def hotel_guest_history(
+    guest_id: UuidIdValue,
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(await hotel_svc.guest_history(db, tenant_id=claims["tenant_id"], guest_id=guest_id))
+
+
+@api.post("/hotel/guests/{guest_id}/merge")
+async def hotel_guest_merge(
+    guest_id: UuidIdValue,
+    payload: HotelGuestMerge,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_svc.merge_guests(
+        db,
+        tenant_id=claims["tenant_id"],
+        keep_guest_id=guest_id,
+        source_guest_id=payload.source_guest_id,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="guest_merged",
+        entity="hotel_guest",
+        entity_id=row.id,
+        details={"source_guest_id": payload.source_guest_id},
+    )
+    await db.commit()
+    return env(hotel_svc.serialize_guest(row), "Guest profiles merged")
 
 
 @api.get("/hotel/reservations")
@@ -13908,6 +17022,10 @@ async def hotel_reservations_create(
             notes=payload.notes,
             created_by=claims["sub"],
             walk_in=payload.walk_in,
+            status=payload.status,
+            rate_plan_id=payload.rate_plan_id,
+            discount_percent=float(payload.discount_percent or 0),
+            discount_authorized_by=payload.discount_authorized_by,
         )
         await audit_svc.record_event(
             db,
@@ -13923,6 +17041,45 @@ async def hotel_reservations_create(
     return env(
         hotel_svc.serialize_reservation(row, room=room, guest=guest),
         "Reservation created",
+    )
+
+
+@api.patch("/hotel/reservations/{reservation_id}")
+async def hotel_reservation_update(
+    reservation_id: UuidIdValue,
+    payload: HotelReservationUpdate,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    data = payload.model_dump(exclude_unset=True)
+    room_id = data.get("room_id") or None
+    lock_room = room_id
+    if not lock_room:
+        existing, _, _ = await hotel_svc._get_reservation(
+            db, claims["tenant_id"], reservation_id
+        )
+        lock_room = existing.room_id
+    async with hotel_svc.room_booking_lock(claims["tenant_id"], lock_room):
+        row, room, guest = await hotel_svc.update_reservation(
+            db,
+            tenant_id=claims["tenant_id"],
+            reservation_id=reservation_id,
+            **data,
+        )
+        await audit_svc.record_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            module="hotel",
+            action="reservation_updated",
+            entity="hotel_reservation",
+            entity_id=row.id,
+            details={"reservation_number": row.reservation_number},
+        )
+        await db.commit()
+    return env(
+        hotel_svc.serialize_reservation(row, room=room, guest=guest),
+        "Reservation updated",
     )
 
 
@@ -14039,6 +17196,60 @@ async def hotel_reservation_no_show(
     )
     await db.commit()
     return env(hotel_svc.serialize_reservation(row, room=room, guest=guest), "Marked no-show")
+
+
+@api.post("/hotel/reservations/{reservation_id}/confirm")
+async def hotel_reservation_confirm(
+    reservation_id: UuidIdValue,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row, room, guest = await hotel_svc.confirm_reservation(
+        db, tenant_id=claims["tenant_id"], reservation_id=reservation_id
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="reservation_confirmed",
+        entity="hotel_reservation",
+        entity_id=row.id,
+        details={"reservation_number": row.reservation_number},
+    )
+    await db.commit()
+    return env(hotel_svc.serialize_reservation(row, room=room, guest=guest), "Reservation confirmed")
+
+
+@api.post("/hotel/reservations/{reservation_id}/duplicate")
+async def hotel_reservation_duplicate(
+    reservation_id: UuidIdValue,
+    payload: HotelReservationDuplicate,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    existing, _, _ = await hotel_svc._get_reservation(db, claims["tenant_id"], reservation_id)
+    async with hotel_svc.room_booking_lock(claims["tenant_id"], existing.room_id):
+        row, room, guest = await hotel_svc.duplicate_reservation(
+            db,
+            tenant_id=claims["tenant_id"],
+            reservation_id=reservation_id,
+            check_in_date=payload.check_in_date,
+            check_out_date=payload.check_out_date,
+            created_by=claims["sub"],
+        )
+        await audit_svc.record_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            module="hotel",
+            action="reservation_duplicated",
+            entity="hotel_reservation",
+            entity_id=row.id,
+            details={"from": existing.reservation_number, "to": row.reservation_number},
+        )
+        await db.commit()
+    return env(hotel_svc.serialize_reservation(row, room=room, guest=guest), "Reservation duplicated")
 
 
 @api.post("/hotel/reservations/{reservation_id}/extend")
@@ -14193,6 +17404,38 @@ async def hotel_folio_void_charge(
     return env(hotel_svc.serialize_folio(folio, charges=charges, payments=payments), "Charge voided")
 
 
+@api.post("/hotel/folios/{folio_id}/charges/{charge_id}/transfer")
+async def hotel_folio_transfer_charge(
+    folio_id: UuidIdValue,
+    charge_id: UuidIdValue,
+    payload: HotelFolioChargeTransfer,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_svc.transfer_folio_charge(
+        db,
+        tenant_id=claims["tenant_id"],
+        charge_id=charge_id,
+        target_folio_id=payload.target_folio_id,
+        created_by=claims["sub"],
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="folio_charge_transferred",
+        entity="hotel_folio_charge",
+        entity_id=row.id,
+        details={"from_folio_id": folio_id, "to_folio_id": payload.target_folio_id},
+    )
+    await db.commit()
+    folio, charges, payments = await hotel_svc.get_folio_detail(
+        db, tenant_id=claims["tenant_id"], folio_id=folio_id
+    )
+    return env(hotel_svc.serialize_folio(folio, charges=charges, payments=payments), "Charge transferred")
+
+
 @api.post("/hotel/folios/{folio_id}/payments")
 async def hotel_folio_add_payment(
     folio_id: UuidIdValue,
@@ -14340,6 +17583,8 @@ async def hotel_maintenance_create(
         assigned_to=payload.assigned_to,
         notes=payload.notes,
         created_by=claims["sub"],
+        ooo_starts_on=payload.ooo_starts_on,
+        ooo_ends_on=payload.ooo_ends_on,
     )
     await audit_svc.record_event(
         db,
@@ -14384,12 +17629,305 @@ async def hotel_maintenance_complete(
     )
 
 
+@api.get("/hotel/rate-plans")
+async def hotel_rate_plans_list(
+    is_active: bool | None = None,
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await hotel_pms_svc.list_rate_plans(
+        db, tenant_id=claims["tenant_id"], is_active=is_active
+    )
+    return env([hotel_pms_svc.serialize_rate_plan(r) for r in rows])
+
+
+@api.post("/hotel/rate-plans")
+async def hotel_rate_plans_create(
+    payload: HotelRatePlanCreate,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_pms_svc.create_rate_plan(
+        db,
+        tenant_id=claims["tenant_id"],
+        code=payload.code,
+        name=payload.name,
+        amount=float(payload.amount or 0),
+        room_type=payload.room_type,
+        weekday_only=payload.weekday_only,
+        weekend_only=payload.weekend_only,
+        min_nights=payload.min_nights,
+        starts_on=payload.starts_on,
+        ends_on=payload.ends_on,
+    )
+    await db.commit()
+    return env(hotel_pms_svc.serialize_rate_plan(row), "Rate plan created")
+
+
+@api.get("/hotel/guest-requests")
+async def hotel_guest_requests_list(
+    status: Annotated[str | None, Query(max_length=20)] = None,
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await hotel_pms_svc.list_guest_requests(
+        db, tenant_id=claims["tenant_id"], status=status
+    )
+    return env([hotel_pms_svc.serialize_guest_request(r) for r in rows])
+
+
+@api.post("/hotel/guest-requests")
+async def hotel_guest_requests_create(
+    payload: HotelGuestRequestCreate,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_pms_svc.create_guest_request(
+        db,
+        tenant_id=claims["tenant_id"],
+        title=payload.title,
+        kind=payload.kind,
+        reservation_id=payload.reservation_id,
+        room_id=payload.room_id,
+        notes=payload.notes,
+        created_by=claims["sub"],
+    )
+    await db.commit()
+    return env(hotel_pms_svc.serialize_guest_request(row), "Guest request recorded")
+
+
+@api.post("/hotel/guest-requests/{request_id}/complete")
+async def hotel_guest_requests_complete(
+    request_id: UuidIdValue,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_pms_svc.complete_guest_request(
+        db, tenant_id=claims["tenant_id"], request_id=request_id
+    )
+    await db.commit()
+    return env(hotel_pms_svc.serialize_guest_request(row), "Request completed")
+
+
+@api.get("/hotel/lost-found")
+async def hotel_lost_found_list(
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await hotel_pms_svc.list_lost_found(db, tenant_id=claims["tenant_id"])
+    return env([hotel_pms_svc.serialize_lost_found(r) for r in rows])
+
+
+@api.post("/hotel/lost-found")
+async def hotel_lost_found_create(
+    payload: HotelLostFoundCreate,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_pms_svc.create_lost_found(
+        db,
+        tenant_id=claims["tenant_id"],
+        description=payload.description,
+        kind=payload.kind,
+        room_id=payload.room_id,
+        notes=payload.notes,
+        created_by=claims["sub"],
+    )
+    await db.commit()
+    return env(hotel_pms_svc.serialize_lost_found(row), "Record saved")
+
+
+@api.get("/hotel/cashier/shift")
+async def hotel_cashier_shift_get(
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_pms_svc.current_shift(db, tenant_id=claims["tenant_id"])
+    return env(hotel_pms_svc.serialize_shift(row) if row else None)
+
+
+@api.post("/hotel/cashier/shift/open")
+async def hotel_cashier_shift_open(
+    payload: HotelCashierShiftOpen,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_pms_svc.open_shift(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        opening_float=float(payload.opening_float or 0),
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="cashier_shift_opened",
+        entity="hotel_cashier_shift",
+        entity_id=row.id,
+        details={},
+    )
+    await db.commit()
+    return env(hotel_pms_svc.serialize_shift(row), "Cashier shift opened")
+
+
+@api.post("/hotel/cashier/shift/close")
+async def hotel_cashier_shift_close(
+    payload: HotelCashierShiftClose,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_pms_svc.close_shift(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        closing_float=float(payload.closing_float or 0),
+        notes=payload.notes,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="cashier_shift_closed",
+        entity="hotel_cashier_shift",
+        entity_id=row.id,
+        details={"payments_total": float(row.payments_total or 0)},
+    )
+    await db.commit()
+    return env(hotel_pms_svc.serialize_shift(row), "Cashier shift closed")
+
+
+@api.get("/hotel/night-audits")
+async def hotel_night_audits_list(
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await hotel_pms_svc.list_night_audits(db, tenant_id=claims["tenant_id"])
+    return env([hotel_pms_svc.serialize_night_audit(r) for r in rows])
+
+
+@api.post("/hotel/night-audits")
+async def hotel_night_audits_run(
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    snapshot = await hotel_svc.summary(db, tenant_id=claims["tenant_id"])
+    row = await hotel_pms_svc.run_night_audit(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        snapshot=snapshot,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="night_audit_posted",
+        entity="hotel_night_audit",
+        entity_id=row.id,
+        details={"business_date": row.business_date.isoformat()},
+    )
+    await db.commit()
+    return env(hotel_pms_svc.serialize_night_audit(row), "Night audit posted")
+
+
+@api.get("/hotel/events")
+async def hotel_events_list(
+    status: Annotated[str | None, Query(max_length=20)] = None,
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await hotel_pms_svc.list_events(db, tenant_id=claims["tenant_id"], status=status)
+    return env([hotel_pms_svc.serialize_event(r) for r in rows])
+
+
+@api.post("/hotel/events")
+async def hotel_events_create(
+    payload: HotelEventCreate,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_pms_svc.create_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        title=payload.title,
+        space_name=payload.space_name,
+        starts_on=payload.starts_on,
+        ends_on=payload.ends_on,
+        expected_guests=payload.expected_guests,
+        room_id=payload.room_id,
+        guest_id=payload.guest_id,
+        deposit_amount=float(payload.deposit_amount or 0),
+        notes=payload.notes,
+        status=payload.status,
+        created_by=claims["sub"],
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="event_created",
+        entity="hotel_event",
+        entity_id=row.id,
+        details={"title": row.title, "status": row.status},
+    )
+    await db.commit()
+    return env(hotel_pms_svc.serialize_event(row), "Event booked")
+
+
+@api.post("/hotel/events/{event_id}/confirm")
+async def hotel_events_confirm(
+    event_id: UuidIdValue,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_pms_svc.set_event_status(
+        db, tenant_id=claims["tenant_id"], event_id=event_id, status="confirmed"
+    )
+    await db.commit()
+    return env(hotel_pms_svc.serialize_event(row), "Event confirmed")
+
+
+@api.post("/hotel/events/{event_id}/cancel")
+async def hotel_events_cancel(
+    event_id: UuidIdValue,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_pms_svc.set_event_status(
+        db, tenant_id=claims["tenant_id"], event_id=event_id, status="cancelled"
+    )
+    await db.commit()
+    return env(hotel_pms_svc.serialize_event(row), "Event cancelled")
+
+
 @api.get("/fmcg/summary")
 async def fmcg_summary(
     claims=Depends(require_permission("fmcg", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     return env(await fmcg_svc.summary(db, tenant_id=claims["tenant_id"]))
+
+
+@api.post("/fmcg/pack-convert")
+async def fmcg_pack_convert(
+    payload: fmcg_svc.FmcgPackConvert,
+    claims=Depends(require_permission("fmcg", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(
+        await fmcg_svc.convert_pack(
+            db,
+            tenant_id=claims["tenant_id"],
+            product_id=payload.product_id,
+            from_unit_id=payload.from_unit_id,
+            quantity=payload.quantity,
+        )
+    )
 
 
 @api.get("/fmcg/expiring")
@@ -14627,9 +18165,9 @@ async def hotel_settings_get(
     claims=Depends(require_permission("hotel", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    row = await hotel_svc.get_or_create_settings(db, tenant_id=claims["tenant_id"])
+    payload = await hotel_svc.settings_payload(db, tenant_id=claims["tenant_id"])
     await db.commit()
-    return env(hotel_svc.serialize_settings(row))
+    return env(payload)
 
 
 @api.patch("/hotel/settings")
@@ -14653,6 +18191,130 @@ async def hotel_settings_update(
     )
     await db.commit()
     return env(hotel_svc.serialize_settings(row), "Hotel settings updated")
+
+
+@api.get("/hotel/services")
+async def hotel_services_list(
+    is_active: bool | None = None,
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await hotel_svc.list_services(
+        db, tenant_id=claims["tenant_id"], is_active=is_active
+    )
+    return env([hotel_svc.serialize_service(r) for r in rows])
+
+
+@api.post("/hotel/services")
+async def hotel_services_create(
+    payload: HotelServiceCreate,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_svc.create_service(
+        db,
+        tenant_id=claims["tenant_id"],
+        code=payload.code,
+        name=payload.name,
+        category=payload.category,
+        unit_amount=float(payload.unit_amount or 0),
+        tax_percent=float(payload.tax_percent or 0),
+        notes=payload.notes,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="service_created",
+        entity="hotel_service",
+        entity_id=row.id,
+        details={"code": row.code},
+    )
+    await db.commit()
+    return env(hotel_svc.serialize_service(row), "Hotel service created")
+
+
+@api.patch("/hotel/services/{service_id}")
+async def hotel_services_update(
+    service_id: UuidIdValue,
+    payload: HotelServiceUpdate,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_svc.update_service(
+        db,
+        tenant_id=claims["tenant_id"],
+        service_id=service_id,
+        **payload.model_dump(exclude_unset=True),
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="service_updated",
+        entity="hotel_service",
+        entity_id=row.id,
+        details={"code": row.code},
+    )
+    await db.commit()
+    return env(hotel_svc.serialize_service(row), "Hotel service updated")
+
+
+@api.get("/hotel/folios")
+async def hotel_folios_list(
+    status: Annotated[str | None, Query()] = None,
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await hotel_svc.list_folios(
+        db, tenant_id=claims["tenant_id"], status=status
+    )
+    out = []
+    for folio, reservation, guest in rows:
+        payload = hotel_svc.serialize_folio(folio)
+        payload["guest_name"] = guest.full_name if guest else None
+        payload["reservation_number"] = (
+            reservation.reservation_number if reservation else None
+        )
+        payload["balance"] = money_json(
+            await hotel_svc.folio_balance(db, tenant_id=claims["tenant_id"], folio_id=folio.id)
+        )
+        out.append(payload)
+    return env(out)
+
+
+@api.post("/hotel/folios/{folio_id}/service-charges")
+async def hotel_folio_service_charge(
+    folio_id: UuidIdValue,
+    payload: HotelFolioServiceChargeCreate,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    await hotel_svc.post_service_to_folio(
+        db,
+        tenant_id=claims["tenant_id"],
+        folio_id=folio_id,
+        service_id=payload.service_id,
+        quantity=float(payload.quantity or 1),
+        created_by=claims["sub"],
+    )
+    folio, charges, payments = await hotel_svc.get_folio_detail(
+        db, tenant_id=claims["tenant_id"], folio_id=folio_id
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="service_charged",
+        entity="hotel_folio",
+        entity_id=folio.id,
+        details={"service_id": payload.service_id},
+    )
+    await db.commit()
+    return env(hotel_svc.serialize_folio(folio, charges=charges, payments=payments), "Service posted")
 
 
 @api.post("/hotel/reservation-groups")
@@ -14851,4 +18513,260 @@ async def fmcg_assignments_upsert(
         fmcg_svc.serialize_assignment(row, customer_name=cn, route_code=rc),
         "Customer assignment saved",
     )
+
+
+@api.get("/pharmacy/rx-products")
+async def pharmacy_rx_products(
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    pharmacy_svc.assert_pharmacy_industry(claims)
+    rows = await pharmacy_svc.list_rx_products(db, tenant_id=claims["tenant_id"])
+    return env(await catalog_meta_svc.serialize_products_list(db, claims["tenant_id"], rows))
+
+
+@api.get("/pharmacy/prescriptions")
+async def pharmacy_prescriptions_list(
+    status: str | None = None,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    pharmacy_svc.assert_pharmacy_industry(claims)
+    rows = await pharmacy_svc.list_prescriptions(
+        db, tenant_id=claims["tenant_id"], status=status
+    )
+    return env(rows)
+
+
+@api.post("/pharmacy/prescriptions")
+async def pharmacy_prescriptions_create(
+    payload: PrescriptionCreate,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    pharmacy_svc.assert_pharmacy_industry(claims)
+    row = await pharmacy_svc.create_prescription(
+        db,
+        tenant_id=claims["tenant_id"],
+        created_by=claims["sub"],
+        customer_id=payload.customer_id,
+        sale_id=payload.sale_id,
+        prescriber_name=payload.prescriber_name,
+        notes=payload.notes,
+        items=[item.model_dump() for item in payload.items],
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="prescription_created",
+        entity="prescription",
+        entity_id=row.id,
+        details={"rx_number": row.rx_number},
+    )
+    await db.commit()
+    data = await pharmacy_svc.get_prescription(
+        db, tenant_id=claims["tenant_id"], prescription_id=row.id
+    )
+    return env(data, "Prescription recorded")
+
+
+@api.get("/pharmacy/prescriptions/{prescription_id}")
+async def pharmacy_prescriptions_get(
+    prescription_id: UuidIdValue,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    pharmacy_svc.assert_pharmacy_industry(claims)
+    return env(
+        await pharmacy_svc.get_prescription(
+            db, tenant_id=claims["tenant_id"], prescription_id=prescription_id
+        )
+    )
+
+
+@api.patch("/pharmacy/prescriptions/{prescription_id}")
+async def pharmacy_prescriptions_status(
+    prescription_id: UuidIdValue,
+    payload: PrescriptionStatusUpdate,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    pharmacy_svc.assert_pharmacy_industry(claims)
+    row = await pharmacy_svc.transition_prescription(
+        db,
+        tenant_id=claims["tenant_id"],
+        prescription_id=prescription_id,
+        status=payload.status,
+        sale_id=payload.sale_id,
+        created_by=claims["sub"],
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="prescription_status",
+        entity="prescription",
+        entity_id=row.id,
+        details={"rx_number": row.rx_number, "status": row.status},
+    )
+    await db.commit()
+    data = await pharmacy_svc.get_prescription(
+        db, tenant_id=claims["tenant_id"], prescription_id=row.id
+    )
+    return env(data, f"Prescription {data['status']}")
+
+
+@api.post("/pharmacy/prescriptions/{prescription_id}/dispense")
+async def pharmacy_prescriptions_dispense(
+    prescription_id: UuidIdValue,
+    payload: PrescriptionDispense,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    pharmacy_svc.assert_pharmacy_industry(claims)
+    row = await pharmacy_svc.dispense_lines(
+        db,
+        tenant_id=claims["tenant_id"],
+        prescription_id=prescription_id,
+        items=[item.model_dump() for item in payload.items],
+        user_id=claims["sub"],
+        sale_id=payload.sale_id,
+        skip_stock=False,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="prescription_dispensed",
+        entity="prescription",
+        entity_id=row.id,
+        details={"rx_number": row.rx_number, "status": row.status},
+    )
+    await db.commit()
+    data = await pharmacy_svc.get_prescription(
+        db, tenant_id=claims["tenant_id"], prescription_id=row.id
+    )
+    return env(data, f"Prescription {data['status']}")
+
+
+@api.post("/pharmacy/prescriptions/{prescription_id}/attachments")
+async def pharmacy_prescriptions_attach(
+    prescription_id: UuidIdValue,
+    file: UploadFile = File(...),
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    pharmacy_svc.assert_pharmacy_industry(claims)
+    stored = await storage_svc.save_upload(
+        tenant_id=claims["tenant_id"],
+        category="prescriptions",
+        upload=file,
+        allowed_types=storage_svc.ATTACHMENT_CONTENT_TYPES,
+        max_bytes=int(settings.MEDIA_MAX_ATTACHMENT_BYTES),
+    )
+    row = await pharmacy_svc.add_attachment(
+        db,
+        tenant_id=claims["tenant_id"],
+        prescription_id=prescription_id,
+        storage_key=stored.key,
+        content_type=stored.content_type,
+        original_filename=stored.original_filename,
+        created_by=claims["sub"],
+    )
+    await db.commit()
+    return env(pharmacy_svc.serialize_attachment(row), "Attachment saved")
+
+
+@api.get("/pharmacy/prescriptions/{prescription_id}/attachments/{attachment_id}")
+async def pharmacy_prescriptions_attachment_get(
+    prescription_id: UuidIdValue,
+    attachment_id: UuidIdValue,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    pharmacy_svc.assert_pharmacy_industry(claims)
+    row = await pharmacy_svc.get_attachment(
+        db,
+        tenant_id=claims["tenant_id"],
+        prescription_id=prescription_id,
+        attachment_id=attachment_id,
+    )
+    return storage_svc.media_response(row.storage_key, tenant_id=claims["tenant_id"])
+
+
+@api.get("/pharmacy/batch-holds")
+async def pharmacy_batch_holds_list(
+    status: str | None = "open",
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    pharmacy_svc.assert_pharmacy_industry(claims)
+    rows = await pharmacy_svc.list_holds(
+        db, tenant_id=claims["tenant_id"], status=status
+    )
+    return env(rows)
+
+
+@api.post("/pharmacy/batch-holds")
+async def pharmacy_batch_holds_create(
+    payload: BatchHoldCreate,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    pharmacy_svc.assert_pharmacy_industry(claims)
+    row = await pharmacy_svc.create_hold(
+        db,
+        tenant_id=claims["tenant_id"],
+        created_by=claims["sub"],
+        batch_id=payload.batch_id,
+        hold_type=payload.hold_type,
+        reason=payload.reason,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="batch_hold_created",
+        entity="batch_hold",
+        entity_id=row.id,
+        details={"batch_id": row.batch_id, "hold_type": row.hold_type},
+    )
+    await db.commit()
+    holds = await pharmacy_svc.list_holds(db, tenant_id=claims["tenant_id"], status=None)
+    data = next((h for h in holds if h["id"] == row.id), pharmacy_svc.serialize_hold(row))
+    return env(data, "Lot hold saved")
+
+
+@api.patch("/pharmacy/batch-holds/{hold_id}")
+async def pharmacy_batch_holds_release(
+    hold_id: UuidIdValue,
+    payload: BatchHoldRelease,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    pharmacy_svc.assert_pharmacy_industry(claims)
+    if payload.status != "released":
+        raise HTTPException(status_code=422, detail="status must be released")
+    row = await pharmacy_svc.release_hold(
+        db, tenant_id=claims["tenant_id"], hold_id=hold_id
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="batch_hold_released",
+        entity="batch_hold",
+        entity_id=row.id,
+        details={"batch_id": row.batch_id},
+    )
+    await db.commit()
+    holds = await pharmacy_svc.list_holds(db, tenant_id=claims["tenant_id"], status=None)
+    data = next((h for h in holds if h["id"] == row.id), pharmacy_svc.serialize_hold(row))
+    return env(data, "Lot hold released")
 

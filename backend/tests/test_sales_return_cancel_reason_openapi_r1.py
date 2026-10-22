@@ -28,7 +28,7 @@ def test_sales_return_cancel_reason_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Sales return cancel reason"' in page
     assert "srCancelReason" in page
-    assert "aria-label={`Cancel sales return ${r.id}`}" in page
+    assert "ariaLabel: `Cancel sales return ${r.id}`" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "SalesReturnCancelReasonValue" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")

@@ -22,7 +22,7 @@ def test_pi_cancel_reason_ui_wired():
     assert "setPiCancelReason" in page
     assert "Required before Cancel" in page
     assert 'aria-label="Purchase invoice cancel reason"' in page
-    assert "aria-label={`Cancel purchase invoice ${inv.id}`}" in page
+    assert "ariaLabel: `Cancel purchase invoice ${inv.id}`" in page
 
 
 async def _admin(ac, seed):

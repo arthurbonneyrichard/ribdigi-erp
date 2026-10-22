@@ -28,7 +28,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
 
     sales = await ac.get("/api/v1/sales/settings", headers=admin)
     assert sales.status_code == 200
-    assert sales.json()["data"]["quotation_numbering"]["preview"] == f"QT-{year}-0001"
+    assert sales.json()["data"]["quotation_numbering"]["preview"] == f"QT{year}0001"
 
     await ac.patch(
         "/api/v1/sales/settings",
@@ -48,7 +48,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 10}]},
     )
     assert q.status_code == 200, q.text
-    assert q.json()["data"]["quotation_number"] == f"Q-{year}-0005"
+    assert q.json()["data"]["quotation_number"] == f"Q{year}0005"
 
     purch = await ac.patch(
         "/api/v1/purchasing/settings",
@@ -170,8 +170,8 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
             "credit_note_numbering": {"prefix": "CN", "next_number": 11}},
     )
     assert sales_num.status_code == 200, sales_num.text
-    assert sales_num.json()["data"]["sales_return_numbering"]["preview"] == f"SR-{year}-0008"
-    assert sales_num.json()["data"]["credit_note_numbering"]["preview"] == f"CN-{year}-0011"
+    assert sales_num.json()["data"]["sales_return_numbering"]["preview"] == f"SR{year}0008"
+    assert sales_num.json()["data"]["credit_note_numbering"]["preview"] == f"CN{year}0011"
 
     cust = await ac.post(
         "/api/v1/customers",
@@ -206,14 +206,14 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "condition": "sellable"}]},
     )
     assert sret.status_code == 200, sret.text
-    assert sret.json()["data"]["return_number"] == f"SR-{year}-0008"
+    assert sret.json()["data"]["return_number"] == f"SR{year}0008"
     sposted = await ac.post(
         f"/api/v1/sales/returns/{sret.json()['data']['id']}/post",
         headers=admin,
         json={"settlement_method": "adjust"},
     )
     assert sposted.status_code == 200, sposted.text
-    assert sposted.json()["data"]["credit_note_number"] == f"CN-{year}-0011"
+    assert sposted.json()["data"]["credit_note_number"] == f"CN{year}0011"
 
     # Sales order numbering (BR-7.3 / BR-20.4)
     so_settings = await ac.patch(
@@ -222,7 +222,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
         json={"sales_order_numbering": {"prefix": "SO", "next_number": 12}},
     )
     assert so_settings.status_code == 200, so_settings.text
-    assert so_settings.json()["data"]["sales_order_numbering"]["preview"] == f"SO-{year}-0012"
+    assert so_settings.json()["data"]["sales_order_numbering"]["preview"] == f"SO{year}0012"
     so = await ac.post(
         "/api/v1/sales/orders",
         headers=admin,
@@ -231,7 +231,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 15}]},
     )
     assert so.status_code == 200, so.text
-    assert so.json()["data"]["order_number"] == f"SO-{year}-0012"
+    assert so.json()["data"]["order_number"] == f"SO{year}0012"
 
     # Purchase request numbering (BR-6.2 / BR-20.4)
     preq_settings = await ac.patch(
@@ -257,7 +257,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
         json={"payment_receipt_numbering": {"prefix": "RCP", "next_number": 5}},
     )
     assert pay_sales.status_code == 200, pay_sales.text
-    assert pay_sales.json()["data"]["payment_receipt_numbering"]["preview"] == f"RCP-{year}-0005"
+    assert pay_sales.json()["data"]["payment_receipt_numbering"]["preview"] == f"RCP{year}0005"
     pay_purch = await ac.patch(
         "/api/v1/purchasing/settings",
         headers=admin,
@@ -287,7 +287,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
             "payment_method": "cash"},
     )
     assert cust_pay.status_code == 200, cust_pay.text
-    assert cust_pay.json()["data"]["payment_number"] == f"RCP-{year}-0005"
+    assert cust_pay.json()["data"]["payment_number"] == f"RCP{year}0005"
 
     # Approve purchase invoice then pay supplier
     pinvid = inv.json()["data"]["id"]

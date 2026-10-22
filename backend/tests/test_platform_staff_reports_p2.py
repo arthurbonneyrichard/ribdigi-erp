@@ -115,3 +115,5 @@ async def test_platform_staff_create_and_reports(client, db_session):
         json={"package_code": "starter", "term_value": 1, "term_unit": "months"},
     )
     assert deny_assign.status_code == 403, deny_assign.text
+    detail = str(deny_assign.json().get("detail") or "")
+    assert "contact" in detail.lower() and "admin" in detail.lower()

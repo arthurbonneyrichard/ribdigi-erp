@@ -16,16 +16,19 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "notifications": ["read", "write"],
         "audit": ["read"],
         "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
     },
     "platform_support": {
         "platform": ["read"],
         "platform_tenants": ["read", "write"],
+        # Packages/modules: read-only — assign/change requires owner, admin, or finance.
         "platform_packages": ["read"],
         "platform_reports": ["read"],
         "users": ["read"],
         "notifications": ["read"],
         "audit": ["read"],
         "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
     },
     "platform_finance": {
         "platform": ["read"],
@@ -36,13 +39,14 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "notifications": ["read"],
         "audit": ["read"],
         "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
     },
     "company_admin": {"*": ["*"]},
     "store_manager": {
         "dashboard": ["read"],
         "inventory": ["read", "write"],
         "sales": ["read", "write"],
-        "pos": ["read", "write"],
+        "pos": ["read", "write", "approve"],
         "purchasing": ["read", "approve"],
         "expenses": ["read", "write", "approve"],
         "accounting": ["read"],
@@ -51,6 +55,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "stores": ["read", "write"],
         "hotel": ["read", "write"],
         "fmcg": ["read", "write"],
+        "hospital": ["read", "write"],
+        "restaurant": ["read", "write"],
         "reports": ["read"],
         "notifications": ["read", "write"],
         "users": ["read"],
@@ -58,6 +64,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "ai": ["read", "write"],
         "security": ["read", "write"],
         "staff_guide": ["read", "download"],
+        "printers": ["read", "write"],
+        "ecommerce": ["read", "write"],
     },
     "sales_officer": {
         "dashboard": ["read"],
@@ -68,17 +76,20 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "customers": ["read", "write"],
         "hotel": ["read", "write"],
         "fmcg": ["read", "write"],
+        "restaurant": ["read", "write"],
         "reports": ["read"],
         "notifications": ["read", "write"],
         "ai": ["read"],
         "security": ["read", "write"],
         "staff_guide": ["read", "download"],
+        "ecommerce": ["read", "write"],
     },
     "inventory_officer": {
         "dashboard": ["read"],
         "inventory": ["read", "write"],
         "purchasing": ["read", "write"],
         "suppliers": ["read", "write"],
+        "restaurant": ["read", "write"],
         "reports": ["read"],
         "notifications": ["read", "write"],
         "ai": ["read"],
@@ -105,8 +116,72 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "dashboard": ["read"],
         "inventory": ["read"],
         "pos": ["read", "write"],
+        "restaurant": ["read", "write"],
         "sales": ["read"],
+        "credit": ["write"],
         "notifications": ["read", "write"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "hotel_manager": {
+        "dashboard": ["read"],
+        "hotel": ["read", "write"],
+        "inventory": ["read", "write"],
+        "pos": ["read", "write", "approve"],
+        "purchasing": ["read", "write", "approve"],
+        "expenses": ["read", "write"],
+        "accounting": ["read"],
+        "credit": ["read", "write"],
+        "reports": ["read"],
+        "notifications": ["read", "write"],
+        "users": ["read"],
+        "audit": ["read"],
+        "security": ["read", "write"],
+        "company": ["read", "write"],
+        "printers": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "hotel_front_desk": {
+        "hotel": ["read", "write"],
+        "notifications": ["read", "write"],
+        "security": ["read", "write"],
+        "printers": ["read"],
+        "staff_guide": ["read", "download"],
+    },
+    "hotel_reservations": {
+        "hotel": ["read", "write"],
+        "notifications": ["read", "write"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "hotel_housekeeping": {
+        "hotel": ["read", "write"],
+        "inventory": ["read"],
+        "notifications": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "hotel_maintenance": {
+        "hotel": ["read", "write"],
+        "inventory": ["read"],
+        "notifications": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "hotel_cashier": {
+        "hotel": ["read", "write"],
+        "pos": ["read", "write"],
+        "accounting": ["read"],
+        "notifications": ["read", "write"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "hotel_auditor": {
+        "hotel": ["read"],
+        "reports": ["read"],
+        "audit": ["read"],
+        "accounting": ["read"],
+        "notifications": ["read"],
         "security": ["read", "write"],
         "staff_guide": ["read", "download"],
     },
@@ -124,6 +199,13 @@ ROLE_LABELS: dict[str, str] = {
     "inventory_officer": "Inventory Officer",
     "accountant": "Accountant",
     "cashier": "Cashier",
+    "hotel_manager": "Hotel Manager",
+    "hotel_front_desk": "Front Desk",
+    "hotel_reservations": "Reservations",
+    "hotel_housekeeping": "Housekeeping",
+    "hotel_maintenance": "Maintenance",
+    "hotel_cashier": "Hotel Cashier",
+    "hotel_auditor": "Hotel Auditor",
 }
 
 PLATFORM_ROLES = frozenset(
@@ -136,7 +218,53 @@ PLATFORM_ROLES = frozenset(
     }
 )
 
+# Support desk permissions live on the system role catalog only.
+# Owner actions are still rejected for tenant roles in support_tickets.support_can,
+# even when the role has a wildcard grant.
+_TENANT_SUPPORT_ACTIONS = ["create", "view_own", "reply", "close"]
+_PLATFORM_ADMIN_SUPPORT = [
+    "view_all",
+    "assign",
+    "manage",
+    "reply",
+    "close",
+    "internal_note",
+    "notification_manage",
+]
+_PLATFORM_SUPPORT_ACTIONS = ["view_all", "assign", "manage", "reply", "close", "internal_note"]
+for _support_role, _support_perms in ROLE_PERMISSIONS.items():
+    if _support_perms.get("*") == ["*"]:
+        continue
+    if _support_role == "platform_admin":
+        _support_perms["support"] = list(_PLATFORM_ADMIN_SUPPORT)
+    elif _support_role == "platform_support":
+        _support_perms["support"] = list(_PLATFORM_SUPPORT_ACTIONS)
+    elif _support_role == "platform_finance":
+        continue
+    else:
+        _support_perms["support"] = list(_TENANT_SUPPORT_ACTIONS)
+
 PLATFORM_OWNER_ROLES = frozenset({"super_admin", "platform_owner"})
+# Hard-delete a company: software owner only. super_admin is the legacy owner.
+# Platform admin, support, finance, and tenant roles cannot delete a company.
+PLATFORM_TENANT_DELETE_ROLES = PLATFORM_OWNER_ROLES
+
+# Customer system templates. Hotel_* stay hotel-only; store_manager is the
+# retail/store counterpart (hotels use hotel_manager). Shared templates
+# (cashier, inventory_officer, accountant, sales_officer, company_admin)
+# remain valid across customer industries.
+HOTEL_ONLY_ROLES = frozenset(
+    {
+        "hotel_manager",
+        "hotel_front_desk",
+        "hotel_reservations",
+        "hotel_housekeeping",
+        "hotel_maintenance",
+        "hotel_cashier",
+        "hotel_auditor",
+    }
+)
+RETAIL_ONLY_ROLES = frozenset({"store_manager"})
 
 # Frontend nav href → required module (read). Used for menu filtering.
 # Platform owner (super_admin) UI only surfaces /platform + a small ops set;
@@ -148,8 +276,10 @@ MENU_MODULE_BY_PATH: dict[str, str] = {
     "/dashboard": "dashboard",
     "/company": "company",
     "/inventory": "inventory",
+    "/prescriptions": "inventory",
     "/sales": "sales",
     "/pos": "pos",
+    "/gift-cards": "pos",
     "/purchasing": "purchasing",
     "/expenses": "expenses",
     "/accounting": "accounting",
@@ -157,17 +287,24 @@ MENU_MODULE_BY_PATH: dict[str, str] = {
     "/tax": "tax",
     "/stores": "stores",
     "/hotel": "hotel",
+    "/hospital": "hospital",
+    "/billing": "accounting",
     "/fmcg": "fmcg",
+    "/restaurant": "restaurant",
     "/reports": "reports",
     "/notifications": "notifications",
     "/audit": "audit",
     "/backup": "backup",
-    "/jobs": "company",
+    "/jobs": "platform",
     "/integrations": "company",
     "/security": "security",
     "/ai": "ai",
     "/users": "users",
     "/departments": "users",
+    "/printers": "printers",
+    "/support": "support",
+    "/platform/support": "support",
+    "/ecommerce": "ecommerce",
 }
 
 VALID_ROLES = set(ROLE_PERMISSIONS.keys())
@@ -188,6 +325,8 @@ SYSTEM_MODULES = frozenset(
         "stores",
         "hotel",
         "fmcg",
+        "hospital",
+        "restaurant",
         "reports",
         "notifications",
         "audit",
@@ -204,6 +343,8 @@ SYSTEM_MODULES = frozenset(
         "platform_packages",
         "platform_staff",
         "platform_reports",
+        "printers",
+        "ecommerce",
     }
 )
 ALLOWED_ACTIONS = frozenset({"read", "write", "create", "download", "approve", "*"})
@@ -219,6 +360,37 @@ def is_platform_role(role: str | None) -> bool:
 
 def is_platform_owner_role(role: str | None) -> bool:
     return (role or "") in PLATFORM_OWNER_ROLES
+
+
+def is_platform_tenant_delete_role(role: str | None) -> bool:
+    """Software owner, including legacy super_admin."""
+    return (role or "") in PLATFORM_TENANT_DELETE_ROLES
+
+
+def is_wildcard_permission_map(perms: dict | None) -> bool:
+    if not isinstance(perms, dict):
+        return False
+    return perms.get("*") == ["*"] or "*" in (perms.get("*") or [])
+
+
+def system_role_visible_for_industry(role: str, industry: str | None) -> bool:
+    """Whether a system role may appear on a tenant catalog / clone-from list."""
+    if role not in VALID_ROLES or role in PLATFORM_ROLES:
+        return False
+    from app.packages import canonicalize_industry
+
+    ind = canonicalize_industry(industry)
+    if role in HOTEL_ONLY_ROLES:
+        return ind == "hotel"
+    if role in RETAIL_ONLY_ROLES:
+        return ind != "hotel"
+    return True
+
+
+def list_customer_system_roles_for_industry(industry: str | None) -> list[str]:
+    return sorted(
+        role for role in VALID_ROLES if system_role_visible_for_industry(role, industry)
+    )
 
 
 def can_assign_platform_role(actor_role: str, target_role: str) -> bool:
@@ -249,6 +421,13 @@ ROLE_RECORD_SCOPE: dict[str, str] = {
     "inventory_officer": "all",
     "sales_officer": "own",
     "cashier": "own",
+    "hotel_manager": "all",
+    "hotel_front_desk": "all",
+    "hotel_reservations": "all",
+    "hotel_housekeeping": "all",
+    "hotel_maintenance": "all",
+    "hotel_cashier": "all",
+    "hotel_auditor": "all",
 }
 
 
@@ -346,6 +525,8 @@ def serialize_user(user) -> dict:
         "role": user.role,
         "branch_id": getattr(user, "branch_id", None),
         "department_id": getattr(user, "department_id", None),
+        "store_id": None,
+        "store_ids": [],
         "is_active": bool(user.is_active),
         "email_verified": bool(user.email_verified),
         "permissions": perms,
@@ -387,12 +568,51 @@ def has_permission(
     if "*" in module_perms or action in module_perms:
         return True
     if action == "read" and ("write" in module_perms or "create" in module_perms):
+        # Till BNPL is credit:write only. AR/AP aging and supplier AP stay credit:read.
+        if module == "credit":
+            return False
         return True
     if action == "download" and (
         "download" in module_perms or "read" in module_perms or "write" in module_perms
     ):
         return True
     # User Management create/edit uses users:write; accept users:create as the same grant.
+    if action in {"write", "create"} and (
+        "write" in module_perms or "create" in module_perms
+    ):
+        return True
+    return False
+
+
+def has_explicit_permission(
+    role: str,
+    module: str,
+    action: str,
+    overrides: dict | None = None,
+) -> bool:
+    """Like has_permission, but write/create do not imply read.
+
+    Cashiers get credit:write for POS buy-now-pay-later tender. That must not open
+    supplier AP aging, which remains credit:read.
+    """
+    clean_overrides = strip_meta_permissions(overrides)
+    if not is_system_role(role):
+        perms = clean_overrides
+    else:
+        perms = permissions_for_role(role)
+        if clean_overrides:
+            perms = {**perms, **clean_overrides}
+
+    if perms.get("*") == ["*"] or "*" in (perms.get("*") or []):
+        return True
+
+    module_perms = perms.get(module) or []
+    if "*" in module_perms or action in module_perms:
+        return True
+    if action == "download" and (
+        "download" in module_perms or "read" in module_perms
+    ):
+        return True
     if action in {"write", "create"} and (
         "write" in module_perms or "create" in module_perms
     ):

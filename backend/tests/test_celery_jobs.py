@@ -7,6 +7,7 @@ EXPECTED_HANDLERS = {
     "scan_low_stock",
     "scan_payment_due",
     "scan_quotation_expiry",
+    "scan_batch_expiry",
     "scan_recurring_expense_due",
     "generate_recurring_expenses",
     "run_due_backups",
@@ -18,12 +19,16 @@ EXPECTED_HANDLERS = {
     "retry_due_webhooks",
     "scan_ai_security_alerts",
     "send_weekly_ai_insight_digest",
+    "process_subscription_renewals",
+    "expire_ecommerce_reservations",
+    "sync_ecommerce_connectors",
 }
 
 EXPECTED_BEAT = {
     "scan-low-stock",
     "scan-payment-due",
     "scan-quotation-expiry",
+    "scan-batch-expiry",
     "scan-recurring-expense-due",
     "generate-recurring-expenses",
     "run-due-backups",
@@ -35,6 +40,9 @@ EXPECTED_BEAT = {
     "retry-due-webhooks",
     "scan-ai-security-alerts",
     "send-weekly-ai-insight-digest",
+    "process-subscription-renewals",
+    "expire-ecommerce-reservations",
+    "sync-ecommerce-connectors",
 }
 
 

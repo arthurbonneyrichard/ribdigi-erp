@@ -18,12 +18,12 @@ def test_industry_literal_schema():
         {
             "company_name": "Acme",
             "slug": "acme-lit",
-            "industry": "Wholesale",
+            "industry": "Hotel",
             "admin_email": "a@example.com",
             "admin_password": "SecurePass123!",
         }
     )
-    assert ok.industry == "wholesale"
+    assert ok.industry == "hotel"
     defaulted = TenantCreate.model_validate(
         {
             "company_name": "Beta",
@@ -71,11 +71,24 @@ def test_industry_literal_schema():
         TenantProfileUpdate.model_validate({"industry": ""})
     with pytest.raises(ValidationError):
         TenantProfileUpdate.model_validate({"industry": "bogus"})
-    patched = TenantProfileUpdate.model_validate({"industry": "PHARMACY"})
-    assert patched.industry == "pharmacy"
+    patched = TenantProfileUpdate.model_validate({"industry": "RESTAURANT"})
+    assert patched.industry == "restaurant"
+    with pytest.raises(ValidationError):
+        TenantProfileUpdate.model_validate({"industry": "PHARMACY"})
+    with pytest.raises(ValidationError):
+        TenantCreate.model_validate(
+            {
+                "company_name": "x",
+                "slug": "x",
+                "industry": "fmcg",
+                "admin_email": "x@example.com",
+                "admin_password": "SecurePass123!",
+            }
+        )
 
 
 def test_coerce_and_normalize_industry_defense():
+    assert coerce_industry_value("  Hotel ") == "hotel"
     assert coerce_industry_value("  Mart ") == "mart"
     assert coerce_industry_value("") == ""
     assert coerce_industry_value(None) is None
@@ -86,23 +99,16 @@ def test_coerce_and_normalize_industry_defense():
 
 def test_industry_ui_and_docs():
     company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
-    assert "Business Type:" in company
+    assert "Business Type:" not in company
+    assert "Business type:" in company
+    assert "industryLabel(tenant.industry)" in company
     assert "onChange={(e) => setTenant({ ...tenant, industry: e.target.value })}" not in company
     industries = (ROOT / "frontend/lib/industries.ts").read_text(encoding="utf-8")
-    for value in (
-        "retail",
-        "mart",
-        "pharmacy",
-        "restaurant",
-        "bakery",
-        "wholesale",
-        "manufacturing",
-        "hotel",
-        "fmcg",
-        "distribution",
-        "general_trading",
-    ):
-        assert f"'{value}'" in industries or f'"{value}"' in industries
+    selectable = industries.split("export const INDUSTRY_LABELS", 1)[0]
+    for value in ("retail", "hotel", "restaurant"):
+        assert f"'{value}'" in selectable
+    for removed in ("pharmacy", "wholesale", "retail_wholesale", "fmcg", "hospital", "mart", "bakery"):
+        assert f"'{removed}'" not in selectable
     api = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "industry" in api
     assert "Literal" in api

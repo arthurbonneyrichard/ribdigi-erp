@@ -1,7 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import FormModal from '../../../components/FormModal';
+import PageHeader from '../../../components/PageHeader';
 import { api, apiOptional } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
+import { isHotelIndustry } from '../../../lib/tenantNav';
+import {
+  formatTransferDate,
+  matchesTransferSearch,
+  transferProductCount,
+  transferQtyTotal,
+} from '../../../lib/stockTransfers';
 
 type DayHours = { open?: string; close?: string; closed?: boolean };
 type OperatingHours = Partial<Record<'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun', DayHours>>;
@@ -97,9 +108,14 @@ type Transfer = {
   can_ship?: boolean;
   rejection_reason?: string | null;
   items: { product_id: string; quantity: number }[];
+  item_count?: number;
+  quantity_total?: number;
+  created_at?: string | null;
 };
 
 export default function Page() {
+  const router = useRouter();
+  const [hotelHome, setHotelHome] = useState<boolean | null>(null);
   const [stores, setStores] = useState<Store[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -147,6 +163,10 @@ export default function Page() {
   const [toStore, setToStore] = useState('');
   const [productId, setProductId] = useState('');
   const [qty, setQty] = useState('1');
+  const [xferSearch, setXferSearch] = useState('');
+  const [xferFromFilter, setXferFromFilter] = useState('');
+  const [xferToFilter, setXferToFilter] = useState('');
+  const [xferConfirming, setXferConfirming] = useState(false);
   const [xferRejectReason, setXferRejectReason] = useState('');
   const [viewStore, setViewStore] = useState('');
   const [reorderProductId, setReorderProductId] = useState('');
@@ -160,6 +180,8 @@ export default function Page() {
   const [drawerOnCash, setDrawerOnCash] = useState(true);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [storeBusy, setStoreBusy] = useState(false);
+  const [storeAddOpen, setStoreAddOpen] = useState(false);
   const [storeManageFilter, setStoreManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [warehouseManageFilter, setWarehouseManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [branchManageFilter, setBranchManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -176,6 +198,7 @@ export default function Page() {
     store_limit?: number | null;
     over_entitlement?: boolean;
     unlimited?: boolean;
+    multi_store?: boolean;
   } | null>(null);
   const [storeLimitDraft, setStoreLimitDraft] = useState('');
 
@@ -191,8 +214,10 @@ export default function Page() {
   const managedBranches = byStatus(branches, branchManageFilter);
   const managedDepartments = byStatus(departments, departmentManageFilter);
   const managedTransfers = transfers.filter((t) => {
-    if (transferManageFilter === 'all') return true;
-    return (t.status || 'draft') === transferManageFilter;
+    if (xferFromFilter && t.from_store_id !== xferFromFilter) return false;
+    if (xferToFilter && t.to_store_id !== xferToFilter) return false;
+    if (transferManageFilter !== 'all' && (t.status || 'draft') !== transferManageFilter) return false;
+    return true;
   });
 
   async function refresh() {
@@ -237,11 +262,34 @@ export default function Page() {
   }
 
   useEffect(() => {
+    let cancelled = false;
+    getMe()
+      .then((me) => {
+        if (cancelled) return;
+        if (isHotelIndustry(me.data?.industry)) {
+          setHotelHome(true);
+          router.replace('/hotel');
+        } else {
+          setHotelHome(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setHotelHome(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
+  useEffect(() => {
+    if (hotelHome !== false) return;
     refresh().catch((err) => setError(err.message));
-  }, []);
+  }, [hotelHome]);
 
   async function createStore() {
+    if (storeBusy) return;
     setError('');
+    setStoreBusy(true);
     try {
       await api('/stores', {
         method: 'POST',
@@ -264,6 +312,7 @@ export default function Page() {
       setBranchId('');
       setHours(defaultHours());
       setMessage('Store created');
+      setStoreAddOpen(false);
       await refresh();
     } catch (err: any) {
       const detail = err?.detail || err?.data?.detail;
@@ -272,6 +321,8 @@ export default function Page() {
       } else {
         setError(err.message);
       }
+    } finally {
+      setStoreBusy(false);
     }
   }
 
@@ -370,7 +421,7 @@ export default function Page() {
     onDay: (day: keyof OperatingHours, patch: Partial<DayHours>) => void;
   }) {
     return (
-      <div style={{ display: 'grid', gap: 6 }}>
+      <div className="store-hours" style={{ display: 'grid', gap: 6 }}>
         {WEEKDAYS.map(({ key, label }) => {
           const d = value[key] || { closed: true };
           const closed = !!d.closed;
@@ -627,7 +678,7 @@ export default function Page() {
     setDeptBusy(true);
     try {
       const payload: Record<string, string> = {
-        code: codeTrim,
+        code: deptCode.trim() || codeTrim,
         name: nameTrim,
       };
       if (deptBranchId.trim()) payload.branch_id = deptBranchId.trim();
@@ -773,6 +824,22 @@ export default function Page() {
 
   async function createTransfer() {
     setError('');
+    if (!fromStore.trim() || !toStore.trim()) {
+      setError('Select source and destination stores');
+      return;
+    }
+    if (fromStore.trim() === toStore.trim()) {
+      setError('Source and destination stores must be different');
+      return;
+    }
+    if (!productId.trim() || Number(qty) <= 0) {
+      setError('Select a product and a positive quantity');
+      return;
+    }
+    if (!xferConfirming) {
+      setXferConfirming(true);
+      return;
+    }
     try {
       const r = await api('/stores/transfers', {
         method: 'POST',
@@ -780,11 +847,11 @@ export default function Page() {
           from_store_id: fromStore.trim(),
           to_store_id: toStore.trim(),
           submit: true,
-          // trim so StockTransferItemCreate (UuidIdValue product_id) does not 422 on whitespace
           items: [{ product_id: productId.trim(), quantity: Number(qty) }],
         }),
       });
       setMessage(`Transfer ${r.data.transfer_number} requested`);
+      setXferConfirming(false);
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -825,13 +892,36 @@ export default function Page() {
   }
 
   const storeName = (id: string) => stores.find((s) => s.id === id)?.name || id;
+  const visibleTransfers = managedTransfers.filter((t) =>
+    matchesTransferSearch(t, xferSearch, {
+      from: storeName(t.from_store_id),
+      to: storeName(t.to_store_id),
+    }),
+  );
+
+  const canCreateStore =
+    Boolean(entitlement?.unlimited) ||
+    ((entitlement?.stores_remaining ?? 0) > 0 && !entitlement?.over_entitlement);
+
+  if (hotelHome !== false) {
+    return <p className="muted">{hotelHome ? 'Opening hotel dashboard…' : 'Checking account…'}</p>;
+  }
 
   return (
-    <>
-      <h1>Multi-Store</h1>
-      <p className="muted">Branches, departments, stores, warehouses, FEFO mode, and transfers</p>
-      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
+    <div className="work">
+      <PageHeader
+        title="Multi-Store"
+        subtitle="Branches, departments, stores, warehouses, FEFO mode, and transfers"
+        actions={
+          canCreateStore ? (
+            <button type="button" className="list-btn-primary" onClick={() => setStoreAddOpen(true)} aria-label="Create store">
+              Create store
+            </button>
+          ) : undefined
+        }
+      />
+      {error && <p className="erp-banner err" role="alert">{error}</p>}
+      {message && <p className="erp-banner ok" role="status">{message}</p>}
 
       <div className="card" style={{ marginBottom: 16 }}>
         <label className="muted">
@@ -840,7 +930,7 @@ export default function Page() {
         </label>
       </div>
 
-      <div className="grid">
+      <div className="work-pair">
         <div className="card">
           <h3>{editBrId ? 'Edit branch' : 'New branch'}</h3>
           <div style={{ display: 'grid', gap: 8 }}>
@@ -978,8 +1068,13 @@ export default function Page() {
             )}
           </div>
         </div>
-        <div className="card">
-          <h3>New store</h3>
+        {storeAddOpen ? (
+        <FormModal
+          title="New store"
+          busy={storeBusy}
+          dirty={Boolean(code.trim() || name.trim() || address.trim() || phone.trim())}
+          onClose={() => setStoreAddOpen(false)}
+        >
           <div style={{ display: 'grid', gap: 8 }}>
             <input
               value={code}
@@ -1039,13 +1134,15 @@ export default function Page() {
             <HoursEditor value={hours} onDay={(day, patch) => setDayHours('create', day, patch)} />
             <button
               onClick={createStore}
-              disabled={!code.trim() || !name.trim()}
+              disabled={storeBusy || !code.trim() || !name.trim()}
               aria-label="Create store"
+              aria-busy={storeBusy}
             >
-              Create store
+              {storeBusy ? 'Creating store…' : 'Create store'}
             </button>
           </div>
-        </div>
+        </FormModal>
+        ) : null}
         <div className="card">
           <h3>{editWhId ? 'Edit warehouse' : 'New warehouse'}</h3>
           <div style={{ display: 'grid', gap: 8 }}>
@@ -1154,7 +1251,10 @@ export default function Page() {
           <div style={{ display: 'grid', gap: 8 }}>
             <select
               value={fromStore}
-              onChange={(e) => setFromStore(e.target.value)}
+              onChange={(e) => {
+                setXferConfirming(false);
+                setFromStore(e.target.value);
+              }}
               aria-label="Stock transfer from store"
               title="Source store for inter-store transfer"
             >
@@ -1168,7 +1268,10 @@ export default function Page() {
             </select>
             <select
               value={toStore}
-              onChange={(e) => setToStore(e.target.value)}
+              onChange={(e) => {
+                setXferConfirming(false);
+                setToStore(e.target.value);
+              }}
               aria-label="Stock transfer to store"
               title="Destination store for inter-store transfer"
             >
@@ -1199,7 +1302,25 @@ export default function Page() {
               placeholder="Qty"
               aria-label="Stock transfer quantity"
             />
-            <button onClick={createTransfer} aria-label="Create and request stock transfer">Create & request</button>
+            {xferConfirming ? (
+              <p className="muted" style={{ margin: 0 }}>
+                Confirm from {stores.find((s) => s.id === fromStore)?.name || fromStore} to{' '}
+                {stores.find((s) => s.id === toStore)?.name || toStore} · qty {qty}
+              </p>
+            ) : null}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {xferConfirming ? (
+                <button type="button" onClick={() => setXferConfirming(false)} aria-label="Edit stock transfer before confirm">
+                  Back
+                </button>
+              ) : null}
+              <button type="button" onClick={createTransfer} aria-label={xferConfirming ? 'Confirm stock transfer' : 'Review stock transfer'}>
+                {xferConfirming ? 'Confirm create' : 'Review transfer'}
+              </button>
+              <button type="button" onClick={createTransfer} aria-label="Create and request stock transfer">
+                Create and request
+              </button>
+            </div>
           </div>
         </div>
         <div className="card">
@@ -1275,7 +1396,7 @@ export default function Page() {
         </div>
       </div>
 
-      <h3 style={{ marginTop: 16 }}>Branches</h3>
+      <h3 id="branches" style={{ marginTop: 16 }}>Branches</h3>
       <p className="muted">Code, manager, address, and contact; deactivate without data loss (BR-2.2).</p>
       <select
         value={branchManageFilter}
@@ -1391,7 +1512,7 @@ export default function Page() {
         </tbody>
       </table>
 
-      <h3 style={{ marginTop: 16 }}>Stores</h3>
+      <h3 id="stores" style={{ marginTop: 16 }}>Stores</h3>
       <p className="muted">Manager, branch, hours, and warehouse link (BR-2.3). Soft-deactivate hides the store from POS and new sales without deleting history.</p>
       {entitlement && (
         <div
@@ -1487,9 +1608,11 @@ export default function Page() {
                 </button>
                 <button onClick={() => loadInventory(s.id)} aria-label={`Open inventory reorder for store ${s.id}`}>Inventory / reorder</button>
                 {s.is_active === false ? (
+                  canCreateStore ? (
                   <button type="button" className="btn-ok" onClick={() => setStoreActive(s.id, true)} aria-label={`Activate store ${s.id}`}>
                     Activate
                   </button>
+                  ) : null
                 ) : (
                   <button type="button" className="btn-danger" onClick={() => setStoreActive(s.id, false)} aria-label={`Deactivate store ${s.id}`}>
                     Deactivate
@@ -1613,6 +1736,7 @@ export default function Page() {
             <thead>
               <tr>
                 <th>Product</th>
+                <th>SKU</th>
                 <th>Qty</th>
                 <th>Reorder</th>
                 <th>Suggest</th>
@@ -1622,9 +1746,8 @@ export default function Page() {
             <tbody>
               {inventory.map((i) => (
                 <tr key={i.product_id}>
-                  <td>
-                    {i.name} ({i.sku})
-                  </td>
+                  <td>{i.name}</td>
+                  <td>{i.sku || '—'}</td>
                   <td>{i.quantity}</td>
                   <td>
                     {i.reorder_level} / {i.reorder_qty}
@@ -1736,6 +1859,37 @@ export default function Page() {
           Used by Reject and Cancel (stored as <code>rejection_reason</code>; status → cancelled).
         </p>
       </div>
+      <div className="cat-toolbar" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+        <input
+          value={xferSearch}
+          onChange={(e) => setXferSearch(e.target.value)}
+          placeholder="Search reference, store, status"
+          aria-label="Search stock transfers"
+        />
+        <select
+          value={xferFromFilter}
+          onChange={(e) => setXferFromFilter(e.target.value)}
+          aria-label="Filter by from store"
+        >
+          <option value="">From store</option>
+          {stores.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+        <select
+          value={xferToFilter}
+          onChange={(e) => setXferToFilter(e.target.value)}
+          aria-label="Filter by to store"
+        >
+          <option value="">To store</option>
+          {stores.map((s) => (
+            <option key={`to-${s.id}`} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
       <select
         value={transferManageFilter}
         onChange={(e) =>
@@ -1760,25 +1914,33 @@ export default function Page() {
         <option value="received">Received only</option>
         <option value="cancelled">Cancelled only</option>
       </select>
+      </div>
       <table className="table">
         <thead>
           <tr>
-            <th>Number</th>
-            <th>From</th>
-            <th>To</th>
+            <th>From store</th>
+            <th>To store</th>
+            <th>Products</th>
+            <th>Qty</th>
+            <th>Reference</th>
+            <th>Date</th>
             <th>Status</th>
             <th>Approval</th>
-            <th>Reject / Cancel reason</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {managedTransfers.map((t) => (
+          {visibleTransfers.map((t) => (
             <tr key={t.id}>
-              <td>{t.transfer_number}</td>
               <td>{storeName(t.from_store_id)}</td>
               <td>{storeName(t.to_store_id)}</td>
-              <td>{t.status}</td>
+              <td>{transferProductCount(t)}</td>
+              <td>{transferQtyTotal(t)}</td>
+              <td>{t.transfer_number}</td>
+              <td>{formatTransferDate(t.created_at)}</td>
+              <td>
+                <span className={`xfer-status xfer-status--${t.status || 'draft'}`}>{t.status}</span>
+              </td>
               <td>
                 {t.status === 'requested'
                   ? t.fully_approved
@@ -1788,7 +1950,6 @@ export default function Page() {
                       : 'Awaiting source'
                   : '—'}
               </td>
-              <td>{t.rejection_reason || '—'}</td>
               <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {t.status === 'draft' && (
                   <button type="button" className="btn-ok" onClick={() => act(t.id, 'submit')} aria-label={`Submit stock transfer ${t.id}`}>
@@ -1828,9 +1989,9 @@ export default function Page() {
               </td>
             </tr>
           ))}
-          {managedTransfers.length === 0 && (
+          {visibleTransfers.length === 0 && (
             <tr>
-              <td colSpan={7} className="muted">
+              <td colSpan={9} className="muted">
                 {transfers.length === 0
                   ? 'No transfers yet'
                   : 'No stock transfers for this filter'}
@@ -1839,6 +2000,6 @@ export default function Page() {
           )}
         </tbody>
       </table>
-    </>
+    </div>
   );
 }

@@ -31,7 +31,7 @@ async def test_category_account_posts_to_linked_gl(client, db_session):
         "/api/v1/accounting/accounts",
         headers=headers,
         json={
-            "code": "6100",
+            "code": "6199",
             "name": "Marketing Expense",
             "account_type": "expense",
         },
@@ -65,7 +65,7 @@ async def test_category_account_posts_to_linked_gl(client, db_session):
     assert cat.status_code == 200, cat.text
     cdata = cat.json()["data"]
     assert cdata["account_id"] == account_id
-    assert cdata["account_code"] == "6100"
+    assert cdata["account_code"] == "6199"
     cat_id = cdata["id"]
 
     # Keep expense pending→auto-approve under threshold so journal posts

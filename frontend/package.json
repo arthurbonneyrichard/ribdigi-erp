@@ -4,8 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+    "clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\"",
+    "build": "npm run clean && next build && node scripts/prepare-standalone.js",
+    "start": "node .next/standalone/server.js",
+    "test:offline": "node scripts/test-offline.js"
   },
   "dependencies": {
     "next": "14.2.35",
@@ -15,6 +17,7 @@
   "devDependencies": {
     "@types/node": "22.17.1",
     "@types/react": "18.3.23",
+    "fake-indexeddb": "^6.2.5",
     "typescript": "5.9.2"
   }
 }

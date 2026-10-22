@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { api } from '../../lib/api';
 import { useRouter, useSearchParams } from 'next/navigation';
 import LoginBrandLogo from '../../components/LoginBrandLogo';
+import LoginLegalLinks from '../../components/LoginLegalLinks';
 
 function ResetPasswordForm() {
   const params = useSearchParams();
@@ -138,6 +139,7 @@ function ResetPasswordForm() {
             A Ribdigi House Product
           </a>
         </p>
+        <LoginLegalLinks />
       </div>
     </div>
   );

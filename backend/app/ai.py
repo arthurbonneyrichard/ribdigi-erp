@@ -189,7 +189,9 @@ def _pct_delta(current: float, previous: float) -> float | None:
 def build_insight_notes(dash: dict) -> list[str]:
     """Sync baseline notes from dashboard totals (kept for unit tests / callers)."""
     notes: list[str] = []
-    low = int(dash.get("low_stock") or 0)
+    # Out-of-stock is at or below the reorder policy even though the traffic
+    # light keeps it separate from the low-stock (red) band.
+    low = int(dash.get("low_stock") or 0) + int(dash.get("out_of_stock") or 0)
     if low > 0:
         notes.append(f"{low} product(s) are at or below reorder level.")
     expenses = money_json(dash.get("total_expenses") or 0)
@@ -251,7 +253,7 @@ async def compose_insights(
         signals.append({"kind": kind, "headline": headline, "detail": detail})
         notes.append(headline if not detail else f"{headline} — {detail}")
 
-    low = int(dash.get("low_stock") or 0)
+    low = int(dash.get("low_stock") or 0) + int(dash.get("out_of_stock") or 0)
     if low > 0:
         add("stock", f"{low} product(s) are at or below reorder level.")
 

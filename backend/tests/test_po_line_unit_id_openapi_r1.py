@@ -59,7 +59,8 @@ def test_po_line_unit_id_schema():
 def test_po_line_unit_id_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="PO unit"' in page
-    assert "unit_id: unitId.trim() || null" in page
+    assert "unit_id: line.unitId.trim() || null" in page
+    assert "amendLines.filter((line) => line.productId.trim())" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "PO line unit_id OpenAPI" in agents
     assert "UuidIdValue" in agents

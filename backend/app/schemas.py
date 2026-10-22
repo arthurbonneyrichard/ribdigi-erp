@@ -26,44 +26,54 @@ from app.tenants import (
     coerce_thousand_separator_value,
     coerce_time_format_value,
 )
-from app.tax_filings import coerce_tax_filing_jurisdiction_value
+from app.tax_filings import (
+    coerce_tax_filing_jurisdiction_value,
+    validate_tenant_tax_jurisdiction_value,
+)
 from app.expenses import coerce_expense_payment_method_value
 from app.print_branding import coerce_invoice_template_value, coerce_receipt_paper_value
 from app.fx import coerce_currency_code_value
 from app.honesty import money_json
 
 PosTenderMethod = Annotated[
-    Literal["cash", "card", "wallet", "credit", "other"],
+    Literal[
+        "cash", "card", "wallet", "credit", "other", "gift_card", "loyalty", "mobile_money", "bank_transfer"
+    ],
     BeforeValidator(coerce_payment_method_value),
 ]
 PosSalePaymentMethod = Annotated[
-    Literal["cash", "card", "wallet", "credit", "other", "split"],
+    Literal[
+        "cash",
+        "card",
+        "wallet",
+        "credit",
+        "other",
+        "gift_card",
+        "loyalty",
+        "mobile_money",
+        "bank_transfer",
+        "split",
+    ],
     BeforeValidator(coerce_payment_method_value),
 ]
 IndustryValue = Annotated[
-    Literal[
-        "retail",
-        "pharmacy",
-        "restaurant",
-        "bakery",
-        "wholesale",
-        "manufacturing",
-        "mart",
-        "hotel",
-        "fmcg",
-        "distribution",
-        "general_trading",
-    ],
+    Literal["retail", "hotel", "restaurant"],
     BeforeValidator(coerce_industry_value),
 ]
 TaxFilingPeriodValue = Annotated[
     Literal["monthly", "quarterly"],
     BeforeValidator(coerce_tax_filing_period_value),
 ]
-# Keep aligned with app.tax_filings.SUPPORTED (Company profile + Tax filing Query/export).
+# Filing Query/export templates — GH only until other government maps exist.
 TaxFilingJurisdictionValue = Annotated[
     Literal["GH"],
     BeforeValidator(coerce_tax_filing_jurisdiction_value),
+]
+# Company profile tax country (ISO list). Not a claim that filing templates exist.
+TenantTaxJurisdictionValue = Annotated[
+    str,
+    BeforeValidator(coerce_tax_filing_jurisdiction_value),
+    AfterValidator(validate_tenant_tax_jurisdiction_value),
 ]
 # Keep aligned with app.fx.normalize_currency (Credit FX rates — 3-letter ISO).
 CurrencyCodeValue = Annotated[
@@ -202,7 +212,7 @@ ProductSearchQueryValue = Annotated[
 
 
 ExpensePaymentMethod = Annotated[
-    Literal["cash", "bank_transfer", "card", "cheque"],
+    Literal["cash", "bank_transfer", "card", "cheque", "mobile_money"],
     BeforeValidator(coerce_expense_payment_method_value),
 ]
 # Shared settlement allow-list for AR/AP (same as expenses).
@@ -275,12 +285,18 @@ NotificationCategoryValue = Annotated[
         "purchase_received",
         "payment_due",
         "quotation_expiry",
+        "batch_expiry",
         "recurring_expense_due",
         "new_order",
         "transfer",
         "billing",
         "security",
         "system",
+        "platform",
+        "provisioning",
+        "platform_security",
+        "staff_account",
+        "admin_password_reset",
     ],
     BeforeValidator(coerce_package_code_value),
 ]
@@ -306,6 +322,8 @@ PackageableModuleValue = Annotated[
         "stores",
         "hotel",
         "fmcg",
+        "hospital",
+        "restaurant",
         "reports",
         "notifications",
         "audit",
@@ -315,6 +333,8 @@ PackageableModuleValue = Annotated[
         "security",
         "customers",
         "suppliers",
+        "printers",
+        "ecommerce",
     ],
     BeforeValidator(coerce_package_code_value),
 ]
@@ -340,22 +360,6 @@ PlatformRoleValue = Annotated[
     BeforeValidator(coerce_platform_role_value),
 ]
 
-# System roles that may be cloned into a tenant custom role (excludes super_admin).
-CustomRoleBaseRoleValue = Annotated[
-    Literal[
-        "platform_owner",
-        "platform_admin",
-        "platform_support",
-        "platform_finance",
-        "company_admin",
-        "store_manager",
-        "sales_officer",
-        "inventory_officer",
-        "accountant",
-        "cashier",
-    ],
-    BeforeValidator(coerce_platform_role_value),
-]
 # Keep aligned with app.custom_roles.ALLOWED_ACTIONS / ApiKeyCreate actions.
 ApiKeyPermissionAction = Literal["read", "write", "approve", "*"]
 
@@ -385,6 +389,13 @@ SystemRoleValue = Annotated[
         "inventory_officer",
         "accountant",
         "cashier",
+        "hotel_manager",
+        "hotel_front_desk",
+        "hotel_reservations",
+        "hotel_housekeeping",
+        "hotel_maintenance",
+        "hotel_cashier",
+        "hotel_auditor",
     ],
     BeforeValidator(coerce_platform_role_value),
 ]
@@ -415,6 +426,41 @@ RoleKeyValue = Annotated[
     str,
     BeforeValidator(coerce_role_key_value),
     AfterValidator(validate_role_key_value),
+]
+
+
+def validate_role_ref_value(value: str) -> str:
+    """Path role: custom-role UUID or RoleKeyValue shape."""
+    from app.custom_roles import ROLE_UUID_RE
+
+    if ROLE_UUID_RE.fullmatch(value):
+        return value
+    return validate_role_key_value(value)
+
+
+RoleRefValue = Annotated[
+    str,
+    BeforeValidator(coerce_role_key_value),
+    AfterValidator(validate_role_ref_value),
+]
+
+
+def validate_custom_role_base_role_value(value: str) -> str:
+    """AfterValidator: platform roles cannot be clone sources (422). Industry / tenant
+    existence is enforced in create_custom_role (404)."""
+    from app.rbac import PLATFORM_ROLES
+
+    if value in PLATFORM_ROLES:
+        raise ValueError("Cannot clone platform roles")
+    return value
+
+
+# Clone-from key: tenant custom role or customer system template (not platform).
+CustomRoleBaseRoleValue = Annotated[
+    str,
+    BeforeValidator(coerce_role_key_value),
+    AfterValidator(validate_role_key_value),
+    AfterValidator(validate_custom_role_base_role_value),
 ]
 
 
@@ -480,6 +526,15 @@ class TwoFactorDisable(BaseModel):
     password: TwoFactorDisablePasswordValue
     # Required TOTP/backup code ∈ TwoFactorCodeValue; blank/`!!!`/`http://…` → **422**
     code: TwoFactorCodeValue
+
+
+class ChangePasswordRequest(BaseModel):
+    """POST /auth/change-password — reauth with current password; extra keys → 422."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    current_password: TwoFactorDisablePasswordValue
+    new_password: TwoFactorDisablePasswordValue
 
 
 class WebAuthnAttestationResponse(BaseModel):
@@ -710,6 +765,10 @@ class TenantCreate(BaseModel):
     # → **422** (was free `str`; whitespace/`!!!`/URL could reach hash path; strength
     # still enforced by validate_password_strength → **400**).
     admin_password: TenantAdminPasswordValue
+    # Platform store layout. Default single so create persists max_stores_override=1.
+    store_mode: Literal["single", "multi"] = "single"
+    # Used only when store_mode=multi; omit → Professional default (10). Must be >= 2.
+    max_stores_override: int | None = Field(default=None, ge=0)
 
 
 class TenantProfileUpdate(BaseModel):
@@ -749,9 +808,9 @@ class TenantProfileUpdate(BaseModel):
     timezone: TimezoneValue | None = None
     # omit = no change; blank/invalid MM-DD → 422 (was free str; length-only late **400**)
     fiscal_year_start: FiscalYearStartValue | None = None
-    # Keep aligned with tax_filings.SUPPORTED / TaxFilingJurisdictionValue (Company select).
-    # omit = no change; blank/unsupported → 422 (was free str; length-only late **400**).
-    tax_jurisdiction: TaxFilingJurisdictionValue | None = None
+    # Company tax country ∈ TenantTaxJurisdictionValue (ISO list). Filing Query stays GH-only.
+    # omit = no change; blank/unsupported → 422.
+    tax_jurisdiction: TenantTaxJurisdictionValue | None = None
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently cleared TIN; garbage could persist). Max 40 (DB column).
     tax_registration_number: TaxRegistrationNumberValue | None = None
@@ -763,6 +822,9 @@ class TenantProfileUpdate(BaseModel):
     thousand_separator: ThousandSeparatorValue | None = None
     time_format: TimeFormatValue | None = None
     inactivity_timeout_minutes: int | None = Field(default=None, ge=5, le=480)
+    # Offline POS authorization window in hours. Default 168 (7 days, refresh-token aligned).
+    # omit = no change; out of 1–168 → **422**.
+    offline_auth_hours: int | None = Field(default=None, ge=1, le=168)
 
 
 class TenantSuspendRequest(BaseModel):
@@ -772,8 +834,8 @@ class TenantSuspendRequest(BaseModel):
     `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
     `min_length=1` only — whitespace still reached service **400**; punctuation-
     only / URL-like garbage could persist on `Tenant.suspended_reason`).
-    Shared by platform `POST /tenants/{ref}/suspend` and company
-    `POST /tenants/me/suspend`.
+    Used by platform `POST /tenants/{ref}/suspend`.
+    Company `POST /tenants/me/suspend` is rejected (403) for tenant users.
     """
     model_config = ConfigDict(extra="forbid")
 
@@ -781,12 +843,65 @@ class TenantSuspendRequest(BaseModel):
     reason: TenantSuspendReasonValue
 
 
-class TenantDeleteConfirm(BaseModel):
-    """Platform owner hard-delete — must re-type the tenant slug to confirm."""
+class TenantSelfDeleteConfirm(BaseModel):
+    """Company admin deletes only the tenant in their own token.
+
+    There is no tenant id field. ``confirm`` must be true. ``confirm_name``
+    must match the saved company name after strip. ``password`` is the
+    admin's current password. Unknown keys, including a client tenant id,
+    are **422**.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
-    confirm_slug: Annotated[str, Field(min_length=1, max_length=80)]
+    password: LoginPasswordValue
+    confirm_name: str = Field(min_length=1, max_length=200)
+    confirm: Literal[True]
+
+
+class TenantDeleteConfirm(BaseModel):
+    """Hard-delete a company. Software owner or platform admin only.
+
+    `confirm_slug` must be that tenant's slug (`TenantSlugValue`). A missing
+    field, blank, or garbage slug is **422**. A well-formed slug that does not
+    match the path tenant is **400**. Unknown keys are **422** (`extra=forbid`).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    confirm_slug: TenantSlugValue
+
+
+def _billing_plan_code_in(value):
+    """Optional saved package code. Blank means omit. Garbage is 422."""
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError("plan code must be text")
+    text = value.strip().lower()
+    if not text:
+        return None
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{1,39}", text):
+        raise ValueError("plan code must use letters, numbers, and hyphens")
+    return text
+
+
+def _subscription_amount_in(value):
+    """Blank amount is invalid. Omit stays None so a saved price is not replaced with 0."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            raise ValueError("amount must be a number")
+        value = text
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        raise ValueError("amount must be a number") from None
+    if number != number or number in (float("inf"), float("-inf")) or number < 0 or number > 1_000_000_000_000_000:
+        raise ValueError("amount must be a finite number greater than or equal to zero")
+    return number
 
 
 class TenantSubscriptionAssign(BaseModel):
@@ -808,6 +923,38 @@ class TenantSubscriptionAssign(BaseModel):
     # Platform store entitlement override; omit = no change; null clears to package default
     max_stores_override: int | None = Field(default=None, ge=0)
     clear_max_stores_override: bool = False
+    # Amount this company is billed. Omit leaves the saved amount unchanged.
+    # Paid packages reject blank, zero, and negative. Trial may be 0.
+    amount: Annotated[float | None, BeforeValidator(_subscription_amount_in)] = None
+    # Saved package code from POST /platform/billing/plans. Omit uses the catalog price row.
+    plan_code: Annotated[str | None, BeforeValidator(_billing_plan_code_in)] = None
+
+    @model_validator(mode="after")
+    def _paid_package_needs_positive_amount(self) -> TenantSubscriptionAssign:
+        if "amount" not in self.model_fields_set:
+            return self
+        if (self.package_code or "") == "trial":
+            return self
+        if self.amount is None or self.amount <= 0:
+            raise ValueError("amount must be greater than zero for a paid package")
+        return self
+
+
+class TenantAdminPasswordReset(BaseModel):
+    """Platform Owner resets that tenant's company administrator password.
+
+    Omit ``new_password`` to email a one-time reset link. Provide
+    ``new_password`` to set a temporary password immediately (not returned).
+    Unknown keys (including ``password``) are **422**.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # omit → the tenant's administrator (earliest company_admin).
+    # A user id from another tenant is rejected by the service.
+    user_id: UuidIdValue | None = None
+    # omit/`null` → email reset link; blank/garbage → **422**.
+    new_password: TenantAdminPasswordValue | None = None
 
 
 class TenantIndustryChange(BaseModel):
@@ -869,6 +1016,15 @@ class UserCreate(BaseModel):
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach department
     # lookup). Existence remains tenant-scoped department lookup (**404**).
     department_id: UuidIdValue | None = None
+    # Optional store ∈ UuidIdValue; omit/`null` → no store membership (grandfather
+    # all stores in this tenant), unless the tenant has exactly one active store
+    # (auto-assigned). blank/`!!!`/`http://…`/non-UUID → **422**. Existence is
+    # tenant-scoped store lookup (**404**). If branch_id is set, store.branch_id
+    # must match (**400** STORE_BRANCH_MISMATCH). Does not grant extra RBAC.
+    store_id: UuidIdValue | None = None
+    # Optional multi-store assignment (same honesty as store_id). Combined with
+    # store_id. Empty list = omit store_id path (grandfather / sole-store auto).
+    store_ids: list[UuidIdValue] = Field(default_factory=list)
     # BR-3.3 — omit = role default; blank/invalid → 422 (no silent all from "")
     record_scope: RecordScopeValue | None = None
 
@@ -898,8 +1054,16 @@ class UserUpdate(BaseModel):
     # garbage could reach department lookup). clear_department remains explicit clear.
     # Existence remains tenant-scoped department lookup (**404**).
     department_id: UuidIdValue | None = None
+    # omit → no change; blank/`!!!`/`http://…`/non-UUID → **422**. clear_store
+    # remains explicit clear (empty memberships → grandfather all stores).
+    # Existence remains tenant-scoped store lookup (**404**). Store must belong
+    # to the user's branch when set (**400** STORE_BRANCH_MISMATCH).
+    store_id: UuidIdValue | None = None
+    # omit → no change; list replaces memberships (empty = grandfather all tenant stores)
+    store_ids: list[UuidIdValue] | None = None
     clear_branch: bool = False
     clear_department: bool = False
+    clear_store: bool = False
 
 
 class UserStoreMembershipsReplace(BaseModel):
@@ -1003,6 +1167,11 @@ class AccountCreate(BaseModel):
     # omit/`null` → no branch; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silent→null; garbage could persist).
     bank_branch: BankBranchValue | None = None
+    # Optional parent COA ∈ UuidIdValue; omit/`null` → top-level; blank/`!!!`/
+    # `http://…`/non-UUID → **422**. Existence is tenant-scoped lookup (**404**).
+    # Client must not send tenant_id or company_id (extra=forbid); company comes
+    # from the session.
+    parent_id: UuidIdValue | None = None
 
 
 class AccountUpdate(BaseModel):
@@ -1022,6 +1191,8 @@ class AccountUpdate(BaseModel):
     # blank silent→null; garbage could persist).
     bank_branch: BankBranchValue | None = None
     is_active: bool | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422**.
+    parent_id: UuidIdValue | None = None
 
 
 class OpeningBalanceLine(BaseModel):
@@ -1187,7 +1358,8 @@ class CustomRoleCreate(BaseModel):
     # (was free `str`; blank/garbage could persist on custom role create).
     label: CustomRoleLabelValue
     permissions: dict[str, list[ApiKeyPermissionAction]] | None = None
-    # Clone-from system role; omit/null OK when permissions set; blank/unknown/super_admin → 422
+    # Clone-from customer system template or this tenant's custom role key.
+    # omit/null OK when permissions set; blank/platform → 422; other-tenant / other-industry → 404
     base_role: CustomRoleBaseRoleValue | None = None
     # BR-3.3 — omit = base_role/own default; blank/invalid → 422
     record_scope: RecordScopeValue | None = None
@@ -1332,6 +1504,13 @@ class ProductCreate(BaseModel):
     # BR-12.1 / BR-5.1 — schema Literal; omit → standard; blank/invalid → 422
     tax_supply_class: Literal["standard", "zero_rated", "exempt"] = "standard"
     tracks_batches: bool = False
+    # Pharmacy catalog: omit/`null` → no dosage text; blank/URL/garbage → **422**
+    dosage_instructions: ProductDescriptionValue | None = None
+    rx_only: bool = False
+    # Wholesale MOQ in stockkeeping qty; omit → 0 (no floor). Retail POS ignores it.
+    min_order_qty: NonNegativeQtyValue = 0
+    # omit/`null` → inherit category / no prep ticket (retail)
+    prep_station: Literal["kitchen", "bar"] | None = None
 
 
 class ProductUpdate(BaseModel):
@@ -1390,7 +1569,12 @@ class ProductUpdate(BaseModel):
     # BR-12.1 — omit = no change; blank/invalid → 422 (no silent standard)
     tax_supply_class: Literal["standard", "zero_rated", "exempt"] | None = None
     tracks_batches: bool | None = None
+    dosage_instructions: ProductDescriptionValue | None = None
+    rx_only: bool | None = None
+    min_order_qty: NonNegativeQtyValue | None = None
     is_active: bool | None = None
+    prep_station: Literal["kitchen", "bar"] | None = None
+    clear_prep_station: bool = False
 
 
 class StockCountCreate(BaseModel):
@@ -1453,10 +1637,10 @@ class StockCountCancel(BaseModel):
 class ProductCategoryCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    # Required category code ∈ CategoryCodeValue; blank/`!!!`/`http://…` → **422**
-    # (was free `str`; blank reached service **400**; punctuation/URL could persist).
+    # Optional category code ∈ CategoryCodeValue; omit/`null` → server allocates
+    # CAT-NNNN (existing codes preserved). If sent, blank/`!!!`/`http://…` → **422**.
     # Tenant uniqueness remains create_category **409**.
-    code: CategoryCodeValue
+    code: CategoryCodeValue | None = None
     # Required category label ∈ CategoryNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on catalog category create).
     name: CategoryNameValue
@@ -1468,6 +1652,7 @@ class ProductCategoryCreate(BaseModel):
     # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
     # tax-rate lookup). Existence remains tenant-scoped tax-rate lookup (**404**).
     tax_rate_id: UuidIdValue | None = None
+    prep_station: Literal["kitchen", "bar"] | None = None
 
 
 class ProductCategoryUpdate(BaseModel):
@@ -1490,15 +1675,17 @@ class ProductCategoryUpdate(BaseModel):
     # Same honesty as ProductCategoryCreate.tax_rate_id.
     tax_rate_id: UuidIdValue | None = None
     is_active: bool | None = None
+    prep_station: Literal["kitchen", "bar"] | None = None
+    clear_prep_station: bool = False
 
 
 class BrandCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    # Required brand code ∈ BrandCodeValue; blank/`!!!`/`http://…` → **422**
-    # (was free `str`; blank reached service **400**; punctuation/URL could persist).
+    # Optional brand code ∈ BrandCodeValue; omit/`null` → server allocates
+    # BRD-NNNN (existing codes preserved). If sent, blank/`!!!`/`http://…` → **422**.
     # Tenant uniqueness remains create_brand **409**.
-    code: BrandCodeValue
+    code: BrandCodeValue | None = None
     # Required brand label ∈ BrandNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on catalog brand create).
     name: BrandNameValue
@@ -1525,10 +1712,10 @@ class BrandUpdate(BaseModel):
 class UnitOfMeasureCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    # Required UoM code ∈ UnitCodeValue; blank/`!!!`/`http://…` → **422**
-    # (was free `str`; blank reached service **400**; punctuation/URL could persist).
+    # Optional UoM code ∈ UnitCodeValue; omit/`null` → server allocates
+    # UNT-NNNN (existing codes preserved). If sent, blank/`!!!`/`http://…` → **422**.
     # Tenant uniqueness remains create_unit **409**.
-    code: UnitCodeValue
+    code: UnitCodeValue | None = None
     # Required UoM label ∈ UnitNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on catalog unit create).
     name: UnitNameValue
@@ -1779,10 +1966,14 @@ class LineItem(BaseModel):
     # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
     variant_id: UuidIdValue | None = None
+    # Optional lot ∈ UuidIdValue; omit/`null` → FEFO when lots exist.
+    batch_id: UuidIdValue | None = None
     # omit/`null` → catalog/group price; nan/inf/<0 → **422**
     unit_price: NonNegativeMoneyValue | None = None
     # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
     discount: NonNegativeMoneyValue = 0
+    discount_type: DiscountKindValue = "fixed"
+    discount_percent: PercentRateValue = 0
 
 
 class LegacyTransactionPayload(BaseModel):
@@ -3412,6 +3603,14 @@ class PurchaseInvoiceCreate(BaseModel):
     currency: CurrencyCodeValue | None = None
     # omit/`null` → resolve_rate; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
     exchange_rate: PositiveMoneyValue | None = None
+    # Optional receive location for posted manual bills (stock for every line).
+    # omit/`null` → consolidated product qty (GRN path uses the GRN warehouse).
+    # blank/`!!!`/`http://…`/non-UUID → **422**. Existence is tenant-scoped (**404**).
+    warehouse_id: UuidIdValue | None = None
+    # Optional store ∈ UuidIdValue; omit/`null` → derive from warehouse.store_id.
+    # Must match warehouse.store_id when both are set (**400**). blank/`!!!`/
+    # `http://…`/non-UUID → **422**. Store access is membership-enforced (**403**).
+    store_id: UuidIdValue | None = None
     items: list[PurchaseInvoiceItemCreate] | None = None
 
 
@@ -3475,11 +3674,42 @@ class SalesInvoiceItemCreate(BaseModel):
     tax_rate: NonNegativeMoneyValue | None = None
     # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
     discount: NonNegativeMoneyValue = 0
+    discount_type: DiscountKindValue = "fixed"
+    discount_percent: PercentRateValue = 0
     # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
     # Same honesty as LineItem.variant_id.
     variant_id: UuidIdValue | None = None
 
+
+
+def coerce_coupon_code_value(value: object) -> object:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().upper()
+
+
+def validate_coupon_code_value(value: str) -> str:
+    if not value:
+        raise ValueError("Coupon code is required")
+    if len(value) > 32:
+        raise ValueError("Coupon code must be 1–32 chars")
+    if "://" in value or "@" in value or " " in value:
+        raise ValueError("Coupon code must be letters, digits, hyphen, or underscore")
+    import re
+
+    if not re.fullmatch(r"[A-Z0-9][A-Z0-9_-]{0,31}", value):
+        raise ValueError("Coupon code must be letters, digits, hyphen, or underscore")
+    return value
+
+
+CouponCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_coupon_code_value),
+    AfterValidator(validate_coupon_code_value),
+]
 
 
 class SalesInvoiceCreate(BaseModel):
@@ -3491,6 +3721,9 @@ class SalesInvoiceCreate(BaseModel):
     customer_id: UuidIdValue
     # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
     discount_amount: NonNegativeMoneyValue = 0
+    discount_type: DiscountKindValue = "fixed"
+    discount_percent: PercentRateValue = 0
+    coupon_code: CouponCodeValue | None = None
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on SalesInvoice.notes Text).
     notes: SalesDocumentNotesValue | None = None
@@ -3504,7 +3737,64 @@ class SalesInvoiceCreate(BaseModel):
     # omit/`null` → resolve_rate; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
     exchange_rate: PositiveMoneyValue | None = None
     is_reverse_charge: bool = False
+    # omit → industry default (wholesale on wholesale / retail+wholesale; POS stays retail).
+    sales_channel: Literal["retail", "wholesale"] | None = None
     items: list[SalesInvoiceItemCreate] = Field(min_length=1)
+
+
+class CouponCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: CouponCodeValue
+    name: ProductNameValue
+    discount_type: DiscountKindValue = "percent"
+    amount: PositiveMoneyValue
+    min_spend: NonNegativeMoneyValue = 0
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
+    max_redemptions: int | None = Field(default=None, ge=1, le=1_000_000)
+    per_customer_limit: int = Field(default=0, ge=0, le=1_000_000)
+    eligible_product_ids: list[UuidIdValue] | None = None
+    eligible_category_ids: list[UuidIdValue] | None = None
+    is_active: bool = True
+    notes: SalesDocumentNotesValue | None = None
+
+
+class CouponUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: ProductNameValue | None = None
+    is_active: bool | None = None
+    min_spend: NonNegativeMoneyValue | None = None
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
+    max_redemptions: int | None = Field(default=None, ge=1, le=1_000_000)
+    per_customer_limit: int | None = Field(default=None, ge=0, le=1_000_000)
+    eligible_product_ids: list[UuidIdValue] | None = None
+    eligible_category_ids: list[UuidIdValue] | None = None
+    notes: SalesDocumentNotesValue | None = None
+
+
+class CouponValidate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: CouponCodeValue
+    header_base: NonNegativeMoneyValue = 0
+    customer_id: UuidIdValue | None = None
+    product_ids: list[UuidIdValue] = Field(default_factory=list)
+    category_ids: list[UuidIdValue] = Field(default_factory=list)
+
+
+class OtherIncomeCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    description: SalesDocumentNotesValue
+    amount: PositiveMoneyValue
+    income_date: datetime | None = None
+    payment_method: ExpensePaymentMethod = "cash"
+    liquid_account_id: UuidIdValue | None = None
+    payer: PartyNameValue | None = None
+    reference: SalesDocumentNotesValue | None = None
 
 
 class SalesQuotationCreate(BaseModel):
@@ -3517,11 +3807,17 @@ class SalesQuotationCreate(BaseModel):
     customer_id: UuidIdValue
     # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
     discount_amount: NonNegativeMoneyValue = 0
+    discount_type: DiscountKindValue = "fixed"
+    discount_percent: PercentRateValue = 0
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on SalesQuotation.notes Text).
     notes: SalesDocumentNotesValue | None = None
     valid_days: int = Field(default=14, ge=1, le=365)
+    # omit → industry default (wholesale for wholesale / retail+wholesale).
+    sales_channel: Literal["retail", "wholesale"] | None = None
     items: list[SalesInvoiceItemCreate] = Field(min_length=1)
+    # Offline-captured quote idempotency; same tenant + id returns the original quote.
+    client_request_id: ClientRequestIdValue | None = None
 
 
 class SalesQuotationReject(BaseModel):
@@ -3564,10 +3860,29 @@ class SalesOrderCreate(BaseModel):
     delivery_address: AddressValue | None = None
     # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
     discount_amount: NonNegativeMoneyValue = 0
+    discount_type: DiscountKindValue = "fixed"
+    discount_percent: PercentRateValue = 0
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on SalesOrder.notes Text).
     notes: SalesDocumentNotesValue | None = None
+    sales_channel: Literal["retail", "wholesale"] | None = None
     items: list[SalesInvoiceItemCreate] = Field(min_length=1)
+
+
+class SalesOrderFulfill(BaseModel):
+    """Partial fill against a confirmed/processing sales order (wholesale)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[LineItem] = Field(min_length=1)
+
+
+class ProductPriceTierCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    min_qty: PositiveQtyValue
+    unit_price: NonNegativeMoneyValue
+    customer_group_id: UuidIdValue | None = None
 
 
 class SalesOrderConfirm(BaseModel):
@@ -3911,10 +4226,12 @@ JobNameValue = Annotated[
         "scan_low_stock",
         "scan_payment_due",
         "scan_quotation_expiry",
+        "scan_batch_expiry",
         "scan_recurring_expense_due",
         "generate_recurring_expenses",
         "run_due_backups",
         "scan_trial_lifecycle",
+        "process_subscription_renewals",
         "run_due_report_emails",
         "refresh_fx_rates",
         "sync_bank_feeds",
@@ -3922,6 +4239,8 @@ JobNameValue = Annotated[
         "retry_due_webhooks",
         "scan_ai_security_alerts",
         "send_weekly_ai_insight_digest",
+        "expire_ecommerce_reservations",
+        "sync_ecommerce_connectors",
     ],
     BeforeValidator(coerce_package_code_value),
 ]
@@ -4027,6 +4346,35 @@ ReturnReportStatusValue = Annotated[
     Literal["draft", "posted", "cancelled"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Union of status filters the reports screen can send to GET /reports/export.
+# Each report function still rejects a status that is not valid for that report.
+ReportExportStatusValue = Annotated[
+    Literal[
+        "draft",
+        "posted",
+        "cancelled",
+        "requested",
+        "in_transit",
+        "received",
+        "completed",
+        "sent",
+        "partially_received",
+    ],
+    BeforeValidator(coerce_package_code_value),
+]
+# Union of sales and purchase return reasons for GET /reports/export.
+ReportExportReasonValue = Annotated[
+    Literal[
+        "damaged",
+        "wrong_item",
+        "defective",
+        "customer_change",
+        "other",
+        "expiry",
+        "quality",
+    ],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with app.tenants.VALID_STATUSES (Platform tenants list filter).
 TenantStatusFilterValue = Annotated[
     Literal["trial", "active", "grace", "suspended"],
@@ -4080,6 +4428,7 @@ AuditModuleValue = Annotated[
         "audit",
         "auth",
         "backup",
+        "billing",
         "company",
         "credit",
         "dashboard",
@@ -4091,8 +4440,10 @@ AuditModuleValue = Annotated[
         "onboarding",
         "platform_staff",
         "pos",
+        "printers",
         "purchasing",
         "reports",
+        "restaurant",
         "sales",
         "security",
         "settings",
@@ -4430,6 +4781,64 @@ SmtpHostValue = Annotated[
 ]
 
 
+def coerce_website_hostname_value(value: object) -> object:
+    """Pydantic BeforeValidator: hostname or https website URL → host; blank stays blank."""
+    if value is None or not isinstance(value, str):
+        return value
+    raw = value.strip()
+    if not raw:
+        return raw
+    if "://" in raw:
+        from urllib.parse import urlparse
+
+        parsed = urlparse(raw)
+        host = (parsed.hostname or "").lower()
+        local = {"localhost", "127.0.0.1", "testserver", "host.docker.internal"}
+        if parsed.scheme not in {"http", "https"} or not host:
+            return raw
+        if parsed.scheme == "http" and host not in local:
+            return raw
+        raw = host
+    if raw.startswith("www."):
+        raw = raw[4:]
+    return raw.lower().rstrip(".")
+
+
+def validate_website_hostname_value(value: str) -> str:
+    """AfterValidator: public DNS hostname; URL/blank/garbage/reserved Ribdigi host → 422."""
+    if not value:
+        raise ValueError("website must be a hostname or https URL you control")
+    if len(value) > 253:
+        raise ValueError("website must be a hostname or https URL you control")
+    lowered = value.lower()
+    if "://" in lowered or "@" in lowered or any(ch.isspace() for ch in value):
+        raise ValueError("website must be a hostname or https URL you control")
+    if lowered in {
+        "localhost",
+        "127.0.0.1",
+        "ribdigi.com",
+        "www.ribdigi.com",
+        "ribdigihouse.com",
+        "www.ribdigihouse.com",
+        "erp.ribdigihouse.com",
+    } or lowered.endswith((".ribdigi.com", ".ribdigihouse.com")):
+        raise ValueError("website must be a hostname you control, not a Ribdigi host")
+    if not re.fullmatch(
+        r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?",
+        lowered,
+    ):
+        raise ValueError("website must be a hostname or https URL you control")
+    return lowered
+
+
+# Online-store domain link — hostname or https website URL (scheme stripped).
+WebsiteHostnameValue = Annotated[
+    str,
+    BeforeValidator(coerce_website_hostname_value),
+    AfterValidator(validate_website_hostname_value),
+]
+
+
 def coerce_bank_account_number_value(value: object) -> object:
     """Pydantic BeforeValidator: strip; blank stays blank for account_number 422."""
     if value is None:
@@ -4680,6 +5089,67 @@ ProductCategoryLabelValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
     AfterValidator(validate_product_category_label_value),
+]
+
+
+def validate_storefront_policy_value(value: str) -> str:
+    """AfterValidator: storefront policy body; blank/URL/garbage → 422 (1–4000)."""
+    if not value:
+        raise ValueError("storefront policy must be a non-empty narrative (1–4000 chars)")
+    if len(value) > 4000:
+        raise ValueError("storefront policy must be a non-empty narrative (1–4000 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("storefront policy must be a non-empty narrative (1–4000 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("storefront policy must be a non-empty narrative (1–4000 chars)")
+    return value
+
+
+# Storefront shipping / returns / privacy policy Text; keep ≤4000 at API boundary.
+StorefrontPolicyValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_storefront_policy_value),
+]
+
+
+def validate_catalog_search_value(value: str) -> str:
+    """AfterValidator: public catalog search; blank/URL/garbage → 422 (1–80)."""
+    if not value:
+        raise ValueError("catalog search must be a non-empty query (1–80 chars)")
+    if len(value) > 80:
+        raise ValueError("catalog search must be a non-empty query (1–80 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("catalog search must be a non-empty query (1–80 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("catalog search must be a non-empty query (1–80 chars)")
+    return value
+
+
+# Public GET /storefront/bootstrap Query q; omit → unfiltered; blank/garbage → 422.
+CatalogSearchValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_catalog_search_value),
+]
+
+
+def validate_storefront_secret_token_value(value: str) -> str:
+    """AfterValidator: cart / tracking token; blank/URL/spaces → 422 (8–80)."""
+    if not value or len(value) < 8 or len(value) > 80:
+        raise ValueError("storefront token must be 8–80 characters")
+    if "://" in value or "@" in value or " " in value:
+        raise ValueError("storefront token must be 8–80 characters")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("storefront token must be 8–80 characters")
+    return value
+
+
+# Cart token + order tracking token path/body + optional preview_token Query.
+StorefrontSecretTokenValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_storefront_secret_token_value),
 ]
 
 
@@ -5447,6 +5917,25 @@ PlatformStaffFullNameValue = Annotated[
 ]
 
 
+def _require_account_password_secret(value: str, *, label: str = "password") -> str:
+    """Shared OpenAPI honesty for account passwords (1–128).
+
+    Allows ``@`` and other symbols (strength often uses ``@``). Rejects blank,
+    whitespace, and URL-shaped ``://`` garbage. Letter/digit required.
+    """
+    if not value:
+        raise ValueError(f"{label} must be a non-empty secret (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError(f"{label} must be a non-empty secret (1–128 chars)")
+    if any(ch.isspace() for ch in value):
+        raise ValueError(f"{label} must not contain spaces")
+    if "://" in value:
+        raise ValueError(f"{label} must not look like a URL")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError(f"{label} must be a non-empty secret (1–128 chars)")
+    return value
+
+
 def coerce_platform_staff_password_value(value: object) -> object:
     """Pydantic BeforeValidator: strip; blank stays blank for password 422."""
     if value is None:
@@ -5457,23 +5946,15 @@ def coerce_platform_staff_password_value(value: object) -> object:
 
 
 def validate_platform_staff_password_value(value: str) -> str:
-    """AfterValidator: platform staff password; blank/URL/@/spaces → 422 (1–128).
+    """AfterValidator: platform staff password; blank/URL/spaces → 422 (1–128).
 
-    Allows punctuation used in fixtures (e.g. Tip246Pass!); rejects empty/URL garbage.
+    Allows ``@`` and other symbols (e.g. Tip246Pass!, SecurePass123@).
     Strength (8+ upper/lower/digit/symbol) remains service validate_password_strength.
     """
-    if not value:
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if len(value) > 128:
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if not re.search(r"[A-Za-z0-9]", value):
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    return value
+    return _require_account_password_secret(value, label="password")
 
 
-# Platform staff create password — 1–128; ≥1 letter/digit; no :// / @ / spaces.
+# Platform staff create password — 1–128; ≥1 letter/digit; no :// / spaces (``@`` OK).
 PlatformStaffPasswordValue = Annotated[
     str,
     BeforeValidator(coerce_platform_staff_password_value),
@@ -5491,23 +5972,15 @@ def coerce_user_password_value(value: object) -> object:
 
 
 def validate_user_password_value(value: str) -> str:
-    """AfterValidator: tenant user password; blank/URL/@/spaces → 422 (1–128).
+    """AfterValidator: tenant user password; blank/URL/spaces → 422 (1–128).
 
-    Allows punctuation used in fixtures (e.g. Tip247Pass!); rejects empty/URL garbage.
+    Allows ``@`` and other symbols (e.g. Tip247Pass!, SecurePass123@).
     Strength (8+ upper/lower/digit/symbol) remains service validate_password_strength.
     """
-    if not value:
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if len(value) > 128:
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if not re.search(r"[A-Za-z0-9]", value):
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    return value
+    return _require_account_password_secret(value, label="password")
 
 
-# Tenant user create/PATCH password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-3).
+# Tenant user create/PATCH password — 1–128; ≥1 letter/digit; no :// / spaces (BR-3).
 UserPasswordValue = Annotated[
     str,
     BeforeValidator(coerce_user_password_value),
@@ -5525,23 +5998,15 @@ def coerce_tenant_admin_password_value(value: object) -> object:
 
 
 def validate_tenant_admin_password_value(value: str) -> str:
-    """AfterValidator: tenant create admin password; blank/URL/@/spaces → 422 (1–128).
+    """AfterValidator: tenant create admin password; blank/URL/spaces → 422 (1–128).
 
-    Allows punctuation used in fixtures (e.g. Tip248Pass!); rejects empty/URL garbage.
+    Allows ``@`` and other symbols (e.g. Tip248Pass!, SecurePass123@).
     Strength (8+ upper/lower/digit/symbol) remains service validate_password_strength.
     """
-    if not value:
-        raise ValueError("admin password must be a non-empty secret (1–128 chars)")
-    if len(value) > 128:
-        raise ValueError("admin password must be a non-empty secret (1–128 chars)")
-    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
-        raise ValueError("admin password must be a non-empty secret (1–128 chars)")
-    if not re.search(r"[A-Za-z0-9]", value):
-        raise ValueError("admin password must be a non-empty secret (1–128 chars)")
-    return value
+    return _require_account_password_secret(value, label="admin password")
 
 
-# Tenant create admin password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-1).
+# Tenant create admin password — 1–128; ≥1 letter/digit; no :// / spaces (BR-1).
 TenantAdminPasswordValue = Annotated[
     str,
     BeforeValidator(coerce_tenant_admin_password_value),
@@ -5559,23 +6024,15 @@ def coerce_password_reset_new_password_value(value: object) -> object:
 
 
 def validate_password_reset_new_password_value(value: str) -> str:
-    """AfterValidator: password-reset new_password; blank/URL/@/spaces → 422 (1–128).
+    """AfterValidator: password-reset new_password; blank/URL/spaces → 422 (1–128).
 
-    Allows punctuation used in fixtures (e.g. Tip250Pass!); rejects empty/URL garbage.
+    Allows ``@`` and other symbols (e.g. Tip250Pass!, SecurePass123@).
     Strength (8+ upper/lower/digit/symbol) remains service validate_password_strength.
     """
-    if not value:
-        raise ValueError("new_password must be a non-empty secret (1–128 chars)")
-    if len(value) > 128:
-        raise ValueError("new_password must be a non-empty secret (1–128 chars)")
-    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
-        raise ValueError("new_password must be a non-empty secret (1–128 chars)")
-    if not re.search(r"[A-Za-z0-9]", value):
-        raise ValueError("new_password must be a non-empty secret (1–128 chars)")
-    return value
+    return _require_account_password_secret(value, label="new_password")
 
 
-# Password reset confirm new_password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-19).
+# Password reset confirm new_password — 1–128; ≥1 letter/digit; no :// / spaces (BR-19).
 PasswordResetNewPasswordValue = Annotated[
     str,
     BeforeValidator(coerce_password_reset_new_password_value),
@@ -5729,23 +6186,15 @@ def coerce_login_password_value(value: object) -> object:
 
 
 def validate_login_password_value(value: str) -> str:
-    """AfterValidator: login password; blank/URL/@/spaces → 422 (1–128).
+    """AfterValidator: login password; blank/URL/spaces → 422 (1–128).
 
-    Allows punctuation used in fixtures (e.g. Tip252Pass!); rejects empty/URL garbage.
+    Allows ``@`` and other symbols (e.g. Tip252Pass!, SecurePass123@).
     Authenticity remains verify_password → **401**.
     """
-    if not value:
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if len(value) > 128:
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if not re.search(r"[A-Za-z0-9]", value):
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    return value
+    return _require_account_password_secret(value, label="password")
 
 
-# Login password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-19).
+# Login password — 1–128; ≥1 letter/digit; no :// / spaces (BR-19).
 LoginPasswordValue = Annotated[
     str,
     BeforeValidator(coerce_login_password_value),
@@ -5763,23 +6212,15 @@ def coerce_two_factor_disable_password_value(value: object) -> object:
 
 
 def validate_two_factor_disable_password_value(value: str) -> str:
-    """AfterValidator: 2FA disable password; blank/URL/@/spaces → 422 (1–128).
+    """AfterValidator: 2FA disable password; blank/URL/spaces → 422 (1–128).
 
-    Allows punctuation used in fixtures (e.g. Tip253Pass!); rejects empty/URL garbage.
+    Allows ``@`` and other symbols (e.g. Tip253Pass!, SecurePass123@).
     Authenticity remains verify_password → **401**.
     """
-    if not value:
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if len(value) > 128:
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    if not re.search(r"[A-Za-z0-9]", value):
-        raise ValueError("password must be a non-empty secret (1–128 chars)")
-    return value
+    return _require_account_password_secret(value, label="password")
 
 
-# 2FA disable password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-19).
+# 2FA disable password — 1–128; ≥1 letter/digit; no :// / spaces (BR-19).
 TwoFactorDisablePasswordValue = Annotated[
     str,
     BeforeValidator(coerce_two_factor_disable_password_value),
@@ -6507,6 +6948,10 @@ PercentRateValue = Annotated[
     float,
     Field(allow_inf_nan=False, ge=0, le=100),
 ]
+DiscountKindValue = Annotated[
+    Literal["fixed", "percent"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Positive quantity (line qty, received qty) — gt 0 + finite.
 PositiveQtyValue = Annotated[
     float,
@@ -6743,6 +7188,7 @@ ReportTypeValue = Annotated[
         "inventory_movements",
         "inventory_low_stock",
         "inventory_expiry",
+        "pharmacy_rx_activity",
         "inventory_transfers",
         "inventory_stock_counts",
         "purchases_summary",
@@ -7425,12 +7871,18 @@ class NotificationPreferencesMap(BaseModel):
     purchase_received: NotificationChannelPrefs | None = None
     payment_due: NotificationChannelPrefs | None = None
     quotation_expiry: NotificationChannelPrefs | None = None
+    batch_expiry: NotificationChannelPrefs | None = None
     recurring_expense_due: NotificationChannelPrefs | None = None
     new_order: NotificationChannelPrefs | None = None
     transfer: NotificationChannelPrefs | None = None
     billing: NotificationChannelPrefs | None = None
     security: NotificationChannelPrefs | None = None
     system: NotificationChannelPrefs | None = None
+    platform: NotificationChannelPrefs | None = None
+    provisioning: NotificationChannelPrefs | None = None
+    platform_security: NotificationChannelPrefs | None = None
+    staff_account: NotificationChannelPrefs | None = None
+    admin_password_reset: NotificationChannelPrefs | None = None
 
 
 class NotificationPreferencesUpdate(BaseModel):
@@ -7839,7 +8291,7 @@ def validate_tenant_suspend_reason_value(value: str) -> str:
     return value
 
 
-# Tenant suspend reason — Tenant.suspended_reason (platform + company self-suspend).
+# Tenant suspend reason — Tenant.suspended_reason (platform suspend APIs).
 TenantSuspendReasonValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
@@ -8744,6 +9196,16 @@ class PosSessionClose(BaseModel):
     notes: PosSessionCloseNotesValue | None = None
 
 
+class PosCashMovementCreate(BaseModel):
+    """POST /pos/sessions/{id}/movements — cash in/out on an open shift."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    movement_type: Literal["cash_in", "cash_out"]
+    amount: PositiveMoneyValue
+    reason: PosDrawerOpenReasonValue
+
+
 class PosPaymentLine(BaseModel):
     """One tender toward a POS sale total (supports split payments).
 
@@ -8794,6 +9256,9 @@ class PosSaleCreate(BaseModel):
     total: NonNegativeMoneyValue = 0
     # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
     discount_amount: NonNegativeMoneyValue = 0
+    discount_type: DiscountKindValue = "fixed"
+    discount_percent: PercentRateValue = 0
+    coupon_code: CouponCodeValue | None = None
     # BR-8.1 — only completed POS create; omit → completed; blank/invalid → 422
     # (was free str; garbage persisted on transactions.status)
     status: Literal["completed"] = "completed"
@@ -8806,12 +9271,33 @@ class PosSaleCreate(BaseModel):
     # required when override_credit_limit=true (same CreditOverrideReasonValue).
     override_reason: CreditOverrideReasonValue | None = None
     # Offline / retry idempotency key; omit/`null` → no dedupe; blank/`!!!` → **422**.
-    # Same tenant + client_request_id returns the original sale (never a duplicate).
+    # Same tenant + client_request_id returns the original sale when the commercial
+    # request matches. A reused id with different contents is **409**.
     client_request_id: ClientRequestIdValue | None = None
+    # Offline sync metadata. Tokens are never accepted here; device_id is a terminal label.
+    device_id: str | None = Field(default=None, max_length=64)
+    offline_created_at: IsoDateQueryValue | None = None
+    offline_sync: bool = False
+    # Server-issued offline grant the sale was rung under; omit for legacy queue rows.
+    offline_grant_id: UuidIdValue | None = None
+    # Manager-approved conflict resolution (OfflineSyncEvent id) for this queued sale.
+    resolution_event_id: UuidIdValue | None = None
+    # Device-side override of its stock allocation; honoured only when the grant allows it.
+    allocation_override: bool = False
+    # Provisional receipt printed offline; kept on the sale to reconcile with the server number.
+    local_receipt_number: Annotated[str, Field(max_length=64)] | None = None
+    # Pharmacy POS fill. Omit on retail. Existence is tenant-scoped (**404**/409).
+    prescription_id: UuidIdValue | None = None
 
     @model_validator(mode="after")
     def require_override_reason_when_flagged(self):
         return _require_credit_override_reason(self)
+
+    @model_validator(mode="after")
+    def offline_sync_requires_idempotency(self):
+        if self.offline_sync and not (self.client_request_id or "").strip():
+            raise ValueError("client_request_id is required when offline_sync is true")
+        return self
 
 
 def coerce_pos_device_id_value(value: object) -> object:
@@ -8852,6 +9338,55 @@ class PosDeviceHeartbeat(BaseModel):
     store_id: UuidIdValue | None = None
     app_version: Annotated[str, Field(max_length=40)] | None = None
     pending_queue_count: Annotated[int, Field(ge=0, le=100000)] = 0
+    # Browser selling pill. Omit means the terminal is still online (older clients).
+    selling_online: bool | None = None
+
+
+class PosOfflineAuthorize(BaseModel):
+    """POST /pos/offline/authorize — online revalidation → device-bound offline grant."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    device_id: PosDeviceIdValue
+    store_id: UuidIdValue | None = None
+    # Unsynced queued qty per product from earlier grants; reduces the new slice.
+    pending_items: dict[str, Annotated[float, Field(ge=0, le=1_000_000)]] | None = Field(
+        default=None, max_length=5000
+    )
+    allocation_pct: Annotated[int, Field(ge=1, le=100)] | None = None
+    label: Annotated[str, Field(max_length=120)] | None = None
+    app_version: Annotated[str, Field(max_length=40)] | None = None
+    pending_queue_count: Annotated[int, Field(ge=0, le=100000)] | None = None
+
+
+class PosOfflineStatusQuery(BaseModel):
+    """POST /pos/offline/status — grant, allocations, and resolution state for queued sales."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    device_id: PosDeviceIdValue
+    client_request_ids: list[ClientRequestIdValue] = Field(default_factory=list, max_length=500)
+
+
+class PosOfflineResolve(BaseModel):
+    """POST /pos/offline/conflicts/{id}/resolve — authorised resolution; never deletes the sale."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    action: Literal[
+        "approve_server_price",
+        "approve_outside_window",
+        "approve_allocation_override",
+        "approve_credit_override",
+        "dismiss",
+    ]
+    note: Annotated[str, Field(min_length=3, max_length=500)]
+
+
+class PosOfflineDeviceBlock(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    blocked: bool
 
 
 # --- Hotel module (rooms / guests / reservations / folio / HK / maintenance) ---
@@ -8920,11 +9455,11 @@ HotelHousekeepingStatusValue = Annotated[
     BeforeValidator(coerce_hotel_room_status_value),
 ]
 HotelReservationStatusValue = Annotated[
-    Literal["booked", "checked_in", "checked_out", "cancelled", "no_show"],
+    Literal["tentative", "booked", "checked_in", "checked_out", "cancelled", "no_show"],
     BeforeValidator(coerce_hotel_reservation_status_value),
 ]
 HotelBookingSourceValue = Annotated[
-    Literal["direct", "walk_in", "ota", "corporate", "phone", "other"],
+    Literal["direct", "walk_in", "ota", "corporate", "phone", "staff", "group", "other"],
     BeforeValidator(coerce_hotel_booking_source_value),
 ]
 HotelPaymentMethodValue = Annotated[
@@ -8936,6 +9471,8 @@ HotelChargeTypeValue = Annotated[
         "room",
         "restaurant",
         "laundry",
+        "transport",
+        "spa",
         "service",
         "damage",
         "extra",
@@ -8946,7 +9483,7 @@ HotelChargeTypeValue = Annotated[
     BeforeValidator(coerce_hotel_room_status_value),
 ]
 HotelListKindValue = Annotated[
-    Literal["arrivals", "departures", "in_house", "upcoming", "cancelled", "no_show"],
+    Literal["arrivals", "departures", "in_house", "upcoming", "cancelled", "no_show", "tentative"],
     BeforeValidator(coerce_hotel_reservation_status_value),
 ]
 
@@ -9002,6 +9539,9 @@ class HotelGuestCreate(BaseModel):
     company_name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
     preferences: Annotated[str, Field(min_length=1, max_length=1000)] | None = None
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+    consent_marketing: bool = False
+    travel_agent: Annotated[str, Field(min_length=1, max_length=150)] | None = None
+    loyalty_tier: Annotated[str, Field(min_length=1, max_length=40)] | None = None
 
 
 class HotelGuestUpdate(BaseModel):
@@ -9021,6 +9561,12 @@ class HotelGuestUpdate(BaseModel):
     is_active: bool | None = None
 
 
+class HotelGuestMerge(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_guest_id: UuidIdValue
+
+
 class HotelReservationCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -9037,6 +9583,10 @@ class HotelReservationCreate(BaseModel):
     deposit_method: HotelPaymentMethodValue | None = None
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
     walk_in: bool = False
+    status: Literal["tentative", "booked"] = "booked"
+    rate_plan_id: UuidIdValue | None = None
+    discount_percent: NonNegativeMoneyValue = 0
+    discount_authorized_by: UuidIdValue | None = None
 
 
 class HotelExtendStay(BaseModel):
@@ -9106,8 +9656,25 @@ class HotelMaintenanceCreate(BaseModel):
     title: Annotated[str, Field(min_length=1, max_length=150)]
     priority: Literal["low", "normal", "high", "urgent"] = "normal"
     block_room: bool = True
+    ooo_starts_on: IsoDateQueryValue | None = None
+    ooo_ends_on: IsoDateQueryValue | None = None
     assigned_to: Annotated[str, Field(min_length=1, max_length=150)] | None = None
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class HotelEventCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: Annotated[str, Field(min_length=1, max_length=150)]
+    space_name: Annotated[str, Field(min_length=1, max_length=120)]
+    starts_on: IsoDateQueryValue
+    ends_on: IsoDateQueryValue
+    expected_guests: Annotated[int, Field(ge=1, le=5000)] = 1
+    room_id: UuidIdValue | None = None
+    guest_id: UuidIdValue | None = None
+    deposit_amount: NonNegativeMoneyValue = 0
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+    status: Literal["inquiry", "confirmed"] = "inquiry"
 
 
 # --- FMCG module (trade schemes / routes / stops) ---
@@ -9211,6 +9778,109 @@ class HotelSettingsUpdate(BaseModel):
     tax_percent: NonNegativeMoneyValue | None = None
     service_charge_percent: NonNegativeMoneyValue | None = None
     notes: Annotated[str, Field(min_length=1, max_length=1000)] | None = None
+    property_name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
+
+
+class HotelReservationUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    room_id: UuidIdValue | None = None
+    check_in_date: IsoDateQueryValue | None = None
+    check_out_date: IsoDateQueryValue | None = None
+    adults: Annotated[int, Field(ge=1, le=20)] | None = None
+    children: Annotated[int, Field(ge=0, le=20)] | None = None
+    nightly_rate: NonNegativeMoneyValue | None = None
+    booking_source: HotelBookingSourceValue | None = None
+    special_requests: Annotated[str, Field(min_length=1, max_length=1000)] | None = None
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class HotelReservationDuplicate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    check_in_date: IsoDateQueryValue
+    check_out_date: IsoDateQueryValue
+
+
+class HotelRatePlanCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: Annotated[str, Field(min_length=1, max_length=40)]
+    name: Annotated[str, Field(min_length=1, max_length=150)]
+    amount: NonNegativeMoneyValue = 0
+    room_type: HotelRoomTypeValue | None = None
+    weekday_only: bool = False
+    weekend_only: bool = False
+    min_nights: Annotated[int, Field(ge=1, le=30)] = 1
+    starts_on: IsoDateQueryValue | None = None
+    ends_on: IsoDateQueryValue | None = None
+
+
+class HotelGuestRequestCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: Annotated[str, Field(min_length=1, max_length=150)]
+    kind: Literal["service", "wake_up", "note", "complaint"] = "service"
+    reservation_id: UuidIdValue | None = None
+    room_id: UuidIdValue | None = None
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class HotelLostFoundCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    description: Annotated[str, Field(min_length=1, max_length=500)]
+    kind: Literal["lost", "found", "damage"] = "lost"
+    room_id: UuidIdValue | None = None
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class HotelCashierShiftOpen(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    opening_float: NonNegativeMoneyValue = 0
+
+
+class HotelCashierShiftClose(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    closing_float: NonNegativeMoneyValue = 0
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class HotelFolioChargeTransfer(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    target_folio_id: UuidIdValue
+
+
+class HotelServiceCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: Annotated[str, Field(min_length=1, max_length=40)]
+    name: Annotated[str, Field(min_length=1, max_length=150)]
+    category: Literal["restaurant", "laundry", "transport", "spa", "extra", "service"] = "extra"
+    unit_amount: NonNegativeMoneyValue = 0
+    tax_percent: NonNegativeMoneyValue = 0
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class HotelServiceUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
+    category: Literal["restaurant", "laundry", "transport", "spa", "extra", "service"] | None = None
+    unit_amount: NonNegativeMoneyValue | None = None
+    tax_percent: NonNegativeMoneyValue | None = None
+    is_active: bool | None = None
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class HotelFolioServiceChargeCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    service_id: UuidIdValue
+    quantity: Annotated[float, Field(gt=0, le=100000)] = 1
 
 
 class HotelGroupReservationCreate(BaseModel):
@@ -9242,3 +9912,79 @@ class FmcgCustomerAssignmentUpsert(BaseModel):
     route_id: UuidIdValue | None = None
     salesperson_name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class PrescriptionItemIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    product_id: UuidIdValue
+    variant_id: UuidIdValue | None = None
+    quantity: Annotated[float, Field(gt=0, le=1_000_000)]
+    dosage_text: ProductDescriptionValue | None = None
+    notes: ProductDescriptionValue | None = None
+
+
+class PrescriptionCreate(BaseModel):
+    """POST /pharmacy/prescriptions — pharmacy tenants only. Not a HIS."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    customer_id: UuidIdValue | None = None
+    sale_id: UuidIdValue | None = None
+    prescriber_name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
+    notes: ProductDescriptionValue | None = None
+    items: Annotated[list[PrescriptionItemIn], Field(min_length=1, max_length=100)]
+
+
+class PrescriptionStatusUpdate(BaseModel):
+    """PATCH /pharmacy/prescriptions/{id} — counter statuses, not clinical review."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal[
+        "received",
+        "review",
+        "approved",
+        "partially_dispensed",
+        "dispensed",
+        "cancelled",
+        "voided",
+        "recorded",
+        "partial",
+    ]
+    sale_id: UuidIdValue | None = None
+
+
+class PrescriptionDispenseLine(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    product_id: UuidIdValue
+    variant_id: UuidIdValue | None = None
+    quantity: Annotated[float, Field(gt=0, le=1_000_000)]
+
+
+class PrescriptionDispense(BaseModel):
+    """POST /pharmacy/prescriptions/{id}/dispense — partial or full fill."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: Annotated[list[PrescriptionDispenseLine], Field(min_length=1, max_length=100)]
+    sale_id: UuidIdValue | None = None
+
+
+class PrescriptionVoid(PrescriptionStatusUpdate):
+    """Backward-compatible alias; voided maps to cancelled."""
+
+
+class BatchHoldCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    batch_id: UuidIdValue
+    hold_type: Literal["quarantine", "recall"]
+    reason: Annotated[str, Field(min_length=1, max_length=500)]
+
+
+class BatchHoldRelease(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["released"]

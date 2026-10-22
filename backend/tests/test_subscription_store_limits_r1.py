@@ -63,9 +63,45 @@ def test_stores_entitlement_ui_wired():
     assert "/stores/entitlement" in stores
     assert "Stores Used" in stores
     assert "store-limit" in stores
-    platform = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
+    assert "canCreateStore" in stores
+    platform = (ROOT / "frontend/app/(dashboard)/platform/tenants/page.tsx").read_text(encoding="utf-8")
     assert "max_stores_override" in platform
     assert "store-entitlement" in platform
+    assert "Single store" in platform
+    assert "Multi-store" in platform
+    shell = (ROOT / "frontend/components/Shell.tsx").read_text(encoding="utf-8")
+    assert "tenantIsMultiStore" in shell
+    assert "CASHIER_NAV_MODULES" in shell
+    nav = (ROOT / "frontend/lib/tenantNav.ts").read_text(encoding="utf-8")
+    assert "filterNavForStoreMode" in nav
+    cashier_line = next(
+        line for line in nav.splitlines() if "export const CASHIER_NAV_MODULES: string[]" in line
+    )
+    assert cashier_line == (
+        "export const CASHIER_NAV_MODULES: string[] = ['sales', 'pos', 'support'];"
+    )
+    assert "'reports'" not in cashier_line
+    assert "'company'" not in cashier_line
+
+
+def test_is_multi_store_and_create_override():
+    assert store_ent_svc.is_multi_store(
+        m.Tenant(slug="a", company_name="A", package_code="professional")
+    )
+    assert not store_ent_svc.is_multi_store(
+        m.Tenant(slug="b", company_name="B", package_code="starter")
+    )
+    assert not store_ent_svc.is_multi_store(
+        m.Tenant(slug="c", company_name="C", package_code="professional", max_stores_override=1)
+    )
+    assert store_ent_svc.resolve_create_max_stores_override("single", None) == 1
+    assert store_ent_svc.resolve_create_max_stores_override("multi", None) == 10
+    assert store_ent_svc.resolve_create_max_stores_override("multi", 5) == 5
+    flags = store_ent_svc.ui_store_flags(
+        m.Tenant(slug="d", company_name="D", package_code="starter", max_stores_override=1)
+    )
+    assert flags["max_stores"] == 1
+    assert flags["multi_store"] is False
 
 
 async def _admin(ac, seed):
@@ -328,11 +364,6 @@ async def test_concurrent_store_create_respects_limit(client, db_session):
 
     r1, r2 = await asyncio.gather(create_one("CONC-1"), create_one("CONC-2"))
     statuses = sorted([r1.status_code, r2.status_code])
-    if statuses == [200, 200]:
-        pytest.skip(
-            "SQLite StaticPool cannot prove FOR UPDATE concurrency; "
-            "create_store uses tenant row lock for Postgres."
-        )
     assert statuses == [200, 403], (r1.text, r2.text)
 
     rows = (
@@ -353,3 +384,71 @@ async def test_stores_entitlement_endpoint(client, db_session):
     assert "stores_active" in data
     assert "effective_store_limit" in data
     assert data["effective_store_limit"] == 10  # professional seed
+    assert data["multi_store"] is True
+    assert data["max_stores"] == 10
+
+
+@pytest.mark.asyncio
+async def test_me_exposes_multi_store_from_tenant_columns(client, db_session):
+    ac, seed = client
+    admin = await _admin(ac, seed)
+    me = await ac.get("/api/v1/me", headers=admin)
+    assert me.status_code == 200, me.text
+    body = me.json()["data"]
+    assert body["multi_store"] is True
+    assert body["max_stores"] == 10
+
+    tenant = await tenants_svc.get_tenant(db_session, seed["t1"].id)
+    await tenants_svc.set_max_stores_override(db_session, tenant, 1)
+    await db_session.commit()
+    me2 = await ac.get("/api/v1/me", headers=admin)
+    assert me2.status_code == 200, me2.text
+    assert me2.json()["data"]["multi_store"] is False
+    assert me2.json()["data"]["max_stores"] == 1
+
+
+@pytest.mark.asyncio
+async def test_create_tenant_store_mode_sets_override(client, db_session):
+    ac, seed = client
+    from tests.conftest import platform_owner_headers
+
+    headers = await platform_owner_headers(ac, seed)
+    single = await ac.post(
+        "/api/v1/tenants",
+        headers=headers,
+        json={
+            "company_name": "Solo Mart",
+            "slug": "solo-mart-store-mode",
+            "industry": "retail",
+            "currency": "GHS",
+            "admin_email": "solo.admin@example.com",
+            "admin_password": "SecurePass123!",
+            "store_mode": "single",
+        },
+    )
+    assert single.status_code == 200, single.text
+    row = (
+        await db_session.execute(select(m.Tenant).where(m.Tenant.slug == "solo-mart-store-mode"))
+    ).scalar_one()
+    assert row.max_stores_override == 1
+    assert store_ent_svc.is_multi_store(row) is False
+
+    multi = await ac.post(
+        "/api/v1/tenants",
+        headers=headers,
+        json={
+            "company_name": "Chain Mart",
+            "slug": "chain-mart-store-mode",
+            "industry": "retail",
+            "currency": "GHS",
+            "admin_email": "chain.admin@example.com",
+            "admin_password": "SecurePass123!",
+            "store_mode": "multi",
+        },
+    )
+    assert multi.status_code == 200, multi.text
+    row2 = (
+        await db_session.execute(select(m.Tenant).where(m.Tenant.slug == "chain-mart-store-mode"))
+    ).scalar_one()
+    assert row2.max_stores_override == 10
+    assert store_ent_svc.is_multi_store(row2) is True

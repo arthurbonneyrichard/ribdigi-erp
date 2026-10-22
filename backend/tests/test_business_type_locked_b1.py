@@ -30,8 +30,34 @@ async def test_platform_owner_can_change_industry_with_reason(client):
         headers=headers,
         json={"industry": "pharmacy", "reason": "Tenant contracted as a pharmacy"},
     )
+    assert resp.status_code == 422, resp.text
+
+    resp = await ac.patch(
+        f"/api/v1/tenants/{tenant_id}/industry",
+        headers=headers,
+        json={"industry": "hotel", "reason": "Tenant contracted as a hotel"},
+    )
     assert resp.status_code == 200, resp.text
-    assert resp.json()["data"]["industry"] == "pharmacy"
+    assert resp.json()["data"]["industry"] == "hotel"
+
+    admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    denied_rx = await ac.get("/api/v1/pharmacy/prescriptions", headers=admin)
+    assert denied_rx.status_code == 403, denied_rx.text
+
+    locked = await ac.patch(
+        f"/api/v1/tenants/{tenant_id}/industry",
+        headers=headers,
+        json={"industry": "retail", "reason": "Reverted to retail operations"},
+    )
+    assert locked.status_code == 200, locked.text
+    assert locked.json()["data"]["industry"] == "retail"
+    denied = await ac.get("/api/v1/pharmacy/prescriptions", headers=admin)
+    assert denied.status_code == 403, denied.text
+    dash = await ac.get("/api/v1/dashboard", headers=admin)
+    assert dash.status_code == 200
+    ids = {row["id"] for row in dash.json()["data"]["industry_features"]}
+    assert "prescriptions" not in ids
+    assert dash.json()["data"].get("rx_queue") is None
 
 
 @pytest.mark.asyncio
@@ -51,3 +77,62 @@ async def test_create_tenant_blank_industry_rejected(client):
         },
     )
     assert missing.status_code == 422, missing.text
+
+
+@pytest.mark.asyncio
+async def test_hotel_fmcg_and_restaurant_are_selectable_for_new_companies(client):
+    """Retail, Hotel, and Restaurant create successfully. Removed industries are rejected."""
+    from app.tenants import RETIRED_PROVISION_INDUSTRIES
+
+    assert RETIRED_PROVISION_INDUSTRIES == frozenset()
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
+    selectable = (
+        ("hotel", "Hotel Co", "hotel-co", "admin@hotel-co.example.com"),
+        ("restaurant", "Restaurant Co", "restaurant-co", "admin@restaurant-co.example.com"),
+        ("retail", "Retail Co", "retail-co", "admin@retail-co.example.com"),
+    )
+    rejected = ("fmcg", "pharmacy", "wholesale", "retail_wholesale", "hospital")
+    for industry in rejected:
+        blocked = await ac.post(
+            "/api/v1/tenants",
+            headers=headers,
+            json={
+                "company_name": f"{industry} Co",
+                "slug": f"{industry}-co",
+                "industry": industry,
+                "currency": "GHS",
+                "admin_email": f"admin@{industry}-co.example.com",
+                "admin_password": "SecurePass123!",
+            },
+        )
+        assert blocked.status_code == 422, blocked.text
+    for industry, company_name, slug, email in selectable:
+        created = await ac.post(
+            "/api/v1/tenants",
+            headers=headers,
+            json={
+                "company_name": company_name,
+                "slug": slug,
+                "industry": industry,
+                "currency": "GHS",
+                "admin_email": email,
+                "admin_password": "SecurePass123!",
+            },
+        )
+        assert created.status_code == 200, created.text
+        assert created.json()["data"]["slug"] == slug
+
+    listed = await ac.get("/api/v1/tenants", headers=headers)
+    assert listed.status_code == 200, listed.text
+    by_slug = {row["slug"]: row["industry"] for row in listed.json()["data"]}
+    for industry, _company_name, slug, _email in selectable:
+        assert by_slug[slug] == industry
+
+    changed = await ac.patch(
+        f"/api/v1/tenants/{seed['t1'].id}/industry",
+        headers=headers,
+        json={"industry": "restaurant", "reason": "Switching an existing company to restaurant"},
+    )
+    assert changed.status_code == 200, changed.text
+    assert changed.json()["data"]["industry"] == "restaurant"

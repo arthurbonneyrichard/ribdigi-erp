@@ -10,6 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app import packages as packages_svc
 
 # Roadmap: Setup company → Add products → Create supplier → (+ stock) → Make first sale
 STEP_DEFS: list[dict[str, str]] = [
@@ -45,8 +46,83 @@ STEP_DEFS: list[dict[str, str]] = [
     },
 ]
 
+HOTEL_STEP_DEFS: list[dict[str, str]] = [
+    {
+        "id": "setup_company",
+        "title": "Setup company profile",
+        "description": "Add phone, address, website, email, or company logo",
+        "href": "/company",
+    },
+    {
+        "id": "add_products",
+        "title": "Add rooms",
+        "description": "Create at least one hotel room",
+        "href": "/hotel?tab=rooms",
+    },
+    {
+        "id": "create_supplier",
+        "title": "Add guests",
+        "description": "Register a guest profile",
+        "href": "/hotel?tab=guests",
+    },
+    {
+        "id": "stock_ready",
+        "title": "Create a reservation",
+        "description": "Book a stay or walk-in",
+        "href": "/hotel?tab=reservations",
+    },
+    {
+        "id": "first_sale",
+        "title": "Check in a guest",
+        "description": "Check in a reservation and open the guest folio",
+        "href": "/hotel?tab=reservations",
+    },
+]
+
+FMCG_STEP_DEFS: list[dict[str, str]] = [
+    {
+        "id": "setup_company",
+        "title": "Setup company profile",
+        "description": "Add phone, address, website, email, or company logo",
+        "href": "/company",
+    },
+    {
+        "id": "add_products",
+        "title": "Add products",
+        "description": "Create at least one SKU in the catalog",
+        "href": "/inventory?tab=products",
+    },
+    {
+        "id": "create_supplier",
+        "title": "Create a trade scheme",
+        "description": "Add a percent, fixed, or BxGy scheme",
+        "href": "/fmcg?tab=schemes",
+    },
+    {
+        "id": "stock_ready",
+        "title": "Add a distribution route",
+        "description": "Create a route for deliveries",
+        "href": "/fmcg?tab=routes",
+    },
+    {
+        "id": "first_sale",
+        "title": "Make first sale",
+        "description": "Post a sales invoice or complete a POS sale",
+        "href": "/sales",
+    },
+]
+
 VALID_STEP_IDS = frozenset(s["id"] for s in STEP_DEFS)
 DISMISS_THRESHOLD_PCT = 80
+
+
+def step_defs_for_industry(industry: str | None) -> list[dict[str, str]]:
+    ind = packages_svc.canonicalize_industry(industry)
+    if ind == "hotel":
+        return HOTEL_STEP_DEFS
+    if ind == "fmcg":
+        return FMCG_STEP_DEFS
+    return STEP_DEFS
 
 
 def _state(tenant: m.Tenant) -> dict[str, Any]:
@@ -118,13 +194,66 @@ async def _auto_complete(db: AsyncSession, tenant_id: str, tenant: m.Tenant) -> 
         )
     ).scalar_one_or_none()
 
-    return {
+    flags = {
         "setup_company": company_done,
         "add_products": product_count >= 1,
         "create_supplier": supplier_count >= 1,
         "stock_ready": bool(stock_product or stock_wh),
         "first_sale": bool(posted_invoice or pos_sale),
     }
+
+    industry = packages_svc.canonicalize_industry(getattr(tenant, "industry", None))
+    if industry == "hotel":
+        room_count = int(
+            (
+                await db.execute(
+                    select(func.count()).select_from(m.HotelRoom).where(m.HotelRoom.tenant_id == tenant_id)
+                )
+            ).scalar_one()
+            or 0
+        )
+        guest_count = int(
+            (
+                await db.execute(
+                    select(func.count()).select_from(m.HotelGuest).where(m.HotelGuest.tenant_id == tenant_id)
+                )
+            ).scalar_one()
+            or 0
+        )
+        reservation = (
+            await db.execute(
+                select(m.HotelReservation.id).where(m.HotelReservation.tenant_id == tenant_id).limit(1)
+            )
+        ).scalar_one_or_none()
+        checked_in = (
+            await db.execute(
+                select(m.HotelReservation.id)
+                .where(
+                    m.HotelReservation.tenant_id == tenant_id,
+                    m.HotelReservation.status.in_(("checked_in", "checked_out")),
+                )
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+        flags["add_products"] = room_count >= 1
+        flags["create_supplier"] = guest_count >= 1
+        flags["stock_ready"] = bool(reservation)
+        flags["first_sale"] = bool(checked_in)
+    elif industry == "fmcg":
+        scheme = (
+            await db.execute(
+                select(m.FmcgTradeScheme.id).where(m.FmcgTradeScheme.tenant_id == tenant_id).limit(1)
+            )
+        ).scalar_one_or_none()
+        route = (
+            await db.execute(
+                select(m.FmcgRoute.id).where(m.FmcgRoute.tenant_id == tenant_id).limit(1)
+            )
+        ).scalar_one_or_none()
+        flags["create_supplier"] = bool(scheme)
+        flags["stock_ready"] = bool(route)
+
+    return flags
 
 
 async def build_checklist(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
@@ -136,7 +265,8 @@ async def build_checklist(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
     skipped = set(state["skipped"])
     steps = []
     done_count = 0
-    for meta in STEP_DEFS:
+    defs = step_defs_for_industry(getattr(tenant, "industry", None))
+    for meta in defs:
         sid = meta["id"]
         auto_done = bool(auto.get(sid))
         is_skipped = sid in skipped
@@ -151,7 +281,7 @@ async def build_checklist(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
                 "skipped": is_skipped and not auto_done,
             }
         )
-    total = len(STEP_DEFS)
+    total = len(defs)
     progress_pct = int(round((done_count / total) * 100)) if total else 100
     dismissed = bool(state.get("dismissed_at"))
     dismissible = progress_pct >= DISMISS_THRESHOLD_PCT

@@ -1,0 +1,113 @@
+.security-ui {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  max-width: 820px;
+}
+
+.security-ui h1,
+.security-ui h2,
+.security-ui h3 {
+  margin: 0 0 8px;
+}
+
+.security-ui-lead,
+.security-ui-note {
+  margin: 0;
+  max-width: 42rem;
+}
+
+.security-ui-alert {
+  margin: 0;
+  color: #b91c1c;
+}
+
+.security-ui-ok {
+  margin: 0;
+  color: var(--brand, #4ab012);
+}
+
+.security-ui-warn {
+  margin: 0;
+  color: #b45309;
+}
+
+.security-ui-form {
+  display: grid;
+  gap: 8px;
+  max-width: 24rem;
+}
+
+.security-ui-form input,
+.security-ui-form button {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.security-ui-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.security-ui-inline input {
+  flex: 1 1 12rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.security-ui-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  max-height: min(22rem, 60vh);
+  overflow: auto;
+}
+
+.security-ui-session {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-top: 1px solid var(--line, #d4e5c4);
+}
+
+.security-ui-session > div {
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+
+.security-ui-advanced > summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .security-ui-inline {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .security-ui-inline input,
+  .security-ui-inline button,
+  .security-ui-session button {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .security-ui {
+    overflow-x: hidden;
+  }
+
+  .security-ui input:not([type="checkbox"]):not([type="radio"]),
+  .security-ui select {
+    min-height: 44px;
+  }
+}

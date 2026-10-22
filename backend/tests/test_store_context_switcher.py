@@ -18,6 +18,7 @@ def test_store_context_switcher_packaged():
     shell = (ROOT / "frontend/components/Shell.tsx").read_text(encoding="utf-8")
     assert "StoreProvider" in shell
     assert "StoreSwitcher" in shell
+    assert "StoreSwitcher visible={!isHotelIndustry(industry)}" in shell
 
     for rel in (
         "frontend/app/(dashboard)/pos/page.tsx",

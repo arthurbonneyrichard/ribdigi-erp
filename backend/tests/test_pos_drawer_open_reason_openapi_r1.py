@@ -24,10 +24,13 @@ def test_pos_drawer_open_reason_schema():
 
 
 def test_pos_drawer_open_reason_ui_and_docs():
+    shell = (ROOT / "frontend/components/Shell.tsx").read_text(encoding="utf-8")
     page = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
-    assert 'aria-label="Cash drawer open reason"' in page
-    assert "drawerReason" in page
-    assert 'aria-label="Open cash drawer"' in page
+    assert 'aria-label="Cash drawer open reason"' in shell
+    assert "drawerReason" in shell
+    assert 'aria-label="Open drawer"' in shell
+    assert "setPosDrawerBridge" in page
+    assert "/pos/sessions/${sessionId}/drawer/open" in shell
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "PosDrawerOpenReasonValue" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")

@@ -106,3 +106,22 @@ async def test_transfers_filter_by_either_side_store(client, db_session):
         headers=headers,
     )
     assert missing.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_single_store_company_cannot_create_a_transfer(client, db_session):
+    ac, seed = client
+    headers = await _admin(ac, seed)
+    seed["t1"].max_stores_override = 1
+    await db_session.commit()
+    resp = await ac.post(
+        "/api/v1/stores/transfers",
+        headers=headers,
+        json={
+            "from_store_id": "00000000-0000-4000-8000-000000000001",
+            "to_store_id": "00000000-0000-4000-8000-000000000002",
+            "items": [{"product_id": seed["p1"].id, "quantity": 1}],
+        },
+    )
+    assert resp.status_code == 403, resp.text
+    assert "single-store" in resp.text.lower()

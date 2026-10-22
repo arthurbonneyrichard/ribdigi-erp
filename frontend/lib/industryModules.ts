@@ -1,16 +1,20 @@
+import { normalizeIndustry } from './industries';
+
 /** Business-type (industry) gating for industry-specific modules.
 
  * Must stay aligned with backend `app.packages.INDUSTRY_SPECIFIC_MODULES`
  * and `INDUSTRY_MODULE_ALLOWLIST`. Shared/core modules are never blocked here.
  */
 
-export const INDUSTRY_SPECIFIC_MODULES = ['hotel', 'fmcg'] as const;
+export const INDUSTRY_SPECIFIC_MODULES = ['hotel', 'fmcg', 'hospital', 'restaurant', 'ecommerce'] as const;
 
 export type IndustrySpecificModule = (typeof INDUSTRY_SPECIFIC_MODULES)[number];
 
 const ALLOWLIST: Record<string, ReadonlySet<string>> = {
   hotel: new Set(['hotel']),
-  fmcg: new Set(['fmcg']),
+  restaurant: new Set(['restaurant']),
+  retail: new Set(['ecommerce']),
+  pharmacy: new Set(['ecommerce']),
 };
 
 export function industryAllowsModule(
@@ -23,9 +27,8 @@ export function industryAllowsModule(
   if (!mod || !(INDUSTRY_SPECIFIC_MODULES as readonly string[]).includes(mod)) {
     return true;
   }
-  const ind = String(industry || 'retail')
-    .trim()
-    .toLowerCase();
+  const ind = normalizeIndustry(industry);
+  if (!ind) return false;
   return ALLOWLIST[ind]?.has(mod) ?? false;
 }
 

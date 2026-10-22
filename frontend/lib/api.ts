@@ -1,27 +1,162 @@
 import { clearSessionTheme } from './theme';
+import { bumpLastActivity, clearLastActivity } from './idleSession';
+import {
+  clearAuthTokens,
+  getAccessTokenSync,
+  getRefreshTokenSync,
+  hydrateAuth,
+  setAuthTokens,
+} from './authStorage';
 
-const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+/** Browser calls the Next.js origin; Next rewrites /api/v1 to the backend (avoids CORS Failed to fetch). */
+export function apiRoot(): string {
+  if (typeof window !== 'undefined') return '/api/v1';
+  const raw =
+    process.env.API_INTERNAL_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    'http://localhost:8000/api/v1';
+  return raw.replace(/\/$/, '');
+}
+
+const base = apiRoot();
+
+export type ApiClientError = Error & {
+  detail?: unknown;
+  status?: number;
+  retryAfter?: number;
+  requestId?: string;
+};
 
 // Backend X-Tenant-ID is UuidIdValue — slugs like platform must not be sent
 // or /me returns 422 and Shell clears the session back to login.
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-function tenantHeaderValue(raw: string | null): string | null {
+export function tenantHeaderValue(raw: string | null): string | null {
   const value = (raw || '').trim();
   if (!value || !UUID_RE.test(value)) return null;
   return value;
 }
 
+/** Sign-in and recovery must not send a leftover Platform/tenant session. */
+function isPublicAuthPath(path: string): boolean {
+  return (
+    path.startsWith('/auth/login') ||
+    path.startsWith('/auth/refresh') ||
+    path.startsWith('/auth/2fa/verify') ||
+    path.startsWith('/auth/password-reset') ||
+    path.startsWith('/auth/verify-email') ||
+    path.startsWith('/auth/resend-verification') ||
+    path.startsWith('/auth/webauthn/login')
+  );
+}
+
+export function unreachableApiMessage(path = ''): string {
+  const signingIn = path.startsWith('/auth/');
+  const browserOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
+  if (browserOffline && signingIn) {
+    return 'You are offline, so sign-in cannot finish. Reconnect, then sign in again. A till that was already prepared can keep selling only while its saved session is still open.';
+  }
+  if (browserOffline) {
+    return 'You are offline. Reconnect to continue. A prepared Point of Sale can keep selling from this device; other pages wait until the connection returns.';
+  }
+  if (signingIn) {
+    return 'Sign-in could not reach the server. Check the connection, then try again.';
+  }
+  return 'The server did not respond. Check the connection and try again. Pending Point of Sale sales stay on this device until sync succeeds.';
+}
+
+export function parseRetryAfterHeader(raw: string | null, now = Date.now()): number {
+  const text = (raw || '').trim();
+  if (!text) return 1;
+  const seconds = Number(text);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.max(1, Math.min(60, Math.ceil(seconds)));
+  const when = Date.parse(text);
+  if (Number.isFinite(when)) {
+    return Math.max(1, Math.min(60, Math.ceil((when - now) / 1000)));
+  }
+  return 1;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function requestMethod(opts: RequestInit): string {
+  return String(opts.method || 'GET').toUpperCase();
+}
+
+function isGetLike(opts: RequestInit): boolean {
+  const method = requestMethod(opts);
+  return (method === 'GET' || method === 'HEAD') && !opts.body;
+}
+
+export function isAbortError(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const name = (err as { name?: string }).name;
+  if (name === 'AbortError') return true;
+  const msg = String((err as { message?: string }).message || '');
+  return /the operation was aborted|request aborted|aborted without reason/i.test(msg);
+}
+
+function inflightKey(path: string): string {
+  const tenant = typeof window !== 'undefined' ? tenantHeaderValue(localStorage.getItem('tenant')) || '' : '';
+  return `${tenant || '_'}::${path}`;
+}
+
+function mergeAbortSignals(timeoutMs: number, userSignal?: AbortSignal | null): {
+  signal: AbortSignal;
+  cleanup: () => void;
+  timedOut: () => boolean;
+} {
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  const onUserAbort = () => {
+    if (!controller.signal.aborted) controller.abort();
+  };
+  if (userSignal) {
+    if (userSignal.aborted) onUserAbort();
+    else userSignal.addEventListener('abort', onUserAbort, { once: true });
+  }
+  return {
+    signal: controller.signal,
+    cleanup: () => {
+      clearTimeout(timer);
+      if (userSignal) userSignal.removeEventListener('abort', onUserAbort);
+    },
+    timedOut: () => timedOut,
+  };
+}
+
 // Shared in-flight refresh so concurrent 401s trigger a single token refresh.
 let refreshPromise: Promise<boolean> | null = null;
+const inflightGets = new Map<string, Promise<any>>();
+const getBackoffUntil = new Map<string, number>();
+const GET_429_MAX_RETRIES = 2;
+const GET_429_MAX_WAIT_MS = 8_000;
+
+/** Confirmed unauthenticated only — never treat 403/429/5xx as expiry. */
+export function isConfirmedAuthExpiry(err: unknown): boolean {
+  const status = (err as { status?: number })?.status;
+  return status === 401;
+}
 
 /** Clear local auth and send the user to login (used on 401 and idle timeout). */
 export function clearSessionAndRedirect() {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem('token');
-  localStorage.removeItem('refresh_token');
+  void clearAuthTokens();
   localStorage.removeItem('tenant');
+  clearLastActivity();
+  try {
+    sessionStorage.removeItem('ribdigi:uid');
+    sessionStorage.removeItem('ribdigi:store');
+  } catch {
+    /* ignore */
+  }
   try {
     sessionStorage.clear();
   } catch {
@@ -33,6 +168,9 @@ export function clearSessionAndRedirect() {
     .catch(() => undefined);
   void import('./prefetchCache')
     .then((m) => m.invalidatePrefetchCache())
+    .catch(() => undefined);
+  void import('./posOffline')
+    .then((m) => m.clearOfflineOnLogout())
     .catch(() => undefined);
   if (window.location.pathname !== '/') {
     window.location.replace('/');
@@ -52,8 +190,8 @@ export function idleTimeoutMs(minutes?: number | null): number {
 
 async function refreshSession(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
-  const raw = localStorage.getItem('refresh_token');
-  const trimmedRefreshToken = (raw || '').trim();
+  await hydrateAuth();
+  const trimmedRefreshToken = (getRefreshTokenSync() || '').trim();
   if (!trimmedRefreshToken) return false;
   if (!refreshPromise) {
     refreshPromise = (async () => {
@@ -68,8 +206,7 @@ async function refreshSession(): Promise<boolean> {
         const body = await r.json().catch(() => ({}));
         const data = body?.data || body;
         if (!data?.access_token) return false;
-        localStorage.setItem('token', data.access_token);
-        if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
+        await setAuthTokens(data.access_token, data.refresh_token || trimmedRefreshToken);
         return true;
       } catch {
         return false;
@@ -83,15 +220,23 @@ async function refreshSession(): Promise<boolean> {
 }
 
 /** Safe user-facing API error. Never include tokens, passwords, SQL, or stack traces. */
-export function formatApiError(body: unknown, status: number): string {
+export function formatApiError(body: unknown, status: number, path?: string): string {
+  const hotelRequest = typeof path === 'string' && path.includes('/hotel/');
+  const loginRequest = typeof path === 'string' && (path === '/auth/login' || path.startsWith('/auth/login?'));
   const fallbackByStatus = (code: number): string => {
     if (code === 401) return 'Your session expired. Please sign in again.';
     if (code === 403) return 'You do not have permission to do that.';
     if (code === 404) return 'Not found.';
     if (code === 409) return 'That record already exists.';
     if (code === 422) return 'Some fields are invalid. Check email, role, phone (E.164), and password.';
-    if (code === 503) return 'The service is busy. Try again in a moment.';
-    if (code >= 500) return 'The server could not complete this request.';
+    if (code === 429) return 'Too many requests. Wait a moment, then retry.';
+    if (code === 503) return 'This extra is not ready on the server yet. Rooms and reservations still work.';
+    if (code >= 500) {
+      if (hotelRequest) {
+        return 'Could not complete that. Try again. Hotel extras may need a database update; rooms and reservations are separate.';
+      }
+      return 'Could not complete that. Try again.';
+    }
     return 'Request failed';
   };
   const looksUnsafe = (text: string): boolean => {
@@ -107,8 +252,16 @@ export function formatApiError(body: unknown, status: number): string {
     if (typeof raw !== 'string') return '';
     const text = raw.replace(/^Value error,\s*/i, '').trim();
     if (!text || looksUnsafe(text)) return '';
+    if (/^RATE_LIMIT_EXCEEDED$/i.test(text)) return '';
     return text;
   };
+
+  if (status === 429) {
+    const payload = body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
+    const msg = cleanMsg(payload.message);
+    if (msg) return msg;
+    return fallbackByStatus(429);
+  }
 
   const payload = body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
   const detail = payload.detail;
@@ -119,6 +272,14 @@ export function formatApiError(body: unknown, status: number): string {
     const rec = detail as Record<string, unknown>;
     const text = cleanMsg(rec.message) || cleanMsg(rec.msg);
     if (text) return text;
+    const fieldParts: string[] = [];
+    for (const [key, val] of Object.entries(rec)) {
+      const msg = cleanMsg(val);
+      if (!msg) continue;
+      if (looksUnsafe(key)) fieldParts.push(msg);
+      else fieldParts.push(`${key}: ${msg}`);
+    }
+    if (fieldParts.length) return fieldParts.join(' ');
   } else if (Array.isArray(detail)) {
     const parts: string[] = [];
     for (const item of detail) {
@@ -146,9 +307,34 @@ export function formatApiError(body: unknown, status: number): string {
   return fallbackByStatus(status);
 }
 
-export async function api(path: string, opts: RequestInit = {}, retryOn401 = true) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const tenant = typeof window !== 'undefined' ? localStorage.getItem('tenant') : null;
+function attachApiError(
+  body: unknown,
+  status: number,
+  retryAfter?: number,
+  requestId?: string,
+  path?: string
+): ApiClientError {
+  const err = new Error(formatApiError(body, status, path)) as ApiClientError;
+  err.detail = body && typeof body === 'object' ? (body as { detail?: unknown }).detail : undefined;
+  err.status = status;
+  if (retryAfter && retryAfter > 0) err.retryAfter = retryAfter;
+  const fromBody =
+    body && typeof body === 'object' && typeof (body as { request_id?: unknown }).request_id === 'string'
+      ? String((body as { request_id: string }).request_id)
+      : '';
+  const rid = (requestId || fromBody).trim();
+  if (rid) err.requestId = rid;
+  return err;
+}
+
+export { getAccessTokenSync as getAccessToken, setAuthTokens, hydrateAuth };
+
+/** Same-origin fetch with auth headers. Use for blobs/PDFs; JSON callers use `api()`. */
+export async function apiFetch(path: string, opts: RequestInit = {}, retryOn401 = true): Promise<Response> {
+  const publicAuth = isPublicAuthPath(path);
+  if (typeof window !== 'undefined') await hydrateAuth();
+  const token = typeof window !== 'undefined' && !publicAuth ? getAccessTokenSync() : null;
+  const tenant = typeof window !== 'undefined' && !publicAuth ? localStorage.getItem('tenant') : null;
   const isFormData = typeof FormData !== 'undefined' && opts.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
@@ -160,46 +346,94 @@ export async function api(path: string, opts: RequestInit = {}, retryOn401 = tru
   // Let the browser set multipart boundary for FormData
   if (isFormData) delete headers['Content-Type'];
 
-  const controller = new AbortController();
-  const timeoutMs = 20000;
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const timeoutMs = isFormData ? 60000 : 20000;
+  const merged = mergeAbortSignals(timeoutMs, opts.signal ?? null);
   let response: Response;
   try {
     response = await fetch(base + path, {
       ...opts,
       headers,
       cache: 'no-store',
-      signal: opts.signal ?? controller.signal,
+      signal: merged.signal,
     });
   } catch (err: unknown) {
-    clearTimeout(timer);
-    if (err instanceof DOMException && err.name === 'AbortError') {
-      throw new Error('The request timed out. Check your connection and try again.');
+    merged.cleanup();
+    if (isAbortError(err) || (err instanceof DOMException && err.name === 'AbortError')) {
+      if (opts.signal?.aborted) {
+        const aborted = new DOMException('The operation was aborted.', 'AbortError');
+        throw aborted;
+      }
+      if (merged.timedOut()) {
+        throw new Error('The request timed out. Check your connection and try again.');
+      }
+      const aborted = new DOMException('The operation was aborted.', 'AbortError');
+      throw aborted;
+    }
+    const raw = err instanceof Error ? err.message : '';
+    if (!raw || /failed to fetch|networkerror|load failed/i.test(raw)) {
+      throw new Error(unreachableApiMessage(path));
     }
     throw err;
   }
-  clearTimeout(timer);
+  merged.cleanup();
 
-  // Session expired: try a one-time refresh + retry, otherwise send back to login.
-  // Auth endpoints are excluded so the login/2FA flow is never disrupted.
   if (response.status === 401 && retryOn401 && !path.startsWith('/auth/') && typeof window !== 'undefined') {
     const refreshed = await refreshSession();
     if (refreshed) {
-      return api(path, opts, false);
+      return apiFetch(path, opts, false);
     }
     clearSessionAndRedirect();
   }
 
+  return response;
+}
+
+async function apiOnce(path: string, opts: RequestInit, retryOn401: boolean, getRetries: number): Promise<any> {
+  const response = await apiFetch(path, opts, retryOn401);
   const body = await response.json().catch(() => ({}));
+  const requestId = response.headers.get('X-Request-ID') || undefined;
+  if (response.status === 429) {
+    const retryAfter = parseRetryAfterHeader(response.headers.get('Retry-After'));
+    const method = requestMethod(opts);
+    if (method === 'GET' && getRetries < GET_429_MAX_RETRIES) {
+      const backoffKey = inflightKey(path);
+      const untilExisting = getBackoffUntil.get(backoffKey) || 0;
+      const now = Date.now();
+      if (untilExisting > now) {
+        throw attachApiError(body, 429, Math.ceil((untilExisting - now) / 1000), requestId, path);
+      }
+      const waitMs = Math.min(GET_429_MAX_WAIT_MS, Math.max(1000, retryAfter * 1000));
+      getBackoffUntil.set(backoffKey, now + waitMs);
+      await sleep(waitMs);
+      if (opts.signal?.aborted) {
+        throw new DOMException('The operation was aborted.', 'AbortError');
+      }
+      return apiOnce(path, opts, retryOn401, getRetries + 1);
+    }
+    throw attachApiError(body, 429, retryAfter, requestId, path);
+  }
   if (!response.ok) {
-    const detail = body.detail;
-    const message = formatApiError(body, response.status);
-    const err = new Error(message) as Error & { detail?: unknown; status?: number };
-    err.detail = detail;
-    err.status = response.status;
-    throw err;
+    throw attachApiError(body, response.status, undefined, requestId, path);
+  }
+  if (typeof window !== 'undefined' && !isGetLike(opts) && !isPublicAuthPath(path)) {
+    bumpLastActivity();
   }
   return body;
+}
+
+export async function api(path: string, opts: RequestInit = {}, retryOn401 = true): Promise<any> {
+  // Do not share in-flight GETs that the caller may abort (stale search / navigation).
+  if (isGetLike(opts) && !opts.signal) {
+    const key = inflightKey(path);
+    const pending = inflightGets.get(key);
+    if (pending) return pending;
+    const run = apiOnce(path, opts, retryOn401, 0).finally(() => {
+      inflightGets.delete(key);
+    });
+    inflightGets.set(key, run);
+    return run;
+  }
+  return apiOnce(path, opts, retryOn401, 0);
 }
 
 /** Load a GET without failing sibling Promise.all calls (pages must not stay on Loading). */
@@ -208,7 +442,15 @@ export async function apiOptional(path: string, opts: RequestInit = {}) {
     const body = await api(path, opts);
     return { ...body, error: null as string | null };
   } catch (err: unknown) {
+    if (isAbortError(err)) {
+      return { data: null, message: undefined, error: null as string | null, aborted: true as const };
+    }
     const message = err instanceof Error ? err.message : 'Request failed';
     return { data: null, message: undefined, error: message };
   }
+}
+
+export function resetApiGetCoalescing() {
+  inflightGets.clear();
+  getBackoffUntil.clear();
 }

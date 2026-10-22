@@ -221,6 +221,12 @@ async def create_count(
     product_ids: list[str] | None = None,
 ) -> m.StockCount:
     await get_warehouse(db, tenant_id, warehouse_id)
+    if user_id:
+        from app import store_access as store_access_svc
+
+        await store_access_svc.assert_warehouse_access(
+            db, tenant_id=tenant_id, user_id=user_id, warehouse_id=warehouse_id
+        )
     ids = await _resolve_product_ids(
         db, tenant_id=tenant_id, warehouse_id=warehouse_id, product_ids=product_ids
     )

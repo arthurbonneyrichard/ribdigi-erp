@@ -11,7 +11,7 @@ from app.honesty import money_json
 # Always available so tenants can log in, see home, and get security alerts.
 # User Management is core tenant ops (Company Admin create/edit staff) — never package-strip it.
 ALWAYS_ON_MODULES: frozenset[str] = frozenset(
-    {"dashboard", "notifications", "security", "users", "staff_guide"}
+    {"dashboard", "notifications", "security", "users", "staff_guide", "printers"}
 )
 
 # Modules a package may grant (excludes platform — software-owner only).
@@ -29,6 +29,8 @@ PACKAGEABLE_MODULES: tuple[str, ...] = (
     "stores",
     "hotel",
     "fmcg",
+    "hospital",
+    "restaurant",
     "reports",
     "notifications",
     "audit",
@@ -38,6 +40,8 @@ PACKAGEABLE_MODULES: tuple[str, ...] = (
     "security",
     "customers",
     "suppliers",
+    "printers",
+    "ecommerce",
 )
 
 _STARTER = (
@@ -53,6 +57,13 @@ _STARTER = (
     "users",
     "customers",
     "suppliers",
+    "printers",
+    # Industry verticals are packageable on every plan; resolve_enabled_modules
+    # still strips them unless the tenant's saved industry matches.
+    "hotel",
+    "fmcg",
+    "hospital",
+    "restaurant",
 )
 
 _PROFESSIONAL = _STARTER + (
@@ -60,12 +71,11 @@ _PROFESSIONAL = _STARTER + (
     "credit",
     "tax",
     "stores",
-    "hotel",
-    "fmcg",
     "reports",
     "audit",
     "backup",
     "ai",
+    "ecommerce",
 )
 
 _ENTERPRISE = tuple(m for m in PACKAGEABLE_MODULES)
@@ -112,26 +122,71 @@ VALID_TERM_UNITS = frozenset({"months", "years"})
 
 # Industry-specific modules are packageable but only activate for matching business types.
 # Core modules (inventory, sales, POS, …) stay shared across industries.
-INDUSTRY_SPECIFIC_MODULES: frozenset[str] = frozenset({"hotel", "fmcg"})
+INDUSTRY_SPECIFIC_MODULES: frozenset[str] = frozenset(
+    {"hotel", "fmcg", "hospital", "restaurant", "ecommerce"}
+)
 
 # Business type → industry modules that may activate (in addition to shared core).
 # Industries omitted here get no industry-specific modules (retail/mart/pharmacy/…).
 INDUSTRY_MODULE_ALLOWLIST: dict[str, frozenset[str]] = {
     "hotel": frozenset({"hotel"}),
-    "fmcg": frozenset({"fmcg"}),
+    "restaurant": frozenset({"restaurant"}),
+    "retail": frozenset({"ecommerce"}),
+    "pharmacy": frozenset({"ecommerce"}),
 }
+
+# Implemented industry verticals (must match shipped UI + APIs). Unimplemented
+# verticals are never added to enabled_modules or the sidebar.
+IMPLEMENTED_INDUSTRY_MODULES: frozenset[str] = frozenset({"hotel", "restaurant", "ecommerce"})
+
+# Pharmacy stays recognizable for companies that already use it. New companies
+# cannot choose it (VALID_INDUSTRIES / the create picker stay retail, hotel, restaurant).
+CANONICAL_INDUSTRIES: frozenset[str] = frozenset({"retail", "hotel", "restaurant", "pharmacy"})
+
+# Safe aliases → canonical customer industries. Removed desks do not map onto retail.
+INDUSTRY_ALIASES: dict[str, str] = {
+    "hospitality": "hotel",
+    "hotels": "hotel",
+    "lodging": "hotel",
+    "accommodation": "hotel",
+    "guest_house": "hotel",
+    "guesthouse": "hotel",
+    "retail_mart": "retail",
+    "retail/mart": "retail",
+    "resto": "restaurant",
+    "food_service": "restaurant",
+    "cafe": "restaurant",
+}
+
+
+def canonicalize_industry(industry: str | None) -> str | None:
+    """Map a stored/display industry to a canonical code, or None if invalid."""
+    if industry is None:
+        return None
+    raw = str(industry).strip().lower().replace(" ", "_").replace("-", "_")
+    if not raw:
+        return None
+    raw = INDUSTRY_ALIASES.get(raw, raw)
+    if raw in CANONICAL_INDUSTRIES:
+        return raw
+    return None
 
 
 def industry_allows_module(industry: str | None, module: str) -> bool:
     """Whether a module is allowed for the tenant's business type.
 
     Non-industry-specific (shared/core) modules always pass. Industry-specific
-    modules require a matching industry allowlist entry.
+    modules require a matching, valid industry allowlist entry. Unknown or
+    blank industry does not default to retail for vertical modules.
     """
     mod = (module or "").strip().lower()
     if not mod or mod not in INDUSTRY_SPECIFIC_MODULES:
         return True
-    ind = (industry or "retail").strip().lower()
+    if mod not in IMPLEMENTED_INDUSTRY_MODULES:
+        return False
+    ind = canonicalize_industry(industry)
+    if ind is None:
+        return False
     return mod in INDUSTRY_MODULE_ALLOWLIST.get(ind, frozenset())
 
 
@@ -199,8 +254,10 @@ def resolve_enabled_modules(tenant) -> list[str]:
                 mods.append(m)
     else:
         mods = package_modules(getattr(tenant, "package_code", None))
-    industry = getattr(tenant, "industry", None)
-    return filter_modules_for_industry(mods, industry)
+    industry = canonicalize_industry(getattr(tenant, "industry", None))
+    filtered = filter_modules_for_industry(mods, industry)
+    # Drop unimplemented verticals even if a custom override listed them.
+    return [m for m in filtered if m not in INDUSTRY_SPECIFIC_MODULES or m in IMPLEMENTED_INDUSTRY_MODULES]
 
 
 def module_allowed(tenant, module: str) -> bool:
@@ -289,4 +346,7 @@ def usage_snapshot(tenant, *, now: datetime | None = None) -> dict[str, Any]:
         "store_limit": getattr(tenant, "store_limit", None),
         "subscription_store_entitlement": store_ent_svc.subscription_store_entitlement(tenant),
         "effective_store_limit": store_ent_svc.effective_store_limit(tenant),
+        "max_stores": store_ent_svc.subscription_store_entitlement(tenant),
+        "multi_store": store_ent_svc.is_multi_store(tenant),
+        "unlimited_stores": store_ent_svc.subscription_store_entitlement(tenant) is None,
     }

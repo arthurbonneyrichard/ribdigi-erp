@@ -65,7 +65,7 @@ async def _for_each_tenant(
             except Exception as exc:  # noqa: BLE001 — isolate tenant failures in batch jobs
                 logger.exception("Scheduled job failed for tenant %s", tenant_id)
                 await db.rollback()
-                results.append({"tenant_id": tenant_id, "ok": False, "error": str(exc)})
+                results.append({"tenant_id": tenant_id, "ok": False, "error": "job_failed"})
     return {"tenants": len(results), "results": results}
 
 
@@ -94,6 +94,16 @@ async def job_scan_quotation_expiry() -> dict:
 
     async def work(db: AsyncSession, tenant_id: str) -> dict:
         created = await notifications_svc.scan_quotation_expiry(db, tenant_id)
+        return {"created": created}
+
+    return await _for_each_tenant(work)
+
+
+async def job_scan_batch_expiry() -> dict:
+    from app import notifications as notifications_svc
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        created = await notifications_svc.scan_batch_expiry(db, tenant_id)
         return {"created": created}
 
     return await _for_each_tenant(work)
@@ -143,7 +153,7 @@ async def job_scan_trial_lifecycle() -> dict:
         except Exception as exc:  # noqa: BLE001
             logger.exception("Trial lifecycle job failed")
             await db.rollback()
-            return {"ok": False, "error": str(exc)}
+            return {"ok": False, "error": "job_failed"}
 
 
 async def job_run_due_report_emails() -> dict:
@@ -241,10 +251,74 @@ async def job_send_weekly_ai_insight_digest() -> dict:
     return await _for_each_tenant(work)
 
 
+async def job_process_subscription_renewals() -> dict:
+    from app import saas_billing as billing_svc
+
+    async with SessionLocal() as db:
+        try:
+            outcome = await billing_svc.process_due_renewals(db)
+            await db.commit()
+            return {"ok": True, **outcome}
+        except Exception:
+            logger.exception("Subscription renewal job failed")
+            await db.rollback()
+            return {"ok": False, "error": "job_failed"}
+
+
+async def job_expire_ecommerce_reservations() -> dict:
+    from app import ecommerce as ecom
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        expired = await ecom.expire_due_reservations(db, tenant_id)
+        return {"expired": expired}
+
+    return await _for_each_tenant(work)
+
+
+async def job_sync_ecommerce_connectors() -> dict:
+    from app import ecommerce as ecom
+    from app import ecommerce_connectors as connectors_svc
+    from sqlalchemy import select
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        retried = await connectors_svc.retry_failed_syncs(db, tenant_id)
+        tenant = await ecom.get_tenant(db, tenant_id)
+        due = (
+            await db.execute(
+                select(m.EcommerceConnector).where(
+                    m.EcommerceConnector.tenant_id == tenant_id,
+                    m.EcommerceConnector.is_enabled.is_(True),
+                    m.EcommerceConnector.platform == "woocommerce",
+                )
+            )
+        ).scalars().all()
+        ran = 0
+        for connector in due:
+            running = (
+                await db.execute(
+                    select(m.EcommerceSyncJob).where(
+                        m.EcommerceSyncJob.tenant_id == tenant_id,
+                        m.EcommerceSyncJob.connector_id == connector.id,
+                        m.EcommerceSyncJob.status == "running",
+                    )
+                )
+            ).scalar_one_or_none()
+            if running is not None:
+                continue
+            await connectors_svc.run_connector_sync(
+                db, tenant=tenant, connector=connector, kind="products"
+            )
+            ran += 1
+        return {"retried": retried, "synced": ran}
+
+    return await _for_each_tenant(work)
+
+
 JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "scan_low_stock": job_scan_low_stock,
     "scan_payment_due": job_scan_payment_due,
     "scan_quotation_expiry": job_scan_quotation_expiry,
+    "scan_batch_expiry": job_scan_batch_expiry,
     "scan_recurring_expense_due": job_scan_recurring_expense_due,
     "generate_recurring_expenses": job_generate_recurring_expenses,
     "run_due_backups": job_run_due_backups,
@@ -256,6 +330,9 @@ JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "retry_due_webhooks": job_retry_due_webhooks,
     "scan_ai_security_alerts": job_scan_ai_security_alerts,
     "send_weekly_ai_insight_digest": job_send_weekly_ai_insight_digest,
+    "process_subscription_renewals": job_process_subscription_renewals,
+    "expire_ecommerce_reservations": job_expire_ecommerce_reservations,
+    "sync_ecommerce_connectors": job_sync_ecommerce_connectors,
 }
 
 

@@ -42,14 +42,22 @@ def test_custom_role_base_role_literal_schema():
         )
     with pytest.raises(ValidationError):
         CustomRoleCreate.model_validate(
-            {"key": "x", "label": "X", "base_role": "garbage_xyz"}
+            {"key": "x", "label": "X", "base_role": "platform_owner"}
         )
+    hotel = CustomRoleCreate.model_validate(
+        {"key": "lead_x", "label": "X", "base_role": "hotel_manager"}
+    )
+    assert hotel.base_role == "hotel_manager"
+    unknown = CustomRoleCreate.model_validate(
+        {"key": "lead_y", "label": "X", "base_role": "garbage_xyz"}
+    )
+    assert unknown.base_role == "garbage_xyz"
 
 
 def test_custom_role_base_role_ui_and_docs():
     users = (ROOT / "frontend/app/(dashboard)/users/page.tsx").read_text(encoding="utf-8")
-    assert "base_role" in users
-    assert "Clone from" in users
+    assert "Clone from" not in users
+    assert "base_role" not in users
     assert "super_admin" in users
     api = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "base_role" in api

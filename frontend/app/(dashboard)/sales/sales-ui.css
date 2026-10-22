@@ -1,0 +1,266 @@
+/* Sales screen layout. Prefix sales-ui- only. Brand stays var(--brand) #4AB012. */
+
+.sales-ui-page {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.sales-ui-path {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 8px 0 0;
+  max-width: 70ch;
+}
+
+.sales-ui-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  margin: 12px 0;
+}
+
+.sales-ui-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  margin: 0 0 12px;
+}
+
+.sales-ui-settings {
+  margin: 0 0 12px;
+  min-width: 0;
+  border: 1px solid var(--line, #d4e5c4);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: var(--mist, #f2f7ec);
+}
+
+.sales-ui-settings > summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.sales-ui-settings-grid {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.sales-ui-note {
+  margin: 0 0 12px;
+  max-width: 70ch;
+}
+
+.sales-ui-page .list-table-wrap,
+.sales-ui-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+  min-width: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sales-ui-page .list-table-wrap .table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 560px;
+  white-space: normal;
+}
+
+.sales-ui-page .erp-row-actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  white-space: nowrap;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.sales-ui-page td.col-actions,
+.sales-ui-page td.erp-row-actions {
+  width: 8rem;
+  max-width: 8rem;
+  text-align: right;
+  white-space: nowrap;
+  vertical-align: middle;
+  overflow: visible;
+}
+
+.sales-ui-page .table th.col-num,
+.sales-ui-page .table td.col-num {
+  width: 6.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sales-ui-page .table th.col-status,
+.sales-ui-page .table td.col-status {
+  width: 6.75rem;
+  white-space: nowrap;
+}
+
+.sales-ui-page .table th.col-text,
+.sales-ui-page .table td.col-text {
+  white-space: normal;
+  overflow: visible;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.sales-ui-page .table th.col-id,
+.sales-ui-page .table td.col-id {
+  width: 7.5rem;
+}
+
+.sales-ui-page .table th.col-date,
+.sales-ui-page .table td.col-date {
+  width: 8rem;
+}
+
+.sales-ui-page .sales-paper-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 14px;
+  margin: 0 0 10px;
+}
+
+.sales-ui-page .card,
+.sales-ui-page .cat-panel {
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .sales-ui-page {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  .sales-ui-path {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    max-width: 100%;
+  }
+
+  .work.sales-desk.sales-ui-page .sales-toolbar.sales-ui-nav {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    max-width: 100%;
+    min-width: 0;
+    overflow: visible;
+  }
+
+  .work.sales-desk.sales-ui-page .sales-toolbar .sales-tab {
+    flex: 0 1 auto;
+    width: auto;
+    max-width: 100%;
+    min-height: 44px;
+  }
+
+  .work.sales-desk.sales-ui-page .sales-search {
+    flex: 1 0 100%;
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    min-height: 44px;
+    order: 1;
+  }
+
+  .sales-ui-page .erp-form-grid,
+  .sales-ui-page .erp-split,
+  .sales-ui-page .sales-ui-actions,
+  .sales-ui-page .sales-desk-head {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .sales-ui-page div[style*="flex-wrap: wrap"],
+  .sales-ui-page div[style*="flex-wrap:wrap"] {
+    display: flex !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    grid-template-columns: none !important;
+    align-items: stretch !important;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .sales-ui-page .erp-form-grid > *,
+  .sales-ui-page input,
+  .sales-ui-page select,
+  .sales-ui-page textarea {
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .sales-ui-page div[style*="flex-wrap: wrap"] > input,
+  .sales-ui-page div[style*="flex-wrap: wrap"] > select,
+  .sales-ui-page div[style*="flex-wrap: wrap"] > textarea,
+  .sales-ui-page div[style*="flex-wrap: wrap"] > button,
+  .sales-ui-page div[style*="flex-wrap:wrap"] > input,
+  .sales-ui-page div[style*="flex-wrap:wrap"] > select,
+  .sales-ui-page div[style*="flex-wrap:wrap"] > textarea,
+  .sales-ui-page div[style*="flex-wrap:wrap"] > button,
+  .sales-ui-page .erp-form-grid input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  .sales-ui-page .erp-form-grid select,
+  .sales-ui-page .erp-form-grid textarea,
+  .sales-ui-page .sales-toolbar input,
+  .sales-ui-page .sales-toolbar select,
+  .sales-ui-page select.list-toolbar,
+  .sales-ui-page .erp-form-grid > button,
+  .sales-ui-page .sales-ui-actions > button,
+  .sales-ui-page .sales-desk-head > button,
+  .sales-ui-page .list-page-head > button,
+  .sales-ui-page .cat-head > button {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 44px;
+  }
+
+  .sales-ui-page .field,
+  .sales-ui-page .erp-form-grid > label {
+    align-items: stretch;
+    text-align: left;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .sales-ui-page .card {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  .sales-ui-page .list-table-wrap {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+
+  .sales-ui-page .erp-row-actions {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+  }
+
+  .sales-ui-page .erp-row-actions button {
+    width: auto;
+    max-width: none;
+    min-height: 36px;
+  }
+}

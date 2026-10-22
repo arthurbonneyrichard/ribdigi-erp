@@ -62,6 +62,9 @@ services:
         NEXT_PUBLIC_UMAMI_SRC: ${NEXT_PUBLIC_UMAMI_SRC:-https://analytics.ribdigihouse.com/script.js}
         NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-0d5b3d4e-fe16-47bf-91f2-6ce564fb2e0e}
         NEXT_PUBLIC_UMAMI_DOMAINS: ${NEXT_PUBLIC_UMAMI_DOMAINS:-erp.ribdigihouse.com}
+    # Rebuild from this checkout. A cached frontend image omits the sign-in
+    # status handling and can keep serving an older page against a new API.
+    pull_policy: build
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -92,12 +95,15 @@ services:
         max-file: "5"
 
   backend:
+    image: ribdigi-backend:eb5720b74b52
+    pull_policy: build
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
       args:
-        # Bump to force Dokploy/BuildKit to rebuild app+alembic layers
-        RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
+        # Must match backend/ribdigi-build-id.txt. Image /app/.build-id is the
+        # git short sha of the commit Dokploy checks out (see resolve_source_revision.py).
+        RIBDIGI_SOURCE_REV: "eb5720b74b52"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -107,7 +113,6 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       UVICORN_WORKERS: ${UVICORN_WORKERS:-2}
       RIBDIGI_RELEASE_CHANNEL: production
-      RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
     volumes:
       - backup_data:/data/backups
       - media_data:/data/media
@@ -149,18 +154,19 @@ services:
   # One-shot schema migration (Alembic). Refuses create_all in production.
   # ---------------------------------------------------------------------------
   migrate:
+    image: ribdigi-backend:eb5720b74b52
+    pull_policy: build
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
       args:
-        RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
+        RIBDIGI_SOURCE_REV: "eb5720b74b52"
     env_file: .env
     environment:
       PYTHONPATH: /app
       APP_ENV: ${APP_ENV:-production}
       DEBUG: ${DEBUG:-false}
       RIBDIGI_RELEASE_CHANNEL: production
-      RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
     volumes:
       - backup_data:/data/backups
       - media_data:/data/media
@@ -175,7 +181,15 @@ services:
       - -c
       - |
         set -eu
-        echo "migrate: build-id=$$(cat /app/.build-id)"
+        BUILD_ID="$$(tr -d '\r\n' < /app/.build-id)"
+        echo "migrate: build-id=$$BUILD_ID"
+        printf '%s\n' "$$BUILD_ID" | grep -Eq '^[0-9a-f]{12}$$'
+        test "$$BUILD_ID" != "20261003-live-test-store-scope"
+        test "$$BUILD_ID" != "20261008-alembic-single-head-0136"
+        test -f /app/alembic/versions/20261008_0136_merge_offline_and_restaurant_heads.py
+        HEADS="$$(DATABASE_URL=postgresql+asyncpg://verify:verify@127.0.0.1:9/ribdigi_verify_build_graph python -m alembic heads)"
+        echo "migrate: alembic-heads=$$HEADS"
+        test "$$HEADS" = "20261011_0138 (head)"
         MIG=/app/alembic/versions/20260917_0106_transaction_client_request_id.py
         test -f "$$MIG"
         test -f /app/alembic/versions/20260917_0107_pos_devices.py
@@ -191,7 +205,7 @@ services:
         fi
         echo "migrate: 0106 on-disk proof OK"
         exec python scripts/bootstrap.py
-    restart: "on-failure"
+    restart: "no"
     logging:
       driver: json-file
       options:
@@ -202,11 +216,13 @@ services:
   # Background jobs (RabbitMQ broker, Redis results — see app.config)
   # ---------------------------------------------------------------------------
   celery_worker:
+    image: ribdigi-backend:eb5720b74b52
+    pull_policy: build
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
       args:
-        RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
+        RIBDIGI_SOURCE_REV: "eb5720b74b52"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -215,7 +231,6 @@ services:
       DEBUG: ${DEBUG:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       RIBDIGI_RELEASE_CHANNEL: production
-      RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
     volumes:
       - backup_data:/data/backups
       - media_data:/data/media
@@ -253,11 +268,13 @@ services:
         max-file: "5"
 
   celery_beat:
+    image: ribdigi-backend:eb5720b74b52
+    pull_policy: build
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
       args:
-        RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
+        RIBDIGI_SOURCE_REV: "eb5720b74b52"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -266,7 +283,6 @@ services:
       DEBUG: ${DEBUG:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       RIBDIGI_RELEASE_CHANNEL: production
-      RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
     networks:
       - ribdigi_internal
     depends_on:
@@ -375,7 +391,12 @@ services:
         max-file: "3"
 
   minio:
-    image: quay.io/minio/minio:RELEASE.2024-12-18T13-15-44Z
+    # quay.io/minio/* and docker.io/minio/* are no longer anonymously pullable (401/denied).
+    # bitnamilegacy 2024.12.18 is MinIO DEVELOPMENT.2024-12-18T13-15-44Z (same vintage as
+    # RELEASE.2024-12-18T13-15-44Z). Official-layout entrypoint + /data keeps the volume.
+    image: docker.io/bitnamilegacy/minio:2024.12.18@sha256:c0ede65eb88e47138470202c517bacf55ab3c27df848030b7b46e69d34b7d192
+    user: "0:0"
+    entrypoint: ["minio"]
     restart: unless-stopped
     command: server /data --console-address :9001
     environment:
@@ -393,7 +414,8 @@ services:
         max-file: "3"
 
   minio-init:
-    image: quay.io/minio/mc:RELEASE.2024-11-21T17-21-54Z
+    # mc DEVELOPMENT.2024-11-21T17-21-54Z — same vintage as quay RELEASE.2024-11-21T17-21-54Z
+    image: docker.io/bitnamilegacy/minio-client:2024.11.21@sha256:a7786f5e6bb7b7080fd142a9f4eec0b7f713d246b5ebdbe0ff55f3d5d9c315bb
     depends_on:
       minio:
         condition: service_started

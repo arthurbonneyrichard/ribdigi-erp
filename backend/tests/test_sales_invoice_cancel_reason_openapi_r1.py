@@ -28,7 +28,7 @@ def test_sales_invoice_cancel_reason_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Sales invoice cancel reason"' in page
     assert "siCancelReason" in page
-    assert "aria-label={`Cancel sales invoice ${inv.id}`}" in page
+    assert "ariaLabel: `Cancel sales invoice ${inv.id}`" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "SalesInvoiceCancelReasonValue" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")

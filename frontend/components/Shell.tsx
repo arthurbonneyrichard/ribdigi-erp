@@ -1,17 +1,52 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
-import { api, clearSessionAndRedirect, idleTimeoutMs } from '../lib/api';
-import { getMe } from '../lib/meCache';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { api, apiRoot, clearSessionAndRedirect, idleTimeoutMs, isConfirmedAuthExpiry, tenantHeaderValue, getAccessToken, hydrateAuth } from '../lib/api';
+import { industryAllowsModule, INDUSTRY_SPECIFIC_MODULES } from '../lib/industryModules';
+import { industryLabel, normalizeIndustry } from '../lib/industries';
+import { isStoreNetworkNavItem, tenantIsMultiStore, type StoreEntitlementMe } from '../lib/tenantNav';
+import { getMe, invalidateMeCache } from '../lib/meCache';
+import { closeShiftForSignOut, openShiftForSignedInUser } from '../lib/cashierShift';
+import { linkStatusText, type LinkSnapshot } from '../lib/connectivity';
+import { subscribePosDrawerBridge, type PosDrawerBridgeState } from '../lib/posDrawerBridge';
+import { PosOfflineTopSlot } from '../lib/posOfflineSlot';
 import { prefetchGet } from '../lib/prefetchCache';
 import { loadUserTheme, writeUserTheme } from '../lib/theme';
 import { StoreProvider } from '../lib/storeContext';
+import {
+  ACTIVITY_EVENTS,
+  LAST_ACTIVITY_KEY,
+  bumpLastActivity,
+  hasStoredActivity,
+  isIdleExpired,
+  readLastActivity,
+  resetIdleWriteThrottle,
+  shouldWarnIdle,
+} from '../lib/idleSession';
+import {
+  ALWAYS_LIST_NAV_GROUP_IDS,
+  CASHIER_NAV_MODULES,
+  RESTAURANT_NAV_ITEMS,
+  filterNavForIndustry,
+  groupedTenantNav,
+  industryFeatureBlock,
+  HOTEL_CASHIER_NAV_MODULES,
+  HOTEL_INVENTORY_PROCUREMENT_CHILDREN,
+  HOTEL_NAV_ITEMS,
+  isHotelIndustry,
+  navAllowlistFromPermissions,
+  navItemVisibleForRole,
+  PEOPLE_NAV_ITEMS,
+  platformNavItemsForRole,
+  unauthorizedNavRedirect,
+  type NavGroup,
+  type NavItem,
+} from '../lib/tenantNav';
+import { chromeLogoAlt, chromeLogoSrc, PLATFORM_SIDEBAR_LOGO } from '../lib/chromeBrand';
 import OnboardingChecklist from './OnboardingChecklist';
 import StoreSwitcher from './StoreSwitcher';
-
-type NavItem = [label: string, href: string, module: string];
 
 /** Tenant ERP navigation (business workspace).
  * Hotel/FMCG nav items are packageable but only appear when `/me.enabled_modules`
@@ -21,63 +56,104 @@ type NavItem = [label: string, href: string, module: string];
 const TENANT_ITEMS: NavItem[] = [
   ['Dashboard', '/dashboard', 'dashboard'],
   ['Company', '/company', 'company'],
-  ['Inventory', '/inventory', 'inventory'],
+  ['Subscription billing', '/company/billing', 'company'],
+  ['Products', '/inventory?tab=products', 'inventory'],
+  ['Categories', '/inventory?tab=categories', 'inventory'],
+  ['Brands', '/inventory?tab=brands', 'inventory'],
+  ['Units', '/inventory?tab=units', 'inventory'],
+  ['Variants', '/inventory?tab=variants', 'inventory'],
+  ['Manage Stock', '/inventory?tab=whstock', 'inventory'],
+  ['Stock Adjustment', '/inventory?tab=adjust', 'inventory'],
+  ['Stock Transfer', '/inventory?tab=transfers', 'inventory'],
+  ['Stock Count', '/inventory?tab=counts', 'inventory'],
+  ['Stock History', '/inventory?tab=movements', 'inventory'],
+  ['Low Stock', '/inventory?tab=lowstock', 'inventory'],
+  ['Expiry', '/inventory?tab=expiry', 'inventory'],
+  ['Batches', '/inventory?tab=batches', 'inventory'],
   ['Sales', '/sales', 'sales'],
+  ['Customers', '/customers', 'sales'],
+  ['Gift cards', '/gift-cards', 'pos'],
   ['POS', '/pos', 'pos'],
-  ['Purchasing', '/purchasing', 'purchasing'],
+  ['Suppliers', '/purchasing?tab=suppliers', 'purchasing'],
+  ['Orders', '/purchasing?tab=orders', 'purchasing'],
+  ['Receive Goods', '/purchasing?tab=grn', 'purchasing'],
+  ['Supplier Bills', '/purchasing?tab=invoices', 'purchasing'],
+  ['Returns', '/purchasing?tab=returns', 'purchasing'],
+  ['Payments', '/credit?kind=payable&panel=pay', 'credit'],
+  ['Balances', '/credit?kind=payable', 'credit'],
+  ['History', '/purchasing?tab=history', 'purchasing'],
   ['Expenses', '/expenses', 'expenses'],
   ['Accounting', '/accounting', 'accounting'],
-  ['Credit', '/credit', 'credit'],
+  ['Payment notice', '/billing', 'accounting'],
+  ['Customer credit', '/credit?kind=receivable', 'credit'],
   ['Tax', '/tax', 'tax'],
-  ['Multi-Store', '/stores', 'stores'],
-  ['Hotel', '/hotel', 'hotel'],
-  ['FMCG', '/fmcg', 'fmcg'],
+  ...PEOPLE_NAV_ITEMS,
+  ...HOTEL_NAV_ITEMS,
+  ...HOTEL_INVENTORY_PROCUREMENT_CHILDREN,
+  ...RESTAURANT_NAV_ITEMS,
   ['Reports', '/reports', 'reports'],
   ['Notifications', '/notifications', 'notifications'],
   ['Audit', '/audit', 'audit'],
   ['Backup', '/backup', 'backup'],
-  ['Jobs', '/jobs', 'jobs'],
+  ['Online store', '/ecommerce', 'ecommerce'],
   ['Integrations', '/integrations', 'integrations'],
   ['Security', '/security', 'security'],
+  ['Printers', '/printers', 'printers'],
   ['AI Assistant', '/ai', 'ai'],
-  ['Users', '/users', 'users'],
-  ['Departments', '/departments', 'users'],
+  ['Help & Support', '/support', 'support'],
 ];
 
-type NavGroup = { id: string; label: string; items: NavItem[] };
+/** Never accordion — click navigates even if later given extra children. */
+const STANDALONE_NAV_IDS = new Set(['dashboard', 'notifications', 'hotel', 'support']);
 
 const TENANT_NAV_GROUPS: NavGroup[] = [
   { id: 'dashboard', label: 'Dashboard', items: [['Dashboard', '/dashboard', 'dashboard']] },
-  {
-    id: 'company',
-    label: 'Company and Setup',
-    items: [
-      ['Company', '/company', 'company'],
-      ['Integrations', '/integrations', 'integrations'],
-      ['Jobs', '/jobs', 'jobs'],
-    ],
-  },
-  { id: 'inventory', label: 'Inventory', items: [['Inventory', '/inventory', 'inventory']] },
+  { id: 'inventory', label: 'Inventory', items: [
+    ['Products', '/inventory?tab=products', 'inventory'],
+    ['Categories', '/inventory?tab=categories', 'inventory'],
+    ['Brands', '/inventory?tab=brands', 'inventory'],
+    ['Units', '/inventory?tab=units', 'inventory'],
+    ['Variants', '/inventory?tab=variants', 'inventory'],
+    ['Manage Stock', '/inventory?tab=whstock', 'inventory'],
+    ['Stock Adjustment', '/inventory?tab=adjust', 'inventory'],
+    ['Stock Transfer', '/inventory?tab=transfers', 'inventory'],
+    ['Stock Count', '/inventory?tab=counts', 'inventory'],
+    ['Stock History', '/inventory?tab=movements', 'inventory'],
+    ['Low Stock', '/inventory?tab=lowstock', 'inventory'],
+    ['Expiry', '/inventory?tab=expiry', 'inventory'],
+    ['Batches', '/inventory?tab=batches', 'inventory'],
+  ] },
   {
     id: 'sales',
     label: 'Sales and POS',
     items: [
       ['Sales', '/sales', 'sales'],
+      ['Customers', '/customers', 'sales'],
+      ['Gift cards', '/gift-cards', 'pos'],
       ['POS', '/pos', 'pos'],
     ],
   },
-  { id: 'purchases', label: 'Purchases', items: [['Purchasing', '/purchasing', 'purchasing']] },
+  { id: 'purchases', label: 'Purchases', items: [
+    ['Suppliers', '/purchasing?tab=suppliers', 'purchasing'],
+    ['Orders', '/purchasing?tab=orders', 'purchasing'],
+    ['Receive Goods', '/purchasing?tab=grn', 'purchasing'],
+    ['Supplier Bills', '/purchasing?tab=invoices', 'purchasing'],
+    ['Returns', '/purchasing?tab=returns', 'purchasing'],
+    ['Payments', '/credit?kind=payable&panel=pay', 'credit'],
+    ['Balances', '/credit?kind=payable', 'credit'],
+    ['History', '/purchasing?tab=history', 'purchasing'],
+  ] },
   {
     id: 'finance',
     label: 'Finance and Accounts',
     items: [
       ['Expenses', '/expenses', 'expenses'],
       ['Accounting', '/accounting', 'accounting'],
-      ['Credit', '/credit', 'credit'],
+      ['Payment notice', '/billing', 'accounting'],
+      ['Customer credit', '/credit?kind=receivable', 'credit'],
       ['Tax', '/tax', 'tax'],
     ],
   },
-  { id: 'stores', label: 'Stores and Warehouses', items: [['Multi-Store', '/stores', 'stores']] },
   {
     id: 'reports',
     label: 'Reports',
@@ -89,17 +165,20 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
   {
     id: 'people',
     label: 'User Management',
-    items: [
-      ['Users', '/users', 'users'],
-      ['Departments', '/departments', 'users'],
-    ],
+    items: [...PEOPLE_NAV_ITEMS],
   },
   { id: 'notifications', label: 'Notifications', items: [['Notifications', '/notifications', 'notifications']] },
+  { id: 'support', label: 'Help & Support', items: [['Help & Support', '/support', 'support']] },
   {
     id: 'settings',
     label: 'Settings',
     items: [
+      ['Company', '/company', 'company'],
+      ['Subscription billing', '/company/billing', 'company'],
+      ['Online store', '/ecommerce', 'ecommerce'],
+      ['Integrations', '/integrations', 'integrations'],
       ['Security', '/security', 'security'],
+      ['Printers', '/printers', 'printers'],
       ['Backup', '/backup', 'backup'],
       ['AI Assistant', '/ai', 'ai'],
     ],
@@ -108,23 +187,18 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
     id: 'industry',
     label: 'Industry-specific features',
     items: [
-      ['Hotel', '/hotel', 'hotel'],
-      ['FMCG', '/fmcg', 'fmcg'],
+      ...HOTEL_NAV_ITEMS,
+      ...RESTAURANT_NAV_ITEMS,
     ],
   },
 ];
 
-/** Software-owner / platform console navigation only. */
-const PLATFORM_ITEMS: NavItem[] = [
-  ['Platform', '/platform', 'platform'],
-  ['Staff', '/platform/staff', 'platform_staff'],
-  ['Reports', '/platform/reports', 'platform_reports'],
-  ['Jobs', '/jobs', 'jobs'],
-  ['Users', '/users', 'users'],
-  ['Notifications', '/notifications', 'notifications'],
-  ['Audit', '/audit', 'audit'],
-  ['Security', '/security', 'security'],
-];
+function usesAccordion(group: NavGroup): boolean {
+  if (!group.label || STANDALONE_NAV_IDS.has(group.id)) return false;
+  if (ALWAYS_LIST_NAV_GROUP_IDS.has(group.id)) return false;
+  if (group.id === 'hotel-inventory') return group.items.length > 0;
+  return group.items.length > 1;
+}
 
 const PLATFORM_ROLES = new Set([
   'super_admin',
@@ -154,12 +228,17 @@ const ROLE_NAV_MODULES: Record<string, string[] | '*'> = {
     'stores',
     'hotel',
     'fmcg',
+    'hospital',
+    'restaurant',
     'reports',
     'notifications',
     'users',
     'audit',
     'ai',
     'security',
+    'printers',
+    'support',
+    'ecommerce',
   ],
   sales_officer: [
     'dashboard',
@@ -169,19 +248,25 @@ const ROLE_NAV_MODULES: Record<string, string[] | '*'> = {
     'credit',
     'hotel',
     'fmcg',
+    'hospital',
+    'restaurant',
     'reports',
     'notifications',
     'ai',
     'security',
+    'support',
+    'ecommerce',
   ],
   inventory_officer: [
     'dashboard',
     'inventory',
     'purchasing',
+    'restaurant',
     'reports',
     'notifications',
     'ai',
     'security',
+    'support',
   ],
   accountant: [
     'dashboard',
@@ -197,8 +282,33 @@ const ROLE_NAV_MODULES: Record<string, string[] | '*'> = {
     'ai',
     'audit',
     'security',
+    'support',
   ],
-  cashier: ['dashboard', 'inventory', 'pos', 'sales', 'notifications', 'security'],
+  cashier: [...CASHIER_NAV_MODULES],
+  hotel_manager: [
+    'dashboard',
+    'hotel',
+    'inventory',
+    'pos',
+    'purchasing',
+    'expenses',
+    'accounting',
+    'credit',
+    'reports',
+    'notifications',
+    'users',
+    'audit',
+    'security',
+    'company',
+    'printers',
+    'support',
+  ],
+  hotel_front_desk: ['hotel', 'notifications', 'security', 'printers', 'support'],
+  hotel_reservations: ['hotel', 'notifications', 'security', 'support'],
+  hotel_housekeeping: ['hotel', 'inventory', 'notifications', 'security', 'support'],
+  hotel_maintenance: ['hotel', 'inventory', 'notifications', 'security', 'support'],
+  hotel_cashier: [...HOTEL_CASHIER_NAV_MODULES],
+  hotel_auditor: ['hotel', 'reports', 'audit', 'accounting', 'notifications', 'security', 'support'],
 };
 
 // Monochrome line icons (inherit the nav text color via currentColor).
@@ -237,6 +347,19 @@ const ICONS: Record<string, React.ReactNode> = {
       <circle cx="9" cy="21" r="1" />
       <circle cx="20" cy="21" r="1" />
       <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+    </>
+  ),
+  ecommerce: (
+    <>
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
+    </>
+  ),
+  printers: (
+    <>
+      <polyline points="6 9 6 2 18 2 18 9" />
+      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+      <rect x="6" y="14" width="12" height="8" />
     </>
   ),
   purchasing: (
@@ -353,6 +476,13 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </>
   ),
+  platform_tenants: (
+    <>
+      <path d="M3 21h18" />
+      <path d="M5 21V7l7-4 7 4v14" />
+      <path d="M9 21v-6h6v6" />
+    </>
+  ),
   platform_staff: (
     <>
       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -371,6 +501,13 @@ const ICONS: Record<string, React.ReactNode> = {
     <>
       <circle cx="12" cy="12" r="3" />
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </>
+  ),
+  support: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 3v2M12 19v2M3 12h2M19 12h2" />
     </>
   ),
 };
@@ -400,59 +537,174 @@ function canReadModule(permissions: Record<string, string[]> | null | undefined,
   return actions.includes('*') || actions.includes('read') || actions.includes('write');
 }
 
-/** Highlight only the most specific menu item. /platform must not stay active on /platform/staff. */
-function isNavActive(pathname: string, href: string, items: NavItem[]): boolean {
-  const path = pathname.split('?')[0].replace(/\/$/, '') || '/';
-  const matches = (candidate: string) => {
-    const item = candidate.replace(/\/$/, '') || '/';
-    return path === item || path.startsWith(`${item}/`);
-  };
-  if (!matches(href)) return false;
-  return !items.some(([, other]) => other !== href && other.length > href.length && matches(other));
+const DEFAULT_NAV_TABS: Record<string, string> = {
+  '/inventory': 'products',
+  '/purchasing': 'orders',
+  '/reports': 'summary',
+};
+
+function hrefParts(href: string): { path: string; params: URLSearchParams; hash: string } {
+  const hashIdx = href.indexOf('#');
+  const hash = hashIdx === -1 ? '' : href.slice(hashIdx + 1);
+  const withoutHash = hashIdx === -1 ? href : href.slice(0, hashIdx);
+  const q = withoutHash.indexOf('?');
+  const path = ((q === -1 ? withoutHash : withoutHash.slice(0, q)).replace(/\/$/, '') || '/');
+  const params = new URLSearchParams(q === -1 ? '' : withoutHash.slice(q + 1));
+  return { path, params, hash };
+}
+
+function currentNavHash(path: string, locationHash: string): string {
+  const h = (locationHash || '').replace(/^#/, '');
+  if (h) return h;
+  if (path === '/stores') return 'stores';
+  return '';
+}
+
+function currentNavValue(key: string, path: string, current: URLSearchParams): string {
+  const raw = current.get(key) || '';
+  if (raw) return raw;
+  if (key === 'tab') return DEFAULT_NAV_TABS[path] || '';
+  if (key === 'kind' && path === '/credit') return 'receivable';
+  return '';
+}
+
+/** Highlight the most specific item (query- and hash-aware). /platform must not stay active on /platform/staff. */
+function navMatchScore(pathname: string, search: string, href: string, locationHash = ''): number {
+  const currentPath = pathname.split('?')[0].replace(/\/$/, '') || '/';
+  const current = new URLSearchParams((search || '').replace(/^\?/, ''));
+  const target = hrefParts(href);
+  if (!(currentPath === target.path || currentPath.startsWith(`${target.path}/`))) return -1;
+  for (const pair of Array.from(target.params.entries())) {
+    const [key, value] = pair;
+    if (currentNavValue(key, currentPath, current) !== value) return -1;
+  }
+  if (!target.params.has('panel') && current.get('panel') && target.params.get('kind') === 'payable') {
+    return -1;
+  }
+  const effectiveHash = currentNavHash(currentPath, locationHash);
+  if (target.hash && effectiveHash !== target.hash) return -1;
+  const hashBonus = target.hash && effectiveHash === target.hash ? 8 : 0;
+  return target.path.length * 20 + Array.from(target.params.keys()).length * 5 + (currentPath === target.path ? 3 : 0) + hashBonus;
+}
+
+function isNavActive(pathname: string, href: string, items: NavItem[], search = '', locationHash = ''): boolean {
+  const score = navMatchScore(pathname, search, href, locationHash);
+  if (score < 0) return false;
+  return !items.some(([, other]) => other !== href && navMatchScore(pathname, search, other, locationHash) > score);
+}
+
+function navAllowlistForRole(
+  role: string,
+  permissions: Record<string, string[]> | null,
+): string[] | '*' {
+  if (Object.prototype.hasOwnProperty.call(ROLE_NAV_MODULES, role)) {
+    return ROLE_NAV_MODULES[role];
+  }
+  return navAllowlistFromPermissions(permissions);
 }
 
 function navItemsForRole(
   role: string,
   permissions: Record<string, string[]> | null,
-  enabledModules: string[] | null
+  enabledModules: string[] | null,
+  industry: string | null,
+  multiStore = true
 ): NavItem[] {
-  // Software owner staff: platform console nav only.
+  // Software owner staff: platform console only. Industry and package filters do not apply.
   if (PLATFORM_ROLES.has(role)) {
-    return PLATFORM_ITEMS.filter(([, , module]) => {
-      if (module === 'platform') return true;
-      if (permissions?.['*']?.includes('*')) return true;
-      return canReadModule(permissions, module);
-    });
+    return platformNavItemsForRole(role, permissions);
   }
 
-  const allowed = ROLE_NAV_MODULES[role] ?? ROLE_NAV_MODULES.cashier;
+  const allowed = navAllowlistForRole(role, permissions);
   const packageSet =
-    enabledModules && enabledModules.length > 0 ? new Set(enabledModules) : null;
-  return TENANT_ITEMS.filter(([, , module]) => {
-    // Integrations + Jobs are company-admin ops surfaces; gate like Company.
-    const permModule =
-      module === 'integrations' || module === 'jobs' ? 'company' : module;
-    if (allowed !== '*' && !allowed.includes(permModule) && module !== 'integrations' && module !== 'jobs')
+    enabledModules && enabledModules.length > 0 ? new Set(enabledModules.map((m) => m.toLowerCase())) : null;
+  const industrySpecific = new Set<string>(INDUSTRY_SPECIFIC_MODULES);
+  return TENANT_ITEMS.filter(([, href, module]) => {
+    if (module === 'support') {
+      return allowed === '*' || allowed.includes('support');
+    }
+    const permModule = module === 'integrations' ? 'company' : module;
+    if (allowed !== '*' && !allowed.includes(permModule) && module !== 'integrations')
       return false;
-    if (allowed !== '*' && (module === 'integrations' || module === 'jobs') && !allowed.includes('company'))
+    if (allowed !== '*' && module === 'integrations' && !allowed.includes('company'))
       return false;
-    if (
+    if (isHotelIndustry(industry) && permModule === 'stores') return false;
+    if (!multiStore && isStoreNetworkNavItem(href, permModule)) return false;
+    if (industrySpecific.has(permModule)) {
+      if (!industryAllowsModule(industry, permModule)) return false;
+      if (!packageSet || !packageSet.has(permModule)) return false;
+    } else if (
       packageSet &&
       !packageSet.has(permModule) &&
-      !['dashboard', 'notifications', 'security', 'users'].includes(module)
+      !['dashboard', 'notifications', 'security', 'users', 'printers', 'stores', 'support'].includes(module)
     ) {
       return false;
     }
+    if (!navItemVisibleForRole(role, href)) return false;
     return canReadModule(permissions, permModule);
   });
 }
 
-function groupedTenantNav(visible: NavItem[]): NavGroup[] {
-  const allowed = new Set(visible.map(([, href]) => href));
-  return TENANT_NAV_GROUPS.map((group) => ({
-    ...group,
-    items: group.items.filter(([, href]) => allowed.has(href)),
-  })).filter((group) => group.items.length > 0);
+const NAV_EXPANDED_KEY = 'ribdigi.nav.expanded';
+const NAV_HIDDEN_KEY = 'ribdigi.nav.hidden';
+
+function readNavCompact(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(NAV_HIDDEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeNavCompact(compact: boolean) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(NAV_HIDDEN_KEY, compact ? '1' : '0');
+  } catch {
+    /* quota / private mode — the rail still toggles for this visit */
+  }
+}
+
+function readExpandedNav(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(NAV_EXPANDED_KEY);
+    const parsed = JSON.parse(raw || '[]');
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((id): id is string => typeof id === 'string' && id.length > 0);
+  } catch {
+    return [];
+  }
+}
+
+function writeExpandedNav(ids: Iterable<string>) {
+  if (typeof window === 'undefined') return;
+  try {
+    const exclusive = Array.from(ids).slice(-1);
+    window.localStorage.setItem(NAV_EXPANDED_KEY, JSON.stringify(exclusive));
+  } catch {
+    /* quota / private mode — navigation still works without persist */
+  }
+}
+
+function exclusiveOpen(id: string | null | undefined): Set<string> {
+  return id ? new Set([id]) : new Set();
+}
+
+function activeNavGroupId(
+  groups: NavGroup[],
+  pathname: string,
+  items: NavItem[],
+  search = '',
+  locationHash = ''
+): string | null {
+  const path = pathname || '';
+  for (const group of groups) {
+    if (!usesAccordion(group)) continue;
+    if (group.items.some(([, href]) => isNavActive(path, href, items, search, locationHash))) return group.id;
+  }
+  return null;
 }
 
 type BellNote = {
@@ -476,52 +728,334 @@ function enrollmentRequired(err: unknown): boolean {
   return e?.status === 403 && /2fa enrollment/i.test(String(e?.message || ''));
 }
 
+function MobileSideNavButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  const label = open ? 'Close sidebar' : 'Open sidebar';
+  return (
+    <button
+      type="button"
+      className="mobile-side-nav"
+      aria-expanded={open}
+      aria-controls="app-sidebar"
+      aria-label={label}
+      title={label}
+      onClick={onToggle}
+    >
+      <span className="mobile-side-nav-mark" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+          <path
+            d="M6 3.5 10.5 8 6 12.5"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+    </button>
+  );
+}
+
+function SideEdgeToggle({ compact, onToggle }: { compact: boolean; onToggle: () => void }) {
+  const label = compact ? 'Expand sidebar' : 'Collapse sidebar';
+  return (
+    <button
+      type="button"
+      className="side-edge-toggle"
+      aria-expanded={!compact}
+      aria-controls="app-sidebar"
+      aria-label={label}
+      title={label}
+      onClick={onToggle}
+    >
+      <span className="side-edge-chevron" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path
+            d="M10 3.5 5.5 8 10 12.5"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+    </button>
+  );
+}
+
+const DRAWER_REASON_PLACEHOLDERS = new Set(['manual', 'n/a', 'na', 'none', 'test']);
+
+function drawerOpenReason(raw: string): string | null {
+  const cleaned = raw.trim();
+  if (cleaned.length < 3 || cleaned.length > 200) return null;
+  if (!/[A-Za-z0-9]/.test(cleaned)) return null;
+  if (cleaned.includes('://') || cleaned.includes('@')) return null;
+  if (DRAWER_REASON_PLACEHOLDERS.has(cleaned.toLowerCase())) return null;
+  return cleaned;
+}
+
+/** Sits in the POS top row, immediately to the right of the selling pill. */
+function PosDrawerTopControls() {
+  const [bridge, setBridge] = useState<PosDrawerBridgeState | null>(null);
+  const [drawerReason, setDrawerReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [drawerNote, setDrawerNote] = useState('');
+  const [drawerError, setDrawerError] = useState('');
+
+  useEffect(() => subscribePosDrawerBridge(setBridge), []);
+
+  if (!bridge?.sessionId) return null;
+
+  return (
+    <div className="pos-top-drawer pos-ui-shift">
+      <div className="pos-top-drawer-row">
+      <input
+        className="pos-top-drawer-reason"
+        value={drawerReason}
+        onChange={(e) => setDrawerReason(e.target.value)}
+        placeholder="Drawer reason"
+        maxLength={200}
+        autoComplete="off"
+        aria-label="Cash drawer open reason"
+      />
+      <button
+        type="button"
+        className="tpos-btn tpos-btn-primary pos-top-drawer-btn"
+        aria-label="Open drawer"
+        disabled={busy}
+        onClick={() => {
+          const sessionId = bridge.sessionId;
+          const cleaned = drawerOpenReason(drawerReason);
+          if (!cleaned) {
+            setDrawerNote('');
+            setDrawerError('Enter a short reason for opening the drawer.');
+            return;
+          }
+          setDrawerError('');
+          setBusy(true);
+          void api(`/pos/sessions/${sessionId}/drawer/open`, {
+            method: 'POST',
+            body: JSON.stringify({ reason: cleaned }),
+          })
+            .then((r) => {
+              setDrawerReason('');
+              setDrawerNote(r.data?.message || r.message || 'Drawer opened');
+            })
+            .catch((err: unknown) => {
+              const message = err instanceof Error ? err.message : 'Could not open the drawer.';
+              setDrawerError(message || 'Could not open the drawer.');
+            })
+            .finally(() => setBusy(false));
+        }}
+      >
+        {busy ? 'Opening…' : 'Open drawer'}
+      </button>
+      </div>
+      {drawerNote ? (
+        <span className="pos-top-drawer-note" role="status">
+          {drawerNote}
+        </span>
+      ) : null}
+      {drawerError ? (
+        <span className="pos-top-drawer-note is-error" role="alert">
+          {drawerError}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function PosSellingStatus() {
+  const [snap, setSnap] = useState<LinkSnapshot>({
+    phase: 'online',
+    pending: 0,
+    lastSyncAt: null,
+    syncError: '',
+  });
+  useEffect(() => {
+    let unsub = () => {};
+    let stop = () => {};
+    void import('../lib/connectivity').then((link) => {
+      setSnap(link.getLinkSnapshot());
+      unsub = link.subscribeLink(setSnap);
+      stop = link.startLinkWatch();
+    });
+    return () => {
+      unsub();
+      stop();
+    };
+  }, []);
+  const text = linkStatusText(snap);
+  const tone =
+    snap.phase === 'online' ? 'is-online' : snap.phase === 'syncing' ? 'is-syncing' : snap.phase === 'sync_failed' ? 'is-sync-failed' : 'is-offline';
+  return (
+    <details className="pos-sell-menu">
+      <summary className={`pos-sell-mode ${tone}`} aria-label={`${text.label}. Offline selling`}>
+        <span className="pos-sell-label" role="status" aria-live="polite">{text.label}</span>
+        <span className="pos-sell-detail">{text.detail}</span>
+      </summary>
+      <div className="pos-sell-menu-body">
+        <PosOfflineTopSlot embedded />
+      </div>
+    </details>
+  );
+}
+
 export default function Shell({ children }: { children: React.ReactNode }) {
   const [authReady, setAuthReady] = useState(false);
+  const [authGateError, setAuthGateError] = useState('');
   const [unread, setUnread] = useState(0);
   const [permissions, setPermissions] = useState<Record<string, string[]> | null>(null);
   const [enabledModules, setEnabledModules] = useState<string[] | null>(null);
+  const [industry, setIndustry] = useState<string | null>(null);
+  const [industryValid, setIndustryValid] = useState<boolean | null>(null);
+  const [multiStore, setMultiStore] = useState(true);
   const [role, setRole] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
+  const [navCompact, setNavCompact] = useState(false);
   const [fullName, setFullName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [hasLogo, setHasLogo] = useState(false);
+  const [logoTick, setLogoTick] = useState(0);
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
   const [idleMinutes, setIdleMinutes] = useState(30);
+  const [idleWarn, setIdleWarn] = useState(false);
+  const idleLoggingOut = useRef(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [userId, setUserId] = useState('');
   const [bellOpen, setBellOpen] = useState(false);
   const [bellNotes, setBellNotes] = useState<BellNote[]>([]);
   const [bellBusy, setBellBusy] = useState(false);
+  const [expandedNav, setExpandedNav] = useState<Set<string>>(() => new Set());
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const navSearch = searchParams?.toString() || '';
+  const [navHash, setNavHash] = useState('');
   const router = useRouter();
+  const [navPending, setNavPending] = useState<string | null>(null);
   const isPlatformOwner = PLATFORM_ROLES.has(role);
+
+  useEffect(() => {
+    setNavPending(null);
+  }, [pathname, navSearch]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const syncHash = () => setNavHash(window.location.hash || '');
+    syncHash();
+    window.addEventListener('hashchange', syncHash);
+    return () => window.removeEventListener('hashchange', syncHash);
+  }, [pathname, navSearch]);
 
   // Market readiness: no anonymous browsing of /pos, /inventory, etc.
   // Run once while this Shell stays mounted across dashboard navigations.
   useEffect(() => {
     let active = true;
+    let timer = 0;
     async function requireAccount() {
-      const token = (localStorage.getItem('token') || '').trim();
+      await hydrateAuth();
+      const token = (getAccessToken() || '').trim();
       if (!token) {
         clearSessionAndRedirect();
         return;
       }
+      const applyMe = (data: StoreEntitlementMe & {
+        permissions?: Record<string, string[]>;
+        enabled_modules?: string[];
+        industry?: string | null;
+        industry_valid?: boolean;
+        role?: string;
+        full_name?: string;
+        company_name?: string;
+        has_logo?: boolean;
+        id?: string;
+        inactivity_timeout_minutes?: number;
+      }) => {
+        if (!active) return;
+        setAuthGateError('');
+        setAuthReady(true);
+        setPermissions(data.permissions || {});
+        setEnabledModules(Array.isArray(data.enabled_modules) ? data.enabled_modules : []);
+        setIndustry(data.industry ?? null);
+        setIndustryValid(
+          typeof data.industry_valid === 'boolean' ? data.industry_valid : Boolean(normalizeIndustry(data.industry))
+        );
+        setMultiStore(tenantIsMultiStore(data));
+        setRole(data.role || '');
+        setFullName(data.full_name || '');
+        setCompanyName(data.company_name || '');
+        setHasLogo(Boolean(data.has_logo));
+        const uid = String(data.id || '').trim();
+        if (uid) {
+          setUserId(uid);
+          setTheme(loadUserTheme(uid));
+        }
+        const mins = Number(data.inactivity_timeout_minutes);
+        if (Number.isFinite(mins)) setIdleMinutes(mins);
+      };
+      const applyCachedAccount = async () => {
+        const { getSnapshot } = await import('../lib/posOffline');
+        const meSnap = await getSnapshot<Parameters<typeof applyMe>[0]>('me');
+        if (!meSnap?.id) return false;
+        applyMe(meSnap);
+        return true;
+      };
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        try {
+          if (await applyCachedAccount()) return;
+        } catch {
+          /* no cached account yet; the online check below explains that */
+        }
+      }
       try {
-        await getMe({ force: true });
-        if (active) setAuthReady(true);
+        await Promise.race([
+          getMe({ force: true }).then((meRes) => {
+            applyMe(meRes.data || {});
+            void import('../lib/posOffline')
+              .then((offline) => offline.cacheSnapshot('me', meRes.data || null))
+              .catch(() => undefined);
+            return meRes;
+          }),
+          new Promise((_, reject) => {
+            timer = window.setTimeout(() => {
+              reject(new Error('The request timed out. Check your connection and try again.'));
+            }, 25000);
+          }),
+        ]);
+        if (active) {
+          setAuthGateError('');
+          setAuthReady(true);
+        }
       } catch (err) {
         if (enrollmentRequired(err)) {
           if (active) setAuthReady(true);
           return;
         }
-        clearSessionAndRedirect();
+        if (isConfirmedAuthExpiry(err)) {
+          clearSessionAndRedirect();
+          return;
+        }
+        const status = (err as { status?: number }).status;
+        if (status === undefined) {
+          try {
+            if (await applyCachedAccount()) return;
+          } catch {
+            /* keep the connection error below */
+          }
+        }
+        const message = err instanceof Error ? err.message : 'Could not verify your account.';
+        if (active) {
+          setAuthGateError(message);
+          setAuthReady(true);
+        }
+      } finally {
+        window.clearTimeout(timer);
       }
     }
     requireAccount();
     return () => {
       active = false;
+      window.clearTimeout(timer);
     };
   }, []);
 
@@ -537,6 +1071,18 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     mq.addEventListener('change', sync);
     return () => mq.removeEventListener('change', sync);
   }, []);
+
+  useEffect(() => {
+    setNavCompact(readNavCompact());
+  }, []);
+
+  function toggleNavCompact() {
+    setNavCompact((prev) => {
+      const next = !prev;
+      writeNavCompact(next);
+      return next;
+    });
+  }
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -584,7 +1130,23 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     setTheme((el.getAttribute('data-theme') as 'light' | 'dark') || 'light');
   }, [userId]);
 
+  useEffect(() => {
+    if (!authReady) return;
+    void openShiftForSignedInUser();
+  }, [authReady]);
+
   async function logout() {
+    try {
+      await closeShiftForSignOut();
+    } catch {
+      /* sign-out still proceeds */
+    }
+    try {
+      const offline = await import('../lib/posOffline');
+      await offline.releaseOfflineGrantIfIdle(api);
+    } catch {
+      /* grant expires on its own; queued sales are never cleared on logout */
+    }
     try {
       await api('/auth/logout', { method: 'POST' });
     } catch {
@@ -655,7 +1217,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     let active = true;
     async function load() {
       try {
-        const meRes = await getMe();
+        const meRes = await getMe({ force: true });
         let unreadCount = 0;
         try {
           const countRes = await api('/notifications/unread-count');
@@ -667,8 +1229,15 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         setUnread(unreadCount);
         setPermissions(meRes.data?.permissions || {});
         setEnabledModules(
-          Array.isArray(meRes.data?.enabled_modules) ? meRes.data.enabled_modules : null
+          Array.isArray(meRes.data?.enabled_modules) ? meRes.data.enabled_modules : []
         );
+        setIndustry(meRes.data?.industry ?? null);
+        setIndustryValid(
+          typeof meRes.data?.industry_valid === 'boolean'
+            ? meRes.data.industry_valid
+            : Boolean(normalizeIndustry(meRes.data?.industry))
+        );
+        setMultiStore(tenantIsMultiStore(meRes.data));
         setRole(meRes.data?.role || '');
         setFullName(meRes.data?.full_name || '');
         setCompanyName(meRes.data?.company_name || '');
@@ -682,7 +1251,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         if (Number.isFinite(mins)) setIdleMinutes(mins);
       } catch (err) {
         if (enrollmentRequired(err)) return;
-        clearSessionAndRedirect();
+        if (isConfirmedAuthExpiry(err)) {
+          clearSessionAndRedirect();
+        }
       }
     }
     load();
@@ -730,10 +1301,10 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         return;
       }
       try {
-        const token = localStorage.getItem('token');
-        const tenantId = localStorage.getItem('tenant');
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-        const res = await fetch(`${apiBase}/tenants/me/logo`, {
+        await hydrateAuth();
+        const token = getAccessToken();
+        const tenantId = tenantHeaderValue(localStorage.getItem('tenant'));
+        const res = await fetch(`${apiRoot()}/tenants/me/logo`, {
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
             ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
@@ -755,51 +1326,206 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       revoked = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [hasLogo]);
+  }, [hasLogo, logoTick]);
 
-  // BR-19.3: auto-logout after tenant-configured idle period (default 30 minutes).
+  useEffect(() => {
+    function onTenantLogoChanged() {
+      void getMe({ force: true })
+        .then((meRes) => {
+          setHasLogo(Boolean(meRes.data?.has_logo));
+          setCompanyName(meRes.data?.company_name || '');
+          setLogoTick((n) => n + 1);
+        })
+        .catch(() => {
+          /* ignore — next poll refreshes */
+        });
+    }
+    window.addEventListener('ribdigi-tenant-logo', onTenantLogoChanged);
+    return () => window.removeEventListener('ribdigi-tenant-logo', onTenantLogoChanged);
+  }, []);
+
+  async function staySignedIn() {
+    resetIdleWriteThrottle();
+    bumpLastActivity();
+    try {
+      await getMe({ force: true });
+      setIdleWarn(false);
+    } catch (err) {
+      if (isConfirmedAuthExpiry(err)) {
+        clearSessionAndRedirect();
+        return;
+      }
+      setIdleWarn(false);
+    }
+  }
+
+  async function idleLogout() {
+    if (idleLoggingOut.current) return;
+    idleLoggingOut.current = true;
+    try {
+      await closeShiftForSignOut();
+    } catch {
+      /* sign-out still proceeds */
+    }
+    try {
+      await api('/auth/logout', { method: 'POST' });
+    } catch {
+      /* revoke best-effort */
+    }
+    clearSessionAndRedirect();
+  }
+
+  // BR-19.3: opening an already-idle session returns to login. Use does not reset that clock.
   useEffect(() => {
     if (typeof window === 'undefined' || !authReady) return;
     const limitMs = idleTimeoutMs(idleMinutes);
-    let last = Date.now();
-    const bump = () => {
-      last = Date.now();
-    };
-    const events: Array<keyof WindowEventMap> = [
-      'mousemove',
-      'mousedown',
-      'keydown',
-      'scroll',
-      'touchstart',
-      'click',
-    ];
-    events.forEach((e) => window.addEventListener(e, bump, { passive: true }));
-    const onVis = () => {
-      if (document.visibilityState === 'visible') bump();
-    };
-    document.addEventListener('visibilitychange', onVis);
-    const id = window.setInterval(() => {
-      if (Date.now() - last >= limitMs) {
-        clearSessionAndRedirect();
+    const check = () => {
+      const now = Date.now();
+      const last = readLastActivity(now);
+      if (isIdleExpired(limitMs, now, last)) {
+        void idleLogout();
+        return;
       }
-    }, 15000);
+      setIdleWarn(shouldWarnIdle(limitMs, now, last));
+    };
+    if (!hasStoredActivity()) {
+      resetIdleWriteThrottle();
+      bumpLastActivity();
+    }
+    if (isIdleExpired(limitMs)) {
+      void idleLogout();
+      return;
+    }
+    const bump = () => {
+      bumpLastActivity();
+      setIdleWarn(false);
+    };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') check();
+    };
+    const opts: AddEventListenerOptions = { capture: true, passive: true };
+    ACTIVITY_EVENTS.forEach((name) => document.addEventListener(name, bump, opts));
+    const onStorage = (ev: StorageEvent) => {
+      if (ev.key === LAST_ACTIVITY_KEY) setIdleWarn(false);
+    };
+    window.addEventListener('storage', onStorage);
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', check);
+    window.addEventListener('pageshow', check);
+    const id = window.setInterval(check, 5000);
     return () => {
-      events.forEach((e) => window.removeEventListener(e, bump));
-      document.removeEventListener('visibilitychange', onVis);
+      ACTIVITY_EVENTS.forEach((name) => document.removeEventListener(name, bump, opts));
+      window.removeEventListener('storage', onStorage);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', check);
+      window.removeEventListener('pageshow', check);
       window.clearInterval(id);
     };
   }, [idleMinutes, authReady]);
 
-  const visible = useMemo(
-    () => navItemsForRole(role, permissions, enabledModules),
-    [role, permissions, enabledModules]
+  useEffect(() => {
+    if (typeof window === 'undefined' || !authReady) return;
+    let lastTenant = localStorage.getItem('tenant') || '';
+    const applyTenantChange = () => {
+      const next = localStorage.getItem('tenant') || '';
+      if (next === lastTenant) return;
+      lastTenant = next;
+      invalidateMeCache();
+      void getMe({ force: true })
+        .then((meRes) => {
+          setPermissions(meRes.data?.permissions || {});
+          setEnabledModules(
+            Array.isArray(meRes.data?.enabled_modules) ? meRes.data.enabled_modules : []
+          );
+          setIndustry(meRes.data?.industry ?? null);
+          setIndustryValid(
+            typeof meRes.data?.industry_valid === 'boolean'
+              ? meRes.data.industry_valid
+              : Boolean(normalizeIndustry(meRes.data?.industry))
+          );
+          setMultiStore(tenantIsMultiStore(meRes.data));
+          setRole(meRes.data?.role || '');
+          setCompanyName(meRes.data?.company_name || '');
+          setHasLogo(Boolean(meRes.data?.has_logo));
+          setLogoTick((n) => n + 1);
+        })
+        .catch(() => undefined);
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'tenant' || e.key === 'token') applyTenantChange();
+    };
+    window.addEventListener('storage', onStorage);
+    const id = window.setInterval(applyTenantChange, 800);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.clearInterval(id);
+    };
+  }, [authReady]);
+
+  const visible = useMemo(() => {
+    const items = navItemsForRole(role, permissions, enabledModules, industry, multiStore);
+    if (PLATFORM_ROLES.has(role)) return items;
+    return filterNavForIndustry(items, industry);
+  }, [role, permissions, enabledModules, industry, multiStore]);
+  const navGroups = useMemo(
+    () => groupedTenantNav(TENANT_NAV_GROUPS, visible, industry, multiStore),
+    [visible, industry, multiStore]
   );
-  const navGroups = useMemo(() => groupedTenantNav(visible), [visible]);
+  const navRedirectTo = useMemo(() => {
+    if (!authReady || !role || PLATFORM_ROLES.has(role)) return null;
+    const allowed = navAllowlistForRole(role, permissions);
+    return unauthorizedNavRedirect(pathname || '', role, allowed, industry);
+  }, [authReady, role, permissions, pathname, industry]);
+  const industryPageBlock = useMemo(() => {
+    if (!role || PLATFORM_ROLES.has(role)) return null;
+    return industryFeatureBlock(pathname || '/', industry, enabledModules);
+  }, [role, pathname, industry, enabledModules]);
+
+  useEffect(() => {
+    if (!navRedirectTo) return;
+    router.replace(navRedirectTo);
+  }, [navRedirectTo, router]);
+  const autoOpenedForPath = useRef('');
+  const navStorageSeeded = useRef(false);
+
+  useEffect(() => {
+    const storedIds = navStorageSeeded.current ? null : readExpandedNav();
+    navStorageSeeded.current = true;
+    const path = pathname || '';
+    const locKey = `${path}?${navSearch}`;
+    const activeId = isPlatformOwner ? null : activeNavGroupId(navGroups, path, visible, navSearch, navHash);
+    const accordionIds = new Set(navGroups.filter(usesAccordion).map((g) => g.id));
+    const storedOne = storedIds?.filter((id) => accordionIds.has(id)).slice(-1)[0] ?? null;
+    const shouldAutoOpen = Boolean(activeId) && autoOpenedForPath.current !== locKey;
+    if (shouldAutoOpen) autoOpenedForPath.current = locKey;
+    setExpandedNav((prev) => {
+      let next: Set<string>;
+      if (shouldAutoOpen && activeId) {
+        next = exclusiveOpen(activeId);
+      } else if (storedIds) {
+        next = exclusiveOpen(activeId ?? storedOne);
+      } else {
+        return prev;
+      }
+      writeExpandedNav(next);
+      return next;
+    });
+  }, [pathname, navSearch, navHash, navGroups, visible, isPlatformOwner]);
+
+  const drawerClosed = (mobileNav && !menuOpen) || (!mobileNav && navCompact);
+
+  function toggleNavGroup(id: string) {
+    setExpandedNav((prev) => {
+      const next = prev.has(id) ? exclusiveOpen(null) : exclusiveOpen(id);
+      writeExpandedNav(next);
+      return next;
+    });
+  }
   const showAlerts = visible.some(([, href]) => href === '/notifications');
-  const sidebarLogoSrc = companyLogoUrl || '/brand/logo-sidebar.png';
-  const sidebarLogoAlt = companyLogoUrl
-    ? companyName || 'Company logo'
-    : 'RIBDIGI ERP';
+  // App chrome only: RIBDIGI ERP default, then this tenant's uploaded logo.
+  // Receipts/invoices stay name-only until upload (not this slot).
+  const sidebarLogoSrc = chromeLogoSrc(companyLogoUrl, PLATFORM_SIDEBAR_LOGO);
+  const sidebarLogoAlt = chromeLogoAlt(Boolean(companyLogoUrl), companyName);
 
   // Warm the Next.js route and API payloads for sidebar destinations.
   useEffect(() => {
@@ -812,6 +1538,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   }, [authReady, router]);
 
   function warmDestination(href: string) {
+    const path = href.split('?')[0];
     try {
       router.prefetch(href);
     } catch {
@@ -819,39 +1546,56 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     }
     if (href === '/platform') {
       void prefetchGet('/tenants');
+      void prefetchGet('/platform/activity');
+    } else if (href === '/platform/tenants') {
+      void prefetchGet('/tenants');
       void prefetchGet('/packages');
     } else if (href === '/platform/staff') {
       void prefetchGet('/platform/staff');
       void prefetchGet('/platform/roles');
-      void prefetchGet('/platform/app-users');
     } else if (href === '/platform/reports') {
       void prefetchGet('/platform/reports');
+    } else if (path === '/security') {
+      void prefetchGet('/auth/2fa/status');
+      void prefetchGet('/auth/webauthn/credentials');
+      void prefetchGet('/auth/sessions');
+    } else if (path === '/pos') {
+      void prefetchGet('/pos/sessions/current');
+      void prefetchGet('/pos/stores');
+    } else if (path === '/inventory') {
+      void prefetchGet('/products?limit=80');
+      void prefetchGet('/catalog/categories');
+      void prefetchGet('/catalog/brands');
+      void prefetchGet('/catalog/units');
     }
   }
 
   if (!authReady) {
     return (
       <div className="auth-gate" role="status" aria-live="polite">
-        <p>Checking your account…</p>
+        <p>{authGateError || 'Checking your account…'}</p>
       </div>
     );
   }
 
   return (
     <StoreProvider enabled={Boolean(role) && !isPlatformOwner}>
-      <div className={`shell shell-secure${menuOpen ? ' nav-open' : ''}`}>
+      <div className={`shell shell-secure${menuOpen ? ' nav-open' : ''}${navCompact ? ' nav-compact' : ''}${pathname === '/pos' ? ' is-pos' : ''}`}>
       <aside
+        id="app-sidebar"
         className="side"
-        aria-hidden={mobileNav && !menuOpen}
-        {...(mobileNav && !menuOpen ? { inert: true } : {})}
+        aria-hidden={drawerClosed}
+        {...(drawerClosed ? { inert: true } : {})}
       >
-        <div className="brand" aria-label="Company brand">
-          <img
-            className="brand-logo"
-            src={sidebarLogoSrc}
-            alt={sidebarLogoAlt}
-            draggable={false}
-          />
+        <div className="brand" aria-label="Workspace brand">
+          <div className="brand-logo-slot">
+            <img
+              className="brand-logo"
+              src={sidebarLogoSrc}
+              alt={sidebarLogoAlt}
+              draggable={false}
+            />
+          </div>
           {companyName ? (
             <div className="brand-name">{companyName}</div>
           ) : isPlatformOwner ? (
@@ -859,10 +1603,19 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           ) : null}
         </div>
         {isPlatformOwner ? <div className="brand-sub">Platform owner console</div> : null}
-        <nav className="nav" aria-label={isPlatformOwner ? 'Platform navigation' : 'Tenant navigation'}>
+        <nav
+          className="nav"
+          aria-label={isPlatformOwner ? 'Platform navigation' : 'Tenant navigation'}
+          data-industry={isPlatformOwner ? 'platform' : normalizeIndustry(industry) || ''}
+        >
           {(isPlatformOwner ? [{ id: 'platform', label: '', items: visible }] : navGroups).map((group) => {
             const links = group.items.map(([n, h, module]) => {
-              const active = isNavActive(pathname || '', h, visible);
+              const active = isNavActive(pathname || '', h, visible, navSearch, navHash);
+              const label =
+                n +
+                ((h === '/notifications' || h.startsWith('/notifications?')) && unread > 0
+                  ? ` (${unread})`
+                  : '');
               return (
                 <Link
                   key={h}
@@ -870,7 +1623,16 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                   prefetch={false}
                   className={active ? 'active' : undefined}
                   aria-current={active ? 'page' : undefined}
-                  onClick={() => setMenuOpen(false)}
+                  title={label}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    const dest = hrefParts(h);
+                    if (dest.hash) setNavHash(`#${dest.hash}`);
+                    else setNavHash('');
+                    const destPath = dest.path;
+                    if (destPath !== (pathname || '')) setNavPending(h);
+                    else if (h !== `${pathname || ''}${navSearch ? `?${navSearch}` : ''}${navHash}`) setNavPending(h);
+                  }}
                   onMouseEnter={() => warmDestination(h)}
                   onFocus={() => warmDestination(h)}
                   onTouchStart={() => warmDestination(h)}
@@ -878,21 +1640,51 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                   <span className="nav-ico">
                     <NavIcon name={module} />
                   </span>
-                  <span className="nav-label">
-                    {n}
-                    {h === '/notifications' && unread > 0 ? ` (${unread})` : ''}
-                  </span>
+                  <span className="nav-label">{label}</span>
                 </Link>
               );
             });
-            if (!group.label) {
-              return <div key={group.id}>{links}</div>;
+            if (ALWAYS_LIST_NAV_GROUP_IDS.has(group.id) && group.label) {
+              const childActive = group.items.some(([, h]) =>
+                isNavActive(pathname || '', h, visible, navSearch, navHash)
+              );
+              return (
+                <div
+                  key={group.id}
+                  className={`nav-group nav-group-static${childActive ? ' nav-group-has-active' : ''}`}
+                >
+                  <div className="nav-group-heading">{group.label}</div>
+                  <div className="nav-group-items">{links}</div>
+                </div>
+              );
             }
-            const childActive = group.items.some(([, h]) => isNavActive(pathname || '', h, visible));
+            if (!group.label || !usesAccordion(group)) {
+              return <div key={group.id} className="nav-standalone">{links}</div>;
+            }
+            const childActive = group.items.some(([, h]) => isNavActive(pathname || '', h, visible, navSearch, navHash));
+            const isOpen = expandedNav.has(group.id);
             return (
-              <details key={group.id} className="nav-group" open>
-                <summary className={childActive ? 'nav-group-active' : undefined}>{group.label}</summary>
-                {links}
+              <details
+                key={group.id}
+                className={`nav-group${childActive ? ' nav-group-has-active' : ''}`}
+                open={isOpen}
+                onToggle={(e) => {
+                  const el = e.currentTarget;
+                  if (el.open !== isOpen) el.open = isOpen;
+                }}
+              >
+                <summary
+                  className={childActive ? 'nav-group-active' : undefined}
+                  aria-expanded={isOpen}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    toggleNavGroup(group.id);
+                  }}
+                >
+                  <span className="nav-group-title">{group.label}</span>
+                  <span className="nav-group-arrow" aria-hidden="true" />
+                </summary>
+                <div className="nav-group-items">{links}</div>
               </details>
             );
           })}
@@ -903,16 +1695,33 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           </a>
         </div>
       </aside>
+      <SideEdgeToggle compact={navCompact} onToggle={toggleNavCompact} />
+      <MobileSideNavButton
+        open={menuOpen}
+        onToggle={() => {
+          if (mobileNav) setMenuOpen((v) => !v);
+        }}
+      />
       <div className="side-backdrop" onClick={() => setMenuOpen(false)} aria-hidden />
       <main className="main">
         <div className="topbar">
           <div className="topbar-left">
+            {pathname === '/pos' ? (
+              <>
+                <PosSellingStatus />
+                <div className="pos-top-tools">
+                  <PosDrawerTopControls />
+                </div>
+              </>
+            ) : null}
             <button
               type="button"
               className="menu-btn"
               aria-label="Toggle navigation menu"
-              aria-expanded={menuOpen}
-              onClick={() => setMenuOpen((v) => !v)}
+              aria-expanded={mobileNav ? menuOpen : undefined}
+              onClick={() => {
+                if (mobileNav) setMenuOpen((v) => !v);
+              }}
             >
               <span aria-hidden>{'\u2630'}</span>
               <span className="menu-btn-label">Menu</span>
@@ -920,7 +1729,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           </div>
           {!isPlatformOwner ? (
             <div className="topbar-context">
-              <StoreSwitcher visible />
+              <StoreSwitcher visible={!isHotelIndustry(industry)} />
             </div>
           ) : (
             <div className="topbar-context topbar-context-spacer" aria-hidden />
@@ -1004,7 +1813,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                 <span className="uavatar" aria-hidden>
                   {fullName.trim().charAt(0).toUpperCase() || 'U'}
                 </span>
-                <span className="uname">{fullName.trim().split(/\s+/)[0]}</span>
+                <span className="uname">{fullName.trim()}</span>
               </span>
             )}
             <button type="button" className="logout-btn" onClick={logout} aria-label="Log out" title="Log out">
@@ -1015,15 +1824,42 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </div>
-        {!isPlatformOwner && (
-          <OnboardingChecklist
-            canManage={role === 'company_admin' || role === 'super_admin'}
-          />
+        {!isPlatformOwner && industryValid === false && (
+          <p className="login-error" role="alert">
+            This company has no valid industry on file ({industryLabel(industry)}). Industry-specific
+            modules stay off until an administrator sets a supported industry on the Company page.
+            Shared modules such as finance and reports remain available.
+          </p>
         )}
+        {(role === 'company_admin' || role === 'super_admin') && (
+          <div className="no-print">
+            <OnboardingChecklist canManage />
+          </div>
+        )}
+        {navPending ? <div className="nav-progress" role="progressbar" aria-label="Loading page" /> : null}
         <div key={pathname || '/'} className="page-view">
-          {children}
+          {navRedirectTo ? (
+            <p className="muted" role="status">
+              Opening an allowed page…
+            </p>
+          ) : (
+            children
+          )}
         </div>
       </main>
+      {idleWarn ? (
+        <div className="idle-warn" role="alertdialog" aria-labelledby="idle-warn-title" aria-describedby="idle-warn-body">
+          <p id="idle-warn-title" style={{ margin: '0 0 8px', fontWeight: 700 }}>
+            You will be signed out soon
+          </p>
+          <p id="idle-warn-body" className="muted" style={{ margin: '0 0 12px' }}>
+            This session is idle. Stay signed in if you are still working.
+          </p>
+          <button type="button" className="list-btn-primary" onClick={() => void staySignedIn()}>
+            Stay signed in
+          </button>
+        </div>
+      ) : null}
     </div>
     </StoreProvider>
   );

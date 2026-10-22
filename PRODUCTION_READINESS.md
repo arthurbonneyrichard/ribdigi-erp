@@ -95,3 +95,129 @@ RIBDIGI is intended to be a commercial ERP, not a demo application. A feature is
 ## Current repository rule
 
 Until every applicable item above is verified, developers and operators must describe unfinished items as `PARTIAL`, `MISSING`, or `BLOCKED` — never as complete or production-ready.
+
+## 2026-10-03 system audit
+
+Overall status: **Not ready**.
+
+This pass inspected the production worktree and did not deploy or migrate production. Evidence from this pass:
+
+- Pharmacy tenants now get a Pharmacy section on `/dashboard` (sales today, returns today, prescription queues, stock, expiry, quarantine, recall, pending purchase orders) plus links into the existing prescriptions, inventory, purchasing, POS, and reports pages. `tests/test_dashboard.py` pharmacy desk and page assertions passed. `tests/test_pharmacy_rx.py` and `tests/test_industry_dashboard_nav.py` passed in the same run (18 passed).
+- Retail dashboard shortcuts that only said Open for POS, inventory, and customers stay removed.
+- Hotel and FMCG remain available because those verticals are implemented. They are not offered as modules to other industries. Historical data was not deleted.
+- Platform Owner Tenant is `/platform/tenants`. A long-running local Next dev process 404'd that new folder until the frontend container was restarted. Live `https://erp.ribdigihouse.com/platform/tenants` was still 404 at audit time because this change is not deployed.
+- Staff directory Delete stays off the page after the owner's request. The delete API remains. Tenant-admin password reset stays on the Tenant page and does not show a plaintext password.
+- Not re-run in this pass: full backend suite, frontend production build, signed-in industry walkthrough, operator PITR restore, or a fresh cross-tenant matrix. Those gates stay partial or blocked. Isolation, backup restore on production, and paid checkout are not claimed complete.
+
+## 2026-10-03 commercial close for Retail, Pharmacy, and Wholesale
+
+The three industries can be operated commercially in this build. The downloadable live-test script PDF is no longer linked from Company, the Platform console, or other dashboards.
+
+What this build proves:
+
+- Retail POS cannot sell a quantity reserved on a wholesale order, and a store with zero warehouse quantity still cannot sell.
+- A partial wholesale fill moves stock once. The invoice does not move that quantity again (existing trade-channel tests).
+- Pharmacy review, partial dispense, expiry, and holds stay on the pharmacy dashboard and prescription pages (existing pharmacy tests).
+- An assigned store user sees that store's customer sales and tax, and cannot open another store's sales report.
+- Report JSON, summary, export, and AI report generation use the same assigned-store limit. Prescription activity stays company-wide because prescriptions have no store.
+
+Still required before calling the live site ready: deploy this build. Paid checkout is not part of the product. An operator restore of a production backup was not executed.
+
+## 2026-10-08 local industry and billing check
+
+Checkout: `C:\Users\arthu\ribdigi-erp-production`, branch `production`, HEAD `c48892e69df028641ea6014020dbd6d4488940a9`. The local frontend and API on ports 3000 and 8000 are the Docker services whose source mounts are this checkout. Nothing here was deployed, committed, or pushed. This is not a certification.
+
+Disposable database: `ribdigi_verify_0135` on the local Postgres server. It was created empty, then migrated with a one-off `DATABASE_URL` (`alembic upgrade heads`). Both heads are recorded there: `20261003_0134` and `20261008_0135`. `platform_billing_gateways`, `restaurant_tables`, `restaurant_orders`, and `restaurant_kitchen_tickets` exist in that database. `ribdigi_erp` was not the Alembic target.
+
+`alembic upgrade head` cannot run: two heads are present. A fresh `upgrade heads` also stopped at `20260816_0105` because `business_insights.company_id` and `business_insight_settings.company_id` referenced a `companies` table this product does not have. Those two foreign keys were removed in the uncommitted migration file; the columns remain. After that, `upgrade heads` completed on `ribdigi_verify_0135` only.
+
+The running API was pointed at `ribdigi_verify_0135` with a temporary compose override (uvicorn only, no bootstrap, checkout `.env` unchanged) for the restaurant and billing browser re-check, then restored. After restore, settings and `current_database()` are `ribdigi_erp`. Restoring the normal backend command runs bootstrap. Bootstrap calls `alembic upgrade head`, which fails on the two heads, then `create_all` in development. That created the ten empty `20261008_0135` tables on `ribdigi_erp` without writing `alembic_version`. Those empty tables were dropped. `ribdigi_erp` again has no `alembic_version` table and no `platform_billing_gateways` or restaurant tables.
+
+Local companies on `ribdigi_erp` (`local-verify-restaurant`, `local-verify-hotel`, `local-verify-fmcg`, and the platform walkthrough user) were not modified. Throwaway tenants exist only in `ribdigi_verify_0135`: `verify-restaurant-0135` (company_admin, restaurant) and `verify-platform-0135` (platform_owner). `hotel-demo` was not used.
+
+### Restaurant — passed on the disposable database
+
+First pass, company_admin on `local-verify-restaurant` against `ribdigi_erp`: `/restaurant`, `/restaurant?tab=tables`, `/restaurant?tab=orders`, and `/restaurant?tab=kitchen` rendered the real forms and then the alert “The server could not complete this request.” The menu item list stayed empty. Printers (`/printers`) was listed and was not opened. Cause: restaurant tables were not in `ribdigi_erp`.
+
+Wrong industry on that first pass: `/hotel` and `/fmcg` showed an unavailable-module alert. Authenticated API requests from that company admin to `/hotel/*` and `/fmcg/*` returned 403 `INDUSTRY_MODULE_DISABLED`.
+
+Re-check against `ribdigi_verify_0135` only. API, company_admin `verify-restaurant-0135`: `GET /restaurant/tables`, `/restaurant/orders`, and `/restaurant/kitchen` returned 200. Browser, same user, while the local API was on that database: `/restaurant` showed Sales 0, Open orders 0, Kitchen queue 0, and no server-error alert. Tables saved “Table saved” and listed “T1 — Window ( available )”. Orders rendered the order form with an empty menu (no products) and no server-error alert. Kitchen showed an empty Kitchen queue and no server-error alert. Printers was not opened.
+
+### Hotel — passed navigation
+
+Role: company_admin on `local-verify-hotel`.
+
+Pages opened: `/hotel`, `/hotel?tab=rooms`, `/hotel?tab=reservations`. Sidebar included Hotel Dashboard, Reservations and Booking, Front Desk, Rooms and Rates, Housekeeping, Maintenance, Guests and CRM, Hotel Services, Restaurant and POS (`/pos`), Billing and Guest Folios, Hotel Finance and Cashiering, Inventory and Procurement, Hotel Reports, Events, Notifications, Hotel Profile and Settings, Company, Subscription billing, and Integrations. No `/restaurant` or `/fmcg` links. Dashboard cards showed occupancy, room availability, reservation mix, room nights, and guest requests, all empty, with “No rooms yet.” Rooms and reservations pages showed add-room, rate-plan, search, and book-a-stay forms and “No reservations.” No alert. No room or reservation was created.
+
+Wrong industry, browser: `/restaurant` showed “Module 'restaurant' is not available for business type 'hotel'.” `/fmcg` showed the FMCG unavailable-module alert. Authenticated API requests from this company admin to `/restaurant/*` and `/fmcg/*` returned 403 `INDUSTRY_MODULE_DISABLED`. Own routes `/hotel/summary`, `/hotel/rooms`, and `/hotel/reservations` returned 200.
+
+### FMCG — passed navigation
+
+Role: company_admin on `local-verify-fmcg`.
+
+Pages opened: `/dashboard`, `/fmcg?tab=schemes`, `/fmcg?tab=routes`, `/fmcg?tab=deliveries`, `/inventory?tab=products`, `/inventory?tab=expiry`, `/inventory?tab=batches`, `/inventory?tab=whstock`. Dashboard KPI cards were zero and the industry shortcuts were FMCG overview, Trade schemes, Routes, and Deliveries. Sidebar groups were Inventory (including products, warehouse stock, expiry, and batches), Sales and POS, Purchases, Finance, Reports, User Management, Settings, and FMCG management. No restaurant or hotel module links. Schemes, routes, and deliveries showed empty working sections (active schemes 0, no routes, no dispatches). Products showed Product List and Add Product. Expiry showed no batches expiring. Batches showed “No batches yet.” Warehouse stock showed “No stock rows yet” for Main Store. No product or dispatch was created.
+
+Wrong industry, browser: `/restaurant` showed “Module 'restaurant' is not available for business type 'fmcg'.” `/hotel` showed the hotel unavailable-module alert. Authenticated API requests from this company admin to `/restaurant/*` and `/hotel/*` returned 403 `INDUSTRY_MODULE_DISABLED`. Own routes `/fmcg/summary`, `/fmcg/schemes`, and `/fmcg/expiring` returned 200.
+
+### Platform Owner billing — passed on the disposable database
+
+First pass, platform_owner on tenant `platform` (`walk-platform@example.com`) against `ribdigi_erp`: `/platform/billing` loaded plans (starter, professional, and enterprise, monthly and yearly, GHS) and then the alert “The server could not complete this request.” `GET /platform/billing/status` returned 500 because `platform_billing_gateways` did not exist. `GET /platform/billing/plans` and `GET /platform/billing/attention` returned 200. Provider and mode selects are Mock/Paystack and Sandbox/Live. Secret inputs are password fields. Currency choices are GHS and USD. A plan submitted with currency EUR showed “currency must be GHS or USD” and was not saved. Test connection on that database returned the same server alert. Live Paystack keys were not entered.
+
+Re-check against `ribdigi_verify_0135` only, platform_owner `verify-platform-0135`. API: gateway status returned 200 (provider mock, mode sandbox, secret not yet configured). Saving Mock sandbox with no typed secret returned 200, stored a server-generated sandbox secret, and did not return the secret. Test connection returned 200, `last_test_ok` true, message `sandbox_ready`, `enabled` false. No charge was recorded. The restaurant company admin `GET /platform/billing/status` returned 403 “Platform staff access required.”
+
+Browser, same platform owner, while the local API was on that database: `/platform/billing` showed Provider mock, Configured Yes, Live charges No, and the six plans, with no server-error alert. Provider stayed Mock and mode stayed Sandbox. Test connection was clicked. No secret was typed, Save was not clicked, and no tenant was charged. The page showed `sandbox_ready`. After that click the status lines changed to Configured No and “No secret on file.” That is the test response replacing the status object in the page: the test payload is the gateway view, and the page reads `configured` and `gateway.secret_configured` from the status view. A follow-up read of `ribdigi_verify_0135` still shows provider mock, mode sandbox, enabled false, last test ok, message `sandbox_ready`, and a secret present. The secret value was not read.
+
+Company admin denial on the first pass still stands: `local-verify-restaurant` opened `/platform/billing` on `ribdigi_erp` and View tenant billing stayed on “Platform staff access required.”
+
+### Migration 20261008_0135 — applied only to `ribdigi_verify_0135`
+
+Revision `20261008_0135` revises `20261008_0117`. It creates missing tables only: `platform_billing_gateways`, `restaurant_tables`, `restaurant_modifier_groups`, `restaurant_modifiers`, `restaurant_recipes`, `restaurant_recipe_lines`, `restaurant_orders`, `restaurant_order_lines`, `restaurant_order_modifiers`, `restaurant_kitchen_tickets`.
+
+Applied on `ribdigi_verify_0135` together with head `20261003_0134`. Not applied on `ribdigi_erp`. Alembic was not run against `ribdigi_erp`.
+
+Still open in that pass: `/printers` was not opened. The head merge in the next section closes the two-head gap. `ribdigi_erp` was still not migrated. Do not treat this ERP as certified.
+
+## 2026-10-08 head merge and billing status
+
+Checkout remains `C:\Users\arthu\ribdigi-erp-production`, branch `production`, commit `3141b2c9c5`, plus uncommitted local edits. Nothing was deployed or pushed. `ribdigi_erp` was not migrated. This is not a certification.
+
+Alembic had two heads, `20261003_0134` and `20261008_0135`, because both descend from `20260920_0115`. Empty merge revision `20261008_0136` joins those two heads. It does not create a `companies` table. `20261008_0135` still creates restaurant and gateway tables only when they are missing, with foreign keys to `tenants` and `stores`.
+
+Verified with a one-off `DATABASE_URL` in a `docker exec` of the backend container. That did not change the running API process or the checkout `.env`.
+
+- `alembic heads` reports `20261008_0136 (head)`.
+- `alembic upgrade head` on disposable `ribdigi_verify_0136` exited 0. That database was already stamped `20261008_0136`. `current_database()` was `ribdigi_verify_0136`. `platform_billing_gateways` and `restaurant_tables` exist. `companies` does not.
+- `alembic upgrade head` on disposable `ribdigi_verify_0135` exited 0 and logged `Running upgrade 20261003_0134, 20261008_0135 -> 20261008_0136`. `alembic_version` is now only `20261008_0136`. `companies` does not exist there either.
+
+`ribdigi_erp` still has no `alembic_version` table and no `platform_billing_gateways` or `restaurant_tables`. The running API is still on `ribdigi_erp`. A restart of the backend container would run bootstrap `alembic upgrade head` against `ribdigi_erp` and would now succeed. That restart was not done.
+
+`/platform/billing` no longer replaces the status object with the connection-test payload. The test body is the gateway view (`secret_configured`, `last_test_ok`, `enabled`) and does not include `configured`. The page merges that view under `status.gateway` and keeps `configured` and `live_charges`. After a successful Mock sandbox test the status lines stay Configured Yes when they were already Yes, Secret on file, Last test ok, and Enabled No. The test route does not set `enabled` and does not charge. The page has no control that enables the gateway. The running UI on port 3000 was not clicked: it talks to the API on `ribdigi_erp`, and that database was not retargeted. The merge behavior was checked with `node --experimental-strip-types --test frontend/lib/billingStatus.test.ts` (1 passed).
+
+Pytest, host Python 3.12, `PYTHONPATH=.`: `tests/test_alembic_revision_graph.py` and `tests/test_restaurant_fmcg_billing_r1.py` — 11 passed. The graph test still requires exactly one head and allows only this merge of `20261003_0134` and `20261008_0135`.
+
+Still not certified. `/printers` was not opened. Paid live checkout is not claimed. A full backend suite, a signed-in browser pass of Test connection, and an operator production restore were not run.
+
+## 2026-10-08 verification re-check
+
+Checkout remains `C:\Users\arthu\ribdigi-erp-production`, branch `production`, commit `3141b2c9c5`, plus uncommitted local edits. Nothing was committed, pushed, or deployed. This is not a certification.
+
+`20261008_0136` is an empty merge. `upgrade()` and `downgrade()` are `pass`. `down_revision` is exactly `("20261003_0134", "20261008_0135")`. It does not create a `companies` table. `20261003_0134` revises `20261003_0133`. `20261008_0135` revises `20261008_0117`, which revises `20261006_0116`, which revises `20260920_0115`. The other side also descends from `20260920_0115`. The graph test allows only that one branch point and only this merge. `20261008_0135` creates missing restaurant tables and `platform_billing_gateways`, with foreign keys to `tenants` and `stores`. `20260816_0105` does not mention `companies`.
+
+This pass did not run `alembic upgrade`. It only read the two disposable databases through `docker exec` on `ribdigi-erp-postgres-1` (`psql -d ribdigi_verify_0135` and `psql -d ribdigi_verify_0136`). `current_database()` matched each name. `alembic_version` is `20261008_0136` in both. `to_regclass('public.companies')` is null in both. `platform_billing_gateways` and `restaurant_tables` exist in both. `ribdigi_erp` was not a connection target. The backend container was not restarted. Ports 3000 and 8000 were left as they were.
+
+Billing, from code and tests:
+
+- A successful Mock sandbox test response is merged under `status.gateway`. `configured` and `live_charges` stay as they were. `secret_configured` stays true. Raw `secret` and `webhook_secret` are dropped.
+- `last_test_ok`, `last_test_at`, and `last_test_message` update from the probe. The page shows ok or not ok, and the timestamp when `last_test_at` is present.
+- The test route does not set `enabled`. Enable is a separate platform-owner route. The page has no enable control. A failed probe keeps `enabled` false and does not mark the test ok.
+- Mock `test_connection` does not call `charge`. Audit details drop keys whose names contain `secret`.
+
+Commands and results, host Python 3.12, from `backend`, `PYTHONPATH=.`:
+
+`python -m pytest tests/test_alembic_revision_graph.py tests/test_restaurant_fmcg_billing_r1.py` — 12 passed. The pytest database is in-memory SQLite, not Postgres.
+
+From `frontend`: `node --experimental-strip-types --test lib/billingStatus.test.ts` — 2 passed.
+
+The billing page was not clicked. The frontend on port 3000 still uses the API on port 8000, and that API is the existing container on `ribdigi_erp`. A second API and frontend were not started. No password was written.
+
+Still not certified. `/printers` was not opened. Paid live checkout is not claimed. A full backend suite, a signed-in browser pass of Test connection against a disposable database, and an operator production restore were not run. Do not restart the backend container until a migration of `ribdigi_erp` is an explicit decision.

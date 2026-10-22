@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import re
+import time
+
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,6 +27,10 @@ DEFAULT_CATEGORIES = (
     ("FOOD", "Food", None),
 )
 
+_CAT_CODE_RE = re.compile(r"^CAT-(\d+)$", re.IGNORECASE)
+_BRD_CODE_RE = re.compile(r"^BRD-(\d+)$", re.IGNORECASE)
+_UNT_CODE_RE = re.compile(r"^UNT-(\d+)$", re.IGNORECASE)
+
 
 def serialize_category(row: m.ProductCategory) -> dict:
     return {
@@ -33,6 +40,7 @@ def serialize_category(row: m.ProductCategory) -> dict:
         "name": row.name,
         "tax_rate_id": getattr(row, "tax_rate_id", None),
         "is_active": bool(row.is_active),
+        "prep_station": getattr(row, "prep_station", None),
         "created_at": row.created_at,
     }
 
@@ -136,25 +144,139 @@ def serialize_unit(row: m.UnitOfMeasure, *, base: m.UnitOfMeasure | None = None)
 STOCK_STATUS_YELLOW_FACTOR = 1.5
 
 
-def compute_stock_status(stock_qty: float, reorder_level: float) -> dict:
+def compute_stock_status(
+    stock_qty: float,
+    reorder_level: float,
+    minimum_stock: float | None = None,
+) -> dict:
     """Traffic-light stock status for product list (BR-5.5).
 
-    - red: on-hand ≤ 0, or (reorder > 0 and on-hand ≤ reorder) — matches low-stock report
-    - yellow: reorder > 0 and reorder < on-hand ≤ reorder × 1.5
-    - green: otherwise (incl. reorder unset/0 with positive stock)
+    - out: on-hand ≤ 0 (never called low stock)
+    - red: floor > 0 and 0 < on-hand ≤ floor (floor = max(minimum_stock, reorder_level))
+    - yellow: floor > 0 and floor < on-hand ≤ floor × 1.5
+    - green: otherwise
     """
     qty = money_json(stock_qty or 0)
     reorder = money_json(reorder_level or 0)
-    if qty <= 0 or (reorder > 0 and qty <= reorder):
-        code = "red"
-        label = "out_of_stock" if qty <= 0 else "low"
-    elif reorder > 0 and qty <= reorder * STOCK_STATUS_YELLOW_FACTOR:
-        code = "yellow"
-        label = "near_reorder"
-    else:
-        code = "green"
-        label = "ok"
-    return {"status": code, "label": label}
+    floor = low_stock_floor(minimum_stock, reorder)
+    if qty <= 0:
+        return {"status": "out", "label": "out_of_stock"}
+    if floor > 0 and qty <= floor:
+        return {"status": "red", "label": "low"}
+    if floor > 0 and qty <= floor * STOCK_STATUS_YELLOW_FACTOR:
+        return {"status": "yellow", "label": "near_reorder"}
+    return {"status": "green", "label": "ok"}
+
+
+def low_stock_floor(minimum_stock: float | None = None, reorder_level: float | None = None) -> float:
+    """Policy floor: max(minimum_stock, reorder_level). Missing values treat as 0."""
+    return max(money_json(minimum_stock or 0), money_json(reorder_level or 0))
+
+
+def qty_is_out_of_stock(qty: float) -> bool:
+    return money_json(qty or 0) <= 0
+
+
+def qty_is_low_stock(
+    qty: float,
+    *,
+    minimum_stock: float | None = None,
+    reorder_level: float | None = None,
+) -> bool:
+    """True when 0 < on-hand ≤ policy floor. Qty ≤ 0 is out of stock, not low."""
+    on_hand = money_json(qty or 0)
+    if on_hand <= 0:
+        return False
+    floor = low_stock_floor(minimum_stock, reorder_level)
+    return floor > 0 and on_hand <= floor
+
+
+def location_policy_floor(
+    *,
+    product_minimum_stock: float | None = None,
+    product_reorder_level: float | None = None,
+    location_minimum_stock: float | None = None,
+    location_reorder_level: float | None = None,
+) -> float:
+    """Location max(minimum_stock, reorder_level) when set; otherwise the product floor."""
+    loc = low_stock_floor(location_minimum_stock, location_reorder_level)
+    if loc > 0:
+        return loc
+    return low_stock_floor(product_minimum_stock, product_reorder_level)
+
+
+def serialize_location_stock(
+    *,
+    product: m.Product,
+    warehouse: m.Warehouse,
+    stock: m.WarehouseStock | None,
+) -> dict:
+    """On-hand + low/OOS flags for one product at one warehouse.
+
+    Missing ``warehouse_stocks`` is quantity 0. Low stock uses the location
+    floor when that location has a threshold; otherwise the product floor.
+    Qty ≤ 0 is out of stock, never low.
+    """
+    qty = money_json(stock.quantity if stock is not None else 0)
+    loc_min = money_json(getattr(stock, "minimum_stock", 0) if stock is not None else 0)
+    loc_reorder = money_json(getattr(stock, "reorder_level", 0) if stock is not None else 0)
+    reorder_qty = money_json(getattr(stock, "reorder_qty", 0) if stock is not None else 0)
+    prod_min = money_json(getattr(product, "minimum_stock", 0) or 0)
+    prod_reorder = money_json(getattr(product, "reorder_level", 0) or 0)
+    floor = location_policy_floor(
+        product_minimum_stock=prod_min,
+        product_reorder_level=prod_reorder,
+        location_minimum_stock=loc_min,
+        location_reorder_level=loc_reorder,
+    )
+    flags = pos_stock_flags(qty, minimum_stock=floor, reorder_level=floor)
+    low = flags["is_low_stock"]
+    return {
+        "product_id": product.id,
+        "name": product.name,
+        "sku": product.sku,
+        "category": getattr(product, "category", None) or None,
+        "quantity": qty,
+        "reorder_level": loc_reorder,
+        "minimum_stock": loc_min,
+        "product_reorder_level": prod_reorder,
+        "product_minimum_stock": prod_min,
+        "low_stock_floor": floor,
+        "reorder_qty": reorder_qty,
+        "is_out_of_stock": flags["is_out_of_stock"],
+        "is_low_stock": low,
+        "below_reorder": low,
+        "stock_status": flags["stock_status"],
+        "stock_status_label": flags["stock_status_label"],
+        "suggested_order_qty": (
+            money_json(max(reorder_qty, money_json(round(floor - qty, 3))))
+            if low
+            else reorder_qty
+        ),
+        "warehouse_id": warehouse.id,
+        "warehouse_code": warehouse.code,
+        "warehouse_name": warehouse.name,
+        "store_id": warehouse.store_id,
+        "consolidated_stock": money_json(getattr(product, "stock_qty", 0) or 0),
+        "scope": "warehouse",
+    }
+
+
+def pos_stock_flags(
+    qty: float,
+    *,
+    minimum_stock: float | None = None,
+    reorder_level: float | None = None,
+) -> dict:
+    status = compute_stock_status(qty, reorder_level or 0, minimum_stock)
+    return {
+        "is_out_of_stock": qty_is_out_of_stock(qty),
+        "is_low_stock": qty_is_low_stock(
+            qty, minimum_stock=minimum_stock, reorder_level=reorder_level
+        ),
+        "stock_status": status["status"],
+        "stock_status_label": status["label"],
+    }
 
 
 def serialize_product(row: m.Product) -> dict:
@@ -163,7 +285,8 @@ def serialize_product(row: m.Product) -> dict:
 
     stock_qty = money_json(row.stock_qty)
     reorder_level = money_json(row.reorder_level)
-    status = compute_stock_status(stock_qty, reorder_level)
+    minimum_stock = money_json(getattr(row, "minimum_stock", 0) or 0)
+    status = compute_stock_status(stock_qty, reorder_level, minimum_stock)
     return {
         "id": row.id,
         "name": row.name,
@@ -184,6 +307,8 @@ def serialize_product(row: m.Product) -> dict:
         "height": _opt_float(getattr(row, "height", None)),
         "stock_qty": stock_qty,
         "reorder_level": reorder_level,
+        "minimum_stock": minimum_stock,
+        "low_stock_floor": low_stock_floor(minimum_stock, reorder_level),
         "stock_status": status["status"],
         "stock_status_label": status["label"],
         "tax_rate_id": row.tax_rate_id,
@@ -191,11 +316,62 @@ def serialize_product(row: m.Product) -> dict:
         "tax_supply_class": getattr(row, "tax_supply_class", None)
         or ("exempt" if row.tax_exempt else "standard"),
         "tracks_batches": bool(row.tracks_batches),
+        "dosage_instructions": getattr(row, "dosage_instructions", None),
+        "rx_only": bool(getattr(row, "rx_only", False)),
+        "min_order_qty": money_json(getattr(row, "min_order_qty", 0) or 0),
         "is_active": bool(row.is_active),
+        "prep_station": getattr(row, "prep_station", None),
+        "created_by": getattr(row, "created_by", None),
+        "unit_name": None,
+        "unit_code": None,
+        "brand": None,
+        "created_by_name": None,
+        "created_by_email": None,
     }
 
 
+async def serialize_products_list(
+    db: AsyncSession, tenant_id: str, rows: list[m.Product]
+) -> list[dict]:
+    payloads = [serialize_product(p) for p in rows]
+    if not payloads:
+        return payloads
+    unit_ids = {p.unit_id for p in rows if p.unit_id}
+    brand_ids = {p.brand_id for p in rows if p.brand_id}
+    user_ids = {getattr(p, "created_by", None) for p in rows if getattr(p, "created_by", None)}
+    units: dict[str, m.UnitOfMeasure] = {}
+    brands: dict[str, m.Brand] = {}
+    users: dict[str, m.User] = {}
+    if unit_ids:
+        for u in (
+            await db.execute(select(m.UnitOfMeasure).where(m.UnitOfMeasure.id.in_(unit_ids)))
+        ).scalars():
+            units[u.id] = u
+    if brand_ids:
+        for b in (await db.execute(select(m.Brand).where(m.Brand.id.in_(brand_ids)))).scalars():
+            brands[b.id] = b
+    if user_ids:
+        for u in (await db.execute(select(m.User).where(m.User.id.in_(user_ids)))).scalars():
+            users[u.id] = u
+    for p, payload in zip(rows, payloads):
+        unit = units.get(p.unit_id) if p.unit_id else None
+        brand = brands.get(p.brand_id) if p.brand_id else None
+        creator = users.get(getattr(p, "created_by", None) or "")
+        payload["unit_name"] = unit.name if unit else None
+        payload["unit_code"] = unit.code if unit else None
+        payload["brand"] = brand.name if brand else None
+        payload["created_by_name"] = creator.full_name if creator else None
+        payload["created_by_email"] = creator.email if creator else None
+    return payloads
+
+
+_ENSURED_AT: dict[str, float] = {}
+_ENSURE_TTL_S = 120.0
+
 async def ensure_default_catalog(db: AsyncSession, tenant_id: str) -> None:
+    now = time.monotonic()
+    if now - _ENSURED_AT.get(tenant_id, 0.0) < _ENSURE_TTL_S:
+        return
     unit_codes = await schema_compat.existing_codes(db, "units_of_measure", tenant_id)
     if not unit_codes:
         for code, name in DEFAULT_UNITS:
@@ -228,6 +404,7 @@ async def ensure_default_catalog(db: AsyncSession, tenant_id: str) -> None:
                 },
             )
     await db.flush()
+    _ENSURED_AT[tenant_id] = now
 
 
 async def list_categories(
@@ -256,26 +433,89 @@ async def _validate_category_tax_rate(
     return rate.id
 
 
+async def _allocate_prefixed_code(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    table: str,
+    prefix: str,
+    pattern: re.Pattern[str],
+) -> str:
+    """Allocate PREFIX-NNNN under a tenant row lock. Existing codes are left unchanged."""
+    await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id).with_for_update())
+    taken = {
+        str(c).strip().upper()
+        for c in await schema_compat.existing_codes(db, table, tenant_id)
+    }
+    seq = 0
+    for existing in taken:
+        match = pattern.match(existing)
+        if match:
+            seq = max(seq, int(match.group(1)))
+    n = seq + 1
+    for _ in range(10_000):
+        candidate = f"{prefix}-{n:04d}"
+        if candidate not in taken:
+            return candidate
+        n += 1
+    raise HTTPException(status_code=500, detail="The server could not complete this request.")
+
+
+async def allocate_category_code(db: AsyncSession, tenant_id: str) -> str:
+    """Allocate CAT-NNNN under a tenant row lock (same idea as POS numbers).
+
+    Existing codes (GEN/BEV/FOOD and any client-supplied values) are left unchanged.
+    """
+    return await _allocate_prefixed_code(
+        db, tenant_id, table="product_categories", prefix="CAT", pattern=_CAT_CODE_RE
+    )
+
+
+async def allocate_brand_code(db: AsyncSession, tenant_id: str) -> str:
+    """Allocate BRD-NNNN under a tenant row lock. Existing codes are preserved."""
+    return await _allocate_prefixed_code(
+        db, tenant_id, table="brands", prefix="BRD", pattern=_BRD_CODE_RE
+    )
+
+
+async def allocate_unit_code(db: AsyncSession, tenant_id: str) -> str:
+    """Allocate UNT-NNNN under a tenant row lock. Existing codes are preserved."""
+    return await _allocate_prefixed_code(
+        db, tenant_id, table="units_of_measure", prefix="UNT", pattern=_UNT_CODE_RE
+    )
+
+
 async def create_category(
     db: AsyncSession,
     *,
     tenant_id: str,
-    code: str,
+    code: str | None = None,
     name: str,
     parent_id: str | None = None,
     tax_rate_id: str | None = None,
+    prep_station: str | None = None,
 ) -> m.ProductCategory:
-    # OpenAPI CategoryCodeValue → 422; service defense-in-depth → 400.
-    code = require_honest_narrative(
-        (code or "").strip().upper(), label="category code", max_length=40
-    )
     name = require_honest_narrative(name, label="category name", max_length=120)
+    supplied = (code or "").strip()
+    if supplied:
+        # OpenAPI CategoryCodeValue → 422; service defense-in-depth → 400.
+        code = require_honest_narrative(supplied, label="category code", max_length=40).upper()
+    else:
+        code = await allocate_category_code(db, tenant_id)
     if parent_id:
         parent = await schema_compat.get_mapped(db, m.ProductCategory, parent_id)
         if not parent or parent.tenant_id != tenant_id:
             raise HTTPException(status_code=404, detail="Parent category not found")
     tax_rate_id = await _validate_category_tax_rate(db, tenant_id=tenant_id, tax_rate_id=tax_rate_id)
-    if code in await schema_compat.existing_codes(db, "product_categories", tenant_id):
+    if prep_station is not None:
+        from app.printers import normalize_prep_station
+
+        prep_station = normalize_prep_station(prep_station)
+    taken = {
+        str(c).strip().upper()
+        for c in await schema_compat.existing_codes(db, "product_categories", tenant_id)
+    }
+    if code in taken:
         raise HTTPException(status_code=409, detail="Category code exists")
     row = await schema_compat.insert_and_get(
         db,
@@ -286,6 +526,7 @@ async def create_category(
             "name": name,
             "parent_id": parent_id,
             "tax_rate_id": tax_rate_id,
+            "prep_station": prep_station,
             "is_active": True,
         },
     )
@@ -306,6 +547,8 @@ async def update_category(
     is_active: bool | None = None,
     clear_parent: bool = False,
     clear_tax_rate: bool = False,
+    prep_station: str | None = None,
+    clear_prep_station: bool = False,
 ) -> m.ProductCategory:
     row = await db.get(m.ProductCategory, category_id)
     if row is None or row.tenant_id != tenant_id:
@@ -344,6 +587,12 @@ async def update_category(
         )
     if is_active is not None:
         row.is_active = bool(is_active)
+    if clear_prep_station:
+        row.prep_station = None
+    elif prep_station is not None:
+        from app.printers import normalize_prep_station
+
+        row.prep_station = normalize_prep_station(prep_station)
     await db.flush()
     return row
 
@@ -373,15 +622,17 @@ async def create_brand(
     db: AsyncSession,
     *,
     tenant_id: str,
-    code: str,
+    code: str | None = None,
     name: str,
     description: str | None = None,
 ) -> m.Brand:
-    # OpenAPI BrandCodeValue → 422; service defense-in-depth → 400.
-    code = require_honest_narrative(
-        (code or "").strip().upper(), label="brand code", max_length=40
-    )
     name = require_honest_narrative(name, label="brand name", max_length=120)
+    supplied = (code or "").strip()
+    if supplied:
+        # OpenAPI BrandCodeValue → 422; service defense-in-depth → 400.
+        code = require_honest_narrative(supplied, label="brand code", max_length=40).upper()
+    else:
+        code = await allocate_brand_code(db, tenant_id)
     if code in await schema_compat.existing_codes(db, "brands", tenant_id):
         raise HTTPException(status_code=409, detail="Brand code exists")
     row = await schema_compat.insert_and_get(
@@ -478,18 +729,20 @@ async def create_unit(
     db: AsyncSession,
     *,
     tenant_id: str,
-    code: str,
+    code: str | None = None,
     name: str,
     base_unit_id: str | None = None,
     conversion_ratio: float | None = None,
 ) -> m.UnitOfMeasure:
     from app.uom import validate_unit_base
 
-    # OpenAPI UnitCodeValue → 422; service defense-in-depth → 400.
-    code = require_honest_narrative(
-        (code or "").strip().upper(), label="unit code", max_length=20
-    )
     name = require_honest_narrative(name, label="unit name", max_length=80)
+    supplied = (code or "").strip()
+    if supplied:
+        # OpenAPI UnitCodeValue → 422; service defense-in-depth → 400.
+        code = require_honest_narrative(supplied, label="unit code", max_length=20).upper()
+    else:
+        code = await allocate_unit_code(db, tenant_id)
     if code in await schema_compat.existing_codes(db, "units_of_measure", tenant_id):
         raise HTTPException(status_code=409, detail="Unit code exists")
     base_id, ratio = await validate_unit_base(

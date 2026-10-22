@@ -69,6 +69,35 @@ def http_exception_for_tenant_create_failure(exc: BaseException) -> HTTPExceptio
     return HTTPException(status_code=500, detail=TENANT_CREATE_FAILED)
 
 
+def _field_detail(field: str, message: str) -> list[dict]:
+    return [{"loc": ["body", field], "msg": message, "type": "value_error"}]
+
+
+def _missing_related_detail(raw: str, path: str = ""):
+    """Map constraint text to a field message. SQL stays in logs only."""
+    path = (path or "").lower()
+    if "customer_group" in raw:
+        return _field_detail(
+            "customer_group",
+            "Customer group was not found or is not available in this company.",
+        )
+    if "company_id" in raw or ("companies" in raw and "foreign" in raw):
+        return _field_detail(
+            "company",
+            "Company is required. Create a company for this workspace, then try again.",
+        )
+    if "tenant_id" in raw or "tenants." in raw:
+        return "Workspace is missing or not available."
+    if "store_id" in raw or "stores." in raw:
+        return _field_detail("store", "Store was not found or is not available.")
+    if "/customers" in path:
+        return (
+            "Could not save the customer. Check that company and customer group "
+            "exist for this workspace."
+        )
+    return "Could not save because a required related record is missing."
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(IntegrityError)
     async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSONResponse:
@@ -81,28 +110,36 @@ def register_exception_handlers(app: FastAPI) -> None:
         if "foreign key" in raw or "not null" in raw or "not-null" in raw or "null value" in raw:
             return JSONResponse(
                 status_code=400,
-                content={
-                    "detail": "Could not save because a required related record is missing.",
-                },
+                content={"detail": _missing_related_detail(raw, request.url.path)},
             )
         return JSONResponse(status_code=409, content={"detail": SAFE_409})
 
     @app.exception_handler(SQLAlchemyError)
     async def sqlalchemy_error_handler(request: Request, exc: SQLAlchemyError) -> JSONResponse:
+        rid = getattr(request.state, "request_id", None) or request.headers.get("X-Request-ID")
         logger.exception(
-            "database error method=%s path=%s",
+            "database error method=%s path=%s request_id=%s",
             request.method,
             request.url.path,
+            rid,
         )
-        return JSONResponse(status_code=500, content={"detail": SAFE_500})
+        body: dict = {"detail": SAFE_500}
+        if rid:
+            body["request_id"] = str(rid)
+        return JSONResponse(status_code=500, content=body)
 
     @app.exception_handler(Exception)
     async def unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
         if isinstance(exc, (HTTPException, StarletteHTTPException, RequestValidationError)):
             raise exc
+        rid = getattr(request.state, "request_id", None) or request.headers.get("X-Request-ID")
         logger.exception(
-            "unhandled error method=%s path=%s",
+            "unhandled error method=%s path=%s request_id=%s",
             request.method,
             request.url.path,
+            rid,
         )
-        return JSONResponse(status_code=500, content={"detail": SAFE_500})
+        body: dict = {"detail": SAFE_500}
+        if rid:
+            body["request_id"] = str(rid)
+        return JSONResponse(status_code=500, content=body)

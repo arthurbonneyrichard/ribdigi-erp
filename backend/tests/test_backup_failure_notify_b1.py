@@ -41,9 +41,10 @@ async def test_scheduled_backup_dir_not_writable_notifies(client, db_session, tm
     row.last_run_at = datetime.utcnow() - timedelta(days=2)
     await db_session.commit()
 
-    bad = tmp_path / "readonly-backups"
-    bad.mkdir()
-    bad.chmod(0o500)
+    bad = tmp_path / "not-a-directory"
+    bad.write_text("file", encoding="utf-8")
+    # A file where the backup directory should be fails mkdir on Windows and Linux.
+    # chmod on a directory does not deny writes on Windows.
     monkeypatch.setattr("app.backup.settings.BACKUP_DIR", str(bad / "nested-missing"))
     monkeypatch.setattr("app.config.settings.BACKUP_DIR", str(bad / "nested-missing"))
 

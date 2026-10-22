@@ -1,11 +1,19 @@
 'use client';
 
-import { useState } from 'react';
-import { api } from '../lib/api';
+import { useEffect, useState } from 'react';
+import { api, clearSessionAndRedirect, idleTimeoutMs, setAuthTokens, unreachableApiMessage } from '../lib/api';
+import { explainOfflineAccess, probeApi, UNPREPARED_OFFLINE } from '../lib/connectivity';
+import { bumpLastActivity, hasStoredActivity, isIdleExpired, resetIdleWriteThrottle } from '../lib/idleSession';
+import { getAccessTokenSync, hydrateAuth } from '../lib/authStorage';
+import { getMe, invalidateMeCache } from '../lib/meCache';
+import { roleHomePath } from '../lib/tenantNav';
+import { invalidatePrefetchCache } from '../lib/prefetchCache';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import LoginBrandLogo from '../components/LoginBrandLogo';
+import LoginLegalLinks from '../components/LoginLegalLinks';
 import { loadUserTheme } from '../lib/theme';
+import { openShiftForSignedInUser } from '../lib/cashierShift';
 
 function bufferToBase64url(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
@@ -37,13 +45,88 @@ export default function Login() {
   const [verifyMessage, setVerifyMessage] = useState('');
   const [debugVerifyToken, setDebugVerifyToken] = useState('');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
   const router = useRouter();
 
-  function finishLogin(data: any) {
-    localStorage.setItem('token', data.access_token);
-    if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
-    // Only persist UUID tenant ids — slug values (e.g. platform) cause
-    // X-Tenant-ID 422s and bounce the session back to login.
+  async function openPreparedTill(): Promise<boolean> {
+    try {
+      await hydrateAuth();
+      const offlineMod = await Promise.race([
+        import('../lib/posOffline'),
+        new Promise<never>((_, reject) => {
+          window.setTimeout(() => reject(new Error('offline-module')), 2500);
+        }),
+      ]);
+      const env = await offlineMod.getOfflineAuthEnvelope().catch(() => null);
+      const decision = explainOfflineAccess(env);
+      if (!decision.prepared || !getAccessTokenSync()) {
+        setError(decision.message);
+        return false;
+      }
+      const me = await offlineMod.getSnapshot<{ id?: string } | null>('me').catch(() => null);
+      if (!me?.id || String(me.id) !== String(env?.user_id || '')) {
+        setError('Online sign-in is required. Saved sales stay on this device.');
+        return false;
+      }
+      router.replace('/pos');
+      return true;
+    } catch {
+      setError(explainOfflineAccess(null).message);
+      return false;
+    }
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    async function look() {
+      try {
+        await hydrateAuth();
+        if (cancelled) return;
+        const phase = await probeApi();
+        if (cancelled) return;
+        if (phase === 'online') {
+          setError((prev) => (prev === UNPREPARED_OFFLINE ? '' : prev));
+          if (!getAccessTokenSync()) return;
+          try {
+            const me = await getMe();
+            if (cancelled) return;
+            const mins = Number(me.data?.inactivity_timeout_minutes);
+            if (hasStoredActivity() && isIdleExpired(idleTimeoutMs(mins))) {
+              clearSessionAndRedirect();
+              return;
+            }
+            if (String(me.data?.role || '') === 'cashier') router.replace('/pos');
+          } catch (err) {
+            const again = await probeApi();
+            if ((err as { status?: number }).status === undefined && again !== 'online') {
+              await openPreparedTill();
+            }
+          }
+          return;
+        }
+        await openPreparedTill();
+      } catch {
+        if (cancelled) return;
+        const phase = await probeApi().catch(() => 'api_down' as const);
+        if (phase !== 'online') setError(explainOfflineAccess(null).message);
+      }
+    }
+    void look();
+    const timer = window.setInterval(() => {
+      void look();
+    }, 4000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [router]);
+
+  async function finishLogin(data: any) {
+    invalidateMeCache();
+    invalidatePrefetchCache();
+    await setAuthTokens(data.access_token, data.refresh_token || null);
+    resetIdleWriteThrottle();
+    bumpLastActivity();
     const tenantId = String(data.user?.tenant_id || '').trim();
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tenantId)) {
       localStorage.setItem('tenant', tenantId);
@@ -51,7 +134,17 @@ export default function Login() {
       localStorage.removeItem('tenant');
     }
     const uid = String(data.user?.id || '').trim();
-    if (uid) loadUserTheme(uid);
+    if (uid) {
+      try {
+        sessionStorage.setItem('ribdigi:uid', uid);
+      } catch {
+        /* ignore */
+      }
+      loadUserTheme(uid);
+    }
+    if (!data.must_enroll_2fa) {
+      await openShiftForSignedInUser();
+    }
     if (data.must_enroll_2fa) {
       router.push('/security');
     } else if (
@@ -61,12 +154,18 @@ export default function Login() {
     ) {
       router.push('/platform');
     } else {
-      router.push('/dashboard');
+      router.push(roleHomePath(String(data.user?.role || ''), data.user?.industry));
     }
   }
 
   async function verifyPasskey() {
     setError('');
+    const phase = await probeApi();
+    if (phase !== 'online') {
+      await openPreparedTill();
+      return;
+    }
+    setBusy(true);
     try {
       if (!window.PublicKeyCredential) {
         throw new Error('This browser does not support passkeys');
@@ -107,15 +206,23 @@ export default function Login() {
         method: 'POST',
         body: JSON.stringify({ challenge_token: trimmedChallenge, credential }),
       });
-      finishLogin(r.data);
+      await finishLogin(r.data);
     } catch (err: any) {
       setError(err.message || 'Passkey login failed');
+    } finally {
+      setBusy(false);
     }
   }
 
   async function go(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    const phase = await probeApi();
+    if (phase !== 'online') {
+      await openPreparedTill();
+      return;
+    }
+    setBusy(true);
     try {
       if (needs2fa && challengeToken) {
         if (!methods.includes('totp') && methods.includes('webauthn')) {
@@ -134,7 +241,7 @@ export default function Login() {
             code: totpCode.trim(),
           }),
         });
-        finishLogin(r.data);
+        await finishLogin(r.data);
         return;
       }
 
@@ -164,7 +271,7 @@ export default function Login() {
         setTotpCode('');
         return;
       }
-      finishLogin(r.data);
+      await finishLogin(r.data);
     } catch (err: any) {
       const detail = err.detail;
       const code = typeof detail === 'object' && detail ? detail.code : null;
@@ -174,7 +281,16 @@ export default function Login() {
         setError(detail?.message || 'Verify your email before signing in');
         return;
       }
-      setError(err.message || 'Login failed');
+      const raw = String(err.message || '');
+      if (!raw || /failed to fetch|networkerror|load failed|did not respond|could not reach the server|you are offline/i.test(raw)) {
+        const again = await probeApi();
+        if (again !== 'online') await openPreparedTill();
+        else setError(unreachableApiMessage('/auth/login'));
+        return;
+      }
+      setError(raw || 'Login failed');
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -187,6 +303,7 @@ export default function Login() {
       setError('Login tenant is required');
       return;
     }
+    setBusy(true);
     try {
       const r = await api('/auth/resend-verification', {
         method: 'POST',
@@ -198,6 +315,8 @@ export default function Login() {
       }
     } catch (err: any) {
       setError(err.message || 'Unable to resend verification');
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -227,6 +346,7 @@ export default function Login() {
                   placeholder="Tenant slug or ID"
                   autoComplete="organization"
                   required
+                  disabled={busy}
                 />
               </label>
               <label className="login-field">
@@ -239,6 +359,7 @@ export default function Login() {
                   type="email"
                   autoComplete="username"
                   required
+                  disabled={busy}
                 />
               </label>
               <label className="login-field">
@@ -251,6 +372,7 @@ export default function Login() {
                   autoComplete="current-password"
                   aria-label="Login password"
                   required
+                  disabled={busy}
                 />
               </label>
               <p className="login-forgot">
@@ -285,14 +407,21 @@ export default function Login() {
                 autoComplete="one-time-code"
                 required={methods.includes('totp') && !methods.includes('webauthn')}
                 autoFocus
+                disabled={busy}
               />
             </label>
           )}
 
           {showPasskey && <p className="login-hint">Or continue with a registered passkey.</p>}
 
-          <button className="login-primary" type="submit" aria-label="Sign in">
-            {needs2fa ? (methods.includes('totp') ? 'Verify & continue' : 'Continue') : 'Sign in'}
+          <button className="login-primary" type="submit" aria-label="Sign in" disabled={busy} aria-busy={busy}>
+            {busy
+              ? 'Signing in…'
+              : needs2fa
+                ? methods.includes('totp')
+                  ? 'Verify & continue'
+                  : 'Continue'
+                : 'Sign in'}
           </button>
 
           {showPasskey && (
@@ -301,8 +430,9 @@ export default function Login() {
               type="button"
               onClick={verifyPasskey}
               aria-label="Use passkey"
+              disabled={busy}
             >
-              Use passkey
+              {busy ? 'Working…' : 'Use passkey'}
             </button>
           )}
 
@@ -333,8 +463,9 @@ export default function Login() {
                 type="button"
                 onClick={resendVerification}
                 aria-label="Resend verification email"
+                disabled={busy}
               >
-                Resend verification email
+                {busy ? 'Sending…' : 'Resend verification email'}
               </button>
               <Link className="login-ghost" href="/verify-email" style={{ display: 'block', textAlign: 'center' }}>
                 Open verify page
@@ -361,6 +492,7 @@ export default function Login() {
             A Ribdigi House Product
           </a>
         </p>
+        <LoginLegalLinks />
       </div>
     </div>
   );

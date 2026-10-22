@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import html
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -322,8 +323,12 @@ async def create_purchase_order(
     await require_active_supplier(db, tenant_id, supplier_id)
     if warehouse_id:
         from app.warehouses import require_active_warehouse
+        from app import store_access as store_access_svc
 
         await require_active_warehouse(db, tenant_id, warehouse_id)
+        await store_access_svc.assert_warehouse_access(
+            db, tenant_id=tenant_id, user_id=user_id, warehouse_id=warehouse_id
+        )
 
     from app.uom import resolve_line_unit
 
@@ -762,6 +767,15 @@ async def create_grn(
     if po.status not in PO_RECEIVABLE:
         raise HTTPException(status_code=409, detail=f"Cannot receive against PO in status {po.status}")
 
+    from app import store_access as store_access_svc
+
+    await store_access_svc.assert_warehouse_access(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        warehouse_id=warehouse_id or po.warehouse_id,
+    )
+
     po_items = {i.id: i for i in await list_po_items(db, tenant_id, po.id)}
     accepted_value = 0.0
 
@@ -944,6 +958,9 @@ async def serialize_grn(db: AsyncSession, grn: m.GoodsReceipt) -> dict:
         ).scalars().all()
         batches = {b.id: b for b in rows}
     used_mv: set[str] = set()
+    already = await _returned_qty_by_grn_item(
+        db, tenant_id=grn.tenant_id, goods_receipt_id=grn.id
+    )
 
     def _batch_fields_for(item: m.GoodsReceiptItem) -> dict:
         if money_json(item.accepted_qty) <= 0:
@@ -995,6 +1012,9 @@ async def serialize_grn(db: AsyncSession, grn: m.GoodsReceipt) -> dict:
                 "accepted_qty": money_json(i.accepted_qty),
                 "rejected_qty": money_json(i.rejected_qty),
                 "rejection_reason": i.rejection_reason,
+                "remaining_return_qty": money_json(
+                    max(money_json(i.accepted_qty or 0) - already.get(i.id, 0.0), 0)
+                ),
                 **_batch_fields_for(i),
             }
             for i in items
@@ -1442,6 +1462,41 @@ async def serialize_purchase_return(db: AsyncSession, ret: m.PurchaseReturn) -> 
     }
 
 
+def purchase_return_print_html(ret: dict, *, supplier_name: str = "", company_name: str = "") -> str:
+    from app.print_branding import POWERED_BY_RIBDIGI, document_print_shell
+
+    rows = "".join(
+        f"<tr><td>{html.escape(str(i.get('product_id') or ''))}</td>"
+        f'<td class="r">{html.escape(str(i.get("quantity") or ""))}</td>'
+        f'<td class="r">{html.escape(str(i.get("unit_price") or ""))}</td>'
+        f'<td class="r">{html.escape(str(i.get("line_total") or ""))}</td></tr>'
+        for i in (ret.get("items") or [])
+    )
+    return_no = str(ret.get("return_number") or "")
+    debit_no = str(ret.get("debit_note_number") or "—")
+    title = f"Purchase return {return_no}".strip() or "Purchase return"
+    body = (
+        f'<div class="meta">'
+        f"Return <strong>{html.escape(return_no)}</strong>"
+        f" · Debit note <strong>{html.escape(debit_no)}</strong><br/>"
+        f"Supplier {html.escape(supplier_name or str(ret.get('supplier_id') or ''))}<br/>"
+        f"Reason {html.escape(str(ret.get('reason') or ''))}"
+        f" · Status {html.escape(str(ret.get('status') or '').upper())}"
+        f"</div>"
+        '<table class="doc"><thead><tr>'
+        "<th>Product</th><th>Qty</th><th>Unit</th><th>Total</th>"
+        f"</tr></thead><tbody>{rows}</tbody></table>"
+        f'<div class="totals"><strong>Total {html.escape(str(ret.get("total_amount") or 0))}</strong></div>'
+        f'<div class="foot"><div class="powered">{html.escape(POWERED_BY_RIBDIGI)}</div></div>'
+    )
+    return document_print_shell(
+        title=title,
+        company_name=company_name or "RIBDIGI ERP",
+        subtitle=f"Debit note {debit_no}",
+        body_html=body,
+    )
+
+
 async def cancel_purchase_return(
     db: AsyncSession,
     *,
@@ -1715,10 +1770,12 @@ async def list_purchase_invoice_items(
 ) -> list[m.PurchaseInvoiceItem]:
     return (
         await db.execute(
-            select(m.PurchaseInvoiceItem).where(
+            select(m.PurchaseInvoiceItem)
+            .where(
                 m.PurchaseInvoiceItem.tenant_id == tenant_id,
                 m.PurchaseInvoiceItem.purchase_invoice_id == invoice_id,
             )
+            .order_by(m.PurchaseInvoiceItem.line_no.asc(), m.PurchaseInvoiceItem.id.asc())
         )
     ).scalars().all()
 
@@ -1741,6 +1798,8 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
         "supplier_id": inv.supplier_id,
         "purchase_order_id": inv.purchase_order_id,
         "goods_receipt_id": inv.goods_receipt_id,
+        "warehouse_id": getattr(inv, "warehouse_id", None),
+        "store_id": getattr(inv, "store_id", None),
         "supplier_invoice_number": inv.supplier_invoice_number,
         "status": status,
         "invoice_date": inv.invoice_date,
@@ -1769,6 +1828,7 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
         "items": [
             {
                 "id": i.id,
+                "line_no": int(getattr(i, "line_no", 0) or 0),
                 "product_id": i.product_id,
                 "quantity": money_json(i.quantity),
                 "unit_price": money_json(i.unit_price),
@@ -1850,9 +1910,48 @@ def _purchase_invoice_tax_breakdown(
     }
 
 
+async def _resolve_bill_location(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    warehouse_id: str | None,
+    store_id: str | None,
+) -> tuple[str | None, str | None]:
+    """Tenant/store/warehouse boundary for a manual supplier bill."""
+    from app.warehouses import require_active_warehouse
+    from app import store_access as store_access_svc
+
+    warehouse = None
+    if warehouse_id:
+        warehouse = await require_active_warehouse(db, tenant_id, warehouse_id)
+        await store_access_svc.assert_warehouse_access(
+            db, tenant_id=tenant_id, user_id=user_id, warehouse_id=warehouse.id
+        )
+    store_row = None
+    if store_id:
+        store_row = await store_access_svc.get_tenant_store(db, tenant_id, store_id)
+        await store_access_svc.assert_store_access(
+            db, tenant_id=tenant_id, user_id=user_id, store_id=store_row.id
+        )
+    if warehouse and store_row and warehouse.store_id and warehouse.store_id != store_row.id:
+        raise HTTPException(
+            status_code=400,
+            detail="Warehouse does not belong to the selected store",
+        )
+    resolved_store = store_row.id if store_row else (warehouse.store_id if warehouse else None)
+    if resolved_store:
+        await store_access_svc.assert_store_access(
+            db, tenant_id=tenant_id, user_id=user_id, store_id=resolved_store
+        )
+    return (warehouse.id if warehouse else None), resolved_store
+
+
 async def _prepare_invoice_lines(
     db: AsyncSession, tenant_id: str, items: list[dict]
 ) -> tuple[float, float, float, list[dict]]:
+    if not items:
+        raise HTTPException(status_code=400, detail="Invoice requires line items")
     subtotal = 0.0
     tax_total = 0.0
     prepared: list[dict] = []
@@ -1873,8 +1972,15 @@ async def _prepare_invoice_lines(
         if qty <= 0:
             raise HTTPException(status_code=400, detail="Line quantity must be positive")
         unit = money_json(item.get("unit_price") if item.get("unit_price") is not None else product.cost_price or 0)
+        if unit < 0:
+            raise HTTPException(status_code=400, detail="Line unit cost cannot be negative")
         discount = money_json(item.get("discount") or 0)
+        if discount < 0:
+            raise HTTPException(status_code=400, detail="Line discount cannot be negative")
         line_item = {**item, "quantity": qty, "unit_price": unit}
+        # Tax on qty × unit (before line discount). Header discount is applied once
+        # to document gross later so tax is not recomputed / double-counted; FX lives
+        # on the header only.
         line_sub, line_tax, line_total, rate_pct, comps = await _purchase_line_tax(
             db, tenant_id, product, line_item
         )
@@ -1915,6 +2021,8 @@ async def create_purchase_invoice(
     is_reverse_charge: bool = False,
     currency: str | None = None,
     exchange_rate: float | None = None,
+    warehouse_id: str | None = None,
+    store_id: str | None = None,
 ) -> m.PurchaseInvoice:
     grn = None
     po = None
@@ -1987,6 +2095,23 @@ async def create_purchase_invoice(
     if not items:
         raise HTTPException(status_code=400, detail="Invoice requires line items")
 
+    loc_warehouse_id: str | None = None
+    loc_store_id: str | None = None
+    if grn is not None:
+        loc_warehouse_id = grn.warehouse_id
+        if loc_warehouse_id:
+            from app.warehouses import get_warehouse
+
+            loc_store_id = (await get_warehouse(db, tenant_id, loc_warehouse_id)).store_id
+    else:
+        loc_warehouse_id, loc_store_id = await _resolve_bill_location(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            warehouse_id=warehouse_id,
+            store_id=store_id,
+        )
+
     subtotal, tax_total, gross, prepared = await _prepare_invoice_lines(db, tenant_id, items)
     discount_amount = money_json(discount_amount or 0)
     is_rc = bool(is_reverse_charge)
@@ -2012,6 +2137,8 @@ async def create_purchase_invoice(
         supplier_id=supplier_id,
         purchase_order_id=purchase_order_id or (po.id if po else None),
         goods_receipt_id=grn.id if grn else None,
+        warehouse_id=loc_warehouse_id,
+        store_id=loc_store_id,
         supplier_invoice_number=optional_honest_narrative(
             supplier_invoice_number, label="supplier invoice number", max_length=100
         ),
@@ -2034,10 +2161,52 @@ async def create_purchase_invoice(
     )
     db.add(inv)
     await db.flush()
-    for line in prepared:
-        db.add(m.PurchaseInvoiceItem(tenant_id=tenant_id, purchase_invoice_id=inv.id, **line))
+    for idx, line in enumerate(prepared, start=1):
+        db.add(
+            m.PurchaseInvoiceItem(
+                tenant_id=tenant_id,
+                purchase_invoice_id=inv.id,
+                line_no=idx,
+                **line,
+            )
+        )
     await db.flush()
     return inv
+
+
+async def _apply_manual_bill_stock(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    inv: m.PurchaseInvoice,
+    items: list[m.PurchaseInvoiceItem],
+    outbound: bool,
+) -> None:
+    """Receive or reverse stock for every manual-bill line in one session (atomic)."""
+    from app.catalog import stock_in_with_batch, stock_out_with_batch
+
+    warehouse_id = getattr(inv, "warehouse_id", None)
+    note = f"Bill {inv.invoice_number}"
+    for item in items:
+        qty = money_json(item.quantity)
+        if qty <= 0:
+            raise HTTPException(status_code=400, detail="Line quantity must be positive")
+        common = dict(
+            db=db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            product_id=item.product_id,
+            quantity=qty,
+            notes=note,
+            warehouse_id=warehouse_id,
+            reference_type="purchase_invoice",
+            reference_id=inv.id,
+        )
+        if outbound:
+            await stock_out_with_batch(**common)
+        else:
+            await stock_in_with_batch(**common, movement_type="stock_in")
 
 
 async def approve_purchase_invoice(
@@ -2054,10 +2223,18 @@ async def approve_purchase_invoice(
     if not items:
         raise HTTPException(status_code=400, detail="Cannot approve empty invoice")
 
-    # GRN path already posted inventory + AP; manual bills post AP now.
+    # GRN path already posted inventory + AP; manual bills post stock + AP together.
     if inv.goods_receipt_id:
         inv.ap_posted = False
     else:
+        await _apply_manual_bill_stock(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            inv=inv,
+            items=items,
+            outbound=False,
+        )
         from app.fx import doc_rate, to_base
 
         supplier = await get_supplier(db, tenant_id, inv.supplier_id)
@@ -2125,6 +2302,16 @@ async def cancel_purchase_invoice(
         raise HTTPException(status_code=409, detail="Cannot cancel invoice with payments")
     if inv.status not in {"draft", "unpaid", "overdue"}:
         raise HTTPException(status_code=409, detail=f"Cannot cancel invoice in status {inv.status}")
+    if inv.ap_posted and inv.status != "draft" and not inv.goods_receipt_id:
+        items = await list_purchase_invoice_items(db, tenant_id, inv.id)
+        await _apply_manual_bill_stock(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            inv=inv,
+            items=items,
+            outbound=True,
+        )
     if inv.ap_posted and inv.status != "draft":
         supplier = await get_supplier(db, tenant_id, inv.supplier_id)
         supplier.balance = max(money_json(supplier.balance or 0) - money_json(inv.total_amount), 0)

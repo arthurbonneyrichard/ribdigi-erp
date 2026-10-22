@@ -37,6 +37,7 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("products", m.Product),
     ("product_variants", m.ProductVariant),
     ("product_batches", m.ProductBatch),
+    ("batch_holds", m.BatchHold),
     ("warehouse_stocks", m.WarehouseStock),
     ("parties", m.Party),
     ("tax_rates", m.TaxRate),
@@ -56,6 +57,9 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("purchase_invoice_items", m.PurchaseInvoiceItem),
     ("sales_invoices", m.SalesInvoice),
     ("sales_invoice_items", m.SalesInvoiceItem),
+    ("prescriptions", m.Prescription),
+    ("prescription_items", m.PrescriptionItem),
+    ("prescription_attachments", m.PrescriptionAttachment),
     ("customer_payments", m.CustomerPayment),
     ("supplier_payments", m.SupplierPayment),
     ("cheques", m.Cheque),
@@ -81,6 +85,9 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("party_contacts", m.PartyContact),
     ("notification_preferences", m.NotificationPreference),
     ("report_schedules", m.ReportSchedule),
+    ("sales_coupons", m.SalesCoupon),
+    ("sales_coupon_redemptions", m.SalesCouponRedemption),
+    ("other_incomes", m.OtherIncome),
 ]
 
 
@@ -149,9 +156,20 @@ def _json_default(value: Any) -> Any:
     return str(value)
 
 
+def _is_secret_column(name: str) -> bool:
+    key = name.lower()
+    return (
+        "password" in key
+        or "secret" in key
+        or key in {"token_hash", "api_key_hash", "refresh_token"}
+    )
+
+
 def row_to_dict(obj: Any) -> dict:
     data: dict[str, Any] = {}
     for col in obj.__table__.columns:
+        if _is_secret_column(col.name):
+            continue
         data[col.name] = getattr(obj, col.name)
     return json.loads(json.dumps(data, default=_json_default))
 
@@ -170,6 +188,7 @@ def serialize_job(job: m.BackupJob) -> dict:
         "created_at": job.created_at,
         "error_message": job.error_message,
         "notes": job.notes,
+        # storage_path / destination credentials never serialized
     }
 
 
@@ -247,6 +266,28 @@ async def collect_tenant_payload(db: AsyncSession, tenant_id: str) -> tuple[dict
         datasets[name] = [row_to_dict(r) for r in rows]
         counts[name] = len(datasets[name])
 
+    from app.storage import read_object
+
+    files: dict[str, str] = {}
+    missing: list[str] = []
+    for rows in datasets.values():
+        for row in rows:
+            key = row.get("storage_key")
+            if not key or key in files or key in missing:
+                continue
+            try:
+                obj = read_object(str(key), tenant_id=tenant_id)
+            except HTTPException:
+                missing.append(str(key))
+                continue
+            files[str(key)] = base64.b64encode(obj.data).decode("ascii")
+    if missing:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Backup incomplete. Missing stored files: {', '.join(missing[:5])}",
+        )
+    counts["files"] = len(files)
+
     payload = {
         "format": FORMAT_NAME,
         "version": FORMAT_VERSION,
@@ -275,6 +316,7 @@ async def collect_tenant_payload(db: AsyncSession, tenant_id: str) -> tuple[dict
         },
         "created_at": datetime.utcnow().isoformat(),
         "datasets": datasets,
+        "files": files,
     }
     return payload, counts
 
@@ -515,9 +557,22 @@ async def apply_restore(db: AsyncSession, tenant_id: str, payload: dict) -> dict
         restored[name] = count
         await db.flush()
 
+    from app.storage import _put_bytes, content_type_for_key, validate_key
+
+    written = 0
+    for key, encoded in (payload.get("files") or {}).items():
+        safe = validate_key(str(key), tenant_id=tenant_id)
+        _put_bytes(safe, base64.b64decode(encoded), content_type_for_key(safe))
+        written += 1
+    report["files_restored"] = written
     report["restored"] = restored
     report["applied"] = True
     report["proof"] = await prove_restore_integrity(db, tenant_id, payload)
+    if not report["proof"].get("ok"):
+        raise HTTPException(
+            status_code=409,
+            detail="Restore verification failed. Database and files were not left as a successful restore.",
+        )
     return report
 
 
@@ -636,6 +691,7 @@ async def restore_backup(
     backup_id: str,
     dry_run: bool = True,
     confirm: bool = False,
+    user_id: str | None = None,
 ) -> dict:
     job = await get_backup(db, tenant_id, backup_id)
     file_bytes = await read_backup_bytes(job)
@@ -647,16 +703,75 @@ async def restore_backup(
         return report
     job.status = "restoring"
     await db.flush()
+    from app.audit import record_event
+
+    safety = await create_backup(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        notes="safety before restore",
+    )
+    await record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        module="backup",
+        action="restore_started",
+        entity="backup",
+        entity_id=backup_id,
+        details={"safety_backup_id": safety.id, "filename": job.filename},
+    )
     try:
         report = await apply_restore(db, tenant_id, payload)
         job.status = "completed"
         await db.flush()
         report["dry_run"] = False
+        report["safety_backup_id"] = safety.id
+        await record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            module="backup",
+            action="restore_completed",
+            entity="backup",
+            entity_id=backup_id,
+            details={"safety_backup_id": safety.id, "files_restored": report.get("files_restored", 0)},
+        )
         return report
-    except Exception:
-        job.status = "completed"
+    except Exception as exc:
+        job.status = "failed"
+        job.error_message = str(getattr(exc, "detail", exc))[:500]
+        recovered = False
+        try:
+            safety_bytes = await read_backup_bytes(safety)
+            safety_payload = decrypt_archive(
+                safety_bytes, expected_file_checksum=safety.checksum_sha256
+            )
+            await apply_restore(db, tenant_id, safety_payload)
+            recovered = True
+        except Exception:
+            recovered = False
         await db.flush()
-        raise
+        await record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            module="backup",
+            action="restore_failed",
+            entity="backup",
+            entity_id=backup_id,
+            details={"safety_backup_id": safety.id, "safety_restored": recovered},
+        )
+        if isinstance(exc, HTTPException):
+            raise
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "Restore failed",
+                "safety_backup_id": safety.id,
+                "safety_restored": recovered,
+            },
+        ) from exc
 
 
 async def prune_retention(db: AsyncSession, tenant_id: str, keep: int) -> int:
@@ -690,7 +805,7 @@ def ensure_backup_dir_writable() -> None:
     except OSError as exc:
         raise HTTPException(
             status_code=503,
-            detail=f"Backup directory not writable: {settings.BACKUP_DIR}",
+            detail="Backups are temporarily unavailable.",
         ) from exc
 
 

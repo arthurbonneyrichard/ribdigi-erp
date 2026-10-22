@@ -494,6 +494,69 @@ async def resolve_product_tax(
     return TaxSpec(rate_pct=0.0, pricing_mode="exclusive", supply_class="standard")
 
 
+async def resolve_products_tax_map(
+    db: AsyncSession,
+    tenant_id: str,
+    products: list[m.Product],
+) -> dict[str, TaxSpec]:
+    """Resolve tax for many products with two tenant-scoped queries (not per-row)."""
+    if not products:
+        return {}
+    rates = (
+        await db.execute(select(m.TaxRate).where(m.TaxRate.tenant_id == tenant_id))
+    ).scalars().all()
+    rate_by_id = {r.id: r for r in rates}
+    default = next((r for r in rates if r.is_default and r.is_active), None)
+    cats = (
+        await db.execute(
+            select(m.ProductCategory).where(m.ProductCategory.tenant_id == tenant_id)
+        )
+    ).scalars().all()
+    cat_by_id = {c.id: c for c in cats}
+
+    def category_rate(category_id: str | None) -> m.TaxRate | None:
+        seen: set[str] = set()
+        current_id = category_id
+        depth = 0
+        while current_id and depth < 16:
+            if current_id in seen:
+                break
+            seen.add(current_id)
+            cat = cat_by_id.get(current_id)
+            if not cat:
+                break
+            if cat.tax_rate_id:
+                rate = rate_by_id.get(cat.tax_rate_id)
+                if rate is not None and rate.is_active:
+                    return rate
+            current_id = cat.parent_id
+            depth += 1
+        return None
+
+    out: dict[str, TaxSpec] = {}
+    for product in products:
+        supply = product_supply_class(product)
+        if supply in {"exempt", "zero_rated"}:
+            out[product.id] = TaxSpec(rate_pct=0.0, pricing_mode="exclusive", supply_class=supply)
+            continue
+        if product.tax_rate_id:
+            rate = rate_by_id.get(product.tax_rate_id)
+            if rate is None:
+                raise HTTPException(status_code=404, detail="Tax rate not found")
+            if rate.is_active:
+                out[product.id] = tax_spec_from_rate(rate, supply_class="standard")
+                continue
+        found = category_rate(getattr(product, "category_id", None))
+        if found:
+            out[product.id] = tax_spec_from_rate(found, supply_class="standard")
+            continue
+        if default:
+            out[product.id] = tax_spec_from_rate(default, supply_class="standard")
+            continue
+        out[product.id] = TaxSpec(rate_pct=0.0, pricing_mode="exclusive", supply_class="standard")
+    return out
+
+
 async def resolve_product_tax_rate(
     db: AsyncSession,
     tenant_id: str,
@@ -527,10 +590,16 @@ async def tax_report(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     store_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
     """Summary VAT/GST output vs input tax for a period."""
     pack = await tax_filing_pack(
-        db, tenant_id, from_date=from_date, to_date=to_date, store_id=store_id
+        db,
+        tenant_id,
+        from_date=from_date,
+        to_date=to_date,
+        store_id=store_id,
+        store_ids=store_ids,
     )
     return {
         "from_date": from_date,
@@ -560,10 +629,12 @@ async def tax_filing_pack(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     store_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
     """Jurisdiction-neutral VAT/GST filing pack: boxes + detailed schedules for export.
 
-    Optional ``store_id`` scopes:
+    Optional ``store_id`` scopes one store. ``store_ids`` limits an assigned user
+    who did not pick a store. None/None stays tenant-wide.
     - output invoices by ``SalesInvoice.store_id``
     - POS by session store
     - input PIs/POs by PO/GRN warehouse → store
@@ -572,6 +643,7 @@ async def tax_filing_pack(
 
     store_name = None
     warehouse_ids: list[str] | None = None
+    scoped = store_id is not None or store_ids is not None
     if store_id:
         store = (
             await db.execute(
@@ -596,6 +668,35 @@ async def tax_filing_pack(
                 )
             ).scalars().all()
         ]
+    elif store_ids is not None:
+        wanted = [str(row) for row in store_ids if row]
+        if not wanted:
+            warehouse_ids = []
+        else:
+            found = {
+                row.id
+                for row in (
+                    await db.execute(
+                        select(m.Store).where(
+                            m.Store.tenant_id == tenant_id,
+                            m.Store.id.in_(wanted),
+                        )
+                    )
+                ).scalars().all()
+            }
+            if any(row not in found for row in wanted):
+                raise HTTPException(status_code=404, detail="Store not found")
+            warehouse_ids = [
+                row.id
+                for row in (
+                    await db.execute(
+                        select(m.Warehouse).where(
+                            m.Warehouse.tenant_id == tenant_id,
+                            m.Warehouse.store_id.in_(wanted),
+                        )
+                    )
+                ).scalars().all()
+            ]
 
     inv_stmt = select(m.SalesInvoice).where(
         m.SalesInvoice.tenant_id == tenant_id,
@@ -607,6 +708,10 @@ async def tax_filing_pack(
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at <= to_date)
     if store_id:
         inv_stmt = inv_stmt.where(m.SalesInvoice.store_id == store_id)
+    elif store_ids is not None:
+        from app.reports import apply_store_scope
+
+        inv_stmt = apply_store_scope(inv_stmt, m.SalesInvoice.store_id, None, list(store_ids))
     invoices = (await db.execute(inv_stmt)).scalars().all()
 
     output_schedule = []
@@ -669,16 +774,21 @@ async def tax_filing_pack(
             }
         )
 
-    if store_id:
+    if store_id or store_ids is not None:
         pos_stmt = (
             select(m.Transaction)
             .join(m.PosSession, m.PosSession.id == m.Transaction.session_id)
             .where(
                 m.Transaction.tenant_id == tenant_id,
                 m.Transaction.tx_type == "pos_sale",
-                m.PosSession.store_id == store_id,
             )
         )
+        if store_id:
+            pos_stmt = pos_stmt.where(m.PosSession.store_id == store_id)
+        else:
+            from app.reports import apply_store_scope
+
+            pos_stmt = apply_store_scope(pos_stmt, m.PosSession.store_id, None, list(store_ids or []))
     else:
         pos_stmt = select(m.Transaction).where(
             m.Transaction.tenant_id == tenant_id,
@@ -729,7 +839,7 @@ async def tax_filing_pack(
         pi_stmt = pi_stmt.where(m.PurchaseInvoice.invoice_date >= from_date)
     if to_date:
         pi_stmt = pi_stmt.where(m.PurchaseInvoice.invoice_date <= to_date)
-    if store_id is not None:
+    if scoped:
         if not warehouse_ids:
             pi_stmt = pi_stmt.where(m.PurchaseInvoice.id == None)  # noqa: E711
         else:
@@ -791,7 +901,7 @@ async def tax_filing_pack(
             po_stmt = po_stmt.where(m.PurchaseOrder.created_at >= from_date)
         if to_date:
             po_stmt = po_stmt.where(m.PurchaseOrder.created_at <= to_date)
-        if store_id is not None:
+        if scoped:
             if not warehouse_ids:
                 po_stmt = po_stmt.where(m.PurchaseOrder.id == None)  # noqa: E711
             else:

@@ -2,22 +2,95 @@
 
 import { useEffect, useState } from 'react';
 import AttachmentPreview from '../../../components/AttachmentPreview';
-import { api } from '../../../lib/api';
+import FormModal from '../../../components/FormModal';
+import PageHeader from '../../../components/PageHeader';
+import { api, getAccessToken } from '../../../lib/api';
+import { currencySign, formatWhen, plainLabel } from '../../../lib/format';
+import { AmountField } from '../../../components/AmountField';
 import { useStoreContext } from '../../../lib/storeContext';
+import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
-function fmtMoney(n: number, _currency?: string) {
+function fmtMoney(n: number, currency?: string) {
   const v = Number(n);
   if (!Number.isFinite(v)) return '—';
-  return v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const body = v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `${currencySign(currency)} ${body}`;
 }
 
-type Tab = 'ledger' | 'cash' | 'reconcile' | 'cheques';
+const JOURNAL_SOURCE_LABEL: Record<string, string> = {
+  manual: 'Manual journal',
+  expense: 'Expense',
+  sales_invoice: 'Sales invoice',
+  sales_return: 'Sales return',
+  sales_return_refund: 'Sales refund',
+  customer_payment: 'Customer repayment',
+  supplier_payment: 'Supplier payment',
+  purchase_invoice: 'Supplier bill',
+  purchase_invoice_cancel: 'Bill cancelled',
+  purchase_return: 'Purchase return',
+  grn: 'Goods received',
+  opening_stock: 'Opening stock',
+  pos_sale: 'POS sale',
+};
+
+function journalSourceLabel(sourceType?: string | null) {
+  const key = String(sourceType || 'manual').toLowerCase();
+  return JOURNAL_SOURCE_LABEL[key] || key.replace(/_/g, ' ');
+}
+
+function fieldErrorsFromDetail(detail: unknown): Record<string, string> {
+  const fields: Record<string, string> = {};
+  if (Array.isArray(detail)) {
+    for (const item of detail) {
+      if (!item || typeof item !== 'object') continue;
+      const rec = item as { loc?: unknown; msg?: unknown; message?: unknown };
+      const loc = Array.isArray(rec.loc) ? rec.loc : [];
+      const field = loc.find((x) => typeof x === 'string' && x !== 'body' && x !== 'query');
+      const msg = typeof rec.msg === 'string' ? rec.msg : typeof rec.message === 'string' ? rec.message : '';
+      if (typeof field === 'string' && msg) fields[field] = msg.replace(/^Value error,\s*/i, '');
+    }
+  } else if (detail && typeof detail === 'object') {
+    for (const [key, val] of Object.entries(detail as Record<string, unknown>)) {
+      if (typeof val === 'string' && key !== 'msg' && key !== 'message') fields[key] = val;
+    }
+  }
+  return fields;
+}
+
+function journalSourceHref(sourceType?: string | null): string | null {
+  switch (String(sourceType || '').toLowerCase()) {
+    case 'expense':
+      return '/expenses';
+    case 'sales_invoice':
+    case 'sales_return':
+    case 'sales_return_refund':
+      return '/sales';
+    case 'customer_payment':
+      return '/credit?kind=receivable';
+    case 'supplier_payment':
+    case 'purchase_invoice':
+    case 'purchase_invoice_cancel':
+    case 'purchase_return':
+    case 'grn':
+      return '/purchasing';
+    case 'pos_sale':
+      return '/pos';
+    default:
+      return null;
+  }
+}
+
+type Tab = 'overview' | 'ledger' | 'cash' | 'reconcile' | 'cheques';
 
 export default function Page() {
   const currency = '';
-  const [tab, setTab] = useState<Tab>('ledger');
+  const [tab, setTab] = useState<Tab>('overview');
+  const [journalPrefix, setJournalPrefix] = useState('');
+  const [journalNext, setJournalNext] = useState('');
+  const [xferNumPrefix, setXferNumPrefix] = useState('');
+  const [xferNumNext, setXferNumNext] = useState('');
   const [accounts, setAccounts] = useState<any[]>([]);
   const [accountManageFilter, setAccountManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [liquid, setLiquid] = useState<any[]>([]);
@@ -84,15 +157,15 @@ export default function Page() {
   const [newAcctCode, setNewAcctCode] = useState('');
   const [newAcctName, setNewAcctName] = useState('');
   const [newAcctKind, setNewAcctKind] = useState('cash');
+  const [newAcctType, setNewAcctType] = useState('asset');
+  const [newAcctParent, setNewAcctParent] = useState('');
   const [newBankName, setNewBankName] = useState('');
-  const [jePrefix, setJePrefix] = useState('JE');
-  const [jeNext, setJeNext] = useState('1');
-  const [jePreview, setJePreview] = useState('');
-  const [xferPrefix, setXferPrefix] = useState('XFER');
-  const [xferNext, setXferNext] = useState('1');
-  const [xferPreview, setXferPreview] = useState('');
   const [newAcctNumber, setNewAcctNumber] = useState('');
   const [newBankBranch, setNewBankBranch] = useState('');
+  const [acctFormOpen, setAcctFormOpen] = useState(false);
+  const [acctSaveBusy, setAcctSaveBusy] = useState(false);
+  const [acctFieldErrors, setAcctFieldErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
   const [coaOpenAccountId, setCoaOpenAccountId] = useState('');
   const [coaOpenAmount, setCoaOpenAmount] = useState('0');
   const [coaOpenLines, setCoaOpenLines] = useState<
@@ -119,6 +192,9 @@ export default function Page() {
   const [cashFlow, setCashFlow] = useState<any>(null);
   /** OpenAPI: omit | prior_period | prior_year (blank → no compare). */
   const [bsCompare, setBsCompare] = useState('');
+  const [arAging, setArAging] = useState<any>(null);
+  const [apAging, setApAging] = useState<any>(null);
+  const [journalBusy, setJournalBusy] = useState(false);
 
   function pnlQuery() {
     const params = new URLSearchParams();
@@ -202,7 +278,7 @@ export default function Page() {
   }
 
   async function refresh() {
-    const [a, j, t, p, liq, stmts, conns, xfers, openSt, st, br, per, settings] = await Promise.all([
+    const [a, j, t, p, liq, stmts, conns, xfers, openSt, st, br, per, ar, ap] = await Promise.all([
       api('/accounting/accounts'),
       api('/accounting/journal-entries'),
       api(`/accounting/trial-balance${trialQuery()}`),
@@ -215,7 +291,8 @@ export default function Page() {
       api('/stores').catch(() => ({ data: [] })),
       api('/branches').catch(() => ({ data: [] })),
       api('/accounting/period').catch(() => ({ data: null })),
-      api('/accounting/settings').catch(() => ({ data: null })),
+      api('/credit/aging?kind=receivable').catch(() => ({ data: null })),
+      api('/credit/aging?kind=payable').catch(() => ({ data: null })),
     ]);
     setAccounts(a.data || []);
     setCoaOpenAccountId((prev) => {
@@ -236,18 +313,8 @@ export default function Page() {
     setStores(st.data || []);
     setBranches(br.data || []);
     setPeriod(per.data || null);
-    const jeNum = settings.data?.journal_numbering;
-    if (jeNum) {
-      setJePrefix(jeNum.prefix || 'JE');
-      setJeNext(String(jeNum.next_number ?? 1));
-      setJePreview(jeNum.preview || '');
-    }
-    const xferNum = settings.data?.cash_transfer_numbering;
-    if (xferNum) {
-      setXferPrefix(xferNum.prefix || 'XFER');
-      setXferNext(String(xferNum.next_number ?? 1));
-      setXferPreview(xferNum.preview || '');
-    }
+    setArAging(ar.data || null);
+    setApAging(ap.data || null);
     if (!closeThrough && per.data?.books_closed_through) {
       setCloseThrough(per.data.books_closed_through);
     }
@@ -255,43 +322,6 @@ export default function Page() {
     if (!xferFrom && liq.data?.length) setXferFrom(liq.data[0].id);
     if (!xferTo && liq.data?.length > 1) setXferTo(liq.data[1].id);
     else if (!xferTo && liq.data?.length) setXferTo(liq.data[0].id);
-  }
-
-  async function saveAccountingNumbering() {
-    setError('');
-    setMessage('');
-    try {
-      const r = await api('/accounting/settings', {
-        method: 'PATCH',
-        body: JSON.stringify({
-          journal_numbering: {
-            prefix: jePrefix.trim(),
-            next_number: Math.max(1, Number(jeNext) || 1),
-          },
-          cash_transfer_numbering: {
-            prefix: xferPrefix.trim(),
-            next_number: Math.max(1, Number(xferNext) || 1),
-          },
-        }),
-      });
-      const jeNum = r.data?.journal_numbering;
-      if (jeNum) {
-        setJePrefix(jeNum.prefix || 'JE');
-        setJeNext(String(jeNum.next_number ?? 1));
-        setJePreview(jeNum.preview || '');
-      }
-      const xferNum = r.data?.cash_transfer_numbering;
-      if (xferNum) {
-        setXferPrefix(xferNum.prefix || 'XFER');
-        setXferNext(String(xferNum.next_number ?? 1));
-        setXferPreview(xferNum.preview || '');
-      }
-      setMessage(
-        `Numbering saved — JE ${jeNum?.preview || ''} · XFER ${xferNum?.preview || ''}`.trim(),
-      );
-    } catch (err: any) {
-      setError(err.message);
-    }
   }
 
   async function closeBooks() {
@@ -338,7 +368,10 @@ export default function Page() {
   }
 
   useEffect(() => {
-    refresh().catch((err) => setError(err.message));
+    setLoading(true);
+    refresh()
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -358,8 +391,10 @@ export default function Page() {
   }, [headerStoreId]);
 
   async function postManual() {
+    if (journalBusy) return;
     setError('');
     setMessage('');
+    setJournalBusy(true);
     try {
       const lines = manualLines.map((l) => ({
         account_id: l.account_id.trim() || null,
@@ -403,6 +438,8 @@ export default function Page() {
       await refresh();
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setJournalBusy(false);
     }
   }
 
@@ -430,7 +467,7 @@ export default function Page() {
   async function uploadJournalAttachment(id: string, file: File) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const form = new FormData();
       form.append('file', file);
@@ -454,7 +491,7 @@ export default function Page() {
   async function downloadJournalAttachment(id: string) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const res = await fetch(`${apiBase}/accounting/journal-entries/${id}/attachment`, {
         headers: {
@@ -491,33 +528,108 @@ export default function Page() {
     }
   }
 
-  async function createLiquidAccount() {
+  function openAddAccount(kind = '') {
+    setEditAcctId('');
+    setEditAcctName('');
+    setNewAcctCode('');
+    setNewAcctName('');
+    setNewAcctKind(kind);
+    setNewAcctType(kind === 'cash' || kind === 'bank' ? 'asset' : 'asset');
+    setNewAcctParent('');
+    setNewBankName('');
+    setNewAcctNumber('');
+    setNewBankBranch('');
+    setAcctFieldErrors({});
     setError('');
     setMessage('');
+    setAcctFormOpen(true);
+  }
+
+  function openEditAccount(row: any) {
+    setEditAcctId(row.id);
+    setEditAcctName(row.name || '');
+    setNewAcctCode(row.code || '');
+    setNewAcctName(row.name || '');
+    setNewAcctKind(row.is_cash_account ? 'cash' : row.is_bank_account ? 'bank' : '');
+    setNewAcctType(row.account_type || 'asset');
+    setNewAcctParent(row.parent_id || '');
+    setNewBankName(row.bank_name || '');
+    setNewAcctNumber(row.account_number || '');
+    setNewBankBranch(row.bank_branch || '');
+    setAcctFieldErrors({});
+    setError('');
+    setMessage('');
+    setAcctFormOpen(true);
+  }
+
+  async function createLiquidAccount() {
+    if (acctSaveBusy) return;
+    setError('');
+    setMessage('');
+    setAcctFieldErrors({});
+    const code = newAcctCode.trim();
+    const name = (editAcctId ? editAcctName : newAcctName).trim();
+    if (!editAcctId && !code) {
+      setAcctFieldErrors({ code: 'Enter an account code' });
+      setError('Enter an account code');
+      return;
+    }
+    if (!name) {
+      setAcctFieldErrors({ name: 'Enter an account name' });
+      setError('Enter an account name');
+      return;
+    }
+    setAcctSaveBusy(true);
     try {
-      const body: Record<string, unknown> = {
-        code: newAcctCode.trim(),
-        name: newAcctName.trim(),
-        liquid_kind: newAcctKind,
-      };
-      if (newAcctKind === 'bank') {
-        // Blank bank_name → schema 422 (BankNameValue); omit only when empty so
-        // service required-name 400 still covers intentional omit.
-        const trimmedBank = newBankName.trim();
-        if (trimmedBank) body.bank_name = trimmedBank;
-        body.account_number = newAcctNumber.trim() || null;
-        body.bank_branch = newBankBranch.trim() || null;
+      if (editAcctId) {
+        const patch: Record<string, unknown> = { name };
+        if (newAcctKind === 'bank') {
+          const trimmedBank = newBankName.trim();
+          if (trimmedBank) patch.bank_name = trimmedBank;
+          patch.account_number = newAcctNumber.trim() || null;
+          patch.bank_branch = newBankBranch.trim() || null;
+        }
+        if (newAcctParent.trim()) patch.parent_id = newAcctParent.trim();
+        const r = await api(`/accounting/accounts/${editAcctId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(patch),
+        });
+        setMessage(`Updated ${r.data.code}`);
+      } else {
+        const body: Record<string, unknown> = {
+          code,
+          name: newAcctName.trim(),
+          account_type: newAcctType,
+        };
+        if (newAcctKind === 'cash' || newAcctKind === 'bank') {
+          body.liquid_kind = newAcctKind;
+          body.account_type = 'asset';
+        }
+        if (newAcctKind === 'bank') {
+          // Blank bank_name → schema 422 (BankNameValue); omit only when empty so
+          // service required-name 400 still covers intentional omit.
+          const trimmedBank = newBankName.trim();
+          if (trimmedBank) body.bank_name = trimmedBank;
+          body.account_number = newAcctNumber.trim() || null;
+          body.bank_branch = newBankBranch.trim() || null;
+        }
+        if (newAcctParent.trim()) body.parent_id = newAcctParent.trim();
+        const r = await api('/accounting/accounts', { method: 'POST', body: JSON.stringify(body) });
+        setMessage(`Account ${r.data.code} created`);
+        setNewAcctCode('');
+        setNewAcctName('');
+        setNewBankName('');
+        setNewAcctNumber('');
+        setNewBankBranch('');
+        setNewAcctParent('');
       }
-      const r = await api('/accounting/accounts', { method: 'POST', body: JSON.stringify(body) });
-      setMessage(`Account ${r.data.code} created`);
-      setNewAcctCode('');
-      setNewAcctName('');
-      setNewBankName('');
-      setNewAcctNumber('');
-      setNewBankBranch('');
+      setAcctFormOpen(false);
       await refresh();
     } catch (err: any) {
+      setAcctFieldErrors(fieldErrorsFromDetail(err.detail));
       setError(err.message);
+    } finally {
+      setAcctSaveBusy(false);
     }
   }
 
@@ -569,6 +681,7 @@ export default function Page() {
   async function saveAccountName() {
     setError('');
     setMessage('');
+    setAcctFieldErrors({});
     if (!editAcctId || !editAcctName.trim()) return;
     try {
       const r = await api(`/accounting/accounts/${editAcctId}`, {
@@ -580,6 +693,7 @@ export default function Page() {
       setEditAcctName('');
       await refresh();
     } catch (err: any) {
+      setAcctFieldErrors(fieldErrorsFromDetail(err.detail));
       setError(err.message);
     }
   }
@@ -661,7 +775,7 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
       const form = new FormData();
@@ -957,34 +1071,72 @@ export default function Page() {
   });
   const activeAccounts = accounts.filter((a) => a.is_active !== false);
 
-  return (
-    <>
-      <h1>Accounting</h1>
-      <p className="muted">Chart of accounts, journals, trial balance, P&amp;L, bank reconciliation, and cheques</p>
-      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
+  async function saveAccountingNumbering() {
+    const pack = (prefix: string, next: string) => {
+      const p = prefix.trim();
+      const n = next.trim();
+      if (!p && !n) return undefined;
+      const out: { prefix?: string; next_number?: number } = {};
+      if (p) out.prefix = p;
+      if (n) out.next_number = Number(n);
+      return out;
+    };
+    const body: Record<string, unknown> = {};
+    const journal = pack(journalPrefix, journalNext);
+    const transfer = pack(xferNumPrefix, xferNumNext);
+    if (journal) body.journal_numbering = journal;
+    if (transfer) body.cash_transfer_numbering = transfer;
+    await api('/accounting/settings', { method: 'PATCH', body: JSON.stringify(body) });
+    setMessage('Accounting numbering saved');
+  }
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+  return (
+    <div className="work">
+      <PageHeader
+        title="Accounting"
+        subtitle="One company ledger. Sales, expenses, and supplier bills post here — this is not a second set of books. Income, expenses, and supplier bills for this company. Use the tabs to see accounts, cash, bank matching, and cheques."
+      />
+      <div className="card" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <input value={journalPrefix} onChange={(e) => setJournalPrefix(e.target.value)} aria-label="Journal number prefix" placeholder="Journal prefix" />
+        <input value={journalNext} onChange={(e) => setJournalNext(e.target.value)} aria-label="Journal next number" placeholder="Next #" />
+        <input value={xferNumPrefix} onChange={(e) => setXferNumPrefix(e.target.value)} aria-label="Cash transfer number prefix" placeholder="Transfer prefix" />
+        <input value={xferNumNext} onChange={(e) => setXferNumNext(e.target.value)} aria-label="Cash transfer next number" placeholder="Next #" />
+        <button type="button" aria-label="Save accounting numbering" onClick={() => saveAccountingNumbering().catch((err) => setError(err.message || 'Could not save numbering'))}>
+          Save numbering
+        </button>
+      </div>
+      {loading && <p className="muted">Loading accounting…</p>}
+      {error && <p className="erp-banner err" role="alert">{error}</p>}
+      {message && <p className="erp-banner ok" role="status">{message}</p>}
+
+      <div className="erp-tabs" role="tablist" aria-label="Accounting sections">
+        <button
+          onClick={() => setTab('overview')}
+          disabled={tab === 'overview'}
+          aria-label="Show accounting overview"
+        >
+          Overview
+        </button>
         <button
           onClick={() => setTab('ledger')}
           disabled={tab === 'ledger'}
           aria-label="Show accounting ledger tab"
         >
-          Ledger
+          Accounts and reports
         </button>
         <button
           onClick={() => setTab('cash')}
           disabled={tab === 'cash'}
           aria-label="Show accounting cash and bank tab"
         >
-          Cash &amp; Bank
+          Cash and bank
         </button>
         <button
           onClick={() => setTab('reconcile')}
           disabled={tab === 'reconcile'}
           aria-label="Show accounting reconcile tab"
         >
-          Reconcile
+          Bank match
         </button>
         <button
           onClick={() => setTab('cheques')}
@@ -995,69 +1147,94 @@ export default function Page() {
         </button>
       </div>
 
-      {tab === 'ledger' && (
+      {tab === 'overview' && (
         <>
-          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
-            <strong>Document numbering</strong>
-            <p className="muted" style={{ margin: 0 }}>
-              Journals and cash/bank transfers use PREFIX-YYYY-NNNN (defaults JE / XFER). Blank
-              transfer reference auto-allocates the next XFER number.
-            </p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <span className="muted">Journal</span>
-              <input
-                value={jePrefix}
-                onChange={(e) => setJePrefix(e.target.value.toUpperCase())}
-                placeholder="Prefix"
-                style={{ width: 100 }}
-                aria-label="Journal number prefix"
-                title="Journal document prefix (letters, digits, _ or -)"
-              />
-              <input
-                value={jeNext}
-                onChange={(e) => setJeNext(e.target.value)}
-                placeholder="Next #"
-                style={{ width: 90 }}
-                aria-label="Journal next number"
-              />
-              <span className="muted">{jePreview || '—'}</span>
+          <div className="erp-kpis">
+            <div className="card">
+              <div className="muted">Income</div>
+              <div className="kpi">{fmtMoney(Number(pnl?.revenue ?? pnl?.income ?? 0))}</div>
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <span className="muted">Transfer/XFER</span>
-              <input
-                value={xferPrefix}
-                onChange={(e) => setXferPrefix(e.target.value.toUpperCase())}
-                placeholder="Prefix"
-                style={{ width: 100 }}
-                aria-label="Cash transfer number prefix"
-                title="Cash transfer document prefix (letters, digits, _ or -)"
-              />
-              <input
-                value={xferNext}
-                onChange={(e) => setXferNext(e.target.value)}
-                placeholder="Next #"
-                style={{ width: 90 }}
-                aria-label="Cash transfer next number"
-              />
-              <span className="muted">{xferPreview || '—'}</span>
-              <button type="button" onClick={saveAccountingNumbering} aria-label="Save accounting numbering">
-                Save numbering
-              </button>
+            <div className="card">
+              <div className="muted">Expenses</div>
+              <div className="kpi">{fmtMoney(Number(pnl?.operating_expenses ?? pnl?.expense ?? 0))}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Customers owe us</div>
+              <div className="kpi">{fmtMoney(Number(arAging?.total_due ?? 0))}</div>
+            </div>
+            <div className="card">
+              <div className="muted">We owe suppliers</div>
+              <div className="kpi">{fmtMoney(Number(apAging?.total_due ?? 0))}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Cash and bank</div>
+              <div className="kpi">
+                {fmtMoney(
+                  liquid.reduce((s: number, a: any) => s + Number(a.balance ?? a.current_balance ?? 0), 0),
+                )}
+              </div>
             </div>
           </div>
+          <div className="card">
+            <h3>Recent activity</h3>
+            <table className="table compact">
+              <thead>
+                <tr>
+                  <th>Entry</th>
+                  <th>What happened</th>
+                  <th>From</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {journals.slice(0, 12).map((j: any) => {
+                  const href = journalSourceHref(j.source_type);
+                  return (
+                    <tr key={j.id}>
+                      <td>{j.entry_number}</td>
+                      <td>{j.description}</td>
+                      <td>
+                        {href ? (
+                          <a href={href}>{journalSourceLabel(j.source_type)}</a>
+                        ) : (
+                          journalSourceLabel(j.source_type)
+                        )}
+                      </td>
+                      <td>{fmtMoney(Number(j.total_debit || 0))}</td>
+                    </tr>
+                  );
+                })}
+                {!journals.length && (
+                  <tr>
+                    <td colSpan={4} className="muted">
+                      No entries yet
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
 
+      {tab === 'ledger' && (
+        <>
+          <p className="muted">
+            Accounts, starting balances, and entries. Totals come from saved entries.
+          </p>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
-            <h3>Period close (BR-10.2)</h3>
+            <h3>Close the books</h3>
             <p className="muted" style={{ margin: 0 }}>
-              Closing books through a date blocks posting and unposting journals on or before that
-              date. Fiscal year start: {period?.fiscal_year_start || '01-01'}
+              Closing through a date stops new entries on or before that date.
               {period?.current_fiscal_start
-                ? ` · current period ${period.current_fiscal_start} → ${period.current_fiscal_end_exclusive}`
+                ? ` This year starts ${formatWhen(period.current_fiscal_start)}.`
                 : ''}
             </p>
             <p style={{ margin: 0 }}>
               Closed through:{' '}
-              <strong>{period?.books_closed_through || 'not closed'}</strong>
+              <strong>
+                {period?.books_closed_through ? formatWhen(period.books_closed_through) : 'Open'}
+              </strong>
             </p>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <input
@@ -1085,16 +1262,14 @@ export default function Page() {
               )}
             </div>
             <p className="muted" style={{ margin: 0 }}>
-              Reason is required for close and reopen (audit <code>period_closed</code> /{' '}
-              <code>period_reopened</code> <code>details.reason</code>).
+              A reason is required. It is kept with the record.
             </p>
           </div>
 
           <div className="card" style={{ marginBottom: 16 }}>
             <h3>Manual journal</h3>
             <p className="muted" style={{ marginTop: 0 }}>
-              Multi-line adjusting entries (BR-10.2). At least two lines; Σ debit must equal Σ credit
-              (±0.01). Each line is debit <em>or</em> credit.
+              Use at least two lines. Debit and credit must match. Each line is either a debit or a credit.
             </p>
             <div style={{ display: 'grid', gap: 8 }}>
               <input
@@ -1142,7 +1317,7 @@ export default function Page() {
                             )
                           }
                           aria-label={`Journal line ${idx + 1} account`}
-                          title="Optional COA account (UuidIdValue); blank/garbage → 422"
+                          title="Account"
                         >
                           <option value="">Select account</option>
                           {activeAccounts.map((a) => (
@@ -1153,7 +1328,8 @@ export default function Page() {
                         </select>
                       </td>
                       <td>
-                        <input
+                        <AmountField
+                          inline
                           value={line.debit}
                           onChange={(e) =>
                             setManualLines((prev) =>
@@ -1163,12 +1339,12 @@ export default function Page() {
                             )
                           }
                           placeholder="0"
-                          style={{ width: 100 }}
                           aria-label={`Journal line ${idx + 1} debit`}
                         />
                       </td>
                       <td>
-                        <input
+                        <AmountField
+                          inline
                           value={line.credit}
                           onChange={(e) =>
                             setManualLines((prev) =>
@@ -1178,7 +1354,6 @@ export default function Page() {
                             )
                           }
                           placeholder="0"
-                          style={{ width: 100 }}
                           aria-label={`Journal line ${idx + 1} credit`}
                         />
                       </td>
@@ -1236,19 +1411,20 @@ export default function Page() {
                 type="button"
                 className="btn-ok"
                 onClick={postManual}
-                disabled={!manualBalanced}
+                disabled={!manualBalanced || journalBusy}
                 aria-label="Post balanced entry"
               >
-                Post balanced entry
+                {journalBusy ? 'Posting…' : 'Post balanced entry'}
               </button>
             </div>
           </div>
 
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
-            <h3>COA opening balances (BR-10.1)</h3>
+            <h3>Starting balances</h3>
             <p className="muted" style={{ margin: 0 }}>
-              Post go-live / fiscal-year openings. Asset &amp; expense amounts debit; liability,
-              equity &amp; income credit. Unbalanced residual plugs to Owner&apos;s Equity (3000).
+              Enter the balances this company already had when it started here. Money the company
+              owns or has spent goes in Debit. Money it owes or has earned goes in Credit. Any
+              difference is added to Owner&apos;s equity.
             </p>
             {coaOpenStatus?.posted ? (
               <p style={{ color: 'var(--brand, #4AB012)', margin: 0 }}>
@@ -1262,7 +1438,7 @@ export default function Page() {
                     value={coaOpenAccountId}
                     onChange={(e) => setCoaOpenAccountId(e.target.value)}
                     aria-label="Opening balance account"
-                    title="Optional COA account (UuidIdValue); blank/garbage → 422"
+                    title="Account"
                   >
                     {activeAccounts.map((a) => (
                       <option key={a.id} value={a.id}>
@@ -1270,12 +1446,12 @@ export default function Page() {
                       </option>
                     ))}
                   </select>
-                  <input
+                  <AmountField
+                    inline
                     value={coaOpenAmount}
                     onChange={(e) => setCoaOpenAmount(e.target.value)}
                     placeholder="Amount"
                     aria-label="Opening balance amount"
-                    style={{ width: 120 }}
                   />
                   <button type="button" aria-label="Add opening balance line" onClick={addCoaOpenLine}>
                     Add line
@@ -1286,7 +1462,7 @@ export default function Page() {
                   onChange={(e) => setCoaOpenRef(e.target.value)}
                   placeholder="Reference (e.g. FY2026-OPEN)"
                   aria-label="Opening balance reference"
-                  title="Optional reference (1–100 chars; blank → auto COA-OPEN-YYYYMMDD)"
+                  title="Leave blank to number this automatically"
                 />
                 <input
                   value={coaOpenNotes}
@@ -1328,12 +1504,19 @@ export default function Page() {
 
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Edit account name</h3>
+            <p className="muted" style={{ margin: 0 }}>
+              Quick rename. For type, parent, or bank details, use Edit on the chart below.
+            </p>
             <select
               value={editAcctId}
               onChange={(e) => {
-                setEditAcctId(e.target.value);
-                const a = accounts.find((x) => x.id === e.target.value);
-                setEditAcctName(a?.name || '');
+                const id = e.target.value;
+                const a = accounts.find((x) => x.id === id);
+                if (a) openEditAccount(a);
+                else {
+                  setEditAcctId('');
+                  setEditAcctName('');
+                }
               }}
               aria-label="Edit account"
               title="Account to rename"
@@ -1356,89 +1539,119 @@ export default function Page() {
             <button
               type="button"
               onClick={saveAccountName}
-              disabled={!editAcctId}
+              disabled={!editAcctId || acctSaveBusy}
               aria-label="Save account name"
             >
               Save name
             </button>
           </div>
 
-          <h3>Chart of accounts</h3>
-          <select
-            value={accountManageFilter}
-            onChange={(e) =>
-              setAccountManageFilter(e.target.value as 'all' | 'active' | 'inactive')
-            }
-            title="Filter manage chart of accounts by status"
-            aria-label="Account status filter"
-            style={{ marginBottom: 8 }}
-          >
-            <option value="all">All statuses</option>
-            <option value="active">Active only</option>
-            <option value="inactive">Inactive only</option>
-          </select>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Liquid</th>
-                <th>Opening</th>
-                <th>Balance</th>
-                <th>Active</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {managedAccounts.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="muted">
-                    No accounts for this filter
-                  </td>
-                </tr>
-              )}
-              {managedAccounts.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.code}</td>
-                  <td>
-                    {r.name}
-                    {r.is_system ? ' · system' : ''}
-                    {r.is_active === false ? (
-                      <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>
-                        [inactive]
-                      </span>
-                    ) : null}
-                  </td>
-                  <td>{r.account_type}</td>
-                  <td>{r.is_cash_account ? 'cash' : r.is_bank_account ? 'bank' : '—'}</td>
-                  <td>{r.opening_balance ?? 0}</td>
-                  <td>{r.balance}</td>
-                  <td>{r.is_active === false ? 'no' : 'yes'}</td>
-                  <td>
-                    {r.is_active === false ? (
-<button type="button" className="btn-ok" onClick={() => setAccountActive(r.id, true)} aria-label={`Activate account ${r.id}`}>
-                          Activate
-                        </button>
-                    ) : (
-<button
-                          type="button"
-                          className="btn-danger"
-                          onClick={() => setAccountActive(r.id, false)}
-                          aria-label={`Deactivate account ${r.id}`}
-                        >
-                          Deactivate
-                        </button>
+          <div className="card" style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+              <div>
+                <h3 style={{ marginTop: 0 }}>Chart of accounts</h3>
+                <p className="muted" style={{ margin: 0 }}>
+                  These are the groups money is recorded in: what the company owns, owes, earns, and spends.
+                  Adding a group does not record a transaction by itself.
+                </p>
+              </div>
+              <button type="button" className="list-btn-primary" onClick={() => openAddAccount('')}>
+                Add account
+              </button>
+            </div>
+            <select
+              value={accountManageFilter}
+              onChange={(e) =>
+                setAccountManageFilter(e.target.value as 'all' | 'active' | 'inactive')
+              }
+              title="Filter manage chart of accounts by status"
+              aria-label="Account status filter"
+              style={{ margin: '12px 0 8px' }}
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active only</option>
+              <option value="inactive">Inactive only</option>
+            </select>
+            {loading ? (
+              <p className="muted">Loading accounts…</p>
+            ) : (
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Code</th>
+                      <th>Name</th>
+                      <th>Type</th>
+                      <th>Parent</th>
+                      <th>Liquid</th>
+                      <th>Opening</th>
+                      <th>Balance</th>
+                      <th>Active</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {managedAccounts.length === 0 && (
+                      <tr>
+                        <td colSpan={9} className="muted">
+                          No accounts for this filter
+                        </td>
+                      </tr>
                     )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    {managedAccounts.map((r) => {
+                      const parent = accounts.find((x) => x.id === r.parent_id);
+                      return (
+                        <tr key={r.id}>
+                          <td>{r.code}</td>
+                          <td>
+                            {r.name}
+                            {r.is_system ? ' · system' : ''}
+                            {r.is_active === false ? (
+                              <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>
+                                [inactive]
+                              </span>
+                            ) : null}
+                          </td>
+                          <td>{r.account_type}</td>
+                          <td>{parent ? `${parent.code}` : '—'}</td>
+                          <td>{r.is_cash_account ? 'cash' : r.is_bank_account ? 'bank' : '—'}</td>
+                          <td>{r.opening_balance ?? 0}</td>
+                          <td>{r.balance}</td>
+                          <td>{r.is_active === false ? 'no' : 'yes'}</td>
+                          <td style={{ whiteSpace: 'nowrap' }}>
+                            <button type="button" onClick={() => openEditAccount(r)} aria-label={`Edit account ${r.code}`}>
+                              Edit
+                            </button>{' '}
+                            {r.is_active === false ? (
+                              <button type="button" className="btn-ok" onClick={() => setAccountActive(r.id, true)} aria-label={`Activate account ${r.id}`}>
+                                Activate
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="btn-danger"
+                                onClick={() => setAccountActive(r.id, false)}
+                                aria-label={`Deactivate account ${r.id}`}
+                              >
+                                Deactivate
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
 
           <div className="grid" style={{ marginTop: 16 }}>
             <div className="card">
               <h3>Trial balance</h3>
+              <p className="muted" style={{ marginTop: 0 }}>
+                Checks that debits equal credits. Set a date, or leave it blank for current balances, then Generate.
+              </p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
                 <input
                   type="date"
@@ -1452,15 +1665,21 @@ export default function Page() {
                   onClick={() => loadTrial().catch((err) => setError(err.message))}
                   aria-label="Apply trial balance filters"
                 >
-                  Apply
+                  Generate
                 </button>
               </div>
               <p className="muted">
-                {trial?.mode === 'journals' ? `As of ${trial?.as_of} (journals)` : 'Live balances'}
+                {trial?.mode === 'journals'
+                  ? `As of ${formatWhen(trial?.as_of) || '—'}`
+                  : 'Current balances'}
                 {' · '}
-                Balanced: {String(trial?.balanced)} | Dr {trial?.total_debit} / Cr{' '}
-                {trial?.total_credit}
+                {trial?.balanced ? 'Balanced' : 'Not balanced'}
+                {' · '}
+                Debit {fmtMoney(trial?.total_debit)} · Credit {fmtMoney(trial?.total_credit)}
               </p>
+              {!trial?.rows?.length && !loading ? (
+                <p className="muted">No balances yet. Add entries, then generate.</p>
+              ) : null}
               {!!trial?.rows?.length && (
                 <table className="table" style={{ marginTop: 8 }}>
                   <thead>
@@ -1486,6 +1705,9 @@ export default function Page() {
             </div>
             <div className="card">
               <h3>Profit &amp; Loss</h3>
+              <p className="muted" style={{ marginTop: 0 }}>
+                Income minus expenses for a period. Filters work like Reports: set dates/store, then Generate.
+              </p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
                 <input
                   type="date"
@@ -1539,19 +1761,19 @@ export default function Page() {
                   }
                   aria-label="Apply profit and loss filters"
                 >
-                  Apply
+                  Generate
                 </button>
               </div>
               <p className="muted" style={{ marginTop: 0 }}>
                 {pnl?.mode === 'journals'
-                  ? 'Period / location from posted journals'
-                  : 'Lifetime account balances'}
+                  ? 'For the dates and location you chose'
+                  : 'All-time balances'}
               </p>
-              <p>Revenue: {pnl?.revenue ?? pnl?.income}</p>
-              <p>COGS: {pnl?.cogs ?? 0}</p>
-              <p>Gross profit: {pnl?.gross_profit ?? (pnl?.income ?? 0) - (pnl?.cogs ?? 0)}</p>
-              <p>Operating expenses: {pnl?.operating_expenses ?? pnl?.expense}</p>
-              <div className="kpi">{pnl?.net_profit}</div>
+              <p>Revenue: {fmtMoney(pnl?.revenue ?? pnl?.income)}</p>
+              <p>Cost of goods: {fmtMoney(pnl?.cogs ?? 0)}</p>
+              <p>Gross profit: {fmtMoney(pnl?.gross_profit ?? (pnl?.income ?? 0) - (pnl?.cogs ?? 0))}</p>
+              <p>Operating expenses: {fmtMoney(pnl?.operating_expenses ?? pnl?.expense)}</p>
+              <div className="kpi">{fmtMoney(pnl?.net_profit)}</div>
               <p className="muted" style={{ margin: 0 }}>
                 Net profit
               </p>
@@ -1561,8 +1783,7 @@ export default function Page() {
           <div className="card" style={{ marginTop: 12 }}>
           <h3 style={{ marginTop: 0 }}>Balance sheet</h3>
           <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
-            Point-in-time statement. Uses the same as-of date as Trial balance, plus optional compare.
-            Store/branch follow the Shell header and P&amp;L branch filter when set.
+            What the company owns and owes on the date you choose.
           </p>
           <div className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div>
@@ -1587,7 +1808,7 @@ export default function Page() {
               </select>
             </div>
             <button type="button" className="btn" onClick={() => void loadBalanceSheet()} aria-label="Apply balance sheet filters">
-              Apply
+              Generate
             </button>
           </div>
           {balanceSheet ? (
@@ -1623,8 +1844,8 @@ export default function Page() {
               ) : null}
               <p className="muted" style={{ fontSize: 12, marginBottom: 0 }}>
                 {(headerStoreId || pnlBranchId)
-                  ? 'Scoped to Shell store and/or P&L branch filter.'
-                  : 'Company-wide (no Shell store or P&L branch filter).'}
+                  ? 'Limited to the selected store or branch.'
+                  : 'Whole company.'}
               </p>
             </>
           ) : (
@@ -1635,7 +1856,7 @@ export default function Page() {
         <div className="card" style={{ marginTop: 12 }}>
           <h3 style={{ marginTop: 0 }}>Cash flow</h3>
           <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
-            Period cash inflows and outflows (requires <code>reports:read</code>). Dates and store/branch match P&amp;L.
+            Cash in and cash out for the dates you choose.
           </p>
           <div className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div>
@@ -1657,7 +1878,7 @@ export default function Page() {
               />
             </div>
             <button type="button" className="btn" onClick={() => void loadCashFlow()} aria-label="Apply cash flow filters">
-              Apply
+              Generate
             </button>
           </div>
           {cashFlow ? (
@@ -1691,8 +1912,8 @@ export default function Page() {
               ) : null}
               <p className="muted" style={{ fontSize: 12, marginBottom: 0 }}>
                 {(headerStoreId || pnlBranchId)
-                  ? 'Scoped to Shell store and/or P&L branch filter.'
-                  : 'Company-wide (no Shell store or P&L branch filter).'}
+                  ? 'Limited to the selected store or branch.'
+                  : 'Whole company.'}
               </p>
             </>
           ) : (
@@ -1702,11 +1923,10 @@ export default function Page() {
           )}
         </div>
 
-        <h3 style={{ marginTop: 16 }}>Recent journals</h3>
+        <h3 style={{ marginTop: 16 }}>Entries</h3>
           <p className="muted">
-            Manual journals can be unposted within the current fiscal period when books are open for
-            that date. Attach supporting
-            documents on any entry (BR-10.2).
+            Saved entries for this company. You can undo a manual entry while the books are still open.
+            Attach a file to any entry.
           </p>
           <select
             value={journalManageFilter}
@@ -1727,13 +1947,13 @@ export default function Page() {
               value={unpostReason}
               onChange={(e) => setUnpostReason(e.target.value)}
               placeholder="Required before Unpost"
-              title="Required unpost reason (1–500 chars; letters/digits required)"
+              title="Reason for undoing this entry"
               aria-label="Journal unpost reason"
               style={{ minWidth: 280 }}
             />
           </label>
           <p className="muted" style={{ marginTop: 0 }}>
-            Appended to the journal description and audit (`POST .../unpost` {'{ reason }'}).
+            The reason is kept with the entry.
           </p>
           <table className="table">
             <thead>
@@ -1752,7 +1972,7 @@ export default function Page() {
                 <tr>
                   <td colSpan={7} className="muted">
                     {journals.length === 0
-                      ? 'No journals yet'
+                      ? 'No entries yet'
                       : 'No journals for this filter'}
                   </td>
                 </tr>
@@ -1761,7 +1981,13 @@ export default function Page() {
                 <tr key={j.id}>
                   <td>{j.entry_number}</td>
                   <td>{j.description}</td>
-                  <td>{j.source_type || 'manual'}</td>
+                  <td>
+                    {(() => {
+                      const href = journalSourceHref(j.source_type);
+                      const label = journalSourceLabel(j.source_type);
+                      return href ? <a href={href}>{label}</a> : label;
+                    })()}
+                  </td>
                   <td>{j.status}</td>
                   <td>{j.total_debit}</td>
                   <td>{j.total_credit}</td>
@@ -1835,67 +2061,24 @@ export default function Page() {
       {tab === 'cash' && (
         <>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
-            <h3>Create cash / bank account</h3>
+            <h3>Cash and bank accounts</h3>
             <p className="muted" style={{ margin: 0 }}>
-              Add petty cash tills or bank accounts (BR-10.3). Bank accounts need a bank name.
+              Cash and bank accounts used when you record a payment. A bank account needs a bank name.
+              For other accounts, use Accounts and reports, then Add account.
             </p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <input
-                value={newAcctCode}
-                onChange={(e) => setNewAcctCode(e.target.value)}
-                placeholder="Code (e.g. 1001)"
-                style={{ width: 120 }}
-                aria-label="Account code"
-                title="Account code (1–30 chars: letters, digits, _ or -)"
-              />
-              <input
-                value={newAcctName}
-                onChange={(e) => setNewAcctName(e.target.value)}
-                placeholder="Name (e.g. Petty Cash)"
-                aria-label="Account name"
-                title="Account display name (1–150 chars; letters/digits required)"
-              />
-              <select
-                value={newAcctKind}
-                onChange={(e) => setNewAcctKind(e.target.value)}
-                aria-label="Liquid account kind"
-              >
-                <option value="cash">Cash</option>
-                <option value="bank">Bank</option>
-              </select>
-              {newAcctKind === 'bank' && (
-                <>
-                  <input
-                    value={newBankName}
-                    onChange={(e) => setNewBankName(e.target.value)}
-                    placeholder="Bank name"
-                    aria-label="Bank name"
-                  />
-                  <input
-                    value={newAcctNumber}
-                    onChange={(e) => setNewAcctNumber(e.target.value)}
-                    placeholder="Account number"
-                    aria-label="Bank account number"
-                  />
-                  <input
-                    value={newBankBranch}
-                    onChange={(e) => setNewBankBranch(e.target.value)}
-                    placeholder="Branch"
-                    aria-label="Bank branch"
-                  />
-                </>
-              )}
-              <button type="button" onClick={createLiquidAccount} aria-label="Create liquid account">
-                Create account
-              </button>
-            </div>
+            <button
+              type="button"
+              className="list-btn-primary"
+              onClick={() => openAddAccount('cash')}
+            >
+              Add cash or bank account
+            </button>
           </div>
 
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
-            <h3>Transfer / deposit / withdrawal</h3>
+            <h3>Move money</h3>
             <p className="muted" style={{ margin: 0 }}>
-              Transfer moves funds between liquid accounts. Deposit credits Owner&apos;s Equity (3000);
-              withdrawal debits equity.
+              A transfer moves money between cash and bank. A deposit adds money. A withdrawal takes money out.
             </p>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <select
@@ -1935,12 +2118,12 @@ export default function Page() {
                   ))}
                 </select>
               )}
-              <input
+              <AmountField
+                inline
                 value={xferAmount}
                 onChange={(e) => setXferAmount(e.target.value)}
                 placeholder="Amount"
                 aria-label="Cash transfer amount"
-                style={{ width: 100 }}
               />
               <input
                 value={xferRef}
@@ -1961,7 +2144,7 @@ export default function Page() {
             </div>
           </div>
 
-          <h3>Liquid accounts</h3>
+          <h3>Cash and bank</h3>
           <table className="table">
             <thead>
               <tr>
@@ -2041,6 +2224,9 @@ export default function Page() {
 
       {tab === 'reconcile' && (
         <>
+          <p className="muted">
+            Match bank statement lines to journal lines. Import a statement or connect a feed, then tick matching rows.
+          </p>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>New statement</h3>
             <select
@@ -2069,19 +2255,19 @@ export default function Page() {
                 title="Statement line txn date (YYYY-MM-DD)"
                 aria-label="Statement line txn date"
               />
-              <input
+              <AmountField
                 value={opening}
                 onChange={(e) => setOpening(e.target.value)}
                 placeholder="Opening"
                 aria-label="Statement opening balance"
               />
-              <input
+              <AmountField
                 value={closing}
                 onChange={(e) => setClosing(e.target.value)}
                 placeholder="Closing"
                 aria-label="Statement closing balance"
               />
-              <input
+              <AmountField
                 value={lineAmount}
                 onChange={(e) => setLineAmount(e.target.value)}
                 placeholder="Line amount (+in/−out)"
@@ -2132,18 +2318,15 @@ export default function Page() {
               </button>
             </div>
             <p className="muted">
-              Tip: post a cash/bank journal first, import a CSV/OFX feed (or create a line), then
-              auto-clear or match manually. CSV needs date + amount (or debit/credit) columns.
+              Bring in a bank file, or match a line by hand. A spreadsheet needs a date and an amount.
             </p>
           </div>
 
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Bank API connections</h3>
             <p className="muted">
-              Link a liquid GL account to a live feed (`mock` for demos/tests, `http_json` for any
-              aggregator that returns JSON transactions). Sync creates a reconcilable statement;
-              duplicates are skipped by external ref. Soft-deactivate pauses Sync / Celery auto-sync
-              without deleting the connection (use Remove to delete).
+              Connect a cash or bank account so new bank lines can be brought in. Turning a connection
+              off pauses those updates. Remove deletes the connection.
             </p>
             <input aria-label="Bank connection display name" value={connName} onChange={(e) => setConnName(e.target.value)} placeholder="Connection name" />
             <select
@@ -2627,6 +2810,188 @@ export default function Page() {
           </table>
         </>
       )}
+      {acctFormOpen ? (
+        <FormModal
+          title={editAcctId ? 'Edit account' : 'Add account'}
+          busy={acctSaveBusy}
+          dirty={Boolean(
+            newAcctCode.trim() ||
+              newAcctName.trim() ||
+              editAcctName.trim() ||
+              newBankName.trim() ||
+              newAcctNumber.trim() ||
+              newBankBranch.trim() ||
+              newAcctParent.trim(),
+          )}
+          headerClose={false}
+          closeLabel="Cancel"
+          closeAriaLabel="Cancel account form"
+          onClose={() => {
+            if (acctSaveBusy) return;
+            setAcctFormOpen(false);
+          }}
+          footer={
+            <button
+              type="button"
+              className="list-btn-primary"
+              onClick={createLiquidAccount}
+              disabled={acctSaveBusy || (!editAcctId && !newAcctCode.trim()) || !(editAcctId ? editAcctName.trim() : newAcctName.trim())}
+              aria-label="Create liquid account"
+            >
+              {acctSaveBusy ? 'Saving…' : 'Save'}
+            </button>
+          }
+        >
+          <p className="muted" style={{ marginTop: 0 }}>
+            Code and type cannot be changed after save. Tenant and company come from your sign-in, not this form.
+          </p>
+          <div className="erp-form-grid">
+            <label>
+              Code
+              <input
+                value={newAcctCode}
+                onChange={(e) => setNewAcctCode(e.target.value)}
+                placeholder="Code (e.g. 1001)"
+                style={{ width: '100%' }}
+                aria-label="Account code"
+                title="Account code (1–30 chars: letters, digits, _ or -)"
+                disabled={Boolean(editAcctId)}
+                aria-invalid={Boolean(acctFieldErrors.code)}
+              />
+            </label>
+            {acctFieldErrors.code ? (
+              <p className="list-toast err" role="alert">
+                {acctFieldErrors.code}
+              </p>
+            ) : null}
+            <label>
+              Name
+              <input
+                value={editAcctId ? editAcctName : newAcctName}
+                onChange={(e) => {
+                  setNewAcctName(e.target.value);
+                  setEditAcctName(e.target.value);
+                }}
+                placeholder="Name (e.g. Petty Cash)"
+                aria-label="Account name"
+                title="Account display name (1–150 chars; letters/digits required)"
+                aria-invalid={Boolean(acctFieldErrors.name)}
+              />
+            </label>
+            {acctFieldErrors.name ? (
+              <p className="list-toast err" role="alert">
+                {acctFieldErrors.name}
+              </p>
+            ) : null}
+            <label>
+              Type
+              <select
+                value={newAcctKind === 'cash' || newAcctKind === 'bank' ? 'asset' : newAcctType}
+                onChange={(e) => setNewAcctType(e.target.value)}
+                aria-label="Account type"
+                disabled={Boolean(editAcctId) || newAcctKind === 'cash' || newAcctKind === 'bank'}
+                aria-invalid={Boolean(acctFieldErrors.account_type)}
+              >
+                <option value="asset">Asset (what you own)</option>
+                <option value="liability">Liability (what you owe)</option>
+                <option value="equity">Equity (owner&apos;s funds)</option>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+              </select>
+            </label>
+            {acctFieldErrors.account_type ? (
+              <p className="list-toast err" role="alert">
+                {acctFieldErrors.account_type}
+              </p>
+            ) : null}
+            <label>
+              Cash or bank
+              <select
+                value={newAcctKind}
+                onChange={(e) => {
+                  setNewAcctKind(e.target.value);
+                  if (e.target.value === 'cash' || e.target.value === 'bank') setNewAcctType('asset');
+                }}
+                aria-label="Liquid account kind"
+                disabled={Boolean(editAcctId)}
+              >
+                <option value="">Not cash or bank (GL)</option>
+                <option value="cash">Cash</option>
+                <option value="bank">Bank</option>
+              </select>
+            </label>
+            <label>
+              Parent account
+              <select
+                value={newAcctParent}
+                onChange={(e) => setNewAcctParent(e.target.value)}
+                aria-label="Parent account"
+                aria-invalid={Boolean(acctFieldErrors.parent_id)}
+              >
+                <option value="">None (top level)</option>
+                {activeAccounts
+                  .filter((a) => {
+                    if (editAcctId && a.id === editAcctId) return false;
+                    const t = newAcctKind === 'cash' || newAcctKind === 'bank' ? 'asset' : newAcctType;
+                    return !a.account_type || a.account_type === t;
+                  })
+                  .map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.code} — {a.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            {acctFieldErrors.parent_id ? (
+              <p className="list-toast err" role="alert">
+                {acctFieldErrors.parent_id}
+              </p>
+            ) : null}
+            {newAcctKind === 'bank' && (
+              <>
+                <label>
+                  Bank name
+                  <input
+                    value={newBankName}
+                    onChange={(e) => setNewBankName(e.target.value)}
+                    placeholder="Bank name"
+                    aria-label="Bank name"
+                    aria-invalid={Boolean(acctFieldErrors.bank_name)}
+                  />
+                </label>
+                {acctFieldErrors.bank_name ? (
+                  <p className="list-toast err" role="alert">
+                    {acctFieldErrors.bank_name}
+                  </p>
+                ) : null}
+                <label>
+                  Account number
+                  <input
+                    value={newAcctNumber}
+                    onChange={(e) => setNewAcctNumber(e.target.value)}
+                    placeholder="Account number"
+                    aria-label="Bank account number"
+                  />
+                </label>
+                <label>
+                  Branch
+                  <input
+                    value={newBankBranch}
+                    onChange={(e) => setNewBankBranch(e.target.value)}
+                    placeholder="Branch"
+                    aria-label="Bank branch"
+                  />
+                </label>
+              </>
+            )}
+            {acctFieldErrors.company ? (
+              <p className="list-toast err" role="alert">
+                {acctFieldErrors.company}
+              </p>
+            ) : null}
+          </div>
+        </FormModal>
+      ) : null}
       {attachPreview && (
         <AttachmentPreview
           open
@@ -2636,6 +3001,6 @@ export default function Page() {
           onError={(msg) => setError(msg)}
         />
       )}
-    </>
+    </div>
   );
 }

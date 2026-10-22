@@ -127,17 +127,34 @@ async def require_active_store(db: AsyncSession, tenant_id: str, store_id: str) 
 
 
 async def warehouse_for_store(db: AsyncSession, tenant_id: str, store_id: str) -> m.Warehouse:
-    wh = (
+    # A store may already have two warehouse rows from an older link. Pick one
+    # instead of raising MultipleResultsFound on POS sale: an active warehouse
+    # first, then the store's own default (WH-<store code>), then by code.
+    # Code order alone picked an empty back-store warehouse over the main one.
+    rows = (
         await db.execute(
-            select(m.Warehouse).where(
+            select(m.Warehouse)
+            .where(
                 m.Warehouse.tenant_id == tenant_id,
                 m.Warehouse.store_id == store_id,
             )
+            .order_by(m.Warehouse.code.asc(), m.Warehouse.id.asc())
         )
-    ).scalar_one_or_none()
-    if wh:
-        return wh
+    ).scalars().all()
+    if len(rows) == 1:
+        return rows[0]
     store = await get_store(db, tenant_id, store_id)
+    if rows:
+        default_code = f"WH-{store.code}".upper()
+        return min(
+            rows,
+            key=lambda w: (
+                not bool(w.is_active),
+                (w.code or "").upper() != default_code,
+                w.code or "",
+                w.id,
+            ),
+        )
     wh = m.Warehouse(
         tenant_id=tenant_id,
         store_id=store.id,
@@ -431,6 +448,7 @@ async def serialize_transfer(db: AsyncSession, transfer: m.StockTransfer) -> dic
     required = int(getattr(transfer, "approval_steps_required", 2) or 2)
     fully_approved = _transfer_fully_approved(transfer)
     can_ship = transfer.status == "requested" and fully_approved
+    qty_total = sum(money_json(i.quantity) for i in items)
     awaiting = None
     if transfer.status == "requested" and not fully_approved:
         if required <= 1:
@@ -458,6 +476,8 @@ async def serialize_transfer(db: AsyncSession, transfer: m.StockTransfer) -> dic
         "rejection_reason": getattr(transfer, "rejection_reason", None),
         "fully_approved": fully_approved,
         "can_ship": can_ship,
+        "item_count": len(items),
+        "quantity_total": money_json(qty_total),
         "shipped_at": transfer.shipped_at,
         "received_at": transfer.received_at,
         "created_at": transfer.created_at,
@@ -490,6 +510,15 @@ async def create_transfer(
     if not items:
         raise HTTPException(status_code=400, detail="Transfer requires at least one item")
 
+    from app import store_entitlements as store_ent_svc
+
+    tenant = await db.get(m.Tenant, tenant_id)
+    if tenant is not None and not store_ent_svc.is_multi_store(tenant):
+        raise HTTPException(
+            status_code=403,
+            detail="This company is single-store. Branch and warehouse transfers are not available.",
+        )
+
     from app.warehouses import get_warehouse
 
     if from_warehouse_id and to_warehouse_id:
@@ -508,6 +537,14 @@ async def create_transfer(
         to_store_id = to_wh.store_id
         await get_store(db, tenant_id, from_store_id)
         await get_store(db, tenant_id, to_store_id)
+        from app import store_access as store_access_svc
+
+        await store_access_svc.assert_store_access(
+            db, tenant_id=tenant_id, user_id=user_id, store_id=from_store_id
+        )
+        await store_access_svc.assert_store_access(
+            db, tenant_id=tenant_id, user_id=user_id, store_id=to_store_id
+        )
     elif from_store_id and to_store_id:
         if from_store_id == to_store_id:
             raise HTTPException(
@@ -515,6 +552,14 @@ async def create_transfer(
             )
         await get_store(db, tenant_id, from_store_id)
         await get_store(db, tenant_id, to_store_id)
+        from app import store_access as store_access_svc
+
+        await store_access_svc.assert_store_access(
+            db, tenant_id=tenant_id, user_id=user_id, store_id=from_store_id
+        )
+        await store_access_svc.assert_store_access(
+            db, tenant_id=tenant_id, user_id=user_id, store_id=to_store_id
+        )
         from_wh = await warehouse_for_store(db, tenant_id, from_store_id)
         to_wh = await warehouse_for_store(db, tenant_id, to_store_id)
     else:

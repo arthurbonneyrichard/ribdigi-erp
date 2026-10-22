@@ -1,0 +1,96 @@
+.notify-ui {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  max-width: 1100px;
+}
+
+.notify-ui h1 {
+  margin: 0;
+}
+
+.notify-ui-lead,
+.notify-ui-note {
+  margin: 0;
+  max-width: 42rem;
+}
+
+.notify-ui-alert {
+  margin: 0;
+  color: #b91c1c;
+}
+
+.notify-ui-ok {
+  margin: 0;
+  color: var(--brand, #4ab012);
+}
+
+.notify-ui-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.notify-ui-actions > button {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.notify-ui .notif-chips {
+  min-width: 0;
+}
+
+.notify-ui-scroll {
+  min-width: 0;
+  max-width: 100%;
+  overflow: auto;
+  max-height: min(28rem, 70vh);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--white);
+}
+
+.notify-ui-scroll .table {
+  width: 100%;
+  margin: 0;
+}
+
+.notify-ui-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.notify-ui-advanced {
+  min-width: 0;
+}
+
+.notify-ui-advanced > summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .notify-ui-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .notify-ui-actions > button,
+  .notify-ui input:not([type="checkbox"]):not([type="radio"]),
+  .notify-ui select {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .notify-ui {
+    overflow-x: hidden;
+  }
+
+  .notify-ui-scroll {
+    max-height: 22rem;
+  }
+}

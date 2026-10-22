@@ -138,7 +138,7 @@ def _s3_client():
     except ImportError as exc:
         raise HTTPException(
             status_code=503,
-            detail="S3 storage requires boto3 (install backend requirements)",
+            detail="Object storage is not available.",
         ) from exc
 
     endpoint = (settings.S3_ENDPOINT or settings.S3_ENDPOINT_URL or "").strip() or None
@@ -148,10 +148,10 @@ def _s3_client():
     if not access or not secret:
         raise HTTPException(
             status_code=503,
-            detail="S3_ACCESS_KEY and S3_SECRET_KEY are required when STORAGE_BACKEND=s3",
+            detail="Object storage is not configured.",
         )
     if not (settings.S3_BUCKET or "").strip():
-        raise HTTPException(status_code=503, detail="S3_BUCKET is required when STORAGE_BACKEND=s3")
+        raise HTTPException(status_code=503, detail="Object storage is not configured.")
 
     addressing = "path" if settings.S3_FORCE_PATH_STYLE else "auto"
     return boto3.client(
@@ -248,16 +248,17 @@ async def save_upload(
     if content_type not in allowed_types:
         raise HTTPException(
             status_code=400,
-            detail=f"Unsupported file type {content_type}. Allowed: {sorted(allowed_types)}",
+            detail="That file type is not allowed. Use PNG, JPEG, WebP, or GIF.",
         )
     data = await upload.read()
     size = len(data)
     if size <= 0:
-        raise HTTPException(status_code=400, detail="Empty file")
+        raise HTTPException(status_code=400, detail="The file is empty. Choose another image.")
     if size > max_bytes:
+        max_mb = max(1, int(max_bytes / 1_000_000))
         raise HTTPException(
             status_code=400,
-            detail=f"File exceeds maximum size of {max_bytes} bytes",
+            detail=f"That file is too large. Maximum size is {max_mb} MB.",
         )
     original = sanitize_filename(upload.filename)
     key = build_key(tenant_id, category, content_type, original)
@@ -300,7 +301,7 @@ def open_key(key: str, *, tenant_id: str | None = None) -> tuple[Path, str]:
     if storage_backend() != "local":
         raise HTTPException(
             status_code=400,
-            detail="open_key is only available for STORAGE_BACKEND=local; use read_object",
+            detail="This media file cannot be opened that way.",
         )
     path = resolve_key(key, tenant_id=tenant_id)
     if not path.is_file():
@@ -321,6 +322,36 @@ def media_response(
         media_type=media.content_type,
         headers={"Content-Disposition": f'{disposition}; filename="{media.filename}"'},
     )
+
+
+def delete_tenant_media(tenant_id: str) -> None:
+    """Remove uploaded files stored under this tenant id. Other tenants stay."""
+    import shutil
+
+    tid = (tenant_id or "").strip()
+    if not tid or any(part in tid for part in ("/", "\\", "..")):
+        raise ValueError("invalid tenant id")
+    if storage_backend() == "s3":
+        ensure_bucket()
+        client = _s3_client()
+        bucket = _s3_bucket()
+        token = None
+        while True:
+            kwargs = {"Bucket": bucket, "Prefix": f"{tid}/"}
+            if token:
+                kwargs["ContinuationToken"] = token
+            page = client.list_objects_v2(**kwargs)
+            keys = [{"Key": obj["Key"]} for obj in page.get("Contents") or []]
+            if keys:
+                client.delete_objects(Bucket=bucket, Delete={"Objects": keys})
+            if not page.get("IsTruncated"):
+                return
+            token = page.get("NextContinuationToken")
+    root = media_root().resolve()
+    path = (root / tid).resolve()
+    path.relative_to(root)
+    if path.is_dir():
+        shutil.rmtree(path)
 
 
 def storage_status() -> dict:

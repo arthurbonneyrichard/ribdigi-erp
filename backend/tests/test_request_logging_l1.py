@@ -121,8 +121,8 @@ async def test_health_and_metrics_hooks_still_green(client, monkeypatch):
 
     ready = await ac.get("/api/v1/health/ready")
     assert ready.status_code == 200, ready.text
-    assert ready.json()["data"]["deep"] is True
-    assert ready.json()["data"]["checks"]["database"]["status"] == "ok"
+    assert ready.json()["data"]["status"] == "ok"
+    assert "checks" not in ready.json()["data"]
 
     metrics = await ac.get("/api/v1/metrics")
     assert metrics.status_code == 200

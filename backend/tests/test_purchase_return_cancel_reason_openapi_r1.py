@@ -31,7 +31,7 @@ def test_purchase_return_cancel_reason_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Purchase return cancel reason"' in page
     assert "prCancelReason" in page
-    assert "aria-label={`Cancel purchase return ${r.id}`}" in page
+    assert "ariaLabel: `Cancel purchase return ${r.id}`" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "PurchaseReturnCancelReasonValue" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")

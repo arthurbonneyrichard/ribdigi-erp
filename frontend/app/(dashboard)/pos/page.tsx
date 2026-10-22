@@ -1,26 +1,121 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { api } from '../../../lib/api';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { api, apiFetch, isAbortError } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
+import { getPrefetched } from '../../../lib/prefetchCache';
+import { pageLoadStarted } from '../../../lib/navTiming';
 import { useStoreContext } from '../../../lib/storeContext';
+import { isHotelIndustry, tenantIsMultiStore } from '../../../lib/tenantNav';
+import { normalizeIndustry } from '../../../lib/industries';
+import { currencySign, formatDate, formatWhen, plainLabel } from '../../../lib/format';
+import { AmountField } from '../../../components/AmountField';
+import { useCompanyFormat } from '../../../lib/useCompanyFormat';
+import { countAndCloseOpenShift, openShiftForSignedInUser } from '../../../lib/cashierShift';
+import { setPosDrawerBridge } from '../../../lib/posDrawerBridge';
+import { setPosOfflinePanelProps } from '../../../lib/posOfflineSlot';
 import {
-  cacheCatalogProducts,
+  CATALOG_NOT_SAVED,
+  describePrepareFailure,
+  explainOfflineAccess,
+  refreshLink,
+  startLinkWatch,
+  subscribeLink,
+  UNPREPARED_OFFLINE,
+} from '../../../lib/connectivity';
+import { openReceiptPrintWindow } from '../../../lib/posReceiptPrint';
+import { consumeWedgeKey, looksLikeBarcode, type WedgeBuffer } from '../../../lib/posWedgeScan';
+import {
+  allocationRemainingFor,
+  cacheSnapshot,
   countPendingSales,
-  downloadRecoveryPackage,
+  enqueueOfflineQuote,
   enqueueOfflineSale,
-  flushOfflineQueue,
   formatCacheAge,
   getCachedCatalogMeta,
+  getCachedCustomers,
   getCachedProducts,
-  getOrCreateDeviceId,
   getOfflineAuthEnvelope,
-  importRecoveryPackage,
+  getSnapshot,
+  hydrateDeviceId,
   isOfflineAuthValid,
+  listQueuedSales,
+  migrateLegacyQueueStates,
   newClientRequestId,
-  saveOfflineAuthEnvelope,
+  revalidateOfflineAccess,
+  searchCachedProducts,
   touchLastOnline,
+  type QueuedSale,
 } from '../../../lib/posOffline';
+import { type OfflineStatus } from '../../../components/PosOfflinePanel';
+
+const OFFLINE_TENDERS = new Set(['cash', 'mobile_money', 'card', 'bank_transfer', 'credit']);
+
+function hasPerm(
+  me: { permissions?: Record<string, string[]> | null } | null | undefined,
+  module: string,
+  action: string
+) {
+  const perms = me?.permissions;
+  if (!perms || typeof perms !== 'object') return false;
+  const star = perms['*'] || [];
+  if (star.includes('*') || star.includes(action)) return true;
+  const mod = perms[module] || [];
+  return mod.includes(action) || mod.includes('*');
+}
+
+function escapeHtml(value: unknown) {
+  return String(value ?? '').replace(/[&<>"']/g, (ch) =>
+    ch === '&' ? '&amp;' : ch === '<' ? '&lt;' : ch === '>' ? '&gt;' : ch === '"' ? '&quot;' : '&#39;'
+  );
+}
+
+function printProvisionalReceipt(
+  rec: QueuedSale,
+  lines: Array<{ name: string; quantity: number; unit: number }>,
+  storeName: string,
+  paper: string = '80mm'
+) {
+  const payload = rec.payload as Record<string, unknown>;
+  const payments = Array.isArray(payload.payments)
+    ? (payload.payments as Array<{ payment_method: string; amount: number }>)
+    : [{ payment_method: String(payload.payment_method || 'cash'), amount: Number(payload.total || 0) }];
+  const narrow = paper === '58mm';
+  const page = narrow ? '58mm' : '80mm';
+  const slip = narrow ? '48mm' : '72mm';
+  const font = narrow ? '12px' : '13px';
+  const rows = lines
+    .map(
+      (l) =>
+        `<tr><td>${escapeHtml(l.name)}</td><td style="text-align:right">${l.quantity}</td><td style="text-align:right">${(l.unit * l.quantity).toFixed(2)}</td></tr>`
+    )
+    .join('');
+  const tenders = payments
+    .map((p) => `<div>${escapeHtml(posPayLabel(p.payment_method))}: ${Number(p.amount || 0).toFixed(2)}</div>`)
+    .join('');
+  return openReceiptPrintWindow(
+    `<!doctype html><html><head><title>${escapeHtml(rec.local_receipt_number)}</title>` +
+      `<style>@page{margin:0;size:${page} auto}html,body{margin:0;padding:0;width:${page};max-width:${page}}` +
+      `.slip{width:${slip};max-width:${page};margin:0 auto;font-family:'Courier New',ui-monospace,monospace;font-weight:700;font-size:${font};line-height:1.15}` +
+      'h3,p,.mid{text-align:center;margin:0;overflow-wrap:anywhere}p{font-size:10px;margin:1mm 0}' +
+      `table{width:100%;border-collapse:collapse;table-layout:fixed}td{font-size:${font};font-weight:700;padding:1px 0;vertical-align:top;overflow-wrap:anywhere}` +
+      'td:nth-child(2),td:last-child{text-align:right;padding-left:1mm}</style></head><body><div class="slip">' +
+      `<h3>${escapeHtml(storeName)}</h3>` +
+      '<p><strong>Offline sale — pending synchronization.</strong><br/>This is not the final receipt. The receipt number is issued when the sale is sent.</p>' +
+      `<div class="mid">Receipt no. ${escapeHtml(rec.local_receipt_number)}</div><div class="mid">${escapeHtml(formatWhen(rec.created_at) || '')}</div>` +
+      `<table>${rows}</table><hr/><div class="mid"><strong>Total ${Number(payload.total || 0).toFixed(2)}</strong></div><div class="mid">${tenders}</div>` +
+      '</div></body></html>',
+    ''
+  );
+}
+
+function posPayLabel(method?: string | null) {
+  const key = String(method || 'cash');
+  if (key === 'mobile_money') return 'Mobile Money (MoMo)';
+  if (key === 'gift_card') return 'Gift card';
+  if (key === 'loyalty') return 'Loyalty points';
+  return key.split('_').join(' ');
+}
 
 type TaxComponent = {
   code?: string;
@@ -39,21 +134,56 @@ type Product = {
   selling_price: number;
   cost_price?: number | null;
   stock_qty: number;
+  is_low_stock?: boolean;
+  is_out_of_stock?: boolean;
   kind?: string;
+  category?: string | null;
+  category_id?: string | null;
   has_image?: boolean;
+  rx_only?: boolean;
+  nearest_expiry_date?: string | null;
   tax_rate_pct?: number;
   tax_pricing_mode?: string;
   tax_reverse_charge?: boolean;
   tax_components?: TaxComponent[] | null;
+  batch_tracked?: boolean;
+  saleable_lots?: Array<{ expiry_date?: string | null; quantity?: number }>;
+  offline_block_reason?: string | null;
 };
 
-function looksLikeBarcode(value: string) {
-  const text = value.trim();
-  if (!text || /\s/.test(text)) return false;
-  return /^[A-Za-z0-9\-._]{4,48}$/.test(text);
+function offlineDispenseBlock(product: Product): string | null {
+  if (product.offline_block_reason) return product.offline_block_reason;
+  if (product.rx_only) return `${product.name} needs a prescription check and cannot be sold offline`;
+  if (product.batch_tracked) {
+    const today = new Date().toISOString().slice(0, 10);
+    const qty = (product.saleable_lots || [])
+      .filter((lot) => !lot.expiry_date || lot.expiry_date >= today)
+      .reduce((sum, lot) => sum + (Number(lot.quantity) || 0), 0);
+    if (qty <= 0) return `${product.name} has no unexpired, released batch on this device`;
+  }
+  return null;
 }
 
-type CartItem = Product & { quantity: number; discount: number };
+function canWriteCredit(me: { permissions?: Record<string, string[]> | null } | null | undefined) {
+  const perms = me?.permissions;
+  if (!perms || typeof perms !== 'object') return false;
+  const star = perms['*'] || [];
+  if (star.includes('*') || star.includes('write')) return true;
+  const credit = perms.credit || [];
+  return credit.includes('write') || credit.includes('*') || credit.includes('approve');
+}
+
+type CartItem = Product & {
+  quantity: number;
+};
+
+type OpenPrescription = {
+  id: string;
+  rx_number: string;
+  status: string;
+  customer_id?: string | null;
+  customer_name?: string | null;
+};
 
 type Customer = {
   id: string;
@@ -61,6 +191,9 @@ type Customer = {
   email?: string | null;
   phone?: string | null;
   status?: string | null;
+  profile_type?: string | null;
+  credit_limit?: number;
+  balance?: number;
   customer_group_id?: string | null;
   customer_group?: { id: string; name: string; discount_percent: number } | null;
 };
@@ -80,6 +213,8 @@ type Session = {
   opening_cash: number;
   expected_cash: number;
   cash_sales: number;
+  cash_in?: number;
+  cash_out?: number;
   card_sales: number;
   other_sales: number;
   total_sales: number;
@@ -89,34 +224,47 @@ type Session = {
   store_id?: string | null;
   store_name?: string | null;
   store_address?: string | null;
+  cashier_id?: string | null;
+  cashier_name?: string | null;
+  opened_at?: string | null;
 };
 
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-
-async function downloadReceiptPdf(saleId: string, paper: string) {
-  const token = localStorage.getItem('token');
-  const tenant = localStorage.getItem('tenant');
-  const res = await fetch(`${apiBase}/pos/sales/${saleId}/receipt?format=pdf&paper=${paper}`, {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-    },
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.detail || body.message || 'PDF download failed');
-  }
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `receipt-${saleId.slice(0, 8)}.pdf`;
-  a.click();
-  URL.revokeObjectURL(url);
+function money(n: number) {
+  const body = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+  return `${currencySign()} ${body}`;
 }
 
-function money(n: number) {
-  return new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+/** Turn movement API failures into a till-friendly sentence. */
+function plainCashMoveError(err: unknown): string {
+  const raw = err instanceof Error ? err.message.trim() : '';
+  if (!raw) return 'Could not record the cash movement. Try again.';
+  let text = raw.replace(/^(amount|reason|movement_type):\s*/i, '').trim();
+  const lower = text.toLowerCase();
+  if (
+    lower.includes('greater than 0') ||
+    lower.includes('must be positive') ||
+    lower.includes('positive cash')
+  ) {
+    return 'Enter an amount greater than zero.';
+  }
+  if (
+    lower.includes('narrative') ||
+    lower.includes('reason is required') ||
+    lower.includes('cash movement reason')
+  ) {
+    return 'Enter a short reason (at least 3 characters).';
+  }
+  if (lower.includes('not your pos session') || lower.includes('do not have permission')) {
+    return 'You do not have permission to change this drawer.';
+  }
+  if (lower.includes('session is not open')) {
+    return 'This shift is not open.';
+  }
+  if (lower.includes('email, role, phone')) {
+    return 'Check the amount and the reason, then try again.';
+  }
+  if (!/[.!?]$/.test(text)) text = `${text}.`;
+  return text;
 }
 
 /** Mirror backend `compute_tax_amounts` for cart preview (cashiers lack tax:read). */
@@ -183,7 +331,7 @@ function computeLineTaxAmounts(
   return { net, tax, gross };
 }
 
-function ProductThumb({
+const ProductThumb = memo(function ProductThumb({
   productId,
   hasImage,
   name,
@@ -193,25 +341,39 @@ function ProductThumb({
   name: string;
 }) {
   const [src, setSrc] = useState<string | null>(null);
+  const [visible, setVisible] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      setVisible(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setVisible(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: '120px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   useEffect(() => {
     let alive = true;
     let objectUrl: string | null = null;
     async function load() {
-      if (!hasImage || !productId) {
+      if (!visible || !hasImage || !productId) {
         setSrc(null);
         return;
       }
       try {
-        const token = localStorage.getItem('token');
-        const tenant = localStorage.getItem('tenant');
-        const res = await fetch(`${apiBase}/products/${productId}/image`, {
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-          },
-          cache: 'no-store',
-        });
+        const res = await apiFetch(`/products/${productId}/image`);
         if (!res.ok) throw new Error('no image');
         const blob = await res.blob();
         objectUrl = URL.createObjectURL(blob);
@@ -225,12 +387,12 @@ function ProductThumb({
       alive = false;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [productId, hasImage]);
+  }, [productId, hasImage, visible]);
 
   if (src) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img className="tpos-thumb-img" src={src} alt={name} draggable={false} />
+      <img className="tpos-thumb-img" src={src} alt={name} draggable={false} loading="lazy" />
     );
   }
 
@@ -241,67 +403,123 @@ function ProductThumb({
     .join('');
 
   return (
-    <div className="tpos-thumb-fallback" aria-hidden>
+    <div className="tpos-thumb-fallback" aria-hidden ref={rootRef}>
       <span>{initials || '?'}</span>
     </div>
   );
-}
+});
 
 export default function Page() {
+  useCompanyFormat();
   const [q, setQ] = useState('');
   const [rows, setRows] = useState<Product[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [session, setSession] = useState<Session | null>(null);
-  const [openingCash, setOpeningCash] = useState('100');
-  const [actualCash, setActualCash] = useState('');
-  const [closeNotes, setCloseNotes] = useState('');
+  const [shifts, setShifts] = useState<any[]>([]);
+  const [shiftManageFilter, setShiftManageFilter] = useState<'all' | 'open' | 'closed'>('all');
+  const [receiptPaper, setReceiptPaper] = useState('80mm');
+  const [posSalePrefix, setPosSalePrefix] = useState('');
+  const [posSaleNext, setPosSaleNext] = useState('');
+  const [posSessionPrefix, setPosSessionPrefix] = useState('');
+  const [posSessionNext, setPosSessionNext] = useState('');
   const [stores, setStores] = useState<Store[]>([]);
   const [storeId, setStoreId] = useState('');
   const { storeId: ctxStoreId, setStoreId: setCtxStoreId } = useStoreContext();
   const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [giftCardCode, setGiftCardCode] = useState('');
+  const [canCreditSale, setCanCreditSale] = useState(false);
   const [splitTender, setSplitTender] = useState(false);
   const [cashTender, setCashTender] = useState('');
   const [cardTender, setCardTender] = useState('');
-  const [paymentReference, setPaymentReference] = useState('');
-  const [paper, setPaper] = useState('80mm');
+  const [splitOtherMethod, setSplitOtherMethod] = useState<'card' | 'mobile_money' | 'bank_transfer'>('card');
+  const [amountPaidNow, setAmountPaidNow] = useState('');
+  const [depositMethod, setDepositMethod] = useState('cash');
   const [receiptTo, setReceiptTo] = useState('');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerId, setCustomerId] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [creditOverrideReason, setCreditOverrideReason] = useState('');
-  const [drawerReason, setDrawerReason] = useState('');
+  const [canOpenDrawer, setCanOpenDrawer] = useState(false);
+  const [cashMoveAmount, setCashMoveAmount] = useState('');
+  const [cashMoveReason, setCashMoveReason] = useState('');
+  const [cashMoveBusy, setCashMoveBusy] = useState<null | 'cash_in' | 'cash_out'>(null);
+  const [cashMoveError, setCashMoveError] = useState('');
+  const [countedCash, setCountedCash] = useState('');
+  const [countNotes, setCountNotes] = useState('');
+  const [countBusy, setCountBusy] = useState(false);
+  const [countError, setCountError] = useState('');
+  const [shiftClosedNote, setShiftClosedNote] = useState('');
   const [cartDiscount, setCartDiscount] = useState('');
+  const [cartDiscountType, setCartDiscountType] = useState<'fixed' | 'percent'>('fixed');
+  const [couponCode, setCouponCode] = useState('');
+  const [isPharmacy, setIsPharmacy] = useState(false);
+  const [tradeBanner, setTradeBanner] = useState('');
+  const [rxList, setRxList] = useState<OpenPrescription[]>([]);
+  const [prescriptionId, setPrescriptionId] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [lastSale, setLastSale] = useState<{ id: string; reference: string } | null>(null);
+  const [lastSale, setLastSale] = useState<{
+    id: string;
+    reference: string;
+    payment_status?: string;
+    paid_amount?: number;
+    balance_due?: number;
+    invoice_number?: string | null;
+    offline?: QueuedSale;
+    lines?: Array<{ name: string; quantity: number; unit: number; line: number }>;
+    total?: number;
+  } | null>(null);
+  const [reprintTarget, setReprintTarget] = useState<
+    | { offline: true; rec: QueuedSale; lines: Array<{ name: string; quantity: number; unit: number }>; store: string }
+    | { offline: false; id: string }
+    | null
+  >(null);
+  const [payAsReprint, setPayAsReprint] = useState(false);
+  const [showReceiptEmailSms, setShowReceiptEmailSms] = useState(false);
+  const printedPayIds = useRef<Set<string>>(new Set());
+  const wedgeLookupRef = useRef<(query: string) => void>(() => undefined);
+  const wedgeState = useRef<WedgeBuffer>({ buf: '', last: 0 });
   const [busy, setBusy] = useState(false);
   const [cashierName, setCashierName] = useState('');
+  const [hideStorePicker, setHideStorePicker] = useState(false);
   const [receiptBusy, setReceiptBusy] = useState('');
   const [shiftReport, setShiftReport] = useState<any>(null);
   const [reportBusy, setReportBusy] = useState(false);
-  const [posPrefix, setPosPrefix] = useState('POS');
-  const [posNext, setPosNext] = useState('1');
-  const [posPreview, setPosPreview] = useState('');
-  const [shiftPrefix, setShiftPrefix] = useState('SHIFT');
-  const [shiftNext, setShiftNext] = useState('1');
+  const [shiftBusy, setShiftBusy] = useState(false);
   const [online, setOnline] = useState(
     typeof navigator === 'undefined' ? true : navigator.onLine
   );
   const [pendingOffline, setPendingOffline] = useState(0);
   const [catalogCachedAt, setCatalogCachedAt] = useState<string | null>(null);
-  const [offlineAuthUntil, setOfflineAuthUntil] = useState<string | null>(null);
-  const [shiftPreview, setShiftPreview] = useState('');
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [shiftManageFilter, setShiftManageFilter] = useState<'all' | 'open' | 'closed'>('all');
-  const [posDevices, setPosDevices] = useState<
-    Array<{
-      device_id: string;
-      label?: string | null;
-      last_seen_at?: string | null;
-      pending_queue_count?: number;
-      app_version?: string | null;
-    }>
-  >([]);
+  const [meId, setMeId] = useState('');
+  const [tenantId, setTenantId] = useState('');
+  const [industryCode, setIndustryCode] = useState('');
+  const [canApproveOffline, setCanApproveOffline] = useState(false);
+  const [canWriteQuotes, setCanWriteQuotes] = useState(false);
+  const [offlineStatus, setOfflineStatus] = useState<OfflineStatus | null>(null);
+  const [offlineRefresh, setOfflineRefresh] = useState(0);
+  const [allocationOverride, setAllocationOverride] = useState(false);
+  const [bootedOffline, setBootedOffline] = useState(false);
+  const [preparingOffline, setPreparingOffline] = useState(false);
+  const [prepareFailure, setPrepareFailure] = useState('');
+  const prepareNotice = useRef('');
+  const bumpOffline = useCallback(() => setOfflineRefresh((n) => n + 1), []);
+  const handleOfflineStatus = useCallback((s: OfflineStatus) => {
+    setOfflineStatus(s);
+    setPendingOffline(s.summary.pending + s.summary.syncing + s.summary.needs_attention);
+  }, []);
+  const offlineValid = isOfflineAuthValid(offlineStatus?.envelope || null);
+  const offlinePerms = offlineStatus?.envelope?.permissions || [];
+  const checkoutReqRef = useRef<string | null>(null);
+  const checkoutAttemptRef = useRef<string | null>(null);
+  const cashMoveLock = useRef(false);
+  const countLock = useRef(false);
+  const browseGen = useRef(0);
+  const skipEmptyBrowse = useRef(false);
+  const prevQ = useRef(q);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [bootLoading, setBootLoading] = useState(true);
 
   const groupDiscountPct = useMemo(() => {
     const match = customers.find((c) => c.id === customerId);
@@ -317,10 +535,7 @@ export default function Page() {
     let tax = 0;
     for (const c of cart) {
       const unit = groupUnitPrice(Number(c.selling_price));
-      const taxable = Math.max(
-        0,
-        Math.round((unit * c.quantity - (Number(c.discount) || 0)) * 100) / 100
-      );
+      const taxable = Math.max(0, Math.round(unit * c.quantity * 100) / 100);
       const amounts = computeLineTaxAmounts(
         taxable,
         Number(c.tax_rate_pct) || 0,
@@ -334,65 +549,192 @@ export default function Page() {
     subtotal = Math.round(subtotal * 100) / 100;
     tax = Math.round(tax * 100) / 100;
     const maxDiscount = Math.round((subtotal + tax) * 100) / 100;
-    const discount = Math.max(0, Number(cartDiscount) || 0);
+    const discount =
+      cartDiscountType === 'percent'
+        ? Math.round((maxDiscount * Math.max(0, Math.min(100, Number(cartDiscount) || 0))) / 100 * 100) / 100
+        : Math.max(0, Number(cartDiscount) || 0);
     const due = Math.max(0, Math.round((subtotal + tax - discount) * 100) / 100);
-    return { subtotal, tax, maxDiscount, due };
-  }, [cart, cartDiscount, groupDiscountPct]);
-  const cartDiscountAmount = Math.max(0, Number(cartDiscount) || 0);
+    return { subtotal, tax, maxDiscount, discount, due };
+  }, [cart, cartDiscount, cartDiscountType, groupDiscountPct]);
+  const cartDiscountAmount = cartTotals.discount;
   const cartTotal = cartTotals.due;
   const cartCount = useMemo(() => cart.reduce((sum, c) => sum + c.quantity, 0), [cart]);
+  const catalogCategories = useMemo(() => {
+    const names = new Set<string>();
+    for (const row of rows) {
+      const label = String(row.category || '').trim();
+      if (label) names.add(label);
+    }
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+  }, [rows]);
+  const visibleRows = useMemo(() => {
+    if (!categoryFilter) return rows;
+    return rows.filter((row) => String(row.category || '').trim() === categoryFilter);
+  }, [rows, categoryFilter]);
+
+  function receiptPreviewFromCart() {
+    return {
+      lines: cart.map((c) => {
+        const unit = groupUnitPrice(Number(c.selling_price));
+        return {
+          name: c.name,
+          quantity: c.quantity,
+          unit,
+          line: Math.round(unit * c.quantity * 100) / 100,
+        };
+      }),
+      total: cartTotal,
+    };
+  }
+  const selectedCustomer = useMemo(
+    () => customers.find((c) => c.id === customerId) || null,
+    [customers, customerId],
+  );
+  const creditPaidNow = Math.max(0, Math.round((Number(amountPaidNow) || 0) * 100) / 100);
+  const creditRemaining =
+    paymentMethod === 'credit' && !splitTender
+      ? Math.max(0, Math.round((cartTotal - creditPaidNow) * 100) / 100)
+      : 0;
+  const cashTenderAmount = Math.round((Number(cashTender) || 0) * 100) / 100;
+  const otherTenderAmount = Math.round((Number(cardTender) || 0) * 100) / 100;
+  const splitPaid = Math.round((cashTenderAmount + otherTenderAmount) * 100) / 100;
+  const splitBalanced = Math.abs(splitPaid - cartTotal) <= 0.01;
+  const splitOtherLabel =
+    splitOtherMethod === 'mobile_money'
+      ? 'Mobile Money'
+      : splitOtherMethod === 'bank_transfer'
+        ? 'Bank transfer'
+        : 'Card';
+  const splitError = !splitTender
+    ? ''
+    : cashTenderAmount <= 0 || otherTenderAmount <= 0
+      ? `Enter a cash amount and a ${splitOtherLabel} amount.`
+      : !splitBalanced
+        ? `Cash and ${splitOtherLabel} must add up to the amount due.`
+        : '';
+
+  useEffect(() => {
+    if (!splitTender) return;
+    const cash = Math.round((Number(cashTender) || 0) * 100) / 100;
+    const nextOther = Math.max(0, Math.round((cartTotal - cash) * 100) / 100);
+    setCardTender((prev) => {
+      const current = Math.round((Number(prev) || 0) * 100) / 100;
+      if (Math.abs(current - nextOther) <= 0.001) return prev;
+      return nextOther === 0 ? '0' : String(nextOther);
+    });
+    // Rebalance the other tender when the sale total changes. Typing either
+    // amount already fills the remainder in the change handlers.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartTotal, splitTender]);
+
+  useEffect(() => {
+    if (!canCreditSale && paymentMethod === 'credit') setPaymentMethod('cash');
+  }, [canCreditSale, paymentMethod]);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      consumeWedgeKey(event, wedgeState.current, (query) => {
+        wedgeLookupRef.current(query);
+      });
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    api('/pos/settings')
+      .then((r) => {
+        if (!cancelled) setShowReceiptEmailSms(r.data?.show_receipt_email_sms === true);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function loadShiftHistory() {
+    try {
+      const list = await api('/pos/sessions');
+      if (Array.isArray(list.data)) setShifts(list.data);
+    } catch {
+      /* recent shifts stay hidden if history cannot load */
+    }
+  }
 
   async function refreshSession() {
     const r = await api('/pos/sessions/current');
     setSession(r.data || null);
+    await loadShiftHistory();
   }
 
-  async function loadSessions() {
-    try {
-      const r = await api('/pos/sessions');
-      setSessions(r.data || []);
-    } catch {
-      // Keep prior cache on transient failures (e.g. rate limit) so the
-      // Recent shifts filter does not flash empty.
-    }
-  }
-
-  const managedShifts = sessions.filter((s) => {
+  const managedShifts = shifts.filter((row) => {
     if (shiftManageFilter === 'all') return true;
-    return (s.status || '') === shiftManageFilter;
+    return String(row.status || '') === shiftManageFilter;
   });
 
+  async function savePosNumbering() {
+    const body: Record<string, unknown> = {};
+    const pack = (prefix: string, next: string) => {
+      const p = prefix.trim();
+      const n = next.trim();
+      if (!p && !n) return undefined;
+      const out: { prefix?: string; next_number?: number } = {};
+      if (p) out.prefix = p;
+      if (n) out.next_number = Number(n);
+      return out;
+    };
+    const sale = pack(posSalePrefix, posSaleNext);
+    const sess = pack(posSessionPrefix, posSessionNext);
+    if (sale) body.pos_sale_numbering = sale;
+    if (sess) body.pos_session_numbering = sess;
+    await api('/pos/settings', { method: 'PATCH', body: JSON.stringify(body) });
+  }
 
-  const browse = useCallback(async (query = '') => {
+  const browse = useCallback(async (query = '', opts?: { signal?: AbortSignal; barcode?: boolean }) => {
+    const posStore = (session?.store_id || storeId).trim();
+    const params = new URLSearchParams();
+    if (query) params.set('q', query);
+    if (posStore) params.set('store_id', posStore);
+    const gen = ++browseGen.current;
+    setCatalogLoading(true);
+    const fromCache = async (barcode?: boolean) => {
+      const cached = (await getCachedProducts()) as unknown as Product[];
+      const hits = searchCachedProducts(cached as unknown as Array<Record<string, unknown>>, query, {
+        barcode,
+      }) as unknown as Product[];
+      const remaining = await allocationRemainingFor(hits.map((p) => p.product_id || p.id));
+      const list = hits.map((p) => {
+        const left = remaining[p.product_id || p.id] ?? 0;
+        return { ...p, stock_qty: left, is_out_of_stock: left <= 0 };
+      });
+      if (gen === browseGen.current) setRows(list);
+      const meta = await getCachedCatalogMeta();
+      setCatalogCachedAt(meta?.cached_at || null);
+      return list;
+    };
     try {
-      const r = await api('/pos/products/search?q=' + encodeURIComponent(query));
-      const list = (r.data || []) as Product[];
-      setRows(list);
-      if (!query.trim()) {
-        await cacheCatalogProducts(list as any[]);
-        const meta = await getCachedCatalogMeta();
-        setCatalogCachedAt(meta?.cached_at || new Date().toISOString());
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        return await fromCache(opts?.barcode);
       }
+      const r = await api('/pos/products/search?' + params.toString(), {
+        signal: opts?.signal,
+      });
+      const list = (r.data || []) as Product[];
+      if (gen !== browseGen.current) return list;
+      setRows(list);
       await touchLastOnline();
       return list;
     } catch (err) {
-      if (!navigator.onLine || query === '') {
-        const cached = (await getCachedProducts()) as Product[];
-        const filtered = query.trim()
-          ? cached.filter(
-              (p) =>
-                String(p.name || '').toLowerCase().includes(query.toLowerCase()) ||
-                String(p.sku || '').toLowerCase().includes(query.toLowerCase())
-            )
-          : cached;
-        setRows(filtered);
-        const meta = await getCachedCatalogMeta();
-        setCatalogCachedAt(meta?.cached_at || null);
-        return filtered;
+      if (isAbortError(err)) return [];
+      if (!navigator.onLine || (err as { status?: number })?.status === undefined) {
+        return fromCache(opts?.barcode);
       }
       throw err;
+    } finally {
+      if (gen === browseGen.current) setCatalogLoading(false);
     }
-  }, []);
+  }, [session?.store_id, storeId]);
 
   async function refreshPendingCount() {
     try {
@@ -403,60 +745,67 @@ export default function Page() {
   }
 
   useEffect(() => {
-    const on = () => setOnline(true);
-    const off = () => setOnline(false);
-    window.addEventListener('online', on);
-    window.addEventListener('offline', off);
-    refreshPendingCount();
-    getOfflineAuthEnvelope()
-      .then((e) => setOfflineAuthUntil(e?.offline_valid_until || null))
-      .catch(() => setOfflineAuthUntil(null));
+    const kick = () => {
+      void refreshLink();
+    };
+    const unsub = subscribeLink((snap) => {
+      setOnline(snap.phase === 'online' || snap.phase === 'syncing' || snap.phase === 'sync_failed');
+    });
+    const stopWatch = startLinkWatch();
+    window.addEventListener('online', kick);
+    window.addEventListener('offline', kick);
+    (async () => {
+      await hydrateDeviceId().catch(() => null);
+      await migrateLegacyQueueStates().catch(() => 0);
+      await refreshPendingCount();
+      bumpOffline();
+    })();
     getCachedCatalogMeta()
       .then((m) => setCatalogCachedAt(m?.cached_at || null))
       .catch(() => null);
     return () => {
-      window.removeEventListener('online', on);
-      window.removeEventListener('offline', off);
+      unsub();
+      stopWatch();
+      window.removeEventListener('online', kick);
+      window.removeEventListener('offline', kick);
     };
-  }, []);
+  }, [bumpOffline]);
 
   useEffect(() => {
-    if (!online) return;
-    flushOfflineQueue(api)
-      .then(async (r) => {
-        if (r.synced > 0) {
-          setMessage(`Synced ${r.synced} offline sale(s)`);
-          await refreshSession();
-        }
-        await refreshPendingCount();
-      })
-      .catch(() => undefined);
-  }, [online]);
+    if (online && session && offlineStatus?.summary.synced) {
+      refreshSession().catch(() => undefined);
+    }
+    // refresh shift totals after background sync
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [online, offlineStatus?.summary.synced]);
 
   useEffect(() => {
-    if (!online) return;
     let cancelled = false;
-    async function beat() {
+    async function beat(sellingOnline: boolean) {
       try {
         const pending = await countPendingSales();
         await api('/pos/devices/heartbeat', {
           method: 'POST',
           body: JSON.stringify({
-            device_id: getOrCreateDeviceId(),
+            device_id: await hydrateDeviceId(),
             store_id: storeId.trim() || session?.store_id || null,
             app_version: 'web-mvp',
             pending_queue_count: pending,
+            selling_online: sellingOnline,
           }),
         });
-        const listed = await api('/pos/devices');
-        setPosDevices(listed.data || []);
       } catch {
-        /* heartbeat best-effort */
+        /* heartbeat best-effort; a missed beat still ages into offline on the server */
       }
     }
-    beat();
+    beat(online);
+    if (!online) {
+      return () => {
+        cancelled = true;
+      };
+    }
     const t = window.setInterval(() => {
-      if (!cancelled && navigator.onLine) beat();
+      if (!cancelled && navigator.onLine) beat(true);
     }, 60000);
     return () => {
       cancelled = true;
@@ -464,78 +813,314 @@ export default function Page() {
     };
   }, [online, storeId, session?.store_id]);
 
-  async function exportRecovery() {
-    setError('');
+  async function refreshOfflineAccess(storeForGrant: string | null) {
+    if (!tenantId || !meId) return;
+    setPreparingOffline(true);
+    setPrepareFailure('');
     try {
-      const pkg = await downloadRecoveryPackage();
-      setMessage(
-        `Recovery package downloaded (${pkg.pending.length} pending sale(s)). Contains no passwords or tokens.`
-      );
-    } catch (err: any) {
-      setError(err.message || 'Recovery export failed');
-    }
-  }
-
-  async function importRecoveryFile(file: File | null) {
-    if (!file) return;
-    setError('');
-    try {
-      const text = await file.text();
-      const raw = JSON.parse(text);
-      const r = await importRecoveryPackage(raw);
-      await refreshPendingCount();
-      setMessage(`Imported ${r.imported} queued sale(s) (${r.skipped} skipped). Sync when online.`);
-    } catch (err: any) {
-      setError(err.message || 'Recovery import failed');
+      await revalidateOfflineAccess(api, {
+        tenant_id: tenantId,
+        user_id: meId,
+        store_id: storeForGrant,
+        label: stores.find((s) => s.id === storeForGrant)?.name,
+      });
+      const [meta, env] = await Promise.all([
+        getCachedCatalogMeta(),
+        getOfflineAuthEnvelope().catch(() => null),
+      ]);
+      if (!env?.grant_id || !meta?.cached_at) {
+        throw new Error(env?.grant_id ? CATALOG_NOT_SAVED : 'Offline access was not saved on this device.');
+      }
+      setCatalogCachedAt(meta.cached_at);
+      const previous = prepareNotice.current;
+      prepareNotice.current = '';
+      setPrepareFailure('');
+      setError((prev) => (prev === UNPREPARED_OFFLINE || prev === previous ? '' : prev));
+    } catch (err) {
+      const env = await getOfflineAuthEnvelope().catch(() => null);
+      const text = describePrepareFailure(err, Boolean(env?.grant_id));
+      const previous = prepareNotice.current;
+      prepareNotice.current = text;
+      setPrepareFailure(text);
+      setError((prev) => (prev === '' || prev === UNPREPARED_OFFLINE || prev === previous ? text : prev));
+    } finally {
+      setPreparingOffline(false);
+      bumpOffline();
     }
   }
 
   useEffect(() => {
-    refreshSession()
-      .then(() => browse(''))
-      .catch((err) => setError(err.message));
-    loadSessions().catch(() => setSessions([]));
-    api('/customers')
-      .then((r) => setCustomers(r.data || []))
-      .catch(() => setCustomers([]));
-    getMe()
-      .then((r) => setCashierName(r.data?.full_name || r.data?.email || ''))
-      .catch(() => setCashierName(''));
-    api('/pos/settings')
-      .then((r) => {
-        const num = r.data?.pos_sale_numbering;
-        if (num) {
-          setPosPrefix(num.prefix || 'POS');
-          setPosNext(String(num.next_number ?? 1));
-          setPosPreview(num.preview || '');
+    const ac = new AbortController();
+    const done = pageLoadStarted('pos');
+    let cancelled = false;
+    (async () => {
+      try {
+        let sess: any;
+        let storeRes: any;
+        let meRes: any;
+        try {
+          if (!navigator.onLine) throw new Error('offline');
+          [sess, storeRes, meRes] = await Promise.all([
+            getPrefetched('/pos/sessions/current'),
+            getPrefetched('/pos/stores'),
+            getMe(),
+          ]);
+          void cacheSnapshot('session', sess.data || null).catch(() => undefined);
+          void cacheSnapshot('stores', storeRes.data || []).catch(() => undefined);
+          void cacheSnapshot('me', meRes.data || null).catch(() => undefined);
+          setBootedOffline(false);
+        } catch (bootErr) {
+          const httpStatus = (bootErr as { status?: number })?.status;
+          const browserOnline = typeof navigator === 'undefined' ? true : navigator.onLine;
+          if (browserOnline && httpStatus !== undefined) throw bootErr;
+          if (browserOnline && (bootErr as Error)?.message !== 'offline') {
+            throw new Error(
+              (bootErr as Error)?.message || 'Point of Sale could not reach the server to prepare this device.'
+            );
+          }
+          const [sSnap, stSnap, meSnap, env] = await Promise.all([
+            getSnapshot<Session | null>('session').catch(() => null),
+            getSnapshot<Store[]>('stores').catch(() => null),
+            getSnapshot<any>('me').catch(() => null),
+            getOfflineAuthEnvelope().catch(() => null),
+          ]);
+          const decision = explainOfflineAccess(env);
+          if (!decision.prepared || !meSnap || env?.user_id !== String(meSnap.id || '')) {
+            throw new Error(
+              decision.prepared
+                ? 'Online sign-in is required. Saved sales stay on this device.'
+                : decision.message
+            );
+          }
+          sess = { data: sSnap };
+          storeRes = { data: stSnap || [] };
+          meRes = { data: meSnap };
+          setBootedOffline(true);
         }
-        const shift = r.data?.pos_session_numbering;
-        if (shift) {
-          setShiftPrefix(shift.prefix || 'SHIFT');
-          setShiftNext(String(shift.next_number ?? 1));
-          setShiftPreview(shift.preview || '');
-        }
-      })
-      .catch(() => {});
-    api('/pos/stores')
-      .then((r) => {
-        const list: Store[] = r.data || [];
+        if (cancelled) return;
+        setMeId(String(meRes.data?.id || ''));
+        setTenantId(String(meRes.data?.tenant_id || ''));
+        setIndustryCode(normalizeIndustry(meRes.data?.industry) || '');
+        setCanApproveOffline(hasPerm(meRes.data, 'pos', 'approve'));
+        setCanOpenDrawer(hasPerm(meRes.data, 'pos', 'write'));
+        setCanWriteQuotes(hasPerm(meRes.data, 'sales', 'write'));
+        const list: Store[] = storeRes.data || [];
         setStores(list);
+        let chosen = '';
         if (ctxStoreId && list.some((s) => s.id === ctxStoreId)) {
+          chosen = ctxStoreId;
           setStoreId(ctxStoreId);
         } else if (list.length === 1) {
+          chosen = list[0].id;
           setStoreId(list[0].id);
           setCtxStoreId(list[0].id);
         }
-      })
-      .catch(() => setStores([]));
+        const tillIndustry = ['retail', 'retail_wholesale', 'pharmacy', 'restaurant', 'hotel'].includes(
+          normalizeIndustry(meRes.data?.industry) || ''
+        );
+        if (!sess.data && navigator.onLine && tillIndustry && !cancelled) {
+          const opened = await openShiftForSignedInUser(chosen || null);
+          if (cancelled) return;
+          if (opened?.session_id) sess = { data: opened as Session };
+          else setError('Your shift could not be started. Sign out and sign in again.');
+        }
+        if (cancelled) return;
+        setSession(sess.data || null);
+        void loadShiftHistory();
+        setCashierName(meRes.data?.full_name || meRes.data?.email || '');
+        setCanCreditSale(canWriteCredit(meRes.data));
+        setHideStorePicker(
+          isHotelIndustry(meRes.data?.industry) ||
+            list.length <= 1 ||
+            !tenantIsMultiStore(meRes.data)
+        );
+        const industry = normalizeIndustry(meRes.data?.industry);
+        const pharmacy = industry === 'pharmacy';
+        setIsPharmacy(pharmacy);
+        setTradeBanner(
+          industry === 'retail_wholesale'
+            ? 'Retail counter. Wholesale quotes and orders stay on Sales.'
+            : industry === 'wholesale'
+              ? 'Wholesale counter. Sales from this register use the wholesale channel.'
+              : ''
+        );
+        if (pharmacy && navigator.onLine) {
+          const rx = await api('/pharmacy/prescriptions').catch(() => ({ data: [] }));
+          const open = (Array.isArray(rx.data) ? rx.data : []).filter((row: OpenPrescription) =>
+            ['approved', 'partially_dispensed'].includes(row.status)
+          );
+          setRxList(open);
+        }
+      } catch (err: any) {
+        if (!cancelled && !isAbortError(err)) setError(err.message);
+      } finally {
+        if (!cancelled) setBootLoading(false);
+        done();
+      }
+    })();
+    return () => {
+      cancelled = true;
+      ac.abort();
+    };
     // setCtxStoreId intentionally omitted: stable setter (see storeContext noops);
     // including an unstable fallback previously caused a mount request storm.
-  }, [browse, ctxStoreId]);
+  }, [ctxStoreId, setCtxStoreId]);
+
+  useEffect(() => {
+    const sessionId = String(session?.session_id || '').trim();
+    const shiftOpen = String(session?.status || '').toLowerCase() === 'open';
+    if (canOpenDrawer && shiftOpen && sessionId) {
+      setPosDrawerBridge({ sessionId });
+    } else {
+      setPosDrawerBridge(null);
+    }
+    return () => setPosDrawerBridge(null);
+  }, [canOpenDrawer, session]);
+
+  useEffect(() => {
+    if (!session) {
+      setRows([]);
+      return;
+    }
+    const ac = new AbortController();
+    browse('', { signal: ac.signal }).catch((err) => {
+      if (!isAbortError(err)) setError(err.message);
+    });
+    return () => ac.abort();
+  }, [session?.session_id, session?.store_id, browse]);
+
+  useEffect(() => {
+    if (!session) return;
+    const query = q.trim();
+    const prev = prevQ.current.trim();
+    prevQ.current = q;
+    if (!query) {
+      if (skipEmptyBrowse.current) {
+        skipEmptyBrowse.current = false;
+        return;
+      }
+      if (!prev) return;
+    }
+    if (looksLikeBarcode(query)) return;
+    const ac = new AbortController();
+    const timer = window.setTimeout(() => {
+      browse(query, { signal: ac.signal }).catch((err) => {
+        if (!isAbortError(err)) setError(err.message);
+      });
+    }, query ? 220 : 0);
+    return () => {
+      window.clearTimeout(timer);
+      ac.abort();
+    };
+  }, [q, session?.session_id, browse]);
+
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    const t = window.setTimeout(() => {
+      const cachedCustomers = () =>
+        getCachedCustomers()
+          .then((rows) => {
+            if (!cancelled) setCustomers(rows as unknown as Customer[]);
+          })
+          .catch(() => {
+            if (!cancelled) setCustomers([]);
+          });
+      if (!navigator.onLine) {
+        void cachedCustomers();
+        return;
+      }
+      api('/customers')
+        .then((r) => {
+          if (!cancelled) setCustomers(r.data || []);
+        })
+        .catch(() => {
+          void cachedCustomers();
+        });
+    }, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [session?.session_id, online]);
+
+  useEffect(() => {
+    if (!online || bootedOffline) return;
+    void cacheSnapshot('session', session).catch(() => undefined);
+  }, [online, bootedOffline, session]);
+
+  useEffect(() => {
+    if (!online || meId || bootLoading) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const meRes = await getMe();
+        if (cancelled) return;
+        const id = String(meRes.data?.id || '');
+        const tid = String(meRes.data?.tenant_id || '');
+        if (!id || !tid) return;
+        setMeId(id);
+        setTenantId(tid);
+        setIndustryCode(normalizeIndustry(meRes.data?.industry) || '');
+        setCanApproveOffline(hasPerm(meRes.data, 'pos', 'approve'));
+        setCanOpenDrawer(hasPerm(meRes.data, 'pos', 'write'));
+        setCanWriteQuotes(hasPerm(meRes.data, 'sales', 'write'));
+        setCashierName(meRes.data?.full_name || meRes.data?.email || '');
+        setCanCreditSale(canWriteCredit(meRes.data));
+        setError('');
+        const [sess, storeRes] = await Promise.all([
+          getPrefetched('/pos/sessions/current').catch(() => null),
+          getPrefetched('/pos/stores').catch(() => null),
+        ]);
+        if (cancelled) return;
+        const list = (storeRes?.data || []) as Store[];
+        if (list.length) setStores(list);
+        if (sess?.data) {
+          setSession(sess.data);
+          setBootedOffline(false);
+        }
+      } catch {
+        /* still unreachable; the unprepared sentence stays only when there is no grant */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [online, meId, bootLoading]);
+
+  useEffect(() => {
+    if (!online || !tenantId || !meId) return;
+    let cancelled = false;
+    (async () => {
+      const storeForGrant = session?.store_id || storeId.trim() || null;
+      const [env, meta] = await Promise.all([
+        getOfflineAuthEnvelope().catch(() => null),
+        getCachedCatalogMeta().catch(() => null),
+      ]);
+      const storeMismatch = Boolean(storeForGrant) && (env?.store_id || null) !== storeForGrant;
+      const stale =
+        !env?.grant_id ||
+        !meta?.cached_at ||
+        !isOfflineAuthValid(env) ||
+        env.user_id !== meId ||
+        env.tenant_id !== tenantId ||
+        storeMismatch ||
+        Date.now() - new Date(env.allocations_refreshed_at || env.issued_at).getTime() > 6 * 3600000;
+      if (!cancelled && stale) await refreshOfflineAccess(storeForGrant);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // refreshOfflineAccess reads current state; re-run only on identity/store changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [online, session?.session_id, session?.store_id, storeId, tenantId, meId]);
 
   function selectCustomer(id: string) {
     setCustomerId(id);
-    if (!id) return;
+    if (!id) {
+      setCustomerName('');
+      return;
+    }
     const match = customers.find((c) => c.id === id);
     if (match) setCustomerName(match.name);
   }
@@ -545,115 +1130,106 @@ export default function Page() {
     setCustomerName('');
   }
 
-  function setLineDiscount(id: string, discount: number) {
-    setCart((prev) =>
-      prev.map((p) => {
-        if (p.id !== id) return p;
-        const maxDisc = Number(p.selling_price) * p.quantity;
-        return { ...p, discount: Math.min(Math.max(0, discount), maxDisc) };
-      })
-    );
-  }
-
-  async function openShift() {
+  async function recordCashMove(kind: 'cash_in' | 'cash_out') {
+    if (!session || cashMoveLock.current) return;
     setError('');
+    setCashMoveError('');
     setMessage('');
-    if (stores.length > 0 && !storeId) {
-      setError('Select a store before opening the shift');
+    const amt = Math.round(Number(cashMoveAmount) * 100) / 100;
+    const reason = cashMoveReason.trim();
+    if (!cashMoveAmount.trim() || !Number.isFinite(amt) || amt <= 0) {
+      const msg = 'Enter an amount greater than zero.';
+      setCashMoveError(msg);
+      setError(msg);
       return;
     }
+    if (reason.length < 3) {
+      const msg = 'Enter a short reason (at least 3 characters).';
+      setCashMoveError(msg);
+      setError(msg);
+      return;
+    }
+    cashMoveLock.current = true;
+    setCashMoveBusy(kind);
     try {
-      const r = await api('/pos/sessions/open', {
+      const r = await api(`/pos/sessions/${session.session_id}/movements`, {
         method: 'POST',
         body: JSON.stringify({
-          opening_cash: Number(openingCash) || 0,
-          // null when blank so Open shift (UuidIdValue store_id) does not 422
-          store_id: storeId.trim() || null,
+          movement_type: kind,
+          amount: amt,
+          reason,
         }),
       });
-      setSession(r.data);
-      setMessage('Shift opened');
-      try {
-        const me = await getMe();
-        const tenant = localStorage.getItem('tenant') || me.data?.tenant_id || '';
-        const env = await saveOfflineAuthEnvelope({
-          tenant_id: String(tenant),
-          store_id: r.data?.store_id || storeId.trim() || null,
-          user_id: String(me.data?.id || me.data?.user_id || ''),
-          permissions: ['pos:write'],
-        });
-        setOfflineAuthUntil(env.offline_valid_until);
-      } catch {
-        /* offline envelope best-effort */
-      }
-      await browse(q);
-      await loadSessions();
-      await refreshPendingCount();
-    } catch (err: any) {
-      setError(err.message);
+      if (r.data?.session) setSession(r.data.session);
+      setCashMoveAmount('');
+      setCashMoveReason('');
+      setMessage(r.message || (kind === 'cash_in' ? 'Cash in recorded.' : 'Cash out recorded.'));
+    } catch (err: unknown) {
+      const msg = plainCashMoveError(err);
+      setCashMoveError(msg);
+      setError(msg);
+    } finally {
+      cashMoveLock.current = false;
+      setCashMoveBusy(null);
     }
   }
 
-  async function savePosNumbering() {
+  async function recordCashCount() {
+    if (!session || countLock.current) return;
+    setCountError('');
     setError('');
-    setMessage('');
-    try {
-      const r = await api('/pos/settings', {
-        method: 'PATCH',
-        body: JSON.stringify({
-          pos_sale_numbering: {
-            prefix: posPrefix.trim(),
-            next_number: Math.max(1, Number(posNext) || 1),
-          },
-          pos_session_numbering: {
-            prefix: shiftPrefix.trim(),
-            next_number: Math.max(1, Number(shiftNext) || 1),
-          },
-        }),
-      });
-      const num = r.data?.pos_sale_numbering;
-      if (num) {
-        setPosPrefix(num.prefix || 'POS');
-        setPosNext(String(num.next_number ?? 1));
-        setPosPreview(num.preview || '');
-      }
-      const shift = r.data?.pos_session_numbering;
-      if (shift) {
-        setShiftPrefix(shift.prefix || 'SHIFT');
-        setShiftNext(String(shift.next_number ?? 1));
-        setShiftPreview(shift.preview || '');
-      }
-      setMessage(
-        `Numbering saved — Sale ${num?.preview || ''} / Shift ${shift?.preview || ''}`.trim()
-      );
-    } catch (err: any) {
-      setError(err.message);
+    const raw = countedCash.trim();
+    const actual = Math.round(Number(raw) * 100) / 100;
+    if (!raw || !Number.isFinite(actual) || actual < 0) {
+      setCountError('Enter the counted cash. Use 0 if the drawer is empty.');
+      return;
     }
-  }
-
-  async function closeShift() {
-    if (!session) return;
-    setError('');
-    setMessage('');
+    const expected = Number(session.expected_cash || 0);
+    const variance = Math.round((actual - expected) * 100) / 100;
+    const note = countNotes.trim();
+    if (Math.abs(variance) >= 0.01 && note.length < 3) {
+      setCountError('Explain the difference between counted cash and the expected drawer.');
+      return;
+    }
+    countLock.current = true;
+    setCountBusy(true);
     try {
-      const r = await api(`/pos/sessions/${session.session_id}/close`, {
-        method: 'POST',
-        body: JSON.stringify({
-          actual_cash: Number(actualCash || session.expected_cash),
-          notes: closeNotes.trim() || null,
-        }),
-      });
+      const closed = await countAndCloseOpenShift(actual, note || null);
+      const recorded = Number(closed.variance ?? variance);
+      const label = closed.session_number || session.session_number;
       setSession(null);
       setShiftReport(null);
-      setMessage(
-        `Shift closed. Variance: ${r.data.variance ?? 0} (expected ${r.data.expected_cash})`
+      setCountedCash('');
+      setCountNotes('');
+      setShiftClosedNote(
+        Math.abs(recorded) < 0.01
+          ? `Shift ${label} closed. Counted cash matched the drawer.`
+          : `Shift ${label} closed. Variance ${money(recorded)}.`
       );
-      setActualCash('');
-      setCloseNotes('');
-      setCart([]);
-      await loadSessions();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'The cash count could not be saved.';
+      setCountError(msg);
+      setError(msg);
+    } finally {
+      countLock.current = false;
+      setCountBusy(false);
+    }
+  }
+
+  async function startNewShift() {
+    setShiftBusy(true);
+    setError('');
+    setShiftClosedNote('');
+    try {
+      const opened = await openShiftForSignedInUser(storeId.trim() || null);
+      if (opened?.session_id) {
+        setSession(opened as Session);
+        void loadShiftHistory();
+      } else {
+        setError('Your shift could not be started. Sign out and sign in again.');
+      }
+    } finally {
+      setShiftBusy(false);
     }
   }
 
@@ -675,22 +1251,39 @@ export default function Page() {
     }
   }
 
-  async function search(e?: React.FormEvent) {
-    e?.preventDefault();
+  async function applyScannedBarcode(raw: string) {
     setError('');
-    const query = q.trim();
+    const query = raw.trim();
+    if (!query) return;
     try {
       // USB/Bluetooth wedge scanners type digits then Enter — accept as barcode.
-      if (looksLikeBarcode(query)) {
-        const exact = await api(
-          '/pos/products/search?barcode=' + encodeURIComponent(query)
+      if (looksLikeBarcode(query) && !navigator.onLine) {
+        const hits = await browse(query, { barcode: true });
+        const exact = hits.filter(
+          (p) => String(p.barcode || '').toLowerCase() === query.toLowerCase() || p.sku.toLowerCase() === query.toLowerCase()
         );
+        if (exact.length === 1) {
+          addToCart(exact[0]);
+          setMessage('');
+          skipEmptyBrowse.current = true;
+          setQ('');
+          return;
+        }
+        if (hits.length === 0) setError(`No product for ${query} in the saved catalog`);
+        return;
+      }
+      if (looksLikeBarcode(query)) {
+        const params = new URLSearchParams();
+        params.set('barcode', query);
+        const posStore = (session?.store_id || storeId).trim();
+        if (posStore) params.set('store_id', posStore);
+        const exact = await api('/pos/products/search?' + params.toString());
         const hits: Product[] = exact.data || [];
         if (hits.length === 1) {
           addToCart(hits[0]);
-          setMessage(`Scanned ${hits[0].name} (${hits[0].barcode || hits[0].sku})`);
+          setMessage('');
+          skipEmptyBrowse.current = true;
           setQ('');
-          await browse('');
           return;
         }
         if (hits.length === 0) {
@@ -698,20 +1291,19 @@ export default function Page() {
           const soft = await browse(query);
           if (soft.length === 1) {
             addToCart(soft[0]);
-            setMessage(`Added ${soft[0].name}`);
+            setMessage('');
+            skipEmptyBrowse.current = true;
             setQ('');
-            await browse('');
             return;
           }
           if (soft.length === 0) {
             setError(`No product for barcode ${query}`);
             return;
           }
-          setMessage(`${soft.length} matches — tap a tile`);
           return;
         }
         setRows(hits);
-        setMessage(`${hits.length} barcode matches — tap a tile`);
+        setMessage('');
         return;
       }
       await browse(query);
@@ -720,23 +1312,49 @@ export default function Page() {
     }
   }
 
+  async function search(e?: React.FormEvent) {
+    e?.preventDefault();
+    await applyScannedBarcode(q);
+  }
+
+  wedgeLookupRef.current = (query: string) => {
+    void applyScannedBarcode(query);
+  };
+
   function addToCart(product: Product) {
     if (!session) {
       setError('Open a POS shift before selling');
       return;
     }
-    if (Number(product.stock_qty) <= 0) {
-      setError(`${product.name} is out of stock`);
+    if (!navigator.onLine) {
+      const blocked = offlineDispenseBlock(product);
+      if (blocked) {
+        setError(blocked);
+        return;
+      }
+    }
+    const avail = lineLimit(product);
+    if (avail <= 0 || (product.is_out_of_stock && avail !== Infinity)) {
+      setError(
+        navigator.onLine
+          ? `${product.name} is out of stock at this store`
+          : `${product.name} has no offline stock allocated to this device`
+      );
       return;
     }
     const pid = product.product_id || product.id;
+    const existing = cart.find((p) => p.id === product.id);
+    if (existing && existing.quantity >= avail) {
+      setError(`Only ${avail} of ${product.name} in stock at this store`);
+      return;
+    }
     setError('');
+    setMessage('');
+    setPayAsReprint(false);
     setCart((prev) => {
-      const existing = prev.find((p) => p.id === product.id);
-      if (existing) {
-        if (existing.quantity + 1 > Number(product.stock_qty)) {
-          return prev;
-        }
+      const row = prev.find((p) => p.id === product.id);
+      if (row) {
+        if (row.quantity + 1 > avail) return prev;
         return prev.map((p) => (p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p));
       }
       return [
@@ -747,50 +1365,90 @@ export default function Page() {
           product_id: pid,
           variant_id: product.variant_id || null,
           quantity: 1,
-          discount: 0,
         },
       ];
     });
   }
 
+  function lineLimit(product: Product) {
+    if (!navigator.onLine && allocationOverride && offlineStatus?.envelope?.can_override_allocation) return Infinity;
+    return Math.max(0, Number(product.stock_qty) || 0);
+  }
+
   function bumpQty(id: string, delta: number) {
+    const line = cart.find((p) => p.id === id);
+    if (!line) return;
+    if (delta > 0 && line.quantity + delta > lineLimit(line)) {
+      setError(`Only ${Number(line.stock_qty)} of ${line.name} in stock at this store`);
+      return;
+    }
     setCart((prev) =>
       prev
-        .map((p) => {
-          if (p.id !== id) return p;
-          const quantity = p.quantity + delta;
-          const maxDisc = Number(p.selling_price) * Math.max(quantity, 0);
-          return {
-            ...p,
-            quantity,
-            discount: Math.min(p.discount || 0, maxDisc),
-          };
-        })
+        .map((p) => (p.id === id ? { ...p, quantity: p.quantity + delta } : p))
         .filter((p) => p.quantity > 0)
     );
+  }
+
+  function setLineQty(id: string, raw: number) {
+    if (!Number.isFinite(raw)) return;
+    const line = cart.find((p) => p.id === id);
+    if (!line) return;
+    const quantity = Math.floor(raw);
+    if (quantity > lineLimit(line)) {
+      setError(`Only ${Number(line.stock_qty)} of ${line.name} in stock at this store`);
+      return;
+    }
+    if (quantity === line.quantity) return;
+    setCart((prev) =>
+      prev
+        .map((p) => (p.id === id ? { ...p, quantity } : p))
+        .filter((p) => p.quantity > 0)
+    );
+  }
+
+  function removeLine(id: string) {
+    setCart((prev) => prev.filter((p) => p.id !== id));
+  }
+
+  function applyKeypad(key: string) {
+    const append = (current: string) => {
+      const raw = String(current || '');
+      if (key === 'C') return '';
+      if (key === '⌫') return raw.slice(0, -1);
+      if (key === '.' && raw.includes('.')) return raw;
+      if (key === '00') return raw ? `${raw}00` : '0';
+      if (raw === '0' && key !== '.') return key;
+      return `${raw}${key}`;
+    };
+    if (splitTender || paymentMethod === 'cash') {
+      const next = append(String(cashTender || ''));
+      setCashTender(next);
+      if (splitTender) {
+        const cash = Number(next);
+        if (Number.isFinite(cash)) {
+          setCardTender(String(Math.max(0, Math.round((cartTotal - cash) * 100) / 100)));
+        }
+      }
+      return;
+    }
+    if (paymentMethod === 'credit') {
+      setAmountPaidNow(append(String(amountPaidNow || '')));
+      return;
+    }
+    const last = cart[cart.length - 1];
+    if (!last) return;
+    const next = append(String(last.quantity));
+    const qty = Math.floor(Number(next) || 0);
+    if (Number.isFinite(qty)) setLineQty(last.id, qty);
   }
 
   function clearCart() {
     setCart([]);
     setCartDiscount('');
+    setCouponCode('');
     setCashTender('');
     setCardTender('');
-  }
-
-  function scalePayments(
-    payments: { payment_method: string; amount: number }[],
-    target: number
-  ) {
-    const sum = payments.reduce((s, p) => s + p.amount, 0);
-    if (sum <= 0 || payments.length === 0) return payments;
-    const scaled = payments.map((p) => ({
-      ...p,
-      amount: Math.round((p.amount / sum) * target * 100) / 100,
-    }));
-    const paid = scaled.reduce((s, p) => s + p.amount, 0);
-    const last = scaled[scaled.length - 1];
-    last.amount = Math.round((last.amount + (target - paid)) * 100) / 100;
-    return scaled.filter((p) => p.amount > 0);
+    setAmountPaidNow('');
   }
 
   function enableSplit(next: boolean) {
@@ -802,7 +1460,61 @@ export default function Page() {
     }
   }
 
+  function customerReceiptRouteNote(
+    jobs: Array<{ purpose?: string; status?: string }>
+  ): string {
+    const receiptJobs = (jobs || []).filter((job) => job.purpose === 'customer_receipt');
+    const bits: string[] = [];
+    if (
+      receiptJobs.some(
+        (job) => job.status === 'queued' || job.status === 'claimed' || job.status === 'printing'
+      )
+    ) {
+      bits.push(
+        'The till agent uses the paper size stored on that printer, not the size next to Pay'
+      );
+    }
+    if (receiptJobs.some((job) => job.status === 'printed')) {
+      bits.push(
+        'A network printer was sent this receipt at the size stored on that printer. This does not confirm that paper came out'
+      );
+    }
+    return bits.join('. ');
+  }
+
+  async function printReceiptAfterPay(
+    saleId: string,
+    jobs: Array<{ id?: string; purpose?: string; status?: string }>,
+    offline?: { rec: QueuedSale; lines: Array<{ name: string; quantity: number; unit: number }>; store: string }
+  ) {
+    if (!saleId || printedPayIds.current.has(saleId)) return;
+    printedPayIds.current.add(saleId);
+    const paper = receiptPaper === '58mm' ? '58mm' : '80mm';
+    if (offline) {
+      printProvisionalReceipt(offline.rec, offline.lines, offline.store, paper);
+      return;
+    }
+    const receiptJobs = (jobs || []).filter((job) => job.purpose === 'customer_receipt');
+    if (!receiptJobs.length) return;
+    if (receiptJobs.some((job) => job.status === 'printed')) return;
+    const browserJob = receiptJobs.find((job) => job.status === 'browser_pending' && job.id);
+    if (!browserJob?.id) return;
+    try {
+      const detail = await api(`/pos/sales/${saleId}/receipt?paper=${encodeURIComponent(paper)}`);
+      const payload = detail.data || {};
+      const opened = openReceiptPrintWindow(payload.html, payload.text || '');
+      if (!opened) return;
+      await api(`/printers/jobs/${browserJob.id}/browser-ack`, {
+        method: 'POST',
+        body: JSON.stringify({ status: 'printed' }),
+      });
+    } catch {
+      return;
+    }
+  }
+
   async function checkout() {
+    if (busy) return;
     setError('');
     setMessage('');
     setLastSale(null);
@@ -814,96 +1526,236 @@ export default function Page() {
       setError('Cart is empty');
       return;
     }
-    const name = customerName.trim();
+    if (!splitTender && paymentMethod === 'credit' && !canCreditSale) {
+      setError('Credit sales require credit permission');
+      return;
+    }
     if (!splitTender && paymentMethod === 'credit' && !customerId) {
       setError('Select a customer for credit sales');
       return;
     }
+    if (!splitTender && paymentMethod === 'credit') {
+      const paidNow = Math.round((Number(amountPaidNow) || 0) * 100) / 100;
+      if (paidNow < 0) {
+        setError('Amount paid cannot be negative');
+        return;
+      }
+      if (paidNow - cartTotal > 0.01) {
+        setError('Amount paid cannot exceed sale total');
+        return;
+      }
+    }
     if (cartDiscountAmount > cartTotals.maxDiscount + 1e-9) {
       setError('Cart discount exceeds sale total');
+      return;
+    }
+    if (isPharmacy && cart.some((c) => c.rx_only) && !prescriptionId.trim()) {
+      setError('Select an approved prescription before selling Rx-only products');
       return;
     }
     const items = cart.map((c) => ({
       product_id: c.product_id || c.id,
       variant_id: c.variant_id || null,
       quantity: c.quantity,
-      discount: Number(c.discount) || 0,
+      discount: 0,
+      discount_type: 'fixed',
+      discount_percent: 0,
     }));
     const body: Record<string, unknown> = {
       // trim so Complete sale (UuidIdValue session_id / party_id) does not 422
       session_id: String(session.session_id).trim(),
-      discount_amount: cartDiscountAmount,
+      discount_amount: cartDiscountType === 'percent' ? 0 : cartDiscountAmount,
+      discount_type: cartDiscountType,
+      discount_percent: cartDiscountType === 'percent' ? Math.max(0, Math.min(100, Number(cartDiscount) || 0)) : 0,
+      coupon_code: couponCode.trim() || null,
+      prescription_id: prescriptionId.trim() || null,
       status: 'completed',
       party_id: customerId.trim() || null,
-      customer_name: name.trim() || null,
+      customer_name: customerName.trim() || null,
       items,
     };
-    let payments: { payment_method: string; amount: number; reference?: string | null }[] | null =
-      null;
-    const tenderRef = paymentReference.trim() || null;
+    let payments: { payment_method: string; amount: number; reference: string | null }[] | null = null;
     if (splitTender) {
-      payments = [
-        { payment_method: 'cash', amount: Number(cashTender) || 0, reference: null },
-        { payment_method: 'card', amount: Number(cardTender) || 0, reference: tenderRef },
-      ].filter((p) => p.amount > 0);
-      if (payments.length < 2) {
-        setError('Split tender needs cash and card amounts');
+      if (splitError) {
+        setError(splitError);
         return;
       }
-      body.payments = payments;
-      body.payment_method = 'split';
-    } else if (tenderRef) {
-      // PosPaymentLine.reference only applies on payments[]; wrap single tender.
       payments = [
-        {
-          payment_method: paymentMethod,
-          amount: cartTotal,
-          reference: tenderRef,
-        },
+        { payment_method: 'cash', amount: cashTenderAmount, reference: null },
+        { payment_method: splitOtherMethod, amount: otherTenderAmount, reference: null },
       ];
       body.payments = payments;
-      body.payment_method = paymentMethod;
+      body.payment_method = 'split';
+    } else if (paymentMethod === 'gift_card') {
+      const code = giftCardCode.trim();
+      if (!code) {
+        setError('Enter the gift card code');
+        return;
+      }
+      payments = [{ payment_method: 'gift_card', amount: cartTotal, reference: code }];
+      body.payments = payments;
+      body.payment_method = 'gift_card';
+    } else if (paymentMethod === 'credit') {
+      const paidNow = Math.round((Number(amountPaidNow) || 0) * 100) / 100;
+      const remaining = Math.max(0, Math.round((cartTotal - paidNow) * 100) / 100);
+      if (paidNow > 0 && remaining > 0) {
+        payments = [
+          { payment_method: depositMethod, amount: paidNow, reference: null },
+          { payment_method: 'credit', amount: remaining, reference: null },
+        ];
+        body.payments = payments;
+        body.payment_method = 'split';
+      } else if (paidNow > 0 && remaining <= 0) {
+        body.payment_method = depositMethod;
+      } else {
+        body.payment_method = 'credit';
+      }
     } else {
       body.payment_method = paymentMethod;
     }
+    if (!splitTender && paymentMethod === 'loyalty' && !customerId) {
+      setError('Select a customer before paying with loyalty points');
+      return;
+    }
+    const attemptKey = JSON.stringify({
+      session_id: body.session_id,
+      items: body.items,
+      party_id: body.party_id,
+      customer_name: body.customer_name,
+      payment_method: body.payment_method,
+      payments: body.payments ?? null,
+      discount_amount: body.discount_amount,
+      discount_type: body.discount_type,
+      discount_percent: body.discount_percent,
+      coupon_code: body.coupon_code,
+      prescription_id: body.prescription_id,
+    });
+    if (checkoutAttemptRef.current !== attemptKey) {
+      checkoutReqRef.current = null;
+      checkoutAttemptRef.current = attemptKey;
+    }
     setBusy(true);
     try {
-      const clientRequestId = newClientRequestId();
+      const clientRequestId = checkoutReqRef.current || newClientRequestId();
+      checkoutReqRef.current = clientRequestId;
       body.client_request_id = clientRequestId;
 
-      // Offline cash sales queue locally; card/momo never fabricate provider success.
-      if (!navigator.onLine) {
-        if (splitTender || paymentMethod !== 'cash') {
+      // Offline tenders are recorded only; nothing is charged through a provider until the sale syncs.
+      const takeOffline = async () => {
+        const methods = (payments || [{ payment_method: String(body.payment_method), amount: cartTotal }]).map(
+          (p) => p.payment_method
+        );
+        if (body.payment_method && body.payment_method !== 'split') methods.push(String(body.payment_method));
+        const blockedTender = methods.find((m) => !OFFLINE_TENDERS.has(m));
+        if (blockedTender) {
           throw new Error(
-            'While offline, only cash sales can be completed. Card/mobile money require confirmation when online.'
+            `${posPayLabel(blockedTender)} needs a live check and cannot be taken offline. Use cash, Mobile Money, card, bank transfer or credit.`
           );
         }
-        if (!isOfflineAuthValid(await getOfflineAuthEnvelope())) {
-          throw new Error('Offline authorization expired — reconnect before selling');
+        if (couponCode.trim()) {
+          throw new Error('Coupons need a live check. Remove the coupon or wait until you are online.');
         }
+        const env = await getOfflineAuthEnvelope();
+        if (!isOfflineAuthValid(env)) {
+          throw new Error(explainOfflineAccess(env).message);
+        }
+        const catalog = await getCachedCatalogMeta();
+        if (!catalog?.cached_at) {
+          throw new Error(CATALOG_NOT_SAVED);
+        }
+        const blocked = cart.map((c) => offlineDispenseBlock(c)).find(Boolean);
+        if (blocked) throw new Error(blocked);
+        const creditPart = (payments || [])
+          .filter((p) => p.payment_method === 'credit')
+          .reduce((s, p) => s + p.amount, 0) || (body.payment_method === 'credit' ? cartTotal : 0);
+        if (creditPart > 0) {
+          if (!env?.permissions.includes('credit_sale')) {
+            throw new Error('Your offline access does not include credit sales.');
+          }
+          const limit = Number(selectedCustomer?.credit_limit || 0);
+          if (limit > 0) {
+            const queuedCredit = (await listQueuedSales())
+              .filter(
+                (rec) =>
+                  rec.kind === 'sale' &&
+                  ['pending', 'syncing', 'needs_attention'].includes(rec.state) &&
+                  rec.payload?.party_id === customerId
+              )
+              .reduce((s, rec) => {
+                const lines = Array.isArray(rec.payload?.payments)
+                  ? (rec.payload.payments as Array<{ payment_method: string; amount: number }>)
+                  : [];
+                const credit = lines.filter((l) => l.payment_method === 'credit').reduce((a, l) => a + l.amount, 0);
+                return s + (credit || (rec.payload?.payment_method === 'credit' ? Number(rec.payload?.total || 0) : 0));
+              }, 0);
+            const projected = Number(selectedCustomer?.balance || 0) + queuedCredit + creditPart;
+            if (projected > limit + 0.009) {
+              throw new Error(
+                `This would take ${selectedCustomer?.name || 'the customer'} over their credit limit (${money(limit)}, projected ${money(projected)} including queued sales). Over-limit credit needs a manager online.`
+              );
+            }
+          }
+        }
+        body.items = cart.map((c) => ({
+          product_id: c.product_id || c.id,
+          variant_id: c.variant_id || null,
+          quantity: c.quantity,
+          unit_price: groupUnitPrice(Number(c.selling_price)),
+          discount: 0,
+          discount_type: 'fixed',
+          discount_percent: 0,
+        }));
         const store = stores.find((s) => s.id === (session.store_id || storeId));
+        const receiptLines = cart.map((c) => ({
+          name: c.name,
+          quantity: c.quantity,
+          unit: groupUnitPrice(Number(c.selling_price)),
+        }));
         const queued = await enqueueOfflineSale({
-          tenant_id: localStorage.getItem('tenant') || '',
+          tenant_id: tenantId,
           store_id: session.store_id || storeId || null,
           store_code: store?.code || 'STORE',
+          user_id: meId,
           payload: { ...body, total: cartTotal },
+          allocation_override: allocationOverride,
         });
-        setCart([]);
-        setCartDiscount('');
-        setCustomerId('');
-        setCustomerName('');
+        const preview = receiptPreviewFromCart();
+        clearCart();
+        clearCustomer();
+        setGiftCardCode('');
         setCreditOverrideReason('');
-        setPaymentReference('');
         setSplitTender(false);
-        setCashTender('');
-        setCardTender('');
-        setLastSale({ id: queued.id, reference: queued.local_receipt_number });
-        setMessage(
-          `Queued offline sale ${queued.local_receipt_number} (will sync when online). Cached stock is not live.`
-        );
+        setAllocationOverride(false);
+        setLastSale({
+          id: queued.id,
+          reference: queued.local_receipt_number,
+          offline: queued,
+          ...preview,
+        });
+        setReprintTarget({
+          offline: true,
+          rec: queued,
+          lines: receiptLines,
+          store: store?.name || session.store_name || '',
+        });
+        setPayAsReprint(true);
+        void printReceiptAfterPay(queued.id, [], {
+          rec: queued,
+          lines: receiptLines,
+          store: store?.name || session.store_name || '',
+        });
+        setMessage('Offline sale — pending synchronization.');
+        checkoutReqRef.current = null;
+        checkoutAttemptRef.current = null;
         await refreshPendingCount();
+        bumpOffline();
+        await browse(q);
+      };
+      if (!online) {
+        await takeOffline();
         return;
       }
+      body.device_id = await hydrateDeviceId();
 
       let r;
       try {
@@ -915,19 +1767,15 @@ export default function Page() {
         const detail = err?.detail;
         if (
           splitTender &&
-          payments &&
           detail &&
           typeof detail === 'object' &&
-          detail.code === 'PAYMENT_TOTAL_MISMATCH' &&
-          typeof detail.sale_total === 'number'
+          detail.code === 'PAYMENT_TOTAL_MISMATCH'
         ) {
-          body.payments = scalePayments(payments, detail.sale_total);
-          setCashTender(String((body.payments as any[]).find((p) => p.payment_method === 'cash')?.amount ?? ''));
-          setCardTender(String((body.payments as any[]).find((p) => p.payment_method === 'card')?.amount ?? ''));
-          r = await api('/pos/sales', {
-            method: 'POST',
-            body: JSON.stringify(body),
-          });
+          const saleTotal =
+            typeof detail.sale_total === 'number' ? money(detail.sale_total) : 'the sale total';
+          throw new Error(
+            `The cash and other amounts on this form do not add up to ${saleTotal}. Change those amounts, then charge again.`
+          );
         } else if (
           err?.status === 409 &&
           detail &&
@@ -952,6 +1800,10 @@ export default function Page() {
             body: JSON.stringify(body),
           });
           setCreditOverrideReason('');
+        } else if (err?.status === undefined) {
+          setOnline(false);
+          await takeOffline();
+          return;
         } else {
           throw err;
         }
@@ -959,16 +1811,42 @@ export default function Page() {
       if (!r?.data?.id || !r?.data?.reference) {
         throw new Error(r?.message || 'Sale failed');
       }
+      const preview = receiptPreviewFromCart();
       clearCart();
       clearCustomer();
+      setGiftCardCode('');
+      setCreditOverrideReason('');
       setSplitTender(false);
-      setPaymentReference('');
-      setLastSale({ id: r.data.id, reference: r.data.reference });
+      setAmountPaidNow('');
+      setDepositMethod('cash');
+      setLastSale({
+        id: r.data.id,
+        reference: r.data.reference,
+        payment_status: r.data.payment_status,
+        paid_amount: r.data.paid_amount,
+        balance_due: r.data.balance_due,
+        invoice_number: r.data.invoice_number,
+        ...preview,
+      });
+      setReprintTarget({ offline: false, id: r.data.id });
+      setPayAsReprint(true);
+      const jobs = Array.isArray(r.data.print_jobs) ? r.data.print_jobs : [];
+      void printReceiptAfterPay(r.data.id, jobs);
       await refreshSession();
       await browse(q);
-      setMessage(
-        r.data?.credit_limit_overridden ? 'Sale successful (credit limit overridden)' : 'Sale successful',
-      );
+      const statusLabel = String(r.data.payment_status || '').replace(/_/g, ' ');
+      const bal = Number(r.data.balance_due || 0);
+      const routeNote = customerReceiptRouteNote(jobs);
+      const extra =
+        (r.data?.credit_limit_overridden
+          ? ' (credit override)'
+          : statusLabel
+            ? ` · ${statusLabel}${bal > 0 ? ` · balance ${money(bal)}` : ''}`
+            : '') + (routeNote ? ` · ${routeNote}` : '');
+      setMessage(`Sale ${r.data.reference} saved${extra}`);
+      checkoutReqRef.current = null;
+      checkoutAttemptRef.current = null;
+      bumpOffline();
     } catch (err: any) {
       setMessage('');
       setLastSale(null);
@@ -978,14 +1856,147 @@ export default function Page() {
     }
   }
 
-  async function printLastReceipt() {
-    if (!lastSale) return;
+  async function saveQuoteOffline() {
     setError('');
-    setReceiptBusy('print');
+    setMessage('');
+    if (!session || !cart.length) {
+      setError('Add items before saving a quote');
+      return;
+    }
+    if (!customerId) {
+      setError('Select a customer for the quote');
+      return;
+    }
     try {
-      await downloadReceiptPdf(lastSale.id, paper);
+      const store = stores.find((s) => s.id === (session.store_id || storeId));
+      const quoteBody = {
+        customer_id: customerId,
+        sales_channel: industryCode === 'retail' ? 'retail' : 'wholesale',
+        notes: 'Captured on POS while offline',
+        items: cart.map((c) => ({
+          product_id: c.product_id || c.id,
+          variant_id: c.variant_id || null,
+          quantity: c.quantity,
+        })),
+        total: cartTotal,
+      };
+      const saveQueuedQuote = async () => {
+        const env = await getOfflineAuthEnvelope();
+        if (!isOfflineAuthValid(env)) throw new Error(explainOfflineAccess(env).message);
+        const catalog = await getCachedCatalogMeta();
+        if (!catalog?.cached_at) throw new Error(CATALOG_NOT_SAVED);
+        const rec = await enqueueOfflineQuote({
+          tenant_id: tenantId,
+          store_id: session.store_id || storeId || null,
+          store_code: store?.code || 'STORE',
+          user_id: meId,
+          payload: quoteBody,
+        });
+        setMessage(
+          `Quote saved offline as ${rec.local_receipt_number}. Prices are confirmed by the server when it syncs.`
+        );
+        bumpOffline();
+      };
+      if (!online) {
+        await saveQueuedQuote();
+      } else {
+        try {
+          const r = await api('/sales/quotations', {
+            method: 'POST',
+            body: JSON.stringify({
+              ...quoteBody,
+              total: undefined,
+              notes: null,
+              client_request_id: newClientRequestId(),
+            }),
+          });
+          setMessage(`Quote ${r.data?.number || r.data?.reference || ''} saved`);
+        } catch (err: unknown) {
+          const status = Number((err as { status?: number })?.status) || 0;
+          if (!status || status >= 500 || status === 429 || status === 408) {
+            await saveQueuedQuote();
+          } else {
+            throw err;
+          }
+        }
+      }
+      clearCart();
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Could not save the quote');
+    }
+  }
+
+  async function reprintLastReceipt() {
+    if (!reprintTarget || receiptBusy) return;
+    setError('');
+    setReceiptBusy('reprint');
+    try {
+      const paper = receiptPaper === '58mm' ? '58mm' : '80mm';
+      if (reprintTarget.offline) {
+        printProvisionalReceipt(reprintTarget.rec, reprintTarget.lines, reprintTarget.store, paper);
+        return;
+      }
+      const notes: string[] = [];
+      let openedBrowser = false;
+      try {
+        const queued = await api('/printers/reprint', {
+          method: 'POST',
+          body: JSON.stringify({ source_type: 'pos_sale', source_id: reprintTarget.id }),
+        });
+        const jobs = Array.isArray(queued.data) ? queued.data : [];
+        const receiptJobs = jobs.filter(
+          (job: { purpose?: string }) => job.purpose === 'customer_receipt'
+        );
+        const browser = receiptJobs.find(
+          (job: { id?: string; status?: string }) => job.status === 'browser_pending' && job.id
+        );
+        const agentQueued = receiptJobs.some(
+          (job: { status?: string }) =>
+            job.status === 'queued' || job.status === 'claimed' || job.status === 'printing'
+        );
+        const networkSent = receiptJobs.some((job: { status?: string }) => job.status === 'printed');
+        if (browser?.id) {
+          const detail = await api(`/pos/sales/${reprintTarget.id}/receipt?paper=${encodeURIComponent(paper)}`);
+          const payload = detail.data || {};
+          openedBrowser = openReceiptPrintWindow(payload.html, payload.text || '');
+          if (openedBrowser) {
+            await api(`/printers/jobs/${browser.id}/browser-ack`, {
+              method: 'POST',
+              body: JSON.stringify({ status: 'printed' }),
+            });
+          }
+        } else if (!agentQueued && !networkSent) {
+          const receipt = await api(`/pos/sales/${reprintTarget.id}/receipt?paper=${encodeURIComponent(paper)}`);
+          openedBrowser = openReceiptPrintWindow(receipt.data?.html, receipt.data?.text || '');
+        }
+        if (openedBrowser) {
+          notes.push(
+            'Browser receipt uses the size next to Pay. This does not confirm that paper came out.'
+          );
+        }
+        if (agentQueued) {
+          notes.push(
+            'Reprint is queued for the till agent. That printer uses the paper size stored on it, not the size next to Pay.'
+          );
+        }
+        if (networkSent) {
+          notes.push(
+            'Reprint was sent to a network printer at the paper size stored on it. This does not confirm that paper came out.'
+          );
+        }
+      } catch {
+        const receipt = await api(`/pos/sales/${reprintTarget.id}/receipt?paper=${encodeURIComponent(paper)}`);
+        openedBrowser = openReceiptPrintWindow(receipt.data?.html, receipt.data?.text || '');
+        if (openedBrowser) {
+          notes.push(
+            'Browser receipt uses the size next to Pay. This does not confirm that paper came out.'
+          );
+        }
+      }
+      if (notes.length) setMessage(notes.join(' '));
+      else if (!openedBrowser) setError('Reprint could not open the print dialog.');
+    } catch (err: any) {
+      setError(err?.message || 'Reprint could not open the print dialog.');
     } finally {
       setReceiptBusy('');
     }
@@ -1014,60 +2025,96 @@ export default function Page() {
     }
   }
 
+  useEffect(() => {
+    if (!meId || !tenantId) {
+      setPosOfflinePanelProps(null);
+      return;
+    }
+    setPosOfflinePanelProps({
+      api: api as unknown as (path: string, opts?: RequestInit) => Promise<unknown>,
+      online,
+      tenantId,
+      userId: meId,
+      storeId: session?.store_id || storeId.trim() || null,
+      storeLabel: stores.find((s) => s.id === (session?.store_id || storeId))?.name,
+      canApprove: canApproveOffline,
+      refreshToken: offlineRefresh,
+      preparing: preparingOffline,
+      prepareFailure,
+      onStatus: handleOfflineStatus,
+      onMessage: setMessage,
+      onError: setError,
+    });
+  }, [
+    meId,
+    tenantId,
+    online,
+    session?.store_id,
+    storeId,
+    stores,
+    canApproveOffline,
+    offlineRefresh,
+    preparingOffline,
+    prepareFailure,
+    handleOfflineStatus,
+  ]);
+
+  useEffect(() => () => setPosOfflinePanelProps(null), []);
+
   return (
     <>
-      <div className="tpos">
+      <div className="tpos pos-ui">
         <header className="tpos-top">
-          <div>
+          <div className="tpos-top-copy">
             <h1>Point of Sale</h1>
+            {tradeBanner ? <p className="muted">{tradeBanner}</p> : null}
+            {cashierName || !online ? (
             <p className="muted">
-              {cashierName ? `Cashier: ${cashierName}` : 'Tap tiles or scan a barcode'}
-              {' · '}
-              <strong>{online ? 'Online' : 'Offline'}</strong>
-              {pendingOffline > 0 ? ` · Pending sync: ${pendingOffline}` : ''}
-              {!online && catalogCachedAt
-                ? ` · Catalog cached ${formatCacheAge(catalogCachedAt)}`
+              {cashierName}
+              {!online
+                ? `${cashierName ? ' · ' : ''}Offline. Prices and stock are from the last time this device was online.`
                 : ''}
-              {offlineAuthUntil
-                ? ` · Offline auth until ${new Date(offlineAuthUntil).toLocaleString()}`
-                : ''}
+              {!online && catalogCachedAt ? ` · Saved ${formatCacheAge(catalogCachedAt)}` : ''}
             </p>
-            <div className="tpos-recovery" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
-              <button
-                type="button"
-                className="tpos-btn"
-                onClick={exportRecovery}
-                aria-label="Export offline recovery package"
-              >
-                Export recovery
-              </button>
-              <label className="tpos-btn" style={{ cursor: 'pointer' }}>
-                Import recovery
-                <input
-                  type="file"
-                  accept="application/json,.json"
-                  aria-label="Import offline recovery package"
-                  style={{ display: 'none' }}
-                  onChange={(e) => {
-                    const f = e.target.files?.[0] || null;
-                    importRecoveryFile(f).finally(() => {
-                      e.target.value = '';
-                    });
-                  }}
-                />
-              </label>
-            </div>
+            ) : null}
           </div>
-          <div className="tpos-shift">
+          <div className="tpos-shift pos-ui-shift">
             {!session ? (
               <>
-                {stores.length > 0 && (
+                {shiftClosedNote ? (
+                  <p className="muted" role="status">
+                    {shiftClosedNote}{' '}
+                    <button
+                      type="button"
+                      className="tpos-btn"
+                      disabled={shiftBusy}
+                      aria-label="Start a new shift"
+                      onClick={() => void startNewShift()}
+                    >
+                      {shiftBusy ? 'Starting…' : 'Start a new shift'}
+                    </button>
+                  </p>
+                ) : null}
+                {stores.length > 0 && !hideStorePicker && (
                   <select
                     className="tpos-input"
                     value={storeId}
                     onChange={(e) => {
-                      setStoreId(e.target.value);
-                      setCtxStoreId(e.target.value);
+                      const id = e.target.value;
+                      setStoreId(id);
+                      setCtxStoreId(id);
+                      if (!id) return;
+                      setShiftBusy(true);
+                      setError('');
+                      void openShiftForSignedInUser(id).then((opened) => {
+                        if (opened?.session_id) {
+                          setSession(opened as Session);
+                          void loadShiftHistory();
+                        } else {
+                          setError('Your shift could not be started. Sign out and sign in again.');
+                        }
+                        setShiftBusy(false);
+                      });
                     }}
                     aria-label="POS store"
                   >
@@ -1075,62 +2122,26 @@ export default function Page() {
                     {stores.map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.name}
-                        {s.code ? ` (${s.code})` : ''}
                       </option>
                     ))}
                   </select>
                 )}
-                <input
-                  className="tpos-input"
-                  value={openingCash}
-                  onChange={(e) => setOpeningCash(e.target.value)}
-                  inputMode="decimal"
-                  placeholder="Opening cash"
-                  aria-label="Opening cash"
-                />
-                <button
-                  type="button"
-                  className="tpos-btn tpos-btn-primary"
-                  onClick={openShift}
-                  aria-label="Open shift"
-                >
-                  Open shift
-                </button>
+                <span className="muted">
+                  {shiftBusy || hideStorePicker || stores.length <= 1
+                    ? 'Starting your shift…'
+                    : 'Choose a store to start your shift.'}
+                </span>
               </>
             ) : (
               <>
                 <div className="tpos-shift-meta">
                   <strong>{session.session_number}</strong>
                   <span>
+                    {session.opened_at ? `${formatWhen(session.opened_at)} · ` : ''}
                     {session.store_name ? `${session.store_name} · ` : ''}
                     {session.sale_count} sales · {money(Number(session.total_sales || 0))}
                   </span>
                 </div>
-                <input
-                  className="tpos-input"
-                  value={actualCash}
-                  onChange={(e) => setActualCash(e.target.value)}
-                  inputMode="decimal"
-                  placeholder={`Count ${session.expected_cash}`}
-                  aria-label="Counted cash"
-                />
-                <input
-                  className="tpos-input"
-                  value={closeNotes}
-                  onChange={(e) => setCloseNotes(e.target.value)}
-                  placeholder="Close notes (optional)"
-                  aria-label="POS shift close notes"
-                  title="Optional notes (1–500 chars; letters/digits required)"
-                  style={{ minWidth: 180 }}
-                />
-                <button
-                  type="button"
-                  className="tpos-btn"
-                  onClick={closeShift}
-                  aria-label="Close shift"
-                >
-                  Close shift
-                </button>
                 <button
                   type="button"
                   className="tpos-btn"
@@ -1140,200 +2151,100 @@ export default function Page() {
                 >
                   {reportBusy ? 'Loading…' : shiftReport ? 'Hide report' : 'Shift report'}
                 </button>
-                <input
-                  className="tpos-input"
-                  value={drawerReason}
-                  onChange={(e) => setDrawerReason(e.target.value)}
-                  placeholder="Drawer reason (required)"
-                  maxLength={200}
-                  autoComplete="off"
-                  aria-label="Cash drawer open reason"
-                  title="Specific drawer reason (3–200 chars; not manual/n/a)"
-                  style={{ minWidth: 200 }}
-                />
-                <button
-                  type="button"
-                  className="tpos-btn"
-                  aria-label="Open cash drawer"
-                  onClick={async () => {
-                    setError('');
-                    const cleaned = drawerReason.trim();
-                    if (
-                      cleaned.length < 3 ||
-                      ['manual', 'n/a', 'na', 'none', 'test'].includes(cleaned.toLowerCase())
-                    ) {
-                      setError('Enter a specific drawer reason (min 3 characters)');
-                      return;
-                    }
-                    try {
-                      const r = await api(`/pos/sessions/${session.session_id}/drawer/open`, {
-                        method: 'POST',
-                        body: JSON.stringify({ reason: cleaned }),
-                      });
-                      setDrawerReason('');
-                      setMessage(
-                        r.data?.message ||
-                          r.message ||
-                          `Drawer opened (${r.data?.reason || cleaned})`
-                      );
-                    } catch (err: any) {
-                      setError(err.message);
-                    }
-                  }}
-                >
-                  Drawer
-                </button>
+                <section className="tpos-cash" aria-label="Shift drawer cash">
+                  <p className="tpos-cash-balance">
+                    <span>Cash in the drawer</span>
+                    <strong>{money(Number(session.expected_cash || 0))}</strong>
+                    <span>
+                      In {money(Number(session.cash_in || 0))} · Out {money(Number(session.cash_out || 0))}
+                    </span>
+                  </p>
+                  <label className="tpos-cash-field">
+                    Amount to add or remove
+                    <AmountField
+                      className="tpos-input"
+                      value={cashMoveAmount}
+                      onChange={(e) => setCashMoveAmount(e.target.value)}
+                      inputMode="decimal"
+                      placeholder="0.00"
+                      autoComplete="off"
+                      aria-label="Drawer cash amount"
+                    />
+                  </label>
+                  <label className="tpos-cash-field">
+                    Reason
+                    <input
+                      className="tpos-input"
+                      value={cashMoveReason}
+                      onChange={(e) => setCashMoveReason(e.target.value)}
+                      placeholder="Short note, such as a payout or a top-up"
+                      maxLength={200}
+                      autoComplete="off"
+                      aria-label="Drawer cash movement reason"
+                    />
+                  </label>
+                  <div className="tpos-cash-actions">
+                    <button
+                      type="button"
+                      className="tpos-btn tpos-btn-primary"
+                      disabled={!!cashMoveBusy}
+                      aria-label="Cash in"
+                      onClick={() => recordCashMove('cash_in')}
+                    >
+                      {cashMoveBusy === 'cash_in' ? 'Saving…' : 'Cash in'}
+                    </button>
+                    <button
+                      type="button"
+                      className="tpos-btn"
+                      disabled={!!cashMoveBusy}
+                      aria-label="Cash out"
+                      onClick={() => recordCashMove('cash_out')}
+                    >
+                      {cashMoveBusy === 'cash_out' ? 'Saving…' : 'Cash out'}
+                    </button>
+                  </div>
+                  {cashMoveError ? (
+                    <p className="tpos-cash-error" role="alert">
+                      {cashMoveError}
+                    </p>
+                  ) : null}
+                </section>
               </>
             )}
+            <details className="tpos-more">
+              <summary>Receipt numbers</summary>
+              <div className="tpos-more-body">
+                <input value={posSalePrefix} onChange={(e) => setPosSalePrefix(e.target.value)} aria-label="POS sale number prefix" placeholder="Sale prefix" />
+                <input value={posSaleNext} onChange={(e) => setPosSaleNext(e.target.value)} aria-label="POS sale next number" placeholder="Next sale number" />
+                <input value={posSessionPrefix} onChange={(e) => setPosSessionPrefix(e.target.value)} aria-label="POS session number prefix" placeholder="Shift prefix" />
+                <input value={posSessionNext} onChange={(e) => setPosSessionNext(e.target.value)} aria-label="POS session next number" placeholder="Next shift number" />
+                <button type="button" className="tpos-btn" onClick={() => savePosNumbering().catch((err) => setError(err.message || 'Could not save numbering'))}>
+                  Save numbering
+                </button>
+                <label className="muted">
+                  Recent shifts
+                  <select
+                    value={shiftManageFilter}
+                    onChange={(e) => setShiftManageFilter(e.target.value as 'all' | 'open' | 'closed')}
+                    aria-label="POS shift status filter"
+                  >
+                    <option value="all">All</option>
+                    <option value="open">Open</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </label>
+                {managedShifts.length === 0 ? <p>No shifts yet.</p> : null}
+                {managedShifts.slice(0, 8).map((row) => (
+                  <p key={row.session_id || row.id} className="muted">
+                    {row.session_number} · {plainLabel(row.status) || 'Open'}
+                    {row.opened_at ? ` · ${formatWhen(row.opened_at)}` : ''}
+                    {row.closed_at ? ` – ${formatWhen(row.closed_at)}` : ''}
+                  </p>
+                ))}
+              </div>
+            </details>
           </div>
         </header>
-
-        <div className="card" style={{ margin: '12px 0', display: 'grid', gap: 8 }}>
-          <strong>Document numbering</strong>
-          <p className="muted" style={{ margin: 0 }}>
-            Sale receipts use POS-YYYY-NNNN; shift sessions use SHIFT-YYYY-NNNN.
-          </p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            <span className="muted">Sale</span>
-            <input
-              className="tpos-input"
-              value={posPrefix}
-              onChange={(e) => setPosPrefix(e.target.value.toUpperCase())}
-              placeholder="Prefix"
-              style={{ width: 100 }}
-              aria-label="POS sale number prefix"
-              title="Document prefix (letters, digits, _ or -)"
-            />
-            <input
-              className="tpos-input"
-              value={posNext}
-              onChange={(e) => setPosNext(e.target.value)}
-              placeholder="Next #"
-              style={{ width: 90 }}
-              aria-label="POS sale next number"
-            />
-            <span className="muted">{posPreview || '—'}</span>
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            <span className="muted">Shift</span>
-            <input
-              className="tpos-input"
-              value={shiftPrefix}
-              onChange={(e) => setShiftPrefix(e.target.value.toUpperCase())}
-              placeholder="Prefix"
-              style={{ width: 100 }}
-              aria-label="POS session number prefix"
-              title="Document prefix (letters, digits, _ or -)"
-            />
-            <input
-              className="tpos-input"
-              value={shiftNext}
-              onChange={(e) => setShiftNext(e.target.value)}
-              placeholder="Next #"
-              style={{ width: 90 }}
-              aria-label="POS session next number"
-            />
-            <span className="muted">{shiftPreview || '—'}</span>
-            <button type="button" className="tpos-btn" onClick={savePosNumbering} aria-label="Save POS numbering">
-              Save numbering
-            </button>
-          </div>
-        </div>
-
-        <div className="card" style={{ margin: '12px 0' }}>
-          <strong>POS devices (last seen)</strong>
-          <p className="muted" style={{ marginTop: 4 }}>
-            Application heartbeat only — not OS lockdown or MDM. Pending count is reported by each
-            browser terminal.
-          </p>
-          {posDevices.length === 0 ? (
-            <p className="muted">No heartbeats yet (open POS while online).</p>
-          ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Device</th>
-                  <th>Label</th>
-                  <th>Pending</th>
-                  <th>Last seen</th>
-                </tr>
-              </thead>
-              <tbody>
-                {posDevices.slice(0, 20).map((d) => (
-                  <tr key={d.device_id}>
-                    <td>
-                      <code>{d.device_id}</code>
-                      {d.app_version ? (
-                        <span className="muted"> · {d.app_version}</span>
-                      ) : null}
-                    </td>
-                    <td>{d.label || '—'}</td>
-                    <td>{d.pending_queue_count ?? 0}</td>
-                    <td>
-                      {d.last_seen_at
-                        ? new Date(d.last_seen_at).toLocaleString()
-                        : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-
-        <div className="card" style={{ margin: '12px 0' }}>
-          <strong>Recent shifts</strong>
-          <p className="muted" style={{ marginTop: 4 }}>
-            Open vs closed POS sessions for this tenant (BR-8.2). Filter is client-side over the
-            full list cache; API also accepts `?status=open|closed`.
-          </p>
-          <select
-            className="tpos-input"
-            value={shiftManageFilter}
-            onChange={(e) =>
-              setShiftManageFilter(e.target.value as 'all' | 'open' | 'closed')
-            }
-            title="Filter POS shifts by status"
-            aria-label="POS shift status filter"
-            style={{ marginBottom: 12 }}
-          >
-            <option value="all">All statuses</option>
-            <option value="open">Open only</option>
-            <option value="closed">Closed only</option>
-          </select>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Shift</th>
-                <th>Store</th>
-                <th>Status</th>
-                <th>Sales</th>
-                <th>Variance</th>
-              </tr>
-            </thead>
-            <tbody>
-              {managedShifts.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="muted">
-                    No shifts for this filter
-                  </td>
-                </tr>
-              ) : (
-                managedShifts.map((s) => (
-                  <tr key={s.session_id}>
-                    <td>{s.session_number}</td>
-                    <td>{s.store_name || '—'}</td>
-                    <td>{s.status}</td>
-                    <td>
-                      {s.sale_count} · {money(Number(s.total_sales || 0))}
-                    </td>
-                    <td>{s.variance == null ? '—' : s.variance}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
 
         {shiftReport && session && (
           <section className="tpos-report" aria-label="Shift report">
@@ -1369,6 +2280,14 @@ export default function Page() {
                 <strong>{money(Number(shiftReport.summary?.return_total || 0))}</strong>
               </div>
               <div>
+                <span>Cash in</span>
+                <strong>{money(Number(shiftReport.session?.cash_in || shiftReport.payment_breakdown?.cash_in || 0))}</strong>
+              </div>
+              <div>
+                <span>Cash out</span>
+                <strong>{money(Number(shiftReport.session?.cash_out || shiftReport.payment_breakdown?.cash_out || 0))}</strong>
+              </div>
+              <div>
                 <span>Expected drawer</span>
                 <strong>{money(Number(shiftReport.session?.expected_cash || 0))}</strong>
               </div>
@@ -1378,10 +2297,89 @@ export default function Page() {
               </div>
             </div>
             <p className="muted" style={{ margin: '8px 0' }}>
-              {shiftReport.summary?.sale_count ?? 0} sales · tax{' '}
-              {money(Number(shiftReport.summary?.tax || 0))} · net after returns{' '}
+              {shiftReport.session?.opened_at
+                ? `Opened ${formatWhen(shiftReport.session.opened_at)} · `
+                : ''}
+              {shiftReport.session?.cashier_name
+                ? `Cashier ${shiftReport.session.cashier_name} · `
+                : ''}
+              {shiftReport.summary?.sale_count ?? 0} sales · Tax{' '}
+              {money(Number(shiftReport.summary?.tax || 0))} · After returns{' '}
               {money(Number(shiftReport.summary?.net_after_returns ?? 0))}
             </p>
+            {(shiftReport.cash_movements || []).length > 0 ? (
+              <div className="tpos-report-table-wrap">
+                <table className="tpos-report-table">
+                  <thead>
+                    <tr>
+                      <th>Cash movement</th>
+                      <th>Amount</th>
+                      <th>Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(shiftReport.cash_movements || []).map((mv: any) => (
+                      <tr key={mv.id}>
+                        <td>{mv.movement_type === 'cash_in' ? 'In' : 'Out'}</td>
+                        <td>{money(Number(mv.amount || 0))}</td>
+                        <td>{mv.reason}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+            {session.status !== 'closed' ? (
+              <form
+                className="tpos-cash"
+                aria-label="Cash count"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void recordCashCount();
+                }}
+              >
+                <p className="muted">
+                  Count the notes and coins in the drawer. Sign-out still closes at the expected amount if you leave this blank.
+                </p>
+                <label className="tpos-cash-field">
+                  Counted cash
+                  <AmountField
+                    className="tpos-input"
+                    value={countedCash}
+                    onChange={(e) => setCountedCash(e.target.value)}
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    autoComplete="off"
+                    aria-label="Counted cash"
+                  />
+                </label>
+                <label className="tpos-cash-field">
+                  Difference note
+                  <input
+                    className="tpos-input"
+                    value={countNotes}
+                    onChange={(e) => setCountNotes(e.target.value)}
+                    placeholder="Required when the count differs"
+                    maxLength={500}
+                    autoComplete="off"
+                    aria-label="Cash count notes"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="tpos-btn tpos-btn-primary"
+                  disabled={countBusy}
+                  aria-label="Record cash count and close shift"
+                >
+                  {countBusy ? 'Saving…' : 'Record cash count and close shift'}
+                </button>
+                {countError ? (
+                  <p className="tpos-cash-error" role="alert">
+                    {countError}
+                  </p>
+                ) : null}
+              </form>
+            ) : null}
             <div className="tpos-report-table-wrap">
               <table className="tpos-report-table">
                 <thead>
@@ -1390,7 +2388,7 @@ export default function Page() {
                     <th>Time</th>
                     <th>Customer</th>
                     <th>Pay</th>
-                    <th>Disc</th>
+                    <th>Discount</th>
                     <th>Tax</th>
                     <th>Total</th>
                   </tr>
@@ -1406,23 +2404,22 @@ export default function Page() {
                   {(shiftReport.sales || []).map((sale: any) => (
                     <tr key={sale.id}>
                       <td>{sale.reference}</td>
-                      <td>
-                        {sale.created_at
-                          ? String(sale.created_at).replace('T', ' ').slice(0, 16)
-                          : '—'}
-                      </td>
+                      <td>{sale.created_at ? formatWhen(sale.created_at) || '—' : '—'}</td>
                       <td>{sale.customer_name || 'Walk-in'}</td>
                       <td>
                         {sale.payment_method === 'split' && sale.payments?.length
                           ? sale.payments
                               .map(
                                 (p: any) =>
-                                  `${String(p.payment_method || '').toUpperCase()} ${money(
+                                  `${posPayLabel(p.payment_method)} ${money(
                                     Number(p.amount || 0)
                                   )}`
                               )
                               .join(' + ')
-                          : String(sale.payment_method || 'cash').toUpperCase()}
+                          : posPayLabel(sale.payment_method)}
+                        {sale.payment_status && sale.payment_status !== 'paid'
+                          ? ` · ${plainLabel(sale.payment_status)}`
+                          : ''}
                       </td>
                       <td>{money(Number(sale.discounts || sale.discount_amount || 0))}</td>
                       <td>{money(Number(sale.tax || 0))}</td>
@@ -1448,8 +2445,8 @@ export default function Page() {
                     {shiftReport.returns.map((ret: any) => (
                       <tr key={ret.id}>
                         <td>{ret.return_number}</td>
-                        <td>{ret.reason}</td>
-                        <td>{ret.status}</td>
+                        <td>{plainLabel(ret.reason) || '—'}</td>
+                        <td>{plainLabel(ret.status) || '—'}</td>
                         <td>{money(Number(ret.total_amount || 0))}</td>
                       </tr>
                     ))}
@@ -1460,65 +2457,15 @@ export default function Page() {
           </section>
         )}
 
-        {error && (
-          <p className="tpos-banner tpos-banner-err" role="alert">
-            {error}
-          </p>
-        )}
-        {message && (
-          <div className="tpos-banner tpos-banner-ok tpos-success-bar">
-            <span>{message}</span>
-            {message === 'Sale successful' && lastSale && (
-              <div className="tpos-success-actions">
-                <button
-                  type="button"
-                  className="tpos-btn"
-                  onClick={printLastReceipt}
-                  disabled={!!receiptBusy}
-                  aria-label="Print last receipt"
-                >
-                  {receiptBusy === 'print' ? 'Printing…' : 'Print'}
-                </button>
-                <input
-                  type="text"
-                  value={receiptTo}
-                  onChange={(e) => setReceiptTo(e.target.value)}
-                  placeholder="Optional to= (email or E.164)"
-                  aria-label="POS receipt override to"
-                  style={{ minWidth: 180 }}
-                  disabled={!!receiptBusy}
-                />
-                <button
-                  type="button"
-                  className="tpos-btn"
-                  onClick={() => sendLastReceipt('email')}
-                  disabled={!!receiptBusy}
-                  aria-label="Email last receipt"
-                >
-                  {receiptBusy === 'email' ? 'Sending…' : 'Email'}
-                </button>
-                <button
-                  type="button"
-                  className="tpos-btn"
-                  onClick={() => sendLastReceipt('sms')}
-                  disabled={!!receiptBusy}
-                  aria-label="SMS last receipt"
-                >
-                  {receiptBusy === 'sms' ? 'Sending…' : 'SMS'}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
         <div className="tpos-body">
-          <section className="tpos-catalog" aria-label="Product catalog">
-            <form className="tpos-search" onSubmit={search}>
+          <section className="tpos-catalog pos-ui-catalog" aria-label="Product catalog">
+            <form className="tpos-search pos-ui-search" onSubmit={search}>
+              <p className="pos-ui-step">Find a product</p>
               <input
                 className="tpos-search-input"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Scan barcode or search name / SKU"
+                placeholder="Scan a barcode or search by name"
                 disabled={!session}
                 autoComplete="off"
                 autoFocus
@@ -1534,6 +2481,7 @@ export default function Page() {
                 disabled={!session}
                 onClick={() => {
                   setQ('');
+                  setCategoryFilter('');
                   browse('').catch((err) => setError(err.message));
                 }}
                 aria-label="Browse all POS products"
@@ -1541,28 +2489,120 @@ export default function Page() {
                 All
               </button>
             </form>
+            {session && catalogCategories.length > 0 ? (
+              <nav className="tpos-cats" aria-label="POS product categories">
+                <p className="tpos-cats-crumb">
+                  {categoryFilter ? `All / ${categoryFilter}` : 'All products'}
+                </p>
+                <div className="tpos-cats-row" role="tablist">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={!categoryFilter}
+                    className={`tpos-cat${categoryFilter ? '' : ' is-on'}`}
+                    onClick={() => setCategoryFilter('')}
+                    aria-label="Show all POS categories"
+                  >
+                    All
+                  </button>
+                  {catalogCategories.map((name) => (
+                    <button
+                      key={name}
+                      type="button"
+                      role="tab"
+                      aria-selected={categoryFilter === name}
+                      className={`tpos-cat${categoryFilter === name ? ' is-on' : ''}`}
+                      onClick={() => setCategoryFilter(name)}
+                      aria-label={`Show ${name} products`}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </nav>
+            ) : null}
 
             {!session && (
               <div className="tpos-empty">
-                <p>Open a shift to unlock the product catalog.</p>
+                {stores.length > 0 && !hideStorePicker ? (
+                  <label className="tpos-field">
+                    <span>Choose a store to start your shift.</span>
+                    <select
+                      className="tpos-input"
+                      value={storeId}
+                      onChange={(e) => {
+                        const id = e.target.value;
+                        setStoreId(id);
+                        setCtxStoreId(id);
+                        if (!id) return;
+                        setShiftBusy(true);
+                        setError('');
+                        void openShiftForSignedInUser(id).then((opened) => {
+                          if (opened?.session_id) {
+                            setSession(opened as Session);
+                            void loadShiftHistory();
+                          } else {
+                            setError('Your shift could not be started. Sign out and sign in again.');
+                          }
+                          setShiftBusy(false);
+                        });
+                      }}
+                      aria-label="POS store"
+                    >
+                      <option value="">Select store</option>
+                      {stores.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                    {error ? <p>{error}</p> : null}
+                  </label>
+                ) : (
+                  <p>{error || 'Wait for your shift to open, then scan or search for a product.'}</p>
+                )}
+                {shiftClosedNote ? (
+                  <button
+                    type="button"
+                    className="tpos-btn"
+                    disabled={shiftBusy}
+                    aria-label="Start a new shift"
+                    onClick={() => void startNewShift()}
+                  >
+                    {shiftBusy ? 'Starting…' : 'Start a new shift'}
+                  </button>
+                ) : null}
               </div>
             )}
 
-            {session && rows.length === 0 && (
+            {session && catalogLoading && rows.length === 0 && (
+              <div className="tpos-skeleton-grid" aria-busy="true" aria-label="Loading products">
+                {Array.from({ length: 8 }, (_, i) => (
+                  <div key={i} className="tpos-skeleton-tile" />
+                ))}
+              </div>
+            )}
+
+            {session && !catalogLoading && visibleRows.length === 0 && (
               <div className="tpos-empty">
-                <p>No products match this search.</p>
+                <p>
+                  {rows.length && categoryFilter
+                    ? `No ${categoryFilter} items in this search. Choose another category or tap All.`
+                    : 'Search again, or tap All to see products you can sell.'}
+                </p>
               </div>
             )}
 
             <div className="tpos-grid">
-              {rows.map((r) => {
-                const out = Number(r.stock_qty) <= 0;
+              {visibleRows.map((r) => {
+                const out = Number(r.stock_qty) <= 0 || Boolean(r.is_out_of_stock);
+                const low = Boolean(r.is_low_stock) && !out;
                 const inCart = cart.find((c) => c.id === r.id)?.quantity || 0;
                 return (
                   <button
                     key={r.id}
                     type="button"
-                    className={`tpos-tile${out ? ' out' : ''}`}
+                    className={`tpos-tile${out ? ' out' : ''}${inCart > 0 ? ' in-cart' : ''}`}
                     onClick={() => addToCart(r)}
                     disabled={!session || out}
                     aria-label={`Add ${r.name}`}
@@ -1575,30 +2615,31 @@ export default function Page() {
                       />
                       {inCart > 0 && <span className="tpos-badge">{inCart}</span>}
                       {out && <span className="tpos-oos">Out</span>}
+                      {low && !out && <span className="tpos-oos">Low</span>}
+                      {r.kind === 'variant' ? <span className="tpos-oos">Variant</span> : null}
                     </div>
                     <div className="tpos-tile-body">
-                      <strong>{r.name}</strong>
-                      <span className="tpos-sku">
+                      <strong title={r.name}>{r.name}</strong>
+                      <span className="tpos-sku" title={r.sku || undefined}>
                         {r.sku}
-                        {r.kind === 'variant' ? ' · variant' : ''}
                       </span>
                       <div className="tpos-tile-foot">
-                        <div className="tpos-price-pair">
-                          {r.cost_price != null && Number.isFinite(Number(r.cost_price)) ? (
-                            <span className="tpos-price-actual">
-                              <span className="tpos-price-label">Actual</span>
-                              <span className="tpos-price-value">{money(Number(r.cost_price))}</span>
-                            </span>
-                          ) : null}
-                          <span className="tpos-price-selling">
-                            <span className="tpos-price-label">Selling</span>
-                            <span className="tpos-price-value">{money(Number(r.selling_price))}</span>
-                          </span>
-                        </div>
-                        <span className="tpos-stock">
-                          {online
-                            ? `${r.stock_qty} in stock`
-                            : `Cached: ${r.stock_qty} · ${formatCacheAge(catalogCachedAt)}`}
+                        <span className="tpos-price-selling">
+                          <span className="tpos-price-value">{money(Number(r.selling_price))}</span>
+                        </span>
+                        <span
+                          className="tpos-stock"
+                          title={
+                            online
+                              ? `${r.stock_qty} in stock`
+                              : `Saved on this device: ${r.stock_qty}`
+                          }
+                        >
+                          {`${r.stock_qty} left`}
+                          {r.nearest_expiry_date
+                            ? ` · Expires ${formatDate(r.nearest_expiry_date) || r.nearest_expiry_date}`
+                            : ''}
+                          {r.rx_only ? ' · Prescription' : ''}
                         </span>
                       </div>
                     </div>
@@ -1608,20 +2649,104 @@ export default function Page() {
             </div>
           </section>
 
-          <aside className="tpos-cart" aria-label="Cart">
+          <aside className="tpos-cart pos-ui-cart" aria-label="Cart">
             <div className="tpos-cart-head">
               <h2>Cart</h2>
-              <span>
-                {cartCount} item{cartCount === 1 ? '' : 's'}
-              </span>
+              <span className="tpos-items-badge">Items {cartCount}</span>
             </div>
+            <label className="tpos-field tpos-customer pos-ui-customer">
+              <span>New customer</span>
+              <select
+                value={customerId}
+                onChange={(e) => selectCustomer(e.target.value)}
+                aria-label="POS customer"
+              >
+                <option value="">Walk-in</option>
+                {customers
+                  .filter((c) => c.status !== 'inactive')
+                  .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                    {c.customer_group
+                      ? ` [${c.customer_group.name}${
+                          c.customer_group.discount_percent
+                            ? ` −${c.customer_group.discount_percent}%`
+                            : ''
+                        }]`
+                      : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+              {isPharmacy ? (
+                <label className="tpos-field tpos-customer">
+                  <span>Prescription (required for Rx-only)</span>
+                  <select
+                    value={prescriptionId}
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      setPrescriptionId(id);
+                      const rx = rxList.find((r) => r.id === id);
+                      if (rx?.customer_id) selectCustomer(rx.customer_id);
+                    }}
+                    aria-label="POS prescription"
+                  >
+                    <option value="">None</option>
+                    {rxList.map((rx) => (
+                      <option key={rx.id} value={rx.id}>
+                        {rx.rx_number} · {rx.status}
+                        {rx.customer_name ? ` · ${rx.customer_name}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+              {selectedCustomer ? (
+                <p className="tpos-split-hint" aria-label="POS customer credit snapshot">
+                  Outstanding {money(Number(selectedCustomer.balance || 0))}
+                  {Number(selectedCustomer.credit_limit || 0) > 0
+                    ? ` · limit ${money(Number(selectedCustomer.credit_limit))}`
+                    : ' · no credit limit'}
+                </p>
+              ) : null}
 
-            <div className="tpos-cart-list">
-              {cart.length === 0 && <p className="muted">Tap a product image to add it.</p>}
+            <div className="tpos-cart-list pos-ui-list">
+              {cart.length === 0 && !payAsReprint ? (
+                <div className="tpos-cart-empty">
+                  <p>Scan or search, then tap a product to add it.</p>
+                </div>
+              ) : cart.length === 0 && payAsReprint && lastSale?.lines?.length ? (
+                <div className="tpos-receipt-preview" aria-label="Last receipt preview">
+                  <p className="tpos-receipt-preview-head">
+                    Receipt {lastSale.reference}
+                    {lastSale.offline ? ' · pending sync' : ''}
+                  </p>
+                  <ul>
+                    {lastSale.lines.map((line, i) => (
+                      <li key={`${line.name}-${i}`}>
+                        <span>
+                          {line.quantity} × {line.name}
+                        </span>
+                        <strong>{money(line.line)}</strong>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="tpos-receipt-preview-total">
+                    <span>Total</span>
+                    <strong>{money(Number(lastSale.total || 0))}</strong>
+                  </p>
+                </div>
+              ) : (
+                <div className="tpos-order-head" aria-hidden>
+                  <span>Product</span>
+                  <span>Qty</span>
+                  <span>Line total</span>
+                  <span />
+                </div>
+              )}
               {cart.map((c) => {
                 const unit = groupUnitPrice(Number(c.selling_price));
-                const lineMerch = unit * c.quantity;
-                const taxable = Math.max(0, Math.round((lineMerch - (Number(c.discount) || 0)) * 100) / 100);
+                const taxable = Math.max(0, Math.round(unit * c.quantity * 100) / 100);
                 const lineAmounts = computeLineTaxAmounts(
                   taxable,
                   Number(c.tax_rate_pct) || 0,
@@ -1629,258 +2754,514 @@ export default function Page() {
                   Boolean(c.tax_reverse_charge),
                   c.tax_components
                 );
+                const stockOut = Number(c.stock_qty) <= 0 || c.is_out_of_stock;
                 return (
-                  <div key={c.id} className="tpos-cart-row">
-                    <div className="tpos-cart-mini">
-                      <ProductThumb
-                        productId={c.product_id || c.id}
-                        hasImage={c.has_image}
-                        name={c.name}
-                      />
-                    </div>
-                    <div className="tpos-cart-info">
-                      <strong>{c.name}</strong>
-                      <div className="tpos-cart-prices">
-                        {c.cost_price != null && Number.isFinite(Number(c.cost_price)) ? (
-                          <span className="tpos-cart-price-actual">
-                            <span className="tpos-price-label">Act</span> {money(Number(c.cost_price))}
-                          </span>
+                  <div key={c.id} className="tpos-cart-row pos-ui-line">
+                    <div className="tpos-cart-product">
+                      <strong className="tpos-cart-name" title={c.name}>
+                        <span className="tpos-cart-name-text">{c.name}</span>
+                      </strong>
+                      <span className="tpos-cart-line-sub">
+                        {c.rx_only ? <span className="tpos-cart-flag">Prescription</span> : null}
+                        {stockOut ? (
+                          <span className="tpos-cart-flag tpos-cart-flag-out">Out</span>
+                        ) : c.is_low_stock ? (
+                          <span className="tpos-cart-flag tpos-cart-flag-low">Low</span>
                         ) : null}
-                        <span className="tpos-cart-price-selling">
-                          <span className="tpos-price-label">Sell</span> {money(Number(c.selling_price))}
-                        </span>
-                      </div>
-                      <span>
-                        {money(unit)} each
-                        {groupDiscountPct > 0 ? ` (−${groupDiscountPct}% group)` : ''}
+                        <span className="tpos-cart-unit">{money(unit)} each</span>
                       </span>
-                      <label className="tpos-line-disc">
-                        <span>Disc</span>
-                        <input
-                          type="number"
-                          min={0}
-                          max={lineMerch}
-                          step="0.01"
-                          value={c.discount || 0}
-                          onChange={(e) => setLineDiscount(c.id, Number(e.target.value) || 0)}
-                          aria-label={`Discount for ${c.name}`}
-                        />
-                      </label>
                     </div>
-                    <div className="tpos-qty">
-                      <button type="button" aria-label="Decrease" onClick={() => bumpQty(c.id, -1)}>
+                    <div className="tpos-qty pos-ui-qty">
+                      <button
+                        type="button"
+                        aria-label={`Decrease quantity of ${c.name}`}
+                        onClick={() => bumpQty(c.id, -1)}
+                      >
                         −
                       </button>
-                      <span>{c.quantity}</span>
-                      <button type="button" aria-label="Increase" onClick={() => bumpQty(c.id, 1)}>
+                      <input
+                        type="number"
+                        min={1}
+                        max={Math.max(0, Number(c.stock_qty) || 0)}
+                        step={1}
+                        value={c.quantity}
+                        onChange={(e) => {
+                          if (e.target.value === '') return;
+                          const n = Number(e.target.value);
+                          if (!Number.isFinite(n)) return;
+                          setLineQty(c.id, n);
+                        }}
+                        inputMode="numeric"
+                        aria-label={`Quantity for ${c.name}`}
+                      />
+                      <button
+                        type="button"
+                        aria-label={`Increase quantity of ${c.name}`}
+                        onClick={() => bumpQty(c.id, 1)}
+                      >
                         +
                       </button>
                     </div>
                     <div className="tpos-line">{money(lineAmounts.gross)}</div>
+                    <button
+                      type="button"
+                      className="tpos-cart-remove"
+                      onClick={() => removeLine(c.id)}
+                      aria-label={`Remove ${c.name}`}
+                    >
+                      ×
+                    </button>
                   </div>
                 );
               })}
             </div>
 
-            <div className="tpos-cart-foot">
-              <label className="tpos-field">
-                <span>Cart discount</span>
-                <input
-                  className="tpos-input"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={cartDiscount}
-                  onChange={(e) => setCartDiscount(e.target.value)}
-                  placeholder="0.00"
-                  inputMode="decimal"
-                  aria-label="POS cart discount"
-                />
-              </label>
-
-              <div className="tpos-totals" aria-label="POS cart totals">
-                <div className="tpos-total-row">
-                  <span>Subtotal</span>
-                  <strong>{money(cartTotals.subtotal)}</strong>
-                </div>
-                <div className="tpos-total-row">
-                  <span>Tax</span>
-                  <strong>{money(cartTotals.tax)}</strong>
-                </div>
-                <div className="tpos-total">
-                  <span>Amount due</span>
-                  <strong>{money(cartTotal)}</strong>
-                </div>
-              </div>
-
-              <label className="tpos-field">
-                <span>Customer {paymentMethod === 'credit' ? '(required)' : '(optional)'}</span>
-                <select
-                  value={customerId}
-                  onChange={(e) => selectCustomer(e.target.value)}
-                  aria-label="POS customer"
-                >
-                  <option value="">Walk-in / none</option>
-                  {customers
-                    .filter((c) => c.status !== 'inactive')
-                    .map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                      {c.customer_group
-                        ? ` [${c.customer_group.name}${
-                            c.customer_group.discount_percent
-                              ? ` −${c.customer_group.discount_percent}%`
-                              : ''
-                          }]`
-                        : ''}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="tpos-field">
-                <span>Customer name</span>
-                <input
-                  className="tpos-input"
-                  aria-label="POS customer name"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Optional name on receipt"
-                  maxLength={180}
-                  autoComplete="off"
-                />
-              </label>
-
-              <label className="tpos-split-toggle">
-                <input
-                  type="checkbox"
-                  aria-label="POS split tender"
-                  checked={splitTender}
-                  onChange={(e) => enableSplit(e.target.checked)}
-                />
-                <span>Split tender (cash + card)</span>
-              </label>
-
-              {!splitTender ? (
-                <label className="tpos-field">
-                  <span>Payment</span>
-                  <select
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    aria-label="POS payment method"
-                  >
-                    <option value="cash">Cash</option>
-                    <option value="card">Card</option>
-                    <option value="wallet">Digital wallet</option>
-                    <option value="credit">Credit</option>
-                  </select>
+            <div className="tpos-cart-dock pos-ui-pay">
+              <div className="tpos-cart-lines">
+                {payAsReprint ? null : <p className="pos-ui-step">Take payment</p>}
+                <div className="pos-ui-pay-method-row">
+                <label className="tpos-split-toggle">
+                  <input
+                    type="checkbox"
+                    aria-label="POS split tender"
+                    checked={splitTender}
+                    onChange={(e) => enableSplit(e.target.checked)}
+                  />
+                  <span>Split payment</span>
                 </label>
-              ) : (
-                <div className="tpos-split-fields">
-                  <label className="tpos-field">
-                    <span>Cash</span>
-                    <input
-                      className="tpos-input"
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={cashTender}
-                      onChange={(e) => {
-                        const cash = Number(e.target.value) || 0;
-                        setCashTender(e.target.value);
-                        setCardTender(String(Math.max(0, Math.round((cartTotal - cash) * 100) / 100)));
-                      }}
-                      inputMode="decimal"
-                      aria-label="POS cash tender"
-                    />
+                {splitTender ? (
+                  <label className="tpos-pay-select">
+                    <span>Payment method</span>
+                    <select
+                      value={splitOtherMethod}
+                      onChange={(e) =>
+                        setSplitOtherMethod(e.target.value as 'card' | 'mobile_money' | 'bank_transfer')
+                      }
+                      aria-label="POS split second method"
+                    >
+                      <option value="card">Card</option>
+                      <option value="mobile_money">Mobile Money (MoMo)</option>
+                      <option value="bank_transfer">Bank transfer</option>
+                    </select>
                   </label>
-                  <label className="tpos-field">
-                    <span>Card</span>
-                    <input
-                      className="tpos-input"
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={cardTender}
-                      onChange={(e) => {
-                        const card = Number(e.target.value) || 0;
-                        setCardTender(e.target.value);
-                        setCashTender(String(Math.max(0, Math.round((cartTotal - card) * 100) / 100)));
-                      }}
-                      inputMode="decimal"
-                      aria-label="POS card tender"
-                    />
+                ) : (
+                  <label className="tpos-pay-select">
+                    <span>Payment method</span>
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      aria-label="POS payment method"
+                    >
+                      <option value="cash">Cash</option>
+                      <option value="card">Card</option>
+                      <option value="mobile_money">Mobile Money (MoMo)</option>
+                      <option value="bank_transfer">Bank transfer</option>
+                      {online ? <option value="wallet">Wallet</option> : null}
+                      {online ? <option value="gift_card">Gift card</option> : null}
+                      {online ? <option value="loyalty">Loyalty points</option> : null}
+                      {canCreditSale && (online || offlinePerms.includes('credit_sale')) ? (
+                        <option value="credit">Credit</option>
+                      ) : null}
+                    </select>
                   </label>
-                  <p className="tpos-split-hint">
-                    Split {money((Number(cashTender) || 0) + (Number(cardTender) || 0))} · due{' '}
-                    {money(cartTotal)}
-                  </p>
+                )}
                 </div>
-              )}
-
-              <label className="tpos-field">
-                <span>Payment reference</span>
-                <input
-                  className="tpos-input"
-                  value={paymentReference}
-                  onChange={(e) => setPaymentReference(e.target.value)}
-                  placeholder="Card/auth ref (optional)"
-                  aria-label="POS payment reference"
-                  title="Optional tender reference (1–100 chars; letters/digits required)"
-                  maxLength={100}
-                  autoComplete="off"
-                />
-              </label>
-
-              <label className="tpos-field">
-                <span>Credit override reason</span>
-                <input
-                  className="tpos-input"
-                  value={creditOverrideReason}
-                  onChange={(e) => setCreditOverrideReason(e.target.value)}
-                  placeholder="Required if credit sale exceeds limit"
-                  maxLength={500}
-                  autoComplete="off"
-                  title="Required on over-limit credit sale (1–500 chars; letters/digits required)"
-                  aria-label="Credit override reason"
-                />
-              </label>
-              <label className="tpos-field">
-                <span>Receipt</span>
-                <select
-                  value={paper}
-                  onChange={(e) => setPaper(e.target.value)}
-                  aria-label="POS receipt paper"
-                >
-                  <option value="80mm">80mm thermal</option>
-                  <option value="58mm">58mm thermal</option>
-                </select>
-              </label>
-
+                {splitTender ? (
+                  <div className="tpos-split-panel">
+                    <p className="tpos-split-due">
+                      <span>Amount due</span>
+                      <strong>{money(cartTotal)}</strong>
+                    </p>
+                    {payAsReprint ? null : <p className="tpos-split-hint">
+                      Cash plus one other tender. Editing either amount fills the rest.{' '}
+                      {splitOtherMethod === 'mobile_money'
+                        ? 'Mobile Money is recorded only and does not charge a phone.'
+                        : splitOtherMethod === 'bank_transfer'
+                          ? 'Bank transfer is recorded only. Collect it at the bank. This register does not charge the account.'
+                          : 'Card is recorded only. Collect it on the card terminal. This register does not charge the card.'}
+                    </p>}
+                    <div className="tpos-split-fields">
+                      <label className="tpos-field">
+                        <span>Cash amount</span>
+                        <AmountField
+                          className="tpos-input tpos-cash-tender"
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={cashTender}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            const cash = Number(raw);
+                            setCashTender(raw);
+                            if (!Number.isFinite(cash)) return;
+                            setCardTender(
+                              String(Math.max(0, Math.round((cartTotal - cash) * 100) / 100))
+                            );
+                          }}
+                          inputMode="decimal"
+                          aria-label="POS cash tender"
+                        />
+                      </label>
+                      <label className="tpos-field tpos-split-other-amount">
+                        <span>{splitOtherLabel} amount</span>
+                        <AmountField
+                          className="tpos-input tpos-card-tender"
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={cardTender}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            const other = Number(raw);
+                            setCardTender(raw);
+                            if (!Number.isFinite(other)) return;
+                            setCashTender(
+                              String(Math.max(0, Math.round((cartTotal - other) * 100) / 100))
+                            );
+                          }}
+                          inputMode="decimal"
+                          aria-label="POS card tender"
+                        />
+                      </label>
+                    </div>
+                    {splitError ? (
+                      <p className="tpos-split-error" role="alert">
+                        {splitError}
+                      </p>
+                    ) : (
+                      <p className="tpos-split-hint">
+                        Cash {money(cashTenderAmount)} + {splitOtherLabel} {money(otherTenderAmount)} ={' '}
+                        {money(splitPaid)}
+                      </p>
+                    )}
+                  </div>
+                ) : null}
+                {!splitTender && paymentMethod === 'gift_card' ? (
+                  <label className="tpos-field">
+                    <span>Gift card code</span>
+                    <input
+                      value={giftCardCode}
+                      onChange={(e) => setGiftCardCode(e.target.value)}
+                      aria-label="Gift card code"
+                      autoComplete="off"
+                    />
+                  </label>
+                ) : null}
+                {!payAsReprint && !splitTender && paymentMethod === 'mobile_money' ? (
+                  <p className="tpos-split-hint">
+                    Mobile Money is recorded only. It does not charge a phone.
+                  </p>
+                ) : null}
+                {!payAsReprint && !splitTender && paymentMethod === 'card' ? (
+                  <p className="tpos-split-hint">
+                    Card is recorded only. Collect it on the card terminal. This register does not charge the card.
+                  </p>
+                ) : null}
+                {!payAsReprint && !splitTender && paymentMethod === 'bank_transfer' ? (
+                  <p className="tpos-split-hint">
+                    Bank transfer is recorded only. Collect it at the bank. This register does not charge the account.
+                  </p>
+                ) : null}
+                {!payAsReprint && !splitTender && (paymentMethod === 'wallet' || paymentMethod === 'gift_card' || paymentMethod === 'loyalty') ? (
+                  <p className="tpos-split-hint">
+                    {paymentMethod === 'wallet' ? 'Wallet' : paymentMethod === 'gift_card' ? 'Gift card' : 'Loyalty points'} is online only. This register does not send a live charge.
+                  </p>
+                ) : null}
+                {!payAsReprint && !online ? (
+                  <p className="tpos-split-hint">
+                    Offline payments are recorded only. Card, Mobile Money and bank transfers must already be
+                    confirmed on the terminal or phone.
+                  </p>
+                ) : null}
+                {!online && offlineStatus?.envelope?.can_override_allocation ? (
+                  <label className="tpos-split-toggle">
+                    <input
+                      type="checkbox"
+                      aria-label="Manager override of offline stock allocation"
+                      checked={allocationOverride}
+                      onChange={(e) => setAllocationOverride(e.target.checked)}
+                    />
+                    <span>Manager: allow selling beyond this device’s allocation (reviewed at sync)</span>
+                  </label>
+                ) : null}
+                {!splitTender && paymentMethod === 'credit' ? (
+                  <>
+                    <label className="tpos-field">
+                      <span>Amount paid now</span>
+                      <AmountField
+                        className="tpos-input"
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={amountPaidNow}
+                        onChange={(e) => setAmountPaidNow(e.target.value)}
+                        placeholder="0.00"
+                        inputMode="decimal"
+                        aria-label="POS amount paid now"
+                      />
+                    </label>
+                    {creditPaidNow > 0 ? (
+                      <label className="tpos-field">
+                        <span>How this amount was paid</span>
+                        <select
+                          value={depositMethod}
+                          onChange={(e) => setDepositMethod(e.target.value)}
+                          aria-label="POS deposit method"
+                        >
+                          <option value="cash">Cash</option>
+                          <option value="card">Card</option>
+                          {online ? <option value="wallet">Digital wallet</option> : null}
+                          <option value="mobile_money">Mobile Money (MoMo)</option>
+                          <option value="bank_transfer">Bank transfer</option>
+                        </select>
+                      </label>
+                    ) : null}
+                  </>
+                ) : null}
+                {paymentMethod === 'credit' && !splitTender ? (
+                  <label className="tpos-field">
+                    <span>Reason for selling over the limit</span>
+                    <input
+                      className="tpos-input"
+                      value={creditOverrideReason}
+                      onChange={(e) => setCreditOverrideReason(e.target.value)}
+                      placeholder="Needed only if over the credit limit"
+                      maxLength={500}
+                      autoComplete="off"
+                      aria-label="Credit override reason"
+                    />
+                  </label>
+                ) : null}
+              </div>
+              <div className="tpos-total pos-ui-due" aria-label="POS cart totals">
+                <span className="pos-ui-due-label">Amount due</span>
+                <strong>{money(cartTotal)}</strong>
+                {payAsReprint ? null : (
+                <span className="pos-ui-due-note">
+                  Subtotal {money(cartTotals.subtotal)}
+                  {cartTotals.tax > 0 ? ` · Tax ${money(cartTotals.tax)}` : ''}
+                  {cartDiscountAmount > 0 ? ` · Discount −${money(cartDiscountAmount)}` : ''}
+                  {paymentMethod === 'credit' && !splitTender
+                    ? ` · On account ${money(creditRemaining)}`
+                    : ''}
+                </span>
+                )}
+              </div>
               <div className="tpos-cart-actions">
-                <button
-                  type="button"
-                  className="tpos-btn"
-                  onClick={clearCart}
-                  disabled={!cart.length}
-                 aria-label="Clear POS cart">
-                  Clear
-                </button>
+                <div className="tpos-keypad" role="group" aria-label="POS keypad">
+                  {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map((key) => (
+                    <button
+                      key={key}
+                      type="button"
+                      className="tpos-key"
+                      disabled={!session || payAsReprint}
+                      onClick={() => applyKeypad(key)}
+                      aria-label={
+                        key === 'C' ? 'Clear keypad value' : key === '⌫' ? 'Delete last keypad digit' : `Keypad ${key}`
+                      }
+                    >
+                      {key}
+                    </button>
+                  ))}
+                </div>
+                <div className="print-ui-row">
+                  <label className="print-ui-paper">
+                    Receipt paper
+                    <select
+                      value={receiptPaper === '58mm' ? '58mm' : '80mm'}
+                      onChange={(e) => setReceiptPaper(e.target.value === '58mm' ? '58mm' : '80mm')}
+                      aria-label="POS receipt paper"
+                    >
+                      <option value="58mm">58mm receipt</option>
+                      <option value="80mm">80mm receipt</option>
+                    </select>
+                  </label>
+                </div>
+                <div className="tpos-pay-row">
                 <button
                   type="button"
                   className="tpos-btn tpos-btn-pay"
+                  onClick={payAsReprint ? reprintLastReceipt : checkout}
+                  disabled={payAsReprint ? !!receiptBusy : !cart.length || !session || busy}
+                  title={
+                    payAsReprint
+                      ? ''
+                      : !session
+                        ? 'Open a POS shift before charging'
+                        : !cart.length
+                          ? 'Add a product before charging'
+                          : busy
+                            ? 'This sale is already being saved'
+                            : ''
+                  }
+                  aria-label={payAsReprint ? 'Print' : 'Charge'}
+                >
+                  {payAsReprint
+                    ? receiptBusy === 'reprint'
+                      ? 'Print…'
+                      : 'Print'
+                    : busy
+                      ? 'Paying…'
+                      : `Pay ${money(cartTotal)}`}
+                </button>
+                <button
+                  type="button"
+                  className="tpos-btn tpos-btn-clear btn-danger"
+                  onClick={clearCart}
+                  disabled={!cart.length}
+                  aria-label="Clear POS cart"
+                >
+                  Clear
+                </button>
+                </div>
+                <button
+                  type="button"
+                  className="sr-only"
                   onClick={checkout}
                   disabled={!cart.length || !session || busy}
                   aria-label="Charge complete sale"
                 >
-                  {busy ? 'Processing…' : 'Charge · Complete sale'}
+                  Charge complete sale
                 </button>
+                {(industryCode === 'wholesale' || industryCode === 'retail_wholesale') &&
+                (online ? canWriteQuotes : offlineValid && offlinePerms.includes('quote_capture')) ? (
+                  <button
+                    type="button"
+                    className="tpos-btn"
+                    onClick={saveQuoteOffline}
+                    disabled={!cart.length || !session || busy || !customerId}
+                    aria-label="Save as quote"
+                    title={customerId ? '' : 'Select a customer first'}
+                  >
+                    {online ? 'Save as quote' : 'Save quote offline'}
+                  </button>
+                ) : null}
               </div>
+              <details className="pos-ui-optional">
+                <summary>Customer name, discount, and coupon</summary>
+                <label className="tpos-field">
+                  <span>Customer name</span>
+                  <input
+                    className="tpos-input"
+                    aria-label="POS customer name"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Walk-in if none selected"
+                    maxLength={180}
+                    autoComplete="off"
+                  />
+                </label>
+                <div className="tpos-foot-discounts">
+                  <label className="tpos-field tpos-field-compact">
+                    <span>Cart discount</span>
+                    <span className="tpos-inline-controls">
+                      <select
+                        value={cartDiscountType}
+                        onChange={(e) => {
+                          setCartDiscountType(e.target.value === 'percent' ? 'percent' : 'fixed');
+                          setCartDiscount('');
+                        }}
+                        aria-label="POS cart discount type"
+                      >
+                        <option value="fixed">Amount</option>
+                        <option value="percent">Percent</option>
+                      </select>
+                      {cartDiscountType === 'percent' ? (
+                        <input
+                          className="tpos-input"
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={cartDiscount}
+                          onChange={(e) => setCartDiscount(e.target.value)}
+                          placeholder="0"
+                          inputMode="decimal"
+                          aria-label="POS cart discount"
+                        />
+                      ) : (
+                        <AmountField
+                          inline
+                          className="tpos-input"
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={cartDiscount}
+                          onChange={(e) => setCartDiscount(e.target.value)}
+                          placeholder="0.00"
+                          inputMode="decimal"
+                          aria-label="POS cart discount"
+                        />
+                      )}
+                    </span>
+                  </label>
+                  <label className="tpos-field tpos-field-compact">
+                    <span>Coupon</span>
+                    <input
+                      className="tpos-input"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      placeholder="CODE"
+                      aria-label="POS coupon code"
+                    />
+                  </label>
+                </div>
+              </details>
+              {error ? (
+                <p className="tpos-banner tpos-banner-err" role="alert">
+                  {error}
+                </p>
+              ) : null}
+              {payAsReprint && lastSale && !lastSale.offline ? (
+                <div className="tpos-banner tpos-banner-ok tpos-success-bar" role="status">
+                  <span>
+                    {String(lastSale.payment_status || '').toLowerCase() === 'paid' &&
+                    !(Number(lastSale.balance_due || 0) > 0)
+                      ? 'Paid'
+                      : 'Success'}
+                  </span>
+                </div>
+              ) : message ? (
+                <div className="tpos-banner tpos-banner-ok tpos-success-bar">
+                  <span>{message}</span>
+                  {lastSale ? (
+                    <div className="tpos-success-actions">
+                      {showReceiptEmailSms && !lastSale.offline ? (
+                      <>
+                      <input
+                        type="text"
+                        value={receiptTo}
+                        onChange={(e) => setReceiptTo(e.target.value)}
+                        placeholder="Email or phone"
+                        aria-label="POS receipt override to"
+                        disabled={!!receiptBusy}
+                      />
+                      <button
+                        type="button"
+                        className="tpos-btn"
+                        onClick={() => sendLastReceipt('email')}
+                        disabled={!!receiptBusy}
+                        aria-label="Email last receipt"
+                      >
+                        {receiptBusy === 'email' ? 'Sending…' : 'Email'}
+                      </button>
+                      <button
+                        type="button"
+                        className="tpos-btn"
+                        onClick={() => sendLastReceipt('sms')}
+                        disabled={!!receiptBusy}
+                        aria-label="SMS last receipt"
+                      >
+                        {receiptBusy === 'sms' ? 'Sending…' : 'SMS'}
+                      </button>
+                      </>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           </aside>
         </div>
-
-
       </div>
     </>
   );

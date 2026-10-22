@@ -13,17 +13,18 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_pos_drawer_reason_ui_wired():
+    shell = (ROOT / "frontend/components/Shell.tsx").read_text(encoding="utf-8")
     pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
-    assert "drawerReason" in pos
-    assert "Drawer reason (required)" in pos
-    assert 'aria-label="Cash drawer open reason"' in pos
-    assert 'aria-label="Open cash drawer"' in pos
-    assert "Reason for opening the cash drawer (required)" not in pos
-    assert "/pos/sessions/${session.session_id}/drawer/open" in pos
-    assert "Enter a specific drawer reason (min 3 characters)" in pos
-    drawer_block_start = pos.find("Drawer reason (required)")
-    drawer_block = pos[drawer_block_start : drawer_block_start + 1200]
-    assert "window.prompt" not in drawer_block
+    assert "drawerReason" in shell
+    assert 'aria-label="Cash drawer open reason"' in shell
+    assert 'aria-label="Open drawer"' in shell
+    assert "Open drawer" in shell
+    assert "window.prompt" not in shell
+    assert "/pos/sessions/${sessionId}/drawer/open" in shell
+    assert "setPosDrawerBridge" in pos
+    topbar = shell[shell.find('className="topbar-left"') : shell.find('className="topbar-left"') + 500]
+    assert "PosSellingStatus" in topbar
+    assert "PosDrawerTopControls" in topbar
 
 
 async def _cashier_headers(ac):

@@ -1,0 +1,167 @@
+.audit-ui {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.audit-ui h1,
+.audit-ui h2 {
+  margin: 0;
+}
+
+.audit-ui-lead,
+.audit-ui-note {
+  margin: 0;
+  max-width: 44rem;
+}
+
+.audit-ui-alert {
+  margin: 0;
+  color: #b91c1c;
+}
+
+.audit-ui-ok {
+  margin: 0;
+  color: var(--brand, #4ab012);
+}
+
+.audit-ui-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+.audit-ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.audit-ui-label {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.audit-ui-hint {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.audit-ui-field input,
+.audit-ui-field select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-height: 2.25rem;
+}
+
+.audit-ui-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.audit-ui-actions button {
+  min-height: 2.25rem;
+}
+
+.audit-ui-verify {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+
+.audit-ui-verify p {
+  margin: 0 0 4px;
+}
+
+.audit-ui-verify p:last-child {
+  margin: 0;
+}
+
+.audit-ui-verify-ok {
+  color: var(--ink);
+}
+
+.audit-ui-verify-bad {
+  color: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.audit-ui-scroll {
+  min-width: 0;
+  max-width: 100%;
+  overflow: auto;
+  max-height: min(32rem, 70vh);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--white);
+}
+
+.audit-ui-scroll .table {
+  width: max-content;
+  min-width: 100%;
+  margin: 0;
+}
+
+.audit-ui-scroll th,
+.audit-ui-scroll td {
+  white-space: nowrap;
+}
+
+.audit-ui-empty {
+  white-space: normal;
+}
+
+.audit-ui-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.audit-ui-keep {
+  display: grid;
+  gap: 8px;
+}
+
+.audit-ui-keep form {
+  display: grid;
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .audit-ui-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .audit-ui-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .audit-ui-actions button {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .audit-ui {
+    overflow-x: hidden;
+  }
+
+  .audit-ui-field input,
+  .audit-ui-field select {
+    min-height: 44px;
+  }
+
+  .audit-ui-facts {
+    flex-direction: column;
+  }
+}

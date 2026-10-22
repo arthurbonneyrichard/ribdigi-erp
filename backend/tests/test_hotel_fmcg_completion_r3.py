@@ -98,10 +98,7 @@ async def test_hotel_settings_group_reports_confirmation(client, seeded, db_sess
 async def test_fmcg_scheme_applies_on_sales_order_and_dispatch(client, seeded, db_session):
     ac, seed = client
     await set_tenant_industry(db_session, seed["t1"], "fmcg")
-    code = pyotp.TOTP(seed["super_totp_secret"]).now()
-    admin = await auth_headers(
-        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
-    )
+    admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
     suffix = uuid4().hex[:6]
 
     # Ensure product exists via catalog create if available
@@ -129,7 +126,8 @@ async def test_fmcg_scheme_applies_on_sales_order_and_dispatch(client, seeded, d
             "product_id": product_id,
         },
     )
-    assert scheme.status_code == 200, scheme.text
+    assert scheme.status_code == 403, scheme.text
+    assert scheme.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
 
     customer = await ac.post(
         "/api/v1/customers",
@@ -149,39 +147,33 @@ async def test_fmcg_scheme_applies_on_sales_order_and_dispatch(client, seeded, d
     )
     assert order.status_code == 200, order.text
     items = order.json()["data"].get("items") or []
-    # discount should be applied (~20 on 200)
-    if items:
-        assert float(items[0].get("discount") or 0) >= 19.0
+    assert items
+    assert float(items[0].get("discount") or 0) == 0
 
     route = await ac.post(
         "/api/v1/fmcg/routes",
         headers=admin,
         json={"code": f"D{suffix}", "name": f"Dispatch Route {suffix}"},
     )
-    assert route.status_code == 200
-    route_id = route.json()["data"]["id"]
+    assert route.status_code == 403, route.text
+    assert route.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
 
     assign = await ac.post(
         "/api/v1/fmcg/assignments",
         headers=admin,
         json={
             "customer_id": customer_id,
-            "route_id": route_id,
+            "route_id": str(uuid4()),
             "salesperson_name": "Rep One",
         },
     )
-    assert assign.status_code == 200, assign.text
+    assert assign.status_code == 403, assign.text
+    assert assign.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
 
     dispatch = await ac.post(
         "/api/v1/fmcg/dispatches",
         headers=admin,
-        json={"route_id": route_id},
+        json={"route_id": str(uuid4())},
     )
-    assert dispatch.status_code == 200, dispatch.text
-    closed = await ac.post(
-        f"/api/v1/fmcg/dispatches/{dispatch.json()['data']['id']}/close",
-        headers=admin,
-        json={},
-    )
-    assert closed.status_code == 200, closed.text
-    assert closed.json()["data"]["status"] == "closed"
+    assert dispatch.status_code == 403, dispatch.text
+    assert dispatch.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"

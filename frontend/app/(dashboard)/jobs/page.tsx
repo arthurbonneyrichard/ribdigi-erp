@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 
@@ -19,7 +20,16 @@ const JOB_LABELS: Record<string, string> = {
   retry_due_webhooks: 'Retry webhooks',
   scan_ai_security_alerts: 'AI security alerts',
   send_weekly_ai_insight_digest: 'Weekly AI insight digest',
+  process_subscription_renewals: 'Subscription renewals',
 };
+
+const PLATFORM_VIEW_ROLES = new Set([
+  'super_admin',
+  'platform_owner',
+  'platform_admin',
+  'platform_support',
+  'platform_finance',
+]);
 
 const RUN_ROLES = new Set(['super_admin', 'platform_owner']);
 
@@ -37,21 +47,33 @@ function beatForJob(beat: Record<string, number | string> | null | undefined, jo
 export default function Page() {
   const [info, setInfo] = useState<any>(null);
   const [role, setRole] = useState('');
+  const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<any>(null);
 
+  const allowed = PLATFORM_VIEW_ROLES.has(role);
   const canRun = RUN_ROLES.has(role);
 
   const refresh = useCallback(async () => {
-    const [jobsRes, meRes] = await Promise.all([api('/jobs'), getMe()]);
+    const meRes = await getMe();
+    const nextRole = meRes.data?.role || '';
+    setRole(nextRole);
+    setReady(true);
+    if (!PLATFORM_VIEW_ROLES.has(nextRole)) {
+      setInfo(null);
+      return;
+    }
+    const jobsRes = await api('/jobs');
     setInfo(jobsRes.data || null);
-    setRole(meRes.data?.role || '');
   }, []);
 
   useEffect(() => {
-    refresh().catch((err) => setError(err.message || 'Failed to load jobs'));
+    refresh().catch((err) => {
+      setError(err.message || 'Failed to load jobs');
+      setReady(true);
+    });
   }, [refresh]);
 
   async function runJob(name: string, enqueue: boolean) {
@@ -70,17 +92,23 @@ export default function Page() {
     }
   }
 
+  if (ready && !allowed) {
+    return (
+      <>
+        <PageHeader title="Jobs" subtitle="This area is only available to Ribdigi House operators." />
+      </>
+    );
+  }
+
   const jobs: string[] = info?.jobs || [];
   const beat = info?.beat || {};
 
   return (
     <>
-      <h1>Jobs</h1>
-      <p className="muted">
-        Scheduled Celery handlers and beat intervals. Company admins can view;{' '}
-        <strong>super_admin</strong> / <strong>platform_owner</strong> can run sync or enqueue.
-        See <code>docs/CELERY_RELIABILITY_RUNBOOK.md</code>.
-      </p>
+      <PageHeader
+        title="Jobs"
+        subtitle="Background job handlers and schedules for Ribdigi House operators. Platform staff can view; roles with platform write can run or enqueue."
+      />
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
@@ -151,7 +179,7 @@ export default function Page() {
                       <button
                         type="button"
                         disabled={!!busy || !info?.celery_enabled}
-                        title={!info?.celery_enabled ? 'CELERY_ENABLED is false' : undefined}
+                        title={!info?.celery_enabled ? 'Background processing is not available' : undefined}
                         onClick={() => runJob(name, true)}
                         aria-label={`Enqueue ${name}`}
                       >

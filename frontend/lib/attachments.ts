@@ -1,5 +1,7 @@
 /** Authenticated attachment fetch helpers (expenses / PI / JE). */
 
+import { getAccessToken } from './api';
+
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 export type FetchedAttachment = {
@@ -9,7 +11,7 @@ export type FetchedAttachment = {
 };
 
 export async function fetchAttachment(apiPath: string): Promise<FetchedAttachment> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const token = typeof window !== 'undefined' ? getAccessToken() : null;
   const tenant = typeof window !== 'undefined' ? localStorage.getItem('tenant') : null;
   const path = apiPath.startsWith('/') ? apiPath : `/${apiPath}`;
   const res = await fetch(`${apiBase}${path}`, {

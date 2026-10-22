@@ -5,7 +5,7 @@
 
 Ribdigi ERP application controls (already in product):
 
-- Cash-only while offline (card/momo blocked until online confirmation)
+- Cash, card, Mobile Money, and bank transfer are recorded tenders while offline. Wallet, gift card, and loyalty stay online-only.
 - Offline auth envelope expires after ~7 days without reconnect
 - Pending sync queue + recovery JSON export (no passwords/tokens)
 - Local reset guard when unsynced sales remain (`assertSafeLocalReset`)
@@ -62,7 +62,7 @@ OS lockdown below is **owner/ops responsibility**.
 |------|--------|
 | Online cash sale | ☐ |
 | Offline cash sale queues + syncs once | ☐ |
-| Offline card/momo blocked | ☐ |
+| Offline card and Mobile Money recorded, not collected | ☐ |
 | Recovery export downloads JSON without tokens | ☐ |
 | Heartbeat row updates within ~1 minute online | ☐ |
 | Kiosk/Guided Access prevents easy exit to desktop | ☐ |

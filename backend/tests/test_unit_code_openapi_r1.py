@@ -21,6 +21,8 @@ def test_unit_code_value_schema():
         with pytest.raises(ValidationError):
             _code.validate_python(bad)
 
+    omit = UnitOfMeasureCreate.model_validate({"name": "Box"})
+    assert omit.code is None
     ok = UnitOfMeasureCreate.model_validate({"code": "  BOX  ", "name": "Box"})
     assert ok.code == "BOX"
     with pytest.raises(ValidationError):
@@ -36,14 +38,14 @@ def test_unit_code_value_schema():
 
 def test_unit_code_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
-    assert 'aria-label="Unit code"' in page
-    assert "code: unitCode.trim()" in page
+    assert "Unit created" in page
+    assert "code: unitCode.trim()" not in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Unit code OpenAPI" in agents
     assert "UnitCodeValue" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "UnitCodeValue" in docs
-    assert "Unit code" in docs
+    assert "UNT-NNNN" in docs
 
 
 @pytest.mark.asyncio
