@@ -616,3 +616,28 @@ async def test_policy_reports_server_grants_and_online_only_workflows(client):
     assert OFFLINE_COMPLETE_MISSING in data["limitations"]
     assert "platform_admin" in data["not_offline"]
     assert set(data["offline_tenders"]) == {"bank_transfer", "card", "cash", "credit", "mobile_money"}
+
+
+@pytest.mark.asyncio
+async def test_reservation_of_device_not_seen_for_hours_stops_blocking(client, db_session):
+    """A browser or phone that stopped checking in no longer holds stock back from other tills."""
+    ac, seed = client
+    admin = await _super(ac, seed)
+    store_id = await _store_with_stock(ac, db_session, seed, admin, qty=10, code="OFFST")
+    cashier = await _cashier(ac)
+    a = await _authorize(ac, cashier, "dev-stale-aaaa1", store_id)
+    assert {x["product_id"]: x["allocated_qty"] for x in a["allocations"]}[seed["p1"].id] == 5
+
+    # Device A was seen just now: B only gets half of what A left free.
+    b = await _authorize(ac, cashier, "dev-stale-bbbb1", store_id)
+    assert {x["product_id"]: x["allocated_qty"] for x in b["allocations"]}[seed["p1"].id] == 2
+
+    # A stops checking in (abandoned browser). After the stale window its 5 units are free again.
+    dev_a = (
+        await db_session.execute(select(m.PosDevice).where(m.PosDevice.device_id == "dev-stale-aaaa1"))
+    ).scalar_one()
+    dev_a.last_seen_at = datetime.utcnow() - timedelta(hours=5)
+    await db_session.commit()
+    c = await _authorize(ac, cashier, "dev-stale-cccc1", store_id)
+    # Free = 10 on hand - 2 held by B (A no longer counts) = 8; half of that is 4.
+    assert {x["product_id"]: x["allocated_qty"] for x in c["allocations"]}[seed["p1"].id] == 4
