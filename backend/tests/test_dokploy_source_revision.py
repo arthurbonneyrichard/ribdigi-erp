@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import importlib.util
+import shutil
 import subprocess
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 DOKPLOY = ROOT / "docker-compose.dokploy.yml"
@@ -50,6 +53,8 @@ def test_stamp_is_a_source_revision_not_a_static_label():
     """Stamp is a git sha. After these files are committed, HEAD moves and the
     stamp may be that commit's parent; the image id still comes from .git.
     """
+    if shutil.which("git") is None or not (ROOT / ".git").exists():
+        pytest.skip("needs git and the repository's .git directory")
     stamp = _stamp()
     head = _git_short_head()
     assert len(stamp) == 12

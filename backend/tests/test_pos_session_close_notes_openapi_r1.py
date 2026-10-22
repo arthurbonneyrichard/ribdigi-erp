@@ -34,7 +34,8 @@ def test_pos_session_close_notes_ui_and_docs():
     assert "Closed when the cashier signed out" in helper
     assert "actual_cash: Number(session.expected_cash || 0)" in helper
     assert 'aria-label="Close shift"' not in page
-    assert 'aria-label="Counted cash"' not in page
+    # A drawer cash count (not a close-shift form) may ask for counted cash.
+    assert 'aria-label="Cash count"' in page
     assert 'aria-label="POS shift close notes"' not in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "POS shift close notes OpenAPI" in agents

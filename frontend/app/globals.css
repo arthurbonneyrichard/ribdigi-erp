@@ -3967,6 +3967,10 @@ a.plat-stat{color:inherit;text-decoration:none}
 @media(min-width:1440px){
   .shell:not(.is-pos) > .main{padding:18px 24px 28px}
 }
+/* Keep page text clear of the fixed 44px .mobile-side-nav tab (the shorthand above resets the 52px gutter). */
+@media (max-width:900px){
+  .shell:not(.is-pos) > .main{padding-left:calc(52px + env(safe-area-inset-left, 0px))}
+}
 .page,.work,.report-ui-page,.plat,.user-manage{display:flex;flex-direction:column;gap:var(--space-4);min-width:0}
 .page-head{align-items:flex-end;margin:0}
 .page-head h1,.list-page-head h1,.sales-desk-head h1,.cat-head h1{margin:0;font-size:22px;letter-spacing:-.02em;line-height:1.2}

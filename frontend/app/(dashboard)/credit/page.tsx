@@ -176,16 +176,21 @@ export default function Page() {
   const [limitBusy, setLimitBusy] = useState(false);
   const [loadState, setLoadState] = useState<'loading' | 'success' | 'empty' | 'error'>('loading');
   const [retryAfterSec, setRetryAfterSec] = useState(0);
-  const refreshInflight = useRef<Promise<void> | null>(null);
+  const refreshInflight = useRef<{ kind: 'receivable' | 'payable'; run: Promise<void> } | null>(null);
+  // Latest selected kind. A refresh started for Receivables can finish after the
+  // switch to Payables; its results must not pick a customer as the party.
+  const kindRef = useRef(kind);
+  kindRef.current = kind;
   const payFormRef = useRef<HTMLFormElement>(null);
 
   async function refresh() {
-    if (refreshInflight.current) return refreshInflight.current;
+    if (refreshInflight.current?.kind === kind) return refreshInflight.current.run;
+    const startKind = kind;
     setLoadState('loading');
     setError('');
     const run = (async () => {
       try {
-        const aging = await api(`/credit/aging?kind=${kind}`);
+        const aging = await api(`/credit/aging?kind=${startKind}`);
         const [cust, supp, settings, liquid, fx] = await Promise.all([
           api('/customers').catch(() => ({ data: [] })),
           api('/suppliers').catch(() => ({ data: [] })),
@@ -193,6 +198,7 @@ export default function Page() {
           api('/accounting/liquid-accounts').catch(() => ({ data: [] })),
           api('/credit/exchange-rates').catch(() => ({ data: { base_currency: 'GHS', rates: [] } })),
         ]);
+        if (kindRef.current !== startKind) return;
         const data = aging.data;
         setReport(data);
         setCustomers(cust.data || []);
@@ -221,6 +227,7 @@ export default function Page() {
         const parties = data?.parties || [];
         setLoadState(due === 0 && docs.length === 0 && parties.length === 0 ? 'empty' : 'success');
       } catch (err) {
+        if (kindRef.current !== startKind) return;
         setReport(null);
         setLoadState('error');
         const wait = retryAfterFrom(err);
@@ -228,9 +235,9 @@ export default function Page() {
         throw err;
       }
     })().finally(() => {
-      refreshInflight.current = null;
+      if (refreshInflight.current?.run === run) refreshInflight.current = null;
     });
-    refreshInflight.current = run;
+    refreshInflight.current = { kind: startKind, run };
     return run;
   }
 
@@ -293,6 +300,8 @@ export default function Page() {
   useEffect(() => {
     if (!partyId) return;
     if (loadState === 'loading' || loadState === 'error') return;
+    const list = kind === 'receivable' ? customers : suppliers;
+    if (!list.some((x) => x.id === partyId)) return;
     loadCreditInfo().catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [partyId, kind, loadState]);

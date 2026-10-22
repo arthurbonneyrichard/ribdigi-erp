@@ -128,7 +128,9 @@ async def require_active_store(db: AsyncSession, tenant_id: str, store_id: str) 
 
 async def warehouse_for_store(db: AsyncSession, tenant_id: str, store_id: str) -> m.Warehouse:
     # A store may already have two warehouse rows from an older link. Pick one
-    # instead of raising MultipleResultsFound on POS sale.
+    # instead of raising MultipleResultsFound on POS sale: an active warehouse
+    # first, then the store's own default (WH-<store code>), then by code.
+    # Code order alone picked an empty back-store warehouse over the main one.
     rows = (
         await db.execute(
             select(m.Warehouse)
@@ -139,9 +141,20 @@ async def warehouse_for_store(db: AsyncSession, tenant_id: str, store_id: str) -
             .order_by(m.Warehouse.code.asc(), m.Warehouse.id.asc())
         )
     ).scalars().all()
-    if rows:
+    if len(rows) == 1:
         return rows[0]
     store = await get_store(db, tenant_id, store_id)
+    if rows:
+        default_code = f"WH-{store.code}".upper()
+        return min(
+            rows,
+            key=lambda w: (
+                not bool(w.is_active),
+                (w.code or "").upper() != default_code,
+                w.code or "",
+                w.id,
+            ),
+        )
     wh = m.Warehouse(
         tenant_id=tenant_id,
         store_id=store.id,

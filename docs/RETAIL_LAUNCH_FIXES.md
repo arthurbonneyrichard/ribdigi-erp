@@ -9,6 +9,20 @@ Shared tick-list version (same items): https://claude.ai/artifact/FejAxZsxg9NJxu
 Verified fixed in the working copy (not committed yet): 1.1, 1.2, 1.3, 1.4, 1.7, 1.8, 3.1, 3.3, 4.7.
 Still open: 1.5 (phone sidebar arrow), 1.6 (credit race: a slow first `refresh()` with `kind === 'receivable'` sets the first customer as `partyId` after the switch to Payables — ignore stale refresh results or only load credit when `partyId` is in the current kind's list), all of section 2, 3.2 (8 tests left), 3.4 (`test_dokploy_source_revision` needs `git`; skip when missing), 4.1–4.6. 4.3: `/legal/terms` and `/legal/privacy` exist and login links to them, but the local dev server returns 404 until `next dev` is restarted — confirm after restart.
 
+## Fixed 22 Oct 2026, ~21:00 (uncommitted, in this working copy)
+
+- **1.1** `backend/app/stores.py` `warehouse_for_store`: prefers an active warehouse, then the store's own `WH-<store code>`, then code. New tests `backend/tests/test_store_warehouse_pick_r1.py`. Existing data: `backend/scripts/fix_duplicate_store_warehouses.py` (dry run; `--apply` unlinks extra warehouses and prints their stock).
+- **1.5** `frontend/app/globals.css`: at ≤900px `.shell:not(.is-pos) > .main` keeps a 52px left gutter (the later padding shorthand had reset it).
+- **1.6** `frontend/app/(dashboard)/credit/page.tsx`: a refresh started for one kind is ignored if the kind changed; in-flight dedupe is per kind; credit info loads only for a party in the current list.
+- **3.2 / 3.4** last 8 screen-text tests point at current code; `test_dokploy_source_revision` skips when git or `.git` is missing.
+- Checks run: till sales on a two-warehouse store, Credit switch (normal and fast), phone layout on 5 pages, updated tests (30 passed, 1 skipped), frontend `tsc --noEmit` clean.
+
+## Recheck 22 Oct 2026, 20:05 (after restarting the local frontend)
+
+- **1.1 re-opened.** No crash any more, and linking a second warehouse is refused. But for a store that *already* has two linked warehouses, `warehouse_for_store` now orders by `Warehouse.code` and returns the first: in the audit company that is `WH-BACK` (0 in stock) instead of `WH-MAIN` (68), so every till sale returns 409 `INSUFFICIENT_WAREHOUSE_STOCK` "Out of stock at this store". Fix: prefer a default/main warehouse (or the one holding stock), and add a one-off data fix that unlinks duplicate store links.
+- **4.3 partly done.** `/legal/terms` and `/legal/privacy` now open (200) and are linked from login, but each is ~185 words of product notes. Still missing for a paid service: legal entity name and address, effective date, fees/renewal/refunds, liability limits, termination and data export, governing law (Ghana), data retention, and how you comply with Ghana's Data Protection Act, 2012 (Act 843). Have a lawyer review.
+- Still open as before: 1.5, 1.6 (still 404 after the restart), section 2, 3.2, 3.4, 4.1, 4.2, 4.4–4.6.
+
 ## How to work through this file (for Cursor / the developer)
 
 - Work top to bottom. Item 1 (POS crash) blocks launch.
@@ -45,13 +59,13 @@ Still open: 1.5 (phone sidebar arrow), 1.6 (credit race: a slow first `refresh()
 - **Fix:** Move `display:flex; flex-wrap:wrap; gap:4px 10px;` into the base `.sales-ui-path` rule (line 8).
 - **Check:** `/sales` at desktop width shows the five steps spaced apart.
 
-### [ ] 1.5 LOW (design, phone): sidebar arrow covers page text
+### [x] 1.5 LOW (design, phone): sidebar arrow covers page text
 - **Problem:** At ~390 px wide the green "›" sidebar toggle on the left edge overlaps content (greeting name, page intros, "Supplier balances").
 - **Where:** Dashboard shell sidebar toggle styles (`frontend/app/(dashboard)` layout / shell CSS in `globals.css`).
 - **Fix:** Add left padding to the main content at phone width, or move the toggle into the top bar.
 - **Check:** Dashboard, Inventory and Purchasing at 390 px: no text covered.
 
-### [ ] 1.6 LOW: Credit page asks for the wrong record after switching to Payables
+### [x] 1.6 LOW: Credit page asks for the wrong record after switching to Payables
 - **Problem:** Receivables → Payables requests the previously selected customer as a supplier: `GET /api/v1/suppliers/{customer-id}/credit` → 404 (console only).
 - **Where:** `frontend/app/(dashboard)/credit/page.tsx` ~line 330 `loadCreditInfo()` uses the stale `partyId`.
 - **Fix:** Clear `partyId` and credit info when `kind` changes, before loading.
@@ -105,7 +119,7 @@ Full run: **2,979 passed, 55 failed** (run with the whole repo mounted). None of
 - **Fix:** Correct the import (module lives under `app/`).
 - **Check:** `pytest --co -q` collects with no errors.
 
-### [ ] 3.2 Update ~42 screen-text tests after the UI redesign
+### [x] 3.2 Update ~42 screen-text tests after the UI redesign
 - **Problem:** Tests assert old labels, e.g. `aria-label={`Cancel sales invoice ${inv.id}`}`. Cancel/reject with a reason still exist; they moved into row menus (e.g. `transferAct(t.id, 'reject')` in `inventory/page.tsx`).
 - **Files:** `backend/tests/test_*_cancel_reason_*`, `test_*_reject_reason_*`, `test_*_ui_and_docs`, `test_po_amend_reason_*`, `test_sales_discount_ui.py`, `test_inventory_low_stock.py`, `test_pos_payment_reference_openapi_r1.py`, `test_pos_session_close_notes_openapi_r1.py`, `test_pos_shift_status_openapi_r1.py`, `test_pos_till_checkout_ui_r1.py`, `test_purchasing_company_admin_ux.py`, `test_soft_activate_btn_colors_r1.py`, `test_credit_override_*`, `test_document_email_to_openapi_r1.py`, `test_honesty_defense_batch12_openapi_r1.py`, `test_webauthn_base64url_fe_omit_openapi_r1.py`, `test_opening_stock_line_product_id_openapi_r1.py`, `test_stock_*_openapi_r1.py`, `test_pr_convert_supplier_id_openapi_r1.py`, `test_purchase_request_item_notes_openapi_r1.py`.
 - **Fix:** Point assertions at the current labels/helpers.
@@ -117,7 +131,7 @@ Full run: **2,979 passed, 55 failed** (run with the whole repo mounted). None of
 - `test_honesty_defense_batch26_openapi_r1.py:151` expects `return money_json(on_hand - reserved)`; match current `available_qty`.
 - **Check:** All three pass.
 
-### [ ] 3.4 Mark server-only tests
+### [x] 3.4 Mark server-only tests
 - **Problem:** Fail on a laptop because they need `/opt/ribdigi` or a throwaway DB: `test_ops_monitoring_m1`, `test_k8s_deploy_k1`, `test_load_capacity_c1`, `test_load_cert_pack_c1`, `test_pitr_drill_pack_r1`, `test_wal_pitr_w1`, `test_grafana_pack_a1`, `test_logical_dr_drill_b1`, `test_celery_reliability_r1`, `test_dokploy_source_revision`, `test_alembic_disposable_upgrade`.
 - **Fix:** `pytest.skip` when the path/DB is unavailable, or run them only in CI.
 - **Check:** A local run has no environment-only failures.
