@@ -121,6 +121,10 @@ def test_launch_ui_source_fixes():
     globals_css = (ROOT / "frontend/app/globals.css").read_text(encoding="utf-8")
     assert ".main .plat-hero h1{color:var(--sand)}" in globals_css
     assert ".shell > .main{padding-left:52px}" in globals_css
+    assert (
+        ".shell:not(.is-pos) > .main{padding-left:calc(52px + env(safe-area-inset-left, 0px))}"
+        in globals_css
+    )
     sales = (ROOT / "frontend/app/(dashboard)/sales/sales-ui.css").read_text(encoding="utf-8")
     base = sales.split("@media")[0]
     assert "display: flex" in base
@@ -128,6 +132,7 @@ def test_launch_ui_source_fixes():
     credit = (ROOT / "frontend/app/(dashboard)/credit/page.tsx").read_text(encoding="utf-8")
     assert "function selectKind" in credit
     assert "setPartyId('')" in credit
+    assert "if (list.length && !list.some((p) => p.id === id)) return;" in credit
     inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert "if (pharmacyOps)" in inventory
     assert "apiOptional('/pharmacy/batch-holds'" in inventory

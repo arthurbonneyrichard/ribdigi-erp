@@ -349,6 +349,10 @@ export default function Page() {
   async function loadCreditInfo(forParty?: string) {
     const id = String(forParty ?? partyId).trim();
     if (!id) return;
+    // After switching Receivables/Payables the old selection can linger for one
+    // render; never ask for a customer as a supplier (404) or the reverse.
+    const list = kind === 'receivable' ? customers : suppliers;
+    if (list.length && !list.some((p) => p.id === id)) return;
     setError('');
     try {
       const path =
