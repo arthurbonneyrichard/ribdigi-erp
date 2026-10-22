@@ -507,6 +507,8 @@ export default function Page() {
   const [labelPick, setLabelPick] = useState<Record<string, boolean>>({});
 
   const [catName, setCatName] = useState('');
+  // Last saved name: Close only warns about unsaved changes when the name differs from it.
+  const [catSavedName, setCatSavedName] = useState('');
   const [catParentId, setCatParentId] = useState('');
   const [catTaxRateId, setCatTaxRateId] = useState('');
   const [catSearch, setCatSearch] = useState('');
@@ -2973,6 +2975,7 @@ export default function Page() {
   function openCategoryCreate() {
     setCatEditId('');
     setCatName('');
+    setCatSavedName('');
     setCatParentId('');
     setCatTaxRateId('');
     setCatTaxAdvanced(false);
@@ -2983,6 +2986,7 @@ export default function Page() {
   function openCategoryEdit(row: any) {
     setCatEditId(row.id);
     setCatName(row.name || '');
+    setCatSavedName(row.name || '');
     setCatParentId(row.parent_id || '');
     setCatTaxRateId(row.tax_rate_id || '');
     setCatTaxAdvanced(Boolean(row.tax_rate_id));
@@ -3010,12 +3014,16 @@ export default function Page() {
           method: 'PATCH',
           body: JSON.stringify(body),
         });
+        setCatSavedName(name);
         setFormFlash({ ok: 'Category updated' });
       } else {
         await api('/catalog/categories', {
           method: 'POST',
           body: JSON.stringify(body),
         });
+        // Clear the name so Close does not warn, and the next category can be typed straight away.
+        setCatName('');
+        setCatSavedName('');
         setFormFlash({ ok: 'Category created' });
       }
       await refresh();
@@ -4908,7 +4916,7 @@ export default function Page() {
             <FormModal
               title={catEditId ? 'Edit category' : 'Add category'}
               busy={saveBusy}
-              dirty={Boolean(catName.trim())}
+              dirty={catName.trim() !== catSavedName.trim()}
               onClose={() => setCatDrawerOpen(false)}
             >
                 <label className="muted" htmlFor="cat-name-field">
