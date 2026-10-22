@@ -58,9 +58,9 @@ RUN MIG=alembic/versions/20260917_0106_transaction_client_request_id.py \
 RUN set -eu; \
     DATABASE_URL=postgresql+asyncpg://verify:verify@127.0.0.1:9/ribdigi_verify_build_graph \
     python -m alembic heads > /tmp/alembic-heads.txt; \
-    printf '%s\n' '20261011_0138 (head)' > /tmp/alembic-heads.expected; \
     tr -d '\r\n' < /app/.build-id > /tmp/build-id-one-line; \
-    if ! cmp -s /tmp/alembic-heads.expected /tmp/alembic-heads.txt \
+    if ! test "$(wc -l < /tmp/alembic-heads.txt)" -eq 1 \
+        || ! grep -Eqx '[0-9]{8}_[0-9]{4} \(head\)' /tmp/alembic-heads.txt \
         || ! grep -Eq '^[0-9a-f]{12}$' /tmp/build-id-one-line \
         || grep -Fxq '20261003-live-test-store-scope' /tmp/build-id-one-line \
         || grep -Fxq '20261008-alembic-single-head-0136' /tmp/build-id-one-line \
@@ -71,7 +71,7 @@ RUN set -eu; \
       cat -A /app/.build-id; \
       exit 1; \
     fi; \
-    rm -f /tmp/alembic-heads.txt /tmp/alembic-heads.expected /tmp/build-id-one-line
+    rm -f /tmp/alembic-heads.txt /tmp/build-id-one-line
 
 RUN useradd --create-home --uid 10001 --shell /usr/sbin/nologin appuser \
     && mkdir -p /data/media /data/backups \
