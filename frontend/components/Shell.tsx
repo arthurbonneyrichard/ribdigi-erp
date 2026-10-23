@@ -10,7 +10,7 @@ import { isStoreNetworkNavItem, tenantIsMultiStore, type StoreEntitlementMe } fr
 import { getMe, invalidateMeCache } from '../lib/meCache';
 import { closeShiftForSignOut, openShiftForSignedInUser } from '../lib/cashierShift';
 import { linkStatusText, type LinkSnapshot } from '../lib/connectivity';
-import { requestPosShiftPanel, subscribePosDrawerBridge, type PosDrawerBridgeState } from '../lib/posDrawerBridge';
+import { requestPosReturnPanel, requestPosShiftPanel, subscribePosDrawerBridge, type PosDrawerBridgeState } from '../lib/posDrawerBridge';
 import { PosOfflineTopSlot } from '../lib/posOfflineSlot';
 import { prefetchGet } from '../lib/prefetchCache';
 import { loadUserTheme, writeUserTheme } from '../lib/theme';
@@ -803,6 +803,20 @@ function PosShiftTopButton() {
       onClick={requestPosShiftPanel}
     >
       Shift
+    </button>
+  );
+}
+
+/** Opens the till's return panel: find a receipt, choose items, refund. */
+function PosReturnTopButton() {
+  return (
+    <button
+      type="button"
+      className="tpos-btn pos-top-drawer-btn"
+      aria-label="Open till return"
+      onClick={requestPosReturnPanel}
+    >
+      Return
     </button>
   );
 }
@@ -1752,6 +1766,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                 <PosSellingStatus />
                 <div className="pos-top-tools">
                   <PosShiftTopButton />
+                  <PosReturnTopButton />
                   <PosDrawerTopControls />
                 </div>
               </>

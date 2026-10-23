@@ -73,6 +73,7 @@ from app import barcodes as barcodes_svc
 from app import printers_api as printers_api_mod
 from app.config import settings
 from app.schemas import (
+    PosTillReturnCreate,
     BrandCreate,
     BrandUpdate,
     BackupSettingsUpdate,
@@ -10731,6 +10732,75 @@ async def pos_search(
             r["rx_only"] = bool(getattr(parent, "rx_only", False)) if parent is not None else False
             r["nearest_expiry_date"] = expiry_map.get(pid)
     return env(out[:40])
+
+
+@api.get("/pos/receipts")
+async def pos_receipts_for_return(
+    q: Annotated[str | None, Query(max_length=60)] = None,
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+    claims=Depends(require_pos_permission("read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Recent till receipts (newest first), searchable by receipt number, for returns."""
+    from app import pos_returns as returns_svc
+
+    sales = await returns_svc.find_till_receipts(db, claims["tenant_id"], q=q, limit=limit)
+    rows = []
+    for sale in sales:
+        payload = sale.payload or {}
+        rows.append(
+            {
+                "id": sale.id,
+                "reference": sale.reference,
+                "created_at": sale.created_at,
+                "total": money_json(sale.total or 0),
+                "customer_name": payload.get("customer_name") or None,
+                "item_count": len(payload.get("items") or []),
+            }
+        )
+    return env(rows)
+
+
+@api.get("/pos/sales/{sale_id}/returnable")
+async def pos_sale_returnable(
+    sale_id: UuidIdValue,
+    claims=Depends(require_pos_permission("read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """A till receipt's lines with how many of each can still be returned."""
+    from app import pos_returns as returns_svc
+
+    sale = await returns_svc.get_till_sale(db, claims["tenant_id"], sale_id)
+    return env(await returns_svc.serialize_till_receipt(db, claims["tenant_id"], sale))
+
+
+@api.post("/pos/sales/{sale_id}/returns")
+async def pos_sale_return(
+    sale_id: UuidIdValue,
+    payload: PosTillReturnCreate,
+    claims=Depends(require_pos_permission("write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Take items back from a till receipt and refund them (stock, books and drawer)."""
+    from app import pos_returns as returns_svc
+    from app.sales_docs import serialize_return
+
+    ret = await returns_svc.create_till_return(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        sale_id=sale_id,
+        items=[item.model_dump() for item in payload.items],
+        reason=payload.reason,
+        refund_method=payload.refund_method,
+        notes=payload.notes,
+    )
+    await db.commit()
+    data = await serialize_return(db, ret)
+    session = await db.get(m.PosSession, ret.session_id) if ret.session_id else None
+    if session is not None:
+        data["session"] = await pos_svc.serialize_session(db, session)
+    return env(data, f"Return {ret.return_number} saved")
 
 
 @api.get("/pos/sales/{sale_id}/receipt")

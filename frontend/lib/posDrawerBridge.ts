@@ -28,3 +28,10 @@ export const POS_SHIFT_PANEL_EVENT = 'ribdigi:pos-shift-panel';
 export function requestPosShiftPanel() {
   window.dispatchEvent(new Event(POS_SHIFT_PANEL_EVENT));
 }
+
+/** The top bar's Return button asks the POS page to open the till return panel. */
+export const POS_RETURN_PANEL_EVENT = 'ribdigi:pos-return-panel';
+
+export function requestPosReturnPanel() {
+  window.dispatchEvent(new Event(POS_RETURN_PANEL_EVENT));
+}

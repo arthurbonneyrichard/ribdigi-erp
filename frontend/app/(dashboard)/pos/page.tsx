@@ -12,7 +12,8 @@ import { currencySign, formatDate, formatWhen, plainLabel } from '../../../lib/f
 import { AmountField } from '../../../components/AmountField';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import { countAndCloseOpenShift, openShiftForSignedInUser } from '../../../lib/cashierShift';
-import { POS_SHIFT_PANEL_EVENT, setPosDrawerBridge } from '../../../lib/posDrawerBridge';
+import { POS_RETURN_PANEL_EVENT, POS_SHIFT_PANEL_EVENT, setPosDrawerBridge } from '../../../lib/posDrawerBridge';
+import { TillReturnPanel } from './TillReturnPanel';
 import { setPosOfflinePanelProps } from '../../../lib/posOfflineSlot';
 import {
   CATALOG_NOT_SAVED,
@@ -499,6 +500,7 @@ export default function Page() {
   const [shiftReport, setShiftReport] = useState<any>(null);
   // The shift header and report open over the till from the top bar's Shift button.
   const [shiftPanelOpen, setShiftPanelOpen] = useState(false);
+  const [returnPanelOpen, setReturnPanelOpen] = useState(false);
   const [reportBusy, setReportBusy] = useState(false);
   const [shiftBusy, setShiftBusy] = useState(false);
   const [online, setOnline] = useState(
@@ -1007,8 +1009,13 @@ export default function Page() {
 
   useEffect(() => {
     const open = () => setShiftPanelOpen(true);
+    const openReturn = () => setReturnPanelOpen(true);
     window.addEventListener(POS_SHIFT_PANEL_EVENT, open);
-    return () => window.removeEventListener(POS_SHIFT_PANEL_EVENT, open);
+    window.addEventListener(POS_RETURN_PANEL_EVENT, openReturn);
+    return () => {
+      window.removeEventListener(POS_SHIFT_PANEL_EVENT, open);
+      window.removeEventListener(POS_RETURN_PANEL_EVENT, openReturn);
+    };
   }, []);
 
   // Opening the panel shows the report straight away, so the cash count is one step.
@@ -2132,6 +2139,18 @@ export default function Page() {
   return (
     <>
       <div className="tpos pos-ui">
+        <TillReturnPanel
+          open={returnPanelOpen}
+          onClose={() => setReturnPanelOpen(false)}
+          money={money}
+          onDone={({ message: note, session: fresh }) => {
+            if (fresh) setSession(fresh as Session);
+            setPayAsReprint(false);
+            setError('');
+            setMessage(note);
+            setShiftReport(null);
+          }}
+        />
         <div
           className={`pos-shift-panel${shiftPanelOpen ? ' is-open' : ''}`}
           onClick={(e) => {
