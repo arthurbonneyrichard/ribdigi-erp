@@ -356,6 +356,9 @@ export default function Page() {
     );
   }
 
+  // Only show Branch and Store columns when the company has a choice to make.
+  const showBranchCol = !hideStoreUx && branches.length > 0;
+  const showStoreCol = !hideStoreAssign && stores.length > 1;
   const isCustomRole = (r: RoleRow) => r.system === false;
   const roleChoiceText = (role: RoleRow) =>
     `${role.label || role.role}${isCustomRole(role) ? ' (custom)' : ''}${role.is_active === false ? ' [inactive]' : ''}`;
@@ -1369,8 +1372,8 @@ export default function Page() {
             <th className="user-manage-name">Name</th>
             <th className="user-manage-email">Email</th>
             <th className="user-manage-role">Role</th>
-            {!hideStoreUx ? <th>Branch</th> : null}
-            {!hideStoreAssign ? <th>Store</th> : null}
+            {showBranchCol ? <th>Branch</th> : null}
+            {showStoreCol ? <th>Store</th> : null}
             <th>Department</th>
             <th>Scope</th>
             <th>Status</th>
@@ -1380,7 +1383,7 @@ export default function Page() {
         <tbody>
           {managedUsers.length === 0 && (
             <tr>
-              <td colSpan={(canWrite ? 7 : 6) + (hideStoreUx ? 0 : 1) + (hideStoreAssign ? 0 : 1)} className="muted">
+              <td colSpan={(canWrite ? 7 : 6) + (showBranchCol ? 1 : 0) + (showStoreCol ? 1 : 0)} className="muted">
                 {rows.length
                   ? 'No users for this filter. Choose All to see everyone in this company.'
                   : 'No users yet. Add a person with a name, email, password, and role.'}
@@ -1410,7 +1413,7 @@ export default function Page() {
                   r.role
                 )}
               </td>
-              {!hideStoreUx ? (
+              {showBranchCol ? (
               <td>
                 {canWrite ? (
                   <select
@@ -1430,7 +1433,7 @@ export default function Page() {
                 )}
               </td>
               ) : null}
-              {!hideStoreAssign ? (
+              {showStoreCol ? (
               <td>
                 {canWrite && !PLATFORM_USER_ROLES.has(r.role) && r.role !== 'company_admin' ? (
                   stores.length <= 1 ? (

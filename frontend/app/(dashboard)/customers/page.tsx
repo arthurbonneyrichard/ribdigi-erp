@@ -6,7 +6,8 @@ import EmptyState from '../../../components/EmptyState';
 import PageHeader from '../../../components/PageHeader';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import { api } from '../../../lib/api';
-import { currencySign } from '../../../lib/format';
+import { currencySign, formatNumber } from '../../../lib/format';
+import RowActions, { type RowActionItem } from '../../../components/RowActions';
 import { AmountField } from '../../../components/AmountField';
 import { getMe } from '../../../lib/meCache';
 import {
@@ -346,6 +347,8 @@ export default function Page() {
     }
   }
 
+  const showCodeCol = customers.some((c) => Boolean(c.code));
+
   return (
     <div className="card cat-panel">
       <PageHeader
@@ -429,11 +432,13 @@ export default function Page() {
                     Name
                   </button>
                 </th>
+                {showCodeCol ? (
                 <th>
                   <button type="button" className="list-sort" onClick={() => toggleSort('code')}>
                     Code
                   </button>
                 </th>
+                ) : null}
                 <th>
                   <button type="button" className="list-sort" onClick={() => toggleSort('status')}>
                     Status
@@ -466,36 +471,42 @@ export default function Page() {
                     <strong>{c.name}</strong>
                     {c.profile_type === 'walk_in' ? <span className="muted"> (walk-in)</span> : null}
                   </td>
-                  <td data-label="Code">{c.code || '—'}</td>
+                  {showCodeCol ? <td data-label="Code">{c.code || '—'}</td> : null}
                   <td data-label="Status">{c.status === 'inactive' ? 'Inactive' : 'Active'}</td>
                   <td data-label="Group">{c.customer_group?.name || '—'}</td>
                   <td data-label="Email">{c.email || '—'}</td>
                   <td data-label="Phone">{c.phone || '—'}</td>
-                  <td data-label="Balance">{c.balance ?? 0}</td>
+                  <td data-label="Balance">{formatNumber(c.balance ?? 0)}</td>
                   <td data-label="Loyalty">{c.loyalty_points ?? 0}</td>
-                  <td className="cat-actions">
-                    <button type="button" onClick={() => openEdit(c)} aria-label={`Edit ${c.name}`}>
-                      Edit
-                    </button>
-                    <button type="button" onClick={() => openAr(c)} aria-label={`AR for ${c.name}`}>
-                      AR
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openAccount(c)}
-                      aria-label={`Account for ${c.name}`}
-                    >
-                      Account
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActive(c, c.status === 'inactive')}
-                      aria-label={
-                        c.status === 'inactive' ? `Activate ${c.name}` : `Deactivate ${c.name}`
+                  <td className="col-actions">
+                    <RowActions
+                      label={`More actions for ${c.name}`}
+                      primaryMax={1}
+                      items={
+                        [
+                          { key: 'edit', label: 'Edit', ariaLabel: `Edit ${c.name}`, onClick: () => openEdit(c) },
+                          {
+                            key: 'ar',
+                            label: 'Unpaid invoices',
+                            ariaLabel: `AR for ${c.name}`,
+                            onClick: () => openAr(c),
+                          },
+                          {
+                            key: 'account',
+                            label: 'Statement',
+                            ariaLabel: `Account for ${c.name}`,
+                            onClick: () => openAccount(c),
+                          },
+                          {
+                            key: 'active',
+                            label: c.status === 'inactive' ? 'Activate' : 'Deactivate',
+                            variant: c.status === 'inactive' ? 'ok' : 'danger',
+                            ariaLabel: c.status === 'inactive' ? `Activate ${c.name}` : `Deactivate ${c.name}`,
+                            onClick: () => setActive(c, c.status === 'inactive'),
+                          },
+                        ] as RowActionItem[]
                       }
-                    >
-                      {c.status === 'inactive' ? 'Activate' : 'Deactivate'}
-                    </button>
+                    />
                   </td>
                 </tr>
               ))}
@@ -660,79 +671,66 @@ export default function Page() {
           onClose={() => setFormOpen(false)}
         >
           <div className="erp-form-grid">
-            <input
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="Name"
-              aria-label="Customer name"
-              aria-invalid={Boolean(fieldErrors.name)}
-            />
+            <label className="field">
+              <span>Name</span>
+              <input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Customer name"
+                aria-label="Customer name"
+                aria-invalid={Boolean(fieldErrors.name)}
+              />
+            </label>
             {fieldErrors.name ? (
               <p className="list-toast err" role="alert">
                 {fieldErrors.name}
               </p>
             ) : null}
-            <input
-              value={form.code}
-              onChange={(e) => setForm({ ...form, code: e.target.value })}
-              placeholder="Code"
-              aria-label="Customer code"
-            />
-            <select
-              value={form.profileType}
-              onChange={(e) => setForm({ ...form, profileType: e.target.value })}
-              aria-label="Customer profile type"
-            >
-              <option value="registered">Registered</option>
-              <option value="walk_in">Walk-in</option>
-            </select>
-            <input
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
-              placeholder="Category"
-              aria-label="Customer category"
-            />
-            <select
-              value={form.status}
-              onChange={(e) => setForm({ ...form, status: e.target.value })}
-              aria-label="Customer status"
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-            <input
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              placeholder="Email"
-              aria-label="Customer email"
-            />
-            <input
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              placeholder="Phone (E.164)"
-              aria-label="Customer phone"
-            />
-            <input
-              value={form.address}
-              onChange={(e) => setForm({ ...form, address: e.target.value })}
-              placeholder="Address"
-              aria-label="Customer address"
-            />
-            <select
-              value={form.groupId}
-              onChange={(e) => setForm({ ...form, groupId: e.target.value })}
-              aria-label="Customer group"
-              aria-invalid={Boolean(fieldErrors.customer_group || fieldErrors.customer_group_id)}
-            >
-              <option value="">Customer group (optional)</option>
-              {groups
-                .filter((g) => g.is_active !== false || g.id === form.groupId)
-                .map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                  </option>
-                ))}
-            </select>
+            <label className="field">
+              <span>Phone</span>
+              <input
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                placeholder="e.g. +233 24 123 4567"
+                aria-label="Customer phone"
+              />
+            </label>
+            <label className="field">
+              <span>Email</span>
+              <input
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="Optional"
+                aria-label="Customer email"
+              />
+            </label>
+            <label className="field">
+              <span>Address</span>
+              <input
+                value={form.address}
+                onChange={(e) => setForm({ ...form, address: e.target.value })}
+                placeholder="Optional"
+                aria-label="Customer address"
+              />
+            </label>
+            <label className="field">
+              <span>Customer group</span>
+              <select
+                value={form.groupId}
+                onChange={(e) => setForm({ ...form, groupId: e.target.value })}
+                aria-label="Customer group"
+                aria-invalid={Boolean(fieldErrors.customer_group || fieldErrors.customer_group_id)}
+              >
+                <option value="">No group</option>
+                {groups
+                  .filter((g) => g.is_active !== false || g.id === form.groupId)
+                  .map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
             {fieldErrors.customer_group || fieldErrors.customer_group_id ? (
               <p className="list-toast err" role="alert">
                 {fieldErrors.customer_group || fieldErrors.customer_group_id}
@@ -743,30 +741,87 @@ export default function Page() {
                 {fieldErrors.company}
               </p>
             ) : null}
-            <input
-              value={form.creditLimit}
-              onChange={(e) => setForm({ ...form, creditLimit: e.target.value })}
-              placeholder="Credit limit"
-              aria-label="Customer credit limit"
-            />
-            <input
-              value={form.paymentTermsDays}
-              onChange={(e) => setForm({ ...form, paymentTermsDays: e.target.value })}
-              placeholder="Net days"
-              aria-label="Customer payment terms days"
-            />
-            <input
-              value={form.lat}
-              onChange={(e) => setForm({ ...form, lat: e.target.value })}
-              placeholder="Latitude"
-              aria-label="Customer latitude"
-            />
-            <input
-              value={form.lng}
-              onChange={(e) => setForm({ ...form, lng: e.target.value })}
-              placeholder="Longitude"
-              aria-label="Customer longitude"
-            />
+            <label className="field">
+              <span>Credit limit</span>
+              <input
+                value={form.creditLimit}
+                onChange={(e) => setForm({ ...form, creditLimit: e.target.value })}
+                placeholder="0 = cash only"
+                aria-label="Customer credit limit"
+              />
+            </label>
+            <label className="field">
+              <span>Payment terms (days)</span>
+              <input
+                value={form.paymentTermsDays}
+                onChange={(e) => setForm({ ...form, paymentTermsDays: e.target.value })}
+                placeholder="e.g. 30"
+                aria-label="Customer payment terms days"
+              />
+            </label>
+            <details className="span-2">
+              <summary>More details</summary>
+              <div className="erp-form-grid" style={{ marginTop: 8 }}>
+                <label className="field">
+                  <span>Code</span>
+                  <input
+                    value={form.code}
+                    onChange={(e) => setForm({ ...form, code: e.target.value })}
+                    placeholder="Optional"
+                    aria-label="Customer code"
+                  />
+                </label>
+                <label className="field">
+                  <span>Type</span>
+                  <select
+                    value={form.profileType}
+                    onChange={(e) => setForm({ ...form, profileType: e.target.value })}
+                    aria-label="Customer profile type"
+                  >
+                    <option value="registered">Registered</option>
+                    <option value="walk_in">Walk-in</option>
+                  </select>
+                </label>
+                <label className="field">
+                  <span>Category</span>
+                  <input
+                    value={form.category}
+                    onChange={(e) => setForm({ ...form, category: e.target.value })}
+                    placeholder="Optional"
+                    aria-label="Customer category"
+                  />
+                </label>
+                <label className="field">
+                  <span>Status</span>
+                  <select
+                    value={form.status}
+                    onChange={(e) => setForm({ ...form, status: e.target.value })}
+                    aria-label="Customer status"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </label>
+                <label className="field">
+                  <span>Map latitude</span>
+                  <input
+                    value={form.lat}
+                    onChange={(e) => setForm({ ...form, lat: e.target.value })}
+                    placeholder="Optional"
+                    aria-label="Customer latitude"
+                  />
+                </label>
+                <label className="field">
+                  <span>Map longitude</span>
+                  <input
+                    value={form.lng}
+                    onChange={(e) => setForm({ ...form, lng: e.target.value })}
+                    placeholder="Optional"
+                    aria-label="Customer longitude"
+                  />
+                </label>
+              </div>
+            </details>
             <button type="button" className="list-btn-primary" onClick={save} disabled={saveBusy}>
               {saveBusy ? 'Saving…' : editingId ? 'Save customer' : 'Add customer'}
             </button>
@@ -784,7 +839,7 @@ export default function Page() {
       ) : null}
       {arCustomer ? (
         <FormModal
-          title={`AR · ${arCustomer.name}`}
+          title={`Unpaid invoices · ${arCustomer.name}`}
           onClose={() => setArCustomer(null)}
         >
           <div className="stack">

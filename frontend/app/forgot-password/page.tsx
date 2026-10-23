@@ -71,12 +71,12 @@ function ForgotPasswordForm() {
 
         <form className="login-form" onSubmit={submit}>
           <label className="login-field">
-            <span>Workspace</span>
+            <span>Company code</span>
             <input
               aria-label="Password reset tenant"
               value={tenant}
               onChange={(e) => setTenant(e.target.value)}
-              placeholder="Tenant slug or ID"
+              placeholder="Your company code"
               autoComplete="organization"
               required
             />

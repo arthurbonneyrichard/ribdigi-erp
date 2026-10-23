@@ -70,7 +70,8 @@
 
 .purchase-ui-page .table th.col-id,
 .purchase-ui-page .table td.col-id {
-  width: 7.5rem;
+  width: 9rem;
+  white-space: nowrap;
 }
 
 .purchase-ui-page .erp-row-actions {

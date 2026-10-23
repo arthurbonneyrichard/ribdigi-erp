@@ -763,7 +763,7 @@ export default function Page() {
               <PanelIcon name="profit" />
               Revenue trend (30d)
             </h3>
-            <p className="hint">Daily revenue line — last 30 days</p>
+            <p className="hint">Sales each day for the last 30 days</p>
             {dailyAll.every((x) => !x.sales) ? (
               <div className="empty">No sales in the last 30 days yet.</div>
             ) : (
@@ -776,7 +776,7 @@ export default function Page() {
               <PanelIcon name="cashflow" />
               Monthly sales (12 mo)
             </h3>
-            <p className="hint">Bar chart of the last 12 calendar months</p>
+            <p className="hint">Sales for each of the last 12 months</p>
             {monthly.every((x) => !x.total) ? (
               <div className="empty">No monthly sales yet.</div>
             ) : (
@@ -926,7 +926,7 @@ export default function Page() {
             <PanelIcon name="recent" />
             Top products (30d)
           </h3>
-          <p className="hint">By revenue from POS/sales lines · <Link href={links.reports_sales || '/reports'}>Reports</Link></p>
+          <p className="hint">Best sellers by sales value · <Link href={links.reports_sales || '/reports'}>Reports</Link></p>
           {topRev.length === 0 ? (
             <div className="empty">No product sales in the last 30 days yet.</div>
           ) : (

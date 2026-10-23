@@ -1680,7 +1680,12 @@ export default function Page() {
           <div className="card">
             <div className="muted">Month sales</div>
             <div className="kpi">{fmtMoney(data.month_sales?.total_revenue)}</div>
-            <p className="muted">vs prior: {data.month_sales?.change_pct ?? '—'}%</p>
+            {data.month_sales?.change_pct != null ? (
+              <p className="muted">
+                {Number(data.month_sales.change_pct) >= 0 ? '+' : ''}
+                {data.month_sales.change_pct}% on last month
+              </p>
+            ) : null}
           </div>
           <div className="card no-print">
             <div className="muted">Low stock SKUs</div>

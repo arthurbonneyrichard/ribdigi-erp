@@ -338,12 +338,12 @@ export default function Login() {
           {!needs2fa && (
             <>
               <label className="login-field">
-                <span>Workspace</span>
+                <span>Company code</span>
                 <input
                   aria-label="Login tenant"
                   value={tenant}
                   onChange={(e) => setTenant(e.target.value)}
-                  placeholder="Tenant slug or ID"
+                  placeholder="Your company code"
                   autoComplete="organization"
                   required
                   disabled={busy}

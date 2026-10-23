@@ -20,7 +20,7 @@ def test_shared_design_tokens_and_page_header():
     assert "--shadow:" in css
     assert ".page-head" in css
     assert ".page-empty" in css
-    assert 'grid-template-areas:"cartcatalog"' in compact
+    assert 'grid-template-areas:"catalogcart"' in compact
     assert "nav-compact" in css and "side-edge-chevron" in css
     assert "rotate(180deg)" in css
     assert "list-page-head page-head" in header
