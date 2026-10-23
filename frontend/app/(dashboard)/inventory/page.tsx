@@ -2795,6 +2795,8 @@ export default function Page() {
       await refresh();
       await refreshSelected(productId);
       if (whStockWarehouseId) await loadWarehouseStock();
+      // Received: close the Receive batch window so the batch shows in the list.
+      if (opts?.requireBatch) setBatchDrawerOpen(false);
     } catch (err: any) {
       setFormFlash({ err: err.message || 'Could not receive stock' });
     } finally {
@@ -5945,18 +5947,23 @@ export default function Page() {
                   placeholder="Notes (optional)"
                   aria-label="Stock-in notes"
                 />
-                <input
-                  value={stockRefType}
-                  onChange={(e) => setStockRefType(e.target.value)}
-                  placeholder="Reference type (optional)"
-                  aria-label="Stock-in reference type"
-                />
-                <input
-                  value={stockRefId}
-                  onChange={(e) => setStockRefId(e.target.value)}
-                  placeholder="Reference id (optional)"
-                  aria-label="Stock-in reference id"
-                />
+                <details className="purchase-bill-more">
+                  <summary>More options: link to a document</summary>
+                  <div className="purchase-bill-more-body">
+                    <input
+                      value={stockRefType}
+                      onChange={(e) => setStockRefType(e.target.value)}
+                      placeholder="Document type, e.g. delivery note (optional)"
+                      aria-label="Stock-in reference type"
+                    />
+                    <input
+                      value={stockRefId}
+                      onChange={(e) => setStockRefId(e.target.value)}
+                      placeholder="Document number (optional)"
+                      aria-label="Stock-in reference id"
+                    />
+                  </div>
+                </details>
                 <div className="cat-save-row">
                   <button
                     type="button"
