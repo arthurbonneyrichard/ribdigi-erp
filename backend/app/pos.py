@@ -602,8 +602,8 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
     return_rows: list[dict] = []
     return_total = 0.0
     for ret in returns_raw:
-        include = ret.created_by == session.user_id
-        if not include and session.store_id:
+        include = ret.created_by == session.user_id or ret.session_id == session.id
+        if not include and session.store_id and ret.sales_invoice_id:
             inv = await db.get(m.SalesInvoice, ret.sales_invoice_id)
             include = bool(
                 inv

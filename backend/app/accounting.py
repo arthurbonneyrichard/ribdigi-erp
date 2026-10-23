@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date, datetime, time, timedelta
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
@@ -1773,11 +1773,10 @@ async def _pnl_journal_ids_for_stores(
             (
                 await db.execute(
                     select(m.SalesReturn.id)
-                    .join(m.SalesInvoice, m.SalesInvoice.id == m.SalesReturn.sales_invoice_id)
+                    .outerjoin(m.SalesInvoice, m.SalesInvoice.id == m.SalesReturn.sales_invoice_id)
                     .where(
                         m.SalesReturn.tenant_id == tenant_id,
-                        m.SalesInvoice.tenant_id == tenant_id,
-                        m.SalesInvoice.store_id.in_(store_ids),
+                        func.coalesce(m.SalesInvoice.store_id, m.SalesReturn.store_id).in_(store_ids),
                     )
                 )
             ).scalars().all()

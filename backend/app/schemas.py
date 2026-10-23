@@ -9988,3 +9988,27 @@ class BatchHoldRelease(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     status: Literal["released"]
+
+
+class PosTillReturnItem(BaseModel):
+    """One item taken back from a till receipt (BR-7.5 / BR-8)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    product_id: UuidIdValue
+    variant_id: UuidIdValue | None = None
+    quantity: PositiveQtyValue
+    # true → back on the shelf; false → damaged / not fit to sell (not restocked)
+    restock: bool = True
+
+
+class PosTillReturnCreate(BaseModel):
+    """Return items from a till receipt and refund them in one step."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[PosTillReturnItem] = Field(min_length=1)
+    reason: Literal["damaged", "wrong_item", "defective", "customer_change", "other"]
+    # omit → the way the customer paid (credit sales → store credit)
+    refund_method: Literal["cash", "card", "mobile_money", "bank_transfer", "store_credit"] | None = None
+    notes: SalesReturnNotesValue | None = None

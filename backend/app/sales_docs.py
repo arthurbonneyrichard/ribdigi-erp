@@ -1002,12 +1002,16 @@ async def list_return_items(db: AsyncSession, tenant_id: str, return_id: str) ->
 
 async def serialize_return(db: AsyncSession, ret: m.SalesReturn) -> dict:
     items = await list_return_items(db, ret.tenant_id, ret.id)
+    till_sale = await db.get(m.Transaction, ret.transaction_id) if getattr(ret, "transaction_id", None) else None
     return {
         "id": ret.id,
         "return_number": ret.return_number,
         "credit_note_number": getattr(ret, "credit_note_number", None),
         "customer_id": ret.customer_id,
         "sales_invoice_id": ret.sales_invoice_id,
+        # Set for a return taken at the till against a receipt (no invoice).
+        "transaction_id": getattr(ret, "transaction_id", None),
+        "till_receipt": till_sale.reference if till_sale else None,
         "status": ret.status,
         "reason": ret.reason,
         "restock": ret.restock,

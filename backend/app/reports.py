@@ -773,15 +773,17 @@ async def sales_returns_summary(
 
     stmt = (
         select(m.SalesReturn, m.Party)
-        .join(m.Party, m.Party.id == m.SalesReturn.customer_id)
+        .outerjoin(m.Party, m.Party.id == m.SalesReturn.customer_id)
         .where(m.SalesReturn.tenant_id == tenant_id)
         .order_by(m.SalesReturn.created_at.desc())
     )
     if store_id or store_ids is not None:
-        stmt = stmt.join(
+        stmt = stmt.outerjoin(
             m.SalesInvoice, m.SalesInvoice.id == m.SalesReturn.sales_invoice_id
         )
-        stmt = apply_store_scope(stmt, m.SalesInvoice.store_id, store_id, store_ids)
+        stmt = apply_store_scope(
+            stmt, func.coalesce(m.SalesInvoice.store_id, m.SalesReturn.store_id), store_id, store_ids
+        )
     if customer_id:
         stmt = stmt.where(m.SalesReturn.customer_id == customer_id)
     if reason:
@@ -830,11 +832,13 @@ async def sales_returns_summary(
         reason_row["total_amount"] = money_json(round(reason_row["total_amount"] + amount, 2))
         reason_row["quantity"] = money_json(round(reason_row["quantity"] + qty, 3))
 
+        cust_id = party.id if party else None
+        cust_name = party.name if party else "Walk-in (till)"
         cust = by_customer.setdefault(
-            party.id,
+            cust_id or "walk-in",
             {
-                "customer_id": party.id,
-                "name": party.name,
+                "customer_id": cust_id,
+                "name": cust_name,
                 "return_count": 0,
                 "total_amount": 0.0,
                 "quantity": 0.0,
@@ -849,8 +853,8 @@ async def sales_returns_summary(
                 "id": ret.id,
                 "return_number": ret.return_number,
                 "credit_note_number": ret.credit_note_number,
-                "customer_id": party.id,
-                "customer_name": party.name,
+                "customer_id": cust_id,
+                "customer_name": cust_name,
                 "status": ret.status,
                 "reason": ret.reason,
                 "restock": bool(ret.restock),
@@ -861,6 +865,7 @@ async def sales_returns_summary(
                 "total_amount": amount,
                 "refunded_amount": refunded,
                 "sales_invoice_id": ret.sales_invoice_id,
+                "transaction_id": ret.transaction_id,
                 "posted_at": ret.posted_at,
                 "created_at": ret.created_at,
             }

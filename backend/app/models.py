@@ -1631,8 +1631,17 @@ class SalesReturn(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
     return_number: Mapped[str] = mapped_column(String(50), index=True)
-    customer_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
-    sales_invoice_id: Mapped[str] = mapped_column(ForeignKey("sales_invoices.id"), index=True)
+    # A return comes from a sales invoice, or from a till receipt (transaction_id);
+    # a walk-in till receipt has no customer.
+    customer_id: Mapped[str | None] = mapped_column(ForeignKey("parties.id"), nullable=True, index=True)
+    sales_invoice_id: Mapped[str | None] = mapped_column(
+        ForeignKey("sales_invoices.id"), nullable=True, index=True
+    )
+    transaction_id: Mapped[str | None] = mapped_column(
+        ForeignKey("transactions.id"), nullable=True, index=True
+    )
+    session_id: Mapped[str | None] = mapped_column(ForeignKey("pos_sessions.id"), nullable=True, index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
     status: Mapped[str] = mapped_column(String(30), default="draft", index=True)
     # draft -> posted | cancelled
     reason: Mapped[str] = mapped_column(String(80), default="other")

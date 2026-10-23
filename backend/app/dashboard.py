@@ -469,10 +469,15 @@ async def build_dashboard(
                 m.SalesReturn.created_at < _day_start(tomorrow),
             )
             if store_id or store_ids is not None:
-                ret_stmt = ret_stmt.join(
+                ret_stmt = ret_stmt.outerjoin(
                     m.SalesInvoice, m.SalesInvoice.id == m.SalesReturn.sales_invoice_id
                 )
-                ret_stmt = apply_store_scope(ret_stmt, m.SalesInvoice.store_id, store_id, store_ids)
+                ret_stmt = apply_store_scope(
+                    ret_stmt,
+                    func.coalesce(m.SalesInvoice.store_id, m.SalesReturn.store_id),
+                    store_id,
+                    store_ids,
+                )
             returns_today = int((await db.execute(ret_stmt)).scalar() or 0)
 
         expired_lots = 0
@@ -652,10 +657,15 @@ async def build_dashboard(
                 m.SalesReturn.status == "posted",
             )
             if store_id or store_ids is not None:
-                ret_all = ret_all.join(
+                ret_all = ret_all.outerjoin(
                     m.SalesInvoice, m.SalesInvoice.id == m.SalesReturn.sales_invoice_id
                 )
-                ret_all = apply_store_scope(ret_all, m.SalesInvoice.store_id, store_id, store_ids)
+                ret_all = apply_store_scope(
+                    ret_all,
+                    func.coalesce(m.SalesInvoice.store_id, m.SalesReturn.store_id),
+                    store_id,
+                    store_ids,
+                )
             returns_count = int((await db.execute(ret_all)).scalar() or 0)
 
     subscription = {

@@ -829,3 +829,230 @@
   border-color: var(--pos-line);
   color: var(--pos-ink);
 }
+
+/* ---------- Green sale panel (right side) ---------- */
+.main .tpos.pos-ui .tpos-cart.pos-ui-cart {
+  --pos-surface: #0f5a2f;
+  --pos-soft: #0c4d29;
+  --pos-line: #2c7d4a;
+  --pos-ink: #ffffff;
+  --pos-muted: #cde8d3;
+  --pos-forest: #c8e86a;
+  --pos-accent: #c8e86a;
+  --pos-accent-dark: #c8e86a;
+  background: linear-gradient(165deg, #006b2e 0%, #004a24 55%, #003d1f 100%);
+  border-color: #003d1f;
+  color: #fff;
+  box-shadow: 0 14px 32px #003d1f40;
+}
+.main .tpos.pos-ui .tpos-cart.pos-ui-cart select option {
+  color: #10211b;
+  background: #fff;
+}
+.main .tpos.pos-ui .tpos-cart.pos-ui-cart button.pos-clear-link {
+  color: #ffc2b8;
+}
+.main .tpos.pos-ui .tpos-cart.pos-ui-cart button.pos-pay-method.is-on {
+  background: #c8e86a;
+  border-color: #c8e86a;
+  color: #003d1f;
+}
+.main .tpos.pos-ui .tpos-cart.pos-ui-cart .pos-change-due.is-short {
+  color: #ffc2b8;
+}
+.main .tpos.pos-ui .tpos-cart.pos-ui-cart .pos-cart-foot {
+  border-top-color: #ffffff2e;
+}
+.main .tpos.pos-ui .tpos-cart.pos-ui-cart .pos-cart-foot .tpos-pay-row button.tpos-btn-pay {
+  background: #c8e86a;
+  color: #003d1f;
+  box-shadow: 0 8px 20px #00000033;
+}
+.main .tpos.pos-ui .tpos-cart.pos-ui-cart .pos-cart-foot .tpos-pay-row button.tpos-btn-pay:hover:not(:disabled) {
+  background: #d8f28a;
+}
+.main .tpos.pos-ui .tpos-cart.pos-ui-cart .pos-cart-foot .tpos-pay-row button.tpos-btn-pay:disabled {
+  background: #ffffff21;
+  color: #ffffff8c;
+  box-shadow: none;
+}
+.main .tpos.pos-ui .tpos-cart.pos-ui-cart .tpos-banner.tpos-banner-ok {
+  background: #e7f6dc;
+  color: #2f7a0c;
+  border-color: #c7e6ad;
+}
+/* The done panel stays a light card on the green so "Give change" stands out. */
+.main .tpos.pos-ui .tpos-cart.pos-ui-cart .pos-done {
+  background: #f3fbea;
+  border-color: #c7e6ad;
+}
+.main .tpos.pos-ui .tpos-cart.pos-ui-cart .pos-done-title {
+  color: #2f7a0c;
+}
+.main .tpos.pos-ui .tpos-cart.pos-ui-cart .pos-done-change {
+  color: #003d1f;
+}
+.main .tpos.pos-ui .tpos-cart.pos-ui-cart .pos-done-actions button.pos-done-new {
+  background: #2f7a0c;
+  color: #fff;
+}
+.main .tpos.pos-ui .tpos-cart.pos-ui-cart .pos-done-actions button.pos-done-new:hover {
+  background: #003d1f;
+}
+.main .tpos.pos-ui .tpos-cart.pos-ui-cart .pos-done-actions button.pos-done-print {
+  background: #fff;
+  border-color: #c7e6ad;
+  color: #10211b;
+}
+[data-theme='dark'] .main .tpos.pos-ui .tpos-cart.pos-ui-cart .pos-done-title,
+[data-theme='dark'] .main .tpos.pos-ui .tpos-cart.pos-ui-cart .pos-done-change {
+  color: #003d1f;
+}
+
+/* ---------- Till return window ---------- */
+.main .tpos.pos-ui .pos-return-card {
+  gap: 12px;
+}
+.main .tpos.pos-ui .pos-return-find {
+  display: flex;
+  gap: 8px;
+}
+.main .tpos.pos-ui .pos-return-find .tpos-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 46px;
+  font-size: 16px;
+}
+.main .tpos.pos-ui .pos-return-find button {
+  height: 46px;
+  min-height: 46px;
+  padding: 0 20px;
+}
+.main .tpos.pos-ui .pos-return-hint {
+  margin: 0;
+  font-size: 13px;
+}
+.main .tpos.pos-ui .pos-return-list,
+.main .tpos.pos-ui .pos-return-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+.main .tpos.pos-ui button.pos-return-row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--white);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: none;
+  transform: none;
+}
+.main .tpos.pos-ui button.pos-return-row:hover {
+  border-color: var(--brand);
+  background: #f4f8ef;
+}
+.main .tpos.pos-ui .pos-return-row span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.main .tpos.pos-ui .pos-return-row small,
+.main .tpos.pos-ui .pos-return-line-name small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.main .tpos.pos-ui .pos-return-lines li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--white);
+}
+.main .tpos.pos-ui .pos-return-lines li.is-chosen {
+  border-color: var(--brand);
+  background: #f3fbea;
+}
+.main .tpos.pos-ui .pos-return-line-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.main .tpos.pos-ui .pos-return-qty {
+  min-width: 2rem;
+  text-align: center;
+  font-weight: 800;
+}
+.main .tpos.pos-ui .pos-return-shelf {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.main .tpos.pos-ui .pos-return-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.main .tpos.pos-ui .pos-return-options select {
+  width: 100%;
+  height: 42px;
+}
+.main .tpos.pos-ui button.pos-return-submit {
+  height: 52px;
+  min-height: 52px;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 850;
+  background: #2f7a0c;
+  border: 0;
+  color: #fff;
+}
+.main .tpos.pos-ui button.pos-return-submit:disabled {
+  background: #cfe3c2;
+}
+.main .tpos.pos-ui button.pos-return-back {
+  background: none;
+  border: 0;
+  padding: 0;
+  min-height: 0;
+  color: #2f7a0c;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  box-shadow: none;
+}
+@media (max-width: 640px) {
+  .main .tpos.pos-ui .pos-return-lines li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .main .tpos.pos-ui .pos-return-shelf {
+    grid-column: 1 / -1;
+  }
+  .main .tpos.pos-ui .pos-return-options {
+    grid-template-columns: 1fr;
+  }
+}
+[data-theme='dark'] .main .tpos.pos-ui button.pos-return-row,
+[data-theme='dark'] .main .tpos.pos-ui .pos-return-lines li {
+  background: #123522;
+  border-color: #1f4a33;
+  color: #eef6ea;
+}
