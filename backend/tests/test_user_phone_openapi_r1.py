@@ -56,7 +56,8 @@ def test_user_phone_schema():
 def test_user_phone_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/users/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="User phone"' in page
-    assert "form.phone.trim() || null" in page
+    assert "phone: phoneTrim || null" in page
+    assert "compactPhone(form.phone)" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "User phone OpenAPI" in agents
     assert "E164PhoneValue" in agents

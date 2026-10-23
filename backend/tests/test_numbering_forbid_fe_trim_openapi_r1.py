@@ -84,7 +84,7 @@ def test_numbering_forbid_fe_omit_ui_and_docs():
     assert security.count("code: code.trim()") >= 2
 
     users = (ROOT / "frontend/app/(dashboard)/users/page.tsx").read_text(encoding="utf-8")
-    assert "phone: form.phone.trim() || null" in users
+    assert "phone: phoneTrim || null" in users
 
     integrations = (ROOT / "frontend/app/(dashboard)/integrations/page.tsx").read_text(
         encoding="utf-8"
