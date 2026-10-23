@@ -115,6 +115,7 @@ export default function Page() {
   const [code, setCode] = useState('');
   const [passkeyName, setPasskeyName] = useState('My passkey');
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
+  const [showAllSessions, setShowAllSessions] = useState(false);
   const [disablePassword, setDisablePassword] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -307,12 +308,8 @@ export default function Page() {
   return (
     <div className="security-ui">
       <PageHeader
-        title={twoFactorOn ? 'Two-factor sign-in is on' : 'Turn on two-factor'}
-        subtitle={
-          twoFactorOn
-            ? 'Your authenticator app is required at sign-in. Review the devices below, then change your password if you need to.'
-            : 'Start here. Scan the QR code with an authenticator app, then enter the code it shows.'
-        }
+        title="Security"
+        subtitle="Protect your account: two-step sign-in, the devices signed in as you, your password and passkeys."
       />
       {error && <p className="security-ui-alert" role="alert">{error}</p>}
       {message && <p className="security-ui-ok" role="status">{message}</p>}
@@ -320,8 +317,8 @@ export default function Page() {
 
       {backupCodes.length > 0 && (
         <div className="card">
-          <h2>Save these codes now</h2>
-          <p className="muted security-ui-note">Write these down. Each code works once if you cannot open your authenticator app.</p>
+          <h2>Save these backup codes now</h2>
+          <p className="muted security-ui-note">Write them down and keep them safe. If you lose your phone, each code lets you sign in once.</p>
           <ul>
             {backupCodes.map((c) => (
               <li key={c}>
@@ -333,40 +330,65 @@ export default function Page() {
       )}
 
       {!twoFactorOn && (
-        <div className="card">
-          <h2>Turn on two-factor</h2>
+        <div className="card security-2fa">
+          <div className="security-2fa-head">
+            <h2>Two-step sign-in</h2>
+            <span className="security-2fa-chip is-off">Off</span>
+          </div>
+          <p className="muted security-ui-note">
+            After your password, the sign-in page also asks for a 6-digit code from an app on your phone, so a stolen
+            password alone cannot open your account.
+          </p>
           {!setup ? (
-            <button onClick={startSetup} aria-label="Start 2FA setup">Start setup</button>
+            <button className="btn-primary" onClick={startSetup} aria-label="Start 2FA setup">Turn on two-step sign-in</button>
           ) : (
-            <div className="security-ui-form">
+            <div className="security-2fa-setup">
               {setup.qr_png_base64 && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
+                  className="security-2fa-qr"
                   src={`data:image/png;base64,${setup.qr_png_base64}`}
                   alt="2FA QR code"
                   width={180}
                   height={180}
                 />
               )}
-              <p className="muted">If you cannot scan, type this secret into the app: {setup.secret}</p>
-              <input
-                aria-label="2FA setup code"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="6-digit code"
-              />
-              <button type="button" onClick={confirmSetup} disabled={!code.trim()} aria-label="Confirm 2FA setup">
-                Confirm &amp; enable
-              </button>
+              <ol className="security-2fa-steps">
+                <li>Install an authenticator app on your phone, such as Google Authenticator or Microsoft Authenticator.</li>
+                <li>
+                  In the app, add an account and scan this QR code.
+                  <span className="muted security-2fa-secret">Cannot scan? Type this key instead: <code>{setup.secret}</code></span>
+                </li>
+                <li>
+                  Type the 6-digit code the app shows, then press Turn on.
+                  <span className="security-2fa-confirm">
+                    <input
+                      aria-label="2FA setup code"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      placeholder="6-digit code"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                    />
+                    <button type="button" className="btn-primary" onClick={confirmSetup} disabled={!code.trim()} aria-label="Confirm 2FA setup">
+                      Turn on
+                    </button>
+                  </span>
+                </li>
+              </ol>
             </div>
           )}
         </div>
       )}
 
       {twoFactorOn && status && (
-        <div className="card">
-          <p>Two-factor sign-in is on.</p>
-          <p>Passkeys on this account: {status.webauthn_count ?? passkeys.length}</p>
+        <div className="card security-2fa">
+          <div className="security-2fa-head">
+            <h2>Two-step sign-in</h2>
+            <span className="security-2fa-chip is-on">On</span>
+          </div>
+          <p>Sign-in asks for the code from your authenticator app.</p>
+          <p className="muted">Passkeys on this account: {status.webauthn_count ?? passkeys.length}</p>
           {status.role_requires_2fa ? <p>Your role must keep two-factor on.</p> : null}
           {status.must_enroll_2fa ? (
             <p className="security-ui-warn">Finish enrollment before using other modules.</p>
@@ -384,7 +406,7 @@ export default function Page() {
           Revoke a device you do not recognize. Signing out this device ends this visit.
         </p>
         <ul className="security-ui-list">
-          {sessions.map((s) => (
+          {(showAllSessions ? sessions : sessions.slice(0, 5)).map((s) => (
             <li key={s.id} className="security-ui-session">
               <div>
                 <div>
@@ -414,6 +436,11 @@ export default function Page() {
             <li className="muted">No signed-in devices are listed. Sign in again if this stays empty.</li>
           )}
         </ul>
+        {sessions.length > 5 ? (
+          <button type="button" className="security-show-all" onClick={() => setShowAllSessions((v) => !v)}>
+            {showAllSessions ? 'Show fewer' : `Show all ${sessions.length} devices`}
+          </button>
+        ) : null}
         <button
           type="button"
           style={{ marginTop: 12 }}

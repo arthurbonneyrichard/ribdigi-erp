@@ -4256,3 +4256,18 @@ input[type=file]::file-selector-button:hover{border-color:var(--brand)}
 .role-list-head .user-manage-role-list{grid-column:1/-1}
 [data-theme="dark"] .role-create{background:#0f2a1c}
 [data-theme="dark"] .perm-grid-wrap{background:transparent}
+
+/* Security: two-step sign-in card */
+.security-2fa-head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.security-2fa-head h2{margin:0}
+.security-2fa-chip{font-size:12px;font-weight:800;padding:3px 10px;border-radius:999px}
+.security-2fa-chip.is-off{background:#fdeeee;color:#b42318}
+.security-2fa-chip.is-on{background:#e6f4d9;color:var(--brand-dark)}
+.security-2fa-setup{display:grid;grid-template-columns:180px minmax(0,1fr);gap:20px;align-items:start;margin-top:12px}
+.security-2fa-qr{border:1px solid var(--line);border-radius:12px;background:#fff;padding:6px;width:180px;height:180px}
+.security-2fa-steps{margin:0;padding-left:20px;display:grid;gap:12px;font-size:14px;line-height:1.45}
+.security-2fa-secret{display:block;margin-top:4px;font-size:12.5px;word-break:break-all}
+.security-2fa-confirm{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.security-2fa-confirm input{max-width:180px;font-size:18px;letter-spacing:3px}
+.security-show-all{margin-top:8px;background:transparent;border:none;color:var(--deep-green);font-weight:700;cursor:pointer;padding:4px 0}
+@media(max-width:640px){.security-2fa-setup{grid-template-columns:1fr}}
