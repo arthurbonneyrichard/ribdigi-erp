@@ -12,7 +12,7 @@ import { currencySign, formatDate, formatWhen, plainLabel } from '../../../lib/f
 import { AmountField } from '../../../components/AmountField';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import { countAndCloseOpenShift, openShiftForSignedInUser } from '../../../lib/cashierShift';
-import { setPosDrawerBridge } from '../../../lib/posDrawerBridge';
+import { POS_SHIFT_PANEL_EVENT, setPosDrawerBridge } from '../../../lib/posDrawerBridge';
 import { setPosOfflinePanelProps } from '../../../lib/posOfflineSlot';
 import {
   CATALOG_NOT_SAVED,
@@ -495,6 +495,8 @@ export default function Page() {
   const [hideStorePicker, setHideStorePicker] = useState(false);
   const [receiptBusy, setReceiptBusy] = useState('');
   const [shiftReport, setShiftReport] = useState<any>(null);
+  // The shift header and report open over the till from the top bar's Shift button.
+  const [shiftPanelOpen, setShiftPanelOpen] = useState(false);
   const [reportBusy, setReportBusy] = useState(false);
   const [shiftBusy, setShiftBusy] = useState(false);
   const [online, setOnline] = useState(
@@ -1002,6 +1004,27 @@ export default function Page() {
   }, [canOpenDrawer, session]);
 
   useEffect(() => {
+    const open = () => setShiftPanelOpen(true);
+    window.addEventListener(POS_SHIFT_PANEL_EVENT, open);
+    return () => window.removeEventListener(POS_SHIFT_PANEL_EVENT, open);
+  }, []);
+
+  // Opening the panel shows the report straight away, so the cash count is one step.
+  useEffect(() => {
+    if (shiftPanelOpen && session && !shiftReport && !reportBusy) void loadShiftReport();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shiftPanelOpen, session?.session_id]);
+
+  useEffect(() => {
+    if (!shiftPanelOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShiftPanelOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [shiftPanelOpen]);
+
+  useEffect(() => {
     if (!session) {
       setRows([]);
       return;
@@ -1185,6 +1208,11 @@ export default function Page() {
         }),
       });
       if (r.data?.session) setSession(r.data.session);
+      // Keep an open report in step with the drawer so the count is checked against the right amount.
+      if (shiftReport) {
+        const fresh = await api(`/pos/sessions/${session.session_id}/report`).catch(() => null);
+        if (fresh?.data) setShiftReport(fresh.data);
+      }
       setCashMoveAmount('');
       setCashMoveReason('');
       setMessage(r.message || (kind === 'cash_in' ? 'Cash in recorded.' : 'Cash out recorded.'));
@@ -1228,7 +1256,7 @@ export default function Page() {
       setShiftClosedNote(
         Math.abs(recorded) < 0.01
           ? `Shift ${label} closed. Counted cash matched the drawer.`
-          : `Shift ${label} closed. Variance ${money(recorded)}.`
+          : `Shift ${label} closed. Counted cash was ${money(Math.abs(recorded))} ${recorded < 0 ? 'short' : 'over'}.`
       );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'The cash count could not be saved.';
@@ -2096,6 +2124,24 @@ export default function Page() {
   return (
     <>
       <div className="tpos pos-ui">
+        <div
+          className={`pos-shift-panel${shiftPanelOpen ? ' is-open' : ''}`}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShiftPanelOpen(false);
+          }}
+        >
+        <div
+          className="pos-shift-panel-card"
+          role={shiftPanelOpen ? 'dialog' : undefined}
+          aria-modal={shiftPanelOpen ? true : undefined}
+          aria-label="Till shift"
+        >
+        <div className="pos-shift-panel-head">
+          <h2>Your shift</h2>
+          <button type="button" className="tpos-btn" aria-label="Close till shift" onClick={() => setShiftPanelOpen(false)}>
+            Close
+          </button>
+        </div>
         <header className="tpos-top">
           <div className="tpos-top-copy">
             <h1>Point of Sale</h1>
@@ -2158,11 +2204,13 @@ export default function Page() {
                     ))}
                   </select>
                 )}
+                {shiftClosedNote && !shiftBusy ? null : (
                 <span className="muted">
                   {shiftBusy || hideStorePicker || stores.length <= 1
                     ? 'Starting your shift…'
                     : 'Choose a store to start your shift.'}
                 </span>
+                )}
               </>
             ) : (
               <>
@@ -2488,6 +2536,8 @@ export default function Page() {
             )}
           </section>
         )}
+        </div>
+        </div>
 
         <div className="tpos-body">
           <section className="tpos-catalog pos-ui-catalog" aria-label="Product catalog">
