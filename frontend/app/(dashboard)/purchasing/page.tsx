@@ -506,6 +506,7 @@ export default function Page() {
   const [piCancelReason, setPiCancelReason] = useState('');
   const [prCancelReason, setPrCancelReason] = useState('');
   const [poEmailTo, setPoEmailTo] = useState('');
+  const [poOptionsOpen, setPoOptionsOpen] = useState(false);
   const [amendEmailTo, setAmendEmailTo] = useState('');
   const [prLevels, setPrLevels] = useState<{ roles: string[]; label?: string }[]>([
     { roles: ['store_manager'], label: 'Store Manager' },
@@ -726,6 +727,7 @@ export default function Page() {
     setMessage('');
     const reason = poCancelReason.trim();
     if (!reason) {
+      setPoOptionsOpen(true);
       setError('Enter a cancel reason before cancelling a purchase order');
       return;
     }
@@ -2545,7 +2547,12 @@ export default function Page() {
       </FormModal>
       ) : null}
 
-          <div className="card">
+          <details
+            className="card purchase-ui-settings"
+            open={poOptionsOpen}
+            onToggle={(e) => setPoOptionsOpen((e.currentTarget as HTMLDetailsElement).open)}
+          >
+            <summary>Cancel or email options</summary>
             <label className="field">
               <span>Reason for cancelling an order</span>
               <input
@@ -2567,7 +2574,7 @@ export default function Page() {
                 aria-label="Purchase order email override to"
               />
             </label>
-          </div>
+          </details>
 
           <div className="card cat-panel">
           <div className="purch-filter-row">
