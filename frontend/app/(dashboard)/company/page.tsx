@@ -954,12 +954,15 @@ export default function Page() {
             ) : (
             <>
               <p className="muted">
-                Outbound mail for this company. Mode: {emailStatus.mode} · Source: {emailStatus.source || '—'} · Configured:{' '}
-                {String(emailStatus.configured)} · Enabled: {String(emailStatus.enabled)}
-                {emailStatus.tenant_override ? ' · Tenant override' : ''}
+                Emails to customers and suppliers, such as invoices and purchase orders.{' '}
+                {emailStatus.configured && emailStatus.enabled
+                  ? emailStatus.tenant_override
+                    ? 'Sending from your own mail server.'
+                    : 'Sending through the Ribdigi mail service.'
+                  : 'Email sending is not set up yet.'}
               </p>
               {!emailStatus.configured ? (
-                <p className="muted">Enter the SMTP host and from address, then save. Leave the password blank to keep a saved password.</p>
+                <p className="muted">To send from your own mail server, enter its host and the address emails come from, then save. Leave the password blank to keep the saved one.</p>
               ) : null}
               <div className="company-page-grid">
                 <div className="company-page-field">
@@ -1101,12 +1104,15 @@ export default function Page() {
             ) : (
             <>
               <p className="muted">
-                Text messages for this company. Mode: {smsStatus.mode} · Source: {smsStatus.source || '—'} · Configured:{' '}
-                {String(smsStatus.configured)} · Enabled: {String(smsStatus.enabled)}
-                {smsStatus.tenant_override ? ' · Tenant override' : ''}
+                Text messages to customers, such as receipts and payment reminders.{' '}
+                {smsStatus.configured && smsStatus.enabled
+                  ? smsStatus.tenant_override
+                    ? 'Sending from your own SMS account.'
+                    : 'Sending through the Ribdigi SMS service.'
+                  : 'SMS sending is not set up yet.'}
               </p>
               {!smsStatus.configured ? (
-                <p className="muted">Enter the account SID and from number, then save. Leave the token blank to keep a saved token.</p>
+                <p className="muted">To send from your own Twilio account, enter its account SID and sending number, then save. Leave the token blank to keep the saved one.</p>
               ) : null}
               <div className="company-page-grid">
                 <div className="company-page-field">
