@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ribdigi ERP Launch Flyer 03</title>
+<link rel="stylesheet" href="flyer-base.css">
+<style>
+  .page { background: #fff; }
+  .hero {
+    position: absolute; left: 0; right: 0; top: 0; height: 150mm;
+    background:
+      radial-gradient(90mm 70mm at 90% 15%, rgba(200, 232, 106, 0.32), transparent 70%),
+      linear-gradient(150deg, #006b2e 0%, #003d1f 60%, #002815 100%);
+    color: #fff;
+  }
+  .hero::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -0.5mm; height: 26mm;
+    background: #fff; clip-path: polygon(0 100%, 100% 0, 100% 100%);
+  }
+  .top { position: absolute; left: 15mm; right: 15mm; top: 13mm; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+  .top .logo { width: 70mm; }
+  .date-chip {
+    text-align: right; line-height: 1.1;
+  }
+  .date-chip small { display: block; font-size: 3.2mm; font-weight: 700; color: var(--brand-light); letter-spacing: 0.4mm; text-transform: uppercase; }
+  .date-chip strong { font-size: 6.4mm; font-weight: 800; }
+  .head { position: absolute; left: 15mm; right: 15mm; top: 40mm; color: #fff; }
+  h1 { font-size: 12.5mm; line-height: 1.04; font-weight: 800; letter-spacing: -0.35mm; }
+  h1 span { color: var(--brand-light); }
+  .sub { margin-top: 3mm; font-size: 4.4mm; color: rgba(255, 255, 255, 0.85); font-weight: 500; }
+
+  .device {
+    position: absolute; left: 12mm; right: 12mm; top: 76mm;
+    border-radius: 5mm; padding: 2.2mm; background: #0b1f15;
+    box-shadow: 0 6mm 16mm rgba(0, 26, 14, 0.4);
+  }
+  .device .bar { display: flex; gap: 1.4mm; padding: 0.6mm 1.2mm 2mm; }
+  .device .bar i { width: 2.2mm; height: 2.2mm; border-radius: 50%; background: #2e4a3b; display: block; }
+  .device .screen { border-radius: 3mm; overflow: hidden; height: 108mm; position: relative; }
+  .device .screen img { position: absolute; left: 0; top: 0; width: 100%; height: auto; max-width: none; }
+  .device-label {
+    position: absolute; right: 15mm; top: 192.5mm; font-size: 3.3mm; color: var(--muted); font-weight: 600;
+  }
+
+  .features { position: absolute; left: 15mm; right: 15mm; top: 203mm; display: grid; grid-template-columns: 1fr 1fr; gap: 4.5mm 7mm; }
+  .feat { display: flex; gap: 3.5mm; align-items: flex-start; }
+  .ico {
+    width: 12mm; height: 12mm; border-radius: 3.5mm; background: var(--mist); border: 0.4mm solid var(--line);
+    display: flex; align-items: center; justify-content: center; flex: 0 0 auto; color: var(--brand-dark);
+  }
+  .ico svg { width: 6.6mm; height: 6.6mm; }
+  .feat h2 { font-size: 4.8mm; font-weight: 800; color: var(--forest); line-height: 1.2; }
+  .feat p { font-size: 3.5mm; color: var(--muted); line-height: 1.35; font-weight: 500; margin-top: 0.6mm; }
+
+  .slogan-row {
+    position: absolute; left: 15mm; right: 15mm; top: 248mm; padding: 4mm 0; border-top: 0.4mm solid var(--line);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .slogan-row .slogan { font-size: 5.6mm; color: var(--forest); }
+  .slogan-row .slogan span { color: var(--brand-dark); }
+  .slogan-row .launch { font-size: 4mm; font-weight: 800; color: #fff; background: var(--brand-dark); padding: 2.4mm 4.4mm; border-radius: 99mm; white-space: nowrap; }
+
+  .foot { position: absolute; left: 0; right: 0; bottom: 0; padding: 6mm 15mm 8mm; background: var(--forest); }
+  .foot .contact { color: #fff; }
+  .foot svg { color: var(--brand-light); }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="hero"></div>
+  <div class="top">
+    <img class="logo" src="assets/ribdigi-erp-logo-light-text.png" alt="Ribdigi ERP">
+    <div class="date-chip"><small>Launching</small><strong>2 November 2026</strong></div>
+  </div>
+
+  <div class="head">
+    <h1>Products, stock, purchases<br>and <span>sales in one place</span></h1>
+    <p class="sub">This is the real Ribdigi ERP till, ready to sell.</p>
+  </div>
+
+  <div class="device">
+    <div class="bar"><i></i><i></i><i></i></div>
+    <div class="screen"><img src="assets/erp-pos.png" alt="Ribdigi ERP point of sale screen"></div>
+  </div>
+  <p class="device-label">Point of sale in Ribdigi ERP</p>
+
+  <div class="features">
+    <div class="feat">
+      <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg></span>
+      <div><h2>Products and inventory</h2><p>Prices, categories and stock for every product.</p></div>
+    </div>
+    <div class="feat">
+      <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span>
+      <div><h2>Supplier purchases</h2><p>Order from suppliers and receive the goods.</p></div>
+    </div>
+    <div class="feat">
+      <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4M6 9h4M6 12h7"/></svg></span>
+      <div><h2>Point-of-sale sales</h2><p>Cash, card, MoMo or bank at the till.</p></div>
+    </div>
+    <div class="feat">
+      <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></span>
+      <div><h2>Customers and reports</h2><p>Know your customers and your sales.</p></div>
+    </div>
+  </div>
+
+  <div class="slogan-row">
+    <p class="slogan">Run smarter. <span>Sell faster.</span> Grow better.</p>
+    <span class="launch">2 November 2026</span>
+  </div>
+
+  <div class="foot">
+    <div class="contact">
+      <div class="item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.8 2z"/></svg>
+        <span><span class="label">Phone</span>0302 944 376</span>
+      </div>
+      <div class="item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>
+        <span><span class="label">WhatsApp</span>0530537307</span>
+      </div>
+      <div class="item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <span><span class="label">Website</span>ribdigihouse.com</span>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

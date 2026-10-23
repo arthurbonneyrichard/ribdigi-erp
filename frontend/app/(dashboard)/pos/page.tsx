@@ -439,11 +439,6 @@ export default function Page() {
   const [cashTender, setCashTender] = useState('');
   // Change handed back on the last cash sale, shown after Pay.
   const [lastChange, setLastChange] = useState<number | null>(null);
-  // On short screens the keypad hides until needed so the cart lines stay visible.
-  const [keypadOpen, setKeypadOpen] = useState(true);
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerHeight < 860) setKeypadOpen(false);
-  }, []);
   const [cardTender, setCardTender] = useState('');
   const [splitOtherMethod, setSplitOtherMethod] = useState<'card' | 'mobile_money' | 'bank_transfer'>('card');
   const [amountPaidNow, setAmountPaidNow] = useState('');
@@ -3018,71 +3013,6 @@ export default function Page() {
 
             <div className="tpos-cart-dock pos-ui-pay">
               <div className="tpos-cart-lines">
-                {splitTender || payAsReprint ? null : (
-                  <div className="pos-pay-methods" role="radiogroup" aria-label="How the customer pays">
-                    {[
-                      ['cash', 'Cash'],
-                      ['card', 'Card'],
-                      ['mobile_money', 'MoMo'],
-                      ['bank_transfer', 'Bank'],
-                    ].map(([value, label]) => (
-                      <button
-                        key={value}
-                        type="button"
-                        role="radio"
-                        aria-checked={paymentMethod === value}
-                        className={`pos-pay-method${paymentMethod === value ? ' is-on' : ''}`}
-                        onClick={() => setPaymentMethod(value)}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <div className="pos-ui-pay-method-row">
-                <label className="tpos-split-toggle">
-                  <input
-                    type="checkbox"
-                    aria-label="POS split tender"
-                    checked={splitTender}
-                    onChange={(e) => enableSplit(e.target.checked)}
-                  />
-                  <span>Split payment</span>
-                </label>
-                {splitTender ? (
-                  <label className="tpos-pay-select">
-                    <span>Payment method</span>
-                    <select
-                      value={splitOtherMethod}
-                      onChange={(e) =>
-                        setSplitOtherMethod(e.target.value as 'card' | 'mobile_money' | 'bank_transfer')
-                      }
-                      aria-label="POS split second method"
-                    >
-                      <option value="card">Card</option>
-                      <option value="mobile_money">Mobile Money (MoMo)</option>
-                      <option value="bank_transfer">Bank transfer</option>
-                    </select>
-                  </label>
-                ) : (
-                  <label className="tpos-pay-select pos-pay-other">
-                    <span>Or</span>
-                    <select
-                      value={MAIN_PAY_METHODS.has(paymentMethod) ? '' : paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value || 'cash')}
-                      aria-label="POS payment method"
-                    >
-                      <option value="">More ways to pay…</option>
-                      {online ? <option value="wallet">Wallet</option> : null}
-                      {online ? <option value="gift_card">Gift card</option> : null}
-                      {online ? <option value="loyalty">Loyalty points</option> : null}
-                      {canCreditSale && (online || offlinePerms.includes('credit_sale')) ? (
-                        <option value="credit">Credit</option>
-                      ) : null}
-                    </select>
-                  </label>
-                )}
-                </div>
                 {splitTender ? (
                   <div className="tpos-split-panel">
                     <p className="tpos-split-due">
@@ -3281,33 +3211,6 @@ export default function Page() {
               <div className="tpos-cart-actions">
                 <button
                   type="button"
-                  className="tpos-btn tpos-keypad-toggle"
-                  aria-expanded={keypadOpen}
-                  onClick={() => setKeypadOpen((open) => !open)}
-                  aria-label={keypadOpen ? 'Hide keypad' : 'Show keypad'}
-                >
-                  {keypadOpen ? 'Hide keypad' : 'Keypad'}
-                </button>
-                {keypadOpen ? (
-                <div className="tpos-keypad" role="group" aria-label="POS keypad">
-                  {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map((key) => (
-                    <button
-                      key={key}
-                      type="button"
-                      className="tpos-key"
-                      disabled={!session || payAsReprint}
-                      onClick={() => applyKeypad(key)}
-                      aria-label={
-                        key === 'C' ? 'Clear keypad value' : key === '⌫' ? 'Delete last keypad digit' : `Keypad ${key}`
-                      }
-                    >
-                      {key}
-                    </button>
-                  ))}
-                </div>
-                ) : null}
-                <button
-                  type="button"
                   className="sr-only"
                   onClick={checkout}
                   disabled={!cart.length || !session || busy}
@@ -3329,89 +3232,6 @@ export default function Page() {
                   </button>
                 ) : null}
               </div>
-              <details className="pos-ui-optional">
-                <summary>Discount, coupon and receipt options</summary>
-                <div className="print-ui-row">
-                  <label className="print-ui-paper">
-                    Receipt paper
-                    <select
-                      value={receiptPaper === '58mm' ? '58mm' : '80mm'}
-                      onChange={(e) => setReceiptPaper(e.target.value === '58mm' ? '58mm' : '80mm')}
-                      aria-label="POS receipt paper"
-                    >
-                      <option value="58mm">58mm receipt</option>
-                      <option value="80mm">80mm receipt</option>
-                    </select>
-                  </label>
-                </div>
-
-                <label className="tpos-field">
-                  <span>Customer name</span>
-                  <input
-                    className="tpos-input"
-                    aria-label="POS customer name"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Walk-in if none selected"
-                    maxLength={180}
-                    autoComplete="off"
-                  />
-                </label>
-                <div className="tpos-foot-discounts">
-                  <label className="tpos-field tpos-field-compact">
-                    <span>Cart discount</span>
-                    <span className="tpos-inline-controls">
-                      <select
-                        value={cartDiscountType}
-                        onChange={(e) => {
-                          setCartDiscountType(e.target.value === 'percent' ? 'percent' : 'fixed');
-                          setCartDiscount('');
-                        }}
-                        aria-label="POS cart discount type"
-                      >
-                        <option value="fixed">Amount</option>
-                        <option value="percent">Percent</option>
-                      </select>
-                      {cartDiscountType === 'percent' ? (
-                        <input
-                          className="tpos-input"
-                          type="number"
-                          min={0}
-                          step="0.01"
-                          value={cartDiscount}
-                          onChange={(e) => setCartDiscount(e.target.value)}
-                          placeholder="0"
-                          inputMode="decimal"
-                          aria-label="POS cart discount"
-                        />
-                      ) : (
-                        <AmountField
-                          inline
-                          className="tpos-input"
-                          type="number"
-                          min={0}
-                          step="0.01"
-                          value={cartDiscount}
-                          onChange={(e) => setCartDiscount(e.target.value)}
-                          placeholder="0.00"
-                          inputMode="decimal"
-                          aria-label="POS cart discount"
-                        />
-                      )}
-                    </span>
-                  </label>
-                  <label className="tpos-field tpos-field-compact">
-                    <span>Coupon</span>
-                    <input
-                      className="tpos-input"
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                      placeholder="CODE"
-                      aria-label="POS coupon code"
-                    />
-                  </label>
-                </div>
-              </details>
               {payAsReprint && lastSale && !lastSale.offline ? null : message ? (
                 <div className="tpos-banner tpos-banner-ok tpos-success-bar">
                   <span>{message}</span>
@@ -3493,6 +3313,93 @@ export default function Page() {
                 </div>
               ) : (
                 <>
+              {payAsReprint ? null : <div className="pos-foot-pay">
+                {splitTender || payAsReprint ? null : (
+                  <div className="pos-pay-methods" role="radiogroup" aria-label="How the customer pays">
+                    {[
+                      ['cash', 'Cash'],
+                      ['card', 'Card'],
+                      ['mobile_money', 'MoMo'],
+                      ['bank_transfer', 'Bank'],
+                    ].map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        role="radio"
+                        aria-checked={paymentMethod === value}
+                        className={`pos-pay-method${paymentMethod === value ? ' is-on' : ''}`}
+                        onClick={() => setPaymentMethod(value)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="pos-ui-pay-method-row">
+                <label className="tpos-split-toggle">
+                  <input
+                    type="checkbox"
+                    aria-label="POS split tender"
+                    checked={splitTender}
+                    onChange={(e) => enableSplit(e.target.checked)}
+                  />
+                  <span>Split payment</span>
+                </label>
+                {splitTender ? (
+                  <label className="tpos-pay-select">
+                    <span>Payment method</span>
+                    <select
+                      value={splitOtherMethod}
+                      onChange={(e) =>
+                        setSplitOtherMethod(e.target.value as 'card' | 'mobile_money' | 'bank_transfer')
+                      }
+                      aria-label="POS split second method"
+                    >
+                      <option value="card">Card</option>
+                      <option value="mobile_money">Mobile Money (MoMo)</option>
+                      <option value="bank_transfer">Bank transfer</option>
+                    </select>
+                  </label>
+                ) : (
+                  <label className="tpos-pay-select pos-pay-other">
+                    <span>Or</span>
+                    <select
+                      value={MAIN_PAY_METHODS.has(paymentMethod) ? '' : paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value || 'cash')}
+                      aria-label="POS payment method"
+                    >
+                      <option value="">More ways to pay…</option>
+                      {online ? <option value="wallet">Wallet</option> : null}
+                      {online ? <option value="gift_card">Gift card</option> : null}
+                      {online ? <option value="loyalty">Loyalty points</option> : null}
+                      {canCreditSale && (online || offlinePerms.includes('credit_sale')) ? (
+                        <option value="credit">Credit</option>
+                      ) : null}
+                    </select>
+                  </label>
+                )}
+                </div>
+              </div>}
+              <div className="pos-foot-grid">
+              {payAsReprint ? null : <div className="pos-foot-keys">
+                <div className="tpos-keypad" role="group" aria-label="POS keypad">
+                  {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map((key) => (
+                    <button
+                      key={key}
+                      type="button"
+                      className="tpos-key"
+                      disabled={!session || payAsReprint}
+                      onClick={() => applyKeypad(key)}
+                      aria-label={
+                        key === 'C' ? 'Clear keypad value' : key === '⌫' ? 'Delete last keypad digit' : `Keypad ${key}`
+                      }
+                    >
+                      {key}
+                    </button>
+                  ))}
+                </div>
+              </div>}
+              <div className="pos-foot-sum">
               <div className="tpos-total pos-ui-due" aria-label="POS cart totals">
                 {payAsReprint ? null : (
                   <dl className="pos-totals">
@@ -3550,6 +3457,95 @@ export default function Page() {
                   {busy ? 'Paying…' : `Pay ${money(cartTotal)}`}
                 </button>
                 </div>
+              </div>
+              </div>
+              {payAsReprint ? null : (
+              <details className="pos-ui-optional pos-foot-options">
+                <summary>Discount, coupon and receipt options</summary>
+                <div className="pos-opt-grid">
+                <div className="print-ui-row">
+                  <label className="print-ui-paper">
+                    Receipt paper
+                    <select
+                      value={receiptPaper === '58mm' ? '58mm' : '80mm'}
+                      onChange={(e) => setReceiptPaper(e.target.value === '58mm' ? '58mm' : '80mm')}
+                      aria-label="POS receipt paper"
+                    >
+                      <option value="58mm">58mm receipt</option>
+                      <option value="80mm">80mm receipt</option>
+                    </select>
+                  </label>
+                </div>
+
+                <label className="tpos-field">
+                  <span>Customer name</span>
+                  <input
+                    className="tpos-input"
+                    aria-label="POS customer name"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Walk-in if none selected"
+                    maxLength={180}
+                    autoComplete="off"
+                  />
+                </label>
+                <div className="tpos-foot-discounts">
+                  <label className="tpos-field tpos-field-compact">
+                    <span>Cart discount</span>
+                    <span className="tpos-inline-controls">
+                      <select
+                        value={cartDiscountType}
+                        onChange={(e) => {
+                          setCartDiscountType(e.target.value === 'percent' ? 'percent' : 'fixed');
+                          setCartDiscount('');
+                        }}
+                        aria-label="POS cart discount type"
+                      >
+                        <option value="fixed">Amount</option>
+                        <option value="percent">Percent</option>
+                      </select>
+                      {cartDiscountType === 'percent' ? (
+                        <input
+                          className="tpos-input"
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={cartDiscount}
+                          onChange={(e) => setCartDiscount(e.target.value)}
+                          placeholder="0"
+                          inputMode="decimal"
+                          aria-label="POS cart discount"
+                        />
+                      ) : (
+                        <AmountField
+                          inline
+                          className="tpos-input"
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={cartDiscount}
+                          onChange={(e) => setCartDiscount(e.target.value)}
+                          placeholder="0.00"
+                          inputMode="decimal"
+                          aria-label="POS cart discount"
+                        />
+                      )}
+                    </span>
+                  </label>
+                  <label className="tpos-field tpos-field-compact">
+                    <span>Coupon</span>
+                    <input
+                      className="tpos-input"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      placeholder="CODE"
+                      aria-label="POS coupon code"
+                    />
+                  </label>
+                </div>
+                </div>
+              </details>
+              )}
                 </>
               )}
             </div>

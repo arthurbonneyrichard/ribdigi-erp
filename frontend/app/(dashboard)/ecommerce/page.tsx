@@ -310,7 +310,7 @@ export default function EcommercePage() {
     <main className="page ecom-desk">
       <PageHeader
         title="Online store"
-        subtitle="Sell on this company’s verified domain. Products stay unpublished until you opt them in. Storefront payments are not Ribdigi subscription billing."
+        subtitle="Sell your products online. Only the products you publish appear in your shop."
         actions={
           <div className="ecom-head-actions">
             <StatusChip value={storefrontStatus} label={storefront.enabled ? 'Storefront on' : 'Storefront off'} />
