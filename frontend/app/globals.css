@@ -2243,7 +2243,7 @@ a.plat-stat{color:inherit;text-decoration:none}
   width:36px;height:36px;border-radius:8px;object-fit:cover;background:var(--leaf);
   flex:0 0 auto;display:grid;place-items:center;font-size:12px;font-weight:800;color:var(--deep-green)
 }
-.list-prod-name{font-weight:700;min-width:0;text-transform:uppercase}
+.list-prod-name{font-weight:700;min-width:0}
 .list-secondary{font-size:12px;font-weight:500;color:var(--muted);text-transform:none;letter-spacing:0}
 .list-qty-low{color:var(--danger);font-weight:700}
 .main button.list-sort:not(.menu-btn),
@@ -4113,3 +4113,31 @@ input[type=file]::file-selector-button{
 }
 input[type=file]::file-selector-button:hover{border-color:var(--brand)}
 .pos-shift-panel .tpos-report-kpis strong{font-size:16px;white-space:nowrap}
+
+/* Amounts in summary cards stay on one line ("GH₵ 11,891.00", not "GH₵" above the number). */
+.stat,.erp-kpis > .card,.report-sheet .card{container-type:inline-size}
+.stat .val,.work .erp-kpis .kpi,.erp-kpis .kpi,.report-sheet .card .kpi,.card > .kpi{
+  white-space:nowrap;font-size:clamp(13px,11cqi,26px);font-variant-numeric:tabular-nums;max-width:100%
+}
+/* Workflow strip under a page title: small steps with arrows between them. */
+.sales-ui-path,.purchase-ui-path{gap:6px 4px;align-items:center}
+.sales-ui-path span,.purchase-ui-path span{
+  display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;
+  background:var(--mist);border:1px solid var(--line);color:var(--deep-green);
+  font-size:12px;font-weight:700;line-height:1.4;white-space:nowrap
+}
+.sales-ui-path span:not(:last-child)::after,.purchase-ui-path span:not(:last-child)::after{
+  content:"›";margin-left:14px;margin-right:-4px;color:var(--muted);font-weight:800
+}
+[data-theme="dark"] .sales-ui-path span,[data-theme="dark"] .purchase-ui-path span{
+  background:#123522;border-color:#1f4a33;color:#c8e86a
+}
+
+/* Page settings (document numbering, rarely used options) sit under the lists, not above them. */
+.sales-ui-page,.acc-page{display:flex;flex-direction:column}
+.sales-ui-page > .sales-ui-settings,.acc-page > .page-settings{order:90;margin-top:16px}
+.page-settings{
+  border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--mist)
+}
+.page-settings > summary{cursor:pointer;font-weight:700;color:var(--ink)}
+.page-settings[open] > summary{margin-bottom:8px}

@@ -7,7 +7,7 @@ export const PRODUCT_LIST_PAGE_SIZE = 50;
 /** Display-only product title. Does not mutate stored catalog names. */
 export function displayProductName(name: unknown): string {
   const text = String(name ?? '').trim();
-  return text ? text.toUpperCase() : '—';
+  return text || '—';
 }
 
 export type SortDir = 1 | -1;

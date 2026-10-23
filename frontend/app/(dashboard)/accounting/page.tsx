@@ -1091,11 +1091,13 @@ export default function Page() {
   }
 
   return (
-    <div className="work">
+    <div className="work acc-page">
       <PageHeader
         title="Accounting"
         subtitle="Sales, expenses and supplier bills post here automatically. Use the tabs for accounts, cash and bank, bank matching and cheques."
       />
+      <details className="page-settings">
+        <summary>Numbering</summary>
       <div className="card" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input value={journalPrefix} onChange={(e) => setJournalPrefix(e.target.value)} aria-label="Journal number prefix" placeholder="Journal prefix" />
         <input value={journalNext} onChange={(e) => setJournalNext(e.target.value)} aria-label="Journal next number" placeholder="Next #" />
@@ -1105,6 +1107,7 @@ export default function Page() {
           Save numbering
         </button>
       </div>
+      </details>
       {loading && <p className="muted">Loading accounting…</p>}
       {error && <p className="erp-banner err" role="alert">{error}</p>}
       {message && <p className="erp-banner ok" role="status">{message}</p>}
