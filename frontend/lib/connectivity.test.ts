@@ -181,3 +181,14 @@ test('signed-in online till does not keep the unprepared sentence after prepare'
   assert.match(login, /prev === UNPREPARED_OFFLINE/);
   assert.match(login, /phase === 'online'/);
 });
+
+test('classifyLink trusts a server that answers even when the browser says offline', () => {
+  assert.equal(
+    classifyLink({ navigatorOnline: false, apiReachable: true, syncing: false, syncFailed: false }),
+    'online'
+  );
+  assert.equal(
+    classifyLink({ navigatorOnline: false, apiReachable: false, syncing: false, syncFailed: false }),
+    'offline'
+  );
+});
