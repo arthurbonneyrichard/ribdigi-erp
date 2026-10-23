@@ -2,7 +2,7 @@ import { api } from './api';
 import { normalizeIndustry } from './industries';
 import { getMe } from './meCache';
 
-const POS_INDUSTRIES = new Set(['retail', 'restaurant', 'hotel']);
+const POS_INDUSTRIES = new Set(['retail', 'retail_wholesale', 'pharmacy', 'restaurant', 'hotel']);
 const PLATFORM_ROLES = new Set([
   'super_admin',
   'platform_owner',
@@ -26,20 +26,36 @@ export type CashierShift = {
   [key: string]: unknown;
 };
 
-function canRunTill(me: MeData | null | undefined): boolean {
-  if (!me || me.must_enroll_2fa) return false;
+/** Why the signed-in person cannot run a till, in words for them; '' when they can. */
+export function tillBlockedReason(me: MeData | null | undefined): string {
+  if (!me) return 'Your account could not be loaded. Sign out and sign in again.';
+  if (me.must_enroll_2fa) return 'Set up two-step sign-in under Security before using the till.';
   const role = String(me.role || '').toLowerCase();
-  if (PLATFORM_ROLES.has(role)) return false;
+  if (PLATFORM_ROLES.has(role)) {
+    return "This is the RIBDIGI platform account, which manages companies and does not sell. To sell, sign in with a shop's company code and a staff or owner email.";
+  }
   const industry = normalizeIndustry(me.industry);
-  if (!industry || !POS_INDUSTRIES.has(industry)) return false;
+  if (!industry || !POS_INDUSTRIES.has(industry)) {
+    return `This company is set up as ${industry ? industry.replace(/_/g, ' ') : 'a business without a till'}, so it has no till. Sign in to a shop's company account to sell.`;
+  }
   const perms = me.permissions;
   if (perms && typeof perms === 'object') {
     const star = perms['*'] || [];
     const pos = perms.pos || [];
     const allowed = star.includes('*') || star.includes('write') || pos.includes('write') || pos.includes('*');
-    if (!allowed) return false;
+    if (!allowed) return 'Your role cannot sell at the till. Ask the owner to give you till access in User Management.';
   }
-  return true;
+  return '';
+}
+
+function canRunTill(me: MeData | null | undefined): boolean {
+  return !tillBlockedReason(me);
+}
+
+/** The reason the last shift-open attempt failed, so the till can say it instead of waiting. */
+let lastShiftOpenError = '';
+export function shiftOpenError(): string {
+  return lastShiftOpenError;
 }
 
 function rememberedStoreId(stores: Array<{ id?: string }>): string {
@@ -57,7 +73,8 @@ export async function openShiftForSignedInUser(preferredStoreId?: string | null)
   try {
     const me = await getMe();
     const data = ((me as { data?: MeData }).data || null) as MeData | null;
-    if (!canRunTill(data)) return null;
+    lastShiftOpenError = tillBlockedReason(data);
+    if (lastShiftOpenError) return null;
     const current = await api('/pos/sessions/current');
     if (current?.data?.session_id) return current.data as CashierShift;
     let storeId = String(preferredStoreId || '').trim();
@@ -79,11 +96,15 @@ export async function openShiftForSignedInUser(preferredStoreId?: string | null)
       const status = (err as { status?: number }).status;
       if (status === 409) {
         const again = await api('/pos/sessions/current');
-        return (again?.data || null) as CashierShift | null;
+        if (again?.data) return again.data as CashierShift;
       }
+      lastShiftOpenError =
+        (err instanceof Error && err.message) || 'Your shift could not be started. Sign out and sign in again.';
       return null;
     }
-  } catch {
+  } catch (err) {
+    lastShiftOpenError =
+      (err instanceof Error && err.message) || 'Your shift could not be started. Sign out and sign in again.';
     return null;
   }
 }

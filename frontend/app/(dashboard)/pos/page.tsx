@@ -11,7 +11,7 @@ import { normalizeIndustry } from '../../../lib/industries';
 import { currencySign, formatDate, formatWhen, plainLabel } from '../../../lib/format';
 import { AmountField } from '../../../components/AmountField';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
-import { countAndCloseOpenShift, openShiftForSignedInUser } from '../../../lib/cashierShift';
+import { countAndCloseOpenShift, openShiftForSignedInUser, shiftOpenError, tillBlockedReason } from '../../../lib/cashierShift';
 import { POS_RETURN_PANEL_EVENT, POS_SHIFT_PANEL_EVENT, setPosDrawerBridge } from '../../../lib/posDrawerBridge';
 import { TillReturnPanel } from './TillReturnPanel';
 import { setPosOfflinePanelProps } from '../../../lib/posOfflineSlot';
@@ -982,11 +982,16 @@ export default function Page() {
         const tillIndustry = ['retail', 'retail_wholesale', 'pharmacy', 'restaurant', 'hotel'].includes(
           normalizeIndustry(meRes.data?.industry) || ''
         );
+        if (!sess.data && navigator.onLine && !tillIndustry) {
+          // Say why instead of 'Wait for your shift to open' that never ends.
+          setError(tillBlockedReason(meRes.data) || 'This company has no till.');
+        }
         if (!sess.data && navigator.onLine && tillIndustry && !cancelled) {
           const opened = await openShiftForSignedInUser(chosen || null);
           if (cancelled) return;
           if (opened?.session_id) sess = { data: opened as Session };
-          else setError('Your shift could not be started. Sign out and sign in again.');
+          else if (list.length > 1 && !chosen) setError('Choose the store you are selling from to start your shift.');
+          else setError(shiftOpenError() || 'Your shift could not be started. Sign out and sign in again.');
         }
         if (cancelled) return;
         setSession(sess.data || null);

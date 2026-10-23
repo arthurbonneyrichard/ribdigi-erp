@@ -4171,3 +4171,11 @@ input[type=file]::file-selector-button:hover{border-color:var(--brand)}
 /* Users table: inline role / department / scope pickers need room; scroll inside the card instead of clipping. */
 .list-table-wrap.user-manage-table-scroll .table{table-layout:auto;min-width:1080px}
 .user-manage-table-scroll td:last-child{white-space:nowrap}
+/* Expense review window (approve / reject). */
+.expenses-review{display:grid;gap:10px;min-width:min(420px,80vw)}
+.expenses-review p{margin:0}
+.expenses-review-amount{font-size:26px;font-weight:900;color:var(--forest)}
+.expenses-review label{display:grid;gap:4px;font-weight:700;font-size:13px}
+.expenses-review-actions{display:flex;justify-content:flex-end;gap:8px}
+.expenses-review-actions button{min-height:42px;padding:0 18px}
+[data-theme="dark"] .expenses-review-amount{color:#c8e86a}
