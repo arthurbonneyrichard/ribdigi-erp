@@ -21,3 +21,10 @@ export function subscribePosDrawerBridge(listener: Listener) {
     listeners.delete(listener);
   };
 }
+
+/** The top bar's Shift button asks the POS page to show its shift panel. */
+export const POS_SHIFT_PANEL_EVENT = 'ribdigi:pos-shift-panel';
+
+export function requestPosShiftPanel() {
+  window.dispatchEvent(new Event(POS_SHIFT_PANEL_EVENT));
+}

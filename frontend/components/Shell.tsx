@@ -10,7 +10,7 @@ import { isStoreNetworkNavItem, tenantIsMultiStore, type StoreEntitlementMe } fr
 import { getMe, invalidateMeCache } from '../lib/meCache';
 import { closeShiftForSignOut, openShiftForSignedInUser } from '../lib/cashierShift';
 import { linkStatusText, type LinkSnapshot } from '../lib/connectivity';
-import { subscribePosDrawerBridge, type PosDrawerBridgeState } from '../lib/posDrawerBridge';
+import { requestPosShiftPanel, subscribePosDrawerBridge, type PosDrawerBridgeState } from '../lib/posDrawerBridge';
 import { PosOfflineTopSlot } from '../lib/posOfflineSlot';
 import { prefetchGet } from '../lib/prefetchCache';
 import { loadUserTheme, writeUserTheme } from '../lib/theme';
@@ -791,6 +791,20 @@ function drawerOpenReason(raw: string): string | null {
   if (cleaned.includes('://') || cleaned.includes('@')) return null;
   if (DRAWER_REASON_PLACEHOLDERS.has(cleaned.toLowerCase())) return null;
   return cleaned;
+}
+
+/** Opens the till's shift panel: report, cash in/out, count and close. */
+function PosShiftTopButton() {
+  return (
+    <button
+      type="button"
+      className="tpos-btn pos-top-drawer-btn"
+      aria-label="Open till shift"
+      onClick={requestPosShiftPanel}
+    >
+      Shift
+    </button>
+  );
 }
 
 /** Sits in the POS top row, immediately to the right of the selling pill. */
@@ -1737,6 +1751,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               <>
                 <PosSellingStatus />
                 <div className="pos-top-tools">
+                  <PosShiftTopButton />
                   <PosDrawerTopControls />
                 </div>
               </>
