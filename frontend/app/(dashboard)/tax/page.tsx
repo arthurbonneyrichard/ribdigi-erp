@@ -394,17 +394,21 @@ export default function Page() {
         </div>
         <div className="card">
           <h3>This period{report?.store_name ? ` · ${report.store_name}` : ''}</h3>
-          <p>VAT collected on sales: {report?.output_tax ?? '—'}</p>
+          <p>VAT collected on sales: {report ? formatMoney(report.output_tax ?? 0) : '—'}</p>
           <p className="muted">
-            Invoices {report?.output_tax_invoices ?? 0} · POS {report?.output_tax_pos ?? 0}
-            {report?.reverse_charge_tax != null
-              ? ` · RC memo ${report.reverse_charge_tax}`
+            Invoices {formatMoney(report?.output_tax_invoices ?? 0)} · Till {formatMoney(report?.output_tax_pos ?? 0)}
+            {report?.reverse_charge_tax
+              ? ` · Reverse charge (customer pays) ${formatMoney(report.reverse_charge_tax)}`
               : ''}
           </p>
-          <p>VAT on purchases (claimable): {report?.input_tax ?? '—'}</p>
-          <p className="muted">Source: {report?.input_tax_source ?? '—'}</p>
-          <div className="kpi">{report?.net_tax_payable ?? '—'}</div>
-          <p className="muted">Amount to pay (or refund if negative)</p>
+          <p>VAT on purchases you can claim back: {report ? formatMoney(report.input_tax ?? 0) : '—'}</p>
+          <p className="muted">
+            {report?.input_tax_source === 'purchase_orders'
+              ? 'Worked out from purchase orders, because no supplier bills are recorded for this period.'
+              : 'Worked out from supplier bills.'}
+          </p>
+          <div className="kpi">{report ? formatMoney(report.net_tax_payable ?? 0) : '—'}</div>
+          <p className="muted">VAT to pay for this period (a negative amount is a refund)</p>
         </div>
       </div>
 
