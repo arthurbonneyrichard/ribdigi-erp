@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AttachmentPreview from '../../../components/AttachmentPreview';
+import FormModal from '../../../components/FormModal';
 import PageHeader from '../../../components/PageHeader';
 import { api, getAccessToken } from '../../../lib/api';
 import { formatDate, formatMoney, formatWhen, plainLabel } from '../../../lib/format';
@@ -101,6 +102,8 @@ export default function Page() {
   const [expenseDate, setExpenseDate] = useState('');
   const [rejectReason, setRejectReason] = useState('');
   const [approveComment, setApproveComment] = useState('');
+  // The expense being approved or rejected in the review window.
+  const [deciding, setDeciding] = useState<{ row: any; kind: 'approve' | 'reject' } | null>(null);
   const [ocrFor, setOcrFor] = useState<string | null>(null);
   const [ocrDraft, setOcrDraft] = useState<{
     amount: string;
@@ -509,6 +512,7 @@ export default function Page() {
       });
       setMessage(r.message || (r.data?.status === 'approved' ? 'Expense approved' : 'Level approved'));
       setApproveComment('');
+      setDeciding(null);
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -532,6 +536,7 @@ export default function Page() {
       });
       setMessage('Expense rejected (reason stored on the record)');
       setRejectReason('');
+      setDeciding(null);
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -854,34 +859,80 @@ export default function Page() {
           </button>
         }
       />
+      {deciding ? (
+        <FormModal
+          title={deciding.kind === 'approve' ? 'Approve this expense?' : 'Reject this expense?'}
+          busy={rowBusyId === deciding.row.id}
+          onClose={() => setDeciding(null)}
+        >
+          <div className="expenses-review">
+            <p className="expenses-review-amount">{formatMoney(deciding.row.amount)}</p>
+            <p>
+              {deciding.row.payee ? <strong>{deciding.row.payee}</strong> : null}
+              {deciding.row.payee && deciding.row.category ? ' · ' : ''}
+              {deciding.row.category || ''}
+            </p>
+            {deciding.row.description ? <p className="muted">{deciding.row.description}</p> : null}
+            {deciding.kind === 'approve' ? (
+              <label>
+                Comment (optional)
+                <input
+                  value={approveComment}
+                  onChange={(e) => setApproveComment(e.target.value)}
+                  placeholder="A note for the record"
+                  aria-label="Expense approve comment"
+                  autoFocus
+                />
+              </label>
+            ) : (
+              <label>
+                Why are you rejecting it?
+                <input
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder="For example: no receipt attached"
+                  aria-label="Expense reject reason"
+                  autoFocus
+                />
+              </label>
+            )}
+            <div className="expenses-review-actions">
+              <button type="button" onClick={() => setDeciding(null)} aria-label="Cancel expense review">
+                Cancel
+              </button>
+              {deciding.kind === 'approve' ? (
+                <button
+                  type="button"
+                  className="btn-ok"
+                  onClick={() => approve(deciding.row.id)}
+                  aria-label="Confirm approve expense"
+                >
+                  Approve
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn-danger"
+                  onClick={() => reject(deciding.row.id)}
+                  aria-label="Confirm reject expense"
+                >
+                  Reject
+                </button>
+              )}
+            </div>
+            {error ? (
+              <p className="erp-banner err" role="alert">
+                {error}
+              </p>
+            ) : null}
+          </div>
+        </FormModal>
+      ) : null}
       <div className="card" id="expense-register">
         <div className="expenses-section-head">
           <h2>Expense list</h2>
-          <p className="muted">Approve or reject a pending expense from this list. A reject reason is required.</p>
+          <p className="muted">Press Approve or Reject on a pending expense to review it first. Rejecting needs a reason.</p>
         </div>
-        <div className="expenses-decide">
-          <label>
-            Approve comment
-            <input
-              value={approveComment}
-              onChange={(e) => setApproveComment(e.target.value)}
-              placeholder="Optional note when you approve"
-              aria-label="Expense approve comment"
-              title="Optional comment; blank omits"
-            />
-          </label>
-          <label>
-            Reject reason
-            <input
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Required before Reject"
-              aria-label="Expense reject reason"
-              title="Required reason for reject"
-            />
-          </label>
-        </div>
-        <p className="muted expenses-hint">An approve comment is optional. Type a reject reason before you reject.</p>
         <div className="erp-toolbar">
           <input
             value={searchQuery}
@@ -1004,7 +1055,7 @@ export default function Page() {
                         <>
                           <button
                             className="btn-ok"
-                            onClick={() => approve(r.id)}
+                            onClick={() => setDeciding({ row: r, kind: 'approve' })}
                             aria-label="Approve expense"
                             disabled={rowBusyId === r.id}
                           >
@@ -1012,14 +1063,9 @@ export default function Page() {
                           </button>
                           <button
                             className="btn-danger"
-                            onClick={() => reject(r.id)}
+                            onClick={() => setDeciding({ row: r, kind: 'reject' })}
                             aria-label={`Reject expense ${r.id}`}
-                            disabled={!rejectReason.trim() || rowBusyId === r.id}
-                            title={
-                              rejectReason.trim()
-                                ? 'Reject expense'
-                                : 'Enter a reject reason first'
-                            }
+                            disabled={rowBusyId === r.id}
                           >
                             Reject
                           </button>
