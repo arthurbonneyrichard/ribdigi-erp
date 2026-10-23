@@ -498,6 +498,8 @@ export default function Page() {
   const [hideStorePicker, setHideStorePicker] = useState(false);
   const [receiptBusy, setReceiptBusy] = useState('');
   const [shiftReport, setShiftReport] = useState<any>(null);
+  // What the product list last asked for: '' means the full list for this store.
+  const [lastBrowseQuery, setLastBrowseQuery] = useState('');
   // The shift header and report open over the till from the top bar's Shift button.
   const [shiftPanelOpen, setShiftPanelOpen] = useState(false);
   const [returnPanelOpen, setReturnPanelOpen] = useState(false);
@@ -758,6 +760,7 @@ export default function Page() {
     if (query) params.set('q', query);
     if (posStore) params.set('store_id', posStore);
     const gen = ++browseGen.current;
+    setLastBrowseQuery(query);
     setCatalogLoading(true);
     const fromCache = async (barcode?: boolean) => {
       const cached = (await getCachedProducts()) as unknown as Product[];
@@ -2744,8 +2747,15 @@ export default function Page() {
                 <p>
                   {rows.length && categoryFilter
                     ? `No ${categoryFilter} items in this search. Choose another category or tap All.`
-                    : `Nothing matches “${q.trim() || 'that search'}”. Check the spelling or scan the barcode.`}
+                    : lastBrowseQuery.trim()
+                      ? `Nothing matches “${lastBrowseQuery.trim()}”. Check the spelling or scan the barcode.`
+                      : `${session.store_name || 'This store'} has no products in stock to sell yet. Add products and their stock in Inventory, then come back.`}
                 </p>
+                {!lastBrowseQuery.trim() && !categoryFilter ? (
+                  <a className="tpos-btn" href="/inventory" aria-label="Go to Inventory">
+                    Go to Inventory
+                  </a>
+                ) : (
                 <button
                   type="button"
                   className="tpos-btn"
@@ -2758,6 +2768,7 @@ export default function Page() {
                 >
                   Show all products
                 </button>
+                )}
               </div>
             )}
 
