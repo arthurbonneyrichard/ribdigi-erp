@@ -508,6 +508,10 @@ export default function Page() {
   const [online, setOnline] = useState(
     typeof navigator === 'undefined' ? true : navigator.onLine
   );
+  // Whether the ERP server answers. The browser's own flag says "offline" whenever the
+  // computer has no internet, even when the till's server on this network is reachable.
+  const serverUp = useRef(online);
+  serverUp.current = online;
   const [pendingOffline, setPendingOffline] = useState(0);
   const [catalogCachedAt, setCatalogCachedAt] = useState<string | null>(null);
   const [meId, setMeId] = useState('');
@@ -778,7 +782,7 @@ export default function Page() {
       return list;
     };
     try {
-      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      if (!serverUp.current) {
         return await fromCache(opts?.barcode);
       }
       const r = await api('/pos/products/search?' + params.toString(), {
@@ -791,7 +795,7 @@ export default function Page() {
       return list;
     } catch (err) {
       if (isAbortError(err)) return [];
-      if (!navigator.onLine || (err as { status?: number })?.status === undefined) {
+      if ((err as { status?: number })?.status === undefined) {
         return fromCache(opts?.barcode);
       }
       throw err;
@@ -869,7 +873,7 @@ export default function Page() {
       };
     }
     const t = window.setInterval(() => {
-      if (!cancelled && navigator.onLine) beat(true);
+      if (!cancelled && serverUp.current) beat(true);
     }, 60000);
     return () => {
       cancelled = true;
@@ -922,8 +926,8 @@ export default function Page() {
         let sess: any;
         let storeRes: any;
         let meRes: any;
+        let offlineBoot = false;
         try {
-          if (!navigator.onLine) throw new Error('offline');
           [sess, storeRes, meRes] = await Promise.all([
             getPrefetched('/pos/sessions/current'),
             getPrefetched('/pos/stores'),
@@ -933,15 +937,12 @@ export default function Page() {
           void cacheSnapshot('stores', storeRes.data || []).catch(() => undefined);
           void cacheSnapshot('me', meRes.data || null).catch(() => undefined);
           setBootedOffline(false);
+          serverUp.current = true;
+          setOnline(true);
         } catch (bootErr) {
-          const httpStatus = (bootErr as { status?: number })?.status;
-          const browserOnline = typeof navigator === 'undefined' ? true : navigator.onLine;
-          if (browserOnline && httpStatus !== undefined) throw bootErr;
-          if (browserOnline && (bootErr as Error)?.message !== 'offline') {
-            throw new Error(
-              (bootErr as Error)?.message || 'Point of Sale could not reach the server to prepare this device.'
-            );
-          }
+          // The server answered with an error: show it. No answer at all: use the saved copy.
+          if ((bootErr as { status?: number })?.status !== undefined) throw bootErr;
+          offlineBoot = true;
           const [sSnap, stSnap, meSnap, env] = await Promise.all([
             getSnapshot<Session | null>('session').catch(() => null),
             getSnapshot<Store[]>('stores').catch(() => null),
@@ -982,11 +983,11 @@ export default function Page() {
         const tillIndustry = ['retail', 'retail_wholesale', 'pharmacy', 'restaurant', 'hotel'].includes(
           normalizeIndustry(meRes.data?.industry) || ''
         );
-        if (!sess.data && navigator.onLine && !tillIndustry) {
+        if (!sess.data && !offlineBoot && !tillIndustry) {
           // Say why instead of 'Wait for your shift to open' that never ends.
           setError(tillBlockedReason(meRes.data) || 'This company has no till.');
         }
-        if (!sess.data && navigator.onLine && tillIndustry && !cancelled) {
+        if (!sess.data && !offlineBoot && tillIndustry && !cancelled) {
           const opened = await openShiftForSignedInUser(chosen || null);
           if (cancelled) return;
           if (opened?.session_id) sess = { data: opened as Session };
@@ -1013,7 +1014,7 @@ export default function Page() {
               ? 'Wholesale counter. Sales from this register use the wholesale channel.'
               : ''
         );
-        if (pharmacy && navigator.onLine) {
+        if (pharmacy && !offlineBoot) {
           const rx = await api('/pharmacy/prescriptions').catch(() => ({ data: [] }));
           const open = (Array.isArray(rx.data) ? rx.data : []).filter((row: OpenPrescription) =>
             ['approved', 'partially_dispensed'].includes(row.status)
@@ -1121,7 +1122,7 @@ export default function Page() {
           .catch(() => {
             if (!cancelled) setCustomers([]);
           });
-      if (!navigator.onLine) {
+      if (!serverUp.current) {
         void cachedCustomers();
         return;
       }
@@ -1357,7 +1358,7 @@ export default function Page() {
     if (!query) return;
     try {
       // USB/Bluetooth wedge scanners type digits then Enter — accept as barcode.
-      if (looksLikeBarcode(query) && !navigator.onLine) {
+      if (looksLikeBarcode(query) && !serverUp.current) {
         const hits = await browse(query, { barcode: true });
         const exact = hits.filter(
           (p) => String(p.barcode || '').toLowerCase() === query.toLowerCase() || p.sku.toLowerCase() === query.toLowerCase()
@@ -1427,7 +1428,7 @@ export default function Page() {
       setError('Open a POS shift before selling');
       return;
     }
-    if (!navigator.onLine) {
+    if (!serverUp.current) {
       const blocked = offlineDispenseBlock(product);
       if (blocked) {
         setError(blocked);
@@ -1437,7 +1438,7 @@ export default function Page() {
     const avail = lineLimit(product);
     if (avail <= 0 || (product.is_out_of_stock && avail !== Infinity)) {
       setError(
-        navigator.onLine
+        serverUp.current
           ? `${product.name} is out of stock at this store`
           : `${product.name} has no offline stock allocated to this device`
       );
@@ -1472,7 +1473,7 @@ export default function Page() {
   }
 
   function lineLimit(product: Product) {
-    if (!navigator.onLine && allocationOverride && offlineStatus?.envelope?.can_override_allocation) return Infinity;
+    if (!serverUp.current && allocationOverride && offlineStatus?.envelope?.can_override_allocation) return Infinity;
     return Math.max(0, Number(product.stock_qty) || 0);
   }
 

@@ -1055,13 +1055,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         applyMe(meSnap);
         return true;
       };
-      if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        try {
-          if (await applyCachedAccount()) return;
-        } catch {
-          /* no cached account yet; the online check below explains that */
-        }
-      }
+      // Ask the server first even when the browser says offline (no internet on the shop
+      // network): only a failed request falls back to the saved account below.
       try {
         await Promise.race([
           getMe({ force: true }).then((meRes) => {

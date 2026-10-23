@@ -47,8 +47,10 @@ export function classifyLink(input: {
   syncing: boolean;
   syncFailed: boolean;
 }): LinkPhase {
-  if (input.syncing && input.navigatorOnline && input.apiReachable !== false) return 'syncing';
-  if (!input.navigatorOnline) return 'offline';
+  // A server that answers wins over the browser's flag: on a shop network with no internet the
+  // browser says offline, but the till's server is still there.
+  if (input.syncing && (input.navigatorOnline || input.apiReachable === true) && input.apiReachable !== false) return 'syncing';
+  if (!input.navigatorOnline && input.apiReachable !== true) return 'offline';
   if (input.apiReachable === false) return 'api_down';
   if (input.syncFailed) return 'sync_failed';
   return 'online';
@@ -188,7 +190,6 @@ export function noteSyncEnd(error?: string) {
 }
 
 export async function probeApi(timeoutMs = 4000): Promise<'online' | 'offline' | 'api_down'> {
-  if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'offline';
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -208,11 +209,7 @@ export async function probeApi(timeoutMs = 4000): Promise<'online' | 'offline' |
 
 export async function refreshLink(): Promise<LinkPhase> {
   navigatorOnline = typeof navigator === 'undefined' ? true : navigator.onLine;
-  if (!navigatorOnline) {
-    apiReachable = null;
-    emit();
-    return currentPhase();
-  }
+  // Always ask the server: the browser reports offline whenever there is no internet.
   const probed = await probeApi();
   apiReachable = probed === 'online';
   if (apiReachable) syncFailed = syncFailed && !syncing;
