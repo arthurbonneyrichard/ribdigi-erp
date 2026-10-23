@@ -932,18 +932,9 @@ export default function Page() {
                 </button>
               ) : null}
               {canWriteStores && !hideStoreUx ? (
-                <button
-                  type="button"
-                  className="list-btn-primary"
-                  onClick={() => {
-                    setError('');
-                    setMessage('');
-                    setStoreAddOpen(true);
-                  }}
-                  aria-label="Create store"
-                >
-                  Create store
-                </button>
+                <a className="list-btn-secondary" href="/stores" aria-label="Manage stores">
+                  Stores
+                </a>
               ) : null}
             </>
           ) : undefined

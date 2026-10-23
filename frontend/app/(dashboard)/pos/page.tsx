@@ -671,6 +671,37 @@ export default function Page() {
     return () => window.removeEventListener('keydown', onKey, true);
   }, []);
 
+  // Shortcuts for a busy till: F2 or / to search, F9 to pay, Enter or F9 for the next sale.
+  const shortcutRef = useRef({ pay: () => {}, next: () => {}, done: false, blocked: false });
+  shortcutRef.current = {
+    pay: () => void checkout(),
+    next: startNextSale,
+    done: payAsReprint,
+    blocked: shiftPanelOpen || returnPanelOpen,
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const keys = shortcutRef.current;
+      if (keys.blocked) return;
+      const el = e.target as HTMLElement | null;
+      const typing =
+        !!el && (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable);
+      if (e.key === 'F2' || (e.key === '/' && !typing)) {
+        e.preventDefault();
+        document.querySelector<HTMLInputElement>('.tpos-search-input')?.focus();
+      } else if (e.key === 'F9') {
+        e.preventDefault();
+        if (keys.done) keys.next();
+        else keys.pay();
+      } else if (e.key === 'Enter' && keys.done && !typing) {
+        e.preventDefault();
+        keys.next();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     api('/pos/settings')
@@ -2611,6 +2642,9 @@ export default function Page() {
                 All
               </button>
             </form>
+            <p className="pos-shortcuts" aria-hidden>
+              <kbd>F2</kbd> search · <kbd>F9</kbd> pay · <kbd>Enter</kbd> next sale
+            </p>
             {session && catalogCategories.length > 0 ? (
               <nav className="tpos-cats" aria-label="POS product categories">
                 <p className="tpos-cats-crumb">

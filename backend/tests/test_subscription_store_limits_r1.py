@@ -61,7 +61,7 @@ def test_effective_limit_override_and_allocation():
 def test_stores_entitlement_ui_wired():
     stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert "/stores/entitlement" in stores
-    assert "Stores Used" in stores
+    assert "stores used" in stores
     assert "store-limit" in stores
     assert "canCreateStore" in stores
     platform = (ROOT / "frontend/app/(dashboard)/platform/tenants/page.tsx").read_text(encoding="utf-8")

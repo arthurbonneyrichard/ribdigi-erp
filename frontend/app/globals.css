@@ -4141,3 +4141,33 @@ input[type=file]::file-selector-button:hover{border-color:var(--brand)}
 }
 .page-settings > summary{cursor:pointer;font-weight:700;color:var(--ink)}
 .page-settings[open] > summary{margin-bottom:8px}
+/* Multi-Store: one card per area (stores, transfers, warehouses, branches, departments). */
+.ms-section{
+  background:var(--white);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin:0 0 16px;
+  box-shadow:0 1px 2px #003D1F0a
+}
+.ms-section > h3{margin:0 0 4px;font-size:18px}
+.ms-section > .card{box-shadow:none}
+.ms-add{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px}
+.ms-add > summary{cursor:pointer;font-weight:700;color:var(--deep-green)}
+.ms-add[open] > summary{margin-bottom:8px}
+.ms-add > .card{max-width:560px}
+.ms-settings-body{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+[data-theme="dark"] .ms-section{background:var(--forest);border-color:#0a3d30}
+.ms-usage{margin:6px 0 10px}
+.ms-usage-line{margin:0;font-size:13px;font-weight:700;color:var(--deep-green)}
+.ms-confirm{margin:0;padding:8px 10px;border-radius:10px;background:var(--mist);border:1px solid var(--line);font-weight:700;color:var(--deep-green)}
+/* User Management: who can sign in comes first; the add form follows. */
+.user-manage{display:flex;flex-direction:column}
+.user-manage > #create-user{order:2}
+.user-manage > .user-manage-list{order:1}
+.user-manage > *:not(#create-user):not(.user-manage-list):not(header){order:3}
+.user-manage > header,.user-manage > .page-header{order:0}
+.list-btn-secondary{
+  display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:6px 14px;border-radius:10px;
+  border:1px solid var(--line);background:var(--white);color:var(--deep-green);font-weight:700;text-decoration:none
+}
+.list-btn-secondary:hover{border-color:var(--brand)}
+/* Users table: inline role / department / scope pickers need room; scroll inside the card instead of clipping. */
+.list-table-wrap.user-manage-table-scroll .table{table-layout:auto;min-width:1080px}
+.user-manage-table-scroll td:last-child{white-space:nowrap}

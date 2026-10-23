@@ -75,14 +75,20 @@ function defaultHours(): OperatingHours {
 
 function summarizeHours(hours?: OperatingHours | null): string {
   if (!hours) return '—';
-  const bits = WEEKDAYS.map(({ key, label }) => {
-    const d = hours[key];
-    if (!d) return null;
-    if (d.closed) return `${label} closed`;
-    if (d.open && d.close) return `${label} ${d.open}-${d.close}`;
-    return null;
-  }).filter(Boolean);
-  return bits.length ? bits.join(' · ') : '—';
+  // Days in a row with the same hours read as one range: "Mon–Fri 09:00–18:00 · Sat–Sun closed".
+  const label = (d?: { open?: string; close?: string; closed?: boolean }) =>
+    !d ? null : d.closed ? 'closed' : d.open && d.close ? `${d.open}–${d.close}` : null;
+  const runs: { from: string; to: string; text: string }[] = [];
+  for (const { key, label: day } of WEEKDAYS) {
+    const text = label(hours[key]);
+    if (!text) continue;
+    const last = runs[runs.length - 1];
+    if (last && last.text === text) last.to = day;
+    else runs.push({ from: day, to: day, text });
+  }
+  return runs.length
+    ? runs.map((r) => `${r.from === r.to ? r.from : `${r.from}–${r.to}`} ${r.text}`).join(' · ')
+    : '—';
 }
 type Warehouse = {
   id: string;
@@ -911,7 +917,7 @@ export default function Page() {
     <div className="work">
       <PageHeader
         title="Multi-Store"
-        subtitle="Branches, departments, stores, warehouses, FEFO mode, and transfers"
+        subtitle="Your stores, moving stock between them, and the warehouses, branches and departments behind them."
         actions={
           canCreateStore ? (
             <button type="button" className="list-btn-primary" onClick={() => setStoreAddOpen(true)} aria-label="Create store">
@@ -922,647 +928,49 @@ export default function Page() {
       />
       {error && <p className="erp-banner err" role="alert">{error}</p>}
       {message && <p className="erp-banner ok" role="status">{message}</p>}
-
-      <div className="card" style={{ marginBottom: 16 }}>
-        <label className="muted">
-          <input type="checkbox" checked={fefoStrict} onChange={() => toggleFefo()} aria-label="FEFO strict warehouse" /> Sell
-          earliest-expiry batches from the same warehouse only (FEFO)
-        </label>
-      </div>
-
-      <div className="work-pair">
-        <div className="card">
-          <h3>{editBrId ? 'Edit branch' : 'New branch'}</h3>
-          <div style={{ display: 'grid', gap: 8 }}>
-            <input
-              value={brCode}
-              onChange={(e) => setBrCode(e.target.value)}
-              placeholder="Code"
-              aria-label="Branch code"
-              title="Branch code"
-              disabled={!!editBrId}
-            />
-            <input
-              value={brName}
-              onChange={(e) => setBrName(e.target.value)}
-              placeholder="Name"
-              aria-label={editBrId ? 'Edit branch name' : 'Branch name'}
-              title="Branch name"
-            />
-            <input
-              value={brAddress}
-              onChange={(e) => setBrAddress(e.target.value)}
-              placeholder="Address"
-              aria-label="Branch address"
-            />
-            <input
-              value={brPhone}
-              onChange={(e) => setBrPhone(e.target.value)}
-              placeholder="Phone (optional), e.g. +233 24 123 4567"
-              aria-label="Branch phone"
-            />
-            <input
-              value={brEmail}
-              onChange={(e) => setBrEmail(e.target.value)}
-              placeholder="Email"
-              aria-label="Branch email"
-            />
-            <select
-              value={brManagerId}
-              onChange={(e) => setBrManagerId(e.target.value)}
-              aria-label={editBrId ? 'Edit branch manager' : 'Branch manager'}
-              title="Branch manager (optional tenant user)"
-            >
-              <option value="">Manager (optional)</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.full_name || u.name || u.email || u.id.slice(0, 8)}
-                </option>
-              ))}
-            </select>
-            {editBrId ? (
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button type="button" onClick={saveBranchEdit} disabled={!brName.trim()} aria-label="Save branch">
-                  Save branch
-                </button>
-                <button type="button" onClick={resetBranchForm} aria-label="Cancel branch edit">
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={createBranch}
-                disabled={!brCode.trim() || !brName.trim()}
-                aria-label="Create branch"
-              >
-                Create branch
-              </button>
-            )}
-          </div>
-        </div>
-        <div className="card">
-          <h3>{editDeptId ? 'Edit department' : 'New department'}</h3>
-          <div style={{ display: 'grid', gap: 8 }}>
-            <input
-              value={deptCode}
-              onChange={(e) => setDeptCode(e.target.value)}
-              placeholder="Code"
-              aria-label="Department code"
-              title="Department code"
-              disabled={!!editDeptId}
-            />
-            <input
-              value={deptName}
-              onChange={(e) => setDeptName(e.target.value)}
-              placeholder="Name (e.g. Sales)"
-              aria-label={editDeptId ? 'Edit department name' : 'Department name'}
-              title="Department name"
-            />
-            <select
-              value={deptBranchId}
-              onChange={(e) => setDeptBranchId(e.target.value)}
-              aria-label={editDeptId ? 'Edit department branch' : 'Department branch'}
-              title="Department branch (optional)"
-            >
-              <option value="">Branch (optional)</option>
-              {branches
-                .filter((b) => b.is_active !== false)
-                .map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.code} — {b.name}
-                  </option>
-                ))}
-            </select>
-            <select
-              value={deptHeadId}
-              onChange={(e) => setDeptHeadId(e.target.value)}
-              aria-label={editDeptId ? 'Edit department head' : 'Department head'}
-              title="Department head (optional tenant user)"
-            >
-              <option value="">Department head (optional)</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.full_name || u.name || u.email || u.id.slice(0, 8)}
-                </option>
-              ))}
-            </select>
-            {editDeptId ? (
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button type="button" onClick={saveDepartmentEdit} disabled={!deptName.trim()} aria-label="Save department">
-                  Save department
-                </button>
-                <button type="button" onClick={resetDeptForm} aria-label="Cancel department edit">
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={createDepartment}
-                disabled={deptBusy || !deptName.trim()}
-                aria-label="Create department"
-              >
-                {deptBusy ? 'Saving…' : 'Create department'}
-              </button>
-            )}
-          </div>
-        </div>
-        {storeAddOpen ? (
-        <FormModal
-          title="New store"
-          busy={storeBusy}
-          dirty={Boolean(code.trim() || name.trim() || address.trim() || phone.trim())}
-          onClose={() => setStoreAddOpen(false)}
-        >
-          <div style={{ display: 'grid', gap: 8 }}>
-            <input
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="Code"
-              aria-label="Store code"
-              title="Store code"
-            />
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Name"
-              aria-label="Store name"
-              title="Store name"
-            />
-            <input
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Address"
-              aria-label="Store address"
-            />
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Phone (optional), e.g. +233 24 123 4567"
-              aria-label="Store phone"
-            />
-            <select
-              value={managerId}
-              onChange={(e) => setManagerId(e.target.value)}
-              aria-label="Store manager"
-              title="Store manager (optional tenant user)"
-            >
-              <option value="">Manager (optional)</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.full_name || u.name || u.email || u.id.slice(0, 8)}
-                </option>
-              ))}
-            </select>
-            <select
-              value={branchId}
-              onChange={(e) => setBranchId(e.target.value)}
-              aria-label="Store branch"
-              title="Store branch (optional)"
-            >
-              <option value="">Branch (optional)</option>
-              {branches
-                .filter((b) => b.is_active !== false)
-                .map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.code} — {b.name}
-                  </option>
-                ))}
-            </select>
-            <label className="muted">Operating hours</label>
-            <HoursEditor value={hours} onDay={(day, patch) => setDayHours('create', day, patch)} />
-            <button
-              onClick={createStore}
-              disabled={storeBusy || !code.trim() || !name.trim()}
-              aria-label="Create store"
-              aria-busy={storeBusy}
-            >
-              {storeBusy ? 'Creating store…' : 'Create store'}
-            </button>
-          </div>
-        </FormModal>
-        ) : null}
-        <div className="card">
-          <h3>{editWhId ? 'Edit warehouse' : 'New warehouse'}</h3>
-          <div style={{ display: 'grid', gap: 8 }}>
-            <input
-              value={whCode}
-              onChange={(e) => setWhCode(e.target.value)}
-              placeholder="Code"
-              aria-label="Warehouse code"
-              title="Warehouse code"
-              disabled={!!editWhId}
-            />
-            <input
-              value={whName}
-              onChange={(e) => setWhName(e.target.value)}
-              placeholder="Name"
-              aria-label={editWhId ? 'Edit warehouse name' : 'Warehouse name'}
-              title="Warehouse name"
-            />
-            <select
-              value={whType}
-              onChange={(e) => setWhType(e.target.value)}
-              aria-label="Warehouse type"
-              title="Warehouse type"
-            >
-              <option value="retail">Retail</option>
-              <option value="bulk">Bulk</option>
-              <option value="cold_storage">Cold storage</option>
-              <option value="other">Other</option>
-            </select>
-            <input
-              value={whAddress}
-              onChange={(e) => setWhAddress(e.target.value)}
-              placeholder="Address"
-              aria-label="Warehouse address"
-            />
-            <input
-              value={whCapacity}
-              onChange={(e) => setWhCapacity(e.target.value)}
-              placeholder="Capacity (optional)"
-              aria-label="Warehouse capacity"
-            />
-            <select
-              value={whManagerId}
-              onChange={(e) => setWhManagerId(e.target.value)}
-              aria-label={editWhId ? 'Edit warehouse manager' : 'Warehouse manager'}
-              title="Warehouse manager (optional tenant user)"
-            >
-              <option value="">Manager (optional)</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.full_name || u.name || u.email || u.id.slice(0, 8)}
-                </option>
-              ))}
-            </select>
-            <select
-              value={whStoreId}
-              onChange={(e) => setWhStoreId(e.target.value)}
-              aria-label={editWhId ? 'Edit warehouse store' : 'Warehouse store'}
-              title="Linked store (optional)"
-            >
-              <option value="">Linked store (optional)</option>
-              {stores
-                .filter((s) => s.is_active !== false)
-                .map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.code} — {s.name}
-                </option>
-              ))}
-            </select>
-            {editWhId ? (
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button type="button" onClick={saveWarehouseEdit} disabled={!whName.trim()} aria-label="Save warehouse">
-                  Save warehouse
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditWhId('');
-                    setWhCode('');
-                    setWhName('');
-                    setWhType('retail');
-                    setWhAddress('');
-                    setWhCapacity('');
-                    setWhManagerId('');
-                    setWhStoreId('');
-                  }}
-                  aria-label="Cancel warehouse edit"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={createWarehouse}
-                disabled={!whCode.trim() || !whName.trim()}
-                aria-label="Create warehouse"
-              >
-                Create warehouse
-              </button>
-            )}
-          </div>
-        </div>
-        <div className="card">
-          <h3>New transfer</h3>
-          <div style={{ display: 'grid', gap: 8 }}>
-            <select
-              value={fromStore}
-              onChange={(e) => {
-                setXferConfirming(false);
-                setFromStore(e.target.value);
-              }}
-              aria-label="Stock transfer from store"
-              title="Source store for inter-store transfer"
-            >
-              {stores
-                .filter((s) => s.is_active !== false)
-                .map((s) => (
-                <option key={s.id} value={s.id}>
-                  From: {s.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={toStore}
-              onChange={(e) => {
-                setXferConfirming(false);
-                setToStore(e.target.value);
-              }}
-              aria-label="Stock transfer to store"
-              title="Destination store for inter-store transfer"
-            >
-              {stores
-                .filter((s) => s.is_active !== false)
-                .map((s) => (
-                <option key={s.id} value={s.id}>
-                  To: {s.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={productId}
-              onChange={(e) => setProductId(e.target.value)}
-              aria-label="Stock transfer product"
-            >
-              {products
-                .filter((p) => p.is_active !== false)
-                .map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.stock_qty})
-                </option>
-              ))}
-            </select>
-            <input
-              value={qty}
-              onChange={(e) => setQty(e.target.value)}
-              placeholder="Qty"
-              aria-label="Stock transfer quantity"
-            />
-            {xferConfirming ? (
-              <p className="muted" style={{ margin: 0 }}>
-                Confirm from {stores.find((s) => s.id === fromStore)?.name || fromStore} to{' '}
-                {stores.find((s) => s.id === toStore)?.name || toStore} · qty {qty}
-              </p>
-            ) : null}
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {xferConfirming ? (
-                <button type="button" onClick={() => setXferConfirming(false)} aria-label="Edit stock transfer before confirm">
-                  Back
-                </button>
-              ) : null}
-              <button type="button" onClick={createTransfer} aria-label={xferConfirming ? 'Confirm stock transfer' : 'Review stock transfer'}>
-                {xferConfirming ? 'Confirm create' : 'Review transfer'}
-              </button>
-              <button type="button" onClick={createTransfer} aria-label="Create and request stock transfer">
-                Create and request
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="card">
-          <h3>Cash drawer</h3>
-          <div style={{ display: 'grid', gap: 8 }}>
-            <select
-              value={drawerStoreId}
-              onChange={(e) => {
-                const id = e.target.value;
-                setDrawerStoreId(id);
-                const s = stores.find((x) => x.id === id);
-                if (s) {
-                  setDrawerMode(s.drawer_mode || 'none');
-                  setDrawerHost(s.drawer_host || '');
-                  setDrawerPort(String(s.drawer_port || 9100));
-                  setDrawerOnCash(s.drawer_open_on_cash !== false);
-                }
-              }}
-              aria-label="Cash drawer store"
-              title="Store for cash drawer settings"
-            >
-              {stores
-                .filter((s) => s.is_active !== false)
-                .map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} ({s.drawer_mode || 'none'})
-                </option>
-              ))}
-            </select>
-            <select
-              value={drawerMode}
-              onChange={(e) => setDrawerMode(e.target.value)}
-              aria-label="Cash drawer mode"
-            >
-              <option value="none">none (disabled)</option>
-              <option value="mock">mock (log pulse)</option>
-              <option value="network">network (ESC/POS TCP)</option>
-              <option value="browser_bridge">browser_bridge (return kick bytes)</option>
-            </select>
-            {drawerMode === 'network' && (
-              <>
-                <input
-                  value={drawerHost}
-                  onChange={(e) => setDrawerHost(e.target.value)}
-                  placeholder="Host (e.g. 127.0.0.1)"
-                  aria-label="Cash drawer host"
-                />
-                <input
-                  value={drawerPort}
-                  onChange={(e) => setDrawerPort(e.target.value)}
-                  placeholder="Port (9100)"
-                  aria-label="Cash drawer port"
-                />
-              </>
-            )}
-            <label>
-              <input
-                type="checkbox"
-                aria-label="Cash drawer open on cash sale"
-                checked={drawerOnCash}
-                onChange={(e) => setDrawerOnCash(e.target.checked)}
-              />{' '}
-              Open on cash POS sales
-            </label>
-            <button
-              onClick={saveDrawerSettings}
-              disabled={!drawerStoreId}
-              aria-label="Save drawer settings"
-            >
-              Save drawer settings
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <h3 id="branches" style={{ marginTop: 16 }}>Branches</h3>
-      <p className="muted">Code, manager, address and contact. Deactivating keeps the history.</p>
-      <select
-        value={branchManageFilter}
-        onChange={(e) => setBranchManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
-        title="Filter manage branch list by status"
-        aria-label="Branch status filter"
-        style={{ marginBottom: 8 }}
-      >
-        <option value="all">All statuses</option>
-        <option value="active">Active only</option>
-        <option value="inactive">Inactive only</option>
-      </select>
-      <table className="table" style={{ marginBottom: 24 }}>
-        <thead>
-          <tr>
-            <th>Code</th>
-            <th>Name</th>
-            <th>Manager</th>
-            <th>Phone</th>
-            <th>Email</th>
-            <th>Address</th>
-            <th>Active</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {managedBranches.map((b) => (
-            <tr key={b.id}>
-              <td>{b.code}</td>
-              <td>{b.name}</td>
-              <td>{b.manager_id ? userLabel(b.manager_id) : '—'}</td>
-              <td>{b.phone || '—'}</td>
-              <td>{b.email || '—'}</td>
-              <td>{b.address || '—'}</td>
-              <td>{b.is_active === false ? 'no' : 'yes'}</td>
-              <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <button type="button" onClick={() => startEditBranch(b)} aria-label={`Edit branch ${b.id}`}>
-                  Edit
-                </button>
-                {b.is_active === false ? (
-                  <button type="button" className="btn-ok" onClick={() => setBranchActive(b.id, true)} aria-label={`Reactivate branch ${b.id}`}>
-                    Reactivate
-                  </button>
-                ) : (
-                  <button type="button" className="btn-danger" onClick={() => setBranchActive(b.id, false)} aria-label={`Deactivate branch ${b.id}`}>
-                    Deactivate
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <h3 style={{ marginTop: 16 }}>Departments</h3>
-      <p className="muted">Code, branch (optional) and department head. Deactivating keeps the history.</p>
-      <select
-        value={departmentManageFilter}
-        onChange={(e) => setDepartmentManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
-        title="Filter manage department list by status"
-        aria-label="Department status filter"
-        style={{ marginBottom: 8 }}
-      >
-        <option value="all">All statuses</option>
-        <option value="active">Active only</option>
-        <option value="inactive">Inactive only</option>
-      </select>
-      <table className="table" style={{ marginBottom: 24 }}>
-        <thead>
-          <tr>
-            <th>Code</th>
-            <th>Name</th>
-            <th>Branch</th>
-            <th>Head</th>
-            <th>Active</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {managedDepartments.map((d) => (
-            <tr key={d.id}>
-              <td>{d.code}</td>
-              <td>{d.name}</td>
-              <td>{d.branch_id ? branchLabel(d.branch_id) : '—'}</td>
-              <td>{d.head_user_id ? userLabel(d.head_user_id) : '—'}</td>
-              <td>{d.is_active === false ? 'no' : 'yes'}</td>
-              <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <button type="button" onClick={() => startEditDepartment(d)} aria-label={`Edit department ${d.id}`}>
-                  Edit
-                </button>
-                {d.is_active === false ? (
-                  <button
-                    type="button"
-                    className="btn-ok"
-                    onClick={() => setDepartmentActive(d.id, true)}
-                    aria-label={`Reactivate department ${d.id}`}
-                  >
-                    Reactivate
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn-danger"
-                    onClick={() => setDepartmentActive(d.id, false)}
-                    aria-label={`Deactivate department ${d.id}`}
-                  >
-                    Deactivate
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <h3 id="stores" style={{ marginTop: 16 }}>Stores</h3>
+      <section className="ms-section" aria-label="Your stores">
+      <h3 id="stores">Your stores</h3>
       <p className="muted">Manager, branch, opening hours and warehouse. Deactivating hides the store from the till and new sales, and keeps its history.</p>
       {entitlement && (
-        <div
-          className="plat-stat"
-          style={{
-            marginBottom: 12,
-            padding: '10px 12px',
-            border: '1px solid var(--border, #ddd)',
-            borderRadius: 8,
-          }}
-        >
-          <strong>
+        <div className="ms-usage">
+          <p className="ms-usage-line">
             {entitlement.unlimited
-              ? `${entitlement.stores_active ?? 0} active Stores Used (unlimited entitlement)`
-              : `${entitlement.stores_active ?? 0} of ${entitlement.effective_store_limit} Stores Used`}
-          </strong>
-          {!entitlement.unlimited && (
-            <span className="muted" style={{ marginLeft: 8 }}>
-              {entitlement.stores_remaining ?? 0} Stores Remaining
-            </span>
-          )}
+              ? `${entitlement.stores_active ?? 0} ${(entitlement.stores_active ?? 0) === 1 ? 'store' : 'stores'} open · your plan has no store limit`
+              : `${entitlement.stores_active ?? 0} of ${entitlement.effective_store_limit} stores used · ${entitlement.stores_remaining ?? 0} left`}
+          </p>
           {entitlement.over_entitlement ? (
             <p className="login-error" style={{ marginTop: 6 }} role="status">
-              Over subscription entitlement — existing stores are kept; create/activate blocked until
-              resolved.
+              More stores are open than your plan allows. Existing stores keep working; you cannot open or
+              reactivate another until one is closed or the plan changes.
             </p>
           ) : null}
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
-            <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              <span>Company store allocation</span>
-              <input
-                type="number"
-                min={0}
-                placeholder="Full entitlement"
-                value={storeLimitDraft}
-                onChange={(e) => setStoreLimitDraft(e.target.value)}
-                style={{ width: 120 }}
-                aria-label="Company store allocation"
-              />
-            </label>
-            <button type="button" onClick={saveStoreLimit} aria-label="Save store limit allocation">
-              Save allocation
-            </button>
-            <span className="muted" style={{ fontSize: 12 }}>
-              Blank = use full subscription entitlement
-              {entitlement.subscription_store_entitlement != null
-                ? ` (${entitlement.subscription_store_entitlement})`
-                : ' (unlimited)'}
-            </span>
-          </div>
+          <details className="ms-add">
+            <summary>Limit stores for this company</summary>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <span>Most stores this company may open</span>
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="No limit"
+                  value={storeLimitDraft}
+                  onChange={(e) => setStoreLimitDraft(e.target.value)}
+                  style={{ width: 120 }}
+                  aria-label="Company store allocation"
+                />
+              </label>
+              <button type="button" onClick={saveStoreLimit} aria-label="Save store limit allocation">
+                Save limit
+              </button>
+              <span className="muted" style={{ fontSize: 12 }}>
+                Leave blank to allow everything your plan includes
+                {entitlement.subscription_store_entitlement != null
+                  ? ` (${entitlement.subscription_store_entitlement})`
+                  : ''}
+                .
+              </span>
+            </div>
+          </details>
         </div>
       )}
       <select
@@ -1760,90 +1168,173 @@ export default function Page() {
           </table>
         </div>
       )}
-
-      <h3 style={{ marginTop: 16 }}>Warehouses</h3>
-      <p className="muted">
-        Type, manager, address and capacity. Deactivating hides the warehouse from new stock
-        movements and keeps its history.
-      </p>
-      <select
-        value={warehouseManageFilter}
-        onChange={(e) => setWarehouseManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
-        title="Filter manage warehouse list by status"
-        aria-label="Warehouse status filter"
-        style={{ marginBottom: 8 }}
-      >
-        <option value="all">All statuses</option>
-        <option value="active">Active only</option>
-        <option value="inactive">Inactive only</option>
-      </select>
-      <table className="table" style={{ marginBottom: 24 }}>
-        <thead>
-          <tr>
-            <th>Code</th>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Manager</th>
-            <th>Address</th>
-            <th>Capacity</th>
-            <th>Active</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {managedWarehouses.map((w) => (
-            <tr key={w.id}>
-              <td>{w.code}</td>
-              <td>
-                {w.name}
-                {w.is_active === false ? ' [inactive]' : ''}
-              </td>
-              <td>{w.warehouse_type || 'retail'}</td>
-              <td>{w.manager_id ? userLabel(w.manager_id) : '—'}</td>
-              <td>{w.address || '—'}</td>
-              <td>{w.capacity != null ? w.capacity : '—'}</td>
-              <td>{w.is_active === false ? 'no' : 'yes'}</td>
-              <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <button type="button" onClick={() => startEditWarehouse(w)} aria-label={`Edit warehouse ${w.id}`}>
-                  Edit
+      </section>
+        {storeAddOpen ? (
+        <FormModal
+          title="New store"
+          busy={storeBusy}
+          dirty={Boolean(code.trim() || name.trim() || address.trim() || phone.trim())}
+          onClose={() => setStoreAddOpen(false)}
+        >
+          <div style={{ display: 'grid', gap: 8 }}>
+            <input
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="Code"
+              aria-label="Store code"
+              title="Store code"
+            />
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Name"
+              aria-label="Store name"
+              title="Store name"
+            />
+            <input
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Address"
+              aria-label="Store address"
+            />
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Phone (optional), e.g. +233 24 123 4567"
+              aria-label="Store phone"
+            />
+            <select
+              value={managerId}
+              onChange={(e) => setManagerId(e.target.value)}
+              aria-label="Store manager"
+              title="Store manager (optional tenant user)"
+            >
+              <option value="">Manager (optional)</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name || u.name || u.email || u.id.slice(0, 8)}
+                </option>
+              ))}
+            </select>
+            <select
+              value={branchId}
+              onChange={(e) => setBranchId(e.target.value)}
+              aria-label="Store branch"
+              title="Store branch (optional)"
+            >
+              <option value="">Branch (optional)</option>
+              {branches
+                .filter((b) => b.is_active !== false)
+                .map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.code} — {b.name}
+                  </option>
+                ))}
+            </select>
+            <label className="muted">Operating hours</label>
+            <HoursEditor value={hours} onDay={(day, patch) => setDayHours('create', day, patch)} />
+            <button
+              onClick={createStore}
+              disabled={storeBusy || !code.trim() || !name.trim()}
+              aria-label="Create store"
+              aria-busy={storeBusy}
+            >
+              {storeBusy ? 'Creating store…' : 'Create store'}
+            </button>
+          </div>
+        </FormModal>
+        ) : null}
+      <section className="ms-section" aria-label="Move stock between stores">
+      <h3>Move stock between stores</h3>
+        <div className="card">
+          <h3>New transfer</h3>
+          <div style={{ display: 'grid', gap: 8 }}>
+            <select
+              value={fromStore}
+              onChange={(e) => {
+                setXferConfirming(false);
+                setFromStore(e.target.value);
+              }}
+              aria-label="Stock transfer from store"
+              title="Source store for inter-store transfer"
+            >
+              <option value="">From which store?</option>
+              {stores
+                .filter((s) => s.is_active !== false)
+                .map((s) => (
+                <option key={s.id} value={s.id}>
+                  From: {s.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={toStore}
+              onChange={(e) => {
+                setXferConfirming(false);
+                setToStore(e.target.value);
+              }}
+              aria-label="Stock transfer to store"
+              title="Destination store for inter-store transfer"
+            >
+              <option value="">To which store?</option>
+              {stores
+                .filter((s) => s.is_active !== false)
+                .map((s) => (
+                <option key={s.id} value={s.id}>
+                  To: {s.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={productId}
+              onChange={(e) => setProductId(e.target.value)}
+              aria-label="Stock transfer product"
+            >
+              <option value="">Choose a product</option>
+              {products
+                .filter((p) => p.is_active !== false)
+                .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({p.stock_qty})
+                </option>
+              ))}
+            </select>
+            <input
+              value={qty}
+              onChange={(e) => setQty(e.target.value)}
+              placeholder="Qty"
+              aria-label="Stock transfer quantity"
+            />
+            {xferConfirming ? (
+              <p className="ms-confirm" role="status">
+                Move {qty} × {products.find((p) => p.id === productId)?.name || 'this product'} from{' '}
+                {stores.find((s) => s.id === fromStore)?.name || fromStore} to{' '}
+                {stores.find((s) => s.id === toStore)?.name || toStore}?
+              </p>
+            ) : null}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {xferConfirming ? (
+                <button type="button" onClick={() => setXferConfirming(false)} aria-label="Edit stock transfer before confirm">
+                  Back
                 </button>
-                {w.is_active === false ? (
-                  <button
-                    type="button"
-                    className="btn-ok"
-                    onClick={() => setWarehouseActive(w.id, true)}
-                    aria-label={`Activate warehouse ${w.id}`}
-                  >
-                    Activate
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn-danger"
-                    onClick={() => setWarehouseActive(w.id, false)}
-                    aria-label={`Deactivate warehouse ${w.id}`}
-                  >
-                    Deactivate
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-          {managedWarehouses.length === 0 && (
-            <tr>
-              <td colSpan={8} className="muted">
-                No warehouses yet
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-
-      <h3 style={{ marginTop: 16 }}>Transfers</h3>
+              ) : null}
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={createTransfer}
+                aria-label="Create and request stock transfer"
+              >
+                {xferConfirming ? 'Confirm transfer' : 'Request transfer'}
+              </button>
+            </div>
+          </div>
+        </div>
       <p className="muted">
         The sending store's manager and the receiving store's manager both approve, then the stock is shipped and received.
       </p>
-      <div className="card" style={{ marginBottom: 12 }}>
+      <details className="ms-add" style={{ marginBottom: 12 }}>
+        <summary>Reject or cancel a transfer</summary>
+      <div className="card">
         <label>
           Reject / Cancel reason{' '}
           <input
@@ -1859,6 +1350,7 @@ export default function Page() {
           Required when you reject or cancel a transfer.
         </p>
       </div>
+      </details>
       <div className="cat-toolbar" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
         <input
           value={xferSearch}
@@ -2000,6 +1492,535 @@ export default function Page() {
           )}
         </tbody>
       </table>
+      </section>
+      <section className="ms-section" aria-label="Warehouses">
+      <h3>Warehouses</h3>
+      <p className="muted">
+        Type, manager, address and capacity. Deactivating hides the warehouse from new stock
+        movements and keeps its history.
+      </p>
+      <select
+        value={warehouseManageFilter}
+        onChange={(e) => setWarehouseManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
+        title="Filter manage warehouse list by status"
+        aria-label="Warehouse status filter"
+        style={{ marginBottom: 8 }}
+      >
+        <option value="all">All statuses</option>
+        <option value="active">Active only</option>
+        <option value="inactive">Inactive only</option>
+      </select>
+      <table className="table" style={{ marginBottom: 24 }}>
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Manager</th>
+            <th>Address</th>
+            <th>Capacity</th>
+            <th>Active</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {managedWarehouses.map((w) => (
+            <tr key={w.id}>
+              <td>{w.code}</td>
+              <td>
+                {w.name}
+                {w.is_active === false ? ' [inactive]' : ''}
+              </td>
+              <td>{w.warehouse_type || 'retail'}</td>
+              <td>{w.manager_id ? userLabel(w.manager_id) : '—'}</td>
+              <td>{w.address || '—'}</td>
+              <td>{w.capacity != null ? w.capacity : '—'}</td>
+              <td>{w.is_active === false ? 'no' : 'yes'}</td>
+              <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button type="button" onClick={() => startEditWarehouse(w)} aria-label={`Edit warehouse ${w.id}`}>
+                  Edit
+                </button>
+                {w.is_active === false ? (
+                  <button
+                    type="button"
+                    className="btn-ok"
+                    onClick={() => setWarehouseActive(w.id, true)}
+                    aria-label={`Activate warehouse ${w.id}`}
+                  >
+                    Activate
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn-danger"
+                    onClick={() => setWarehouseActive(w.id, false)}
+                    aria-label={`Deactivate warehouse ${w.id}`}
+                  >
+                    Deactivate
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+          {managedWarehouses.length === 0 && (
+            <tr>
+              <td colSpan={8} className="muted">
+                No warehouses yet
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+        <details className="ms-add" open={editWhId ? true : undefined}>
+          <summary>Add a warehouse</summary>
+        <div className="card">
+          <h3>{editWhId ? 'Edit warehouse' : 'New warehouse'}</h3>
+          <div style={{ display: 'grid', gap: 8 }}>
+            <input
+              value={whCode}
+              onChange={(e) => setWhCode(e.target.value)}
+              placeholder="Code"
+              aria-label="Warehouse code"
+              title="Warehouse code"
+              disabled={!!editWhId}
+            />
+            <input
+              value={whName}
+              onChange={(e) => setWhName(e.target.value)}
+              placeholder="Name"
+              aria-label={editWhId ? 'Edit warehouse name' : 'Warehouse name'}
+              title="Warehouse name"
+            />
+            <select
+              value={whType}
+              onChange={(e) => setWhType(e.target.value)}
+              aria-label="Warehouse type"
+              title="Warehouse type"
+            >
+              <option value="retail">Retail</option>
+              <option value="bulk">Bulk</option>
+              <option value="cold_storage">Cold storage</option>
+              <option value="other">Other</option>
+            </select>
+            <input
+              value={whAddress}
+              onChange={(e) => setWhAddress(e.target.value)}
+              placeholder="Address"
+              aria-label="Warehouse address"
+            />
+            <input
+              value={whCapacity}
+              onChange={(e) => setWhCapacity(e.target.value)}
+              placeholder="Capacity (optional)"
+              aria-label="Warehouse capacity"
+            />
+            <select
+              value={whManagerId}
+              onChange={(e) => setWhManagerId(e.target.value)}
+              aria-label={editWhId ? 'Edit warehouse manager' : 'Warehouse manager'}
+              title="Warehouse manager (optional tenant user)"
+            >
+              <option value="">Manager (optional)</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name || u.name || u.email || u.id.slice(0, 8)}
+                </option>
+              ))}
+            </select>
+            <select
+              value={whStoreId}
+              onChange={(e) => setWhStoreId(e.target.value)}
+              aria-label={editWhId ? 'Edit warehouse store' : 'Warehouse store'}
+              title="Linked store (optional)"
+            >
+              <option value="">Linked store (optional)</option>
+              {stores
+                .filter((s) => s.is_active !== false)
+                .map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.code} — {s.name}
+                </option>
+              ))}
+            </select>
+            {editWhId ? (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button type="button" onClick={saveWarehouseEdit} disabled={!whName.trim()} aria-label="Save warehouse">
+                  Save warehouse
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditWhId('');
+                    setWhCode('');
+                    setWhName('');
+                    setWhType('retail');
+                    setWhAddress('');
+                    setWhCapacity('');
+                    setWhManagerId('');
+                    setWhStoreId('');
+                  }}
+                  aria-label="Cancel warehouse edit"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={createWarehouse}
+                disabled={!whCode.trim() || !whName.trim()}
+                aria-label="Create warehouse"
+              >
+                Create warehouse
+              </button>
+            )}
+          </div>
+        </div>
+        </details>
+      </section>
+      <section className="ms-section" aria-label="Branches">
+      <h3 id="branches">Branches</h3>
+      <p className="muted">Code, manager, address and contact. Deactivating keeps the history.</p>
+      <select
+        value={branchManageFilter}
+        onChange={(e) => setBranchManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
+        title="Filter manage branch list by status"
+        aria-label="Branch status filter"
+        style={{ marginBottom: 8 }}
+      >
+        <option value="all">All statuses</option>
+        <option value="active">Active only</option>
+        <option value="inactive">Inactive only</option>
+      </select>
+      <table className="table" style={{ marginBottom: 24 }}>
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Manager</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>Address</th>
+            <th>Active</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {managedBranches.map((b) => (
+            <tr key={b.id}>
+              <td>{b.code}</td>
+              <td>{b.name}</td>
+              <td>{b.manager_id ? userLabel(b.manager_id) : '—'}</td>
+              <td>{b.phone || '—'}</td>
+              <td>{b.email || '—'}</td>
+              <td>{b.address || '—'}</td>
+              <td>{b.is_active === false ? 'no' : 'yes'}</td>
+              <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button type="button" onClick={() => startEditBranch(b)} aria-label={`Edit branch ${b.id}`}>
+                  Edit
+                </button>
+                {b.is_active === false ? (
+                  <button type="button" className="btn-ok" onClick={() => setBranchActive(b.id, true)} aria-label={`Reactivate branch ${b.id}`}>
+                    Reactivate
+                  </button>
+                ) : (
+                  <button type="button" className="btn-danger" onClick={() => setBranchActive(b.id, false)} aria-label={`Deactivate branch ${b.id}`}>
+                    Deactivate
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+        <details className="ms-add" open={editBrId ? true : undefined}>
+          <summary>Add a branch</summary>
+        <div className="card">
+          <h3>{editBrId ? 'Edit branch' : 'New branch'}</h3>
+          <div style={{ display: 'grid', gap: 8 }}>
+            <input
+              value={brCode}
+              onChange={(e) => setBrCode(e.target.value)}
+              placeholder="Code"
+              aria-label="Branch code"
+              title="Branch code"
+              disabled={!!editBrId}
+            />
+            <input
+              value={brName}
+              onChange={(e) => setBrName(e.target.value)}
+              placeholder="Name"
+              aria-label={editBrId ? 'Edit branch name' : 'Branch name'}
+              title="Branch name"
+            />
+            <input
+              value={brAddress}
+              onChange={(e) => setBrAddress(e.target.value)}
+              placeholder="Address"
+              aria-label="Branch address"
+            />
+            <input
+              value={brPhone}
+              onChange={(e) => setBrPhone(e.target.value)}
+              placeholder="Phone (optional), e.g. +233 24 123 4567"
+              aria-label="Branch phone"
+            />
+            <input
+              value={brEmail}
+              onChange={(e) => setBrEmail(e.target.value)}
+              placeholder="Email"
+              aria-label="Branch email"
+            />
+            <select
+              value={brManagerId}
+              onChange={(e) => setBrManagerId(e.target.value)}
+              aria-label={editBrId ? 'Edit branch manager' : 'Branch manager'}
+              title="Branch manager (optional tenant user)"
+            >
+              <option value="">Manager (optional)</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name || u.name || u.email || u.id.slice(0, 8)}
+                </option>
+              ))}
+            </select>
+            {editBrId ? (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button type="button" onClick={saveBranchEdit} disabled={!brName.trim()} aria-label="Save branch">
+                  Save branch
+                </button>
+                <button type="button" onClick={resetBranchForm} aria-label="Cancel branch edit">
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={createBranch}
+                disabled={!brCode.trim() || !brName.trim()}
+                aria-label="Create branch"
+              >
+                Create branch
+              </button>
+            )}
+          </div>
+        </div>
+        </details>
+      </section>
+      <section className="ms-section" aria-label="Departments">
+      <h3>Departments</h3>
+      <p className="muted">Code, branch (optional) and department head. Deactivating keeps the history.</p>
+      <select
+        value={departmentManageFilter}
+        onChange={(e) => setDepartmentManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
+        title="Filter manage department list by status"
+        aria-label="Department status filter"
+        style={{ marginBottom: 8 }}
+      >
+        <option value="all">All statuses</option>
+        <option value="active">Active only</option>
+        <option value="inactive">Inactive only</option>
+      </select>
+      <table className="table" style={{ marginBottom: 24 }}>
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Branch</th>
+            <th>Head</th>
+            <th>Active</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {managedDepartments.map((d) => (
+            <tr key={d.id}>
+              <td>{d.code}</td>
+              <td>{d.name}</td>
+              <td>{d.branch_id ? branchLabel(d.branch_id) : '—'}</td>
+              <td>{d.head_user_id ? userLabel(d.head_user_id) : '—'}</td>
+              <td>{d.is_active === false ? 'no' : 'yes'}</td>
+              <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button type="button" onClick={() => startEditDepartment(d)} aria-label={`Edit department ${d.id}`}>
+                  Edit
+                </button>
+                {d.is_active === false ? (
+                  <button
+                    type="button"
+                    className="btn-ok"
+                    onClick={() => setDepartmentActive(d.id, true)}
+                    aria-label={`Reactivate department ${d.id}`}
+                  >
+                    Reactivate
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn-danger"
+                    onClick={() => setDepartmentActive(d.id, false)}
+                    aria-label={`Deactivate department ${d.id}`}
+                  >
+                    Deactivate
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+        <details className="ms-add" open={editDeptId ? true : undefined}>
+          <summary>Add a department</summary>
+        <div className="card">
+          <h3>{editDeptId ? 'Edit department' : 'New department'}</h3>
+          <div style={{ display: 'grid', gap: 8 }}>
+            <input
+              value={deptCode}
+              onChange={(e) => setDeptCode(e.target.value)}
+              placeholder="Code"
+              aria-label="Department code"
+              title="Department code"
+              disabled={!!editDeptId}
+            />
+            <input
+              value={deptName}
+              onChange={(e) => setDeptName(e.target.value)}
+              placeholder="Name (e.g. Sales)"
+              aria-label={editDeptId ? 'Edit department name' : 'Department name'}
+              title="Department name"
+            />
+            <select
+              value={deptBranchId}
+              onChange={(e) => setDeptBranchId(e.target.value)}
+              aria-label={editDeptId ? 'Edit department branch' : 'Department branch'}
+              title="Department branch (optional)"
+            >
+              <option value="">Branch (optional)</option>
+              {branches
+                .filter((b) => b.is_active !== false)
+                .map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.code} — {b.name}
+                  </option>
+                ))}
+            </select>
+            <select
+              value={deptHeadId}
+              onChange={(e) => setDeptHeadId(e.target.value)}
+              aria-label={editDeptId ? 'Edit department head' : 'Department head'}
+              title="Department head (optional tenant user)"
+            >
+              <option value="">Department head (optional)</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name || u.name || u.email || u.id.slice(0, 8)}
+                </option>
+              ))}
+            </select>
+            {editDeptId ? (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button type="button" onClick={saveDepartmentEdit} disabled={!deptName.trim()} aria-label="Save department">
+                  Save department
+                </button>
+                <button type="button" onClick={resetDeptForm} aria-label="Cancel department edit">
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={createDepartment}
+                disabled={deptBusy || !deptName.trim()}
+                aria-label="Create department"
+              >
+                {deptBusy ? 'Saving…' : 'Create department'}
+              </button>
+            )}
+          </div>
+        </div>
+        </details>
+      </section>
+      <details className="page-settings ms-settings">
+        <summary>Store settings: expiry-first selling and cash drawer</summary>
+        <div className="ms-settings-body">
+      <div className="card">
+        <label className="muted">
+          <input type="checkbox" checked={fefoStrict} onChange={() => toggleFefo()} aria-label="FEFO strict warehouse" /> Sell
+          earliest-expiry batches from the same warehouse only (FEFO)
+        </label>
+      </div>
+        <div className="card">
+          <h3>Cash drawer</h3>
+          <div style={{ display: 'grid', gap: 8 }}>
+            <select
+              value={drawerStoreId}
+              onChange={(e) => {
+                const id = e.target.value;
+                setDrawerStoreId(id);
+                const s = stores.find((x) => x.id === id);
+                if (s) {
+                  setDrawerMode(s.drawer_mode || 'none');
+                  setDrawerHost(s.drawer_host || '');
+                  setDrawerPort(String(s.drawer_port || 9100));
+                  setDrawerOnCash(s.drawer_open_on_cash !== false);
+                }
+              }}
+              aria-label="Cash drawer store"
+              title="Store for cash drawer settings"
+            >
+              {stores
+                .filter((s) => s.is_active !== false)
+                .map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} ({s.drawer_mode || 'none'})
+                </option>
+              ))}
+            </select>
+            <select
+              value={drawerMode}
+              onChange={(e) => setDrawerMode(e.target.value)}
+              aria-label="Cash drawer mode"
+            >
+              <option value="none">none (disabled)</option>
+              <option value="mock">mock (log pulse)</option>
+              <option value="network">network (ESC/POS TCP)</option>
+              <option value="browser_bridge">browser_bridge (return kick bytes)</option>
+            </select>
+            {drawerMode === 'network' && (
+              <>
+                <input
+                  value={drawerHost}
+                  onChange={(e) => setDrawerHost(e.target.value)}
+                  placeholder="Host (e.g. 127.0.0.1)"
+                  aria-label="Cash drawer host"
+                />
+                <input
+                  value={drawerPort}
+                  onChange={(e) => setDrawerPort(e.target.value)}
+                  placeholder="Port (9100)"
+                  aria-label="Cash drawer port"
+                />
+              </>
+            )}
+            <label>
+              <input
+                type="checkbox"
+                aria-label="Cash drawer open on cash sale"
+                checked={drawerOnCash}
+                onChange={(e) => setDrawerOnCash(e.target.checked)}
+              />{' '}
+              Open on cash POS sales
+            </label>
+            <button
+              onClick={saveDrawerSettings}
+              disabled={!drawerStoreId}
+              aria-label="Save drawer settings"
+            >
+              Save drawer settings
+            </button>
+          </div>
+        </div>
+        </div>
+      </details>
     </div>
   );
 }
