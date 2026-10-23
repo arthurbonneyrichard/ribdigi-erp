@@ -1466,7 +1466,7 @@ export default function Page() {
                   .filter((g) => g.is_active !== false || g.id === customerGroupId)
                   .map((g) => (
                     <option key={g.id} value={g.id}>
-                      {g.name} · {Number(g.discount_percent || 0)}% off
+                      {g.name} · {Number(g.discount_percent || 0)}% off{g.is_active === false ? ' [inactive]' : ''}
                     </option>
                   ))}
               </select>
@@ -1934,8 +1934,7 @@ export default function Page() {
                 {customers
                   .filter((c) => {
                     if (customerManageFilter === 'all') return true;
-                    const inactive = (c.status || 'active') === 'inactive';
-                    return customerManageFilter === 'inactive' ? inactive : !inactive;
+                    return customerManageFilter === 'inactive' ? c.status === 'inactive' : c.status !== 'inactive';
                   })
                   .map((c) => (
                   <tr key={c.id}>

@@ -48,3 +48,12 @@
 [data-theme="dark"] .ecom-desk .ecom-tab{background:transparent;color:var(--mist)}
 .ecom-desk nav.ecom-tabs button.ecom-tab.is-on,
 .ecom-desk nav.ecom-tabs button.ecom-tab.is-on:hover{background:var(--brand);border-color:var(--brand);color:#fff;opacity:1}
+/* Save stays in reach while the long storefront form scrolls */
+.ecom-desk button[aria-label="Save storefront settings"] {
+  position: sticky;
+  bottom: 12px;
+  justify-self: start;
+  z-index: 2;
+  box-shadow: 0 0 0 12px var(--white, #fff), 0 6px 18px #003d1f2e;
+}
+[data-theme="dark"] .ecom-desk button[aria-label="Save storefront settings"] { box-shadow: 0 0 0 12px #12261b; }

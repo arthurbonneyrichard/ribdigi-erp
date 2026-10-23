@@ -1,0 +1,87 @@
+/* Shared base for the Ribdigi ERP launch flyers (A4 portrait, 210 × 297 mm).
+   Colours are the ERP's own brand tokens (frontend/app/globals.css). */
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=block");
+
+:root {
+  --brand: #4ab012;
+  --brand-dark: #2f7a0c;
+  --brand-light: #c8e86a;
+  --forest: #003d1f;
+  --forest-deep: #001a0e;
+  --deep-green: #006b2e;
+  --ink: #10211b;
+  --muted: #4d5d56;
+  --line: #d4e5c4;
+  --mist: #f2f7ec;
+  --white: #ffffff;
+}
+
+@page { size: A4 portrait; margin: 0; }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 210mm;
+  height: 297mm;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+body {
+  font-family: "Plus Jakarta Sans", Arial, sans-serif;
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.page {
+  position: relative;
+  width: 210mm;
+  height: 297mm;
+  overflow: hidden;
+}
+
+/* Logos are used as supplied: fixed height, width follows the file's own ratio. */
+.logo { display: block; height: auto; }
+
+.shot {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 3mm;
+}
+
+.frame {
+  border-radius: 4mm;
+  overflow: hidden;
+  box-shadow: 0 3mm 9mm rgba(0, 26, 14, 0.28);
+  border: 0.6mm solid rgba(255, 255, 255, 0.7);
+  background: #fff;
+}
+
+/* Contact strip: same on every flyer */
+.contact {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  justify-content: space-between;
+  align-items: center;
+  gap: 4mm;
+  font-size: 4.3mm;
+  font-weight: 700;
+}
+.contact .item { display: flex; align-items: center; gap: 2.4mm; white-space: nowrap; }
+.contact .item > span { display: flex; flex-direction: column; line-height: 1.15; }
+.contact .label {
+  display: block;
+  font-size: 2.6mm;
+  font-weight: 700;
+  letter-spacing: 0.35mm;
+  text-transform: uppercase;
+  opacity: 0.75;
+  margin-bottom: 0.6mm;
+}
+/* Screens are cropped to a window (never stretched): the box sets the height, the image covers it from the top. */
+.crop { overflow: hidden; }
+.crop .shot { height: 100%; object-fit: cover; object-position: left top; border-radius: 0; }
+.contact svg { width: 7mm; height: 7mm; flex: 0 0 auto; }
+
+.slogan { font-weight: 800; letter-spacing: -0.1mm; }
