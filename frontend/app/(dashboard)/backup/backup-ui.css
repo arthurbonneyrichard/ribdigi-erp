@@ -120,3 +120,142 @@
     min-width: 0;
   }
 }
+
+/* Modern layout: create card, list card with filter beside the heading, status chips, friendly check result. */
+.backup-ui .card h2 {
+  font-size: 1.1rem;
+}
+
+.backup-ui-create {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.backup-ui-create-head h2 {
+  margin-bottom: 4px;
+}
+
+.backup-ui-list-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.backup-ui-list-head h2 {
+  margin: 0;
+}
+
+.backup-ui-list-head select {
+  width: auto;
+  min-width: 12rem;
+}
+
+.backup-ui-when {
+  display: block;
+  white-space: nowrap;
+}
+
+.backup-ui-file {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.backup-ui-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  background: #eef2f0;
+  color: var(--ink);
+}
+
+.backup-ui-status::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.backup-ui-status.is-completed {
+  background: #e6f4dc;
+  color: var(--brand-dark, #2f7a0c);
+}
+
+.backup-ui-status.is-failed {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.backup-ui-status.is-pending,
+.backup-ui-status.is-restoring {
+  background: #fff7e0;
+  color: #8a5a00;
+}
+
+.backup-ui-counts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.backup-ui-counts li {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--mist, #f2f7ec);
+  border: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.backup-ui-tech > summary {
+  cursor: pointer;
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+.backup-ui-schedule .backup-ui-settings {
+  margin-top: 8px;
+}
+
+[data-theme="dark"] .backup-ui-status.is-completed {
+  background: #14532d66;
+  color: #bbf7d0;
+}
+
+[data-theme="dark"] .backup-ui-status.is-failed {
+  background: #7f1d1d66;
+  color: #fecaca;
+}
+
+[data-theme="dark"] .backup-ui-status.is-pending,
+[data-theme="dark"] .backup-ui-status.is-restoring {
+  background: #78350f66;
+  color: #fde68a;
+}
+
+[data-theme="dark"] .backup-ui-counts li {
+  background: transparent;
+}
+
+.backup-ui-save-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.backup-ui-saved {
+  font-weight: 700;
+}
