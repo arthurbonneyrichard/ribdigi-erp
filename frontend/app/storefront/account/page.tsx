@@ -94,7 +94,7 @@ export default function StorefrontAccountPage() {
           {!orders.length ? (
             <section className="sf-empty" role="status">
               <p className="sf-empty-title">No orders yet</p>
-              <p className="sf-muted">Place an order from the shop. Payment stays unpaid until a signed webhook or staff collection.</p>
+              <p className="sf-muted">Your orders will show here once you place one.</p>
             </section>
           ) : null}
           {orders.map((order) => (

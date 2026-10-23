@@ -84,6 +84,7 @@ async function copyText(value: string): Promise<boolean> {
 
 export default function EcommercePage() {
   const [storefront, setStorefront] = useState<any>(null);
+  const [ecomTab, setEcomTab] = useState<'shop' | 'products' | 'orders' | 'website'>('shop');
   const [domains, setDomains] = useState<any[]>([]);
   const [listings, setListings] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
@@ -346,6 +347,30 @@ export default function EcommercePage() {
         </div>
       </section>
 
+      <nav className="ecom-tabs" aria-label="Online store sections">
+        {(
+          [
+            ['shop', 'Shop setup', storefront.enabled ? 'On' : 'Off'],
+            ['products', 'Products', `${listings.filter((row) => row.published).length} online`],
+            ['orders', 'Orders', `${orders.length}`],
+            ['website', 'Website and payments', primaryDomain ? 'Linked' : ''],
+          ] as ['shop' | 'products' | 'orders' | 'website', string, string][]
+        ).map(([id, label, badge]) => (
+          <button
+            key={id}
+            type="button"
+            className={ecomTab === id ? 'ecom-tab is-on' : 'ecom-tab'}
+            aria-pressed={ecomTab === id}
+            aria-label={`Show online store ${label.toLowerCase()}`}
+            onClick={() => setEcomTab(id)}
+          >
+            {label}
+            {badge ? <span className="ecom-tab-badge">{badge}</span> : null}
+          </button>
+        ))}
+      </nav>
+
+      {ecomTab === 'shop' ? (
       <section className="card" aria-labelledby="ecom-storefront">
         <h2 id="ecom-storefront">Storefront settings</h2>
         <p className="muted">Enable the built-in shop, set policies, and choose how orders are fulfilled.</p>
@@ -464,7 +489,9 @@ export default function EcommercePage() {
           </button>
         </form>
       </section>
+      ) : null}
 
+      {ecomTab === 'shop' ? (
       <section className="card" aria-labelledby="ecom-media">
         <h2 id="ecom-media">Storefront media</h2>
         <p className="muted">
@@ -522,7 +549,9 @@ export default function EcommercePage() {
           ))}
         </div>
       </section>
+      ) : null}
 
+      {ecomTab === 'website' ? (
       <section className="card" aria-labelledby="ecom-domains">
         <h2 id="ecom-domains">Link a website</h2>
         <p className="muted">
@@ -681,7 +710,9 @@ export default function EcommercePage() {
           </article>
         ))}
       </section>
+      ) : null}
 
+      {ecomTab === 'products' ? (
       <section className="card" aria-labelledby="ecom-catalog">
         <h2 id="ecom-catalog">Catalog</h2>
         <p className="muted">The ERP catalog is not published automatically. Online price and stock buffer are opt-in per product.</p>
@@ -782,6 +813,7 @@ export default function EcommercePage() {
                         </button>
                         <button
                           type="button"
+                          className={row.published ? 'btn-danger' : 'btn-ok'}
                           aria-label={`${row.published ? 'Unpublish' : 'Publish'} ${row.name}`}
                           onClick={() =>
                             void run(`publish-${row.product_id}`, async () => {
@@ -804,7 +836,9 @@ export default function EcommercePage() {
           </div>
         )}
       </section>
+      ) : null}
 
+      {ecomTab === 'orders' ? (
       <section className="card" aria-labelledby="ecom-orders">
         <h2 id="ecom-orders">Orders</h2>
         <p className="muted">Collect is a recorded note. A checkout return URL does not mark an order paid.</p>
@@ -856,7 +890,9 @@ export default function EcommercePage() {
           </div>
         )}
       </section>
+      ) : null}
 
+      {ecomTab === 'website' ? (
       <section className="card" aria-labelledby="ecom-payments">
         <h2 id="ecom-payments">Storefront payments</h2>
         <p className="muted">Store a test webhook secret only. Live processor secrets stay out of this tree. A return URL does not mark paid.</p>
@@ -882,7 +918,9 @@ export default function EcommercePage() {
           </button>
         </form>
       </section>
+      ) : null}
 
+      {ecomTab === 'website' ? (
       <section className="card" aria-labelledby="ecom-woo">
         <h2 id="ecom-woo">Website connector</h2>
         <p className="muted">
@@ -988,6 +1026,7 @@ export default function EcommercePage() {
           Retry failed jobs
         </button>
       </section>
+      ) : null}
     </main>
   );
 }

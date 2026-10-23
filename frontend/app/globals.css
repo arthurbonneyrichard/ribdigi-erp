@@ -4236,3 +4236,23 @@ input[type=file]::file-selector-button:hover{border-color:var(--brand)}
 [data-theme="dark"] .gift-issued{background:#0f2a1c}
 [data-theme="dark"] .gift-code{color:var(--brand-light)}
 @media(max-width:600px){.gift-form{grid-template-columns:1fr}}
+
+/* Users > Roles window and permission table */
+.role-create{display:grid;gap:10px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--mist);margin-bottom:16px}
+.role-create h4,.role-list-head h4{margin:0}
+.role-create .field{display:flex;flex-direction:column;gap:2px}
+.role-create .field > label{font-size:13px;font-weight:600}
+.role-create-hint{margin:0}
+.role-create > button{justify-self:start}
+.perm-grid-wrap{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--white)}
+.perm-grid{width:100%;border-collapse:collapse;font-size:14px}
+.perm-grid th{position:sticky;top:0;background:var(--sand);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;text-align:center;padding:8px 10px;z-index:1}
+.perm-grid th:first-child{text-align:left}
+.perm-grid td{padding:6px 10px;border-top:1px solid var(--line);text-align:center}
+.perm-grid td:first-child{text-align:left;font-weight:600}
+.perm-grid input[type=checkbox]{width:18px;height:18px}
+.role-list-head{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+.role-list-head select{width:auto}
+.role-list-head .user-manage-role-list{grid-column:1/-1}
+[data-theme="dark"] .role-create{background:#0f2a1c}
+[data-theme="dark"] .perm-grid-wrap{background:transparent}

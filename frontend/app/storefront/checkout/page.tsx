@@ -103,8 +103,9 @@ export default function CheckoutPage() {
     <main className="sf-main">
       <h1>{signedIn ? 'Checkout' : 'Guest checkout'}</h1>
       <p className="sf-lead">
-        {signedIn ? 'Signed in. This is not an ERP staff login. ' : 'Create an account later if you want order history. Guest checkout stays available. '}
-        A checkout return does not mark this order paid.
+        {signedIn
+          ? 'You are signed in, so this order is saved to your account.'
+          : 'No account needed. Make one later if you want to see your past orders.'}
       </p>
       {error ? <p className="sf-alert" role="alert">{error}</p> : null}
       {!lines.length ? (
@@ -170,7 +171,7 @@ export default function CheckoutPage() {
             <h2>Payment</h2>
             <p className="sf-muted">
               Storefront payments stay on this company’s gateway. They are not Ribdigi subscription billing.
-              Paid status arrives only from a signed webhook or staff collection.
+              The shop confirms your order once your payment arrives.
             </p>
             <p className="sf-actions">
               <Link className="sf-btn sf-btn-ghost" href={storefrontHref('/storefront/cart')}>Back to cart</Link>

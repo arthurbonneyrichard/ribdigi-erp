@@ -37,3 +37,14 @@
   .ecom-desk .ecom-status{grid-template-columns:1fr}
   .ecom-desk .ecom-row-actions button,.ecom-desk .ecom-row-actions .list-btn-primary{min-height:44px}
 }
+
+/* Section tabs: one job at a time instead of one long page */
+.ecom-desk .ecom-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 12px}
+.ecom-desk .ecom-tab{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:9px 16px;font-weight:700;border:1px solid var(--line);background:var(--white);color:var(--ink);cursor:pointer}
+.ecom-desk .ecom-tab:hover{border-color:var(--brand)}
+.ecom-desk .ecom-tab.is-on{background:var(--brand);border-color:var(--brand);color:#fff}
+.ecom-desk .ecom-tab-badge{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--mist);color:var(--deep-green)}
+.ecom-desk .ecom-tab.is-on .ecom-tab-badge{background:rgba(255,255,255,.22);color:#fff}
+[data-theme="dark"] .ecom-desk .ecom-tab{background:transparent;color:var(--mist)}
+.ecom-desk nav.ecom-tabs button.ecom-tab.is-on,
+.ecom-desk nav.ecom-tabs button.ecom-tab.is-on:hover{background:var(--brand);border-color:var(--brand);color:#fff;opacity:1}

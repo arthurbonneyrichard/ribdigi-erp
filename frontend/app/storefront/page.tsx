@@ -114,7 +114,7 @@ export default function StorefrontHome() {
         ) : null}
         <div className="sf-hero-copy">
           <h1>{company}</h1>
-          <p>{meta.tagline || 'Shop published products from this company. A checkout return does not mark an order paid.'}</p>
+          <p>{meta.tagline || 'Order online, then collect in store or have it delivered.'}</p>
         </div>
       </section>
       <div className="sf-filters">

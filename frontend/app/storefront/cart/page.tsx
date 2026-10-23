@@ -133,7 +133,7 @@ export default function CartPage() {
       {lines.length ? (
         <section className="sf-summary">
           <h2>Subtotal {shopMoney(subtotal, currency)}</h2>
-          <p className="sf-muted">Payment is confirmed only by a signed webhook or staff collection. A return URL does not mark paid.</p>
+          <p className="sf-muted">You choose delivery or pickup at checkout.</p>
           <div className="sf-actions">
             <Link className="sf-btn" href={storefrontHref('/storefront/checkout')}>Go to checkout</Link>
             <Link className="sf-btn sf-btn-ghost" href={storefrontHref('/storefront')}>Continue shopping</Link>

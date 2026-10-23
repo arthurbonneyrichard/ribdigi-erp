@@ -118,7 +118,7 @@ export default function StorefrontShell({ children }: { children: React.ReactNod
           <section className="sf-empty" role="alert">
             <p className="sf-empty-title">This store is not available</p>
             <p className="sf-muted">
-              {unavailable}. There is no public Ribdigi subdomain. Open a verified company hostname or a staff preview link.
+              {unavailable}. Check the web address, or ask the shop for its store link.
             </p>
           </section>
         </main>
@@ -154,7 +154,7 @@ export default function StorefrontShell({ children }: { children: React.ReactNod
         </header>
         {meta.preview ? (
           <p className="sf-preview" role="status">
-            Staff preview. Shoppers on a verified hostname do not see this banner.
+            Preview for shop staff. Customers do not see this bar.
           </p>
         ) : null}
         {meta.announcement ? <p className="sf-announce">{meta.announcement}</p> : null}
@@ -168,7 +168,7 @@ export default function StorefrontShell({ children }: { children: React.ReactNod
             <Link href={previewHref('/storefront/policy/contact')}>Contact</Link>
           </nav>
           <p className="sf-muted">
-            Customer accounts are not ERP logins. A checkout return does not mark an order paid.
+            Your order is confirmed once the shop receives payment.
           </p>
         </footer>
       </div>

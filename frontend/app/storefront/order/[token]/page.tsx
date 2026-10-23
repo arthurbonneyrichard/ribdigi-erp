@@ -53,8 +53,8 @@ export default function OrderStatusPage() {
             <p className="sf-muted">
               {order.message ||
                 (paid
-                  ? 'Payment was confirmed by a signed webhook or staff collection.'
-                  : 'Keep this tracking link. Payment is confirmed only by a signed webhook or staff collection. A return URL does not mark paid.')}
+                  ? 'Payment received. Thank you.'
+                  : 'Keep this link to check your order. It shows as paid once the shop receives your payment.')}
             </p>
             <p className="sf-actions">
               <Link className="sf-btn" href={storefrontHref('/storefront')}>Back to shop</Link>
