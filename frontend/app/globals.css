@@ -1026,6 +1026,8 @@ a.plat-stat{color:inherit;text-decoration:none}
 .main .topbar .pos-top-drawer-btn:hover,
 .main .topbar .pos-top-drawer-btn:active{box-shadow:none;transform:none}
 .shell.is-pos .topbar{gap:6px 8px;min-height:0}
+/* The till page is a no-scroll column; the top bar keeps its height instead of spilling over the till. */
+.shell.is-pos .main > .topbar{flex-shrink:0}
 .shell.is-pos .topbar-left{align-items:center;flex-wrap:nowrap;min-width:0;gap:6px}
 .shell.is-pos .pos-sell-menu{flex:0 0 auto;z-index:40}
 .shell.is-pos .pos-sell-mode{
@@ -4110,3 +4112,4 @@ input[type=file]::file-selector-button{
   background:var(--white);color:var(--ink);font:inherit;font-weight:700;cursor:pointer
 }
 input[type=file]::file-selector-button:hover{border-color:var(--brand)}
+.pos-shift-panel .tpos-report-kpis strong{font-size:16px;white-space:nowrap}
