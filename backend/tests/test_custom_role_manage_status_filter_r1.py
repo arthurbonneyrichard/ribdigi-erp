@@ -15,10 +15,10 @@ def test_custom_role_manage_status_filter_ui_and_docs():
     assert 'value="all"' in page
     assert 'value="active"' in page
     assert 'value="inactive"' in page
-    assert "All statuses" in page
+    assert "All roles" in page
     assert "Active only" in page
     assert "Inactive only" in page
-    assert "No custom roles for this filter" in page
+    assert "No roles of your own here yet" in page
     # Assignment pickers stay active-only (except current)
     assert "isRoleActive" in page
     assert "assignableRoles" in page

@@ -52,7 +52,7 @@ def test_accounting_coa_and_bank_soft_colors():
 
 
 def test_party_tax_expense_soft_toggle_colors():
-    sales = _read("frontend/app/(dashboard)/sales/page.tsx")
+    sales = _read("frontend/app/(dashboard)/sales/page.tsx") + _read("frontend/components/CustomerGroupsWindow.tsx")
     assert "setCustomerActive" in sales and "btn-ok" in sales and "btn-danger" in sales
     assert "setGroupActive" in sales and "btn-ok" in sales
 

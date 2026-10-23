@@ -143,6 +143,23 @@ const TENANT_RBAC_MODULES = [
 
 const TENANT_RBAC_ACTIONS = ['read', 'write', 'approve'] as const;
 
+const PERM_ACTION_LABELS: Record<string, string> = {
+  read: 'Can see',
+  write: 'Add and change',
+  approve: 'Approve',
+};
+
+/** A role code made from its name: "Shop supervisor" -> "shop_supervisor". */
+function roleKeyFromLabel(label: string): string {
+  const base = label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 48);
+  if (!base) return '';
+  return /^[a-z]/.test(base) ? base : `role_${base}`;
+}
+
 const MODULE_LABELS: Record<string, string> = {
   dashboard: 'Dashboard',
   inventory: 'Products and stock',
@@ -232,24 +249,35 @@ function PermissionGrid({
 }) {
   const modules = TENANT_RBAC_MODULES.filter((mod) => industryAllowsModule(industry, mod));
   return (
-    <div style={{ display: 'grid', gap: 6, maxHeight: 320, overflow: 'auto' }}>
-      {modules.map((mod) => (
-        <div key={mod} style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ minWidth: 120 }}>{mod}</span>
-          {TENANT_RBAC_ACTIONS.map((act) => (
-            <label key={act} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-              <input
-                type="checkbox"
-                checked={moduleGrants(value[mod], act)}
-                disabled={disabled}
-                onChange={() => onChange(togglePermAction(value, mod, act))}
-                aria-label={`${mod} ${act}`}
-              />
-              {act}
-            </label>
+    <div className="perm-grid-wrap">
+      <table className="perm-grid">
+        <thead>
+          <tr>
+            <th>Area</th>
+            {TENANT_RBAC_ACTIONS.map((act) => (
+              <th key={act}>{PERM_ACTION_LABELS[act]}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {modules.map((mod) => (
+            <tr key={mod}>
+              <td>{MODULE_LABELS[mod] || mod}</td>
+              {TENANT_RBAC_ACTIONS.map((act) => (
+                <td key={act}>
+                  <input
+                    type="checkbox"
+                    checked={moduleGrants(value[mod], act)}
+                    disabled={disabled}
+                    onChange={() => onChange(togglePermAction(value, mod, act))}
+                    aria-label={`${MODULE_LABELS[mod] || mod}: ${PERM_ACTION_LABELS[act]}`}
+                  />
+                </td>
+              ))}
+            </tr>
           ))}
-        </div>
-      ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -289,6 +317,7 @@ export default function Page() {
   const [meIndustry, setMeIndustry] = useState<string | null>(null);
   const [createPerms, setCreatePerms] = useState<Record<string, string[]>>({});
   const [permRole, setPermRole] = useState<string | null>(null);
+  const [rolesOpen, setRolesOpen] = useState(false);
   const [permMap, setPermMap] = useState<Record<string, string[]>>({});
   const [permBusy, setPermBusy] = useState(false);
   const [error, setError] = useState('');
@@ -574,7 +603,7 @@ export default function Page() {
   async function createCustomRole(e: React.FormEvent) {
     e.preventDefault();
     const label = roleForm.label.trim();
-    const key = roleForm.key.trim().toLowerCase();
+    const key = (roleForm.key.trim() || roleKeyFromLabel(label)).toLowerCase();
     if (!label) {
       setError('Custom role label is required.');
       setMessage('');
@@ -586,7 +615,7 @@ export default function Page() {
       return;
     }
     if (PLATFORM_USER_ROLES.has(key) || roles.some((r) => r.system && r.role === key)) {
-      setError('That code is already a built-in role. Choose a different role code.');
+      setError('A built-in role already uses that name. Choose a different name.');
       setMessage('');
       return;
     }
@@ -610,7 +639,7 @@ export default function Page() {
       });
       setRoleForm({ key: '', label: '' });
       setCreatePerms({});
-      setMessage(`Custom role ${r.data?.role || roleForm.key} created`);
+      setMessage(`Role ${r.data?.label || label} created. Choose it under Role when you add or edit a person.`);
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -929,6 +958,20 @@ export default function Page() {
               {canWrite ? (
                 <button type="button" className="list-btn-primary" onClick={focusAddUser} aria-label="Add User">
                   Add user
+                </button>
+              ) : null}
+              {canWrite ? (
+                <button
+                  type="button"
+                  className="list-btn-secondary"
+                  onClick={() => {
+                    setError('');
+                    setMessage('');
+                    setRolesOpen(true);
+                  }}
+                  aria-label="Open roles"
+                >
+                  Roles
                 </button>
               ) : null}
               {canWriteStores && !hideStoreUx ? (
@@ -1579,39 +1622,56 @@ export default function Page() {
 
       <CashierPresencePanel />
 
-      {canWrite && (
-        <details className="user-manage-more">
-          <summary>Custom roles</summary>
-        <form onSubmit={createCustomRole} className="user-manage-more-body">
-          <p className="muted" style={{ margin: 0 }}>
-            Add a role for this company and choose what that role can open. Deactivate keeps people
-            who already have it, and stops new assignments. A role cannot be deleted while someone
-            still uses it.
+      {canWrite && rolesOpen ? (
+        <FormModal title="Roles" busy={busy} onClose={() => setRolesOpen(false)}>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Built-in roles such as Cashier and Accountant are ready to use. Make your own role when someone needs a
+            different mix, then choose it under Role for that person.
           </p>
-          <input
-            value={roleForm.key}
-            onChange={(e) => setRoleForm({ ...roleForm, key: e.target.value })}
-            placeholder="Role code, for example warehouse_lead"
-            required
-            aria-label="Custom role key"
-          />
-          <input
-            value={roleForm.label}
-            onChange={(e) => setRoleForm({ ...roleForm, label: e.target.value })}
-            placeholder="Display label"
-            required
-            aria-label="Custom role label"
-          />
-          <PermissionGrid value={createPerms} onChange={setCreatePerms} industry={meIndustry} />
-          <button
-            type="submit"
-            className="btn-ok"
-            disabled={busy || !roleForm.key.trim() || !roleForm.label.trim() || !Object.keys(createPerms).length}
-            aria-label="Create custom role"
-          >
-            {busy ? 'Saving…' : 'Create custom role'}
-          </button>
-          <select
+          {error ? (
+            <p className="list-toast err" role="alert">
+              {error}
+            </p>
+          ) : message ? (
+            <p className="list-toast ok" role="status">
+              {message}
+            </p>
+          ) : null}
+          <form onSubmit={createCustomRole} className="role-create">
+            <h4>Make a role</h4>
+            <div className="field">
+              <label htmlFor="role-label">Role name</label>
+              <input
+                id="role-label"
+                value={roleForm.label}
+                onChange={(e) => setRoleForm({ ...roleForm, label: e.target.value })}
+                placeholder="e.g. Shop supervisor"
+                required
+                aria-label="Custom role label"
+              />
+            </div>
+            <input
+              className="sr-only"
+              tabIndex={-1}
+              value={roleForm.key}
+              onChange={(e) => setRoleForm({ ...roleForm, key: e.target.value })}
+              placeholder={roleKeyFromLabel(roleForm.label) || 'role_code'}
+              aria-label="Custom role key"
+            />
+            <p className="muted role-create-hint">Tick what this role can do in each area.</p>
+            <PermissionGrid value={createPerms} onChange={setCreatePerms} industry={meIndustry} />
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={busy || !roleForm.label.trim() || !Object.keys(createPerms).length}
+              aria-label="Create custom role"
+            >
+              {busy ? 'Saving…' : 'Create role'}
+            </button>
+          </form>
+          <div className="role-list-head">
+            <h4>Your roles</h4>
+            <select
             value={roleManageFilter}
             onChange={(e) =>
               setRoleManageFilter(e.target.value as 'all' | 'active' | 'inactive')
@@ -1619,7 +1679,7 @@ export default function Page() {
             title="Filter manage custom role list by status"
             aria-label="Custom role status filter"
           >
-            <option value="all">All statuses</option>
+            <option value="all">All roles</option>
             <option value="active">Active only</option>
             <option value="inactive">Inactive only</option>
           </select>
@@ -1674,12 +1734,12 @@ export default function Page() {
               </li>
             ))}
             {!managedCustomRoles.length && (
-              <li className="muted">No custom roles for this filter. Choose All statuses, or create a role with a code and at least one permission.</li>
+              <li className="muted">No roles of your own here yet. Make one above.</li>
             )}
           </ul>
-        </form>
-        </details>
-      )}
+          </div>
+        </FormModal>
+      ) : null}
 
       {canWrite && (
         <details className="user-manage-more">

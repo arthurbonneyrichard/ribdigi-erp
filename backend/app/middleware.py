@@ -89,7 +89,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if any(path.startswith(p) for p in AUTH_PATH_PREFIXES):
             return settings.RATE_LIMIT_AUTH_PER_MINUTE
         if any(path.startswith(p) for p in STOREFRONT_WRITE_PREFIXES + STOREFRONT_PUBLIC_PREFIXES):
-            return settings.RATE_LIMIT_AUTH_PER_MINUTE
+            # Shoppers browse many pages; cart and checkout changes get the tighter write limit.
+            if method.upper() in {"GET", "HEAD"}:
+                return settings.RATE_LIMIT_READ_PER_MINUTE
+            return settings.RATE_LIMIT_PER_MINUTE
         if method.upper() in {"GET", "HEAD"}:
             return settings.RATE_LIMIT_READ_PER_MINUTE
         return settings.RATE_LIMIT_PER_MINUTE
@@ -110,6 +113,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         limit = self._limit_for_path(path, method)
         if any(path.startswith(p) for p in AUTH_PATH_PREFIXES):
             kind = "auth"
+        elif any(path.startswith(p) for p in STOREFRONT_WRITE_PREFIXES + STOREFRONT_PUBLIC_PREFIXES):
+            # Own bucket: shop visitors must not share a counter with staff using the ERP.
+            kind = "storefront-read" if method in {"GET", "HEAD"} else "storefront-write"
         elif method in {"GET", "HEAD"}:
             kind = "read"
         else:

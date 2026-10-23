@@ -45,7 +45,8 @@ export function notifyStorefrontCart() {
 
 export function storefrontAssetUrl(path: string) {
   const preview = previewTokenFromLocation();
-  const url = new URL(`${storefrontApiRoot()}${path}`, 'http://local.invalid');
+  // Parse the path alone: the API root is added once when the request is made.
+  const url = new URL(path, 'http://local.invalid');
   if (preview && !url.searchParams.get('preview_token')) {
     url.searchParams.set('preview_token', preview);
   }
@@ -77,7 +78,8 @@ export function setShopperToken(token: string | null) {
 
 export async function storefrontFetch(path: string, init: RequestInit = {}) {
   const preview = previewTokenFromLocation();
-  const url = new URL(`${storefrontApiRoot()}${path}`, 'http://local.invalid');
+  // Parse the path alone: the API root is added once when the request is made.
+  const url = new URL(path, 'http://local.invalid');
   if (preview && !url.searchParams.get('preview_token')) {
     url.searchParams.set('preview_token', preview);
   }
