@@ -13,6 +13,7 @@ import { AmountField } from '../../../components/AmountField';
 import { getMe } from '../../../lib/meCache';
 import { useStoreContext } from '../../../lib/storeContext';
 import { tenantIsMultiStore } from '../../../lib/tenantNav';
+import { formatNumber } from '../../../lib/format';
 import './purchase-ui.css';
 
 type Tab = 'suppliers' | 'requests' | 'orders' | 'grn' | 'invoices' | 'returns' | 'history';
@@ -2390,7 +2391,7 @@ export default function Page() {
             Add one or more product lines from this supplier. Use Add product for each extra line.
           </span>
         </div>
-        <div className="cat-table-wrap" style={{ marginTop: 12 }}>
+        <div className="cat-table-wrap erp-modal-lines" style={{ marginTop: 12 }}>
           <table className="table">
             <thead>
               <tr>
@@ -2673,7 +2674,7 @@ export default function Page() {
                   <td>{supplierNameOf(o.supplier_id)}</td>
                   <td className="col-status"><StatusChip value={o.status} /></td>
                   <td className="col-num">{o.revision_no ?? 0}</td>
-                  <td className="col-num">{o.total_amount}</td>
+                  <td className="col-num">{formatNumber(o.total_amount)}</td>
                   <td className="col-text muted">
                     {o.notes || '—'}
                   </td>
@@ -4116,13 +4117,13 @@ export default function Page() {
                     ? `${inv.currency}${inv.exchange_rate != null ? ` @ ${inv.exchange_rate}` : ''}`
                     : '—'}
                 </td>
-                <td className="col-num">{inv.total_amount}</td>
+                <td className="col-num">{formatNumber(inv.total_amount)}</td>
                 <td className="col-num">
                   {inv.is_reverse_charge
                     ? `${inv.reverse_charge_tax ?? 0}`
                     : inv.tax_amount ?? '—'}
                 </td>
-                <td className="col-num">{inv.balance_due}</td>
+                <td className="col-num">{formatNumber(inv.balance_due)}</td>
                 <td className="col-status">
                   <StatusChip value={inv.ap_posted ? 'posted' : 'draft'} label={inv.ap_posted ? 'Posted' : 'Via GRN'} />
                 </td>
@@ -4516,7 +4517,7 @@ export default function Page() {
                 <td className="col-status"><StatusChip value={r.reason} /></td>
                 <td className="col-status"><StatusChip value={r.status} /></td>
                 <td className="col-num">{r.discount_amount ?? 0}</td>
-                <td className="col-num">{r.total_amount}</td>
+                <td className="col-num">{formatNumber(r.total_amount)}</td>
                 <td className="col-text muted">
                   {r.notes || '—'}
                 </td>
