@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../../lib/api';
 import { formatWhen } from '../../../lib/format';
 
@@ -84,18 +84,29 @@ export function TillReturnPanel({
   const [refund, setRefund] = useState('cash');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  // Only the newest search may fill the list (an earlier, slower one must not overwrite it).
+  const searchSeq = useRef(0);
 
   const lineKey = (line: ReturnLine) => `${line.product_id}:${line.variant_id || ''}`;
 
   const search = useCallback(async (text: string) => {
+    const seq = ++searchSeq.current;
     setError('');
+    setLoading(true);
     try {
       const params = new URLSearchParams();
       if (text.trim()) params.set('q', text.trim());
       const r = await api(`/pos/receipts?${params.toString()}`);
-      setRows(r.data || []);
+      if (seq !== searchSeq.current) return [];
+      const found: ReceiptRow[] = r.data || [];
+      setRows(found);
+      return found;
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not load receipts.');
+      if (seq === searchSeq.current) setError(err instanceof Error ? err.message : 'Could not load receipts.');
+      return [];
+    } finally {
+      if (seq === searchSeq.current) setLoading(false);
     }
   }, []);
 
@@ -213,7 +224,10 @@ export function TillReturnPanel({
               className="pos-return-find"
               onSubmit={(e) => {
                 e.preventDefault();
-                void search(query);
+                void search(query).then((found) => {
+                  // A full receipt number finds one sale: open it straight away.
+                  if (query.trim() && found.length === 1) void pick(found[0].id);
+                });
               }}
             >
               <input
@@ -230,7 +244,8 @@ export function TillReturnPanel({
             </form>
             <p className="muted pos-return-hint">The receipt number is printed at the top of the receipt. Recent sales:</p>
             <ul className="pos-return-list">
-              {rows.length === 0 ? <li className="muted">No till receipts match.</li> : null}
+              {loading && rows.length === 0 ? <li className="muted">Loading receipts…</li> : null}
+              {!loading && rows.length === 0 ? <li className="muted">No till receipts match.</li> : null}
               {rows.map((row) => (
                 <li key={row.id}>
                   <button type="button" className="pos-return-row" onClick={() => void pick(row.id)} aria-label={`Open receipt ${row.reference}`}>
