@@ -10522,6 +10522,30 @@ async def pos_search(
     q_clean = (q or "").strip()
     # Exact barcode param, or treat scanner wedge input in `q` as a barcode first.
     barcode_key = (barcode or "").strip() or (q_clean if barcodes_svc.looks_like_barcode(q_clean) else "")
+    if barcode_key and not (barcode or "").strip():
+        # A plain word such as "sugar" also looks like a barcode; search names when nothing matches exactly.
+        exact_hit = (
+            await db.execute(
+                select(m.Product.id).where(
+                    m.Product.tenant_id == claims["tenant_id"],
+                    m.Product.is_active == True,  # noqa: E712
+                    (func.lower(m.Product.barcode) == barcode_key.lower())
+                    | (func.lower(m.Product.sku) == barcode_key.lower()),
+                ).limit(1)
+            )
+        ).scalar_one_or_none()
+        exact_variant = (
+            await db.execute(
+                select(m.ProductVariant.id).where(
+                    m.ProductVariant.tenant_id == claims["tenant_id"],
+                    m.ProductVariant.is_active == True,  # noqa: E712
+                    (func.lower(m.ProductVariant.barcode) == barcode_key.lower())
+                    | (func.lower(m.ProductVariant.sku) == barcode_key.lower()),
+                ).limit(1)
+            )
+        ).scalar_one_or_none()
+        if exact_hit is None and exact_variant is None:
+            barcode_key = ""
     if barcode_key:
         stmt = stmt.where(
             (m.Product.barcode == barcode_key)
