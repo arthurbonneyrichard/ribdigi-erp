@@ -3548,7 +3548,7 @@ export default function Page() {
             onChange={(e) => setInvoiceGrnId(e.target.value)}
             aria-label="Purchase invoice GRN"
           >
-            <option value="">Select GRN</option>
+            <option value="">Choose the delivery you received (GRN)</option>
             {grns.map((g) => (
               <option key={g.id} value={g.id}>
                 {g.grn_number} · {supplierNameOf(g.supplier_id, g.purchase_order_id)}
@@ -3558,10 +3558,13 @@ export default function Page() {
           <input
             value={supplierInvoiceNo}
             onChange={(e) => setSupplierInvoiceNo(e.target.value)}
-            placeholder="Supplier invoice #"
+            placeholder="Number on the supplier's invoice"
             aria-label="Supplier invoice number"
             title="Optional supplier invoice #"
           />
+          <details className="span-2 purchase-bill-more">
+            <summary>More options: notes, link to the bill, discount, foreign currency</summary>
+            <div className="purchase-bill-more-body">
           <input
             value={invNotes}
             onChange={(e) => setInvNotes(e.target.value)}
@@ -3605,10 +3608,12 @@ export default function Page() {
             step="0.0001"
             aria-label="Purchase invoice FX rate"
           />
-          <span className="muted span-2">
-            From-GRN lines inherit proportional PO discounts; leave header at 0 to mirror them on the
-            invoice total. Currency/FX apply when paying foreign supplier invoices (Credit).
-          </span>
+              <span className="muted">
+                Discounts from the order carry over; leave the discount at 0 to keep them. Currency and rate are only
+                for suppliers who bill in another currency.
+              </span>
+            </div>
+          </details>
           {(() => {
             const billGrn = grns.find((g) => g.id === invoiceGrnId);
             const lines = (billGrn?.items || []).filter((i) => Number(i.accepted_qty || 0) > 0);
@@ -3628,7 +3633,7 @@ export default function Page() {
             disabled={!invoiceGrnId || saveBusy}
             aria-label="Draft purchase invoice from GRN"
           >
-            {saveBusy ? 'Saving…' : 'Draft invoice from GRN'}
+            {saveBusy ? 'Saving…' : 'Create bill'}
           </button>
         </div>
       </FormModal>

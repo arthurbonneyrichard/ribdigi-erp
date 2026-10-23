@@ -4179,3 +4179,5 @@ input[type=file]::file-selector-button:hover{border-color:var(--brand)}
 .expenses-review-actions{display:flex;justify-content:flex-end;gap:8px}
 .expenses-review-actions button{min-height:42px;padding:0 18px}
 [data-theme="dark"] .expenses-review-amount{color:#c8e86a}
+.purchase-bill-more > summary{cursor:pointer;font-weight:700;color:var(--deep-green)}
+.purchase-bill-more-body{display:grid;gap:8px;margin-top:8px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
