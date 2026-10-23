@@ -106,7 +106,12 @@ export default function SalesReportSheets({
               {multiStore && data?.monthly?.store_name ? ` · ${data.monthly.store_name}` : ''}
             </h3>
             <p>Revenue: {fmtMoney(data?.monthly?.total_revenue)}</p>
-            <p>Change: {data?.monthly?.change_pct ?? '—'}%</p>
+            {data?.monthly?.change_pct != null ? (
+              <p>
+                Change on last month: {Number(data.monthly.change_pct) >= 0 ? '+' : ''}
+                {data.monthly.change_pct}%
+              </p>
+            ) : null}
           </div>
         </div>
         <h3 style={{ marginTop: 16 }}>Days in this month</h3>
