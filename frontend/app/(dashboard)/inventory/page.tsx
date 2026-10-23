@@ -2733,6 +2733,8 @@ export default function Page() {
       }
       await loadAllVariants();
       setTab('variants');
+      // Saved: close the window so the new row shows and a second press cannot duplicate it.
+      setVariantDrawerOpen(false);
     } catch (err: any) {
       setFormFlash({ err: err.message || 'Could not save variant' });
     } finally {
