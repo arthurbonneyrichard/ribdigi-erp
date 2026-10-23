@@ -102,9 +102,9 @@ test('customer filters search status group and profile', () => {
   );
 });
 
-test('displayProductName is uppercase display-only and leaves blanks', () => {
-  assert.equal(displayProductName('Rice 5kg'), 'RICE 5KG');
-  assert.equal(displayProductName('  sku-safe  '), 'SKU-SAFE');
+test('displayProductName shows the name as entered and leaves blanks', () => {
+  assert.equal(displayProductName('Rice 5kg'), 'Rice 5kg');
+  assert.equal(displayProductName('  sku-safe  '), 'sku-safe');
   assert.equal(displayProductName(''), '—');
   assert.equal(displayProductName(null), '—');
 });

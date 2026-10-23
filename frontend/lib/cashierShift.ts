@@ -123,6 +123,13 @@ export async function countAndCloseOpenShift(
       notes: notes && notes.trim() ? notes.trim() : null,
     }),
   });
+  try {
+    // A closed shift should not keep this till's offline stock slice away from other tills.
+    const offline = await import('./posOffline');
+    await offline.releaseOfflineGrantIfIdle(api);
+  } catch {
+    /* the slice expires on its own */
+  }
   return (closed?.data || session) as CashierShift;
 }
 
