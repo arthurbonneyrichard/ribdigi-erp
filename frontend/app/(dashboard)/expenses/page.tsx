@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import AttachmentPreview from '../../../components/AttachmentPreview';
 import PageHeader from '../../../components/PageHeader';
 import { api, getAccessToken } from '../../../lib/api';
-import { formatMoney, formatWhen, plainLabel } from '../../../lib/format';
+import { formatDate, formatMoney, formatWhen, plainLabel } from '../../../lib/format';
+import { getMe } from '../../../lib/meCache';
 import { AmountField } from '../../../components/AmountField';
 import { useStoreContext } from '../../../lib/storeContext';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
@@ -38,6 +39,7 @@ type Category = {
 };
 type Expense = {
   id: string;
+  created_by?: string | null;
   category: string;
   category_id?: string | null;
   description: string;
@@ -62,6 +64,13 @@ type Expense = {
 
 export default function Page() {
   const [rows, setRows] = useState<Expense[]>([]);
+  // The person who submitted an expense cannot approve it, so their own rows show who must act.
+  const [meId, setMeId] = useState('');
+  useEffect(() => {
+    getMe()
+      .then((r) => setMeId(String(r?.data?.id || '').trim()))
+      .catch(() => {});
+  }, []);
   const [expPrefix, setExpPrefix] = useState('');
   const [expNext, setExpNext] = useState('');
   const [expenseManageFilter, setExpenseManageFilter] = useState<
@@ -922,7 +931,7 @@ export default function Page() {
             ) : (
               managedExpenses.map((r) => (
               <tr key={r.id}>
-                <td className="expenses-nowrap">{formatWhen(r.expense_date || r.created_at, formatPrefs) || '—'}</td>
+                <td className="expenses-nowrap">{formatDate(r.expense_date || r.created_at, formatPrefs) || '—'}</td>
                 <td>
                   {r.payee || '—'}
                   {r.description ? <span className="expenses-payee-sub">{r.description}</span> : null}
@@ -962,7 +971,7 @@ export default function Page() {
                         </>
                       ) : (
                         <label className="expenses-upload">
-                          Upload receipt
+                          Attach receipt
                           <input
                             type="file"
                             aria-label={`Upload expense attachment ${r.id}`}
@@ -986,7 +995,12 @@ export default function Page() {
                           Edit
                         </button>
                       )}
-                      {r.status === 'pending' && (
+                      {r.status === 'pending' && meId && r.created_by === meId ? (
+                        <span className="muted" title="The person who submitted an expense cannot approve it.">
+                          Needs another approver
+                        </span>
+                      ) : null}
+                      {r.status === 'pending' && !(meId && r.created_by === meId) && (
                         <>
                           <button
                             className="btn-ok"
