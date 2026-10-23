@@ -4707,14 +4707,17 @@ export default function Page() {
               <option value="ean13">EAN-13</option>
               <option value="upca">UPC-A</option>
             </select>
-            <input
-              value={labelCopies}
-              onChange={(e) => setLabelCopies(e.target.value)}
-              placeholder="Copies"
-              aria-label="Label copies"
-              title="Copies (1–40)"
-              style={{ width: 88 }}
-            />
+            <label className="inv-label-copies">
+              Copies
+              <input
+                value={labelCopies}
+                onChange={(e) => setLabelCopies(e.target.value)}
+                placeholder="1"
+                aria-label="Label copies"
+                title="Copies (1–40)"
+                inputMode="numeric"
+              />
+            </label>
             <button type="button" onClick={generateBarcodesForSelected} aria-label="Generate barcode for selected products">
               Generate barcode
             </button>
@@ -4733,7 +4736,7 @@ export default function Page() {
             <table className="table cat-table">
               <thead>
                 <tr>
-                  <th>
+                  <th className="col-check">
                     <input
                       type="checkbox"
                       aria-label="Select all products for labels"
@@ -4782,7 +4785,7 @@ export default function Page() {
                   ];
                   return (
                   <tr key={p.id}>
-                    <td>
+                    <td className="col-check">
                       <input
                         type="checkbox"
                         checked={Boolean(labelPick[p.id])}
