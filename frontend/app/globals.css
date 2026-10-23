@@ -4187,3 +4187,32 @@ input[type=file]::file-selector-button:hover{border-color:var(--brand)}
 .list-table-wrap:has(input[aria-label="Select all products for labels"]) .table :is(th,td).col-actions{width:12.5rem;max-width:12.5rem}
 .inv-label-copies{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:13px}
 .inv-label-copies input{width:64px}
+
+/* Sales → Customers: labelled customer form and the Customer groups window */
+.cust-form{display:grid;gap:12px}
+.cust-form .form-grid{gap:10px 14px}
+.cust-form .field > label{font-size:13px;font-weight:600}
+.cust-more > summary{cursor:pointer}
+.cust-more .form-grid{margin-top:10px}
+.cust-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.cust-group-add{display:grid;grid-template-columns:minmax(0,1fr) 110px auto;gap:10px;align-items:end;margin-bottom:14px}
+.cust-group-add .field{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cust-group-add .field > label{font-size:13px;font-weight:600}
+.cust-group-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:4px 0 8px}
+.cust-group-head h4{margin:0}
+.cust-group-head select{width:auto}
+.cust-group-pct{width:80px}
+.cust-group-row-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.sales-ui-actions .cust-filter{width:auto;margin-left:auto}
+@media(max-width:600px){.cust-group-add{grid-template-columns:1fr 90px}.cust-group-add > button{grid-column:1/-1}}
+.erp-split > .cust-form{grid-column:1/-1;max-width:none;width:100%}
+.cust-group-table td{padding-top:6px;padding-bottom:6px;vertical-align:middle}
+.cust-group-table input.cust-group-pct{width:72px;min-width:0;padding:6px 8px}
+.cust-group-table .cust-group-row-actions button{padding:6px 10px;min-height:0}
+.list-table-wrap .table.cust-group-table{min-width:0}
+.list-table-wrap .table.cust-group-table th.col-actions,
+.list-table-wrap .table.cust-group-table td.col-actions{width:1%;max-width:none}
+.cust-group-table .cust-group-row-actions{flex-wrap:nowrap}
+.cust-group-wrap{overflow-x:auto}
+.table.cust-group-table{table-layout:auto;width:100%}
+.cust-group-table .cust-group-act{text-align:right;white-space:nowrap;width:1%}

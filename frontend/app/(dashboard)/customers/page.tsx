@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import FormModal from '../../../components/FormModal';
 import EmptyState from '../../../components/EmptyState';
 import PageHeader from '../../../components/PageHeader';
+import CustomerGroupsWindow from '../../../components/CustomerGroupsWindow';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import { api } from '../../../lib/api';
 import { currencySign, formatNumber } from '../../../lib/format';
@@ -122,6 +123,7 @@ export default function Page() {
   const [payDateNote, setPayDateNote] = useState('');
   const [payBusy, setPayBusy] = useState(false);
   const [canPay, setCanPay] = useState(false);
+  const [groupsOpen, setGroupsOpen] = useState(false);
 
   async function refresh() {
     setError('');
@@ -130,8 +132,16 @@ export default function Page() {
       api(path),
       api('/customers/groups').catch(() => ({ data: [] })),
     ]);
-    setCustomers(custRes.data || []);
-    setGroups(groupRes.data || []);
+    const groupList: Group[] = groupRes.data || [];
+    const groupById = new Map(groupList.map((g) => [g.id, g]));
+    // The list only carries the group id; attach the name so the Group column, search and sort work.
+    setCustomers(
+      (custRes.data || []).map((c: Customer) => {
+        const g = c.customer_group_id ? groupById.get(c.customer_group_id) : undefined;
+        return { ...c, customer_group: c.customer_group || (g ? { id: g.id, name: g.name } : null) };
+      })
+    );
+    setGroups(groupList);
   }
 
   useEffect(() => {
@@ -234,7 +244,8 @@ export default function Page() {
           method: 'PATCH',
           body: JSON.stringify(partyBody()),
         });
-        setMessage('Customer updated');
+        setMessage(`${form.name.trim()} saved`);
+        setFormOpen(false);
       } else {
         await api('/customers', { method: 'POST', body: JSON.stringify(partyBody()) });
         setMessage('Customer created');
@@ -355,9 +366,14 @@ export default function Page() {
         title="Customers"
         subtitle="Your customers, used on quotes, orders and invoices."
         actions={
-          <button type="button" className="list-btn-primary" onClick={openAdd} aria-label="Add customer">
-            Add customer
-          </button>
+          <>
+            <button type="button" className="list-btn-secondary" onClick={() => setGroupsOpen(true)} aria-label="Open customer groups">
+              Customer groups
+            </button>
+            <button type="button" className="list-btn-primary" onClick={openAdd} aria-label="Add customer">
+              Add customer
+            </button>
+          </>
         }
       />
       {message ? (
@@ -657,6 +673,15 @@ export default function Page() {
         </div>
       ) : null}
 
+      {groupsOpen ? (
+        <CustomerGroupsWindow
+          groups={groups}
+          customers={customers}
+          onClose={() => setGroupsOpen(false)}
+          onChanged={refresh}
+        />
+      ) : null}
+
       {formOpen ? (
         <FormModal
           title={editingId ? 'Edit customer' : 'Add customer'}
@@ -721,12 +746,12 @@ export default function Page() {
                 aria-label="Customer group"
                 aria-invalid={Boolean(fieldErrors.customer_group || fieldErrors.customer_group_id)}
               >
-                <option value="">No group</option>
+                <option value="">No group (normal prices)</option>
                 {groups
                   .filter((g) => g.is_active !== false || g.id === form.groupId)
                   .map((g) => (
                     <option key={g.id} value={g.id}>
-                      {g.name}
+                      {g.name} · {Number(g.discount_percent || 0)}% off
                     </option>
                   ))}
               </select>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import FormModal from '../../../components/FormModal';
+import CustomerGroupsWindow from '../../../components/CustomerGroupsWindow';
 import PageHeader from '../../../components/PageHeader';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import RowActions, { type RowActionItem } from '../../../components/RowActions';
@@ -140,7 +141,6 @@ export default function Page() {
   >('all');
   const [customers, setCustomers] = useState<any[]>([]);
   const [groups, setGroups] = useState<any[]>([]);
-  const [groupManageFilter, setGroupManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [products, setProducts] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
@@ -170,10 +170,6 @@ export default function Page() {
   const [srCancelReason, setSrCancelReason] = useState('');
   const [docEmailTo, setDocEmailTo] = useState('');
   const [paymentTermsDays, setPaymentTermsDays] = useState('30');
-  const [newGroupName, setNewGroupName] = useState('');
-  const [newGroupCode, setNewGroupCode] = useState('');
-  const [newGroupDiscount, setNewGroupDiscount] = useState('0');
-  const [groupDiscountDrafts, setGroupDiscountDrafts] = useState<Record<string, string>>({});
   const [useGroupPrice, setUseGroupPrice] = useState(true);
   const [productId, setProductId] = useState('');
   const [variantId, setVariantId] = useState('');
@@ -203,6 +199,7 @@ export default function Page() {
   const [payAmounts, setPayAmounts] = useState<Record<string, string>>({});
   const [composerKind, setComposerKind] = useState<'invoice' | 'quotation' | 'order'>('invoice');
   const [customerFormOpen, setCustomerFormOpen] = useState(false);
+  const [groupsOpen, setGroupsOpen] = useState(false);
   const [giftAmount, setGiftAmount] = useState('');
   const [giftLookup, setGiftLookup] = useState('');
   const [giftIssued, setGiftIssued] = useState<{ code: string; balance: number; status: string } | null>(null);
@@ -279,9 +276,6 @@ export default function Page() {
       setStoreId(ctxStoreId);
     }
     setGroups(groupRes.data || []);
-    setGroupDiscountDrafts(
-      Object.fromEntries((groupRes.data || []).map((g: any) => [g.id, String(g.discount_percent ?? 0)]))
-    );
     if (tenantRes.data) setFmt(tenantRes.data);
     setCoupons(couponRes.data || []);
     const numbering = settingsRes.data?.invoice_numbering;
@@ -428,6 +422,65 @@ export default function Page() {
     ...(wholesaleOps ? { sales_channel: 'wholesale' as const } : {}),
   };
 
+  /** Load one customer's details into the form, or clear it for a new customer. */
+  function fillCustomerForm(c: any | null) {
+    setCustomerId(c?.id || '');
+    setCustomerName(c?.name || '');
+    setCustomerCode(c?.code || '');
+    setCustomerEmail(c?.email || '');
+    setCustomerPhone(c?.phone || '');
+    setCustomerAddress(c?.address || '');
+    setCustomerProfileType(c?.profile_type || 'registered');
+    setCustomerCategory(c?.category || '');
+    setCustomerStatus(c?.status || 'active');
+    setCustomerLat(c?.latitude == null ? '' : String(c.latitude));
+    setCustomerLng(c?.longitude == null ? '' : String(c.longitude));
+    setCustomerGroupId(c?.customer_group_id || '');
+    setCreditLimit(String(c?.credit_limit ?? 0));
+    setPaymentTermsDays(String(c?.payment_terms_days ?? 30));
+  }
+
+  function openCustomerForm(c: any | null) {
+    fillCustomerForm(c);
+    setError('');
+    setMessage('');
+    setComposerOpen(false);
+    setCustomerFormOpen(true);
+  }
+
+  async function saveCustomer() {
+    if (saveBusy || !customerId) return;
+    setError('');
+    setSaveBusy(true);
+    try {
+      const r = await api(`/customers/${customerId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name: customerName.trim(),
+          code: customerCode.trim() || undefined,
+          profile_type: customerProfileType || 'registered',
+          category: customerCategory.trim() || undefined,
+          status: customerStatus || 'active',
+          email: customerEmail.trim() || undefined,
+          phone: customerPhone.trim() || undefined,
+          address: customerAddress.trim() || undefined,
+          latitude: customerLat === '' ? undefined : Number(customerLat),
+          longitude: customerLng === '' ? undefined : Number(customerLng),
+          credit_limit: Number(creditLimit) || 0,
+          payment_terms_days: Number(paymentTermsDays) || 0,
+          customer_group_id: customerGroupId.trim() || null,
+        }),
+      });
+      await refresh();
+      setCustomerFormOpen(false);
+      setMessage(`${r.data?.name || 'Customer'} saved`);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSaveBusy(false);
+    }
+  }
+
   async function createCustomer() {
     if (saveBusy) return;
     setError('');
@@ -466,7 +519,8 @@ export default function Page() {
       setCustomerGroupId('');
       setPaymentTermsDays('30');
       await refresh();
-      setMessage('Customer created');
+      setCustomerFormOpen(false);
+      setMessage(`${r.data?.name || 'Customer'} added`);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -491,61 +545,6 @@ export default function Page() {
           ? `Customer ${r.data?.name || ''} activated`
           : `Customer ${r.data?.name || ''} deactivated`,
       );
-    } catch (err: any) {
-      setError(err.message);
-    }
-  }
-
-  async function createGroup() {
-    const name = newGroupName.trim();
-    if (!name) {
-      setError('Customer group name is required.');
-      return;
-    }
-    setError('');
-    try {
-      await api('/customers/groups', {
-        method: 'POST',
-        body: JSON.stringify({
-          name,
-          code: newGroupCode.trim() || null,
-          discount_percent: Number(newGroupDiscount) || 0,
-        }),
-      });
-      setNewGroupName('');
-      setNewGroupCode('');
-      setNewGroupDiscount('0');
-      await refresh();
-      setMessage('Customer group created');
-    } catch (err: any) {
-      setError(err.message);
-    }
-  }
-
-  async function setGroupActive(group: { id: string; name: string }, is_active: boolean) {
-    setError('');
-    try {
-      await api(`/customers/groups/${group.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ is_active }),
-      });
-      await refresh();
-      setMessage(is_active ? `Group ${group.name} activated` : `Group ${group.name} deactivated`);
-    } catch (err: any) {
-      setError(err.message);
-    }
-  }
-
-  async function saveGroupDiscount(group: { id: string; name: string }) {
-    setError('');
-    try {
-      const pct = Number(groupDiscountDrafts[group.id] ?? 0);
-      await api(`/customers/groups/${group.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ discount_percent: pct }),
-      });
-      await refresh();
-      setMessage(`Group ${group.name} discount updated`);
     } catch (err: any) {
       setError(err.message);
     }
@@ -1046,11 +1045,6 @@ export default function Page() {
     }
   }
 
-  const managedGroups = groups.filter((g) => {
-    if (groupManageFilter === 'all') return true;
-    const active = g.is_active !== false;
-    return groupManageFilter === 'inactive' ? !active : active;
-  });
   function matchesList(row: any) {
     const q = listSearch.trim().toLowerCase();
     if (!q) return true;
@@ -1401,7 +1395,7 @@ export default function Page() {
 
       {(composerOpen || customerFormOpen) ? (
       <FormModal
-        title={composerOpen ? 'New document' : 'Customer'}
+        title={composerOpen ? 'New document' : customerId ? 'Edit customer' : 'New customer'}
         busy={saveBusy}
         dirty={Boolean(customerName.trim() || customerId || productId || docNotes.trim() || qty !== '1')}
         onClose={() => {
@@ -1416,281 +1410,215 @@ export default function Page() {
         ) : null}
       <div className="erp-split">
         {customerFormOpen && !composerOpen ? (
-        <div className="card">
-          <h3>Customer</h3>
-          <div className="erp-stack" style={{ marginBottom: 0 }}>
-        <details className="sales-more sales-ui-settings">
-          <summary>Customer groups</summary>
-        <div style={{ display: 'grid', gap: 8 }}>
-          <select
-            value={groupManageFilter}
-            onChange={(e) => setGroupManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
-            title="Filter manage customer group list by status"
-            aria-label="Customer group status filter"
-          >
-            <option value="all">All statuses</option>
-            <option value="active">Active only</option>
-            <option value="inactive">Inactive only</option>
-          </select>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
-            {managedGroups.map((g) => (
-              <li
-                key={g.id}
-                style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}
+        <div className="card cust-form">
+          <div className="form-grid">
+            <div className="field span-2">
+              <label htmlFor="cust-name">Name</label>
+              <input
+                id="cust-name"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="e.g. Kofi Mensah or Adom Traders"
+                aria-label="Customer name"
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="cust-phone">Phone</label>
+              <input
+                id="cust-phone"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                placeholder="+233 24 000 0000"
+                aria-label="Customer phone"
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="cust-email">Email</label>
+              <input
+                id="cust-email"
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+                placeholder="name@example.com"
+                aria-label="Customer email"
+              />
+            </div>
+            <div className="field span-2">
+              <label htmlFor="cust-address">Address</label>
+              <input
+                id="cust-address"
+                value={customerAddress}
+                onChange={(e) => setCustomerAddress(e.target.value)}
+                placeholder="Street, town"
+                aria-label="Customer address"
+              />
+            </div>
+            <div className="field span-2">
+              <label htmlFor="cust-group">Customer group</label>
+              <select
+                id="cust-group"
+                value={customerGroupId}
+                onChange={(e) => setCustomerGroupId(e.target.value)}
+                aria-label="Customer group"
               >
-                <span>
-                  {g.code} — {g.name}
-                  {g.is_active === false ? ' [inactive]' : ''}
-                </span>
-                <input
-                  value={groupDiscountDrafts[g.id] ?? String(g.discount_percent ?? 0)}
-                  onChange={(e) =>
-                    setGroupDiscountDrafts((prev) => ({ ...prev, [g.id]: e.target.value }))
-                  }
-                  placeholder="Discount %"
-                  style={{ width: 90 }}
-                  title="Discount percent"
-                  aria-label={`${g.name} discount percent`}
-                />
-                <button type="button" onClick={() => saveGroupDiscount(g)} aria-label={`Save customer group discount ${g.id}`}>
-                  Save discount
+                <option value="">No group (normal prices)</option>
+                {groups
+                  .filter((g) => g.is_active !== false || g.id === customerGroupId)
+                  .map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name} · {Number(g.discount_percent || 0)}% off
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="cust-credit">Credit limit</label>
+              <input
+                id="cust-credit"
+                value={creditLimit}
+                onChange={(e) => setCreditLimit(e.target.value)}
+                inputMode="decimal"
+                placeholder="0 = pays now"
+                aria-label="Customer credit limit"
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="cust-terms">Days to pay</label>
+              <input
+                id="cust-terms"
+                value={paymentTermsDays}
+                onChange={(e) => setPaymentTermsDays(e.target.value)}
+                inputMode="numeric"
+                title="Payment terms (days)"
+                aria-label="Customer payment terms days"
+              />
+            </div>
+          </div>
+          <details className="sales-more cust-more">
+            <summary>More details</summary>
+            <div className="form-grid">
+            <div className="field">
+              <label htmlFor="cust-code">Customer code</label>
+              <input
+                id="cust-code"
+                value={customerCode}
+                onChange={(e) => setCustomerCode(e.target.value)}
+                placeholder="Optional"
+                aria-label="Customer code"
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="cust-type">Type</label>
+              <select
+                id="cust-type"
+                value={customerProfileType}
+                onChange={(e) => setCustomerProfileType(e.target.value)}
+                aria-label="Customer profile type"
+              >
+                <option value="registered">Registered</option>
+                <option value="walk_in">Walk-in</option>
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="cust-category">Category</label>
+              <input
+                id="cust-category"
+                value={customerCategory}
+                onChange={(e) => setCustomerCategory(e.target.value)}
+                placeholder="Optional"
+                aria-label="Customer category"
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="cust-status">Status</label>
+              <select
+                id="cust-status"
+                value={customerStatus}
+                onChange={(e) => setCustomerStatus(e.target.value)}
+                aria-label="Customer status"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="cust-lat">Latitude</label>
+              <input
+                id="cust-lat"
+                value={customerLat}
+                onChange={(e) => setCustomerLat(e.target.value)}
+                inputMode="decimal"
+                placeholder="Optional"
+                aria-label="Customer latitude"
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="cust-lng">Longitude</label>
+              <input
+                id="cust-lng"
+                value={customerLng}
+                onChange={(e) => setCustomerLng(e.target.value)}
+                inputMode="decimal"
+                placeholder="Optional"
+                aria-label="Customer longitude"
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="cust-currency">Invoice currency</label>
+              <input
+                id="cust-currency"
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+                placeholder="Company currency"
+                aria-label="Sales invoice currency"
+                pattern="[A-Z]{3}"
+                maxLength={3}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="cust-fx">Exchange rate</label>
+              <input
+                id="cust-fx"
+                value={exchangeRate}
+                onChange={(e) => setExchangeRate(e.target.value)}
+                placeholder="Optional"
+                aria-label="Sales invoice FX rate"
+              />
+            </div>
+            </div>
+          </details>
+          {customerId && customerStatus === 'inactive' ? (
+            <p className="muted" style={{ margin: 0 }}>
+              Inactive customers are not offered on new sales. Their open invoices can still be paid.
+            </p>
+          ) : null}
+          <div className="cust-actions">
+            {customerId ? (
+              <>
+                <button type="button" className="btn-primary" onClick={saveCustomer} disabled={saveBusy || !customerName.trim()} aria-label="Save customer">
+                  Save customer
+                </button>
+                <button type="button" className="sr-only" onClick={assignCustomerGroup} aria-label="Assign customer group" tabIndex={-1}>
+                  Assign group
                 </button>
                 <button
                   type="button"
-                  className={g.is_active === false ? 'btn-ok' : 'btn-danger'}
-                  onClick={() => setGroupActive(g, g.is_active === false)}
-                  aria-label={
-                    g.is_active === false
-                      ? `Activate customer group ${g.id}`
-                      : `Deactivate customer group ${g.id}`
-                  }
+                  className={customerStatus === 'inactive' ? 'btn-ok' : 'btn-danger'}
+                  aria-label="Toggle customer active status"
+                  onClick={async () => {
+                    const next = customerStatus === 'inactive';
+                    await setCustomerActive(next);
+                    setCustomerStatus(next ? 'active' : 'inactive');
+                  }}
                 >
-                  {g.is_active === false ? 'Activate' : 'Deactivate'}
+                  {customerStatus === 'inactive' ? 'Activate customer' : 'Deactivate customer'}
                 </button>
-              </li>
-            ))}
-          </ul>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            <input
-              aria-label="Customer group name"
-              value={newGroupName}
-              onChange={(e) => setNewGroupName(e.target.value)}
-              placeholder="New group name"
-            />
-            <input
-              aria-label="Customer group code"
-              value={newGroupCode}
-              onChange={(e) => setNewGroupCode(e.target.value)}
-              placeholder="Code (optional)"
-              title="Group code (optional; made from the name if blank)"
-              style={{ width: 140 }}
-            />
-            <input
-              value={newGroupDiscount}
-              onChange={(e) => setNewGroupDiscount(e.target.value)}
-              placeholder="Discount %"
-              aria-label="Customer group discount percent"
-              style={{ width: 100 }}
-            />
-            <button
-              type="button"
-              aria-label="Add group"
-              onClick={createGroup}
-              disabled={!newGroupName.trim()}
-            >
-              Add group
-            </button>
+              </>
+            ) : (
+              <button type="button" className="btn-primary" onClick={createCustomer} disabled={saveBusy || !customerName.trim()} aria-label="Add customer">
+                Add customer
+              </button>
+            )}
           </div>
-        </div>
-        </details>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <select
-            value={customerManageFilter}
-            onChange={(e) => {
-              const next = e.target.value as 'all' | 'active' | 'inactive';
-              setCustomerManageFilter(next);
-              if (customerId) {
-                const row = customers.find((c) => c.id === customerId);
-                const st = (row?.status || 'active') as string;
-                if (next === 'active' && st === 'inactive') setCustomerId('');
-                if (next === 'inactive' && st !== 'inactive') setCustomerId('');
-              }
-            }}
-            title="Filter manage customer list by status"
-            aria-label="Customer status filter"
-          >
-            <option value="all">All statuses</option>
-            <option value="active">Active only</option>
-            <option value="inactive">Inactive only</option>
-          </select>
-          <select
-            value={customerId}
-            onChange={(e) => setCustomerId(e.target.value)}
-            title="Manage customer"
-            aria-label="Manage customer"
-          >
-            <option value="">Manage customer…</option>
-            {customers
-              .filter((c) => {
-                if (customerManageFilter === 'all') return true;
-                if (customerManageFilter === 'inactive') return (c.status || 'active') === 'inactive';
-                return c.status !== 'inactive';
-              })
-              .map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-                {c.status === 'inactive' ? ' · Inactive' : ''}
-              </option>
-            ))}
-          </select>
-          <details className="sales-more">
-            <summary>Currency</summary>
-          <input
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-            placeholder="Currency"
-            aria-label="Sales invoice currency"
-            pattern="[A-Z]{3}"
-            maxLength={3}
-            style={{ width: 140 }}
-          />
-          <input
-            value={exchangeRate}
-            onChange={(e) => setExchangeRate(e.target.value)}
-            placeholder="Exchange rate"
-            style={{ width: 120 }}
-            aria-label="Sales invoice FX rate"
-          />
-          <input
-            value={customerLat}
-            onChange={(e) => setCustomerLat(e.target.value)}
-            placeholder="Latitude"
-            style={{ width: 90 }}
-            aria-label="Customer latitude"
-          />
-          <input
-            value={customerLng}
-            onChange={(e) => setCustomerLng(e.target.value)}
-            placeholder="Longitude"
-            style={{ width: 90 }}
-            aria-label="Customer longitude"
-          />
-          </details>
-          <input
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-            placeholder="New customer"
-            aria-label="Customer name"
-            title="Customer name"
-          />
-          <input
-            value={customerCode}
-            onChange={(e) => setCustomerCode(e.target.value)}
-            placeholder="Code"
-            aria-label="Customer code"
-            title="Customer code"
-            style={{ width: 100 }}
-          />
-          <select
-            value={customerProfileType}
-            onChange={(e) => setCustomerProfileType(e.target.value)}
-            aria-label="Customer profile type"
-            title="Customer type"
-          >
-            <option value="registered">Registered</option>
-            <option value="walk_in">Walk-in</option>
-          </select>
-          <input
-            value={customerCategory}
-            onChange={(e) => setCustomerCategory(e.target.value)}
-            placeholder="Category"
-            aria-label="Customer category"
-            title="Customer category"
-            style={{ width: 120 }}
-          />
-          <select
-            value={customerStatus}
-            onChange={(e) => setCustomerStatus(e.target.value)}
-            aria-label="Customer status"
-            title="Status"
-          >
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-          <input
-            value={customerEmail}
-            onChange={(e) => setCustomerEmail(e.target.value)}
-            placeholder="Customer email"
-            aria-label="Customer email"
-          />
-          <input
-            value={customerPhone}
-            onChange={(e) => setCustomerPhone(e.target.value)}
-            placeholder="Phone"
-            aria-label="Customer phone"
-            style={{ width: 160 }}
-          />
-          <input
-            value={customerAddress}
-            onChange={(e) => setCustomerAddress(e.target.value)}
-            placeholder="Address"
-            aria-label="Customer address"
-            style={{ minWidth: 160 }}
-          />
-          <select
-            value={customerGroupId}
-            onChange={(e) => setCustomerGroupId(e.target.value)}
-            aria-label="Customer group"
-          >
-            <option value="">Group (optional)</option>
-            {groups
-              .filter((g) => g.is_active !== false)
-              .map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name} (−{g.discount_percent}%)
-                </option>
-              ))}
-          </select>
-          <input
-            value={creditLimit}
-            onChange={(e) => setCreditLimit(e.target.value)}
-            placeholder="Credit limit"
-            aria-label="Customer credit limit"
-          />
-          <input
-            value={paymentTermsDays}
-            onChange={(e) => setPaymentTermsDays(e.target.value)}
-            placeholder="Net days"
-            style={{ width: 90 }}
-            title="Payment terms (days)"
-            aria-label="Customer payment terms days"
-          />
-          <button type="button" onClick={createCustomer} aria-label="Add customer">
-            Add customer
-          </button>
-          <button type="button" onClick={assignCustomerGroup} aria-label="Assign customer group">
-            Assign group
-          </button>
-          <button
-            type="button"
-            aria-label="Toggle customer active status"
-            disabled={!customerId}
-            onClick={() => {
-              const inactive = (customers.find((c) => c.id === customerId)?.status || 'active') === 'inactive';
-              setCustomerActive(inactive);
-            }}
-          >
-            {(customers.find((c) => c.id === customerId)?.status || 'active') === 'inactive'
-              ? 'Activate customer'
-              : 'Deactivate customer'}
-          </button>
-        </div>
-        {customerId &&
-          (customers.find((c) => c.id === customerId)?.status || 'active') === 'inactive' && (
-            <p className="muted" style={{ margin: 0 }}>
-              Inactive — not shown on new sales. Existing documents can still be settled.
-            </p>
-          )}
         {customerId ? (
           <details className="sales-more">
             <summary>Contacts</summary>
@@ -1701,7 +1629,6 @@ export default function Page() {
           />
           </details>
         ) : null}
-          </div>
         </div>
         ) : null}
         {composerOpen ? (
@@ -1948,6 +1875,15 @@ export default function Page() {
       </FormModal>
       ) : null}
 
+      {groupsOpen ? (
+        <CustomerGroupsWindow
+          groups={groups}
+          customers={customers}
+          onClose={() => setGroupsOpen(false)}
+          onChanged={refresh}
+        />
+      ) : null}
+
       {tab === 'customers' && (
         <>
           <div className="sales-ui-actions">
@@ -1955,30 +1891,56 @@ export default function Page() {
               type="button"
               className="btn-primary"
               aria-label="Add customer"
-              onClick={() => {
-                setComposerOpen(false);
-                setCustomerFormOpen(true);
-              }}
+              onClick={() => openCustomerForm(null)}
             >
               Add customer
             </button>
+            <button
+              type="button"
+              aria-label="Open customer groups"
+              onClick={() => {
+                setError('');
+                setMessage('');
+                setGroupsOpen(true);
+              }}
+            >
+              Customer groups
+            </button>
+            <select
+              value={customerManageFilter}
+              onChange={(e) => setCustomerManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
+              aria-label="Customer status filter"
+              className="cust-filter"
+            >
+              <option value="all">All customers</option>
+              <option value="active">Active only</option>
+              <option value="inactive">Inactive only</option>
+            </select>
           </div>
-          <p className="sales-ui-note">Add a customer, then use that name on a quote, order, or invoice. Groups and credit sit in the customer form.</p>
+          <p className="sales-ui-note">Add a customer, then use that name on a quote, order, or invoice. A group gives its customers a set discount.</p>
           <div className="list-table-wrap">
             <table className="table">
               <thead>
                 <tr>
                   <th>Name</th>
                   <th className="col-id">Phone</th>
+                  <th>Group</th>
                   <th className="col-status">Status</th>
                   <th className="col-actions">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {customers.map((c) => (
+                {customers
+                  .filter((c) => {
+                    if (customerManageFilter === 'all') return true;
+                    const inactive = (c.status || 'active') === 'inactive';
+                    return customerManageFilter === 'inactive' ? inactive : !inactive;
+                  })
+                  .map((c) => (
                   <tr key={c.id}>
                     <td>{c.name}</td>
                     <td className="col-id">{c.phone || '—'}</td>
+                    <td>{groups.find((g) => g.id === c.customer_group_id)?.name || '—'}</td>
                     <td className="col-status"><StatusChip value={c.status || 'active'} /></td>
                     <td className="col-actions">
                       <RowActions
@@ -1988,11 +1950,7 @@ export default function Page() {
                           {
                             key: 'open',
                             label: 'Open',
-                            onClick: () => {
-                              setCustomerId(c.id);
-                              setComposerOpen(false);
-                              setCustomerFormOpen(true);
-                            },
+                            onClick: () => openCustomerForm(c),
                           },
                           {
                             key: 'toggle',
@@ -2008,7 +1966,7 @@ export default function Page() {
                 ))}
                 {customers.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="muted">No customers yet. Add a customer to use them on a quote, order, or invoice.</td>
+                    <td colSpan={5} className="muted">No customers yet. Add a customer to use them on a quote, order, or invoice.</td>
                   </tr>
                 )}
               </tbody>

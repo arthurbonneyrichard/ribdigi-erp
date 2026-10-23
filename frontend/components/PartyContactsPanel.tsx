@@ -118,8 +118,7 @@ export default function PartyContactsPanel({ kind, partyId, partyLabel }: Props)
         Contacts{partyLabel ? ` — ${partyLabel}` : ''}
       </h3>
       <p className="muted" style={{ marginTop: 0 }}>
-        Multiple contacts with name, phone, email, and designation (BR-6.1). Primary syncs to the
-        party phone/email used for documents.
+        Other people you deal with here. The main contact's phone and email go on your documents.
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}

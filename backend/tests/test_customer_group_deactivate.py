@@ -13,13 +13,15 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_customer_group_deactivate_ui_wired():
-    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8") + (
+        ROOT / "frontend/components/CustomerGroupsWindow.tsx"
+    ).read_text(encoding="utf-8")
     assert "setGroupActive" in sales
     assert "saveGroupDiscount" in sales
     assert "Deactivate" in sales
     assert "Activate" in sales
-    assert "[inactive]" in sales
-    assert "Save discount" in sales
+    assert "switched off" in sales
+    assert "Save customer group discount" in sales
     assert "groupManageFilter" in sales
     assert 'aria-label="Customer group status filter"' in sales
     assert "managedGroups" in sales
