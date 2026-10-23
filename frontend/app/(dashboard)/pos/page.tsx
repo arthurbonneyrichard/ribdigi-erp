@@ -1294,6 +1294,8 @@ export default function Page() {
             setMessage('');
             skipEmptyBrowse.current = true;
             setQ('');
+            // Put the product grid back; it only held this one search result.
+            void browse('').catch(() => {});
             return;
           }
           if (soft.length === 0) {
@@ -1314,6 +1316,8 @@ export default function Page() {
 
   async function search(e?: React.FormEvent) {
     e?.preventDefault();
+    // A search covers every category, so results are not hidden by the category tabs.
+    if (q.trim()) setCategoryFilter('');
     await applyScannedBarcode(q);
   }
 
