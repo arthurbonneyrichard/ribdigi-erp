@@ -73,6 +73,23 @@ async def issue_gift_card(
     return _env(loyalty_gift_svc.serialize_card(row), "Gift card issued")
 
 
+@router.get("/gift-cards")
+async def list_gift_cards(
+    claims=Depends(require_permission("pos", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """The company's gift cards, newest first (most recent 200)."""
+    rows = (
+        await db.execute(
+            select(m.GiftCard)
+            .where(m.GiftCard.tenant_id == claims["tenant_id"])
+            .order_by(m.GiftCard.created_at.desc())
+            .limit(200)
+        )
+    ).scalars().all()
+    return _env([loyalty_gift_svc.serialize_card(r) for r in rows])
+
+
 @router.get("/gift-cards/{code}")
 async def read_gift_card(
     code: str,

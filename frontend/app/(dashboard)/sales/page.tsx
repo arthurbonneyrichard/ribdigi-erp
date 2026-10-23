@@ -200,6 +200,7 @@ export default function Page() {
   const [composerKind, setComposerKind] = useState<'invoice' | 'quotation' | 'order'>('invoice');
   const [customerFormOpen, setCustomerFormOpen] = useState(false);
   const [groupsOpen, setGroupsOpen] = useState(false);
+  const [couponFormOpen, setCouponFormOpen] = useState(false);
   const [giftAmount, setGiftAmount] = useState('');
   const [giftLookup, setGiftLookup] = useState('');
   const [giftIssued, setGiftIssued] = useState<{ code: string; balance: number; status: string } | null>(null);
@@ -2662,60 +2663,139 @@ export default function Page() {
 
       {tab === 'coupons' && (
         <div className="card cat-panel">
-          <h3>Coupons</h3>
-          <p className="sales-ui-note">A coupon code takes a percent or a fixed amount off a quote, order, or invoice. It is not a payment.</p>
-          <div className="erp-form-grid" style={{ marginBottom: 12 }}>
-            <input value={newCouponCode} onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())} placeholder="Code" aria-label="New coupon code" />
-            <input value={newCouponName} onChange={(e) => setNewCouponName(e.target.value)} placeholder="Name" aria-label="New coupon name" />
-            <select value={newCouponType} onChange={(e) => setNewCouponType(e.target.value as 'fixed' | 'percent')} aria-label="New coupon type">
-              <option value="percent">Percent</option>
-              <option value="fixed">Fixed</option>
-            </select>
-            {newCouponType === 'fixed' ? (
-              <AmountField value={newCouponAmount} onChange={(e) => setNewCouponAmount(e.target.value)} placeholder="Amount" aria-label="New coupon amount" />
-            ) : (
-              <input value={newCouponAmount} onChange={(e) => setNewCouponAmount(e.target.value)} placeholder="Percent" aria-label="New coupon amount" />
-            )}
-            <input value={newCouponMin} onChange={(e) => setNewCouponMin(e.target.value)} placeholder="Min spend" aria-label="New coupon min spend" />
+          <div className="coupon-head">
+            <div>
+              <h3>Coupons</h3>
+              <p className="sales-ui-note">
+                A coupon code takes a percent or a set amount off. Type it on a quote, order or invoice, or under Discount at the till. It is not a payment.
+              </p>
+            </div>
             <button
               type="button"
-              onClick={async () => {
+              className="btn-primary"
+              onClick={() => {
                 setError('');
-                try {
-                  await api('/sales/coupons', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                      code: newCouponCode.trim(),
-                      name: newCouponName.trim(),
-                      discount_type: newCouponType,
-                      amount: Number(newCouponAmount),
-                      min_spend: Number(newCouponMin) || 0,
-                    }),
-                  });
-                  setNewCouponCode('');
-                  setNewCouponName('');
-                  await refresh();
-                  setMessage('Coupon saved');
-                } catch (err: any) {
-                  setError(err.message);
-                }
+                setMessage('');
+                setCouponFormOpen(true);
               }}
-              aria-label="Save coupon"
+              aria-label="Add coupon"
             >
-              Save coupon
+              Add coupon
             </button>
           </div>
+          {couponFormOpen ? (
+            <FormModal
+              title="Add coupon"
+              busy={saveBusy}
+              dirty={Boolean(newCouponCode.trim() || newCouponName.trim())}
+              onClose={() => setCouponFormOpen(false)}
+            >
+              {error ? (
+                <p className="sales-flash sales-flash-err" role="alert">
+                  {error}
+                </p>
+              ) : null}
+              <div className="form-grid">
+                <div className="field">
+                  <label htmlFor="coupon-code">Code customers type</label>
+                  <input
+                    id="coupon-code"
+                    value={newCouponCode}
+                    onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())}
+                    placeholder="e.g. SAVE10"
+                    aria-label="New coupon code"
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="coupon-name">Name</label>
+                  <input
+                    id="coupon-name"
+                    value={newCouponName}
+                    onChange={(e) => setNewCouponName(e.target.value)}
+                    placeholder="e.g. Ten percent off"
+                    aria-label="New coupon name"
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="coupon-type">Discount</label>
+                  <select
+                    id="coupon-type"
+                    value={newCouponType}
+                    onChange={(e) => setNewCouponType(e.target.value as 'fixed' | 'percent')}
+                    aria-label="New coupon type"
+                  >
+                    <option value="percent">Percent off</option>
+                    <option value="fixed">Amount off</option>
+                  </select>
+                </div>
+                <div className="field">
+                  <label htmlFor="coupon-amount">{newCouponType === 'fixed' ? 'Amount off' : 'Percent off'}</label>
+                  {newCouponType === 'fixed' ? (
+                    <AmountField id="coupon-amount" value={newCouponAmount} onChange={(e) => setNewCouponAmount(e.target.value)} aria-label="New coupon amount" />
+                  ) : (
+                    <input id="coupon-amount" value={newCouponAmount} onChange={(e) => setNewCouponAmount(e.target.value)} inputMode="decimal" aria-label="New coupon amount" />
+                  )}
+                </div>
+                <div className="field span-2">
+                  <label htmlFor="coupon-min">Lowest bill it works on</label>
+                  <AmountField
+                    id="coupon-min"
+                    value={newCouponMin}
+                    onChange={(e) => setNewCouponMin(e.target.value)}
+                    placeholder="0 = any bill"
+                    aria-label="New coupon min spend"
+                  />
+                </div>
+              </div>
+              <div className="cust-actions" style={{ marginTop: 12 }}>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  disabled={saveBusy || !newCouponCode.trim() || !newCouponName.trim() || !(Number(newCouponAmount) > 0)}
+                  onClick={async () => {
+                    setError('');
+                    setSaveBusy(true);
+                    try {
+                      await api('/sales/coupons', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                          code: newCouponCode.trim(),
+                          name: newCouponName.trim(),
+                          discount_type: newCouponType,
+                          amount: Number(newCouponAmount),
+                          min_spend: Number(newCouponMin) || 0,
+                        }),
+                      });
+                      const code = newCouponCode.trim();
+                      setNewCouponCode('');
+                      setNewCouponName('');
+                      await refresh();
+                      setCouponFormOpen(false);
+                      setMessage(`Coupon ${code} saved`);
+                    } catch (err: any) {
+                      setError(err.message);
+                    } finally {
+                      setSaveBusy(false);
+                    }
+                  }}
+                  aria-label="Save coupon"
+                >
+                  Save coupon
+                </button>
+              </div>
+            </FormModal>
+          ) : null}
           <div className="list-table-wrap">
             <table className="table">
               <thead>
                 <tr>
                   <th className="col-id">Code</th>
                   <th>Name</th>
-                  <th className="col-status">Type</th>
-                  <th className="col-num">Amount</th>
-                  <th className="col-num">Min spend</th>
-                  <th className="col-status">Active</th>
+                  <th className="col-num">Takes off</th>
+                  <th className="col-num">Lowest bill</th>
                   <th className="col-num">Used</th>
+                  <th className="col-status">Status</th>
+                  <th className="col-actions">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -2723,17 +2803,38 @@ export default function Page() {
                   <tr key={c.id}>
                     <td className="col-id">{c.code}</td>
                     <td>{c.name}</td>
-                    <td className="col-status"><StatusChip value={c.discount_type} label={saleWords(c.discount_type)} /></td>
                     <td className="col-num">{c.discount_type === 'percent' ? `${formatNumber(c.amount, fmt)}%` : formatMoney(c.amount, fmt)}</td>
-                    <td className="col-num">{formatMoney(c.min_spend, fmt)}</td>
-                    <td className="col-status"><StatusChip value={c.is_active ? 'active' : 'inactive'} label={c.is_active ? 'Yes' : 'No'} /></td>
+                    <td className="col-num">{Number(c.min_spend || 0) > 0 ? formatMoney(c.min_spend, fmt) : 'Any'}</td>
                     <td className="col-num">{c.redemption_count ?? 0}</td>
+                    <td className="col-status"><StatusChip value={c.is_active ? 'active' : 'inactive'} label={c.is_active ? 'On' : 'Off'} /></td>
+                    <td className="col-actions">
+                      <button
+                        type="button"
+                        className={c.is_active ? 'btn-danger' : 'btn-ok'}
+                        aria-label={c.is_active ? `Switch off coupon ${c.code}` : `Switch on coupon ${c.code}`}
+                        onClick={async () => {
+                          setError('');
+                          try {
+                            await api(`/sales/coupons/${c.id}`, {
+                              method: 'PATCH',
+                              body: JSON.stringify({ is_active: !c.is_active }),
+                            });
+                            await refresh();
+                            setMessage(c.is_active ? `Coupon ${c.code} switched off` : `Coupon ${c.code} switched on`);
+                          } catch (err: any) {
+                            setError(err.message);
+                          }
+                        }}
+                      >
+                        {c.is_active ? 'Switch off' : 'Switch on'}
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {coupons.length === 0 && (
                   <tr>
                     <td colSpan={7} className="muted">
-                      No coupons yet. Save a code to take a percent or a fixed amount off a quote, order, or invoice.
+                      No coupons yet. Press Add coupon to make a code that takes a percent or a set amount off.
                     </td>
                   </tr>
                 )}
