@@ -68,6 +68,9 @@ const RECORD_SCOPES = [
 
 const ROLE_KEY_RE = /^[a-z][a-z0-9_]{1,48}$/;
 const E164_RE = /^\+[0-9]{8,15}$/;
+/** Phones may be typed with spaces or dashes (+233 24 123 4567); store them compact. */
+const compactPhone = (value: string) => value.trim().replace(/[\s-]/g, '');
+const PHONE_HINT = 'Enter the phone with its country code, for example +233 24 123 4567, or leave it blank.';
 
 const PLATFORM_USER_ROLES = new Set([
   'super_admin',
@@ -355,7 +358,7 @@ export default function Page() {
 
   const isCustomRole = (r: RoleRow) => r.system === false;
   const roleChoiceText = (role: RoleRow) =>
-    `${role.role}${isCustomRole(role) ? ' (custom)' : ''}${role.is_active === false ? ' [inactive]' : ''}`;
+    `${role.label || role.role}${isCustomRole(role) ? ' (custom)' : ''}${role.is_active === false ? ' [inactive]' : ''}`;
   const isRoleActive = (r: RoleRow) => !isCustomRole(r) || r.is_active !== false;
   const assignableRoles = (currentRole?: string) =>
     roles.filter(
@@ -482,9 +485,9 @@ export default function Page() {
       setMessage('');
       return;
     }
-    const phoneTrim = form.phone.trim();
+    const phoneTrim = compactPhone(form.phone);
     if (phoneTrim && !E164_RE.test(phoneTrim)) {
-      setError('Phone must be E.164, for example +233241234567, or leave it blank.');
+      setError(PHONE_HINT);
       setMessage('');
       return;
     }
@@ -499,7 +502,7 @@ export default function Page() {
           full_name: fullName,
           password: trimmedPassword,
           role: form.role,
-          phone: form.phone.trim() || null,
+          phone: phoneTrim || null,
           branch_id: form.branch_id.trim() || null,
           department_id: form.department_id.trim() || null,
           store_id: hideStoreAssign ? null : form.store_ids[0] || null,
@@ -701,9 +704,9 @@ export default function Page() {
     const body: Record<string, unknown> = {};
     const name = editForm.full_name.trim();
     if (name && name !== (editUser.full_name || '')) body.full_name = name;
-    const phone = editForm.phone.trim();
+    const phone = compactPhone(editForm.phone);
     if (phone && !E164_RE.test(phone)) {
-      setError('Phone must be E.164, for example +233241234567, or leave it blank.');
+      setError(PHONE_HINT);
       setMessage('');
       return;
     }
@@ -1060,7 +1063,7 @@ export default function Page() {
               <input
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                placeholder="+233…"
+                placeholder="e.g. +233 24 123 4567"
                 aria-label="User phone"
               />
             </label>
