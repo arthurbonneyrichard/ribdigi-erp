@@ -50,6 +50,8 @@ import {
 import { type OfflineStatus } from '../../../components/PosOfflinePanel';
 import './pos-modern.css';
 
+/** Ways to pay that have their own button on the till. */
+const MAIN_PAY_METHODS = new Set(['cash', 'card', 'mobile_money', 'bank_transfer']);
 const OFFLINE_TENDERS = new Set(['cash', 'mobile_money', 'card', 'bank_transfer', 'credit']);
 
 function hasPerm(
@@ -1350,10 +1352,7 @@ export default function Page() {
             void browse('').catch(() => {});
             return;
           }
-          if (soft.length === 0) {
-            setError(`No product for barcode ${query}`);
-            return;
-          }
+          // No match: the empty product list already says so and offers Show all products.
           return;
         }
         setRows(hits);
@@ -1496,6 +1495,15 @@ export default function Page() {
     const next = append(String(last.quantity));
     const qty = Math.floor(Number(next) || 0);
     if (Number.isFinite(qty)) setLineQty(last.id, qty);
+  }
+
+  /** After a sale: clear the done panel and get ready to scan the next customer. */
+  function startNextSale() {
+    setPayAsReprint(false);
+    setLastChange(null);
+    setMessage('');
+    setError('');
+    document.querySelector<HTMLInputElement>('.tpos-search-input')?.focus();
   }
 
   function clearCart() {
@@ -2347,10 +2355,21 @@ export default function Page() {
                 <span>Card sales</span>
                 <strong>{money(Number(shiftReport.payment_breakdown?.card || 0))}</strong>
               </div>
-              <div>
-                <span>Other</span>
-                <strong>{money(Number(shiftReport.payment_breakdown?.other || 0))}</strong>
-              </div>
+              {shiftReport.payment_breakdown?.by_method ? (
+                Object.entries(shiftReport.payment_breakdown.by_method as Record<string, number>)
+                  .filter(([method, amount]) => method !== 'cash' && method !== 'card' && Number(amount) > 0)
+                  .map(([method, amount]) => (
+                    <div key={method}>
+                      <span>{method === 'credit' ? 'On credit' : posPayLabel(method)}</span>
+                      <strong>{money(Number(amount))}</strong>
+                    </div>
+                  ))
+              ) : (
+                <div>
+                  <span>Other</span>
+                  <strong>{money(Number(shiftReport.payment_breakdown?.other || 0))}</strong>
+                </div>
+              )}
               <div>
                 <span>Discounts</span>
                 <strong>{money(Number(shiftReport.summary?.discounts || 0))}</strong>
@@ -2672,8 +2691,20 @@ export default function Page() {
                 <p>
                   {rows.length && categoryFilter
                     ? `No ${categoryFilter} items in this search. Choose another category or tap All.`
-                    : 'Search again, or tap All to see products you can sell.'}
+                    : `Nothing matches “${q.trim() || 'that search'}”. Check the spelling or scan the barcode.`}
                 </p>
+                <button
+                  type="button"
+                  className="tpos-btn"
+                  aria-label="Show all products"
+                  onClick={() => {
+                    setQ('');
+                    setCategoryFilter('');
+                    browse('').catch((err) => setError(err.message));
+                  }}
+                >
+                  Show all products
+                </button>
               </div>
             )}
 
@@ -2733,7 +2764,7 @@ export default function Page() {
             </div>
           </section>
 
-          <aside className="tpos-cart pos-ui-cart" aria-label="Cart">
+          <aside className={`tpos-cart pos-ui-cart${payAsReprint && lastSale ? ' is-done' : ''}`} aria-label="Cart">
             <div className="tpos-cart-head">
               <h2>Current sale</h2>
               <span className="tpos-items-badge">{cartCount} {cartCount === 1 ? 'item' : 'items'}</span>
@@ -2776,6 +2807,7 @@ export default function Page() {
                 ))}
               </select>
             </label>
+            <div className="pos-cart-scroll">
               {isPharmacy ? (
                 <label className="tpos-field tpos-customer">
                   <span>Prescription (required for Rx-only)</span>
@@ -2900,7 +2932,7 @@ export default function Page() {
                         +
                       </button>
                     </div>
-                    <div className="tpos-line">{money(lineAmounts.gross)}</div>
+                    <div className="tpos-line">{money(taxable)}</div>
                     <button
                       type="button"
                       className="tpos-cart-remove"
@@ -2915,38 +2947,6 @@ export default function Page() {
             </div>
 
             <div className="tpos-cart-dock pos-ui-pay">
-              <div className="tpos-total pos-ui-due" aria-label="POS cart totals">
-                {payAsReprint ? null : (
-                  <dl className="pos-totals">
-                    <div>
-                      <dt>Subtotal</dt>
-                      <dd>{money(cartTotals.subtotal)}</dd>
-                    </div>
-                    {cartTotals.tax > 0 ? (
-                      <div>
-                        <dt>Tax</dt>
-                        <dd>{money(cartTotals.tax)}</dd>
-                      </div>
-                    ) : null}
-                    {cartDiscountAmount > 0 ? (
-                      <div>
-                        <dt>Discount</dt>
-                        <dd>−{money(cartDiscountAmount)}</dd>
-                      </div>
-                    ) : null}
-                    {paymentMethod === 'credit' && !splitTender ? (
-                      <div>
-                        <dt>On account</dt>
-                        <dd>{money(creditRemaining)}</dd>
-                      </div>
-                    ) : null}
-                  </dl>
-                )}
-                <p className="pos-total-row">
-                  <span className="pos-ui-due-label">Total</span>
-                  <strong>{money(cartTotal)}</strong>
-                </p>
-              </div>
               <div className="tpos-cart-lines">
                 {splitTender || payAsReprint ? null : (
                   <div className="pos-pay-methods" role="radiogroup" aria-label="How the customer pays">
@@ -2996,16 +2996,13 @@ export default function Page() {
                   </label>
                 ) : (
                   <label className="tpos-pay-select pos-pay-other">
-                    <span>Other</span>
+                    <span>Or</span>
                     <select
-                      value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      value={MAIN_PAY_METHODS.has(paymentMethod) ? '' : paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value || 'cash')}
                       aria-label="POS payment method"
                     >
-                      <option value="cash">Cash</option>
-                      <option value="card">Card</option>
-                      <option value="mobile_money">Mobile Money (MoMo)</option>
-                      <option value="bank_transfer">Bank transfer</option>
+                      <option value="">More ways to pay…</option>
                       {online ? <option value="wallet">Wallet</option> : null}
                       {online ? <option value="gift_card">Gift card</option> : null}
                       {online ? <option value="loyalty">Loyalty points</option> : null}
@@ -3239,34 +3236,6 @@ export default function Page() {
                   ))}
                 </div>
                 ) : null}
-                <div className="tpos-pay-row">
-                <button
-                  type="button"
-                  className="tpos-btn tpos-btn-pay"
-                  onClick={payAsReprint ? reprintLastReceipt : checkout}
-                  disabled={payAsReprint ? !!receiptBusy : !cart.length || !session || busy}
-                  title={
-                    payAsReprint
-                      ? ''
-                      : !session
-                        ? 'Open a POS shift before charging'
-                        : !cart.length
-                          ? 'Add a product before charging'
-                          : busy
-                            ? 'This sale is already being saved'
-                            : ''
-                  }
-                  aria-label={payAsReprint ? 'Print' : 'Charge'}
-                >
-                  {payAsReprint
-                    ? receiptBusy === 'reprint'
-                      ? 'Print…'
-                      : 'Print'
-                    : busy
-                      ? 'Paying…'
-                      : `Pay ${money(cartTotal)}`}
-                </button>
-                </div>
                 <button
                   type="button"
                   className="sr-only"
@@ -3373,22 +3342,7 @@ export default function Page() {
                   </label>
                 </div>
               </details>
-              {error ? (
-                <p className="tpos-banner tpos-banner-err" role="alert">
-                  {error}
-                </p>
-              ) : null}
-              {payAsReprint && lastSale && !lastSale.offline ? (
-                <div className="tpos-banner tpos-banner-ok tpos-success-bar" role="status">
-                  <span>
-                    {String(lastSale.payment_status || '').toLowerCase() === 'paid' &&
-                    !(Number(lastSale.balance_due || 0) > 0)
-                      ? 'Paid'
-                      : 'Success'}
-                    {lastChange ? ` · Give change ${money(lastChange)}` : ''}
-                  </span>
-                </div>
-              ) : message ? (
+              {payAsReprint && lastSale && !lastSale.offline ? null : message ? (
                 <div className="tpos-banner tpos-banner-ok tpos-success-bar">
                   <span>{message}</span>
                   {lastSale ? (
@@ -3427,6 +3381,107 @@ export default function Page() {
                   ) : null}
                 </div>
               ) : null}
+            </div>
+            </div>
+            <div className="pos-cart-foot">
+              {payAsReprint && lastSale ? (
+                <div className="pos-done" role="status" aria-label="Sale complete">
+                  <p className="pos-done-title">
+                    <span aria-hidden>✓</span>{' '}
+                    {lastSale.offline
+                      ? 'Sale saved · sends when back online'
+                      : String(lastSale.payment_status || '').toLowerCase() === 'paid' &&
+                          !(Number(lastSale.balance_due || 0) > 0)
+                        ? `Paid ${money(Number(lastSale.total || 0))}`
+                        : `Sale saved ${money(Number(lastSale.total || 0))}`}
+                  </p>
+                  {lastChange ? (
+                    <p className="pos-done-change">
+                      <span>Give change</span>
+                      <strong>{money(lastChange)}</strong>
+                    </p>
+                  ) : null}
+                  <div className="pos-done-actions">
+                    <button
+                      type="button"
+                      className="tpos-btn tpos-btn-primary pos-done-new"
+                      onClick={startNextSale}
+                      aria-label="Start new sale"
+                    >
+                      New sale
+                    </button>
+                    <button
+                      type="button"
+                      className="tpos-btn pos-done-print"
+                      onClick={reprintLastReceipt}
+                      disabled={!!receiptBusy}
+                      aria-label="Print receipt"
+                    >
+                      {receiptBusy === 'reprint' ? 'Printing…' : 'Print receipt'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+              <div className="tpos-total pos-ui-due" aria-label="POS cart totals">
+                {payAsReprint ? null : (
+                  <dl className="pos-totals">
+                    <div>
+                      <dt>Subtotal</dt>
+                      <dd>{money(cartTotals.subtotal)}</dd>
+                    </div>
+                    {cartTotals.tax > 0 ? (
+                      <div>
+                        <dt>Tax</dt>
+                        <dd>{money(cartTotals.tax)}</dd>
+                      </div>
+                    ) : null}
+                    {cartDiscountAmount > 0 ? (
+                      <div>
+                        <dt>Discount</dt>
+                        <dd>−{money(cartDiscountAmount)}</dd>
+                      </div>
+                    ) : null}
+                    {paymentMethod === 'credit' && !splitTender ? (
+                      <div>
+                        <dt>On account</dt>
+                        <dd>{money(creditRemaining)}</dd>
+                      </div>
+                    ) : null}
+                  </dl>
+                )}
+                <p className="pos-total-row">
+                  <span className="pos-ui-due-label">Total</span>
+                  <strong>{money(cartTotal)}</strong>
+                </p>
+              </div>
+              {error ? (
+                <p className="tpos-banner tpos-banner-err" role="alert">
+                  {error}
+                </p>
+              ) : null}
+                <div className="tpos-pay-row">
+                <button
+                  type="button"
+                  className="tpos-btn tpos-btn-pay"
+                  onClick={checkout}
+                  disabled={!cart.length || !session || busy}
+                  title={
+                    !session
+                      ? 'Open a POS shift before charging'
+                      : !cart.length
+                        ? 'Add a product before charging'
+                        : busy
+                          ? 'This sale is already being saved'
+                          : ''
+                  }
+                  aria-label="Charge"
+                >
+                  {busy ? 'Paying…' : `Pay ${money(cartTotal)}`}
+                </button>
+                </div>
+                </>
+              )}
             </div>
           </aside>
         </div>

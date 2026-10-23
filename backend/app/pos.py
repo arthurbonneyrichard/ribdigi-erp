@@ -533,6 +533,8 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
     tax_sum = 0.0
     discount_sum = 0.0
     net_sum = 0.0
+    # Sales per tender, so credit, MoMo and bank do not hide inside "other".
+    by_method: dict[str, float] = {}
     for s in sales:
         payload = s.payload or {}
         cart_disc = money_json(payload.get("discount_amount") or 0)
@@ -550,6 +552,14 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
             payments=payload.get("payments") or None,
             payment_method=payload.get("payment_method"),
         )
+        tenders = payload.get("payments") or [
+            {"payment_method": payload.get("payment_method") or "cash", "amount": total}
+        ]
+        for tender in tenders:
+            method = normalize_payment_method(tender.get("payment_method"), strict=False)
+            by_method[method] = money_json(
+                round(by_method.get(method, 0.0) + money_json(tender.get("amount") or 0), 2)
+            )
         sale_rows.append(
             {
                 "id": s.id,
@@ -643,6 +653,7 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
             "cash_in": money_json(getattr(session, "cash_in", 0) or 0),
             "cash_out": money_json(getattr(session, "cash_out", 0) or 0),
             "total": money_json(session.total_sales or 0),
+            "by_method": by_method,
         },
     }
 

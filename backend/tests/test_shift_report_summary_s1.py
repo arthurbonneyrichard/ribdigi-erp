@@ -107,6 +107,8 @@ async def test_shift_report_includes_summary_discounts_and_returns(client, db_se
     assert abs(float(data["summary"]["net_after_returns"]) - (sale_total - 10)) < 0.01
     assert data["returns"][0]["return_number"] == "SR-SHIFT-1"
     assert data["payment_breakdown"]["cash"] > 0
+    # Per-tender totals, so credit / MoMo / bank do not hide inside "other".
+    assert data["payment_breakdown"]["by_method"] == {"cash": sale_total}
 
     other = m.SalesReturn(
         tenant_id=tenant_id,

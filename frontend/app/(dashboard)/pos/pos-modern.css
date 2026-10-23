@@ -486,10 +486,10 @@
   background: var(--pos-surface);
   border-color: var(--pos-accent);
 }
-.main .tpos.pos-ui .tpos-cart-dock .tpos-pay-row {
+.main .tpos.pos-ui .pos-cart-foot .tpos-pay-row {
   display: flex;
 }
-.main .tpos.pos-ui .tpos-cart-dock .tpos-pay-row button.tpos-btn-pay {
+.main .tpos.pos-ui .pos-cart-foot .tpos-pay-row button.tpos-btn-pay {
   flex: 1 1 auto;
   height: 56px;
   min-height: 56px;
@@ -500,10 +500,10 @@
   color: #fff;
   box-shadow: 0 8px 18px #4ab01247;
 }
-.main .tpos.pos-ui .tpos-cart-dock .tpos-pay-row button.tpos-btn-pay:hover:not(:disabled) {
+.main .tpos.pos-ui .pos-cart-foot .tpos-pay-row button.tpos-btn-pay:hover:not(:disabled) {
   background: var(--pos-accent-dark);
 }
-.main .tpos.pos-ui .tpos-cart-dock .tpos-pay-row button.tpos-btn-pay:disabled {
+.main .tpos.pos-ui .pos-cart-foot .tpos-pay-row button.tpos-btn-pay:disabled {
   background: #cfe3c2;
   color: #fff;
   box-shadow: none;
@@ -541,10 +541,20 @@
   color: #0d2a1d;
 }
 
-/* ---------- Layout fixes: one scrolling column, Pay pinned at the bottom ---------- */
+/* ---------- Layout: header and customer on top, a scrolling middle, total and Pay fixed below ---------- */
 .main .tpos.pos-ui .tpos-cart.pos-ui-cart {
+  overflow: hidden;
+}
+.main .tpos.pos-ui .pos-cart-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 -6px;
+  padding: 0 6px 4px;
 }
 .main .tpos.pos-ui .tpos-cart-list.pos-ui-list {
   flex: 0 0 auto;
@@ -555,18 +565,128 @@
 .main .tpos.pos-ui .tpos-cart-dock.pos-ui-pay {
   position: static;
   flex: 0 0 auto;
-  margin-top: auto;
+  margin-top: 0;
 }
-.main .tpos.pos-ui .tpos-cart-dock .tpos-pay-row {
-  position: sticky;
-  bottom: -14px;
-  z-index: 2;
-  margin: 0 -14px -14px;
-  padding: 10px 14px 14px;
-  background: linear-gradient(to top, var(--pos-surface) 80%, transparent);
-}
-.main .tpos.pos-ui .tpos-cart-actions {
+.main .tpos.pos-ui .pos-cart-foot {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--pos-line);
+}
+.main .tpos.pos-ui .pos-cart-foot .tpos-pay-row {
+  position: static;
+  margin: 0;
+  padding: 0;
+  background: none;
+}
+.main .tpos.pos-ui .pos-cart-foot .tpos-banner {
+  margin: 0;
+}
+.main .tpos.pos-ui .tpos-cart-dock .tpos-cart-actions {
+  position: static;
+  background: transparent;
+  padding: 0;
+  gap: 8px;
+}
+.main .tpos.pos-ui .tpos-cart-dock .tpos-cart-actions button.tpos-btn.tpos-keypad-toggle {
+  width: auto;
+  flex: 0 0 auto;
+  min-height: 30px;
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+  background: transparent;
+  color: var(--pos-muted);
+}
+
+/* Sale done: what to tell the customer, then the next sale */
+.main .tpos.pos-ui .pos-done {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #e7f6dc;
+  border: 1px solid #c7e6ad;
+}
+.main .tpos.pos-ui .pos-done-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 850;
+  color: var(--pos-accent-dark);
+}
+.main .tpos.pos-ui .pos-done-change {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-weight: 800;
+  color: var(--pos-forest);
+}
+.main .tpos.pos-ui .pos-done-change strong {
+  font-size: 30px;
+  font-weight: 900;
+}
+.main .tpos.pos-ui .pos-done-actions {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 8px;
+}
+.main .tpos.pos-ui .pos-done-actions button.tpos-btn {
+  height: 52px;
+  min-height: 52px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 800;
+  box-shadow: none;
+  transform: none;
+}
+.main .tpos.pos-ui .pos-done-actions button.pos-done-new {
+  background: var(--pos-accent);
+  border: 0;
+  color: #fff;
+}
+.main .tpos.pos-ui .pos-done-actions button.pos-done-new:hover {
+  background: var(--pos-accent-dark);
+}
+.main .tpos.pos-ui .pos-done-actions button.pos-done-print {
+  background: var(--pos-surface);
+  border: 1px solid var(--pos-line);
+  color: var(--pos-ink);
+}
+/* While the done panel shows, the receipt is the only thing in the middle. */
+.main .tpos.pos-ui .tpos-cart.is-done .tpos-cart-dock {
+  display: none;
+}
+.main .tpos.pos-ui .pos-done-actions button.tpos-btn {
+  white-space: nowrap;
+}
+[data-theme='dark'] .main .tpos.pos-ui .pos-done {
+  background: #123522;
+  border-color: #1f4a33;
+}
+
+/* Search row stays on one line at every width */
+.main .tpos.pos-ui .tpos-search {
+  flex-wrap: nowrap;
+}
+.main .tpos.pos-ui .tpos-search .tpos-search-input {
+  flex: 1 1 auto;
+  flex-basis: auto;
+  width: auto;
+  max-width: none;
+}
+.main .tpos.pos-ui .tpos-search button.tpos-btn {
+  flex: 0 0 auto;
+  width: auto;
+}
+.main .tpos.pos-ui .tpos-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
 .main .tpos.pos-ui .tpos-cart-actions button.tpos-keypad-toggle {
   align-self: flex-start;
@@ -663,5 +783,49 @@
   display: flex;
   justify-content: space-between;
   font-weight: 800;
+  color: var(--pos-ink);
+}
+
+/* Phones: one scroll area in the cart, not a second one around the item list. */
+.shell.is-pos .main .tpos.pos-ui .tpos-cart.pos-ui-cart .tpos-cart-list.pos-ui-list {
+  flex: 0 0 auto;
+  max-height: none;
+  overflow: visible;
+}
+/* Nothing in the cart's middle squashes; the middle scrolls instead. */
+.main .tpos.pos-ui .pos-cart-scroll > * {
+  flex-shrink: 0;
+}
+
+/* Dark theme contrast: tiles, change due, the done panel and the shift panel's extra button. */
+[data-theme='dark'] .main .tpos.pos-ui button.tpos-tile,
+[data-theme='dark'] .main .tpos.pos-ui button.tpos-tile .tpos-tile-body {
+  background: var(--pos-surface);
+  color: var(--pos-ink);
+}
+[data-theme='dark'] .main .tpos.pos-ui .tpos-thumb {
+  background: linear-gradient(135deg, #17402a, #123522);
+}
+[data-theme='dark'] .main .tpos.pos-ui .tpos-thumb .tpos-thumb-fallback {
+  color: #9be36a;
+}
+[data-theme='dark'] .main .tpos.pos-ui .tpos-tile-body strong,
+[data-theme='dark'] .main .tpos.pos-ui .tpos-price-value {
+  color: var(--pos-ink);
+}
+[data-theme='dark'] .main .tpos.pos-ui .pos-change-due,
+[data-theme='dark'] .main .tpos.pos-ui .pos-done-title,
+[data-theme='dark'] .main .tpos.pos-ui .pos-done-change {
+  color: var(--pos-forest);
+}
+[data-theme='dark'] .main .tpos.pos-ui .pos-quick-cash button,
+[data-theme='dark'] .main .tpos.pos-ui .pos-cash-received .tpos-input,
+[data-theme='dark'] .main .tpos.pos-ui .pos-cash-received input {
+  color: var(--pos-ink);
+  background: var(--pos-surface);
+}
+[data-theme='dark'] .main .tpos.pos-ui .pos-shift-panel .tpos-more > summary {
+  background: var(--pos-soft);
+  border-color: var(--pos-line);
   color: var(--pos-ink);
 }
