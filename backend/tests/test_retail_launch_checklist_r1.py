@@ -23,7 +23,7 @@ async def _admin(ac, seed):
 
 
 @pytest.mark.asyncio
-async def test_second_warehouse_for_a_store_is_blocked(client):
+async def test_second_warehouse_replaces_unused_store_default(client):
     ac, seed = client
     headers = await _admin(ac, seed)
     store = await ac.post(
@@ -38,8 +38,13 @@ async def test_second_warehouse_for_a_store_is_blocked(client):
         headers=headers,
         json={"name": "Till WH 2", "code": "LCH-WH-2", "store_id": store_id},
     )
-    assert second.status_code == 400, second.text
-    assert "already has a warehouse" in second.text
+    # The store's automatic warehouse is unused, so the new one takes its place
+    # (still one warehouse per store). A used default stays and blocks this;
+    # see test_store_warehouse_pick_r1.py.
+    assert second.status_code == 200, second.text
+    listed = await ac.get("/api/v1/warehouses?is_active=true", headers=headers)
+    linked = [w for w in listed.json()["data"] if w.get("store_id") == store_id]
+    assert [w["code"] for w in linked] == ["LCH-WH-2"]
 
 
 @pytest.mark.asyncio
