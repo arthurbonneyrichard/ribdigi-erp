@@ -195,6 +195,37 @@ Full run: **2,979 passed, 55 failed** (run with the whole repo mounted). None of
 
 ---
 
+## 5. Found while recording the owner how-to videos (23 Oct 2026)
+
+### [x] 5.1 Till search by name returned nothing
+- Any single word of 4+ letters ("sugar", "baby") was treated as a barcode, so `/pos/products/search?q=` only matched exact barcodes/SKUs. Scanner input still matches barcodes first; with no exact match it now searches names. Test: `backend/tests/test_pos_search_name_word.py`.
+
+### [x] 5.2 Adding a user with a spaced phone number did nothing
+- The Users page blocked "+233 24 555 0142" before sending, with the error shown at the top of the page, out of view. Spaces and dashes are now stripped. The role list also showed codes (`company_admin`); it now shows role names.
+
+### [x] 5.3 False "unsaved changes" prompt when closing forms
+- `FormModal` now warns only if something was typed since the last save. Fixes Opening stock, Category, Brand and the other inventory forms that stay filled after saving.
+
+### [x] 5.4 Till cart back on the right
+- A fit-to-screen commit made directly on `production` (Cursor) restored cart-left because two layout tests still asserted it. Its sizing is kept, the cart is on the right, and the tests now assert `"catalog cart"`. Please make changes on `main` first (see AGENTS.md).
+
+### [x] 5.5 Wording and layout tidy-ups
+- Purchase totals show two decimals (496.80). The purchase order form is wider so product names fit. The PO cancel-reason and email-override boxes are folded into "Cancel or email options". Page text no longer sits under the sidebar edge toggle. The Company page has plain header text, and the Email/SMS cards no longer show debug status ("Mode: console · Configured: false").
+- After a till search adds an item, the product grid comes back, and searching clears the category tab.
+
+### [x] 5.6 Smaller layout fixes
+- Till: on screens under 860px tall the keypad hides behind a "Keypad" button, so the cart lines stay visible.
+- Till header: the drawer reason box appears only after "Open drawer" is pressed (with Cancel).
+- Users → People: Branch and Store columns show only when the company has branches or more than one store.
+- Customers: rarely used fields (code, type, category, map location) are folded into "More details" on the customer and supplier forms, and every field has a label. The list keeps Edit visible and moves the rest to a menu; "AR"/"Account" are now "Unpaid invoices"/"Statement"; Code shows only if used; balances are formatted.
+- Company → SMS number example is a Ghana number. ID columns (e.g. `PO-2026-0005`) no longer clip.
+- Low stock and Reports wording: no more "max(minimum stock, reorder)" or "vs prior: —%". Stock adjustment confirmation names the reason ("damaged") instead of the code.
+
+### [ ] 5.7 MISSING FEATURE: returns for till sales
+- Sales returns can only be made against a sales invoice (`SalesReturnCreate.sales_invoice_id`). There is no way to return an item sold at the till (a POS receipt), which is how most retail sales happen. A return-from-receipt flow is needed: pick a POS sale, choose lines, restock or discard, then refund cash or give store credit.
+
+---
+
 ## What already works (verified end to end)
 
 Company setup, branches, departments, warehouses, staff and custom roles · categories, brands, units, tax rates, products, barcode generate/label · stock in/out/adjust, transfers (approve/ship/receive), stock counts, low stock · suppliers, purchase requests, POs (amend, email), GRN, purchase invoices, supplier payments, purchase returns · customers, quotation → order (reserves stock) → invoice, invoice post/print, customer payments, sales returns · POS shift open/close, cash and credit sales, receipt, shift report · expenses, recurring expenses, bank account, cash transfer, manual journal · all main reports with CSV/Excel/PDF export · backup, API keys, webhooks, audit log, notifications · Help & Support round trip (shop ticket → owner desk → reply; internal notes hidden from the shop) · owner console (tenants, subscriptions, usage, billing, reports, staff, jobs). No blank pages, crashes, NaN/undefined text, or sideways scrolling on phones. Frontend `tsc --noEmit` passes.

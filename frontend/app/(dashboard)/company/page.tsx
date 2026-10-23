@@ -1131,7 +1131,7 @@ export default function Page() {
                     id="company-sms-from"
                     value={smsFromNumber}
                     onChange={(e) => setSmsFromNumber(e.target.value)}
-                    placeholder="+15551234567"
+                    placeholder="e.g. +233 24 123 4567"
                     aria-label="Company SMS from number"
                   />
                 </div>

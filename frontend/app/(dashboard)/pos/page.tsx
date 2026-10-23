@@ -431,6 +431,11 @@ export default function Page() {
   const [canCreditSale, setCanCreditSale] = useState(false);
   const [splitTender, setSplitTender] = useState(false);
   const [cashTender, setCashTender] = useState('');
+  // On short screens the keypad hides until needed so the cart lines stay visible.
+  const [keypadOpen, setKeypadOpen] = useState(true);
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerHeight < 860) setKeypadOpen(false);
+  }, []);
   const [cardTender, setCardTender] = useState('');
   const [splitOtherMethod, setSplitOtherMethod] = useState<'card' | 'mobile_money' | 'bank_transfer'>('card');
   const [amountPaidNow, setAmountPaidNow] = useState('');
@@ -3052,6 +3057,16 @@ export default function Page() {
                 )}
               </div>
               <div className="tpos-cart-actions">
+                <button
+                  type="button"
+                  className="tpos-btn tpos-keypad-toggle"
+                  aria-expanded={keypadOpen}
+                  onClick={() => setKeypadOpen((open) => !open)}
+                  aria-label={keypadOpen ? 'Hide keypad' : 'Show keypad'}
+                >
+                  {keypadOpen ? 'Hide keypad' : 'Keypad'}
+                </button>
+                {keypadOpen ? (
                 <div className="tpos-keypad" role="group" aria-label="POS keypad">
                   {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map((key) => (
                     <button
@@ -3068,6 +3083,7 @@ export default function Page() {
                     </button>
                   ))}
                 </div>
+                ) : null}
                 <div className="print-ui-row">
                   <label className="print-ui-paper">
                     Receipt paper

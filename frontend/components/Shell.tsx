@@ -800,6 +800,8 @@ function PosDrawerTopControls() {
   const [busy, setBusy] = useState(false);
   const [drawerNote, setDrawerNote] = useState('');
   const [drawerError, setDrawerError] = useState('');
+  // The reason box appears only after Open drawer is pressed.
+  const [asking, setAsking] = useState(false);
 
   useEffect(() => subscribePosDrawerBridge(setBridge), []);
 
@@ -808,6 +810,7 @@ function PosDrawerTopControls() {
   return (
     <div className="pos-top-drawer pos-ui-shift">
       <div className="pos-top-drawer-row">
+      {asking ? (
       <input
         className="pos-top-drawer-reason"
         value={drawerReason}
@@ -816,13 +819,21 @@ function PosDrawerTopControls() {
         maxLength={200}
         autoComplete="off"
         aria-label="Cash drawer open reason"
+        autoFocus
       />
+      ) : null}
       <button
         type="button"
         className="tpos-btn tpos-btn-primary pos-top-drawer-btn"
         aria-label="Open drawer"
         disabled={busy}
         onClick={() => {
+          if (!asking) {
+            setDrawerNote('');
+            setDrawerError('');
+            setAsking(true);
+            return;
+          }
           const sessionId = bridge.sessionId;
           const cleaned = drawerOpenReason(drawerReason);
           if (!cleaned) {
@@ -838,6 +849,7 @@ function PosDrawerTopControls() {
           })
             .then((r) => {
               setDrawerReason('');
+              setAsking(false);
               setDrawerNote(r.data?.message || r.message || 'Drawer opened');
             })
             .catch((err: unknown) => {
@@ -849,6 +861,21 @@ function PosDrawerTopControls() {
       >
         {busy ? 'Opening…' : 'Open drawer'}
       </button>
+      {asking ? (
+        <button
+          type="button"
+          className="tpos-btn pos-top-drawer-cancel"
+          aria-label="Cancel opening drawer"
+          disabled={busy}
+          onClick={() => {
+            setAsking(false);
+            setDrawerReason('');
+            setDrawerError('');
+          }}
+        >
+          Cancel
+        </button>
+      ) : null}
       </div>
       {drawerNote ? (
         <span className="pos-top-drawer-note" role="status">

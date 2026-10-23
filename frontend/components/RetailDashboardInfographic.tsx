@@ -188,7 +188,7 @@ export default function RetailDashboardInfographic({ storeId }: { storeId?: stri
             </div>
             <div className="panel">
               <h3>Revenue trend (30d)</h3>
-              <p className="hint">Daily revenue line — last 30 days</p>
+              <p className="hint">Sales each day for the last 30 days</p>
               {trendEmpty ? (
                 <div className="empty">No sales in the last 30 days yet.</div>
               ) : (

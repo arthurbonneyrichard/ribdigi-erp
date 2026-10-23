@@ -301,6 +301,14 @@ function StockStatusBadge({ product }: { product: any }) {
   );
 }
 
+const ADJUST_REASON_LABEL: Record<string, string> = {
+  damage: 'damaged',
+  theft: 'theft',
+  expiry: 'expired',
+  found: 'found',
+  lost: 'lost',
+};
+
 export default function Page() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -7026,8 +7034,8 @@ export default function Page() {
                 />
                 {adjConfirming ? (
                   <p className="muted inv-child">
-                    Confirm: change on-hand by {adjQty} because {adjReason}. This is recorded and cannot
-                    be undone.
+                    Confirm: change stock by {adjQty} ({ADJUST_REASON_LABEL[adjReason] || adjReason}). This is
+                    recorded and cannot be undone.
                   </p>
                 ) : null}
                 <div className="cat-save-row">
@@ -7208,7 +7216,7 @@ export default function Page() {
             <div>
               <h2 style={{ margin: 0 }}>Low stock</h2>
               <p className="muted" style={{ margin: '4px 0 0' }}>
-                On-hand above zero and at or below max(minimum stock, reorder). Out of stock is listed on Products.
+                Products running low and due for reordering. Products with none left show as Out of stock on the Products list.
               </p>
             </div>
           </div>
@@ -7242,7 +7250,7 @@ export default function Page() {
                     <th className="col-id">SKU</th>
                     <th>Category</th>
                     <th className="col-num">Qty on hand</th>
-                    <th className="col-num">Reorder/min</th>
+                    <th className="col-num">Reorder at</th>
                     <th className="col-status">Status</th>
                     <th className="col-actions">Actions</th>
                   </tr>
@@ -7269,7 +7277,7 @@ export default function Page() {
                       <td data-label="SKU" className="col-id list-secondary">{row.sku}</td>
                       <td data-label="Category" className="list-secondary">{row.category}</td>
                       <td data-label="Qty on hand" className="col-num list-qty-low">{row.qty}</td>
-                      <td data-label="Reorder/min" className="col-num">{row.floor}</td>
+                      <td data-label="Reorder at" className="col-num">{row.floor}</td>
                       <td className="col-status" data-label="Status">
                         <StatusChip value={row.status} />
                       </td>

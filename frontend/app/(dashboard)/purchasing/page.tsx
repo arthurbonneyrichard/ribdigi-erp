@@ -2102,53 +2102,6 @@ export default function Page() {
             />
           </label>
           <label className="field">
-            <span>Code</span>
-            <input
-              value={supplierCode}
-              onChange={(e) => setSupplierCode(e.target.value)}
-              placeholder="Optional code"
-              aria-label="Supplier code"
-              title="Supplier code"
-            />
-          </label>
-          <label className="field">
-            <span>Type</span>
-            <select
-              value={supplierProfileType}
-              onChange={(e) => setSupplierProfileType(e.target.value)}
-              aria-label="Supplier profile type"
-              title="Supplier type"
-            >
-              <option value="registered">Registered</option>
-              <option value="trade">Trade</option>
-              <option value="manufacturer">Manufacturer</option>
-              <option value="service">Service</option>
-              <option value="other">Other</option>
-            </select>
-          </label>
-          <label className="field">
-            <span>Category</span>
-            <input
-              value={supplierCategory}
-              onChange={(e) => setSupplierCategory(e.target.value)}
-              placeholder="Optional category"
-              aria-label="Supplier category"
-              title="Supplier category"
-            />
-          </label>
-          <label className="field">
-            <span>Status</span>
-            <select
-              value={supplierStatus}
-              onChange={(e) => setSupplierStatus(e.target.value)}
-              aria-label="Supplier status"
-              title="Status"
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </label>
-          <label className="field">
             <span>Email</span>
             <input
               type="email"
@@ -2177,26 +2130,6 @@ export default function Page() {
             />
           </label>
           <label className="field">
-            <span>Latitude</span>
-            <input
-              value={supplierLat}
-              onChange={(e) => setSupplierLat(e.target.value)}
-              placeholder="−90 to 90"
-              title="GPS latitude (−90…90)"
-              aria-label="Supplier latitude"
-            />
-          </label>
-          <label className="field">
-            <span>Longitude</span>
-            <input
-              value={supplierLng}
-              onChange={(e) => setSupplierLng(e.target.value)}
-              placeholder="−180 to 180"
-              title="GPS longitude (−180…180)"
-              aria-label="Supplier longitude"
-            />
-          </label>
-          <label className="field">
             <span>Payment terms (days)</span>
             <input
               value={supplierTermsDays}
@@ -2206,6 +2139,78 @@ export default function Page() {
               aria-label="Supplier payment terms days"
             />
           </label>
+          <details className="span-2">
+            <summary>More details</summary>
+            <div className="erp-form-grid" style={{ marginTop: 8 }}>
+              <label className="field">
+                <span>Code</span>
+                <input
+                  value={supplierCode}
+                  onChange={(e) => setSupplierCode(e.target.value)}
+                  placeholder="Optional code"
+                  aria-label="Supplier code"
+                  title="Supplier code"
+                />
+              </label>
+              <label className="field">
+                <span>Type</span>
+                <select
+                  value={supplierProfileType}
+                  onChange={(e) => setSupplierProfileType(e.target.value)}
+                  aria-label="Supplier profile type"
+                  title="Supplier type"
+                >
+                  <option value="registered">Registered</option>
+                  <option value="trade">Trade</option>
+                  <option value="manufacturer">Manufacturer</option>
+                  <option value="service">Service</option>
+                  <option value="other">Other</option>
+                </select>
+              </label>
+              <label className="field">
+                <span>Category</span>
+                <input
+                  value={supplierCategory}
+                  onChange={(e) => setSupplierCategory(e.target.value)}
+                  placeholder="Optional category"
+                  aria-label="Supplier category"
+                  title="Supplier category"
+                />
+              </label>
+              <label className="field">
+                <span>Status</span>
+                <select
+                  value={supplierStatus}
+                  onChange={(e) => setSupplierStatus(e.target.value)}
+                  aria-label="Supplier status"
+                  title="Status"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </label>
+              <label className="field">
+                <span>Latitude</span>
+                <input
+                  value={supplierLat}
+                  onChange={(e) => setSupplierLat(e.target.value)}
+                  placeholder="−90 to 90"
+                  title="GPS latitude (−90…90)"
+                  aria-label="Supplier latitude"
+                />
+              </label>
+              <label className="field">
+                <span>Longitude</span>
+                <input
+                  value={supplierLng}
+                  onChange={(e) => setSupplierLng(e.target.value)}
+                  placeholder="−180 to 180"
+                  title="GPS longitude (−180…180)"
+                  aria-label="Supplier longitude"
+                />
+              </label>
+            </div>
+          </details>
           <button
             type="button"
             className="btn-primary"
