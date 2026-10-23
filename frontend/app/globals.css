@@ -4181,3 +4181,9 @@ input[type=file]::file-selector-button:hover{border-color:var(--brand)}
 [data-theme="dark"] .expenses-review-amount{color:#c8e86a}
 .purchase-bill-more > summary{cursor:pointer;font-weight:700;color:var(--deep-green)}
 .purchase-bill-more-body{display:grid;gap:8px;margin-top:8px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+/* Labels table: a narrow tick column, room for the barcode button; a labelled copies box. */
+.cat-table-wrap .table th.col-check,.cat-table-wrap .table td.col-check,
+.list-table-wrap .table th.col-check,.list-table-wrap .table td.col-check{width:44px;text-align:center}
+.list-table-wrap:has(input[aria-label="Select all products for labels"]) .table :is(th,td).col-actions{width:12.5rem;max-width:12.5rem}
+.inv-label-copies{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:13px}
+.inv-label-copies input{width:64px}
