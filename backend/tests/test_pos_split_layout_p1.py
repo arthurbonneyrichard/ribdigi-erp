@@ -37,6 +37,10 @@ def test_pos_split_layout_cart_left_catalog_right():
     assert "{r.sku}" in pos
     assert "client_request_id" in pos
     assert "enqueueOfflineSale" in pos
+    assert "minmax(300px,400px)" not in compact
+    assert "height:85vh" not in compact
+    assert "100svh" in compact
+    assert "minmax(0,min(400px,38vw))" in compact
     assert "offline_complete_claimed" not in pos
 
 
@@ -55,4 +59,8 @@ def test_pos_cart_line_name_and_qty_compact():
     assert "width:2.6rem;min-width:2.6rem;height:44px" not in compact
     assert ".main.pos-ui-cart.pos-ui-qtybutton{width:20px;height:20px" in compact
     assert 'grid-template-areas:"cartcatalog"' in compact
+    assert "minmax(300px,400px)" not in compact
+    assert "height:85vh" not in compact
+    assert "100svh" in compact
+    assert "minmax(0,min(400px,38vw))" in compact
     assert "offline_complete_claimed" not in pos
