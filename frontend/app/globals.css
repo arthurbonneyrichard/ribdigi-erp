@@ -4064,7 +4064,8 @@ a.plat-stat{color:inherit;text-decoration:none}
 
 
 /* Stock count window: name, expected and counted fit without sideways scrolling. */
-.inv-count-lines .table{min-width:0;width:100%}
+/* Beats the inventory page's 560px table floor so the count window never scrolls sideways. */
+.cat-table-wrap.inv-count-lines table.table{min-width:0;width:100%}
 .inv-count-lines .table td,.inv-count-lines .table th{padding:8px 10px}
 .inv-count-lines .inv-ui-name{display:block}
 .inv-count-lines .inv-count-sku{display:block;font-size:11px}
