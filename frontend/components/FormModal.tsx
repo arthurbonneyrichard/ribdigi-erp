@@ -35,7 +35,11 @@ export default function FormModal({
   const dirtyRef = useRef(dirty);
   const busyRef = useRef(busy);
   const onCloseRef = useRef(onClose);
+  // True once the person types or picks something since the dialog opened or the last save.
+  // Many forms stay "dirty" after a successful save, so dirty alone would prompt falsely.
+  const touchedRef = useRef(false);
   const titleId = useId();
+  if (busyRef.current && !busy) touchedRef.current = false;
   dirtyRef.current = dirty;
   busyRef.current = busy;
   onCloseRef.current = onClose;
@@ -46,7 +50,7 @@ export default function FormModal({
 
   function requestClose() {
     if (busyRef.current) return;
-    if (dirtyRef.current && typeof window !== 'undefined' && !window.confirm('You have unsaved changes. Discard them?')) {
+    if (dirtyRef.current && touchedRef.current && typeof window !== 'undefined' && !window.confirm('You have unsaved changes. Discard them?')) {
       return;
     }
     onCloseRef.current();
@@ -81,9 +85,16 @@ export default function FormModal({
         first.focus();
       }
     }
+    function onEdit() {
+      touchedRef.current = true;
+    }
     document.addEventListener('keydown', onKey);
+    panel?.addEventListener('input', onEdit, true);
+    panel?.addEventListener('change', onEdit, true);
     return () => {
       document.removeEventListener('keydown', onKey);
+      panel?.removeEventListener('input', onEdit, true);
+      panel?.removeEventListener('change', onEdit, true);
       document.body.style.overflow = previousOverflow;
       lastFocus.current?.focus?.();
     };
