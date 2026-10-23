@@ -82,9 +82,8 @@ def test_normalize_industry_accepts_and_rejects():
     assert normalize_industry("Retail") == "retail"
     assert normalize_industry("Hotel") == "hotel"
     assert normalize_industry("Restaurant") == "restaurant"
-    with pytest.raises(HTTPException) as removed:
-        normalize_industry("  PHARMACY ")
-    assert removed.value.status_code == 400
+    # Pharmacy is a supported desk again (packages.CANONICAL_INDUSTRIES).
+    assert normalize_industry("  PHARMACY ") == "pharmacy"
     with pytest.raises(HTTPException) as exc:
         normalize_industry("spaceships")
     assert exc.value.status_code == 400
