@@ -667,7 +667,7 @@ export default function Page() {
     <div className="company-page">
       <PageHeader
         title="Company"
-        subtitle="Start with the company profile. Email and SMS sit together below it. Logo, print, tax, fiscal year, store allocation, and inactivity timeout are in their own sections."
+        subtitle="Your business details, branding, and settings for email, tax and printing."
       />
       {!industryValid && (
         <p className="login-error" role="alert">
@@ -710,8 +710,8 @@ export default function Page() {
       <section className="card" aria-labelledby="company-profile-title">
         <h2 id="company-profile-title">Company profile</h2>
         <p className="muted">
-          Trading name, contact details, currency, timezone, and how dates and numbers appear.
-          Save stays on this card. Blank optional fields are left unchanged.
+          Your business name, contact details, currency, timezone, and how dates and numbers
+          appear on invoices and receipts.
         </p>
         <div className="company-page-grid">
           <div className="company-page-field">
