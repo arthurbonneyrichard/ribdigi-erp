@@ -15,11 +15,11 @@ def _pos() -> str:
     return (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
 
 
-def test_pos_split_layout_cart_left_catalog_right():
+def test_pos_split_layout_catalog_left_cart_right():
     css = _css()
     pos = _pos()
     compact = css.replace(" ", "").replace("\n", "")
-    assert 'grid-template-areas:"cartcatalog"' in compact
+    assert 'grid-template-areas:"catalogcart"' in compact
     assert "grid-area:cart" in compact
     assert "grid-area:catalog" in compact
     assert 'aria-label="POS product categories"' in pos
@@ -58,7 +58,7 @@ def test_pos_cart_line_name_and_qty_compact():
     assert "minmax(0,1fr) 10.5rem" not in css
     assert "width:2.6rem;min-width:2.6rem;height:44px" not in compact
     assert ".main.pos-ui-cart.pos-ui-qtybutton{width:20px;height:20px" in compact
-    assert 'grid-template-areas:"cartcatalog"' in compact
+    assert 'grid-template-areas:"catalogcart"' in compact
     assert "minmax(300px,400px)" not in compact
     assert "height:85vh" not in compact
     assert "100svh" in compact
