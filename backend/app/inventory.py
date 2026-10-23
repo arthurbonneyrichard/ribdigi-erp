@@ -642,6 +642,20 @@ async def lookup_products(
     barcode_key = (barcode or "").strip() or (
         q_clean if barcodes_svc.looks_like_barcode(q_clean) else ""
     )
+    if barcode_key and not (barcode or "").strip():
+        # A plain word such as "rice" also looks like a barcode; search names when nothing matches exactly.
+        exact_hit = (
+            await db.execute(
+                select(m.Product.id).where(
+                    m.Product.tenant_id == tenant_id,
+                    m.Product.is_active == True,  # noqa: E712
+                    (func.lower(m.Product.barcode) == barcode_key.lower())
+                    | (func.lower(m.Product.sku) == barcode_key.lower()),
+                ).limit(1)
+            )
+        ).scalar_one_or_none()
+        if exact_hit is None:
+            barcode_key = ""
     stmt = select(m.Product).where(
         m.Product.tenant_id == tenant_id,
         m.Product.is_active == True,  # noqa: E712

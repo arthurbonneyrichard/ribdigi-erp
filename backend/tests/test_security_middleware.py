@@ -116,23 +116,41 @@ def test_rate_limit_headers_and_tenant_buckets(monkeypatch):
     rate_limiter.reset_for_tests()
 
     client = TestClient(app)
-    first = client.get("/api/v1/health", headers={"X-Tenant-ID": "tenant-alpha"})
+    first = client.get("/api/v1/health?deep=true", headers={"X-Tenant-ID": "tenant-alpha"})
     assert first.status_code == 200
     assert "X-RateLimit-Limit" in first.headers
     assert "X-RateLimit-Remaining" in first.headers
     assert "X-RateLimit-Backend" not in first.headers
     assert first.headers.get("Cross-Origin-Opener-Policy") == "same-origin"
 
-    assert client.get("/api/v1/health", headers={"X-Tenant-ID": "tenant-alpha"}).status_code == 200
-    blocked = client.get("/api/v1/health", headers={"X-Tenant-ID": "tenant-alpha"})
+    assert client.get("/api/v1/health?deep=true", headers={"X-Tenant-ID": "tenant-alpha"}).status_code == 200
+    blocked = client.get("/api/v1/health?deep=true", headers={"X-Tenant-ID": "tenant-alpha"})
     assert blocked.status_code == 429
     assert blocked.json()["detail"] == "RATE_LIMIT_EXCEEDED"
     assert "Retry-After" in blocked.headers
     assert blocked.headers.get("X-RateLimit-Remaining") == "0"
 
-    other = client.get("/api/v1/health", headers={"X-Tenant-ID": "tenant-beta"})
+    other = client.get("/api/v1/health?deep=true", headers={"X-Tenant-ID": "tenant-beta"})
     assert other.status_code == 200
     assert int(other.headers.get("X-RateLimit-Remaining", "0")) >= 0
+
+
+def test_plain_health_is_not_rate_limited(monkeypatch):
+    """Tills use the plain liveness check to decide online/offline; it must never answer 429."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    monkeypatch.setattr("app.middleware.settings.RATE_LIMIT_ENABLED", True)
+    monkeypatch.setattr("app.middleware.settings.RATE_LIMIT_READ_PER_MINUTE", 2)
+    monkeypatch.setattr("app.rate_limit.settings.RATE_LIMIT_BACKEND", "memory")
+    monkeypatch.setattr("app.rate_limit.settings.RATE_LIMIT_REQUIRE_REDIS", False)
+    rate_limiter.reset_for_tests()
+
+    client = TestClient(app)
+    for _ in range(5):
+        assert client.get("/api/v1/health").status_code == 200
+    statuses = [client.get("/api/v1/health?deep=true").status_code for _ in range(4)]
+    assert 429 in statuses
 
 
 def test_rate_limit_allows_under_cap(monkeypatch):

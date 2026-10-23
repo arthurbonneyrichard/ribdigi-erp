@@ -109,6 +109,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         path = request.url.path
+        # Tills ask the liveness check to decide online/offline; a busy shop network must not make
+        # them look offline. The deep readiness check (/health/ready) stays limited.
+        if (
+            path == "/api/v1/health"
+            and request.method in {"GET", "HEAD"}
+            and request.query_params.get("deep", "").lower() not in {"1", "true", "yes"}
+        ):
+            return await call_next(request)
         method = request.method.upper()
         limit = self._limit_for_path(path, method)
         if any(path.startswith(p) for p in AUTH_PATH_PREFIXES):
