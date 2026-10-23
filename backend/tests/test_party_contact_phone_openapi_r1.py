@@ -41,7 +41,7 @@ def test_party_contact_phone_ui_and_docs():
     )
     assert 'aria-label="Party contact phone"' in panel
     assert "phone.trim() || null" in panel
-    assert "E.164" in panel
+    assert "+233 24 123 4567" in panel
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Party contact phone OpenAPI" in agents
     assert "E164PhoneValue" in agents
