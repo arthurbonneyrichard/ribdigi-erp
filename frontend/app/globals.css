@@ -4216,3 +4216,23 @@ input[type=file]::file-selector-button:hover{border-color:var(--brand)}
 .cust-group-wrap{overflow-x:auto}
 .table.cust-group-table{table-layout:auto;width:100%}
 .cust-group-table .cust-group-act{text-align:right;white-space:nowrap;width:1%}
+
+/* Coupons tab header and the Gift cards page */
+.coupon-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.coupon-head h3{margin:0 0 4px}
+.coupon-head .sales-ui-note{margin:0;max-width:60ch}
+.gift-page{display:grid;gap:16px}
+.gift-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px}
+.gift-box{margin:0}
+.gift-box h3{margin:0 0 10px}
+.gift-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}
+.gift-form .field{display:flex;flex-direction:column;gap:2px;min-width:0}
+.gift-form .field > label{font-size:13px;font-weight:600}
+.gift-issued{margin-top:14px;padding:14px 16px;border-radius:14px;background:var(--mist);border:1px dashed var(--brand);display:grid;gap:4px;justify-items:start}
+.gift-issued-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+.gift-code{font-size:26px;letter-spacing:2px;font-variant-numeric:tabular-nums;color:var(--deep-green)}
+.gift-issued button{margin-top:6px}
+.gift-found{margin:12px 0 0}
+[data-theme="dark"] .gift-issued{background:#0f2a1c}
+[data-theme="dark"] .gift-code{color:var(--brand-light)}
+@media(max-width:600px){.gift-form{grid-template-columns:1fr}}
