@@ -32,7 +32,9 @@ def test_pos_split_layout_catalog_left_cart_right():
     assert "receiptPreviewFromCart" in pos
     assert "Add a product before charging" in pos
     assert 'aria-label="POS receipt paper"' in pos
-    assert "payAsReprint ? 'Print' : 'Charge'" in pos
+    # Pay charges; after the sale the done panel offers Print receipt and New sale.
+    assert 'aria-label="Charge"' in pos
+    assert 'aria-label="Print receipt"' in pos
     assert "addToCart(r)" in pos
     assert "{r.sku}" in pos
     assert "client_request_id" in pos

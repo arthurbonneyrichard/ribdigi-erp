@@ -13,6 +13,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -1126,7 +1127,18 @@ class PosSession(Base):
     """Cashier shift / POS session with cash reconciliation."""
 
     __tablename__ = "pos_sessions"
-    __table_args__ = (UniqueConstraint("tenant_id", "session_number"),)
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "session_number"),
+        # One open shift per cashier (two start-up requests used to open two).
+        Index(
+            "uq_pos_sessions_one_open_per_user",
+            "tenant_id",
+            "user_id",
+            unique=True,
+            postgresql_where=text("status = 'open'"),
+            sqlite_where=text("status = 'open'"),
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)

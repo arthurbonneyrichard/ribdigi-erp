@@ -142,15 +142,20 @@ async def get_session(db: AsyncSession, tenant_id: str, session_id: str) -> m.Po
 async def get_open_session_for_user(
     db: AsyncSession, tenant_id: str, user_id: str
 ) -> m.PosSession | None:
+    # Newest first: an older database may still hold duplicate open shifts from a
+    # start-up race; the lookup must not fail on them.
     return (
         await db.execute(
-            select(m.PosSession).where(
+            select(m.PosSession)
+            .where(
                 m.PosSession.tenant_id == tenant_id,
                 m.PosSession.user_id == user_id,
                 m.PosSession.status == "open",
             )
+            .order_by(m.PosSession.opened_at.desc())
+            .limit(1)
         )
-    ).scalar_one_or_none()
+    ).scalars().first()
 
 
 async def require_open_session(
@@ -192,6 +197,11 @@ async def open_session(
     store_id: str | None,
     opening_cash: float,
 ) -> m.PosSession:
+    # The till page and the page frame can both open a shift at the same moment. Lock the
+    # cashier's row so the second request waits and then sees the first one's shift.
+    await db.execute(
+        select(m.User.id).where(m.User.id == user_id, m.User.tenant_id == tenant_id).with_for_update()
+    )
     existing = await get_open_session_for_user(db, tenant_id, user_id)
     if existing:
         raise HTTPException(status_code=409, detail="Cashier already has an open POS shift")
