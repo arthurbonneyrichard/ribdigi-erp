@@ -76,7 +76,9 @@ def test_honesty_batch17_docs_and_agents():
     assert "Activate warehouse" in stores
     assert "Deactivate warehouse" in stores
 
-    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8") + (
+        ROOT / "frontend/components/CustomerGroupsWindow.tsx"
+    ).read_text(encoding="utf-8")
     assert "Activate customer group" in sales
     assert "Accept quotation" in sales
     assert "Convert quotation to order" in sales

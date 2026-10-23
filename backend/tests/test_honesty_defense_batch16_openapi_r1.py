@@ -100,7 +100,9 @@ def test_honesty_batch16_docs_and_agents():
     assert "Cancel stock transfer" in stores
     assert "Open inventory reorder for store" in stores
 
-    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8") + (
+        ROOT / "frontend/components/CustomerGroupsWindow.tsx"
+    ).read_text(encoding="utf-8")
     assert "Save customer group discount" in sales
 
     expenses = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")

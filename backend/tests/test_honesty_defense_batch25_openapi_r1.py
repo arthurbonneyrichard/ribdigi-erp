@@ -72,7 +72,9 @@ def test_honesty_batch25_docs_and_agents():
     assert "compute_expected_cash" in standards or "_prepare_lines" in standards
     assert "_pi_line_tax_value" in standards or "effective_rate_from_components" in standards
 
-    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8") + (
+        ROOT / "frontend/components/CustomerGroupsWindow.tsx"
+    ).read_text(encoding="utf-8")
     assert 'aria-label="Invoice next number"' in sales
     assert 'aria-label="Customer status filter"' in sales
     assert 'aria-label="Sales return status filter"' in sales

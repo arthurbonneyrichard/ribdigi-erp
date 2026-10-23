@@ -144,7 +144,9 @@ def test_budget_discount_credit_tax_fx_ui_and_docs():
     tax = (ROOT / "frontend/app/(dashboard)/tax/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Tax rate percent"' in tax
 
-    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8") + (
+        ROOT / "frontend/components/CustomerGroupsWindow.tsx"
+    ).read_text(encoding="utf-8")
     assert 'aria-label="Header discount"' in sales
     assert 'aria-label="Line discount"' in sales
     assert 'aria-label="Customer group discount percent"' in sales
