@@ -4595,17 +4595,20 @@ export default function Page() {
                     </select>
                     </div>
                     <div className="field span-2">
-                    <label className="muted">Gallery</label>
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp,image/gif"
-                      aria-label="Product gallery image file"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) uploadImage(file);
-                        e.target.value = '';
-                      }}
-                    />
+                    <span className="muted">Photos</span>
+                    <label className="file-btn">
+                      Add photo
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/gif"
+                        aria-label="Product gallery image file"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) uploadImage(file);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
                     {gallery.map((img) => (
                       <span key={img.id} style={{ display: 'inline-flex', gap: 6, marginRight: 8 }}>
                         <button type="button" aria-label="Set primary product image" onClick={() => setPrimaryImage(img.id)}>
@@ -6650,14 +6653,13 @@ export default function Page() {
                 </div>
                 <div className="inv-drawer-body">
                 {activeCount.notes ? <p className="muted inv-child">{activeCount.notes}</p> : null}
-                <div className="cat-table-wrap">
+                <div className="cat-table-wrap inv-count-lines">
                   <table className="table cat-table">
                     <thead>
                       <tr>
                         <th>Product</th>
-                        <th>SKU</th>
-                        <th>Expected</th>
-                        <th>Counted</th>
+                        <th className="col-num">Expected</th>
+                        <th className="col-num">Counted</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -6665,13 +6667,26 @@ export default function Page() {
                         <tr key={item.id}>
                           <td data-label="Product">
                             <strong className="inv-ui-name">{item.product_name || 'Product name is not on this count line.'}</strong>
-                          </td>
-                          <td data-label="SKU" className="list-secondary">
-                            {item.product_sku || '—'}
-                          </td>
-                          <td data-label="Expected">{item.expected_qty}</td>
-                          <td data-label="Counted">
+                            <span className="list-secondary inv-count-sku">{item.product_sku || ''}</span>
                             <input
+                              className="inv-count-note"
+                              value={countLineNotes[countLineKey(item)] ?? ''}
+                              disabled={activeCount.status !== 'draft'}
+                              onChange={(e) => {
+                                const key = countLineKey(item);
+                                const value = e.target.value;
+                                if (!key) return;
+                                setCountLineNotes((prev) => ({ ...prev, [key]: value }));
+                              }}
+                              placeholder="Note (optional)"
+                              aria-label={`Stock count line notes ${item.product_sku || item.product_id}`}
+                            />
+                          </td>
+                          <td data-label="Expected" className="col-num">{item.expected_qty}</td>
+                          <td data-label="Counted" className="col-num">
+                            <input
+                              className="inv-count-qty"
+                              inputMode="decimal"
                               value={countQtys[countLineKey(item)] ?? ''}
                               disabled={activeCount.status !== 'draft'}
                               onChange={(e) => {
@@ -6682,18 +6697,6 @@ export default function Page() {
                               }}
                               aria-label={`Counted qty ${item.product_sku || item.product_id}`}
                             />
-                            <input
-                              value={countLineNotes[countLineKey(item)] ?? ''}
-                              disabled={activeCount.status !== 'draft'}
-                              onChange={(e) => {
-                                const key = countLineKey(item);
-                                const value = e.target.value;
-                                if (!key) return;
-                                setCountLineNotes((prev) => ({ ...prev, [key]: value }));
-                              }}
-                              placeholder="Stock count line notes"
-                              aria-label={`Stock count line notes ${item.product_sku || item.product_id}`}
-                            />
                           </td>
                         </tr>
                       ))}
@@ -6701,12 +6704,15 @@ export default function Page() {
                   </table>
                 </div>
                 {activeCount.status === 'draft' ? (
+                  <details className="inv-count-cancel">
+                    <summary>Cancel this count</summary>
                     <input
                       value={countCancelReason}
                       onChange={(e) => setCountCancelReason(e.target.value)}
-                      placeholder="Required before Cancel"
+                      placeholder="Reason (Required before Cancel)"
                       aria-label="Stock count cancel reason"
                     />
+                  </details>
                 ) : null}
                 </div>
                 {activeCount.status === 'draft' ? (
