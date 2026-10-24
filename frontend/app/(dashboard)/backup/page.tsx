@@ -10,6 +10,7 @@ const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 type BackupJob = {
   id: string;
   filename?: string;
+  notes?: string | null;
   status?: string;
   size_bytes?: number;
   checksum_sha256?: string;
@@ -17,6 +18,25 @@ type BackupJob = {
   record_counts?: Record<string, number>;
   error_message?: string;
 };
+
+function formatWhen(value?: string) {
+  if (!value) return '—';
+  const d = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(value) ? value : `${value}Z`);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function formatSize(bytes?: number) {
+  if (bytes == null) return '—';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function datasetLabel(key: string) {
+  const text = key.replace(/_/g, ' ');
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
 export default function Page() {
   const [rows, setRows] = useState<BackupJob[]>([]);
@@ -33,6 +53,7 @@ export default function Page() {
   const [backupNotes, setBackupNotes] = useState('');
   const [restoreJob, setRestoreJob] = useState<BackupJob | null>(null);
   const [confirmText, setConfirmText] = useState('');
+  const [scheduleSaved, setScheduleSaved] = useState(false);
 
   async function refresh() {
     const [list, cfg] = await Promise.all([api('/backup'), api('/backup/settings')]);
@@ -112,6 +133,7 @@ export default function Page() {
         }),
       });
       setSettings(r.data);
+      setScheduleSaved(true);
       setMessageTone('ok');
       setMessage('Settings saved');
     } catch (err: any) {
@@ -247,8 +269,8 @@ export default function Page() {
   return (
     <div className="backup-ui">
       <PageHeader
-        title="Create a backup"
-        subtitle="This saves an encrypted copy for this company only. A failed job stays failed. Starting the job is not the same as a finished backup."
+        title="Backup"
+        subtitle="Keep a safe, encrypted copy of this company's records. Make one now, or let it run on a schedule."
       />
       {error && (
         <p role="alert" className="backup-ui-alert">
@@ -274,24 +296,33 @@ export default function Page() {
         </p>
       )}
 
-      <div className="card backup-ui-form">
+      <div className="card backup-ui-create">
+        <div className="backup-ui-create-head">
+          <h2>Make a backup now</h2>
+          <p className="muted backup-ui-note">
+            Takes a few seconds. Only this company's records are saved. A backup counts once its status says Completed.
+          </p>
+        </div>
+        <div className="backup-ui-form">
         <label>
           Note (optional)
           <input
             value={backupNotes}
             onChange={(e) => setBackupNotes(e.target.value)}
-            placeholder="Backup notes (optional)"
+            placeholder="For example: before month end"
             aria-label="Backup notes"
             title="Optional notes"
           />
         </label>
-        <button disabled={busy} onClick={createBackup} aria-label="Create backup now">
+        <button className="btn-primary" disabled={busy} onClick={createBackup} aria-label="Create backup now">
           {busy && busyAction === 'create' ? 'Working…' : 'Create backup now'}
         </button>
+        </div>
       </div>
 
+      <div className="card" id="history">
+      <div className="backup-ui-list-head">
       <h2 className="backup-ui-section">Saved backups</h2>
-      <div id="history">
       <select
         value={backupManageFilter}
         onChange={(e) =>
@@ -301,7 +332,6 @@ export default function Page() {
         }
         title="Filter backup job list by status"
         aria-label="Backup job status filter"
-        style={{ marginBottom: 12 }}
       >
         <option value="all">All statuses</option>
         <option value="pending">Pending only</option>
@@ -309,15 +339,15 @@ export default function Page() {
         <option value="failed">Failed only</option>
         <option value="restoring">Restoring only</option>
       </select>
+      </div>
       <div className="backup-ui-scroll">
       <table className="table">
         <thead>
           <tr>
             <th>When</th>
-            <th>File</th>
+            <th>Note</th>
             <th>Size</th>
             <th>Status</th>
-            <th>Checksum</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -336,16 +366,20 @@ export default function Page() {
                       : String(r.status || '');
             return (
             <tr key={r.id}>
-              <td>{String(r.created_at)}</td>
-              <td>{r.filename}</td>
-              <td>{r.size_bytes}</td>
               <td>
-                {statusLabel}
+                <b className="backup-ui-when">{formatWhen(r.created_at)}</b>
+                <span className="backup-ui-file" title={r.checksum_sha256 ? `Check code ${r.checksum_sha256}` : undefined}>
+                  {r.filename}
+                </span>
+              </td>
+              <td>{r.notes === 'scheduled' ? 'Automatic' : r.notes || '—'}</td>
+              <td>{formatSize(r.size_bytes)}</td>
+              <td>
+                <span className={`backup-ui-status is-${r.status || 'pending'}`}>{statusLabel}</span>
                 {r.status === 'failed' && r.error_message ? (
                   <div className="backup-ui-alert">{String(r.error_message)}</div>
                 ) : null}
               </td>
-              <td>{r.checksum_sha256 ? String(r.checksum_sha256).slice(0, 12) : '—'}</td>
               <td>
                 <div className="backup-ui-row-actions">
                 <button
@@ -359,17 +393,20 @@ export default function Page() {
                   disabled={!completed || busy}
                   onClick={() => dryRun(r.id)}
                   aria-label="Backup dry-run restore"
+                  title="Preview a restore. Nothing is changed."
                 >
-                  Dry-run
+                  Test restore
                 </button>
                 <button
                   disabled={!completed || busy}
                   onClick={() => verifyBackup(r.id)}
                   aria-label="Verify backup"
+                  title="Check the file is complete and readable."
                 >
-                  Verify
+                  Check
                 </button>
                 <button
+                  className="btn-danger"
                   disabled={!completed || busy}
                   onClick={() => openRestore(r)}
                   aria-label="Select backup for restore"
@@ -383,7 +420,7 @@ export default function Page() {
           })}
           {!managedBackups.length && (
             <tr>
-              <td colSpan={6} className="muted">
+              <td colSpan={5} className="muted">
                 {historyEmpty}
               </td>
             </tr>
@@ -393,61 +430,34 @@ export default function Page() {
       </div>
       </div>
 
-      <div className="card" id="restore">
-        <h2>Restore a completed backup</h2>
-        <p className="muted">
-          Choose Restore on a completed row above. Dry-run first if you want a preview. Type{' '}
-          <strong>RESTORE</strong> before Apply. This overwrites matching product, sales, purchase,
-          stock, and ledger rows in this company. It does not delete rows created after the backup.
-        </p>
-        {restoreJob ? (
-          <div className="backup-ui-form">
-            <p>
-              Apply <code>{restoreJob.filename || restoreJob.id}</code> into this company?
-            </p>
-            <label>
-              Type RESTORE to confirm
-              <input
-                value={confirmText}
-                onChange={(e) => setConfirmText(e.target.value)}
-                placeholder="RESTORE"
-                aria-label="Restore confirmation text"
-                autoComplete="off"
-                disabled={busy}
-              />
-            </label>
-            <div className="backup-ui-row-actions">
-              <button
-                type="button"
-                disabled={!restoreReady}
-                onClick={applyRestore}
-                aria-label="Apply backup restore"
-              >
-                {busy && busyAction === 'restore' ? 'Restoring…' : 'Apply restore'}
-              </button>
-              <button type="button" disabled={busy} onClick={cancelRestore} aria-label="Cancel restore">
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          <p className="muted">No restore selected. Choose Restore on a completed backup in the list above.</p>
-        )}
-      </div>
-
       {dryReport && (
         <div className="card">
           <h2>Check result</h2>
-          <p>
-            File accepted: {dryReport.valid ? 'yes' : 'no'} · Written: {dryReport.applied ? 'yes' : 'no'}
-            {dryReport.dry_run != null ? ` · Preview only: ${dryReport.dry_run ? 'yes' : 'no'}` : ''}
-            {proof ? ` · Check matched: ${proof.ok ? 'yes' : 'no'}` : ''}
+          <p className={dryReport.valid === false || proof?.ok === false ? 'backup-ui-alert' : 'backup-ui-ok'}>
+            {dryReport.valid === false
+              ? 'This backup file could not be read.'
+              : dryReport.applied
+                ? 'Restore applied to this company.'
+                : 'The backup file is complete and readable. Nothing was changed.'}
           </p>
+          {Object.keys(dryReport.record_counts || dryReport.restored || {}).length ? (
+            <ul className="backup-ui-counts">
+              {Object.entries((dryReport.record_counts || dryReport.restored || {}) as Record<string, number>)
+                .filter(([, n]) => Number(n) > 0)
+                .map(([k, n]) => (
+                  <li key={k}>
+                    <b>{n}</b> {datasetLabel(k)}
+                  </li>
+                ))}
+            </ul>
+          ) : null}
           {proof?.mismatch_count ? (
             <p role="alert" className="backup-ui-alert">
               {proof.mismatch_count} mismatch(es). This check did not pass. Newer live rows may remain.
             </p>
           ) : null}
+          <details className="backup-ui-tech">
+          <summary>Technical details</summary>
           <pre className="backup-ui-report">
             {JSON.stringify(
               {
@@ -468,13 +478,14 @@ export default function Page() {
               2
             )}
           </pre>
+          </details>
         </div>
       )}
 
-      <details className="card backup-ui-advanced" id="schedule">
-        <summary>Schedule</summary>
+      <div className="card backup-ui-schedule" id="schedule">
+        <h2>Back up automatically</h2>
         <p className="muted backup-ui-note">
-          Daily or weekly runs keep the newest copies and drop older ones after the retention count.
+          Turn this on and a backup runs by itself every day or week. Only the newest copies are kept.
         </p>
         {settings ? (
           <div className="backup-ui-settings">
@@ -483,9 +494,9 @@ export default function Page() {
                 type="checkbox"
                 aria-label="Backup schedule enabled"
                 checked={!!settings.enabled}
-                onChange={(e) => setSettings({ ...settings, enabled: e.target.checked })}
+                onChange={(e) => { setScheduleSaved(false); setSettings({ ...settings, enabled: e.target.checked }); }}
               />{' '}
-              Run on a schedule
+              Back up automatically
             </label>
             <label>
               Frequency
@@ -499,7 +510,7 @@ export default function Page() {
               </select>
             </label>
             <label>
-              Keep this many
+              Copies to keep
               <input
                 type="number"
                 min={1}
@@ -511,7 +522,7 @@ export default function Page() {
               />
             </label>
             <label>
-              Hour (GMT)
+              At hour (GMT, 0–23)
               <input
                 type="number"
                 min={0}
@@ -522,13 +533,64 @@ export default function Page() {
                 aria-label="Backup hour UTC"
               />
             </label>
-            <button aria-label="Save backup settings" onClick={saveSettings}>Save settings</button>
+            <div className="backup-ui-save-row">
+              <button className="btn-primary" aria-label="Save backup settings" onClick={saveSettings}>Save settings</button>
+              {scheduleSaved ? (
+                <span className="backup-ui-ok backup-ui-saved" role="status">
+                  {settings?.enabled ? `Saved. Backs up ${settings.frequency === 'weekly' ? 'every week' : 'every day'}.` : 'Saved. Automatic backups are off.'}
+                </span>
+              ) : null}
+            </div>
           </div>
         ) : (
           <p className="muted backup-ui-note">Schedule settings load with this page. Refresh if the switches are missing.</p>
         )}
-        {settings?.last_run_at && <p className="muted">Last scheduled run: {String(settings.last_run_at)}</p>}
-      </details>
+        {settings?.last_run_at && <p className="muted">Last backup: {formatWhen(String(settings.last_run_at))}</p>}
+      </div>
+
+      <div className="card" id="restore">
+        <h2>Restore a completed backup</h2>
+        <p className="muted">
+          Only if you need to go back. Choose Restore on a completed backup above, and Test restore first if you
+          want a preview. Type <strong>RESTORE</strong> before Apply. This overwrites matching product, sales,
+          purchase, stock and ledger records in this company. It does not delete records made after the backup.
+        </p>
+        {restoreJob ? (
+          <div className="backup-ui-form">
+            <p>
+              Apply <code>{restoreJob.filename || restoreJob.id}</code> into this company?
+            </p>
+            <label>
+              Type RESTORE to confirm
+              <input
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder="RESTORE"
+                aria-label="Restore confirmation text"
+                autoComplete="off"
+                disabled={busy}
+              />
+            </label>
+            <div className="backup-ui-row-actions">
+              <button
+                type="button"
+                className="btn-danger"
+                disabled={!restoreReady}
+                onClick={applyRestore}
+                aria-label="Apply backup restore"
+              >
+                {busy && busyAction === 'restore' ? 'Restoring…' : 'Apply restore'}
+              </button>
+              <button type="button" disabled={busy} onClick={cancelRestore} aria-label="Cancel restore">
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="muted">No restore selected. Choose Restore on a completed backup in the list above.</p>
+        )}
+      </div>
+
     </div>
   );
 }

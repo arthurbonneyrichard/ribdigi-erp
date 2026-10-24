@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, apiRoot, clearSessionAndRedirect, idleTimeoutMs, isConfirmedAuthExpiry, tenantHeaderValue, getAccessToken, hydrateAuth } from '../lib/api';
+import { formatNoticeTime, notifyCategoryLabel } from '../lib/notifyText';
 import { industryAllowsModule, INDUSTRY_SPECIFIC_MODULES } from '../lib/industryModules';
 import { industryLabel, normalizeIndustry } from '../lib/industries';
 import { isStoreNetworkNavItem, tenantIsMultiStore, type StoreEntitlementMe } from '../lib/tenantNav';
@@ -980,6 +981,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [userId, setUserId] = useState('');
   const [bellOpen, setBellOpen] = useState(false);
   const [bellNotes, setBellNotes] = useState<BellNote[]>([]);
+  const [bellLoading, setBellLoading] = useState(false);
   const [bellBusy, setBellBusy] = useState(false);
   const [expandedNav, setExpandedNav] = useState<Set<string>>(() => new Set());
   const pathname = usePathname();
@@ -1234,7 +1236,12 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     const next = !bellOpen;
     setBellOpen(next);
     if (next) {
-      await Promise.all([refreshUnread(), loadBellNotes()]);
+      setBellLoading(true);
+      try {
+        await Promise.all([refreshUnread(), loadBellNotes()]);
+      } finally {
+        setBellLoading(false);
+      }
     }
   }
 
@@ -1819,14 +1826,16 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                       <span className="muted">{unread} unread</span>
                     </div>
                     <div className="bell-panel-list">
-                      {bellNotes.length === 0 ? (
+                      {bellLoading && bellNotes.length === 0 ? (
+                        <p className="muted bell-empty">Loading alerts…</p>
+                      ) : bellNotes.length === 0 ? (
                         <p className="muted bell-empty">No unread alerts</p>
                       ) : (
                         bellNotes.map((n) => (
                           <div key={n.id} className="bell-item">
                             <div className="bell-item-meta">
-                              <span className="bell-cat">{n.category}</span>
-                              <span className="muted">{n.created_at?.slice?.(0, 16) || ''}</span>
+                              <span className={`bell-cat bell-cat-${n.category}`}>{notifyCategoryLabel(n.category)}</span>
+                              <span className="muted">{formatNoticeTime(n.created_at)}</span>
                             </div>
                             <div className="bell-item-title">{n.title}</div>
                             <div className="muted bell-item-msg">{n.message}</div>

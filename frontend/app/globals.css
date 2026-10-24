@@ -4271,3 +4271,12 @@ input[type=file]::file-selector-button:hover{border-color:var(--brand)}
 .security-2fa-confirm input{max-width:180px;font-size:18px;letter-spacing:3px}
 .security-show-all{margin-top:8px;background:transparent;border:none;color:var(--deep-green);font-weight:700;cursor:pointer;padding:4px 0}
 @media(max-width:640px){.security-2fa-setup{grid-template-columns:1fr}}
+
+/* Alerts dropdown: plain category chip, small Mark read that the generic .main button style does not inflate. */
+.bell-cat{text-transform:none;letter-spacing:0;font-size:11px;padding:2px 8px;border-radius:999px;background:var(--mist);border:1px solid var(--line)}
+.bell-cat-low_stock,.bell-cat-batch_expiry{background:#fff4e0;border-color:#f6d9a8;color:#8a5a00}
+.bell-cat-payment_due,.bell-cat-credit_limit{background:#fef2f2;border-color:#fecaca;color:#b91c1c}
+.main .bell-panel button.bell-item-action{font-size:12px;font-weight:700;padding:3px 10px;min-height:0;border-radius:999px;box-shadow:none;background:transparent;border:1px solid var(--line);color:var(--deep-green)}
+.main .bell-panel button.bell-item-action:hover{background:var(--mist)}
+[data-theme="dark"] .bell-cat{background:transparent;border-color:#1f5c45;color:var(--brand-light)}
+[data-theme="dark"] .main .bell-panel button.bell-item-action{background:transparent;border-color:#1f5c45;color:var(--brand-light)}
