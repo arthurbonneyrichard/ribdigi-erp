@@ -430,6 +430,58 @@ export default function Page() {
       </div>
       </div>
 
+      {dryReport && (
+        <div className="card">
+          <h2>Check result</h2>
+          <p className={dryReport.valid === false || proof?.ok === false ? 'backup-ui-alert' : 'backup-ui-ok'}>
+            {dryReport.valid === false
+              ? 'This backup file could not be read.'
+              : dryReport.applied
+                ? 'Restore applied to this company.'
+                : 'The backup file is complete and readable. Nothing was changed.'}
+          </p>
+          {Object.keys(dryReport.record_counts || dryReport.restored || {}).length ? (
+            <ul className="backup-ui-counts">
+              {Object.entries((dryReport.record_counts || dryReport.restored || {}) as Record<string, number>)
+                .filter(([, n]) => Number(n) > 0)
+                .map(([k, n]) => (
+                  <li key={k}>
+                    <b>{n}</b> {datasetLabel(k)}
+                  </li>
+                ))}
+            </ul>
+          ) : null}
+          {proof?.mismatch_count ? (
+            <p role="alert" className="backup-ui-alert">
+              {proof.mismatch_count} mismatch(es). This check did not pass. Newer live rows may remain.
+            </p>
+          ) : null}
+          <details className="backup-ui-tech">
+          <summary>Technical details</summary>
+          <pre className="backup-ui-report">
+            {JSON.stringify(
+              {
+                record_counts: dryReport.record_counts || dryReport.restored || {},
+                restored: dryReport.restored,
+                unknown_datasets: dryReport.unknown_datasets,
+                company_name: dryReport.company_name,
+                proof: proof
+                  ? {
+                      ok: proof.ok,
+                      checked: proof.checked,
+                      mismatch_count: proof.mismatch_count,
+                      mismatches: (proof.mismatches || []).slice(0, 10),
+                    }
+                  : undefined,
+              },
+              null,
+              2
+            )}
+          </pre>
+          </details>
+        </div>
+      )}
+
       <div className="card backup-ui-schedule" id="schedule">
         <h2>Back up automatically</h2>
         <p className="muted backup-ui-note">
@@ -493,7 +545,7 @@ export default function Page() {
         ) : (
           <p className="muted backup-ui-note">Schedule settings load with this page. Refresh if the switches are missing.</p>
         )}
-        {settings?.last_run_at && <p className="muted">Last automatic backup: {formatWhen(String(settings.last_run_at))}</p>}
+        {settings?.last_run_at && <p className="muted">Last backup: {formatWhen(String(settings.last_run_at))}</p>}
       </div>
 
       <div className="card" id="restore">
@@ -538,58 +590,6 @@ export default function Page() {
           <p className="muted">No restore selected. Choose Restore on a completed backup in the list above.</p>
         )}
       </div>
-
-      {dryReport && (
-        <div className="card">
-          <h2>Check result</h2>
-          <p className={dryReport.valid === false || proof?.ok === false ? 'backup-ui-alert' : 'backup-ui-ok'}>
-            {dryReport.valid === false
-              ? 'This backup file could not be read.'
-              : dryReport.applied
-                ? 'Restore applied to this company.'
-                : 'The backup file is complete and readable. Nothing was changed.'}
-          </p>
-          {Object.keys(dryReport.record_counts || dryReport.restored || {}).length ? (
-            <ul className="backup-ui-counts">
-              {Object.entries((dryReport.record_counts || dryReport.restored || {}) as Record<string, number>)
-                .filter(([, n]) => Number(n) > 0)
-                .map(([k, n]) => (
-                  <li key={k}>
-                    <b>{n}</b> {datasetLabel(k)}
-                  </li>
-                ))}
-            </ul>
-          ) : null}
-          {proof?.mismatch_count ? (
-            <p role="alert" className="backup-ui-alert">
-              {proof.mismatch_count} mismatch(es). This check did not pass. Newer live rows may remain.
-            </p>
-          ) : null}
-          <details className="backup-ui-tech">
-          <summary>Technical details</summary>
-          <pre className="backup-ui-report">
-            {JSON.stringify(
-              {
-                record_counts: dryReport.record_counts || dryReport.restored || {},
-                restored: dryReport.restored,
-                unknown_datasets: dryReport.unknown_datasets,
-                company_name: dryReport.company_name,
-                proof: proof
-                  ? {
-                      ok: proof.ok,
-                      checked: proof.checked,
-                      mismatch_count: proof.mismatch_count,
-                      mismatches: (proof.mismatches || []).slice(0, 10),
-                    }
-                  : undefined,
-              },
-              null,
-              2
-            )}
-          </pre>
-          </details>
-        </div>
-      )}
 
     </div>
   );
