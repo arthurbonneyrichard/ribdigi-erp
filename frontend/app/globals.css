@@ -4206,6 +4206,28 @@ input[type=file]::file-selector-button:hover{border-color:var(--brand)}
 .sales-ui-actions .cust-filter{width:auto;margin-left:auto}
 @media(max-width:600px){.cust-group-add{grid-template-columns:1fr 90px}.cust-group-add > button{grid-column:1/-1}}
 .erp-split > .cust-form{grid-column:1/-1;max-width:none;width:100%}
+
+/* Sales → New quote / order / invoice: labelled fields, several product lines */
+.erp-split > .sale-form{grid-column:1/-1;max-width:none;width:100%}
+.sale-form .form-grid{gap:10px 14px}
+.sale-form .field > label{font-size:13px;font-weight:600}
+.sale-form-sub{margin:14px 0 6px;font-size:14px}
+.sale-form-line{align-items:end}
+.sale-form-check{display:flex;gap:6px;align-items:center;font-size:13px;font-weight:600;margin-top:6px}
+.sale-form-check input{width:auto}
+.sale-form-add{justify-content:flex-end}
+.sale-form-add > button{width:100%}
+.sale-form-pair{display:flex;gap:6px;align-items:center}
+.sale-form-pair > select{width:84px;flex:none}
+.sale-form-pair > .money-fill,.sale-form-pair > input{flex:1;min-width:0}
+.sale-form-more{margin-top:12px}
+.sale-form-more > summary{cursor:pointer;font-weight:700}
+.sale-form-more .form-grid{margin-top:10px}
+.sale-form-lines{margin:0 0 10px;min-width:0}
+.sale-form-lines td,.sale-form-lines th{padding:6px 10px}
+.sale-form-lines .num{text-align:right}
+.sale-form-lines button{padding:4px 10px;min-height:0}
+.sale-form-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .cust-group-table td{padding-top:6px;padding-bottom:6px;vertical-align:middle}
 .cust-group-table input.cust-group-pct{width:72px;min-width:0;padding:6px 8px}
 .cust-group-table .cust-group-row-actions button{padding:6px 10px;min-height:0}
