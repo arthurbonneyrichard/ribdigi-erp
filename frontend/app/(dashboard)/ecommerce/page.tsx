@@ -5,7 +5,7 @@ import EmptyState from '../../../components/EmptyState';
 import PageHeader from '../../../components/PageHeader';
 import StatusChip from '../../../components/StatusChip';
 import { api, apiFetch } from '../../../lib/api';
-import { formatMoney } from '../../../lib/format';
+import { formatMoney, formatWhen } from '../../../lib/format';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import './ecom-desk.css';
 
@@ -841,42 +841,60 @@ export default function EcommercePage() {
       {ecomTab === 'orders' ? (
       <section className="card" aria-labelledby="ecom-orders">
         <h2 id="ecom-orders">Orders</h2>
-        <p className="muted">Collect is a recorded note. A checkout return URL does not mark an order paid.</p>
+        <p className="muted">
+          New orders wait for payment. When the customer pays (cash, MoMo or card on delivery or at pickup), press
+          Payment received. Then move the order along: Pack, Send out, Delivered.
+        </p>
         {!orders.length ? (
-          <EmptyState title="No online orders yet" detail="Orders appear here after a shopper checks out on a verified hostname or preview." />
+          <EmptyState title="No online orders yet" detail="Orders appear here as soon as a shopper places one in your online store." />
         ) : (
           <div className="list-table-wrap">
-            <table className="table">
+            <table className="table ecom-orders-table">
               <thead>
                 <tr>
                   <th>Order</th>
-                  <th>Status</th>
+                  <th>Customer</th>
+                  <th>Items</th>
                   <th>Total</th>
-                  <th>Actions</th>
+                  <th>Status</th>
+                  <th>Next step</th>
                 </tr>
               </thead>
               <tbody>
-                {orders.map((order) => (
+                {orders.map((order) => {
+                  const pickup = order.fulfillment === 'pickup';
+                  return (
                   <tr key={order.id}>
-                    <td>{order.order_number}</td>
-                    <td><StatusChip value={order.status} /></td>
+                    <td>
+                      <b className="ecom-order-no">{order.order_number}</b>
+                      <span className="ecom-order-sub">{order.created_at ? formatWhen(order.created_at, prefs) : ''}</span>
+                    </td>
+                    <td>
+                      <b>{order.guest_name || 'Guest'}</b>
+                      {order.guest_phone ? <span className="ecom-order-sub">{order.guest_phone}</span> : null}
+                      <span className="ecom-order-sub">
+                        {pickup ? 'Pickup at the shop' : `Delivery${order.delivery_address ? `: ${order.delivery_address}` : ''}`}
+                      </span>
+                    </td>
+                    <td className="ecom-order-items">{order.items_summary || '—'}</td>
                     <td>{formatMoney(order.total_amount, prefs, order.currency || storefront.currency)}</td>
+                    <td><StatusChip value={order.status} /></td>
                     <td>
                       <div className="ecom-row-actions">
                         {order.status === 'awaiting_payment' ? (
                           <>
-                            <button type="button" aria-label={`Collect payment ${order.order_number}`} onClick={() => void run(`collect-${order.id}`, async () => { await api(`/ecommerce/orders/${order.id}/collect`, { method: 'POST' }); await refresh(); }, 'Payment recorded. A return URL does not mark paid.')}>Collect</button>
-                            <button type="button" aria-label={`Cancel order ${order.order_number}`} onClick={() => void run(`cancel-${order.id}`, async () => { await api(`/ecommerce/orders/${order.id}/cancel`, { method: 'POST' }); await refresh(); }, 'Order cancelled.')}>Cancel</button>
+                            <button type="button" className="btn-ok" aria-label={`Collect payment ${order.order_number}`} onClick={() => void run(`collect-${order.id}`, async () => { await api(`/ecommerce/orders/${order.id}/collect`, { method: 'POST' }); await refresh(); }, 'Payment recorded and the sale posted.')}>Payment received</button>
+                            <button type="button" className="btn-danger" aria-label={`Cancel order ${order.order_number}`} onClick={() => void run(`cancel-${order.id}`, async () => { await api(`/ecommerce/orders/${order.id}/cancel`, { method: 'POST' }); await refresh(); }, 'Order cancelled.')}>Cancel</button>
                           </>
                         ) : null}
                         {order.status === 'paid' ? (
-                          <button type="button" aria-label={`Pack order ${order.order_number}`} onClick={() => void run(`pack-${order.id}`, async () => { await api(`/ecommerce/orders/${order.id}/fulfill?target=packed`, { method: 'POST' }); await refresh(); }, 'Order packed.')}>Pack</button>
+                          <button type="button" className="btn-ok" aria-label={`Pack order ${order.order_number}`} onClick={() => void run(`pack-${order.id}`, async () => { await api(`/ecommerce/orders/${order.id}/fulfill?target=packed`, { method: 'POST' }); await refresh(); }, 'Order packed.')}>{pickup ? 'Packed, ready for pickup' : 'Pack'}</button>
                         ) : null}
                         {order.status === 'packed' ? (
-                          <button type="button" aria-label={`Dispatch order ${order.order_number}`} onClick={() => void run(`dispatch-${order.id}`, async () => { await api(`/ecommerce/orders/${order.id}/fulfill?target=dispatched`, { method: 'POST' }); await refresh(); }, 'Order dispatched.')}>Dispatch</button>
+                          <button type="button" className="btn-ok" aria-label={`Dispatch order ${order.order_number}`} onClick={() => void run(`dispatch-${order.id}`, async () => { await api(`/ecommerce/orders/${order.id}/fulfill?target=dispatched`, { method: 'POST' }); await refresh(); }, pickup ? 'Order handed over.' : 'Order sent out.')}>{pickup ? 'Hand over' : 'Send out'}</button>
                         ) : null}
                         {order.status === 'dispatched' ? (
-                          <button type="button" aria-label={`Mark ${order.order_number} delivered`} onClick={() => void run(`deliver-${order.id}`, async () => { await api(`/ecommerce/orders/${order.id}/fulfill?target=delivered`, { method: 'POST' }); await refresh(); }, 'Order delivered.')}>Delivered</button>
+                          <button type="button" className="btn-ok" aria-label={`Mark ${order.order_number} delivered`} onClick={() => void run(`deliver-${order.id}`, async () => { await api(`/ecommerce/orders/${order.id}/fulfill?target=delivered`, { method: 'POST' }); await refresh(); }, 'Order delivered.')}>{pickup ? 'Collected' : 'Delivered'}</button>
                         ) : null}
                         {['paid', 'packed', 'dispatched', 'delivered', 'fulfilled'].includes(order.status) ? (
                           <button type="button" aria-label={`Return order ${order.order_number}`} onClick={() => void run(`return-${order.id}`, async () => { await api(`/ecommerce/orders/${order.id}/return`, { method: 'POST' }); await refresh(); }, 'Return posted.')}>Return</button>
@@ -884,7 +902,8 @@ export default function EcommercePage() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

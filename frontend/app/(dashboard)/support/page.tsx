@@ -322,27 +322,32 @@ export default function HelpSupportPage() {
       />
       {guideError ? <p className="plat-msg desk-alert" role="alert">{guideError}</p> : null}
       <section className="plat-panel" aria-label="Help topics">
-        <div className="desk-panel-head"><h2>Help topics</h2></div>
+        <div className="desk-panel-head"><h2>Help topics</h2><p className="muted">Pick a topic to start a ticket about it.</p></div>
         {categories.length === 0 ? (
           <p className="muted">Topics appear here once this page has loaded your company.</p>
         ) : (
-          <ul className="desk-files">
+          <div className="help-topics">
             {categories.map((item) => (
-              <li key={item.code}>
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => {
-                    setCategory(item.code);
+              <button
+                key={item.code}
+                type="button"
+                className="help-topic"
+                aria-label={`Ask about ${item.label}`}
+                onClick={() => {
+                  setCategory(item.code);
+                  setDetail(null);
+                  window.setTimeout(() => {
                     document.getElementById('help-new-ticket')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }}
-                >
-                  {item.label}
-                </button>
+                    (document.querySelector('[aria-label="Ticket subject"]') as HTMLInputElement | null)?.focus({ preventScroll: true });
+                  }, 50);
+                }}
+              >
+                <b>{item.label}</b>
                 <span>{TOPIC_HELP[item.code] || 'Covers this part of the product for your company.'}</span>
-              </li>
+                <small>Ask about this →</small>
+              </button>
             ))}
-          </ul>
+          </div>
         )}
       </section>
       {error ? <p className="plat-msg desk-alert" role="alert">{error}</p> : null}

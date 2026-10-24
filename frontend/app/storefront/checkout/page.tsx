@@ -170,8 +170,8 @@ export default function CheckoutPage() {
             <p className="sf-price">{shopMoney(subtotal, currency)}</p>
             <h2>Payment</h2>
             <p className="sf-muted">
-              Storefront payments stay on this company’s gateway. They are not Ribdigi subscription billing.
-              The shop confirms your order once your payment arrives.
+              Place your order now and pay when it is delivered, or when you collect it at the shop: cash, mobile
+              money or card. The shop confirms your order once your payment arrives.
             </p>
             <p className="sf-actions">
               <Link className="sf-btn sf-btn-ghost" href={storefrontHref('/storefront/cart')}>Back to cart</Link>

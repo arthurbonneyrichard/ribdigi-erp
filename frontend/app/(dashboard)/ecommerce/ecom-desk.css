@@ -57,3 +57,28 @@
   box-shadow: 0 0 0 12px var(--white, #fff), 0 6px 18px #003d1f2e;
 }
 [data-theme="dark"] .ecom-desk button[aria-label="Save storefront settings"] { box-shadow: 0 0 0 12px #12261b; }
+
+/* Orders: who ordered, what, and how it reaches them. */
+.ecom-orders-table td {
+  vertical-align: top;
+}
+
+.ecom-orders-table td b {
+  display: block;
+}
+
+.ecom-order-sub {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.ecom-order-items {
+  font-size: 13px;
+  max-width: 16rem;
+}
+
+.ecom-orders-table .ecom-row-actions button {
+  white-space: nowrap;
+}

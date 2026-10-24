@@ -4280,3 +4280,14 @@ input[type=file]::file-selector-button:hover{border-color:var(--brand)}
 .main .bell-panel button.bell-item-action:hover{background:var(--mist)}
 [data-theme="dark"] .bell-cat{background:transparent;border-color:#1f5c45;color:var(--brand-light)}
 [data-theme="dark"] .main .bell-panel button.bell-item-action{background:transparent;border-color:#1f5c45;color:var(--brand-light)}
+
+/* Help & Support: topic cards in a grid (was buttons and text running together). */
+.help-topics{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.main .desk button.help-topic:not(.menu-btn):not(.plat-stat):not(.desk-ref),.main button.help-topic{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;white-space:normal;height:auto;min-height:0;padding:14px 16px;border-radius:14px;border:1px solid var(--line);background:var(--white);box-shadow:0 2px 8px rgba(0,61,31,.06);font-weight:400;color:var(--ink);cursor:pointer}
+.main .desk button.help-topic:not(.menu-btn):not(.plat-stat):not(.desk-ref):hover,.main button.help-topic:hover{border-color:var(--brand);background:var(--mist);box-shadow:0 6px 16px rgba(0,61,31,.10)}
+.help-topic b{font-size:15px;font-weight:800;color:var(--forest)}
+.help-topic span{font-size:13px;line-height:1.4;color:var(--muted)}
+.help-topic small{margin-top:auto;font-size:12px;font-weight:800;color:var(--brand-dark)}
+[data-theme="dark"] .main .desk button.help-topic:not(.menu-btn):not(.plat-stat):not(.desk-ref){background:transparent;border-color:#1f5c45;color:var(--mist)}
+[data-theme="dark"] .help-topic b{color:var(--mist)}
+[data-theme="dark"] .help-topic small{color:var(--brand-light)}

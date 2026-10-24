@@ -101,7 +101,8 @@ export default function StorefrontShell({ children }: { children: React.ReactNod
     return () => window.removeEventListener('ribdigi-storefront-cart', onCart);
   }, [refreshCart]);
 
-  const company = meta.company_name || 'Online store';
+  // Blank until the store loads, so a shopper never sees a generic name flash before the shop's own name.
+  const company = meta.company_name || (ready ? 'Online store' : '');
   const currency = meta.currency || 'GHS';
   const value = useMemo(
     () => ({ meta, currency, cartCount, ready, unavailable, refreshCart }),
