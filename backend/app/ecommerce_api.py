@@ -6,6 +6,7 @@ from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, File, Header, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import audit as audit_svc
@@ -413,7 +414,28 @@ async def staff_orders(
 ):
     tenant = await _staff_tenant(db, claims)
     rows = await ecom.list_orders(db, tenant.id)
-    return env([ecom.serialize_order(row) for row in rows])
+    # Staff see who ordered and what: phone and a short item list (the public tracking page does not get the phone).
+    summaries: dict[str, list[str]] = {}
+    if rows:
+        lines = (
+            await db.execute(
+                select(m.EcommerceOrderItem.order_id, m.EcommerceOrderItem.quantity, m.Product.name)
+                .join(m.Product, m.Product.id == m.EcommerceOrderItem.product_id)
+                .where(
+                    m.EcommerceOrderItem.tenant_id == tenant.id,
+                    m.EcommerceOrderItem.order_id.in_([row.id for row in rows]),
+                )
+            )
+        ).all()
+        for order_id, qty, name in lines:
+            qty_text = f"{money_json(qty):.3f}".rstrip("0").rstrip(".") or "0"
+            summaries.setdefault(order_id, []).append(f"{name} × {qty_text}")
+    return env(
+        [
+            {**ecom.serialize_order(row), "guest_phone": row.guest_phone, "items_summary": ", ".join(summaries.get(row.id, []))}
+            for row in rows
+        ]
+    )
 
 
 @staff.post("/orders/{order_id}/cancel")
