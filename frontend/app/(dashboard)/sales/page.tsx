@@ -1118,9 +1118,10 @@ export default function Page() {
   const showQuoteReject = managedQuotations.some((q) => q.rejection_reason);
   const showReserved = managedOrders.some((o) => o.reservation_status);
   const storeName = (id?: string | null) => (id ? stores.find((s) => s.id === id)?.name || '' : '');
-  const quoteCols = 5 + (showChannel ? 1 : 0) + (showQuoteReject ? 1 : 0);
-  const orderCols = 5 + (showChannel ? 1 : 0) + (showStore ? 1 : 0) + (showReserved ? 1 : 0);
-  const invoiceCols = 5 + (showChannel ? 1 : 0) + (showStore ? 1 : 0);
+  const customerNameOf = (id?: string | null) => customers.find((c) => c.id === id)?.name || '—';
+  const quoteCols = 6 + (showChannel ? 1 : 0) + (showQuoteReject ? 1 : 0);
+  const orderCols = 6 + (showChannel ? 1 : 0) + (showStore ? 1 : 0) + (showReserved ? 1 : 0);
+  const invoiceCols = 6 + (showChannel ? 1 : 0) + (showStore ? 1 : 0);
   function printInvoice(invoiceId: string, invoiceNumber: string, variant: 'list' | 'drawer' = 'list') {
     const paper = invoicePaper;
     const fail = (err: { message?: string }) => {
@@ -2310,6 +2311,7 @@ export default function Page() {
           <thead>
             <tr>
               <th className="col-id">Number</th>
+              <th className="col-text">Customer</th>
               {showChannel ? <th>Channel</th> : null}
               <th className="col-status">Status</th>
               <th className="col-num">Total</th>
@@ -2381,6 +2383,7 @@ export default function Page() {
               return (
               <tr key={q.id}>
                 <td className="col-id">{q.quotation_number}</td>
+                <td className="col-text">{customerNameOf(q.customer_id)}</td>
                 {showChannel ? <td>{channelLabel(q.sales_channel)}</td> : null}
                 <td className="col-status"><StatusChip value={q.status} label={saleWords(q.status)} /></td>
                 <td className="col-num">{formatMoney(q.total_amount, fmt, q.currency)}</td>
@@ -2462,6 +2465,7 @@ export default function Page() {
           <thead>
             <tr>
               <th className="col-id">Number</th>
+              <th className="col-text">Customer</th>
               {showChannel ? <th>Channel</th> : null}
               <th className="col-status">Status</th>
               {showStore ? <th>Store</th> : null}
@@ -2545,6 +2549,7 @@ export default function Page() {
               return (
               <tr key={o.id}>
                 <td className="col-id">{o.order_number}</td>
+                <td className="col-text">{customerNameOf(o.customer_id)}</td>
                 {showChannel ? <td>{channelLabel(o.sales_channel)}</td> : null}
                 <td className="col-status"><StatusChip value={o.status} label={saleWords(o.status)} /></td>
                 {showStore ? <td>{storeName(o.store_id) || '—'}</td> : null}
@@ -2657,6 +2662,7 @@ export default function Page() {
           <thead>
             <tr>
               <th className="col-id">Number</th>
+              <th className="col-text">Customer</th>
               {showChannel ? <th>Channel</th> : null}
               <th className="col-status">Status</th>
               {showStore ? <th>Store</th> : null}
@@ -2768,6 +2774,7 @@ export default function Page() {
               return (
               <tr key={inv.id}>
                 <td className="col-id">{inv.invoice_number}</td>
+                <td className="col-text">{customerNameOf(inv.customer_id)}</td>
                 {showChannel ? <td>{channelLabel(inv.sales_channel)}</td> : null}
                 <td className="col-status"><StatusChip value={inv.status} label={saleWords(inv.status)} /></td>
                 {showStore ? <td>{storeName(inv.store_id) || '—'}</td> : null}
