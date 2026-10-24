@@ -133,6 +133,19 @@ async def _prepare_lines(
     return money_json(round(subtotal, 2)), money_json(round(tax_total, 2)), prepared
 
 
+def _doc_line_tax(item) -> float:
+    """Tax inside one quote/order line (lines store rate and total, not the tax amount)."""
+    rate = money_json(item.tax_rate or 0)
+    total = money_json(item.line_total)
+    if rate <= 0 or total <= 0:
+        return money_json(0)
+    base = money_json(round(money_json(item.quantity) * money_json(item.unit_price) - money_json(getattr(item, "discount", 0) or 0), 2))
+    if total > base + 0.005:
+        return money_json(round(total - base, 2))
+    # Tax-inclusive price: the tax sits inside the line total.
+    return money_json(round(total - total / (1 + rate / 100.0), 2))
+
+
 def _stamp(prefix: str) -> str:
     return f"{prefix}-{datetime.utcnow():%Y%m%d%H%M%S%f}"
 
@@ -200,6 +213,7 @@ async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict
                 "discount_type": getattr(i, "discount_type", None) or "fixed",
                 "discount_percent": money_json(getattr(i, "discount_percent", None) or 0),
                 "line_total": money_json(i.line_total),
+                "line_tax": _doc_line_tax(i),
             }
             for i in items
         ],
@@ -290,7 +304,7 @@ async def send_quotation(
     if not recipient:
         raise HTTPException(
             status_code=400,
-            detail="Customer has no email; set customer email or pass to= override",
+            detail="This customer has no email address. Add one to the customer, or type an address in Email to.",
         )
 
     tenant = await db.get(m.Tenant, tenant_id)
@@ -445,6 +459,7 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
                 "discount_type": getattr(i, "discount_type", None) or "fixed",
                 "discount_percent": money_json(getattr(i, "discount_percent", None) or 0),
                 "line_total": money_json(i.line_total),
+                "line_tax": _doc_line_tax(i),
                 "qty_fulfilled": money_json(getattr(i, "qty_fulfilled", 0) or 0),
                 "reserved_qty": reserved_by_item.get(i.id, 0.0),
             }
@@ -1034,6 +1049,7 @@ async def serialize_return(db: AsyncSession, ret: m.SalesReturn) -> dict:
                 "unit_price": money_json(i.unit_price),
                 "tax_rate": money_json(i.tax_rate),
                 "line_total": money_json(i.line_total),
+                "line_tax": _doc_line_tax(i),
                 "condition": i.condition,
             }
             for i in items
