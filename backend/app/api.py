@@ -7560,7 +7560,7 @@ async def send_sales_invoice(
     await db.commit()
     data = await sales_svc.serialize_invoice(db, invoice)
     data["delivery"] = delivery
-    return env(data, f"Invoice emailed to {delivery['to']} ({delivery['mode']})")
+    return env(data, f"Invoice emailed to {delivery['to']}")
 
 
 @api.post("/sales/invoices/{invoice_id}/cancel")
@@ -7864,7 +7864,7 @@ async def send_quotation(
     await db.commit()
     data = await sales_docs_svc.serialize_quotation(db, quote)
     data["delivery"] = delivery
-    return env(data, f"Quotation emailed to {delivery['to']} ({delivery['mode']})")
+    return env(data, f"Quotation emailed to {delivery['to']}")
 
 
 @api.post("/sales/quotations/{quotation_id}/accept")
@@ -8624,7 +8624,7 @@ async def send_purchase_order(
     await db.commit()
     data = await purchasing_svc.serialize_po(db, po)
     data["delivery"] = delivery
-    return env(data, f"Purchase order emailed to {delivery['to']} ({delivery['mode']})")
+    return env(data, f"Purchase order emailed to {delivery['to']}")
 
 
 @api.post("/purchasing/orders/{po_id}/amend")
@@ -8673,7 +8673,7 @@ async def amend_purchase_order(
         data["delivery"] = delivery
     msg = f"Purchase order amended (rev.{amendment.revision_no})"
     if delivery:
-        msg += f"; emailed {delivery['to']} ({delivery['mode']})"
+        msg += f"; emailed {delivery['to']}"
     return env(data, msg)
 
 
