@@ -1,0 +1,85 @@
+/* Shared base for the Ribdigi ERP Instagram flyers: 1080 x 1440 px (3:4 portrait feed post).
+   Colours are the ERP's own brand tokens (frontend/app/globals.css). Font is the ERP's Plus Jakarta Sans, loaded locally. */
+@font-face {
+  font-family: "Jakarta";
+  src: url("assets/fonts/PlusJakartaSans.ttf") format("truetype");
+  font-weight: 200 800;
+}
+
+:root {
+  --brand: #4ab012;
+  --brand-dark: #2f7a0c;
+  --brand-light: #c8e86a;
+  --forest: #003d1f;
+  --forest-deep: #001a0e;
+  --deep-green: #006b2e;
+  --ink: #10211b;
+  --muted: #4d5d56;
+  --line: #d4e5c4;
+  --mist: #f2f7ec;
+  /* Everything that matters stays inside this margin. */
+  --safe: 72px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { width: 1080px; height: 1440px; }
+
+body {
+  font-family: "Jakarta", sans-serif;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+.post {
+  position: relative;
+  width: 1080px;
+  height: 1440px;
+  overflow: hidden;
+}
+
+.logo { display: block; height: auto; }
+
+/* Contact block: phone, WhatsApp, website, Instagram, TikTok. */
+.contacts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 28px;
+}
+
+.contacts .c {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.contacts .c small {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  opacity: 0.8;
+  margin-bottom: 3px;
+}
+
+.contacts .ic {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.contacts .ic svg { width: 26px; height: 26px; }
+
+.contacts .wide { grid-column: 1 / -1; }
+
+.slogan { font-weight: 800; letter-spacing: -0.5px; }
+.slogan em { font-style: normal; }
