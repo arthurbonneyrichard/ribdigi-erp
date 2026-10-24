@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.document_display import document_item_label, enrich_document_items
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 from app.schemas import validate_webhook_url_value
 from app.inventory import apply_stock_change
@@ -268,7 +269,7 @@ async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
     has_receipts = any(money_json(i.received_qty) > 0 for i in items)
     can_amend = po.status in PO_AMENDABLE and not has_receipts
     can_cancel = po.status not in {"received", "cancelled"} and not has_receipts
-    return {
+    payload = {
         "id": po.id,
         "po_number": po.po_number,
         "supplier_id": po.supplier_id,
@@ -305,6 +306,8 @@ async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
             for i in items
         ],
     }
+    await enrich_document_items(db, po.tenant_id, payload["items"])
+    return payload
 
 
 async def create_purchase_order(
@@ -457,6 +460,8 @@ async def send_purchase_order(
     company_name = tenant.company_name if tenant else "RIBDIGI ERP"
     currency = (tenant.currency if tenant else None) or "GHS"
     payload = await serialize_po(db, po)
+    if not payload.get("due_date"):
+        payload["due_date"] = default_due_date(terms_days=party_terms_days(supplier))
 
     result = await emailer.send_purchase_order_email(
         to=recipient,
@@ -486,6 +491,32 @@ async def send_purchase_order(
         "po_number": po.po_number,
     }
     return po, delivery
+
+
+async def issue_purchase_order(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    po_id: str,
+) -> m.PurchaseOrder:
+    """Raise a draft PO to sent without email (paper handoff). Idempotent when already sent."""
+    po = await get_po(db, tenant_id, po_id)
+    if po.status == "sent":
+        return po
+    if po.status != "draft":
+        raise HTTPException(status_code=409, detail=f"Cannot issue PO in status {po.status}")
+    items = await list_po_items(db, tenant_id, po.id)
+    if not items:
+        raise HTTPException(status_code=400, detail="Cannot issue empty purchase order")
+
+    supplier = await get_supplier(db, tenant_id, po.supplier_id)
+    now = datetime.utcnow()
+    po.status = "sent"
+    po.due_date = po.due_date or default_due_date(terms_days=party_terms_days(supplier))
+    po.updated_at = now
+    await db.flush()
+    return po
 
 
 async def cancel_purchase_order(
@@ -692,6 +723,8 @@ async def amend_purchase_order(
         # Flush mutation before serializing for email body
         await db.flush()
         payload = await serialize_po(db, po)
+        if not payload.get("due_date"):
+            payload["due_date"] = default_due_date(terms_days=party_terms_days(supplier))
         result = await emailer.send_purchase_order_email(
             to=recipient,
             company_name=company_name,
@@ -993,7 +1026,7 @@ async def serialize_grn(db: AsyncSession, grn: m.GoodsReceipt) -> dict:
             "expiry_date": None,
         }
 
-    return {
+    payload = {
         "id": grn.id,
         "grn_number": grn.grn_number,
         "purchase_order_id": grn.purchase_order_id,
@@ -1020,6 +1053,8 @@ async def serialize_grn(db: AsyncSession, grn: m.GoodsReceipt) -> dict:
             for i in items
         ],
     }
+    await enrich_document_items(db, grn.tenant_id, payload["items"])
+    return payload
 
 
 async def record_supplier_payment(
@@ -1440,6 +1475,7 @@ async def serialize_purchase_return(db: AsyncSession, ret: m.PurchaseReturn) -> 
                 "line_total": line_total,
             }
         )
+    await enrich_document_items(db, ret.tenant_id, serialized_items)
     return {
         "id": ret.id,
         "return_number": ret.return_number,
@@ -1462,11 +1498,79 @@ async def serialize_purchase_return(db: AsyncSession, ret: m.PurchaseReturn) -> 
     }
 
 
+def purchase_order_print_html(
+    po: dict,
+    *,
+    supplier_name: str = "",
+    company_name: str = "",
+    currency: str = "GHS",
+    product_labels: dict[str, str] | None = None,
+    tenant: Any | None = None,
+) -> str:
+    from app.document_display import format_tenant_date
+    from app.print_branding import POWERED_BY_RIBDIGI, document_print_shell
+
+    labels = product_labels or {}
+
+    def _po_print_label(item: dict) -> str:
+        pid = str(item.get("product_id") or "")
+        named = {**item, "product_name": labels.get(pid) or item.get("product_name")}
+        return document_item_label(named)
+
+    rows = "".join(
+        f"<tr><td>{html.escape(_po_print_label(i))}</td>"
+        f'<td class="r">{html.escape(str(i.get("quantity") or ""))}</td>'
+        f'<td class="r">{html.escape(str(currency))} {html.escape(str(i.get("unit_price") or ""))}</td>'
+        f'<td class="r">{html.escape(str(i.get("tax_rate") or "0"))}%</td>'
+        f'<td class="r">{html.escape(str(i.get("discount") or "0"))}</td>'
+        f'<td class="r">{html.escape(str(currency))} {html.escape(str(i.get("line_total") or ""))}</td></tr>'
+        for i in (po.get("items") or [])
+    )
+    po_no = str(po.get("po_number") or "")
+    order_date = format_tenant_date(po.get("created_at"), tenant)
+    needed_by = format_tenant_date(po.get("due_date"), tenant)
+    ship = str(po.get("delivery_address") or "").strip()
+    notes = str(po.get("notes") or "").strip()
+    title = f"Purchase order {po_no}".strip() or "Purchase order"
+    ship_html = f"<br/>Ship to {html.escape(ship)}" if ship else ""
+    order_date_html = f"<br/>Order date {html.escape(order_date)}" if order_date else ""
+    needed_by_html = f"<br/>Needed by {html.escape(needed_by)}" if needed_by else ""
+    notes_html = (
+        f'<p class="meta" style="margin-top:12px">Notes {html.escape(notes)}</p>' if notes else ""
+    )
+    body = (
+        f'<div class="meta">'
+        f"Purchase order <strong>{html.escape(po_no)}</strong>"
+        f" · Status {html.escape(str(po.get('status') or '').upper())}<br/>"
+        f"Supplier {html.escape(supplier_name or str(po.get('supplier_id') or ''))}"
+        f"{order_date_html}"
+        f"{needed_by_html}"
+        f"{ship_html}"
+        f"</div>"
+        '<table class="doc"><thead><tr>'
+        "<th>Product</th><th>Qty</th><th>Unit</th><th>Tax</th><th>Discount</th><th>Total</th>"
+        f"</tr></thead><tbody>{rows}</tbody></table>"
+        f'<div class="totals">'
+        f"Subtotal {html.escape(str(currency))} {html.escape(str(po.get('subtotal') or 0))}<br/>"
+        f"Tax {html.escape(str(currency))} {html.escape(str(po.get('tax_amount') or 0))}<br/>"
+        f"<strong>Total {html.escape(str(currency))} {html.escape(str(po.get('total_amount') or 0))}</strong>"
+        f"</div>"
+        f"{notes_html}"
+        f'<div class="foot"><div class="powered">{html.escape(POWERED_BY_RIBDIGI)}</div></div>'
+    )
+    return document_print_shell(
+        title=title,
+        company_name=company_name or "RIBDIGI ERP",
+        subtitle=f"Needed by {needed_by}" if needed_by else (f"Order date {order_date}" if order_date else ""),
+        body_html=body,
+    )
+
+
 def purchase_return_print_html(ret: dict, *, supplier_name: str = "", company_name: str = "") -> str:
     from app.print_branding import POWERED_BY_RIBDIGI, document_print_shell
 
     rows = "".join(
-        f"<tr><td>{html.escape(str(i.get('product_id') or ''))}</td>"
+        f"<tr><td>{html.escape(document_item_label(i))}</td>"
         f'<td class="r">{html.escape(str(i.get("quantity") or ""))}</td>'
         f'<td class="r">{html.escape(str(i.get("unit_price") or ""))}</td>'
         f'<td class="r">{html.escape(str(i.get("line_total") or ""))}</td></tr>'
@@ -1792,7 +1896,7 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
     paid = money_json(inv.paid_amount)
     can_cancel = status in {"draft", "unpaid", "overdue"} and paid <= 0
     fx = money_json(getattr(inv, "exchange_rate", None), default=1.0)
-    return {
+    payload = {
         "id": inv.id,
         "invoice_number": inv.invoice_number,
         "supplier_id": inv.supplier_id,
@@ -1842,6 +1946,8 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
             for i in items
         ],
     }
+    await enrich_document_items(db, inv.tenant_id, payload["items"])
+    return payload
 
 
 def _pi_line_subtotal(item: m.PurchaseInvoiceItem) -> float:

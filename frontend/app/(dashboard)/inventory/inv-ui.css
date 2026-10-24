@@ -90,6 +90,14 @@
   min-width: 560px;
   white-space: normal;
 }
+@media (max-width: 720px) {
+  .inv-ui-page .list-table-wrap .table,
+  .inv-ui-page .cat-table-wrap .table {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+}
 
 .inv-ui-page .cat-actions,
 .inv-ui-page td.cat-actions,

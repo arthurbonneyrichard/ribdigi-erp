@@ -3107,7 +3107,7 @@ export default function Page() {
                 const prod = products.find((p) => p.id === line.product_id);
                 return (
                   <option key={line.id || line.product_id} value={line.product_id}>
-                    {prod?.name || 'Product'} · {line.quantity}
+                    {line.product_name || prod?.name || 'Product'} · {line.quantity}
                   </option>
                 );
               })}
@@ -3326,7 +3326,7 @@ export default function Page() {
                 return (
                 <tr key={it.id}>
                   <td className="col-text">
-                    {prod?.name || 'Product'}
+                    {it.product_name || prod?.name || 'Product'}
                     {it.is_reverse_charge ? ' · Reverse charge' : ''}
                   </td>
                   <td className="col-id">{prod?.sku || '—'}</td>
@@ -3363,7 +3363,7 @@ export default function Page() {
                 const remaining = Math.max(Number(it.quantity || 0) - Number(it.qty_fulfilled || 0), 0);
                 return (
                   <label key={it.id} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
-                    <span>{prod?.name || it.product_id}</span>
+                    <span>{it.product_name || prod?.name || 'Item'}</span>
                     <span className="muted">remaining {remaining}</span>
                     <input
                       value={fulfillQty[it.product_id] || ''}
@@ -3371,7 +3371,7 @@ export default function Page() {
                         setFulfillQty((prev) => ({ ...prev, [it.product_id]: e.target.value }))
                       }
                       placeholder="Qty"
-                      aria-label={`Fill quantity for ${prod?.name || it.product_id}`}
+                      aria-label={`Fill quantity for ${it.product_name || prod?.name || 'Item'}`}
                       style={{ width: 80 }}
                     />
                   </label>

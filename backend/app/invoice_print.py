@@ -389,7 +389,7 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
     if payload.get("due_date"):
         due = payload["due_date"]
         due_s = due.strftime("%Y-%m-%d") if isinstance(due, datetime) else str(due)[:10]
-        meta_left.append(f"Due      {due_s}")
+        meta_left.append(f"Pay by   {due_s}")
 
     if payload.get("company_address"):
         meta_right.append(str(payload["company_address"])[:48])

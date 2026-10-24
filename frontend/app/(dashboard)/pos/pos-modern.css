@@ -1316,3 +1316,19 @@
 .main .tpos.pos-ui .pos-opt-grid .print-ui-row { display: block; margin: 0; }
 .main .tpos.pos-ui .pos-opt-grid .print-ui-paper { width: 100%; align-items: stretch; text-align: left; }
 .main .tpos.pos-ui .pos-opt-grid .print-ui-paper select { width: 100%; }
+
+@media (max-width: 720px) {
+  .main .tpos.pos-ui .pos-pay-methods {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .main .tpos.pos-ui .pos-foot-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .main .tpos.pos-ui .pos-foot-pay .pos-ui-pay-method-row {
+    flex-wrap: wrap;
+  }
+  .main .tpos.pos-ui button.pos-pay-method {
+    min-height: 44px;
+    height: 44px;
+  }
+}

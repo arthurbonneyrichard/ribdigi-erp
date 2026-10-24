@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.document_display import enrich_document_items
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 from app.tax import resolve_product_tax
 from app.credit import default_due_date, party_terms_days
@@ -174,7 +175,7 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
         overdue_days = days_overdue(datetime.utcnow(), invoice.due_date, invoice.posted_at or invoice.created_at)
     balance_due = max(money_json(invoice.total_amount) - money_json(invoice.paid_amount), 0)
     fx = money_json(getattr(invoice, "exchange_rate", None), default=1.0)
-    return {
+    payload = {
         "id": invoice.id,
         "invoice_number": invoice.invoice_number,
         "customer_id": invoice.customer_id,
@@ -228,6 +229,8 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
             for i in items
         ],
     }
+    await enrich_document_items(db, invoice.tenant_id, payload["items"])
+    return payload
 
 
 def _line_tax_value(item: m.SalesInvoiceItem) -> float:

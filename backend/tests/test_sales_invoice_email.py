@@ -26,9 +26,12 @@ def test_render_sales_invoice_bodies_includes_total():
             "paid_amount": 0,
             "balance_due": 115,
             "due_date": "2026-08-20",
+            "created_at": "2026-08-06",
             "items": [
                 {
-                    "product_id": "p1",
+                    "product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                    "product_name": "Alpha Widget",
+                    "sku": "A-1",
                     "quantity": 2,
                     "unit_price": 50,
                     "tax_rate": 15,
@@ -37,7 +40,12 @@ def test_render_sales_invoice_bodies_includes_total():
     )
     assert "INV-1" in text and "115.00" in text
     assert "Buyer Co" in html and "Acme" in html
-    assert "Due date" in text or "Due" in html
+    assert "Alpha Widget" in text and "Alpha Widget" in html
+    assert "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" not in text
+    assert "Invoice date: 06/08/2026" in text
+    assert "Payment due date: 20/08/2026" in text
+    assert "please pay the balance by this date" in text
+    assert "Balance due:" in text
 
 
 async def _super(ac, seed):
@@ -97,6 +105,11 @@ async def test_send_invoice_email_console_and_resend(client, db_session, monkeyp
     assert out and "Invoice" in out[0]["subject"]
     assert out[0]["to"] == ["buyer@example.com"]
     assert "Net 14" in out[0]["text_body"]
+    assert "Alpha Widget" in out[0]["text_body"]
+    assert seed["p1"].id not in out[0]["text_body"]
+    assert "Invoice date:" in out[0]["text_body"]
+    assert "Payment due date:" in out[0]["text_body"]
+    assert "Balance due:" in out[0]["text_body"]
 
     # Resend with override — stays sent while unpaid
     clear_dev_outbox()

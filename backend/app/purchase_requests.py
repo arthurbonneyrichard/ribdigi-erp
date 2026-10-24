@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.document_display import enrich_document_items
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 from app import purchasing as purchasing_svc
 from app.doc_numbers import next_purchase_request_number
@@ -278,6 +279,7 @@ async def serialize_request(db: AsyncSession, row: m.PurchaseRequest) -> dict:
             for i in items
         ],
     }
+    await enrich_document_items(db, row.tenant_id, data["items"])
     if row.status == "pending":
         settings = await get_approval_settings(db, row.tenant_id)
         data["awaiting_roles"] = roles_for_step(settings["levels"], step)

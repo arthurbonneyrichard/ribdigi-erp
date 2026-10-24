@@ -208,10 +208,21 @@
 .sf-foot a{color:var(--brand-light);margin-right:14px}
 .sf-foot .sf-muted{color:#c9d9c4}
 @media (max-width:820px){
-  .sf-bar{flex-direction:column;align-items:flex-start;padding:16px}
+  .sf-bar{
+    flex-direction:column;align-items:stretch;
+    padding:max(12px,env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) 12px max(14px,env(safe-area-inset-left,0px))
+  }
+  .sf-brand-block,.sf-nav{width:100%;min-width:0}
+  .sf-nav{justify-content:flex-start}
+  .sf-nav a{flex:1 1 auto;text-align:center;justify-content:center}
   .sf-tagline{max-width:100%;white-space:normal}
+  .sf-main{padding:16px max(14px,env(safe-area-inset-right,0px)) 40px max(14px,env(safe-area-inset-left,0px));width:100%;max-width:100%;box-sizing:border-box}
+  .sf-hero{padding:20px 16px}
+  .sf-hero.has-banner .sf-hero-copy{margin:-20px -16px;padding:20px 16px}
   .sf-filters,.sf-split{grid-template-columns:1fr}
-  .sf-grid{grid-template-columns:1fr}
-  .sf-line{grid-template-columns:64px 1fr}
-  .sf-actions button,.sf-form button,.sf-btn{min-height:44px}
+  .sf-grid{grid-template-columns:minmax(0,1fr)}
+  .sf-line{grid-template-columns:64px minmax(0,1fr)}
+  .sf-line .sf-actions{grid-column:1/-1}
+  .sf-actions button,.sf-form button,.sf-btn{min-height:44px;width:100%}
+  .sf-foot{padding:20px max(14px,env(safe-area-inset-right,0px)) max(28px,env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px))}
 }

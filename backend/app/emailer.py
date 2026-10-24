@@ -17,6 +17,7 @@ from typing import Any
 from fastapi import HTTPException
 
 from app.config import settings
+from app.document_display import document_item_label, first_document_date, format_tenant_date
 from app.email_settings import SmtpConfig, resolve_smtp_config
 from app.honesty import money_json
 
@@ -507,6 +508,10 @@ def _fmt_money(value: Any) -> str:
         return "0.00"
 
 
+def _fmt_doc_date(value: Any, tenant: Any | None = None) -> str:
+    return format_tenant_date(value, tenant)
+
+
 def _doc_line_row(*cells: str, right_from: int = 1) -> str:
     from app.print_branding import DOC_TD_RIGHT, DOC_TD_STYLE
 
@@ -544,21 +549,24 @@ def render_quotation_bodies(
     from app.print_branding import document_table_html
 
     number = quotation.get("quotation_number") or ""
-    valid = quotation.get("valid_until")
-    valid_s = str(valid)[:10] if valid else "—"
+    quote_date = _fmt_doc_date(
+        first_document_date(quotation, "created_at", "quote_date", "quotation_date"),
+        tenant,
+    )
+    valid_s = _fmt_doc_date(quotation.get("valid_until"), tenant)
     lines = [
         f"Quotation {number}",
         f"From: {company_name}",
         f"To: {customer_name}",
-        f"Valid until: {valid_s}",
-        "",
-        "Items:",
     ]
+    if quote_date:
+        lines.append(f"Quote date: {quote_date}")
+    if valid_s:
+        lines.append(f"Valid until: {valid_s} (this offer expires on this date)")
+    lines.extend(["", "Items:"])
     html_rows = []
     for item in quotation.get("items") or []:
-        desc = item.get("product_id") or "Item"
-        if item.get("variant_id"):
-            desc = f"{desc} (variant {item['variant_id'][:8]})"
+        desc = document_item_label(item)
         qty = item.get("quantity")
         price = _fmt_money(item.get("unit_price"))
         total = _fmt_money(item.get("line_total"))
@@ -582,7 +590,13 @@ def render_quotation_bodies(
     inner = (
         _doc_meta_block(
             f"From <strong>{html.escape(company_name)}</strong><br/>"
-            f"To {html.escape(str(customer_name))}<br/>Valid until {html.escape(valid_s)}"
+            f"To {html.escape(str(customer_name))}"
+            + (f"<br/>Quote date {html.escape(quote_date)}" if quote_date else "")
+            + (
+                f"<br/>Valid until {html.escape(valid_s)} — this offer expires on this date"
+                if valid_s
+                else ""
+            )
         )
         + document_table_html(
             headers=["Item", "Qty", "Price", "Line"],
@@ -642,15 +656,21 @@ def render_purchase_order_bodies(
     from app.print_branding import document_table_html
 
     number = purchase_order.get("po_number") or ""
-    due = purchase_order.get("due_date")
-    due_s = str(due)[:10] if due else "—"
+    order_date = _fmt_doc_date(
+        first_document_date(purchase_order, "created_at", "order_date"),
+        tenant,
+    )
+    due_s = _fmt_doc_date(purchase_order.get("due_date"), tenant)
     delivery_address = (purchase_order.get("delivery_address") or "").strip()
     lines = [
         f"Purchase Order {number}",
         f"From: {company_name}",
         f"To: {supplier_name}",
-        f"Due date: {due_s}",
     ]
+    if order_date:
+        lines.append(f"Order date: {order_date}")
+    if due_s:
+        lines.append(f"Needed by: {due_s} (when we expect these goods delivered)")
     if delivery_address:
         lines.append(f"Delivery address: {delivery_address}")
     lines.extend(
@@ -661,7 +681,7 @@ def render_purchase_order_bodies(
     )
     html_rows = []
     for item in purchase_order.get("items") or []:
-        desc = item.get("product_id") or "Item"
+        desc = document_item_label(item)
         qty = item.get("quantity")
         price = _fmt_money(item.get("unit_price"))
         total = _fmt_money(item.get("line_total"))
@@ -700,8 +720,14 @@ def render_purchase_order_bodies(
     inner = (
         _doc_meta_block(
             f"From <strong>{html.escape(company_name)}</strong><br/>"
-            f"To {html.escape(str(supplier_name))}<br/>Due {html.escape(due_s)}"
-            f"{delivery_html}"
+            f"To {html.escape(str(supplier_name))}"
+            + (f"<br/>Order date {html.escape(order_date)}" if order_date else "")
+            + (
+                f"<br/>Needed by {html.escape(due_s)} — when we expect these goods delivered"
+                if due_s
+                else ""
+            )
+            + f"{delivery_html}"
         )
         + document_table_html(
             headers=["Item", "Qty", "Price", "Tax", "Discount", "Line"],
@@ -767,21 +793,24 @@ def render_sales_invoice_bodies(
     from app.print_branding import document_table_html
 
     number = invoice.get("invoice_number") or ""
-    due = invoice.get("due_date")
-    due_s = str(due)[:10] if due else "—"
+    invoice_date = _fmt_doc_date(
+        first_document_date(invoice, "posted_at", "invoice_date", "created_at"),
+        tenant,
+    )
+    due_s = _fmt_doc_date(invoice.get("due_date"), tenant)
     lines = [
         f"Sales Invoice {number}",
         f"From: {company_name}",
         f"To: {customer_name}",
-        f"Due date: {due_s}",
-        "",
-        "Items:",
     ]
+    if invoice_date:
+        lines.append(f"Invoice date: {invoice_date}")
+    if due_s:
+        lines.append(f"Payment due date: {due_s} (please pay the balance by this date)")
+    lines.extend(["", "Items:"])
     html_rows = []
     for item in invoice.get("items") or []:
-        desc = item.get("product_id") or "Item"
-        if item.get("variant_id"):
-            desc = f"{desc} (variant {item['variant_id'][:8]})"
+        desc = document_item_label(item)
         qty = item.get("quantity")
         price = _fmt_money(item.get("unit_price"))
         total = _fmt_money(item.get("line_total"))
@@ -816,7 +845,13 @@ def render_sales_invoice_bodies(
     inner = (
         _doc_meta_block(
             f"From <strong>{html.escape(company_name)}</strong><br/>"
-            f"To {html.escape(str(customer_name))}<br/>Due {html.escape(due_s)}"
+            f"To {html.escape(str(customer_name))}"
+            + (f"<br/>Invoice date {html.escape(invoice_date)}" if invoice_date else "")
+            + (
+                f"<br/>Payment due date {html.escape(due_s)} — please pay the balance by this date"
+                if due_s
+                else ""
+            )
         )
         + document_table_html(
             headers=["Item", "Qty", "Price", "Tax", "Line"],

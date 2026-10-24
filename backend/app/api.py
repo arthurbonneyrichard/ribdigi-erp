@@ -8627,6 +8627,70 @@ async def send_purchase_order(
     return env(data, f"Purchase order emailed to {delivery['to']}")
 
 
+@api.post("/purchasing/orders/{po_id}/issue")
+async def issue_purchase_order(
+    po_id: UuidIdValue,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Raise draft PO to sent without email (paper handoff). Already sent is a no-op."""
+    existing = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
+    assert_record_access(claims, existing.created_by)
+    po = await purchasing_svc.issue_purchase_order(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        po_id=po_id,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="purchasing",
+        action="po_issue",
+        entity="purchase_order",
+        entity_id=po.id,
+        details={"po_number": po.po_number, "channel": "print"},
+    )
+    await db.commit()
+    return env(await purchasing_svc.serialize_po(db, po), "Purchase order issued for print")
+
+
+@api.get("/purchasing/orders/{po_id}/print")
+async def print_purchase_order(
+    po_id: UuidIdValue,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Printable PO HTML. No email required. Does not change status."""
+    po = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
+    assert_record_access(claims, po.created_by)
+    data = await purchasing_svc.serialize_po(db, po)
+    supplier = await purchasing_svc.get_supplier(db, claims["tenant_id"], po.supplier_id)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    product_ids = [str(i.get("product_id") or "") for i in (data.get("items") or []) if i.get("product_id")]
+    labels: dict[str, str] = {}
+    if product_ids:
+        rows = (
+            await db.execute(
+                select(m.Product).where(
+                    m.Product.tenant_id == claims["tenant_id"],
+                    m.Product.id.in_(product_ids),
+                )
+            )
+        ).scalars().all()
+        labels = {p.id: (p.name or p.sku or p.id) for p in rows}
+    html_page = purchasing_svc.purchase_order_print_html(
+        data,
+        supplier_name=supplier.name,
+        company_name=tenant.company_name or "",
+        currency=(tenant.currency if tenant else None) or "GHS",
+        product_labels=labels,
+        tenant=tenant,
+    )
+    return Response(content=html_page, media_type="text/html; charset=utf-8")
+
+
 @api.post("/purchasing/orders/{po_id}/amend")
 async def amend_purchase_order(
     po_id: UuidIdValue,

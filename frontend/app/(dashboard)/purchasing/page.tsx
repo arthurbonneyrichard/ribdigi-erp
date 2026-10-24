@@ -41,6 +41,37 @@ function asList<T>(data: unknown): T[] {
   return [];
 }
 
+function purchasingApiBase() {
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+}
+
+async function openPurchasingPrint(path: string) {
+  const token = getAccessToken();
+  const tenant = localStorage.getItem('tenant');
+  const res = await fetch(`${purchasingApiBase()}${path}`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+    },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const detail = body.detail;
+    throw new Error(
+      (typeof detail === 'string' && detail)
+        || (typeof body.message === 'string' && body.message)
+        || `Print failed (${res.status})`,
+    );
+  }
+  const html = await res.text();
+  const w = window.open('', '_blank');
+  if (!w) {
+    throw new Error('Allow pop-ups to print this document.');
+  }
+  w.document.write(html);
+  w.document.close();
+}
+
 type BillLineDraft = {
   key: string;
   productId: string;
@@ -232,6 +263,7 @@ type Supplier = {
   id: string;
   name: string;
   code?: string | null;
+  email?: string | null;
   profile_type?: string | null;
   category?: string | null;
   status?: string | null;
@@ -250,12 +282,14 @@ type PurchaseRequest = {
   approval_steps_required?: number;
   awaiting_level?: number | null;
   awaiting_roles?: string[];
-  items: { id: string; product_id: string; quantity: number }[];
+  items: { id: string; product_id: string; quantity: number; product_name?: string }[];
   purchase_order?: { id: string; po_number: string };
 };
 type PoItem = {
   id: string;
   product_id: string;
+  product_name?: string;
+  sku?: string;
   quantity: number;
   received_qty: number;
   unit_id?: string | null;
@@ -296,6 +330,8 @@ type PurchaseOrder = {
 type GrnItem = {
   id: string;
   product_id: string;
+  product_name?: string;
+  sku?: string;
   accepted_qty: number;
   remaining_return_qty?: number;
   received_qty: number;
@@ -360,6 +396,8 @@ type PurchaseInvoice = {
   items?: {
     id: string;
     product_id: string;
+    product_name?: string;
+    sku?: string;
     quantity: number;
     unit_price: number;
     tax_rate: number;
@@ -697,7 +735,12 @@ export default function Page() {
           })),
         }),
       });
-      setMessage(`Created ${r.data.po_number}`);
+      const noEmail = !(suppliers.find((s) => s.id === supplierId)?.email || '').trim();
+      setMessage(
+        noEmail
+          ? `Created ${r.data.po_number}. Print the order and hand it to the supplier. When they deliver, receive the goods.`
+          : `Created ${r.data.po_number}. Email or print the order. When the supplier delivers, receive the goods.`,
+      );
       setPoDeliveryAddress('');
       setPoNotes('');
       setWarehouseId('');
@@ -710,6 +753,25 @@ export default function Page() {
       setError(friendlyPurchaseError(err));
     } finally {
       setSaveBusy(false);
+    }
+  }
+
+  async function printPo(po: PurchaseOrder) {
+    setError('');
+    try {
+      let current = po;
+      if (po.status === 'draft') {
+        const issued = await api(`/purchasing/orders/${po.id}/issue`, { method: 'POST' });
+        current = issued.data;
+      }
+      await openPurchasingPrint(`/purchasing/orders/${current.id}/print`);
+      setMessage(
+        `${current.po_number} is ready to print. Hand the paper to the supplier. When they deliver, receive the goods.`,
+      );
+      await refresh();
+      setSelected(current);
+    } catch (err: any) {
+      setError(friendlyPurchaseError(err));
     }
   }
 
@@ -1408,7 +1470,8 @@ export default function Page() {
   }
 
   const selectedGrn = grns.find((g) => g.id === grnId);
-  const productName = (id: string) => products.find((p) => p.id === id)?.name || id.slice(0, 8);
+  const productName = (id: string, item?: { product_name?: string }) =>
+    item?.product_name || products.find((p) => p.id === id)?.name || 'Item';
   const managedReturns = returns.filter((r) => {
     if (returnManageFilter === 'all') return true;
     return (r.status || 'draft') === returnManageFilter;
@@ -1494,7 +1557,8 @@ export default function Page() {
     setReceiveDrafts({});
   }
   const poNumberOf = (id: string) => orders.find((o) => o.id === id)?.po_number || id.slice(0, 8);
-  const productNameOf = (id: string) => products.find((p) => p.id === id)?.name || id.slice(0, 8);
+  const productNameOf = (id: string, item?: { product_name?: string }) =>
+    item?.product_name || products.find((p) => p.id === id)?.name || 'Item';
   const receivableOrders = orders.filter(
     (o) => o.status === 'sent' || o.status === 'partially_received',
   );
@@ -1955,7 +2019,7 @@ export default function Page() {
                   <td>{r.department || '—'}</td>
                   <td className="col-text">
                     {(r.items || [])
-                      .map((i) => `${productName(i.product_id)} × ${i.quantity}`)
+                      .map((i) => `${productName(i.product_id, i)} × ${i.quantity}`)
                       .join(', ') || '—'}
                   </td>
                   <td className="col-text muted">{r.rejection_reason || '—'}</td>
@@ -2589,6 +2653,10 @@ export default function Page() {
                 aria-label="Purchase order email override to"
               />
             </label>
+            <p className="muted" style={{ margin: '8px 0 0' }}>
+              If the supplier has no email, print the order and hand it over. When they deliver, receive
+              the goods.
+            </p>
           </details>
 
           <div className="card cat-panel">
@@ -2633,6 +2701,13 @@ export default function Page() {
             <tbody>
               {managedOrders.map((o) => {
                 const poActions: RowActionItem[] = [
+                  {
+                    key: 'print',
+                    label: 'Print PO',
+                    hidden: o.status === 'cancelled',
+                    ariaLabel: 'Print purchase order',
+                    onClick: () => printPo(o),
+                  },
                   {
                     key: 'email',
                     label: 'Email',
@@ -2718,6 +2793,20 @@ export default function Page() {
                 {selected.delivery_address ? ` · Ship to: ${selected.delivery_address}` : ''}
                 {selected.revision_no ? ` · rev.${selected.revision_no}` : ''}
               </h3>
+              {selected.status !== 'cancelled' && (
+                <p style={{ marginTop: 0 }}>
+                  <button
+                    type="button"
+                    onClick={() => printPo(selected)}
+                    aria-label={`Print purchase order ${selected.id}`}
+                  >
+                    Print PO
+                  </button>
+                  <span className="muted" style={{ marginLeft: 8 }}>
+                    Hand the paper to a supplier who has no email. When they deliver, receive the goods.
+                  </span>
+                </p>
+              )}
               {selected.can_cancel && (
                 <p style={{ marginTop: 0 }}>
                   <button
@@ -2786,7 +2875,7 @@ export default function Page() {
                     const tracks = products.find((p) => p.id === i.product_id)?.tracks_batches;
                     return (
                       <tr key={i.id}>
-                        <td>{productNameOf(i.product_id)}</td>
+                        <td>{productNameOf(i.product_id, i)}</td>
                         <td>{products.find((p) => p.id === i.product_id)?.sku || '—'}</td>
                         <td>{i.quantity}</td>
                         <td>{i.received_qty}</td>
@@ -3265,7 +3354,7 @@ export default function Page() {
         </div>
         {receivableOrders.length === 0 ? (
           <div className="cat-empty">
-            <p>Send a purchase order, then choose it here to receive the goods.</p>
+            <p>Email or print a purchase order, then choose it here when the supplier delivers.</p>
           </div>
         ) : null}
         {receivePo && (
@@ -3298,7 +3387,7 @@ export default function Page() {
                     const tracks = products.find((p) => p.id === i.product_id)?.tracks_batches;
                     return (
                       <tr key={i.id}>
-                        <td>{productNameOf(i.product_id)}</td>
+                        <td>{productNameOf(i.product_id, i)}</td>
                         <td>{products.find((p) => p.id === i.product_id)?.sku || '—'}</td>
                         <td>{i.outstanding_qty}</td>
                         <td>
@@ -3631,7 +3720,7 @@ export default function Page() {
               <ul className="muted span-2" style={{ margin: 0, paddingLeft: 18 }}>
                 {lines.map((line) => (
                   <li key={line.id}>
-                    {productNameOf(line.product_id)} · accepted {line.accepted_qty}
+                    {productNameOf(line.product_id, line)} · accepted {line.accepted_qty}
                   </li>
                 ))}
               </ul>
@@ -4235,7 +4324,7 @@ export default function Page() {
               <tbody>
                 {(selectedInvoice.items || []).map((it) => (
                   <tr key={it.id}>
-                    <td>{productName(it.product_id)}</td>
+                    <td>{productName(it.product_id, it)}</td>
                     <td>{products.find((p) => p.id === it.product_id)?.sku || '—'}</td>
                     <td>{it.quantity}</td>
                     <td>{it.unit_price}</td>
@@ -4356,7 +4445,7 @@ export default function Page() {
                 <option value="">Select GRN line</option>
                 {(selectedGrn?.items || []).map((item) => (
                   <option key={item.id} value={item.id}>
-                    {productName(item.product_id)} (remaining {item.remaining_return_qty ?? item.accepted_qty})
+                    {productName(item.product_id, item)} (remaining {item.remaining_return_qty ?? item.accepted_qty})
                   </option>
                 ))}
               </>
@@ -4507,24 +4596,9 @@ export default function Page() {
                   label: 'Print',
                   ariaLabel: `Print purchase return ${r.id}`,
                   onClick: () => {
-                    const token = getAccessToken();
-                    const tenant = localStorage.getItem('tenant');
-                    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-                    fetch(`${base}/purchasing/returns/${r.id}/print`, {
-                      headers: {
-                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                        ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-                      },
-                    })
-                      .then((res) => res.text())
-                      .then((html) => {
-                        const w = window.open('', '_blank');
-                        if (w) {
-                          w.document.write(html);
-                          w.document.close();
-                        }
-                      })
-                      .catch((err) => setError(String(err)));
+                    openPurchasingPrint(`/purchasing/returns/${r.id}/print`).catch((err) =>
+                      setError(String(err)),
+                    );
                   },
                 },
               ];

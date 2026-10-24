@@ -22,10 +22,13 @@ def test_render_purchase_order_bodies_includes_total():
             "subtotal": 100,
             "tax_amount": 15,
             "total_amount": 115,
+            "created_at": "2026-08-10",
             "due_date": "2026-08-20",
             "items": [
                 {
-                    "product_id": "p1",
+                    "product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                    "product_name": "Basmati Rice",
+                    "sku": "RICE-25",
                     "quantity": 2,
                     "unit_price": 50,
                     "tax_rate": 15,
@@ -34,6 +37,14 @@ def test_render_purchase_order_bodies_includes_total():
     )
     assert "PO-1" in text and "115.00" in text
     assert "Vendor Co" in html and "Acme" in html
+    assert "Basmati Rice" in text and "Basmati Rice" in html
+    assert "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" not in text
+    assert "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" not in html
+    assert "Order date: 10/08/2026" in text
+    assert "Needed by: 20/08/2026" in text
+    assert "when we expect these goods delivered" in text
+    assert "Needed by" in html
+    assert "Balance due" not in text
 
 
 async def _super(ac, seed):
@@ -103,6 +114,13 @@ async def test_send_po_email_console_and_resend(client, db_session, monkeypatch)
     assert out and "PO-" in out[0]["subject"]
     assert out[0]["to"] == ["vendor@example.com"]
     assert "Please ship ASAP" in out[0]["text_body"]
+    assert "Alpha Widget" in out[0]["text_body"]
+    assert "Alpha Widget" in out[0]["html_body"]
+    assert seed["p1"].id not in out[0]["text_body"]
+    assert seed["p1"].id not in out[0]["html_body"]
+    assert "Order date:" in out[0]["text_body"]
+    assert "Needed by:" in out[0]["text_body"]
+    assert "when we expect these goods delivered" in out[0]["text_body"]
 
     # Resend with override address
     clear_dev_outbox()

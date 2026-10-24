@@ -157,9 +157,11 @@ async def test_invoice_email_uses_branded_shell():
         invoice={
             "invoice_number": "INV-1",
             "due_date": "2026-09-01",
+            "created_at": "2026-08-15",
             "items": [
                 {
-                    "product_id": "p1",
+                    "product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                    "product_name": "Idle Snack",
                     "quantity": 2,
                     "unit_price": 10,
                     "tax_rate": 0,
@@ -175,6 +177,10 @@ async def test_invoice_email_uses_branded_shell():
         },
     )
     assert "INV-1" in text
+    assert "Idle Snack" in text
+    assert "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" not in text
+    assert "Invoice date:" in text
+    assert "Payment due date:" in text
     assert "ribdigi-email-brand" in html_body
     assert "Sales Invoice INV-1" in html_body
     assert "Acme Retail" in html_body

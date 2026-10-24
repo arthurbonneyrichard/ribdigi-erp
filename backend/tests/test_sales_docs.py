@@ -37,9 +37,11 @@ def test_render_quotation_bodies_includes_total():
             "discount_amount": 0,
             "total_amount": 115,
             "valid_until": "2026-08-20",
+            "created_at": "2026-08-01",
             "items": [
                 {
-                    "product_id": "p1",
+                    "product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                    "product_name": "Office Chair",
                     "quantity": 2,
                     "unit_price": 50,
                     "line_total": 100,
@@ -49,6 +51,11 @@ def test_render_quotation_bodies_includes_total():
     )
     assert "QT-1" in text and "115.00" in text
     assert "Acme" in html and "Buyer" in html
+    assert "Office Chair" in text
+    assert "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" not in text
+    assert "Quote date: 01/08/2026" in text
+    assert "Valid until: 20/08/2026" in text
+    assert "this offer expires on this date" in text
 
 
 @pytest.mark.asyncio

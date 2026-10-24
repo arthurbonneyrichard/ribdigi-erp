@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.document_display import enrich_document_items
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 from app.inventory import apply_stock_change
 from app.doc_numbers import (
@@ -188,7 +189,7 @@ async def _party_name(db: AsyncSession, party_id: str | None) -> str | None:
 
 async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict:
     items = await list_quotation_items(db, quote.tenant_id, quote.id)
-    return {
+    payload = {
         "id": quote.id,
         "quotation_number": quote.quotation_number,
         "customer_id": quote.customer_id,
@@ -227,6 +228,8 @@ async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict
             for i in items
         ],
     }
+    await enrich_document_items(db, quote.tenant_id, payload["items"])
+    return payload
 
 
 async def create_quotation(
@@ -419,7 +422,7 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
     reserved_by_item = {
         r.sales_order_item_id: money_json(r.quantity) for r in active if r.sales_order_item_id
     }
-    return {
+    payload = {
         "id": order.id,
         "order_number": order.order_number,
         "customer_id": order.customer_id,
@@ -476,6 +479,8 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
             for i in items
         ],
     }
+    await enrich_document_items(db, order.tenant_id, payload["items"])
+    return payload
 
 
 async def create_order(
@@ -1028,7 +1033,7 @@ async def list_return_items(db: AsyncSession, tenant_id: str, return_id: str) ->
 async def serialize_return(db: AsyncSession, ret: m.SalesReturn) -> dict:
     items = await list_return_items(db, ret.tenant_id, ret.id)
     till_sale = await db.get(m.Transaction, ret.transaction_id) if getattr(ret, "transaction_id", None) else None
-    return {
+    payload = {
         "id": ret.id,
         "return_number": ret.return_number,
         "credit_note_number": getattr(ret, "credit_note_number", None),
@@ -1065,6 +1070,8 @@ async def serialize_return(db: AsyncSession, ret: m.SalesReturn) -> dict:
             for i in items
         ],
     }
+    await enrich_document_items(db, ret.tenant_id, payload["items"])
+    return payload
 
 
 async def cancel_return(
