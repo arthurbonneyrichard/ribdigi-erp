@@ -130,6 +130,10 @@ async def test_document_email_to_query_blank_invalid_422(client, seeded, monkeyp
         params={"to": ""},
     )
     assert q_blank.status_code == 422, q_blank.text
+    q_ok = await ac.post(f"/api/v1/sales/quotations/{qid}/send", headers=admin)
+    assert q_ok.status_code == 200, q_ok.text
+    assert q_ok.json()["data"]["status"] == "sent"
+    assert isinstance(q_ok.json()["data"]["delivery"]["emailed_at"], str)
 
     supplier = await ac.post(
         "/api/v1/suppliers",
