@@ -7,6 +7,7 @@ import PageHeader from '../../../components/PageHeader';
 import CustomerGroupsWindow from '../../../components/CustomerGroupsWindow';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import { api } from '../../../lib/api';
+import { createPaintGet, peekPrefetch } from '../../../lib/prefetchCache';
 import { currencySign, formatNumber } from '../../../lib/format';
 import RowActions, { type RowActionItem } from '../../../components/RowActions';
 import { AmountField } from '../../../components/AmountField';
@@ -125,13 +126,18 @@ export default function Page() {
   const [canPay, setCanPay] = useState(false);
   const [groupsOpen, setGroupsOpen] = useState(false);
 
+  const paintGet = useMemo(() => createPaintGet(), []);
+
   async function refresh() {
     setError('');
     const path = status === 'all' ? '/customers' : `/customers?status=${status}`;
+    const peekCust = peekPrefetch(path);
+    if (peekCust?.data) setCustomers(peekCust.data || []);
     const [custRes, groupRes] = await Promise.all([
-      api(path),
-      api('/customers/groups').catch(() => ({ data: [] })),
+      paintGet.get(path),
+      paintGet.get('/customers/groups').catch(() => ({ data: [] })),
     ]);
+    paintGet.done();
     const groupList: Group[] = groupRes.data || [];
     const groupById = new Map(groupList.map((g) => [g.id, g]));
     // The list only carries the group id; attach the name so the Group column, search and sort work.

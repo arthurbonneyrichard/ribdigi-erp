@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api, getAccessToken } from '../../../lib/api';
+import { getPrefetched } from '../../../lib/prefetchCache';
 import { formatMoney, formatNumber, formatWhen, plainLabel } from '../../../lib/format';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import {
@@ -627,12 +628,12 @@ export default function Page() {
       .catch(() => setMultiStore(true));
     load(tab, view);
     Promise.all([
-      api('/stores').catch(() => ({ data: [] })),
-      api('/branches').catch(() => ({ data: [] })),
-      api('/warehouses').catch(() => ({ data: [] })),
-      api('/catalog/categories').catch(() => ({ data: [] })),
-      api('/departments').catch(() => ({ data: [] })),
-      api('/accounting/accounts').catch(() => ({ data: [] })),
+      getPrefetched('/stores').catch(() => ({ data: [] })),
+      getPrefetched('/branches').catch(() => ({ data: [] })),
+      getPrefetched('/warehouses').catch(() => ({ data: [] })),
+      getPrefetched('/catalog/categories').catch(() => ({ data: [] })),
+      getPrefetched('/departments').catch(() => ({ data: [] })),
+      getPrefetched('/accounting/accounts').catch(() => ({ data: [] })),
     ])
       .then(([st, br, wh, cats, deps, accts]) => {
         setStores(st.data || []);

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { invalidatePrefetchCache, peekPrefetch, prefetchGet } from './prefetchCache';
+import { createPaintGet, invalidatePrefetchCache, peekPrefetch, prefetchGet } from './prefetchCache';
 
 function installLocalStorage(tenant: string | null) {
   const store: Record<string, string> = {};
@@ -88,6 +88,37 @@ test('prefetch cache dedupes in-flight GETs for the same tenant path', async () 
     assert.equal(y.data.started, 1);
     assert.equal(started, 1);
     assert.equal(inflight, 1);
+  } finally {
+    globalThis.fetch = origFetch;
+    invalidatePrefetchCache();
+  }
+});
+
+test('paint getter reuses the first GET then forces after done()', async () => {
+  const tenantA = '11111111-1111-4111-8111-111111111111';
+  let started = 0;
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = (async () => {
+    started += 1;
+    return {
+      ok: true,
+      status: 200,
+      headers: { get: () => null },
+      json: async () => ({ data: { started } }),
+    } as unknown as Response;
+  }) as typeof fetch;
+
+  try {
+    installLocalStorage(tenantA);
+    invalidatePrefetchCache();
+    const paint = createPaintGet();
+    const first = await paint.get('/sales/invoices');
+    assert.equal(first.data.started, 1);
+    assert.equal(started, 1);
+    paint.done();
+    const second = await paint.get('/sales/invoices');
+    assert.equal(second.data.started, 2);
+    assert.equal(started, 2);
   } finally {
     globalThis.fetch = origFetch;
     invalidatePrefetchCache();

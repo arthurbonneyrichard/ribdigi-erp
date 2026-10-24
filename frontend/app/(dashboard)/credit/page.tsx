@@ -1,10 +1,11 @@
 'use client';
 
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import EmptyState from '../../../components/EmptyState';
 import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
+import { createPaintGet } from '../../../lib/prefetchCache';
 import { formatMoney, formatWhen } from '../../../lib/format';
 import { AmountField } from '../../../components/AmountField';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
@@ -182,6 +183,7 @@ export default function Page() {
   const kindRef = useRef(kind);
   kindRef.current = kind;
   const payFormRef = useRef<HTMLFormElement>(null);
+  const paintGet = useMemo(() => createPaintGet(), []);
 
   async function refresh() {
     if (refreshInflight.current?.kind === kind) return refreshInflight.current.run;
@@ -190,14 +192,16 @@ export default function Page() {
     setError('');
     const run = (async () => {
       try {
-        const aging = await api(`/credit/aging?kind=${startKind}`);
-        const [cust, supp, settings, liquid, fx] = await Promise.all([
-          api('/customers').catch(() => ({ data: [] })),
-          api('/suppliers').catch(() => ({ data: [] })),
-          api('/credit/settings').catch(() => ({ data: {} })),
-          api('/accounting/liquid-accounts').catch(() => ({ data: [] })),
-          api('/credit/exchange-rates').catch(() => ({ data: { base_currency: 'GHS', rates: [] } })),
+        const get = paintGet.get;
+        const [aging, cust, supp, settings, liquid, fx] = await Promise.all([
+          get(`/credit/aging?kind=${startKind}`),
+          get('/customers').catch(() => ({ data: [] })),
+          get('/suppliers').catch(() => ({ data: [] })),
+          get('/credit/settings').catch(() => ({ data: {} })),
+          get('/accounting/liquid-accounts').catch(() => ({ data: [] })),
+          get('/credit/exchange-rates').catch(() => ({ data: { base_currency: 'GHS', rates: [] } })),
         ]);
+        paintGet.done();
         if (kindRef.current !== startKind) return;
         const data = aging.data;
         setReport(data);

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '../../../lib/api';
+import { getPrefetched } from '../../../lib/prefetchCache';
 import { formatDate, formatMoney, formatTime } from '../../../lib/format';
 import { getMe } from '../../../lib/meCache';
 import { industryLabel, normalizeIndustry } from '../../../lib/industries';
@@ -334,7 +335,7 @@ export default function Page() {
     setDashStatus('loading');
     setDashError('');
     const qs = headerStoreId ? `?store_id=${encodeURIComponent(headerStoreId)}` : '';
-    api(`/dashboard${qs}`)
+    getPrefetched(`/dashboard${qs}`, { force: dashTick > 0 })
       .then((r) => {
         if (cancelled) return;
         setD(r.data || {});

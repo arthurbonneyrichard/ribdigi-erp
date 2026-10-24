@@ -62,7 +62,7 @@ Inspected on this tree (HEAD `d41426f99e`, branch `production`). Later cashier, 
 
 1. **P0 — protect money and isolation.** Keep tenant filters, idempotent sales, and balanced stock journals. Do not change posted amounts during sync.
 2. **P1 — core workflows that are still wrong.** Role and plan gates, store caps, POS shifts and receipts, offline prepare / queue / sync / conflicts, subscription webhook matching, company format visible to every signed-in role.
-3. **P2 — usability and evidence.** Aria labels already in progress via `AGENTS.md`, personal theme, performance, secondary reports. Do not mark a module done because one screen loads.
+3. **P2 — usability and evidence.** Aria labels already in progress via `AGENTS.md`, personal theme, secondary reports. Desk-open performance: sidebar route prefetch + hover GET warm + first-paint reuse (`frontend/lib/navPrefetch.ts`). Do not mark a module done because one screen loads.
 
 ## Migrations
 

@@ -788,11 +788,21 @@ export default function Page() {
       setBootLoading(false);
     }
     const [pFast, c, b, u, w] = await Promise.all([
-      opts?.signal ? apiOptional('/products', req) : apiOptional('/products'),
-      apiOptional('/catalog/categories'),
-      apiOptional('/catalog/brands'),
-      apiOptional('/catalog/units'),
-      apiOptional('/warehouses', req),
+      opts?.signal
+        ? apiOptional('/products', req)
+        : getPrefetched('/products?limit=80')
+            .then((body) => ({ data: body.data, error: null as string | null }))
+            .catch((err: { message?: string }) => ({ data: [] as unknown[], error: err?.message || null })),
+      getPrefetched('/catalog/categories')
+        .then((body) => ({ data: body.data, error: null as string | null }))
+        .catch((err: { message?: string }) => ({ data: [] as unknown[], error: err?.message || null })),
+      getPrefetched('/catalog/brands')
+        .then((body) => ({ data: body.data, error: null as string | null }))
+        .catch((err: { message?: string }) => ({ data: [] as unknown[], error: err?.message || null })),
+      getPrefetched('/catalog/units')
+        .then((body) => ({ data: body.data, error: null as string | null }))
+        .catch((err: { message?: string }) => ({ data: [] as unknown[], error: err?.message || null })),
+      opts?.signal ? apiOptional('/warehouses', req) : apiOptional('/warehouses'),
     ]);
     if (opts?.signal?.aborted) return;
     const loadError = [c, b, u, w]

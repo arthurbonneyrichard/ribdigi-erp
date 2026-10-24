@@ -48,6 +48,7 @@ Do not treat this file as a second copy of `AGENTS.md`. `AGENTS.md` is the alway
 
 - Money and quantities in JSON are numbers via `honesty.money_json`, not decimal strings. Values must be finite.
 - Brand green `#4AB012` stays. New UI uses the existing CSS variables. Controls that users operate need `aria-label`s. Light and dark personal theme uses `data-theme`.
+- Opening a desk warms the Next.js route from the sidebar (default Link prefetch plus idle `router.prefetch`). Hover/focus also prefetches that desk’s GET lists (`navPrefetch.ts`, 45s TTL). First paint reuses `createPaintGet`; a later refresh on the same mount forces fresh data. Writes stay on `api()`.
 - No secrets in source, logs, or client bundles. Do not commit `.env` or `backend/_tmp_api_log.txt`.
 - No production or staging migrate, restart, password reset, real charge, queued-data deletion, push, or deploy without explicit authorization.
 - Preserve unrelated user changes. Pytest from `backend` uses the in-memory SQLite fixtures, not the live `ribdigi_erp` database.

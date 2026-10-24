@@ -14,6 +14,7 @@ import { linkStatusText, type LinkSnapshot } from '../lib/connectivity';
 import { requestPosReturnPanel, requestPosShiftPanel, subscribePosDrawerBridge, type PosDrawerBridgeState } from '../lib/posDrawerBridge';
 import { PosOfflineTopSlot } from '../lib/posOfflineSlot';
 import { prefetchGet } from '../lib/prefetchCache';
+import { prefetchPathsForHref } from '../lib/navPrefetch';
 import { loadUserTheme, writeUserTheme } from '../lib/theme';
 import { StoreProvider } from '../lib/storeContext';
 import {
@@ -1584,7 +1585,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const sidebarLogoSrc = chromeLogoSrc(companyLogoUrl, PLATFORM_SIDEBAR_LOGO);
   const sidebarLogoAlt = chromeLogoAlt(Boolean(companyLogoUrl), companyName);
 
-  // Warm the Next.js route and API payloads for sidebar destinations.
+  // Warm visible route JS as soon as the sidebar is up, then likely desk APIs.
   useEffect(() => {
     if (!authReady) return;
     try {
@@ -1592,39 +1593,34 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     } catch {
       /* ignore */
     }
-  }, [authReady, router]);
+    const hrefs = visible.map(([, h]) => h);
+    let cancelled = false;
+    const warmRoutes = () => {
+      if (cancelled) return;
+      for (const h of hrefs) {
+        try {
+          router.prefetch(h);
+        } catch {
+          /* ignore */
+        }
+      }
+    };
+    const ric = typeof window !== 'undefined' ? window.requestIdleCallback : undefined;
+    const routeId = ric ? ric(warmRoutes, { timeout: 1200 }) : window.setTimeout(warmRoutes, 200);
+    return () => {
+      cancelled = true;
+      if (ric) window.cancelIdleCallback(routeId as number);
+      else window.clearTimeout(routeId as number);
+    };
+  }, [authReady, router, visible]);
 
   function warmDestination(href: string) {
-    const path = href.split('?')[0];
     try {
       router.prefetch(href);
     } catch {
       /* ignore */
     }
-    if (href === '/platform') {
-      void prefetchGet('/tenants');
-      void prefetchGet('/platform/activity');
-    } else if (href === '/platform/tenants') {
-      void prefetchGet('/tenants');
-      void prefetchGet('/packages');
-    } else if (href === '/platform/staff') {
-      void prefetchGet('/platform/staff');
-      void prefetchGet('/platform/roles');
-    } else if (href === '/platform/reports') {
-      void prefetchGet('/platform/reports');
-    } else if (path === '/security') {
-      void prefetchGet('/auth/2fa/status');
-      void prefetchGet('/auth/webauthn/credentials');
-      void prefetchGet('/auth/sessions');
-    } else if (path === '/pos') {
-      void prefetchGet('/pos/sessions/current');
-      void prefetchGet('/pos/stores');
-    } else if (path === '/inventory') {
-      void prefetchGet('/products?limit=80');
-      void prefetchGet('/catalog/categories');
-      void prefetchGet('/catalog/brands');
-      void prefetchGet('/catalog/units');
-    }
+    for (const path of prefetchPathsForHref(href)) void prefetchGet(path);
   }
 
   if (!authReady) {
@@ -1677,7 +1673,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={h}
                   href={h}
-                  prefetch={false}
                   className={active ? 'active' : undefined}
                   aria-current={active ? 'page' : undefined}
                   title={label}

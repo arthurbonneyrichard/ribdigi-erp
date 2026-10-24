@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import AttachmentPreview from '../../../components/AttachmentPreview';
 import FormModal from '../../../components/FormModal';
 import PageHeader from '../../../components/PageHeader';
 import { api, getAccessToken } from '../../../lib/api';
+import { createPaintGet } from '../../../lib/prefetchCache';
 import { formatDate, formatMoney, formatWhen, plainLabel } from '../../../lib/format';
 import { getMe } from '../../../lib/meCache';
 import { AmountField } from '../../../components/AmountField';
@@ -165,22 +166,26 @@ export default function Page() {
   const [rowBusyId, setRowBusyId] = useState<string | null>(null);
   const formatPrefs = useCompanyFormat();
 
+  const paintGet = useMemo(() => createPaintGet(), []);
+
   async function refresh() {
     const storeTrim = (storeId || ctxStoreId || '').trim();
     const expensesPath = storeTrim ? `/expenses?store_id=${encodeURIComponent(storeTrim)}` : '/expenses';
+    const get = paintGet.get;
     const [exp, cats, settings, liquid, st, br, dep, accounts, rec, supp, inc] = await Promise.all([
-      api(expensesPath),
-      api('/expenses/categories'),
-      api('/expenses/settings'),
-      api('/accounting/liquid-accounts').catch(() => ({ data: [] })),
-      api('/stores').catch(() => ({ data: [] })),
-      api('/branches').catch(() => ({ data: [] })),
-      api('/departments').catch(() => ({ data: [] })),
-      api('/accounting/accounts').catch(() => ({ data: [] })),
-      api('/expenses/recurring').catch(() => ({ data: [] })),
-      api('/suppliers').catch(() => ({ data: [] })),
-      api('/incomes').catch(() => ({ data: [] })),
+      get(expensesPath),
+      get('/expenses/categories'),
+      get('/expenses/settings'),
+      get('/accounting/liquid-accounts').catch(() => ({ data: [] })),
+      get('/stores').catch(() => ({ data: [] })),
+      get('/branches').catch(() => ({ data: [] })),
+      get('/departments').catch(() => ({ data: [] })),
+      get('/accounting/accounts').catch(() => ({ data: [] })),
+      get('/expenses/recurring').catch(() => ({ data: [] })),
+      get('/suppliers').catch(() => ({ data: [] })),
+      get('/incomes').catch(() => ({ data: [] })),
     ]);
+    paintGet.done();
     setRows(exp.data || []);
     setIncomes(inc.data || []);
     setCategories(cats.data || []);

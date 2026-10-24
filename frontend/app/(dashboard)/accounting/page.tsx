@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import AttachmentPreview from '../../../components/AttachmentPreview';
 import FormModal from '../../../components/FormModal';
 import PageHeader from '../../../components/PageHeader';
 import { api, getAccessToken } from '../../../lib/api';
+import { createPaintGet } from '../../../lib/prefetchCache';
 import { currencySign, formatWhen, plainLabel } from '../../../lib/format';
 import { AmountField } from '../../../components/AmountField';
 import { useStoreContext } from '../../../lib/storeContext';
@@ -277,23 +278,27 @@ export default function Page() {
     setCheques(chq.data || []);
   }
 
+  const paintGet = useMemo(() => createPaintGet(), []);
+
   async function refresh() {
+    const get = paintGet.get;
     const [a, j, t, p, liq, stmts, conns, xfers, openSt, st, br, per, ar, ap] = await Promise.all([
-      api('/accounting/accounts'),
-      api('/accounting/journal-entries'),
-      api(`/accounting/trial-balance${trialQuery()}`),
-      api(`/accounting/profit-loss${pnlQuery()}`),
-      api('/accounting/liquid-accounts'),
-      api('/accounting/bank-statements'),
-      api('/accounting/bank-connections').catch(() => ({ data: [] })),
-      api('/accounting/transfers').catch(() => ({ data: [] })),
-      api('/accounting/opening-balances').catch(() => ({ data: null })),
-      api('/stores').catch(() => ({ data: [] })),
-      api('/branches').catch(() => ({ data: [] })),
-      api('/accounting/period').catch(() => ({ data: null })),
-      api('/credit/aging?kind=receivable').catch(() => ({ data: null })),
-      api('/credit/aging?kind=payable').catch(() => ({ data: null })),
+      get('/accounting/accounts'),
+      get('/accounting/journal-entries'),
+      get(`/accounting/trial-balance${trialQuery()}`),
+      get(`/accounting/profit-loss${pnlQuery()}`),
+      get('/accounting/liquid-accounts'),
+      get('/accounting/bank-statements'),
+      get('/accounting/bank-connections').catch(() => ({ data: [] })),
+      get('/accounting/transfers').catch(() => ({ data: [] })),
+      get('/accounting/opening-balances').catch(() => ({ data: null })),
+      get('/stores').catch(() => ({ data: [] })),
+      get('/branches').catch(() => ({ data: [] })),
+      get('/accounting/period').catch(() => ({ data: null })),
+      get('/credit/aging?kind=receivable').catch(() => ({ data: null })),
+      get('/credit/aging?kind=payable').catch(() => ({ data: null })),
     ]);
+    paintGet.done();
     setAccounts(a.data || []);
     setCoaOpenAccountId((prev) => {
       if (prev) return prev;

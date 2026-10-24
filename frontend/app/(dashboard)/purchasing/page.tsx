@@ -9,6 +9,7 @@ import AttachmentPreview from '../../../components/AttachmentPreview';
 import RowActions, { type RowActionItem } from '../../../components/RowActions';
 import StatusChip from '../../../components/StatusChip';
 import { api, getAccessToken } from '../../../lib/api';
+import { createPaintGet, peekPrefetch } from '../../../lib/prefetchCache';
 import { AmountField } from '../../../components/AmountField';
 import { getMe } from '../../../lib/meCache';
 import { useStoreContext } from '../../../lib/storeContext';
@@ -558,20 +559,28 @@ export default function Page() {
   const [billCreateOpen, setBillCreateOpen] = useState(false);
   const [billManualOpen, setBillManualOpen] = useState(false);
   const [returnCreateOpen, setReturnCreateOpen] = useState(false);
+  const paintGet = useMemo(() => createPaintGet(), []);
+
   async function refresh() {
+    const get = paintGet.get;
+    const peekPo = peekPrefetch('/purchasing/orders');
+    if (peekPo?.data) setOrders(asList<PurchaseOrder>(peekPo.data));
+    const peekSup = peekPrefetch('/suppliers');
+    if (peekSup?.data) setSuppliers(asList<Supplier>(peekSup.data));
     const [poRes, prRes, settingsRes, supRes, prodRes, unitRes, whRes, grnRes, invRes, retRes] =
       await Promise.all([
-      api('/purchasing/orders'),
-      api('/purchasing/requests'),
-      api('/purchasing/requests/settings'),
-      api('/suppliers'),
-      api('/products'),
-      api('/catalog/units').catch(() => ({ data: [] })),
-      api('/warehouses').catch(() => ({ data: [] })),
-      api('/purchasing/grn'),
-      api('/purchasing/invoices'),
-      api('/purchasing/returns'),
+      get('/purchasing/orders'),
+      get('/purchasing/requests'),
+      get('/purchasing/requests/settings'),
+      get('/suppliers'),
+      get('/products'),
+      get('/catalog/units').catch(() => ({ data: [] })),
+      get('/warehouses').catch(() => ({ data: [] })),
+      get('/purchasing/grn'),
+      get('/purchasing/invoices'),
+      get('/purchasing/returns'),
     ]);
+    paintGet.done();
     setOrders(asList<PurchaseOrder>(poRes.data));
     setRequests(asList<PurchaseRequest>(prRes.data));
     setPrLevels(settingsRes.data?.levels || []);

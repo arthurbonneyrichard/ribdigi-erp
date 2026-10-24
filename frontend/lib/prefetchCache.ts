@@ -7,7 +7,20 @@ type Body = Awaited<ReturnType<typeof api>>;
 const store = new Map<string, { at: number; body: Body; tenant: string }>();
 const inflight = new Map<string, Promise<Body>>();
 
-const TTL_MS = 15_000;
+/** Long enough to cover hover → click and tab switches; writes still force-refresh. */
+const TTL_MS = 45_000;
+
+export function createPaintGet() {
+  let firstPaint = true;
+  return {
+    get(path: string) {
+      return getPrefetched(path, { force: !firstPaint });
+    },
+    done() {
+      firstPaint = false;
+    },
+  };
+}
 
 function activeTenant(): string {
   if (typeof window === 'undefined') return '';

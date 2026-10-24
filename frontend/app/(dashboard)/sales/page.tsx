@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import FormModal from '../../../components/FormModal';
 import CustomerGroupsWindow from '../../../components/CustomerGroupsWindow';
@@ -9,6 +9,7 @@ import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import RowActions, { type RowActionItem } from '../../../components/RowActions';
 import StatusChip from '../../../components/StatusChip';
 import { api, getAccessToken } from '../../../lib/api';
+import { createPaintGet, peekPrefetch } from '../../../lib/prefetchCache';
 import { openReceiptPrintWindow } from '../../../lib/posReceiptPrint';
 import { formatMoney, formatNumber, formatWhen, plainLabel, type FormatPrefs } from '../../../lib/format';
 import { AmountField } from '../../../components/AmountField';
@@ -248,23 +249,33 @@ export default function Page() {
       .catch(() => undefined);
   }, []);
 
+  const paintGet = useMemo(() => createPaintGet(), []);
+
   async function refresh() {
+    const get = paintGet.get;
+    const peekInv = peekPrefetch('/sales/invoices');
+    if (peekInv?.data) setInvoices(peekInv.data || []);
+    const peekCust = peekPrefetch('/customers');
+    if (peekCust?.data) setCustomers(peekCust.data || []);
+    const peekProd = peekPrefetch('/products');
+    if (peekProd?.data) setProducts(peekProd.data || []);
     const [madeRes, invRes, custRes, prodRes, unitRes, qRes, oRes, rRes, storeRes, settingsRes, groupRes, tenantRes, couponRes] =
       await Promise.all([
-        api('/sales/made').catch(() => ({ data: [] })),
-        api('/sales/invoices'),
-        api('/customers'),
-        api('/products'),
-        api('/catalog/units').catch(() => ({ data: [] })),
-        api('/sales/quotations'),
-        api('/sales/orders'),
-        api('/sales/returns'),
-        api('/stores').catch(() => ({ data: [] })),
-        api('/sales/settings').catch(() => ({ data: null })),
-        api('/customers/groups').catch(() => ({ data: [] })),
-        api('/tenants/me').catch(() => ({ data: null })),
-        api('/sales/coupons').catch(() => ({ data: [] })),
+        get('/sales/made').catch(() => ({ data: [] })),
+        get('/sales/invoices'),
+        get('/customers'),
+        get('/products'),
+        get('/catalog/units').catch(() => ({ data: [] })),
+        get('/sales/quotations'),
+        get('/sales/orders'),
+        get('/sales/returns'),
+        get('/stores').catch(() => ({ data: [] })),
+        get('/sales/settings').catch(() => ({ data: null })),
+        get('/customers/groups').catch(() => ({ data: [] })),
+        get('/tenants/me').catch(() => ({ data: null })),
+        get('/sales/coupons').catch(() => ({ data: [] })),
       ]);
+    paintGet.done();
     setMadeSales(madeRes.data || []);
     setInvoices(invRes.data || []);
     setCustomers(custRes.data || []);

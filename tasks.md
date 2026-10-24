@@ -4,6 +4,12 @@ IDs are stable. Status values: Not started, In progress, Blocked, Implemented aw
 
 Evidence is a command outcome or a file inspection. Prior results cited from `docs/COMMERCIAL_READINESS_REPORT.md` or `docs/RETAIL_FEATURE_MATRIX.md` were not re-run for this file. Do not treat a loaded screen as a finished module.
 
+## 24 October 2026 UTC
+
+| ID | Priority | Finding | Required fix | Status | Acceptance criteria | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| T-PERF-24 | P1 | Opening a new sidebar desk waited on the page JS chunk (`prefetch={false}`) and then re-fetched every list | Enable Link prefetch, idle-warm visible routes, hover-warm GET lists, reuse them on first paint, add desk `loading.tsx` | Implemented awaiting verification | Sidebar no longer disables prefetch. Sales/purchasing/customers/credit/expenses/accounting use `createPaintGet`. Source + unit tests green. POS checkout / posted txns / `offline_complete_claimed` unchanged | From `backend`, `PYTHONPATH=.`, `RATE_LIMIT_BACKEND=memory`, Python 3.12: `pytest tests/test_nav_open_perf_p1.py tests/test_pos_split_layout_p1.py tests/test_credit_aging_kind_openapi_r1.py tests/test_erp_desk_design_p1.py` **12 passed** in 8.81s. `frontend` `npx tsx --test lib/navPrefetch.test.ts lib/prefetchCache.test.ts` **7 passed**. `npx tsc --noEmit` exit 0. Signed-in walk not run. `offline_complete_claimed` stays false |
+
 ## 22 October 2026 UTC
 
 | ID | Priority | Finding | Required fix | Status | Acceptance criteria | Evidence |
