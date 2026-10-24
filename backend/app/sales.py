@@ -145,6 +145,14 @@ async def list_invoice_items(db: AsyncSession, tenant_id: str, invoice_id: str) 
     ).scalars().all()
 
 
+async def _party_name(db: AsyncSession, party_id: str | None) -> str | None:
+    """Customer name for list screens (the party may be hidden from the customer picker)."""
+    if not party_id:
+        return None
+    party = await db.get(m.Party, party_id)
+    return party.name if party else None
+
+
 async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
     items = await list_invoice_items(db, invoice.tenant_id, invoice.id)
     status = invoice.status
@@ -170,6 +178,7 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
         "id": invoice.id,
         "invoice_number": invoice.invoice_number,
         "customer_id": invoice.customer_id,
+        "customer_name": await _party_name(db, invoice.customer_id),
         "store_id": invoice.store_id,
         "status": status,
         "subtotal": money_json(invoice.subtotal),

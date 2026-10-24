@@ -178,12 +178,21 @@ async def list_quotation_items(db: AsyncSession, tenant_id: str, quotation_id: s
     ).scalars().all()
 
 
+async def _party_name(db: AsyncSession, party_id: str | None) -> str | None:
+    """Customer name for list screens (the party may be hidden from the customer picker)."""
+    if not party_id:
+        return None
+    party = await db.get(m.Party, party_id)
+    return party.name if party else None
+
+
 async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict:
     items = await list_quotation_items(db, quote.tenant_id, quote.id)
     return {
         "id": quote.id,
         "quotation_number": quote.quotation_number,
         "customer_id": quote.customer_id,
+        "customer_name": await _party_name(db, quote.customer_id),
         "status": quote.status,
         "subtotal": money_json(quote.subtotal),
         "tax_amount": money_json(quote.tax_amount),
@@ -335,7 +344,7 @@ async def send_quotation(
         "sent": result.sent,
         "mode": result.mode,
         "to": recipient,
-        "emailed_at": quote.emailed_at,
+        "emailed_at": now.isoformat(),
     }
     return quote, delivery
 
@@ -414,6 +423,7 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
         "id": order.id,
         "order_number": order.order_number,
         "customer_id": order.customer_id,
+        "customer_name": await _party_name(db, order.customer_id),
         "quotation_id": order.quotation_id,
         "store_id": getattr(order, "store_id", None),
         "delivery_date": getattr(order, "delivery_date", None),

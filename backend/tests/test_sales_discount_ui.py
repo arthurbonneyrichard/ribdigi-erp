@@ -11,8 +11,8 @@ def test_sales_discount_ui_wired():
     assert "headerDiscount" in sales
     assert "discount_type: headerDiscountType" in sales
     assert "discount_type: lineDiscountType" in sales
-    assert 'placeholder="Line discount"' in sales
-    assert 'placeholder="Header discount"' in sales
+    assert 'aria-label="Line discount"' in sales
+    assert 'aria-label="Header discount"' in sales
     assert '<th className="col-num">Discount</th>' in sales
     assert "selected.discount_amount" in sales
 
