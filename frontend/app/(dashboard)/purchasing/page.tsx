@@ -14,7 +14,8 @@ import { AmountField } from '../../../components/AmountField';
 import { getMe } from '../../../lib/meCache';
 import { useStoreContext } from '../../../lib/storeContext';
 import { tenantIsMultiStore } from '../../../lib/tenantNav';
-import { formatNumber } from '../../../lib/format';
+import { formatDate, formatNumber } from '../../../lib/format';
+import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import './purchase-ui.css';
 
 type Tab = 'suppliers' | 'requests' | 'orders' | 'grn' | 'invoices' | 'returns' | 'history';
@@ -267,6 +268,10 @@ type Supplier = {
   profile_type?: string | null;
   category?: string | null;
   status?: string | null;
+  total_paid?: number;
+  amount_left?: number;
+  base_currency?: string;
+  totals_by_currency?: { currency: string; total_paid: number; amount_left: number }[];
 };
 type Product = { id: string; name: string; sku: string; cost_price: number; tracks_batches?: boolean; is_active?: boolean };
 type PurchaseRequest = {
@@ -314,6 +319,8 @@ type PurchaseOrder = {
   supplier_id: string;
   status: string;
   total_amount: number;
+  paid_amount?: number;
+  balance_due?: number;
   notes?: string | null;
   delivery_address?: string | null;
   due_date?: string | null;
@@ -349,6 +356,7 @@ type Grn = {
   status: string;
   items: GrnItem[];
   created_at?: string;
+  received_at?: string;
 };
 type PurchaseReturn = {
   id: string;
@@ -445,6 +453,7 @@ export default function Page() {
   const [prManageFilter, setPrManageFilter] = useState<
     'all' | 'draft' | 'pending' | 'approved' | 'rejected' | 'converted'
   >('all');
+  const formatPrefs = useCompanyFormat();
   const [grns, setGrns] = useState<Grn[]>([]);
   const [invoices, setInvoices] = useState<PurchaseInvoice[]>([]);
   const [piManageFilter, setPiManageFilter] = useState<
@@ -1566,6 +1575,31 @@ export default function Page() {
   const openBills = invoices.filter((inv) =>
     inv.status === 'unpaid' || inv.status === 'partial' || inv.status === 'overdue',
   );
+  const supplierMoney = (s: Supplier | undefined, field: 'total_paid' | 'amount_left') => {
+    const lines = s?.totals_by_currency || [];
+    const base = s?.base_currency || '';
+    if (lines.length > 1 || (lines.length === 1 && lines[0].currency !== base)) {
+      return (
+        <span className="purchase-ui-money-lines">
+          {lines.map((row) => (
+            <span key={row.currency}>
+              {row.currency} {formatNumber(row[field], formatPrefs)}
+            </span>
+          ))}
+        </span>
+      );
+    }
+    return formatNumber(s?.[field] ?? 0, formatPrefs);
+  };
+  const grnBillMoney = (grnId: string) => {
+    const bills = invoices.filter(
+      (inv) => inv.goods_receipt_id === grnId && inv.status !== 'cancelled' && inv.status !== 'draft',
+    );
+    if (bills.length === 0) return null;
+    const paid = bills.reduce((s, inv) => s + Number(inv.paid_amount || 0), 0);
+    const left = bills.reduce((s, inv) => s + Number(inv.balance_due || 0), 0);
+    return { paid: Math.round(paid * 100) / 100, left: Math.round(left * 100) / 100 };
+  };
   const purchaseHistory = useMemo(() => {
     const stamp = (iso?: string | null) => (iso ? String(iso) : '');
     const rows: { key: string; at: string; kind: string; ref: string; party: string; status: string; amount: string }[] =
@@ -2098,13 +2132,15 @@ export default function Page() {
             </div>
           ) : (
             <div className="cat-table-wrap">
-              <table className="table cat-table">
+              <table className="table cat-table purchase-ui-stack">
                 <thead>
                   <tr>
                     <th>Name</th>
                     <th className="col-id">Code</th>
                     <th className="col-status">Status</th>
                     <th className="col-num">Open bills</th>
+                    <th className="col-num">Total paid</th>
+                    <th className="col-num">Amount left</th>
                     <th className="col-actions">Actions</th>
                   </tr>
                 </thead>
@@ -2143,7 +2179,13 @@ export default function Page() {
                         <StatusChip value={s.status === 'inactive' ? 'inactive' : 'active'} />
                       </td>
                       <td className="col-num" data-label="Open bills">
-                        {owed.count === 0 ? '—' : `${owed.count} · ${owed.due.toFixed(2)}`}
+                        {owed.count === 0 ? '—' : owed.count}
+                      </td>
+                      <td className="col-num" data-label="Total paid" aria-label={`Total paid to ${s.name}`}>
+                        {supplierMoney(s, 'total_paid')}
+                      </td>
+                      <td className="col-num" data-label="Amount left" aria-label={`Amount left for ${s.name}`}>
+                        {supplierMoney(s, 'amount_left')}
                       </td>
                       <td className="col-actions">
                         <RowActions label={`More actions for ${s.name}`} primaryMax={1} items={supplierActions} />
@@ -2346,6 +2388,19 @@ export default function Page() {
               settle.
             </p>
           ) : null}
+        {(() => {
+          const managed = suppliers.find((s) => s.id === supplierId);
+          return (
+            <p className="purchase-ui-bill" style={{ marginTop: 0 }}>
+              <span aria-label={`Supplier total paid ${managed?.name || ''}`.trim()}>
+                Total paid {supplierMoney(managed, 'total_paid')}
+              </span>
+              <span aria-label={`Supplier amount left ${managed?.name || ''}`.trim()}>
+                Amount left {supplierMoney(managed, 'amount_left')}
+              </span>
+            </p>
+          );
+        })()}
           <PartyContactsPanel
             kind="supplier"
             partyId={supplierId}
@@ -2686,7 +2741,7 @@ export default function Page() {
           </select>
           </div>
           <div className="cat-table-wrap">
-          <table className="table">
+          <table className="table purchase-ui-stack">
             <thead>
               <tr>
                 <th className="col-id">PO</th>
@@ -2694,6 +2749,8 @@ export default function Page() {
                 <th className="col-status">Status</th>
                 <th className="col-num">Rev</th>
                 <th className="col-num">Total</th>
+                <th className="col-num">Amount paid</th>
+                <th className="col-num">Amount left</th>
                 <th className="col-text">Notes</th>
                 <th className="col-actions">Actions</th>
               </tr>
@@ -2751,7 +2808,7 @@ export default function Page() {
                 ];
                 return (
                 <tr key={o.id}>
-                  <td className="col-id">
+                  <td className="col-id" data-label="PO">
                     <button
                       onClick={() => openAmend(o)}
                       style={{ background: 'none', border: 0, color: 'var(--deep-green, #006B2E)', cursor: 'pointer' }}
@@ -2760,11 +2817,15 @@ export default function Page() {
                       {o.po_number}
                     </button>
                   </td>
-                  <td>{supplierNameOf(o.supplier_id)}</td>
-                  <td className="col-status"><StatusChip value={o.status} /></td>
-                  <td className="col-num">{o.revision_no ?? 0}</td>
-                  <td className="col-num">{formatNumber(o.total_amount)}</td>
-                  <td className="col-text muted">
+                  <td data-label="Supplier">{supplierNameOf(o.supplier_id)}</td>
+                  <td className="col-status" data-label="Status"><StatusChip value={o.status} /></td>
+                  <td className="col-num" data-label="Rev">{o.revision_no ?? 0}</td>
+                  <td className="col-num" data-label="Total">{formatNumber(o.total_amount, formatPrefs)}</td>
+                  <td className="col-num" data-label="Amount paid">{formatNumber(o.paid_amount ?? 0, formatPrefs)}</td>
+                  <td className="col-num" data-label="Amount left">
+                    {formatNumber(o.balance_due ?? Math.max(Number(o.total_amount || 0) - Number(o.paid_amount || 0), 0), formatPrefs)}
+                  </td>
+                  <td className="col-text muted" data-label="Notes">
                     {o.notes || '—'}
                   </td>
                   <td className="col-actions">
@@ -2775,7 +2836,7 @@ export default function Page() {
               })}
               {managedOrders.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="muted">
+                  <td colSpan={9} className="muted">
                     {orders.length === 0
                       ? 'Add a purchase order for a supplier.'
                       : 'No purchase orders for this filter, so choose All statuses to see them.'}
@@ -3498,16 +3559,18 @@ export default function Page() {
           </div>
         ) : (
         <div className="cat-table-wrap">
-        <table className="table cat-table">
+        <table className="table cat-table purchase-ui-stack">
           <thead>
             <tr>
               <th className="col-id">GRN</th>
               <th className="col-id">PO</th>
               <th>Supplier</th>
-              <th className="col-date">Date</th>
+              <th className="col-date">Date received</th>
               <th className="col-status">Status</th>
               <th className="col-num">Accepted</th>
               <th className="col-num">Rejected</th>
+              <th className="col-num">Amount paid</th>
+              <th className="col-num">Amount left</th>
               <th className="col-actions">Actions</th>
             </tr>
           </thead>
@@ -3518,6 +3581,7 @@ export default function Page() {
               const billed = invoices.some(
                 (inv) => inv.goods_receipt_id === g.id && inv.status !== 'cancelled',
               );
+              const billMoney = grnBillMoney(g.id);
               const grnActions: RowActionItem[] = [
                 {
                   key: 'bill',
@@ -3537,12 +3601,20 @@ export default function Page() {
                   <td className="col-id" data-label="GRN">{g.grn_number}</td>
                   <td className="col-id" data-label="PO">{poNumberOf(g.purchase_order_id)}</td>
                   <td data-label="Supplier">{supplierNameOf(g.supplier_id, g.purchase_order_id)}</td>
-                  <td className="col-date" data-label="Date">{g.created_at ? String(g.created_at).slice(0, 10) : '—'}</td>
+                  <td className="col-date" data-label="Date received">
+                    {formatDate(g.received_at || g.created_at, formatPrefs) || '—'}
+                  </td>
                   <td className="col-status" data-label="Status">
                     <StatusChip value={g.status} />
                   </td>
                   <td className="col-num" data-label="Accepted">{accepted}</td>
                   <td className="col-num" data-label="Rejected">{rejected}</td>
+                  <td className="col-num" data-label="Amount paid">
+                    {billMoney ? formatNumber(billMoney.paid, formatPrefs) : '—'}
+                  </td>
+                  <td className="col-num" data-label="Amount left">
+                    {billMoney ? formatNumber(billMoney.left, formatPrefs) : '—'}
+                  </td>
                   <td className="col-actions">
                     {billed ? (
                       <span className="muted">Billed</span>
@@ -3620,7 +3692,10 @@ export default function Page() {
             {openBills.length > 0
               ? openBills.map((inv) => (
                 <p key={inv.id} className="purchase-ui-bill">
-                  <span>{billSupplierName(inv)} · {inv.invoice_number} · {inv.status} · due {inv.balance_due}</span>
+                  <span>
+                    {billSupplierName(inv)} · {inv.invoice_number} · {inv.status} · paid{' '}
+                    {formatNumber(inv.paid_amount ?? 0, formatPrefs)} · left {formatNumber(inv.balance_due, formatPrefs)}
+                  </span>
                   {inv.supplier_id ? (
                     <a href={`/credit?kind=payable&panel=pay&supplier=${inv.supplier_id}&bill=${inv.id}`}>
                       Pay {inv.invoice_number}
@@ -4098,7 +4173,7 @@ export default function Page() {
         </select>
         </div>
         <div className="cat-table-wrap">
-        <table className="table">
+        <table className="table purchase-ui-stack">
           <thead>
             <tr>
               <th className="col-id">Invoice</th>
@@ -4108,7 +4183,8 @@ export default function Page() {
               <th className="col-status">Currency</th>
               <th className="col-num">Total</th>
               <th className="col-num">RC</th>
-              <th className="col-num">Due</th>
+              <th className="col-num">Amount paid</th>
+              <th className="col-num">Amount left</th>
               <th className="col-status">AP posted</th>
               <th className="col-status">File</th>
               <th className="col-text">Notes</th>
@@ -4195,7 +4271,7 @@ export default function Page() {
               ];
               return (
               <tr key={inv.id}>
-                <td className="col-id">
+                <td className="col-id" data-label="Invoice">
                   <button
                     type="button"
                     onClick={async () => {
@@ -4217,28 +4293,29 @@ export default function Page() {
                     {inv.invoice_number}
                   </button>
                 </td>
-                <td>{billSupplierName(inv)}</td>
-                <td className="col-id">{inv.supplier_invoice_number || '—'}</td>
-                <td className="col-status"><StatusChip value={inv.status} /></td>
-                <td className="col-status">
+                <td data-label="Supplier">{billSupplierName(inv)}</td>
+                <td className="col-id" data-label="Supplier #">{inv.supplier_invoice_number || '—'}</td>
+                <td className="col-status" data-label="Status"><StatusChip value={inv.status} /></td>
+                <td className="col-status" data-label="Currency">
                   {inv.currency
                     ? `${inv.currency}${inv.exchange_rate != null ? ` @ ${inv.exchange_rate}` : ''}`
                     : '—'}
                 </td>
-                <td className="col-num">{formatNumber(inv.total_amount)}</td>
-                <td className="col-num">
+                <td className="col-num" data-label="Total">{formatNumber(inv.total_amount, formatPrefs)}</td>
+                <td className="col-num" data-label="RC">
                   {inv.is_reverse_charge
                     ? `${inv.reverse_charge_tax ?? 0}`
                     : inv.tax_amount ?? '—'}
                 </td>
-                <td className="col-num">{formatNumber(inv.balance_due)}</td>
-                <td className="col-status">
+                <td className="col-num" data-label="Amount paid">{formatNumber(inv.paid_amount ?? 0, formatPrefs)}</td>
+                <td className="col-num" data-label="Amount left">{formatNumber(inv.balance_due, formatPrefs)}</td>
+                <td className="col-status" data-label="AP posted">
                   <StatusChip value={inv.ap_posted ? 'posted' : 'draft'} label={inv.ap_posted ? 'Posted' : 'Via GRN'} />
                 </td>
-                <td className="col-status">
+                <td className="col-status" data-label="File">
                   {inv.has_attachment ? <StatusChip value="active" label="Yes" /> : '—'}
                 </td>
-                <td className="col-text muted">
+                <td className="col-text muted" data-label="Notes">
                   {inv.notes || '—'}
                 </td>
                 <td className="col-actions">
@@ -4249,7 +4326,7 @@ export default function Page() {
             })}
             {managedInvoices.length === 0 && (
               <tr>
-                <td colSpan={12} className="muted">
+                <td colSpan={13} className="muted">
                   {invoices.length === 0
                     ? 'Receive goods, then create a supplier bill for that supplier.'
                     : 'No purchase invoices for this filter, so choose All statuses to see them.'}

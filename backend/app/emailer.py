@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import asyncio
-import base64
 import html
+import io
 import logging
+import re
 import smtplib
 import ssl
+import threading
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from email.message import EmailMessage
 from functools import lru_cache
@@ -81,9 +84,62 @@ def _is_platform_brand_name(name: str | None) -> bool:
     return key in _PLATFORM_BRAND_ALIASES
 
 
+PLATFORM_LOGO_CID = "ribdigi-house-logo@ribdigi"
+_CID_SRC = re.compile(r'<img\b[^>]*\bsrc="cid:([^"]+)"[^>]*>', re.IGNORECASE)
+_INLINE_MAX = 256
+_inline_lock = threading.Lock()
+# cid -> (owning tenant id or None for the platform mark, bytes, image subtype)
+_INLINE_IMAGES: OrderedDict[str, tuple[str | None, bytes, str]] = OrderedDict()
+
+
+def _register_inline(cid: str, owner: str | None, data: bytes, subtype: str) -> None:
+    with _inline_lock:
+        _INLINE_IMAGES[cid] = (owner, data, subtype)
+        _INLINE_IMAGES.move_to_end(cid)
+        while len(_INLINE_IMAGES) > _INLINE_MAX:
+            _INLINE_IMAGES.popitem(last=False)
+
+
+def _resolve_inline_images(
+    html_body: str | None, tenant: Any | None
+) -> tuple[str | None, list[tuple[str, bytes, str]]]:
+    """Find ``cid:`` logos in the HTML that belong to this tenant (or the platform).
+
+    An image this send cannot attach is removed so clients do not show a broken icon;
+    the company name text stays in the header.
+    """
+    if not html_body or "cid:" not in html_body:
+        return html_body, []
+    tenant_id = str(getattr(tenant, "id", "") or "") or None
+    found: list[tuple[str, bytes, str]] = []
+    seen: set[str] = set()
+
+    def _swap(match: re.Match) -> str:
+        cid = match.group(1)
+        with _inline_lock:
+            entry = _INLINE_IMAGES.get(cid)
+        if entry is None or (entry[0] is not None and entry[0] != tenant_id):
+            return ""
+        if cid not in seen:
+            seen.add(cid)
+            found.append((cid, entry[1], entry[2]))
+        return match.group(0)
+
+    return _CID_SRC.sub(_swap, html_body), found
+
+
+def _platform_house_logo() -> tuple[int, int] | None:
+    """Register the Ribdigi House noreply mark as an inline image; return (width, height)."""
+    cached = _platform_house_logo_bytes()
+    if cached is None:
+        return None
+    data, subtype, width, height = cached
+    _register_inline(PLATFORM_LOGO_CID, None, data, subtype)
+    return width, height
+
+
 @lru_cache(maxsize=1)
-def _platform_house_logo_data_uri() -> tuple[str, int, int] | None:
-    """Return (data_uri, width, height) for the Ribdigi House noreply brand mark."""
+def _platform_house_logo_bytes() -> tuple[bytes, str, int, int] | None:
     jpg = _BRANDING_DIR / "ribdigi-house-email.jpg"
     png = _BRANDING_DIR / "ribdigi-house-logo.png"
     path = jpg if jpg.is_file() else png if png.is_file() else None
@@ -92,17 +148,22 @@ def _platform_house_logo_data_uri() -> tuple[str, int, int] | None:
     try:
         from PIL import Image
 
-        raw = path.read_bytes()
-        with Image.open(path) as img:
-            width, height = img.size
-        # Keep email headers readable (~220px wide)
+        with Image.open(path) as src:
+            img = src.convert("RGBA") if src.mode in {"RGBA", "LA", "P"} else src.convert("RGB")
+        # Readable ~220px header, bitmap at 2× for HiDPI clients.
         max_w = 220
-        if width > max_w:
-            height = max(1, int(round(height * (max_w / width))))
-            width = max_w
-        mime = "image/jpeg" if path.suffix.lower() in {".jpg", ".jpeg"} else "image/png"
-        b64 = base64.b64encode(raw).decode("ascii")
-        return f"data:{mime};base64,{b64}", width, height
+        img.thumbnail((max_w * 2, 144), Image.LANCZOS)
+        buf = io.BytesIO()
+        if path.suffix.lower() in {".jpg", ".jpeg"}:
+            img.convert("RGB").save(buf, format="JPEG", quality=88, optimize=True)
+            subtype = "jpeg"
+        else:
+            img.save(buf, format="PNG", optimize=True)
+            subtype = "png"
+        scale = min(max_w / img.width, 72 / img.height, 1.0)
+        width = max(1, int(round(img.width * scale)))
+        height = max(1, int(round(img.height * scale)))
+        return buf.getvalue(), subtype, width, height
     except Exception:
         logger.exception("Failed to load Ribdigi House email logo")
         return None
@@ -122,7 +183,8 @@ def render_branded_html(
     back to the Ribdigi House mark — company name only. Platform noreply mail
     (verify/reset) may embed the House logo when ``allow_platform_logo`` is true.
     """
-    from app.print_branding import load_logo_jpeg, print_branding_settings
+    from app.logo_media import email_logo
+    from app.print_branding import print_branding_settings
 
     company = (
         (company_name or getattr(tenant, "company_name", None) or "Ribdigi House") or "Ribdigi House"
@@ -136,27 +198,26 @@ def render_branded_html(
 
     logo_html = ""
     used_platform_logo = False
-    logo = None
-    if tenant is not None and getattr(tenant, "logo_url", None):
-        logo = load_logo_jpeg(tenant, max_width_px=240, max_height_px=80)
+    # Inline CID parts, not data: URIs — Gmail/Outlook strip data: images.
+    logo = email_logo(tenant)
     if logo:
-        jpeg, width_px, height_px = logo
-        b64 = base64.b64encode(jpeg).decode("ascii")
+        _register_inline(logo.cid, str(tenant.id), logo.data, logo.subtype)
         logo_html = (
-            f'<img class="ribdigi-email-logo" src="data:image/jpeg;base64,{b64}" '
-            f'width="{int(width_px)}" height="{int(height_px)}" alt="{company_esc}" '
-            'style="display:block;max-width:240px;max-height:80px;width:auto;height:auto;'
-            'object-fit:contain;margin:0 auto 12px;" />'
+            f'<img class="ribdigi-email-logo" src="cid:{logo.cid}" '
+            f'width="{logo.width}" height="{logo.height}" alt="{company_esc}" '
+            f'style="display:block;width:{logo.width}px;height:{logo.height}px;'
+            "max-width:240px;border:0;outline:none;background:#ffffff;padding:6px;"
+            'border-radius:8px;margin:0 auto 12px;" />'
         )
     elif allow_platform_logo:
-        platform = _platform_house_logo_data_uri()
+        platform = _platform_house_logo()
         if platform:
-            data_uri, width_px, height_px = platform
+            width_px, height_px = platform
             logo_html = (
-                f'<img class="ribdigi-email-logo ribdigi-house-logo" src="{data_uri}" '
-                f'width="{int(width_px)}" height="{int(height_px)}" alt="Ribdigi House" '
-                'style="display:block;max-width:220px;max-height:72px;width:auto;height:auto;'
-                'object-fit:contain;margin:0 auto 8px;" />'
+                f'<img class="ribdigi-email-logo ribdigi-house-logo" src="cid:{PLATFORM_LOGO_CID}" '
+                f'width="{width_px}" height="{height_px}" alt="Ribdigi House" '
+                f'style="display:block;width:{width_px}px;height:{height_px}px;'
+                'max-width:220px;border:0;outline:none;margin:0 auto 8px;" />'
             )
             used_platform_logo = True
 
@@ -258,6 +319,7 @@ def build_message(
     html_body: str | None = None,
     attachments: list[dict[str, Any]] | None = None,
     cfg: SmtpConfig | None = None,
+    inline_images: list[tuple[str, bytes, str]] | None = None,
 ) -> EmailMessage:
     recipients = [to] if isinstance(to, str) else list(to)
     if not recipients:
@@ -272,6 +334,18 @@ def build_message(
     msg.set_content(text_body)
     if html_body:
         msg.add_alternative(html_body, subtype="html")
+        if inline_images:
+            # multipart/alternative → [text/plain, multipart/related → [text/html, image…]]
+            html_part = msg.get_payload()[-1]
+            for cid, data, subtype in inline_images:
+                html_part.add_related(
+                    data,
+                    maintype="image",
+                    subtype=subtype,
+                    cid=f"<{cid}>",
+                    filename=f"logo.{'jpg' if subtype == 'jpeg' else subtype}",
+                    disposition="inline",
+                )
     _attach_files(msg, attachments)
     return msg
 
@@ -318,6 +392,7 @@ async def send_email(
     if mode == "disabled":
         return EmailResult(sent=False, mode="disabled", recipients=recipients)
 
+    html_body, inline_images = _resolve_inline_images(html_body, tenant)
     msg = build_message(
         to=recipients,
         subject=subject,
@@ -325,6 +400,7 @@ async def send_email(
         html_body=html_body,
         attachments=attachments,
         cfg=c,
+        inline_images=inline_images,
     )
     attachment_meta = [
         {
@@ -343,6 +419,10 @@ async def send_email(
         "text_body": text_body,
         "html_body": html_body,
         "attachments": attachment_meta,
+        "inline_images": [
+            {"cid": cid, "content_type": f"image/{subtype}", "size_bytes": len(data)}
+            for cid, data, subtype in inline_images
+        ],
         "mode": mode,
     }
 

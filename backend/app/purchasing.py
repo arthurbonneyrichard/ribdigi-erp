@@ -1035,6 +1035,7 @@ async def serialize_grn(db: AsyncSession, grn: m.GoodsReceipt) -> dict:
         "status": grn.status,
         "notes": grn.notes,
         "created_at": grn.created_at,
+        "received_at": grn.created_at,
         "items": [
             {
                 "id": i.id,

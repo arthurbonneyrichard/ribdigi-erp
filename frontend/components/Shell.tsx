@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { api, apiRoot, clearSessionAndRedirect, idleTimeoutMs, isConfirmedAuthExpiry, tenantHeaderValue, getAccessToken, hydrateAuth } from '../lib/api';
+import { api, clearSessionAndRedirect, idleTimeoutMs, isConfirmedAuthExpiry, tenantHeaderValue, getAccessToken, hydrateAuth } from '../lib/api';
 import { formatNoticeTime, notifyCategoryLabel } from '../lib/notifyText';
 import { industryAllowsModule, INDUSTRY_SPECIFIC_MODULES } from '../lib/industryModules';
 import { industryLabel, normalizeIndustry } from '../lib/industries';
@@ -47,6 +47,13 @@ import {
   type NavItem,
 } from '../lib/tenantNav';
 import { chromeLogoAlt, chromeLogoSrc, PLATFORM_SIDEBAR_LOGO } from '../lib/chromeBrand';
+import {
+  cachedCompanyLogoUrl,
+  loadCompanyLogo,
+  logoVersionFromMe,
+  logoVersionHint,
+  rememberLogoVersion,
+} from '../lib/companyLogo';
 import OnboardingChecklist from './OnboardingChecklist';
 import StoreSwitcher from './StoreSwitcher';
 
@@ -972,9 +979,19 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [navCompact, setNavCompact] = useState(false);
   const [fullName, setFullName] = useState('');
   const [companyName, setCompanyName] = useState('');
-  const [hasLogo, setHasLogo] = useState(false);
+  const [logoVersion, setLogoVersion] = useState<string | null>(null);
   const [logoTick, setLogoTick] = useState(0);
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
+  const [logoPending, setLogoPending] = useState(false);
+
+  function applyLogoVersion(data: { has_logo?: boolean; logo_version?: string | null } | null | undefined) {
+    const v = logoVersionFromMe(data);
+    const tenantId = tenantHeaderValue(localStorage.getItem('tenant'));
+    rememberLogoVersion(tenantId, v);
+    setLogoVersion(v);
+    // An early request from the saved version can fail before the token refreshes.
+    if (v && tenantId && !cachedCompanyLogoUrl(tenantId, v)) setLogoTick((n) => n + 1);
+  }
   const [idleMinutes, setIdleMinutes] = useState(30);
   const [idleWarn, setIdleWarn] = useState(false);
   const idleLoggingOut = useRef(false);
@@ -1026,6 +1043,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         full_name?: string;
         company_name?: string;
         has_logo?: boolean;
+        logo_version?: string | null;
         id?: string;
         inactivity_timeout_minutes?: number;
       }) => {
@@ -1042,7 +1060,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         setRole(data.role || '');
         setFullName(data.full_name || '');
         setCompanyName(data.company_name || '');
-        setHasLogo(Boolean(data.has_logo));
+        applyLogoVersion(data);
         const uid = String(data.id || '').trim();
         if (uid) {
           setUserId(uid);
@@ -1299,7 +1317,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         setRole(meRes.data?.role || '');
         setFullName(meRes.data?.full_name || '');
         setCompanyName(meRes.data?.company_name || '');
-        setHasLogo(Boolean(meRes.data?.has_logo));
+        applyLogoVersion(meRes.data);
         const uid = String(meRes.data?.id || '').trim();
         if (uid) {
           setUserId(uid);
@@ -1350,47 +1368,42 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     if (main instanceof HTMLElement) main.scrollTop = 0;
   }, [pathname]);
 
+  // Start the logo request from the last known version before /me answers.
   useEffect(() => {
-    let revoked = false;
-    let objectUrl: string | null = null;
-    async function loadLogo() {
-      if (!hasLogo) {
-        setCompanyLogoUrl(null);
-        return;
-      }
-      try {
-        await hydrateAuth();
-        const token = getAccessToken();
-        const tenantId = tenantHeaderValue(localStorage.getItem('tenant'));
-        const res = await fetch(`${apiRoot()}/tenants/me/logo`, {
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
-          },
-        });
-        if (!res.ok) {
-          if (!revoked) setCompanyLogoUrl(null);
-          return;
-        }
-        const blob = await res.blob();
-        objectUrl = URL.createObjectURL(blob);
-        if (!revoked) setCompanyLogoUrl(objectUrl);
-      } catch {
-        if (!revoked) setCompanyLogoUrl(null);
-      }
+    const hint = logoVersionHint(tenantHeaderValue(localStorage.getItem('tenant')));
+    if (hint) setLogoVersion((current) => current ?? hint);
+  }, []);
+
+  useEffect(() => {
+    const tenantId = tenantHeaderValue(localStorage.getItem('tenant'));
+    if (!logoVersion || !tenantId) {
+      setCompanyLogoUrl(null);
+      setLogoPending(false);
+      return;
     }
-    loadLogo();
+    const hit = cachedCompanyLogoUrl(tenantId, logoVersion);
+    if (hit) {
+      setCompanyLogoUrl(hit);
+      setLogoPending(false);
+      return;
+    }
+    let cancelled = false;
+    setLogoPending(true);
+    void loadCompanyLogo(tenantId, logoVersion).then((url) => {
+      if (cancelled) return;
+      setCompanyLogoUrl(url);
+      setLogoPending(false);
+    });
     return () => {
-      revoked = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      cancelled = true;
     };
-  }, [hasLogo, logoTick]);
+  }, [logoVersion, logoTick]);
 
   useEffect(() => {
     function onTenantLogoChanged() {
       void getMe({ force: true })
         .then((meRes) => {
-          setHasLogo(Boolean(meRes.data?.has_logo));
+          applyLogoVersion(meRes.data);
           setCompanyName(meRes.data?.company_name || '');
           setLogoTick((n) => n + 1);
         })
@@ -1504,7 +1517,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           setMultiStore(tenantIsMultiStore(meRes.data));
           setRole(meRes.data?.role || '');
           setCompanyName(meRes.data?.company_name || '');
-          setHasLogo(Boolean(meRes.data?.has_logo));
+          applyLogoVersion(meRes.data);
           setLogoTick((n) => n + 1);
         })
         .catch(() => undefined);
@@ -1642,12 +1655,18 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       >
         <div className="brand" aria-label="Workspace brand">
           <div className="brand-logo-slot">
-            <img
-              className="brand-logo"
-              src={sidebarLogoSrc}
-              alt={sidebarLogoAlt}
-              draggable={false}
-            />
+            {logoPending && !companyLogoUrl ? null : (
+              <img
+                className="brand-logo"
+                src={sidebarLogoSrc}
+                alt={sidebarLogoAlt}
+                width={216}
+                height={50}
+                decoding="async"
+                fetchPriority="high"
+                draggable={false}
+              />
+            )}
           </div>
           {companyName ? (
             <div className="brand-name">{companyName}</div>

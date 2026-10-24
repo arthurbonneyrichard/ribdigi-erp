@@ -15,6 +15,7 @@ from app import packages as packages_svc
 from app import schema_compat
 from app.config import settings
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
+from app.logo_media import logo_version
 
 _SAFE_IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
@@ -277,6 +278,7 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         "grace_days": int(settings.TRIAL_GRACE_DAYS),
         "logo_url": tenant.logo_url,
         "has_logo": bool(tenant.logo_url),
+        "logo_version": logo_version(tenant.id, tenant.logo_url),
         "suspended_at": tenant.suspended_at,
         "suspended_reason": tenant.suspended_reason,
         "package_code": getattr(tenant, "package_code", None) or "trial",

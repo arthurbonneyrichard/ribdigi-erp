@@ -275,11 +275,11 @@ def load_logo_jpeg(
         from PIL import Image
 
         from app import storage as storage_svc
+        from app.logo_media import _open_image, flatten_on_white
 
         media = storage_svc.read_object(tenant.logo_url, tenant_id=tenant.id)
-        img = Image.open(io.BytesIO(media.data))
-        img = img.convert("RGB")
-        img.thumbnail((max_width_px, max_height_px))
+        img = flatten_on_white(_open_image(media.data))
+        img.thumbnail((max_width_px, max_height_px), Image.LANCZOS)
         buf = io.BytesIO()
         img.save(buf, format="JPEG", quality=85)
         return buf.getvalue(), img.width, img.height

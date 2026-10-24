@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+from types import SimpleNamespace
 from typing import Any
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer
 
@@ -322,6 +323,118 @@ def _bill_is_overdue(as_of: datetime, due_date: datetime | None) -> bool:
     return bool(due_date and due_date.date() < as_of.date())
 
 
+def _open_bill_dues(
+    invoices: list[m.PurchaseInvoice], return_credit: dict[str, float]
+) -> list[tuple[m.PurchaseInvoice, float]]:
+    """Amount left per open bill after posted purchase-return credit (AP aging rule)."""
+    remaining_credit = dict(return_credit)
+    out: list[tuple[m.PurchaseInvoice, float]] = []
+    for inv in invoices:
+        due = max(money_json(inv.total_amount) - money_json(inv.paid_amount), 0)
+        due = _apply_po_return_credit(due, inv.purchase_order_id, remaining_credit)
+        if due > 0:
+            out.append((inv, due))
+    return out
+
+
+def _add_currency_total(
+    by_currency: dict[str, dict[str, float]], currency: str, field: str, amount: float
+) -> None:
+    row = by_currency.setdefault(
+        currency, {"currency": currency, "total_paid": money_json(0), "amount_left": money_json(0)}
+    )
+    row[field] = money_json(round(row[field] + money_json(amount), 2))
+
+
+def _currency_list(by_currency: dict[str, dict[str, float]], base: str) -> list[dict]:
+    """Base currency first, then other codes alphabetically."""
+    return sorted(by_currency.values(), key=lambda r: (r["currency"] != base, r["currency"]))
+
+
+def empty_supplier_money(base_currency: str) -> dict:
+    return {
+        "total_paid": money_json(0),
+        "amount_left": money_json(0),
+        "base_currency": base_currency,
+        "totals_by_currency": [],
+    }
+
+
+async def supplier_paid_and_left(
+    db: AsyncSession, tenant_id: str, supplier_id: str | None = None
+) -> dict[str, dict]:
+    """Per-supplier total paid and amount left, in a fixed number of tenant-scoped queries.
+
+    total_paid sums supplier payments, excluding those reversed by a bounced or
+    cancelled cheque. amount_left uses the AP aging bill rule (open bills minus
+    posted return credit). Scalars are base currency, each document converted at
+    its own stored exchange_rate. totals_by_currency keeps each document currency
+    separate and is never summed across currencies.
+    """
+    from sqlalchemy import and_, or_
+
+    from app.fx import doc_currency, doc_rate, get_base_currency, to_base
+    from app.purchasing import PURCHASE_INVOICE_OPEN
+
+    base = await get_base_currency(db, tenant_id)
+    pay_q = (
+        select(
+            m.SupplierPayment.supplier_id,
+            m.SupplierPayment.currency,
+            m.SupplierPayment.exchange_rate,
+            func.coalesce(func.sum(m.SupplierPayment.amount), 0),
+        )
+        .outerjoin(
+            m.Cheque,
+            and_(
+                m.Cheque.supplier_payment_id == m.SupplierPayment.id,
+                m.Cheque.tenant_id == tenant_id,
+            ),
+        )
+        .where(
+            m.SupplierPayment.tenant_id == tenant_id,
+            or_(m.Cheque.id.is_(None), m.Cheque.status.notin_(["bounced", "cancelled"])),
+        )
+        .group_by(
+            m.SupplierPayment.supplier_id,
+            m.SupplierPayment.currency,
+            m.SupplierPayment.exchange_rate,
+        )
+    )
+    inv_q = select(m.PurchaseInvoice).where(
+        m.PurchaseInvoice.tenant_id == tenant_id,
+        m.PurchaseInvoice.status.in_(list(PURCHASE_INVOICE_OPEN)),
+    )
+    if supplier_id:
+        pay_q = pay_q.where(m.SupplierPayment.supplier_id == supplier_id)
+        inv_q = inv_q.where(m.PurchaseInvoice.supplier_id == supplier_id)
+    paid_rows = (await db.execute(pay_q)).all()
+    invoices = (
+        await db.execute(inv_q.order_by(m.PurchaseInvoice.created_at, m.PurchaseInvoice.id))
+    ).scalars().all()
+    return_credit = await _posted_return_credit_by_po(db, tenant_id)
+
+    out: dict[str, dict] = {}
+    by_cur: dict[str, dict[str, dict[str, float]]] = {}
+
+    def _row(sid: str) -> dict:
+        by_cur.setdefault(str(sid), {})
+        return out.setdefault(str(sid), empty_supplier_money(base))
+
+    for sid, currency, rate, total in paid_rows:
+        row = _row(sid)
+        doc = SimpleNamespace(currency=currency, exchange_rate=rate)
+        row["total_paid"] = money_json(round(row["total_paid"] + to_base(total, doc_rate(doc)), 2))
+        _add_currency_total(by_cur[str(sid)], doc_currency(doc, base), "total_paid", total)
+    for inv, due in _open_bill_dues(list(invoices), return_credit):
+        row = _row(inv.supplier_id)
+        row["amount_left"] = money_json(round(row["amount_left"] + to_base(due, doc_rate(inv)), 2))
+        _add_currency_total(by_cur[str(inv.supplier_id)], doc_currency(inv, base), "amount_left", due)
+    for sid, row in out.items():
+        row["totals_by_currency"] = _currency_list(by_cur[sid], base)
+    return out
+
+
 async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = None) -> dict:
     """Supplier amounts due from billed invoices only.
 
@@ -338,6 +451,7 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
                 m.PurchaseInvoice.tenant_id == tenant_id,
                 m.PurchaseInvoice.status.in_(list(PURCHASE_INVOICE_OPEN)),
             )
+            .order_by(m.PurchaseInvoice.created_at, m.PurchaseInvoice.id)
         )
     ).scalars().all()
     invoiced_po_ids = {i.purchase_order_id for i in invoices if i.purchase_order_id}
@@ -359,8 +473,12 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
         ).scalars().all()
     }
     return_credit = await _posted_return_credit_by_po(db, tenant_id)
+    from app.fx import doc_currency, doc_rate, get_base_currency, to_base
+
+    base = await get_base_currency(db, tenant_id)
 
     by_supplier: dict[str, dict] = {}
+    due_by_currency: dict[str, dict[str, dict[str, float]]] = {}
     totals = empty_buckets()
     documents: list[dict] = []
     commitments: list[dict] = []
@@ -369,6 +487,7 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
 
     def _party_row(supplier_id: str) -> dict:
         sup = suppliers.get(supplier_id)
+        due_by_currency.setdefault(supplier_id, {})
         return by_supplier.setdefault(
             supplier_id,
             {
@@ -377,22 +496,28 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
                 "credit_limit": money_json(sup.credit_limit) if sup else money_json(0),
                 "balance": money_json(sup.balance) if sup else money_json(0),
                 "total_due": money_json(0),
+                "total_due_base": money_json(0),
+                "base_currency": base,
+                "totals_by_currency": [],
                 "commitment_total": money_json(0),
                 **empty_buckets(),
             },
         )
 
-    remaining_credit = dict(return_credit)
-    for inv in invoices:
-        due = max(money_json(inv.total_amount) - money_json(inv.paid_amount), 0)
-        due = _apply_po_return_credit(due, inv.purchase_order_id, remaining_credit)
-        if due <= 0:
-            continue
+    for inv, due in _open_bill_dues(list(invoices), return_credit):
         days = days_overdue(as_of, inv.due_date, inv.invoice_date or inv.created_at)
         bucket = age_bucket(days)
         add_to_bucket(totals, days, due)
         row = _party_row(inv.supplier_id)
         row["total_due"] = money_json(round(row["total_due"] + due, 2))
+        row["total_due_base"] = money_json(
+            round(row["total_due_base"] + to_base(due, doc_rate(inv)), 2)
+        )
+        cur = doc_currency(inv, base)
+        cur_row = due_by_currency[inv.supplier_id].setdefault(
+            cur, {"currency": cur, "total_due": money_json(0)}
+        )
+        cur_row["total_due"] = money_json(round(cur_row["total_due"] + due, 2))
         row[bucket] = money_json(round(row[bucket] + due, 2))
         if _bill_is_overdue(as_of, inv.due_date):
             overdue_total = money_json(round(overdue_total + due, 2))
@@ -443,6 +568,12 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
                 "balance_due": money_json(due),
                 "status": po.status,
             }
+        )
+
+    for sid, row in by_supplier.items():
+        row["totals_by_currency"] = sorted(
+            due_by_currency.get(sid, {}).values(),
+            key=lambda r: (r["currency"] != base, r["currency"]),
         )
 
     total_due = money_json(round(sum(totals.values()), 2))

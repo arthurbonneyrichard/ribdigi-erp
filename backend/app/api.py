@@ -62,6 +62,7 @@ from app import backup as backup_svc
 from app import tenants as tenants_svc
 from app import packages as packages_svc
 from app import storage as storage_svc
+from app import logo_media as logo_media_svc
 from app.honesty import money_json, require_honest_narrative
 from app.schemas import validate_e164_phone_value
 from app import cheques as cheques_svc
@@ -1025,8 +1026,9 @@ async def tenant_me_logo_upload(
         allowed_types=storage_svc.LOGO_CONTENT_TYPES,
         max_bytes=int(settings.MEDIA_MAX_LOGO_BYTES),
     )
+    logo_media_svc.store_display_copy(tenant.id, stored.key)
     if tenant.logo_url:
-        storage_svc.delete_key(tenant.logo_url, tenant_id=tenant.id)
+        logo_media_svc.delete_logo(tenant.logo_url, tenant_id=tenant.id)
     tenant.logo_url = stored.key
     await audit_svc.record_event(
         db,
@@ -1055,13 +1057,16 @@ async def tenant_me_logo_upload(
 
 @api.get("/tenants/me/logo")
 async def tenant_me_logo_get(
+    request: Request,
+    # `logo_version` from /me; a matching value lets the browser keep the image for a year.
+    v: Annotated[str | None, Query(pattern=r"^[a-f0-9]{1,64}$")] = None,
     claims=Depends(current_claims),
     db: AsyncSession = Depends(get_db),
 ):
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     if not tenant.logo_url:
         raise HTTPException(status_code=404, detail="No logo uploaded")
-    return storage_svc.media_response(tenant.logo_url, tenant_id=tenant.id)
+    return logo_media_svc.tenant_logo_response(tenant, request=request, requested_version=v)
 
 
 @api.delete("/tenants/me/logo")
@@ -1073,7 +1078,7 @@ async def tenant_me_logo_delete(
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     if not tenant.logo_url:
         raise HTTPException(status_code=404, detail="No logo uploaded")
-    storage_svc.delete_key(tenant.logo_url, tenant_id=tenant.id)
+    logo_media_svc.delete_logo(tenant.logo_url, tenant_id=tenant.id)
     tenant.logo_url = None
     await audit_svc.record_event(
         db,
@@ -3248,6 +3253,7 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             ),
             "time_format": (getattr(tenant, "time_format", None) or "24h") if tenant else "24h",
             "has_logo": bool(getattr(tenant, "logo_url", None)) if tenant else False,
+            "logo_version": logo_media_svc.tenant_logo_version(tenant),
             **totp_svc.status_payload(user),
         }
     )
@@ -6674,8 +6680,13 @@ async def suppliers(
             raise HTTPException(status_code=422, detail="Invalid status filter")
         q = q.where(m.Party.status == st)
     rows = (await db.execute(q)).scalars().all()
+    from app.credit import empty_supplier_money, supplier_paid_and_left
+    from app.fx import get_base_currency
+
+    money = await supplier_paid_and_left(db, claims["tenant_id"])
+    zero = empty_supplier_money(await get_base_currency(db, claims["tenant_id"]))
     await db.commit()
-    return env([_serialize_party(r) for r in rows])
+    return env([{**_serialize_party(r), **money.get(r.id, zero)} for r in rows])
 
 
 @api.get("/suppliers/{supplier_id}")
@@ -6696,6 +6707,14 @@ async def get_supplier(
     if not party:
         raise HTTPException(status_code=404, detail="Supplier not found")
     data = await _party_with_contacts(db, party)
+    from app.credit import empty_supplier_money, supplier_paid_and_left
+    from app.fx import get_base_currency
+
+    money = await supplier_paid_and_left(db, claims["tenant_id"], supplier_id=party.id)
+    data.update(
+        money.get(party.id)
+        or empty_supplier_money(await get_base_currency(db, claims["tenant_id"]))
+    )
     await db.commit()
     return env(data)
 

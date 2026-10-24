@@ -60,7 +60,9 @@ async def test_verification_email_content():
     assert "ribdigi-email-brand" in html_body
     assert "Acme" in html_body
     assert "ribdigi-house-logo" in html_body
-    assert "data:image/" in html_body
+    assert f'src="cid:{emailer.PLATFORM_LOGO_CID}"' in html_body
+    assert "data:image/" not in html_body
+    assert emailer.get_dev_outbox()[0]["inline_images"][0]["cid"] == emailer.PLATFORM_LOGO_CID
 
 
 @pytest.mark.asyncio

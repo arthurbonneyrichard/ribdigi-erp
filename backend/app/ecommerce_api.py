@@ -14,6 +14,7 @@ from app import ecommerce as ecom
 from app import ecommerce_connectors as connectors_svc
 from app import ecommerce_payments as payments_svc
 from app import storage as storage_svc
+from app import logo_media as logo_media_svc
 from app.config import settings
 from app.db import get_db
 from app.honesty import money_json
@@ -235,6 +236,7 @@ async def staff_upload_media(
 @staff.get("/media/{kind}")
 async def staff_get_media(
     kind: Literal["logo", "banner", "favicon"],
+    request: Request,
     db: AsyncSession = Depends(get_db),
     claims: dict = Depends(require_permission("ecommerce", "read")),
 ):
@@ -243,7 +245,13 @@ async def staff_get_media(
     key = getattr(row, ecom.storefront_media_attr(kind))
     if not key:
         raise HTTPException(status_code=404, detail=f"No storefront {kind} uploaded")
-    return storage_svc.media_response(key, tenant_id=tenant.id)
+    return logo_media_svc.keyed_media_response(
+        key,
+        tenant_id=tenant.id,
+        request=request,
+        cache_control=logo_media_svc.REVALIDATE_CACHE_CONTROL,
+        vary="Authorization, X-Tenant-ID",
+    )
 
 
 @staff.delete("/media/{kind}")
@@ -658,7 +666,13 @@ async def public_media(
     key = getattr(storefront_row, ecom.storefront_media_attr(kind))
     if not key:
         raise HTTPException(status_code=404, detail=f"No storefront {kind} uploaded")
-    return storage_svc.media_response(key, tenant_id=tenant.id)
+    return logo_media_svc.keyed_media_response(
+        key,
+        tenant_id=tenant.id,
+        request=request,
+        cache_control="private, no-cache" if _public_preview(request, preview_token) else "public, max-age=300",
+        vary="Host, X-Forwarded-Host, X-Storefront-Preview",
+    )
 
 
 @storefront.get("/products/{product_id}/image")
@@ -683,7 +697,14 @@ async def public_product_image(
         or not listing.is_published
     ):
         raise HTTPException(status_code=404, detail="Product image is not published")
-    return storage_svc.media_response(product.image_url, tenant_id=tenant.id)
+    # Revalidate every time so unpublishing takes effect at once; 304 still skips the bytes.
+    return logo_media_svc.keyed_media_response(
+        product.image_url,
+        tenant_id=tenant.id,
+        request=request,
+        cache_control="private, no-cache" if _public_preview(request, preview_token) else "public, no-cache",
+        vary="Host, X-Forwarded-Host, X-Storefront-Preview",
+    )
 
 
 @storefront.post("/cart")

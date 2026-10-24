@@ -19,7 +19,9 @@ def test_sidebar_brand_ui_wired():
     assert "brand-name" in shell
     assert "company_name" in shell
     assert "has_logo" in shell
-    assert "/tenants/me/logo" in shell
+    assert "loadCompanyLogo" in shell
+    logo_loader = (ROOT / "frontend/lib/companyLogo.ts").read_text(encoding="utf-8")
+    assert "/tenants/me/logo" in logo_loader
     assert "topbar-brand" not in shell
     css = (ROOT / "frontend/app/globals.css").read_text(encoding="utf-8")
     assert ".brand{" in css or ".brand{" in css.replace(" ", "")
