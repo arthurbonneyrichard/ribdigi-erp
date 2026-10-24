@@ -177,6 +177,7 @@ export default function Page() {
   const [units, setUnits] = useState<any[]>([]);
   const [qty, setQty] = useState('1');
   const [unitPrice, setUnitPrice] = useState('0');
+  const [addedLines, setAddedLines] = useState<{ label: string; qty: number; price: number; item: any }[]>([]);
   const [taxRate, setTaxRate] = useState('');
   const [lineDiscount, setLineDiscount] = useState('');
   const [lineDiscountType, setLineDiscountType] = useState<'fixed' | 'percent'>('fixed');
@@ -326,6 +327,10 @@ export default function Page() {
   }, [ctxStoreId]);
 
   useEffect(() => {
+    if (!composerOpen) setAddedLines([]);
+  }, [composerOpen]);
+
+  useEffect(() => {
     setVariantId('');
     setVariants([]);
     if (!productId) return;
@@ -368,19 +373,38 @@ export default function Page() {
 
   const lineDisc = Math.max(0, Number(lineDiscount) || 0);
   const hdrDisc = Math.max(0, Number(headerDiscount) || 0);
-  const lineItems = [
-    {
-      product_id: productId.trim(),
-      variant_id: variantId.trim() || null,
-      unit_id: unitId.trim() || null,
-      quantity: Number(qty),
-      ...(useGroupPrice ? {} : { unit_price: Number(unitPrice) }),
-      tax_rate: taxRate === '' ? null : Number(taxRate),
-      discount: lineDiscountType === 'percent' ? 0 : lineDisc,
-      discount_type: lineDiscountType,
-      discount_percent: lineDiscountType === 'percent' ? Math.max(0, Math.min(100, lineDisc)) : 0,
-    },
-  ];
+  const currentLine = {
+    product_id: productId.trim(),
+    variant_id: variantId.trim() || null,
+    unit_id: unitId.trim() || null,
+    quantity: Number(qty),
+    ...(useGroupPrice ? {} : { unit_price: Number(unitPrice) }),
+    tax_rate: taxRate === '' ? null : Number(taxRate),
+    discount: lineDiscountType === 'percent' ? 0 : lineDisc,
+    discount_type: lineDiscountType,
+    discount_percent: lineDiscountType === 'percent' ? Math.max(0, Math.min(100, lineDisc)) : 0,
+  };
+  // Lines already added with "Add line", plus the line being typed (when a product is chosen).
+  const lineItems = [...addedLines.map((l) => l.item), ...(productId.trim() || !addedLines.length ? [currentLine] : [])];
+
+  function addLine() {
+    if (!productId.trim() || !(Number(qty) > 0)) {
+      setError('Choose a product and a quantity first');
+      return;
+    }
+    setError('');
+    const prod = products.find((p) => p.id === productId);
+    const variant = variants.find((v) => v.id === variantId);
+    const label = [prod?.name || 'Product', variant?.name].filter(Boolean).join(' · ');
+    setAddedLines((prev) => [...prev, { label, qty: Number(qty), price: Number(unitPrice) || 0, item: currentLine }]);
+    setProductId('');
+    setVariantId('');
+    setUnitId('');
+    setQty('1');
+    setUnitPrice('0');
+    setTaxRate('');
+    setLineDiscount('');
+  }
 
   const linePayload = {
     // trim so Create quotation / Create order (UuidIdValue customer_id) do not 422 on whitespace
@@ -1633,216 +1657,326 @@ export default function Page() {
         </div>
         ) : null}
         {composerOpen ? (
-        <div className="card">
-          <h3>Create sale</h3>
+        <div className="card sale-form">
           <div className="erp-stack" style={{ marginBottom: 0 }}>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <select
-            value={customerId}
-            onChange={(e) => setCustomerId(e.target.value)}
-            aria-label="Sale customer"
-          >
-            <option value="">Customer</option>
-            {customers
-              .filter((c) => c.is_active !== false && (c.status || 'active') === 'active')
-              .map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-          </select>
-          {showStore ? (
-          <select
-            value={storeId}
-            onChange={(e) => {
-              setStoreId(e.target.value);
-              setCtxStoreId(e.target.value);
-            }}
-            aria-label="Sale store"
-          >
-            <option value="">Choose a store</option>
-            {activeStores.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-          ) : null}
-          <input
-            type="date"
-            value={deliveryDate}
-            onChange={(e) => setDeliveryDate(e.target.value)}
-            aria-label="SO delivery date"
-            title="Promised delivery date for a sales order"
-          />
-          <input
-            value={deliveryAddress}
-            onChange={(e) => setDeliveryAddress(e.target.value)}
-            placeholder="Delivery address"
-            aria-label="SO delivery address"
-            title="Ship-to address for a sales order"
-          />
-          <select
-            value={productId}
-            onChange={(e) => setProductId(e.target.value)}
-            aria-label="Sales product"
-          >
-            <option value="">Product</option>
-            {products
-              .filter((p) => p.is_active !== false)
-              .map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} — {p.sku}
-              </option>
-            ))}
-          </select>
-          {variants.length > 0 && (
+        <div className="form-grid">
+          <div className="field">
+            <label htmlFor="sale-customer">Customer</label>
             <select
-              value={variantId}
-              onChange={(e) => setVariantId(e.target.value)}
-              aria-label="Sales variant"
+              id="sale-customer"
+              value={customerId}
+              onChange={(e) => setCustomerId(e.target.value)}
+              aria-label="Sale customer"
             >
-              <option value="">Variant (optional)</option>
-              {variants.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name} — {v.sku} ({v.selling_price})
+              <option value="">Choose a customer</option>
+              {customers
+                .filter((c) => c.is_active !== false && (c.status || 'active') === 'active')
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+          {showStore && composerKind !== 'quotation' ? (
+          <div className="field">
+            <label htmlFor="sale-store">Store</label>
+            <select
+              id="sale-store"
+              value={storeId}
+              onChange={(e) => {
+                setStoreId(e.target.value);
+                setCtxStoreId(e.target.value);
+              }}
+              aria-label="Sale store"
+            >
+              <option value="">Choose a store</option>
+              {activeStores.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
                 </option>
               ))}
             </select>
-          )}
-          <select
-            value={unitId}
-            onChange={(e) => setUnitId(e.target.value)}
-            aria-label="Sales unit"
-          >
-            <option value="">Unit (default)</option>
-            {units.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.code}
-              </option>
-            ))}
-          </select>
-          <input
-            value={qty}
-            onChange={(e) => setQty(e.target.value)}
-            placeholder="Qty"
-            aria-label="Line quantity"
-            style={{ width: 80 }}
-          />
-          {wholesaleOps && Number(products.find((p) => p.id === productId)?.min_order_qty || 0) > 0 ? (
-            <span className="muted">
-              Wholesale minimum {products.find((p) => p.id === productId)?.min_order_qty}
-            </span>
+          </div>
           ) : null}
-          <AmountField
-            inline
-            currency={currency}
-            value={unitPrice}
-            onChange={(e) => {
-              setUseGroupPrice(false);
-              setUnitPrice(e.target.value);
-            }}
-            placeholder="Price"
-            aria-label="Line unit price"
-          />
-          <label style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-            <input
-              type="checkbox"
-              aria-label="Use customer group price"
-              checked={useGroupPrice}
-              onChange={(e) => setUseGroupPrice(e.target.checked)}
-            />
-            {wholesaleOps ? 'Quantity price' : 'Group price'}
-          </label>
-          <input
-            value={taxRate}
-            onChange={(e) => setTaxRate(e.target.value)}
-            placeholder="Tax %"
-            aria-label="Line tax percent"
-            style={{ width: 80 }}
-          />
-          <select
-            value={lineDiscountType}
-            onChange={(e) => setLineDiscountType(e.target.value === 'percent' ? 'percent' : 'fixed')}
-            aria-label="Line discount type"
-          >
-            <option value="fixed">Line discount amount</option>
-            <option value="percent">Line discount %</option>
-          </select>
-          {lineDiscountType === 'fixed' ? (
-            <AmountField
-              inline
-              currency={currency}
-              value={lineDiscount}
-              onChange={(e) => setLineDiscount(e.target.value)}
-              placeholder="Line discount"
-              aria-label="Line discount"
-              title="Line discount amount (tax before discount)"
-            />
-          ) : (
-            <input
-              value={lineDiscount}
-              onChange={(e) => setLineDiscount(e.target.value)}
-              placeholder="Line discount"
-              aria-label="Line discount"
-              style={{ width: 110 }}
-              title="Line discount amount (tax before discount)"
-            />
-          )}
-          <select
-            value={headerDiscountType}
-            onChange={(e) => setHeaderDiscountType(e.target.value === 'percent' ? 'percent' : 'fixed')}
-            aria-label="Header discount type"
-          >
-            <option value="fixed">Header discount amount</option>
-            <option value="percent">Header discount %</option>
-          </select>
-          {headerDiscountType === 'fixed' ? (
-            <AmountField
-              inline
-              currency={currency}
-              value={headerDiscount}
-              onChange={(e) => setHeaderDiscount(e.target.value)}
-              placeholder="Header discount"
-              aria-label="Header discount"
-              title="Document-level discount amount"
-            />
-          ) : (
-            <input
-              value={headerDiscount}
-              onChange={(e) => setHeaderDiscount(e.target.value)}
-              placeholder="Header discount"
-              aria-label="Header discount"
-              style={{ width: 120 }}
-              title="Document-level discount amount"
-            />
-          )}
-          <input
-            value={couponCode}
-            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-            placeholder="Coupon code"
-            aria-label="Invoice coupon code"
-            style={{ width: 140 }}
-          />
-          <input
-            value={docNotes}
-            onChange={(e) => setDocNotes(e.target.value)}
-            placeholder="Notes (optional)"
-            aria-label="Sales document notes"
-            title="Optional notes"
-            style={{ minWidth: 180 }}
-          />
+          {composerKind === 'order' ? (
+            <>
+              <div className="field">
+                <label htmlFor="sale-deliver-on">Deliver on</label>
+                <input
+                  id="sale-deliver-on"
+                  type="date"
+                  value={deliveryDate}
+                  onChange={(e) => setDeliveryDate(e.target.value)}
+                  aria-label="SO delivery date"
+                  title="Promised delivery date for a sales order"
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="sale-deliver-to">Deliver to</label>
+                <input
+                  id="sale-deliver-to"
+                  value={deliveryAddress}
+                  onChange={(e) => setDeliveryAddress(e.target.value)}
+                  placeholder="Delivery address"
+                  aria-label="SO delivery address"
+                  title="Ship-to address for a sales order"
+                />
+              </div>
+            </>
+          ) : null}
         </div>
-        <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
-          <input
-            type="checkbox"
-            checked={invoiceReverseCharge}
-            onChange={(e) => setInvoiceReverseCharge(e.target.checked)}
-            aria-label="Sales invoice reverse charge"
-          />
-          Reverse charge (tax memo only — not charged to customer)
-        </label>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+
+        <h4 className="sale-form-sub">Products</h4>
+        {addedLines.length ? (
+          <table className="table sale-form-lines">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th className="num">Qty</th>
+                <th className="num">Price each</th>
+                <th aria-label="Remove" />
+              </tr>
+            </thead>
+            <tbody>
+              {addedLines.map((l, i) => (
+                <tr key={i}>
+                  <td>{l.label}</td>
+                  <td className="num">{l.qty}</td>
+                  <td className="num">{l.price.toFixed(2)}</td>
+                  <td className="num">
+                    <button
+                      type="button"
+                      className="btn-danger"
+                      aria-label={`Remove sale line ${i + 1}`}
+                      onClick={() => setAddedLines((prev) => prev.filter((_, k) => k !== i))}
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : null}
+        <div className="form-grid sale-form-line">
+          <div className="field span-2">
+            <label htmlFor="sale-product">{addedLines.length ? 'Another product (optional)' : 'Product'}</label>
+            <select
+              id="sale-product"
+              value={productId}
+              onChange={(e) => setProductId(e.target.value)}
+              aria-label="Sales product"
+            >
+              <option value="">Choose a product</option>
+              {products
+                .filter((p) => p.is_active !== false)
+                .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} — {p.sku}
+                </option>
+              ))}
+            </select>
+          </div>
+          {variants.length > 0 && (
+            <div className="field">
+              <label htmlFor="sale-variant">Size or colour</label>
+              <select
+                id="sale-variant"
+                value={variantId}
+                onChange={(e) => setVariantId(e.target.value)}
+                aria-label="Sales variant"
+              >
+                <option value="">Variant (optional)</option>
+                {variants.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.name} — {v.sku} ({v.selling_price})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className="field">
+            <label htmlFor="sale-unit">Unit</label>
+            <select
+              id="sale-unit"
+              value={unitId}
+              onChange={(e) => setUnitId(e.target.value)}
+              aria-label="Sales unit"
+            >
+              <option value="">Product&apos;s unit</option>
+              {units.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.code}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="sale-qty">Quantity</label>
+            <input
+              id="sale-qty"
+              value={qty}
+              onChange={(e) => setQty(e.target.value)}
+              placeholder="Qty"
+              inputMode="decimal"
+              aria-label="Line quantity"
+            />
+            {wholesaleOps && Number(products.find((p) => p.id === productId)?.min_order_qty || 0) > 0 ? (
+              <span className="muted">
+                Wholesale minimum {products.find((p) => p.id === productId)?.min_order_qty}
+              </span>
+            ) : null}
+          </div>
+          <div className="field">
+            <label htmlFor="sale-price">Price each</label>
+            <AmountField
+              id="sale-price"
+              currency={currency}
+              value={unitPrice}
+              onChange={(e) => {
+                setUseGroupPrice(false);
+                setUnitPrice(e.target.value);
+              }}
+              placeholder="Price"
+              aria-label="Line unit price"
+            />
+            <label className="sale-form-check">
+              <input
+                type="checkbox"
+                aria-label="Use customer group price"
+                checked={useGroupPrice}
+                onChange={(e) => setUseGroupPrice(e.target.checked)}
+              />
+              {wholesaleOps ? 'Use quantity price' : 'Use the customer group price'}
+            </label>
+          </div>
+          <div className="field">
+            <label htmlFor="sale-tax">Tax %</label>
+            <input
+              id="sale-tax"
+              value={taxRate}
+              onChange={(e) => setTaxRate(e.target.value)}
+              placeholder="Product tax"
+              inputMode="decimal"
+              aria-label="Line tax percent"
+            />
+          </div>
+          <div className="field sale-form-add">
+            <button type="button" onClick={addLine} aria-label="Add sale line">
+              + Add line
+            </button>
+          </div>
+        </div>
+
+        <details className="sales-more sale-form-more">
+          <summary>Discounts and more</summary>
+          <div className="form-grid">
+            <div className="field">
+              <label htmlFor="sale-line-disc">Discount on this line</label>
+              <div className="sale-form-pair">
+                <select
+                  value={lineDiscountType}
+                  onChange={(e) => setLineDiscountType(e.target.value === 'percent' ? 'percent' : 'fixed')}
+                  aria-label="Line discount type"
+                >
+                  <option value="fixed">Amount</option>
+                  <option value="percent">%</option>
+                </select>
+                {lineDiscountType === 'fixed' ? (
+                  <AmountField
+                    id="sale-line-disc"
+                    inline
+                    currency={currency}
+                    value={lineDiscount}
+                    onChange={(e) => setLineDiscount(e.target.value)}
+                    placeholder="0"
+                    aria-label="Line discount"
+                    title="Line discount amount (tax before discount)"
+                  />
+                ) : (
+                  <input
+                    id="sale-line-disc"
+                    value={lineDiscount}
+                    onChange={(e) => setLineDiscount(e.target.value)}
+                    placeholder="0"
+                    aria-label="Line discount"
+                    title="Line discount percent"
+                  />
+                )}
+              </div>
+            </div>
+            <div className="field">
+              <label htmlFor="sale-hdr-disc">Discount on the whole sale</label>
+              <div className="sale-form-pair">
+                <select
+                  value={headerDiscountType}
+                  onChange={(e) => setHeaderDiscountType(e.target.value === 'percent' ? 'percent' : 'fixed')}
+                  aria-label="Header discount type"
+                >
+                  <option value="fixed">Amount</option>
+                  <option value="percent">%</option>
+                </select>
+                {headerDiscountType === 'fixed' ? (
+                  <AmountField
+                    id="sale-hdr-disc"
+                    inline
+                    currency={currency}
+                    value={headerDiscount}
+                    onChange={(e) => setHeaderDiscount(e.target.value)}
+                    placeholder="0"
+                    aria-label="Header discount"
+                    title="Document-level discount amount"
+                  />
+                ) : (
+                  <input
+                    id="sale-hdr-disc"
+                    value={headerDiscount}
+                    onChange={(e) => setHeaderDiscount(e.target.value)}
+                    placeholder="0"
+                    aria-label="Header discount"
+                    title="Document-level discount percent"
+                  />
+                )}
+              </div>
+            </div>
+            {composerKind === 'invoice' ? (
+              <div className="field">
+                <label htmlFor="sale-coupon">Coupon code</label>
+                <input
+                  id="sale-coupon"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  placeholder="Optional"
+                  aria-label="Invoice coupon code"
+                />
+              </div>
+            ) : null}
+            <div className="field span-2">
+              <label htmlFor="sale-notes">Notes</label>
+              <input
+                id="sale-notes"
+                value={docNotes}
+                onChange={(e) => setDocNotes(e.target.value)}
+                placeholder="Optional, e.g. Price valid for bulk order only"
+                aria-label="Sales document notes"
+                title="Optional notes"
+              />
+            </div>
+          </div>
+          {composerKind === 'invoice' ? (
+            <label className="sale-form-check">
+              <input
+                type="checkbox"
+                checked={invoiceReverseCharge}
+                onChange={(e) => setInvoiceReverseCharge(e.target.checked)}
+                aria-label="Sales invoice reverse charge"
+              />
+              Reverse charge (tax memo only — not charged to customer)
+            </label>
+          ) : null}
+        </details>
+        <div className="sale-form-actions">
           {(composerKind === 'quotation'
             ? (['quotation', 'order', 'invoice'] as const)
             : composerKind === 'order'
