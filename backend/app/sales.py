@@ -854,7 +854,7 @@ async def send_sales_invoice(
     if not recipient:
         raise HTTPException(
             status_code=400,
-            detail="Customer has no email; set customer email or pass to= override",
+            detail="This customer has no email address. Add one to the customer, or type an address in Email to.",
         )
 
     tenant = await db.get(m.Tenant, tenant_id)

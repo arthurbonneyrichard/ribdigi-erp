@@ -450,7 +450,7 @@ async def send_purchase_order(
     if not recipient:
         raise HTTPException(
             status_code=400,
-            detail="Supplier has no email; set supplier email or pass to= override",
+            detail="This supplier has no email address. Add one to the supplier, or type an address in Email the order to.",
         )
 
     tenant = await db.get(m.Tenant, tenant_id)
@@ -684,7 +684,7 @@ async def amend_purchase_order(
         if not recipient:
             raise HTTPException(
                 status_code=400,
-                detail="Supplier has no email; set supplier email or pass to= override",
+                detail="This supplier has no email address. Add one to the supplier, or type an address in Email the order to.",
             )
         tenant = await db.get(m.Tenant, tenant_id)
         company_name = tenant.company_name if tenant else "RIBDIGI ERP"
