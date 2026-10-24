@@ -9,6 +9,7 @@ import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import RowActions, { type RowActionItem } from '../../../components/RowActions';
 import StatusChip from '../../../components/StatusChip';
 import { api, getAccessToken } from '../../../lib/api';
+import { openDocumentPrint } from '../../../lib/documentPrint';
 import { createPaintGet, peekPrefetch } from '../../../lib/prefetchCache';
 import { openReceiptPrintWindow } from '../../../lib/posReceiptPrint';
 import { formatMoney, formatNumber, formatWhen, plainLabel, type FormatPrefs } from '../../../lib/format';
@@ -925,7 +926,10 @@ export default function Page() {
     try {
       let requestPath = path;
       if (
-        (path.includes('/quotations/') || path.includes('/invoices/')) &&
+        (path.includes('/quotations/')
+          || path.includes('/invoices/')
+          || path.includes('/orders/')
+          || path.includes('/returns/')) &&
         path.endsWith('/send') &&
         docEmailTo.trim()
       ) {
@@ -2341,6 +2345,16 @@ export default function Page() {
                   onClick: () => setSelected(q),
                 },
                 {
+                  key: 'print',
+                  label: 'Print',
+                  ariaLabel: 'Print quotation',
+                  onClick: () => {
+                    openDocumentPrint(`/sales/quotations/${q.id}/print?format=pdf`).catch((err) =>
+                      setError(String(err)),
+                    );
+                  },
+                },
+                {
                   key: 'email',
                   label: 'Email',
                   hidden: q.status !== 'draft',
@@ -2430,7 +2444,7 @@ export default function Page() {
           </div>
           {numberingPanel}
           <details className="sales-more sales-ui-settings">
-            <summary>Cancel an order</summary>
+            <summary>Cancel or email an order</summary>
           <div className="card sales-more-body">
             <label>
               Cancel reason{' '}
@@ -2439,6 +2453,16 @@ export default function Page() {
                 onChange={(e) => setSoCancelReason(e.target.value)}
                 placeholder="Required before Cancel"
                 aria-label="Sales order cancel reason"
+              />
+            </label>
+            <label style={{ display: 'block', marginTop: 8 }}>
+              Email to{' '}
+              <input
+                type="email"
+                value={docEmailTo}
+                onChange={(e) => setDocEmailTo(e.target.value)}
+                placeholder="Optional — uses customer email if blank"
+                aria-label="Document email override to"
               />
             </label>
           </div>
@@ -2494,6 +2518,22 @@ export default function Page() {
                   label: 'View',
                   ariaLabel: `View sales order ${o.id}`,
                   onClick: () => setSelected(o),
+                },
+                {
+                  key: 'print',
+                  label: 'Print',
+                  ariaLabel: 'Print sales order',
+                  onClick: () => {
+                    openDocumentPrint(`/sales/orders/${o.id}/print?format=pdf`).catch((err) =>
+                      setError(String(err)),
+                    );
+                  },
+                },
+                {
+                  key: 'email',
+                  label: 'Email',
+                  ariaLabel: 'Email sales order',
+                  onClick: () => act(`/sales/orders/${o.id}/send`, 'Sales order emailed'),
                 },
                 {
                   key: 'confirm',
@@ -3143,7 +3183,7 @@ export default function Page() {
           </FormModal>
           ) : null}
           <details className="sales-more" style={{ marginBottom: 12 }}>
-            <summary>Cancel a return</summary>
+            <summary>Cancel or email a return</summary>
           <div className="card sales-more-body">
             <label>
               Cancel reason{' '}
@@ -3152,6 +3192,16 @@ export default function Page() {
                 onChange={(e) => setSrCancelReason(e.target.value)}
                 placeholder="Required before Cancel"
                 aria-label="Sales return cancel reason"
+              />
+            </label>
+            <label style={{ display: 'block', marginTop: 8 }}>
+              Email to{' '}
+              <input
+                type="email"
+                value={docEmailTo}
+                onChange={(e) => setDocEmailTo(e.target.value)}
+                placeholder="Optional — uses customer email if blank"
+                aria-label="Document email override to"
               />
             </label>
           </div>
@@ -3193,6 +3243,22 @@ export default function Page() {
                   label: 'View',
                   ariaLabel: `View sales return ${r.id}`,
                   onClick: () => setSelected(r),
+                },
+                {
+                  key: 'print',
+                  label: 'Print',
+                  ariaLabel: 'Print sales return',
+                  onClick: () => {
+                    openDocumentPrint(`/sales/returns/${r.id}/print?format=pdf`).catch((err) =>
+                      setError(String(err)),
+                    );
+                  },
+                },
+                {
+                  key: 'email',
+                  label: 'Email',
+                  ariaLabel: 'Email sales return',
+                  onClick: () => act(`/sales/returns/${r.id}/send`, 'Credit note emailed'),
                 },
                 {
                   key: 'post-credit',

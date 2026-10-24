@@ -153,6 +153,7 @@ from app.schemas import (
     InvoiceTemplateValue,
     ReceiptPaperValue,
     InvoicePrintFormatValue,
+    DocumentPrintFormatValue,
     ReceiptPrintFormatValue,
     ReceiptChannelValue,
     E164PhoneValue,
@@ -7854,6 +7855,41 @@ async def get_quotation(
     return env(await sales_docs_svc.serialize_quotation(db, quote))
 
 
+@api.get("/sales/quotations/{quotation_id}/print")
+async def print_sales_quotation(
+    quotation_id: UuidIdValue,
+    format: Annotated[DocumentPrintFormatValue | None, Query()] = None,
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Printable quotation HTML or A4 PDF. Empty customer email does not block."""
+    from app.document_print import (
+        build_sales_quotation_print,
+        print_response,
+        store_name_by_id,
+    )
+
+    quote = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
+    assert_record_access(claims, quote.created_by)
+    data = await sales_docs_svc.serialize_quotation(db, quote)
+    customer = await sales_svc.get_customer(db, claims["tenant_id"], quote.customer_id)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    payload = build_sales_quotation_print(
+        data,
+        tenant=tenant,
+        customer=customer,
+        store_name=await store_name_by_id(
+            db, tenant_id=claims["tenant_id"], store_id=getattr(quote, "store_id", None)
+        ),
+    )
+    return print_response(
+        payload,
+        tenant=tenant,
+        fmt=format,
+        filename=f"quotation_{payload.get('title') or quotation_id}.pdf",
+    )
+
+
 @api.post("/sales/quotations/{quotation_id}/send")
 async def send_quotation(
     quotation_id: UuidIdValue,
@@ -8017,6 +8053,75 @@ async def get_sales_order(
     order = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
     assert_record_access(claims, order.created_by)
     return env(await sales_docs_svc.serialize_order(db, order))
+
+
+@api.get("/sales/orders/{order_id}/print")
+async def print_sales_order(
+    order_id: UuidIdValue,
+    format: Annotated[DocumentPrintFormatValue | None, Query()] = None,
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Printable sales order HTML or A4 PDF. Empty customer email does not block."""
+    from app.document_print import (
+        build_sales_order_print,
+        print_response,
+        store_name_by_id,
+    )
+
+    order = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
+    assert_record_access(claims, order.created_by)
+    data = await sales_docs_svc.serialize_order(db, order)
+    customer = await sales_svc.get_customer(db, claims["tenant_id"], order.customer_id)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    payload = build_sales_order_print(
+        data,
+        tenant=tenant,
+        customer=customer,
+        store_name=await store_name_by_id(
+            db, tenant_id=claims["tenant_id"], store_id=getattr(order, "store_id", None)
+        ),
+    )
+    return print_response(
+        payload,
+        tenant=tenant,
+        fmt=format,
+        filename=f"sales_order_{order.order_number or order_id}.pdf",
+    )
+
+
+@api.post("/sales/orders/{order_id}/send")
+async def send_sales_order(
+    order_id: UuidIdValue,
+    to: Annotated[EmailStr | None, Query()] = None,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Email sales order. Optional Query `to` ∈ EmailStr; omit → customer email; blank/invalid → 422."""
+    from app import document_email as document_email_svc
+
+    existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
+    assert_record_access(claims, existing.created_by)
+    order, delivery = await document_email_svc.send_sales_order(
+        db,
+        tenant_id=claims["tenant_id"],
+        order_id=order_id,
+        to=str(to) if to is not None else None,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="sales",
+        action="sales_order_email",
+        entity="sales_order",
+        entity_id=order.id,
+        details=delivery,
+    )
+    await db.commit()
+    data = await sales_docs_svc.serialize_order(db, order)
+    data["delivery"] = delivery
+    return env(data, f"Sales order emailed to {delivery['to']}")
 
 
 @api.post("/sales/orders/{order_id}/confirm")
@@ -8199,6 +8304,64 @@ async def get_sales_return(
     return env(await sales_docs_svc.serialize_return(db, ret))
 
 
+@api.get("/sales/returns/{return_id}/print")
+async def print_sales_return(
+    return_id: UuidIdValue,
+    format: Annotated[DocumentPrintFormatValue | None, Query()] = None,
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Printable sales return / credit note HTML or A4 PDF."""
+    from app.document_print import build_sales_return_print, print_response
+
+    ret = await sales_docs_svc.get_return(db, claims["tenant_id"], return_id)
+    assert_record_access(claims, ret.created_by)
+    data = await sales_docs_svc.serialize_return(db, ret)
+    customer = await sales_svc.get_customer(db, claims["tenant_id"], ret.customer_id)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    payload = build_sales_return_print(data, tenant=tenant, customer=customer)
+    return print_response(
+        payload,
+        tenant=tenant,
+        fmt=format,
+        filename=f"credit_note_{ret.credit_note_number or ret.return_number or return_id}.pdf",
+    )
+
+
+@api.post("/sales/returns/{return_id}/send")
+async def send_sales_return(
+    return_id: UuidIdValue,
+    to: Annotated[EmailStr | None, Query()] = None,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Email sales return / credit note. Optional Query `to` ∈ EmailStr; omit → customer email; blank/invalid → 422."""
+    from app import document_email as document_email_svc
+
+    existing = await sales_docs_svc.get_return(db, claims["tenant_id"], return_id)
+    assert_record_access(claims, existing.created_by)
+    ret, delivery = await document_email_svc.send_sales_return(
+        db,
+        tenant_id=claims["tenant_id"],
+        return_id=return_id,
+        to=str(to) if to is not None else None,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="sales",
+        action="sales_return_email",
+        entity="sales_return",
+        entity_id=ret.id,
+        details=delivery,
+    )
+    await db.commit()
+    data = await sales_docs_svc.serialize_return(db, ret)
+    data["delivery"] = delivery
+    return env(data, f"Credit note emailed to {delivery['to']}")
+
+
 @api.post("/sales/returns/{return_id}/post")
 async def post_sales_return(
     return_id: UuidIdValue,
@@ -8304,6 +8467,98 @@ async def record_sales_payment(
             "fx_gain_loss": money_json(getattr(payment, "fx_gain_loss", 0) or 0),
         },
         "Payment recorded",
+    )
+
+
+@api.get("/sales/payments/{payment_id}/print")
+async def print_customer_payment(
+    payment_id: UuidIdValue,
+    format: Annotated[DocumentPrintFormatValue | None, Query()] = None,
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
+):
+    """Printable customer payment receipt HTML or A4 PDF."""
+    from app.document_print import (
+        build_customer_payment_print,
+        get_customer_payment,
+        print_response,
+    )
+    from app.rbac import has_permission
+
+    role = claims.get("role", "")
+    perms = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
+    if not (
+        has_permission(role, "sales", "read", overrides=perms)
+        or has_permission(role, "credit", "read", overrides=perms)
+    ):
+        raise HTTPException(status_code=403, detail="Missing permission: sales:read or credit:read")
+    payment = await get_customer_payment(db, claims["tenant_id"], payment_id)
+    assert_record_access(claims, payment.created_by)
+    customer = await sales_svc.get_customer(db, claims["tenant_id"], payment.customer_id)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    invoice_number = ""
+    if payment.sales_invoice_id:
+        invoice = await db.get(m.SalesInvoice, payment.sales_invoice_id)
+        if invoice and invoice.tenant_id == claims["tenant_id"]:
+            invoice_number = invoice.invoice_number or ""
+    payload = build_customer_payment_print(
+        payment, tenant=tenant, customer=customer, invoice_number=invoice_number
+    )
+    return print_response(
+        payload,
+        tenant=tenant,
+        fmt=format,
+        filename=f"payment_receipt_{payment.payment_number or payment_id}.pdf",
+    )
+
+
+@api.post("/sales/payments/{payment_id}/send")
+async def send_customer_payment(
+    payment_id: UuidIdValue,
+    to: Annotated[EmailStr | None, Query()] = None,
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
+):
+    """Email customer payment receipt. Optional Query `to` ∈ EmailStr; omit → customer email."""
+    from app import document_email as document_email_svc
+    from app.rbac import has_permission
+
+    role = claims.get("role", "")
+    perms = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
+    if not (
+        has_permission(role, "sales", "write", overrides=perms)
+        or has_permission(role, "credit", "write", overrides=perms)
+    ):
+        raise HTTPException(status_code=403, detail="Missing permission: sales:write or credit:write")
+    from app.document_print import get_customer_payment
+
+    existing = await get_customer_payment(db, claims["tenant_id"], payment_id)
+    assert_record_access(claims, existing.created_by)
+    payment, delivery = await document_email_svc.send_customer_payment(
+        db,
+        tenant_id=claims["tenant_id"],
+        payment_id=payment_id,
+        to=str(to) if to is not None else None,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="credit",
+        action="customer_payment_email",
+        entity="customer_payment",
+        entity_id=payment.id,
+        details=delivery,
+    )
+    await db.commit()
+    return env(
+        {
+            "id": payment.id,
+            "payment_number": payment.payment_number,
+            "amount": money_json(payment.amount),
+            "delivery": delivery,
+        },
+        f"Payment receipt emailed to {delivery['to']}",
     )
 
 
@@ -8452,6 +8707,78 @@ async def get_purchase_request(
     row = await purchase_requests_svc.get_request(db, claims["tenant_id"], request_id)
     assert_record_access(claims, row.created_by)
     return env(await purchase_requests_svc.serialize_request(db, row))
+
+
+@api.get("/purchasing/requests/{request_id}/print")
+async def print_purchase_request(
+    request_id: UuidIdValue,
+    format: Annotated[DocumentPrintFormatValue | None, Query()] = None,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Printable purchase request HTML or A4 PDF."""
+    from app.document_print import (
+        build_purchase_request_print,
+        get_tenant_party,
+        print_response,
+        warehouse_store_name,
+    )
+
+    row = await purchase_requests_svc.get_request(db, claims["tenant_id"], request_id)
+    assert_record_access(claims, row.created_by)
+    data = await purchase_requests_svc.serialize_request(db, row)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    supplier = await get_tenant_party(
+        db, claims["tenant_id"], row.preferred_supplier_id, kind="supplier"
+    )
+    payload = build_purchase_request_print(
+        data,
+        tenant=tenant,
+        supplier=supplier,
+        store_name=await warehouse_store_name(
+            db, tenant_id=claims["tenant_id"], warehouse_id=row.warehouse_id
+        ),
+    )
+    return print_response(
+        payload,
+        tenant=tenant,
+        fmt=format,
+        filename=f"purchase_request_{row.request_number or request_id}.pdf",
+    )
+
+
+@api.post("/purchasing/requests/{request_id}/send")
+async def send_purchase_request(
+    request_id: UuidIdValue,
+    to: Annotated[EmailStr | None, Query()] = None,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Email purchase request. Optional Query `to` ∈ EmailStr; omit → preferred supplier or requester email."""
+    from app import document_email as document_email_svc
+
+    existing = await purchase_requests_svc.get_request(db, claims["tenant_id"], request_id)
+    assert_record_access(claims, existing.created_by)
+    row, delivery = await document_email_svc.send_purchase_request(
+        db,
+        tenant_id=claims["tenant_id"],
+        request_id=request_id,
+        to=str(to) if to is not None else None,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="purchasing",
+        action="purchase_request_email",
+        entity="purchase_request",
+        entity_id=row.id,
+        details=delivery,
+    )
+    await db.commit()
+    data = await purchase_requests_svc.serialize_request(db, row)
+    data["delivery"] = delivery
+    return env(data, f"Purchase request emailed to {delivery['to']}")
 
 
 @api.post("/purchasing/requests/{request_id}/submit")
@@ -8678,10 +9005,11 @@ async def issue_purchase_order(
 @api.get("/purchasing/orders/{po_id}/print")
 async def print_purchase_order(
     po_id: UuidIdValue,
+    format: Annotated[DocumentPrintFormatValue | None, Query()] = None,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Printable PO HTML. No email required. Does not change status."""
+    """Printable PO HTML or A4 PDF. No email required. Does not change status."""
     po = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
     assert_record_access(claims, po.created_by)
     data = await purchasing_svc.serialize_po(db, po)
@@ -8699,13 +9027,39 @@ async def print_purchase_order(
             )
         ).scalars().all()
         labels = {p.id: (p.name or p.sku or p.id) for p in rows}
-    html_page = purchasing_svc.purchase_order_print_html(
+    store_name = await purchasing_svc.po_print_store_name(
+        db, tenant_id=claims["tenant_id"], warehouse_id=po.warehouse_id
+    )
+    payload = purchasing_svc.purchase_order_print_payload(
         data,
         supplier_name=supplier.name,
+        supplier_email=getattr(supplier, "email", None) or "",
         company_name=tenant.company_name or "",
         currency=(tenant.currency if tenant else None) or "GHS",
         product_labels=labels,
         tenant=tenant,
+        store_name=store_name,
+    )
+    fmt = format or "html"
+    if fmt == "pdf":
+        from app.invoice_print import to_purchase_order_a4_pdf
+
+        pdf = to_purchase_order_a4_pdf(payload)
+        filename = f"purchase_order_{payload.get('po_number') or po_id}.pdf".replace("/", "-")
+        return Response(
+            content=pdf,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'inline; filename="{filename}"'},
+        )
+    html_page = purchasing_svc.purchase_order_print_html(
+        data,
+        supplier_name=supplier.name,
+        supplier_email=getattr(supplier, "email", None) or "",
+        company_name=tenant.company_name or "",
+        currency=(tenant.currency if tenant else None) or "GHS",
+        product_labels=labels,
+        tenant=tenant,
+        store_name=store_name,
     )
     return Response(content=html_page, media_type="text/html; charset=utf-8")
 
@@ -8857,6 +9211,81 @@ async def get_grn(
     return env(await purchasing_svc.serialize_grn(db, grn))
 
 
+@api.get("/purchasing/grn/{grn_id}/print")
+async def print_grn(
+    grn_id: UuidIdValue,
+    format: Annotated[DocumentPrintFormatValue | None, Query()] = None,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Printable GRN HTML or A4 PDF. Empty supplier email does not block."""
+    from app.document_print import (
+        build_grn_print,
+        print_response,
+        warehouse_store_name,
+    )
+
+    grn = await purchasing_svc.get_grn(db, claims["tenant_id"], grn_id)
+    assert_record_access(claims, grn.created_by)
+    data = await purchasing_svc.serialize_grn(db, grn)
+    supplier = await purchasing_svc.get_supplier(db, claims["tenant_id"], grn.supplier_id)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    po_number = ""
+    if grn.purchase_order_id:
+        po = await db.get(m.PurchaseOrder, grn.purchase_order_id)
+        if po and po.tenant_id == claims["tenant_id"]:
+            po_number = po.po_number or ""
+    payload = build_grn_print(
+        data,
+        tenant=tenant,
+        supplier=supplier,
+        po_number=po_number,
+        store_name=await warehouse_store_name(
+            db, tenant_id=claims["tenant_id"], warehouse_id=grn.warehouse_id
+        ),
+    )
+    return print_response(
+        payload,
+        tenant=tenant,
+        fmt=format,
+        filename=f"grn_{grn.grn_number or grn_id}.pdf",
+    )
+
+
+@api.post("/purchasing/grn/{grn_id}/send")
+async def send_grn(
+    grn_id: UuidIdValue,
+    to: Annotated[EmailStr | None, Query()] = None,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Email GRN. Optional Query `to` ∈ EmailStr; omit → supplier email; blank/invalid → 422."""
+    from app import document_email as document_email_svc
+
+    existing = await purchasing_svc.get_grn(db, claims["tenant_id"], grn_id)
+    assert_record_access(claims, existing.created_by)
+    grn, delivery = await document_email_svc.send_grn(
+        db,
+        tenant_id=claims["tenant_id"],
+        grn_id=grn_id,
+        to=str(to) if to is not None else None,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="purchasing",
+        action="grn_email",
+        entity="goods_receipt",
+        entity_id=grn.id,
+        details=delivery,
+    )
+    await db.commit()
+    data = await purchasing_svc.serialize_grn(db, grn)
+    data["delivery"] = delivery
+    return env(data, f"Goods received note emailed to {delivery['to']}")
+
+
 @api.get("/purchasing/returns")
 async def list_purchase_returns(
     status: Annotated[ReturnReportStatusValue | None, Query()] = None,
@@ -8924,20 +9353,70 @@ async def get_purchase_return(
 @api.get("/purchasing/returns/{return_id}/print")
 async def print_purchase_return(
     return_id: UuidIdValue,
+    format: Annotated[DocumentPrintFormatValue | None, Query()] = None,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Printable purchase return / debit note HTML or A4 PDF."""
+    from app.document_print import (
+        build_purchase_return_print,
+        print_response,
+        warehouse_store_name,
+    )
+
     ret = await purchasing_svc.get_purchase_return(db, claims["tenant_id"], return_id)
     assert_record_access(claims, ret.created_by)
     data = await purchasing_svc.serialize_purchase_return(db, ret)
     supplier = await purchasing_svc.get_supplier(db, claims["tenant_id"], ret.supplier_id)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
-    html_page = purchasing_svc.purchase_return_print_html(
+    payload = build_purchase_return_print(
         data,
-        supplier_name=supplier.name,
-        company_name=tenant.company_name or "",
+        tenant=tenant,
+        supplier=supplier,
+        store_name=await warehouse_store_name(
+            db, tenant_id=claims["tenant_id"], warehouse_id=ret.warehouse_id
+        ),
     )
-    return Response(content=html_page, media_type="text/html; charset=utf-8")
+    return print_response(
+        payload,
+        tenant=tenant,
+        fmt=format,
+        filename=f"debit_note_{ret.debit_note_number or ret.return_number or return_id}.pdf",
+    )
+
+
+@api.post("/purchasing/returns/{return_id}/send")
+async def send_purchase_return(
+    return_id: UuidIdValue,
+    to: Annotated[EmailStr | None, Query()] = None,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Email purchase return / debit note. Optional Query `to` ∈ EmailStr; omit → supplier email."""
+    from app import document_email as document_email_svc
+
+    existing = await purchasing_svc.get_purchase_return(db, claims["tenant_id"], return_id)
+    assert_record_access(claims, existing.created_by)
+    ret, delivery = await document_email_svc.send_purchase_return(
+        db,
+        tenant_id=claims["tenant_id"],
+        return_id=return_id,
+        to=str(to) if to is not None else None,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="purchasing",
+        action="purchase_return_email",
+        entity="purchase_return",
+        entity_id=ret.id,
+        details=delivery,
+    )
+    await db.commit()
+    data = await purchasing_svc.serialize_purchase_return(db, ret)
+    data["delivery"] = delivery
+    return env(data, f"Debit note emailed to {delivery['to']}")
 
 
 @api.post("/purchasing/returns/{return_id}/post")
@@ -9052,6 +9531,78 @@ async def get_purchase_invoice(
     inv = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, inv.created_by)
     return env(await purchasing_svc.serialize_purchase_invoice(db, inv))
+
+
+@api.get("/purchasing/invoices/{invoice_id}/print")
+async def print_purchase_invoice(
+    invoice_id: UuidIdValue,
+    format: Annotated[DocumentPrintFormatValue | None, Query()] = None,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Printable supplier bill HTML or A4 PDF. Empty supplier email does not block."""
+    from app.document_print import (
+        build_purchase_invoice_print,
+        print_response,
+        store_name_by_id,
+        warehouse_store_name,
+    )
+
+    inv = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
+    assert_record_access(claims, inv.created_by)
+    data = await purchasing_svc.serialize_purchase_invoice(db, inv)
+    supplier = await purchasing_svc.get_supplier(db, claims["tenant_id"], inv.supplier_id)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    store_name = await store_name_by_id(
+        db, tenant_id=claims["tenant_id"], store_id=getattr(inv, "store_id", None)
+    )
+    if not store_name:
+        store_name = await warehouse_store_name(
+            db, tenant_id=claims["tenant_id"], warehouse_id=getattr(inv, "warehouse_id", None)
+        )
+    payload = build_purchase_invoice_print(
+        data, tenant=tenant, supplier=supplier, store_name=store_name
+    )
+    return print_response(
+        payload,
+        tenant=tenant,
+        fmt=format,
+        filename=f"supplier_bill_{inv.invoice_number or invoice_id}.pdf",
+    )
+
+
+@api.post("/purchasing/invoices/{invoice_id}/send")
+async def send_purchase_invoice(
+    invoice_id: UuidIdValue,
+    to: Annotated[EmailStr | None, Query()] = None,
+    claims=Depends(require_permission("purchasing", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Email supplier bill. Optional Query `to` ∈ EmailStr; omit → supplier email; blank/invalid → 422."""
+    from app import document_email as document_email_svc
+
+    existing = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
+    assert_record_access(claims, existing.created_by)
+    inv, delivery = await document_email_svc.send_purchase_invoice(
+        db,
+        tenant_id=claims["tenant_id"],
+        invoice_id=invoice_id,
+        to=str(to) if to is not None else None,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="purchasing",
+        action="purchase_invoice_email",
+        entity="purchase_invoice",
+        entity_id=inv.id,
+        details=delivery,
+    )
+    await db.commit()
+    data = await purchasing_svc.serialize_purchase_invoice(db, inv)
+    data["delivery"] = delivery
+    return env(data, f"Supplier bill emailed to {delivery['to']}")
 
 
 @api.patch("/purchasing/invoices/{invoice_id}")
@@ -11479,6 +12030,35 @@ async def get_expense(
     expense = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
     assert_record_access(claims, expense.created_by)
     return env(await expenses_svc.serialize_expense_full(db, expense))
+
+
+@api.get("/expenses/{expense_id}/print")
+async def print_expense(
+    expense_id: UuidIdValue,
+    format: Annotated[DocumentPrintFormatValue | None, Query()] = None,
+    claims=Depends(require_permission("expenses", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Printable expense HTML or A4 PDF. Expenses have no party email, so print only."""
+    from app.document_print import build_expense_print, print_response, store_name_by_id
+
+    expense = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
+    assert_record_access(claims, expense.created_by)
+    data = await expenses_svc.serialize_expense_full(db, expense)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    payload = build_expense_print(
+        data,
+        tenant=tenant,
+        store_name=await store_name_by_id(
+            db, tenant_id=claims["tenant_id"], store_id=getattr(expense, "store_id", None)
+        ),
+    )
+    return print_response(
+        payload,
+        tenant=tenant,
+        fmt=format,
+        filename=f"expense_{data.get('reference') or expense_id}.pdf",
+    )
 
 
 @api.patch("/expenses/{expense_id}")
@@ -14502,6 +15082,101 @@ async def supplier_payment(
             "fx_gain_loss": money_json(getattr(payment, "fx_gain_loss", 0) or 0),
         },
         "Supplier payment recorded",
+    )
+
+
+@api.get("/purchasing/payments/{payment_id}/print")
+async def print_supplier_payment(
+    payment_id: UuidIdValue,
+    format: Annotated[DocumentPrintFormatValue | None, Query()] = None,
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
+):
+    """Printable supplier payment receipt HTML or A4 PDF."""
+    from app.document_print import (
+        build_supplier_payment_print,
+        get_supplier_payment,
+        print_response,
+    )
+    from app.rbac import has_permission
+
+    role = claims.get("role", "")
+    perms = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
+    if not (
+        has_permission(role, "purchasing", "read", overrides=perms)
+        or has_permission(role, "credit", "read", overrides=perms)
+    ):
+        raise HTTPException(
+            status_code=403, detail="Missing permission: purchasing:read or credit:read"
+        )
+    payment = await get_supplier_payment(db, claims["tenant_id"], payment_id)
+    assert_record_access(claims, payment.created_by)
+    supplier = await purchasing_svc.get_supplier(db, claims["tenant_id"], payment.supplier_id)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    bill_number = ""
+    if payment.purchase_invoice_id:
+        bill = await db.get(m.PurchaseInvoice, payment.purchase_invoice_id)
+        if bill and bill.tenant_id == claims["tenant_id"]:
+            bill_number = bill.invoice_number or ""
+    payload = build_supplier_payment_print(
+        payment, tenant=tenant, supplier=supplier, bill_number=bill_number
+    )
+    return print_response(
+        payload,
+        tenant=tenant,
+        fmt=format,
+        filename=f"supplier_payment_{payment.payment_number or payment_id}.pdf",
+    )
+
+
+@api.post("/purchasing/payments/{payment_id}/send")
+async def send_supplier_payment(
+    payment_id: UuidIdValue,
+    to: Annotated[EmailStr | None, Query()] = None,
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
+):
+    """Email supplier payment receipt. Optional Query `to` ∈ EmailStr; omit → supplier email."""
+    from app import document_email as document_email_svc
+    from app.document_print import get_supplier_payment
+    from app.rbac import has_permission
+
+    role = claims.get("role", "")
+    perms = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
+    if not (
+        has_permission(role, "purchasing", "write", overrides=perms)
+        or has_permission(role, "credit", "write", overrides=perms)
+    ):
+        raise HTTPException(
+            status_code=403, detail="Missing permission: purchasing:write or credit:write"
+        )
+    existing = await get_supplier_payment(db, claims["tenant_id"], payment_id)
+    assert_record_access(claims, existing.created_by)
+    payment, delivery = await document_email_svc.send_supplier_payment(
+        db,
+        tenant_id=claims["tenant_id"],
+        payment_id=payment_id,
+        to=str(to) if to is not None else None,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="credit",
+        action="supplier_payment_email",
+        entity="supplier_payment",
+        entity_id=payment.id,
+        details=delivery,
+    )
+    await db.commit()
+    return env(
+        {
+            "id": payment.id,
+            "payment_number": payment.payment_number,
+            "amount": money_json(payment.amount),
+            "delivery": delivery,
+        },
+        f"Supplier payment emailed to {delivery['to']}",
     )
 
 

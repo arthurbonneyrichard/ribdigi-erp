@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import EmptyState from '../../../components/EmptyState';
 import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
+import { openDocumentPrint } from '../../../lib/documentPrint';
 import { createPaintGet } from '../../../lib/prefetchCache';
 import { formatMoney, formatWhen } from '../../../lib/format';
 import { AmountField } from '../../../components/AmountField';
@@ -173,6 +174,7 @@ export default function Page() {
   const [payFxRate, setPayFxRate] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [receiptEmailTo, setReceiptEmailTo] = useState('');
   const [payBusy, setPayBusy] = useState(false);
   const [limitBusy, setLimitBusy] = useState(false);
   const [loadState, setLoadState] = useState<'loading' | 'success' | 'empty' | 'error'>('loading');
@@ -345,6 +347,18 @@ export default function Page() {
       setMessage(
         `History: ${s?.purchase_count ?? 0} purchases · ${s?.return_count ?? 0} returns · ${s?.payment_count ?? 0} payments`,
       );
+    } catch (err: any) {
+      setError(friendlyCreditError(err));
+    }
+  }
+
+  async function sendReceipt(path: string, okMessage: string) {
+    setError('');
+    try {
+      const qs = receiptEmailTo.trim() ? `?to=${encodeURIComponent(receiptEmailTo.trim())}` : '';
+      const r = await api(`${path}${qs}`, { method: 'POST' });
+      const to = r.data?.delivery?.to || r.data?.emailed_to || 'recipient';
+      setMessage(r.message || `${okMessage} ${to}`);
     } catch (err: any) {
       setError(friendlyCreditError(err));
     }
@@ -1423,6 +1437,16 @@ export default function Page() {
             </tbody>
           </table>
           <h4 style={{ marginTop: 12 }}>Payments</h4>
+          <label style={{ display: 'block', margin: '8px 0' }}>
+            Email receipt to{' '}
+            <input
+              type="email"
+              value={receiptEmailTo}
+              onChange={(e) => setReceiptEmailTo(e.target.value)}
+              placeholder="Optional — uses customer or supplier email if blank"
+              aria-label="Document email override to"
+            />
+          </label>
           <table className="table">
             <thead>
               <tr>
@@ -1434,7 +1458,50 @@ export default function Page() {
             <tbody>
               {(history.payments || []).map((p: any) => (
                 <tr key={p.id}>
-                  <td>{p.payment_number}</td>
+                  <td>
+                    {p.payment_number}{' '}
+                    <button
+                      type="button"
+                      className="btn-link"
+                      aria-label={
+                        kind === 'payable'
+                          ? `Print supplier payment receipt ${p.id}`
+                          : `Print payment receipt ${p.id}`
+                      }
+                      onClick={() => {
+                        const path =
+                          kind === 'payable'
+                            ? `/purchasing/payments/${p.id}/print?format=pdf`
+                            : `/sales/payments/${p.id}/print?format=pdf`;
+                        openDocumentPrint(path).catch((err) => setError(friendlyCreditError(err)));
+                      }}
+                    >
+                      Print
+                    </button>{' '}
+                    <button
+                      type="button"
+                      className="btn-link"
+                      aria-label={
+                        kind === 'payable'
+                          ? `Email supplier payment receipt ${p.id}`
+                          : `Email payment receipt ${p.id}`
+                      }
+                      onClick={() => {
+                        const path =
+                          kind === 'payable'
+                            ? `/purchasing/payments/${p.id}/send`
+                            : `/sales/payments/${p.id}/send`;
+                        sendReceipt(
+                          path,
+                          kind === 'payable'
+                            ? 'Supplier payment receipt emailed to'
+                            : 'Payment receipt emailed to',
+                        );
+                      }}
+                    >
+                      Email
+                    </button>
+                  </td>
                   <td>{p.payment_method}</td>
                   <td>{formatMoney(p.amount)}</td>
                 </tr>

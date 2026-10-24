@@ -65,6 +65,13 @@ async def test_send_invoice_email_console_and_resend(client, db_session, monkeyp
     monkeypatch.setattr("app.emailer.settings.SMTP_FROM_EMAIL", "noreply@localhost")
     clear_dev_outbox()
 
+    tenant = await db_session.get(m.Tenant, seed["t1"].id)
+    tenant.email = "accounts@alpha.example.com"
+    tenant.phone = "+233201111111"
+    tenant.address = "12 Market Street, Accra"
+    tenant.legal_name = "Alpha Company Ltd"
+    await db_session.commit()
+
     customer = await ac.post(
         "/api/v1/customers",
         headers=admin,
@@ -110,6 +117,13 @@ async def test_send_invoice_email_console_and_resend(client, db_session, monkeyp
     assert "Invoice date:" in out[0]["text_body"]
     assert "Payment due date:" in out[0]["text_body"]
     assert "Balance due:" in out[0]["text_body"]
+    html_body = out[0]["html_body"]
+    brand = html_body.split("ribdigi-email-brand", 1)[1].split("padding:24px;", 1)[0]
+    assert "Alpha Co" in brand
+    assert "accounts@alpha.example.com" in brand
+    assert "ribdigi-email-identity" in brand
+    assert "Alpha Widget" in html_body
+    assert "Payment due" in html_body
 
     # Resend with override — stays sent while unpaid
     clear_dev_outbox()

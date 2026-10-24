@@ -132,6 +132,49 @@ def test_render_branded_html_includes_chrome_and_escapes():
     # Logo-aligned chrome (forest header + brand accent)
     assert "background:#003d1f" in html_body
     assert "border-bottom:3px solid #4ab012" in html_body
+    assert "ribdigi-email-identity" not in html_body
+
+
+def test_render_branded_html_includes_tenant_letterhead_when_set():
+    class _T:
+        company_name = "Sunrise Mart"
+        legal_name = "Sunrise Mart Ltd"
+        address = "12 Market Street, Accra"
+        phone = "+233201111111"
+        email = "accounts@sunrise.example.com"
+        registration_number = "CS123456"
+        tax_registration_number = "C0001234567"
+        logo_url = None
+        print_branding = {}
+
+    html_body = emailer.render_branded_html(
+        body_html="<p>Order</p>",
+        company_name="Sunrise Mart",
+        tenant=_T(),
+        title="Purchase order",
+    )
+    brand = html_body.split("ribdigi-email-brand", 1)[1].split("padding:24px;", 1)[0]
+    assert "Sunrise Mart" in brand
+    assert "ribdigi-email-identity" in brand
+    assert "Sunrise Mart Ltd" in brand
+    assert "12 Market Street, Accra" in brand
+    assert "Tel +233201111111" in brand
+    assert "accounts@sunrise.example.com" in brand
+    assert "Reg CS123456" in brand
+    assert "TIN C0001234567" in brand
+    assert "data:image/" not in html_body
+
+
+def test_render_branded_html_without_tenant_does_not_invent_identity():
+    html_body = emailer.render_branded_html(
+        body_html="<p>Reset</p>",
+        company_name="Ribdigi House",
+        tenant=None,
+        title="Password reset",
+        allow_platform_logo=True,
+    )
+    assert "ribdigi-email-identity" not in html_body
+    assert "accounts@" not in html_body
 
 
 @pytest.mark.asyncio

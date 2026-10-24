@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 import html
+from typing import Any
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -1499,17 +1500,122 @@ async def serialize_purchase_return(db: AsyncSession, ret: m.PurchaseReturn) -> 
     }
 
 
-def purchase_order_print_html(
+async def po_print_store_name(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    warehouse_id: str | None,
+) -> str:
+    """Store name when the PO warehouse is linked to a shop."""
+    if not warehouse_id:
+        return ""
+    warehouse = (
+        await db.execute(
+            select(m.Warehouse).where(
+                m.Warehouse.id == warehouse_id,
+                m.Warehouse.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not warehouse or not warehouse.store_id:
+        return ""
+    store = (
+        await db.execute(
+            select(m.Store).where(
+                m.Store.id == warehouse.store_id,
+                m.Store.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    return ((store.name if store else None) or "").strip()
+
+
+def purchase_order_print_payload(
     po: dict,
     *,
     supplier_name: str = "",
+    supplier_email: str = "",
     company_name: str = "",
     currency: str = "GHS",
     product_labels: dict[str, str] | None = None,
     tenant: Any | None = None,
+    store_name: str = "",
+) -> dict:
+    """Shared HTML/PDF letterhead fields for a purchase order."""
+    from app.print_branding import branding_fields_for_payload, company_identity_fields
+
+    labels = product_labels or {}
+    fields = company_identity_fields(tenant)
+    if (company_name or "").strip():
+        fields["company_name"] = company_name.strip()
+    if (store_name or "").strip():
+        fields["store_name"] = store_name.strip()
+    branding = branding_fields_for_payload(tenant)
+    items = []
+    for item in po.get("items") or []:
+        pid = str(item.get("product_id") or "")
+        named = {**item, "product_name": labels.get(pid) or item.get("product_name")}
+        items.append(
+            {
+                "name": document_item_label(named),
+                "quantity": item.get("quantity"),
+                "unit_price": item.get("unit_price"),
+                "tax_rate": item.get("tax_rate"),
+                "discount": item.get("discount"),
+                "line_total": item.get("line_total"),
+            }
+        )
+    return {
+        "document_type": "purchase_order",
+        "po_number": po.get("po_number"),
+        "status": po.get("status"),
+        "company_name": fields.get("company_name") or "RIBDIGI ERP",
+        "legal_name": fields.get("legal_name"),
+        "store_name": fields.get("store_name"),
+        "company_address": fields.get("company_address"),
+        "company_phone": fields.get("company_phone"),
+        "company_email": fields.get("company_email"),
+        "registration_number": fields.get("registration_number"),
+        "tax_registration_number": fields.get("tax_registration_number"),
+        "print_header": branding["print_header"],
+        "print_footer": branding["print_footer"],
+        "has_logo": branding["has_logo"],
+        "tenant_id": getattr(tenant, "id", None),
+        "logo_key": getattr(tenant, "logo_url", None) if tenant else None,
+        "currency": currency,
+        "supplier_name": supplier_name,
+        "supplier_email": (supplier_email or "").strip() or None,
+        "subtotal": po.get("subtotal"),
+        "tax": po.get("tax_amount"),
+        "tax_amount": po.get("tax_amount"),
+        "total": po.get("total_amount"),
+        "total_amount": po.get("total_amount"),
+        "items": items,
+        "notes": po.get("notes"),
+        "due_date": po.get("due_date"),
+        "created_at": po.get("created_at"),
+        "delivery_address": po.get("delivery_address"),
+    }
+
+
+def purchase_order_print_html(
+    po: dict,
+    *,
+    supplier_name: str = "",
+    supplier_email: str = "",
+    company_name: str = "",
+    currency: str = "GHS",
+    product_labels: dict[str, str] | None = None,
+    tenant: Any | None = None,
+    store_name: str = "",
 ) -> str:
     from app.document_display import format_tenant_date
-    from app.print_branding import POWERED_BY_RIBDIGI, document_print_shell
+    from app.print_branding import (
+        POWERED_BY_RIBDIGI,
+        company_identity_fields,
+        company_identity_html,
+        document_print_shell,
+    )
 
     labels = product_labels or {}
 
@@ -1536,6 +1642,10 @@ def purchase_order_print_html(
     ship_html = f"<br/>Ship to {html.escape(ship)}" if ship else ""
     order_date_html = f"<br/>Order date {html.escape(order_date)}" if order_date else ""
     needed_by_html = f"<br/>Needed by {html.escape(needed_by)}" if needed_by else ""
+    supplier_email_s = (supplier_email or "").strip()
+    supplier_email_html = (
+        f"<br/>Supplier email {html.escape(supplier_email_s)}" if supplier_email_s else ""
+    )
     notes_html = (
         f'<p class="meta" style="margin-top:12px">Notes {html.escape(notes)}</p>' if notes else ""
     )
@@ -1544,6 +1654,7 @@ def purchase_order_print_html(
         f"Purchase order <strong>{html.escape(po_no)}</strong>"
         f" · Status {html.escape(str(po.get('status') or '').upper())}<br/>"
         f"Supplier {html.escape(supplier_name or str(po.get('supplier_id') or ''))}"
+        f"{supplier_email_html}"
         f"{order_date_html}"
         f"{needed_by_html}"
         f"{ship_html}"
@@ -1559,47 +1670,40 @@ def purchase_order_print_html(
         f"{notes_html}"
         f'<div class="foot"><div class="powered">{html.escape(POWERED_BY_RIBDIGI)}</div></div>'
     )
+    fields = company_identity_fields(tenant)
+    if (company_name or "").strip():
+        fields["company_name"] = company_name.strip()
+    if (store_name or "").strip():
+        fields["store_name"] = store_name.strip()
     return document_print_shell(
         title=title,
         company_name=company_name or "RIBDIGI ERP",
         subtitle=f"Needed by {needed_by}" if needed_by else (f"Order date {order_date}" if order_date else ""),
         body_html=body,
+        tenant=tenant,
+        identity_html=company_identity_html(tenant, fields=fields),
     )
 
 
-def purchase_return_print_html(ret: dict, *, supplier_name: str = "", company_name: str = "") -> str:
-    from app.print_branding import POWERED_BY_RIBDIGI, document_print_shell
+def purchase_return_print_html(
+    ret: dict,
+    *,
+    supplier_name: str = "",
+    company_name: str = "",
+    tenant: Any | None = None,
+    store_name: str = "",
+    supplier: Any | None = None,
+) -> str:
+    from app.document_print import build_purchase_return_print, render_payload_html
 
-    rows = "".join(
-        f"<tr><td>{html.escape(document_item_label(i))}</td>"
-        f'<td class="r">{html.escape(str(i.get("quantity") or ""))}</td>'
-        f'<td class="r">{html.escape(str(i.get("unit_price") or ""))}</td>'
-        f'<td class="r">{html.escape(str(i.get("line_total") or ""))}</td></tr>'
-        for i in (ret.get("items") or [])
+    payload = build_purchase_return_print(
+        ret, tenant=tenant, supplier=supplier, store_name=store_name
     )
-    return_no = str(ret.get("return_number") or "")
-    debit_no = str(ret.get("debit_note_number") or "—")
-    title = f"Purchase return {return_no}".strip() or "Purchase return"
-    body = (
-        f'<div class="meta">'
-        f"Return <strong>{html.escape(return_no)}</strong>"
-        f" · Debit note <strong>{html.escape(debit_no)}</strong><br/>"
-        f"Supplier {html.escape(supplier_name or str(ret.get('supplier_id') or ''))}<br/>"
-        f"Reason {html.escape(str(ret.get('reason') or ''))}"
-        f" · Status {html.escape(str(ret.get('status') or '').upper())}"
-        f"</div>"
-        '<table class="doc"><thead><tr>'
-        "<th>Product</th><th>Qty</th><th>Unit</th><th>Total</th>"
-        f"</tr></thead><tbody>{rows}</tbody></table>"
-        f'<div class="totals"><strong>Total {html.escape(str(ret.get("total_amount") or 0))}</strong></div>'
-        f'<div class="foot"><div class="powered">{html.escape(POWERED_BY_RIBDIGI)}</div></div>'
-    )
-    return document_print_shell(
-        title=title,
-        company_name=company_name or "RIBDIGI ERP",
-        subtitle=f"Debit note {debit_no}",
-        body_html=body,
-    )
+    if (company_name or "").strip():
+        payload["company_name"] = company_name.strip()
+    if (supplier_name or "").strip() and not payload.get("party_name"):
+        payload["party_name"] = supplier_name.strip()
+    return render_payload_html(payload, tenant)
 
 
 async def cancel_purchase_return(

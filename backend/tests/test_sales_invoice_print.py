@@ -10,6 +10,7 @@ from app.invoice_print import (
     to_invoice_a4_pdf,
     to_invoice_thermal_pdf,
 )
+from app import models as m
 from tests.conftest import auth_headers
 
 
@@ -45,6 +46,8 @@ def test_invoice_thermal_and_a4_pdf_bytes():
     a4 = to_invoice_a4_pdf(payload)
     assert a4.startswith(b"%PDF")
     assert b"SALES INVOICE" in a4 or b"Invoice" in a4
+    assert b"Sunrise Mart" in a4
+    assert a4.find(b"Sunrise Mart") < a4.find(b"SALES INVOICE")
 
 
 async def _super(ac, seed):
@@ -78,10 +81,28 @@ async def test_print_route_a4_thermal_and_guards(client, db_session, seeded):
     assert posted.status_code == 200, posted.text
     assert posted.json()["data"]["can_print"] is True
 
+    tenant = await db_session.get(m.Tenant, seed["t1"].id)
+    tenant.email = "accounts@alpha.example.com"
+    tenant.phone = "+233201111111"
+    tenant.address = "12 Market Street, Accra"
+    tenant.legal_name = "Alpha Company Ltd"
+    await db_session.commit()
+
     a4 = await ac.get(f"/api/v1/sales/invoices/{iid}/print?template=a4&format=pdf", headers=admin)
     assert a4.status_code == 200, a4.text
     assert a4.headers["content-type"].startswith("application/pdf")
     assert a4.content.startswith(b"%PDF")
+    import re
+
+    pdf_parts = []
+    for raw in re.findall(rb"\((?:\\.|[^\\)])*\)", a4.content):
+        text = raw[1:-1].decode("latin-1")
+        text = text.replace(r"\(", "(").replace(r"\)", ")").replace(r"\\", "\\")
+        if text:
+            pdf_parts.append(text)
+    pdf_text = "\n".join(pdf_parts)
+    assert pdf_text.index("Alpha Co") < pdf_text.index("SALES INVOICE")
+    assert pdf_text.index("accounts@alpha.example.com") < pdf_text.index("SALES INVOICE")
 
     thermal = await ac.get(
         f"/api/v1/sales/invoices/{iid}/print?template=thermal&format=pdf&paper=80mm",

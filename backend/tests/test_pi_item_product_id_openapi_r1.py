@@ -40,8 +40,14 @@ def test_pi_item_product_id_schema():
 def test_pi_item_product_id_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Purchase invoice product"' in page
+    assert 'aria-label="Add purchase invoice product"' in page
     assert "product_id: line.productId.trim()" in page
     assert "Add product" in page
+    assert "function addBillProduct" in page
+    assert "setBillLines((rows) => [...rows, draft])" in page
+    assert "productId" in page
+    assert "Choose a product first" in page
+    assert "title=\"Create supplier bill\"" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Purchase invoice item product_id OpenAPI" in agents
     assert "UuidIdValue" in agents

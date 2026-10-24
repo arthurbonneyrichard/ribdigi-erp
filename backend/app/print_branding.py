@@ -57,12 +57,106 @@ def document_table_html(*, headers: list[str], rows_html: str) -> str:
     )
 
 
+def _clean_identity(value: object) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def company_identity_fields(tenant: m.Tenant | None) -> dict[str, str | None]:
+    """Company lines shared by invoice / document HTML prints."""
+    name = _clean_identity(getattr(tenant, "company_name", None) if tenant else None) or "RIBDIGI ERP"
+    legal = _clean_identity(getattr(tenant, "legal_name", None) if tenant else None)
+    return {
+        "company_name": name,
+        "legal_name": legal if legal and legal != name else None,
+        "company_address": _clean_identity(getattr(tenant, "address", None) if tenant else None),
+        "company_phone": _clean_identity(getattr(tenant, "phone", None) if tenant else None),
+        "company_email": _clean_identity(getattr(tenant, "email", None) if tenant else None),
+        "registration_number": _clean_identity(
+            getattr(tenant, "registration_number", None) if tenant else None
+        ),
+        "tax_registration_number": _clean_identity(
+            getattr(tenant, "tax_registration_number", None) if tenant else None
+        ),
+    }
+
+
+def company_identity_html(
+    tenant: m.Tenant | None = None,
+    *,
+    fields: dict[str, str | None] | None = None,
+    include_logo: bool = True,
+) -> str:
+    """Printable company block: name, legal, address, Tel, email, Reg, TIN, logo."""
+    import base64
+    import html as html_mod
+
+    ident = dict(fields or company_identity_fields(tenant))
+    name = str(ident.get("company_name") or "RIBDIGI ERP")
+    bits = ['<div class="doc-company">']
+    if include_logo and tenant is not None and getattr(tenant, "logo_url", None):
+        logo = load_logo_jpeg(tenant, max_width_px=280, max_height_px=72)
+        if logo:
+            jpeg, width_px, height_px = logo
+            bits.append(
+                f'<img class="doc-logo" src="data:image/jpeg;base64,'
+                f'{base64.b64encode(jpeg).decode("ascii")}" '
+                f'width="{width_px}" height="{height_px}" '
+                f'alt="{html_mod.escape(name)}" />'
+            )
+    bits.append(f'<div class="co-name">{html_mod.escape(name)}</div>')
+    if ident.get("legal_name"):
+        bits.append(f'<div class="co-legal">{html_mod.escape(str(ident["legal_name"]))}</div>')
+    if ident.get("store_name"):
+        bits.append(f'<div class="co-store">{html_mod.escape(str(ident["store_name"]))}</div>')
+    extra: list[str] = []
+    if ident.get("company_address"):
+        extra.append(html_mod.escape(str(ident["company_address"])))
+    if ident.get("company_phone"):
+        extra.append(f'Tel {html_mod.escape(str(ident["company_phone"]))}')
+    if ident.get("company_email"):
+        extra.append(html_mod.escape(str(ident["company_email"])))
+    if ident.get("registration_number"):
+        extra.append(f'Reg {html_mod.escape(str(ident["registration_number"]))}')
+    if ident.get("tax_registration_number"):
+        extra.append(f'TIN {html_mod.escape(str(ident["tax_registration_number"]))}')
+    if extra:
+        bits.append("<div>" + "<br/>".join(extra) + "</div>")
+    bits.append("</div>")
+    return "".join(bits)
+
+
+def company_letterhead_detail_lines(fields: dict[str, str | None] | None) -> list[str]:
+    """Address / Tel / email / Reg / TIN / store lines for PDF and print headers."""
+    ident = dict(fields or {})
+    lines: list[str] = []
+    if ident.get("legal_name"):
+        lines.append(str(ident["legal_name"]))
+    if ident.get("store_name"):
+        lines.append(str(ident["store_name"]))
+    if ident.get("company_address"):
+        lines.append(str(ident["company_address"]))
+    if ident.get("company_phone"):
+        lines.append(f'Tel {ident["company_phone"]}')
+    if ident.get("company_email"):
+        lines.append(str(ident["company_email"]))
+    if ident.get("registration_number"):
+        lines.append(f'Reg {ident["registration_number"]}')
+    if ident.get("tax_registration_number"):
+        lines.append(f'TIN {ident["tax_registration_number"]}')
+    return [line for line in lines if str(line).strip()]
+
+
 def document_print_shell(
     *,
     title: str,
     company_name: str,
     body_html: str,
     subtitle: str | None = None,
+    tenant: m.Tenant | None = None,
+    identity_html: str | None = None,
 ) -> str:
     """Browser-printable HTML document with forest header + brand accent."""
     import html as html_mod
@@ -72,6 +166,11 @@ def document_print_shell(
     sub_html = (
         f'<p class="doc-sub">{html_mod.escape(subtitle)}</p>' if subtitle else ""
     )
+    if identity_html is None:
+        fields = company_identity_fields(tenant)
+        if (company_name or "").strip():
+            fields["company_name"] = company_name.strip()
+        identity_html = company_identity_html(tenant, fields=fields)
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -109,9 +208,22 @@ def document_print_shell(
     border-bottom: 3px solid var(--brand);
   }}
   .doc-head h1 {{
-    margin: 0; font-size: 22px; letter-spacing: .02em; font-weight: 800;
+    margin: 10px 0 0; font-size: 22px; letter-spacing: .02em; font-weight: 800;
   }}
   .doc-sub {{ margin: 6px 0 0; color: #c8e86a; font-size: 13px; }}
+  .doc-company {{
+    padding: 0; font-size: 13px; line-height: 1.5; color: #e8f2df;
+  }}
+  .doc-company .co-name {{
+    font-weight: 800; color: #fff; font-size: 18px;
+  }}
+  .doc-company .co-legal, .doc-company .co-store {{
+    color: #c8e86a; margin: 2px 0 4px;
+  }}
+  .doc-logo {{
+    display: block; max-height: 48px; max-width: 180px; width: auto; height: auto;
+    margin: 0 0 10px; background: #fff; padding: 4px; border-radius: 4px;
+  }}
   .doc-body {{ padding: 24px 28px; }}
   .doc-body h2 {{
     margin: 0 0 12px; font-size: 15px; text-transform: uppercase;
@@ -145,6 +257,14 @@ def document_print_shell(
     .toolbar {{ display: none; }}
     .sheet {{ margin: 0; max-width: none; padding: 0; }}
     .card {{ box-shadow: none; border: 0; border-radius: 0; }}
+    .doc-head, .doc-head .doc-company, .doc-company {{
+      display: block !important;
+      visibility: visible !important;
+    }}
+    .doc-head {{
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }}
   }}
 </style>
 </head>
@@ -154,7 +274,7 @@ def document_print_shell(
     <button type="button" onclick="window.print()">Print</button>
   </div>
   <div class="sheet"><div class="card">
-    <div class="doc-head"><h1>{title_esc}</h1>{sub_html}</div>
+    <div class="doc-head letterhead">{identity_html}<h1>{title_esc}</h1>{sub_html}</div>
     <div class="doc-body">{body_html}</div>
   </div></div>
 </body></html>"""
@@ -285,6 +405,147 @@ def load_logo_jpeg(
         return buf.getvalue(), img.width, img.height
     except Exception:
         return None
+
+
+def append_a4_letterhead(
+    content: list[str],
+    *,
+    company_name: str,
+    logo: tuple[bytes, int, int] | None = None,
+    print_header: str | None = None,
+    detail_lines: list[str] | None = None,
+    page_width: float = 595.0,
+    page_height: float = 842.0,
+    margin: float = 40.0,
+) -> float:
+    """Forest header band + brand strip. Returns y just below the band.
+
+    Shared by sales invoice and purchase-order A4 PDFs so the shop name and
+    contact lines sit in the printed header, not only in on-screen chrome.
+    """
+    from app.report_export import _pdf_escape
+
+    fr, fg, fb = FOREST_RGB
+    br, bg, bb = BRAND_GREEN_RGB
+    details = [str(line).strip() for line in (detail_lines or []) if str(line).strip()]
+    header_h = 78.0 + 12.0 * len(details)
+    content.append(
+        f"{fr:.3f} {fg:.3f} {fb:.3f} rg "
+        f"0 {page_height - header_h:.1f} {page_width:.1f} {header_h:.1f} re f"
+    )
+    content.append(
+        f"{br:.3f} {bg:.3f} {bb:.3f} rg "
+        f"0 {page_height - header_h - 4:.1f} {page_width:.1f} 4 re f"
+    )
+
+    y = page_height - 28.0
+    x_text = margin
+    if logo:
+        _jpeg, px_w, px_h = logo
+        scale = min(56.0 / max(px_w, 1), 40.0 / max(px_h, 1), 1.0)
+        draw_w = px_w * scale
+        draw_h = px_h * scale
+        y_img = page_height - 18.0 - draw_h
+        content.append(
+            f"q {draw_w:.2f} 0 0 {draw_h:.2f} {margin:.2f} {y_img:.2f} cm /Im1 Do Q"
+        )
+        x_text = margin + draw_w + 12
+
+    def _header_text(
+        text: str,
+        size: float,
+        rgb: tuple[float, float, float],
+        *,
+        bold: bool = False,
+    ) -> None:
+        nonlocal y
+        if not text:
+            return
+        font = "/F2" if bold or size >= 12 else "/F1"
+        r, g, b = rgb
+        content.append(
+            f"BT {font} {size:.0f} Tf {r:.3f} {g:.3f} {b:.3f} rg "
+            f"{x_text:.1f} {y - size:.1f} Td ({_pdf_escape(text)}) Tj ET"
+        )
+
+    _header_text(company_name or "RIBDIGI ERP", 16, (1.0, 1.0, 1.0), bold=True)
+    y -= 18
+    if print_header:
+        _header_text(str(print_header), 9, (0.784, 0.910, 0.416))
+        y -= 12
+    for line in details:
+        _header_text(line[:72], 9, (0.910, 0.949, 0.847))
+        y -= 12
+    return page_height - header_h - 28
+
+
+def assemble_a4_pdf(
+    content: list[str],
+    *,
+    logo: tuple[bytes, int, int] | None = None,
+    page_width: float = 595.0,
+    page_height: float = 842.0,
+) -> bytes:
+    """Single-page A4 PDF from content-stream ops (Helvetica + optional JPEG)."""
+    stream = "\n".join(content).encode("latin-1", errors="replace")
+    objects: list[bytes] = []
+
+    def obj(n: int, body: bytes) -> None:
+        objects.append(f"{n} 0 obj\n".encode() + body + b"\nendobj\n")
+
+    obj(1, b"<< /Type /Catalog /Pages 2 0 R >>")
+    obj(2, b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+    if logo:
+        jpeg, px_w, px_h = logo
+        obj(
+            3,
+            (
+                f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {page_width} {page_height}] "
+                f"/Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> "
+                f"/XObject << /Im1 7 0 R >> >> >>"
+            ).encode(),
+        )
+        obj(4, f"<< /Length {len(stream)} >>\nstream\n".encode() + stream + b"\nendstream")
+        obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+        obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>")
+        obj(
+            7,
+            (
+                f"<< /Type /XObject /Subtype /Image /Width {px_w} /Height {px_h} "
+                f"/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode "
+                f"/Length {len(jpeg)} >>\nstream\n"
+            ).encode()
+            + jpeg
+            + b"\nendstream",
+        )
+        n_objs = 7
+    else:
+        obj(
+            3,
+            (
+                f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {page_width} {page_height}] "
+                f"/Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>"
+            ).encode(),
+        )
+        obj(4, f"<< /Length {len(stream)} >>\nstream\n".encode() + stream + b"\nendstream")
+        obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+        obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>")
+        n_objs = 6
+
+    out = bytearray(b"%PDF-1.4\n")
+    offsets = [0]
+    for i, o in enumerate(objects, start=1):
+        offsets.append(len(out))
+        out.extend(o)
+    xref_pos = len(out)
+    out.extend(f"xref\n0 {n_objs + 1}\n".encode())
+    out.extend(b"0000000000 65535 f \n")
+    for off in offsets[1:]:
+        out.extend(f"{off:010d} 00000 n \n".encode())
+    out.extend(
+        f"trailer\n<< /Size {n_objs + 1} /Root 1 0 R >>\nstartxref\n{xref_pos}\n%%EOF\n".encode()
+    )
+    return bytes(out)
 
 
 def _pdf_font_objects(*, mono: bool, bold: bool) -> tuple[bytes, bytes]:

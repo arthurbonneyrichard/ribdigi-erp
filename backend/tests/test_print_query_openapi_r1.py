@@ -8,6 +8,7 @@ import pytest
 from pydantic import TypeAdapter, ValidationError
 
 from app.schemas import (
+    DocumentPrintFormatValue,
     InvoicePrintFormatValue,
     InvoiceTemplateValue,
     ReceiptChannelValue,
@@ -25,6 +26,14 @@ def test_print_query_literal_schema():
         inv_fmt.validate_python("")
     with pytest.raises(ValidationError):
         inv_fmt.validate_python("docx")
+
+    doc_fmt = TypeAdapter(DocumentPrintFormatValue)
+    assert doc_fmt.validate_python("PDF") == "pdf"
+    assert doc_fmt.validate_python("HTML") == "html"
+    with pytest.raises(ValidationError):
+        doc_fmt.validate_python("")
+    with pytest.raises(ValidationError):
+        doc_fmt.validate_python("docx")
 
     tmpl = TypeAdapter(InvoiceTemplateValue)
     assert tmpl.validate_python("Thermal") == "thermal"

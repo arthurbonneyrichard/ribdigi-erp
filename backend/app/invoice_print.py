@@ -121,9 +121,14 @@ async def build_invoice_print_payload(
         dict.fromkeys(str(p["payment_method"]).replace("_", " ") for p in payments)
     ) or payment_status
 
-    from app.print_branding import branding_fields_for_payload
+    from app.print_branding import branding_fields_for_payload, company_identity_fields
 
     branding = branding_fields_for_payload(tenant)
+    ident = company_identity_fields(tenant)
+    ident["company_name"] = company_name
+    store_name = _clean_text(store.name if store else None)
+    if store_name:
+        ident["store_name"] = store_name
 
     return {
         "document_type": "sales_invoice",
@@ -132,14 +137,15 @@ async def build_invoice_print_payload(
         "invoice_number": invoice.invoice_number,
         "status": invoice.status,
         "company_name": company_name,
-        "store_name": _clean_text(store.name if store else None),
+        "legal_name": ident.get("legal_name"),
+        "store_name": store_name,
         "store_id": store.id if store else None,
-        "company_phone": _clean_text(store.phone if store else None)
-        or _clean_text(tenant.phone if tenant else None),
-        "company_email": _clean_text(tenant.email if tenant else None),
+        "company_phone": ident.get("company_phone"),
+        "company_email": ident.get("company_email"),
         "company_website": _clean_text(tenant.website if tenant else None),
-        "company_address": _clean_text(store.address if store else None)
-        or _clean_text(tenant.address if tenant else None),
+        "company_address": ident.get("company_address"),
+        "registration_number": ident.get("registration_number"),
+        "tax_registration_number": ident.get("tax_registration_number"),
         "print_header": branding["print_header"],
         "print_footer": branding["print_footer"],
         "has_logo": branding["has_logo"],
@@ -300,6 +306,9 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
         FOREST_RGB,
         INK_RGB,
         POWERED_BY_RIBDIGI,
+        append_a4_letterhead,
+        assemble_a4_pdf,
+        company_letterhead_detail_lines,
         load_logo_jpeg,
     )
     from app.report_export import _pdf_escape
@@ -311,18 +320,6 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
     br, bg, bb = BRAND_GREEN_RGB
     ir, ig, ib = INK_RGB
 
-    # Forest header + brand accent strip
-    header_h = 78.0
-    content.append(
-        f"{fr:.3f} {fg:.3f} {fb:.3f} rg "
-        f"0 {page_height - header_h:.1f} {page_width:.1f} {header_h:.1f} re f"
-    )
-    content.append(
-        f"{br:.3f} {bg:.3f} {bb:.3f} rg "
-        f"0 {page_height - header_h - 4:.1f} {page_width:.1f} 4 re f"
-    )
-
-    y = page_height - 28.0
     company = str(payload.get("company_name") or "RIBDIGI ERP")
     logo = None
     if payload.get("logo_key") and payload.get("tenant_id"):
@@ -333,17 +330,28 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
 
         logo = load_logo_jpeg(_T(), max_width_px=280, max_height_px=72)
 
-    x_text = margin
-    if logo:
-        jpeg, px_w, px_h = logo
-        scale = min(56.0 / max(px_w, 1), 40.0 / max(px_h, 1), 1.0)
-        draw_w = px_w * scale
-        draw_h = px_h * scale
-        y_img = page_height - 18.0 - draw_h
-        content.append(
-            f"q {draw_w:.2f} 0 0 {draw_h:.2f} {margin:.2f} {y_img:.2f} cm /Im1 Do Q"
-        )
-        x_text = margin + draw_w + 12
+    details = company_letterhead_detail_lines(
+        {
+            "company_name": company,
+            "legal_name": payload.get("legal_name"),
+            "store_name": payload.get("store_name"),
+            "company_address": payload.get("company_address"),
+            "company_phone": payload.get("company_phone"),
+            "company_email": payload.get("company_email"),
+            "registration_number": payload.get("registration_number"),
+            "tax_registration_number": payload.get("tax_registration_number"),
+        }
+    )
+    y = append_a4_letterhead(
+        content,
+        company_name=company,
+        logo=logo,
+        print_header=str(payload["print_header"]) if payload.get("print_header") else None,
+        detail_lines=details,
+        page_width=page_width,
+        page_height=page_height,
+        margin=margin,
+    )
 
     def draw_text(
         text: str,
@@ -367,13 +375,6 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
             f"{(x if x is not None else margin):.1f} {y - size:.1f} Td ({escaped}) Tj ET"
         )
 
-    draw_text(company, 16, x=x_text, y_pos=y, bold=True, rgb=(1.0, 1.0, 1.0))
-    y -= 18
-    if payload.get("print_header"):
-        draw_text(str(payload["print_header"]), 9, x=x_text, rgb=(0.784, 0.910, 0.416))
-        y -= 12
-
-    y = page_height - header_h - 28
     draw_text("SALES INVOICE", 18, bold=True, rgb=FOREST_RGB)
     y -= 22
 
@@ -390,15 +391,6 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
         due = payload["due_date"]
         due_s = due.strftime("%Y-%m-%d") if isinstance(due, datetime) else str(due)[:10]
         meta_left.append(f"Pay by   {due_s}")
-
-    if payload.get("company_address"):
-        meta_right.append(str(payload["company_address"])[:48])
-    if payload.get("company_phone"):
-        meta_right.append(f"Tel {payload['company_phone']}")
-    if payload.get("company_email"):
-        meta_right.append(str(payload["company_email"])[:48])
-    if payload.get("store_name"):
-        meta_right.append(str(payload["store_name"])[:48])
 
     meta_y = y
     for line in meta_left:
@@ -533,60 +525,199 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
     y -= 14
     draw_text(POWERED_BY_RIBDIGI, 7, y_pos=y, bold=True, rgb=BRAND_GREEN_RGB)
 
-    stream = "\n".join(content).encode("latin-1", errors="replace")
-    objects: list[bytes] = []
-
-    def obj(n: int, body: bytes) -> None:
-        objects.append(f"{n} 0 obj\n".encode() + body + b"\nendobj\n")
-
-    obj(1, b"<< /Type /Catalog /Pages 2 0 R >>")
-    obj(2, b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
-    if logo:
-        jpeg, px_w, px_h = logo
-        resources = (
-            f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {page_width} {page_height}] "
-            f"/Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> "
-            f"/XObject << /Im1 7 0 R >> >> >>"
-        ).encode()
-        obj(3, resources)
-        obj(4, f"<< /Length {len(stream)} >>\nstream\n".encode() + stream + b"\nendstream")
-        obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
-        obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>")
-        obj(
-            7,
-            (
-                f"<< /Type /XObject /Subtype /Image /Width {px_w} /Height {px_h} "
-                f"/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode "
-                f"/Length {len(jpeg)} >>\nstream\n"
-            ).encode()
-            + jpeg
-            + b"\nendstream",
-        )
-        n_objs = 7
-    else:
-        obj(
-            3,
-            (
-                f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {page_width} {page_height}] "
-                f"/Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>"
-            ).encode(),
-        )
-        obj(4, f"<< /Length {len(stream)} >>\nstream\n".encode() + stream + b"\nendstream")
-        obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
-        obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>")
-        n_objs = 6
-
-    out = bytearray(b"%PDF-1.4\n")
-    offsets = [0]
-    for i, o in enumerate(objects, start=1):
-        offsets.append(len(out))
-        out.extend(o)
-    xref_pos = len(out)
-    out.extend(f"xref\n0 {n_objs + 1}\n".encode())
-    out.extend(b"0000000000 65535 f \n")
-    for off in offsets[1:]:
-        out.extend(f"{off:010d} 00000 n \n".encode())
-    out.extend(
-        f"trailer\n<< /Size {n_objs + 1} /Root 1 0 R >>\nstartxref\n{xref_pos}\n%%EOF\n".encode()
+    return assemble_a4_pdf(
+        content, logo=logo, page_width=page_width, page_height=page_height
     )
-    return bytes(out)
+
+
+def to_purchase_order_a4_pdf(payload: dict[str, Any]) -> bytes:
+    """A4 purchase-order PDF — same forest letterhead as the sales invoice."""
+    from app.print_branding import (
+        BRAND_GREEN_RGB,
+        FOREST_RGB,
+        INK_RGB,
+        POWERED_BY_RIBDIGI,
+        append_a4_letterhead,
+        assemble_a4_pdf,
+        company_letterhead_detail_lines,
+        load_logo_jpeg,
+    )
+    from app.report_export import _pdf_escape
+
+    page_width, page_height = 595.0, 842.0
+    margin = 40.0
+    content: list[str] = []
+    fr, fg, fb = FOREST_RGB
+    ir, ig, ib = INK_RGB
+
+    company = str(payload.get("company_name") or "RIBDIGI ERP")
+    logo = None
+    if payload.get("logo_key") and payload.get("tenant_id"):
+
+        class _T:
+            id = payload["tenant_id"]
+            logo_url = payload["logo_key"]
+
+        logo = load_logo_jpeg(_T(), max_width_px=280, max_height_px=72)
+
+    ident = {
+        "company_name": company,
+        "legal_name": payload.get("legal_name"),
+        "store_name": payload.get("store_name"),
+        "company_address": payload.get("company_address"),
+        "company_phone": payload.get("company_phone"),
+        "company_email": payload.get("company_email"),
+        "registration_number": payload.get("registration_number"),
+        "tax_registration_number": payload.get("tax_registration_number"),
+    }
+    details = company_letterhead_detail_lines(ident)
+
+    y = append_a4_letterhead(
+        content,
+        company_name=company,
+        logo=logo,
+        print_header=str(payload["print_header"]) if payload.get("print_header") else None,
+        detail_lines=details,
+        page_width=page_width,
+        page_height=page_height,
+        margin=margin,
+    )
+
+    def draw_text(
+        text: str,
+        size: float,
+        *,
+        x: float | None = None,
+        y_pos: float | None = None,
+        bold: bool = False,
+        rgb: tuple[float, float, float] | None = None,
+    ) -> None:
+        nonlocal y
+        if y_pos is not None:
+            y = y_pos
+        if not text:
+            return
+        font = "/F2" if bold or size >= 12 else "/F1"
+        r, g, b = rgb if rgb is not None else (ir, ig, ib)
+        content.append(
+            f"BT {font} {size:.0f} Tf {r:.3f} {g:.3f} {b:.3f} rg "
+            f"{(x if x is not None else margin):.1f} {y - size:.1f} Td ({_pdf_escape(text)}) Tj ET"
+        )
+
+    draw_text("PURCHASE ORDER", 18, bold=True, rgb=FOREST_RGB)
+    y -= 22
+
+    meta_left: list[str] = []
+    meta_right: list[str] = []
+    meta_left.append(f"Order    {payload.get('po_number') or ''}")
+    meta_left.append(f"Status   {str(payload.get('status') or '').upper()}")
+    created = payload.get("created_at") or payload.get("order_date")
+    if isinstance(created, datetime):
+        meta_left.append(f"Date     {created.strftime('%Y-%m-%d')}")
+    elif created:
+        meta_left.append(f"Date     {str(created)[:10]}")
+    if payload.get("due_date"):
+        due = payload["due_date"]
+        due_s = due.strftime("%Y-%m-%d") if isinstance(due, datetime) else str(due)[:10]
+        meta_left.append(f"Needed   {due_s}")
+    if payload.get("supplier_name"):
+        meta_right.append(f"Supplier {str(payload['supplier_name'])[:40]}")
+    if payload.get("supplier_email"):
+        meta_right.append(str(payload["supplier_email"])[:48])
+    if payload.get("delivery_address"):
+        meta_right.append(f"Ship to {str(payload['delivery_address'])[:40]}")
+
+    meta_y = y
+    for line in meta_left:
+        draw_text(line, 10, y_pos=meta_y)
+        meta_y -= 13
+    meta_y_r = y
+    for line in meta_right:
+        draw_text(line, 9, x=320, y_pos=meta_y_r, rgb=(0.302, 0.365, 0.337))
+        meta_y_r -= 12
+    y = min(meta_y, meta_y_r) - 8
+
+    col_y = y
+    content.append(
+        f"{fr:.3f} {fg:.3f} {fb:.3f} rg {margin:.1f} {col_y - 16:.1f} "
+        f"{page_width - 2 * margin:.1f} 16 re f"
+    )
+    headers = [
+        (margin + 4, "Qty"),
+        (margin + 40, "Description"),
+        (margin + 280, "Unit"),
+        (margin + 340, "Tax%"),
+        (margin + 390, "Disc"),
+        (margin + 450, "Line"),
+    ]
+    for x, label in headers:
+        draw_text(label, 8, x=x, y_pos=col_y - 2, bold=True, rgb=(1.0, 1.0, 1.0))
+    y = col_y - 22
+
+    for item in payload.get("items") or []:
+        if y < margin + 140:
+            break
+        name = str(item.get("name") or "Item")[:36]
+        qty = money_json(item.get("quantity") or 0)
+        unit = money_json(item.get("unit_price") or 0)
+        tax = money_json(item.get("tax_rate") or 0)
+        disc = money_json(item.get("discount") or 0)
+        line_total = money_json(item.get("line_total") or 0)
+        row_top = y
+        draw_text(f"{qty:g}", 9, x=margin + 4, y_pos=row_top)
+        draw_text(name, 9, x=margin + 40, y_pos=row_top)
+        draw_text(_money(unit), 9, x=margin + 280, y_pos=row_top)
+        draw_text(_money(tax), 9, x=margin + 340, y_pos=row_top)
+        draw_text(_money(disc), 9, x=margin + 390, y_pos=row_top)
+        draw_text(_money(line_total), 9, x=margin + 450, y_pos=row_top, bold=True)
+        y = row_top - 14
+        content.append(
+            f"0.831 0.898 0.769 RG 0.5 w {margin:.1f} {y + 2:.1f} m "
+            f"{page_width - margin:.1f} {y + 2:.1f} l S"
+        )
+
+    y -= 10
+    currency = str(payload.get("currency") or "").strip()
+    totals_x = 340.0
+    totals: list[tuple[str, str, bool]] = [
+        ("Subtotal", f"{currency} {_money(payload.get('subtotal') or 0)}".strip(), False),
+        ("Tax", f"{currency} {_money(payload.get('tax') or payload.get('tax_amount') or 0)}".strip(), False),
+        (
+            "TOTAL",
+            f"{currency} {_money(payload.get('total') or payload.get('total_amount') or 0)}".strip(),
+            True,
+        ),
+    ]
+    box_h = 14 * len(totals) + 16
+    content.append(
+        f"0.949 0.969 0.925 rg {totals_x - 8:.1f} {y - box_h:.1f} "
+        f"{page_width - margin - totals_x + 8:.1f} {box_h:.1f} re f"
+    )
+    content.append(
+        f"0.831 0.898 0.769 RG 0.8 w {totals_x - 8:.1f} {y - box_h:.1f} "
+        f"{page_width - margin - totals_x + 8:.1f} {box_h:.1f} re S"
+    )
+    ty = y - 12
+    for label, value, emph in totals:
+        size = 12 if emph else 10
+        draw_text(label, size, x=totals_x, y_pos=ty, bold=emph, rgb=FOREST_RGB if emph else INK_RGB)
+        draw_text(value, size, x=totals_x + 110, y_pos=ty, bold=emph)
+        ty -= 14
+    y = y - box_h - 16
+
+    if payload.get("notes") and y > margin + 60:
+        draw_text("Notes", 9, y_pos=y, bold=True, rgb=FOREST_RGB)
+        y -= 12
+        for part in _wrap(str(payload["notes"]), 78)[:4]:
+            draw_text(part, 9, y_pos=y, rgb=(0.302, 0.365, 0.337))
+            y -= 11
+
+    y = max(y - 8, margin + 36)
+    if payload.get("print_footer"):
+        draw_text(str(payload["print_footer"]), 9, y_pos=y, rgb=(0.302, 0.365, 0.337))
+        y -= 14
+    draw_text(POWERED_BY_RIBDIGI, 7, y_pos=y, bold=True, rgb=BRAND_GREEN_RGB)
+
+    return assemble_a4_pdf(
+        content, logo=logo, page_width=page_width, page_height=page_height
+    )

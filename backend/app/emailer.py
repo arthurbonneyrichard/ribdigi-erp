@@ -230,6 +230,22 @@ def render_branded_html(
         else ""
     )
 
+    identity_html = ""
+    if tenant is not None:
+        from app.print_branding import company_identity_fields, company_letterhead_detail_lines
+
+        ident = company_identity_fields(tenant)
+        if company:
+            ident["company_name"] = company
+        detail_lines = company_letterhead_detail_lines(ident)
+        if detail_lines:
+            identity_html = (
+                '<div class="ribdigi-email-identity" style="margin:8px 0 0;color:#e8f2df;'
+                'font-size:12px;line-height:1.45;">'
+                + "<br/>".join(html.escape(line) for line in detail_lines)
+                + "</div>"
+            )
+
     header_html = (
         f'<p class="ribdigi-email-header" style="margin:8px 0 0;color:#c8e86a;font-size:13px;">'
         f"{html.escape(header)}</p>"
@@ -265,6 +281,7 @@ def render_branded_html(
         'font-family:Arial,Helvetica,sans-serif;border-bottom:3px solid #4ab012;">'
         f"{logo_html}"
         f"{company_html}"
+        f"{identity_html}"
         f"{header_html}"
         "</td></tr>"
         '<tr><td style="padding:24px;font-family:Arial,Helvetica,sans-serif;color:#10211b;'
@@ -979,6 +996,604 @@ async def send_sales_invoice_email(
     )
     return await send_email(
         to=to, subject=subject, text_body=text, html_body=html_body, tenant=tenant
+    )
+
+
+def _catalog_item_text(item: dict[str, Any], currency: str, *, kind: str) -> str:
+    desc = document_item_label(item)
+    if kind == "grn":
+        return (
+            f"  - {desc}: received {item.get('received_qty')} · "
+            f"accepted {item.get('accepted_qty')} · rejected {item.get('rejected_qty')}"
+        )
+    if kind == "request":
+        notes = str(item.get("notes") or "").strip()
+        extra = f" ({notes})" if notes else ""
+        return f"  - {desc}: qty {item.get('quantity')}{extra}"
+    qty = item.get("quantity")
+    price = _fmt_money(item.get("unit_price"))
+    total = _fmt_money(item.get("line_total"))
+    tax = item.get("tax_rate")
+    tax_s = f" (tax {_fmt_money(tax)}%)" if tax is not None else ""
+    return f"  - {desc}: qty {qty} × {currency} {price}{tax_s} = {currency} {total}"
+
+
+def _catalog_item_row(item: dict[str, Any], currency: str, *, kind: str) -> str:
+    desc = document_item_label(item)
+    if kind == "grn":
+        return _doc_line_row(
+            str(desc),
+            str(item.get("received_qty") if item.get("received_qty") is not None else ""),
+            str(item.get("accepted_qty") if item.get("accepted_qty") is not None else ""),
+            str(item.get("rejected_qty") if item.get("rejected_qty") is not None else ""),
+            right_from=1,
+        )
+    if kind == "request":
+        return _doc_line_row(
+            str(desc),
+            str(item.get("quantity") if item.get("quantity") is not None else ""),
+            str(item.get("notes") or "—"),
+            right_from=1,
+        )
+    return _doc_line_row(
+        str(desc),
+        str(item.get("quantity") if item.get("quantity") is not None else ""),
+        f"{currency} {_fmt_money(item.get('unit_price'))}",
+        f"{_fmt_money(item.get('tax_rate'))}%",
+        f"{currency} {_fmt_money(item.get('line_total'))}",
+    )
+
+
+def render_catalog_document_bodies(
+    *,
+    title: str,
+    company_name: str,
+    currency: str,
+    party_name: str,
+    document: dict[str, Any],
+    tenant: Any | None = None,
+    date_label: str = "Date",
+    date_keys: tuple[str, ...] = ("created_at",),
+    extra_date_label: str | None = None,
+    extra_date_key: str | None = None,
+    extra_date_hint: str | None = None,
+    extra_meta: list[str] | None = None,
+    item_kind: str = "priced",
+    item_headers: list[str] | None = None,
+    totals: list[tuple[str, Any]] | None = None,
+    total_label: str = "Total",
+    total_key: str = "total_amount",
+    closing: str = "Thank you for your business.",
+) -> tuple[str, str]:
+    """Shared branded HTML + text for commercial documents with optional lines."""
+    from app.print_branding import document_table_html
+
+    date_s = _fmt_doc_date(first_document_date(document, *date_keys), tenant)
+    extra_s = _fmt_doc_date(document.get(extra_date_key), tenant) if extra_date_key else ""
+    lines = [title, f"From: {company_name}", f"To: {party_name}"]
+    if date_s:
+        lines.append(f"{date_label}: {date_s}")
+    if extra_s and extra_date_label:
+        hint = f" ({extra_date_hint})" if extra_date_hint else ""
+        lines.append(f"{extra_date_label}: {extra_s}{hint}")
+    for meta in extra_meta or []:
+        if str(meta or "").strip():
+            lines.append(str(meta))
+    html_rows: list[str] = []
+    items = list(document.get("items") or [])
+    if item_kind != "none":
+        lines.extend(["", "Items:"])
+        for item in items:
+            lines.append(_catalog_item_text(item, currency, kind=item_kind))
+            html_rows.append(_catalog_item_row(item, currency, kind=item_kind))
+    totals = totals if totals is not None else [
+        ("Subtotal", document.get("subtotal")),
+        ("Tax", document.get("tax_amount")),
+        ("Discount", document.get("discount_amount")),
+    ]
+    shown_totals = [
+        (label, value)
+        for label, value in totals
+        if value is not None and not (label == "Discount" and not money_json(value or 0))
+    ]
+    total_value = document.get(total_key) if total_key else None
+    if shown_totals or total_key:
+        lines.append("")
+    for label, value in shown_totals:
+        lines.append(f"{label}: {currency} {_fmt_money(value)}")
+    if total_key:
+        lines.append(f"{total_label}: {currency} {_fmt_money(total_value)}")
+    if document.get("notes"):
+        lines.extend(["", f"Notes: {document['notes']}"])
+    lines.append(f"\n{closing}")
+    text = "\n".join(lines)
+    meta_html = (
+        f"From <strong>{html.escape(company_name)}</strong><br/>"
+        f"To {html.escape(str(party_name))}"
+        + (f"<br/>{html.escape(date_label)} {html.escape(date_s)}" if date_s else "")
+        + (
+            f"<br/>{html.escape(extra_date_label)} {html.escape(extra_s)}"
+            + (f" — {html.escape(extra_date_hint)}" if extra_date_hint else "")
+            if extra_s and extra_date_label
+            else ""
+        )
+    )
+    for meta in extra_meta or []:
+        if str(meta or "").strip():
+            meta_html += f"<br/>{html.escape(str(meta))}"
+    inner = _doc_meta_block(meta_html)
+    if item_kind != "none":
+        headers = item_headers or {
+            "priced": ["Item", "Qty", "Price", "Tax", "Line"],
+            "grn": ["Item", "Received", "Accepted", "Rejected"],
+            "request": ["Item", "Qty", "Notes"],
+        }.get(item_kind, ["Item", "Qty", "Price", "Tax", "Line"])
+        inner += document_table_html(headers=headers, rows_html="".join(html_rows))
+    if shown_totals or total_key:
+        inner += _doc_totals_block(
+            [
+                f"{html.escape(label)}: {html.escape(currency)} {_fmt_money(value)}"
+                for label, value in shown_totals
+            ],
+            total_line=(
+                f"{html.escape(total_label)}: {html.escape(currency)} {_fmt_money(total_value)}"
+                if total_key
+                else ""
+            ),
+        )
+    if document.get("notes"):
+        inner += (
+            f'<p style="margin:14px 0 0;color:#4d5d56;">Notes: '
+            f"{html.escape(str(document['notes']))}</p>"
+        )
+    branded = render_branded_html(
+        body_html=inner,
+        company_name=company_name,
+        tenant=tenant,
+        title=title,
+    )
+    return text, branded
+
+
+def render_sales_order_bodies(
+    *,
+    company_name: str,
+    currency: str,
+    customer_name: str,
+    order: dict[str, Any],
+    tenant: Any | None = None,
+) -> tuple[str, str]:
+    number = order.get("order_number") or ""
+    ship = str(order.get("delivery_address") or "").strip()
+    return render_catalog_document_bodies(
+        title=f"Sales Order {number}".strip() or "Sales Order",
+        company_name=company_name,
+        currency=currency,
+        party_name=customer_name,
+        document=order,
+        tenant=tenant,
+        date_label="Order date",
+        date_keys=("created_at", "order_date"),
+        extra_date_label="Delivery date",
+        extra_date_key="delivery_date",
+        extra_date_hint="when we expect to deliver these goods",
+        extra_meta=[f"Ship to: {ship}"] if ship else None,
+        closing="Thank you for your business.",
+    )
+
+
+async def send_sales_order_email(
+    *,
+    to: str,
+    company_name: str,
+    currency: str,
+    customer_name: str,
+    order: dict[str, Any],
+    tenant: Any | None = None,
+) -> EmailResult:
+    number = order.get("order_number") or ""
+    text, html_body = render_sales_order_bodies(
+        company_name=company_name,
+        currency=currency,
+        customer_name=customer_name,
+        order=order,
+        tenant=tenant,
+    )
+    return await send_email(
+        to=to,
+        subject=f"Sales order {number} from {company_name}".strip(),
+        text_body=text,
+        html_body=html_body,
+        tenant=tenant,
+    )
+
+
+def render_sales_return_bodies(
+    *,
+    company_name: str,
+    currency: str,
+    customer_name: str,
+    ret: dict[str, Any],
+    tenant: Any | None = None,
+) -> tuple[str, str]:
+    number = ret.get("return_number") or ""
+    credit = ret.get("credit_note_number") or ""
+    title = f"Credit Note {credit}".strip() if credit else f"Sales Return {number}".strip()
+    extra = [f"Return {number}"] if credit and number else []
+    if ret.get("reason"):
+        extra.append(f"Reason: {ret.get('reason')}")
+    return render_catalog_document_bodies(
+        title=title or "Credit Note",
+        company_name=company_name,
+        currency=currency,
+        party_name=customer_name,
+        document=ret,
+        tenant=tenant,
+        date_label="Return date",
+        date_keys=("posted_at", "created_at"),
+        extra_meta=extra,
+        totals=[("Subtotal", ret.get("subtotal")), ("Tax", ret.get("tax_amount"))],
+        closing="This credit note reduces the amount owed.",
+    )
+
+
+async def send_sales_return_email(
+    *,
+    to: str,
+    company_name: str,
+    currency: str,
+    customer_name: str,
+    ret: dict[str, Any],
+    tenant: Any | None = None,
+) -> EmailResult:
+    number = ret.get("credit_note_number") or ret.get("return_number") or ""
+    text, html_body = render_sales_return_bodies(
+        company_name=company_name,
+        currency=currency,
+        customer_name=customer_name,
+        ret=ret,
+        tenant=tenant,
+    )
+    return await send_email(
+        to=to,
+        subject=f"Credit note {number} from {company_name}".strip(),
+        text_body=text,
+        html_body=html_body,
+        tenant=tenant,
+    )
+
+
+def render_payment_receipt_bodies(
+    *,
+    title: str,
+    company_name: str,
+    currency: str,
+    party_name: str,
+    payment: dict[str, Any],
+    tenant: Any | None = None,
+    extra_meta: list[str] | None = None,
+    total_label: str = "Received",
+    closing: str = "Thank you for your payment.",
+) -> tuple[str, str]:
+    return render_catalog_document_bodies(
+        title=title,
+        company_name=company_name,
+        currency=currency,
+        party_name=party_name,
+        document=payment,
+        tenant=tenant,
+        date_label="Date",
+        date_keys=("created_at", "payment_date"),
+        extra_meta=extra_meta,
+        item_kind="none",
+        totals=[],
+        total_label=total_label,
+        total_key="amount",
+        closing=closing,
+    )
+
+
+async def send_customer_payment_email(
+    *,
+    to: str,
+    company_name: str,
+    currency: str,
+    customer_name: str,
+    payment: dict[str, Any],
+    tenant: Any | None = None,
+) -> EmailResult:
+    number = payment.get("payment_number") or ""
+    extra = []
+    if payment.get("invoice_number"):
+        extra.append(f"Invoice: {payment.get('invoice_number')}")
+    if payment.get("payment_method"):
+        extra.append(f"Method: {str(payment.get('payment_method')).replace('_', ' ')}")
+    if payment.get("reference"):
+        extra.append(f"Ref: {payment.get('reference')}")
+    text, html_body = render_payment_receipt_bodies(
+        title=f"Payment Receipt {number}".strip() or "Payment Receipt",
+        company_name=company_name,
+        currency=currency,
+        party_name=customer_name,
+        payment=payment,
+        tenant=tenant,
+        extra_meta=extra,
+        total_label="Received",
+        closing="Thank you for your payment.",
+    )
+    return await send_email(
+        to=to,
+        subject=f"Payment receipt {number} from {company_name}".strip(),
+        text_body=text,
+        html_body=html_body,
+        tenant=tenant,
+    )
+
+
+def render_purchase_request_bodies(
+    *,
+    company_name: str,
+    currency: str,
+    party_name: str,
+    request: dict[str, Any],
+    tenant: Any | None = None,
+) -> tuple[str, str]:
+    number = request.get("request_number") or ""
+    extra = []
+    if request.get("department"):
+        extra.append(f"Department: {request.get('department')}")
+    return render_catalog_document_bodies(
+        title=f"Purchase Request {number}".strip() or "Purchase Request",
+        company_name=company_name,
+        currency=currency,
+        party_name=party_name or "—",
+        document=request,
+        tenant=tenant,
+        date_label="Request date",
+        date_keys=("created_at",),
+        extra_date_label="Needed by",
+        extra_date_key="required_date",
+        extra_date_hint="when these goods are needed",
+        extra_meta=extra,
+        item_kind="request",
+        totals=[],
+        total_key="",
+        closing="Please review this purchase request.",
+    )
+
+
+async def send_purchase_request_email(
+    *,
+    to: str,
+    company_name: str,
+    currency: str,
+    party_name: str,
+    request: dict[str, Any],
+    tenant: Any | None = None,
+) -> EmailResult:
+    number = request.get("request_number") or ""
+    text, html_body = render_purchase_request_bodies(
+        company_name=company_name,
+        currency=currency,
+        party_name=party_name,
+        request=request,
+        tenant=tenant,
+    )
+    return await send_email(
+        to=to,
+        subject=f"Purchase request {number} from {company_name}".strip(),
+        text_body=text,
+        html_body=html_body,
+        tenant=tenant,
+    )
+
+
+def render_grn_bodies(
+    *,
+    company_name: str,
+    currency: str,
+    supplier_name: str,
+    grn: dict[str, Any],
+    tenant: Any | None = None,
+) -> tuple[str, str]:
+    number = grn.get("grn_number") or ""
+    extra = []
+    if grn.get("po_number"):
+        extra.append(f"Purchase order: {grn.get('po_number')}")
+    return render_catalog_document_bodies(
+        title=f"Goods Received {number}".strip() or "Goods Received",
+        company_name=company_name,
+        currency=currency,
+        party_name=supplier_name,
+        document=grn,
+        tenant=tenant,
+        date_label="Date received",
+        date_keys=("received_at", "created_at"),
+        extra_meta=extra,
+        item_kind="grn",
+        totals=[],
+        total_key="",
+        closing="Please keep this goods received note for your records.",
+    )
+
+
+async def send_grn_email(
+    *,
+    to: str,
+    company_name: str,
+    currency: str,
+    supplier_name: str,
+    grn: dict[str, Any],
+    tenant: Any | None = None,
+) -> EmailResult:
+    number = grn.get("grn_number") or ""
+    text, html_body = render_grn_bodies(
+        company_name=company_name,
+        currency=currency,
+        supplier_name=supplier_name,
+        grn=grn,
+        tenant=tenant,
+    )
+    return await send_email(
+        to=to,
+        subject=f"Goods received {number} from {company_name}".strip(),
+        text_body=text,
+        html_body=html_body,
+        tenant=tenant,
+    )
+
+
+def render_purchase_invoice_bodies(
+    *,
+    company_name: str,
+    currency: str,
+    supplier_name: str,
+    invoice: dict[str, Any],
+    tenant: Any | None = None,
+) -> tuple[str, str]:
+    number = invoice.get("invoice_number") or ""
+    extra = []
+    if invoice.get("supplier_invoice_number"):
+        extra.append(f"Supplier #: {invoice.get('supplier_invoice_number')}")
+    return render_catalog_document_bodies(
+        title=f"Supplier Bill {number}".strip() or "Supplier Bill",
+        company_name=company_name,
+        currency=currency,
+        party_name=supplier_name,
+        document=invoice,
+        tenant=tenant,
+        date_label="Bill date",
+        date_keys=("invoice_date", "created_at"),
+        extra_date_label="Payment due date",
+        extra_date_key="due_date",
+        extra_date_hint="please settle the balance by this date",
+        extra_meta=extra,
+        totals=[
+            ("Subtotal", invoice.get("subtotal")),
+            ("Tax", invoice.get("tax_amount")),
+            ("Discount", invoice.get("discount_amount")),
+            ("Paid", invoice.get("paid_amount")),
+            ("Balance due", invoice.get("balance_due")),
+        ],
+        closing="Please keep this supplier bill for your records.",
+    )
+
+
+async def send_purchase_invoice_email(
+    *,
+    to: str,
+    company_name: str,
+    currency: str,
+    supplier_name: str,
+    invoice: dict[str, Any],
+    tenant: Any | None = None,
+) -> EmailResult:
+    number = invoice.get("invoice_number") or ""
+    text, html_body = render_purchase_invoice_bodies(
+        company_name=company_name,
+        currency=currency,
+        supplier_name=supplier_name,
+        invoice=invoice,
+        tenant=tenant,
+    )
+    return await send_email(
+        to=to,
+        subject=f"Supplier bill {number} from {company_name}".strip(),
+        text_body=text,
+        html_body=html_body,
+        tenant=tenant,
+    )
+
+
+def render_purchase_return_bodies(
+    *,
+    company_name: str,
+    currency: str,
+    supplier_name: str,
+    ret: dict[str, Any],
+    tenant: Any | None = None,
+) -> tuple[str, str]:
+    number = ret.get("return_number") or ""
+    debit = ret.get("debit_note_number") or ""
+    title = f"Debit Note {debit}".strip() if debit else f"Purchase Return {number}".strip()
+    extra = [f"Return {number}"] if debit and number else []
+    if ret.get("reason"):
+        extra.append(f"Reason: {ret.get('reason')}")
+    return render_catalog_document_bodies(
+        title=title or "Debit Note",
+        company_name=company_name,
+        currency=currency,
+        party_name=supplier_name,
+        document=ret,
+        tenant=tenant,
+        date_label="Return date",
+        date_keys=("posted_at", "created_at"),
+        extra_meta=extra,
+        totals=[("Subtotal", ret.get("subtotal")), ("Tax", ret.get("tax_amount"))],
+        closing="This debit note reduces the amount we owe.",
+    )
+
+
+async def send_purchase_return_email(
+    *,
+    to: str,
+    company_name: str,
+    currency: str,
+    supplier_name: str,
+    ret: dict[str, Any],
+    tenant: Any | None = None,
+) -> EmailResult:
+    number = ret.get("debit_note_number") or ret.get("return_number") or ""
+    text, html_body = render_purchase_return_bodies(
+        company_name=company_name,
+        currency=currency,
+        supplier_name=supplier_name,
+        ret=ret,
+        tenant=tenant,
+    )
+    return await send_email(
+        to=to,
+        subject=f"Debit note {number} from {company_name}".strip(),
+        text_body=text,
+        html_body=html_body,
+        tenant=tenant,
+    )
+
+
+async def send_supplier_payment_email(
+    *,
+    to: str,
+    company_name: str,
+    currency: str,
+    supplier_name: str,
+    payment: dict[str, Any],
+    tenant: Any | None = None,
+) -> EmailResult:
+    number = payment.get("payment_number") or ""
+    extra = []
+    if payment.get("bill_number"):
+        extra.append(f"Bill: {payment.get('bill_number')}")
+    if payment.get("payment_method"):
+        extra.append(f"Method: {str(payment.get('payment_method')).replace('_', ' ')}")
+    if payment.get("reference"):
+        extra.append(f"Ref: {payment.get('reference')}")
+    text, html_body = render_payment_receipt_bodies(
+        title=f"Supplier Payment {number}".strip() or "Supplier Payment",
+        company_name=company_name,
+        currency=currency,
+        party_name=supplier_name,
+        payment=payment,
+        tenant=tenant,
+        extra_meta=extra,
+        total_label="Paid",
+        closing="Please keep this payment receipt for your records.",
+    )
+    return await send_email(
+        to=to,
+        subject=f"Supplier payment {number} from {company_name}".strip(),
+        text_body=text,
+        html_body=html_body,
+        tenant=tenant,
     )
 
 

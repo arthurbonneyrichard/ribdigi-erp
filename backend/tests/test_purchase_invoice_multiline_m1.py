@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pyotp
 import pytest
 
 from app import models as m
 from tests.conftest import auth_headers
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
 async def _admin(ac, seed):
@@ -282,3 +286,19 @@ async def test_manual_bill_requires_valid_qty_and_at_least_one_line(client):
         },
     )
     assert bad_qty.status_code == 422, bad_qty.text
+
+
+def test_create_bill_add_product_appends_line_with_product_id():
+    """Create supplier bill: pick product, Add product appends a line; draft sends product_id."""
+    page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
+    assert 'aria-label="Create supplier bill"' in page
+    assert 'title="Create supplier bill"' in page
+    assert "function addBillProduct" in page
+    assert 'aria-label="Purchase invoice product"' in page
+    assert 'aria-label="Add purchase invoice product"' in page
+    assert "setBillLines((rows) => [...rows, draft])" in page
+    assert "productId" in page
+    assert "product_id: line.productId.trim()" in page
+    assert "Choose a product first" in page
+    # GRN-from-bill path stays a separate modal.
+    assert 'aria-label="Draft purchase invoice from GRN"' in page

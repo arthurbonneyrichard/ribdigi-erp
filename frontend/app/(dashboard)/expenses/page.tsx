@@ -11,6 +11,7 @@ import { getMe } from '../../../lib/meCache';
 import { AmountField } from '../../../components/AmountField';
 import { useStoreContext } from '../../../lib/storeContext';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
+import { openDocumentPrint } from '../../../lib/documentPrint';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -1041,6 +1042,17 @@ export default function Page() {
                       )}
                     </div>
                     <div className="expenses-actions-row">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          openDocumentPrint(`/expenses/${r.id}/print?format=pdf`).catch((err) =>
+                            setError(String((err as { message?: string })?.message || err)),
+                          )
+                        }
+                        aria-label="Print expense"
+                      >
+                        Print
+                      </button>
                       {(r.status === 'pending' || r.status === 'rejected') && (
                         <button
                           type="button"

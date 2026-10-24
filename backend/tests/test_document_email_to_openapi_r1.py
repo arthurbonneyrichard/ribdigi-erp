@@ -46,6 +46,9 @@ def test_document_email_to_ui_and_docs():
     assert "sales/invoices/{invoice_id}/send" in docs
     assert "EmailStr" in docs
     assert "purchasing/orders/{po_id}/send" in docs
+    assert "sales/orders/{order_id}/send" in docs
+    assert "purchasing/grn/{grn_id}/send" in docs
+    assert "sales/payments/{payment_id}/send" in docs
 
 
 async def _admin(ac, seed):

@@ -64,6 +64,17 @@ async function openPurchasingPrint(path: string) {
         || `Print failed (${res.status})`,
     );
   }
+  const type = (res.headers.get('content-type') || '').toLowerCase();
+  if (type.includes('pdf')) {
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url, '_blank', 'noopener');
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    if (!w) {
+      throw new Error('Allow pop-ups to print this document.');
+    }
+    return;
+  }
   const html = await res.text();
   const w = window.open('', '_blank');
   if (!w) {
@@ -571,7 +582,12 @@ export default function Page() {
   const [invAttachmentUrl, setInvAttachmentUrl] = useState('');
   const [grnNotes, setGrnNotes] = useState('');
   const [manualInvSupplierId, setManualInvSupplierId] = useState('');
-  const [billLines, setBillLines] = useState<BillLineDraft[]>(() => [emptyBillLine()]);
+  const [billLines, setBillLines] = useState<BillLineDraft[]>([]);
+  const [billPickProductId, setBillPickProductId] = useState('');
+  const [billPickQty, setBillPickQty] = useState('1');
+  const [billPickUnitCost, setBillPickUnitCost] = useState('0');
+  const [billPickTax, setBillPickTax] = useState('');
+  const [billPickDiscount, setBillPickDiscount] = useState('0');
   const [manualInvHeaderDiscount, setManualInvHeaderDiscount] = useState('0');
   const [grnInvHeaderDiscount, setGrnInvHeaderDiscount] = useState('0');
   const [invCurrency, setInvCurrency] = useState('');
@@ -773,7 +789,7 @@ export default function Page() {
         const issued = await api(`/purchasing/orders/${po.id}/issue`, { method: 'POST' });
         current = issued.data;
       }
-      await openPurchasingPrint(`/purchasing/orders/${current.id}/print`);
+      await openPurchasingPrint(`/purchasing/orders/${current.id}/print?format=pdf`);
       setMessage(
         `${current.po_number} is ready to print. Hand the paper to the supplier. When they deliver, receive the goods.`,
       );
@@ -798,6 +814,19 @@ export default function Page() {
       );
       await refresh();
       setSelected(r.data);
+    } catch (err: any) {
+      setError(friendlyPurchaseError(err));
+    }
+  }
+
+  async function sendPurchasingDoc(path: string, okMessage: string) {
+    setError('');
+    try {
+      const qs = poEmailTo.trim() ? `?to=${encodeURIComponent(poEmailTo.trim())}` : '';
+      const r = await api(`${path}${qs}`, { method: 'POST' });
+      const to = r.data?.delivery?.to || r.data?.emailed_to || 'recipient';
+      setMessage(r.message || `${okMessage} ${to}`);
+      await refresh();
     } catch (err: any) {
       setError(friendlyPurchaseError(err));
     }
@@ -1148,6 +1177,34 @@ export default function Page() {
     }
   }
 
+  function addBillProduct() {
+    const productId = billPickProductId.trim();
+    const product = products.find((p) => p.id === productId);
+    if (!product) {
+      setError('Choose a product first');
+      return;
+    }
+    const draft: BillLineDraft = {
+      ...emptyBillLine(),
+      productId,
+      qty: billPickQty,
+      unitCost: billPickUnitCost,
+      taxRate: billPickTax,
+      discount: billPickDiscount,
+    };
+    if (!isValidBillLine(draft)) {
+      setError('Add at least one product line with quantity and unit cost.');
+      return;
+    }
+    setError('');
+    setBillLines((rows) => [...rows, draft]);
+    setBillPickProductId('');
+    setBillPickQty('1');
+    setBillPickUnitCost('0');
+    setBillPickTax('');
+    setBillPickDiscount('0');
+  }
+
   async function createManualInvoice() {
     if (saveBusy) return;
     setError('');
@@ -1191,7 +1248,12 @@ export default function Page() {
       setSupplierInvoiceNo('');
       setInvNotes('');
       setInvAttachmentUrl('');
-      setBillLines([emptyBillLine()]);
+      setBillLines([]);
+      setBillPickProductId('');
+      setBillPickQty('1');
+      setBillPickUnitCost('0');
+      setBillPickTax('');
+      setBillPickDiscount('0');
       setManualInvHeaderDiscount('0');
       setManualInvRc(false);
       setInvCurrency('');
@@ -1994,6 +2056,23 @@ export default function Page() {
               {managedRequests.map((r) => {
                 const prActions: RowActionItem[] = [
                   {
+                    key: 'print',
+                    label: 'Print',
+                    ariaLabel: 'Print purchase request',
+                    onClick: () => {
+                      openPurchasingPrint(`/purchasing/requests/${r.id}/print?format=pdf`).catch((err) =>
+                        setError(String(err)),
+                      );
+                    },
+                  },
+                  {
+                    key: 'email',
+                    label: 'Email',
+                    ariaLabel: 'Email purchase request',
+                    onClick: () =>
+                      sendPurchasingDoc(`/purchasing/requests/${r.id}/send`, 'Purchase request emailed to'),
+                  },
+                  {
                     key: 'submit',
                     label: 'Submit',
                     hidden: r.status !== 'draft',
@@ -2698,7 +2777,7 @@ export default function Page() {
               />
             </label>
             <label className="field" style={{ marginTop: 8 }}>
-              <span>Email the order to</span>
+              <span>Email the document to</span>
               <input
                 type="email"
                 className="purch-reason"
@@ -2709,8 +2788,8 @@ export default function Page() {
               />
             </label>
             <p className="muted" style={{ margin: '8px 0 0' }}>
-              If the supplier has no email, print the order and hand it over. When they deliver, receive
-              the goods.
+              This address also applies when you email a purchase request, goods received note,
+              supplier bill, or debit note. If there is no email, print the document instead.
             </p>
           </details>
 
@@ -2863,6 +2942,16 @@ export default function Page() {
                   >
                     Print PO
                   </button>
+                  {(selected.status === 'draft' || selected.status === 'sent') && (
+                    <button
+                      type="button"
+                      onClick={() => sendPo(selected.id, selected.status === 'sent')}
+                      aria-label={`Email purchase order ${selected.id}`}
+                      style={{ marginLeft: 8 }}
+                    >
+                      {selected.status === 'sent' ? 'Resend email' : 'Email PO'}
+                    </button>
+                  )}
                   <span className="muted" style={{ marginLeft: 8 }}>
                     Hand the paper to a supplier who has no email. When they deliver, receive the goods.
                   </span>
@@ -3584,6 +3673,23 @@ export default function Page() {
               const billMoney = grnBillMoney(g.id);
               const grnActions: RowActionItem[] = [
                 {
+                  key: 'print',
+                  label: 'Print',
+                  ariaLabel: 'Print goods received note',
+                  onClick: () => {
+                    openPurchasingPrint(`/purchasing/grn/${g.id}/print?format=pdf`).catch((err) =>
+                      setError(String(err)),
+                    );
+                  },
+                },
+                {
+                  key: 'email',
+                  label: 'Email',
+                  ariaLabel: 'Email goods received note',
+                  onClick: () =>
+                    sendPurchasingDoc(`/purchasing/grn/${g.id}/send`, 'Goods received note emailed to'),
+                },
+                {
                   key: 'bill',
                   label: 'Add purchase',
                   variant: 'ok',
@@ -3815,7 +3921,7 @@ export default function Page() {
       <FormModal
         title="Create supplier bill"
         busy={saveBusy}
-        dirty={Boolean(manualInvSupplierId || billLines.some((line) => line.productId))}
+        dirty={Boolean(manualInvSupplierId || billPickProductId || billLines.some((line) => line.productId))}
         onClose={() => setBillManualOpen(false)}
       >
         <div className="erp-form-grid">
@@ -3903,15 +4009,73 @@ export default function Page() {
             Reverse charge (self-assess VAT; AP = net)
           </label>
           <span className="muted span-2">
-            One supplier and bill header. Add product lines below — adding a product does not replace earlier lines.
+            One supplier and bill header. Choose a product, then Add product — that line stays, and you can add another.
             Header discount and FX apply once on the bill total (tax is not doubled). Draft saves the bill only; posting receives stock for every line at the selected warehouse.
           </span>
         </div>
-        <div className="cat-table-wrap" style={{ marginTop: 12 }}>
+        <div className="erp-form-grid erp-modal-lines" style={{ marginTop: 12 }}>
+          <select
+            value={billPickProductId}
+            onChange={(e) => {
+              const productId = e.target.value;
+              const product = products.find((p) => p.id === productId);
+              setBillPickProductId(productId);
+              if (product) setBillPickUnitCost(String(product.cost_price ?? 0));
+            }}
+            aria-label="Purchase invoice product"
+          >
+            <option value="">Select product</option>
+            {products
+              .filter((p) => p.is_active !== false)
+              .map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} ({p.sku})
+              </option>
+            ))}
+          </select>
+          <input
+            value={billPickQty}
+            onChange={(e) => setBillPickQty(e.target.value)}
+            placeholder="Quantity"
+            aria-label="Purchase invoice quantity"
+          />
+          <AmountField
+            value={billPickUnitCost}
+            onChange={(e) => setBillPickUnitCost(e.target.value)}
+            placeholder="Unit cost"
+            aria-label="Purchase invoice unit price"
+          />
+          <input
+            value={billPickTax}
+            onChange={(e) => setBillPickTax(e.target.value)}
+            placeholder="Tax rate % (blank = auto)"
+            aria-label="Purchase invoice tax rate percent"
+          />
+          <input
+            value={billPickDiscount}
+            onChange={(e) => setBillPickDiscount(e.target.value)}
+            placeholder="Line discount amount"
+            aria-label="Purchase invoice line discount"
+            type="number"
+            min={0}
+            step="0.01"
+          />
+          <button
+            type="button"
+            onClick={addBillProduct}
+            aria-label="Add purchase invoice product"
+          >
+            Add product
+          </button>
+        </div>
+        {products.filter((p) => p.is_active !== false).length === 0 ? (
+          <p className="muted">No products in the catalog yet. Add them in Inventory, then come back.</p>
+        ) : null}
+        <div className="cat-table-wrap erp-modal-lines" style={{ marginTop: 12 }}>
           <table className="table">
             <thead>
               <tr>
-                <th>Product</th>
+                <th className="col-text">Product</th>
                 <th>SKU</th>
                 <th>Qty</th>
                 <th>Unit cost</th>
@@ -3922,42 +4086,12 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {billLines.map((line) => (
+              {billLines.map((line, index) => {
+                const product = products.find((p) => p.id === line.productId);
+                return (
                 <tr key={line.key}>
-                  <td>
-                    <select
-                      value={line.productId}
-                      onChange={(e) => {
-                        const productId = e.target.value;
-                        const product = products.find((p) => p.id === productId);
-                        setBillLines((rows) =>
-                          ensureTrailingBlank(
-                            rows.map((row) =>
-                              row.key === line.key
-                                ? {
-                                    ...row,
-                                    productId,
-                                    unitCost: product ? String(product.cost_price ?? 0) : row.unitCost,
-                                  }
-                                : row,
-                            ),
-                            emptyBillLine,
-                          ),
-                        );
-                      }}
-                      aria-label="Purchase invoice product"
-                    >
-                      <option value="">Select product</option>
-                      {products
-                        .filter((p) => p.is_active !== false)
-                        .map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} ({p.sku})
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>{products.find((p) => p.id === line.productId)?.sku || '—'}</td>
+                  <td className="col-text">{product?.name || 'Product'}</td>
+                  <td>{product?.sku || '—'}</td>
                   <td>
                     <input
                       value={line.qty}
@@ -3967,7 +4101,7 @@ export default function Page() {
                         )
                       }
                       placeholder="Quantity"
-                      aria-label="Purchase invoice quantity"
+                      aria-label={`Purchase invoice quantity ${index + 1}`}
                     />
                   </td>
                   <td>
@@ -3980,7 +4114,7 @@ export default function Page() {
                         )
                       }
                       placeholder="Unit cost"
-                      aria-label="Purchase invoice unit price"
+                      aria-label={`Purchase invoice unit price ${index + 1}`}
                     />
                   </td>
                   <td>
@@ -3992,7 +4126,7 @@ export default function Page() {
                         )
                       }
                       placeholder="Tax rate % (blank = auto)"
-                      aria-label="Purchase invoice tax rate percent"
+                      aria-label={`Purchase invoice tax rate percent ${index + 1}`}
                     />
                   </td>
                   <td>
@@ -4004,7 +4138,7 @@ export default function Page() {
                         )
                       }
                       placeholder="Line discount amount"
-                      aria-label="Purchase invoice line discount"
+                      aria-label={`Purchase invoice line discount ${index + 1}`}
                       type="number"
                       min={0}
                       step="0.01"
@@ -4015,9 +4149,7 @@ export default function Page() {
                     <button
                       type="button"
                       onClick={() =>
-                        setBillLines((rows) =>
-                          rows.length <= 1 ? [emptyBillLine()] : rows.filter((row) => row.key !== line.key),
-                        )
+                        setBillLines((rows) => rows.filter((row) => row.key !== line.key))
                       }
                       aria-label="Remove purchase invoice line"
                     >
@@ -4025,18 +4157,17 @@ export default function Page() {
                     </button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
+              {billLines.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="muted">
+                    Choose a product above, then Add product. Each click keeps the earlier lines.
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-          <button
-            type="button"
-            onClick={() => setBillLines((rows) => [...rows, emptyBillLine()])}
-            aria-label="Add purchase invoice product"
-          >
-            Add product
-          </button>
         </div>
         <div className="grid" style={{ marginTop: 12 }}>
           <div className="card">
@@ -4194,6 +4325,23 @@ export default function Page() {
           <tbody>
             {managedInvoices.map((inv) => {
               const piActions: RowActionItem[] = [
+                {
+                  key: 'print',
+                  label: 'Print',
+                  ariaLabel: 'Print supplier bill',
+                  onClick: () => {
+                    openPurchasingPrint(`/purchasing/invoices/${inv.id}/print?format=pdf`).catch((err) =>
+                      setError(String(err)),
+                    );
+                  },
+                },
+                {
+                  key: 'email',
+                  label: 'Email',
+                  ariaLabel: 'Email supplier bill',
+                  onClick: () =>
+                    sendPurchasingDoc(`/purchasing/invoices/${inv.id}/send`, 'Supplier bill emailed to'),
+                },
                 {
                   key: 'approve',
                   label: 'Approve',
@@ -4673,10 +4821,17 @@ export default function Page() {
                   label: 'Print',
                   ariaLabel: `Print purchase return ${r.id}`,
                   onClick: () => {
-                    openPurchasingPrint(`/purchasing/returns/${r.id}/print`).catch((err) =>
+                    openPurchasingPrint(`/purchasing/returns/${r.id}/print?format=pdf`).catch((err) =>
                       setError(String(err)),
                     );
                   },
+                },
+                {
+                  key: 'email',
+                  label: 'Email',
+                  ariaLabel: 'Email purchase return',
+                  onClick: () =>
+                    sendPurchasingDoc(`/purchasing/returns/${r.id}/send`, 'Debit note emailed to'),
                 },
               ];
               return (

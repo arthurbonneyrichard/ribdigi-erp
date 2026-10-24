@@ -171,6 +171,11 @@ InvoicePrintFormatValue = Annotated[
     Literal["pdf", "text", "json"],
     BeforeValidator(coerce_invoice_template_value),
 ]
+# Purchase-order / document HTML print (BR-6.3) — omit → html; blank/invalid → 422.
+DocumentPrintFormatValue = Annotated[
+    Literal["html", "pdf"],
+    BeforeValidator(coerce_invoice_template_value),
+]
 ReceiptPrintFormatValue = Annotated[
     Literal["json", "text", "pdf"],
     BeforeValidator(coerce_invoice_template_value),
