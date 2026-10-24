@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
+import { formatNoticeTime, notifyCategoryLabel } from '../../../lib/notifyText';
 import './notify-ui.css';
 
 type Note = {
@@ -106,7 +107,7 @@ export default function Page() {
   function categoryLabel(id: string): string {
     const chip = chips.find((c) => c.id === id);
     if (chip) return chip.label;
-    return id.split('_').join(' ');
+    return notifyCategoryLabel(id);
   }
 
   useEffect(() => {
@@ -195,8 +196,8 @@ export default function Page() {
   return (
     <div className="notify-ui">
       <PageHeader
-        title="Unread alerts"
-        subtitle="Start with unread items. Mark one read when you have dealt with it. All (90 days) keeps the recent history."
+        title="Alerts"
+        subtitle="Things in your shop that need you: low stock, payments due, approvals and more. Mark one read when you have dealt with it."
       />
       {platformAudience ? (
         <p className="muted notify-ui-note">
@@ -209,20 +210,27 @@ export default function Page() {
       {message && <p className="notify-ui-ok" role="status">{message}</p>}
 
       <div className="notify-ui-actions">
+        <div className="notify-ui-seg" role="group" aria-label="Show">
         <button
+          type="button"
+          className={status === 'unread' ? 'is-on' : ''}
+          aria-pressed={status === 'unread'}
           onClick={() => setStatus('unread')}
-          disabled={status === 'unread'}
           aria-label="Filter unread notifications"
         >
           Unread
         </button>
         <button
+          type="button"
+          className={status === '' ? 'is-on' : ''}
+          aria-pressed={status === ''}
           onClick={() => setStatus('')}
-          disabled={status === ''}
           aria-label="Filter all notifications"
         >
           All (90 days)
         </button>
+        </div>
+        <span className="notify-ui-spacer" />
         <button onClick={markAll} aria-label="Mark all notifications read">Mark all read</button>
         {!platformAudience ? (
           <button onClick={scanDue} aria-label="Scan due notification alerts">
@@ -249,31 +257,34 @@ export default function Page() {
       <table className="table">
         <thead>
           <tr>
+            <th>When</th>
             <th>Type</th>
-            <th>Title</th>
-            <th>Message</th>
-            <th>Status</th>
+            <th>Alert</th>
             <th>Action</th>
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={5} className="muted">
+              <td colSpan={4} className="muted">
                 {emptyCopy}
               </td>
             </tr>
           ) : (
             rows.map((n) => (
-            <tr key={n.id}>
-              <td>{categoryLabel(n.category)}</td>
-              <td>{n.title}</td>
-              <td>{n.message}</td>
-              <td>{n.status === 'unread' ? 'Unread' : 'Read'}</td>
+            <tr key={n.id} className={n.status === 'unread' ? 'notify-ui-unread' : 'notify-ui-read'}>
+              <td className="notify-ui-when">{formatNoticeTime(n.created_at)}</td>
+              <td>
+                <span className={`notify-ui-cat notify-ui-cat-${n.category}`}>{categoryLabel(n.category)}</span>
+              </td>
+              <td>
+                <b className="notify-ui-title">{n.title}</b>
+                <span className="notify-ui-msg">{n.message}</span>
+              </td>
               <td>
                 <div className="notify-ui-row-actions">
                 {n.status === 'unread' ? (
-                  <button onClick={() => markRead(n.id)} aria-label={`Mark notification ${n.id} read`}>Mark read</button>
+                  <button className="btn-ok" onClick={() => markRead(n.id)} aria-label={`Mark notification ${n.id} read`}>Mark read</button>
                 ) : (
                   <button onClick={() => markUnread(n.id)} aria-label={`Mark notification ${n.id} unread`}>Mark unread</button>
                 )}
@@ -289,7 +300,7 @@ export default function Page() {
       <details className="card notify-ui-advanced">
         <summary>Channel preferences</summary>
         <p className="muted notify-ui-note">
-          Choose whether each type also sends email or SMS. Dashboard stays the in-app list.
+          Choose where each kind of alert reaches you. In the app is this list; Email and SMS also send a message.
         </p>
         {prefsError ? <p className="notify-ui-alert" role="alert">{prefsError}</p> : null}
         {prefs ? (
@@ -298,7 +309,7 @@ export default function Page() {
             <thead>
               <tr>
                 <th>Type</th>
-                <th>Dashboard</th>
+                <th>In the app</th>
                 <th>Email</th>
                 <th>SMS</th>
               </tr>
@@ -315,10 +326,14 @@ export default function Page() {
                     <td key={ch}>
                       <button
                         type="button"
+                        role="switch"
+                        aria-checked={!!channels[ch]}
+                        className={channels[ch] ? 'notify-ui-switch is-on' : 'notify-ui-switch'}
                         aria-label={`${cat} ${ch}`}
                         onClick={() => togglePref(cat, ch)}
                       >
-                        {channels[ch] ? 'On' : 'Off'}
+                        <span className="notify-ui-knob" aria-hidden />
+                        <span className="notify-ui-switch-text">{channels[ch] ? 'On' : 'Off'}</span>
                       </button>
                     </td>
                   ))}

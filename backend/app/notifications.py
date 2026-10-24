@@ -483,6 +483,12 @@ async def mark_all_read(
     return len(rows)
 
 
+def _qty_text(value) -> str:
+    """Quantity for alert text: 8 not 8.0, 2.5 stays 2.5."""
+    text = f"{money_json(value):.3f}".rstrip("0").rstrip(".")
+    return text or "0"
+
+
 async def notify_low_stock_if_needed(
     db: AsyncSession,
     *,
@@ -511,7 +517,11 @@ async def notify_low_stock_if_needed(
         tenant_id=tenant_id,
         category="low_stock",
         title="Low Stock",
-        message=f"{product.name} ({product.sku}) is at {stock} (reorder {reorder}).",
+        message=(
+            f"{product.name} ({product.sku}) is out of stock. Reorder level is {_qty_text(reorder)}."
+            if stock <= 0
+            else f"{product.name} ({product.sku}) has {_qty_text(stock)} left. Reorder level is {_qty_text(reorder)}."
+        ),
         entity_type="product",
         entity_id=product.id,
         roles=list(LOW_STOCK_NOTIFY_ROLES),
@@ -575,8 +585,8 @@ async def notify_warehouse_low_stock_if_needed(
         category="low_stock",
         title="Store/warehouse low stock",
         message=(
-            f"{product.name} ({product.sku}) at {loc}: {qty} "
-            f"(reorder {reorder}; suggest order {suggested})."
+            f"{product.name} ({product.sku}) at {loc}: {_qty_text(qty)} left. "
+            f"Reorder level is {_qty_text(reorder)}; suggested order {_qty_text(suggested)}."
         ),
         entity_type="warehouse_stock",
         entity_id=entity_id,

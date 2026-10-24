@@ -94,3 +94,168 @@
     max-height: 22rem;
   }
 }
+
+/* Unread / All toggle, readable rows, switch-style channel preferences. */
+.notify-ui-seg {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--mist, #f2f7ec);
+  border: 1px solid var(--line);
+  gap: 2px;
+}
+
+.main .notify-ui-seg > button {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  border-radius: 999px;
+  padding: 6px 16px;
+  min-height: 0;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.main .notify-ui-seg > button.is-on {
+  background: var(--forest, #003d1f);
+  color: #fff;
+}
+
+.notify-ui-spacer {
+  flex: 1 1 auto;
+}
+
+.notify-ui-when {
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.notify-ui-cat {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  background: var(--mist, #f2f7ec);
+  border: 1px solid var(--line);
+  color: var(--deep-green, #006b2e);
+}
+
+.notify-ui-cat-low_stock,
+.notify-ui-cat-batch_expiry {
+  background: #fff4e0;
+  border-color: #f6d9a8;
+  color: #8a5a00;
+}
+
+.notify-ui-cat-payment_due,
+.notify-ui-cat-credit_limit {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.notify-ui-title {
+  display: block;
+}
+
+.notify-ui-msg {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.notify-ui-unread .notify-ui-title::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand, #4ab012);
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.notify-ui-read .notify-ui-title {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.notify-ui-row-actions button {
+  white-space: nowrap;
+}
+
+.main .notify-ui-switch,
+.main .table td button.notify-ui-switch,
+.main .table td button.notify-ui-switch:hover {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 64px;
+  min-width: 64px;
+  height: 30px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid #c9d4ce;
+  background: #e3e9e5;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+  overflow: hidden;
+  transition: background 0.2s ease;
+}
+
+.notify-ui-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: left 0.2s ease;
+}
+
+.notify-ui-switch-text {
+  position: absolute;
+  right: 9px;
+}
+
+.main .notify-ui-switch.is-on,
+.main .table td button.notify-ui-switch.is-on,
+.main .table td button.notify-ui-switch.is-on:hover {
+  background: var(--brand, #4ab012);
+  border-color: var(--brand-dark, #2f7a0c);
+  color: #fff;
+}
+
+.main .table td button.notify-ui-switch.is-on .notify-ui-knob,
+.main .notify-ui-switch.is-on .notify-ui-knob {
+  left: 37px;
+}
+
+.main .table td button.notify-ui-switch.is-on .notify-ui-switch-text,
+.main .notify-ui-switch.is-on .notify-ui-switch-text {
+  right: auto;
+  left: 10px;
+}
+
+[data-theme="dark"] .main .notify-ui-seg > button.is-on {
+  background: var(--brand, #4ab012);
+}
+
+[data-theme="dark"] .notify-ui-cat {
+  background: transparent;
+  border-color: #1f5c45;
+  color: var(--brand-light, #c8e86a);
+}
+
+[data-theme="dark"] .main .table td button.notify-ui-switch:not(.is-on) {
+  background: transparent;
+}
