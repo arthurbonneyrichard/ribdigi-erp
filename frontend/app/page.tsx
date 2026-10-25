@@ -331,8 +331,14 @@ export default function Login() {
         <span className="login-grid" />
       </div>
 
-      <div className="login">
-        <LoginBrandLogo />
+      <div className="login login-split">
+        <div className="login-aside">
+          <LoginBrandLogo />
+          <p className="login-tagline">One System. Total Business Control.</p>
+        </div>
+        <div className="login-main">
+        <h1 className="login-heading">Sign in</h1>
+        <p className="login-lead">Open your company desk with your staff account.</p>
 
         <form className="login-form" onSubmit={go}>
           {!needs2fa && (
@@ -493,6 +499,7 @@ export default function Login() {
           </a>
         </p>
         <LoginLegalLinks />
+        </div>
       </div>
     </div>
   );

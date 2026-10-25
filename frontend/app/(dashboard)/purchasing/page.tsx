@@ -1707,7 +1707,7 @@ export default function Page() {
           <a href="/credit?kind=payable&panel=pay">Record a supplier payment</a>
         </p>
       </PageHeader>
-      {error ? <p className="form-flash err">{error}</p> : null}
+      {error ? <p className="form-flash err" role="alert">{error}</p> : null}
       {message ? <p className="form-flash ok">{message}</p> : null}
 
       <nav className="sales-toolbar" aria-label="Purchasing workflow">
@@ -1864,9 +1864,9 @@ export default function Page() {
               <table className="table">
                 <thead>
                   <tr>
-                    <th>Product</th>
-                    <th>Qty</th>
-                    <th>Line notes</th>
+                    <th className="col-text">Product</th>
+                    <th className="col-num">Qty</th>
+                    <th className="col-text">Line notes</th>
                     <th />
                   </tr>
                 </thead>
@@ -2015,7 +2015,7 @@ export default function Page() {
                 <th className="col-id">Number</th>
                 <th className="col-status">Status</th>
                 <th className="col-status">Approval</th>
-                <th>Department</th>
+                <th className="col-text">Department</th>
                 <th className="col-text">Lines</th>
                 <th className="col-text">Reject reason</th>
                 <th className="col-actions">Actions</th>
@@ -2098,7 +2098,7 @@ export default function Page() {
                         ? `${r.approval_steps_required} level(s)`
                         : '—'}
                   </td>
-                  <td>{r.department || '—'}</td>
+                  <td className="col-text">{r.department || '—'}</td>
                   <td className="col-text">
                     {(r.items || [])
                       .map((i) => `${productName(i.product_id, i)} × ${i.quantity}`)
@@ -2183,7 +2183,7 @@ export default function Page() {
               <table className="table cat-table purchase-ui-stack">
                 <thead>
                   <tr>
-                    <th>Name</th>
+                    <th className="col-text">Name</th>
                     <th className="col-id">Code</th>
                     <th className="col-status">Status</th>
                     <th className="col-num">Open bills</th>
@@ -2221,7 +2221,7 @@ export default function Page() {
                     ];
                     return (
                     <tr key={s.id}>
-                      <td data-label="Name"><strong>{s.name}</strong></td>
+                      <td className="col-text" data-label="Name"><strong>{s.name}</strong></td>
                       <td className="col-id" data-label="Code">{s.code || '—'}</td>
                       <td className="col-status" data-label="Status">
                         <StatusChip value={s.status === 'inactive' ? 'inactive' : 'active'} />
@@ -2576,11 +2576,11 @@ export default function Page() {
           <table className="table">
             <thead>
               <tr>
-                <th>Product</th>
-                <th>Unit</th>
-                <th>Qty</th>
-                <th>Unit price</th>
-                <th>Discount</th>
+                <th className="col-text">Product</th>
+                <th className="col-text">Unit</th>
+                <th className="col-num">Qty</th>
+                <th className="col-num">Unit price</th>
+                <th className="col-num">Discount</th>
                 <th />
               </tr>
             </thead>
@@ -2793,7 +2793,7 @@ export default function Page() {
             <thead>
               <tr>
                 <th className="col-id">PO</th>
-                <th>Supplier</th>
+                <th className="col-text">Supplier</th>
                 <th className="col-status">Status</th>
                 <th className="col-num">Rev</th>
                 <th className="col-num">Total</th>
@@ -2865,7 +2865,7 @@ export default function Page() {
                       {o.po_number}
                     </button>
                   </td>
-                  <td data-label="Supplier">{supplierNameOf(o.supplier_id)}</td>
+                  <td className="col-text" data-label="Supplier">{supplierNameOf(o.supplier_id)}</td>
                   <td className="col-status" data-label="Status"><StatusChip value={o.status} /></td>
                   <td className="col-num" data-label="Rev">{o.revision_no ?? 0}</td>
                   <td className="col-num" data-label="Total">{formatNumber(o.total_amount, formatPrefs)}</td>
@@ -2956,14 +2956,14 @@ export default function Page() {
               <table className="table">
                 <thead>
                   <tr>
-                    <th>Product</th>
-                    <th>SKU</th>
-                    <th>Ordered</th>
-                    <th>Received</th>
-                    <th>Outstanding</th>
-                    <th>Unit price</th>
-                    <th>Discount</th>
-                    <th>Line total</th>
+                    <th className="col-text">Product</th>
+                    <th className="col-id">SKU</th>
+                    <th className="col-num">Ordered</th>
+                    <th className="col-num">Received</th>
+                    <th className="col-num">Outstanding</th>
+                    <th className="col-num">Unit price</th>
+                    <th className="col-num">Discount</th>
+                    <th className="col-num">Line total</th>
                     {(selected.status === 'sent' || selected.status === 'partially_received') && (
                       <>
                         <th>Receive</th>
@@ -3184,11 +3184,11 @@ export default function Page() {
                     <table className="table compact">
                       <thead>
                         <tr>
-                          <th>Product</th>
-                          <th>Unit</th>
-                          <th>Qty</th>
-                          <th>Price</th>
-                          <th>Discount</th>
+                          <th className="col-text">Product</th>
+                          <th className="col-text">Unit</th>
+                          <th className="col-num">Qty</th>
+                          <th className="col-num">Price</th>
+                          <th className="col-num">Discount</th>
                           <th />
                         </tr>
                       </thead>
@@ -3481,13 +3481,13 @@ export default function Page() {
             <table className="table compact">
               <thead>
                 <tr>
-                  <th>Product</th>
-                  <th>SKU</th>
-                  <th>Left</th>
-                  <th>Receive</th>
-                  <th>Accept</th>
-                  <th>Reject</th>
-                  <th>Batch</th>
+                  <th className="col-text">Product</th>
+                  <th className="col-id">SKU</th>
+                  <th className="col-num">Left</th>
+                  <th className="col-num">Receive</th>
+                  <th className="col-num">Accept</th>
+                  <th className="col-num">Reject</th>
+                  <th className="col-id">Batch</th>
                 </tr>
               </thead>
               <tbody>
@@ -3622,7 +3622,7 @@ export default function Page() {
             <tr>
               <th className="col-id">GRN</th>
               <th className="col-id">PO</th>
-              <th>Supplier</th>
+              <th className="col-text">Supplier</th>
               <th className="col-date">Date received</th>
               <th className="col-status">Status</th>
               <th className="col-num">Accepted</th>
@@ -3675,7 +3675,7 @@ export default function Page() {
                 <tr key={g.id}>
                   <td className="col-id" data-label="GRN">{g.grn_number}</td>
                   <td className="col-id" data-label="PO">{poNumberOf(g.purchase_order_id)}</td>
-                  <td data-label="Supplier">{supplierNameOf(g.supplier_id, g.purchase_order_id)}</td>
+                  <td className="col-text" data-label="Supplier">{supplierNameOf(g.supplier_id, g.purchase_order_id)}</td>
                   <td className="col-date" data-label="Date received">
                     {formatDate(g.received_at || g.created_at, formatPrefs) || '—'}
                   </td>
@@ -3720,9 +3720,9 @@ export default function Page() {
             <thead>
               <tr>
                 <th className="col-date">Date</th>
-                <th>Type</th>
+                <th className="col-text">Type</th>
                 <th className="col-id">Number</th>
-                <th>Supplier</th>
+                <th className="col-text">Supplier</th>
                 <th className="col-status">Status</th>
                 <th className="col-num">Amount / qty</th>
               </tr>
@@ -3731,9 +3731,9 @@ export default function Page() {
               {purchaseHistory.map((row) => (
                 <tr key={row.key}>
                   <td className="col-date">{row.at ? String(row.at).slice(0, 10) : '—'}</td>
-                  <td>{row.kind}</td>
+                  <td className="col-text">{row.kind}</td>
                   <td className="col-id">{row.ref}</td>
-                  <td>{row.party}</td>
+                  <td className="col-text">{row.party}</td>
                   <td className="col-status">
                     <StatusChip value={row.status} />
                   </td>
@@ -4277,7 +4277,7 @@ export default function Page() {
           <thead>
             <tr>
               <th className="col-id">Invoice</th>
-              <th>Supplier</th>
+              <th className="col-text">Supplier</th>
               <th className="col-id">Supplier #</th>
               <th className="col-status">Status</th>
               <th className="col-status">Currency</th>
@@ -4410,7 +4410,7 @@ export default function Page() {
                     {inv.invoice_number}
                   </button>
                 </td>
-                <td data-label="Supplier">{billSupplierName(inv)}</td>
+                <td className="col-text" data-label="Supplier">{billSupplierName(inv)}</td>
                 <td className="col-id" data-label="Supplier #">{inv.supplier_invoice_number || '—'}</td>
                 <td className="col-status" data-label="Status"><StatusChip value={inv.status} /></td>
                 <td className="col-status" data-label="Currency">
@@ -4505,14 +4505,14 @@ export default function Page() {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Product</th>
-                  <th>SKU</th>
-                  <th>Qty</th>
-                  <th>Unit</th>
-                  <th>Tax %</th>
-                  <th>Discount</th>
-                  <th>Line tax</th>
-                  <th>Line total</th>
+                  <th className="col-text">Product</th>
+                  <th className="col-id">SKU</th>
+                  <th className="col-num">Qty</th>
+                  <th className="col-text">Unit</th>
+                  <th className="col-num">Tax %</th>
+                  <th className="col-num">Discount</th>
+                  <th className="col-num">Line tax</th>
+                  <th className="col-num">Line total</th>
                 </tr>
               </thead>
               <tbody>
@@ -4756,7 +4756,7 @@ export default function Page() {
           <thead>
             <tr>
               <th className="col-id">Return</th>
-              <th>Supplier</th>
+              <th className="col-text">Supplier</th>
               <th className="col-id">Debit note</th>
               <th className="col-status">Reason</th>
               <th className="col-status">Status</th>
@@ -4806,7 +4806,7 @@ export default function Page() {
               return (
               <tr key={r.id}>
                 <td className="col-id">{r.return_number}</td>
-                <td>{supplierNameOf(r.supplier_id || grns.find((g) => g.id === r.goods_receipt_id)?.supplier_id, grns.find((g) => g.id === r.goods_receipt_id)?.purchase_order_id)}</td>
+                <td className="col-text">{supplierNameOf(r.supplier_id || grns.find((g) => g.id === r.goods_receipt_id)?.supplier_id, grns.find((g) => g.id === r.goods_receipt_id)?.purchase_order_id)}</td>
                 <td className="col-id">{r.debit_note_number || '—'}</td>
                 <td className="col-status"><StatusChip value={r.reason} /></td>
                 <td className="col-status"><StatusChip value={r.status} /></td>

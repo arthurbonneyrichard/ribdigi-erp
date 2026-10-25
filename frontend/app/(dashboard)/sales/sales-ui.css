@@ -68,16 +68,25 @@
 }
 
 .sales-ui-page .list-table-wrap .table {
-  table-layout: fixed;
-  width: 100%;
-  min-width: 560px;
-  white-space: normal;
+  table-layout: auto;
+  width: max-content;
+  min-width: 100%;
+  max-width: none;
+  white-space: nowrap;
 }
 @media (max-width: 720px) {
   .sales-ui-page .list-table-wrap .table {
-    min-width: 0;
-    width: 100%;
-    max-width: 100%;
+    min-width: 100%;
+    width: max-content;
+    max-width: none;
+    table-layout: auto;
+    white-space: nowrap;
+  }
+  .sales-ui-page .table th.col-text,
+  .sales-ui-page .table td.col-text {
+    white-space: nowrap;
+    word-break: normal;
+    overflow-wrap: normal;
   }
 }
 
@@ -91,9 +100,10 @@
 }
 
 .sales-ui-page td.col-actions,
-.sales-ui-page td.erp-row-actions {
-  width: 8rem;
-  max-width: 8rem;
+.sales-ui-page td.erp-row-actions,
+.sales-ui-page th.col-actions {
+  width: 1%;
+  max-width: none;
   text-align: right;
   white-space: nowrap;
   vertical-align: middle;
@@ -102,7 +112,8 @@
 
 .sales-ui-page .table th.col-num,
 .sales-ui-page .table td.col-num {
-  width: 6.5rem;
+  width: auto;
+  min-width: 6.25rem;
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -110,26 +121,27 @@
 
 .sales-ui-page .table th.col-status,
 .sales-ui-page .table td.col-status {
-  width: 6.75rem;
+  width: auto;
   white-space: nowrap;
 }
 
 .sales-ui-page .table th.col-text,
 .sales-ui-page .table td.col-text {
-  white-space: normal;
+  white-space: nowrap;
   overflow: visible;
-  word-break: break-word;
+  word-break: normal;
+  overflow-wrap: normal;
   line-height: 1.35;
 }
 
 .sales-ui-page .table th.col-id,
 .sales-ui-page .table td.col-id {
-  width: 7.5rem;
+  width: auto;
 }
 
 .sales-ui-page .table th.col-date,
 .sales-ui-page .table td.col-date {
-  width: 8rem;
+  width: auto;
 }
 
 .sales-ui-page .sales-paper-bar {
@@ -251,13 +263,30 @@
   }
 
   .sales-ui-page .card {
-    overflow-x: hidden;
+    overflow-x: auto;
     max-width: 100%;
   }
 
   .sales-ui-page .list-table-wrap {
     overflow-x: auto;
     max-width: 100%;
+  }
+
+  .sales-ui-page .list-table-wrap .table {
+    table-layout: auto;
+    white-space: nowrap;
+    width: max-content;
+    min-width: 100%;
+    max-width: none;
+  }
+
+  .sales-ui-page .list-table-wrap .table th,
+  .sales-ui-page .list-table-wrap .table td,
+  .sales-ui-page .list-table-wrap .table th.col-text,
+  .sales-ui-page .list-table-wrap .table td.col-text {
+    white-space: nowrap;
+    word-break: normal;
+    overflow-wrap: normal;
   }
 
   .sales-ui-page .erp-row-actions {

@@ -25,19 +25,40 @@ def test_phone_layout_uses_full_width_and_stacks_desk_chrome():
     assert ".mobile-side-nav{display:none !important}" in phone
     assert "padding-left:max(14px,env(safe-area-inset-left,0px))" in phone
     assert "padding-right:max(14px,env(safe-area-inset-right,0px))" in phone
-    assert "width:100%;min-width:0;max-width:100%" in phone
+    assert "width:100%;max-width:100%" in phone
+    assert "width:max-content;min-width:100%;max-width:none;table-layout:auto;white-space:nowrap" in phone
+    assert (
+        "display:table;table-layout:auto;width:max-content;min-width:100%;max-width:none;margin:0"
+        in css
+    )
+    tablet = css.split("@media(min-width:721px){")[-1]
+    assert "table-layout:auto;white-space:nowrap" in tablet
+    assert ".purchase-ui-page .cat-table-wrap .table" in tablet
+    assert ".sale-form-pair{" in phone
     assert ".sales-ui-page .list-table-wrap .table" in phone
     assert ".page-head,.list-page-head,.sales-desk-head,.cat-head,.users-page-head,.plat-hero{" in css
     assert "flex-direction:column;align-items:stretch" in css
     assert "viewportFit: 'cover'" in layout
-    assert ".login{width:100%;max-width:100%" in css
+    assert "width:100%;max-width:100%;margin:auto 0" in css
+    assert ".login-split{" in css
+    assert ".login-heading{" in css
+    assert ".login-tagline{display:none}" in css
+    assert ".login-forgot a,.login-legal a,.login-ghost{" in css
+    assert "overflow-y:auto;-webkit-overflow-scrolling:touch" in css
+    assert "max-height:100vh;max-height:100dvh" in css
+    assert "@media(min-width:721px) and (max-width:899px){" in css
+    assert "@media(min-width:900px){" in css
+    assert "@media(max-width:720px) and (orientation:landscape)" in css
 
     sales = (ROOT / "frontend/app/(dashboard)/sales/sales-ui.css").read_text(encoding="utf-8")
     inv = (ROOT / "frontend/app/(dashboard)/inventory/inv-ui.css").read_text(encoding="utf-8")
     purch = (ROOT / "frontend/app/(dashboard)/purchasing/purchase-ui.css").read_text(encoding="utf-8")
     for desk in (sales, inv, purch):
         assert "@media (max-width: 720px)" in desk
-        assert "min-width: 0;" in desk
+        assert "width: max-content;" in desk
+        assert "table-layout: auto;" in desk
+    assert "width: max-content;" in sales.split("@media (max-width: 760px)")[-1]
+    assert "white-space: nowrap;" in sales.split("@media (max-width: 760px)")[-1]
 
 
 def test_storefront_and_pos_stack_on_phone():

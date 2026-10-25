@@ -75,35 +75,45 @@
 .inv-ui-page .inv-ui-name {
   display: inline;
   text-transform: none;
-  white-space: normal;
+  white-space: nowrap;
   overflow: visible;
   text-overflow: unset;
   max-width: none;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .inv-ui-page .list-table-wrap .table,
 .inv-ui-page .cat-table-wrap .table {
-  table-layout: fixed;
-  width: 100%;
-  min-width: 560px;
-  white-space: normal;
+  table-layout: auto;
+  width: max-content;
+  min-width: 100%;
+  max-width: none;
+  white-space: nowrap;
 }
 @media (max-width: 720px) {
   .inv-ui-page .list-table-wrap .table,
   .inv-ui-page .cat-table-wrap .table {
-    min-width: 0;
-    width: 100%;
-    max-width: 100%;
+    min-width: 100%;
+    width: max-content;
+    max-width: none;
+    table-layout: auto;
+    white-space: nowrap;
+  }
+  .inv-ui-page .table th.col-text,
+  .inv-ui-page .table td.col-text {
+    white-space: nowrap;
+    word-break: normal;
+    overflow-wrap: normal;
   }
 }
 
 .inv-ui-page .cat-actions,
 .inv-ui-page td.cat-actions,
-.inv-ui-page td.col-actions {
-  width: 8rem;
-  max-width: 8rem;
+.inv-ui-page td.col-actions,
+.inv-ui-page th.col-actions {
+  width: 1%;
+  max-width: none;
   text-align: right;
   white-space: nowrap;
   vertical-align: middle;
@@ -121,7 +131,8 @@
 
 .inv-ui-page .table th.col-num,
 .inv-ui-page .table td.col-num {
-  width: 6.5rem;
+  width: auto;
+  min-width: 6.25rem;
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -129,7 +140,7 @@
 
 .inv-ui-page .table th.col-id,
 .inv-ui-page .table td.col-id {
-  width: 7.5rem;
+  width: auto;
 }
 
 .inv-ui-page .cat-actions button,

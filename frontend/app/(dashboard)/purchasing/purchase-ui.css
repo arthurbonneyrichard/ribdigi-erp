@@ -28,17 +28,39 @@
 }
 
 .purchase-ui-page .cat-table-wrap .table,
-.purchase-ui-page .list-table-wrap .table {
-  table-layout: fixed;
-  width: 100%;
-  min-width: 560px;
-  white-space: normal;
+.purchase-ui-page .list-table-wrap .table,
+.purchase-ui-page .erp-modal-lines .table {
+  table-layout: auto;
+  width: max-content;
+  min-width: 100%;
+  max-width: none;
+  white-space: nowrap;
+}
+.purchase-ui-page .cat-table-wrap .table th,
+.purchase-ui-page .cat-table-wrap .table td,
+.purchase-ui-page .list-table-wrap .table th,
+.purchase-ui-page .list-table-wrap .table td,
+.purchase-ui-page .erp-modal-lines .table th,
+.purchase-ui-page .erp-modal-lines .table td {
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+  overflow: visible;
+  text-overflow: clip;
+  vertical-align: middle;
 }
 @media (max-width: 720px) {
   .purchase-ui-page .cat-table-wrap .table,
   .purchase-ui-page .list-table-wrap .table {
-    min-width: 0;
+    min-width: 100%;
+    width: max-content;
+    max-width: none;
+    table-layout: auto;
+    white-space: nowrap;
+  }
+  .purchase-ui-page .table.purchase-ui-stack {
     width: 100%;
+    min-width: 0;
     max-width: 100%;
   }
 
@@ -75,6 +97,7 @@
   .purchase-ui-page .table.purchase-ui-stack td,
   .purchase-ui-page .table.purchase-ui-stack td.col-num,
   .purchase-ui-page .table.purchase-ui-stack td.col-id,
+  .purchase-ui-page .table.purchase-ui-stack td.col-text,
   .purchase-ui-page .table.purchase-ui-stack td.col-status,
   .purchase-ui-page .table.purchase-ui-stack td.col-actions {
     display: flex;
@@ -113,9 +136,10 @@
 
 .purchase-ui-page td.col-actions,
 .purchase-ui-page td.purch-actions,
-.purchase-ui-page td.cat-actions {
-  width: 8rem;
-  max-width: 8rem;
+.purchase-ui-page td.cat-actions,
+.purchase-ui-page th.col-actions {
+  width: 1%;
+  max-width: none;
   text-align: right;
   white-space: nowrap;
   vertical-align: middle;
@@ -124,7 +148,8 @@
 
 .purchase-ui-page .table th.col-num,
 .purchase-ui-page .table td.col-num {
-  width: 6.5rem;
+  width: auto;
+  min-width: 6.25rem;
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -132,22 +157,35 @@
 
 .purchase-ui-page .table th.col-status,
 .purchase-ui-page .table td.col-status {
-  width: 6.75rem;
+  width: auto;
   white-space: nowrap;
 }
 
 .purchase-ui-page .table th.col-text,
 .purchase-ui-page .table td.col-text {
-  white-space: normal;
+  white-space: nowrap;
   overflow: visible;
-  word-break: break-word;
+  word-break: normal;
+  overflow-wrap: normal;
   line-height: 1.35;
 }
 
 .purchase-ui-page .table th.col-id,
 .purchase-ui-page .table td.col-id {
-  width: 9rem;
+  width: auto;
   white-space: nowrap;
+}
+
+.purchase-ui-page .erp-modal-lines td select,
+.purchase-ui-page .erp-modal-lines td input,
+.purchase-ui-page .erp-modal-lines td .money-fill {
+  min-width: 5.5rem;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+.purchase-ui-page .erp-modal-lines td:first-child select {
+  min-width: 12rem;
 }
 
 .purchase-ui-page .erp-row-actions {
@@ -254,5 +292,12 @@
   .purchase-ui-page .purch-filter-row > select {
     width: 100%;
     min-height: 44px;
+  }
+
+  .purchase-ui-page .list-table-wrap .table:not(.purchase-ui-stack) th.col-text,
+  .purchase-ui-page .list-table-wrap .table:not(.purchase-ui-stack) td.col-text {
+    white-space: nowrap;
+    word-break: normal;
+    overflow-wrap: normal;
   }
 }
