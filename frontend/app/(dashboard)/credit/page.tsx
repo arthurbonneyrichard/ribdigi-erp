@@ -642,7 +642,7 @@ export default function Page() {
       .filter((doc: { party_id?: string }) => String(doc.party_id || '').trim().toLowerCase() === key)
       .reduce(
         (sum: number, doc: { balance_due_base?: number; balance_due?: number }) =>
-          sum + Number(doc.balance_due_base ?? doc.balance_due || 0),
+          sum + Number(doc.balance_due_base ?? doc.balance_due ?? 0),
         0,
       );
     return formatMoney(fromBills, formatPrefs);
