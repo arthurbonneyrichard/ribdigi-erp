@@ -50,6 +50,56 @@ def test_invoice_thermal_and_a4_pdf_bytes():
     assert a4.find(b"Sunrise Mart") < a4.find(b"SALES INVOICE")
 
 
+def _pdf_text(pdf: bytes) -> str:
+    import re
+
+    parts = []
+    for raw in re.findall(rb"\((?:\\.|[^\\)])*\)", pdf):
+        text = raw[1:-1].decode("latin-1")
+        text = text.replace(r"\(", "(").replace(r"\)", ")").replace(r"\\", "\\")
+        if text:
+            parts.append(text)
+    return "\n".join(parts)
+
+
+def test_invoice_a4_pdf_keeps_overflow_lines_on_page_2():
+    items = [
+        {
+            "name": f"Overflow Product {i:02d}",
+            "quantity": 1,
+            "unit_price": 1,
+            "tax_rate": 0,
+            "line_tax": 0,
+            "line_total": 1,
+        }
+        for i in range(1, 46)
+    ]
+    pdf = to_invoice_a4_pdf(
+        {
+            "company_name": "Sunrise Mart",
+            "invoice_number": "I260812-LONG",
+            "status": "posted",
+            "customer_name": "Walk-in",
+            "currency": "GHS",
+            "subtotal": 45,
+            "tax": 0,
+            "discount_amount": 0,
+            "total": 45,
+            "paid_amount": 0,
+            "balance_due": 45,
+            "items": items,
+        }
+    )
+    assert pdf.startswith(b"%PDF")
+    assert b"/Count 1" not in pdf
+    assert b"/Count 2" in pdf or b"/Count 3" in pdf
+    text = _pdf_text(pdf)
+    assert "Overflow Product 01" in text
+    assert "Overflow Product 40" in text
+    assert "Sunrise Mart" in text
+    assert "SALES INVOICE (continued)" in text
+
+
 async def _super(ac, seed):
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     return await auth_headers(

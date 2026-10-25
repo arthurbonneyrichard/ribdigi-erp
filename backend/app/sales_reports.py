@@ -943,7 +943,13 @@ async def credit_outstanding(
                 "total_due": 0.0,
             },
         )
-        row["total_due"] = money_json(round(row["total_due"] + money_json(doc.get("balance_due")), 2))
+        row["total_due"] = money_json(
+            round(
+                row["total_due"]
+                + money_json(doc.get("balance_due_base") if doc.get("balance_due_base") is not None else doc.get("balance_due")),
+                2,
+            )
+        )
     party_rows = sorted(parties.values(), key=lambda row: row["total_due"], reverse=True)
     as_of = aging.get("as_of")
     return {

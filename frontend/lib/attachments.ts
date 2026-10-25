@@ -1,8 +1,6 @@
-/** Authenticated attachment fetch helpers (expenses / PI / JE). */
+/** Authenticated attachment / binary helpers. Same-origin via apiFetch. */
 
-import { getAccessToken } from './api';
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+import { apiFetch } from './api';
 
 export type FetchedAttachment = {
   blob: Blob;
@@ -10,25 +8,24 @@ export type FetchedAttachment = {
   contentType: string;
 };
 
+function attachmentMessage(body: unknown, fallback: string): string {
+  const rec = body && typeof body === 'object' ? (body as { detail?: unknown; message?: string }) : {};
+  const detail = rec.detail;
+  if (typeof detail === 'string' && detail.trim()) return detail;
+  if (detail && typeof detail === 'object') {
+    const msg = (detail as { message?: unknown }).message;
+    if (typeof msg === 'string' && msg.trim()) return msg;
+  }
+  if (typeof rec.message === 'string' && rec.message.trim()) return rec.message;
+  return fallback;
+}
+
 export async function fetchAttachment(apiPath: string): Promise<FetchedAttachment> {
-  const token = typeof window !== 'undefined' ? getAccessToken() : null;
-  const tenant = typeof window !== 'undefined' ? localStorage.getItem('tenant') : null;
   const path = apiPath.startsWith('/') ? apiPath : `/${apiPath}`;
-  const res = await fetch(`${apiBase}${path}`, {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-    },
-    cache: 'no-store',
-  });
+  const res = await apiFetch(path);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    const detail = body.detail;
-    const message =
-      typeof detail === 'string'
-        ? detail
-        : detail?.message || body.message || 'Attachment download failed';
-    throw new Error(message);
+    throw new Error(attachmentMessage(body, 'Attachment download failed'));
   }
   const blob = await res.blob();
   const cd = res.headers.get('Content-Disposition') || '';
@@ -39,6 +36,30 @@ export async function fetchAttachment(apiPath: string): Promise<FetchedAttachmen
     filename: match?.[1] || '',
     contentType,
   };
+}
+
+export async function uploadAttachment(apiPath: string, file: File): Promise<any> {
+  const path = apiPath.startsWith('/') ? apiPath : `/${apiPath}`;
+  const form = new FormData();
+  form.append('file', file);
+  const res = await apiFetch(path, { method: 'POST', body: form });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(attachmentMessage(body, 'Upload failed'));
+  return body;
+}
+
+export function triggerBlobDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function downloadAttachment(apiPath: string, fallbackName: string): Promise<void> {
+  const { blob, filename } = await fetchAttachment(apiPath);
+  triggerBlobDownload(blob, filename || fallbackName);
 }
 
 export function isImageContentType(contentType: string, filename?: string): boolean {

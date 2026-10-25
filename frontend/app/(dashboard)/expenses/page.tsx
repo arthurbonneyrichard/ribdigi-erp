@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import AttachmentPreview from '../../../components/AttachmentPreview';
 import FormModal from '../../../components/FormModal';
 import PageHeader from '../../../components/PageHeader';
-import { api, getAccessToken } from '../../../lib/api';
+import { api } from '../../../lib/api';
+import { fetchAttachment, uploadAttachment } from '../../../lib/attachments';
 import { createPaintGet } from '../../../lib/prefetchCache';
 import { formatDate, formatMoney, formatWhen, plainLabel } from '../../../lib/format';
 import { getMe } from '../../../lib/meCache';
@@ -12,8 +13,6 @@ import { AmountField } from '../../../components/AmountField';
 import { useStoreContext } from '../../../lib/storeContext';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import { openDocumentPrint } from '../../../lib/documentPrint';
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 /** Keep aligned with backend SystemRoleValue / rbac.VALID_ROLES (approval matrix). */
 const SYSTEM_ROLES = [
@@ -567,23 +566,10 @@ export default function Page() {
     }
   }
 
-  async function uploadAttachment(id: string, file: File) {
+  async function uploadExpenseAttachment(id: string, file: File) {
     setError('');
     try {
-      const token = getAccessToken();
-      const tenant = localStorage.getItem('tenant');
-      const form = new FormData();
-      form.append('file', file);
-      const res = await fetch(`${apiBase}/expenses/${id}/attachment`, {
-        method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
-        body: form,
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.detail?.message || body.detail || body.message || 'Upload failed');
+      await uploadAttachment(`/expenses/${id}/attachment`, file);
       setMessage('Receipt uploaded');
       await refresh();
     } catch (err: any) {
@@ -591,28 +577,14 @@ export default function Page() {
     }
   }
 
-  async function downloadAttachment(id: string) {
+  async function downloadExpenseAttachment(id: string) {
     setError('');
     try {
-      const token = getAccessToken();
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/expenses/${id}/attachment`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail || body.message || 'Download failed');
-      }
-      const blob = await res.blob();
-      const cd = res.headers.get('Content-Disposition') || '';
-      const match = cd.match(/filename="?([^"]+)"?/);
+      const { blob, filename } = await fetchAttachment(`/expenses/${id}/attachment`);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = match?.[1] || 'expense-attachment';
+      a.download = filename || 'expense-attachment';
       a.click();
       URL.revokeObjectURL(url);
     } catch (err: any) {
@@ -1020,7 +992,7 @@ export default function Page() {
                           >
                             Preview
                           </button>
-                          <button onClick={() => downloadAttachment(r.id)} aria-label="Download expense attachment">
+                          <button onClick={() => downloadExpenseAttachment(r.id)} aria-label="Download expense attachment">
                             Download
                           </button>
                           <button onClick={() => suggestOcr(r.id)} aria-label={`Suggest expense OCR ${r.id}`}>OCR</button>
@@ -1034,7 +1006,7 @@ export default function Page() {
                             aria-label={`Upload expense attachment ${r.id}`}
                             onChange={(e) => {
                               const f = e.target.files?.[0];
-                              if (f) uploadAttachment(r.id, f);
+                              if (f) uploadExpenseAttachment(r.id, f);
                               e.target.value = '';
                             }}
                           />

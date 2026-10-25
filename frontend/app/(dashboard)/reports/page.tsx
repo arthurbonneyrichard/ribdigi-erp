@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { api, getAccessToken } from '../../../lib/api';
+import { api } from '../../../lib/api';
+import { downloadAttachment } from '../../../lib/attachments';
 import { getPrefetched } from '../../../lib/prefetchCache';
 import { formatMoney, formatNumber, formatWhen, plainLabel } from '../../../lib/format';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
@@ -24,8 +25,6 @@ import OfflineProvisionalNotice from '../../../components/OfflineProvisionalNoti
 import EmptyState from '../../../components/EmptyState';
 import PageHeader from '../../../components/PageHeader';
 import './report-ui.css';
-
-const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 type Tab =
   | 'summary'
@@ -832,8 +831,6 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const token = getAccessToken();
-      const tenant = localStorage.getItem('tenant');
       const params = new URLSearchParams();
       const exportType = reportType || activeReport.exportType || TAB_EXPORT[tab as Exclude<Tab, 'schedules'>];
       if (!exportType) return;
@@ -902,26 +899,7 @@ export default function Page() {
         const d = Math.max(1, Math.min(365, Number(expiryDays) || 30));
         params.set('days', String(d));
       }
-      const res = await fetch(`${base}/reports/export?${params}`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail || 'Export failed');
-      }
-      const blob = await res.blob();
-      const cd = res.headers.get('Content-Disposition') || '';
-      const match = cd.match(/filename="?([^"]+)"?/);
-      const filename = match?.[1] || `report.${format}`;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadAttachment(`/reports/export?${params}`, `report.${format}`);
       setMessage(`${format.toUpperCase()} downloaded`);
     } catch (err: any) {
       setError(err.message);

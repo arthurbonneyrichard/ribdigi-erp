@@ -8,7 +8,7 @@ import PageHeader from '../../../components/PageHeader';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import RowActions, { type RowActionItem } from '../../../components/RowActions';
 import StatusChip from '../../../components/StatusChip';
-import { api, getAccessToken } from '../../../lib/api';
+import { api, apiFetch } from '../../../lib/api';
 import { openDocumentPrint } from '../../../lib/documentPrint';
 import { createPaintGet, peekPrefetch } from '../../../lib/prefetchCache';
 import { openReceiptPrintWindow } from '../../../lib/posReceiptPrint';
@@ -53,26 +53,17 @@ function saleWords(value?: string | null) {
   return mapped[code] || plainLabel(code);
 }
 
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-
 async function downloadInvoicePdf(
   invoiceId: string,
   invoiceNumber: string,
   template: 'a4' | 'thermal',
   paper = '80mm'
 ) {
-  const token = getAccessToken();
-  const tenant = localStorage.getItem('tenant');
   const qs =
     template === 'thermal'
       ? `template=thermal&format=pdf&paper=${encodeURIComponent(paper)}`
       : 'template=a4&format=pdf';
-  const res = await fetch(`${apiBase}/sales/invoices/${invoiceId}/print?${qs}`, {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-    },
-  });
+  const res = await apiFetch(`/sales/invoices/${invoiceId}/print?${qs}`);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const detail = body.detail;
@@ -90,18 +81,11 @@ async function downloadInvoicePdf(
 }
 
 async function previewInvoicePdf(invoiceId: string, template: 'a4' | 'thermal', paper = '80mm') {
-  const token = getAccessToken();
-  const tenant = localStorage.getItem('tenant');
   const qs =
     template === 'thermal'
       ? `template=thermal&format=pdf&paper=${encodeURIComponent(paper)}`
       : 'template=a4&format=pdf';
-  const res = await fetch(`${apiBase}/sales/invoices/${invoiceId}/print?${qs}`, {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-    },
-  });
+  const res = await apiFetch(`/sales/invoices/${invoiceId}/print?${qs}`);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const detail = body.detail;

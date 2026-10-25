@@ -3,12 +3,11 @@
 import { useEffect, useState } from 'react';
 import FormModal from '../../../components/FormModal';
 import PageHeader from '../../../components/PageHeader';
-import { api, getAccessToken } from '../../../lib/api';
+import { api } from '../../../lib/api';
+import { downloadAttachment } from '../../../lib/attachments';
 import { AmountField } from '../../../components/AmountField';
 import { formatMoney } from '../../../lib/format';
 import { useStoreContext } from '../../../lib/storeContext';
-
-const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 type TaxRate = {
   id: string;
@@ -190,8 +189,6 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const token = getAccessToken();
-      const tenant = localStorage.getItem('tenant');
       const params = new URLSearchParams();
       params.set('report_type', reportType);
       params.set('format', format);
@@ -204,26 +201,7 @@ export default function Page() {
       } else if (filingJurisdictionFilter) {
         params.set('jurisdiction', filingJurisdictionFilter);
       }
-      const res = await fetch(`${base}/reports/export?${params}`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail || 'Export failed');
-      }
-      const blob = await res.blob();
-      const cd = res.headers.get('Content-Disposition') || '';
-      const match = cd.match(/filename="?([^"]+)"?/);
-      const filename = match?.[1] || `${reportType}.${format}`;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadAttachment(`/reports/export?${params}`, `${reportType}.${format}`);
       setMessage(
         reportType === 'tax_filing_gh'
           ? `Ghana VAT return ${format.toUpperCase()} downloaded`

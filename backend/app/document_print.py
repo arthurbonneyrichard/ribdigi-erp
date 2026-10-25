@@ -233,6 +233,7 @@ def to_document_a4_pdf(payload: dict[str, Any]) -> bytes:
         INK_RGB,
         append_a4_letterhead,
         assemble_a4_pdf,
+        begin_a4_page,
         load_logo_jpeg,
     )
     from app.receipts import _money, _wrap
@@ -265,16 +266,18 @@ def to_document_a4_pdf(payload: dict[str, Any]) -> bytes:
         "tax_registration_number": payload.get("tax_registration_number"),
     }
     details = company_letterhead_detail_lines(ident)
-    y = append_a4_letterhead(
-        content,
-        company_name=company,
-        logo=logo,
-        print_header=str(payload["print_header"]) if payload.get("print_header") else None,
-        detail_lines=details,
-        page_width=page_width,
-        page_height=page_height,
-        margin=margin,
-    )
+    letterhead = {
+        "company_name": company,
+        "logo": logo,
+        "print_header": str(payload["print_header"]) if payload.get("print_header") else None,
+        "detail_lines": details,
+        "page_width": page_width,
+        "page_height": page_height,
+        "margin": margin,
+    }
+    y = append_a4_letterhead(content, **letterhead)
+    pages: list[list[str]] = []
+    heading = str(payload.get("doc_heading") or payload.get("title") or "DOCUMENT")
 
     def draw_text(
         text: str,
@@ -297,7 +300,13 @@ def to_document_a4_pdf(payload: dict[str, Any]) -> bytes:
             f"{(x if x is not None else margin):.1f} {y - size:.1f} Td ({_pdf_escape(text)}) Tj ET"
         )
 
-    heading = str(payload.get("doc_heading") or payload.get("title") or "DOCUMENT")
+    def break_page(label: str | None = None) -> None:
+        nonlocal content, y
+        pages.append(content)
+        content, y = begin_a4_page(
+            **letterhead, continuation_label=label or f"{heading} (continued)"
+        )
+
     draw_text(heading, 18, bold=True, rgb=FOREST_RGB)
     y -= 22
 
@@ -333,11 +342,6 @@ def to_document_a4_pdf(payload: dict[str, Any]) -> bytes:
     table = str(payload.get("table") or "lines")
     items = list(payload.get("items") or [])
     if table != "none" and items:
-        col_y = y
-        content.append(
-            f"{fr:.3f} {fg:.3f} {fb:.3f} rg {margin:.1f} {col_y - 16:.1f} "
-            f"{page_width - 2 * margin:.1f} 16 re f"
-        )
         if table == "grn":
             headers = [
                 (margin + 4, "Product"),
@@ -360,12 +364,23 @@ def to_document_a4_pdf(payload: dict[str, Any]) -> bytes:
                 (margin + 390, "Disc"),
                 (margin + 450, "Line"),
             ]
-        for x, label in headers:
-            draw_text(label, 8, x=x, y_pos=col_y - 2, bold=True, rgb=(1.0, 1.0, 1.0))
-        y = col_y - 22
+
+        def draw_col_header() -> None:
+            nonlocal y
+            col_y = y
+            content.append(
+                f"{fr:.3f} {fg:.3f} {fb:.3f} rg {margin:.1f} {col_y - 16:.1f} "
+                f"{page_width - 2 * margin:.1f} 16 re f"
+            )
+            for x, label in headers:
+                draw_text(label, 8, x=x, y_pos=col_y - 2, bold=True, rgb=(1.0, 1.0, 1.0))
+            y = col_y - 22
+
+        draw_col_header()
         for item in items:
-            if y < margin + 140:
-                break
+            if y < margin + 28:
+                break_page()
+                draw_col_header()
             name = str(item.get("name") or "Item")[:36]
             row_top = y
             if table == "grn":
@@ -400,6 +415,8 @@ def to_document_a4_pdf(payload: dict[str, Any]) -> bytes:
     if totals:
         totals_x = 340.0
         box_h = 14 * len(totals) + 16
+        if y < margin + box_h + 50:
+            break_page()
         content.append(
             f"0.949 0.969 0.925 rg {totals_x - 8:.1f} {y - box_h:.1f} "
             f"{page_width - margin - totals_x + 8:.1f} {box_h:.1f} re f"
@@ -416,19 +433,24 @@ def to_document_a4_pdf(payload: dict[str, Any]) -> bytes:
             ty -= 14
         y = y - box_h - 16
 
-    if payload.get("notes") and y > margin + 60:
+    if payload.get("notes"):
+        if y < margin + 60:
+            break_page()
         draw_text("Notes", 9, y_pos=y, bold=True, rgb=FOREST_RGB)
         y -= 12
         for part in _wrap(str(payload["notes"]), 78)[:4]:
             draw_text(part, 9, y_pos=y, rgb=(0.302, 0.365, 0.337))
             y -= 11
 
+    if y < margin + 50:
+        break_page()
     y = max(y - 8, margin + 36)
     if payload.get("print_footer"):
         draw_text(str(payload["print_footer"]), 9, y_pos=y, rgb=(0.302, 0.365, 0.337))
         y -= 14
     draw_text(POWERED_BY_RIBDIGI, 7, y_pos=y, bold=True, rgb=BRAND_GREEN_RGB)
-    return assemble_a4_pdf(content, logo=logo, page_width=page_width, page_height=page_height)
+    pages.append(content)
+    return assemble_a4_pdf(pages, logo=logo, page_width=page_width, page_height=page_height)
 
 
 def print_response(

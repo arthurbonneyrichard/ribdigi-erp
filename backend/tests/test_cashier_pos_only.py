@@ -70,6 +70,12 @@ async def test_cashier_api_denies_back_office_modules(client):
     )
     assert supplier_pay.status_code == 403, supplier_pay.text
 
+    supplier_send = await ac.post(
+        "/api/v1/purchasing/payments/00000000-0000-4000-8000-000000000099/send",
+        headers=headers,
+    )
+    assert supplier_send.status_code == 403, supplier_send.text
+
     admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
     admin_pay = await ac.post(
         "/api/v1/suppliers/00000000-0000-4000-8000-000000000099/payments",

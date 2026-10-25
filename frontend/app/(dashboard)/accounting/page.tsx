@@ -4,14 +4,13 @@ import { useEffect, useMemo, useState } from 'react';
 import AttachmentPreview from '../../../components/AttachmentPreview';
 import FormModal from '../../../components/FormModal';
 import PageHeader from '../../../components/PageHeader';
-import { api, getAccessToken } from '../../../lib/api';
+import { api } from '../../../lib/api';
+import { downloadAttachment, uploadAttachment } from '../../../lib/attachments';
 import { createPaintGet } from '../../../lib/prefetchCache';
 import { currencySign, formatWhen, plainLabel } from '../../../lib/format';
 import { AmountField } from '../../../components/AmountField';
 import { useStoreContext } from '../../../lib/storeContext';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 function fmtMoney(n: number, currency?: string) {
   const v = Number(n);
@@ -472,20 +471,7 @@ export default function Page() {
   async function uploadJournalAttachment(id: string, file: File) {
     setError('');
     try {
-      const token = getAccessToken();
-      const tenant = localStorage.getItem('tenant');
-      const form = new FormData();
-      form.append('file', file);
-      const res = await fetch(`${apiBase}/accounting/journal-entries/${id}/attachment`, {
-        method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
-        body: form,
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.detail?.message || body.detail || body.message || 'Upload failed');
+      await uploadAttachment(`/accounting/journal-entries/${id}/attachment`, file);
       setMessage('Supporting document uploaded');
       await refresh();
     } catch (err: any) {
@@ -496,27 +482,7 @@ export default function Page() {
   async function downloadJournalAttachment(id: string) {
     setError('');
     try {
-      const token = getAccessToken();
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/accounting/journal-entries/${id}/attachment`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail || body.message || 'Download failed');
-      }
-      const blob = await res.blob();
-      const cd = res.headers.get('Content-Disposition') || '';
-      const match = cd.match(/filename="?([^"]+)"?/);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = match?.[1] || 'journal-attachment';
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadAttachment(`/accounting/journal-entries/${id}/attachment`, 'journal-attachment');
     } catch (err: any) {
       setError(err.message);
     }
@@ -780,11 +746,6 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const token = getAccessToken();
-      const tenant = localStorage.getItem('tenant');
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-      const form = new FormData();
-      form.append('file', importFile);
       const qs = new URLSearchParams({
         account_id: reconAccountId,
         opening_balance: String(Number(opening) || 0),
@@ -794,18 +755,10 @@ export default function Page() {
       // omit blank so BankStatementNotesValue Query notes does not 422
       const notesTrim = stmtNotes.trim();
       if (notesTrim) qs.set('notes', notesTrim);
-      const res = await fetch(`${apiBase}/accounting/bank-statements/import?${qs}`, {
-        method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
-        body: form,
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(body.detail?.message || body.detail || body.message || 'Import failed');
-      }
+      const body = await uploadAttachment(
+        `/accounting/bank-statements/import?${qs}`,
+        importFile,
+      );
       setMessage(
         `Imported ${body.data?.import?.format?.toUpperCase() || 'feed'} (${body.data?.import?.line_count || 0} lines)`,
       );

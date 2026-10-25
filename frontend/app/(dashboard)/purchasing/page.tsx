@@ -8,7 +8,9 @@ import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import AttachmentPreview from '../../../components/AttachmentPreview';
 import RowActions, { type RowActionItem } from '../../../components/RowActions';
 import StatusChip from '../../../components/StatusChip';
-import { api, getAccessToken } from '../../../lib/api';
+import { api } from '../../../lib/api';
+import { fetchAttachment, uploadAttachment } from '../../../lib/attachments';
+import { openDocumentPrint } from '../../../lib/documentPrint';
 import { createPaintGet, peekPrefetch } from '../../../lib/prefetchCache';
 import { AmountField } from '../../../components/AmountField';
 import { getMe } from '../../../lib/meCache';
@@ -42,46 +44,8 @@ function asList<T>(data: unknown): T[] {
   return [];
 }
 
-function purchasingApiBase() {
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-}
-
 async function openPurchasingPrint(path: string) {
-  const token = getAccessToken();
-  const tenant = localStorage.getItem('tenant');
-  const res = await fetch(`${purchasingApiBase()}${path}`, {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-    },
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    const detail = body.detail;
-    throw new Error(
-      (typeof detail === 'string' && detail)
-        || (typeof body.message === 'string' && body.message)
-        || `Print failed (${res.status})`,
-    );
-  }
-  const type = (res.headers.get('content-type') || '').toLowerCase();
-  if (type.includes('pdf')) {
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const w = window.open(url, '_blank', 'noopener');
-    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    if (!w) {
-      throw new Error('Allow pop-ups to print this document.');
-    }
-    return;
-  }
-  const html = await res.text();
-  const w = window.open('', '_blank');
-  if (!w) {
-    throw new Error('Allow pop-ups to print this document.');
-  }
-  w.document.write(html);
-  w.document.close();
+  return openDocumentPrint(path);
 }
 
 type BillLineDraft = {
@@ -1301,25 +1265,10 @@ export default function Page() {
     }
   }
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-
   async function uploadInvoiceAttachment(id: string, file: File) {
     setError('');
     try {
-      const token = getAccessToken();
-      const tenant = localStorage.getItem('tenant');
-      const form = new FormData();
-      form.append('file', file);
-      const res = await fetch(`${apiBase}/purchasing/invoices/${id}/attachment`, {
-        method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
-        body: form,
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.detail?.message || body.detail || body.message || 'Upload failed');
+      const body = await uploadAttachment(`/purchasing/invoices/${id}/attachment`, file);
       setMessage(`Attachment uploaded for ${body.data?.invoice_number || id}`);
       await refresh();
     } catch (err: any) {
@@ -1330,25 +1279,11 @@ export default function Page() {
   async function downloadInvoiceAttachment(id: string) {
     setError('');
     try {
-      const token = getAccessToken();
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/purchasing/invoices/${id}/attachment`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail || body.message || 'Download failed');
-      }
-      const blob = await res.blob();
-      const cd = res.headers.get('Content-Disposition') || '';
-      const match = cd.match(/filename="?([^"]+)"?/);
+      const { blob, filename } = await fetchAttachment(`/purchasing/invoices/${id}/attachment`);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = match?.[1] || `invoice-${id.slice(0, 8)}`;
+      a.download = filename || `invoice-${id.slice(0, 8)}`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err: any) {
@@ -1658,9 +1593,43 @@ export default function Page() {
       (inv) => inv.goods_receipt_id === grnId && inv.status !== 'cancelled' && inv.status !== 'draft',
     );
     if (bills.length === 0) return null;
-    const paid = bills.reduce((s, inv) => s + Number(inv.paid_amount || 0), 0);
-    const left = bills.reduce((s, inv) => s + Number(inv.balance_due || 0), 0);
-    return { paid: Math.round(paid * 100) / 100, left: Math.round(left * 100) / 100 };
+    const byCurrency = new Map<string, { currency: string; paid: number; left: number }>();
+    for (const inv of bills) {
+      const currency = String(inv.currency || '').trim() || 'base';
+      const row = byCurrency.get(currency) || { currency, paid: 0, left: 0 };
+      row.paid += Number(inv.paid_amount || 0);
+      const balance = Number(inv.balance_due);
+      row.left += Number.isFinite(balance)
+        ? balance
+        : Math.max(Number(inv.total_amount || 0) - Number(inv.paid_amount || 0), 0);
+      byCurrency.set(currency, row);
+    }
+    const lines = Array.from(byCurrency.values()).map((row) => ({
+      currency: row.currency === 'base' ? '' : row.currency,
+      paid: Math.round(row.paid * 100) / 100,
+      left: Math.round(row.left * 100) / 100,
+    }));
+    if (lines.length === 1) return { paid: lines[0].paid, left: lines[0].left, lines };
+    return { paid: null, left: null, lines };
+  };
+  const formatGrnBillField = (
+    money: { paid: number | null; left: number | null; lines: { currency: string; paid: number; left: number }[] } | null,
+    field: 'paid' | 'left',
+  ) => {
+    if (!money) return '—';
+    if (money.lines.length > 1) {
+      return (
+        <span className="purchase-ui-money-lines">
+          {money.lines.map((row) => (
+            <span key={`${row.currency || 'base'}-${field}`}>
+              {row.currency ? `${row.currency} ` : ''}
+              {formatNumber(row[field], formatPrefs)}
+            </span>
+          ))}
+        </span>
+      );
+    }
+    return formatNumber(money[field] ?? 0, formatPrefs);
   };
   const purchaseHistory = useMemo(() => {
     const stamp = (iso?: string | null) => (iso ? String(iso) : '');
@@ -3716,10 +3685,10 @@ export default function Page() {
                   <td className="col-num" data-label="Accepted">{accepted}</td>
                   <td className="col-num" data-label="Rejected">{rejected}</td>
                   <td className="col-num" data-label="Amount paid">
-                    {billMoney ? formatNumber(billMoney.paid, formatPrefs) : '—'}
+                    {formatGrnBillField(billMoney, 'paid')}
                   </td>
                   <td className="col-num" data-label="Amount left">
-                    {billMoney ? formatNumber(billMoney.left, formatPrefs) : '—'}
+                    {formatGrnBillField(billMoney, 'left')}
                   </td>
                   <td className="col-actions">
                     {billed ? (

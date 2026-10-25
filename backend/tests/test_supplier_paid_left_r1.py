@@ -39,6 +39,17 @@ def test_purchasing_tables_show_paid_left_and_received_date():
     assert 'className="purchase-ui-money-lines"' in page
     # Phone: the four money tables stack into one card per row.
     assert page.count("purchase-ui-stack") >= 4
+    assert "formatGrnBillField" in page
+    assert "byCurrency" in page
+    credit = (ROOT / "frontend" / "app" / "(dashboard)" / "credit" / "page.tsx").read_text(
+        encoding="utf-8"
+    )
+    assert "payableCurrencyLines" in credit
+    assert "credit-money-lines" in credit
+    assert 'aria-label="Due by currency"' in credit
+    assert 'aria-label="We owe by currency"' in credit
+    css = (ROOT / "frontend" / "app" / "globals.css").read_text(encoding="utf-8")
+    assert ".credit-money-lines" in css
     css = (
         ROOT / "frontend" / "app" / "(dashboard)" / "purchasing" / "purchase-ui.css"
     ).read_text(encoding="utf-8")
@@ -246,6 +257,14 @@ async def test_ghs_and_usd_bills_stay_separate_not_summed(client, db_session):
         {"currency": "USD", "total_due": 40.0},
     ]
     assert party["total_due_base"] == pytest.approx(sup["amount_left"])
+    assert party["total_due"] == pytest.approx(sup["amount_left"])
+    assert party["total_due"] == pytest.approx(60 + 40 * 12)
+    assert party["total_due"] != pytest.approx(100.0)
+    assert party["current"] == pytest.approx(party["total_due"])
+    aging_body = aging.json()["data"]
+    assert aging_body["base_currency"] == "GHS"
+    assert aging_body["total_due"] == aging_body["total_due_base"]
+    assert any(row["currency"] == "USD" and row["total_due"] == 40.0 for row in aging_body["totals_by_currency"])
 
 
 @pytest.mark.asyncio

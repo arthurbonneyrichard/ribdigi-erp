@@ -8,6 +8,7 @@ from pathlib import Path
 import pyotp
 import pytest
 
+from app.document_print import to_document_a4_pdf
 from app.emailer import clear_dev_outbox, get_dev_outbox
 from app import models as m
 from tests.conftest import auth_headers
@@ -41,6 +42,40 @@ async def _brand_tenant(db_session, seed):
     tenant.registration_number = "CS123456"
     tenant.tax_registration_number = "C0001234567"
     await db_session.commit()
+
+
+def test_document_a4_pdf_keeps_overflow_lines_on_page_2():
+    items = [
+        {
+            "name": f"Later Widget {i:02d}",
+            "quantity": 1,
+            "unit_price": 2,
+            "tax_rate": 0,
+            "discount": 0,
+            "line_total": 2,
+        }
+        for i in range(1, 46)
+    ]
+    pdf = to_document_a4_pdf(
+        {
+            "company_name": "Sunrise Mart",
+            "title": "Supplier bill BILL-LONG",
+            "doc_heading": "SUPPLIER BILL",
+            "party_label": "Bill from",
+            "party_name": "Acme Supplies",
+            "items": items,
+            "table": "lines",
+            "totals": [("TOTAL", "GHS 90.00", True)],
+        }
+    )
+    assert pdf.startswith(b"%PDF")
+    assert b"/Count 1" not in pdf
+    assert b"/Count 2" in pdf or b"/Count 3" in pdf
+    text = _pdf_text(pdf)
+    assert "Later Widget 01" in text
+    assert "Later Widget 40" in text
+    assert "Sunrise Mart" in text
+    assert "SUPPLIER BILL (continued)" in text
 
 
 def _assert_letterhead(html: str, heading: str):
@@ -100,6 +135,12 @@ def test_document_print_ui_and_docs():
     assert "Document print letterhead" in agents
     assert "Branded document email identity" in agents
     assert "GET /expenses/{id}/print" in agents
+    printer = (ROOT / "frontend" / "lib" / "documentPrint.ts").read_text(encoding="utf-8")
+    assert "apiFetch" in printer
+    assert "NEXT_PUBLIC_API_URL" not in printer
+    assert "localhost:8000" not in printer
+    assert "openDocumentPrint" in purchasing
+    assert "apiFetch(`/sales/invoices/${invoiceId}/print?" in sales
 
 
 @pytest.mark.asyncio
@@ -316,6 +357,30 @@ async def test_document_prints_share_company_letterhead(client, db_session, seed
     still_no_email = await ac.get(f"/api/v1/customers/{seed['party1'].id}", headers=admin)
     assert still_no_email.status_code == 200
     assert not (still_no_email.json()["data"].get("email") or "").strip()
+
+
+@pytest.mark.asyncio
+async def test_walk_in_sales_return_print_does_not_404(client, db_session, seeded):
+    ac, seed = client
+    admin = await _super(ac, seed)
+    await _brand_tenant(db_session, seed)
+    row = m.SalesReturn(
+        tenant_id=seed["t1"].id,
+        return_number="SR-WALK-PRINT",
+        customer_id=None,
+        reason="other",
+        status="posted",
+        total_amount=10,
+    )
+    db_session.add(row)
+    await db_session.commit()
+    printed = await ac.get(f"/api/v1/sales/returns/{row.id}/print", headers=admin)
+    assert printed.status_code == 200, printed.text
+    _assert_letterhead(printed.text, "Sales return")
+    pdf = await ac.get(f"/api/v1/sales/returns/{row.id}/print?format=pdf", headers=admin)
+    assert pdf.status_code == 200, pdf.text
+    assert pdf.headers.get("content-type", "").startswith("application/pdf")
+    assert "CREDIT NOTE" in _pdf_text(pdf.content)
 
 
 @pytest.mark.asyncio

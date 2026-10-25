@@ -212,6 +212,13 @@ def add_to_bucket(buckets: dict[str, float], days: int, amount: float) -> None:
 
 
 async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = None) -> dict:
+    """Customer amounts due from open sales invoices.
+
+    total_due / age buckets use stored-rate base currency. totals_by_currency
+    keeps each document currency separate so GHS + USD is never 100.
+    """
+    from app.fx import doc_currency, doc_rate, get_base_currency, to_base
+
     as_of = as_of or datetime.utcnow()
     invoices = (
         await db.execute(
@@ -231,10 +238,15 @@ async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
             )
         ).scalars().all()
     }
+    base = await get_base_currency(db, tenant_id)
 
     by_customer: dict[str, dict] = {}
+    due_by_currency: dict[str, dict[str, dict[str, float]]] = {}
+    report_by_currency: dict[str, dict] = {}
     totals = empty_buckets()
     documents = []
+    overdue_total = 0.0
+    not_yet_due_total = 0.0
 
     for inv in invoices:
         due = max(money_json(inv.total_amount) - money_json(inv.paid_amount), 0)
@@ -242,8 +254,10 @@ async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
             continue
         days = days_overdue(as_of, inv.due_date, inv.posted_at or inv.created_at)
         bucket = age_bucket(days)
-        add_to_bucket(totals, days, due)
+        base_due = to_base(due, doc_rate(inv))
+        add_to_bucket(totals, days, base_due)
         cust = customers.get(inv.customer_id)
+        due_by_currency.setdefault(inv.customer_id, {})
         row = by_customer.setdefault(
             inv.customer_id,
             {
@@ -252,11 +266,28 @@ async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
                 "credit_limit": money_json(cust.credit_limit) if cust else money_json(0),
                 "balance": money_json(cust.balance) if cust else money_json(0),
                 "total_due": money_json(0),
+                "total_due_base": money_json(0),
+                "base_currency": base,
+                "totals_by_currency": [],
                 **empty_buckets(),
             },
         )
-        row["total_due"] = money_json(round(row["total_due"] + due, 2))
-        row[bucket] = money_json(round(row[bucket] + due, 2))
+        row["total_due"] = money_json(round(row["total_due"] + base_due, 2))
+        row["total_due_base"] = money_json(round(row["total_due_base"] + base_due, 2))
+        cur = doc_currency(inv, base)
+        cur_row = due_by_currency[inv.customer_id].setdefault(
+            cur, {"currency": cur, "total_due": money_json(0)}
+        )
+        cur_row["total_due"] = money_json(round(cur_row["total_due"] + due, 2))
+        report_cur = report_by_currency.setdefault(
+            cur, {"currency": cur, "total_due": money_json(0)}
+        )
+        report_cur["total_due"] = money_json(round(report_cur["total_due"] + due, 2))
+        row[bucket] = money_json(round(row[bucket] + base_due, 2))
+        if _bill_is_overdue(as_of, inv.due_date):
+            overdue_total = money_json(round(overdue_total + base_due, 2))
+        else:
+            not_yet_due_total = money_json(round(not_yet_due_total + base_due, 2))
         documents.append(
             {
                 "id": inv.id,
@@ -267,21 +298,32 @@ async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
                 "balance_due": money_json(due),
                 "currency": getattr(inv, "currency", None) or "",
                 "exchange_rate": money_json(getattr(inv, "exchange_rate", None), default=1.0),
-                "balance_due_base": money_json(
-                    round(
-                        due * money_json(getattr(inv, "exchange_rate", None), default=1.0), 2
-                    )
-                ),
+                "balance_due_base": money_json(base_due),
                 "days_overdue": days,
                 "bucket": bucket,
             }
         )
 
+    for cid, row in by_customer.items():
+        row["totals_by_currency"] = sorted(
+            due_by_currency.get(cid, {}).values(),
+            key=lambda r: (r["currency"] != base, r["currency"]),
+        )
+
+    total_due = money_json(round(sum(totals.values()), 2))
     return {
         "as_of": as_of,
         "kind": "receivable",
+        "base_currency": base,
         "totals": {k: money_json(v) for k, v in totals.items()},
-        "total_due": money_json(round(sum(totals.values()), 2)),
+        "total_due": total_due,
+        "total_due_base": total_due,
+        "totals_by_currency": sorted(
+            report_by_currency.values(),
+            key=lambda r: (r["currency"] != base, r["currency"]),
+        ),
+        "overdue_total": money_json(overdue_total),
+        "not_yet_due_total": money_json(not_yet_due_total),
         "parties": sorted(by_customer.values(), key=lambda x: x["total_due"], reverse=True),
         "documents": documents,
     }
@@ -479,6 +521,7 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
 
     by_supplier: dict[str, dict] = {}
     due_by_currency: dict[str, dict[str, dict[str, float]]] = {}
+    report_by_currency: dict[str, dict] = {}
     totals = empty_buckets()
     documents: list[dict] = []
     commitments: list[dict] = []
@@ -507,22 +550,25 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
     for inv, due in _open_bill_dues(list(invoices), return_credit):
         days = days_overdue(as_of, inv.due_date, inv.invoice_date or inv.created_at)
         bucket = age_bucket(days)
-        add_to_bucket(totals, days, due)
+        base_due = to_base(due, doc_rate(inv))
+        add_to_bucket(totals, days, base_due)
         row = _party_row(inv.supplier_id)
-        row["total_due"] = money_json(round(row["total_due"] + due, 2))
-        row["total_due_base"] = money_json(
-            round(row["total_due_base"] + to_base(due, doc_rate(inv)), 2)
-        )
+        row["total_due"] = money_json(round(row["total_due"] + base_due, 2))
+        row["total_due_base"] = money_json(round(row["total_due_base"] + base_due, 2))
         cur = doc_currency(inv, base)
         cur_row = due_by_currency[inv.supplier_id].setdefault(
             cur, {"currency": cur, "total_due": money_json(0)}
         )
         cur_row["total_due"] = money_json(round(cur_row["total_due"] + due, 2))
-        row[bucket] = money_json(round(row[bucket] + due, 2))
+        report_cur = report_by_currency.setdefault(
+            cur, {"currency": cur, "total_due": money_json(0)}
+        )
+        report_cur["total_due"] = money_json(round(report_cur["total_due"] + due, 2))
+        row[bucket] = money_json(round(row[bucket] + base_due, 2))
         if _bill_is_overdue(as_of, inv.due_date):
-            overdue_total = money_json(round(overdue_total + due, 2))
+            overdue_total = money_json(round(overdue_total + base_due, 2))
         else:
-            not_yet_due_total = money_json(round(not_yet_due_total + due, 2))
+            not_yet_due_total = money_json(round(not_yet_due_total + base_due, 2))
         paid = money_json(inv.paid_amount)
         documents.append(
             {
@@ -580,8 +626,14 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
     return {
         "as_of": as_of,
         "kind": "payable",
+        "base_currency": base,
         "totals": {k: money_json(v) for k, v in totals.items()},
         "total_due": total_due,
+        "total_due_base": total_due,
+        "totals_by_currency": sorted(
+            report_by_currency.values(),
+            key=lambda r: (r["currency"] != base, r["currency"]),
+        ),
         "overdue_total": money_json(overdue_total),
         "not_yet_due_total": money_json(not_yet_due_total),
         "commitment_total": money_json(commitment_total),

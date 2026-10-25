@@ -5,7 +5,8 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import EmptyState from '../../../components/EmptyState';
 import PageHeader from '../../../components/PageHeader';
-import { api, apiOptional, isAbortError, getAccessToken, apiRoot, tenantHeaderValue } from '../../../lib/api';
+import { api, apiOptional, apiFetch, isAbortError, getAccessToken, apiRoot, tenantHeaderValue } from '../../../lib/api';
+import { downloadAttachment, fetchAttachment, uploadAttachment } from '../../../lib/attachments';
 import { getMe } from '../../../lib/meCache';
 import { getPrefetched, peekPrefetch } from '../../../lib/prefetchCache';
 import { pageLoadStarted } from '../../../lib/navTiming';
@@ -122,8 +123,6 @@ type ImportReport = {
   rows: ImportReportRow[];
   created?: any[];
 };
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 function categoryLabel(c: { path?: string; name?: string; code?: string; depth?: number }) {
   if (c.path) return c.path;
@@ -2058,25 +2057,7 @@ export default function Page() {
   async function downloadImportTemplate() {
     setError('');
     try {
-      const token = getAccessToken();
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/products/import/template`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail || body.message || 'Template download failed');
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'products-import-template.csv';
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadAttachment('/products/import/template', 'products-import-template.csv');
       setMessage('CSV template downloaded');
     } catch (err: any) {
       setError(err.message);
@@ -2086,25 +2067,7 @@ export default function Page() {
   async function downloadProductsExport() {
     setError('');
     try {
-      const token = getAccessToken();
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/products/export`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail || body.message || 'Product export failed');
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'products-export.csv';
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadAttachment('/products/export', 'products-export.csv');
       setMessage('Products CSV exported');
     } catch (err: any) {
       setError(err.message);
@@ -2171,21 +2134,12 @@ export default function Page() {
     setMessage('');
     setImportBusy(true);
     try {
-      const token = getAccessToken();
-      const tenant = localStorage.getItem('tenant');
       const form = new FormData();
       form.append('file', importFile);
-      const res = await fetch(
-        `${apiBase}/products/import?dry_run=${dryRun ? 'true' : 'false'}`,
-        {
-          method: 'POST',
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-          },
-          body: form,
-        }
-      );
+      const res = await apiFetch(`/products/import?dry_run=${dryRun ? 'true' : 'false'}`, {
+        method: 'POST',
+        body: form,
+      });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         const detail = body.detail;
@@ -2221,16 +2175,7 @@ export default function Page() {
 
   async function loadBrandLogoPreview(brandId: string) {
     try {
-      const token = getAccessToken();
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/catalog/brands/${brandId}/logo`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
-      });
-      if (!res.ok) return;
-      const blob = await res.blob();
+      const { blob } = await fetchAttachment(`/catalog/brands/${brandId}/logo`);
       const url = URL.createObjectURL(blob);
       setBrandLogoPreview((prev) => {
         if (prev[brandId]) URL.revokeObjectURL(prev[brandId]);
@@ -2244,20 +2189,7 @@ export default function Page() {
   async function uploadBrandLogo(brandId: string, file: File) {
     setError('');
     try {
-      const token = getAccessToken();
-      const tenant = localStorage.getItem('tenant');
-      const form = new FormData();
-      form.append('file', file);
-      const res = await fetch(`${apiBase}/catalog/brands/${brandId}/logo`, {
-        method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
-        body: form,
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.detail || body.message || 'Upload failed');
+      await uploadAttachment(`/catalog/brands/${brandId}/logo`, file);
       setMessage('Brand logo uploaded');
       await refresh();
       await loadBrandLogoPreview(brandId);
@@ -2288,23 +2220,10 @@ export default function Page() {
     if (!selectedId) return;
     setError('');
     try {
-      const token = getAccessToken();
-      const tenant = localStorage.getItem('tenant');
-      const form = new FormData();
-      form.append('file', file);
-      const path = asPrimary
-        ? `${apiBase}/products/${selectedId}/image`
-        : `${apiBase}/products/${selectedId}/images`;
-      const res = await fetch(path, {
-        method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
-        body: form,
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.detail || body.message || 'Upload failed');
+      await uploadAttachment(
+        asPrimary ? `/products/${selectedId}/image` : `/products/${selectedId}/images`,
+        file,
+      );
       setMessage(asPrimary ? 'Primary product image uploaded' : 'Gallery image added');
       await refresh();
       await refreshSelected(selectedId);

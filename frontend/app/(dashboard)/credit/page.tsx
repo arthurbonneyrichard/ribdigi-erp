@@ -136,7 +136,7 @@ function CreateCreditForm({
 }
 
 export default function Page() {
-  useCompanyFormat();
+  const formatPrefs = useCompanyFormat();
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlKind = searchParams.get('kind') === 'payable' ? 'payable' : 'receivable';
@@ -627,16 +627,44 @@ export default function Page() {
     Boolean(billOnUrl) &&
     Boolean(supplierOnUrl) &&
     partyId.trim().toLowerCase() === supplierOnUrl.toLowerCase();
-  const dueOf = (id: string) => {
+  const partyAgingRow = (id: string) => {
     const key = String(id || '').trim().toLowerCase();
-    const row = (report?.parties || []).find(
+    return (report?.parties || []).find(
       (x: { party_id?: string }) => String(x.party_id || '').trim().toLowerCase() === key,
     );
-    if (row) return formatMoney(row.total_due ?? 0);
+  };
+
+  const dueOf = (id: string) => {
+    const row = partyAgingRow(id);
+    if (row) return formatMoney(row.total_due ?? 0, formatPrefs);
+    const key = String(id || '').trim().toLowerCase();
     const fromBills = (report?.documents || [])
       .filter((doc: { party_id?: string }) => String(doc.party_id || '').trim().toLowerCase() === key)
-      .reduce((sum: number, doc: { balance_due?: number }) => sum + Number(doc.balance_due || 0), 0);
-    return formatMoney(fromBills);
+      .reduce(
+        (sum: number, doc: { balance_due_base?: number; balance_due?: number }) =>
+          sum + Number(doc.balance_due_base ?? doc.balance_due || 0),
+        0,
+      );
+    return formatMoney(fromBills, formatPrefs);
+  };
+
+  const payableCurrencyLines = (row?: {
+    totals_by_currency?: { currency: string; total_due: number }[];
+    total_due?: number;
+  } | null) => {
+    const lines = row?.totals_by_currency || [];
+    if (lines.length > 1) {
+      return (
+        <span className="credit-money-lines" aria-label="Due by currency">
+          {lines.map((line) => (
+            <span key={line.currency}>
+              {formatMoney(line.total_due, formatPrefs, line.currency)}
+            </span>
+          ))}
+        </span>
+      );
+    }
+    return formatMoney(row?.total_due ?? 0, formatPrefs);
   };
 
   function chooseParty(id: string) {
@@ -729,7 +757,25 @@ export default function Page() {
       <div className="erp-kpis credit-kpis">
         <div className="card">
           <div className="muted">{kind === 'receivable' ? 'Customer balance' : 'We owe'}</div>
-          <div className="kpi">{loadState === 'loading' ? '…' : loadState === 'error' ? 'Unavailable' : formatMoney(weOweAmt ?? 0)}</div>
+          <div className="kpi">{loadState === 'loading' ? '…' : loadState === 'error' ? 'Unavailable' : formatMoney(weOweAmt ?? 0, formatPrefs)}</div>
+          {kind === 'receivable' && (report?.totals_by_currency || []).length > 1 ? (
+            <div className="credit-money-lines" aria-label="Customer balance by currency">
+              {(report.totals_by_currency as { currency: string; total_due: number }[]).map((line) => (
+                <span key={line.currency}>
+                  {formatMoney(line.total_due, formatPrefs, line.currency)}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          {kind === 'payable' && (report?.totals_by_currency || []).length > 1 ? (
+            <div className="credit-money-lines" aria-label="We owe by currency">
+              {(report.totals_by_currency as { currency: string; total_due: number }[]).map((line) => (
+                <span key={line.currency}>
+                  {formatMoney(line.total_due, formatPrefs, line.currency)}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
         <div className="card">
           <div className="muted">Overdue</div>
@@ -932,7 +978,13 @@ export default function Page() {
             </label>
             <div className="credit-selected-balance credit-span" aria-live="polite">
               <span>{kind === 'receivable' ? 'This customer owes' : 'You owe this supplier'}</span>
-              <strong>{partyId ? dueOf(partyId) : '—'}</strong>
+              <strong>
+                {partyId
+                  ? (partyAgingRow(partyId)
+                    ? payableCurrencyLines(partyAgingRow(partyId))
+                    : dueOf(partyId))
+                  : '—'}
+              </strong>
             </div>
             <label>
               Amount
@@ -1136,7 +1188,7 @@ export default function Page() {
           {(report?.parties || []).map((r: any) => (
             <tr key={r.party_id} className={r.party_id === partyId ? 'is-selected' : undefined}>
               <td>{r.name}</td>
-              <td>{formatMoney(r.total_due)}</td>
+              <td>{payableCurrencyLines(r)}</td>
               <td>{formatMoney(r.current)}</td>
               <td>{formatMoney(r['1_30'])}</td>
               <td>{formatMoney(r['31_60'])}</td>

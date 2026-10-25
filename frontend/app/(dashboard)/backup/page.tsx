@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import PageHeader from '../../../components/PageHeader';
-import { api, getAccessToken } from '../../../lib/api';
+import { api } from '../../../lib/api';
+import { downloadAttachment } from '../../../lib/attachments';
 import './backup-ui.css';
-
-const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 type BackupJob = {
   id: string;
@@ -144,22 +143,7 @@ export default function Page() {
   async function downloadBackup(id: string, filename: string) {
     setError('');
     try {
-      const token = getAccessToken();
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${base}/backup/${id}/download`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
-      });
-      if (!res.ok) throw new Error('Download failed');
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename || 'backup.ribbak';
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadAttachment(`/backup/${id}/download`, filename || 'backup.ribbak');
       setMessageTone('ok');
       setMessage('Backup downloaded');
     } catch (err: any) {

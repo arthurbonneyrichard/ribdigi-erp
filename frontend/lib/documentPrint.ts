@@ -1,19 +1,8 @@
-import { getAccessToken } from './api';
-
-function documentApiBase() {
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-}
+import { apiFetch } from './api';
 
 /** Open a document print HTML page or A4 PDF in a new tab. */
 export async function openDocumentPrint(path: string) {
-  const token = getAccessToken();
-  const tenant = typeof window !== 'undefined' ? localStorage.getItem('tenant') : null;
-  const res = await fetch(`${documentApiBase()}${path}`, {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-    },
-  });
+  const res = await apiFetch(path);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const detail = (body as { detail?: unknown; message?: string }).detail;

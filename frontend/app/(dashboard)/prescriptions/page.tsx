@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import FormModal from '../../../components/FormModal';
 import PageHeader from '../../../components/PageHeader';
-import { api, apiRoot, getAccessToken } from '../../../lib/api';
+import { api } from '../../../lib/api';
+import { uploadAttachment } from '../../../lib/attachments';
 import { getMe } from '../../../lib/meCache';
 import { normalizeIndustry } from '../../../lib/industries';
 
@@ -318,23 +319,7 @@ export default function PrescriptionsPage() {
     setError('');
     setMessage('');
     try {
-      const token = getAccessToken();
-      const tenant = typeof window !== 'undefined' ? localStorage.getItem('tenant') : null;
-      const apiBase = apiRoot();
-      const body = new FormData();
-      body.append('file', file);
-      const res = await fetch(`${apiBase}/pharmacy/prescriptions/${selected.id}/attachments`, {
-        method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
-        body,
-      });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        throw new Error(payload.detail?.message || payload.message || 'Upload failed');
-      }
+      await uploadAttachment(`/pharmacy/prescriptions/${selected.id}/attachments`, file);
       setMessage('Attachment saved');
       await refresh();
     } catch (err: unknown) {

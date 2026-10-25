@@ -2590,6 +2590,16 @@ a.plat-stat{color:inherit;text-decoration:none}
 }
 .credit-page .credit-selected-balance span{color:var(--muted);font-weight:700}
 .credit-page .credit-selected-balance strong{font-size:1.25rem;color:var(--ink)}
+.credit-page .credit-money-lines{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:2px;
+  font-size:0.85rem;
+  font-weight:600;
+}
+.credit-page .credit-kpis .credit-money-lines{align-items:flex-start;margin-top:6px;color:var(--muted)}
+.credit-page .credit-selected-balance .credit-money-lines{align-items:flex-start;font-size:1rem}
 .credit-page .credit-check{
   display:flex;flex-direction:row;align-items:center;gap:8px;font-weight:600
 }

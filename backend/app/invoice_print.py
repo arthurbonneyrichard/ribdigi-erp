@@ -308,6 +308,7 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
         POWERED_BY_RIBDIGI,
         append_a4_letterhead,
         assemble_a4_pdf,
+        begin_a4_page,
         company_letterhead_detail_lines,
         load_logo_jpeg,
     )
@@ -342,16 +343,17 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
             "tax_registration_number": payload.get("tax_registration_number"),
         }
     )
-    y = append_a4_letterhead(
-        content,
-        company_name=company,
-        logo=logo,
-        print_header=str(payload["print_header"]) if payload.get("print_header") else None,
-        detail_lines=details,
-        page_width=page_width,
-        page_height=page_height,
-        margin=margin,
-    )
+    letterhead = {
+        "company_name": company,
+        "logo": logo,
+        "print_header": str(payload["print_header"]) if payload.get("print_header") else None,
+        "detail_lines": details,
+        "page_width": page_width,
+        "page_height": page_height,
+        "margin": margin,
+    }
+    y = append_a4_letterhead(content, **letterhead)
+    pages: list[list[str]] = []
 
     def draw_text(
         text: str,
@@ -374,6 +376,11 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
             f"BT {font} {size:.0f} Tf {r:.3f} {g:.3f} {b:.3f} rg "
             f"{(x if x is not None else margin):.1f} {y - size:.1f} Td ({escaped}) Tj ET"
         )
+
+    def break_page(label: str = "SALES INVOICE (continued)") -> None:
+        nonlocal content, y
+        pages.append(content)
+        content, y = begin_a4_page(**letterhead, continuation_label=label)
 
     draw_text("SALES INVOICE", 18, bold=True, rgb=FOREST_RGB)
     y -= 22
@@ -423,26 +430,31 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
     y -= bill_h + 18
 
     # Table header bar
-    col_y = y
-    content.append(
-        f"{fr:.3f} {fg:.3f} {fb:.3f} rg {margin:.1f} {col_y - 16:.1f} "
-        f"{page_width - 2 * margin:.1f} 16 re f"
-    )
-    headers = [
-        (margin + 4, "Qty"),
-        (margin + 40, "Description"),
-        (margin + 280, "Unit"),
-        (margin + 340, "Tax%"),
-        (margin + 390, "Tax"),
-        (margin + 450, "Line"),
-    ]
-    for x, label in headers:
-        draw_text(label, 8, x=x, y_pos=col_y - 2, bold=True, rgb=(1.0, 1.0, 1.0))
-    y = col_y - 22
+    def draw_col_header() -> None:
+        nonlocal y
+        col_y = y
+        content.append(
+            f"{fr:.3f} {fg:.3f} {fb:.3f} rg {margin:.1f} {col_y - 16:.1f} "
+            f"{page_width - 2 * margin:.1f} 16 re f"
+        )
+        headers = [
+            (margin + 4, "Qty"),
+            (margin + 40, "Description"),
+            (margin + 280, "Unit"),
+            (margin + 340, "Tax%"),
+            (margin + 390, "Tax"),
+            (margin + 450, "Line"),
+        ]
+        for x, label in headers:
+            draw_text(label, 8, x=x, y_pos=col_y - 2, bold=True, rgb=(1.0, 1.0, 1.0))
+        y = col_y - 22
+
+    draw_col_header()
 
     for item in payload.get("items") or []:
-        if y < margin + 140:
-            break
+        if y < margin + 28:
+            break_page()
+            draw_col_header()
         name = str(item.get("name") or "Item")[:36]
         qty = money_json(item.get("quantity") or 0)
         unit = money_json(item.get("unit_price") or 0)
@@ -492,6 +504,8 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
     )
 
     box_h = 14 * len(totals) + 16
+    if y < margin + box_h + 50:
+        break_page()
     content.append(
         f"0.949 0.969 0.925 rg {totals_x - 8:.1f} {y - box_h:.1f} "
         f"{page_width - margin - totals_x + 8:.1f} {box_h:.1f} re f"
@@ -508,13 +522,17 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
         ty -= 14
     y = y - box_h - 16
 
-    if payload.get("notes") and y > margin + 60:
+    if payload.get("notes"):
+        if y < margin + 60:
+            break_page()
         draw_text("Notes", 9, y_pos=y, bold=True, rgb=FOREST_RGB)
         y -= 12
         for part in _wrap(str(payload["notes"]), 78)[:4]:
             draw_text(part, 9, y_pos=y, rgb=(0.302, 0.365, 0.337))
             y -= 11
 
+    if y < margin + 50:
+        break_page()
     y = max(y - 8, margin + 36)
     draw_text(
         str(payload.get("print_footer") or DEFAULT_FOOTER_INVOICE),
@@ -525,8 +543,9 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
     y -= 14
     draw_text(POWERED_BY_RIBDIGI, 7, y_pos=y, bold=True, rgb=BRAND_GREEN_RGB)
 
+    pages.append(content)
     return assemble_a4_pdf(
-        content, logo=logo, page_width=page_width, page_height=page_height
+        pages, logo=logo, page_width=page_width, page_height=page_height
     )
 
 
@@ -539,6 +558,7 @@ def to_purchase_order_a4_pdf(payload: dict[str, Any]) -> bytes:
         POWERED_BY_RIBDIGI,
         append_a4_letterhead,
         assemble_a4_pdf,
+        begin_a4_page,
         company_letterhead_detail_lines,
         load_logo_jpeg,
     )
@@ -572,16 +592,17 @@ def to_purchase_order_a4_pdf(payload: dict[str, Any]) -> bytes:
     }
     details = company_letterhead_detail_lines(ident)
 
-    y = append_a4_letterhead(
-        content,
-        company_name=company,
-        logo=logo,
-        print_header=str(payload["print_header"]) if payload.get("print_header") else None,
-        detail_lines=details,
-        page_width=page_width,
-        page_height=page_height,
-        margin=margin,
-    )
+    letterhead = {
+        "company_name": company,
+        "logo": logo,
+        "print_header": str(payload["print_header"]) if payload.get("print_header") else None,
+        "detail_lines": details,
+        "page_width": page_width,
+        "page_height": page_height,
+        "margin": margin,
+    }
+    y = append_a4_letterhead(content, **letterhead)
+    pages: list[list[str]] = []
 
     def draw_text(
         text: str,
@@ -603,6 +624,11 @@ def to_purchase_order_a4_pdf(payload: dict[str, Any]) -> bytes:
             f"BT {font} {size:.0f} Tf {r:.3f} {g:.3f} {b:.3f} rg "
             f"{(x if x is not None else margin):.1f} {y - size:.1f} Td ({_pdf_escape(text)}) Tj ET"
         )
+
+    def break_page(label: str = "PURCHASE ORDER (continued)") -> None:
+        nonlocal content, y
+        pages.append(content)
+        content, y = begin_a4_page(**letterhead, continuation_label=label)
 
     draw_text("PURCHASE ORDER", 18, bold=True, rgb=FOREST_RGB)
     y -= 22
@@ -637,26 +663,31 @@ def to_purchase_order_a4_pdf(payload: dict[str, Any]) -> bytes:
         meta_y_r -= 12
     y = min(meta_y, meta_y_r) - 8
 
-    col_y = y
-    content.append(
-        f"{fr:.3f} {fg:.3f} {fb:.3f} rg {margin:.1f} {col_y - 16:.1f} "
-        f"{page_width - 2 * margin:.1f} 16 re f"
-    )
-    headers = [
-        (margin + 4, "Qty"),
-        (margin + 40, "Description"),
-        (margin + 280, "Unit"),
-        (margin + 340, "Tax%"),
-        (margin + 390, "Disc"),
-        (margin + 450, "Line"),
-    ]
-    for x, label in headers:
-        draw_text(label, 8, x=x, y_pos=col_y - 2, bold=True, rgb=(1.0, 1.0, 1.0))
-    y = col_y - 22
+    def draw_col_header() -> None:
+        nonlocal y
+        col_y = y
+        content.append(
+            f"{fr:.3f} {fg:.3f} {fb:.3f} rg {margin:.1f} {col_y - 16:.1f} "
+            f"{page_width - 2 * margin:.1f} 16 re f"
+        )
+        headers = [
+            (margin + 4, "Qty"),
+            (margin + 40, "Description"),
+            (margin + 280, "Unit"),
+            (margin + 340, "Tax%"),
+            (margin + 390, "Disc"),
+            (margin + 450, "Line"),
+        ]
+        for x, label in headers:
+            draw_text(label, 8, x=x, y_pos=col_y - 2, bold=True, rgb=(1.0, 1.0, 1.0))
+        y = col_y - 22
+
+    draw_col_header()
 
     for item in payload.get("items") or []:
-        if y < margin + 140:
-            break
+        if y < margin + 28:
+            break_page()
+            draw_col_header()
         name = str(item.get("name") or "Item")[:36]
         qty = money_json(item.get("quantity") or 0)
         unit = money_json(item.get("unit_price") or 0)
@@ -689,6 +720,8 @@ def to_purchase_order_a4_pdf(payload: dict[str, Any]) -> bytes:
         ),
     ]
     box_h = 14 * len(totals) + 16
+    if y < margin + box_h + 50:
+        break_page()
     content.append(
         f"0.949 0.969 0.925 rg {totals_x - 8:.1f} {y - box_h:.1f} "
         f"{page_width - margin - totals_x + 8:.1f} {box_h:.1f} re f"
@@ -705,19 +738,24 @@ def to_purchase_order_a4_pdf(payload: dict[str, Any]) -> bytes:
         ty -= 14
     y = y - box_h - 16
 
-    if payload.get("notes") and y > margin + 60:
+    if payload.get("notes"):
+        if y < margin + 60:
+            break_page()
         draw_text("Notes", 9, y_pos=y, bold=True, rgb=FOREST_RGB)
         y -= 12
         for part in _wrap(str(payload["notes"]), 78)[:4]:
             draw_text(part, 9, y_pos=y, rgb=(0.302, 0.365, 0.337))
             y -= 11
 
+    if y < margin + 50:
+        break_page()
     y = max(y - 8, margin + 36)
     if payload.get("print_footer"):
         draw_text(str(payload["print_footer"]), 9, y_pos=y, rgb=(0.302, 0.365, 0.337))
         y -= 14
     draw_text(POWERED_BY_RIBDIGI, 7, y_pos=y, bold=True, rgb=BRAND_GREEN_RGB)
 
+    pages.append(content)
     return assemble_a4_pdf(
-        content, logo=logo, page_width=page_width, page_height=page_height
+        pages, logo=logo, page_width=page_width, page_height=page_height
     )

@@ -8311,15 +8311,29 @@ async def print_sales_return(
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Printable sales return / credit note HTML or A4 PDF."""
-    from app.document_print import build_sales_return_print, print_response
+    """Printable sales return / credit note HTML or A4 PDF. Walk-in till returns have no customer."""
+    from app.document_print import (
+        build_sales_return_print,
+        get_tenant_party,
+        print_response,
+        store_name_by_id,
+    )
 
     ret = await sales_docs_svc.get_return(db, claims["tenant_id"], return_id)
     assert_record_access(claims, ret.created_by)
     data = await sales_docs_svc.serialize_return(db, ret)
-    customer = await sales_svc.get_customer(db, claims["tenant_id"], ret.customer_id)
+    customer = await get_tenant_party(
+        db, claims["tenant_id"], ret.customer_id, kind="customer"
+    )
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
-    payload = build_sales_return_print(data, tenant=tenant, customer=customer)
+    payload = build_sales_return_print(
+        data,
+        tenant=tenant,
+        customer=customer,
+        store_name=await store_name_by_id(
+            db, tenant_id=claims["tenant_id"], store_id=getattr(ret, "store_id", None)
+        ),
+    )
     return print_response(
         payload,
         tenant=tenant,
@@ -15139,16 +15153,19 @@ async def send_supplier_payment(
     """Email supplier payment receipt. Optional Query `to` ∈ EmailStr; omit → supplier email."""
     from app import document_email as document_email_svc
     from app.document_print import get_supplier_payment
-    from app.rbac import has_permission
+    from app.rbac import has_explicit_permission, has_permission
 
     role = claims.get("role", "")
     perms = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
     if not (
         has_permission(role, "purchasing", "write", overrides=perms)
-        or has_permission(role, "credit", "write", overrides=perms)
+        or (
+            has_permission(role, "credit", "write", overrides=perms)
+            and has_explicit_permission(role, "credit", "read", overrides=perms)
+        )
     ):
         raise HTTPException(
-            status_code=403, detail="Missing permission: purchasing:write or credit:write"
+            status_code=403, detail="Missing permission: purchasing:write or credit:read"
         )
     existing = await get_supplier_payment(db, claims["tenant_id"], payment_id)
     assert_record_access(claims, existing.created_by)

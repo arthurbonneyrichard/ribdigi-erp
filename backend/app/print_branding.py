@@ -479,37 +479,80 @@ def append_a4_letterhead(
     return page_height - header_h - 28
 
 
+def begin_a4_page(
+    *,
+    company_name: str,
+    logo: tuple[bytes, int, int] | None = None,
+    print_header: str | None = None,
+    detail_lines: list[str] | None = None,
+    page_width: float = 595.0,
+    page_height: float = 842.0,
+    margin: float = 40.0,
+    continuation_label: str | None = None,
+) -> tuple[list[str], float]:
+    """New A4 page with the shared letterhead. Optional compact continued title."""
+    from app.report_export import _pdf_escape
+
+    content: list[str] = []
+    y = append_a4_letterhead(
+        content,
+        company_name=company_name,
+        logo=logo,
+        print_header=print_header,
+        detail_lines=detail_lines,
+        page_width=page_width,
+        page_height=page_height,
+        margin=margin,
+    )
+    label = str(continuation_label or "").strip()
+    if label:
+        fr, fg, fb = FOREST_RGB
+        content.append(
+            f"BT /F2 11 Tf {fr:.3f} {fg:.3f} {fb:.3f} rg "
+            f"{margin:.1f} {y - 11:.1f} Td ({_pdf_escape(label)}) Tj ET"
+        )
+        y -= 20
+    return content, y
+
+
 def assemble_a4_pdf(
-    content: list[str],
+    content: list[str] | list[list[str]],
     *,
     logo: tuple[bytes, int, int] | None = None,
     page_width: float = 595.0,
     page_height: float = 842.0,
 ) -> bytes:
-    """Single-page A4 PDF from content-stream ops (Helvetica + optional JPEG)."""
-    stream = "\n".join(content).encode("latin-1", errors="replace")
-    objects: list[bytes] = []
+    """A4 PDF from content-stream ops (Helvetica + optional JPEG).
 
-    def obj(n: int, body: bytes) -> None:
-        objects.append(f"{n} 0 obj\n".encode() + body + b"\nendobj\n")
+    `content` is one page of operators, or a list of pages when leftover
+    lines overflow the first sheet.
+    """
+    if content and isinstance(content[0], list):
+        page_ops = [list(page) for page in content]  # type: ignore[arg-type]
+    else:
+        page_ops = [list(content)]  # type: ignore[arg-type]
+    if not page_ops:
+        page_ops = [[]]
+    streams = ["\n".join(ops).encode("latin-1", errors="replace") for ops in page_ops]
+    n_pages = len(streams)
 
-    obj(1, b"<< /Type /Catalog /Pages 2 0 R >>")
-    obj(2, b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
-    if logo:
+    objects: dict[int, bytes] = {}
+
+    def put(n: int, body: bytes) -> None:
+        objects[n] = f"{n} 0 obj\n".encode() + body + b"\nendobj\n"
+
+    has_logo = logo is not None
+    first_page = 6 if has_logo else 5
+    kids = " ".join(f"{first_page + 2 * i} 0 R" for i in range(n_pages))
+    put(1, b"<< /Type /Catalog /Pages 2 0 R >>")
+    put(2, f"<< /Type /Pages /Kids [{kids}] /Count {n_pages} >>".encode())
+    put(3, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+    put(4, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>")
+    xobject = ""
+    if has_logo:
         jpeg, px_w, px_h = logo
-        obj(
-            3,
-            (
-                f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {page_width} {page_height}] "
-                f"/Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> "
-                f"/XObject << /Im1 7 0 R >> >> >>"
-            ).encode(),
-        )
-        obj(4, f"<< /Length {len(stream)} >>\nstream\n".encode() + stream + b"\nendstream")
-        obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
-        obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>")
-        obj(
-            7,
+        put(
+            5,
             (
                 f"<< /Type /XObject /Subtype /Image /Width {px_w} /Height {px_h} "
                 f"/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode "
@@ -518,25 +561,26 @@ def assemble_a4_pdf(
             + jpeg
             + b"\nendstream",
         )
-        n_objs = 7
-    else:
-        obj(
-            3,
+        xobject = " /XObject << /Im1 5 0 R >>"
+    resources = f"/Resources << /Font << /F1 3 0 R /F2 4 0 R >>{xobject} >>"
+    for i, stream in enumerate(streams):
+        page_n = first_page + 2 * i
+        cont_n = page_n + 1
+        put(
+            page_n,
             (
                 f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {page_width} {page_height}] "
-                f"/Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>"
+                f"/Contents {cont_n} 0 R {resources} >>"
             ).encode(),
         )
-        obj(4, f"<< /Length {len(stream)} >>\nstream\n".encode() + stream + b"\nendstream")
-        obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
-        obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>")
-        n_objs = 6
+        put(cont_n, f"<< /Length {len(stream)} >>\nstream\n".encode() + stream + b"\nendstream")
 
+    n_objs = first_page + 2 * n_pages - 1
     out = bytearray(b"%PDF-1.4\n")
     offsets = [0]
-    for i, o in enumerate(objects, start=1):
+    for i in range(1, n_objs + 1):
         offsets.append(len(out))
-        out.extend(o)
+        out.extend(objects[i])
     xref_pos = len(out)
     out.extend(f"xref\n0 {n_objs + 1}\n".encode())
     out.extend(b"0000000000 65535 f \n")

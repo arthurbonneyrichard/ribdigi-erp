@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import PageHeader from '../../../components/PageHeader';
-import { api, getAccessToken } from '../../../lib/api';
+import { api, apiFetch } from '../../../lib/api';
+import { triggerBlobDownload } from '../../../lib/attachments';
 import { currencySign, formatWhen, plainLabel } from '../../../lib/format';
 import { AmountField } from '../../../components/AmountField';
 import { useStoreContext } from '../../../lib/storeContext';
@@ -400,18 +401,9 @@ export default function Page() {
     try {
       const prompt = q.trim() || 'monthly sales for this month';
       const period = reportPeriod.trim() ? reportPeriod.trim() : null;
-      const token = getAccessToken();
-      const tenant = localStorage.getItem('tenant');
-      const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-      const res = await fetch(`${base}/ai/reports/export`, {
+      const res = await apiFetch('/ai/reports/export', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
         body: JSON.stringify({ prompt, format: 'csv', period }),
-        cache: 'no-store',
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -428,12 +420,7 @@ export default function Page() {
       const cd = res.headers.get('Content-Disposition') || '';
       const match = cd.match(/filename="?([^"]+)"?/);
       const filename = match?.[1] || 'ai-report.csv';
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
+      triggerBlobDownload(blob, filename);
       setMessage(`AI report CSV downloaded (${filename})`);
       setA(`Downloaded ${filename}.`);
     } catch (err: any) {

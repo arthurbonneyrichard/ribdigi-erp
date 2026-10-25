@@ -58,7 +58,10 @@ def test_po_print_ui_and_docs():
     assert "ariaLabel: 'Print purchase order'" in purchasing
     assert "aria-label={`Print purchase order ${selected.id}`}" in purchasing
     assert "/purchasing/orders/${current.id}/print?format=pdf" in purchasing
-    assert "content-type" in purchasing and "pdf" in purchasing
+    assert "openDocumentPrint" in purchasing
+    printer = (ROOT / "frontend" / "lib" / "documentPrint.ts").read_text(encoding="utf-8")
+    assert "apiFetch" in printer
+    assert "content-type" in printer and "pdf" in printer
     assert "/purchasing/orders/${po.id}/issue" in purchasing
     assert "Email or print a purchase order" in purchasing
     assert "Hand the paper to the supplier" in purchasing
