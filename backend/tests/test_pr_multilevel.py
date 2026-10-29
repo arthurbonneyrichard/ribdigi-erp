@@ -147,3 +147,31 @@ async def test_pr_wrong_role_for_level(db_session, seeded):
     )
     await db_session.commit()
     assert final.status == "approved"
+
+@pytest.mark.asyncio
+async def test_pr_skips_level_nobody_holds(db_session, seeded):
+    """A shop with no Store Manager goes straight to the owner instead of getting stuck at level 1."""
+    tenant_id = seeded["t1"].id
+    seeded["mgr1"].is_active = False
+    io = m.User(
+        tenant_id=tenant_id,
+        email="io-pr-small-shop@alpha.example.com",
+        full_name="IO Small Shop",
+        password_hash=hash_password("SecurePass123!"),
+        role="inventory_officer",
+        email_verified=True,
+        permissions=permissions_for_role("inventory_officer"),
+        totp_enabled=False,
+    )
+    db_session.add(io)
+    await db_session.commit()
+    pr = await pr_svc.create_request(
+        db_session, tenant_id=tenant_id, user_id=io.id, items=[{"product_id": seeded["p1"].id, "quantity": 1}]
+    )
+    submitted = await pr_svc.submit_request(db_session, tenant_id=tenant_id, user_id=io.id, request_id=pr.id)
+    assert submitted.approval_step == 2
+    final = await pr_svc.approve_request(
+        db_session, tenant_id=tenant_id, user_id=seeded["admin1"].id, request_id=pr.id, actor_role="company_admin"
+    )
+    await db_session.commit()
+    assert final.status == "approved"

@@ -107,6 +107,23 @@ def roles_for_step(levels: list[dict], step: int) -> list[str]:
     return []
 
 
+async def staffed_steps(db: AsyncSession, tenant_id: str, levels: list[dict]) -> list[int]:
+    """Approval steps that at least one active user of the company can act on.
+
+    A small shop with no Store Manager skips that level instead of leaving every request stuck.
+    When no level is staffed, all steps are kept (approval then fails loudly, as before).
+    """
+    roles = set(
+        (
+            await db.execute(
+                select(m.User.role).where(m.User.tenant_id == tenant_id, m.User.is_active.is_(True))
+            )
+        ).scalars().all()
+    )
+    steps = [int(lvl["step"]) for lvl in levels if roles & set(lvl["roles"])]
+    return steps or [int(lvl["step"]) for lvl in levels]
+
+
 def assert_actor_may_act(*, levels: list[dict], step: int, actor_role: str | None) -> None:
     role = (actor_role or "").strip()
     if role == "super_admin":
@@ -416,7 +433,7 @@ async def submit_request(
     if steps < 1:
         raise HTTPException(status_code=400, detail="Purchase approval matrix has no levels")
     row.status = "pending"
-    row.approval_step = 1
+    row.approval_step = (await staffed_steps(db, tenant_id, settings["levels"]))[0]
     row.approval_steps_required = steps
     row.approved_by = None
     row.rejected_by = None
@@ -477,8 +494,9 @@ async def approve_request(
     )
 
     now = datetime.utcnow()
-    if step < required:
-        row.approval_step = step + 1
+    next_step = next((s for s in await staffed_steps(db, tenant_id, settings["levels"]) if s > step), None)
+    if step < required and next_step is not None:
+        row.approval_step = next_step
         row.updated_at = now
         db.add(
             m.AuditLog(
@@ -490,7 +508,7 @@ async def approve_request(
                 details={
                     "request_number": row.request_number,
                     "step": step,
-                    "next_step": step + 1,
+                    "next_step": next_step,
                 },
             )
         )
@@ -503,7 +521,7 @@ async def approve_request(
             title="Purchase request needs next-level approval",
             message=(
                 f"PR {row.request_number} passed level {step} "
-                f"and awaits level {step + 1} approval."
+                f"and awaits level {next_step} approval."
             ),
             entity_type="purchase_request",
             entity_id=row.id,
