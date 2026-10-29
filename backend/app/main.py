@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -18,7 +20,33 @@ logging.getLogger("ribdigi.request").setLevel(_level)
 if not logging.getLogger().handlers:
     logging.basicConfig(level=_level)
 
+async def _align_hybrid_schema_on_startup() -> None:
+    if settings.APP_ENV.lower() != "production":
+        return
+    if "sqlite" in (settings.DATABASE_URL or "").lower():
+        return
+    from app.db import engine
+    from app.schema_align import align_async_engine
+
+    try:
+        await align_async_engine(engine)
+    except Exception:
+        logging.getLogger("ribdigi.schema_align").exception("startup schema align failed")
+
+
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    if is_prod and not ((settings.BACKUP_ENCRYPTION_KEY or "").strip() and (settings.TOTP_ENCRYPTION_KEY or "").strip()):
+        # Without them, stored secrets are encrypted with keys derived from JWT_SECRET_KEY.
+        logging.getLogger("ribdigi.security").warning(
+            "BACKUP_ENCRYPTION_KEY and TOTP_ENCRYPTION_KEY should both be set in production"
+        )
+    await _align_hybrid_schema_on_startup()
+    yield
+
+
 app = FastAPI(
+    lifespan=_lifespan,
     title="RIBDIGI BUSINESS ERP API",
     version="1.0.0",
     docs_url=None if is_prod else "/docs",
@@ -66,21 +94,6 @@ app.include_router(api)
 register_exception_handlers(app)
 # Used by AuditMutationMiddleware (overridable in tests via app.state.session_factory).
 app.state.session_factory = SessionLocal
-
-
-@app.on_event("startup")
-async def _align_hybrid_schema_on_startup() -> None:
-    if settings.APP_ENV.lower() != "production":
-        return
-    if "sqlite" in (settings.DATABASE_URL or "").lower():
-        return
-    from app.db import engine
-    from app.schema_align import align_async_engine
-
-    try:
-        await align_async_engine(engine)
-    except Exception:
-        logging.getLogger("ribdigi.schema_align").exception("startup schema align failed")
 
 
 @app.get("/")

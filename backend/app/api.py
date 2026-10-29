@@ -6,7 +6,7 @@ from pathlib import Path as FsPath
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, Query, Request, UploadFile
 from fastapi.responses import FileResponse, PlainTextResponse, Response
 from pydantic import EmailStr, TypeAdapter, ValidationError as PydanticValidationError
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated, Literal
@@ -58,6 +58,7 @@ from app import report_export as report_export_svc
 from app import report_schedules as report_schedules_svc
 from app import notifications as notifications_svc
 from app import audit as audit_svc
+from app.middleware import client_ip_from_request
 from app import backup as backup_svc
 from app import tenants as tenants_svc
 from app import packages as packages_svc
@@ -650,7 +651,7 @@ async def create_session(
         refresh_token_hash=refresh_hash,
         jti=jti,
         user_agent=(request.headers.get("user-agent") if request else None),
-        ip_address=(request.client.host if request and request.client else None),
+        ip_address=(client_ip_from_request(request) if request else None),
         expires_at=refresh_exp,
     )
     db.add(session)
@@ -2314,7 +2315,7 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
                         entity="user",
                         entity_id=user.id,
                         details={"email": payload.email},
-                        ip_address=request.client.host if request.client else None,
+                        ip_address=client_ip_from_request(request),
                         user_agent=request.headers.get("user-agent"),
                     ),
                 )
@@ -2347,7 +2348,7 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
                     entity="user",
                     entity_id=user.id,
                     details={"email": user.email},
-                    ip_address=request.client.host if request.client else None,
+                    ip_address=client_ip_from_request(request),
                     user_agent=request.headers.get("user-agent"),
                 ),
             )
@@ -2404,7 +2405,7 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
                             entity="user",
                             entity_id=user.id,
                             details={"email": user.email},
-                            ip_address=request.client.host if request.client else None,
+                            ip_address=client_ip_from_request(request),
                             user_agent=request.headers.get("user-agent"),
                         ),
                     )
@@ -2437,7 +2438,7 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
                         entity="user",
                         entity_id=user.id,
                         details={"email": user.email, "methods": methods},
-                        ip_address=request.client.host if request.client else None,
+                        ip_address=client_ip_from_request(request),
                         user_agent=request.headers.get("user-agent"),
                     ),
                 )
@@ -2485,7 +2486,7 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
             entity="user",
             entity_id=user.id,
             details={"email": user.email, "totp": bool(user.totp_enabled), "webauthn": has_webauthn},
-            ip_address=request.client.host if request.client else None,
+            ip_address=client_ip_from_request(request),
             user_agent=request.headers.get("user-agent"),
         ),
     )
@@ -2532,7 +2533,7 @@ async def auth_2fa_verify(payload: TwoFactorVerify, request: Request, db: AsyncS
                 action="2fa_failed",
                 entity="user",
                 entity_id=user.id,
-                ip_address=request.client.host if request.client else None,
+                ip_address=client_ip_from_request(request),
                 user_agent=request.headers.get("user-agent"),
             ),
         )
@@ -2559,7 +2560,7 @@ async def auth_2fa_verify(payload: TwoFactorVerify, request: Request, db: AsyncS
             entity="user",
             entity_id=user.id,
             details={"email": user.email, "totp": True},
-            ip_address=request.client.host if request.client else None,
+            ip_address=client_ip_from_request(request),
             user_agent=request.headers.get("user-agent"),
         ),
     )
@@ -2724,7 +2725,7 @@ async def webauthn_login_verify(
             entity="user",
             entity_id=user.id,
             details={"email": user.email, "webauthn": True},
-            ip_address=request.client.host if request.client else None,
+            ip_address=client_ip_from_request(request),
             user_agent=request.headers.get("user-agent"),
         ),
     )
@@ -2856,7 +2857,28 @@ async def refresh(payload: RefreshRequest, request: Request, db: AsyncSession = 
     session = (
         await db.execute(select(m.AuthSession).where(m.AuthSession.refresh_token_hash == token_hash))
     ).scalar_one_or_none()
-    if not session or session.revoked_at is not None or session.expires_at < datetime.utcnow():
+    now = datetime.utcnow()
+    if session and session.revoked_at is not None and session.revoked_at < now - timedelta(seconds=60):
+        # An old, already-rotated refresh token came back: treat it as stolen and end every session of
+        # that user. (Within 60 s it is more likely two tabs refreshing at once, so just refuse it.)
+        await db.execute(
+            update(m.AuthSession)
+            .where(m.AuthSession.user_id == session.user_id, m.AuthSession.revoked_at.is_(None))
+            .values(revoked_at=now)
+        )
+        await audit_svc.record_event(
+            db,
+            tenant_id=session.tenant_id,
+            user_id=session.user_id,
+            module="auth",
+            action="refresh_token_reuse",
+            entity="auth_session",
+            entity_id=session.id,
+            details={"all_sessions_revoked": True},
+        )
+        await db.commit()
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+    if not session or session.revoked_at is not None or session.expires_at < now:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
     user = await db.get(m.User, session.user_id)
@@ -2898,7 +2920,7 @@ async def logout(request: Request, claims=Depends(current_claims), db: AsyncSess
         action="logout",
         entity="user",
         entity_id=claims["sub"],
-        ip_address=request.client.host if request.client else None,
+        ip_address=client_ip_from_request(request),
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()
@@ -16833,7 +16855,7 @@ async def backup_create(
         entity="backup_job",
         entity_id=job.id,
         details={"filename": job.filename, "size_bytes": job.size_bytes, "checksum": job.checksum_sha256},
-        ip_address=request.client.host if request.client else None,
+        ip_address=client_ip_from_request(request),
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()
@@ -16891,7 +16913,7 @@ async def backup_download(
         entity="backup_job",
         entity_id=job.id,
         details={"filename": job.filename, "checksum": job.checksum_sha256},
-        ip_address=request.client.host if request.client else None,
+        ip_address=client_ip_from_request(request),
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()
@@ -16935,7 +16957,7 @@ async def backup_verify(
             "checked": (report.get("proof") or {}).get("checked"),
             "mismatch_count": (report.get("proof") or {}).get("mismatch_count"),
         },
-        ip_address=request.client.host if request.client else None,
+        ip_address=client_ip_from_request(request),
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()
@@ -16983,7 +17005,7 @@ async def backup_restore(
             "counts": report.get("record_counts"),
             "proof_ok": (report.get("proof") or {}).get("ok"),
         },
-        ip_address=request.client.host if request.client else None,
+        ip_address=client_ip_from_request(request),
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()
@@ -17032,7 +17054,7 @@ async def api_keys_create(
         entity="api_key",
         entity_id=row.id,
         details={"name": row.name, "key_prefix": row.key_prefix, "permissions": row.permissions},
-        ip_address=request.client.host if request.client else None,
+        ip_address=client_ip_from_request(request),
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()
@@ -17081,7 +17103,7 @@ async def api_keys_revoke(
         entity="api_key",
         entity_id=row.id,
         details={"name": row.name, "key_prefix": row.key_prefix},
-        ip_address=request.client.host if request.client else None,
+        ip_address=client_ip_from_request(request),
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()
@@ -17131,7 +17153,7 @@ async def webhooks_create(
         entity="webhook",
         entity_id=row.id,
         details={"url": row.url, "events": row.events},
-        ip_address=request.client.host if request.client else None,
+        ip_address=client_ip_from_request(request),
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()
@@ -17180,7 +17202,7 @@ async def webhooks_patch(
         entity="webhook",
         entity_id=row.id,
         details={"url": row.url, "events": row.events, "rotated_secret": bool(new_secret)},
-        ip_address=request.client.host if request.client else None,
+        ip_address=client_ip_from_request(request),
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()
@@ -17208,7 +17230,7 @@ async def webhooks_delete(
         entity="webhook",
         entity_id=webhook_id,
         details={},
-        ip_address=request.client.host if request.client else None,
+        ip_address=client_ip_from_request(request),
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()
@@ -17240,7 +17262,7 @@ async def webhooks_test_delivery(
         entity="webhook",
         entity_id=webhook_id,
         details={"delivery_id": delivery.id, "status": delivery.status},
-        ip_address=request.client.host if request.client else None,
+        ip_address=client_ip_from_request(request),
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()
@@ -17291,7 +17313,7 @@ async def webhooks_retry_delivery(
             "attempt_count": updated.attempt_count,
             "response_status": updated.response_status,
         },
-        ip_address=request.client.host if request.client else None,
+        ip_address=client_ip_from_request(request),
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()

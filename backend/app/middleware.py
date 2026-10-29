@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 import time
 
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -23,6 +24,15 @@ def client_ip_from_request(request: Request) -> str:
                 return hop
         return peer or (hops[-1] if hops else "unknown")
     if hops:
+        # Without a configured proxy list, skip private/loopback hops (Docker-network proxies such as
+        # Traefik and the Next.js /api proxy) and use the nearest public address. Anything to its left
+        # was written by the caller and is ignored.
+        for hop in reversed(hops):
+            try:
+                if ipaddress.ip_address(hop).is_global:
+                    return hop
+            except ValueError:
+                continue
         return hops[-1]
     return peer or "unknown"
 

@@ -30,6 +30,15 @@ const nextConfig = {
       { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
       { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
       { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=()' },
+      // Enforced: no plugins, no <base> hijack. The full policy runs report-only until every page is checked with it.
+      { key: 'Content-Security-Policy', value: "object-src 'none'; base-uri 'self'" },
+      {
+        key: 'Content-Security-Policy-Report-Only',
+        value:
+          "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+          "font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss:; " +
+          "frame-src 'self' https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https:",
+      },
     ];
     return [
       { source: '/:path*', headers: base },

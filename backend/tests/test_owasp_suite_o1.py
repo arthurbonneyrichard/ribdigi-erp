@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 
 import pyotp
 import pytest
-from jose import jwt
+import jwt
 
 from app.config import settings
 from tests.conftest import auth_headers

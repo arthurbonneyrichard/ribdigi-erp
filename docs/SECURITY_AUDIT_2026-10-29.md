@@ -30,6 +30,19 @@ Method: dependency scans (pip-audit, npm audit), static analysis (bandit), a rou
 | O8 | Low | The `Server: uvicorn` header is disclosed. `@app.on_event("startup")` is deprecated in FastAPI 0.162. | Strip the header at the proxy; move to a lifespan handler. |
 | O9 | Owner | No external penetration test or production restore drill. | Arrange both before claiming certification. |
 
+## Fixed in the follow-up pass
+
+| ID | Was | Fix |
+| --- | --- | --- |
+| O3 (part) | No CSP on the web app | Enforced `object-src 'none'; base-uri 'self'`. The full policy runs as `Content-Security-Policy-Report-Only` until each page is checked; then switch it to enforcing. |
+| O4 | Recorded IPs could be spoofed, and rate-limit buckets may have been shared | Uvicorn trusts any `X-Forwarded-For`, so `request.client.host` was caller-controlled. Sign-in, session and audit IPs now use `client_ip_from_request`. Without `TRUSTED_PROXY_IPS`, it skips private proxy hops and uses the nearest public address. Test: `test_client_ip_behind_proxies.py`. |
+| O5 | python-jose 3.5.0 (unmaintained, advisory) | Replaced with PyJWT 2.15.1; `cryptography` pinned directly. HS256 is still pinned. |
+| O6 | Refresh-token reuse not detected | An already-rotated refresh token reused more than 60 s later revokes every session of that user and writes `refresh_token_reuse` to the audit log. Within 60 s (two tabs refreshing at once) it is only refused. Test: `test_refresh_token_reuse.py`. |
+| O8 | `Server: uvicorn` header; deprecated `on_event` | `--no-server-header` added to the Dockerfile and both compose files; startup moved to a lifespan handler. |
+| O2 (part) | Encryption keys derived from the JWT secret | Production now logs a warning at startup unless `BACKUP_ENCRYPTION_KEY` and `TOTP_ENCRYPTION_KEY` are both set. A dedicated billing/shop key still needs a re-encryption migration. |
+
+Still open: O1 (Next 16 upgrade), O2 (dedicated key and migration), O3 (enforce the full CSP), O7 (pin the resolved IP), O9 (external pentest, production restore drill).
+
 ## Verified in place
 
 - **Auth.** JWT algorithm pinned; 15-minute access tokens; refresh tokens rotated and stored hashed; bcrypt passwords; 30-minute lockout after repeated failed logins.
