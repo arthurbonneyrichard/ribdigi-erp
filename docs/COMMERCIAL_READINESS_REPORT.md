@@ -1,6 +1,32 @@
 # RIBDIGI ERP COMMERCIAL READINESS REPORT
 
-**Date:** 2026-09-17 (historical scorecard). **28 October 2026 UTC** is the latest Restaurant result. **25 October 2026 UTC** stays the latest Hotel result. **15 October 2026 UTC** stays the latest result for Security, Retail, and Offline POS. Earlier addenda stay below. The 2026-10-05 section still says **Not ready for market**.
+**Date:** 2026-09-17 (historical scorecard). **29 October 2026 UTC** is the latest Retail verification. **28 October 2026 UTC** is the latest Restaurant result. **25 October 2026 UTC** stays the latest Hotel result. **15 October 2026 UTC** stays the latest result for Security, Retail, and Offline POS. Earlier addenda stay below. The 2026-10-05 section still says **Not ready for market**.
+
+## 29 October 2026 UTC — Retail verification (Verified, not certified)
+
+**Verified by evidence, not certified.** No external body has certified this release. This pass checked retail on the local tree and on the live site, fixed what it found, and pushed `main` and `production` up to `15fe81aba9`. An external penetration test and a restore drill on production are still owed.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Automated tests | Pass | CI run 40886409676 on `15fe81aba9`: backend 3283 passed, 1 skipped; frontend passed. |
+| Signed-in walkthroughs | Pass | 51 owner how-to guides recorded on the current interface against company `demo-mart-rec` (sales, till, stock, purchasing, credit, accounting, tax, reports, staff, audit, printers, subscription). Each render verified: audio offset 0 ms, correlation ≥ 0.97, no overruns. |
+| Restore drill (local copy) | Pass | Backup restored into a throwaway database. Row counts matched the source (19, 11, 19, 166, 238, 9351, 69). 0 orphan rows, 0 rows crossing companies. The drill database was then dropped. |
+| Audit record chain | Pass | Appends for one company are now serialised with a per-company lock. A 20-way concurrent append gave 0 broken links (19 before the fix; `backend/scripts/check_audit_chain_concurrency.py`). Check the record chain accepts logs that forked before the fix and still catches an edited or removed entry. Demo company: valid, 1648 checked. |
+| Live site | Pass | Health OK. Metrics return 404 without `METRICS_TOKEN`. Security headers live (nosniff, Referrer-Policy, HSTS, Permissions-Policy, X-Frame-Options outside the shop pages). |
+
+### Fixed in this pass
+
+- Purchase requests skip an approval level nobody in the company holds, so a shop with no Store Manager can still approve.
+- Customer statements can be printed and emailed as a PDF.
+- A shop guest checking out with only a phone number reuses the existing customer.
+- Dashboard till sales round at each step.
+- Shell scripts keep LF line endings, so the backend container starts on Windows checkouts.
+
+### Still open
+
+- External penetration test (owner to arrange).
+- Restore drill on production, with RPO/RTO recorded (owner).
+- Audit log Record type shows the raw API path; wording polish only.
 
 ## 28 October 2026 UTC — Restaurant
 
