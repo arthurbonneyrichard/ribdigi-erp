@@ -174,8 +174,13 @@ async def record_event(
     ip_address: str | None = None,
     user_agent: str | None = None,
 ) -> m.AuditLog:
-    created_at = datetime.utcnow()
     details = details or {}
+    # One writer per company at a time: two requests appending together would both chain to the
+    # same previous hash and fork the log, so verify_chain would report a break. The lock is
+    # transaction-scoped (released on commit/rollback). SQLite tests are single-writer already.
+    if db.get_bind().dialect.name == "postgresql":
+        await db.execute(text("SELECT pg_advisory_xact_lock(hashtext(:k))"), {"k": f"audit-chain:{tenant_id}"})
+    created_at = datetime.utcnow()
     prev = await latest_integrity_hash(db, tenant_id)
     payload = canonical_payload(
         tenant_id=tenant_id,
