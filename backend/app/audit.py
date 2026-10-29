@@ -281,7 +281,11 @@ async def verify_chain(db: AsyncSession, tenant_id: str) -> dict:
             .order_by(m.AuditLog.created_at.asc(), m.AuditLog.id.asc())
         )
     ).scalars().all()
-    expected_prev = GENESIS_HASH
+    # Each entry must hash correctly from its own content and link to an earlier entry (or genesis).
+    # An edited entry fails its hash; a deleted entry leaves its successor pointing at a missing hash.
+    # Links are checked against every earlier entry, not only the one just before: before appends were
+    # serialised, two entries written at the same moment could share a parent (a fork), which is not tampering.
+    seen = {GENESIS_HASH}
     checked = 0
     for row in rows:
         payload = canonical_payload(
@@ -294,8 +298,8 @@ async def verify_chain(db: AsyncSession, tenant_id: str) -> dict:
             details=row.details or {},
             created_at=row.created_at,
         )
-        expected = compute_integrity_hash(expected_prev, payload)
-        if row.prev_hash != expected_prev or row.integrity_hash != expected:
+        prev = row.prev_hash or ""
+        if prev not in seen or row.integrity_hash != compute_integrity_hash(prev, payload):
             return {
                 "valid": False,
                 "checked": checked,
@@ -303,7 +307,7 @@ async def verify_chain(db: AsyncSession, tenant_id: str) -> dict:
                 "action": row.action,
                 "created_at": row.created_at,
             }
-        expected_prev = row.integrity_hash or expected_prev
+        seen.add(row.integrity_hash)
         checked += 1
     return {"valid": True, "checked": checked, "broken_at": None}
 
