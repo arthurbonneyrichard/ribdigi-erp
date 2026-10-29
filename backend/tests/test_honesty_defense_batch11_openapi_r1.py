@@ -119,9 +119,9 @@ def test_money_json_wired_batch11():
     assert "money_json(session.total_sales" in zrep
 
     baskets = inspect.getsource(ai_sales_mod._invoice_baskets)
-    assert "money_json(inv.total_amount" in baskets
+    assert "_amount_base(inv, inv.total_amount" in baskets  # base currency at the row's rate; _amount_base wraps money_json
     pos_ev = inspect.getsource(ai_sales_mod._pos_events)
-    assert "money_json(tx.total" in pos_ev
+    assert "money_json(_tx_amount_base(tx))" in pos_ev
 
     wh = inspect.getsource(inventory_mod.list_product_warehouse_stock)
     assert "money_json(product.reorder_level" in wh

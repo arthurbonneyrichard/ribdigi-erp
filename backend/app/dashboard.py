@@ -596,7 +596,7 @@ async def build_dashboard(
             continue
         d = created_at.date()
         if d in daily:
-            daily[d]["sales"] += _tx_amount_base(tx)
+            daily[d]["sales"] = money_json(round(daily[d]["sales"] + _tx_amount_base(tx), 2))
             rate = _tx_rate(tx)
             for it in (payload or {}).get("items") or []:
                 qty = money_json(it.get("quantity") or 0)

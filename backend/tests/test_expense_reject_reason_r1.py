@@ -16,7 +16,7 @@ def test_expense_reject_reason_ui_wired():
     expenses = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert "rejectReason" in expenses
     assert "Enter a reject reason before rejecting an expense" in expenses
-    assert "Required before Reject" in expenses
+    assert "Why are you rejecting it?" in expenses
     assert 'aria-label="Expense reject reason"' in expenses
     assert "rejection_reason" in expenses
     assert "|| 'Rejected'" not in expenses

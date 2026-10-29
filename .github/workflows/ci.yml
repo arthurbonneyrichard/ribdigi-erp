@@ -5,6 +5,7 @@ jobs:
   runs-on: ubuntu-latest
   steps:
    - uses: actions/checkout@v4
+     with: {fetch-depth: 0}  # the build-stamp test checks the stamp is in this branch's history
    - uses: actions/setup-python@v5
      with: {python-version: '3.11'}
    - run: pip install -r backend/requirements.txt

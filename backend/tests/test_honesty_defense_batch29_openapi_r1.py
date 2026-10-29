@@ -95,9 +95,9 @@ def test_money_json_wired_batch29():
     assert money_json("12.50") == 12.5
 
     dash_src = Path(dashboard_mod.__file__).read_text(encoding="utf-8")
-    assert "month_totals[key] += money_json(total or 0)" in dash_src
+    assert "month_totals[key] = money_json(round(month_totals[key] + base, 2))" in dash_src
     assert "cost_map = {pid: money_json(cost or 0) for pid, cost in cost_rows}" in dash_src
-    assert 'daily[d]["sales"] += money_json(total or 0)' in dash_src
+    assert 'daily[d]["sales"] = money_json(round(daily[d]["sales"] + _tx_amount_base(tx), 2))' in dash_src
     assert 'qty = money_json(it.get("quantity") or 0)' in dash_src
     assert 'unit_price = money_json(it.get("unit_price") or 0)' in dash_src
 

@@ -2611,6 +2611,9 @@ async def test_restaurant_sold_out(client, db_session):
     await db_session.refresh(tenant)
     assert "restaurant_sold_out" not in (tenant.document_numbering or {})
     assert tenant.document_numbering["pos_sale"]["prefix"] == "POS"
+    await set_tenant_industry(db_session, seed["t1"], "hotel")
+    hotel = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    denied = await ac.put("/api/v1/restaurant/sold-out", headers=hotel, json={"product_ids": [dish["id"]]})
     assert denied.status_code == 403, denied.text
 
 

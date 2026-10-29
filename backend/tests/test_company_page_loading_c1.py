@@ -21,7 +21,7 @@ def test_api_optional_does_not_throw():
 
 def test_inventory_catalog_loads_use_api_optional():
     page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
-    assert "apiOptional('/products')" in page
-    assert "apiOptional('/catalog/categories')" in page
-    assert "apiOptional('/catalog/brands')" in page
-    assert "apiOptional('/catalog/units')" in page
+    # Loads stay optional (a failed list does not blank the page); catalog lists may come from the prefetch cache.
+    assert "apiOptional('/products'" in page
+    for path in ("/catalog/categories", "/catalog/brands", "/catalog/units"):
+        assert f"apiOptional('{path}'" in page or f"getPrefetched('{path}'" in page

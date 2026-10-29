@@ -122,7 +122,7 @@ def test_money_json_wired_batch24():
     assert "payment_total = money_json(round(sum(" in sup_hist
 
     month_src = inspect.getsource(reports_mod.sales_monthly_total)
-    assert "return money_json(round(inv + pos, 2))" in month_src
+    assert "return money_json(round(inv + pos + table - returned, 2))" in month_src
 
     disc_src = inspect.getsource(customer_groups_mod.apply_discount)
     assert "return money_json(round(base * (1.0 - pct / 100.0), 2))" in disc_src

@@ -126,9 +126,9 @@ def test_money_json_wired_batch20():
     daily_src = inspect.getsource(reports_mod.sales_daily)
     assert "money_json(round(invoice_total, 2))" in daily_src
     assert "money_json(round(pos_total, 2))" in daily_src
-    assert "money_json(round(invoice_total + pos_total, 2))" in daily_src
-    assert "money_json(round(invoice_tax + pos_tax, 2))" in daily_src
-    assert "money_json(round(invoice_discount, 2))" in daily_src
+    assert "money_json(round(invoice_total + pos_total + table_total, 2))" in daily_src
+    assert "money_json(round(invoice_tax + pos_tax + table_tax, 2))" in daily_src
+    assert "money_json(round(invoice_discount + till_discount, 2))" in daily_src
 
     monthly_src = inspect.getsource(reports_mod.sales_monthly)
     assert 'money_json(round(total, 2))' in monthly_src

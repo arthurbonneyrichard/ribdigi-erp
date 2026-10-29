@@ -92,7 +92,7 @@ def test_honesty_batch32_docs_and_agents():
     assert 'aria-label="Copy Python webhook verifier"' in integrations
 
     notifications = (ROOT / "frontend/app/(dashboard)/notifications/page.tsx").read_text(encoding="utf-8")
-    assert "Filter notifications by ${c.label}" in notifications
+    assert "Filter notifications by ${chipLabel(c.id, c.label)}" in notifications
 
     audit = (ROOT / "frontend/app/(dashboard)/audit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Apply audit filters"' in audit
