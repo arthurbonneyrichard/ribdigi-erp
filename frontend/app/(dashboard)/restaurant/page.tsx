@@ -564,7 +564,7 @@ export default function RestaurantPage() {
     }));
     setLeftoverRecipeRemoved((current) => ({
       ...current,
-      [row.id]: [...new Set([...(current[row.id] || []), String(line.ingredient_id)])],
+      [row.id]: Array.from(new Set([...(current[row.id] || []), String(line.ingredient_id)])),
     }));
   }
 
@@ -1450,6 +1450,8 @@ export default function RestaurantPage() {
         note: orderForm.item_note.trim(),
         hold: orderForm.item_hold,
         seat: orderForm.item_seat.trim(),
+        spice: orderForm.item_spice,
+        doneness: orderForm.item_doneness,
       });
     }
     if (orderForm.service_mode === 'delivery' && !orderForm.delivery_address.trim()) {
