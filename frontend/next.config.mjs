@@ -20,6 +20,19 @@ const nextConfig = {
     }
     return config;
   },
+  // Same baseline as the API. Public booking/ordering/shop pages stay embeddable on a shop's own website.
+  async headers() {
+    const base = [
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
+      { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=()' },
+    ];
+    return [
+      { source: '/:path*', headers: base },
+      { source: '/((?!book|order|stay|storefront|shop).*)', headers: [{ key: 'X-Frame-Options', value: 'DENY' }] },
+    ];
+  },
   async redirects() {
     return [{ source: '/login', destination: '/', permanent: false }];
   },
