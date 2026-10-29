@@ -7514,8 +7514,10 @@ def validate_webhook_url_value(value: str) -> str:
         raise ValueError("url must not include credentials")
     host = (parsed.hostname or "").lower()
     if parsed.scheme == "http":
-        if host not in _LOCAL_HTTP_HOSTS:
-            raise ValueError("Webhook URL must use HTTPS (http allowed only for localhost)")
+        from app.config import settings
+
+        if host not in _LOCAL_HTTP_HOSTS or (settings.APP_ENV or "").strip().lower() == "production":
+            raise ValueError("Webhook URL must use HTTPS (http allowed only for localhost outside production)")
         return value
     if outbound_host_is_forbidden(host):
         raise ValueError("url must not target a private or local address")

@@ -365,6 +365,13 @@ async def _deliver_http(
         SIGNATURE_HEADER: signature_header,
         "User-Agent": "RIBDIGI-Webhooks/1.0",
     }
+    if transport is None:
+        from app.outbound import assert_public_destination
+
+        try:
+            await assert_public_destination(url)
+        except HTTPException as exc:
+            return None, str(exc.detail)
     try:
         async with httpx.AsyncClient(timeout=timeout, transport=transport, follow_redirects=False) as client:
             resp = await client.post(url, content=body, headers=headers)

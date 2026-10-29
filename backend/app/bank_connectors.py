@@ -375,6 +375,9 @@ async def _fetch_http_json(
     if row.external_account_id:
         params["account_id"] = row.external_account_id
     timeout = float(settings.BANK_FEED_TIMEOUT_SECONDS or 30)
+    from app.outbound import assert_public_destination
+
+    await assert_public_destination(url)
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
             resp = await client.get(url, headers=headers, params=params)

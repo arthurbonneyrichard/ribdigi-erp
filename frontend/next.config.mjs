@@ -9,6 +9,9 @@ function apiProxyTarget() {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  // The app never uses next/image. Keep the image optimizer off: its endpoint carries
+  // unauthenticated RCE/DoS advisories on Next 14 (blocked again in middleware.ts).
+  images: { unoptimized: true },
   // Cloud/remote VMs often miss native FS events; poll so Fast Refresh sees edits.
   webpack: (config, { dev }) => {
     if (dev) {

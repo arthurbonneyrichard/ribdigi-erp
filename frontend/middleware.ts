@@ -16,6 +16,10 @@ function hostnameOf(request: NextRequest): string {
 }
 
 export function middleware(request: NextRequest) {
+  // Image optimizer is disabled (next.config images.unoptimized); refuse its endpoint outright.
+  if (request.nextUrl.pathname.startsWith('/_next/image')) {
+    return new NextResponse(null, { status: 404 });
+  }
   const host = hostnameOf(request);
   if (!host || ERP_HOSTS.has(host)) return NextResponse.next();
   const path = request.nextUrl.pathname;
@@ -40,5 +44,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image).*)'],
+  matcher: ['/((?!_next/static).*)'],
 };
