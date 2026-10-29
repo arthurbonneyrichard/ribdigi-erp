@@ -1134,3 +1134,37 @@ def test_ecommerce_ui_and_docs_exist():
     assert "product_id" in api
     assert "storefront media" in api.lower() or "/ecommerce/media" in api
     assert "has_logo" in docs.lower() or "logo" in docs.lower()
+
+
+@pytest.mark.asyncio
+async def test_phone_only_guest_reuses_customer(db_session, seeded):
+    storefront, _warehouse, _store = await _seed_storefront(db_session, seeded, buffer=0, stock=10)
+    parties = []
+    for name in ("Kwame Asante", "Kwame A."):
+        cart = await ecom.create_cart(db_session, seeded["t1"].id)
+        await ecom.set_cart_item(
+            db_session, tenant=seeded["t1"], storefront=storefront, cart=cart, product_id=seeded["p1"].id, quantity=1
+        )
+        order = await ecom.checkout(
+            db_session,
+            tenant=seeded["t1"],
+            storefront=storefront,
+            cart=cart,
+            guest_name=name,
+            guest_email=None,
+            guest_phone="+233241234567",
+            fulfillment="pickup",
+            delivery_address=None,
+            notes=None,
+        )
+        parties.append(await ecom.ensure_guest_party(db_session, tenant_id=seeded["t1"].id, order=order))
+    await db_session.commit()
+    assert parties[0].id == parties[1].id
+    same_phone = (
+        await db_session.execute(
+            select(m.Party).where(
+                m.Party.tenant_id == seeded["t1"].id, m.Party.kind == "customer", m.Party.phone == "+233241234567"
+            )
+        )
+    ).scalars().all()
+    assert len(same_phone) == 1

@@ -1285,6 +1285,23 @@ async def ensure_guest_party(db: AsyncSession, *, tenant_id: str, order: m.Ecomm
         if existing is not None:
             order.party_id = existing.id
             return existing
+    # Phone-only shoppers: reuse the customer with the same phone instead of adding a duplicate every order.
+    phone = (order.guest_phone or "").strip() or None
+    if phone and not email:
+        existing = (
+            await db.execute(
+                select(m.Party)
+                .where(
+                    m.Party.tenant_id == tenant_id,
+                    m.Party.kind == "customer",
+                    m.Party.phone == phone,
+                )
+                .order_by(m.Party.id)
+            )
+        ).scalars().first()
+        if existing is not None:
+            order.party_id = existing.id
+            return existing
     party = m.Party(
         tenant_id=tenant_id,
         kind="customer",
