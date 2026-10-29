@@ -19,7 +19,7 @@ def test_product_deactivate_ui_wired():
     assert "Activate" in inventory
     assert "[inactive]" in inventory
     assert "productManageFilter" in inventory
-    assert 'aria-label="Product status filter"' in inventory
+    assert "hotelOps ? 'Supply status filter' : restaurantOps ? 'Ingredient status filter' : 'Product status filter'" in inventory
     assert "managedProducts" in inventory
 
     sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")

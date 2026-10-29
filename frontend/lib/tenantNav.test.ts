@@ -14,6 +14,8 @@ import {
   RESTAURANT_NAV_ITEMS,
   hideStoreUx,
   HOTEL_CASHIER_NAV_MODULES,
+  HOTEL_NAV_GROUPS,
+  HOTEL_NAV_ITEMS,
   HOTEL_OMIT_NAV_GROUP_IDS,
   navAllowlistFromPermissions,
   navItemVisibleForRole,
@@ -369,19 +371,19 @@ test('restaurant company admin keeps the sales ledger and multi-store branches',
     PEOPLE_GROUP,
   ];
   const multi = groupedTenantNav(groups, kept, 'restaurant', true);
-  const sales = multi.find((g) => g.id === 'sales');
-  assert.ok(sales);
+  const service = multi.find((g) => g.id === 'restaurant-service');
+  assert.ok(service);
   assert.deepEqual(
-    sales.items.map(([, href]) => href),
+    service.items.map(([, href]) => href),
     ['/sales', '/customers', '/pos'],
   );
-  const people = multi.find((g) => g.id === 'people');
-  assert.ok(people);
-  assert.equal(people.items.some(([, href]) => href === '/stores#branches'), true);
+  assert.equal(service.items.some(([label]) => label === 'POS'), false);
+  const places = multi.find((g) => g.id === 'restaurant-places');
+  assert.ok(places);
+  assert.equal(places.items.some(([, href]) => href === '/stores#branches'), true);
   const single = groupedTenantNav(groups, kept, 'restaurant', false);
-  const peopleOne = single.find((g) => g.id === 'people');
-  assert.ok(peopleOne);
-  assert.equal(peopleOne.items.some(([, href]) => href.startsWith('/stores')), false);
+  const placesOne = single.find((g) => g.id === 'restaurant-places');
+  assert.equal(placesOne, undefined);
 });
 
 test('hotel company admin keeps account pages on the hotel list', () => {
@@ -431,7 +433,7 @@ test('hotel company admin keeps account pages on the hotel list', () => {
   const hotelVisible: NavItem[] = [
     ...visible,
     ['Hotel Dashboard', '/hotel', 'hotel'],
-    ['Restaurant and POS', '/pos', 'pos'],
+    ['Shop till', '/pos', 'pos'],
     ['Company profile', '/company', 'company'],
     ['Staff and Permissions', '/users', 'users'],
     ['Hotel Reports', '/hotel?tab=reports', 'hotel'],
@@ -439,38 +441,134 @@ test('hotel company admin keeps account pages on the hotel list', () => {
   ];
   const out = groupedTenantNav(groups, hotelVisible, 'hotel', true);
   const labels = out.flatMap((g) => g.items.map(([label]) => label));
-  for (const label of ['Sales', 'Expenses', 'Accounting', 'Reports', 'Staff and Permissions', 'Company profile', 'Restaurant and POS']) {
+  for (const label of ['Sales', 'Expenses', 'Accounting', 'Hotel Reports', 'Staff and Permissions', 'Company profile', 'Shop till']) {
     assert.equal(labels.filter((item) => item === label).length, 1, label);
   }
+  assert.equal(labels.includes('Reports'), false);
+  assert.equal(out.flatMap((g) => g.items).some(([, href]) => href === '/reports'), false);
   assert.equal(labels.includes('Pharmacy'), false);
   assert.equal(out.some((g) => ['finance', 'sales', 'reports', 'people', 'settings'].includes(g.id)), false);
   assert.equal(industryNavHrefOk('/sales', 'hotel'), true);
   assert.equal(industryNavHrefOk('/pos', 'hotel'), true);
   assert.equal(industryNavHrefOk('/gift-cards', 'hotel'), false);
+  const salesMother = out.find((g) => g.id === 'hotel-sales');
+  assert.ok(salesMother);
+  assert.equal(salesMother.label, 'Sales and POS');
+  assert.equal(salesMother.items.some(([label]) => label === 'Sales'), true);
+  assert.equal(out.some((g) => g.id === 'hotel-rest'), false);
 });
 
-test('restaurant nav shows floor and kitchen and hides hotel rooms', () => {
+test('hotel children sit under labeled mother dropdowns', () => {
+  const visible: NavItem[] = [...HOTEL_NAV_ITEMS, ...HOTEL_NAV_GROUPS.flatMap((g) => g.items)];
   const groups: NavGroup[] = [
+    { id: 'sales', label: 'Sales and POS', items: [['Sales', '/sales', 'sales']] },
+    { id: 'finance', label: 'Finance and Accounts', items: [['Expenses', '/expenses', 'expenses']] },
+    PEOPLE_GROUP,
+    { id: 'settings', label: 'Settings', items: [['Company', '/company', 'company']] },
+    { id: 'reports', label: 'Reports', items: [['Reports', '/reports', 'reports']] },
+    { id: 'inventory', label: 'Inventory', items: [['Products', '/inventory?tab=products', 'inventory']] },
+    { id: 'support', label: 'Help & Support', items: [['Help & Support', '/support', 'support']] },
+  ];
+  const out = groupedTenantNav(groups, visible, 'hotel', true);
+  const byId = Object.fromEntries(out.map((g) => [g.id, g]));
+  assert.equal(byId.hotel.label, '');
+  assert.deepEqual(byId.hotel.items.map(([, href]) => href), ['/hotel']);
+  assert.equal(byId['hotel-ops'].label, 'Hotel');
+  for (const href of [
+    '/hotel?tab=reservations',
+    '/hotel?tab=front-desk',
+    '/hotel?tab=rooms',
+    '/hotel?tab=housekeeping',
+    '/hotel?tab=housekeeping#lost-found',
+    '/hotel?tab=guests',
+    '/hotel?tab=events',
+    '/hotel?tab=reservations#group-stay',
+    '/hotel?tab=reservations#online-booking',
+    '/hotel?tab=front-desk#guest-requests',
+    '/hotel?tab=rooms#rate-plans',
+  ]) {
+    assert.equal(byId['hotel-ops'].items.some(([, h]) => h === href), true, href);
+  }
+  assert.equal(byId['hotel-ops'].items.some(([, href]) => href === '/hotel'), false);
+  assert.equal(byId['hotel-sales'].label, 'Sales and POS');
+  assert.deepEqual(
+    byId['hotel-sales'].items.map(([, href]) => href),
+    ['/sales', '/customers', '/sales?tab=coupons', '/sales?tab=giftcards', '/pos'],
+  );
+  assert.equal(byId['hotel-finance'].label, 'Finance and Accounts');
+  assert.equal(byId['hotel-finance'].items.some(([, href]) => href === '/hotel?tab=billing'), true);
+  assert.equal(byId['hotel-finance'].items.some(([, href]) => href === '/hotel?tab=cashier#night-audit'), true);
+  assert.equal(byId['hotel-inventory'].label, 'Inventory and Procurement');
+  assert.equal(byId['hotel-inventory'].items.some(([, href]) => href === '/inventory?tab=products'), true);
+  assert.equal(byId['hotel-inventory'].items.some(([, href]) => href === '/inventory?tab=batches'), true);
+  assert.equal(byId['hotel-inventory'].items.some(([, href]) => href === '/purchasing?tab=invoices'), true);
+  assert.equal(byId['hotel-inventory'].items.some(([, href]) => href === '/purchasing?tab=returns'), true);
+  assert.equal(byId['hotel-people'].label, 'User Management');
+  assert.equal(byId['hotel-reports'].label, 'Hotel Reports');
+  assert.equal(byId['hotel-reports'].items.some(([, href]) => href === '/hotel?tab=reports'), true);
+  assert.equal(byId['hotel-reports'].items.some(([, href]) => href === '/reports'), false);
+  assert.equal(byId['hotel-settings'].label, 'Settings');
+  assert.equal(byId['hotel-settings'].items.some(([, href]) => href === '/hotel?tab=settings'), true);
+  assert.equal(out.some((g) => ['sales', 'finance', 'people', 'settings', 'reports', 'inventory'].includes(g.id)), false);
+  assert.equal(HOTEL_NAV_GROUPS.some((g) => g.id === 'hotel'), true);
+});
+
+test('restaurant sidebar is its own floor and hides hotel and retail labels', () => {
+  const groups: NavGroup[] = [
+    {
+      id: 'sales',
+      label: 'Sales and POS',
+      items: [
+        ['Sales', '/sales', 'sales'],
+        ['POS', '/pos', 'pos'],
+      ],
+    },
+    {
+      id: 'inventory',
+      label: 'Inventory',
+      items: [['Batches', '/inventory?tab=batches', 'inventory']],
+    },
     {
       id: 'industry',
       label: 'Industry-specific features',
-      items: [['Hotel Dashboard', '/hotel', 'hotel']],
+      items: [
+        ['Hotel Dashboard', '/hotel', 'hotel'],
+        ...RESTAURANT_NAV_ITEMS,
+      ],
     },
   ];
-  const restaurant = groupedTenantNav(groups, RESTAURANT_NAV_ITEMS, 'restaurant');
-  const industry = restaurant.find((g) => g.id === 'industry');
-  assert.ok(industry);
-  assert.equal(industry.label, 'Restaurant');
-  const hrefs = industry.items.map(([, href]) => href);
+  const visible: NavItem[] = [
+    ['Sales', '/sales', 'sales'],
+    ['POS', '/pos', 'pos'],
+    ['Batches', '/inventory?tab=batches', 'inventory'],
+    ['Hotel Dashboard', '/hotel', 'hotel'],
+    ...RESTAURANT_NAV_ITEMS,
+  ];
+  const restaurant = groupedTenantNav(groups, visible, 'restaurant');
+  assert.equal(restaurant.some((g) => g.id === 'sales' || g.id === 'inventory' || g.id === 'industry'), false);
+  const hrefs = restaurant.flatMap((g) => g.items.map(([, href]) => href));
+  const labels = restaurant.flatMap((g) => g.items.map(([label]) => label));
   assert.equal(hrefs.includes('/restaurant'), true);
   assert.equal(hrefs.includes('/restaurant?tab=tables'), true);
+  assert.equal(hrefs.includes('/restaurant?tab=booking'), true);
   assert.equal(hrefs.includes('/restaurant?tab=kitchen'), true);
+  assert.equal(hrefs.includes('/pos'), true);
+  assert.equal(labels.includes('Restaurant till'), true);
+  assert.equal(labels.includes('POS'), false);
+  assert.equal(labels.includes('Batches'), false);
   assert.equal(hrefs.some((href) => href.startsWith('/hotel')), false);
-  const hotel = groupedTenantNav(groups, RESTAURANT_NAV_ITEMS, 'hotel');
-  assert.equal(
-    hotel.some((g) => g.items.some(([, href]) => href.startsWith('/restaurant'))),
-    false,
-  );
+  const retail = groupedTenantNav(groups, visible, 'retail');
+  const retailSales = retail.find((g) => g.id === 'sales');
+  assert.ok(retailSales);
+  assert.equal(retailSales.items.some(([label]) => label === 'POS'), true);
+  assert.equal(retail.some((g) => g.items.some(([, href]) => href.startsWith('/restaurant'))), false);
+  assert.equal(retail.some((g) => g.items.some(([, href]) => href.startsWith('/hotel'))), false);
+  const hotel = groupedTenantNav(groups, visible, 'hotel');
+  assert.equal(hotel.some((g) => g.items.some(([, href]) => href.startsWith('/restaurant'))), false);
+  assert.equal(industryNavHrefOk('/restaurant', 'hotel'), false);
+  assert.equal(industryNavHrefOk('/hotel', 'restaurant'), false);
+  assert.equal(industryNavHrefOk('/restaurant', 'retail'), false);
+  assert.equal(industryNavHrefOk('/hotel', 'retail'), false);
 });
 
 test('online store is a settings item, not a sales or POS sibling', () => {

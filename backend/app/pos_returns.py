@@ -259,8 +259,9 @@ async def create_till_return(
     ]
     if restock_items:
         warehouse_id = None
-        if store_id:
-            warehouse_id = (await stores_svc.warehouse_for_store(db, tenant_id, store_id)).id
+        receipt_store_id = origin.store_id if origin else None
+        if receipt_store_id:
+            warehouse_id = (await stores_svc.warehouse_for_store(db, tenant_id, receipt_store_id)).id
         await apply_line_items_stock(
             db,
             tenant_id=tenant_id,

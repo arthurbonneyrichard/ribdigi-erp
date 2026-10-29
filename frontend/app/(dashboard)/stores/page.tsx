@@ -759,6 +759,10 @@ export default function Page() {
     if (!drawerStoreId) return;
     setError('');
     setMessage('');
+    if (drawerMode === 'network' && !drawerHost.trim()) {
+      setError('Enter a cash drawer host for network mode.');
+      return;
+    }
     try {
       await api(`/stores/${drawerStoreId}/drawer`, {
         method: 'PATCH',
@@ -1950,7 +1954,7 @@ export default function Page() {
       </div>
         <div className="card">
           <h3>Cash drawer</h3>
-          <div style={{ display: 'grid', gap: 8 }}>
+          <div className="ms-drawer-fields" style={{ display: 'grid', gap: 8 }}>
             <select
               value={drawerStoreId}
               onChange={(e) => {

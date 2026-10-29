@@ -148,12 +148,14 @@ async def apply_signed_webhook(
     hostname: str | None,
     forwarded_host: str | None,
     preview_token: str | None,
+    peer_ip: str | None = None,
 ) -> dict[str, Any]:
     tenant, _storefront, _domain = await ecom.resolve_public_tenant(
         db,
         host=hostname,
         forwarded_host=forwarded_host,
         preview_token=preview_token,
+        peer_ip=peer_ip,
     )
     row = await get_gateway(db, tenant.id)
     if row is None or (row.provider or "").lower() != (provider or "").strip().lower():

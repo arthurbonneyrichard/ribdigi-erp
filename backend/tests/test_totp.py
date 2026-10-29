@@ -71,6 +71,7 @@ def test_challenge_token_roundtrip(monkeypatch):
     assert data["sub"] == "u1"
     assert data["tenant_id"] == "t1"
     assert data["type"] == "mfa_challenge"
+    assert data.get("jti")
 
 
 def test_enforced_roles_and_enrollment_paths(monkeypatch):
@@ -82,3 +83,6 @@ def test_enforced_roles_and_enrollment_paths(monkeypatch):
     assert path_allowed_during_enrollment("/api/v1/me") is True
     assert path_allowed_during_enrollment("/api/v1/notifications/unread-count") is True
     assert path_allowed_during_enrollment("/api/v1/products") is False
+    assert path_allowed_during_enrollment("/api/v1/tenants/me") is False
+    assert path_allowed_during_enrollment("/api/v1/tenants/me/logo") is False
+    assert path_allowed_during_enrollment("/api/v1/settings/email") is False

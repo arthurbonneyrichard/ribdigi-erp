@@ -25,6 +25,11 @@ class Settings(BaseSettings):
     RABBITMQ_URL: str = "amqp://ribdigi:ribdigi@rabbitmq:5672/"
     CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
     TRUSTED_HOSTS: str = ""
+    # Empty = same as today (honor X-Forwarded-Host). Set false to use Host only.
+    TRUST_X_FORWARDED_HOST: bool = True
+    # CSV of proxy peer IPs. Empty = do not filter by peer. When set, X-Forwarded-*
+    # is honored only if the immediate peer is in this list.
+    TRUSTED_PROXY_IPS: str = ""
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_PER_MINUTE: int = 120
     # GET/HEAD share this bucket. Default matches PER_MINUTE; raise only when
@@ -66,7 +71,7 @@ class Settings(BaseSettings):
     BACKUP_RETENTION_COUNT: int = 30
     BACKUP_ENCRYPTION_KEY: str = ""
     TOTP_ENCRYPTION_KEY: str = ""
-    TOTP_ENFORCED_ROLES: str = "company_admin,super_admin"
+    TOTP_ENFORCED_ROLES: str = "company_admin,super_admin,platform_owner,platform_admin"
     # When false, login skips TOTP/passkey challenge and enrollment gates (password + tenant only).
     # Set true in production to require enrolled second factors at sign-in.
     LOGIN_2FA_ENABLED: bool = False
@@ -159,6 +164,10 @@ class Settings(BaseSettings):
     @property
     def trusted_hosts(self) -> list[str]:
         return [x.strip() for x in self.TRUSTED_HOSTS.split(",") if x.strip()]
+
+    @property
+    def trusted_proxy_ips(self) -> frozenset[str]:
+        return frozenset(x.strip() for x in self.TRUSTED_PROXY_IPS.split(",") if x.strip())
 
     @property
     def celery_broker_url(self) -> str:

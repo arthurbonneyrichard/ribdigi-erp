@@ -38,6 +38,65 @@ def apply_store_scope_or_unassigned(stmt, column, store_id: str | None, store_id
 COMPLETED_SALE_STATUSES = ("posted", "sent", "partial", "paid", "overdue")
 
 
+def _amount_base(obj, amount) -> float:
+    """Document amount in tenant base at that row's stored exchange_rate."""
+    from app.fx import doc_rate, to_base
+
+    if obj is None:
+        return money_json(amount)
+    return to_base(money_json(amount), doc_rate(obj))
+
+
+def _tx_base(tx, amount=None) -> float:
+    """POS/legacy amount: convert only when a stored or payload rate exists."""
+    from app.dashboard import _tx_amount_base
+
+    return _tx_amount_base(tx, amount)
+
+
+async def _linked_sales_invoices(
+    db: AsyncSession, tenant_id: str, invoice_ids: set[str]
+) -> dict[str, m.SalesInvoice]:
+    ids = {str(i) for i in invoice_ids if i}
+    if not ids:
+        return {}
+    rows = (
+        await db.execute(
+            select(m.SalesInvoice).where(
+                m.SalesInvoice.tenant_id == tenant_id,
+                m.SalesInvoice.id.in_(list(ids)),
+            )
+        )
+    ).scalars().all()
+    return {str(row.id): row for row in rows}
+
+
+async def _linked_purchase_invoices_by_po(
+    db: AsyncSession, tenant_id: str, po_ids: set[str]
+) -> dict[str, m.PurchaseInvoice]:
+    """Earliest non-cancelled bill per PO — return amounts share that stored rate."""
+    ids = {str(i) for i in po_ids if i}
+    if not ids:
+        return {}
+    rows = (
+        await db.execute(
+            select(m.PurchaseInvoice)
+            .where(
+                m.PurchaseInvoice.tenant_id == tenant_id,
+                m.PurchaseInvoice.purchase_order_id.in_(list(ids)),
+                m.PurchaseInvoice.status != "cancelled",
+            )
+            .order_by(m.PurchaseInvoice.created_at.asc())
+        )
+    ).scalars().all()
+    out: dict[str, m.PurchaseInvoice] = {}
+    for inv in rows:
+        key = str(inv.purchase_order_id or "")
+        if key and key not in out:
+            out[key] = inv
+    return out
+
+
 def linked_sales_invoice_id(tx) -> str | None:
     """Invoice created for a register sale, when the payload records one."""
     payload = tx.payload if isinstance(getattr(tx, "payload", None), dict) else {}
@@ -110,6 +169,31 @@ def day_bounds(day: datetime) -> tuple[datetime, datetime]:
     return start, end
 
 
+async def restaurant_completed_orders(
+    db: AsyncSession,
+    tenant_id: str,
+    start: datetime,
+    end: datetime,
+    store_id: str | None,
+    store_ids: list[str] | None,
+) -> list[m.RestaurantOrder]:
+    """Completed restaurant bills in a period. Other industries return an empty list."""
+    tenant = await db.get(m.Tenant, tenant_id)
+    from app.packages import canonicalize_industry
+
+    if tenant is None or canonicalize_industry(getattr(tenant, "industry", None)) != "restaurant":
+        return []
+    when = func.coalesce(m.RestaurantOrder.completed_at, m.RestaurantOrder.created_at)
+    stmt = select(m.RestaurantOrder).where(
+        m.RestaurantOrder.tenant_id == tenant_id,
+        m.RestaurantOrder.status == "completed",
+        when >= start,
+        when <= end,
+    )
+    stmt = apply_store_scope(stmt, m.RestaurantOrder.store_id, store_id, store_ids)
+    return list((await db.execute(stmt)).scalars().all())
+
+
 def month_bounds(year: int, month: int) -> tuple[datetime, datetime]:
     start = datetime(year, month, 1)
     if month == 12:
@@ -179,11 +263,55 @@ async def sales_daily(
         if not pos_counts_with_invoice(row[0], counted_invoice_ids)
     ]
 
-    invoice_total = sum(money_json(i.total_amount) for i in invoices)
-    invoice_tax = sum(money_json(i.tax_amount) for i in invoices)
-    invoice_discount = sum(money_json(i.discount_amount) for i in invoices)
-    pos_total = sum(money_json(t.total) for t, _ in pos_rows)
-    pos_tax = sum(money_json(t.tax) for t, _ in pos_rows)
+    invoice_total = sum(_amount_base(i, i.total_amount) for i in invoices)
+    invoice_tax = sum(_amount_base(i, i.tax_amount) for i in invoices)
+    invoice_discount = sum(_amount_base(i, i.discount_amount) for i in invoices)
+    pos_total = sum(_tx_base(t) for t, _ in pos_rows)
+    pos_tax = sum(_tx_base(t, t.tax) for t, _ in pos_rows)
+    from app.restaurant import _restaurant_company, posted_till_returns
+
+    restaurant_company = await _restaurant_company(db, tenant_id)
+    till_returns = await posted_till_returns(
+        db,
+        tenant_id,
+        start=start,
+        end=end,
+        inclusive_end=True,
+        store_id=store_id,
+        store_ids=store_ids,
+    )
+    returned = money_json(round(sum(money_json(row.total_amount) for row in till_returns), 2))
+    returned_tax = money_json(round(sum(money_json(row.tax_amount or 0) for row in till_returns), 2))
+    pos_total = money_json(round(pos_total - returned, 2))
+    pos_tax = money_json(round(pos_tax - returned_tax, 2))
+    till_discount = 0.0
+    if restaurant_company:
+        sale_by_id = {tx.id: tx for tx, _session in pos_rows}
+        for tx in sale_by_id.values():
+            till_discount = money_json(
+                round(till_discount + money_json((tx.payload or {}).get("discount_amount") or 0), 2)
+            )
+        for ret in till_returns:
+            sale = sale_by_id.get(ret.transaction_id)
+            if sale is None:
+                continue
+            header = money_json((sale.payload or {}).get("discount_amount") or 0)
+            gross = money_json(sale.total or 0)
+            refunded = money_json(ret.total_amount or 0)
+            if header > 0 and gross > 0 and refunded > 0:
+                share = money_json(round(header * min(refunded, gross) / gross, 2))
+                till_discount = money_json(round(till_discount - share, 2))
+    table_orders = await restaurant_completed_orders(db, tenant_id, start, end, store_id, store_ids)
+    table_total = 0.0
+    table_tax = 0.0
+    if table_orders:
+        from app.restaurant import bill_parts, service_percent
+
+        percent = await service_percent(db, tenant_id)
+        for order in table_orders:
+            table_total = money_json(round(table_total + money_json(order.total_amount), 2))
+            _service, tax = bill_parts(money_json(order.subtotal), money_json(order.total_amount), percent)
+            table_tax = money_json(round(table_tax + tax, 2))
 
     return {
         "date": start.date().isoformat(),
@@ -193,14 +321,19 @@ async def sales_daily(
         "pos_count": len(pos_rows),
         "invoice_revenue": money_json(round(invoice_total, 2)),
         "pos_revenue": money_json(round(pos_total, 2)),
-        "total_revenue": money_json(round(invoice_total + pos_total, 2)),
-        "tax": money_json(round(invoice_tax + pos_tax, 2)),
-        "discounts": money_json(round(invoice_discount, 2)),
+        "restaurant_revenue": money_json(round(table_total, 2)),
+        "total_revenue": money_json(round(invoice_total + pos_total + table_total, 2)),
+        "tax": money_json(round(invoice_tax + pos_tax + table_tax, 2)),
+        "discounts": money_json(round(invoice_discount + till_discount, 2)),
         # Invoice total_amount is already net of the header discount.
-        "net_sales": money_json(round(invoice_total + pos_total, 2)),
+        "net_sales": money_json(round(invoice_total + pos_total + table_total, 2)),
         "returns_note": (
-            "Completed sales only. Header discounts are already taken out of revenue. "
-            "Posted returns are listed on Sales returns and are not subtracted here."
+            "A restaurant till return comes off this total. The original receipt stays on the till report."
+            if restaurant_company
+            else (
+                "Completed sales only. Header discounts are already taken out of revenue. "
+                "Posted returns are listed on Sales returns and are not subtracted here."
+            )
         ),
     }
 
@@ -250,12 +383,33 @@ async def sales_monthly(
         if stamped is None:
             continue
         key = stamped.date().isoformat()
-        by_day[key] += money_json(inv.total_amount)
+        by_day[key] += _amount_base(inv, inv.total_amount)
     for tx, _ in pos_rows:
         if tx.created_at is None:
             continue
         key = tx.created_at.date().isoformat()
-        by_day[key] += money_json(tx.total)
+        by_day[key] += _tx_base(tx)
+    for order in await restaurant_completed_orders(db, tenant_id, start, end, store_id, store_ids):
+        stamped = order.completed_at or order.created_at
+        if stamped is None:
+            continue
+        by_day[stamped.date().isoformat()] += money_json(order.total_amount)
+    from app.restaurant import posted_till_returns
+
+    for ret in await posted_till_returns(
+        db,
+        tenant_id,
+        start=start,
+        end=end,
+        inclusive_end=True,
+        store_id=store_id,
+        store_ids=store_ids,
+    ):
+        stamped = ret.posted_at or ret.created_at
+        if stamped is None:
+            continue
+        key = stamped.date().isoformat()
+        by_day[key] = money_json(round(by_day[key] - money_json(ret.total_amount), 2))
 
     total = sum(by_day.values())
     prev_year, prev_month = (year - 1, month) if month == 1 else (year, month - 1)
@@ -291,14 +445,16 @@ async def sales_monthly_total(
     store_ids: list[str] | None = None,
 ) -> float:
     start, end = month_bounds(year, month)
-    inv_stmt = select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
+    inv_stmt = select(m.SalesInvoice).where(
         m.SalesInvoice.tenant_id == tenant_id,
         m.SalesInvoice.status.in_(["posted", "sent", "partial", "paid", "overdue"]),
         m.SalesInvoice.posted_at >= start,
         m.SalesInvoice.posted_at <= end,
     )
     inv_stmt = apply_store_scope(inv_stmt, m.SalesInvoice.store_id, store_id, store_ids)
-    inv = money_json((await db.execute(inv_stmt)).scalar() or 0)
+    inv = 0.0
+    for invoice in (await db.execute(inv_stmt)).scalars().all():
+        inv = money_json(round(inv + _amount_base(invoice, invoice.total_amount), 2))
 
     counted_stmt = select(m.SalesInvoice.id).where(
         m.SalesInvoice.tenant_id == tenant_id,
@@ -323,8 +479,22 @@ async def sales_monthly_total(
     for tx in (await db.execute(pos_tx_stmt)).scalars().all():
         if pos_counts_with_invoice(tx, counted_invoice_ids):
             continue
-        pos = money_json(round(pos + money_json(tx.total), 2))
-    return money_json(round(inv + pos, 2))
+        pos = money_json(round(pos + _tx_base(tx), 2))
+    table = 0.0
+    for order in await restaurant_completed_orders(db, tenant_id, start, end, store_id, store_ids):
+        table = money_json(round(table + money_json(order.total_amount), 2))
+    from app.restaurant import posted_till_return_total
+
+    returned = await posted_till_return_total(
+        db,
+        tenant_id,
+        start=start,
+        end=end,
+        inclusive_end=True,
+        store_id=store_id,
+        store_ids=store_ids,
+    )
+    return money_json(round(inv + pos + table - returned, 2))
 
 
 async def sales_by_product(
@@ -339,6 +509,10 @@ async def sales_by_product(
     include_cost: bool = True,
 ) -> dict:
     """Product-wise quantity and revenue; optional store / category filters (BR-14.1)."""
+    from app.packages import canonicalize_industry
+
+    tenant = await db.get(m.Tenant, tenant_id)
+    restaurant_company = tenant is not None and canonicalize_industry(getattr(tenant, "industry", None)) == "restaurant"
     category_name: str | None = None
     if category_id:
         cat = (
@@ -473,11 +647,11 @@ async def sales_by_product(
         )
 
     agg: dict[str, dict] = {}
-    for item, _inv, product in rows:
+    for item, inv, product in rows:
         row = _bucket(agg, product)
         qty = money_json(item.quantity)
         row["quantity"] = money_json(round(row["quantity"] + qty, 3))
-        row["revenue"] = money_json(round(row["revenue"] + money_json(item.line_total), 2))
+        row["revenue"] = money_json(round(row["revenue"] + _amount_base(inv, item.line_total), 2))
         unit_cost = money_json(product.cost_price) if product.cost_price is not None else None
         if unit_cost is not None:
             row["cost"] = money_json(round(row["cost"] + unit_cost * qty, 2))
@@ -496,15 +670,161 @@ async def sales_by_product(
                 continue
             row = _bucket(agg, product)
             qty = money_json(line.get("quantity") or 0)
-            revenue = money_json(
-                line.get("line_total")
+            amount = (
+                line.get("line_subtotal")
+                if restaurant_company and line.get("line_subtotal") is not None
+                else line.get("line_total")
                 or (money_json(line.get("unit_price") or product.selling_price or 0) * qty)
             )
+            revenue = _tx_base(tx, amount)
             row["quantity"] = money_json(round(row["quantity"] + qty, 3))
             row["revenue"] = money_json(round(row["revenue"] + revenue, 2))
-            unit_cost = money_json(product.cost_price) if product.cost_price is not None else None
-            if unit_cost is not None:
-                row["cost"] = money_json(round(row["cost"] + unit_cost * qty, 2))
+            if restaurant_company:
+                from app.restaurant import sale_line_cost
+
+                row["cost"] = money_json(round(row["cost"] + await sale_line_cost(db, tenant_id, product.id, qty), 2))
+            else:
+                unit_cost = money_json(product.cost_price) if product.cost_price is not None else None
+                if unit_cost is not None:
+                    row["cost"] = money_json(round(row["cost"] + unit_cost * qty, 2))
+
+    if from_date is not None and to_date is not None:
+        menu_orders = await restaurant_completed_orders(
+            db, tenant_id, from_date, to_date, store_id, store_ids
+        )
+    else:
+        menu_orders = []
+        tenant = await db.get(m.Tenant, tenant_id)
+        from app.packages import canonicalize_industry
+
+        if tenant is not None and canonicalize_industry(getattr(tenant, "industry", None)) == "restaurant":
+            when = func.coalesce(m.RestaurantOrder.completed_at, m.RestaurantOrder.created_at)
+            menu_stmt = select(m.RestaurantOrder).where(
+                m.RestaurantOrder.tenant_id == tenant_id,
+                m.RestaurantOrder.status == "completed",
+            )
+            if from_date is not None:
+                menu_stmt = menu_stmt.where(when >= from_date)
+            if to_date is not None:
+                menu_stmt = menu_stmt.where(when <= to_date)
+            menu_stmt = apply_store_scope(
+                menu_stmt, m.RestaurantOrder.store_id, store_id, store_ids
+            )
+            menu_orders = list((await db.execute(menu_stmt)).scalars().all())
+    if menu_orders:
+        menu_lines = list(
+            (
+                await db.execute(
+                    select(m.RestaurantOrderLine).where(
+                        m.RestaurantOrderLine.tenant_id == tenant_id,
+                        m.RestaurantOrderLine.order_id.in_([row.id for row in menu_orders]),
+                    )
+                )
+            ).scalars().all()
+        )
+        missing_ids = {line.product_id for line in menu_lines if line.product_id and line.product_id not in product_cache}
+        if missing_ids:
+            for product in (
+                await db.execute(
+                    select(m.Product).where(
+                        m.Product.tenant_id == tenant_id,
+                        m.Product.id.in_(list(missing_ids)),
+                    )
+                )
+            ).scalars().all():
+                product_cache[product.id] = product
+                if product.category_id and product.category_id not in cat_names:
+                    cat_ids.add(product.category_id)
+                if product.brand_id:
+                    brand_ids.add(product.brand_id)
+            if cat_ids - set(cat_names):
+                for category in (
+                    await db.execute(
+                        select(m.ProductCategory).where(
+                            m.ProductCategory.tenant_id == tenant_id,
+                            m.ProductCategory.id.in_(list(cat_ids - set(cat_names))),
+                        )
+                    )
+                ).scalars().all():
+                    cat_names[category.id] = category.name
+            if brand_ids - set(brand_names):
+                for brand in (
+                    await db.execute(
+                        select(m.Brand).where(
+                            m.Brand.tenant_id == tenant_id,
+                            m.Brand.id.in_(list(brand_ids - set(brand_names))),
+                        )
+                    )
+                ).scalars().all():
+                    brand_names[brand.id] = brand.name
+        for line in menu_lines:
+            product = product_cache.get(line.product_id)
+            if product is None:
+                continue
+            if category_id and product.category_id != category_id:
+                continue
+            row = _bucket(agg, product)
+            qty = money_json(line.quantity)
+            row["quantity"] = money_json(round(row["quantity"] + qty, 3))
+            row["revenue"] = money_json(round(row["revenue"] + money_json(line.line_total), 2))
+            from app.restaurant import sale_line_cost
+
+            row["cost"] = money_json(round(row["cost"] + await sale_line_cost(db, tenant_id, product.id, qty), 2))
+
+    if restaurant_company:
+        from app.restaurant import posted_till_return_moves
+
+        tx_by_id = {tx.id: tx for tx in pos_txs}
+
+        def _returned_menu_net(payload: dict | None, product_id: str, return_qty: float) -> float | None:
+            if not payload:
+                return None
+            for sold in payload.get("items") or []:
+                if str(sold.get("product_id") or "") != str(product_id):
+                    continue
+                if sold.get("line_subtotal") is None:
+                    return None
+                sold_qty = money_json(sold.get("quantity") or 0)
+                if sold_qty <= 0:
+                    return None
+                return money_json(round(money_json(sold.get("line_subtotal")) * return_qty / sold_qty, 2))
+            return None
+
+        for move in await posted_till_return_moves(
+            db,
+            tenant_id,
+            start=from_date,
+            end=to_date,
+            inclusive_end=to_date is not None,
+            store_id=store_id,
+            store_ids=store_ids,
+        ):
+            product = product_cache.get(move["product_id"])
+            if product is None:
+                product = await db.get(m.Product, move["product_id"])
+                if product is None or product.tenant_id != tenant_id:
+                    continue
+                product_cache[product.id] = product
+            if category_id and product.category_id != category_id:
+                continue
+            row = _bucket(agg, product)
+            sale = tx_by_id.get(move["transaction_id"])
+            if sale is None and move.get("transaction_id"):
+                sale = await db.get(m.Transaction, move["transaction_id"])
+                if sale is None or sale.tenant_id != tenant_id:
+                    sale = None
+                else:
+                    tx_by_id[sale.id] = sale
+            cut = _returned_menu_net(
+                sale.payload if sale is not None else None,
+                move["product_id"],
+                move["quantity"],
+            )
+            if cut is None:
+                cut = move["revenue"]
+            row["quantity"] = money_json(round(row["quantity"] - move["quantity"], 3))
+            row["revenue"] = money_json(round(row["revenue"] - cut, 2))
+            row["cost"] = money_json(round(row["cost"] - move["cost"], 2))
 
     products = sorted(agg.values(), key=lambda x: x["revenue"], reverse=True)
     for row in products:
@@ -512,6 +832,11 @@ async def sales_by_product(
         row["revenue"] = money_json(round(row["revenue"], 2))
         row["cost"] = money_json(round(row["cost"], 2))
         row["profit"] = money_json(round(row["revenue"] - row["cost"], 2))
+    products = [
+        row
+        for row in products
+        if abs(row["quantity"]) > 1e-9 or abs(row["revenue"]) > 0.004
+    ]
 
     def _rollup(id_key: str, name_key: str, missing: str) -> list[dict]:
         buckets: dict[str, dict] = {}
@@ -630,8 +955,8 @@ async def sales_by_customer(
     counted_invoice_ids = {str(inv.id) for inv in customer_invoices}
     for inv in customer_invoices:
         row = _bucket(agg, inv.customer_id)
-        total = money_json(inv.total_amount)
-        tax = money_json(inv.tax_amount)
+        total = _amount_base(inv, inv.total_amount)
+        tax = _amount_base(inv, inv.tax_amount)
         row["invoice_count"] += 1
         row["invoice_revenue"] = money_json(round(row["invoice_revenue"] + total, 2))
         row["invoice_tax"] = money_json(round(row["invoice_tax"] + tax, 2))
@@ -656,8 +981,8 @@ async def sales_by_customer(
         if pos_counts_with_invoice(tx, counted_invoice_ids):
             continue
         row = _bucket(agg, tx.party_id)
-        total = money_json(tx.total)
-        tax = money_json(tx.tax)
+        total = _tx_base(tx)
+        tax = _tx_base(tx, tx.tax)
         row["pos_count"] += 1
         row["pos_revenue"] = money_json(round(row["pos_revenue"] + total, 2))
         row["pos_tax"] = money_json(round(row["pos_tax"] + tax, 2))
@@ -665,7 +990,78 @@ async def sales_by_customer(
         row["revenue"] = money_json(round(row["revenue"] + total, 2))
         row["tax"] = money_json(round(row["tax"] + tax, 2))
 
-    party_ids = [k for k in agg.keys() if k != "walk_in"]
+    from app.restaurant import _restaurant_company, posted_till_returns
+
+    restaurant_company = await _restaurant_company(db, tenant_id)
+    if restaurant_company:
+        for ret in await posted_till_returns(
+            db,
+            tenant_id,
+            start=from_date,
+            end=to_date,
+            inclusive_end=to_date is not None,
+            store_id=store_id,
+            store_ids=store_ids,
+        ):
+            amount = money_json(ret.total_amount or 0)
+            if amount <= 0:
+                continue
+            tax = money_json(ret.tax_amount or 0)
+            row = _bucket(agg, ret.customer_id)
+            row["pos_revenue"] = money_json(round(row["pos_revenue"] - amount, 2))
+            row["revenue"] = money_json(round(row["revenue"] - amount, 2))
+            row["pos_tax"] = money_json(round(row["pos_tax"] - tax, 2))
+            row["tax"] = money_json(round(row["tax"] - tax, 2))
+        from app.restaurant import bill_parts, service_percent
+
+        percent = await service_percent(db, tenant_id)
+        when = func.coalesce(m.RestaurantOrder.completed_at, m.RestaurantOrder.created_at)
+        bill_stmt = select(m.RestaurantOrder).where(
+            m.RestaurantOrder.tenant_id == tenant_id,
+            m.RestaurantOrder.status == "completed",
+        )
+        if from_date:
+            bill_stmt = bill_stmt.where(when >= from_date)
+        if to_date:
+            bill_stmt = bill_stmt.where(when <= to_date)
+        bill_stmt = apply_store_scope(
+            bill_stmt, m.RestaurantOrder.store_id, store_id, store_ids
+        )
+        for order in (await db.execute(bill_stmt)).scalars().all():
+            guest = (order.customer_name or "").strip()
+            if guest:
+                key = f"bill:{guest.casefold()}"
+                row = agg.setdefault(
+                    key,
+                    {
+                        "customer_id": None,
+                        "name": guest,
+                        "email": None,
+                        "phone": None,
+                        "invoice_count": 0,
+                        "invoice_revenue": 0.0,
+                        "invoice_tax": 0.0,
+                        "pos_count": 0,
+                        "pos_revenue": 0.0,
+                        "pos_tax": 0.0,
+                        "sale_count": 0,
+                        "revenue": 0.0,
+                        "tax": 0.0,
+                        "avg_ticket": 0.0,
+                    },
+                )
+            else:
+                row = _bucket(agg, None)
+            total = money_json(order.total_amount or 0)
+            _, tax = bill_parts(order.subtotal or 0, total, percent)
+            row["invoice_count"] += 1
+            row["invoice_revenue"] = money_json(round(row["invoice_revenue"] + total, 2))
+            row["invoice_tax"] = money_json(round(row["invoice_tax"] + tax, 2))
+            row["sale_count"] += 1
+            row["revenue"] = money_json(round(row["revenue"] + total, 2))
+            row["tax"] = money_json(round(row["tax"] + tax, 2))
+
+    party_ids = [k for k in agg.keys() if k != "walk_in" and not str(k).startswith("bill:")]
     if party_ids:
         parties = (
             await db.execute(
@@ -708,6 +1104,11 @@ async def sales_by_customer(
         "from_date": from_date,
         "to_date": to_date,
         "store_id": store_id,
+        "returns_note": (
+            "A restaurant till return comes off this customer. The original receipt stays on the till report."
+            if restaurant_company
+            else "Posted returns are listed on Sales returns and are not subtracted here."
+        ),
         "customers": customers,
         "total_revenue": money_json(round(sum(c["revenue"] for c in customers), 2)),
         "total_sales": sum(c["sale_count"] for c in customers),
@@ -734,7 +1135,7 @@ async def sales_returns_summary(
 ) -> dict:
     """Sales return summary by period / reason / customer (BR-14.1).
 
-    Optional ``store_id`` scopes returns to the original invoice store.
+    Optional ``store_id`` scopes an invoice return to that invoice's store and a till return to the store on the original receipt.
     """
     from app.sales_docs import RETURN_REASONS
 
@@ -781,8 +1182,13 @@ async def sales_returns_summary(
         stmt = stmt.outerjoin(
             m.SalesInvoice, m.SalesInvoice.id == m.SalesReturn.sales_invoice_id
         )
+        stmt = stmt.outerjoin(m.Transaction, m.Transaction.id == m.SalesReturn.transaction_id)
+        stmt = stmt.outerjoin(m.PosSession, m.PosSession.id == m.Transaction.session_id)
         stmt = apply_store_scope(
-            stmt, func.coalesce(m.SalesInvoice.store_id, m.SalesReturn.store_id), store_id, store_ids
+            stmt,
+            func.coalesce(m.SalesInvoice.store_id, m.PosSession.store_id),
+            store_id,
+            store_ids,
         )
     if customer_id:
         stmt = stmt.where(m.SalesReturn.customer_id == customer_id)
@@ -796,6 +1202,9 @@ async def sales_returns_summary(
         stmt = stmt.where(m.SalesReturn.created_at <= to_date)
 
     rows = (await db.execute(stmt)).all()
+    invoices = await _linked_sales_invoices(
+        db, tenant_id, {ret.sales_invoice_id for ret, _ in rows}
+    )
     by_reason: dict[str, dict] = {}
     by_status: dict[str, int] = defaultdict(int)
     by_customer: dict[str, dict] = {}
@@ -815,8 +1224,11 @@ async def sales_returns_summary(
             )
         ).scalars().all()
         qty = money_json(round(sum(money_json(i.quantity) for i in items), 3))
-        amount = money_json(ret.total_amount)
-        refunded = money_json(ret.refunded_amount)
+        fx_src = invoices.get(str(ret.sales_invoice_id or ""))
+        amount = _amount_base(fx_src, ret.total_amount)
+        refunded = _amount_base(fx_src, ret.refunded_amount)
+        subtotal = _amount_base(fx_src, ret.subtotal)
+        tax_amount = _amount_base(fx_src, ret.tax_amount)
         total_amount += amount
         total_qty += qty
         refunded_total += refunded
@@ -860,8 +1272,8 @@ async def sales_returns_summary(
                 "restock": bool(ret.restock),
                 "settlement_method": ret.settlement_method,
                 "quantity": qty,
-                "subtotal": money_json(ret.subtotal),
-                "tax_amount": money_json(ret.tax_amount),
+                "subtotal": subtotal,
+                "tax_amount": tax_amount,
                 "total_amount": amount,
                 "refunded_amount": refunded,
                 "sales_invoice_id": ret.sales_invoice_id,
@@ -870,6 +1282,47 @@ async def sales_returns_summary(
                 "created_at": ret.created_at,
             }
         )
+
+    for bill in await _restaurant_bill_refunds(
+        db,
+        tenant_id,
+        from_date=from_date,
+        to_date=to_date,
+        customer_id=customer_id,
+        reason=reason,
+        status=status,
+        store_id=store_id,
+        store_ids=store_ids,
+    ):
+        amount = bill["total_amount"]
+        qty = bill["quantity"]
+        total_amount += amount
+        total_qty += qty
+        refunded_total += amount
+        posted_amount += amount
+        by_status["refunded"] = by_status.get("refunded", 0) + 1
+        reason_row = by_reason.setdefault(
+            "table_bill",
+            {"reason": "table_bill", "return_count": 0, "total_amount": 0.0, "quantity": 0.0},
+        )
+        reason_row["return_count"] += 1
+        reason_row["total_amount"] = money_json(round(reason_row["total_amount"] + amount, 2))
+        reason_row["quantity"] = money_json(round(reason_row["quantity"] + qty, 3))
+        cust_name = bill["customer_name"] or "No customer"
+        cust = by_customer.setdefault(
+            f"bill:{bill['id']}",
+            {
+                "customer_id": None,
+                "name": cust_name,
+                "return_count": 0,
+                "total_amount": 0.0,
+                "quantity": 0.0,
+            },
+        )
+        cust["return_count"] += 1
+        cust["total_amount"] = money_json(round(cust["total_amount"] + amount, 2))
+        cust["quantity"] = money_json(round(cust["quantity"] + qty, 3))
+        returns.append(bill)
 
     reasons = sorted(by_reason.values(), key=lambda x: x["total_amount"], reverse=True)
     customers = sorted(by_customer.values(), key=lambda x: x["total_amount"], reverse=True)
@@ -897,6 +1350,96 @@ async def sales_returns_summary(
         "by_customer": customers,
         "returns": returns,
     }
+
+
+async def _restaurant_bill_refunds(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    from_date: datetime | None,
+    to_date: datetime | None,
+    customer_id: str | None,
+    reason: str | None,
+    status: str | None,
+    store_id: str | None,
+    store_ids: list[str] | None,
+) -> list[dict]:
+    """Refunded table bills. They have no sales-return row. Other industries add nothing."""
+    from app.packages import canonicalize_industry
+
+    if customer_id or reason or status:
+        return []
+    tenant = await db.get(m.Tenant, tenant_id)
+    if tenant is None or canonicalize_industry(getattr(tenant, "industry", None)) != "restaurant":
+        return []
+    stmt = select(m.RestaurantOrder).where(
+        m.RestaurantOrder.tenant_id == tenant_id,
+        m.RestaurantOrder.status == "refunded",
+    )
+    stmt = apply_store_scope(stmt, m.RestaurantOrder.store_id, store_id, store_ids)
+    orders = list((await db.execute(stmt)).scalars().all())
+    if not orders:
+        return []
+    order_ids = [order.id for order in orders]
+    refunded_at: dict[str, datetime] = {}
+    for entity_id, created_at in (
+        await db.execute(
+            select(m.AuditLog.entity_id, m.AuditLog.created_at).where(
+                m.AuditLog.tenant_id == tenant_id,
+                m.AuditLog.action == "restaurant_order_refunded",
+                m.AuditLog.entity_id.in_(order_ids),
+            )
+        )
+    ).all():
+        if entity_id and created_at and (entity_id not in refunded_at or created_at > refunded_at[entity_id]):
+            refunded_at[entity_id] = created_at
+    qty_by_order: dict[str, float] = {}
+    for order_id, qty in (
+        await db.execute(
+            select(m.RestaurantOrderLine.order_id, func.coalesce(func.sum(m.RestaurantOrderLine.quantity), 0))
+            .where(
+                m.RestaurantOrderLine.tenant_id == tenant_id,
+                m.RestaurantOrderLine.order_id.in_(order_ids),
+            )
+            .group_by(m.RestaurantOrderLine.order_id)
+        )
+    ).all():
+        qty_by_order[order_id] = money_json(qty or 0)
+    rows: list[dict] = []
+    for order in orders:
+        when = refunded_at.get(order.id) or order.completed_at or order.created_at
+        if when is None:
+            continue
+        if from_date is not None and when < from_date:
+            continue
+        if to_date is not None and when > to_date:
+            continue
+        amount = money_json(order.total_amount)
+        qty = qty_by_order.get(order.id, 0.0)
+        rows.append(
+            {
+                "id": order.id,
+                "return_number": order.order_number,
+                "credit_note_number": None,
+                "customer_id": None,
+                "customer_name": (order.customer_name or "").strip() or "No customer",
+                "status": "refunded",
+                "reason": "table_bill",
+                "restock": True,
+                "settlement_method": order.payment_method or "cash",
+                "quantity": qty,
+                "subtotal": money_json(order.subtotal),
+                "tax_amount": money_json(round(amount - money_json(order.subtotal), 2)),
+                "total_amount": amount,
+                "refunded_amount": amount,
+                "sales_invoice_id": None,
+                "transaction_id": None,
+                "posted_at": when,
+                "created_at": when,
+            }
+        )
+    rows.sort(key=lambda row: row["created_at"] or datetime.min, reverse=True)
+    return rows
 
 
 async def _resolve_department_filter(
@@ -1010,8 +1553,8 @@ async def sales_by_salesperson(
     counted_invoice_ids = {str(inv.id) for inv in staff_invoices}
     for inv in staff_invoices:
         row = _bucket(agg, inv.created_by)
-        total = money_json(inv.total_amount)
-        tax = money_json(inv.tax_amount)
+        total = _amount_base(inv, inv.total_amount)
+        tax = _amount_base(inv, inv.tax_amount)
         row["invoice_count"] += 1
         row["invoice_revenue"] = money_json(round(row["invoice_revenue"] + total, 2))
         row["invoice_tax"] = money_json(round(row["invoice_tax"] + tax, 2))
@@ -1042,14 +1585,83 @@ async def sales_by_salesperson(
             continue
         user_id = session.user_id if session else None
         row = _bucket(agg, user_id)
-        total = money_json(tx.total)
-        tax = money_json(tx.tax)
+        total = _tx_base(tx)
+        tax = _tx_base(tx, tx.tax)
         row["pos_count"] += 1
         row["pos_revenue"] = money_json(round(row["pos_revenue"] + total, 2))
         row["pos_tax"] = money_json(round(row["pos_tax"] + tax, 2))
         row["sale_count"] += 1
         row["revenue"] = money_json(round(row["revenue"] + total, 2))
         row["tax"] = money_json(round(row["tax"] + tax, 2))
+
+    from app.restaurant import _restaurant_company, posted_till_returns
+
+    restaurant_company = await _restaurant_company(db, tenant_id)
+    if restaurant_company:
+        staff_returns = await posted_till_returns(
+            db,
+            tenant_id,
+            start=from_date,
+            end=to_date,
+            inclusive_end=to_date is not None,
+            store_id=store_id,
+            store_ids=store_ids,
+        )
+        sale_ids = [ret.transaction_id for ret in staff_returns if ret.transaction_id]
+        cashier_by_sale: dict[str, str | None] = {}
+        if sale_ids:
+            cashier_rows = (
+                await db.execute(
+                    select(m.Transaction.id, m.PosSession.user_id)
+                    .outerjoin(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+                    .where(
+                        m.Transaction.tenant_id == tenant_id,
+                        m.Transaction.id.in_(sale_ids),
+                    )
+                )
+            ).all()
+            cashier_by_sale = {sale_id: user_id for sale_id, user_id in cashier_rows}
+        allowed_staff = set(dept_user_ids) if dept_user_ids is not None else None
+        for ret in staff_returns:
+            amount = money_json(ret.total_amount or 0)
+            if amount <= 0:
+                continue
+            cashier = cashier_by_sale.get(ret.transaction_id) or ret.created_by
+            if allowed_staff is not None and cashier not in allowed_staff:
+                continue
+            tax = money_json(ret.tax_amount or 0)
+            row = _bucket(agg, cashier)
+            row["pos_revenue"] = money_json(round(row["pos_revenue"] - amount, 2))
+            row["revenue"] = money_json(round(row["revenue"] - amount, 2))
+            row["pos_tax"] = money_json(round(row["pos_tax"] - tax, 2))
+            row["tax"] = money_json(round(row["tax"] - tax, 2))
+        from app.restaurant import bill_parts, service_percent
+
+        percent = await service_percent(db, tenant_id)
+        when = func.coalesce(m.RestaurantOrder.completed_at, m.RestaurantOrder.created_at)
+        bill_stmt = select(m.RestaurantOrder).where(
+            m.RestaurantOrder.tenant_id == tenant_id,
+            m.RestaurantOrder.status == "completed",
+        )
+        if from_date:
+            bill_stmt = bill_stmt.where(when >= from_date)
+        if to_date:
+            bill_stmt = bill_stmt.where(when <= to_date)
+        bill_stmt = apply_store_scope(
+            bill_stmt, m.RestaurantOrder.store_id, store_id, store_ids
+        )
+        for order in (await db.execute(bill_stmt)).scalars().all():
+            if allowed_staff is not None and order.created_by not in allowed_staff:
+                continue
+            total = money_json(order.total_amount or 0)
+            _, tax = bill_parts(order.subtotal or 0, total, percent)
+            row = _bucket(agg, order.created_by)
+            row["invoice_count"] += 1
+            row["invoice_revenue"] = money_json(round(row["invoice_revenue"] + total, 2))
+            row["invoice_tax"] = money_json(round(row["invoice_tax"] + tax, 2))
+            row["sale_count"] += 1
+            row["revenue"] = money_json(round(row["revenue"] + total, 2))
+            row["tax"] = money_json(round(row["tax"] + tax, 2))
 
     user_ids = [k for k in agg.keys() if k != "unknown"]
     dept_names: dict[str, str] = {}
@@ -1109,6 +1721,11 @@ async def sales_by_salesperson(
         "department_name": dept_name,
         "store_id": store_id,
         "store_name": store_name,
+        "returns_note": (
+            "A restaurant till return comes off this staff member. The original receipt stays on the till report."
+            if restaurant_company
+            else "Posted returns are listed on Sales returns and are not subtracted here."
+        ),
         "salespeople": salespeople,
         "total_revenue": money_json(round(sum(s["revenue"] for s in salespeople), 2)),
         "total_sales": sum(s["sale_count"] for s in salespeople),
@@ -1188,8 +1805,8 @@ async def sales_by_store(
     counted_invoice_ids = {str(inv.id) for inv in store_invoices}
     for inv in store_invoices:
         row = _bucket(agg, inv.store_id)
-        total = money_json(inv.total_amount)
-        tax = money_json(inv.tax_amount)
+        total = _amount_base(inv, inv.total_amount)
+        tax = _amount_base(inv, inv.tax_amount)
         row["invoice_count"] += 1
         row["invoice_revenue"] = money_json(round(row["invoice_revenue"] + total, 2))
         row["invoice_tax"] = money_json(round(row["invoice_tax"] + tax, 2))
@@ -1220,14 +1837,83 @@ async def sales_by_store(
             continue
         store_id = session.store_id if session else None
         row = _bucket(agg, store_id)
-        total = money_json(tx.total)
-        tax = money_json(tx.tax)
+        total = _tx_base(tx)
+        tax = _tx_base(tx, tx.tax)
         row["pos_count"] += 1
         row["pos_revenue"] = money_json(round(row["pos_revenue"] + total, 2))
         row["pos_tax"] = money_json(round(row["pos_tax"] + tax, 2))
         row["sale_count"] += 1
         row["revenue"] = money_json(round(row["revenue"] + total, 2))
         row["tax"] = money_json(round(row["tax"] + tax, 2))
+
+    from app.restaurant import _restaurant_company, posted_till_returns
+
+    restaurant_company = await _restaurant_company(db, tenant_id)
+    if restaurant_company:
+        store_returns = await posted_till_returns(
+            db,
+            tenant_id,
+            start=from_date,
+            end=to_date,
+            inclusive_end=to_date is not None,
+        )
+        sale_ids = [ret.transaction_id for ret in store_returns if ret.transaction_id]
+        sale_store: dict[str, tuple[str | None, str | None]] = {}
+        if sale_ids:
+            sale_rows = (
+                await db.execute(
+                    select(m.Transaction.id, m.PosSession.store_id, m.PosSession.user_id)
+                    .outerjoin(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+                    .where(
+                        m.Transaction.tenant_id == tenant_id,
+                        m.Transaction.id.in_(sale_ids),
+                    )
+                )
+            ).all()
+            sale_store = {sale_id: (row_store, user_id) for sale_id, row_store, user_id in sale_rows}
+        allowed_staff = set(dept_user_ids) if dept_user_ids is not None else None
+        allowed_stores = set(store_ids) if store_ids is not None else None
+        for ret in store_returns:
+            amount = money_json(ret.total_amount or 0)
+            if amount <= 0:
+                continue
+            row_store, cashier = sale_store.get(ret.transaction_id, (None, ret.created_by))
+            if allowed_staff is not None and cashier not in allowed_staff:
+                continue
+            if allowed_stores is not None and row_store not in allowed_stores:
+                continue
+            tax = money_json(ret.tax_amount or 0)
+            row = _bucket(agg, row_store)
+            row["pos_revenue"] = money_json(round(row["pos_revenue"] - amount, 2))
+            row["revenue"] = money_json(round(row["revenue"] - amount, 2))
+            row["pos_tax"] = money_json(round(row["pos_tax"] - tax, 2))
+            row["tax"] = money_json(round(row["tax"] - tax, 2))
+        from app.restaurant import bill_parts, service_percent
+
+        percent = await service_percent(db, tenant_id)
+        when = func.coalesce(m.RestaurantOrder.completed_at, m.RestaurantOrder.created_at)
+        bill_stmt = select(m.RestaurantOrder).where(
+            m.RestaurantOrder.tenant_id == tenant_id,
+            m.RestaurantOrder.status == "completed",
+        )
+        if from_date:
+            bill_stmt = bill_stmt.where(when >= from_date)
+        if to_date:
+            bill_stmt = bill_stmt.where(when <= to_date)
+        for order in (await db.execute(bill_stmt)).scalars().all():
+            if allowed_staff is not None and order.created_by not in allowed_staff:
+                continue
+            if allowed_stores is not None and order.store_id not in allowed_stores:
+                continue
+            total = money_json(order.total_amount or 0)
+            _, tax = bill_parts(order.subtotal or 0, total, percent)
+            row = _bucket(agg, order.store_id)
+            row["invoice_count"] += 1
+            row["invoice_revenue"] = money_json(round(row["invoice_revenue"] + total, 2))
+            row["invoice_tax"] = money_json(round(row["invoice_tax"] + tax, 2))
+            row["sale_count"] += 1
+            row["revenue"] = money_json(round(row["revenue"] + total, 2))
+            row["tax"] = money_json(round(row["tax"] + tax, 2))
 
     # Enrich store rows that came only from activity (not in seed list).
     orphan_ids = [k for k in agg.keys() if k != "unknown" and agg[k]["code"] is None]
@@ -1280,6 +1966,11 @@ async def sales_by_store(
         "to_date": to_date,
         "department_id": dept_id,
         "department_name": dept_name,
+        "returns_note": (
+            "A restaurant till return comes off this store. The original receipt stays on the till report."
+            if restaurant_company
+            else "Posted returns are listed on Sales returns and are not subtracted here."
+        ),
         "stores": stores_out,
         "total_revenue": money_json(round(sum(s["revenue"] for s in stores_out), 2)),
         "total_sales": sum(s["sale_count"] for s in stores_out),
@@ -1359,8 +2050,8 @@ async def sales_by_department(
         if filter_id and seller_dept != filter_id:
             continue
         row = _bucket(agg, seller_dept)
-        total = money_json(inv.total_amount)
-        tax = money_json(inv.tax_amount)
+        total = _amount_base(inv, inv.total_amount)
+        tax = _amount_base(inv, inv.tax_amount)
         row["invoice_count"] += 1
         row["invoice_revenue"] = money_json(round(row["invoice_revenue"] + total, 2))
         row["invoice_tax"] = money_json(round(row["invoice_tax"] + tax, 2))
@@ -1389,14 +2080,84 @@ async def sales_by_department(
         if filter_id and seller_dept != filter_id:
             continue
         row = _bucket(agg, seller_dept)
-        total = money_json(tx.total)
-        tax = money_json(tx.tax)
+        total = _tx_base(tx)
+        tax = _tx_base(tx, tx.tax)
         row["pos_count"] += 1
         row["pos_revenue"] = money_json(round(row["pos_revenue"] + total, 2))
         row["pos_tax"] = money_json(round(row["pos_tax"] + tax, 2))
         row["sale_count"] += 1
         row["revenue"] = money_json(round(row["revenue"] + total, 2))
         row["tax"] = money_json(round(row["tax"] + tax, 2))
+
+    from app.restaurant import _restaurant_company, posted_till_returns
+
+    restaurant_company = await _restaurant_company(db, tenant_id)
+    if restaurant_company:
+        dept_returns = await posted_till_returns(
+            db,
+            tenant_id,
+            start=from_date,
+            end=to_date,
+            inclusive_end=to_date is not None,
+            store_id=None,
+            store_ids=store_ids,
+        )
+        sale_ids = [ret.transaction_id for ret in dept_returns if ret.transaction_id]
+        cashier_by_sale: dict[str, str | None] = {}
+        if sale_ids:
+            cashier_rows = (
+                await db.execute(
+                    select(m.Transaction.id, m.PosSession.user_id)
+                    .outerjoin(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+                    .where(
+                        m.Transaction.tenant_id == tenant_id,
+                        m.Transaction.id.in_(sale_ids),
+                    )
+                )
+            ).all()
+            cashier_by_sale = {sale_id: user_id for sale_id, user_id in cashier_rows}
+        for ret in dept_returns:
+            amount = money_json(ret.total_amount or 0)
+            if amount <= 0:
+                continue
+            cashier = cashier_by_sale.get(ret.transaction_id) or ret.created_by
+            seller_dept = user_dept.get(cashier) if cashier else None
+            if filter_id and seller_dept != filter_id:
+                continue
+            tax = money_json(ret.tax_amount or 0)
+            row = _bucket(agg, seller_dept)
+            row["pos_revenue"] = money_json(round(row["pos_revenue"] - amount, 2))
+            row["revenue"] = money_json(round(row["revenue"] - amount, 2))
+            row["pos_tax"] = money_json(round(row["pos_tax"] - tax, 2))
+            row["tax"] = money_json(round(row["tax"] - tax, 2))
+        from app.restaurant import bill_parts, service_percent
+
+        percent = await service_percent(db, tenant_id)
+        when = func.coalesce(m.RestaurantOrder.completed_at, m.RestaurantOrder.created_at)
+        bill_stmt = select(m.RestaurantOrder).where(
+            m.RestaurantOrder.tenant_id == tenant_id,
+            m.RestaurantOrder.status == "completed",
+        )
+        if from_date:
+            bill_stmt = bill_stmt.where(when >= from_date)
+        if to_date:
+            bill_stmt = bill_stmt.where(when <= to_date)
+        bill_stmt = apply_store_scope(
+            bill_stmt, m.RestaurantOrder.store_id, None, store_ids
+        )
+        for order in (await db.execute(bill_stmt)).scalars().all():
+            seller_dept = user_dept.get(order.created_by) if order.created_by else None
+            if filter_id and seller_dept != filter_id:
+                continue
+            total = money_json(order.total_amount or 0)
+            _, tax = bill_parts(order.subtotal or 0, total, percent)
+            row = _bucket(agg, seller_dept)
+            row["invoice_count"] += 1
+            row["invoice_revenue"] = money_json(round(row["invoice_revenue"] + total, 2))
+            row["invoice_tax"] = money_json(round(row["invoice_tax"] + tax, 2))
+            row["sale_count"] += 1
+            row["revenue"] = money_json(round(row["revenue"] + total, 2))
+            row["tax"] = money_json(round(row["tax"] + tax, 2))
 
     orphan_ids = [k for k in agg.keys() if k != "unknown" and agg[k]["code"] is None]
     if orphan_ids:
@@ -1447,6 +2208,11 @@ async def sales_by_department(
         "to_date": to_date,
         "department_id": filter_id,
         "department_name": filter_name,
+        "returns_note": (
+            "A restaurant till return comes off this department. The original receipt stays on the till report."
+            if restaurant_company
+            else "Posted returns are listed on Sales returns and are not subtracted here."
+        ),
         "departments": departments_out,
         "total_revenue": money_json(round(sum(s["revenue"] for s in departments_out), 2)),
         "total_sales": sum(s["sale_count"] for s in departments_out),
@@ -2830,6 +3596,9 @@ async def purchases_returns_summary(
             stmt = stmt.where(m.PurchaseReturn.warehouse_id.in_(warehouse_ids))
 
     rows = (await db.execute(stmt)).all()
+    invoices = await _linked_purchase_invoices_by_po(
+        db, tenant_id, {ret.purchase_order_id for ret, _ in rows}
+    )
     by_reason: dict[str, dict] = {}
     by_status: dict[str, int] = defaultdict(int)
     by_supplier: dict[str, dict] = {}
@@ -2848,7 +3617,10 @@ async def purchases_returns_summary(
             )
         ).scalars().all()
         qty = money_json(round(sum(money_json(i.quantity) for i in items), 3))
-        amount = money_json(ret.total_amount)
+        fx_src = invoices.get(str(ret.purchase_order_id or ""))
+        amount = _amount_base(fx_src, ret.total_amount)
+        subtotal = _amount_base(fx_src, ret.subtotal)
+        tax_amount = _amount_base(fx_src, ret.tax_amount)
         total_amount += amount
         total_qty += qty
         by_status[ret.status] += 1
@@ -2887,8 +3659,8 @@ async def purchases_returns_summary(
                 "status": ret.status,
                 "reason": ret.reason,
                 "quantity": qty,
-                "subtotal": money_json(ret.subtotal),
-                "tax_amount": money_json(ret.tax_amount),
+                "subtotal": subtotal,
+                "tax_amount": tax_amount,
                 "total_amount": amount,
                 "goods_receipt_id": ret.goods_receipt_id,
                 "purchase_order_id": ret.purchase_order_id,

@@ -6,6 +6,8 @@ import {
   findReport,
   reportFromTabView,
   reportHasFilter,
+  reportCopy,
+  reportGroupLabel,
   reportVisible,
   reportsHref,
   reportsInGroup,
@@ -91,6 +93,22 @@ test('sales reports stay industry-specific and single-store hides store lists', 
   assert.equal(reportVisible(stores, { industry: 'retail', multiStore: false }), false);
   assert.equal(reportVisible(stores, { industry: 'retail', multiStore: true }), true);
   assert.equal(findReport('sales_products')?.name, 'Sales by product');
+  assert.equal(findReport('inventory_value')?.name, 'Stock value');
+  assert.equal(reportCopy(findReport('inventory_value')!, 'hotel').name, 'Supply value');
+  assert.equal(reportCopy(findReport('inventory_value')!, 'retail').name, 'Stock value');
+  assert.equal(reportCopy(findReport('inventory_movements')!, 'hotel').name, 'Supply movements');
+  assert.equal(reportCopy(findReport('inventory_counts')!, 'hotel').name, 'Supply count variances');
+  assert.equal(reportCopy(findReport('inventory_expiry')!, 'hotel').description, 'Lots nearing expiry or already expired.');
+  assert.equal(reportCopy(findReport('sales_pos')!, 'hotel').name, 'Shop till sales');
+  assert.equal(reportCopy(findReport('sales_pos')!, 'retail').name, 'POS sales');
+  assert.equal(reportCopy(findReport('sales_pos')!, 'restaurant').name, 'Restaurant till sales');
+  assert.equal(reportCopy(findReport('inventory_low_stock')!, 'restaurant').name, 'Low ingredients');
+  assert.equal(reportCopy(findReport('inventory_low_stock')!, 'hotel').name, 'Low supplies');
+  assert.equal(reportGroupLabel('inventory', 'Inventory', 'restaurant'), 'Ingredients');
+  assert.equal(reportGroupLabel('inventory', 'Inventory', 'hotel'), 'Supplies');
+  assert.equal(reportGroupLabel('inventory', 'Inventory', 'retail'), 'Inventory');
+  assert.equal(reportGroupLabel('inventory', 'Inventory', 'hotel'), 'Supplies');
+  assert.equal(reportGroupLabel('inventory', 'Inventory', 'retail'), 'Inventory');
   assert.equal(reportsInGroup('customers')[0].name, 'Sales by customer');
 });
 

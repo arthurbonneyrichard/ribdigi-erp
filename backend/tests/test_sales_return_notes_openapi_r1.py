@@ -39,7 +39,7 @@ def test_sales_return_notes_ui_and_docs():
     assert "returnNotes.trim() || null" in page
     assert 'aria-label="Create sales return"' in page
     assert 'aria-label="Return from invoice"' in page
-    assert 'aria-label="Sales product"' in page
+    assert "hotelOps ? 'Sales supply' : restaurantOps ? 'Sales menu item' : 'Sales product'" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Sales return notes OpenAPI" in agents
     assert "SalesReturnNotesValue" in agents

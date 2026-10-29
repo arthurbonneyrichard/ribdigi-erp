@@ -204,6 +204,14 @@ async def open_session(
     )
     existing = await get_open_session_for_user(db, tenant_id, user_id)
     if existing:
+        requested = money_json(round(money_json(opening_cash or 0), 2))
+        # Implicit login/Shell open sends 0 and must not wipe a float already set.
+        # A later unused open with a positive float (Shift panel) applies it.
+        if requested > 0 and _session_unused(existing):
+            existing.opening_cash = requested
+            existing.expected_cash = requested
+            await db.flush()
+            return existing
         raise HTTPException(status_code=409, detail="Cashier already has an open POS shift")
 
     if store_id:
@@ -722,6 +730,13 @@ async def record_cash_movement(
     qty = money_json(round(money_json(amount), 2))
     if qty <= 0:
         raise HTTPException(status_code=400, detail="amount must be positive")
+    if kind == "cash_out":
+        available = expected_cash_for_session(session)
+        if qty > money_json(round(available + 0.009, 2)):
+            raise HTTPException(
+                status_code=400,
+                detail="cash_out cannot exceed expected drawer cash",
+            )
     reason_s = require_honest_narrative(reason, label="cash movement reason", max_length=200)
 
     row = m.PosCashMovement(
@@ -741,3 +756,50 @@ async def record_cash_movement(
     session.expected_cash = expected_cash_for_session(session)
     await db.flush()
     return row
+
+
+def _session_unused(session: m.PosSession) -> bool:
+    return (
+        int(session.sale_count or 0) == 0
+        and money_json(getattr(session, "cash_in", 0) or 0) == 0
+        and money_json(getattr(session, "cash_out", 0) or 0) == 0
+    )
+
+
+def resolve_close_counted_cash(*, actual_cash: float | None, closing_cash: float | None) -> float:
+    """Counted drawer: actual_cash, or closing_cash as an alias. Both must match."""
+    if actual_cash is None and closing_cash is None:
+        raise HTTPException(status_code=422, detail="actual_cash or closing_cash is required")
+    if actual_cash is not None and closing_cash is not None:
+        if abs(money_json(actual_cash) - money_json(closing_cash)) >= 0.01:
+            raise HTTPException(
+                status_code=422,
+                detail="actual_cash and closing_cash must match",
+            )
+    counted = actual_cash if actual_cash is not None else closing_cash
+    return money_json(round(money_json(counted or 0), 2))
+
+
+async def set_opening_cash(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    session_id: str,
+    opening_cash: float,
+) -> m.PosSession:
+    """Set opening float on an unused open shift (no sales or cash movements yet)."""
+    session = await get_session(db, tenant_id, session_id)
+    if session.status != "open":
+        raise HTTPException(status_code=409, detail="POS session is not open")
+    if not _session_unused(session):
+        raise HTTPException(
+            status_code=409,
+            detail="Opening cash can only be set before sales or cash movements",
+        )
+    cash = money_json(round(money_json(opening_cash or 0), 2))
+    if cash < 0:
+        raise HTTPException(status_code=400, detail="opening_cash must be >= 0")
+    session.opening_cash = cash
+    session.expected_cash = cash
+    await db.flush()
+    return session

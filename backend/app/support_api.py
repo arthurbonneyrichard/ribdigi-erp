@@ -9,6 +9,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict, model_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import packages as packages_svc
 from app import support_tickets as svc
 from app.db import get_db
 from app.security import current_claims
@@ -129,6 +130,7 @@ async def support_categories(
     tenant = await db.get(m.Tenant, claims["tenant_id"])
     return env(
         {
+            "industry": packages_svc.canonicalize_industry(getattr(tenant, "industry", None)) if tenant else None,
             "categories": svc.categories_for(tenant),
             "priorities": list(svc.PRIORITIES),
             "statuses": list(svc.STATUSES),

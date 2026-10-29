@@ -38,7 +38,7 @@ def test_ai_low_stock_prediction_notes_ui_and_docs():
     assert 'aria-label="AI low-stock prediction notes"' in page
     assert "predictionNotes.trim() || null" in page
     assert 'aria-label="Create draft purchase requests from predictions"' in page
-    assert 'aria-label="Inventory predictions"' in page
+    assert "hotelOps ? 'Supply predictions' : restaurantOps ? 'Ingredient predictions' : 'Inventory predictions'" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "PurchaseRequestNotesValue" in agents
     assert "AiLowStockPredictionRequestsBody" in agents

@@ -28,5 +28,9 @@ def test_login_logo_is_preloaded():
     assert "preload" in layout
     logo = (ROOT / "frontend/components/LoginBrandLogo.tsx").read_text(encoding="utf-8")
     assert "fetchPriority" in logo
+    login = (ROOT / "frontend/app/page.tsx").read_text(encoding="utf-8")
+    assert 'className="login login-split"' in login
+    assert 'className="login-heading">Sign in' in login
+    assert 'aria-label="Sign in"' in login
     api = (ROOT / "frontend/lib/api.ts").read_text(encoding="utf-8")
     assert "location.replace" in api

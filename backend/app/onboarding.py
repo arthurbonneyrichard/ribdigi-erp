@@ -79,6 +79,40 @@ HOTEL_STEP_DEFS: list[dict[str, str]] = [
     },
 ]
 
+RESTAURANT_STEP_DEFS: list[dict[str, str]] = [
+    {
+        "id": "setup_company",
+        "title": "Setup company profile",
+        "description": "Add phone, address, website, email, or company logo",
+        "href": "/company",
+    },
+    {
+        "id": "add_products",
+        "title": "Add a menu item",
+        "description": "Create at least one dish or drink",
+        "href": "/restaurant?tab=orders",
+    },
+    {
+        "id": "create_supplier",
+        "title": "Create a supplier",
+        "description": "Add a supplier for ingredients",
+        "href": "/purchasing",
+    },
+    {
+        "id": "stock_ready",
+        "title": "Stock an ingredient",
+        "description": "Record ingredient stock",
+        "href": "/inventory",
+    },
+    {
+        "id": "first_sale",
+        "title": "Complete a bill",
+        "description": "Complete a table, takeaway, or delivery bill",
+        "href": "/restaurant?tab=orders",
+    },
+]
+
+
 FMCG_STEP_DEFS: list[dict[str, str]] = [
     {
         "id": "setup_company",
@@ -120,6 +154,8 @@ def step_defs_for_industry(industry: str | None) -> list[dict[str, str]]:
     ind = packages_svc.canonicalize_industry(industry)
     if ind == "hotel":
         return HOTEL_STEP_DEFS
+    if ind == "restaurant":
+        return RESTAURANT_STEP_DEFS
     if ind == "fmcg":
         return FMCG_STEP_DEFS
     return STEP_DEFS
@@ -239,6 +275,18 @@ async def _auto_complete(db: AsyncSession, tenant_id: str, tenant: m.Tenant) -> 
         flags["create_supplier"] = guest_count >= 1
         flags["stock_ready"] = bool(reservation)
         flags["first_sale"] = bool(checked_in)
+    elif industry == "restaurant":
+        table_bill = (
+            await db.execute(
+                select(m.RestaurantOrder.id)
+                .where(
+                    m.RestaurantOrder.tenant_id == tenant_id,
+                    m.RestaurantOrder.status == "completed",
+                )
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+        flags["first_sale"] = bool(table_bill or pos_sale)
     elif industry == "fmcg":
         scheme = (
             await db.execute(

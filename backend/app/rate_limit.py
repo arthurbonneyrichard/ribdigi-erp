@@ -54,7 +54,17 @@ class RateLimiter:
             await client.ping()
             self._redis = client
             self._backend = "redis"
-            logger.info("Rate limiter using Redis at %s", settings.REDIS_URL)
+            from urllib.parse import urlparse
+
+            parsed = urlparse(settings.REDIS_URL or "")
+            host = parsed.hostname or "redis"
+            port = f":{parsed.port}" if parsed.port else ""
+            logger.info(
+                "Rate limiter using Redis at %s://%s%s",
+                parsed.scheme or "redis",
+                host,
+                port,
+            )
         except Exception as exc:
             self._redis = None
             self._backend = "memory"

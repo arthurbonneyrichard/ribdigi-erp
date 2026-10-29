@@ -107,7 +107,7 @@ export default function Page() {
     <>
       <PageHeader
         title="Jobs"
-        subtitle="Background job handlers and schedules for Ribdigi House operators. Platform staff can view; roles with platform write can run or enqueue."
+        subtitle="Background job handlers and schedules for Ribdigi House operators. Platform staff can view; platform owner can run or enqueue."
       />
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
@@ -119,10 +119,10 @@ export default function Page() {
           {info?.task_always_eager ? ' · always eager' : ''}
         </div>
         <div className="muted" style={{ fontSize: 12, wordBreak: 'break-all' }}>
-          Broker: {info?.broker || '—'}
+          Broker: {info?.broker_configured ? 'configured' : 'not configured'}
         </div>
         <div className="muted" style={{ fontSize: 12, wordBreak: 'break-all' }}>
-          Results: {info?.result_backend || '—'}
+          Results: {info?.result_backend_configured ? 'configured' : 'not configured'}
         </div>
         <div>
           <button

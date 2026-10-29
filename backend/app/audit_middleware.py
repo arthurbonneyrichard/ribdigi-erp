@@ -139,7 +139,7 @@ class AuditMutationMiddleware(BaseHTTPMiddleware):
             return
 
         claims = peek_access_claims(request)
-        tenant_id = (claims or {}).get("tenant_id") or request.headers.get("X-Tenant-ID")
+        tenant_id = (claims or {}).get("tenant_id")
         if not tenant_id:
             return
         user_id = (claims or {}).get("sub")

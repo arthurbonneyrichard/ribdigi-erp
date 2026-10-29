@@ -1,6 +1,6 @@
 /* Ribdigi POS offline shell cache — application security only; not OS lockdown.
  * Never touches IndexedDB: queued sales survive every service-worker update. */
-const VERSION = 'v8';
+const VERSION = 'v9';
 const SHELL = `ribdigi-pos-shell-${VERSION}`;
 const STATIC = `ribdigi-pos-static-${VERSION}`;
 const KEEP = new Set([SHELL, STATIC]);
@@ -65,6 +65,12 @@ function hardReload(req) {
   return req.cache === 'reload' || req.cache === 'no-cache' || req.cache === 'no-store';
 }
 
+/** Dev page chunks reuse a stable URL. Cache-first would keep an old dashboard. */
+function isHashedNextChunk(pathname) {
+  if (pathname.includes('hot-update')) return false;
+  return /\/_next\/static\/.+\.[a-f0-9]{8,}\.(js|css)$/i.test(pathname);
+}
+
 async function cacheFirstStatic(req) {
   const cache = await caches.open(STATIC);
   if (!hardReload(req)) {
@@ -111,7 +117,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   if (url.pathname.startsWith('/_next/static/')) {
-    event.respondWith(cacheFirstStatic(req));
+    event.respondWith(isHashedNextChunk(url.pathname) ? cacheFirstStatic(req) : networkFirstExact(req));
     return;
   }
   if (ASSETS.includes(url.pathname)) {

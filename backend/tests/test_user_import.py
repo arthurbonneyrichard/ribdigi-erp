@@ -81,6 +81,7 @@ async def test_user_import_rejects_duplicate_and_bad_role(client):
         "Dup,cashier@alpha.example.com,cashier,TempPass1!\n"
         "Bad Role,badrole@alpha.example.com,wizard,TempPass1!\n"
         "Weak,weak@alpha.example.com,cashier,password\n"
+        "Plat,plat@alpha.example.com,platform_owner,TempPass1!\n"
     )
     dry = await ac.post(
         "/api/v1/users/import?dry_run=true",
@@ -90,11 +91,12 @@ async def test_user_import_rejects_duplicate_and_bad_role(client):
     assert dry.status_code == 200, dry.text
     report = dry.json()["data"]
     assert report["can_commit"] is False
-    assert report["error_rows"] == 3
+    assert report["error_rows"] == 4
     errs = " | ".join(";".join(r["errors"]) for r in report["rows"])
     assert "email already exists" in errs
     assert "unknown role" in errs
     assert "Password must" in errs
+    assert "platform roles cannot be assigned" in errs
 
     commit = await ac.post(
         "/api/v1/users/import?dry_run=false",

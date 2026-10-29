@@ -81,6 +81,8 @@ async def _invoice_baskets(
             )
         )
     ).all()
+    from app.reports import _amount_base
+
     baskets: dict[str, dict[str, Any]] = {}
     for inv, item in rows:
         b = baskets.setdefault(
@@ -89,7 +91,7 @@ async def _invoice_baskets(
                 "id": inv.id,
                 "customer_id": inv.customer_id,
                 "posted_at": inv.posted_at,
-                "total": money_json(inv.total_amount or 0),
+                "total": _amount_base(inv, inv.total_amount or 0),
                 "product_ids": set(),
             },
         )
@@ -110,7 +112,9 @@ async def _pos_events(
                 m.Transaction.created_at <= end,
             )
         )
-    ).scalars().all()
+        ).scalars().all()
+    from app.dashboard import _tx_amount_base
+
     out: list[dict[str, Any]] = []
     for tx in txs:
         pids = {
@@ -122,7 +126,7 @@ async def _pos_events(
             {
                 "id": tx.id,
                 "created_at": tx.created_at,
-                "total": money_json(tx.total or 0),
+                "total": money_json(_tx_amount_base(tx)),
                 "product_ids": pids,
             }
         )

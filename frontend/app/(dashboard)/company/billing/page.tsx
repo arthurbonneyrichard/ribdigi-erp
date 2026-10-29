@@ -5,6 +5,7 @@ import PageHeader from '../../../../components/PageHeader';
 import { api } from '../../../../lib/api';
 import { billingGatewayLabel } from '../../../../lib/billingStatus';
 import { currencySign, formatDate, formatDateTime, formatMoney, formatNumber, type FormatPrefs } from '../../../../lib/format';
+import { isHotelIndustry } from '../../../../lib/tenantNav';
 import './billing-page.css';
 
 type Plan = {
@@ -160,6 +161,7 @@ export default function SubscriptionBillingPage() {
   const [consent, setConsent] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [hotelOps, setHotelOps] = useState(false);
 
   async function load() {
     const [accountRes, invoiceRes, profileRes] = await Promise.all([
@@ -171,6 +173,7 @@ export default function SubscriptionBillingPage() {
     setInvoices(invoiceRes?.data || []);
     const profile = profileRes?.data;
     if (profile) {
+      setHotelOps(isHotelIndustry(profile.industry));
       setPrefs({
         date_format: profile.date_format,
         time_format: profile.time_format,
@@ -307,7 +310,11 @@ export default function SubscriptionBillingPage() {
       <PageHeader
         className="billing-page-head"
         title="Subscription"
-        subtitle="This is your Ribdigi ERP plan. It is separate from payments you take from your own customers."
+        subtitle={
+          hotelOps
+            ? 'This is your Ribdigi ERP plan. It is separate from payments you take from guests.'
+            : 'This is your Ribdigi ERP plan. It is separate from payments you take from your own customers.'
+        }
       />
       {error && <p role="alert">{error}</p>}
       {message && <p>{message}</p>}

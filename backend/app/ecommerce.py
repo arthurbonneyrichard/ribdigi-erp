@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import secrets
 from datetime import datetime, timedelta
 from typing import Any, Callable, Awaitable
@@ -90,8 +92,20 @@ def assert_public_hostname(host: str) -> str:
     return host
 
 
-def host_from_request(*, host: str | None, forwarded_host: str | None) -> str:
-    raw = (forwarded_host or host or "").split(",")[0].strip()
+def host_from_request(
+    *,
+    host: str | None,
+    forwarded_host: str | None,
+    peer_ip: str | None = None,
+) -> str:
+    """Prefer X-Forwarded-Host when unset (current deploy). Opt into Host-only."""
+    from app.config import settings
+
+    use_forwarded = bool(settings.TRUST_X_FORWARDED_HOST) and bool((forwarded_host or "").strip())
+    trusted = settings.trusted_proxy_ips
+    if use_forwarded and trusted and (peer_ip or "") not in trusted:
+        use_forwarded = False
+    raw = ((forwarded_host if use_forwarded else host) or host or "").split(",")[0].strip()
     return normalize_hostname(raw)
 
 
@@ -499,27 +513,48 @@ async def remove_domain(db: AsyncSession, *, tenant_id: str, domain_id: str) -> 
             await db.flush()
 
 
+def preview_token_digest(token: str) -> str:
+    return hashlib.sha256((token or "").encode("utf-8")).hexdigest()
+
+
+def preview_tokens_match(stored: str | None, offered: str | None) -> bool:
+    left = (stored or "").strip()
+    right = (offered or "").strip()
+    if not left or not right:
+        return False
+    if len(left) == len(right) and hmac.compare_digest(left, right):
+        return True
+    digest = preview_token_digest(right)
+    if len(left) == len(digest):
+        return hmac.compare_digest(left, digest)
+    return False
+
+
 async def resolve_public_tenant(
     db: AsyncSession,
     *,
     host: str | None,
     forwarded_host: str | None,
     preview_token: str | None,
+    peer_ip: str | None = None,
 ) -> tuple[m.Tenant, m.EcommerceStorefront, m.EcommerceDomain | None]:
     token = (preview_token or "").strip()
     if token:
+        digest = preview_token_digest(token)
         storefront = (
             await db.execute(
-                select(m.EcommerceStorefront).where(m.EcommerceStorefront.preview_token == token)
+                select(m.EcommerceStorefront).where(
+                    m.EcommerceStorefront.preview_token.in_((token, digest))
+                )
             )
         ).scalar_one_or_none()
-        if storefront is None:
+        if storefront is None or not preview_tokens_match(storefront.preview_token, token):
             raise HTTPException(status_code=404, detail="Preview is not available")
         tenant = await get_tenant(db, storefront.tenant_id)
         assert_ecommerce_entitled(tenant)
         return tenant, storefront, None
 
-    hostname = host_from_request(host=host, forwarded_host=forwarded_host)
+    hostname = host_from_request(host=host, forwarded_host=forwarded_host, peer_ip=peer_ip)
     if not hostname:
         raise HTTPException(
             status_code=404,
@@ -1607,8 +1642,7 @@ async def shopper_orders(db: AsyncSession, shopper: m.EcommerceShopper) -> list[
                 select(m.EcommerceOrder)
                 .where(
                     m.EcommerceOrder.tenant_id == shopper.tenant_id,
-                    (m.EcommerceOrder.shopper_id == shopper.id)
-                    | (m.EcommerceOrder.guest_email == shopper.email),
+                    m.EcommerceOrder.shopper_id == shopper.id,
                 )
                 .order_by(m.EcommerceOrder.created_at.desc())
             )

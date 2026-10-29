@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
+import { isHotelIndustry } from '../../../lib/tenantNav';
+import { normalizeIndustry } from '../../../lib/industries';
 import { downloadAttachment } from '../../../lib/attachments';
 import './backup-ui.css';
 
@@ -53,6 +56,8 @@ export default function Page() {
   const [restoreJob, setRestoreJob] = useState<BackupJob | null>(null);
   const [confirmText, setConfirmText] = useState('');
   const [scheduleSaved, setScheduleSaved] = useState(false);
+  const [hotelOps, setHotelOps] = useState(false);
+  const [restaurantOps, setRestaurantOps] = useState(false);
 
   async function refresh() {
     const [list, cfg] = await Promise.all([api('/backup'), api('/backup/settings')]);
@@ -62,6 +67,18 @@ export default function Page() {
 
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
+  }, []);
+
+  useEffect(() => {
+    getMe()
+      .then((me) => {
+        setHotelOps(isHotelIndustry(me.data?.industry));
+        setRestaurantOps(normalizeIndustry(me.data?.industry) === 'restaurant');
+      })
+      .catch(() => {
+        setHotelOps(false);
+        setRestaurantOps(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -324,12 +341,20 @@ export default function Page() {
         <option value="restoring">Restoring only</option>
       </select>
       </div>
-      <div className="backup-ui-scroll">
+      <div className={restaurantOps ? 'backup-ui-scroll rest-backup-table' : 'backup-ui-scroll'}>
       <table className="table">
+        {restaurantOps ? (
+          <colgroup>
+            <col style={{ width: '36%' }} />
+            <col style={{ width: '14%' }} />
+            <col style={{ width: '16%' }} />
+            <col style={{ width: '34%' }} />
+          </colgroup>
+        ) : null}
         <thead>
           <tr>
-            <th>When</th>
-            <th>Note</th>
+            {restaurantOps ? <th>Backup</th> : <th>When</th>}
+            {restaurantOps ? null : <th>Note</th>}
             <th>Size</th>
             <th>Status</th>
             <th>Actions</th>
@@ -350,21 +375,33 @@ export default function Page() {
                       : String(r.status || '');
             return (
             <tr key={r.id}>
+              {restaurantOps ? (
+                <td data-label="Backup">
+                  <b className="backup-ui-when">{formatWhen(r.created_at)}</b>
+                  <span className="backup-ui-file" title={r.checksum_sha256 ? `Check code ${r.checksum_sha256}` : undefined}>
+                    {r.filename}
+                  </span>
+                  <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                    {r.notes === 'scheduled' ? 'Automatic' : r.notes || 'No note'}
+                  </span>
+                </td>
+              ) : (
               <td>
                 <b className="backup-ui-when">{formatWhen(r.created_at)}</b>
                 <span className="backup-ui-file" title={r.checksum_sha256 ? `Check code ${r.checksum_sha256}` : undefined}>
                   {r.filename}
                 </span>
               </td>
-              <td>{r.notes === 'scheduled' ? 'Automatic' : r.notes || '—'}</td>
-              <td>{formatSize(r.size_bytes)}</td>
-              <td>
+              )}
+              {restaurantOps ? null : <td>{r.notes === 'scheduled' ? 'Automatic' : r.notes || '—'}</td>}
+              <td data-label={restaurantOps ? 'Size' : undefined}>{formatSize(r.size_bytes)}</td>
+              <td data-label={restaurantOps ? 'Status' : undefined}>
                 <span className={`backup-ui-status is-${r.status || 'pending'}`}>{statusLabel}</span>
                 {r.status === 'failed' && r.error_message ? (
                   <div className="backup-ui-alert">{String(r.error_message)}</div>
                 ) : null}
               </td>
-              <td>
+              <td data-label={restaurantOps ? 'Actions' : undefined}>
                 <div className="backup-ui-row-actions">
                 <button
                   disabled={!completed || busy}
@@ -404,7 +441,7 @@ export default function Page() {
           })}
           {!managedBackups.length && (
             <tr>
-              <td colSpan={5} className="muted">
+              <td colSpan={restaurantOps ? 4 : 5} className="muted">
                 {historyEmpty}
               </td>
             </tr>
@@ -536,8 +573,13 @@ export default function Page() {
         <h2>Restore a completed backup</h2>
         <p className="muted">
           Only if you need to go back. Choose Restore on a completed backup above, and Test restore first if you
-          want a preview. Type <strong>RESTORE</strong> before Apply. This overwrites matching product, sales,
-          purchase, stock and ledger records in this company. It does not delete records made after the backup.
+          want a preview. Type <strong>RESTORE</strong> before Apply.{' '}
+          {hotelOps
+            ? 'This overwrites matching supplies, sales, purchases, on-hand quantities and ledger records in this hotel.'
+            : restaurantOps
+              ? 'This overwrites matching ingredients, sales, purchases, on-hand quantities and ledger records in this restaurant.'
+              : 'This overwrites matching product, sales, purchase, stock and ledger records in this company.'}{' '}
+          It does not delete records made after the backup.
         </p>
         {restoreJob ? (
           <div className="backup-ui-form">

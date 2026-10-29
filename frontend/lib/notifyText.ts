@@ -1,5 +1,7 @@
 /** Plain words for notification categories and times, shared by the Alerts dropdown and the Notifications page. */
 
+import { normalizeIndustry } from './industries';
+
 export const NOTIFY_CATEGORY_LABELS: Record<string, string> = {
   low_stock: 'Stock',
   new_order: 'Order',
@@ -22,7 +24,23 @@ export const NOTIFY_CATEGORY_LABELS: Record<string, string> = {
   platform: 'Platform',
 };
 
-export function notifyCategoryLabel(id: string): string {
+const HOTEL_NOTIFY_LABELS: Record<string, string> = {
+  low_stock: 'Supplies',
+  new_order: 'Sales orders',
+  shift_variance: 'Shop till',
+  quotation_expiry: 'Sales quotes',
+};
+
+const RESTAURANT_NOTIFY_LABELS: Record<string, string> = {
+  low_stock: 'Ingredients',
+  new_order: 'Restaurant orders',
+  shift_variance: 'Restaurant till',
+};
+
+export function notifyCategoryLabel(id: string, industry?: string | null): string {
+  const ind = normalizeIndustry(industry);
+  if (ind === 'hotel' && HOTEL_NOTIFY_LABELS[id]) return HOTEL_NOTIFY_LABELS[id];
+  if (ind === 'restaurant' && RESTAURANT_NOTIFY_LABELS[id]) return RESTAURANT_NOTIFY_LABELS[id];
   if (NOTIFY_CATEGORY_LABELS[id]) return NOTIFY_CATEGORY_LABELS[id];
   const text = String(id || '').split('_').join(' ');
   return text.charAt(0).toUpperCase() + text.slice(1);

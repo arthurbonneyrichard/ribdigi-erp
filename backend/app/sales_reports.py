@@ -17,7 +17,10 @@ from app.honesty import money_json
 from app.rbac import apply_created_by_scope, is_platform_role, record_scope_for_claims
 from app.reports import (
     COMPLETED_SALE_STATUSES,
+    _amount_base,
+    _tx_base,
     apply_store_scope,
+    apply_store_scope_or_unassigned,
     linked_sales_invoice_id,
     pos_counts_with_invoice,
 )
@@ -201,6 +204,34 @@ def _method_label(methods: list[str]) -> str:
     return unique[0]
 
 
+async def _restaurant_bills(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    from_date: datetime | None,
+    to_date: datetime | None,
+    store_id: str | None,
+    store_ids: list[str] | None,
+) -> list[m.RestaurantOrder]:
+    """Completed table bills for a restaurant company. Other industries get none."""
+    tenant = await db.get(m.Tenant, tenant_id)
+    from app.packages import canonicalize_industry
+
+    if tenant is None or canonicalize_industry(getattr(tenant, "industry", None)) != "restaurant":
+        return []
+    when = func.coalesce(m.RestaurantOrder.completed_at, m.RestaurantOrder.created_at)
+    stmt = select(m.RestaurantOrder).where(
+        m.RestaurantOrder.tenant_id == tenant_id,
+        m.RestaurantOrder.status == "completed",
+    )
+    if from_date is not None:
+        stmt = stmt.where(when >= from_date)
+    if to_date is not None:
+        stmt = stmt.where(when <= to_date)
+    stmt = apply_store_scope(stmt, m.RestaurantOrder.store_id, store_id, store_ids)
+    return list((await db.execute(stmt)).scalars().all())
+
+
 async def completed_sales(
     db: AsyncSession,
     claims: dict,
@@ -248,7 +279,7 @@ async def completed_sales(
                 "customer": names.get(inv.customer_id) or "Customer",
                 "when": when.isoformat() if when else None,
                 "status": inv.status,
-                "total": money_json(inv.total_amount or 0),
+                "total": _amount_base(inv, inv.total_amount or 0),
                 "store_id": inv.store_id,
                 "store_name": stores.get(inv.store_id or ""),
                 "_sort": when or datetime.min,
@@ -274,19 +305,78 @@ async def completed_sales(
                 "customer": customer,
                 "when": when.isoformat() if when else None,
                 "status": tx.status or "completed",
-                "total": money_json(tx.total or 0),
+                "total": _tx_base(tx),
                 "store_id": store_id_row,
                 "store_name": stores.get(store_id_row or ""),
                 "_sort": when or datetime.min,
             }
         )
+    bills = await _restaurant_bills(
+        db,
+        tenant_id,
+        from_date=from_date,
+        to_date=to_date,
+        store_id=store_id,
+        store_ids=store_ids,
+    )
+    if bills:
+        extra_stores = {row.store_id for row in bills if row.store_id and row.store_id not in stores}
+        if extra_stores:
+            stores.update(await _store_names(db, tenant_id, extra_stores))
+        for order in bills:
+            when = order.completed_at or order.created_at
+            rows.append(
+                {
+                    "id": order.id,
+                    "source": "table_bill",
+                    "number": order.order_number,
+                    "customer": (order.customer_name or "").strip() or "No customer",
+                    "when": when.isoformat() if when else None,
+                    "status": "completed",
+                    "total": money_json(order.total_amount),
+                    "store_id": order.store_id,
+                    "store_name": stores.get(order.store_id or ""),
+                    "_sort": when or datetime.min,
+                }
+            )
+    from app.restaurant import _restaurant_company, posted_till_returns
+
+    restaurant_company = await _restaurant_company(db, tenant_id)
+    if restaurant_company:
+        returned_by_sale: dict[str, float] = {}
+        for ret in await posted_till_returns(
+            db,
+            tenant_id,
+            start=from_date,
+            end=to_date,
+            inclusive_end=to_date is not None,
+            store_id=store_id,
+            store_ids=store_ids,
+        ):
+            if not ret.transaction_id:
+                continue
+            returned_by_sale[ret.transaction_id] = money_json(
+                round(returned_by_sale.get(ret.transaction_id, 0) + money_json(ret.total_amount), 2)
+            )
+        kept: list[dict] = []
+        for row in rows:
+            taken = returned_by_sale.get(row["id"])
+            if row["source"] == "register" and taken:
+                row["total"] = money_json(round(row["total"] - taken, 2))
+            if abs(money_json(row["total"])) > 0.004:
+                kept.append(row)
+        rows = kept
     rows.sort(key=lambda row: row["_sort"], reverse=True)
     total = money_json(round(sum(row["total"] for row in rows), 2))
     for row in rows:
         row.pop("_sort", None)
     shown = rows[:LINE_CAP]
     return {
-        "returns_note": RETURNS_NOTE,
+        "returns_note": (
+            "A restaurant till return comes off this list. The original receipt stays on the till report."
+            if restaurant_company
+            else RETURNS_NOTE
+        ),
         "count": len(rows),
         "truncated": len(rows) > LINE_CAP,
         "total": total,
@@ -306,6 +396,10 @@ async def product_lines(
     include_cost: bool = False,
 ) -> dict:
     tenant_id = claims["tenant_id"]
+    from app.packages import canonicalize_industry
+
+    tenant = await db.get(m.Tenant, tenant_id)
+    restaurant_company = tenant is not None and canonicalize_industry(getattr(tenant, "industry", None)) == "restaurant"
     invoices = await _completed_invoices(
         db,
         claims,
@@ -344,6 +438,29 @@ async def product_lines(
         for line in (tx.payload or {}).get("items") or []:
             if line.get("product_id"):
                 product_ids.add(str(line["product_id"]))
+    bills = await _restaurant_bills(
+        db,
+        tenant_id,
+        from_date=from_date,
+        to_date=to_date,
+        store_id=store_id,
+        store_ids=store_ids,
+    )
+    bill_lines: list[m.RestaurantOrderLine] = []
+    if bills:
+        bill_lines = list(
+            (
+                await db.execute(
+                    select(m.RestaurantOrderLine).where(
+                        m.RestaurantOrderLine.tenant_id == tenant_id,
+                        m.RestaurantOrderLine.order_id.in_([row.id for row in bills]),
+                    )
+                )
+            ).scalars().all()
+        )
+        for line in bill_lines:
+            if line.product_id:
+                product_ids.add(line.product_id)
     products = {}
     if product_ids:
         for product in (
@@ -408,6 +525,7 @@ async def product_lines(
     party_ids.update(tx.party_id for tx, _ in pos_rows if tx.party_id)
     names = await _names(db, tenant_id, party_ids)
     user_ids = {inv.created_by for inv in invoices if inv.created_by}
+    user_ids.update(order.created_by for order in bills if order.created_by)
     for tx, session in pos_rows:
         payload = tx.payload or {}
         if payload.get("cashier_user_id"):
@@ -417,6 +535,7 @@ async def product_lines(
     users = await _user_names(db, tenant_id, user_ids)
     store_ids_seen = {inv.store_id for inv in invoices if inv.store_id}
     store_ids_seen.update(session.store_id for _, session in pos_rows if session and session.store_id)
+    store_ids_seen.update(order.store_id for order in bills if order.store_id)
     stores = await _store_names(db, tenant_id, store_ids_seen)
 
     lines: list[dict] = []
@@ -434,7 +553,7 @@ async def product_lines(
             continue
         when = _sale_when(inv)
         qty = money_json(item.quantity)
-        line_total = money_json(item.line_total)
+        line_total = _amount_base(inv, item.line_total)
         row = {
             "id": item.id,
             "when": when.isoformat() if when else None,
@@ -445,9 +564,9 @@ async def product_lines(
             "category": cat_names.get(product.category_id or "") or product.category,
             "brand": brand_names.get(product.brand_id or ""),
             "quantity": qty,
-            "unit_price": money_json(item.unit_price),
-            "discount": money_json(item.discount or 0),
-            "tax": money_json(item.line_tax or 0),
+            "unit_price": _amount_base(inv, item.unit_price),
+            "discount": _amount_base(inv, item.discount or 0),
+            "tax": _amount_base(inv, item.line_tax or 0),
             "sales_total": line_total,
             "customer": names.get(inv.customer_id) or "Customer",
             "cashier": users.get(inv.created_by or ""),
@@ -490,6 +609,8 @@ async def product_lines(
             discount = money_json(line.get("discount") or 0)
             tax = money_json(line.get("line_tax") or line.get("tax") or 0)
             sales_total = money_json(line.get("line_total") or (unit_price * qty))
+            if restaurant_company and line.get("line_subtotal") is not None:
+                sales_total = money_json(line.get("line_subtotal"))
             row = {
                 "id": f"{tx.id}:{index}",
                 "when": tx.created_at.isoformat() if tx.created_at else None,
@@ -510,8 +631,17 @@ async def product_lines(
                 "store_id": store_id_row,
                 "store_name": stores.get(store_id_row or ""),
             }
+            if restaurant_company:
+                row["_sale_id"] = tx.id
+                row["_product_id"] = product.id
             if include_cost:
-                if product.cost_price is None:
+                if restaurant_company:
+                    from app.restaurant import sale_line_cost
+
+                    cost = await sale_line_cost(db, tenant_id, product.id, qty)
+                    row["cost"] = cost
+                    row["profit"] = money_json(round(sales_total - cost, 2))
+                elif product.cost_price is None:
                     row["cost"] = None
                     row["profit"] = None
                 else:
@@ -519,10 +649,139 @@ async def product_lines(
                     row["cost"] = cost
                     row["profit"] = money_json(round(sales_total - cost, 2))
             _append(row, tx.created_at)
+        if restaurant_company:
+            header = money_json(payload.get("discount_amount") or 0)
+            if header > 0:
+                sale_rows = [row for row in lines if row.get("_sale_id") == tx.id]
+                base = money_json(round(sum(money_json(row["sales_total"]) for row in sale_rows), 2))
+                if base > 0 and sale_rows:
+                    allocated = 0.0
+                    for index, row in enumerate(sale_rows):
+                        if index == len(sale_rows) - 1:
+                            share = money_json(round(header - allocated, 2))
+                        else:
+                            share = money_json(round(header * money_json(row["sales_total"]) / base, 2))
+                            allocated = money_json(round(allocated + share, 2))
+                        row["discount"] = money_json(round(money_json(row["discount"]) + share, 2))
+                        row["sales_total"] = money_json(round(money_json(row["sales_total"]) - share, 2))
+                        if row.get("cost") is not None:
+                            row["profit"] = money_json(round(row["sales_total"] - row["cost"], 2))
+
+    bill_by_id = {order.id: order for order in bills}
+    for line in bill_lines:
+        order = bill_by_id.get(line.order_id)
+        product = products.get(line.product_id)
+        if order is None or product is None:
+            continue
+        if category_id and product.category_id != category_id:
+            continue
+        when = order.completed_at or order.created_at
+        qty = money_json(line.quantity)
+        sales_total = money_json(line.line_total)
+        row = {
+            "id": line.id,
+            "when": when.isoformat() if when else None,
+            "number": order.order_number,
+            "product": product.name,
+            "sku": product.sku,
+            "barcode": product.barcode,
+            "category": cat_names.get(product.category_id or "") or product.category,
+            "brand": brand_names.get(product.brand_id or ""),
+            "quantity": qty,
+            "unit_price": money_json(line.unit_price),
+            "discount": 0,
+            "tax": 0,
+            "_order_id": order.id,
+            "sales_total": sales_total,
+            "customer": (order.customer_name or "").strip() or "No customer",
+            "cashier": users.get(order.created_by or ""),
+            "payment_method": order.payment_method or "cash",
+            "store_id": order.store_id,
+            "store_name": stores.get(order.store_id or ""),
+        }
+        if include_cost:
+            from app.restaurant import sale_line_cost
+
+            cost = await sale_line_cost(db, tenant_id, product.id, qty)
+            row["cost"] = cost
+            row["profit"] = money_json(round(sales_total - cost, 2))
+        _append(row, when)
+
+    if bills:
+        from app.restaurant import bill_parts, service_percent
+
+        percent = await service_percent(db, tenant_id)
+        tax_by_order: dict[str, float] = {}
+        subtotal_by_order: dict[str, float] = {}
+        for order in bills:
+            subtotal = money_json(order.subtotal or 0)
+            _service, tax = bill_parts(subtotal, money_json(order.total_amount or 0), percent)
+            tax_by_order[order.id] = tax
+            subtotal_by_order[order.id] = subtotal
+        rows_by_order: dict[str, list] = {}
+        for row in lines:
+            order_id = row.get("_order_id")
+            if order_id:
+                rows_by_order.setdefault(order_id, []).append(row)
+        for order_id, rows in rows_by_order.items():
+            tax = tax_by_order.get(order_id, 0.0)
+            subtotal = subtotal_by_order.get(order_id, 0.0)
+            included = money_json(round(sum(money_json(row["sales_total"]) for row in rows), 2))
+            complete = abs(included - subtotal) <= 0.02
+            allocated = 0.0
+            for index, row in enumerate(rows):
+                if subtotal <= 0:
+                    share = 0.0
+                elif complete and index == len(rows) - 1:
+                    share = money_json(round(tax - allocated, 2))
+                else:
+                    share = money_json(round(tax * money_json(row["sales_total"]) / subtotal, 2))
+                    allocated = money_json(round(allocated + share, 2))
+                row["tax"] = share
+
+    if restaurant_company:
+        from app.restaurant import posted_till_return_moves
+
+        for move in await posted_till_return_moves(
+            db,
+            tenant_id,
+            start=from_date,
+            end=to_date,
+            inclusive_end=to_date is not None,
+            store_id=store_id,
+            store_ids=store_ids,
+        ):
+            qty = move["quantity"]
+            for row in lines:
+                if qty <= 1e-9:
+                    break
+                if row.get("_sale_id") != move["transaction_id"] or row.get("_product_id") != move["product_id"]:
+                    continue
+                row_qty = money_json(row["quantity"])
+                if row_qty <= 0:
+                    continue
+                take = min(row_qty, qty)
+                kept = money_json(round(1 - (take / row_qty), 6))
+                row["quantity"] = money_json(round(row_qty - take, 3))
+                row["sales_total"] = money_json(round(money_json(row["sales_total"]) * kept, 2))
+                row["tax"] = money_json(round(money_json(row["tax"]) * kept, 2))
+                row["discount"] = money_json(round(money_json(row["discount"]) * kept, 2))
+                if row.get("cost") is not None:
+                    row["cost"] = money_json(round(money_json(row["cost"]) * kept, 2))
+                    row["profit"] = money_json(round(row["sales_total"] - row["cost"], 2))
+                qty = money_json(round(qty - take, 3))
+        lines[:] = [
+            row
+            for row in lines
+            if abs(money_json(row["quantity"])) > 1e-9 or abs(money_json(row["sales_total"])) > 0.004
+        ]
 
     lines.sort(key=lambda row: row["_sort"], reverse=True)
     for row in lines:
         row.pop("_sort", None)
+        row.pop("_sale_id", None)
+        row.pop("_product_id", None)
+        row.pop("_order_id", None)
     total_sales = money_json(round(sum(row["sales_total"] for row in lines), 2))
     total_qty = money_json(round(sum(row["quantity"] for row in lines), 3))
     total_discount = money_json(round(sum(row["discount"] for row in lines), 2))
@@ -588,13 +847,17 @@ async def payment_methods(
         for inv in invoices:
             collected = 0.0
             for pay in by_invoice.get(inv.id, []):
-                collected = money_json(round(collected + money_json(pay.amount), 2))
-                _add(str(pay.payment_method or "other"), money_json(pay.amount))
-            due = max(money_json(inv.total_amount) - money_json(inv.paid_amount), 0)
+                paid = _amount_base(pay, pay.amount)
+                collected = money_json(round(collected + paid, 2))
+                _add(str(pay.payment_method or "other"), paid)
+            due = max(
+                _amount_base(inv, inv.total_amount) - _amount_base(inv, inv.paid_amount),
+                0,
+            )
             if due > 0:
                 _add("on_account", due)
-            elif not by_invoice.get(inv.id) and money_json(inv.total_amount) > 0:
-                _add("recorded_on_invoice", money_json(inv.total_amount))
+            elif not by_invoice.get(inv.id) and _amount_base(inv, inv.total_amount) > 0:
+                _add("recorded_on_invoice", _amount_base(inv, inv.total_amount))
 
     pos_rows = await _pos_rows(
         db,
@@ -630,18 +893,55 @@ async def payment_methods(
         if pays:
             collected = 0.0
             for pay in pays:
-                collected = money_json(round(collected + money_json(pay.amount), 2))
-                _add(str(pay.payment_method or "other"), money_json(pay.amount))
-            due = max(money_json(tx.total) - collected, 0)
+                collected = money_json(round(collected + _tx_base(tx, pay.amount), 2))
+                _add(str(pay.payment_method or "other"), _tx_base(tx, pay.amount))
+            due = max(_tx_base(tx) - collected, 0)
             if due > 0:
                 _add("on_account", due)
         else:
             method = str((tx.payload or {}).get("payment_method") or "on_account")
-            _add(method, money_json(tx.total or 0))
+            _add(method, _tx_base(tx))
 
-    rows = sorted(buckets.values(), key=lambda row: row["amount"], reverse=True)
+    for order in await _restaurant_bills(
+        db,
+        tenant_id,
+        from_date=from_date,
+        to_date=to_date,
+        store_id=store_id,
+        store_ids=store_ids,
+    ):
+        _add(str(order.payment_method or "cash"), money_json(order.total_amount))
+
+    from app.restaurant import _restaurant_company, posted_till_returns
+
+    restaurant_company = await _restaurant_company(db, tenant_id)
+    if restaurant_company:
+        for ret in await posted_till_returns(
+            db,
+            tenant_id,
+            start=from_date,
+            end=to_date,
+            inclusive_end=to_date is not None,
+            store_id=store_id,
+            store_ids=store_ids,
+        ):
+            amount = money_json(ret.refunded_amount or 0)
+            if amount <= 0 and (ret.settlement_method or "") == "refund":
+                amount = money_json(ret.total_amount or 0)
+            if amount <= 0:
+                continue
+            _add(str(ret.refund_payment_method or "cash"), -amount, count=0)
+    rows = sorted(
+        (row for row in buckets.values() if abs(money_json(row["amount"])) > 0.004),
+        key=lambda row: row["amount"],
+        reverse=True,
+    )
     return {
-        "returns_note": RETURNS_NOTE,
+        "returns_note": (
+            "A restaurant till return comes off this tender. The original receipt stays on the till report."
+            if restaurant_company
+            else RETURNS_NOTE
+        ),
         "rows": rows,
         "total": money_json(round(sum(row["amount"] for row in rows), 2)),
     }
@@ -683,7 +983,7 @@ async def discount_lines(
             by_invoice.setdefault(item.sales_invoice_id, []).append(item)
         for inv in invoices:
             when = _sale_when(inv)
-            header = money_json(inv.discount_amount or 0)
+            header = _amount_base(inv, inv.discount_amount or 0)
             if header > 0:
                 header_total = money_json(round(header_total + header, 2))
                 rows.append(
@@ -697,7 +997,7 @@ async def discount_lines(
                     }
                 )
             for item in by_invoice.get(inv.id, []):
-                amount = money_json(item.discount or 0)
+                amount = _amount_base(inv, item.discount or 0)
                 if amount <= 0:
                     continue
                 line_total = money_json(round(line_total + amount, 2))
@@ -755,13 +1055,103 @@ async def discount_lines(
                     "_sort": tx.created_at or datetime.min,
                 }
             )
+    from app.restaurant import _restaurant_company, posted_till_returns
+
+    restaurant_company = await _restaurant_company(db, tenant_id)
+    if restaurant_company:
+        discount_returns = await posted_till_returns(
+            db,
+            tenant_id,
+            start=from_date,
+            end=to_date,
+            inclusive_end=to_date is not None,
+        )
+        if discount_returns:
+            sale_ids = [ret.transaction_id for ret in discount_returns if ret.transaction_id]
+            sales = (
+                await db.execute(select(m.Transaction).where(m.Transaction.id.in_(sale_ids)))
+            ).scalars().all() if sale_ids else []
+            sale_by_id = {sale.id: sale for sale in sales}
+            return_items = (
+                await db.execute(
+                    select(m.SalesReturnItem).where(
+                        m.SalesReturnItem.sales_return_id.in_([ret.id for ret in discount_returns])
+                    )
+                )
+            ).scalars().all()
+            items_by_return: dict[str, list] = {}
+            for item in return_items:
+                items_by_return.setdefault(item.sales_return_id, []).append(item)
+            left_qty: dict[tuple[str, int], float] = {}
+            unit_discount: dict[tuple[str, int], float] = {}
+            for sale in sales:
+                for index, line in enumerate((sale.payload or {}).get("items") or []):
+                    qty = money_json(line.get("quantity") or 0)
+                    discount = money_json(line.get("discount") or 0)
+                    if qty <= 0 or discount <= 0:
+                        continue
+                    key = (sale.id, index)
+                    left_qty[key] = qty
+                    unit_discount[key] = discount / qty
+            take: dict[str, float] = {}
+            for ret in discount_returns:
+                sale = sale_by_id.get(ret.transaction_id)
+                if sale is None:
+                    continue
+                pending: dict[str, float] = {}
+                for item in items_by_return.get(ret.id, []):
+                    pending[item.product_id] = money_json(
+                        round(pending.get(item.product_id, 0.0) + money_json(item.quantity or 0), 3)
+                    )
+                for index, line in enumerate((sale.payload or {}).get("items") or []):
+                    product_id = line.get("product_id")
+                    waiting = pending.get(product_id, 0.0)
+                    key = (sale.id, index)
+                    open_qty = left_qty.get(key, 0.0)
+                    if waiting <= 0 or open_qty <= 0:
+                        continue
+                    used = min(waiting, open_qty)
+                    share = money_json(round(unit_discount[key] * used, 2))
+                    if share > 0:
+                        row_id = f"{sale.id}:{index}"
+                        take[row_id] = money_json(round(take.get(row_id, 0.0) + share, 2))
+                    left_qty[key] = money_json(round(open_qty - used, 3))
+                    pending[product_id] = money_json(round(waiting - used, 3))
+                header = money_json((sale.payload or {}).get("discount_amount") or 0)
+                gross = money_json(sale.total or 0)
+                refunded = money_json(ret.total_amount or 0)
+                if header > 0 and gross > 0 and refunded > 0:
+                    share = money_json(round(header * min(refunded, gross) / gross, 2))
+                    if share > 0:
+                        row_id = f"{sale.id}:header"
+                        take[row_id] = money_json(round(take.get(row_id, 0.0) + share, 2))
+            kept_rows = []
+            for row in rows:
+                cut = take.get(row["id"], 0.0)
+                if cut:
+                    cut = min(cut, row["amount"])
+                    row["amount"] = money_json(round(row["amount"] - cut, 2))
+                    if abs(row["amount"]) <= 0.004:
+                        continue
+                kept_rows.append(row)
+            rows = kept_rows
+            header_total = money_json(
+                round(sum(row["amount"] for row in rows if row["kind"] in {"Invoice discount", "Sale discount"}), 2)
+            )
+            line_total = money_json(
+                round(sum(row["amount"] for row in rows if row["kind"] == "Line discount"), 2)
+            )
     rows.sort(key=lambda row: row["_sort"], reverse=True)
     for row in rows:
         row.pop("_sort", None)
     return {
         "returns_note": (
-            "Discounts are listed here and are already taken out of sales revenue. "
-            "They are not subtracted again."
+            "A restaurant till return comes off this discount. The original receipt stays on the till report."
+            if restaurant_company
+            else (
+                "Discounts are listed here and are already taken out of sales revenue. "
+                "They are not subtracted again."
+            )
         ),
         "count": len(rows),
         "truncated": len(rows) > LINE_CAP,
@@ -847,7 +1237,7 @@ async def pos_sales(
                 or "Walk-in",
                 "cashier": users.get(cashier_id),
                 "payment_method": _method_label(method_list),
-                "total": money_json(tx.total or 0),
+                "total": _tx_base(tx),
                 "store_id": store_id_row,
                 "store_name": stores.get(store_id_row or ""),
                 "also_invoiced": bool(linked and linked in counted),

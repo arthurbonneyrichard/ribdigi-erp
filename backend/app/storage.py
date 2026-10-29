@@ -92,6 +92,51 @@ def _normalize_content_type(content_type: str | None) -> str:
     return ct
 
 
+def _sniff_media_type(data: bytes) -> str | None:
+    if not data:
+        return None
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if data.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if data.startswith(b"GIF87a") or data.startswith(b"GIF89a"):
+        return "image/gif"
+    if data.startswith(b"%PDF"):
+        return "application/pdf"
+    if len(data) >= 12 and data.startswith(b"RIFF") and data[8:12] == b"WEBP":
+        return "image/webp"
+    return None
+
+
+def _reject_untrusted_upload(*, filename: str | None, claimed: str, data: bytes) -> str:
+    name = (filename or "").lower()
+    if claimed in {"image/svg+xml", "text/xml", "application/xml"} or name.endswith(".svg"):
+        raise HTTPException(
+            status_code=400,
+            detail="That file type is not allowed. Use PNG, JPEG, WebP, or GIF.",
+        )
+    head = data[:256].lstrip().lower()
+    if head.startswith(b"<svg") or head.startswith(b"<?xml") or b"<svg" in head:
+        raise HTTPException(
+            status_code=400,
+            detail="That file type is not allowed. Use PNG, JPEG, WebP, or GIF.",
+        )
+    sniffed = _sniff_media_type(data)
+    if claimed.startswith("image/") or claimed == "application/pdf":
+        if sniffed is None:
+            raise HTTPException(
+                status_code=400,
+                detail="That file type is not allowed. Use PNG, JPEG, WebP, or GIF.",
+            )
+        if sniffed != claimed:
+            raise HTTPException(
+                status_code=400,
+                detail="That file type is not allowed. Use PNG, JPEG, WebP, or GIF.",
+            )
+        return sniffed
+    return claimed
+
+
 def content_type_for_key(key: str) -> str:
     suffix = Path(key).suffix.lower()
     return CONTENT_TYPE_FOR_EXT.get(suffix, "application/octet-stream")
@@ -254,6 +299,9 @@ async def save_upload(
     size = len(data)
     if size <= 0:
         raise HTTPException(status_code=400, detail="The file is empty. Choose another image.")
+    content_type = _reject_untrusted_upload(
+        filename=upload.filename, claimed=content_type, data=data
+    )
     if size > max_bytes:
         max_mb = max(1, int(max_bytes / 1_000_000))
         raise HTTPException(

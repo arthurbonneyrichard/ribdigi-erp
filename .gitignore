@@ -54,6 +54,8 @@ pnpm-debug.log*
 # --- Logs & temp ---
 logs/
 *.log
+backend/_tmp_api_log.txt
+_tmp_api_log.txt
 tmp/
 temp/
 *.tmp

@@ -411,6 +411,10 @@ async def apply_line_items_stock(
     """
     if not items:
         return
+    if reference_type in {"pos_sale", "sales_return"}:
+        from app.restaurant import expand_pos_recipe_items
+
+        items = await expand_pos_recipe_items(db, tenant_id, items, reference_type)
     from app.catalog import get_variant, stock_out_with_batch
 
     for item in items:

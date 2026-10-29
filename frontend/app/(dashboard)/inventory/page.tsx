@@ -10,6 +10,7 @@ import { downloadAttachment, fetchAttachment, uploadAttachment } from '../../../
 import { getMe } from '../../../lib/meCache';
 import { getPrefetched, peekPrefetch } from '../../../lib/prefetchCache';
 import { pageLoadStarted } from '../../../lib/navTiming';
+import { printDocumentHtml } from '../../../lib/documentPrint';
 import PageSkeleton from '../../../components/PageSkeleton';
 import { AmountField } from '../../../components/AmountField';
 import RowActions, { type RowActionItem } from '../../../components/RowActions';
@@ -104,6 +105,30 @@ const VIEW_TITLE: Record<Tab, string> = {
   lowstock: 'Low Stock',
   whstock: 'Manage Stock',
   transfers: 'Stock transfer',
+};
+
+const HOTEL_VIEW_TITLE: Partial<Record<Tab, string>> = {
+  products: 'Supplies',
+  batches: 'Lots',
+  opening: 'Opening supplies',
+  counts: 'Supply count',
+  movements: 'Supply history',
+  adjust: 'Supply adjustment',
+  stockout: 'Supplies out',
+  lowstock: 'Low supplies',
+  whstock: 'Supplies on hand',
+};
+
+const RESTAURANT_VIEW_TITLE: Partial<Record<Tab, string>> = {
+  products: 'Ingredients',
+  batches: 'Ingredient lots',
+  opening: 'Opening ingredients',
+  counts: 'Ingredient count',
+  movements: 'Ingredient history',
+  adjust: 'Ingredient adjustment',
+  stockout: 'Ingredients out',
+  lowstock: 'Low ingredients',
+  whstock: 'Ingredients on hand',
 };
 
 type ImportReportRow = {
@@ -256,7 +281,25 @@ function warehouseRowIsLow(r: {
   return floor > 0 && qty <= floor;
 }
 
-function StockStatusBadge({ product }: { product: any }) {
+function stockStatusText(label: string, hotel: boolean, restaurant = false): string {
+  if (hotel) {
+    if (label === 'out_of_stock') return 'None left';
+    if (label === 'low') return 'Low supplies';
+    if (label === 'near_reorder') return 'Near reorder';
+    if (label === 'ok') return 'On hand';
+    return label;
+  }
+  if (restaurant) {
+    if (label === 'out_of_stock') return 'None left';
+    if (label === 'low') return 'Low';
+    if (label === 'near_reorder') return 'Near reorder';
+    if (label === 'ok') return 'On hand';
+    return label;
+  }
+  return label;
+}
+
+function StockStatusBadge({ product, hotel = false, restaurant = false }: { product: any; hotel?: boolean; restaurant?: boolean }) {
   const status = stockStatusOf(product);
   const colors: Record<string, { bg: string; fg: string }> = {
     out: { bg: '#fee2e2', fg: '#991b1b' },
@@ -268,9 +311,17 @@ function StockStatusBadge({ product }: { product: any }) {
   const apiText =
     product.stock_status_label ||
     (status === 'out' ? 'out_of_stock' : status === 'red' ? 'low' : status === 'yellow' ? 'near_reorder' : 'ok');
+  const shown = stockStatusText(apiText, hotel, restaurant);
+  const floor = Math.max(Number(product.minimum_stock ?? 0), Number(product.reorder_level ?? 0));
   return (
     <span
-      title={`Stock ${product.stock_qty ?? 0} · floor ${Math.max(Number(product.minimum_stock ?? 0), Number(product.reorder_level ?? 0))}`}
+      title={
+        hotel
+          ? `On hand ${product.stock_qty ?? 0} · floor ${floor}`
+          : restaurant
+            ? `On hand ${product.stock_qty ?? 0} · reorder ${floor}`
+            : `Stock ${product.stock_qty ?? 0} · floor ${floor}`
+      }
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -281,7 +332,9 @@ function StockStatusBadge({ product }: { product: any }) {
         color: c.fg,
         fontSize: 12,
         fontWeight: 600,
-        whiteSpace: 'nowrap',
+        whiteSpace: restaurant ? 'normal' : 'nowrap',
+        justifyContent: restaurant ? 'flex-end' : undefined,
+        textAlign: restaurant ? 'right' : undefined,
       }}
     >
       <span
@@ -295,7 +348,7 @@ function StockStatusBadge({ product }: { product: any }) {
         }}
       />
       {product.stock_qty ?? 0}
-      <span style={{ fontWeight: 500, opacity: 0.85 }}>({apiText})</span>
+      <span style={{ fontWeight: 500, opacity: 0.85 }}>({shown})</span>
     </span>
   );
 }
@@ -326,6 +379,7 @@ export default function Page() {
   const [units, setUnits] = useState<any[]>([]);
   const { storeId } = useStoreContext();
   const [hotelOps, setHotelOps] = useState(false);
+  const [restaurantOps, setRestaurantOps] = useState(false);
   const [pharmacyOps, setPharmacyOps] = useState(false);
   const [wholesaleOps, setWholesaleOps] = useState(false);
   const [retailTransfers, setRetailTransfers] = useState(true);
@@ -336,6 +390,7 @@ export default function Page() {
         const industry = r.data?.industry;
         const multi = tenantIsMultiStore(r.data);
         setHotelOps(isHotelIndustry(industry));
+        setRestaurantOps(normalizeIndustry(industry) === 'restaurant');
         setPharmacyOps(normalizeIndustry(industry) === 'pharmacy');
         setWholesaleOps(usesWholesaleTrade(industry));
         setRetailTransfers(usesStoreStockTransfers(industry) && multi);
@@ -476,6 +531,7 @@ export default function Page() {
   const [productTaxRateId, setProductTaxRateId] = useState('');
   const [productBrandId, setProductBrandId] = useState('');
   const [productUnitId, setProductUnitId] = useState('');
+  const [productStation, setProductStation] = useState('');
   const [editReorder, setEditReorder] = useState('0');
   const [editPrice, setEditPrice] = useState('0');
   const [editMoq, setEditMoq] = useState('0');
@@ -494,6 +550,7 @@ export default function Page() {
   const [editCategoryId, setEditCategoryId] = useState('');
   const [editBrandId, setEditBrandId] = useState('');
   const [editUnitId, setEditUnitId] = useState('');
+  const [editStation, setEditStation] = useState('');
   const [editTaxRateId, setEditTaxRateId] = useState('');
   const [priceTiers, setPriceTiers] = useState<any[]>([]);
   const [tierMinQty, setTierMinQty] = useState('');
@@ -1239,11 +1296,11 @@ export default function Page() {
     setFormFlash({});
     const reorderWh = whStockWarehouseId.trim() || (hideWarehouseUx ? defaultWarehouseId : '');
     if (!reorderWh) {
-      setFormFlash({ err: hideWarehouseUx ? 'No warehouse is available for this store' : 'Select a location' });
+      setFormFlash({ err: hideWarehouseUx ? hotelOps ? 'No location is available for this hotel.' : restaurantOps ? 'No warehouse is available for this restaurant.' : 'No warehouse is available for this store' : hotelOps ? 'Select a location' : restaurantOps ? 'Select a warehouse' : 'Select a location' });
       return;
     }
     if (!whReorderProductId) {
-      setFormFlash({ err: 'Select a product' });
+      setFormFlash({ err: hotelOps ? 'Select a supply' : restaurantOps ? 'Select an ingredient' : 'Select a product' });
       return;
     }
     setSaveBusy(true);
@@ -1302,6 +1359,7 @@ export default function Page() {
         setEditBrandId(String(p.brand_id || ''));
         setEditUnitId(String(p.unit_id || ''));
         setEditTaxRateId(String(p.tax_rate_id || ''));
+        setEditStation(String(p.prep_station || ''));
       }
     }
   }, [selectedId, products]);
@@ -1332,14 +1390,19 @@ export default function Page() {
           brand_id: editBrandId.trim() || null,
           unit_id: editUnitId.trim() || null,
           tax_rate_id: editTaxRateId.trim() || null,
+          ...(restaurantOps
+            ? editStation === 'kitchen' || editStation === 'bar'
+              ? { prep_station: editStation }
+              : { clear_prep_station: true }
+            : {}),
         }),
       });
-      setFormFlash({ ok: 'Product updated' });
+      setFormFlash({ ok: hotelOps ? 'Supply updated' : restaurantOps ? 'Ingredient updated' : 'Product updated' });
       setProductEditMode(false);
       await refresh();
       return true;
     } catch (err: any) {
-      setFormFlash({ err: err.message || 'Could not update product' });
+      setFormFlash({ err: err.message || (hotelOps ? 'Could not update supply' : restaurantOps ? 'Could not update ingredient' : 'Could not update product') });
       return false;
     } finally {
       setSaveBusy(false);
@@ -1430,7 +1493,7 @@ export default function Page() {
         method: 'PATCH',
         body: JSON.stringify({ is_active }),
       });
-      setMessage(is_active ? 'Product activated' : 'Product deactivated');
+      setMessage(is_active ? (hotelOps ? 'Supply activated' : restaurantOps ? 'Ingredient activated' : 'Product activated') : (hotelOps ? 'Supply deactivated' : restaurantOps ? 'Ingredient deactivated' : 'Product deactivated'));
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -1467,14 +1530,9 @@ export default function Page() {
   }
 
   function openHtmlPrint(html: string) {
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const w = window.open(url, '_blank', 'noopener,noreferrer,width=720,height=640');
-    if (!w) {
-      URL.revokeObjectURL(url);
-      throw new Error('Pop-up blocked — allow pop-ups to print labels');
+    if (!printDocumentHtml(html)) {
+      throw new Error('Print failed');
     }
-    setTimeout(() => URL.revokeObjectURL(url), 60_000);
   }
 
   function downloadBlob(blob: Blob, filename: string) {
@@ -1645,7 +1703,7 @@ export default function Page() {
     setFormFlash({});
     const countWh = countWarehouseId.trim() || (hideWarehouseUx ? defaultWarehouseId : '');
     if (!countWh) {
-      setFormFlash({ err: hideWarehouseUx ? 'No warehouse is available for this store' : 'Select a location' });
+      setFormFlash({ err: hideWarehouseUx ? hotelOps ? 'No location is available for this hotel.' : restaurantOps ? 'No warehouse is available for this restaurant.' : 'No warehouse is available for this store' : hotelOps ? 'Select a location' : restaurantOps ? 'Select a warehouse' : 'Select a location' });
       return;
     }
     setSaveBusy(true);
@@ -1658,7 +1716,7 @@ export default function Page() {
         }),
       });
       if (!r.data?.id) {
-        setFormFlash({ err: 'Server did not confirm the stock count' });
+        setFormFlash({ err: hotelOps ? 'Server did not confirm the supply count' : restaurantOps ? 'Server did not confirm the ingredient count' : 'Server did not confirm the stock count' });
         return;
       }
       setActiveCount(r.data);
@@ -1675,7 +1733,7 @@ export default function Page() {
       setTab('counts');
       await refresh();
     } catch (err: any) {
-      setFormFlash({ err: err.message || 'Could not start stock count' });
+      setFormFlash({ err: err.message || (hotelOps ? 'Could not start supply count' : restaurantOps ? 'Could not start ingredient count' : 'Could not start stock count') });
     } finally {
       setSaveBusy(false);
     }
@@ -1754,7 +1812,7 @@ export default function Page() {
       setFormFlash({ ok: `Count ${r.data.count_number} completed` });
       await refresh();
     } catch (err: any) {
-      setFormFlash({ err: err.message || 'Could not complete stock count' });
+      setFormFlash({ err: err.message || (hotelOps ? 'Could not complete supply count' : restaurantOps ? 'Could not complete ingredient count' : 'Could not complete stock count') });
     } finally {
       setSaveBusy(false);
     }
@@ -1766,7 +1824,7 @@ export default function Page() {
     setFormFlash({});
     const reason = countCancelReason.trim();
     if (!reason) {
-      setFormFlash({ err: 'Enter a cancel reason before cancelling a stock count' });
+      setFormFlash({ err: hotelOps ? 'Enter a cancel reason before cancelling a supply count' : restaurantOps ? 'Enter a cancel reason before cancelling an ingredient count' : 'Enter a cancel reason before cancelling a stock count' });
       return;
     }
     setSaveBusy(true);
@@ -1782,7 +1840,7 @@ export default function Page() {
       }
       await refresh();
     } catch (err: any) {
-      setFormFlash({ err: err.message || 'Could not cancel stock count' });
+      setFormFlash({ err: err.message || (hotelOps ? 'Could not cancel supply count' : restaurantOps ? 'Could not cancel ingredient count' : 'Could not cancel stock count') });
     } finally {
       setSaveBusy(false);
     }
@@ -1795,7 +1853,7 @@ export default function Page() {
     setFormFlash({});
     const name = productName.trim();
     if (!name) {
-      setFormFlash({ err: 'Enter a product name' });
+      setFormFlash({ err: hotelOps ? 'Enter a supply name' : restaurantOps ? 'Enter an ingredient name' : 'Enter a product name' });
       return;
     }
     const openingQty = Number(createOpeningQty);
@@ -1803,7 +1861,9 @@ export default function Page() {
     const wantsExpiry = Boolean(createOpeningExpiry.trim() || createOpeningBatch.trim() || createOpeningMfg.trim());
     if (wantsExpiry && !wantsOpening) {
       setFormFlash({ err: hideWarehouseUx
-        ? 'Expiry is stored on a lot, not the product. Enter quantity with the expiry date.'
+        ? (hotelOps
+          ? 'Expiry is stored on a lot, not the supply. Enter quantity with the expiry date.'
+          : 'Expiry is stored on a lot, not the product. Enter quantity with the expiry date.')
         : 'Enter the quantity and location together with the expiry date.' });
       setCreateOpenStockOpen(true);
       setCreateExpiryOpen(true);
@@ -1811,7 +1871,7 @@ export default function Page() {
     }
     const openingWh = createOpeningWh.trim() || (hideWarehouseUx ? defaultWarehouseId : '');
     if (wantsOpening && !openingWh) {
-      setFormFlash({ err: hideWarehouseUx ? 'No warehouse is available for this store' : 'Select a warehouse for opening stock' });
+      setFormFlash({ err: hideWarehouseUx ? hotelOps ? 'No location is available for this hotel.' : restaurantOps ? 'No warehouse is available for this restaurant.' : 'No warehouse is available for this store' : (hotelOps ? 'Select a location for opening supplies' : restaurantOps ? 'Select a warehouse for opening ingredients' : 'Select a warehouse for opening stock') });
       setCreateOpenStockOpen(true);
       return;
     }
@@ -1847,11 +1907,17 @@ export default function Page() {
           tax_supply_class: productSupplyClass,
           tracks_batches: tracksBatches,
           stock_qty: 0,
+          ...(restaurantOps
+            ? {
+                prep_station:
+                  productStation === 'kitchen' || productStation === 'bar' ? productStation : null,
+              }
+            : {}),
         }),
       });
       const productId = r.data?.id;
       if (!productId) {
-        setFormFlash({ err: 'Server did not confirm the product' });
+        setFormFlash({ err: hotelOps ? 'Server did not confirm the supply' : restaurantOps ? 'Server did not confirm the ingredient' : 'Server did not confirm the product' });
         return;
       }
       if (wantsOpening) {
@@ -1887,6 +1953,7 @@ export default function Page() {
       setProductCategoryId('');
       setProductBrandId('');
       setProductUnitId('');
+      setProductStation('');
       setCreateOpeningQty('');
       setCreateOpeningBatch('');
       setCreateOpeningMfg('');
@@ -1895,9 +1962,9 @@ export default function Page() {
       setFormFlash({
         ok: wantsOpening
           ? createOpeningExpiry.trim()
-            ? `Saved ${r.data.sku || name} with opening stock and expiry`
-            : `Saved ${r.data.sku || name} with opening stock`
-          : `Saved ${r.data.sku || name}. Set expiry below with quantity and warehouse, or use the Expiry tab.`,
+            ? `Saved ${r.data.sku || name} with ${hotelOps ? 'opening supplies' : restaurantOps ? 'opening ingredients' : 'opening stock'} and expiry`
+            : `Saved ${r.data.sku || name} with ${hotelOps ? 'opening supplies' : restaurantOps ? 'opening ingredients' : 'opening stock'}`
+          : `Saved ${r.data.sku || name}. Set expiry below with quantity and ${hotelOps ? 'location' : 'warehouse'}, or use the Expiry tab.`,
       });
       setProductAddOpen(false);
       await refresh();
@@ -1907,7 +1974,7 @@ export default function Page() {
       setProductEditMode(false);
       if (!lotWh && createOpeningWh) setLotWh(createOpeningWh);
     } catch (err: any) {
-      setFormFlash({ err: err.message || 'Could not save product' });
+      setFormFlash({ err: err.message || (hotelOps ? 'Could not save supply' : restaurantOps ? 'Could not save ingredient' : 'Could not save product') });
     } finally {
       setSaveBusy(false);
     }
@@ -1980,17 +2047,17 @@ export default function Page() {
     setFormFlash({});
     const productId = expiryTargetId.trim();
     if (!productId) {
-      setFormFlash({ err: 'Select a product' });
+      setFormFlash({ err: hotelOps ? 'Select a supply' : restaurantOps ? 'Select an ingredient' : 'Select a product' });
       return;
     }
     const qty = Number(lotQty);
     if (!Number.isFinite(qty) || qty <= 0) {
-      setFormFlash({ err: 'Enter quantity for this warehouse lot' });
+      setFormFlash({ err: hotelOps ? 'Enter quantity for this location lot' : 'Enter quantity for this warehouse lot' });
       return;
     }
     const warehouseId = (lotWh || createOpeningWh || stockWarehouseId || (hideWarehouseUx ? defaultWarehouseId : '')).trim();
     if (!warehouseId) {
-      setFormFlash({ err: hideWarehouseUx ? 'No warehouse is available for this store' : 'Select a warehouse' });
+      setFormFlash({ err: hideWarehouseUx ? hotelOps ? 'No location is available for this hotel.' : restaurantOps ? 'No warehouse is available for this restaurant.' : 'No warehouse is available for this store' : (hotelOps ? 'Select a location' : 'Select a warehouse') });
       return;
     }
     const expiry = lotExpiry.trim();
@@ -2020,7 +2087,7 @@ export default function Page() {
           }),
         });
         if (!r.data?.id && !r.data?.reference) {
-          setFormFlash({ err: 'Server did not confirm opening stock' });
+          setFormFlash({ err: hotelOps ? 'Server did not confirm opening supplies' : restaurantOps ? 'Server did not confirm opening ingredients' : 'Server did not confirm opening stock' });
           return;
         }
         setFormFlash({ ok: `Expiry saved${batch ? ` on lot ${batch}` : ''} · opening ${r.data.reference}` });
@@ -2068,7 +2135,7 @@ export default function Page() {
     setError('');
     try {
       await downloadAttachment('/products/export', 'products-export.csv');
-      setMessage('Products CSV exported');
+      setMessage(hotelOps ? 'Supplies CSV exported' : restaurantOps ? 'Ingredients CSV exported' : 'Products CSV exported');
     } catch (err: any) {
       setError(err.message);
     }
@@ -2095,7 +2162,7 @@ export default function Page() {
       setLookupMeta({ q: data.q, barcode: data.barcode, count: data.count });
       setLookupStock(null);
       if (!items.length) {
-        setMessage('No products matched');
+        setMessage(hotelOps ? 'No supplies matched' : restaurantOps ? 'No ingredients matched' : 'No products matched');
         return;
       }
       const pickId = opts?.selectId || items[0].id;
@@ -2103,7 +2170,7 @@ export default function Page() {
       const stock = await api(`/products/${pickId}/warehouse-stock`);
       setLookupStock(stock.data);
       setMessage(
-        `Found ${data.count} product(s)` +
+        `Found ${data.count} ${hotelOps ? 'supply' : restaurantOps ? 'ingredient' : 'product'}(s)` +
           (data.barcode ? ` for barcode ${data.barcode}` : q ? ` for “${q}”` : '')
       );
     } catch (err: any) {
@@ -2161,7 +2228,7 @@ export default function Page() {
             : `Validation found ${body.data?.error_rows || 0} error row(s)`
         );
       } else {
-        setMessage(`Imported ${body.data?.imported || 0} product(s)`);
+        setMessage(`Imported ${body.data?.imported || 0} ${hotelOps ? 'supply' : restaurantOps ? 'ingredient' : 'product'}(s)`);
         setImportFile(null);
         await refresh();
         setTab('products');
@@ -2224,7 +2291,7 @@ export default function Page() {
         asPrimary ? `/products/${selectedId}/image` : `/products/${selectedId}/images`,
         file,
       );
-      setMessage(asPrimary ? 'Primary product image uploaded' : 'Gallery image added');
+      setMessage(asPrimary ? (hotelOps ? 'Primary supply image uploaded' : restaurantOps ? 'Primary ingredient image uploaded' : 'Primary product image uploaded') : 'Gallery image added');
       await refresh();
       await refreshSelected(selectedId);
     } catch (err: any) {
@@ -2275,7 +2342,9 @@ export default function Page() {
     setError('');
     if (
       !window.confirm(
-        'Deactivate this variant? The product stays in the catalog. You can activate the variant again later.',
+        hotelOps
+          ? 'Deactivate this variant? The supply stays in the catalog. You can activate the variant again later.'
+          : 'Deactivate this variant? The product stays in the catalog. You can activate the variant again later.',
       )
     ) {
       return;
@@ -2469,7 +2538,9 @@ export default function Page() {
     if (
       !isActive &&
       !window.confirm(
-        'Deactivate this brand? Products stay in the catalog. You can activate the brand again later.',
+        hotelOps
+          ? 'Deactivate this brand? Supplies stay in the catalog. You can activate the brand again later.'
+          : 'Deactivate this brand? Products stay in the catalog. You can activate the brand again later.',
       )
     ) {
       return;
@@ -2556,7 +2627,9 @@ export default function Page() {
     if (
       !isActive &&
       !window.confirm(
-        'Deactivate this unit? Products stay in the catalog. You can activate the unit again later.',
+        hotelOps
+          ? 'Deactivate this unit? Supplies stay in the catalog. You can activate the unit again later.'
+          : 'Deactivate this unit? Products stay in the catalog. You can activate the unit again later.',
       )
     ) {
       return;
@@ -2618,7 +2691,7 @@ export default function Page() {
     setFormFlash({});
     const parentId = variantProductId || selectedId;
     if (!parentId) {
-      setFormFlash({ err: 'Select a product first' });
+      setFormFlash({ err: hotelOps ? 'Select a supply first' : restaurantOps ? 'Select an ingredient first' : 'Select a product first' });
       return;
     }
     const name = variantName.trim();
@@ -2677,12 +2750,12 @@ export default function Page() {
     setFormFlash({});
     const productId = (opts?.productId || '').trim();
     if (!productId) {
-      setFormFlash({ err: 'Select a product' });
+      setFormFlash({ err: hotelOps ? 'Select a supply' : restaurantOps ? 'Select an ingredient' : 'Select a product' });
       return;
     }
     const wh = (stockWarehouseId || whStockWarehouseId || (hideWarehouseUx ? defaultWarehouseId : '')).trim();
     if (!wh) {
-      setFormFlash({ err: hideWarehouseUx ? 'No warehouse is available for this store' : 'Select a location' });
+      setFormFlash({ err: hideWarehouseUx ? hotelOps ? 'No location is available for this hotel.' : restaurantOps ? 'No warehouse is available for this restaurant.' : 'No warehouse is available for this store' : hotelOps ? 'Select a location' : restaurantOps ? 'Select a warehouse' : 'Select a location' });
       return;
     }
     if (opts?.requireBatch && !batchNumber.trim()) {
@@ -2713,10 +2786,10 @@ export default function Page() {
         }),
       });
       if (r.data?.stock_qty == null && !r.data?.id) {
-        setFormFlash({ err: 'Server did not confirm received stock' });
+        setFormFlash({ err: hotelOps ? 'Server did not confirm received supplies' : restaurantOps ? 'Server did not confirm received ingredients' : 'Server did not confirm received stock' });
         return;
       }
-      setFormFlash({ ok: `Stock received — on-hand ${r.data.stock_qty}` });
+      setFormFlash({ ok: hotelOps ? `Supplies received — on hand ${r.data.stock_qty}` : `Stock received — on-hand ${r.data.stock_qty}` });
       setBatchNumber('');
       setMfgDate('');
       setExpiryDate('');
@@ -2727,7 +2800,7 @@ export default function Page() {
       // Received: close the Receive batch window so the batch shows in the list.
       if (opts?.requireBatch) setBatchDrawerOpen(false);
     } catch (err: any) {
-      setFormFlash({ err: err.message || 'Could not receive stock' });
+      setFormFlash({ err: err.message || (hotelOps ? 'Could not receive supplies' : restaurantOps ? 'Could not receive ingredients' : 'Could not receive stock') });
     } finally {
       setSaveBusy(false);
     }
@@ -2740,7 +2813,7 @@ export default function Page() {
     setFormFlash({});
     const productId = openingTargetId.trim();
     if (!productId) {
-      setFormFlash({ err: 'Select a product' });
+      setFormFlash({ err: hotelOps ? 'Select a supply' : restaurantOps ? 'Select an ingredient' : 'Select a product' });
       return;
     }
     const qty = Number(openingQty);
@@ -2750,7 +2823,7 @@ export default function Page() {
     }
     const openingWhId = openingWarehouseId.trim() || (hideWarehouseUx ? defaultWarehouseId : '');
     if ((openingExpiry.trim() || openingBatch.trim() || openingMfg.trim()) && !openingWhId) {
-      setFormFlash({ err: hideWarehouseUx ? 'No warehouse is available for this store' : 'Select a warehouse to record expiry' });
+      setFormFlash({ err: hideWarehouseUx ? hotelOps ? 'No location is available for this hotel.' : restaurantOps ? 'No warehouse is available for this restaurant.' : 'No warehouse is available for this store' : (hotelOps ? 'Select a location to record expiry' : 'Select a warehouse to record expiry') });
       return;
     }
     if (openingExpiry && openingMfg && openingExpiry < openingMfg) {
@@ -2781,12 +2854,14 @@ export default function Page() {
         }),
       });
       if (!r.data?.reference && !r.data?.id) {
-        setFormFlash({ err: 'Server did not confirm opening stock' });
+        setFormFlash({ err: hotelOps ? 'Server did not confirm opening supplies' : restaurantOps ? 'Server did not confirm opening ingredients' : 'Server did not confirm opening stock' });
         return;
       }
       const je = r.data.journal_number ? ` · journal ${r.data.journal_number}` : '';
       setFormFlash({
-        ok: `Opening stock ${r.data.reference}: ${r.data.line_count} line(s), value ${r.data.inventory_value}${je}`,
+        ok: hotelOps
+          ? `Opening supplies ${r.data.reference}: ${r.data.line_count} line(s), value ${r.data.inventory_value}${je}`
+          : `Opening stock ${r.data.reference}: ${r.data.line_count} line(s), value ${r.data.inventory_value}${je}`,
       });
       setOpeningBatch('');
       setOpeningMfg('');
@@ -2797,7 +2872,7 @@ export default function Page() {
       await refreshSelected(productId);
       setTab('opening');
     } catch (err: any) {
-      setFormFlash({ err: err.message || 'Could not post opening stock' });
+      setFormFlash({ err: err.message || (hotelOps ? 'Could not post opening supplies' : restaurantOps ? 'Could not post opening ingredients' : 'Could not post opening stock') });
     } finally {
       setSaveBusy(false);
     }
@@ -2810,7 +2885,7 @@ export default function Page() {
     setFormFlash({});
     const productId = adjustTargetId.trim();
     if (!productId) {
-      setFormFlash({ err: 'Select a product' });
+      setFormFlash({ err: hotelOps ? 'Select a supply' : restaurantOps ? 'Select an ingredient' : 'Select a product' });
       return;
     }
     if (!adjReason.trim()) {
@@ -2861,7 +2936,7 @@ export default function Page() {
     setFormFlash({});
     const productId = outTargetId.trim();
     if (!productId) {
-      setFormFlash({ err: 'Select a product' });
+      setFormFlash({ err: hotelOps ? 'Select a supply' : restaurantOps ? 'Select an ingredient' : 'Select a product' });
       return;
     }
     if (!outRefType.trim()) {
@@ -2875,7 +2950,7 @@ export default function Page() {
     }
     const batchId = outBatchId.trim();
     if (batchId && !outLots.some((b) => String(b.id) === batchId)) {
-      setFormFlash({ err: 'Pick a batch that belongs to this product' });
+      setFormFlash({ err: hotelOps ? 'Pick a batch that belongs to this supply' : restaurantOps ? 'Pick a batch that belongs to this ingredient' : 'Pick a batch that belongs to this product' });
       return;
     }
     setSaveBusy(true);
@@ -2896,10 +2971,10 @@ export default function Page() {
         }),
       });
       if (r.data?.stock_qty == null) {
-        setFormFlash({ err: 'Server did not confirm stock out' });
+        setFormFlash({ err: hotelOps ? 'Server did not confirm supplies out' : restaurantOps ? 'Server did not confirm ingredients out' : 'Server did not confirm stock out' });
         return;
       }
-      setFormFlash({ ok: `Stock out saved — on-hand ${r.data.stock_qty}` });
+      setFormFlash({ ok: hotelOps ? `Supplies out saved — on hand ${r.data.stock_qty}` : `Stock out saved — on-hand ${r.data.stock_qty}` });
       setOutNotes('');
       setOutRefId('');
       setOutRefType('');
@@ -2907,7 +2982,7 @@ export default function Page() {
       setMvType('stock_out');
       setMvReason('');
     } catch (err: any) {
-      setFormFlash({ err: err.message || 'Could not post stock out' });
+      setFormFlash({ err: err.message || (hotelOps ? 'Could not post supplies out' : restaurantOps ? 'Could not post ingredients out' : 'Could not post stock out') });
     } finally {
       setSaveBusy(false);
     }
@@ -2980,7 +3055,9 @@ export default function Page() {
     if (
       !isActive &&
       !window.confirm(
-        'Deactivate this category? Products stay in the catalog. You can activate the category again later.',
+        hotelOps
+          ? 'Deactivate this category? Supplies stay in the catalog. You can activate the category again later.'
+          : 'Deactivate this category? Products stay in the catalog. You can activate the category again later.',
       )
     ) {
       return;
@@ -3267,17 +3344,23 @@ export default function Page() {
   return (
     <div className="inv-ui-page">
       <PageHeader
-        title={VIEW_TITLE[tab]}
-        subtitle={hotelOps ? 'Linen, toiletries, F&B and cleaning supplies use the same stock records as the rest of the hotel.' : undefined}
+        title={(hotelOps && HOTEL_VIEW_TITLE[tab]) || (restaurantOps && RESTAURANT_VIEW_TITLE[tab]) || VIEW_TITLE[tab]}
+        subtitle={
+          hotelOps
+            ? 'Linen, toiletries, F&B and cleaning supplies use the same supply records as the rest of the hotel.'
+            : restaurantOps
+              ? 'Recipe ingredients and menu items use these stock records. Table orders stay on the restaurant desk.'
+              : undefined
+        }
       />
-      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
+      {error && <p className="form-flash err" role="alert">{error}</p>}
+      {message && <p className="form-flash ok">{message}</p>}
 
       <div className="inv-ui-nav">
         <div className="inv-ui-nav-group">
-          <p className="inv-ui-nav-label">Products</p>
+          <p className="inv-ui-nav-label">{hotelOps ? 'Supplies' : restaurantOps ? 'Ingredients' : 'Products'}</p>
           <div className="inv-ui-nav-row">
-            <button type="button" onClick={() => selectTab('products')} disabled={tab === 'products'} aria-label="Show inventory products tab">Products</button>
+            <button type="button" onClick={() => selectTab('products')} disabled={tab === 'products'} aria-label="Show inventory products tab">{hotelOps ? 'Supplies' : restaurantOps ? 'Ingredients' : 'Products'}</button>
           </div>
         </div>
         <div className="inv-ui-nav-group">
@@ -3298,40 +3381,40 @@ export default function Page() {
           </div>
         </div>
         <div className="inv-ui-nav-group">
-          <p className="inv-ui-nav-label">Stock</p>
+          <p className="inv-ui-nav-label">{hotelOps || restaurantOps ? 'On hand' : 'Stock'}</p>
           <div className="inv-ui-nav-row">
             {(
               [
-                ['whstock', 'Warehouse stock'],
-                ['adjust', 'Adjust stock'],
-                ['counts', 'Stock count'],
-                ['movements', 'Stock history'],
-                ['lowstock', 'Low stock'],
-                ['expiry', 'Expiry'],
-                ['batches', 'Batches'],
+                ['whstock', 'Warehouse stock', 'Supplies on hand', 'Ingredients on hand'],
+                ['adjust', 'Adjust stock', 'Adjust supplies', 'Adjust ingredients'],
+                ['counts', 'Stock count', 'Supply count', 'Ingredient count'],
+                ['movements', 'Stock history', 'Supply history', 'Ingredient history'],
+                ['lowstock', 'Low stock', 'Low supplies', 'Low ingredients'],
+                ['expiry', 'Expiry', 'Expiry', 'Expiry'],
+                ['batches', 'Batches', 'Lots', 'Ingredient lots'],
               ] as const
-            ).map(([id, label]) => (
+            ).map(([id, retail, hotel, restaurant]) => (
               <button key={id} type="button" onClick={() => selectTab(id)} disabled={tab === id} aria-label={`Show inventory ${id} tab`}>
-                {label}
+                {hotelOps ? hotel : restaurantOps ? restaurant : retail}
               </button>
             ))}
           </div>
         </div>
         <details className="inv-ui-more">
-          <summary>More inventory tools</summary>
+          <summary>{hotelOps ? 'More supply tools' : restaurantOps ? 'More ingredient tools' : 'More inventory tools'}</summary>
           <div className="inv-ui-nav-row">
             {(
               [
-                ['labels', 'Labels'],
-                ['lookup', 'Lookup'],
-                ['import', 'Import'],
-                ['opening', 'Opening stock'],
-                ['stockout', 'Stock out'],
-                ...(retailTransfers ? [['transfers', 'Stock transfer'] as [Tab, string]] : []),
-              ] as [Tab, string][]
-            ).map(([id, label]) => (
+                ['labels', 'Labels', 'Labels', 'Labels'],
+                ['lookup', 'Lookup', 'Lookup', 'Lookup'],
+                ['import', 'Import', 'Import', 'Import'],
+                ['opening', 'Opening stock', 'Opening supplies', 'Opening ingredients'],
+                ['stockout', 'Stock out', 'Supplies out', 'Ingredients out'],
+                ...(retailTransfers ? [['transfers', 'Stock transfer', 'Supply transfer', 'Ingredient transfer'] as [Tab, string, string, string]] : []),
+              ] as [Tab, string, string, string][]
+            ).map(([id, retail, hotel, restaurant]) => (
               <button key={id} type="button" onClick={() => selectTab(id)} disabled={tab === id} aria-label={`Show inventory ${id} tab`}>
-                {label}
+                {hotelOps ? hotel : restaurantOps ? restaurant : retail}
               </button>
             ))}
           </div>
@@ -3373,8 +3456,8 @@ export default function Page() {
                 if (next === 'inactive' && active) setSelectedId('');
               }
             }}
-            title="Filter manage product list by status"
-            aria-label="Product status filter"
+            title={hotelOps ? 'Filter the supply list by status' : restaurantOps ? 'Filter the ingredient list by status' : 'Filter manage product list by status'}
+            aria-label={hotelOps ? 'Supply status filter' : restaurantOps ? 'Ingredient status filter' : 'Product status filter'}
           >
             <option value="all">All statuses</option>
             <option value="active">Active only</option>
@@ -3387,7 +3470,7 @@ export default function Page() {
           style={{ width: '100%' }}
           aria-label="Selected product"
         >
-          <option value="">Select product</option>
+          <option value="">{hotelOps ? 'Select supply' : restaurantOps ? 'Select ingredient' : 'Select product'}</option>
           {managedProducts.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name} ({p.sku}) — {p.stock_qty}
@@ -3396,7 +3479,7 @@ export default function Page() {
           ))}
         </select>
         {selected?.is_active === false && (
-          <p className="muted">Inactive — hidden from sales/purchasing/POS pickers; stock ops still allowed</p>
+          <p className="muted">{hotelOps ? 'Inactive — hidden from sales and purchasing. Supply counts and receipts still work.' : restaurantOps ? 'Inactive — hidden from bills and purchasing. Ingredient counts and receipts still work.' : 'Inactive — hidden from sales/purchasing/POS pickers; stock ops still allowed'}</p>
         )}
       </div>
         )}
@@ -3404,10 +3487,13 @@ export default function Page() {
       {tab === 'lookup' && (
         <div className="erp-split">
         <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 12 }}>
-          <h3>Product lookup</h3>
+          <h3>{hotelOps ? 'Supply lookup' : restaurantOps ? 'Ingredient lookup' : 'Product lookup'}</h3>
           <p className="muted" style={{ margin: 0 }}>
-            Scan a barcode or search by name or SKU. Choose a result to see its stock in each
-            warehouse.
+            {hotelOps
+              ? 'Scan a barcode or search by name or SKU. Choose a result to see how much is on hand.'
+              : restaurantOps
+                ? 'Scan a barcode or search by name or SKU. Choose a result to see ingredients in each warehouse.'
+                : 'Scan a barcode or search by name or SKU. Choose a result to see its stock in each warehouse.'}
           </p>
           <div className="erp-form-grid" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <input
@@ -3455,10 +3541,10 @@ export default function Page() {
           <table className="table">
             <thead>
               <tr>
-                <th>Product</th>
+                <th>{hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}</th>
                 <th>SKU</th>
                 <th>Barcode</th>
-                <th>Stock</th>
+                <th>{hotelOps ? 'On hand' : restaurantOps ? 'On hand' : 'Stock'}</th>
                 <th>Status</th>
                 <th></th>
               </tr>
@@ -3470,7 +3556,7 @@ export default function Page() {
                   <td>{p.sku}</td>
                   <td>{p.barcode || '—'}</td>
                   <td>
-                    <StockStatusBadge product={p} />
+                    <StockStatusBadge product={p} hotel={hotelOps} restaurant={restaurantOps} />
                   </td>
                   <td>{p.is_active === false ? 'inactive' : 'active'}</td>
                   <td>
@@ -3492,13 +3578,13 @@ export default function Page() {
           {lookupStock && (
             <div style={{ display: 'grid', gap: 8 }}>
               <strong>
-                Warehouse stock — {lookupStock.sku} ({lookupStock.name}) · consolidated{' '}
+                {hotelOps ? 'Locations' : 'Warehouse stock'} — {lookupStock.sku} ({lookupStock.name}) · consolidated{' '}
                 {lookupStock.consolidated_stock}
               </strong>
               <table className="table">
                 <thead>
                   <tr>
-                    <th>Warehouse</th>
+                    <th>{hotelOps ? 'Location' : 'Warehouse'}</th>
                     <th>Qty</th>
                     <th>Reorder</th>
                     <th>Reorder qty</th>
@@ -3520,15 +3606,19 @@ export default function Page() {
                   {!(lookupStock.items || []).length && (
                     <tr>
                       <td colSpan={5} className="muted">
-                        No warehouse rows for this product
+                        {hotelOps ? 'No location rows for this supply' : restaurantOps ? 'No warehouse rows for this ingredient' : 'No warehouse rows for this product'}
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
               <p className="muted" style={{ margin: 0 }}>
-                Located total {lookupStock.total_quantity ?? 0} · product selected for stock
-                ops / barcode tools above
+                Located total {lookupStock.total_quantity ?? 0} ·{' '}
+                {hotelOps
+                  ? 'supply selected for counts and labels above'
+                  : restaurantOps
+                    ? 'ingredient selected for counts and labels above'
+                    : 'product selected for stock ops / barcode tools above'}
               </p>
             </div>
           )}
@@ -3538,18 +3628,18 @@ export default function Page() {
 
       {tab === 'import' && (
         <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 12 }}>
-          <h3>Bulk import products</h3>
+          <h3>{hotelOps ? 'Bulk import supplies' : restaurantOps ? 'Bulk import ingredients' : 'Bulk import products'}</h3>
           <p className="muted" style={{ margin: 0 }}>
-            Download the CSV template, fill product rows (category / brand / unit must already exist),
-            validate, then import. Import is all-or-nothing — fix every error row first. Export
-            downloads the current catalog in the same column layout.
+            {hotelOps
+              ? 'Download the CSV template, fill supply rows (category / brand / unit must already exist), validate, then import. Import is all-or-nothing — fix every error row first. Export downloads the current supplies in the same column layout.'
+              : 'Download the CSV template, fill product rows (category / brand / unit must already exist), validate, then import. Import is all-or-nothing — fix every error row first. Export downloads the current catalog in the same column layout.'}
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button type="button" onClick={downloadImportTemplate} aria-label="Download product CSV template">
               Download CSV template
             </button>
             <button type="button" onClick={downloadProductsExport} aria-label="Export products CSV">
-              Export products CSV
+              {hotelOps ? 'Export supplies CSV' : restaurantOps ? 'Export ingredients CSV' : 'Export products CSV'}
             </button>
           </div>
           <label className="muted">CSV file</label>
@@ -3592,7 +3682,7 @@ export default function Page() {
                 <thead>
                   <tr>
                     <th>Line</th>
-                    <th>Product</th>
+                    <th>{hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}</th>
                     <th>SKU</th>
                     <th>Status</th>
                     <th>Errors</th>
@@ -3617,13 +3707,17 @@ export default function Page() {
 
       {tab === 'products' && (
         <>
-          {bootLoading && products.length === 0 ? <PageSkeleton label="Loading products…" cards={3} /> : null}
+          {bootLoading && products.length === 0 ? <PageSkeleton label={hotelOps ? 'Loading supplies…' : restaurantOps ? 'Loading ingredients…' : 'Loading products…'} cards={3} /> : null}
           <div className="card cat-panel">
             <div className="list-page-head page-head">
               <div>
-                <h2 style={{ margin: 0 }}>Product List</h2>
+                <h2 style={{ margin: 0 }}>{hotelOps ? 'Supply list' : restaurantOps ? 'Ingredient list' : 'Product List'}</h2>
                 <p className="muted" style={{ margin: '4px 0 0' }}>
-                  Search, filter, and add products for this company.
+                  {hotelOps
+                    ? 'Search, filter, and add linen, toiletries, food, drink, and cleaning supplies.'
+                    : restaurantOps
+                      ? 'Search, filter, and add ingredients for this restaurant.'
+                      : 'Search, filter, and add products for this company.'}
                 </p>
               </div>
               <div className="list-head-actions">
@@ -3634,12 +3728,12 @@ export default function Page() {
                     setFormFlash({});
                     setProductAddOpen(true);
                   }}
-                  aria-label="Add Product"
+                  aria-label={hotelOps ? 'Add supply' : restaurantOps ? 'Add ingredient' : 'Add Product'}
                 >
-                  Add Product
+                  {hotelOps ? 'Add supply' : restaurantOps ? 'Add ingredient' : 'Add Product'}
                 </button>
-                <button type="button" onClick={() => selectTab('import')} aria-label="Import Product">
-                  Import Product
+                <button type="button" onClick={() => selectTab('import')} aria-label={hotelOps ? 'Import supplies' : restaurantOps ? 'Import ingredients' : 'Import Product'}>
+                  {hotelOps ? 'Import supplies' : restaurantOps ? 'Import ingredients' : 'Import Product'}
                 </button>
               </div>
             </div>
@@ -3672,7 +3766,7 @@ export default function Page() {
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
                 placeholder="Search name, SKU, barcode"
-                aria-label="Search products"
+                aria-label={hotelOps ? 'Search supplies' : restaurantOps ? 'Search ingredients' : 'Search products'}
               />
               <select
                 value={productCategoryFilter}
@@ -3707,15 +3801,15 @@ export default function Page() {
                 onChange={(e) => setProductStockFilter(e.target.value as 'all' | 'low' | 'oos' | 'ok')}
                 aria-label="Filter by stock status"
               >
-                <option value="all">All stock</option>
-                <option value="low">Low stock</option>
-                <option value="oos">Out of stock</option>
-                <option value="ok">In stock</option>
+                <option value="all">{hotelOps ? 'All supplies' : restaurantOps ? 'All ingredients' : 'All stock'}</option>
+                <option value="low">{hotelOps ? 'Low supplies' : restaurantOps ? 'Low ingredients' : 'Low stock'}</option>
+                <option value="oos">{hotelOps ? 'None left' : restaurantOps ? 'None left' : 'Out of stock'}</option>
+                <option value="ok">{hotelOps ? 'On hand' : restaurantOps ? 'On hand' : 'In stock'}</option>
               </select>
               <select
                 value={productManageFilter}
                 onChange={(e) => setProductManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
-                aria-label="Product status filter"
+                aria-label={hotelOps ? 'Supply status filter' : restaurantOps ? 'Ingredient status filter' : 'Product status filter'}
               >
                 <option value="all">All statuses</option>
                 <option value="active">Active only</option>
@@ -3726,8 +3820,16 @@ export default function Page() {
               <EmptyState
                 title={
                   managedProducts.length === 0
-                    ? 'No products yet. Add a product to sell it and track stock.'
-                    : 'No products match these filters. Clear the filters or add a product.'
+                    ? (hotelOps
+                      ? 'No supplies yet. Add linen, toiletries, food, drink, or cleaning supplies.'
+                      : restaurantOps
+                        ? 'No ingredients yet. Add an ingredient to cook from or a menu item to sell.'
+                        : 'No products yet. Add a product to sell it and track stock.')
+                    : (hotelOps
+                      ? 'No supplies match these filters. Clear the filters or add a supply.'
+                      : restaurantOps
+                        ? 'No ingredients match these filters. Clear the filters or add an ingredient.'
+                        : 'No products match these filters. Clear the filters or add a product.')
                 }
                 action={
                   <button
@@ -3738,13 +3840,23 @@ export default function Page() {
                       setProductAddOpen(true);
                     }}
                   >
-                    Add Product
+                    {hotelOps ? 'Add supply' : restaurantOps ? 'Add ingredient' : 'Add Product'}
                   </button>
                 }
               />
             ) : (
-              <div className="list-table-wrap">
+              <div className={restaurantOps ? 'list-table-wrap rest-ing-table' : 'list-table-wrap'}>
                 <table className="table cat-table">
+                  {restaurantOps ? (
+                    <colgroup>
+                      <col style={{ width: '28%' }} />
+                      <col style={{ width: '12%' }} />
+                      <col style={{ width: '12%' }} />
+                      <col style={{ width: '16%' }} />
+                      <col style={{ width: '10%' }} />
+                      <col style={{ width: '22%' }} />
+                    </colgroup>
+                  ) : null}
                   <thead>
                     <tr>
                       <th aria-sort={productSort === 'name' ? (productSortDir === 1 ? 'ascending' : 'descending') : 'none'}>
@@ -3756,9 +3868,10 @@ export default function Page() {
                             setProductSortDir((d) => (productSort === 'name' ? ((d === 1 ? -1 : 1) as 1 | -1) : 1));
                           }}
                         >
-                          Product{productSort === 'name' ? (productSortDir === 1 ? ' ↑' : ' ↓') : ''}
+                          {hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}{productSort === 'name' ? (productSortDir === 1 ? ' ↑' : ' ↓') : ''}
                         </button>
                       </th>
+                      {restaurantOps ? null : (
                       <th aria-sort={productSort === 'sku' ? (productSortDir === 1 ? 'ascending' : 'descending') : 'none'}>
                         <button
                           type="button"
@@ -3771,6 +3884,8 @@ export default function Page() {
                           SKU{productSort === 'sku' ? (productSortDir === 1 ? ' ↑' : ' ↓') : ''}
                         </button>
                       </th>
+                      )}
+                      {restaurantOps ? null : (
                       <th aria-sort={productSort === 'category' ? (productSortDir === 1 ? 'ascending' : 'descending') : 'none'}>
                         <button
                           type="button"
@@ -3783,6 +3898,10 @@ export default function Page() {
                           Category{productSort === 'category' ? (productSortDir === 1 ? ' ↑' : ' ↓') : ''}
                         </button>
                       </th>
+                      )}
+                      {restaurantOps ? (
+                        <th>Station</th>
+                      ) : (
                       <th aria-sort={productSort === 'brand' ? (productSortDir === 1 ? 'ascending' : 'descending') : 'none'}>
                         <button
                           type="button"
@@ -3795,6 +3914,7 @@ export default function Page() {
                           Brand{productSort === 'brand' ? (productSortDir === 1 ? ' ↑' : ' ↓') : ''}
                         </button>
                       </th>
+                      )}
                       <th className="col-num" aria-sort={productSort === 'price' ? (productSortDir === 1 ? 'ascending' : 'descending') : 'none'}>
                         <button
                           type="button"
@@ -3804,7 +3924,7 @@ export default function Page() {
                             setProductSortDir((d) => (productSort === 'price' ? ((d === 1 ? -1 : 1) as 1 | -1) : 1));
                           }}
                         >
-                          Selling Price{productSort === 'price' ? (productSortDir === 1 ? ' ↑' : ' ↓') : ''}
+                          {hotelOps ? 'Price' : 'Selling Price'}{productSort === 'price' ? (productSortDir === 1 ? ' ↑' : ' ↓') : ''}
                         </button>
                       </th>
                       <th className="col-num" aria-sort={productSort === 'qty' ? (productSortDir === 1 ? 'ascending' : 'descending') : 'none'}>
@@ -3816,9 +3936,10 @@ export default function Page() {
                             setProductSortDir((d) => (productSort === 'qty' ? ((d === 1 ? -1 : 1) as 1 | -1) : 1));
                           }}
                         >
-                          Qty{productSort === 'qty' ? (productSortDir === 1 ? ' ↑' : ' ↓') : ''}
+                          {restaurantOps ? 'On hand' : 'Qty'}{productSort === 'qty' ? (productSortDir === 1 ? ' ↑' : ' ↓') : ''}
                         </button>
                       </th>
+                      {restaurantOps ? <th className="col-num">Reorder</th> : null}
                       <th className="col-actions">Actions</th>
                     </tr>
                   </thead>
@@ -3830,7 +3951,7 @@ export default function Page() {
                         {
                           key: 'view',
                           label: 'View',
-                          ariaLabel: `Open product ${p.name}`,
+                          ariaLabel: `Open ${hotelOps ? 'supply' : restaurantOps ? 'ingredient' : 'product'} ${p.name}`,
                           onClick: () => {
                             setSelectedId(p.id);
                             setDrawerOpen(true);
@@ -3890,7 +4011,7 @@ export default function Page() {
                       ];
                       return (
                         <tr key={p.id}>
-                          <td data-label="Product">
+                          <td data-label={hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}>
                             <div className="list-prod">
                               {img ? (
                                 // eslint-disable-next-line @next/next/no-img-element
@@ -3904,16 +4025,26 @@ export default function Page() {
                                 {displayProductName(p.name)}
                                 {p.is_active === false ? ' [inactive]' : ''}
                                 {pharmacyOps && p.rx_only ? ' [Rx]' : ''}
+                                {restaurantOps ? (
+                                  <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                                    {p.sku || '—'} · {p.category || '—'}
+                                  </span>
+                                ) : null}
                               </span>
                             </div>
                           </td>
-                          <td data-label="SKU" className="list-secondary col-id">{p.sku || '—'}</td>
-                          <td data-label="Category" className="list-secondary">{p.category || '—'}</td>
+                          {restaurantOps ? null : <td data-label="SKU" className="list-secondary col-id">{p.sku || '—'}</td>}
+                          {restaurantOps ? null : <td data-label="Category" className="list-secondary">{p.category || '—'}</td>}
+                          {restaurantOps ? (
+                            <td data-label="Station">{p.prep_station === 'bar' ? 'Bar' : p.prep_station === 'kitchen' ? 'Kitchen' : '—'}</td>
+                          ) : (
                           <td data-label="Brand" className="list-secondary">{p.brand || '—'}</td>
-                          <td data-label="Selling Price" className="col-num">{p.selling_price ?? 0}</td>
-                          <td data-label="Qty" className={`col-num${st === 'out' || st === 'red' ? ' list-qty-low' : ''}`}>
-                            <StockStatusBadge product={p} />
+                          )}
+                          <td data-label={hotelOps ? 'Price' : 'Selling Price'} className="col-num">{p.selling_price ?? 0}</td>
+                          <td data-label={restaurantOps ? 'On hand' : 'Qty'} className={`col-num${st === 'out' || st === 'red' ? ' list-qty-low' : ''}`}>
+                            <StockStatusBadge product={p} hotel={hotelOps} restaurant={restaurantOps} />
                           </td>
+                          {restaurantOps ? <td data-label="Reorder" className="col-num">{p.reorder_level ?? 0}</td> : null}
                           <td className="col-actions" data-label="Actions">
                             <RowActions label={`More actions for ${p.name}`} primaryMax={1} items={productActions} />
                           </td>
@@ -3934,7 +4065,7 @@ export default function Page() {
                     Max per page
                     <select
                       value={productPageSize}
-                      aria-label="Maximum products per page"
+                      aria-label={hotelOps ? 'Maximum supplies per page' : restaurantOps ? 'Maximum ingredients per page' : 'Maximum products per page'}
                       onChange={(e) => setProductPageSize(Number(e.target.value))}
                     >
                       {PRODUCT_LIST_PAGE_SIZES.map((size) => (
@@ -3948,7 +4079,7 @@ export default function Page() {
                     type="button"
                     disabled={productPaged.page <= 1}
                     onClick={() => setProductPage(productPaged.page - 1)}
-                    aria-label="Previous product page"
+                    aria-label={hotelOps ? 'Previous supply page' : restaurantOps ? 'Previous ingredient page' : 'Previous product page'}
                   >
                     Previous
                   </button>
@@ -3956,7 +4087,7 @@ export default function Page() {
                     type="button"
                     disabled={productPaged.page >= productPaged.pages}
                     onClick={() => setProductPage(productPaged.page + 1)}
-                    aria-label="Next product page"
+                    aria-label={hotelOps ? 'Next supply page' : restaurantOps ? 'Next ingredient page' : 'Next product page'}
                   >
                     Next
                   </button>
@@ -3966,12 +4097,12 @@ export default function Page() {
           </div>
           {productAddOpen ? (
             <FormModal
-              title="Add product"
+              title={hotelOps ? 'Add supply' : restaurantOps ? 'Add ingredient' : 'Add product'}
               busy={saveBusy}
               dirty={productAddDirty}
               headerClose={false}
               closeLabel="Cancel"
-              closeAriaLabel="Cancel add product"
+              closeAriaLabel={hotelOps ? 'Cancel add supply' : restaurantOps ? 'Cancel add ingredient' : 'Cancel add product'}
               onClose={() => {
                 setProductAddOpen(false);
                 setFormFlash({});
@@ -4061,7 +4192,7 @@ export default function Page() {
                       />
                     </div>
           <div className="product-price-field product-price-field--selling">
-                      <label className="product-price-label" htmlFor="add-product-selling-price">Selling price</label>
+                      <label className="product-price-label" htmlFor="add-product-selling-price">{hotelOps ? 'Price' : 'Selling price'}</label>
                       <AmountField
                         id="add-product-selling-price"
                         type="number"
@@ -4074,6 +4205,21 @@ export default function Page() {
                         aria-label="Product selling price"
                       />
                     </div>
+            {restaurantOps ? (
+              <div className="product-price-field">
+                <label className="product-price-label" htmlFor="add-restaurant-menu-station">Menu station</label>
+                <select
+                  id="add-restaurant-menu-station"
+                  value={productStation}
+                  onChange={(e) => setProductStation(e.target.value)}
+                  aria-label="Create restaurant menu station"
+                >
+                  <option value="">Ingredient — no station</option>
+                  <option value="kitchen">Kitchen</option>
+                  <option value="bar">Bar</option>
+                </select>
+              </div>
+            ) : null}
             {wholesaleOps ? (
               <div className="product-price-field">
                 <label className="product-price-label" htmlFor="add-product-moq">Wholesale MOQ</label>
@@ -4247,7 +4393,7 @@ export default function Page() {
               onChange={(e) => setCreateOpeningWh(e.target.value)}
               aria-label="Create product opening warehouse"
             >
-              <option value="">Warehouse (required with quantity or expiry)</option>
+              <option value="">{hotelOps ? 'Location (required with quantity or expiry)' : 'Warehouse (required with quantity or expiry)'}</option>
               {storeWarehouses
                 .filter((w) => w.is_active !== false)
                 .map((w) => (
@@ -4281,7 +4427,7 @@ export default function Page() {
                 <p className="muted">SKU {selected.sku}</p>
                 <p className="muted">Barcode {selected.barcode || '—'}</p>
                 <p className="muted">Category {selected.category || '—'}</p>
-                <p className="muted">On-hand {selected.stock_qty ?? 0}</p>
+                <p className="muted">{hotelOps ? 'On hand' : 'On-hand'} {selected.stock_qty ?? 0}</p>
                 {pharmacyOps ? (
                   <>
                     <p className="muted">Rx-only {selected.rx_only ? 'Yes' : 'No'}</p>
@@ -4339,12 +4485,16 @@ export default function Page() {
                     </div>
                   </>
                 ) : null}
-                <h4>Warehouse lots / expiry</h4>
+                <h4>{hotelOps ? 'Lots and expiry' : 'Warehouse lots / expiry'}</h4>
                 <p className="muted">
-                  Expiry is not a product field. Record quantity at a location with an expiry date.
+                  {hotelOps
+                    ? 'Expiry is not a supply field. Record quantity at a location with an expiry date.'
+                    : restaurantOps
+                      ? 'Expiry is not an ingredient field. Record quantity at a location with an expiry date.'
+                      : 'Expiry is not a product field. Record quantity at a location with an expiry date.'}
                 </p>
                 {batches.length === 0 ? (
-                  <p className="muted">No lots yet for this product.</p>
+                  <p className="muted">{hotelOps ? 'No lots yet for this supply.' : restaurantOps ? 'No lots yet for this ingredient.' : 'No lots yet for this product.'}</p>
                 ) : (
                   <ul style={{ margin: 0, paddingLeft: 18 }}>
                     {batches.map((b) => {
@@ -4368,7 +4518,7 @@ export default function Page() {
                   onChange={(e) => setLotWh(e.target.value)}
                   aria-label="Product lot warehouse"
                 >
-                  <option value="">Select warehouse</option>
+                  <option value="">{hotelOps ? 'Select location' : 'Select warehouse'}</option>
                   {storeWarehouses
                     .filter((w) => w.is_active !== false)
                     .map((w) => (
@@ -4474,9 +4624,19 @@ export default function Page() {
                     <AmountField value={editCost} onChange={(e) => setEditCost(e.target.value)} aria-label="Edit product cost price" />
                     </div>
                     <div className="field">
-                    <label className="muted">Selling price</label>
+                    <label className="muted">{hotelOps ? 'Price' : 'Selling price'}</label>
                     <AmountField value={editPrice} onChange={(e) => setEditPrice(e.target.value)} aria-label="Edit product selling price" />
                     </div>
+                    {restaurantOps ? (
+                    <div className="field">
+                    <label className="muted">Menu station</label>
+                    <select value={editStation} onChange={(e) => setEditStation(e.target.value)} aria-label="Edit restaurant menu station">
+                      <option value="">Ingredient — no station</option>
+                      <option value="kitchen">Kitchen</option>
+                      <option value="bar">Bar</option>
+                    </select>
+                    </div>
+                    ) : null}
                     {wholesaleOps ? (
                     <div className="field">
                     <label className="muted">Wholesale MOQ</label>
@@ -4619,7 +4779,9 @@ export default function Page() {
             <div>
               <h2 style={{ margin: 0 }}>Barcode / QR labels</h2>
               <p className="muted" style={{ margin: '4px 0 0' }}>
-                Create a barcode or QR code for the selected products, then print the labels.
+                {hotelOps
+                  ? 'Create a barcode or QR code for the selected supplies, then print the labels.'
+                  : 'Create a barcode or QR code for the selected products, then print the labels.'}
               </p>
             </div>
           </div>
@@ -4684,9 +4846,12 @@ export default function Page() {
                       }}
                     />
                   </th>
-                  <th>Product</th>
+                  <th>{hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}</th>
                   <th className="col-id">SKU</th>
                   <th className="col-id">Barcode</th>
+                  {restaurantOps ? <th className="col-num">On hand</th> : null}
+                  {restaurantOps ? <th className="col-num">Reorder</th> : null}
+                  {restaurantOps ? <th>Station</th> : null}
                   <th className="col-actions">Actions</th>
                 </tr>
               </thead>
@@ -4726,9 +4891,14 @@ export default function Page() {
                         aria-label={`Select ${p.name} for labels`}
                       />
                     </td>
-                    <td data-label="Product">{displayProductName(p.name)}</td>
+                    <td data-label={hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}>{displayProductName(p.name)}</td>
                     <td data-label="SKU" className="col-id list-secondary">{p.sku || '—'}</td>
                     <td data-label="Barcode" className="col-id list-secondary">{p.barcode || '—'}</td>
+                    {restaurantOps ? <td data-label="On hand" className="col-num">{p.stock_qty ?? 0}</td> : null}
+                    {restaurantOps ? <td data-label="Reorder" className="col-num">{p.reorder_level ?? 0}</td> : null}
+                    {restaurantOps ? (
+                      <td data-label="Station">{p.prep_station === 'bar' ? 'Bar' : p.prep_station === 'kitchen' ? 'Kitchen' : '—'}</td>
+                    ) : null}
                     <td className="col-actions">
                       <RowActions label={`More actions for ${p.name}`} primaryMax={1} items={labelActions} />
                     </td>
@@ -4741,7 +4911,7 @@ export default function Page() {
                   return `${p.name || ''} ${p.sku || ''} ${p.barcode || ''}`.toLowerCase().includes(q);
                 }).length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="muted">No products match.</td>
+                    <td colSpan={restaurantOps ? 8 : 5} className="muted">No products match.</td>
                   </tr>
                 ) : null}
               </tbody>
@@ -4780,7 +4950,7 @@ export default function Page() {
           </div>
           {visibleCategories.length === 0 ? (
             <div className="cat-empty">
-              <p style={{ margin: 0 }}>No categories yet. Add a category, then use it on products.</p>
+              <p style={{ margin: 0 }}>{hotelOps ? 'No categories yet. Add a category, then use it on supplies.' : restaurantOps ? 'No categories yet. Add a category, then use it on ingredients.' : 'No categories yet. Add a category, then use it on products.'}</p>
               <button type="button" style={{ marginTop: 12 }} onClick={openCategoryCreate}>
                 Add category
               </button>
@@ -5007,7 +5177,7 @@ export default function Page() {
           </div>
           {visibleBrands.length === 0 ? (
             <div className="cat-empty">
-              <p style={{ margin: 0 }}>No brands yet. Add a brand, then assign it on products.</p>
+              <p style={{ margin: 0 }}>{hotelOps ? 'No brands yet. Add a brand, then assign it on supplies.' : restaurantOps ? 'No brands yet. Add a brand, then assign it on ingredients.' : 'No brands yet. Add a brand, then assign it on products.'}</p>
               <button type="button" style={{ marginTop: 12 }} onClick={openBrandCreate}>
                 Add brand
               </button>
@@ -5365,7 +5535,7 @@ export default function Page() {
               onChange={(e) => setVariantParentFilter(e.target.value)}
               aria-label="Parent product for variant"
             >
-              <option value="">All products</option>
+              <option value="">{hotelOps ? 'All supplies' : restaurantOps ? 'All ingredients' : 'All products'}</option>
               {products.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -5404,7 +5574,7 @@ export default function Page() {
             </div>
           ) : visibleVariants.length === 0 ? (
             <div className="cat-empty">
-              <p style={{ margin: 0 }}>No variants yet. Choose the parent product, then add size, color, or other options.</p>
+              <p style={{ margin: 0 }}>{hotelOps ? 'No variants yet. Choose the parent supply, then add size, color, or other options.' : restaurantOps ? 'No variants yet. Choose the parent ingredient, then add size, color, or other options.' : 'No variants yet. Choose the parent product, then add size, color, or other options.'}</p>
               <button type="button" style={{ marginTop: 12 }} onClick={openVariantCreate} disabled={!products.length}>
                 Add variant
               </button>
@@ -5416,7 +5586,7 @@ export default function Page() {
                   <tr>
                     <th>Name</th>
                     <th>Parent</th>
-                    <th className="col-num">Selling</th>
+                    <th className="col-num">{hotelOps ? 'Price' : 'Selling'}</th>
                     <th className="col-num">Cost</th>
                     <th className="col-status">Status</th>
                     <th className="col-actions">Actions</th>
@@ -5471,7 +5641,7 @@ export default function Page() {
                       <td data-label="Parent">
                         {products.find((p) => p.id === v.product_id)?.name || '—'}
                       </td>
-                      <td className="col-num" data-label="Selling">
+                      <td className="col-num" data-label={hotelOps ? 'Price' : 'Selling'}>
                         <AmountField inline readOnly value={v.selling_price ?? ''} aria-label={`Variant selling price ${v.name || v.id}`} />
                       </td>
                       <td className="col-num" data-label="Cost">
@@ -5626,7 +5796,7 @@ export default function Page() {
       {tab === 'batches' && (
         <div className="card cat-panel">
           <div className="cat-head">
-            <h2 style={{ margin: 0 }}>Batches</h2>
+            <h2 style={{ margin: 0 }}>{hotelOps ? 'Lots' : restaurantOps ? 'Lots' : 'Batches'}</h2>
             <button
               type="button"
               onClick={() => {
@@ -5636,17 +5806,17 @@ export default function Page() {
                 setStockVariantId('');
                 setBatchDrawerOpen(true);
               }}
-              aria-label="Receive batch"
+              aria-label={hotelOps ? 'Receive a lot' : restaurantOps ? 'Receive a lot' : 'Receive batch'}
             >
-              Receive batch
+              {hotelOps ? 'Receive a lot' : restaurantOps ? 'Receive a lot' : 'Receive batch'}
             </button>
           </div>
           <div className="cat-toolbar">
             <input
               value={batchSearch}
               onChange={(e) => setBatchSearch(e.target.value)}
-              placeholder="Search batches"
-              aria-label="Search batches"
+              placeholder={hotelOps ? 'Search lots' : restaurantOps ? 'Search lots' : 'Search batches'}
+              aria-label={hotelOps ? 'Search lots' : restaurantOps ? 'Search lots' : 'Search batches'}
             />
           </div>
           {pharmacyOps ? (
@@ -5676,7 +5846,7 @@ export default function Page() {
           ) : null}
           {visibleBatches.length === 0 ? (
             <div className="cat-empty">
-              <p style={{ margin: 0 }}>No batches yet. Receive a batch with a product, location, and optional expiry.</p>
+              <p style={{ margin: 0 }}>{hotelOps ? 'No lots yet. Receive a lot with a supply, location, and optional expiry.' : restaurantOps ? 'No lots yet. Receive a lot with an ingredient, location, and optional expiry.' : 'No batches yet. Receive a batch with a product, location, and optional expiry.'}</p>
               <button
                 type="button"
                 style={{ marginTop: 12 }}
@@ -5688,7 +5858,7 @@ export default function Page() {
                   setBatchDrawerOpen(true);
                 }}
               >
-                Receive batch
+                {hotelOps ? 'Receive a lot' : restaurantOps ? 'Receive a lot' : 'Receive batch'}
               </button>
             </div>
           ) : (
@@ -5696,7 +5866,7 @@ export default function Page() {
               <table className="table cat-table">
                 <thead>
                   <tr>
-                    <th>Product</th>
+                    <th>{hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}</th>
                     <th>Batch</th>
                     <th>Qty</th>
                     <th>Expiry</th>
@@ -5711,9 +5881,9 @@ export default function Page() {
                     const hold = pharmacyOps ? openHoldFor(b) : null;
                     return (
                       <tr key={b.id}>
-                        <td data-label="Product">
+                        <td data-label={hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}>
                           <span className="inv-ui-name">
-                            {catalogProductName(products, b.product_id, b.product_name) || 'Product name is not on this lot.'}
+                            {catalogProductName(products, b.product_id, b.product_name) || (hotelOps ? 'Supply name is not on this lot.' : restaurantOps ? 'Ingredient name is not on this lot.' : 'Product name is not on this lot.')}
                           </span>
                         </td>
                         <td data-label="Batch">
@@ -5774,13 +5944,13 @@ export default function Page() {
           )}
           {batchDrawerOpen ? (
             <FormModal
-              title="Receive batch"
+              title={hotelOps ? 'Receive a lot' : restaurantOps ? 'Receive a lot' : 'Receive batch'}
               busy={saveBusy}
               dirty={batchFormDirty}
               onClose={() => setBatchDrawerOpen(false)}
             >
                 <label className="muted" htmlFor="batch-product">
-                  Product
+                  {hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}
                 </label>
                 <select
                   id="batch-product"
@@ -5791,7 +5961,7 @@ export default function Page() {
                   }}
                   aria-label="Batch product"
                 >
-                  <option value="">Select product</option>
+                  <option value="">{hotelOps ? 'Select supply' : restaurantOps ? 'Select ingredient' : 'Select product'}</option>
                   {managedProducts.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} ({p.sku}) — {p.stock_qty}
@@ -5823,7 +5993,7 @@ export default function Page() {
                 <input
                   value={batchNumber}
                   onChange={(e) => setBatchNumber(e.target.value)}
-                  placeholder="Batch number"
+                  placeholder={hotelOps ? 'Lot number' : 'Batch number'}
                   aria-label="Stock-in batch number"
                 />
                 <label className="muted">Manufacturing date</label>
@@ -5847,7 +6017,7 @@ export default function Page() {
                   aria-label="Stock-in quantity"
                 />
                 <select value={stockUnitId} onChange={(e) => setStockUnitId(e.target.value)} aria-label="Stock-in unit">
-                  <option value="">Unit (product default)</option>
+                  <option value="">{hotelOps ? 'Unit (supply default)' : restaurantOps ? 'Unit (ingredient default)' : 'Unit (product default)'}</option>
                   {units
                     .filter((u) => u.is_active !== false)
                     .map((u) => (
@@ -5901,7 +6071,7 @@ export default function Page() {
                     disabled={!batchTargetId || !batchNumber.trim() || saveBusy}
                     aria-label="Receive batch"
                   >
-                    {saveBusy ? 'Saving…' : 'Receive batch'}
+                    {saveBusy ? 'Saving…' : (hotelOps ? 'Receive a lot' : restaurantOps ? 'Receive a lot' : 'Receive batch')}
                   </button>
                   {formFlash.ok ? (
                     <p className="form-flash ok" role="status">
@@ -5922,7 +6092,7 @@ export default function Page() {
       {tab === 'opening' && (
         <div className="card cat-panel">
           <div className="cat-head">
-            <h2 style={{ margin: 0 }}>Opening stock</h2>
+            <h2 style={{ margin: 0 }}>{hotelOps ? 'Opening supplies' : restaurantOps ? 'Opening ingredients' : 'Opening stock'}</h2>
             <button
               type="button"
               onClick={() => {
@@ -5933,21 +6103,25 @@ export default function Page() {
               }}
               aria-label="Post opening stock"
             >
-              Post opening stock
+              {hotelOps ? 'Post opening supplies' : restaurantOps ? 'Post opening ingredients' : 'Post opening stock'}
             </button>
           </div>
           <div className="cat-toolbar">
             <input
               value={openingSearch}
               onChange={(e) => setOpeningSearch(e.target.value)}
-              placeholder="Search opening stock"
-              aria-label="Search opening stock"
+              placeholder={hotelOps ? 'Search opening supplies' : restaurantOps ? 'Search opening ingredients' : 'Search opening stock'}
+              aria-label={hotelOps ? 'Search opening supplies' : restaurantOps ? 'Search opening ingredients' : 'Search opening stock'}
             />
           </div>
           {visibleOpening.length === 0 ? (
             <div className="cat-empty">
               <p style={{ margin: 0 }}>
-                No opening stock posted yet. Post opening stock for go-live; the document number is assigned when you save.
+                {hotelOps
+                  ? 'No opening supplies posted yet. Post opening supplies for go-live; the document number is assigned when you save.'
+                  : restaurantOps
+                    ? 'No opening ingredients posted yet. Post opening ingredients for go-live; the document number is assigned when you save.'
+                    : 'No opening stock posted yet. Post opening stock for go-live; the document number is assigned when you save.'}
               </p>
               <button
                 type="button"
@@ -5959,7 +6133,7 @@ export default function Page() {
                   setOpeningDrawerOpen(true);
                 }}
               >
-                Post opening stock
+                {hotelOps ? 'Post opening supplies' : restaurantOps ? 'Post opening ingredients' : 'Post opening stock'}
               </button>
             </div>
           ) : (
@@ -5967,7 +6141,7 @@ export default function Page() {
               <table className="table cat-table">
                 <thead>
                   <tr>
-                    <th>Product</th>
+                    <th>{hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}</th>
                     <th>SKU</th>
                     <th>When</th>
                     <th>Qty</th>
@@ -5979,9 +6153,9 @@ export default function Page() {
                     const p = products.find((x) => String(x.id) === String(m.product_id));
                     return (
                       <tr key={m.id}>
-                        <td data-label="Product">
+                        <td data-label={hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}>
                           <strong className="inv-ui-name">
-                            {catalogProductName(products, m.product_id, m.product_name) || 'Product name is not on this receipt.'}
+                            {catalogProductName(products, m.product_id, m.product_name) || (hotelOps ? 'Supply name is not on this receipt.' : restaurantOps ? 'Ingredient name is not on this receipt.' : 'Product name is not on this receipt.')}
                           </strong>
                         </td>
                         <td data-label="SKU" className="list-secondary">
@@ -5999,7 +6173,7 @@ export default function Page() {
           )}
           {openingDrawerOpen ? (
             <FormModal
-              title="Post opening stock"
+              title={hotelOps ? 'Post opening supplies' : restaurantOps ? 'Post opening ingredients' : 'Post opening stock'}
               busy={saveBusy}
               dirty={openingFormDirty}
               headerClose={false}
@@ -6015,7 +6189,7 @@ export default function Page() {
                     disabled={!openingTargetId || saveBusy}
                     aria-label="Post opening stock"
                   >
-                    {saveBusy ? 'Saving…' : 'Post opening stock'}
+                    {saveBusy ? 'Saving…' : (hotelOps ? 'Post opening supplies' : restaurantOps ? 'Post opening ingredients' : 'Post opening stock')}
                   </button>
                   {formFlash.ok ? (
                     <p className="form-flash ok" role="status">
@@ -6033,7 +6207,7 @@ export default function Page() {
                 <div className="erp-form-grid form-grid">
                 <div className="field">
                 <label className="muted" htmlFor="opening-product">
-                  Product
+                  {hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}
                 </label>
                 <select
                   id="opening-product"
@@ -6044,7 +6218,7 @@ export default function Page() {
                   }}
                   aria-label="Opening stock product"
                 >
-                  <option value="">Select product</option>
+                  <option value="">{hotelOps ? 'Select supply' : restaurantOps ? 'Select ingredient' : 'Select product'}</option>
                   {managedProducts.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} ({p.sku})
@@ -6075,7 +6249,7 @@ export default function Page() {
                   aria-label="Opening stock quantity"
                 />
                 <select value={openingUnitId} onChange={(e) => setOpeningUnitId(e.target.value)} aria-label="Opening stock unit">
-                  <option value="">Unit (product default)</option>
+                  <option value="">{hotelOps ? 'Unit (supply default)' : restaurantOps ? 'Unit (ingredient default)' : 'Unit (product default)'}</option>
                   {units
                     .filter((u) => u.is_active !== false)
                     .map((u) => (
@@ -6227,10 +6401,14 @@ export default function Page() {
             <div className="cat-empty">
               <p style={{ margin: 0 }}>
                 {expiryWhen === 'expired'
-                  ? 'No expired lots on hand. Set expiry on the lot that is already in stock.'
+                  ? (hotelOps
+                    ? 'No expired lots on hand. Set expiry on the lot that is already on hand.'
+                    : 'No expired lots on hand. Set expiry on the lot that is already in stock.')
                   : expiryWhen === 'soon'
                     ? 'No lots expiring in the next 30 days. Set expiry when you receive the next lot.'
-                    : 'No batches expiring in the next year. Set expiry when you receive a lot.'}
+                    : (hotelOps
+                      ? 'No lots expiring in the next year. Set expiry when you receive a lot.'
+                      : 'No batches expiring in the next year. Set expiry when you receive a lot.')}
               </p>
               <button
                 type="button"
@@ -6254,7 +6432,7 @@ export default function Page() {
                 <thead>
                   <tr>
                     <th className="col-id">Batch</th>
-                    <th>Product</th>
+                    <th>{hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}</th>
                     <th className="col-num">Qty</th>
                     <th className="col-date">Expiry</th>
                     <th>Location</th>
@@ -6286,8 +6464,8 @@ export default function Page() {
                         <td className="col-id" data-label="Batch">
                           <strong>{b.batch_number}</strong>
                         </td>
-                        <td data-label="Product">
-                          <span className="inv-ui-name">{lotName || 'Product name is not on this lot.'}</span>
+                        <td data-label={hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}>
+                          <span className="inv-ui-name">{lotName || (hotelOps ? 'Supply name is not on this lot.' : restaurantOps ? 'Ingredient name is not on this lot.' : 'Product name is not on this lot.')}</span>
                         </td>
                         <td className="col-num" data-label="Qty">{b.quantity}</td>
                         <td className="col-date" data-label="Expiry">{b.expiry_date ? String(b.expiry_date).slice(0, 10) : '—'}</td>
@@ -6337,11 +6515,13 @@ export default function Page() {
             >
               <div className="erp-form-grid form-grid">
               <p className="muted span-2" style={{ margin: 0 }}>
-                Records quantity at the selected warehouse with an expiry date. Uses opening stock when on-hand is zero, otherwise receive stock.
+                {hotelOps
+                  ? 'Records quantity at the selected location with an expiry date. Uses opening supplies when on hand is zero, otherwise receive supplies.'
+                  : 'Records quantity at the selected warehouse with an expiry date. Uses opening stock when on-hand is zero, otherwise receive stock.'}
               </p>
               <div className="field">
               <label className="muted" htmlFor="expiry-product">
-                Product
+                {hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}
               </label>
               <select
                 id="expiry-product"
@@ -6352,7 +6532,7 @@ export default function Page() {
                 }}
                 aria-label="Expiry product"
               >
-                <option value="">Select product</option>
+                <option value="">{hotelOps ? 'Select supply' : restaurantOps ? 'Select ingredient' : 'Select product'}</option>
                 {managedProducts.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name} ({p.sku})
@@ -6371,7 +6551,7 @@ export default function Page() {
                 onChange={(e) => setLotWh(e.target.value)}
                 aria-label="Expiry warehouse"
               >
-                <option value="">Select warehouse</option>
+                <option value="">{hotelOps ? 'Select location' : 'Select warehouse'}</option>
                 {storeWarehouses
                   .filter((w) => w.is_active !== false)
                   .map((w) => (
@@ -6412,7 +6592,7 @@ export default function Page() {
       {tab === 'counts' && (
         <div className="card cat-panel">
           <div className="cat-head">
-            <h2 style={{ margin: 0 }}>Stock count</h2>
+            <h2 style={{ margin: 0 }}>{hotelOps ? 'Supply count' : restaurantOps ? 'Ingredient count' : 'Stock count'}</h2>
             <button
               type="button"
               onClick={() => {
@@ -6446,10 +6626,13 @@ export default function Page() {
           </div>
           {visibleCounts.length === 0 ? (
             <div className="cat-empty">
-              <p style={{ margin: 0 }}>{counts.length === 0 ? 'No stock counts yet.' : 'No stock counts for this filter'}</p>
+              <p style={{ margin: 0 }}>{counts.length === 0 ? (hotelOps ? 'No supply counts yet.' : restaurantOps ? 'No ingredient counts yet.' : 'No stock counts yet.') : (hotelOps ? 'No supply counts for this filter' : restaurantOps ? 'No ingredient counts for this filter' : 'No stock counts for this filter')}</p>
               <p className="muted" style={{ margin: '8px 0 0' }}>
-                Count on-hand quantity at a location, then post differences. This is not an adjustment
-                or a transfer.
+                {hotelOps
+                  ? 'Count supplies on hand at a location, then post differences. This is not an adjustment.'
+                  : restaurantOps
+                    ? 'Count ingredients on hand at a warehouse, then post differences. This is not an adjustment.'
+                    : 'Count on-hand quantity at a location, then post differences. This is not an adjustment or a transfer.'}
               </p>
               <button
                 type="button"
@@ -6515,7 +6698,7 @@ export default function Page() {
           )}
           {countDrawerOpen ? (
             <FormModal
-              title="Start stock count"
+              title={hotelOps ? 'Start supply count' : restaurantOps ? 'Start ingredient count' : 'Start stock count'}
               busy={saveBusy}
               dirty={countFormDirty}
               onClose={() => setCountDrawerOpen(false)}
@@ -6526,7 +6709,7 @@ export default function Page() {
                   onChange={(e) => setCountWarehouseId(e.target.value)}
                   aria-label="Stock count warehouse"
                 >
-                  <option value="">Location</option>
+                  <option value="">{hotelOps ? 'Location' : restaurantOps ? 'Warehouse' : 'Location'}</option>
                   {storeWarehouses
                     .filter((w) => w.is_active !== false)
                     .map((w) => (
@@ -6598,7 +6781,7 @@ export default function Page() {
                   <table className="table cat-table">
                     <thead>
                       <tr>
-                        <th>Product</th>
+                        <th>{hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}</th>
                         <th className="col-num">Expected</th>
                         <th className="col-num">Counted</th>
                       </tr>
@@ -6606,8 +6789,8 @@ export default function Page() {
                     <tbody>
                       {(activeCount.items || []).map((item: any) => (
                         <tr key={item.id}>
-                          <td data-label="Product">
-                            <strong className="inv-ui-name">{item.product_name || 'Product name is not on this count line.'}</strong>
+                          <td data-label={hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}>
+                            <strong className="inv-ui-name">{item.product_name || (hotelOps ? 'Supply name is not on this count line.' : restaurantOps ? 'Ingredient name is not on this count line.' : 'Product name is not on this count line.')}</strong>
                             <span className="list-secondary inv-count-sku">{item.product_sku || ''}</span>
                             <input
                               className="inv-count-note"
@@ -6699,7 +6882,7 @@ export default function Page() {
       {tab === 'movements' && (
         <div className="card cat-panel">
           <div className="cat-head">
-            <h2 style={{ margin: 0 }}>Stock history</h2>
+            <h2 style={{ margin: 0 }}>{hotelOps ? 'Supply history' : restaurantOps ? 'Ingredient history' : 'Stock history'}</h2>
             <button type="button" onClick={() => loadMovements()} aria-label="Refresh inventory movements">
               Refresh
             </button>
@@ -6754,7 +6937,7 @@ export default function Page() {
                 onChange={(e) => setMvProductOnly(e.target.checked)}
                 aria-label="Movement selected product only"
               />
-              Selected product only
+              {hotelOps ? 'Selected supply only' : restaurantOps ? 'Selected ingredient only' : 'Selected product only'}
             </label>
             {mvProductOnly ? (
               <select
@@ -6762,7 +6945,7 @@ export default function Page() {
                 onChange={(e) => setSelectedId(e.target.value)}
                 aria-label="Selected product"
               >
-                <option value="">Select product</option>
+                <option value="">{hotelOps ? 'Select supply' : restaurantOps ? 'Select ingredient' : 'Select product'}</option>
                 {managedProducts.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name} ({p.sku})
@@ -6777,7 +6960,7 @@ export default function Page() {
           </p>
           {visibleMovements.length === 0 ? (
             <div className="cat-empty">
-              <p style={{ margin: 0 }}>No stock history yet. Receive, issue, count, transfer, or adjust stock and the record appears here.</p>
+              <p style={{ margin: 0 }}>{hotelOps ? 'No supply history yet. Receive, issue, count, or adjust supplies and the record appears here.' : restaurantOps ? 'No ingredient history yet. Receive, issue, count, or adjust ingredients and the record appears here.' : 'No stock history yet. Receive, issue, count, transfer, or adjust stock and the record appears here.'}</p>
             </div>
           ) : (
             <div className="cat-table-wrap">
@@ -6785,7 +6968,7 @@ export default function Page() {
                 <thead>
                   <tr>
                     <th>When</th>
-                    <th>Product</th>
+                    <th>{hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}</th>
                     <th>Type</th>
                     <th>Qty</th>
                     <th>User</th>
@@ -6795,8 +6978,8 @@ export default function Page() {
                   {visibleMovements.map((mv) => (
                     <tr key={mv.id}>
                       <td data-label="When">{mv.created_at ? String(mv.created_at).slice(0, 19) : '—'}</td>
-                      <td data-label="Product">
-                        <strong className="inv-ui-name">{mv.product_name || 'Product name is not on this movement.'}</strong>
+                      <td data-label={hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}>
+                        <strong className="inv-ui-name">{mv.product_name || (hotelOps ? 'Supply name is not on this movement.' : restaurantOps ? 'Ingredient name is not on this movement.' : 'Product name is not on this movement.')}</strong>
                         <div className="muted inv-child">
                           {mv.reason || '—'} · {mv.quantity_before} → {mv.quantity_after}
                         </div>
@@ -6816,7 +6999,7 @@ export default function Page() {
       {tab === 'adjust' && (
         <div className="card cat-panel">
           <div className="cat-head">
-            <h2 style={{ margin: 0 }}>Adjust stock</h2>
+            <h2 style={{ margin: 0 }}>{hotelOps ? 'Adjust supplies' : restaurantOps ? 'Adjust ingredients' : 'Adjust stock'}</h2>
             <button
               type="button"
               onClick={() => {
@@ -6828,39 +7011,42 @@ export default function Page() {
                 setAdjNotes('');
                 setAdjustDrawerOpen(true);
               }}
-              aria-label="Adjust stock"
+              aria-label={hotelOps ? 'Adjust supplies' : restaurantOps ? 'Adjust ingredients' : 'Adjust stock'}
             >
-              Adjust stock
+              {hotelOps ? 'Adjust supplies' : restaurantOps ? 'Adjust ingredients' : 'Adjust stock'}
             </button>
           </div>
           <p className="muted inv-child">
-            Use this only to correct on-hand quantity. Receive stock in Manage stock. Move stock with
-            Stock transfer. Count with Stock count.
+            {hotelOps
+              ? 'Use this only to correct supplies on hand. Receive supplies from Supplies on hand. Count with Supply count.'
+              : restaurantOps
+                ? 'Use this only to correct ingredients on hand. Receive ingredients from Ingredients on hand. Count with Ingredient count.'
+                : 'Use this only to correct on-hand quantity. Receive stock in Manage stock. Move stock with Stock transfer. Count with Stock count.'}
           </p>
           <div className="list-toolbar">
             <input
               value={adjustSearch}
               onChange={(e) => setAdjustSearch(e.target.value)}
-              placeholder="Search products to adjust"
-              aria-label="Search products for stock adjustment"
+              placeholder={hotelOps ? 'Search supplies to adjust' : restaurantOps ? 'Search ingredients to adjust' : 'Search products to adjust'}
+              aria-label={hotelOps ? 'Search supplies to adjust' : restaurantOps ? 'Search ingredients to adjust' : 'Search products for stock adjustment'}
             />
           </div>
           {adjustVisible.length === 0 ? (
             <p className="muted inv-child">
               {adjustEligible.length === 0
-                ? 'No eligible products to adjust.'
-                : 'No products match this search.'}
+                ? (hotelOps ? 'No eligible supplies to adjust.' : restaurantOps ? 'No eligible ingredients to adjust.' : 'No eligible products to adjust.')
+                : (hotelOps ? 'No supplies match this search.' : restaurantOps ? 'No ingredients match this search.' : 'No products match this search.')}
             </p>
           ) : (
             <>
               <p className="muted inv-child">
-                {adjustLowOutCount} of {adjustVisible.length} listed product(s) are low or out of stock.
+                {adjustLowOutCount} of {adjustVisible.length} listed {hotelOps ? 'supply' : restaurantOps ? 'ingredient' : 'product'}(s) are low or out of stock.
               </p>
               <div className="cat-table-wrap">
                 <table className="table cat-table">
                   <thead>
                     <tr>
-                      <th>Product</th>
+                      <th>{hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}</th>
                       <th className="col-id">SKU</th>
                       <th className="col-num">Qty</th>
                       <th className="col-actions">Actions</th>
@@ -6886,7 +7072,7 @@ export default function Page() {
                       ];
                       return (
                       <tr key={p.id}>
-                        <td data-label="Product">
+                        <td data-label={hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}>
                           <strong className="list-prod-name">{displayProductName(p.name)}</strong>
                         </td>
                         <td data-label="SKU" className="col-id list-secondary">{p.sku || '—'}</td>
@@ -6913,7 +7099,7 @@ export default function Page() {
               }}
             >
                 <label className="muted" htmlFor="adj-product">
-                  Product
+                  {hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}
                 </label>
                 <select
                   id="adj-product"
@@ -6924,7 +7110,7 @@ export default function Page() {
                   }}
                   aria-label="Adjustment product"
                 >
-                  <option value="">Select product</option>
+                  <option value="">{hotelOps ? 'Select supply' : restaurantOps ? 'Select ingredient' : 'Select product'}</option>
                   {managedProducts.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} ({p.sku}) — on-hand {p.stock_qty}
@@ -6963,7 +7149,7 @@ export default function Page() {
                   onChange={(e) => setAdjWarehouseId(e.target.value)}
                   aria-label="Stock adjustment warehouse"
                 >
-                  <option value="">Company stock (no location)</option>
+                  <option value="">{hotelOps ? 'No location' : restaurantOps ? 'Company ingredients (no warehouse)' : 'Company stock (no location)'}</option>
                   {storeWarehouses
                     .filter((w) => w.is_active !== false)
                     .map((w) => (
@@ -7014,7 +7200,7 @@ export default function Page() {
       {tab === 'stockout' && (
         <div className="card cat-panel">
           <div className="cat-head">
-            <h2 style={{ margin: 0 }}>Stock out</h2>
+            <h2 style={{ margin: 0 }}>{hotelOps ? 'Supplies out' : restaurantOps ? 'Ingredients out' : 'Stock out'}</h2>
             <button
               type="button"
               onClick={() => {
@@ -7027,7 +7213,7 @@ export default function Page() {
               }}
               aria-label="Issue stock"
             >
-              Issue stock
+              {hotelOps ? 'Issue supplies' : restaurantOps ? 'Issue ingredients' : 'Issue stock'}
             </button>
           </div>
           <p className="muted inv-child">
@@ -7036,7 +7222,7 @@ export default function Page() {
           </p>
           {stockOutDrawerOpen ? (
             <FormModal
-              title="Issue stock"
+              title={hotelOps ? 'Issue supplies' : restaurantOps ? 'Issue ingredients' : 'Issue stock'}
               busy={saveBusy}
               dirty={stockOutFormDirty}
               onClose={() => setStockOutDrawerOpen(false)}
@@ -7051,7 +7237,7 @@ export default function Page() {
                   }}
                   aria-label="Stock-out product"
                 >
-                  <option value="">Select product</option>
+                  <option value="">{hotelOps ? 'Select supply' : restaurantOps ? 'Select ingredient' : 'Select product'}</option>
                   {managedProducts.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} ({p.sku}) — {p.stock_qty}
@@ -7089,7 +7275,7 @@ export default function Page() {
                   onChange={(e) => setOutWarehouseId(e.target.value)}
                   aria-label="Stock-out warehouse"
                 >
-                  <option value="">Company stock (no location)</option>
+                  <option value="">{hotelOps ? 'No location' : restaurantOps ? 'Company ingredients (no warehouse)' : 'Company stock (no location)'}</option>
                   {storeWarehouses
                     .filter((w) => w.is_active !== false)
                     .map((w) => (
@@ -7100,7 +7286,7 @@ export default function Page() {
                 </select>
                 ) : null}
                 <select value={outUnitId} onChange={(e) => setOutUnitId(e.target.value)} aria-label="Stock-out unit">
-                  <option value="">Stock unit</option>
+                  <option value="">{hotelOps ? 'Supply unit' : restaurantOps ? 'Ingredient unit' : 'Stock unit'}</option>
                   {units.filter((u) => u.is_active !== false).map((u) => (
                     <option key={u.id} value={u.id}>{u.name}</option>
                   ))}
@@ -7139,7 +7325,7 @@ export default function Page() {
                     disabled={!outTargetId || !outRefType || saveBusy}
                     aria-label="Post stock out"
                   >
-                    {saveBusy ? 'Saving…' : 'Post stock out'}
+                    {saveBusy ? 'Saving…' : (hotelOps ? 'Post supplies out' : restaurantOps ? 'Post ingredients out' : 'Post stock out')}
                   </button>
                   {formFlash.ok ? (
                     <p className="form-flash ok" role="status">
@@ -7161,9 +7347,13 @@ export default function Page() {
         <div className="card cat-panel">
           <div className="list-page-head page-head">
             <div>
-              <h2 style={{ margin: 0 }}>Low stock</h2>
+              <h2 style={{ margin: 0 }}>{hotelOps ? 'Low supplies' : restaurantOps ? 'Low ingredients' : 'Low stock'}</h2>
               <p className="muted" style={{ margin: '4px 0 0' }}>
-                Products running low and due for reordering. Products with none left show as Out of stock on the Products list.
+                {hotelOps
+                  ? 'Supplies running low and due for reordering. Supplies with none left show as None left on the supply list.'
+                  : restaurantOps
+                    ? 'Ingredients running low and due for reordering. Ingredients with none left show as None left on the ingredient list.'
+                    : 'Products running low and due for reordering. Products with none left show as Out of stock on the Products list.'}
               </p>
             </div>
           </div>
@@ -7187,17 +7377,26 @@ export default function Page() {
               }
             />
           ) : lowStockRows.length === 0 ? (
-            <EmptyState title="Receive stock or raise the reorder level when a product should appear in the low-stock band." />
+            <EmptyState title={hotelOps ? 'Receive supplies or raise the reorder level when a supply should appear here.' : restaurantOps ? 'Receive stock or raise the reorder level when an ingredient should appear here.' : 'Receive stock or raise the reorder level when a product should appear in the low-stock band.'} />
           ) : (
-            <div className="list-table-wrap">
+            <div className={restaurantOps ? 'list-table-wrap rest-ing-table' : 'list-table-wrap'}>
               <table className="table cat-table">
+                {restaurantOps ? (
+                  <colgroup>
+                    <col style={{ width: '34%' }} />
+                    <col style={{ width: '16%' }} />
+                    <col style={{ width: '14%' }} />
+                    <col style={{ width: '16%' }} />
+                    <col style={{ width: '20%' }} />
+                  </colgroup>
+                ) : null}
                 <thead>
                   <tr>
-                    <th>Product</th>
-                    <th className="col-id">SKU</th>
-                    <th>Category</th>
-                    <th className="col-num">Qty on hand</th>
-                    <th className="col-num">Reorder at</th>
+                    <th>{hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}</th>
+                    {restaurantOps ? null : <th className="col-id">SKU</th>}
+                    {restaurantOps ? null : <th>Category</th>}
+                    <th className="col-num">{restaurantOps ? 'On hand' : 'Qty on hand'}</th>
+                    <th className="col-num">{restaurantOps ? 'Reorder' : 'Reorder at'}</th>
                     <th className="col-status">Status</th>
                     <th className="col-actions">Actions</th>
                   </tr>
@@ -7220,15 +7419,25 @@ export default function Page() {
                     ];
                     return (
                     <tr key={row.key}>
-                      <td data-label="Product"><span className="inv-ui-name">{row.name || 'Product name is not on this low-stock row.'}</span></td>
-                      <td data-label="SKU" className="col-id list-secondary">{row.sku}</td>
-                      <td data-label="Category" className="list-secondary">{row.category}</td>
-                      <td data-label="Qty on hand" className="col-num list-qty-low">{row.qty}</td>
-                      <td data-label="Reorder at" className="col-num">{row.floor}</td>
-                      <td className="col-status" data-label="Status">
-                        <StatusChip value={row.status} />
+                      <td data-label={hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}>
+                        <span className="inv-ui-name">{row.name || (hotelOps ? 'Supply name is not on this low-supply row.' : restaurantOps ? 'Ingredient name is not on this low-stock row.' : 'Product name is not on this low-stock row.')}</span>
+                        {restaurantOps ? (
+                          <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                            {row.sku || '—'} · {row.category || '—'}
+                          </span>
+                        ) : null}
                       </td>
-                      <td className="col-actions">
+                      {restaurantOps ? null : <td data-label="SKU" className="col-id list-secondary">{row.sku}</td>}
+                      {restaurantOps ? null : <td data-label="Category" className="list-secondary">{row.category}</td>}
+                      <td data-label={restaurantOps ? 'On hand' : 'Qty on hand'} className="col-num list-qty-low">{row.qty}</td>
+                      <td data-label={restaurantOps ? 'Reorder' : 'Reorder at'} className="col-num">{row.floor}</td>
+                      <td className="col-status" data-label="Status">
+                        <StatusChip
+                          value={row.status}
+                          label={restaurantOps ? stockStatusText(String(row.status || 'low'), false, true) : undefined}
+                        />
+                      </td>
+                      <td className="col-actions" data-label="Actions">
                         <RowActions label={`More actions for ${row.name || row.id}`} primaryMax={1} items={lowActions} />
                       </td>
                     </tr>
@@ -7244,7 +7453,7 @@ export default function Page() {
       {tab === 'whstock' && (
         <div className="card cat-panel">
           <div className="cat-head">
-            <h2 style={{ margin: 0 }}>{whLowOnly ? 'Low stock' : 'Manage stock'}</h2>
+            <h2 style={{ margin: 0 }}>{hotelOps ? (whLowOnly ? 'Low supplies' : 'Supplies on hand') : restaurantOps ? (whLowOnly ? 'Low ingredients' : 'Ingredients on hand') : (whLowOnly ? 'Low stock' : 'Manage stock')}</h2>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button
                 type="button"
@@ -7257,12 +7466,16 @@ export default function Page() {
                 }}
                 aria-label="Receive stock"
               >
-                Receive stock
+                {hotelOps ? 'Receive supplies' : restaurantOps ? 'Receive ingredients' : 'Receive stock'}
               </button>
             </div>
           </div>
           <p className="muted inv-child">
-            View quantity, receive stock, and set reorder levels. Quantity corrections belong on Adjust stock.
+            {hotelOps
+              ? 'View quantity, receive supplies, and set reorder levels. Quantity corrections belong on Adjust supplies.'
+              : restaurantOps
+                ? 'View quantity, receive ingredients, and set reorder levels. Quantity corrections belong on Adjust ingredients.'
+                : 'View quantity, receive stock, and set reorder levels. Quantity corrections belong on Adjust stock.'}
           </p>
           <div className="cat-toolbar">
             {!hideWarehouseUx ? (
@@ -7284,7 +7497,7 @@ export default function Page() {
             <input
               value={whSearch}
               onChange={(e) => setWhSearch(e.target.value)}
-              placeholder="Search products"
+              placeholder={hotelOps ? 'Search supplies' : restaurantOps ? 'Search ingredients' : 'Search products'}
               aria-label="Search warehouse stock"
             />
             <select
@@ -7292,8 +7505,8 @@ export default function Page() {
               onChange={(e) => setWhLowOnly(e.target.value === 'low')}
               aria-label="Low stock filter"
             >
-              <option value="all">All products</option>
-              <option value="low">Low stock</option>
+              <option value="all">{hotelOps ? 'All supplies' : restaurantOps ? 'All ingredients' : 'All products'}</option>
+              <option value="low">{hotelOps ? 'Low supplies' : restaurantOps ? 'Low ingredients' : 'Low stock'}</option>
             </select>
             <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <input
@@ -7320,13 +7533,15 @@ export default function Page() {
           </div>
           <p className="muted inv-child" style={{ margin: 0 }}>
             {whStockMeta.warehouse_name
-              ? `${whStockMeta.warehouse_name} — ${whStockMeta.count ?? 0} products · total ${whStockMeta.total_quantity ?? 0}`
+              ? `${whStockMeta.warehouse_name} — ${whStockMeta.count ?? 0} ${hotelOps ? ((Number(whStockMeta.count) === 1) ? 'supply' : 'supplies') : restaurantOps ? ((Number(whStockMeta.count) === 1) ? 'ingredient' : 'ingredients') : 'products'} · total ${whStockMeta.total_quantity ?? 0}`
               : hideWarehouseUx
-                ? 'Loading store stock'
-                : 'Pick a location to load stock'}
+                ? (hotelOps ? 'Loading supplies' : restaurantOps ? 'Loading ingredients' : 'Loading store stock')
+                : restaurantOps
+                  ? 'Pick a warehouse to load ingredients'
+                  : 'Pick a location to load stock'}
           </p>
           {!whStockWarehouseId ? (
-            <p className="muted">{hideWarehouseUx ? 'No warehouse is available for this store' : 'Pick a location to load stock'}</p>
+            <p className="muted">{hideWarehouseUx ? hotelOps ? 'No location is available for this hotel.' : restaurantOps ? 'No warehouse is available for this restaurant.' : 'No warehouse is available for this store' : restaurantOps ? 'Pick a warehouse to load ingredients' : 'Pick a location to load stock'}</p>
           ) : whStockBusy ? (
             <p className="muted">Loading…</p>
           ) : whStockFailed ? (
@@ -7345,35 +7560,57 @@ export default function Page() {
             <div className="cat-empty">
               <p style={{ margin: 0 }}>
                 {whLowOnly
-                  ? 'Clear the low-stock filter or pick another location when nothing is low here.'
-                  : 'Receive stock into this location to add the first stock row.'}
+                  ? (hotelOps
+                    ? 'Clear the low-supply filter or pick another location when nothing is low here.'
+                    : restaurantOps
+                      ? 'Clear the low-ingredient filter or pick another warehouse when nothing is low here.'
+                      : 'Clear the low-stock filter or pick another location when nothing is low here.')
+                  : (hotelOps ? 'Receive supplies into this location to add the first row.' : restaurantOps ? 'Receive ingredients into this warehouse to add the first row.' : 'Receive stock into this location to add the first stock row.')}
               </p>
             </div>
           ) : (
-            <div className="cat-table-wrap">
+            <div className={restaurantOps ? 'list-table-wrap rest-ing-table' : 'cat-table-wrap'}>
               <table className="table cat-table">
+                {restaurantOps ? (
+                  <colgroup>
+                    <col style={{ width: '40%' }} />
+                    <col style={{ width: '20%' }} />
+                    <col style={{ width: '20%' }} />
+                    <col style={{ width: '20%' }} />
+                  </colgroup>
+                ) : null}
                 <thead>
                   <tr>
-                    <th>Product</th>
-                    <th>SKU</th>
-                    <th>Qty</th>
-                    <th>Reorder</th>
+                    <th>{hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}</th>
+                    {restaurantOps ? null : <th>SKU</th>}
+                    <th className="col-num">{restaurantOps ? 'On hand' : 'Qty'}</th>
+                    <th className="col-num">Reorder</th>
                     <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {visibleWhRows.map((r) => (
                     <tr key={r.product_id}>
-                      <td data-label="Product">
-                        <strong className="inv-ui-name">{r.name || 'Product name is not on this stock row.'}</strong>
+                      <td data-label={hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}>
+                        <strong className="inv-ui-name">{r.name || (hotelOps ? 'Supply name is not on this row.' : restaurantOps ? 'Ingredient name is not on this row.' : 'Product name is not on this stock row.')}</strong>
+                        {restaurantOps ? (
+                          <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>{r.sku || '—'}</span>
+                        ) : null}
                       </td>
-                      <td data-label="SKU" className="list-secondary">{r.sku || '—'}</td>
-                      <td data-label="Qty">{r.quantity}</td>
-                      <td data-label="Reorder">
-                        {r.low_stock_floor ?? r.reorder_level} / {r.reorder_qty}
+                      {restaurantOps ? null : <td data-label="SKU" className="list-secondary">{r.sku || '—'}</td>}
+                      <td data-label={restaurantOps ? 'On hand' : 'Qty'} className="col-num">{r.quantity}</td>
+                      <td data-label="Reorder" className="col-num">
+                        {restaurantOps ? (
+                          <>
+                            <span>{r.low_stock_floor ?? r.reorder_level ?? 0}</span>
+                            <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>Order {r.reorder_qty ?? 0}</span>
+                          </>
+                        ) : (
+                          <>{r.low_stock_floor ?? r.reorder_level} / {r.reorder_qty}</>
+                        )}
                       </td>
                       <td data-label="Status" style={{ color: r.is_out_of_stock || warehouseRowIsLow(r) ? '#b91c1c' : undefined }}>
-                        {r.stock_status_label || r.stock_status || 'ok'}
+                        {stockStatusText(String(r.stock_status_label || r.stock_status || 'ok'), hotelOps, restaurantOps)}
                       </td>
                     </tr>
                   ))}
@@ -7383,7 +7620,7 @@ export default function Page() {
           )}
           {receiveDrawerOpen ? (
             <FormModal
-              title="Receive stock"
+              title={hotelOps ? 'Receive supplies' : restaurantOps ? 'Receive ingredients' : 'Receive stock'}
               busy={saveBusy}
               dirty={receiveFormDirty}
               onClose={() => setReceiveDrawerOpen(false)}
@@ -7393,7 +7630,7 @@ export default function Page() {
                   onChange={(e) => setReceiveTargetId(e.target.value)}
                   aria-label="Receive stock product"
                 >
-                  <option value="">Select product</option>
+                  <option value="">{hotelOps ? 'Select supply' : restaurantOps ? 'Select ingredient' : 'Select product'}</option>
                   {managedProducts.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} ({p.sku})
@@ -7447,7 +7684,7 @@ export default function Page() {
                     disabled={!receiveTargetId || !whStockWarehouseId || saveBusy}
                     aria-label="Receive stock"
                   >
-                    {saveBusy ? 'Saving…' : 'Receive stock'}
+                    {saveBusy ? 'Saving…' : (hotelOps ? 'Receive supplies' : restaurantOps ? 'Receive ingredients' : 'Receive stock')}
                   </button>
                   {formFlash.ok ? (
                     <p className="form-flash ok" role="status">
@@ -7482,7 +7719,7 @@ export default function Page() {
                   }}
                   aria-label="Warehouse reorder product"
                 >
-                  <option value="">Product</option>
+                  <option value="">{hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}</option>
                   {products.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} ({p.sku})
@@ -7653,7 +7890,7 @@ export default function Page() {
                   <tr>
                     <th>From store / warehouse</th>
                     <th>To store / warehouse</th>
-                    <th className="col-num">Products</th>
+                    <th className="col-num">{hotelOps ? 'Supplies' : restaurantOps ? 'Ingredients' : 'Products'}</th>
                     <th className="col-num">Qty</th>
                     <th className="col-id">Reference</th>
                     <th className="col-date">Date</th>
@@ -7754,7 +7991,7 @@ export default function Page() {
                           <table className="table">
                             <thead>
                               <tr>
-                                <th>Product</th>
+                                <th>{hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'}</th>
                                 <th>SKU</th>
                                 <th>Qty</th>
                                 <th>Shipped</th>
@@ -7898,7 +8135,7 @@ export default function Page() {
                   placeholder="Your reference"
                   aria-label="Stock transfer reference"
                 />
-                <label className="muted">Product lines</label>
+                <label className="muted">{hotelOps ? 'Supply lines' : restaurantOps ? 'Ingredient lines' : 'Product lines'}</label>
                 {xferLines.map((line, idx) => (
                   <div key={line.key} className="xfer-line-row">
                     <select
@@ -7913,7 +8150,7 @@ export default function Page() {
                       }}
                       aria-label={`Transfer product line ${idx + 1}`}
                     >
-                      <option value="">Select product</option>
+                      <option value="">{hotelOps ? 'Select supply' : restaurantOps ? 'Select ingredient' : 'Select product'}</option>
                       {xferProductOptions.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.name} ({p.sku})
@@ -7959,7 +8196,7 @@ export default function Page() {
                   }
                   aria-label="Add transfer product line"
                 >
-                  Add product line
+                  {hotelOps ? 'Add supply line' : restaurantOps ? 'Add ingredient line' : 'Add product line'}
                 </button>
                 <input
                   value={xferNotes}

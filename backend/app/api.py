@@ -63,7 +63,7 @@ from app import tenants as tenants_svc
 from app import packages as packages_svc
 from app import storage as storage_svc
 from app import logo_media as logo_media_svc
-from app.honesty import money_json, require_honest_narrative
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 from app.schemas import validate_e164_phone_value
 from app import cheques as cheques_svc
 from app import stock_counts as stock_counts_svc
@@ -194,11 +194,15 @@ from app.schemas import (
     FmcgTradeSchemeActiveUpdate,
     FmcgTradeSchemeCreate,
     HotelCheckoutBody,
+    HotelServiceChargeBody,
+    HotelTimingFeeBody,
     HotelFolioServiceChargeCreate,
     HotelGroupReservationCreate,
     HotelReservationUpdate,
     HotelServiceCreate,
     HotelServiceUpdate,
+    HotelFolioNotesUpdate,
+    HotelNightAuditRun,
     HotelSettingsUpdate,
     HotelExtendStay,
     HotelFolioChargeCreate,
@@ -255,6 +259,7 @@ from app.schemas import (
     PosOfflineResolve,
     PosOfflineStatusQuery,
     PosSessionClose,
+    PosSessionOpeningCash,
     PosSessionOpen,
     PosCashMovementCreate,
     PosDrawerOpen,
@@ -390,6 +395,7 @@ from app import fmcg as fmcg_svc
 from app import pharmacy as pharmacy_svc
 from app.rbac import (
     PLATFORM_ROLES,
+    can_assign_company_admin,
     is_platform_owner_role,
     is_platform_role,
     is_platform_tenant_delete_role,
@@ -418,6 +424,12 @@ from app import restaurant_api as restaurant_api_mod
 api.include_router(commerce_extras_api_mod.router)
 api.include_router(billing_api_mod.router)
 api.include_router(restaurant_api_mod.router)
+api.include_router(restaurant_api_mod.public_router)
+api.include_router(restaurant_api_mod.order_public_router)
+from app import hotel_booking_api as hotel_booking_api_mod
+
+api.include_router(hotel_booking_api_mod.router)
+api.include_router(hotel_booking_api_mod.public_router)
 from app import support_api as support_api_mod
 
 api.include_router(support_api_mod.router)
@@ -945,6 +957,7 @@ async def tenant_me_update(
         thousand_separator=payload.thousand_separator,
         time_format=payload.time_format,
         inactivity_timeout_minutes=payload.inactivity_timeout_minutes,
+        count_drawer_on_sign_out=payload.count_drawer_on_sign_out,
         offline_auth_hours=payload.offline_auth_hours,
     )
     await audit_svc.record_event(
@@ -2394,6 +2407,7 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
             challenge = totp_svc.create_challenge_token(
                 user_id=user.id, tenant_id=tenant_id, role=user.role
             )
+            await totp_svc.load_login_challenge(db, challenge)
             try:
                 await db.flush()
             except SQLAlchemyError:
@@ -2488,7 +2502,7 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
 
 @api.post("/auth/2fa/verify")
 async def auth_2fa_verify(payload: TwoFactorVerify, request: Request, db: AsyncSession = Depends(get_db)):
-    claims = totp_svc.decode_challenge_token(payload.challenge_token)
+    claims, challenge_row = await totp_svc.load_login_challenge(db, payload.challenge_token)
     user = await db.get(m.User, claims["sub"])
     if not user or not user.is_active or user.tenant_id != claims["tenant_id"]:
         raise HTTPException(status_code=401, detail="Invalid 2FA challenge user")
@@ -2518,6 +2532,7 @@ async def auth_2fa_verify(payload: TwoFactorVerify, request: Request, db: AsyncS
             logger.exception("2fa verify failed-attempt commit skipped")
         raise HTTPException(status_code=401, detail="Invalid 2FA code")
 
+    totp_svc.consume_login_challenge(challenge_row)
     access, refresh = await create_session(
         db, user=user, request=request, login_method="totp"
     )
@@ -2660,7 +2675,7 @@ async def webauthn_delete_credential(
 async def webauthn_login_options(payload: WebAuthnLoginOptions, db: AsyncSession = Depends(get_db)):
     from app import webauthn_svc as webauthn
 
-    claims = totp_svc.decode_challenge_token(payload.challenge_token)
+    claims, _challenge_row = await totp_svc.load_login_challenge(db, payload.challenge_token)
     user = await db.get(m.User, claims["sub"])
     if not user or not user.is_active or user.tenant_id != claims["tenant_id"]:
         raise HTTPException(status_code=401, detail="Invalid 2FA challenge user")
@@ -2675,13 +2690,14 @@ async def webauthn_login_verify(
 ):
     from app import webauthn_svc as webauthn
 
-    claims = totp_svc.decode_challenge_token(payload.challenge_token)
+    claims, challenge_row = await totp_svc.load_login_challenge(db, payload.challenge_token)
     user = await db.get(m.User, claims["sub"])
     if not user or not user.is_active or user.tenant_id != claims["tenant_id"]:
         raise HTTPException(status_code=401, detail="Invalid 2FA challenge user")
     await webauthn.verify_authentication(
         db, user, credential=payload.credential.model_dump(mode="json")
     )
+    totp_svc.consume_login_challenge(challenge_row)
     access, refresh = await create_session(
         db, user=user, request=request, login_method="webauthn"
     )
@@ -3019,6 +3035,18 @@ async def password_reset_request(payload: PasswordResetRequest, db: AsyncSession
     ).scalar_one_or_none()
     data: dict = {"requested": True}
     if user:
+        prior = (
+            await db.execute(
+                select(m.AuthToken).where(
+                    m.AuthToken.user_id == user.id,
+                    m.AuthToken.purpose == "password_reset",
+                    m.AuthToken.used_at.is_(None),
+                )
+            )
+        ).scalars().all()
+        now = datetime.utcnow()
+        for row in prior:
+            row.used_at = now
         raw, token_hash, expires = issue_one_time_token()
         db.add(
             m.AuthToken(
@@ -3237,6 +3265,7 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             )
             if tenant
             else 30,
+            "count_drawer_on_sign_out": tenants_svc.count_drawer_on_sign_out(tenant),
             "offline_auth_hours": int(getattr(tenant, "offline_auth_hours", None) or 168)
             if tenant
             else 168,
@@ -3917,6 +3946,11 @@ async def add_user(
             status_code=400,
             detail="Create platform owners via POST /platform/staff",
         )
+    if role_key == "company_admin" and not can_assign_company_admin(claims.get("role")):
+        raise HTTPException(
+            status_code=403,
+            detail="Only a company admin can assign company_admin",
+        )
     validate_password_strength(payload.password)
     exists = (
         await db.execute(
@@ -4059,6 +4093,11 @@ async def update_user(
             )
         if user.id == claims["sub"] and role_key != user.role:
             raise HTTPException(status_code=400, detail="Cannot change your own role")
+        if role_key == "company_admin" and not can_assign_company_admin(claims.get("role")):
+            raise HTTPException(
+                status_code=403,
+                detail="Only a company admin can assign company_admin",
+            )
         await user_accounts_svc.require_remaining_company_admin(
             db,
             tenant_id=claims["tenant_id"],
@@ -4077,6 +4116,7 @@ async def update_user(
             if prev_scope is not None:
                 perms[RECORD_SCOPE_KEY] = prev_scope
             user.permissions = perms
+            await _revoke_user_sessions(db, tenant_id=claims["tenant_id"], user_id=user.id)
 
     if payload.password is not None:
         validate_password_strength(payload.password)
@@ -7043,6 +7083,7 @@ async def list_sales_made(
     A register sale that already created an invoice is listed once, as the invoice.
     """
     from app.rbac import record_scope_for_claims
+    from app.reports import _amount_base, _tx_base
 
     inv_stmt = (
         select(m.SalesInvoice)
@@ -7096,7 +7137,7 @@ async def list_sales_made(
                 "customer": names.get(inv.customer_id) or "Customer",
                 "when": when.isoformat() if when else None,
                 "status": inv.status,
-                "total": money_json(inv.total_amount or 0),
+                "total": _amount_base(inv, inv.total_amount or 0),
                 "invoice_id": inv.id,
                 "_sort": when or datetime.min,
             }
@@ -7121,7 +7162,7 @@ async def list_sales_made(
                 "customer": customer,
                 "when": when.isoformat() if when else None,
                 "status": tx.status or "completed",
-                "total": money_json(tx.total or 0),
+                "total": _tx_base(tx),
                 "invoice_id": linked,
                 "_sort": when or datetime.min,
             }
@@ -7450,7 +7491,7 @@ async def print_sales_invoice(
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Printable sales invoice: template=a4|thermal, format=pdf|text|json, paper=58mm|80mm (thermal)."""
+    """Printable sales invoice: template=a4|thermal, format=pdf|text|json|html, paper=58mm|80mm (thermal)."""
     from app import invoice_print as invoice_print_svc
     from app.print_branding import print_branding_settings
 
@@ -7459,20 +7500,24 @@ async def print_sales_invoice(
     payload = await invoice_print_svc.build_invoice_print_payload(
         db, tenant_id=claims["tenant_id"], invoice_id=invoice_id
     )
-    branding = print_branding_settings(
-        await tenants_svc.get_tenant(db, claims["tenant_id"])
-    )
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    branding = print_branding_settings(tenant)
     tmpl = (template or branding["default_invoice_template"] or "a4").lower()
     fmt = format
     paper = paper if paper is not None else branding["default_receipt_paper"]
     # Defense in depth: Query Literals reject blank/unknown with 422.
     if tmpl not in {"a4", "thermal"}:
         raise HTTPException(status_code=400, detail="template must be a4 or thermal")
-    if fmt not in {"pdf", "text", "json"}:
-        raise HTTPException(status_code=400, detail="format must be pdf, text, or json")
+    if fmt not in {"pdf", "text", "json", "html"}:
+        raise HTTPException(status_code=400, detail="format must be pdf, text, json, or html")
 
     if tmpl == "thermal":
         text = invoice_print_svc.render_invoice_thermal_text(payload, paper=paper)
+        if fmt == "html":
+            return Response(
+                content=invoice_print_svc.render_invoice_thermal_html(payload, paper=paper),
+                media_type="text/html; charset=utf-8",
+            )
         if fmt == "json":
             public = {k: v for k, v in payload.items() if k != "logo_key"}
             public["template"] = "thermal"
@@ -7493,6 +7538,11 @@ async def print_sales_invoice(
         )
 
     # A4
+    if fmt == "html":
+        return Response(
+            content=invoice_print_svc.render_invoice_a4_html(payload, tenant=tenant),
+            media_type="text/html; charset=utf-8",
+        )
     if fmt == "json":
         public = {k: v for k, v in payload.items() if k != "logo_key"}
         public["template"] = "a4"
@@ -9297,7 +9347,12 @@ async def send_grn(
     await db.commit()
     data = await purchasing_svc.serialize_grn(db, grn)
     data["delivery"] = delivery
-    return env(data, f"Goods received note emailed to {delivery['to']}")
+    note = (
+        "Supplies received note emailed to"
+        if (claims.get("industry") or "").strip().lower() == "hotel"
+        else "Goods received note emailed to"
+    )
+    return env(data, f"{note} {delivery['to']}")
 
 
 @api.get("/purchasing/returns")
@@ -10052,6 +10107,25 @@ async def pos_open_session(
             db, claims["tenant_id"], claims["sub"]
         )
         if existing:
+            requested = float(payload.opening_cash or 0)
+            if requested > 0:
+                try:
+                    existing = await pos_svc.set_opening_cash(
+                        db,
+                        tenant_id=claims["tenant_id"],
+                        session_id=existing.id,
+                        opening_cash=requested,
+                    )
+                    await db.commit()
+                    return env(
+                        await pos_svc.serialize_session(db, existing),
+                        "Opening cash updated",
+                    )
+                except HTTPException:
+                    await db.rollback()
+                    existing = await pos_svc.get_open_session_for_user(
+                        db, claims["tenant_id"], claims["sub"]
+                    )
             return env(
                 await pos_svc.serialize_session(db, existing),
                 "POS shift already open",
@@ -10144,11 +10218,38 @@ async def pos_close_session(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         session_id=session_id,
-        actual_cash=payload.actual_cash,
+        actual_cash=payload.counted_cash(),
         notes=payload.notes,
     )
     await db.commit()
     return env(await pos_svc.serialize_session(db, session), "POS shift closed")
+
+
+@api.patch("/pos/sessions/{session_id}/opening-cash")
+async def pos_set_opening_cash(
+    session_id: UuidIdValue,
+    payload: PosSessionOpeningCash,
+    claims=Depends(require_pos_permission("write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import store_access as store_access_svc
+
+    session = await pos_svc.get_session(db, claims["tenant_id"], session_id)
+    pos_svc.assert_can_operate_session(session, claims)
+    await store_access_svc.assert_store_access(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=session.store_id,
+    )
+    session = await pos_svc.set_opening_cash(
+        db,
+        tenant_id=claims["tenant_id"],
+        session_id=session_id,
+        opening_cash=payload.opening_cash,
+    )
+    await db.commit()
+    return env(await pos_svc.serialize_session(db, session), "Opening cash updated")
 
 
 @api.get("/pos/sessions/{session_id}/drawer")
@@ -10158,8 +10259,16 @@ async def pos_session_drawer(
     db: AsyncSession = Depends(get_db),
 ):
     from app import cash_drawer as cash_drawer_svc
+    from app import store_access as store_access_svc
 
     session = await pos_svc.get_session(db, claims["tenant_id"], session_id)
+    pos_svc.assert_can_operate_session(session, claims)
+    await store_access_svc.assert_store_access(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=session.store_id,
+    )
     summary = await pos_svc.drawer_summary(session)
     cfg = await cash_drawer_svc.resolve_config(
         db, tenant_id=claims["tenant_id"], store_id=session.store_id
@@ -10175,16 +10284,18 @@ async def pos_open_cash_drawer(
     db: AsyncSession = Depends(get_db),
 ):
     from app import cash_drawer as cash_drawer_svc
+    from app import store_access as store_access_svc
 
     session = await pos_svc.get_session(db, claims["tenant_id"], session_id)
     if session.status != "open":
         raise HTTPException(status_code=400, detail="POS session is not open")
-    if session.user_id != claims["sub"] and claims.get("role") not in {
-        "company_admin",
-        "super_admin",
-        "store_manager",
-    }:
-        raise HTTPException(status_code=403, detail="Not your POS session")
+    pos_svc.assert_can_operate_session(session, claims)
+    await store_access_svc.assert_store_access(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=session.store_id,
+    )
     result = await cash_drawer_svc.open_drawer(
         db,
         tenant_id=claims["tenant_id"],
@@ -16407,8 +16518,8 @@ async def list_jobs(
     return env(
         {
             "celery_enabled": bool(app_settings.CELERY_ENABLED),
-            "broker": app_settings.celery_broker_url,
-            "result_backend": app_settings.celery_result_backend,
+            "broker_configured": bool(app_settings.celery_broker_url),
+            "result_backend_configured": bool(app_settings.celery_result_backend),
             "task_always_eager": bool(app_settings.CELERY_TASK_ALWAYS_EAGER),
             "jobs": sorted(jobs_svc.JOB_HANDLERS.keys()),
             "beat": {
@@ -16439,7 +16550,9 @@ async def run_job_now(
     enqueue: bool = False,
     claims=Depends(require_platform_permission("platform", "write")),
 ):
-    """Run a scheduled job immediately (sync) or enqueue to Celery (platform ops only)."""
+    """Run a scheduled job immediately (sync) or enqueue to Celery (owner only)."""
+    if (claims.get("role") or "") not in {"super_admin", "platform_owner"}:
+        raise HTTPException(status_code=403, detail="Insufficient permission")
     from app import jobs as jobs_svc
     from app.config import settings as app_settings
 
@@ -17684,9 +17797,9 @@ async def hotel_rooms_create(
         floor=payload.floor,
         bed_type=payload.bed_type,
         max_occupancy=payload.max_occupancy,
-        rate_amount=float(payload.rate_amount or 0),
-        weekend_rate=float(payload.weekend_rate) if payload.weekend_rate is not None else None,
-        extra_person_charge=float(payload.extra_person_charge or 0),
+        rate_amount=money_json(payload.rate_amount or 0),
+        weekend_rate=money_json(payload.weekend_rate) if payload.weekend_rate is not None else None,
+        extra_person_charge=money_json(payload.extra_person_charge or 0),
         amenities=payload.amenities,
         description=payload.description,
         status=payload.status,
@@ -17858,9 +17971,30 @@ async def hotel_reservations_list(
         list_kind=list_kind,
         on_date=on_date,
     )
+    folio_map = await hotel_svc.folio_map_for_reservations(
+        db,
+        tenant_id=claims["tenant_id"],
+        reservation_ids=[r.id for r, _, _ in rows],
+    )
+    labels = await hotel_svc.group_labels(
+        db,
+        tenant_id=claims["tenant_id"],
+        group_ids=[hotel_svc._opt(r, "group_id") for r, _, _ in rows],
+    )
+    cancel_hours = await hotel_svc.stored_cancellation_hours(db, tenant_id=claims["tenant_id"])
+    check_in_time = await hotel_svc.stored_check_in_time(db, tenant_id=claims["tenant_id"])
     return env(
         [
-            hotel_svc.serialize_reservation(r, room=room, guest=guest)
+            hotel_svc.serialize_reservation(
+                r,
+                room=room,
+                guest=guest,
+                folio_id=folio_map.get(r.id, (None, None))[0],
+                folio_balance=folio_map.get(r.id, (None, None))[1] if r.id in folio_map else None,
+                cancellation_hours=cancel_hours,
+                check_in_time=check_in_time,
+                group_name=labels.get(str(hotel_svc._opt(r, "group_id") or "")),
+            )
             for r, room, guest in rows
         ]
     )
@@ -17883,17 +18017,17 @@ async def hotel_reservations_create(
             check_out_date=payload.check_out_date,
             adults=payload.adults,
             children=payload.children,
-            nightly_rate=float(payload.nightly_rate) if payload.nightly_rate is not None else None,
+            nightly_rate=money_json(payload.nightly_rate) if payload.nightly_rate is not None else None,
             booking_source=payload.booking_source,
             special_requests=payload.special_requests,
-            deposit_amount=float(payload.deposit_amount or 0),
+            deposit_amount=money_json(payload.deposit_amount or 0),
             deposit_method=payload.deposit_method,
             notes=payload.notes,
             created_by=claims["sub"],
             walk_in=payload.walk_in,
             status=payload.status,
             rate_plan_id=payload.rate_plan_id,
-            discount_percent=float(payload.discount_percent or 0),
+            discount_percent=money_json(payload.discount_percent or 0),
             discount_authorized_by=payload.discount_authorized_by,
         )
         await audit_svc.record_event(
@@ -17907,8 +18041,16 @@ async def hotel_reservations_create(
             details={"reservation_number": row.reservation_number, "room_id": row.room_id},
         )
         await db.commit()
+    cancel_hours = await hotel_svc.stored_cancellation_hours(db, tenant_id=claims["tenant_id"])
+    check_in_time = await hotel_svc.stored_check_in_time(db, tenant_id=claims["tenant_id"])
     return env(
-        hotel_svc.serialize_reservation(row, room=room, guest=guest),
+        hotel_svc.serialize_reservation(
+            row,
+            room=room,
+            guest=guest,
+            cancellation_hours=cancel_hours,
+            check_in_time=check_in_time,
+        ),
         "Reservation created",
     )
 
@@ -18191,7 +18333,9 @@ async def hotel_reservation_folio(
     folio, charges, payments = await hotel_svc.get_folio_detail(
         db, tenant_id=claims["tenant_id"], folio_id=folio.id
     )
-    return env(hotel_svc.serialize_folio(folio, charges=charges, payments=payments))
+    return env(await hotel_svc.present_folio(
+        db, tenant_id=claims["tenant_id"], folio=folio, charges=charges, payments=payments
+    ))
 
 
 @api.get("/hotel/folios/{folio_id}")
@@ -18203,7 +18347,31 @@ async def hotel_folio_get(
     folio, charges, payments = await hotel_svc.get_folio_detail(
         db, tenant_id=claims["tenant_id"], folio_id=folio_id
     )
-    return env(hotel_svc.serialize_folio(folio, charges=charges, payments=payments))
+    return env(await hotel_svc.present_folio(
+        db, tenant_id=claims["tenant_id"], folio=folio, charges=charges, payments=payments
+    ))
+
+
+@api.patch("/hotel/folios/{folio_id}")
+async def hotel_folio_notes(
+    folio_id: UuidIdValue,
+    payload: HotelFolioNotesUpdate,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    await hotel_svc.update_folio_notes(
+        db,
+        tenant_id=claims["tenant_id"],
+        folio_id=folio_id,
+        **payload.model_dump(exclude_unset=True),
+    )
+    folio, charges, payments = await hotel_svc.get_folio_detail(
+        db, tenant_id=claims["tenant_id"], folio_id=folio_id
+    )
+    await db.commit()
+    return env(await hotel_svc.present_folio(
+        db, tenant_id=claims["tenant_id"], folio=folio, charges=charges, payments=payments
+    ), "Folio note saved")
 
 
 @api.post("/hotel/folios/{folio_id}/charges")
@@ -18220,9 +18388,9 @@ async def hotel_folio_add_charge(
         charge_type=payload.charge_type,
         description=payload.description,
         quantity=payload.quantity,
-        unit_amount=float(payload.unit_amount or 0),
-        tax_amount=float(payload.tax_amount or 0),
-        discount_amount=float(payload.discount_amount or 0),
+        unit_amount=money_json(payload.unit_amount or 0),
+        tax_amount=money_json(payload.tax_amount or 0),
+        discount_amount=money_json(payload.discount_amount or 0),
         created_by=claims["sub"],
     )
     await audit_svc.record_event(
@@ -18239,7 +18407,105 @@ async def hotel_folio_add_charge(
     folio, charges, payments = await hotel_svc.get_folio_detail(
         db, tenant_id=claims["tenant_id"], folio_id=folio_id
     )
-    return env(hotel_svc.serialize_folio(folio, charges=charges, payments=payments), "Charge posted")
+    return env(await hotel_svc.present_folio(
+        db, tenant_id=claims["tenant_id"], folio=folio, charges=charges, payments=payments
+    ), "Charge posted")
+
+
+@api.post("/hotel/folios/{folio_id}/timing-fee")
+async def hotel_folio_timing_fee(
+    folio_id: UuidIdValue,
+    payload: HotelTimingFeeBody,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_svc.post_timing_fee(
+        db,
+        tenant_id=claims["tenant_id"],
+        folio_id=folio_id,
+        kind=payload.kind,
+        created_by=claims["sub"],
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="folio_timing_fee",
+        entity="hotel_folio_charge",
+        entity_id=row.id,
+        details={"folio_id": folio_id, "kind": payload.kind, "line_total": float(row.line_total or 0)},
+    )
+    await db.commit()
+    folio, charges, payments = await hotel_svc.get_folio_detail(
+        db, tenant_id=claims["tenant_id"], folio_id=folio_id
+    )
+    return env(await hotel_svc.present_folio(
+        db, tenant_id=claims["tenant_id"], folio=folio, charges=charges, payments=payments
+    ), "Fee posted")
+
+
+@api.post("/hotel/folios/{folio_id}/service-charge")
+async def hotel_folio_service_charge(
+    folio_id: UuidIdValue,
+    payload: HotelServiceChargeBody,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_svc.post_service_charge(
+        db,
+        tenant_id=claims["tenant_id"],
+        folio_id=folio_id,
+        created_by=claims["sub"],
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="folio_service_charge",
+        entity="hotel_folio_charge",
+        entity_id=row.id,
+        details={"folio_id": folio_id, "line_total": float(row.line_total or 0)},
+    )
+    await db.commit()
+    folio, charges, payments = await hotel_svc.get_folio_detail(
+        db, tenant_id=claims["tenant_id"], folio_id=folio_id
+    )
+    return env(await hotel_svc.present_folio(
+        db, tenant_id=claims["tenant_id"], folio=folio, charges=charges, payments=payments
+    ), "Service charge posted")
+
+
+@api.post("/hotel/reservations/{reservation_id}/no-show-fee")
+async def hotel_reservation_no_show_fee(
+    reservation_id: UuidIdValue,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    folio = await hotel_svc.post_no_show_fee(
+        db,
+        tenant_id=claims["tenant_id"],
+        reservation_id=reservation_id,
+        created_by=claims["sub"],
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="no_show_fee",
+        entity="hotel_folio",
+        entity_id=folio.id,
+        details={"reservation_id": reservation_id},
+    )
+    await db.commit()
+    folio, charges, payments = await hotel_svc.get_folio_detail(
+        db, tenant_id=claims["tenant_id"], folio_id=folio.id
+    )
+    return env(await hotel_svc.present_folio(
+        db, tenant_id=claims["tenant_id"], folio=folio, charges=charges, payments=payments
+    ), "No-show fee posted")
 
 
 @api.post("/hotel/folios/{folio_id}/charges/{charge_id}/void")
@@ -18270,7 +18536,9 @@ async def hotel_folio_void_charge(
     folio, charges, payments = await hotel_svc.get_folio_detail(
         db, tenant_id=claims["tenant_id"], folio_id=folio_id
     )
-    return env(hotel_svc.serialize_folio(folio, charges=charges, payments=payments), "Charge voided")
+    return env(await hotel_svc.present_folio(
+        db, tenant_id=claims["tenant_id"], folio=folio, charges=charges, payments=payments
+    ), "Charge voided")
 
 
 @api.post("/hotel/folios/{folio_id}/charges/{charge_id}/transfer")
@@ -18302,7 +18570,9 @@ async def hotel_folio_transfer_charge(
     folio, charges, payments = await hotel_svc.get_folio_detail(
         db, tenant_id=claims["tenant_id"], folio_id=folio_id
     )
-    return env(hotel_svc.serialize_folio(folio, charges=charges, payments=payments), "Charge transferred")
+    return env(await hotel_svc.present_folio(
+        db, tenant_id=claims["tenant_id"], folio=folio, charges=charges, payments=payments
+    ), "Charge transferred")
 
 
 @api.post("/hotel/folios/{folio_id}/payments")
@@ -18317,7 +18587,7 @@ async def hotel_folio_add_payment(
         tenant_id=claims["tenant_id"],
         folio_id=folio_id,
         method=payload.method,
-        amount=float(payload.amount),
+        amount=money_json(payload.amount),
         reference=payload.reference,
         notes=payload.notes,
         recorded_by=claims["sub"],
@@ -18337,7 +18607,9 @@ async def hotel_folio_add_payment(
         db, tenant_id=claims["tenant_id"], folio_id=folio_id
     )
     return env(
-        hotel_svc.serialize_folio(folio, charges=charges, payments=payments),
+        await hotel_svc.present_folio(
+            db, tenant_id=claims["tenant_id"], folio=folio, charges=charges, payments=payments
+        ),
         "Payment information recorded",
     )
 
@@ -18371,6 +18643,7 @@ async def hotel_housekeeping_create(
         priority=payload.priority,
         assigned_to=payload.assigned_to,
         notes=payload.notes,
+        due_at=payload.due_at,
         created_by=claims["sub"],
     )
     await audit_svc.record_event(
@@ -18521,7 +18794,7 @@ async def hotel_rate_plans_create(
         tenant_id=claims["tenant_id"],
         code=payload.code,
         name=payload.name,
-        amount=float(payload.amount or 0),
+        amount=money_json(payload.amount or 0),
         room_type=payload.room_type,
         weekday_only=payload.weekday_only,
         weekend_only=payload.weekend_only,
@@ -18559,6 +18832,7 @@ async def hotel_guest_requests_create(
         reservation_id=payload.reservation_id,
         room_id=payload.room_id,
         notes=payload.notes,
+        due_at=payload.due_at,
         created_by=claims["sub"],
     )
     await db.commit()
@@ -18625,7 +18899,7 @@ async def hotel_cashier_shift_open(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
-        opening_float=float(payload.opening_float or 0),
+        opening_float=money_json(payload.opening_float or 0),
     )
     await audit_svc.record_event(
         db,
@@ -18651,7 +18925,7 @@ async def hotel_cashier_shift_close(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
-        closing_float=float(payload.closing_float or 0),
+        closing_float=money_json(payload.closing_float or 0),
         notes=payload.notes,
     )
     await audit_svc.record_event(
@@ -18668,6 +18942,15 @@ async def hotel_cashier_shift_close(
     return env(hotel_pms_svc.serialize_shift(row), "Cashier shift closed")
 
 
+@api.get("/hotel/cashier/shifts")
+async def hotel_cashier_shifts_list(
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await hotel_pms_svc.list_closed_shifts(db, tenant_id=claims["tenant_id"])
+    return env([hotel_pms_svc.serialize_shift(r) for r in rows])
+
+
 @api.get("/hotel/night-audits")
 async def hotel_night_audits_list(
     claims=Depends(require_permission("hotel", "read")),
@@ -18679,10 +18962,18 @@ async def hotel_night_audits_list(
 
 @api.post("/hotel/night-audits")
 async def hotel_night_audits_run(
+    payload: HotelNightAuditRun | None = None,
     claims=Depends(require_permission("hotel", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     snapshot = await hotel_svc.summary(db, tenant_id=claims["tenant_id"])
+    snapshot["day_closed"] = True
+    snapshot["room_charges_reposted"] = False
+    notes = None if payload is None else payload.notes
+    if notes is not None:
+        if not str(notes).strip():
+            raise HTTPException(status_code=422, detail="Night audit notes cannot be blank")
+        snapshot["note"] = optional_honest_narrative(notes, label="notes", max_length=500)
     row = await hotel_pms_svc.run_night_audit(
         db,
         tenant_id=claims["tenant_id"],
@@ -18729,10 +19020,18 @@ async def hotel_events_create(
         expected_guests=payload.expected_guests,
         room_id=payload.room_id,
         guest_id=payload.guest_id,
-        deposit_amount=float(payload.deposit_amount or 0),
+        deposit_amount=money_json(payload.deposit_amount or 0),
         notes=payload.notes,
         status=payload.status,
         created_by=claims["sub"],
+    )
+    deposit_folio_id = await hotel_svc.apply_event_deposit(
+        db,
+        tenant_id=claims["tenant_id"],
+        event_id=row.id,
+        guest_id=row.guest_id,
+        amount=money_json(row.deposit_amount or 0),
+        recorded_by=claims["sub"],
     )
     await audit_svc.record_event(
         db,
@@ -18745,7 +19044,9 @@ async def hotel_events_create(
         details={"title": row.title, "status": row.status},
     )
     await db.commit()
-    return env(hotel_pms_svc.serialize_event(row), "Event booked")
+    body = hotel_pms_svc.serialize_event(row)
+    body["deposit_folio_id"] = deposit_folio_id
+    return env(body, "Event booked")
 
 
 @api.post("/hotel/events/{event_id}/confirm")
@@ -19086,8 +19387,8 @@ async def hotel_services_create(
         code=payload.code,
         name=payload.name,
         category=payload.category,
-        unit_amount=float(payload.unit_amount or 0),
-        tax_percent=float(payload.tax_percent or 0),
+        unit_amount=money_json(payload.unit_amount or 0),
+        tax_percent=money_json(payload.tax_percent or 0),
         notes=payload.notes,
     )
     await audit_svc.record_event(
@@ -19141,15 +19442,16 @@ async def hotel_folios_list(
         db, tenant_id=claims["tenant_id"], status=status
     )
     out = []
-    for folio, reservation, guest in rows:
-        payload = hotel_svc.serialize_folio(folio)
-        payload["guest_name"] = guest.full_name if guest else None
-        payload["reservation_number"] = (
-            reservation.reservation_number if reservation else None
+    for folio, _reservation, _guest in rows:
+        payload = await hotel_svc.present_folio(
+            db, tenant_id=claims["tenant_id"], folio=folio
         )
-        payload["balance"] = money_json(
-            await hotel_svc.folio_balance(db, tenant_id=claims["tenant_id"], folio_id=folio.id)
+        charges_total, payments_total, balance = await hotel_svc.folio_totals(
+            db, tenant_id=claims["tenant_id"], folio_id=folio.id
         )
+        payload["charges_total"] = charges_total
+        payload["payments_total"] = payments_total
+        payload["balance"] = balance
         out.append(payload)
     return env(out)
 
@@ -19166,7 +19468,7 @@ async def hotel_folio_service_charge(
         tenant_id=claims["tenant_id"],
         folio_id=folio_id,
         service_id=payload.service_id,
-        quantity=float(payload.quantity or 1),
+        quantity=money_json(payload.quantity or 1),
         created_by=claims["sub"],
     )
     folio, charges, payments = await hotel_svc.get_folio_detail(
@@ -19183,7 +19485,9 @@ async def hotel_folio_service_charge(
         details={"service_id": payload.service_id},
     )
     await db.commit()
-    return env(hotel_svc.serialize_folio(folio, charges=charges, payments=payments), "Service posted")
+    return env(await hotel_svc.present_folio(
+        db, tenant_id=claims["tenant_id"], folio=folio, charges=charges, payments=payments
+    ), "Service posted")
 
 
 @api.post("/hotel/reservation-groups")
@@ -19204,6 +19508,8 @@ async def hotel_group_create(
         booking_source=payload.booking_source,
         name=payload.name,
         notes=payload.notes,
+        discount_percent=money_json(payload.discount_percent or 0),
+        discount_authorized_by=payload.discount_authorized_by,
         created_by=claims["sub"],
     )
     await audit_svc.record_event(
@@ -19218,7 +19524,12 @@ async def hotel_group_create(
     )
     await db.commit()
     reservations = [
-        hotel_svc.serialize_reservation(r, room=room, guest=guest)
+        hotel_svc.serialize_reservation(
+            r,
+            room=room,
+            guest=guest,
+            group_name=(group.name or "").strip() or group.group_number,
+        )
         for r, room, guest in created
     ]
     return env(hotel_svc.serialize_group(group, reservations=reservations), "Group reservation created")

@@ -11,8 +11,8 @@ import { normalizeIndustry } from '../../../lib/industries';
 import { currencySign, formatDate, formatWhen, plainLabel } from '../../../lib/format';
 import { AmountField } from '../../../components/AmountField';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
-import { countAndCloseOpenShift, openShiftForSignedInUser, shiftOpenError, tillBlockedReason } from '../../../lib/cashierShift';
-import { POS_RETURN_PANEL_EVENT, POS_SHIFT_PANEL_EVENT, setPosDrawerBridge } from '../../../lib/posDrawerBridge';
+import { countAndCloseOpenShift, openShiftForSignedInUser, setOpeningCash, shiftOpenError, tillBlockedReason } from '../../../lib/cashierShift';
+import { dispatchDrawerKick, POS_RETURN_PANEL_EVENT, POS_SHIFT_PANEL_EVENT, setPosDrawerBridge } from '../../../lib/posDrawerBridge';
 import { TillReturnPanel } from './TillReturnPanel';
 import { setPosOfflinePanelProps } from '../../../lib/posOfflineSlot';
 import {
@@ -53,6 +53,11 @@ import './pos-modern.css';
 
 /** Ways to pay that have their own button on the till. */
 const MAIN_PAY_METHODS = new Set(['cash', 'card', 'mobile_money', 'bank_transfer']);
+const COUPON_LETTER_KEYS = [
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
+  'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R',
+  'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'CLR',
+] as const;
 const OFFLINE_TENDERS = new Set(['cash', 'mobile_money', 'card', 'bank_transfer', 'credit']);
 
 function hasPerm(
@@ -442,6 +447,8 @@ export default function Page() {
   const [cardTender, setCardTender] = useState('');
   const [splitOtherMethod, setSplitOtherMethod] = useState<'card' | 'mobile_money' | 'bank_transfer'>('card');
   const [amountPaidNow, setAmountPaidNow] = useState('');
+  const [keypadOpen, setKeypadOpen] = useState(false);
+  const [keypadField, setKeypadField] = useState<'cash' | 'card' | 'paidNow' | 'discount' | 'coupon' | null>(null);
   const [depositMethod, setDepositMethod] = useState('cash');
   const [receiptTo, setReceiptTo] = useState('');
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -458,11 +465,16 @@ export default function Page() {
   const [countBusy, setCountBusy] = useState(false);
   const [countError, setCountError] = useState('');
   const [shiftClosedNote, setShiftClosedNote] = useState('');
+  const [openingCashInput, setOpeningCashInput] = useState('');
+  const [openingCashBusy, setOpeningCashBusy] = useState(false);
+  const [newShiftOpeningCash, setNewShiftOpeningCash] = useState('');
   const [cartDiscount, setCartDiscount] = useState('');
   const [cartDiscountType, setCartDiscountType] = useState<'fixed' | 'percent'>('fixed');
   const [couponCode, setCouponCode] = useState('');
   const [isPharmacy, setIsPharmacy] = useState(false);
   const [tradeBanner, setTradeBanner] = useState('');
+  const [hotelTill, setHotelTill] = useState(false);
+  const [restaurantTill, setRestaurantTill] = useState(false);
   const [rxList, setRxList] = useState<OpenPrescription[]>([]);
   const [prescriptionId, setPrescriptionId] = useState('');
   const [message, setMessage] = useState('');
@@ -530,6 +542,7 @@ export default function Page() {
   const offlinePerms = offlineStatus?.envelope?.permissions || [];
   const checkoutReqRef = useRef<string | null>(null);
   const checkoutAttemptRef = useRef<string | null>(null);
+  const keypadSuppressRef = useRef(false);
   const cashMoveLock = useRef(false);
   const countLock = useRef(false);
   const browseGen = useRef(0);
@@ -612,11 +625,15 @@ export default function Page() {
     paymentMethod === 'credit' && !splitTender
       ? Math.max(0, Math.round((cartTotal - creditPaidNow) * 100) / 100)
       : 0;
+  const cashReceivedEntered = cashTender.trim() !== '';
   const cashTenderAmount = Math.round((Number(cashTender) || 0) * 100) / 100;
   const payingCash = !splitTender && paymentMethod === 'cash';
   const cashChangeDue =
-    payingCash && cashTenderAmount > cartTotal ? Math.round((cashTenderAmount - cartTotal) * 100) / 100 : 0;
-  const cashShort = payingCash && cashTenderAmount > 0 && cashTenderAmount < cartTotal - 0.004;
+    payingCash && cashReceivedEntered && cashTenderAmount > cartTotal
+      ? Math.round((cashTenderAmount - cartTotal) * 100) / 100
+      : 0;
+  const cashShort =
+    payingCash && cashReceivedEntered && cashTenderAmount > 0 && cashTenderAmount < cartTotal - 0.004;
   // Exact amount plus the next round notes above the total, e.g. 50, 100, 200.
   const quickCash = (() => {
     if (cartTotal <= 0) return [] as number[];
@@ -975,14 +992,17 @@ export default function Page() {
           setStoreId(list[0].id);
           setCtxStoreId(list[0].id);
         }
+        const industryNow = normalizeIndustry(meRes.data?.industry) || '';
+        const hotelCompany = industryNow === 'hotel';
+        const restaurantCompany = industryNow === 'restaurant';
         const tillIndustry = ['retail', 'retail_wholesale', 'pharmacy', 'restaurant', 'hotel'].includes(
-          normalizeIndustry(meRes.data?.industry) || ''
+          industryNow
         );
         if (!sess.data && !offlineBoot && !tillIndustry) {
           // Say why instead of 'Wait for your shift to open' that never ends.
           setError(tillBlockedReason(meRes.data) || 'This company has no till.');
         }
-        if (!sess.data && !offlineBoot && tillIndustry && !cancelled) {
+        if (!sess.data && !offlineBoot && tillIndustry && !hotelCompany && !restaurantCompany && !cancelled) {
           const opened = await openShiftForSignedInUser(chosen || null);
           if (cancelled) return;
           if (opened?.session_id) sess = { data: opened as Session };
@@ -1002,12 +1022,18 @@ export default function Page() {
         const industry = normalizeIndustry(meRes.data?.industry);
         const pharmacy = industry === 'pharmacy';
         setIsPharmacy(pharmacy);
+        setHotelTill(industry === 'hotel');
+        setRestaurantTill(industry === 'restaurant');
         setTradeBanner(
-          industry === 'retail_wholesale'
-            ? 'Retail counter. Wholesale quotes and orders stay on Sales.'
-            : industry === 'wholesale'
-              ? 'Wholesale counter. Sales from this register use the wholesale channel.'
-              : ''
+          industry === 'hotel'
+            ? 'Walk-up shop sales. Meals and drinks stay on the guest bill. Guest folio charges stay on Billing.'
+            : industry === 'restaurant'
+              ? 'Walk-up sales from this till. Table orders stay on the restaurant desk.'
+              : industry === 'retail_wholesale'
+              ? 'Retail counter. Wholesale quotes and orders stay on Sales.'
+              : industry === 'wholesale'
+                ? 'Wholesale counter. Sales from this register use the wholesale channel.'
+                : ''
         );
         if (pharmacy && !offlineBoot) {
           const rx = await api('/pharmacy/prescriptions').catch(() => ({ data: [] }));
@@ -1240,6 +1266,12 @@ export default function Page() {
       setError(msg);
       return;
     }
+    if (kind === 'cash_out' && amt > Number(session.expected_cash || 0) + 0.009) {
+      const msg = 'Cash out cannot exceed cash in the drawer.';
+      setCashMoveError(msg);
+      setError(msg);
+      return;
+    }
     cashMoveLock.current = true;
     setCashMoveBusy(kind);
     try {
@@ -1312,14 +1344,43 @@ export default function Page() {
     }
   }
 
+  async function saveOpeningCash() {
+    if (!session || openingCashBusy) return;
+    const raw = openingCashInput.trim();
+    const amount = Math.round(Number(raw) * 100) / 100;
+    if (!raw || !Number.isFinite(amount) || amount < 0) {
+      setError('Enter the opening cash. Use 0 if the drawer starts empty.');
+      return;
+    }
+    setOpeningCashBusy(true);
+    setError('');
+    try {
+      const updated = await setOpeningCash(amount);
+      setSession(updated as Session);
+      setOpeningCashInput('');
+      setMessage('Opening cash updated.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Opening cash could not be saved.');
+    } finally {
+      setOpeningCashBusy(false);
+    }
+  }
+
   async function startNewShift() {
     setShiftBusy(true);
     setError('');
     setShiftClosedNote('');
     try {
-      const opened = await openShiftForSignedInUser(storeId.trim() || null);
+      const raw = newShiftOpeningCash.trim();
+      const amount = raw ? Math.round(Number(raw) * 100) / 100 : 0;
+      const opened = await openShiftForSignedInUser(
+        storeId.trim() || null,
+        Number.isFinite(amount) && amount > 0 ? amount : 0,
+        true
+      );
       if (opened?.session_id) {
         setSession(opened as Session);
+        setNewShiftOpeningCash('');
         void loadShiftHistory();
       } else {
         setError('Your shift could not be started. Sign out and sign in again.');
@@ -1365,7 +1426,7 @@ export default function Page() {
           setQ('');
           return;
         }
-        if (hits.length === 0) setError(`No product for ${query} in the saved catalog`);
+        if (hits.length === 0) setError(restaurantTill ? `No menu item for ${query} in the saved catalog` : `No product for ${query} in the saved catalog`);
         return;
       }
       if (looksLikeBarcode(query)) {
@@ -1434,15 +1495,19 @@ export default function Page() {
     if (avail <= 0 || (product.is_out_of_stock && avail !== Infinity)) {
       setError(
         serverUp.current
-          ? `${product.name} is out of stock at this store`
-          : `${product.name} has no offline stock allocated to this device`
+          ? restaurantTill
+            ? `${product.name} is sold out at this store`
+            : `${product.name} is out of stock at this store`
+          : restaurantTill
+            ? `${product.name} has no offline menu items allocated to this device`
+            : `${product.name} has no offline stock allocated to this device`
       );
       return;
     }
     const pid = product.product_id || product.id;
     const existing = cart.find((p) => p.id === product.id);
     if (existing && existing.quantity >= avail) {
-      setError(`Only ${avail} of ${product.name} in stock at this store`);
+      setError(restaurantTill ? `Only ${avail} of ${product.name} on hand at this store` : `Only ${avail} of ${product.name} in stock at this store`);
       return;
     }
     setError('');
@@ -1507,17 +1572,58 @@ export default function Page() {
     setCart((prev) => prev.filter((p) => p.id !== id));
   }
 
+  function hideKeypad() {
+    keypadSuppressRef.current = true;
+    setKeypadOpen(false);
+    window.setTimeout(() => {
+      keypadSuppressRef.current = false;
+    }, 400);
+  }
+
+  function openKeypad(field?: 'cash' | 'card' | 'paidNow' | 'discount' | 'coupon') {
+    if (keypadSuppressRef.current) return;
+    if (field) setKeypadField(field);
+    setKeypadOpen(true);
+  }
+
+  function toggleKeypad() {
+    if (keypadOpen) hideKeypad();
+    else openKeypad();
+  }
+
   function applyKeypad(key: string) {
     const append = (current: string) => {
       const raw = String(current || '');
-      if (key === 'C') return '';
+      if (key === 'CLR' || key === 'Clear') return '';
+      if (key === 'C' && keypadField !== 'coupon') return '';
       if (key === '⌫') return raw.slice(0, -1);
       if (key === '.' && raw.includes('.')) return raw;
       if (key === '00') return raw ? `${raw}00` : '0';
       if (raw === '0' && key !== '.') return key;
       return `${raw}${key}`;
     };
-    if (splitTender || paymentMethod === 'cash') {
+    if (keypadField === 'discount') {
+      setCartDiscount(append(String(cartDiscount || '')));
+      return;
+    }
+    if (keypadField === 'coupon') {
+      setCouponCode(append(String(couponCode || '')).toUpperCase());
+      return;
+    }
+    if (keypadField === 'paidNow') {
+      setAmountPaidNow(append(String(amountPaidNow || '')));
+      return;
+    }
+    if (keypadField === 'card' && splitTender) {
+      const next = append(String(cardTender || ''));
+      setCardTender(next);
+      const other = Number(next);
+      if (Number.isFinite(other)) {
+        setCashTender(String(Math.max(0, Math.round((cartTotal - other) * 100) / 100)));
+      }
+      return;
+    }
+    if (keypadField === 'cash' || splitTender || paymentMethod === 'cash') {
       const next = append(String(cashTender || ''));
       setCashTender(next);
       if (splitTender) {
@@ -1545,6 +1651,9 @@ export default function Page() {
     setLastChange(null);
     setMessage('');
     setError('');
+    setCashTender('');
+    hideKeypad();
+    setKeypadField(null);
     document.querySelector<HTMLInputElement>('.tpos-search-input')?.focus();
   }
 
@@ -1555,6 +1664,8 @@ export default function Page() {
     setCashTender('');
     setCardTender('');
     setAmountPaidNow('');
+    hideKeypad();
+    setKeypadField(null);
   }
 
   function enableSplit(next: boolean) {
@@ -1563,6 +1674,10 @@ export default function Page() {
       const half = Math.round((cartTotal / 2) * 100) / 100;
       setCashTender(String(half || ''));
       setCardTender(String(Math.max(0, Math.round((cartTotal - half) * 100) / 100) || ''));
+    } else {
+      // Leaving split must not leave a half-due sitting in Cash received.
+      setCashTender('');
+      setCardTender('');
     }
   }
 
@@ -1861,6 +1976,9 @@ export default function Page() {
         await browse(q);
       };
       if (!online) {
+        if (restaurantTill) {
+          throw new Error('The restaurant till stays online. Connect, then take the payment.');
+        }
         await takeOffline();
         return;
       }
@@ -1940,6 +2058,7 @@ export default function Page() {
       });
       setReprintTarget({ offline: false, id: r.data.id });
       setPayAsReprint(true);
+      dispatchDrawerKick(r.data.drawer);
       const jobs = Array.isArray(r.data.print_jobs) ? r.data.print_jobs : [];
       void printReceiptAfterPay(r.data.id, jobs);
       await refreshSession();
@@ -2196,17 +2315,17 @@ export default function Page() {
           className="pos-shift-panel-card"
           role={shiftPanelOpen ? 'dialog' : undefined}
           aria-modal={shiftPanelOpen ? true : undefined}
-          aria-label="Till shift"
+          aria-label={hotelTill ? 'Shop shift' : restaurantTill ? 'Restaurant shift' : 'Till shift'}
         >
         <div className="pos-shift-panel-head">
-          <h2>Your shift</h2>
-          <button type="button" className="tpos-btn" aria-label="Close till shift" onClick={() => setShiftPanelOpen(false)}>
+          <h2>{hotelTill ? 'Shop shift' : restaurantTill ? 'Restaurant shift' : 'Your shift'}</h2>
+          <button type="button" className="tpos-btn" aria-label={hotelTill ? 'Close shop shift' : restaurantTill ? 'Close restaurant shift' : 'Close till shift'} onClick={() => setShiftPanelOpen(false)}>
             Close
           </button>
         </div>
         <header className="tpos-top">
           <div className="tpos-top-copy">
-            <h1>Point of Sale</h1>
+            <h1>{hotelTill ? 'Shop till' : restaurantTill ? 'Restaurant till' : 'Point of Sale'}</h1>
             {tradeBanner ? <p className="muted">{tradeBanner}</p> : null}
             {cashierName || !online ? (
             <p className="muted">
@@ -2224,6 +2343,18 @@ export default function Page() {
                 {shiftClosedNote ? (
                   <p className="muted" role="status">
                     {shiftClosedNote}{' '}
+                    <label className="tpos-cash-field">
+                      Opening cash
+                      <AmountField
+                        className="tpos-input"
+                        value={newShiftOpeningCash}
+                        onChange={(e) => setNewShiftOpeningCash(e.target.value)}
+                        inputMode="decimal"
+                        placeholder="0.00"
+                        autoComplete="off"
+                        aria-label="Opening cash"
+                      />
+                    </label>
                     <button
                       type="button"
                       className="tpos-btn"
@@ -2246,7 +2377,7 @@ export default function Page() {
                       if (!id) return;
                       setShiftBusy(true);
                       setError('');
-                      void openShiftForSignedInUser(id).then((opened) => {
+                      void openShiftForSignedInUser(id, 0, true).then((opened) => {
                         if (opened?.session_id) {
                           setSession(opened as Session);
                           void loadShiftHistory();
@@ -2266,7 +2397,9 @@ export default function Page() {
                     ))}
                   </select>
                 )}
-                {shiftClosedNote && !shiftBusy ? null : (
+                {hotelTill && !shiftClosedNote ? (
+                  <span className="muted">Shop shift is not open.</span>
+                ) : shiftClosedNote && !shiftBusy ? null : (
                 <span className="muted">
                   {shiftBusy || hideStorePicker || stores.length <= 1
                     ? 'Starting your shift…'
@@ -2298,9 +2431,37 @@ export default function Page() {
                     <span>Cash in the drawer</span>
                     <strong>{money(Number(session.expected_cash || 0))}</strong>
                     <span>
-                      In {money(Number(session.cash_in || 0))} · Out {money(Number(session.cash_out || 0))}
+                      Opening {money(Number(session.opening_cash || 0))} · In{' '}
+                      {money(Number(session.cash_in || 0))} · Out {money(Number(session.cash_out || 0))}
                     </span>
                   </p>
+                  {Number(session.sale_count || 0) === 0 &&
+                  Number(session.cash_in || 0) === 0 &&
+                  Number(session.cash_out || 0) === 0 ? (
+                    <div className="tpos-cash-actions">
+                      <label className="tpos-cash-field">
+                        Opening cash
+                        <AmountField
+                          className="tpos-input"
+                          value={openingCashInput}
+                          onChange={(e) => setOpeningCashInput(e.target.value)}
+                          inputMode="decimal"
+                          placeholder={String(Number(session.opening_cash || 0).toFixed(2))}
+                          autoComplete="off"
+                          aria-label="Opening cash"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className="tpos-btn"
+                        disabled={openingCashBusy}
+                        aria-label="Save opening cash"
+                        onClick={() => void saveOpeningCash()}
+                      >
+                        {openingCashBusy ? 'Saving…' : 'Save opening cash'}
+                      </button>
+                    </div>
+                  ) : null}
                   <label className="tpos-cash-field">
                     Amount to add or remove
                     <AmountField
@@ -2492,7 +2653,7 @@ export default function Page() {
                 }}
               >
                 <p className="muted">
-                  Count the notes and coins in the drawer. Sign-out still closes at the expected amount if you leave this blank.
+                  Count the notes and coins in the drawer. When the company requires it, Log out asks cashiers for the same count. Other roles sign out without this step. Idle sign-out leaves the shift open.
                 </p>
                 <label className="tpos-cash-field">
                   Counted cash
@@ -2558,7 +2719,7 @@ export default function Page() {
                     <tr key={sale.id}>
                       <td>{sale.reference}</td>
                       <td>{sale.created_at ? formatWhen(sale.created_at) || '—' : '—'}</td>
-                      <td>{sale.customer_name || 'Walk-in'}</td>
+                      <td>{sale.customer_name || (restaurantTill ? 'Walk-in diner' : 'Walk-in')}</td>
                       <td>
                         {sale.payment_method === 'split' && sale.payments?.length
                           ? sale.payments
@@ -2652,7 +2813,7 @@ export default function Page() {
             {session && catalogCategories.length > 0 ? (
               <nav className="tpos-cats" aria-label="POS product categories">
                 <p className="tpos-cats-crumb">
-                  {categoryFilter ? `All / ${categoryFilter}` : 'All products'}
+                  {categoryFilter ? `All / ${categoryFilter}` : restaurantTill ? 'All menu items' : 'All products'}
                 </p>
                 <div className="tpos-cats-row" role="tablist">
                   <button
@@ -2673,7 +2834,7 @@ export default function Page() {
                       aria-selected={categoryFilter === name}
                       className={`tpos-cat${categoryFilter === name ? ' is-on' : ''}`}
                       onClick={() => setCategoryFilter(name)}
-                      aria-label={`Show ${name} products`}
+                      aria-label={restaurantTill ? `Show ${name} menu items` : `Show ${name} products`}
                     >
                       {name}
                     </button>
@@ -2697,7 +2858,7 @@ export default function Page() {
                         if (!id) return;
                         setShiftBusy(true);
                         setError('');
-                        void openShiftForSignedInUser(id).then((opened) => {
+                        void openShiftForSignedInUser(id, 0, true).then((opened) => {
                           if (opened?.session_id) {
                             setSession(opened as Session);
                             void loadShiftHistory();
@@ -2719,7 +2880,23 @@ export default function Page() {
                     {error ? <p>{error}</p> : null}
                   </label>
                 ) : (
-                  <p>{error || 'Wait for your shift to open, then scan or search for a product.'}</p>
+                  hotelTill ? (
+                    <p>
+                      Meals and drinks stay on the guest bill. Start a shop shift when this till is selling.{' '}
+                      <button type="button" className="tpos-btn" disabled={shiftBusy} aria-label="Start shop shift" onClick={() => void startNewShift()}>
+                        {shiftBusy ? 'Starting…' : 'Start shop shift'}
+                      </button>
+                    </p>
+                  ) : restaurantTill ? (
+                    <p>
+                      Table orders stay on the restaurant desk. Start a shift when this till is selling.{' '}
+                      <button type="button" className="tpos-btn" disabled={shiftBusy} aria-label="Start restaurant shift" onClick={() => void startNewShift()}>
+                        {shiftBusy ? 'Starting…' : 'Start restaurant shift'}
+                      </button>
+                    </p>
+                  ) : (
+                    <p>{error || 'Wait for your shift to open, then scan or search for a product.'}</p>
+                  )
                 )}
                 {shiftClosedNote ? (
                   <button
@@ -2736,7 +2913,7 @@ export default function Page() {
             )}
 
             {session && catalogLoading && rows.length === 0 && (
-              <div className="tpos-skeleton-grid" aria-busy="true" aria-label="Loading products">
+              <div className="tpos-skeleton-grid" aria-busy="true" aria-label={restaurantTill ? 'Loading menu items' : 'Loading products'}>
                 {Array.from({ length: 8 }, (_, i) => (
                   <div key={i} className="tpos-skeleton-tile" />
                 ))}
@@ -2750,24 +2927,26 @@ export default function Page() {
                     ? `No ${categoryFilter} items in this search. Choose another category or tap All.`
                     : lastBrowseQuery.trim()
                       ? `Nothing matches “${lastBrowseQuery.trim()}”. Check the spelling or scan the barcode.`
-                      : `${session.store_name || 'This store'} has no products in stock to sell yet. Add products and their stock in Inventory, then come back.`}
+                      : restaurantTill
+                        ? `${session.store_name || 'This store'} has no menu items to sell yet. Add menu items in Ingredients, then come back.`
+                        : `${session.store_name || 'This store'} has no products in stock to sell yet. Add products and their stock in Inventory, then come back.`}
                 </p>
                 {!lastBrowseQuery.trim() && !categoryFilter ? (
-                  <a className="tpos-btn" href="/inventory" aria-label="Go to Inventory">
-                    Go to Inventory
+                  <a className="tpos-btn" href="/inventory" aria-label={restaurantTill ? 'Go to Ingredients' : 'Go to Inventory'}>
+                    {restaurantTill ? 'Go to Ingredients' : 'Go to Inventory'}
                   </a>
                 ) : (
                 <button
                   type="button"
                   className="tpos-btn"
-                  aria-label="Show all products"
+                  aria-label={restaurantTill ? 'Show all menu items' : 'Show all products'}
                   onClick={() => {
                     setQ('');
                     setCategoryFilter('');
                     browse('').catch((err) => setError(err.message));
                   }}
                 >
-                  Show all products
+                  {restaurantTill ? 'Show all menu items' : 'Show all products'}
                 </button>
                 )}
               </div>
@@ -2855,7 +3034,7 @@ export default function Page() {
                 onChange={(e) => selectCustomer(e.target.value)}
                 aria-label="POS customer"
               >
-                <option value="">Walk-in</option>
+                <option value="">{restaurantTill ? 'Walk-in diner' : 'Walk-in'}</option>
                 {customers
                   .filter((c) => c.status !== 'inactive')
                   .map((c) => (
@@ -2908,7 +3087,7 @@ export default function Page() {
             <div className="tpos-cart-list pos-ui-list">
               {cart.length === 0 && !payAsReprint ? (
                 <div className="tpos-cart-empty">
-                  <p>Scan or search, then tap a product to add it.</p>
+                  <p>{restaurantTill ? 'Scan or search, then tap a menu item to add it.' : 'Scan or search, then tap a product to add it.'}</p>
                 </div>
               ) : cart.length === 0 && payAsReprint && lastSale?.lines?.length ? (
                 <div className="tpos-receipt-preview" aria-label="Last receipt preview">
@@ -3010,6 +3189,7 @@ export default function Page() {
                 );
               })}
             </div>
+            </div>
 
             <div className="tpos-cart-dock pos-ui-pay">
               <div className="tpos-cart-lines">
@@ -3031,6 +3211,7 @@ export default function Page() {
                           min={0}
                           step="0.01"
                           value={cashTender}
+                          onFocus={() => openKeypad('cash')}
                           onChange={(e) => {
                             const raw = e.target.value;
                             const cash = Number(raw);
@@ -3052,6 +3233,7 @@ export default function Page() {
                           min={0}
                           step="0.01"
                           value={cardTender}
+                          onFocus={() => openKeypad('card')}
                           onChange={(e) => {
                             const raw = e.target.value;
                             const other = Number(raw);
@@ -3085,8 +3267,9 @@ export default function Page() {
                       <AmountField
                         className="tpos-input"
                         value={cashTender}
+                        onFocus={() => openKeypad('cash')}
                         onChange={(e) => setCashTender(e.target.value)}
-                        placeholder={cartTotal.toFixed(2)}
+                        placeholder=""
                         inputMode="decimal"
                         aria-label="Cash received"
                       />
@@ -3169,6 +3352,7 @@ export default function Page() {
                         min={0}
                         step="0.01"
                         value={amountPaidNow}
+                        onFocus={() => openKeypad('paidNow')}
                         onChange={(e) => setAmountPaidNow(e.target.value)}
                         placeholder="0.00"
                         inputMode="decimal"
@@ -3272,7 +3456,6 @@ export default function Page() {
                 </div>
               ) : null}
             </div>
-            </div>
             <div className="pos-cart-foot">
               {payAsReprint && lastSale ? (
                 <div className="pos-done" role="status" aria-label="Sale complete">
@@ -3314,6 +3497,11 @@ export default function Page() {
               ) : (
                 <>
               {payAsReprint ? null : <div className="pos-foot-pay">
+                {restaurantTill ? (
+                  <p className="muted">
+                    Card, Mobile Money, and bank are recorded. This till does not charge a card. Gift cards and loyalty stay on retail sales. A menu item with a recipe uses its ingredients. The ingredient cost is posted to cost of goods. The restaurant till stays online.
+                  </p>
+                ) : null}
                 {splitTender || payAsReprint ? null : (
                   <div className="pos-pay-methods" role="radiogroup" aria-label="How the customer pays">
                     {[
@@ -3370,8 +3558,8 @@ export default function Page() {
                     >
                       <option value="">More ways to pay…</option>
                       {online ? <option value="wallet">Wallet</option> : null}
-                      {online ? <option value="gift_card">Gift card</option> : null}
-                      {online ? <option value="loyalty">Loyalty points</option> : null}
+                      {online && !restaurantTill ? <option value="gift_card">Gift card</option> : null}
+                      {online && !restaurantTill ? <option value="loyalty">Loyalty points</option> : null}
                       {canCreditSale && (online || offlinePerms.includes('credit_sale')) ? (
                         <option value="credit">Credit</option>
                       ) : null}
@@ -3381,24 +3569,6 @@ export default function Page() {
                 </div>
               </div>}
               <div className="pos-foot-grid">
-              {payAsReprint ? null : <div className="pos-foot-keys">
-                <div className="tpos-keypad" role="group" aria-label="POS keypad">
-                  {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map((key) => (
-                    <button
-                      key={key}
-                      type="button"
-                      className="tpos-key"
-                      disabled={!session || payAsReprint}
-                      onClick={() => applyKeypad(key)}
-                      aria-label={
-                        key === 'C' ? 'Clear keypad value' : key === '⌫' ? 'Delete last keypad digit' : `Keypad ${key}`
-                      }
-                    >
-                      {key}
-                    </button>
-                  ))}
-                </div>
-              </div>}
               <div className="pos-foot-sum">
               <div className="tpos-total pos-ui-due" aria-label="POS cart totals">
                 {payAsReprint ? null : (
@@ -3447,7 +3617,9 @@ export default function Page() {
                     !session
                       ? 'Open a POS shift before charging'
                       : !cart.length
-                        ? 'Add a product before charging'
+                        ? restaurantTill
+                          ? 'Add a menu item before charging'
+                          : 'Add a product before charging'
                         : busy
                           ? 'This sale is already being saved'
                           : ''
@@ -3456,6 +3628,21 @@ export default function Page() {
                 >
                   {busy ? 'Paying…' : `Pay ${money(cartTotal)}`}
                 </button>
+                {payAsReprint ? null : (
+                <button
+                  type="button"
+                  className={`tpos-btn tpos-keypad-toggle${keypadOpen ? ' is-on' : ''}`}
+                  aria-pressed={keypadOpen}
+                  aria-expanded={keypadOpen}
+                  aria-controls="pos-pay-keypad"
+                  aria-label={keypadOpen ? 'Hide keypad' : 'Show keypad'}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={toggleKeypad}
+                >
+                  <span className="tpos-keypad-toggle-verb">{keypadOpen ? 'Hide' : 'Show'}</span>
+                  <span className="tpos-keypad-toggle-noun">keypad</span>
+                </button>
+                )}
                 </div>
               </div>
               </div>
@@ -3484,7 +3671,7 @@ export default function Page() {
                     aria-label="POS customer name"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Walk-in if none selected"
+                    placeholder={restaurantTill ? 'Walk-in diner if none selected' : 'Walk-in if none selected'}
                     maxLength={180}
                     autoComplete="off"
                   />
@@ -3511,6 +3698,7 @@ export default function Page() {
                           min={0}
                           step="0.01"
                           value={cartDiscount}
+                          onFocus={() => openKeypad('discount')}
                           onChange={(e) => setCartDiscount(e.target.value)}
                           placeholder="0"
                           inputMode="decimal"
@@ -3524,6 +3712,7 @@ export default function Page() {
                           min={0}
                           step="0.01"
                           value={cartDiscount}
+                          onFocus={() => openKeypad('discount')}
                           onChange={(e) => setCartDiscount(e.target.value)}
                           placeholder="0.00"
                           inputMode="decimal"
@@ -3537,6 +3726,7 @@ export default function Page() {
                     <input
                       className="tpos-input"
                       value={couponCode}
+                      onFocus={() => openKeypad('coupon')}
                       onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                       placeholder="CODE"
                       aria-label="POS coupon code"
@@ -3545,6 +3735,48 @@ export default function Page() {
                 </div>
                 </div>
               </details>
+              )}
+              {payAsReprint || !keypadOpen ? null : (
+              <div className="pos-keypad-dock">
+                {keypadField === 'coupon' ? (
+                <div className="tpos-keypad-letters" role="group" aria-label="POS coupon letters">
+                  {COUPON_LETTER_KEYS.map((key) => (
+                    <button
+                      key={key}
+                      type="button"
+                      className={`tpos-key${key === 'CLR' ? ' tpos-key-clear' : ''}`}
+                      disabled={!session || payAsReprint}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => applyKeypad(key)}
+                      aria-label={key === 'CLR' ? 'Clear coupon code' : `Keypad ${key}`}
+                    >
+                      {key === 'CLR' ? 'Clear' : key}
+                    </button>
+                  ))}
+                </div>
+                ) : null}
+                <div id="pos-pay-keypad" className="tpos-keypad" role="group" aria-label="POS keypad">
+                  {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '⌫'].map((key) => (
+                    <button
+                      key={key}
+                      type="button"
+                      className="tpos-key"
+                      disabled={!session || payAsReprint}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => applyKeypad(key)}
+                      aria-label={
+                        key === '.'
+                          ? 'Keypad decimal'
+                          : key === '⌫'
+                            ? 'Delete last keypad character'
+                            : `Keypad ${key}`
+                      }
+                    >
+                      {key}
+                    </button>
+                  ))}
+                </div>
+              </div>
               )}
                 </>
               )}

@@ -18,10 +18,9 @@ export const PEOPLE_NAV_ITEMS: NavItem[] = [
 /** These groups always render children in the sidebar (no collapsed <details>). */
 export const ALWAYS_LIST_NAV_GROUP_IDS = new Set<string>();
 
-/** Hotel tenants use one flat list. Generic inventory, purchasing, finance,
- * and settings groups stay hidden so those pages are not listed twice.
- * Sales, expenses, accounting, and business reports are hotel-labeled links
- * and still follow the package module. */
+/** Hotel hides the generic retail groups so pages are not listed twice.
+ * Hotel-labeled mothers (Hotel, Sales and POS, Finance, Inventory, Users,
+ * Reports, Settings) hold the children as sidebar dropdowns. */
 export const HOTEL_OMIT_NAV_GROUP_IDS = new Set([
   'dashboard',
   'company',
@@ -41,11 +40,14 @@ export const HOTEL_INVENTORY_PARENT_HREF = '/hotel?tab=supplies';
 
 /** Shared ERP inventory/purchasing destinations, hotel-labeled. No second stock ledger. */
 export const HOTEL_INVENTORY_PROCUREMENT_CHILDREN: NavItem[] = [
-  ['Products and stock', '/inventory?tab=products', 'inventory'],
-  ['Low stock', '/inventory?tab=lowstock', 'inventory'],
+  ['Supplies', '/inventory?tab=products', 'inventory'],
+  ['Low supplies', '/inventory?tab=lowstock', 'inventory'],
   ['Stock adjustments', '/inventory?tab=adjust', 'inventory'],
+  ['Lots', '/inventory?tab=batches', 'inventory'],
   ['Purchase orders', '/purchasing?tab=orders', 'purchasing'],
-  ['Goods received', '/purchasing?tab=grn', 'purchasing'],
+  ['Receive supplies', '/purchasing?tab=grn', 'purchasing'],
+  ['Supplier bills', '/purchasing?tab=invoices', 'purchasing'],
+  ['Purchase returns', '/purchasing?tab=returns', 'purchasing'],
   ['Suppliers', '/purchasing?tab=suppliers', 'purchasing'],
   ['Purchase history', '/purchasing?tab=history', 'purchasing'],
 ];
@@ -53,17 +55,27 @@ export const HOTEL_INVENTORY_PROCUREMENT_CHILDREN: NavItem[] = [
 export const HOTEL_NAV_ITEMS: NavItem[] = [
   ['Hotel Dashboard', '/hotel', 'hotel'],
   ['Reservations and Booking', '/hotel?tab=reservations', 'hotel'],
+  ['Group stays', '/hotel?tab=reservations#group-stay', 'hotel'],
+  ['Online booking', '/hotel?tab=reservations#online-booking', 'hotel'],
   ['Front Desk', '/hotel?tab=front-desk', 'hotel'],
+  ['Guest requests', '/hotel?tab=front-desk#guest-requests', 'hotel'],
   ['Rooms and Rates', '/hotel?tab=rooms', 'hotel'],
+  ['Rate plans', '/hotel?tab=rooms#rate-plans', 'hotel'],
   ['Housekeeping', '/hotel?tab=housekeeping', 'hotel'],
+  ['Lost and found', '/hotel?tab=housekeeping#lost-found', 'hotel'],
   ['Maintenance', '/hotel?tab=maintenance', 'hotel'],
   ['Guests and CRM', '/hotel?tab=guests', 'hotel'],
   ['Hotel Services', '/hotel?tab=services', 'hotel'],
+  ['Hotel restaurant', '/hotel?tab=restaurant', 'hotel'],
+  ['Hotel bar', '/hotel?tab=bar', 'hotel'],
   ['Sales', '/sales', 'sales'],
   ['Customers', '/customers', 'sales'],
-  ['Restaurant and POS', '/pos', 'pos'],
+  ['Discount codes', '/sales?tab=coupons', 'sales'],
+  ['Gift cards', '/sales?tab=giftcards', 'sales'],
+  ['Shop till', '/pos', 'pos'],
   ['Billing and Guest Folios', '/hotel?tab=billing', 'hotel'],
   ['Hotel Finance and Cashiering', '/hotel?tab=cashier', 'hotel'],
+  ['Night audit', '/hotel?tab=cashier#night-audit', 'hotel'],
   ['Expenses', '/expenses', 'expenses'],
   ['Accounting', '/accounting', 'accounting'],
   ['Payment notice', '/billing', 'accounting'],
@@ -73,7 +85,6 @@ export const HOTEL_NAV_ITEMS: NavItem[] = [
   ['Staff and Permissions', '/users', 'users'],
   ['Departments', '/departments', 'users'],
   ['Hotel Reports', '/hotel?tab=reports', 'hotel'],
-  ['Reports', '/reports', 'reports'],
   ['Audit', '/audit', 'audit'],
   ['Events and Banquets', '/hotel?tab=events', 'hotel'],
   ['Notifications', '/notifications', 'notifications'],
@@ -87,13 +98,200 @@ export const HOTEL_NAV_ITEMS: NavItem[] = [
   ['AI Assistant', '/ai', 'ai'],
 ];
 
+/** Hotel sidebar mothers. Children sit under these labels as dropdowns.
+ * Hotel Dashboard stays a standalone home link (`id: 'hotel'`). */
+export const HOTEL_NAV_GROUPS: NavGroup[] = [
+  { id: 'hotel', label: '', items: [['Hotel Dashboard', '/hotel', 'hotel']] },
+  {
+    id: 'hotel-ops',
+    label: 'Hotel',
+    items: [
+      ['Reservations and Booking', '/hotel?tab=reservations', 'hotel'],
+      ['Group stays', '/hotel?tab=reservations#group-stay', 'hotel'],
+  ['Online booking', '/hotel?tab=reservations#online-booking', 'hotel'],
+      ['Front Desk', '/hotel?tab=front-desk', 'hotel'],
+      ['Guest requests', '/hotel?tab=front-desk#guest-requests', 'hotel'],
+      ['Rooms and Rates', '/hotel?tab=rooms', 'hotel'],
+      ['Rate plans', '/hotel?tab=rooms#rate-plans', 'hotel'],
+      ['Housekeeping', '/hotel?tab=housekeeping', 'hotel'],
+      ['Lost and found', '/hotel?tab=housekeeping#lost-found', 'hotel'],
+      ['Maintenance', '/hotel?tab=maintenance', 'hotel'],
+      ['Guests and CRM', '/hotel?tab=guests', 'hotel'],
+      ['Hotel Services', '/hotel?tab=services', 'hotel'],
+      ['Hotel restaurant', '/hotel?tab=restaurant', 'hotel'],
+      ['Hotel bar', '/hotel?tab=bar', 'hotel'],
+      ['Events and Banquets', '/hotel?tab=events', 'hotel'],
+    ],
+  },
+  {
+    id: 'hotel-sales',
+    label: 'Sales and POS',
+    items: [
+      ['Sales', '/sales', 'sales'],
+      ['Customers', '/customers', 'sales'],
+      ['Discount codes', '/sales?tab=coupons', 'sales'],
+      ['Gift cards', '/sales?tab=giftcards', 'sales'],
+      ['Shop till', '/pos', 'pos'],
+    ],
+  },
+  {
+    id: 'hotel-finance',
+    label: 'Finance and Accounts',
+    items: [
+      ['Billing and Guest Folios', '/hotel?tab=billing', 'hotel'],
+      ['Hotel Finance and Cashiering', '/hotel?tab=cashier', 'hotel'],
+      ['Night audit', '/hotel?tab=cashier#night-audit', 'hotel'],
+      ['Expenses', '/expenses', 'expenses'],
+      ['Accounting', '/accounting', 'accounting'],
+      ['Payment notice', '/billing', 'accounting'],
+      ['Customer credit', '/credit?kind=receivable', 'credit'],
+      ['Tax', '/tax', 'tax'],
+    ],
+  },
+  {
+    id: 'hotel-inventory',
+    label: 'Inventory and Procurement',
+    items: [...HOTEL_INVENTORY_PROCUREMENT_CHILDREN],
+  },
+  {
+    id: 'hotel-people',
+    label: 'User Management',
+    items: [
+      ['Staff and Permissions', '/users', 'users'],
+      ['Departments', '/departments', 'users'],
+    ],
+  },
+  {
+    id: 'hotel-reports',
+    label: 'Hotel Reports',
+    items: [
+      ['Hotel Reports', '/hotel?tab=reports', 'hotel'],
+      ['Audit', '/audit', 'audit'],
+    ],
+  },
+  { id: 'hotel-notifications', label: '', items: [['Notifications', '/notifications', 'notifications']] },
+  {
+    id: 'hotel-settings',
+    label: 'Settings',
+    items: [
+      ['Hotel Profile and Settings', '/hotel?tab=settings', 'hotel'],
+      ['Company profile', '/company', 'company'],
+      ['Subscription billing', '/company/billing', 'company'],
+      ['Integrations', '/integrations', 'company'],
+      ['Security', '/security', 'security'],
+      ['Printers', '/printers', 'printers'],
+      ['Backup', '/backup', 'backup'],
+      ['AI Assistant', '/ai', 'ai'],
+    ],
+  },
+];
+
 export const RESTAURANT_NAV_ITEMS: NavItem[] = [
   ['Restaurant dashboard', '/restaurant', 'restaurant'],
   ['Tables and floor', '/restaurant?tab=tables', 'restaurant'],
+  ['Online booking', '/restaurant?tab=booking', 'restaurant'],
   ['Orders', '/restaurant?tab=orders', 'restaurant'],
   ['Kitchen', '/restaurant?tab=kitchen', 'restaurant'],
   ['Recipes', '/restaurant?tab=recipes', 'restaurant'],
+  ['Waste', '/restaurant?tab=waste', 'restaurant'],
+  ['Bills', '/sales', 'sales'],
+  ['Customers', '/customers', 'sales'],
+  ['Customer credit', '/credit?kind=receivable', 'credit'],
+  ['Restaurant till', '/pos', 'pos'],
+  ['Ingredients', '/inventory?tab=products', 'inventory'],
+  ['Low ingredients', '/inventory?tab=lowstock', 'inventory'],
+  ['Purchase orders', '/purchasing?tab=orders', 'purchasing'],
+  ['Receive stock', '/purchasing?tab=grn', 'purchasing'],
+  ['Suppliers', '/purchasing?tab=suppliers', 'purchasing'],
+  ['Expenses', '/expenses', 'expenses'],
+  ['Accounting', '/accounting', 'accounting'],
+  ['Tax', '/tax', 'tax'],
+  ['Reports', '/reports', 'reports'],
+  ['Staff and Permissions', '/users', 'users'],
+  ['Departments', '/departments', 'users'],
+  ['Audit', '/audit', 'audit'],
+  ['Notifications', '/notifications', 'notifications'],
+  ['Company profile', '/company', 'company'],
+  ['Security', '/security', 'security'],
   ['Printers', '/printers', 'printers'],
+  ['Backup', '/backup', 'backup'],
+];
+
+/** Restaurant sidebar. Retail POS, Batches, and hotel rooms stay off this list. */
+export const RESTAURANT_NAV_GROUPS: NavGroup[] = [
+  { id: 'restaurant', label: '', items: [['Restaurant dashboard', '/restaurant', 'restaurant']] },
+  {
+    id: 'restaurant-floor',
+    label: 'Restaurant',
+    items: [
+      ['Tables and floor', '/restaurant?tab=tables', 'restaurant'],
+      ['Online booking', '/restaurant?tab=booking', 'restaurant'],
+      ['Orders', '/restaurant?tab=orders', 'restaurant'],
+      ['Kitchen', '/restaurant?tab=kitchen', 'restaurant'],
+      ['Recipes', '/restaurant?tab=recipes', 'restaurant'],
+      ['Waste', '/restaurant?tab=waste', 'restaurant'],
+    ],
+  },
+  {
+    id: 'restaurant-service',
+    label: 'Service',
+    items: [
+      ['Bills', '/sales', 'sales'],
+      ['Customers', '/customers', 'sales'],
+      ['Restaurant till', '/pos', 'pos'],
+    ],
+  },
+  {
+    id: 'restaurant-places',
+    label: 'Branches',
+    items: [
+      ['Branch', '/stores#branches', 'stores'],
+      ['Store', '/stores#stores', 'stores'],
+    ],
+  },
+  {
+    id: 'restaurant-stock',
+    label: 'Ingredients and purchasing',
+    items: [
+      ['Ingredients', '/inventory?tab=products', 'inventory'],
+      ['Low ingredients', '/inventory?tab=lowstock', 'inventory'],
+      ['Purchase orders', '/purchasing?tab=orders', 'purchasing'],
+      ['Receive stock', '/purchasing?tab=grn', 'purchasing'],
+      ['Suppliers', '/purchasing?tab=suppliers', 'purchasing'],
+    ],
+  },
+  {
+    id: 'restaurant-finance',
+    label: 'Finance',
+    items: [
+      ['Expenses', '/expenses', 'expenses'],
+      ['Customer credit', '/credit?kind=receivable', 'credit'],
+      ['Accounting', '/accounting', 'accounting'],
+      ['Tax', '/tax', 'tax'],
+      ['Reports', '/reports', 'reports'],
+    ],
+  },
+  {
+    id: 'restaurant-people',
+    label: 'User Management',
+    items: [
+      ['Staff and Permissions', '/users', 'users'],
+      ['Departments', '/departments', 'users'],
+    ],
+  },
+  { id: 'restaurant-notifications', label: '', items: [['Notifications', '/notifications', 'notifications']] },
+  {
+    id: 'restaurant-settings',
+    label: 'Settings',
+    items: [
+      ['Company profile', '/company', 'company'],
+      ['Security', '/security', 'security'],
+      ['Printers', '/printers', 'printers'],
+      ['Backup', '/backup', 'backup'],
+      ['AI Assistant', '/ai', 'ai'],
+      ['Audit', '/audit', 'audit'],
+    ],
+  },
 ];
 
 export const FMCG_NAV_ITEMS: NavItem[] = [
@@ -179,6 +377,8 @@ export function filterNavForStoreMode(items: NavItem[], multiStore = true): NavI
 export function industryNavHrefOk(href: string, industry: string | null | undefined): boolean {
   const path = (href.split('?')[0] || '').split('#')[0];
   const ind = normalizeIndustry(industry);
+  if (path === '/hotel' || path.startsWith('/hotel/')) return ind === 'hotel';
+  if (path === '/restaurant' || path.startsWith('/restaurant/')) return ind === 'restaurant';
   if (path === '/gift-cards') return ind === 'retail';
   if (path === '/ecommerce' || path.startsWith('/ecommerce/')) {
     return ind === 'retail' || ind === 'pharmacy';
@@ -382,6 +582,13 @@ export function groupedTenantNav(
           ),
         }));
 
+  if (ind === 'restaurant') {
+    return RESTAURANT_NAV_GROUPS.map((group) => ({
+      ...group,
+      items: group.items.filter(([, href]) => hrefVisible(href)),
+    })).filter((group) => group.items.length > 0);
+  }
+
   if (ind !== 'hotel') return pointed;
 
   const hotelItems = HOTEL_NAV_ITEMS.filter(([, href, module]) => {
@@ -390,33 +597,26 @@ export function groupedTenantNav(
   });
   if (!hotelItems.length) return mapped;
 
-  const invChildren = HOTEL_INVENTORY_PROCUREMENT_CHILDREN.filter(([, href]) => hrefVisible(href));
-  const showInvParent = hotelItems.some(([, href]) => href === HOTEL_INVENTORY_PARENT_HREF);
-  const splitAt = HOTEL_NAV_ITEMS.findIndex(([, href]) => href === HOTEL_INVENTORY_PARENT_HREF);
-  const beforeHrefs = new Set(HOTEL_NAV_ITEMS.slice(0, Math.max(0, splitAt)).map(([, href]) => href));
-  const hotelFlat = hotelItems.filter(([, href]) => href !== HOTEL_INVENTORY_PARENT_HREF);
-  const before = hotelFlat.filter(([, href]) => beforeHrefs.has(href));
-  const after = hotelFlat.filter(([, href]) => !beforeHrefs.has(href));
-
-  const hotelGroups: NavGroup[] = [];
-  if (before.length) hotelGroups.push({ id: 'hotel', label: '', items: before });
-  if (showInvParent && invChildren.length) {
-    hotelGroups.push({
-      id: 'hotel-inventory',
-      label: 'Inventory and Procurement',
-      items: invChildren,
-    });
-  } else if (showInvParent) {
-    hotelGroups.push({
-      id: 'hotel-inventory',
-      label: '',
-      items: hotelItems.filter(([, href]) => href === HOTEL_INVENTORY_PARENT_HREF),
-    });
-  }
-  if (after.length) hotelGroups.push({ id: 'hotel-rest', label: '', items: after });
+  const allowedHotel = new Set(hotelItems.map(([, href]) => href));
+  const hotelGroups = HOTEL_NAV_GROUPS.map((group) => {
+    if (group.id === 'hotel-inventory') {
+      const invChildren = HOTEL_INVENTORY_PROCUREMENT_CHILDREN.filter(([, href]) => hrefVisible(href));
+      const showInvParent = hotelItems.some(([, href]) => href === HOTEL_INVENTORY_PARENT_HREF);
+      if (showInvParent && invChildren.length) {
+        return { ...group, items: invChildren };
+      }
+      if (showInvParent) {
+        return {
+          ...group,
+          items: hotelItems.filter(([, href]) => href === HOTEL_INVENTORY_PARENT_HREF),
+        };
+      }
+      return { ...group, items: invChildren };
+    }
+    return { ...group, items: group.items.filter(([, href]) => allowedHotel.has(href)) };
+  }).filter((group) => group.items.length > 0);
   if (!hotelGroups.length) return mapped;
 
-  // Hotel-only: flat ops items, plus an accordion for shared inventory/purchasing.
   return [...hotelGroups, ...pointed];
 }
 

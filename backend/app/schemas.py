@@ -168,7 +168,7 @@ ReceiptPaperValue = Annotated[
 ]
 # Live print/receipt query params (BR-20.4 / BR-8) — same coerce as branding Literals.
 InvoicePrintFormatValue = Annotated[
-    Literal["pdf", "text", "json"],
+    Literal["pdf", "text", "json", "html"],
     BeforeValidator(coerce_invoice_template_value),
 ]
 # Purchase-order / document HTML print (BR-6.3) — omit → html; blank/invalid → 422.
@@ -827,6 +827,8 @@ class TenantProfileUpdate(BaseModel):
     thousand_separator: ThousandSeparatorValue | None = None
     time_format: TimeFormatValue | None = None
     inactivity_timeout_minutes: int | None = Field(default=None, ge=5, le=480)
+    # Cashiers only: ask for counted cash on Log out. omit = no change; default on.
+    count_drawer_on_sign_out: bool | None = None
     # Offline POS authorization window in hours. Default 168 (7 days, refresh-token aligned).
     # omit = no change; out of 1–168 → **422**.
     offline_auth_hours: int | None = Field(default=None, ge=1, le=168)
@@ -7472,6 +7474,35 @@ def coerce_webhook_url_value(value: object) -> object:
     return value.strip()
 
 
+_LOCAL_HTTP_HOSTS = frozenset(
+    {"localhost", "127.0.0.1", "testserver", "host.docker.internal"}
+)
+_BLOCKED_OUTBOUND_HOSTS = _LOCAL_HTTP_HOSTS | {
+    "::1",
+    "metadata.google.internal",
+    "metadata.goog",
+    "169.254.169.254",
+}
+
+
+def outbound_host_is_forbidden(host: str | None, *, allow_local_http: bool = False) -> bool:
+    """True when the host is loopback, private, link-local, or a reserved name."""
+    import ipaddress
+
+    h = (host or "").lower().rstrip(".")
+    if not h:
+        return True
+    if h in _BLOCKED_OUTBOUND_HOSTS:
+        return not (allow_local_http and h in _LOCAL_HTTP_HOSTS)
+    if h.endswith(".local") or h.endswith(".internal") or h.endswith(".localhost"):
+        return True
+    try:
+        ip = ipaddress.ip_address(h)
+    except ValueError:
+        return False
+    return not ip.is_global
+
+
 def validate_webhook_url_value(value: str) -> str:
     """AfterValidator: absolute http(s) URL; http only for localhost (BR-18.6)."""
     from urllib.parse import urlparse
@@ -7479,14 +7510,15 @@ def validate_webhook_url_value(value: str) -> str:
     parsed = urlparse(value)
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
         raise ValueError("url must be an absolute http(s) URL")
+    if parsed.username or parsed.password:
+        raise ValueError("url must not include credentials")
     host = (parsed.hostname or "").lower()
-    if parsed.scheme == "http" and host not in {
-        "localhost",
-        "127.0.0.1",
-        "testserver",
-        "host.docker.internal",
-    }:
-        raise ValueError("Webhook URL must use HTTPS (http allowed only for localhost)")
+    if parsed.scheme == "http":
+        if host not in _LOCAL_HTTP_HOSTS:
+            raise ValueError("Webhook URL must use HTTPS (http allowed only for localhost)")
+        return value
+    if outbound_host_is_forbidden(host):
+        raise ValueError("url must not target a private or local address")
     return value
 
 
@@ -9192,13 +9224,45 @@ class PosSessionOpen(BaseModel):
 class PosSessionClose(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
-    actual_cash: NonNegativeMoneyValue
-    # omit/`null` → no separate closing figure; nan/inf/<0 → **422**
+    # Counted drawer. Either field is enough; both must match. nan/inf/<0 → **422**
+    actual_cash: NonNegativeMoneyValue | None = None
+    # Alias for actual_cash (desk "closing cash"); omit/`null` OK; nan/inf/<0 → **422**
     closing_cash: NonNegativeMoneyValue | None = None
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on PosSession.notes Text).
     notes: PosSessionCloseNotesValue | None = None
+
+    @model_validator(mode="after")
+    def require_matching_counted_cash(self):
+        if self.actual_cash is None and self.closing_cash is None:
+            raise ValueError("actual_cash or closing_cash is required")
+        if (
+            self.actual_cash is not None
+            and self.closing_cash is not None
+            and abs(float(self.actual_cash) - float(self.closing_cash)) >= 0.01
+        ):
+            raise ValueError("actual_cash and closing_cash must match")
+        return self
+
+    def counted_cash(self) -> float:
+        if self.actual_cash is not None:
+            return float(self.actual_cash)
+        return float(self.closing_cash or 0)
+
+
+class PosSessionOpeningCash(BaseModel):
+    """PATCH /pos/sessions/{id}/opening-cash — opening float on an unused open shift."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422**
+    opening_cash: NonNegativeMoneyValue
+
+
+CashMovementTypeValue = Annotated[
+    Literal["cash_in", "cash_out"],
+    BeforeValidator(coerce_record_scope_value),
+]
 
 
 class PosCashMovementCreate(BaseModel):
@@ -9206,7 +9270,9 @@ class PosCashMovementCreate(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    movement_type: Literal["cash_in", "cash_out"]
+    # ∈ cash_in|cash_out (strip/lower); blank/`!!!`/`in` → **422** (was bare
+    # Literal — padded ` CASH_IN ` was late service **400**).
+    movement_type: CashMovementTypeValue
     amount: PositiveMoneyValue
     reason: PosDrawerOpenReasonValue
 
@@ -9438,7 +9504,7 @@ def coerce_hotel_payment_method_value(value: object) -> object:
 
 
 HotelRoomTypeValue = Annotated[
-    Literal["standard", "deluxe", "suite", "family", "other"],
+    Literal["standard", "deluxe", "executive", "suite", "family", "other"],
     BeforeValidator(coerce_hotel_room_type_value),
 ]
 HotelRoomStatusValue = Annotated[
@@ -9464,7 +9530,7 @@ HotelReservationStatusValue = Annotated[
     BeforeValidator(coerce_hotel_reservation_status_value),
 ]
 HotelBookingSourceValue = Annotated[
-    Literal["direct", "walk_in", "ota", "corporate", "phone", "staff", "group", "other"],
+    Literal["direct", "walk_in", "ota", "corporate", "phone", "staff", "group", "online", "other"],
     BeforeValidator(coerce_hotel_booking_source_value),
 ]
 HotelPaymentMethodValue = Annotated[
@@ -9475,6 +9541,7 @@ HotelChargeTypeValue = Annotated[
     Literal[
         "room",
         "restaurant",
+        "bar",
         "laundry",
         "transport",
         "spa",
@@ -9488,9 +9555,22 @@ HotelChargeTypeValue = Annotated[
     BeforeValidator(coerce_hotel_room_status_value),
 ]
 HotelListKindValue = Annotated[
-    Literal["arrivals", "departures", "in_house", "upcoming", "cancelled", "no_show", "tentative"],
+    Literal["arrivals", "departures", "in_house", "upcoming", "cancelled", "no_show", "tentative", "waitlist"],
     BeforeValidator(coerce_hotel_reservation_status_value),
 ]
+
+
+class HotelRoomAmenities(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    wifi: bool = False
+    air_conditioning: bool = False
+    television: bool = False
+    minibar: bool = False
+    safe: bool = False
+    balcony: bool = False
+    breakfast: bool = False
+    accessible: bool = False
 
 
 class HotelRoomCreate(BaseModel):
@@ -9505,7 +9585,7 @@ class HotelRoomCreate(BaseModel):
     rate_amount: NonNegativeMoneyValue = 0
     weekend_rate: NonNegativeMoneyValue | None = None
     extra_person_charge: NonNegativeMoneyValue = 0
-    amenities: dict | None = None
+    amenities: HotelRoomAmenities | None = None
     description: Annotated[str, Field(min_length=1, max_length=2000)] | None = None
     status: HotelRoomStatusValue = "available"
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
@@ -9522,7 +9602,7 @@ class HotelRoomUpdate(BaseModel):
     rate_amount: NonNegativeMoneyValue | None = None
     weekend_rate: NonNegativeMoneyValue | None = None
     extra_person_charge: NonNegativeMoneyValue | None = None
-    amenities: dict | None = None
+    amenities: HotelRoomAmenities | None = None
     description: Annotated[str, Field(min_length=1, max_length=2000)] | None = None
     status: HotelRoomStatusValue | None = None
     housekeeping_status: HotelHousekeepingStatusValue | None = None
@@ -9564,6 +9644,8 @@ class HotelGuestUpdate(BaseModel):
     preferences: Annotated[str, Field(min_length=1, max_length=1000)] | None = None
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
     is_active: bool | None = None
+    travel_agent: Annotated[str, Field(min_length=1, max_length=150)] | None = None
+    loyalty_tier: Annotated[str, Field(min_length=1, max_length=40)] | None = None
 
 
 class HotelGuestMerge(BaseModel):
@@ -9588,7 +9670,7 @@ class HotelReservationCreate(BaseModel):
     deposit_method: HotelPaymentMethodValue | None = None
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
     walk_in: bool = False
-    status: Literal["tentative", "booked"] = "booked"
+    status: Literal["tentative", "booked", "waitlisted"] = "booked"
     rate_plan_id: UuidIdValue | None = None
     discount_percent: NonNegativeMoneyValue = 0
     discount_authorized_by: UuidIdValue | None = None
@@ -9604,6 +9686,16 @@ class HotelMoveRoom(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     new_room_id: UuidIdValue
+
+
+class HotelTimingFeeBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["early_checkin", "late_checkout"]
+
+
+class HotelServiceChargeBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
 
 
 class HotelCheckoutBody(BaseModel):
@@ -9646,6 +9738,7 @@ class HotelHousekeepingCreate(BaseModel):
     priority: Literal["low", "normal", "high", "urgent"] = "normal"
     assigned_to: Annotated[str, Field(min_length=1, max_length=150)] | None = None
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+    due_at: IsoDateQueryValue | None = None
 
 
 class HotelHousekeepingComplete(BaseModel):
@@ -9771,6 +9864,18 @@ class FmcgRouteStopDeliveryUpdate(BaseModel):
     fail_reason: Annotated[str, Field(min_length=1, max_length=255)] | None = None
 
 
+class HotelFolioNotesUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    notes: Annotated[str, Field(min_length=1, max_length=1000)] | None = None
+
+
+class HotelNightAuditRun(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
 class HotelSettingsUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -9781,9 +9886,10 @@ class HotelSettingsUpdate(BaseModel):
     early_checkin_fee: NonNegativeMoneyValue | None = None
     late_checkout_fee: NonNegativeMoneyValue | None = None
     tax_percent: NonNegativeMoneyValue | None = None
-    service_charge_percent: NonNegativeMoneyValue | None = None
+    service_charge_percent: PercentRateValue | None = None
     notes: Annotated[str, Field(min_length=1, max_length=1000)] | None = None
     property_name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
+    food_outlet_mode: Literal["together", "separate"] | None = None
 
 
 class HotelReservationUpdate(BaseModel):
@@ -9829,6 +9935,7 @@ class HotelGuestRequestCreate(BaseModel):
     reservation_id: UuidIdValue | None = None
     room_id: UuidIdValue | None = None
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+    due_at: IsoDateQueryValue | None = None
 
 
 class HotelLostFoundCreate(BaseModel):
@@ -9864,7 +9971,7 @@ class HotelServiceCreate(BaseModel):
 
     code: Annotated[str, Field(min_length=1, max_length=40)]
     name: Annotated[str, Field(min_length=1, max_length=150)]
-    category: Literal["restaurant", "laundry", "transport", "spa", "extra", "service"] = "extra"
+    category: Literal["restaurant", "bar", "laundry", "transport", "spa", "extra", "service"] = "extra"
     unit_amount: NonNegativeMoneyValue = 0
     tax_percent: NonNegativeMoneyValue = 0
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
@@ -9874,7 +9981,7 @@ class HotelServiceUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
-    category: Literal["restaurant", "laundry", "transport", "spa", "extra", "service"] | None = None
+    category: Literal["restaurant", "bar", "laundry", "transport", "spa", "extra", "service"] | None = None
     unit_amount: NonNegativeMoneyValue | None = None
     tax_percent: NonNegativeMoneyValue | None = None
     is_active: bool | None = None
@@ -9900,6 +10007,8 @@ class HotelGroupReservationCreate(BaseModel):
     booking_source: HotelBookingSourceValue = "corporate"
     name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+    discount_percent: NonNegativeMoneyValue = 0
+    discount_authorized_by: UuidIdValue | None = None
 
 
 class FmcgDispatchCreate(BaseModel):

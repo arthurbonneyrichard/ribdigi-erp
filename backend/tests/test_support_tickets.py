@@ -615,7 +615,14 @@ async def test_ticket_categories_follow_industry_desk(client):
     retail = await labels_for("retail")
     assert retail.get("pos_sales") == "POS and sales"
     hotel = await labels_for("hotel")
-    assert hotel.get("pos_sales") == "POS and sales"
+    assert hotel.get("pos_sales") == "Shop till"
+    assert hotel.get("inventory_stock") == "Supplies"
+    assert hotel.get("finance_reports") == "Folios, cashiering, and reports"
+    hotel_meta = await ac.get("/api/v1/support/categories", headers=cashier)
+    hotel_help = {row["code"]: row.get("help") or "" for row in hotel_meta.json()["data"]["categories"]}
+    assert "Guest folio" in hotel_help["pos_sales"]
+    assert "Till sales" not in hotel_help["pos_sales"]
+    assert hotel_meta.json()["data"]["industry"] == "hotel"
     restaurant = await labels_for("restaurant")
     assert restaurant.get("pos_sales") == "POS and sales"
     pharmacy = await labels_for("pharmacy")

@@ -115,7 +115,7 @@ def _meta_html(lines: list[str]) -> str:
     bits = [line for line in lines if str(line or "").strip()]
     if not bits:
         return ""
-    return '<div class="meta">' + "<br/>".join(bits) + "</div>"
+    return '<div class="meta">' + "<br/>".join(str(line) for line in bits) + "</div>"
 
 
 def _notes_html(notes: Any) -> str:
@@ -139,26 +139,41 @@ def _money_line(currency: str, amount: Any) -> str:
     return f"{currency} {money_json(amount or 0)}".strip()
 
 
+def _qty_cell(value: Any) -> str:
+    if value is None or value == "":
+        return ""
+    amount = money_json(value)
+    text = f"{amount:g}" if isinstance(amount, (int, float)) else str(amount)
+    return html.escape(text)
+
+
+def _money_cell(currency: str, value: Any) -> str:
+    if value is None or value == "":
+        return ""
+    return html.escape(_money_line(currency, value))
+
+
 def _line_table_html(items: list[dict], currency: str) -> str:
     rows = "".join(
         "<tr>"
         f"<td>{html.escape(str(i.get('name') or 'Item'))}</td>"
-        f'<td class="r">{html.escape(str(i.get("quantity") if i.get("quantity") is not None else ""))}</td>'
-        f'<td class="r">{html.escape(str(currency))} {html.escape(str(i.get("unit_price") if i.get("unit_price") is not None else ""))}</td>'
-        f'<td class="r">{html.escape(str(i.get("tax_rate") if i.get("tax_rate") is not None else ""))}</td>'
-        f'<td class="r">{html.escape(str(i.get("discount") if i.get("discount") is not None else ""))}</td>'
-        f'<td class="r">{html.escape(str(currency))} {html.escape(str(i.get("line_total") if i.get("line_total") is not None else ""))}</td>'
+        f'<td class="r">{_qty_cell(i.get("quantity"))}</td>'
+        f'<td class="r">{_money_cell(currency, i.get("unit_price"))}</td>'
+        f'<td class="r">{_qty_cell(i.get("tax_rate"))}</td>'
+        f'<td class="r">{_money_cell(currency, i.get("discount"))}</td>'
+        f'<td class="r">{_money_cell(currency, i.get("line_total"))}</td>'
         "</tr>"
         for i in items
     )
     return (
         '<table class="doc"><thead><tr>'
-        "<th>Product</th><th>Qty</th><th>Unit</th><th>Tax</th><th>Discount</th><th>Total</th>"
+        '<th>Product</th><th class="r">Qty</th><th class="r">Unit</th>'
+        '<th class="r">Tax</th><th class="r">Discount</th><th class="r">Total</th>'
         f"</tr></thead><tbody>{rows}</tbody></table>"
     )
 
 
-def _grn_table_html(items: list[dict]) -> str:
+def _grn_table_html(items: list[dict], *, item_heading: str = "Product") -> str:
     rows = "".join(
         "<tr>"
         f"<td>{html.escape(str(i.get('name') or 'Item'))}</td>"
@@ -170,7 +185,7 @@ def _grn_table_html(items: list[dict]) -> str:
     )
     return (
         '<table class="doc"><thead><tr>'
-        "<th>Product</th><th>Received</th><th>Accepted</th><th>Rejected</th>"
+        f'<th>{html.escape(item_heading)}</th><th class="r">Received</th><th class="r">Accepted</th><th class="r">Rejected</th>'
         f"</tr></thead><tbody>{rows}</tbody></table>"
     )
 
@@ -186,7 +201,7 @@ def _request_table_html(items: list[dict]) -> str:
     )
     return (
         '<table class="doc"><thead><tr>'
-        "<th>Product</th><th>Qty</th><th>Notes</th>"
+        '<th>Product</th><th class="r">Qty</th><th>Notes</th>'
         f"</tr></thead><tbody>{rows}</tbody></table>"
     )
 
@@ -196,7 +211,7 @@ def document_body_html(payload: dict[str, Any]) -> str:
     table = str(payload.get("table") or "lines")
     items = list(payload.get("items") or [])
     if table == "grn":
-        table_html = _grn_table_html(items)
+        table_html = _grn_table_html(items, item_heading=str(payload.get("item_heading") or "Product"))
     elif table == "request":
         table_html = _request_table_html(items)
     elif table == "none":
@@ -344,7 +359,7 @@ def to_document_a4_pdf(payload: dict[str, Any]) -> bytes:
     if table != "none" and items:
         if table == "grn":
             headers = [
-                (margin + 4, "Product"),
+                (margin + 4, str(payload.get("item_heading") or "Product")),
                 (margin + 280, "Recv"),
                 (margin + 360, "Acc"),
                 (margin + 440, "Rej"),
@@ -357,12 +372,12 @@ def to_document_a4_pdf(payload: dict[str, Any]) -> bytes:
             ]
         else:
             headers = [
-                (margin + 4, "Qty"),
-                (margin + 40, "Description"),
-                (margin + 280, "Unit"),
-                (margin + 340, "Tax%"),
-                (margin + 390, "Disc"),
-                (margin + 450, "Line"),
+                (margin + 4, "Product"),
+                (margin + 250, "Qty"),
+                (margin + 300, "Unit"),
+                (margin + 360, "Tax%"),
+                (margin + 410, "Disc"),
+                (margin + 460, "Line"),
             ]
 
         def draw_col_header() -> None:
@@ -381,15 +396,15 @@ def to_document_a4_pdf(payload: dict[str, Any]) -> bytes:
             if y < margin + 28:
                 break_page()
                 draw_col_header()
-            name = str(item.get("name") or "Item")[:36]
+            name = str(item.get("name") or "Item")
             row_top = y
             if table == "grn":
-                draw_text(name, 9, x=margin + 4, y_pos=row_top)
+                draw_text(name[:42], 9, x=margin + 4, y_pos=row_top)
                 draw_text(str(item.get("received_qty") or ""), 9, x=margin + 280, y_pos=row_top)
                 draw_text(str(item.get("accepted_qty") or ""), 9, x=margin + 360, y_pos=row_top)
                 draw_text(str(item.get("rejected_qty") or ""), 9, x=margin + 440, y_pos=row_top)
             elif table == "request":
-                draw_text(name, 9, x=margin + 4, y_pos=row_top)
+                draw_text(name[:42], 9, x=margin + 4, y_pos=row_top)
                 draw_text(str(item.get("quantity") or ""), 9, x=margin + 360, y_pos=row_top)
                 draw_text(str(item.get("notes") or "")[:18], 9, x=margin + 420, y_pos=row_top)
             else:
@@ -398,12 +413,12 @@ def to_document_a4_pdf(payload: dict[str, Any]) -> bytes:
                 tax = money_json(item.get("tax_rate") or 0)
                 disc = money_json(item.get("discount") or 0)
                 line_total = money_json(item.get("line_total") or 0)
-                draw_text(f"{qty:g}", 9, x=margin + 4, y_pos=row_top)
-                draw_text(name, 9, x=margin + 40, y_pos=row_top)
-                draw_text(_money(unit), 9, x=margin + 280, y_pos=row_top)
-                draw_text(_money(tax), 9, x=margin + 340, y_pos=row_top)
-                draw_text(_money(disc), 9, x=margin + 390, y_pos=row_top)
-                draw_text(_money(line_total), 9, x=margin + 450, y_pos=row_top, bold=True)
+                draw_text(name[:38], 9, x=margin + 4, y_pos=row_top)
+                draw_text(f"{qty:g}", 9, x=margin + 250, y_pos=row_top)
+                draw_text(_money(unit), 9, x=margin + 300, y_pos=row_top)
+                draw_text(_money(tax), 9, x=margin + 360, y_pos=row_top)
+                draw_text(_money(disc), 9, x=margin + 410, y_pos=row_top)
+                draw_text(_money(line_total), 9, x=margin + 460, y_pos=row_top, bold=True)
             y = row_top - 14
             content.append(
                 f"0.831 0.898 0.769 RG 0.5 w {margin:.1f} {y + 2:.1f} m "
@@ -741,11 +756,15 @@ def build_grn_print(
     party_email = (getattr(supplier, "email", None) or "").strip()
     party_name = (getattr(supplier, "name", None) or "").strip()
     date_s = _fmt_when(grn.get("received_at") or grn.get("created_at"), tenant)
+    hotel = (getattr(tenant, "industry", None) or "").strip().lower() == "hotel"
+    title_word = "Supplies received" if hotel else "Goods received"
+    ref_label = "Delivery" if hotel else "GRN"
     payload.update(
         {
             "document_type": "goods_receipt",
-            "title": f"Goods received {number}".strip() or "Goods received",
-            "doc_heading": "GOODS RECEIVED",
+            "title": f"{title_word} {number}".strip() or title_word,
+            "doc_heading": "SUPPLIES RECEIVED" if hotel else "GOODS RECEIVED",
+            "item_heading": "Supply" if hotel else "Product",
             "subtitle": f"PO {po_number}" if po_number else (f"Received {date_s}" if date_s else None),
             "table": "grn",
             "items": labeled_items(grn.get("items")),
@@ -754,14 +773,14 @@ def build_grn_print(
             "party_name": party_name,
             "party_detail": party_email or None,
             "meta_left": [
-                f"GRN      {number}",
+                f"{ref_label}      {number}",
                 f"Status   {str(grn.get('status') or '').upper()}",
                 f"Date     {date_s}" if date_s else "",
                 f"PO       {po_number}" if po_number else "",
             ],
             "meta_right": [f"Supplier email {party_email}" if party_email else ""],
             "meta_html_lines": [
-                f"GRN <strong>{html.escape(number)}</strong> · Status {html.escape(str(grn.get('status') or '').upper())}",
+                f"{html.escape(ref_label)} <strong>{html.escape(number)}</strong> · Status {html.escape(str(grn.get('status') or '').upper())}",
                 f"Supplier {html.escape(str(party_name or grn.get('supplier_id') or ''))}"
                 + (f"<br/>Supplier email {html.escape(party_email)}" if party_email else ""),
                 f"Date received {html.escape(date_s)}" if date_s else "",

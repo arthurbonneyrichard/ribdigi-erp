@@ -86,6 +86,51 @@ _SALES_DESK_INDUSTRIES = frozenset({"wholesale", "fmcg"})
 _OPERATING_INDUSTRIES = _POS_TICKET_INDUSTRIES | _SALES_DESK_INDUSTRIES | frozenset({"hospital"})
 CATEGORY_CODES = {code for code, _label, _mods in CATEGORY_DEFS}
 CATEGORY_LABELS = {code: label for code, label, _mods in CATEGORY_DEFS}
+_CATEGORY_HELP = {
+    "account_login": "Signing in, your password, and which screens your role can open.",
+    "pos_sales": "Till sales and receipts, or quotations and invoices when this company uses a sales desk.",
+    "inventory_stock": "Products on hand, stock movements, and what is available to sell.",
+    "purchases_suppliers": "Suppliers, purchase orders, goods received, supplier bills, and returns.",
+    "finance_reports": "Accounts, expenses, and the reports for this company.",
+    "printing_barcode_receipt": "Printers, barcode labels, and sale receipts.",
+    "settings_configuration": "Company settings, including the business type already saved for this company.",
+    "bug_other": "A problem that is not covered by the topics above.",
+}
+# Same ticket codes. Hotel companies see hotel functions, not the retail till menu.
+_HOTEL_CATEGORY_COPY: dict[str, tuple[str, str]] = {
+    "account_login": (
+        "Staff sign-in and access",
+        "Signing in, passwords, and which hotel screens a role can open.",
+    ),
+    "pos_sales": (
+        "Shop till",
+        "Walk-up shop sales for this hotel. Meals and drinks stay on the guest bill. Guest folio charges and payments stay on Billing.",
+    ),
+    "inventory_stock": (
+        "Supplies",
+        "Hotel supplies, quantities on hand, and adjustments. Rooms stay on Rooms and rates.",
+    ),
+    "purchases_suppliers": (
+        "Hotel purchasing and suppliers",
+        "Suppliers, purchase orders, supplies received, and supplier bills for the hotel.",
+    ),
+    "finance_reports": (
+        "Folios, cashiering, and reports",
+        "Guest folios, front-desk cashiering, expenses, accounting, and hotel reports.",
+    ),
+    "printing_barcode_receipt": (
+        "Printing and guest documents",
+        "Reservation confirmations, folio print, and printers for this hotel.",
+    ),
+    "settings_configuration": (
+        "Hotel profile and settings",
+        "Hotel profile, company settings, and the saved hotel business type.",
+    ),
+    "bug_other": (
+        "Something else",
+        "A hotel problem that is not covered by the topics above.",
+    ),
+}
 
 _EVENT_LABELS = {
     "tenant_created": "New support ticket",
@@ -249,7 +294,10 @@ def categories_for(tenant: m.Tenant | None, *, all_categories: bool = False) -> 
         if not _category_visible(tenant, industry, code, modules):
             continue
         shown = "Sales" if code == "pos_sales" and industry in _SALES_DESK_INDUSTRIES else label
-        rows.append({"code": code, "label": shown})
+        help_text = _CATEGORY_HELP.get(code, "Covers this part of the product for your company.")
+        if industry == "hotel" and code in _HOTEL_CATEGORY_COPY:
+            shown, help_text = _HOTEL_CATEGORY_COPY[code]
+        rows.append({"code": code, "label": shown, "help": help_text})
     return rows
 
 

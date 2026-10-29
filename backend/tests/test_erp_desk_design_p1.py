@@ -32,6 +32,16 @@ def test_shared_design_tokens_and_page_header():
     assert 'aria-label={label}' in shell
     assert "Collapse sidebar" in shell
     assert "Expand sidebar" in shell
+    assert "width:18px;height:28px" in compact
+    assert ".menu-btn{display:none!important}" in compact
+    assert "className=\"menu-btn\"" not in shell
+    assert "MobileSideNavButton" not in shell
+    assert "scrollbar-width:none!important" in compact
+    assert ".shell.main::-webkit-scrollbar" in compact
+    assert "overflow-y:hidden;overscroll-behavior:contain;border-right:1pxsolid#002818" in compact
+    assert "NAV_GROUP_ICON" in shell
+    assert "NavGroupIcon" in shell
+    assert ".side .nav-group-title" in css
 
 
 def test_desk_pages_use_shared_page_header():

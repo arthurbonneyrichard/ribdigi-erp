@@ -11,6 +11,21 @@ from starlette.responses import JSONResponse, Response
 from app.config import settings
 from app.rate_limit import rate_limiter
 
+
+def client_ip_from_request(request: Request) -> str:
+    """Rate-limit IP: rightmost XFF hop, or the trusted-proxy walk when configured."""
+    peer = request.client.host if request.client else ""
+    hops = [part.strip() for part in (request.headers.get("x-forwarded-for") or "").split(",") if part.strip()]
+    trusted = settings.trusted_proxy_ips
+    if trusted:
+        for hop in reversed(hops):
+            if hop not in trusted:
+                return hop
+        return peer or (hops[-1] if hops else "unknown")
+    if hops:
+        return hops[-1]
+    return peer or "unknown"
+
 STOREFRONT_WRITE_PREFIXES = (
     "/api/v1/storefront/cart",
     "/api/v1/storefront/checkout",
@@ -27,6 +42,7 @@ AUTH_PATH_PREFIXES = (
     "/api/v1/auth/login",
     "/api/v1/auth/refresh",
     "/api/v1/auth/2fa/verify",
+    "/api/v1/auth/webauthn/login",
     "/api/v1/auth/password-reset",
     "/api/v1/auth/password-reset-request",
     "/api/v1/auth/verify-email",
@@ -74,12 +90,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
 
     def _client_ip(self, request: Request) -> str:
-        forwarded = request.headers.get("x-forwarded-for")
-        if forwarded:
-            return forwarded.split(",")[0].strip()
-        if request.client:
-            return request.client.host
-        return "unknown"
+        return client_ip_from_request(request)
 
     def _tenant_scope(self, request: Request) -> str:
         raw = (request.headers.get("x-tenant-id") or "").strip()

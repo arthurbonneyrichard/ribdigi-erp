@@ -615,6 +615,7 @@ async def tax_report(
         "net_tax_payable": money_json(pack["net_tax_payable"]),
         "invoice_count": pack["invoice_count"],
         "pos_sale_count": pack["pos_sale_count"],
+        "returns_note": pack.get("returns_note"),
         "purchase_count": pack["purchase_count"],
         "purchase_order_count": pack["purchase_order_count"],
         "taxable_outputs_net": money_json(pack["filing_boxes"]["taxable_outputs_net"]),
@@ -828,6 +829,95 @@ async def tax_filing_pack(
                 "store_id": store_id,
             }
         )
+    from app.restaurant import _restaurant_company, posted_till_returns
+
+    restaurant_company = await _restaurant_company(db, tenant_id)
+    if restaurant_company:
+        tax_returns = await posted_till_returns(
+            db,
+            tenant_id,
+            start=from_date,
+            end=to_date,
+            inclusive_end=to_date is not None,
+        )
+        sale_ids = [ret.transaction_id for ret in tax_returns if ret.transaction_id]
+        sale_store: dict[str, str | None] = {}
+        if sale_ids and (store_id or store_ids is not None):
+            sale_rows = (
+                await db.execute(
+                    select(m.Transaction.id, m.PosSession.store_id)
+                    .outerjoin(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+                    .where(
+                        m.Transaction.tenant_id == tenant_id,
+                        m.Transaction.id.in_(sale_ids),
+                    )
+                )
+            ).all()
+            sale_store = {sale_id: row_store for sale_id, row_store in sale_rows}
+        allowed_stores = set(store_ids) if store_ids is not None else None
+        for ret in tax_returns:
+            tax_back = money_json(ret.tax_amount or 0)
+            net_back = money_json(ret.subtotal or 0)
+            gross_back = money_json(ret.total_amount or 0)
+            if tax_back <= 0 and net_back <= 0 and gross_back <= 0:
+                continue
+            if store_id or allowed_stores is not None:
+                row_store = sale_store.get(ret.transaction_id)
+                if store_id and row_store != store_id:
+                    continue
+                if allowed_stores is not None and row_store not in allowed_stores:
+                    continue
+            output_pos = money_json(round(output_pos - tax_back, 2))
+            _bump_supply("standard", -net_back)
+            for row in output_schedule:
+                if row.get("document_type") == "pos_sale" and row.get("document_id") == ret.transaction_id:
+                    row["tax_amount"] = money_json(round(money_json(row["tax_amount"]) - tax_back, 2))
+                    row["net_amount"] = money_json(round(money_json(row["net_amount"]) - net_back, 2))
+                    row["gross_amount"] = money_json(round(money_json(row["gross_amount"]) - gross_back, 2))
+                    break
+        from sqlalchemy import func
+
+        from app.reports import apply_store_scope_or_unassigned
+        from app.restaurant import bill_parts, service_percent
+
+        percent = await service_percent(db, tenant_id)
+        when = func.coalesce(m.RestaurantOrder.completed_at, m.RestaurantOrder.created_at)
+        bill_stmt = select(m.RestaurantOrder).where(
+            m.RestaurantOrder.tenant_id == tenant_id,
+            m.RestaurantOrder.status == "completed",
+        )
+        if from_date:
+            bill_stmt = bill_stmt.where(when >= from_date)
+        if to_date:
+            bill_stmt = bill_stmt.where(when <= to_date)
+        bill_stmt = apply_store_scope_or_unassigned(
+            bill_stmt,
+            m.RestaurantOrder.store_id,
+            store_id,
+            list(store_ids) if store_ids is not None else None,
+        )
+        for order in (await db.execute(bill_stmt)).scalars().all():
+            total = money_json(order.total_amount or 0)
+            subtotal = money_json(order.subtotal or 0)
+            _service, tax = bill_parts(subtotal, total, percent)
+            net = money_json(round(total - tax, 2))
+            output_invoices += tax
+            _bump_supply("standard", net)
+            output_schedule.append(
+                {
+                    "schedule": "output_sales_invoices",
+                    "document_type": "table_bill",
+                    "document_number": order.order_number,
+                    "document_id": order.id,
+                    "document_date": order.completed_at or order.created_at,
+                    "net_amount": net,
+                    "tax_amount": tax,
+                    "reverse_charge_tax": money_json(0),
+                    "gross_amount": total,
+                    "party_id": None,
+                    "store_id": order.store_id,
+                }
+            )
     taxable_outputs = standard_outputs
 
     # Prefer approved purchase invoices for input tax; fall back to POs.
@@ -1020,6 +1110,11 @@ async def tax_filing_pack(
         "net_tax_payable": money_json(net),
         "invoice_count": len(invoices),
         "pos_sale_count": len(pos_sales),
+        "returns_note": (
+            "A restaurant till return comes off this till tax. The original receipt stays on the till report."
+            if restaurant_company
+            else "Posted returns are listed on Sales returns and are not subtracted here."
+        ),
         "purchase_count": len(input_schedule),
         "purchase_order_count": len(input_schedule) if input_source == "purchase_orders" else 0,
         "filing_boxes": {

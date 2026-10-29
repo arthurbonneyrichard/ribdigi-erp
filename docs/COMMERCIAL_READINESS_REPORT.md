@@ -1,6 +1,86 @@
 # RIBDIGI ERP COMMERCIAL READINESS REPORT
 
-**Date:** 2026-09-17 (historical scorecard). **15 October 2026 UTC** is the latest result. Earlier addenda stay below. The 2026-10-05 section still says **Not ready for market**.
+**Date:** 2026-09-17 (historical scorecard). **28 October 2026 UTC** is the latest Restaurant result. **25 October 2026 UTC** stays the latest Hotel result. **15 October 2026 UTC** stays the latest result for Security, Retail, and Offline POS. Earlier addenda stay below. The 2026-10-05 section still says **Not ready for market**.
+
+## 28 October 2026 UTC — Restaurant
+
+**General release. Not certified. Not Offline Complete.** Restaurant is **Ready** on a disposable company. Hotel stays Ready from 25 October 2026 UTC. Security stays Ready and not Verified. Retail and Offline POS stay Ready from 15 October 2026 UTC. `offline_complete_claimed` stays false. This pass did not commit, push, deploy, migrate Dokploy, charge a card gateway, or recertify the live site.
+
+| Area | Status | Evidence |
+| --- | --- | --- |
+| Restaurant | Ready | Signed-in Restaurant Audit Walk (`rest-audit-28`): dine-in cash bill R-0001 for Ama Audit, menu line 100, service 10, VAT 16.50, total GH₵ 126.50. Audit rice stock 5 to 4. Journal debit cash 1000 for 126.50 equals credits sales 4000 for 110 and tax payable 2100 for 16.50. Sales today GH₵ 126.50. Detailed sales lists one Table bill at 126.50. Daily sales restaurant revenue 126.50. In-memory fixture: service 10 and VAT 10 on 100 give tax 11 and total 121, journal balanced, hotel and retail reports omit the bill, hotel service-charge save **403**. Live Local Verify Restaurant R-0001 stays open at GH₵ 45.00 with no tax and no service charge. Hotel Audit Walk `GET /restaurant/orders` **403**. This is not certified and not a live-site recert. |
+
+### Restaurant operating limitations
+
+- Table tax uses the company tax rate. Exclusive tax is added. Inclusive tax stays inside the menu line. The optional service percent is 0 until set, and 0 to 30.
+- Card, Mobile Money, and bank are recorded tenders. This does not charge a card. Gift cards and loyalty stay on retail sales.
+- The restaurant till stays online. `offline_complete_claimed` stays false.
+- Hotel folio meals and drinks stay on the hotel. Ingredients, purchasing, and staff stay the company desks.
+- A completed table bill is included in restaurant-industry company sales. Hotel and retail reports do not include it.
+- Getting started on a restaurant company finishes Complete a bill from a completed restaurant bill. It does not use a retail invoice. Hotel Getting started still finishes on check-in.
+- Restaurant Sales today includes completed restaurant-till receipts with table bills. Draft and void receipts stay out. Hotel and retail do not use that total.
+- A restaurant till receipt for a menu item with a recipe uses the ingredients. A return puts those ingredients back. An item with no recipe uses its own stock. Hotel and retail tills keep the sold item.
+- A sent restaurant ticket can be marked preparing before it is marked ready. Starting it does not take a payment. Hotel cannot start a restaurant ticket.
+- The company dashboard for a restaurant company includes completed table bills in sales today, the month, the charts, top dishes, and recent sales. Hotel and retail dashboards leave those bills out.
+- Restaurant waste with a cost debits operating expenses and credits inventory. An ingredient with no cost still leaves stock and posts no journal. Hotel and retail cannot record restaurant waste.
+- Completing a restaurant bill posts the recipe ingredient cost to cost of goods and takes it off inventory. A refund reverses that cost. A menu item with no recipe uses its own stock and cost. A restaurant till receipt uses the ingredient cost. A hotel till sale uses the sold item's cost.
+- A restaurant bill cannot be put on credit. Cash, card, wallet, and Mobile Money stay on the bill. Credit stays on the restaurant till, where a customer can be selected. Completing a bill already stored as credit is refused before stock or a journal moves.
+- Company dashboard profit for a restaurant company uses the ingredient cost, or the item's own cost when it has no recipe. A restaurant till receipt uses that same cost. A hotel till sale keeps the sold item's cost.
+- Menu items sold and sold lines for a restaurant company use that same ingredient cost. A menu item with no recipe uses its own cost. A hotel till sale keeps the sold item's cost. Revenue stays on the dish.
+- A refunded restaurant bill leaves completed sales and is listed on Bill returns, with the guest and the bill total. Hotel and retail do not list that bill. A restaurant till return stays on the till report.
+- A posted restaurant till return comes off Sales today, the company dashboard, and profit. Profit uses the ingredient cost of the returned lines, or the item's own cost when it has no recipe. The original receipt stays on the till list. A hotel company keeps that receipt in sales.
+- A posted restaurant till return also comes off menu items sold and sold lines. A dish that stays on the receipt stays on those lists. A hotel company keeps the returned dish at the dish's own cost.
+- A posted restaurant till return comes off today sales and this month's sales. The receipt count stays. A hotel or retail company still leaves posted returns on that sales total.
+- A posted restaurant till return comes off detailed sales. The amount that remains stays listed. The original receipt stays on the till report. A hotel company keeps the full receipt on detailed sales.
+- A posted restaurant till return comes off sales by payment method. The tender count stays. The original receipt stays on the till report. A hotel company keeps the full tender.
+- A posted restaurant till return comes off sales by customer. The visit count stays. The original receipt stays on the till report. A hotel company keeps the full customer total.
+- A posted restaurant till return comes off sales by staff. The sale count stays. The original receipt stays on the till report. A hotel company keeps the full staff total.
+- A posted restaurant till return comes off sales by department. The sale count stays. The original receipt stays on the till report. A hotel company keeps the full department total.
+- A posted restaurant till return comes off sales by store. The sale count stays. The original receipt stays on the till report. A hotel company keeps the full store total. A single-store restaurant does not show this report.
+- A posted restaurant till return comes off till tax. The receipt count stays. The original receipt stays on the till report. A hotel company keeps the full till tax.
+- A posted restaurant till return comes off recent sales on the company dashboard. The amount that remains stays listed. The original receipt stays on the till report. A hotel company keeps the full receipt. A restaurant company is sent to its own home, so that list is not on the restaurant desk.
+- A posted restaurant till return comes off discounts. A returned line discount leaves the list. A cart discount is reduced by the share of the receipt that was returned. The original receipt stays on the till report. A hotel company keeps the full discount.
+- A completed restaurant bill is included on sales by customer for the guest named on the bill. An unnamed bill stays on Walk-in. A hotel company does not include that bill.
+- A completed restaurant bill is included on sales by staff for the staff member who rang it. A hotel company does not include that bill.
+- A completed restaurant bill is included on sales by department for the department of the staff member who rang it. A hotel company does not include that bill.
+- A completed restaurant bill is included on sales by store for the store on the bill. A bill with no store is Unassigned. A hotel company does not include that bill. A single-store company does not show this report.
+- A completed restaurant bill is included in bill tax. VAT collected includes that bill. The filing schedule lists it as a table bill. Restaurant till stays the POS figure. A hotel company does not include that bill.
+- A completed restaurant bill is included in profit and loss for the store on the bill. Cash flow for that store includes the cash. Another store stays at zero. A hotel company does not include that bill.
+- A completed restaurant bill is included in the tax on items sold. The menu amount stays the line total. A hotel company does not include that line.
+- A partial restaurant till return comes off the tax on items sold. Returning one of two taxed plates leaves half the tax. The till receipt stays the original total. A hotel company keeps the full tax.
+- Restaurant till tax stays off the menu amount and the items-sold amount. Profit on those reports uses the price before tax. The tax stays listed on items sold. The till receipt keeps the full total. A hotel company keeps the tax inside the amount.
+- A restaurant till return keeps the tax out of company dashboard profit. Sales today still falls by the amount handed back, tax included. A hotel company keeps the full profit.
+- A completed restaurant bill includes its service charge in company dashboard profit. Top dishes stay at the menu amount. A hotel company does not include that bill.
+- A restaurant till discount comes off company dashboard profit. Top dishes stay at the menu amount. Sales today already uses the receipt. A hotel company keeps the profit on the menu amount.
+- A restaurant till discount comes off the items-sold amount. The menu amount stays. A hotel company keeps the sales amount.
+- A restaurant till discount is included in today's discounts. The menu amount stays. A hotel company keeps that figure at zero for the till sale.
+- Restaurant waste is included in operating expenses for the store on the warehouse. Another store stays at zero. A hotel company does not include that waste.
+- A completed restaurant bill takes store ingredient value down when the stock sits in that store's warehouse. Stock that is not in the warehouse still lets the bill complete, and that store value stays put. A hotel company cannot post the bill.
+- A restaurant bill with no store stays off a store sales filter. The company total still includes it. Another store stays at zero. A hotel company does not include that bill.
+- A restaurant till return with no store stays off a store sales filter. The company total still includes it. The return follows the store on the original receipt. A hotel company does not include that return.
+- A restaurant till return is included in store profit and loss for the store on the original receipt. A return of a receipt with no store stays off the store. The company profit still includes it. A hotel company does not include that return.
+- A restaurant till return puts the stock back in the store on the original receipt. Another store stays at zero. A hotel company cannot post the bill.
+- A restaurant till return is listed on bill returns for the store on the original receipt. Another store stays at zero. The company list still includes it. A hotel company cannot post the bill.
+- A restaurant till return comes off Sales today for the store on the original receipt. The company Sales today still includes it. A hotel company cannot open the restaurant home.
+
+## 25 October 2026 UTC — Hotel
+
+**General release. Not certified. Not Offline Complete.** Hotel is **Ready** on a disposable stay. Restaurant stays Not ready. Security stays Ready and not Verified. Retail and Offline POS stay Ready from 15 October 2026 UTC. `offline_complete_claimed` stays false. This pass did not commit, push, deploy, migrate live `ribdigi_erp`, charge a card gateway, or recertify the live site.
+
+| Area | Status | Evidence |
+| --- | --- | --- |
+| Hotel | Ready | Signed-in Hotel Audit Walk (`hotel-audit-26`): room 101 at GH₵ 250, guest Ama Boateng, HR-2026-0001 confirm → check-in → folio HF-2026-0001 charges 500 / pay 500 / balance 0 → checked out; housekeeping due_at; reports payments 500 outstanding 0. In-memory stay fixture: settings tax 5% does not change 2×250=500, folio pay 500, checkout invoice 500, reports occupied nights 2 and room revenue 500, Getting started “Check in a guest” auto-completes without a POS sale, retail beta `GET /hotel/rooms` **403**. From `backend`, `PYTHONPATH=.`, `RATE_LIMIT_BACKEND=memory`, Python 3.12: hotel commercial fixture + onboarding + hotel MVP + industry gate **21 passed** in 71.46s. This is not certified and not a live-site recert. |
+| Restaurant | Not ready | Not walked in this pass. |
+
+### Hotel operating limitations
+
+- Room folio lines are nights × nightly rate. Settings tax % and early/late fees are stored; they are not auto-posted on the room line.
+- Folio “Record payment info” is a recorded tender note, not a card gateway and not the retail till drawer.
+- Tentative stays must be confirmed before check-in.
+- Hotel extras (events, night audit, cashier float) stay on their own APIs. A failed extra does not block rooms and reservations.
+- Occupancy and room revenue count nights sold in the selected report range, not the full folio stay when the guest leaves early or the range is shorter.
+- Offline POS does not include hotel. `offline_complete_claimed` stays false.
+- Folio, invoice-from-folio, dashboard extras, report service/payment totals, guest history, cashier close, and hotel API amounts use `money_json` (finite JSON numbers). That is not a card gateway and does not add settings tax to the room line.
 
 ## 15 October 2026 UTC
 

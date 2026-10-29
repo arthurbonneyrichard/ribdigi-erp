@@ -11,7 +11,9 @@ import { createPaintGet, peekPrefetch } from '../../../lib/prefetchCache';
 import { currencySign, formatNumber } from '../../../lib/format';
 import RowActions, { type RowActionItem } from '../../../components/RowActions';
 import { AmountField } from '../../../components/AmountField';
+import { normalizeIndustry } from '../../../lib/industries';
 import { getMe } from '../../../lib/meCache';
+import { isHotelIndustry } from '../../../lib/tenantNav';
 import {
   matchesCustomerList,
   paginate,
@@ -124,6 +126,8 @@ export default function Page() {
   const [payDateNote, setPayDateNote] = useState('');
   const [payBusy, setPayBusy] = useState(false);
   const [canPay, setCanPay] = useState(false);
+  const [hotelOps, setHotelOps] = useState(false);
+  const [restaurantOps, setRestaurantOps] = useState(false);
   const [groupsOpen, setGroupsOpen] = useState(false);
 
   const paintGet = useMemo(() => createPaintGet(), []);
@@ -161,7 +165,11 @@ export default function Page() {
 
   useEffect(() => {
     getMe()
-      .then((me) => setCanPay(canWriteCredit(me.data)))
+      .then((me) => {
+        setCanPay(canWriteCredit(me.data));
+        setHotelOps(isHotelIndustry(me.data?.industry));
+        setRestaurantOps(normalizeIndustry(me.data?.industry) === 'restaurant');
+      })
       .catch(() => setCanPay(false));
   }, []);
 
@@ -370,7 +378,13 @@ export default function Page() {
     <div className="card cat-panel">
       <PageHeader
         title="Customers"
-        subtitle="Your customers, used on quotes, orders and invoices."
+        subtitle={
+          hotelOps
+            ? 'Customers on checkout invoices. Guest profiles stay on Guests and CRM.'
+            : restaurantOps
+              ? 'Customers on restaurant bills. Table orders stay on the restaurant desk until a bill is posted.'
+              : 'Your customers, used on quotes, orders and invoices.'
+        }
         actions={
           <>
             <button type="button" className="list-btn-secondary" onClick={() => setGroupsOpen(true)} aria-label="Open customer groups">
@@ -429,15 +443,17 @@ export default function Page() {
         >
           <option value="all">All types</option>
           <option value="registered">Registered</option>
-          <option value="walk_in">Walk-in</option>
+          <option value="walk_in">{hotelOps ? 'Walk-in guest' : restaurantOps ? 'Walk-in diner' : 'Walk-in'}</option>
         </select>
       </div>
       {loading ? (
         <p className="muted">Loading customers…</p>
-      ) : paged.total === 0 ? (
+      ) : paged.total === 0 && !restaurantOps ? (
         <EmptyState
           title={customers.length === 0 ? 'No customers yet.' : 'No customers match these filters.'}
-          detail="Add a customer to use them on quotations, orders, and invoices."
+          detail={hotelOps
+            ? 'Add a customer to use them on sales quotes, orders, and checkout invoices.'
+            : 'Add a customer to use them on quotations, orders, and invoices.'}
           action={
             <button type="button" className="list-btn-primary" onClick={openAdd}>
               Add customer
@@ -445,16 +461,26 @@ export default function Page() {
           }
         />
       ) : (
-        <div className="list-table-wrap">
+        <div className={restaurantOps ? 'list-table-wrap rest-cust-table' : 'list-table-wrap'}>
           <table className="table cat-table">
+            {restaurantOps ? (
+              <colgroup>
+                <col style={{ width: '24%' }} />
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '22%' }} />
+                <col style={{ width: '16%' }} />
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '14%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
                 <th>
                   <button type="button" className="list-sort" onClick={() => toggleSort('name')}>
-                    Name
+                    {restaurantOps ? 'Customer' : 'Name'}
                   </button>
                 </th>
-                {showCodeCol ? (
+                {!restaurantOps && showCodeCol ? (
                 <th>
                   <button type="button" className="list-sort" onClick={() => toggleSort('code')}>
                     Code
@@ -466,11 +492,13 @@ export default function Page() {
                     Status
                   </button>
                 </th>
+                {restaurantOps ? null : (
                 <th>
                   <button type="button" className="list-sort" onClick={() => toggleSort('group')}>
                     Group
                   </button>
                 </th>
+                )}
                 <th>
                   <button type="button" className="list-sort" onClick={() => toggleSort('email')}>
                     Email
@@ -482,25 +510,32 @@ export default function Page() {
                     Balance
                   </button>
                 </th>
-                <th>Loyalty</th>
-                <th />
+                {restaurantOps ? null : <th>Loyalty</th>}
+                <th className="col-actions">{restaurantOps ? 'Actions' : ''}</th>
               </tr>
             </thead>
             <tbody>
               {paged.rows.map((c) => (
                 <tr key={c.id}>
-                  <td data-label="Name">
+                  <td data-label={restaurantOps ? 'Customer' : 'Name'}>
                     <strong>{c.name}</strong>
-                    {c.profile_type === 'walk_in' ? <span className="muted"> (walk-in)</span> : null}
+                    {c.profile_type === 'walk_in' ? <span className="muted"> {hotelOps ? '(walk-in guest)' : restaurantOps ? '(walk-in diner)' : '(walk-in)'}</span> : null}
+                    {restaurantOps ? (
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {c.code || 'No code'}
+                        {' · '}
+                        {c.customer_group?.name || 'No group'}
+                      </span>
+                    ) : null}
                   </td>
-                  {showCodeCol ? <td data-label="Code">{c.code || '—'}</td> : null}
+                  {!restaurantOps && showCodeCol ? <td data-label="Code">{c.code || '—'}</td> : null}
                   <td data-label="Status">{c.status === 'inactive' ? 'Inactive' : 'Active'}</td>
-                  <td data-label="Group">{c.customer_group?.name || '—'}</td>
+                  {restaurantOps ? null : <td data-label="Group">{c.customer_group?.name || '—'}</td>}
                   <td data-label="Email">{c.email || '—'}</td>
                   <td data-label="Phone">{c.phone || '—'}</td>
-                  <td data-label="Balance">{formatNumber(c.balance ?? 0)}</td>
-                  <td data-label="Loyalty">{c.loyalty_points ?? 0}</td>
-                  <td className="col-actions">
+                  <td className="col-num" data-label="Balance">{formatNumber(c.balance ?? 0)}</td>
+                  {restaurantOps ? null : <td data-label="Loyalty">{c.loyalty_points ?? 0}</td>}
+                  <td className="col-actions" data-label="Actions">
                     <RowActions
                       label={`More actions for ${c.name}`}
                       primaryMax={1}
@@ -509,7 +544,7 @@ export default function Page() {
                           { key: 'edit', label: 'Edit', ariaLabel: `Edit ${c.name}`, onClick: () => openEdit(c) },
                           {
                             key: 'ar',
-                            label: 'Unpaid invoices',
+                            label: restaurantOps ? 'Unpaid bills' : 'Unpaid invoices',
                             ariaLabel: `AR for ${c.name}`,
                             onClick: () => openAr(c),
                           },
@@ -532,6 +567,15 @@ export default function Page() {
                   </td>
                 </tr>
               ))}
+              {restaurantOps && paged.rows.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="muted">
+                    {customers.length === 0
+                      ? 'No customers yet. Add a customer to use them on restaurant bills. Table orders stay on the restaurant desk.'
+                      : 'No customers match these filters.'}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -568,7 +612,7 @@ export default function Page() {
             <div>
               <h2 style={{ margin: 0 }}>Account · {accountName}</h2>
               <p className="muted" style={{ margin: '4px 0 0' }}>
-                Outstanding balance and payments on the AR ledger (invoices + customer payments).
+                Outstanding balance and payments on the AR ledger ({restaurantOps ? 'bills' : 'invoices'} + customer payments).
               </p>
             </div>
             <button type="button" onClick={() => setAccountId('')} aria-label="Close customer account">
@@ -810,7 +854,7 @@ export default function Page() {
                     aria-label="Customer profile type"
                   >
                     <option value="registered">Registered</option>
-                    <option value="walk_in">Walk-in</option>
+                    <option value="walk_in">{hotelOps ? 'Walk-in guest' : restaurantOps ? 'Walk-in diner' : 'Walk-in'}</option>
                   </select>
                 </label>
                 <label className="field">
@@ -870,7 +914,7 @@ export default function Page() {
       ) : null}
       {arCustomer ? (
         <FormModal
-          title={`Unpaid invoices · ${arCustomer.name}`}
+          title={`${restaurantOps ? 'Unpaid bills' : 'Unpaid invoices'} · ${arCustomer.name}`}
           onClose={() => setArCustomer(null)}
         >
           <div className="stack">
@@ -919,7 +963,7 @@ export default function Page() {
             ) : null}
             {arHistory?.summary || arHistory?.purchases?.length || arHistory?.payments?.length ? (
               <p className="muted">
-                {(arHistory.summary?.purchase_count ?? (arHistory.purchases || []).length)} invoices ·{' '}
+                {(arHistory.summary?.purchase_count ?? (arHistory.purchases || []).length)} {restaurantOps ? 'bills' : 'invoices'} ·{' '}
                 {(arHistory.summary?.payment_count ?? (arHistory.payments || []).length)} payments
               </p>
             ) : null}

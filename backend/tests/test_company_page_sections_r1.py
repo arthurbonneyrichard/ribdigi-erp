@@ -36,6 +36,12 @@ def test_company_sections_save_separately():
     assert "tenants/me/suspend" not in page
     assert 'aria-label="Suspend company"' not in page
     assert 'aria-label="Save company profile"' in page
+    assert 'id="company-cashier-signout-title"' in page
+    assert 'aria-label="Enable cashier drawer count on sign-out"' in page
+    assert 'aria-label="Disable cashier drawer count on sign-out"' in page
+    profile = _slice(page, "async function save()", "async function saveTax()")
+    assert "count_drawer_on_sign_out" not in profile
+    assert "async function saveCountDrawer" in page
 
     css = CSS.read_text(encoding="utf-8")
     company_css = css.split("/* Company page layout.", 1)[1].split("/* User management */", 1)[0]

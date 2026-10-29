@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_print_query_literal_schema():
     inv_fmt = TypeAdapter(InvoicePrintFormatValue)
     assert inv_fmt.validate_python("PDF") == "pdf"
+    assert inv_fmt.validate_python("HTML") == "html"
     with pytest.raises(ValidationError):
         inv_fmt.validate_python("")
     with pytest.raises(ValidationError):

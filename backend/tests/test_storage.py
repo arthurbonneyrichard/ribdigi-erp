@@ -105,7 +105,7 @@ async def test_s3_backend_put_get_delete(monkeypatch):
 
     monkeypatch.setattr(storage_svc, "_s3_client", lambda: client)
 
-    upload = _Upload("logo.png", "image/png", b"png-bytes")
+    upload = _Upload("logo.png", "image/png", b"\x89PNG\r\n\x1a\nfake")
     stored = await storage_svc.save_upload(
         tenant_id="t1",
         category="logos",
@@ -116,11 +116,36 @@ async def test_s3_backend_put_get_delete(monkeypatch):
     assert stored.backend == "s3"
     assert stored.key in store
     media = storage_svc.read_object(stored.key, tenant_id="t1")
-    assert media.data == b"png-bytes"
+    assert media.data.startswith(b"\x89PNG")
     assert media.backend == "s3"
     assert storage_svc.delete_key(stored.key, tenant_id="t1") is True
     assert stored.key not in store
     storage_svc.reset_s3_client_cache()
+
+
+@pytest.mark.asyncio
+async def test_rejects_svg_and_type_mismatch(tmp_path, monkeypatch):
+    monkeypatch.setattr(storage_svc.settings, "MEDIA_DIR", str(tmp_path))
+    monkeypatch.setattr(storage_svc.settings, "STORAGE_BACKEND", "local")
+    svg = _Upload("mark.svg", "image/png", b"<svg xmlns='http://www.w3.org/2000/svg'></svg>")
+    with pytest.raises(HTTPException) as exc:
+        await storage_svc.save_upload(
+            tenant_id="t1",
+            category="logos",
+            upload=svg,
+            allowed_types=storage_svc.LOGO_CONTENT_TYPES,
+            max_bytes=1_000_000,
+        )
+    assert exc.value.status_code == 400
+    mismatch = _Upload("x.png", "image/png", b"%PDF-1.4")
+    with pytest.raises(HTTPException):
+        await storage_svc.save_upload(
+            tenant_id="t1",
+            category="logos",
+            upload=mismatch,
+            allowed_types=storage_svc.LOGO_CONTENT_TYPES,
+            max_bytes=1_000_000,
+        )
 
 
 def test_storage_status_local(monkeypatch):

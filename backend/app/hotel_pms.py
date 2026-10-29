@@ -13,6 +13,19 @@ from app import models as m
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 
+def _plan_date(value: date | datetime | str | None) -> date | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    text = str(value).strip()
+    if not text:
+        return None
+    return date.fromisoformat(text[:10])
+
+
 async def _flush_pms(db: AsyncSession) -> None:
     try:
         await db.flush()
@@ -67,12 +80,18 @@ async def create_rate_plan(
     starts_on: date | None = None,
     ends_on: date | None = None,
 ) -> m.HotelRatePlan:
+    starts_on = _plan_date(starts_on)
+    ends_on = _plan_date(ends_on)
+    if weekday_only and weekend_only:
+        raise HTTPException(status_code=422, detail="A rate plan cannot be both weekday-only and weekend-only")
+    if starts_on and ends_on and ends_on < starts_on:
+        raise HTTPException(status_code=422, detail="Rate plan end is before the start")
     row = m.HotelRatePlan(
         tenant_id=tenant_id,
         code=require_honest_narrative(code, label="code", max_length=40).upper(),
         name=require_honest_narrative(name, label="name", max_length=150),
         room_type=(room_type or "").strip().lower() or None,
-        amount=float(amount or 0),
+        amount=money_json(amount or 0),
         weekday_only=bool(weekday_only),
         weekend_only=bool(weekend_only),
         min_nights=max(1, int(min_nights or 1)),
@@ -83,6 +102,25 @@ async def create_rate_plan(
     db.add(row)
     await _flush_pms(db)
     return row
+
+
+def _guest_request_due(value: datetime | str | None) -> datetime | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.replace(tzinfo=None) if value.tzinfo is not None else value
+    text = str(value).strip()
+    if not text:
+        raise HTTPException(status_code=422, detail="Guest request due time cannot be blank")
+    try:
+        if len(text) == 10:
+            return datetime.strptime(text, "%Y-%m-%d")
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).replace(tzinfo=None)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="Guest request due time must be a date and time",
+        ) from exc
 
 
 def serialize_guest_request(row: m.HotelGuestRequest) -> dict:
@@ -119,11 +157,25 @@ async def create_guest_request(
     reservation_id: str | None = None,
     room_id: str | None = None,
     notes: str | None = None,
+    due_at: datetime | str | None = None,
     created_by: str | None = None,
 ) -> m.HotelGuestRequest:
     kind_key = (kind or "service").strip().lower()
     if kind_key not in {"service", "wake_up", "note", "complaint"}:
         raise HTTPException(status_code=422, detail="Invalid request kind")
+    if notes is not None and not str(notes).strip():
+        raise HTTPException(status_code=422, detail="Guest request notes cannot be blank")
+    if room_id:
+        room = (
+            await db.execute(
+                select(m.HotelRoom).where(
+                    m.HotelRoom.id == room_id,
+                    m.HotelRoom.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not room:
+            raise HTTPException(status_code=404, detail="Room not found")
     row = m.HotelGuestRequest(
         tenant_id=tenant_id,
         reservation_id=reservation_id,
@@ -131,6 +183,7 @@ async def create_guest_request(
         kind=kind_key,
         title=require_honest_narrative(title, label="title", max_length=150),
         status="open",
+        due_at=_guest_request_due(due_at),
         notes=optional_honest_narrative(notes, label="notes", max_length=500),
         created_by=created_by,
     )
@@ -189,6 +242,8 @@ async def create_lost_found(
     kind_key = (kind or "lost").strip().lower()
     if kind_key not in {"lost", "found", "damage"}:
         raise HTTPException(status_code=422, detail="kind must be lost, found, or damage")
+    if notes is not None and not str(notes).strip():
+        raise HTTPException(status_code=422, detail="Lost and found notes cannot be blank")
     row = m.HotelLostFound(
         tenant_id=tenant_id,
         room_id=room_id,
@@ -237,7 +292,7 @@ async def open_shift(
     row = m.HotelCashierShift(
         tenant_id=tenant_id,
         opened_by=user_id,
-        opening_float=float(opening_float or 0),
+        opening_float=money_json(opening_float or 0),
         status="open",
     )
     db.add(row)
@@ -264,15 +319,27 @@ async def close_shift(
             )
         )
     ).scalars().all()
-    total = sum(float(p.amount or 0) for p in payments)
+    total = money_json(sum(money_json(p.amount or 0) for p in payments))
+    if notes is not None and not str(notes).strip():
+        raise HTTPException(status_code=422, detail="Front-desk float notes cannot be blank")
     row.closed_by = user_id
     row.closed_at = datetime.utcnow()
-    row.closing_float = float(closing_float or 0)
-    row.payments_total = total
+    row.closing_float = money_json(closing_float or 0)
+    row.payments_total = money_json(total)
     row.notes = optional_honest_narrative(notes, label="notes", max_length=500)
     row.status = "closed"
     await _flush_pms(db)
     return row
+
+
+async def list_closed_shifts(db: AsyncSession, *, tenant_id: str, limit: int = 8) -> list:
+    stmt = (
+        select(m.HotelCashierShift)
+        .where(m.HotelCashierShift.tenant_id == tenant_id, m.HotelCashierShift.status == "closed")
+        .order_by(m.HotelCashierShift.closed_at.desc())
+        .limit(limit)
+    )
+    return await _pms_scalars(db, stmt)
 
 
 def serialize_night_audit(row: m.HotelNightAudit) -> dict:
@@ -381,6 +448,8 @@ async def create_event(
     end = _as_date(ends_on)
     if not start or not end or end <= start:
         raise HTTPException(status_code=400, detail="Event end date must be after start date")
+    if notes is not None and not str(notes).strip():
+        raise HTTPException(status_code=422, detail="Event notes cannot be blank")
     if room_id:
         await _assert_room_available(
             db,
@@ -399,7 +468,7 @@ async def create_event(
         status=st,
         room_id=room_id or None,
         guest_id=guest_id or None,
-        deposit_amount=float(deposit_amount or 0),
+        deposit_amount=money_json(deposit_amount or 0),
         notes=optional_honest_narrative(notes, label="notes", max_length=500),
         created_by=created_by,
     )

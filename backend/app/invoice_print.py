@@ -266,6 +266,67 @@ def render_invoice_thermal_html(payload: dict[str, Any], *, paper: str = "80mm")
     return html_doc
 
 
+def render_invoice_a4_html(payload: dict[str, Any], tenant: m.Tenant | None = None) -> str:
+    """Browser A4 invoice — same letterhead + line table as other commercial documents."""
+    import html as html_mod
+
+    from app.document_print import (
+        _fmt_when,
+        _money_line,
+        document_body_html,
+        render_document_print_html,
+    )
+
+    currency = str(payload.get("currency") or "GHS")
+    number = str(payload.get("invoice_number") or "")
+    date_s = _fmt_when(payload.get("posted_at") or payload.get("created_at"), tenant)
+    due_s = _fmt_when(payload.get("due_date"), tenant)
+    party_name = str(payload.get("customer_name") or "").strip()
+    party_email = str(payload.get("customer_email") or "").strip()
+    totals: list[tuple[str, str, bool]] = [
+        ("Subtotal", _money_line(currency, payload.get("subtotal")), False),
+        ("Tax", _money_line(currency, payload.get("tax") or payload.get("tax_amount")), False),
+    ]
+    rc = money_json(payload.get("reverse_charge_tax") or 0)
+    if rc:
+        totals.append(("Reverse-charge (memo)", _money_line(currency, rc), False))
+    disc = money_json(payload.get("discount_amount") or 0)
+    if disc:
+        totals.append(("Discount", _money_line(currency, disc), False))
+    totals.extend(
+        [
+            ("TOTAL", _money_line(currency, payload.get("total") or payload.get("total_amount")), True),
+            ("Paid", _money_line(currency, payload.get("paid_amount")), False),
+            ("Balance due", _money_line(currency, payload.get("balance_due")), True),
+        ]
+    )
+    body = document_body_html(
+        {
+            "currency": currency,
+            "table": "lines",
+            "items": list(payload.get("items") or []),
+            "notes": payload.get("notes"),
+            "totals": totals,
+            "meta_html_lines": [
+                f"Invoice <strong>{html_mod.escape(number)}</strong> · Status {html_mod.escape(str(payload.get('status') or '').upper())}",
+                f"Customer {html_mod.escape(party_name or '—')}"
+                + (f"<br/>Customer email {html_mod.escape(party_email)}" if party_email else ""),
+                f"Invoice date {html_mod.escape(date_s)}" if date_s else "",
+                f"Payment due {html_mod.escape(due_s)}" if due_s else "",
+                f"Payment {html_mod.escape(str(payload.get('payment_method') or payload.get('payment_status') or ''))}",
+            ],
+        }
+    )
+    return render_document_print_html(
+        title=f"Invoice {number}".strip() or "Sales invoice",
+        company_name=str(payload.get("company_name") or "RIBDIGI ERP"),
+        body_html=body,
+        tenant=tenant,
+        store_name=str(payload.get("store_name") or ""),
+        subtitle=f"Due {due_s}" if due_s else (f"Invoice date {date_s}" if date_s else None),
+    )
+
+
 def to_invoice_thermal_pdf(payload: dict[str, Any], *, paper: str = "80mm") -> bytes:
     from app.print_branding import build_text_pdf, load_logo_jpeg, style_powered_by_line
 

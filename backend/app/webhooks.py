@@ -9,7 +9,6 @@ import logging
 import secrets
 from datetime import datetime, timedelta
 from typing import Any
-from urllib.parse import urlparse
 
 import httpx
 from fastapi import HTTPException
@@ -75,14 +74,13 @@ def decrypt_webhook_secret(token: str) -> str:
 
 def validate_url(url: str) -> str:
     # Defense in depth: WebhookCreate/Update WebhookUrlValue → 422 on blank/non-http(s).
+    from app.schemas import validate_webhook_url_value
+
     cleaned = (url or "").strip()
-    parsed = urlparse(cleaned)
-    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-        raise HTTPException(status_code=400, detail="url must be an absolute http(s) URL")
-    host = (parsed.hostname or "").lower()
-    if parsed.scheme == "http" and host not in {"localhost", "127.0.0.1", "testserver", "host.docker.internal"}:
-        raise HTTPException(status_code=400, detail="Webhook URL must use HTTPS (http allowed only for localhost)")
-    return cleaned
+    try:
+        return validate_webhook_url_value(cleaned)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 def normalize_events(events: list | None) -> list[str]:

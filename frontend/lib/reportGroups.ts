@@ -1,5 +1,7 @@
 /** Report picker catalog for /reports. Display-only; fetch paths stay in the page. */
 
+import { normalizeIndustry } from './industries';
+
 export type ReportGroupId =
   | 'sales'
   | 'inventory'
@@ -437,6 +439,128 @@ export const REPORT_CATALOG: ReportDef[] = [
     filters: [],
   },
 ];
+
+const HOTEL_REPORT_COPY: Record<string, { name?: string; description?: string }> = {
+  summary: {
+    description: 'Today and this month, including shop till and checkout sales.',
+  },
+  sales_transactions: {
+    description: 'Each checkout invoice and shop till receipt, listed once.',
+  },
+  sales_lines: {
+    name: 'Items sold',
+    description: 'Each line on a checkout invoice or shop till receipt.',
+  },
+  sales_products: {
+    name: 'Sales by supply',
+    description: 'Quantity and revenue for each supply in the date range.',
+  },
+  sales_category: {
+    description: 'Quantity and revenue grouped by supply category.',
+  },
+  sales_pos: {
+    name: 'Shop till sales',
+    description: 'Shop till receipts. A receipt that also created an invoice is counted once in the summary.',
+  },
+  sales_credit: {
+    description: 'Amounts still owed after checkout. The guest folio stays on Billing until then.',
+  },
+  stores: {
+    description: 'Checkout invoices and shop-till revenue grouped by store.',
+  },
+  customers: {
+    description: 'Checkout invoices and shop-till revenue by customer.',
+  },
+  salesperson: {
+    description: 'Checkout invoices and shop-till revenue by staff member.',
+  },
+  sales_brand: {
+    description: 'Quantity and revenue grouped by brand. Supplies without a brand are Unbranded.',
+  },
+  inventory_value: {
+    name: 'Supply value',
+    description: 'On-hand quantity and standard-cost value of supplies.',
+  },
+  inventory_movements: {
+    name: 'Supply movements',
+    description: 'Receives, issues, counts, and adjustments for supplies.',
+  },
+  inventory_expiry: {
+    description: 'Lots nearing expiry or already expired.',
+  },
+  inventory_counts: {
+    name: 'Supply count variances',
+    description: 'Count sessions with expected versus counted differences.',
+  },
+  inventory_low_stock: {
+    name: 'Low supplies',
+    description: 'Supplies at or below reorder, with draft purchase-request suggestions.',
+  },
+};
+
+const RESTAURANT_REPORT_COPY: Record<string, { name?: string; description?: string }> = {
+  summary: {
+    description: 'Today and this month, including restaurant till bills.',
+  },
+  sales_transactions: {
+    description: 'Each restaurant bill and restaurant till receipt, listed once.',
+  },
+  sales_lines: {
+    name: 'Items sold',
+    description: 'Each line on a restaurant bill or restaurant till receipt.',
+  },
+  sales_products: {
+    name: 'Sales by menu item',
+    description: 'Quantity and revenue for each menu item in the date range.',
+  },
+  sales_pos: {
+    name: 'Restaurant till sales',
+    description: 'Restaurant till receipts. A receipt that also created a bill is counted once in the summary.',
+  },
+  sales_returns: {
+    name: 'Bill returns',
+    description: 'Menu items sent back, by reason and amount.',
+  },
+  inventory_value: {
+    name: 'Ingredient value',
+    description: 'On-hand quantity and standard-cost value of ingredients.',
+  },
+  inventory_movements: {
+    name: 'Ingredient movements',
+    description: 'Receives, issues, counts, and adjustments for ingredients.',
+  },
+  inventory_low_stock: {
+    name: 'Low ingredients',
+    description: 'Ingredients at or below reorder, with draft purchase-request suggestions.',
+  },
+  inventory_counts: {
+    name: 'Ingredient count variances',
+    description: 'Counts where the expected quantity and the counted quantity differ.',
+  },
+  purchases_returns: {
+    name: 'Returns to suppliers',
+    description: 'Ingredient returns sent back to a supplier.',
+  },
+};
+
+export function reportCopy(
+  def: ReportDef,
+  industry?: string | null,
+): { name: string; description: string } {
+  const ind = normalizeIndustry(industry);
+  const over =
+    ind === 'hotel' ? HOTEL_REPORT_COPY[def.id] : ind === 'restaurant' ? RESTAURANT_REPORT_COPY[def.id] : undefined;
+  return {
+    name: over?.name || def.name,
+    description: over?.description || def.description,
+  };
+}
+
+export function reportGroupLabel(id: ReportGroupId, label: string, industry?: string | null): string {
+  if (normalizeIndustry(industry) === 'hotel' && id === 'inventory') return 'Supplies';
+  if (normalizeIndustry(industry) === 'restaurant' && id === 'inventory') return 'Ingredients';
+  return label;
+}
 
 export function reportsInGroup(group: ReportGroupId): ReportDef[] {
   return REPORT_CATALOG.filter((r) => r.group === group);

@@ -62,6 +62,9 @@ def test_po_print_ui_and_docs():
     printer = (ROOT / "frontend" / "lib" / "documentPrint.ts").read_text(encoding="utf-8")
     assert "apiFetch" in printer
     assert "content-type" in printer and "pdf" in printer
+    assert "window.open" not in printer
+    assert "Allow pop-ups" not in printer
+    assert "frame.print()" in printer
     assert "/purchasing/orders/${po.id}/issue" in purchasing
     assert "Email or print a purchase order" in purchasing
     assert "Hand the paper to the supplier" in purchasing

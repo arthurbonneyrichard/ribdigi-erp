@@ -203,6 +203,8 @@ Token is single-use and expires in 1 hour; new password must pass complexity rul
 
 Client idle auto-logout uses tenant `inactivity_timeout_minutes` (default `30`, range `5`–`480`). Configure via `PATCH /tenants/me`; current value is also returned on `GET /me` and `GET /tenants/me`.
 
+Count drawer on Log out is cashiers only (`cashier` / `hotel_cashier`). Company `count_drawer_on_sign_out` (default `true`) is on `GET /me` and `GET /tenants/me`. `PATCH /tenants/me` `{ "count_drawer_on_sign_out": true|false }` (omit = no change). When false, cashiers sign out without counting; idle/forced sign-out still leaves the shift open.
+
 ---
 
 ## 3. Tenant Management
@@ -1092,7 +1094,7 @@ Optional create/confirm `delivery_address` ∈ `AddressValue` (strip; 1–500 ch
 **Create:** `POST /sales/invoices` — typed `SalesInvoiceCreate` (`extra=forbid`; unknown keys → **422**; same forbid on `SalesQuotationCreate` / `SalesOrderCreate`). Required `customer_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach party lookup; existence remains tenant-scoped customer lookup **404**). Optional `store_id` ∈ `UuidIdValue` (omit/`null` → no store / HQ path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach store lookup; existence remains tenant-scoped store lookup **404**). Line `items[].product_id` ∈ `UuidIdValue` (`SalesInvoiceItemCreate` / shared `LineItem` for POS/legacy sale; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach catalog lookup; existence remains tenant-scoped product lookup **404**). Optional line `unit_id` / `variant_id` ∈ `UuidIdValue` (omit/`null` OK; blank/`!!!`/`http://…`/non-UUID → **422**). Optional `notes` ∈ `SalesDocumentNotesValue` (same honesty as quotations/orders; omit/`null` → no notes; blank/garbage → **422**). Sales **Sale customer** + **Sale store** + **Sales product** + **Sales unit** + **Sales variant** selects + **Sales document notes** input; Create invoice sends `customer_id` / `product_id` trim, `store_id` / unit/variant trim or `null` when blank, and `null` notes when blank.  
 **Get:** `GET /sales/invoices/{invoice_id}` — Path `invoice_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; existence remains tenant-scoped **404**). Same Path honesty on print/post/send/cancel.  
 **Pay:** `POST /sales/invoices/{invoice_id}/payments`  
-**Print:** `GET /sales/invoices/{invoice_id}/print` — query `template` ∈ a4|thermal (omit → company print branding default; blank/invalid → **422**); `format` ∈ pdf|text|json (omit → `pdf`; blank/invalid → **422**); `paper` ∈ 58mm|80mm for thermal (omit → branding default; blank/invalid → **422**, no silent branding fallback for garbage). A4 PDF letterhead includes company trading name, legal if different, address, Tel, company email, Reg/TIN (same band as PO). Sales Print A4 / thermal controls.
+**Print:** `GET /sales/invoices/{invoice_id}/print` — query `template` ∈ a4|thermal (omit → company print branding default; blank/invalid → **422**); `format` ∈ pdf|text|json|html (omit → `pdf`; blank/invalid → **422**); `paper` ∈ 58mm|80mm for thermal (omit → branding default; blank/invalid → **422**, no silent branding fallback for garbage). HTML is the in-tab print path (shared letterhead + line table). A4 PDF letterhead includes company trading name, legal if different, address, Tel, company email, Reg/TIN (same band as PO). Sales Print A4 / thermal controls.
 
 **Create Invoice:**
 ```json
@@ -1161,6 +1163,10 @@ Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, a
 ### 8.1 POS Session
 **Open Shift:** `POST /pos/sessions/open` — typed `PosSessionOpen` (`extra=forbid`; unknown keys → **422**). Optional `store_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no store / HQ path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach store lookup; existence remains tenant-scoped store lookup **404**). POS **POS store** select (`aria-label`); Open shift sends trim or `null` when blank. Optional `opening_cash` ∈ `NonNegativeMoneyValue` (finite; `ge=0`; ≤1e15; omit → 0; `nan`/`inf`/<0 → **422** — was `Field(ge=0)` only; Inf could pass). POS **Opening cash** (`aria-label`).
 
+**Set opening cash:** `PATCH /pos/sessions/{session_id}/opening-cash` — typed `PosSessionOpeningCash` (`extra=forbid`; unknown keys → **422**). Path `session_id` ∈ `UuidIdValue`. Required `opening_cash` ∈ `NonNegativeMoneyValue` (finite; `ge=0`; ≤1e15; `nan`/`inf`/<0 → **422**). Unused open shift only (no sales / cash in / cash out) else **409**. Own shift or supervisor + assigned-store access (other cashier **403**; other tenant **404**). POS **Opening cash** + **Save opening cash**.
+
+**Drawer:** `GET|POST /pos/sessions/{session_id}/drawer[/open]` require operate + store access (other cashier **403**; other tenant **404**). Manual open reason ∈ `PosDrawerOpenReasonValue`. Cash in/out `POST …/movements` typed `PosCashMovementCreate` (`extra=forbid`): `movement_type` ∈ cash_in|cash_out (`CashMovementTypeValue` strip/lower; blank/`!!!`/`in` → **422**); `amount` ∈ `PositiveMoneyValue` (`nan`/`inf`/≤0 → **422**); `reason` ∈ `PosDrawerOpenReasonValue` (blank/`!!!`/`http://…` → **422**). Cash out cannot exceed expected drawer cash (**400**). Expected drawer is opening + cash tenders + cash in − cash out (card/other tenders do not add). Variance is counted − expected.
+
 ```json
 {
   "store_id": "st_001",
@@ -1169,13 +1175,13 @@ Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, a
 }
 ```
 
-**Close Shift:** `POST /pos/sessions/{session_id}/close` — typed `PosSessionClose` (`extra=forbid`; unknown keys → **422**). Path `session_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; existence remains tenant-scoped **404**). Required `actual_cash` ∈ `NonNegativeMoneyValue` (finite; `ge=0`; ≤1e15; `nan`/`inf`/<0 → **422** — was `Field(ge=0)` only); optional `closing_cash` ∈ `NonNegativeMoneyValue` (omit/`null` OK; same honesty). Optional `notes` ∈ `PosSessionCloseNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`); omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist on shift notes). POS **Counted cash** + **POS shift close notes** inputs (`aria-label`s); Close shift sends `null` notes when blank.
+**Close Shift:** `POST /pos/sessions/{session_id}/close` — typed `PosSessionClose` (`extra=forbid`; unknown keys → **422**). Path `session_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; existence remains tenant-scoped **404**). Counted drawer is `actual_cash` or alias `closing_cash` (same amount; either required; both matching OK; mismatch / omit both / `nan`/`inf`/<0 → **422**). Variance is server `counted − expected`. Optional `notes` ∈ `PosSessionCloseNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`); omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist on shift notes). POS **Counted cash** + **POS shift close notes** / **Cash count notes**; Shell **Log out** **Sign-out counted cash** + **Sign-out cash count notes** (required when counted ≠ expected). Close sends `actual_cash` and matching `closing_cash`; `null` notes when blank. Shell Log out asks cashiers for the count only when `count_drawer_on_sign_out` is on. Idle/forced sign-out leaves the shift open.
 
 ```json
 {
-  "closing_cash": 850.50,
+  "closing_cash": 845.00,
   "actual_cash": 845.00,
-  "notes": "Minor discrepancy"
+  "notes": "Counted drawer"
 }
 ```
 

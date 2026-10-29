@@ -166,7 +166,7 @@ def test_money_json_wired_batch19():
 
     sched_src = inspect.getsource(credit_mod.supplier_payment_schedule)
     assert "money_json(round(balance, 2))" in sched_src
-    assert 'money_json(round(sum(r["balance_due"] for r in items), 2))' in sched_src
+    assert 'money_json(round(sum(r["balance_due_base"] for r in items), 2))' in sched_src
 
     tb_src = Path(accounting_mod.__file__).read_text(encoding="utf-8")
     assert 'money_json(round(debit_total, 2))' in tb_src

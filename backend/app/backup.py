@@ -97,6 +97,19 @@ def backup_root() -> Path:
     return root
 
 
+def _confined_tenant_backup_file(job: m.BackupJob) -> Path | None:
+    raw = (job.storage_path or "").strip()
+    if not raw or not job.tenant_id:
+        return None
+    root = (backup_root() / job.tenant_id).resolve()
+    try:
+        resolved = Path(raw).resolve()
+        resolved.relative_to(root)
+    except (OSError, ValueError):
+        return None
+    return resolved
+
+
 def _fernet_from_configured_key(raw: str, *, label: str) -> Fernet:
     """Accept a Fernet key, or common openssl formats (hex / standard base64)."""
     value = (raw or "").strip()
@@ -483,8 +496,8 @@ async def get_backup(db: AsyncSession, tenant_id: str, backup_id: str) -> m.Back
 async def read_backup_bytes(job: m.BackupJob) -> bytes:
     if job.status != "completed":
         raise HTTPException(status_code=400, detail="Backup is not available for download")
-    path = Path(job.storage_path)
-    if not path.is_file():
+    path = _confined_tenant_backup_file(job)
+    if path is None or not path.is_file():
         raise HTTPException(status_code=404, detail="Backup file missing on disk")
     data = path.read_bytes()
     actual = hashlib.sha256(data).hexdigest()
@@ -785,8 +798,8 @@ async def prune_retention(db: AsyncSession, tenant_id: str, keep: int) -> int:
     ).scalars().all()
     removed = 0
     for job in rows[keep:]:
-        path = Path(job.storage_path) if job.storage_path else None
-        if path and path.is_file():
+        path = _confined_tenant_backup_file(job)
+        if path is not None and path.is_file():
             try:
                 path.unlink()
             except OSError:

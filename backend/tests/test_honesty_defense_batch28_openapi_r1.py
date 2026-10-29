@@ -78,7 +78,8 @@ def test_honesty_batch28_docs_and_agents():
     assert 'aria-label="Edit payment method"' in expenses
 
     inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
-    assert 'aria-label="Product status filter"' in inventory
+    assert "Product status filter" in inventory
+    assert "hotelOps ? 'Supply status filter' : restaurantOps ? 'Ingredient status filter' : 'Product status filter'" in inventory
     assert 'aria-label="Add brand"' in inventory
 
     reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")

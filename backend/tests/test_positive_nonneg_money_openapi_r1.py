@@ -129,7 +129,8 @@ def test_money_value_ui_and_docs():
 
     helper = (ROOT / "frontend/lib/cashierShift.ts").read_text(encoding="utf-8")
     assert "opening_cash: 0" in helper
-    assert "actual_cash: Number(session.expected_cash || 0)" in helper
+    assert "actual_cash: actualCash" in helper
+    assert "actual_cash: Number(session.expected_cash || 0)" not in helper
 
 
 @pytest.mark.asyncio

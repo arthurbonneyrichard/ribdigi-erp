@@ -15,7 +15,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import audit as audit_svc
 from app import models as m
 from app.config import settings
-from app.rbac import VALID_ROLES, permissions_for_role, serialize_user
+from app.rbac import (
+    PLATFORM_ROLES,
+    VALID_ROLES,
+    can_assign_company_admin,
+    permissions_for_role,
+    serialize_user,
+)
 from app.schemas import E164PhoneValue, UserFullNameValue, UserPasswordValue
 from app.security import hash_password, issue_one_time_token, validate_password_strength
 
@@ -36,8 +42,8 @@ SAMPLE_ROW = {
 }
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-# Tenant operators may assign these via CSV; super_admin blocked unless actor is super_admin.
-ASSIGNABLE_ROLES = frozenset(VALID_ROLES) - {"super_admin"}
+# Tenant CSV may assign customer system roles only. Platform minting stays on /platform/staff.
+ASSIGNABLE_ROLES = frozenset(VALID_ROLES) - PLATFORM_ROLES
 
 
 def template_csv() -> str:
@@ -147,11 +153,10 @@ async def validate_import_rows(
 
         if not role:
             errors.append("role is required")
-        elif role == "super_admin":
-            if actor != "super_admin":
-                errors.append("only super_admin can assign super_admin")
-            elif role not in VALID_ROLES:
-                errors.append("unknown role")
+        elif role in PLATFORM_ROLES:
+            errors.append("platform roles cannot be assigned via tenant import")
+        elif role == "company_admin" and not can_assign_company_admin(actor):
+            errors.append("only a company admin can assign company_admin")
         elif role not in ASSIGNABLE_ROLES:
             errors.append(f"unknown role (allowed: {', '.join(sorted(ASSIGNABLE_ROLES))})")
 

@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
+import { isHotelIndustry } from '../../../lib/tenantNav';
 import './integ-ui.css';
 
 const WEBHOOK_EVENTS = [
@@ -20,6 +22,18 @@ const WEBHOOK_EVENTS = [
   'tenant.suspended',
   'webhook.test',
 ] as const;
+
+const HOTEL_WEBHOOK_LABELS: Record<string, string> = {
+  'stock.low': 'Supplies low',
+  'stock.in': 'Supplies in',
+  'stock.out': 'Supplies out',
+  'purchase.grn.received': 'Supplies received',
+};
+
+function webhookEventLabel(ev: string, hotel: boolean): string {
+  if (!hotel) return ev;
+  return HOTEL_WEBHOOK_LABELS[ev] || ev;
+}
 
 type ApiKeyRow = {
   id: string;
@@ -86,6 +100,7 @@ export default function Page() {
   const [hookDesc, setHookDesc] = useState('');
   const [hookEvents, setHookEvents] = useState<string[]>(['sale.created', 'webhook.test']);
   const [busy, setBusy] = useState(false);
+  const [hotelOps, setHotelOps] = useState(false);
 
   async function refresh() {
     const [k, w] = await Promise.all([api('/api-keys'), api('/webhooks')]);
@@ -95,6 +110,12 @@ export default function Page() {
 
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
+  }, []);
+
+  useEffect(() => {
+    getMe()
+      .then((me) => setHotelOps(isHotelIndustry(me.data?.industry)))
+      .catch(() => setHotelOps(false));
   }, []);
 
   function toggleEvent(ev: string) {
@@ -559,7 +580,7 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
                 checked={hookEvents.includes(ev)}
                 onChange={() => toggleEvent(ev)}
               />
-              <span style={{ fontSize: 13 }}>{ev}</span>
+              <span style={{ fontSize: 13 }} title={hotelOps ? ev : undefined}>{webhookEventLabel(ev, hotelOps)}</span>
             </label>
           ))}
         </div>
@@ -607,7 +628,7 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
                     </div>
                   ) : null}
                 </td>
-                <td style={{ fontSize: 12 }}>{(h.events || []).join(', ')}</td>
+                <td style={{ fontSize: 12 }}>{(h.events || []).map((ev) => webhookEventLabel(ev, hotelOps)).join(', ')}</td>
                 <td>
                   {h.is_active ? 'active' : 'disabled'}
                   {h.failure_count ? ` · fails ${h.failure_count}` : ''}
@@ -704,7 +725,7 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
                     <td style={{ fontSize: 12 }}>
                       {d.created_at ? String(d.created_at).replace('T', ' ').slice(0, 19) : '—'}
                     </td>
-                    <td style={{ fontSize: 12 }}>{d.event}</td>
+                    <td style={{ fontSize: 12 }}>{webhookEventLabel(d.event, hotelOps)}</td>
                     <td>{d.status}</td>
                     <td>{d.response_status ?? '—'}</td>
                     <td>{d.attempt_count ?? 0}</td>

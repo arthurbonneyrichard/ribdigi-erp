@@ -14,24 +14,35 @@ export function DailyBars({
 }) {
   const n = data.length || 1;
   const max = Math.max(1, ...data.map((x) => x[field] || 0));
+  const peak = Math.max(0, ...data.map((x) => x[field] || 0));
   const slot = 300 / n;
   const bw = Math.min(26, slot * 0.55);
   return (
-    <svg viewBox="0 0 300 172" width="100%" height="172" role="img" aria-label={`Daily ${field}`}>
-      <line x1="8" y1="138" x2="292" y2="138" stroke="#D4E5C4" />
+    <svg
+      className="dash-chart-svg"
+      viewBox="0 0 300 172"
+      preserveAspectRatio="xMidYMid meet"
+      role="img"
+      aria-label={`Daily ${field}`}
+    >
+      <line x1="8" y1="138" x2="292" y2="138" stroke="var(--line, #D4E5C4)" />
       {data.map((t, i) => {
         const v = t[field] || 0;
         const h = Math.max(0, (v / max) * 112);
         const x = i * slot + (slot - bw) / 2;
         const y = 138 - h;
+        const tick = (t.label || '').split(' ')[0] || t.label;
         return (
           <g key={t.label + i}>
+            <title>{t.label}</title>
             <rect x={x} y={y} width={bw} height={h} rx={5} fill={color} />
-            <text x={x + bw / 2} y={y - 5} textAnchor="middle" className="vbar-val">
-              {v ? new Intl.NumberFormat().format(Math.round(v)) : ''}
-            </text>
+            {v === peak && v > 0 && (
+              <text x={x + bw / 2} y={y - 5} textAnchor="middle" className="vbar-val">
+                {new Intl.NumberFormat().format(Math.round(v))}
+              </text>
+            )}
             <text x={x + bw / 2} y={156} textAnchor="middle" className="vbar-label">
-              {t.label}
+              {tick}
             </text>
           </g>
         );
@@ -53,10 +64,18 @@ export function TrendLine({
     const y = 138 - ((t.sales || 0) / max) * 112;
     return `${x},${y}`;
   });
+  const area = pts.length ? `8,138 ${pts.join(' ')} 292,138` : '';
   return (
-    <svg viewBox="0 0 300 172" width="100%" height="172" role="img" aria-label="30-day sales">
-      <line x1="8" y1="138" x2="292" y2="138" stroke="#D4E5C4" />
-      <polyline fill="none" stroke={color} strokeWidth="2.5" points={pts.join(' ')} />
+    <svg
+      className="dash-chart-svg"
+      viewBox="0 0 300 172"
+      preserveAspectRatio="xMidYMid meet"
+      role="img"
+      aria-label="30-day sales"
+    >
+      <line x1="8" y1="138" x2="292" y2="138" stroke="var(--line, #D4E5C4)" />
+      {area ? <polygon fill={color} fillOpacity="0.12" points={area} /> : null}
+      <polyline fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" points={pts.join(' ')} />
       <text x="8" y="156" className="vbar-label">
         {data[0]?.label || ''}
       </text>

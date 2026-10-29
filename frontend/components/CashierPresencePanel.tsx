@@ -22,9 +22,10 @@ export type CashierPresenceRow = {
   shift_sales?: number | null;
 };
 
-function sellingLabel(status: CashierPresenceRow['status']): string {
+function sellingLabel(status: CashierPresenceRow['status'], hotel: boolean, restaurant: boolean): string {
   if (status === 'online') return 'Online';
   if (status === 'offline') return 'Offline';
+  if (hotel || restaurant) return 'No till signal';
   return 'No POS signal';
 }
 
@@ -49,7 +50,7 @@ function byAttention(a: CashierPresenceRow, b: CashierPresenceRow): number {
 }
 
 /** Company admin view of each cashier's POS connection and open shift. */
-export default function CashierPresencePanel() {
+export default function CashierPresencePanel({ hotel = false, restaurant = false }: { hotel?: boolean; restaurant?: boolean }) {
   const formatPrefs = useCompanyFormat();
   const [rows, setRows] = useState<CashierPresenceRow[] | null>(null);
 
@@ -78,25 +79,35 @@ export default function CashierPresencePanel() {
   const quiet = countOf(rows, 'no_signal');
 
   return (
-    <section className="cashier-board" aria-label="Cashier offline status">
+    <section className="cashier-board" aria-label={hotel ? 'Shop till status' : restaurant ? 'Restaurant till status' : 'Cashier offline status'}>
       <header className="cashier-board-head">
         <div>
-          <h2>Cashiers</h2>
-          <p>Who is selling, who is offline, and which shift is still open.</p>
+          <h2>{hotel ? 'Shop till' : restaurant ? 'Restaurant till' : 'Cashiers'}</h2>
+          <p>
+            {hotel
+              ? 'Who is on the shop till, who is offline, and which till shift is still open.'
+              : restaurant
+                ? 'Who is on the restaurant till, who is offline, and which till shift is still open.'
+                : 'Who is selling, who is offline, and which shift is still open.'}
+          </p>
           {offline > 0 ? (
-            <p className="cashier-board-note">Saved sales leave an offline till on their own once it connects. The waiting count is the last report from that till.</p>
+            <p className="cashier-board-note">
+              {hotel
+                ? 'Saved restaurant sales leave an offline till on their own once it connects. The waiting count is the last report from that till.'
+                : 'Saved sales leave an offline till on their own once it connects. The waiting count is the last report from that till.'}
+            </p>
           ) : null}
         </div>
         {rows.length > 0 ? (
           <div className="cashier-board-counts" role="status">
             <span className={online ? 'is-online' : 'is-quiet'}><strong>{online}</strong> Online</span>
             <span className={offline ? 'is-offline' : 'is-quiet'}><strong>{offline}</strong> Offline</span>
-            <span className={quiet ? 'is-unknown' : 'is-quiet'}><strong>{quiet}</strong> No POS signal</span>
+            <span className={quiet ? 'is-unknown' : 'is-quiet'}><strong>{quiet}</strong> {hotel || restaurant ? 'No till signal' : 'No POS signal'}</span>
           </div>
         ) : null}
       </header>
       {rows.length === 0 ? (
-        <p className="cashier-board-empty">No active cashiers.</p>
+        <p className="cashier-board-empty">{hotel ? 'No one is on the shop till.' : restaurant ? 'No one is on the restaurant till.' : 'No active cashiers.'}</p>
       ) : (
         <div className="cashier-board-grid">
           {rows.slice().sort(byAttention).map((row) => {
@@ -112,10 +123,10 @@ export default function CashierPresencePanel() {
                   <span className={`cashier-avatar ${tone}`} aria-hidden="true">{initials(row.full_name)}</span>
                   <div className="cashier-card-who">
                     <strong>{row.full_name}</strong>
-                    <span>{row.store_name || 'Not on a till'}</span>
+                    <span>{row.store_name || (hotel ? 'Not on the shop till' : restaurant ? 'Not on the restaurant till' : 'Not on a till')}</span>
                     {row.email ? <span className="cashier-card-mail">{row.email}</span> : null}
                   </div>
-                  <span className={`cashier-sell-status ${tone}`}>{sellingLabel(row.status)}</span>
+                  <span className={`cashier-sell-status ${tone}`}>{sellingLabel(row.status, hotel, restaurant)}</span>
                 </header>
                 <dl className="cashier-card-facts">
                   <div>

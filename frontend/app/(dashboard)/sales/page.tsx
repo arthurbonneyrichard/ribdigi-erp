@@ -16,7 +16,8 @@ import { formatMoney, formatNumber, formatWhen, plainLabel, type FormatPrefs } f
 import { AmountField } from '../../../components/AmountField';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import { getMe } from '../../../lib/meCache';
-import { usesWholesaleTrade } from '../../../lib/industries';
+import { normalizeIndustry, usesWholesaleTrade } from '../../../lib/industries';
+import { isHotelIndustry } from '../../../lib/tenantNav';
 import { useStoreContext } from '../../../lib/storeContext';
 import './sales-ui.css';
 
@@ -34,9 +35,20 @@ function channelLabel(value?: string | null) {
   return '—';
 }
 
-function saleWords(value?: string | null) {
+function saleWords(value?: string | null, hotel = false, restaurant = false) {
   const code = String(value || '').trim().toLowerCase();
   if (!code) return '—';
+  if (hotel && code === 'sellable') return 'Good to use again';
+  if (hotel && code === 'discard') return 'Do not put back';
+  if (hotel && code === 'wrong_item') return 'Wrong supply';
+  if (hotel && code === 'customer_change') return 'Guest changed their mind';
+  if (hotel && code === 'register') return 'Shop till';
+  if (restaurant && code === 'sellable') return 'Good to sell again';
+  if (restaurant && code === 'discard') return 'Do not restock';
+  if (restaurant && code === 'wrong_item') return 'Wrong menu item';
+  if (restaurant && code === 'customer_change') return 'Guest changed their mind';
+  if (restaurant && code === 'register') return 'Restaurant till';
+  if (restaurant && code === 'invoice') return 'Bill';
   const mapped: Record<string, string> = {
     adjust: 'Credit on the account',
     refund: 'Cash refund',
@@ -83,18 +95,9 @@ async function downloadInvoicePdf(
 async function previewInvoicePdf(invoiceId: string, template: 'a4' | 'thermal', paper = '80mm') {
   const qs =
     template === 'thermal'
-      ? `template=thermal&format=pdf&paper=${encodeURIComponent(paper)}`
-      : 'template=a4&format=pdf';
-  const res = await apiFetch(`/sales/invoices/${invoiceId}/print?${qs}`);
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    const detail = body.detail;
-    throw new Error(typeof detail === 'string' ? detail : detail?.message || 'Preview failed');
-  }
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  window.open(url, '_blank', 'noopener');
-  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      ? `template=thermal&format=html&paper=${encodeURIComponent(paper)}`
+      : 'template=a4&format=html';
+  await openDocumentPrint(`/sales/invoices/${invoiceId}/print?${qs}`);
 }
 
 export default function Page() {
@@ -203,6 +206,8 @@ export default function Page() {
   const [saveBusy, setSaveBusy] = useState(false);
   const [returnCreateOpen, setReturnCreateOpen] = useState(false);
   const [wholesaleOps, setWholesaleOps] = useState(false);
+  const [hotelOps, setHotelOps] = useState(false);
+  const [restaurantOps, setRestaurantOps] = useState(false);
   const [fulfillQty, setFulfillQty] = useState<Record<string, string>>({});
   const [invPrefix, setInvPrefix] = useState('INV');
   const [invNext, setInvNext] = useState('1');
@@ -230,7 +235,11 @@ export default function Page() {
 
   useEffect(() => {
     getMe()
-      .then((r) => setWholesaleOps(usesWholesaleTrade(r.data?.industry)))
+      .then((r) => {
+        setWholesaleOps(usesWholesaleTrade(r.data?.industry));
+        setHotelOps(isHotelIndustry(r.data?.industry));
+        setRestaurantOps(normalizeIndustry(r.data?.industry) === 'restaurant');
+      })
       .catch(() => undefined);
   }, []);
 
@@ -385,13 +394,13 @@ export default function Page() {
 
   function addLine() {
     if (!productId.trim() || !(Number(qty) > 0)) {
-      setError('Choose a product and a quantity first');
+      setError(hotelOps ? 'Choose a supply and a quantity first' : restaurantOps ? 'Choose a menu item and a quantity first' : 'Choose a product and a quantity first');
       return;
     }
     setError('');
     const prod = products.find((p) => p.id === productId);
     const variant = variants.find((v) => v.id === variantId);
-    const label = [prod?.name || 'Product', variant?.name].filter(Boolean).join(' · ');
+    const label = [prod?.name || (hotelOps ? 'Supply' : restaurantOps ? 'Menu item' : 'Product'), variant?.name].filter(Boolean).join(' · ');
     setAddedLines((prev) => [...prev, { label, qty: Number(qty), price: Number(unitPrice) || 0, item: currentLine }]);
     setProductId('');
     setVariantId('');
@@ -593,33 +602,23 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
+      const pack = (prefix: string, next: string) => {
+        const p = prefix.trim();
+        const out: { prefix?: string; next_number: number } = {
+          next_number: Math.max(1, Number(next) || 1),
+        };
+        if (p) out.prefix = p;
+        return out;
+      };
       const r = await api('/sales/settings', {
         method: 'PATCH',
         body: JSON.stringify({
-          invoice_numbering: {
-            prefix: invPrefix.trim(),
-            next_number: Math.max(1, Number(invNext) || 1),
-          },
-          quotation_numbering: {
-            prefix: qtPrefix.trim(),
-            next_number: Math.max(1, Number(qtNext) || 1),
-          },
-          sales_order_numbering: {
-            prefix: soPrefix.trim(),
-            next_number: Math.max(1, Number(soNext) || 1),
-          },
-          sales_return_numbering: {
-            prefix: srPrefix.trim(),
-            next_number: Math.max(1, Number(srNext) || 1),
-          },
-          credit_note_numbering: {
-            prefix: cnPrefix.trim(),
-            next_number: Math.max(1, Number(cnNext) || 1),
-          },
-          payment_receipt_numbering: {
-            prefix: rcpPrefix.trim(),
-            next_number: Math.max(1, Number(rcpNext) || 1),
-          },
+          invoice_numbering: pack(invPrefix, invNext),
+          quotation_numbering: pack(qtPrefix, qtNext),
+          sales_order_numbering: pack(soPrefix, soNext),
+          sales_return_numbering: pack(srPrefix, srNext),
+          credit_note_numbering: pack(cnPrefix, cnNext),
+          payment_receipt_numbering: pack(rcpPrefix, rcpNext),
         }),
       });
       const numbering = r.data?.invoice_numbering;
@@ -1046,7 +1045,11 @@ export default function Page() {
       });
       setGiftIssued(res.data);
       setGiftAmount('');
-      setMessage('Gift card issued. The balance stays a liability until the code is spent at the register.');
+      setMessage(
+        hotelOps
+          ? 'Gift card issued. The balance stays a liability until the code is used on the shop till.'
+          : 'Gift card issued. The balance stays a liability until the code is spent at the register.',
+      );
     } catch (err: any) {
       setError(err.message || 'Could not issue the gift card');
     }
@@ -1130,13 +1133,13 @@ export default function Page() {
     };
     const task =
       paper === 'a4'
-        ? downloadInvoicePdf(invoiceId, invoiceNumber, 'a4')
-        : downloadInvoicePdf(invoiceId, invoiceNumber, 'thermal', paper);
+        ? openDocumentPrint(`/sales/invoices/${invoiceId}/print?template=a4&format=html`)
+        : openDocumentPrint(
+            `/sales/invoices/${invoiceId}/print?template=thermal&format=html&paper=${encodeURIComponent(paper)}`
+          );
     task
       .then(() =>
-        setMessage(
-          paper === 'a4' ? `Downloaded A4 ${invoiceNumber}` : `Downloaded ${paper} receipt ${invoiceNumber}`
-        )
+        setMessage(paper === 'a4' ? `Printing A4 ${invoiceNumber}` : `Printing ${paper} receipt ${invoiceNumber}`)
       )
       .catch(fail);
   }
@@ -1365,33 +1368,70 @@ export default function Page() {
 
   return (
     <div className="sales-desk work sales-ui-page">
-      <PageHeader className="sales-desk-head" title="Sales">
+      <PageHeader className="sales-desk-head" title={restaurantOps ? 'Bills' : 'Sales'}>
         <p className="sales-ui-path">
-          <span>1 Customers</span>
-          <span>2 Quotes</span>
-          <span>3 Orders</span>
-          <span>4 Invoices</span>
-          <span>5 Returns</span>
+          {hotelOps ? (
+            <>
+              <span>1 Customers</span>
+              <span>2 Invoices</span>
+              <span>3 Returns</span>
+            </>
+          ) : restaurantOps ? (
+            <>
+              <span>1 Customers</span>
+              <span>2 Bills</span>
+              <span>3 Returns</span>
+            </>
+          ) : (
+            <>
+              <span>1 Customers</span>
+              <span>2 Quotes</span>
+              <span>3 Orders</span>
+              <span>4 Invoices</span>
+              <span>5 Returns</span>
+            </>
+          )}
         </p>
         <p className="sales-ui-note">
-          {wholesaleOps
-            ? 'Quotes and orders are not sales until they are invoiced. Coupons and gift cards are codes, not a card charge.'
-            : 'Coupons and gift cards are codes, not a card charge.'}
+          {hotelOps
+            ? 'Checkout invoices from guest folios land here. Room charges stay on Billing until checkout.'
+            : restaurantOps
+              ? 'Bills from the restaurant till land here. Table orders stay on the restaurant desk.'
+              : wholesaleOps
+              ? 'Quotes and orders are not sales until they are invoiced. Coupons and gift cards are codes, not a card charge.'
+              : 'Coupons and gift cards are codes, not a card charge.'}
         </p>
       </PageHeader>
 
       <nav className="sales-toolbar sales-ui-nav" aria-label="Sales workflow">
         {(
-          [
-            ['customers', 'Customers'],
-            ['quotations', 'Quotes'],
-            ['orders', 'Orders'],
-            ['invoices', 'Invoices'],
-            ['returns', 'Returns'],
-            ['coupons', 'Coupons'],
-            ['giftcards', 'Gift cards'],
-            ['made', 'All sales'],
-          ] as [Tab, string][]
+          (hotelOps
+            ? [
+                ['customers', 'Customers'],
+                ['quotations', 'Sales quotes'],
+                ['orders', 'Sales orders'],
+                ['invoices', 'Invoices'],
+                ['returns', 'Returns'],
+                ['coupons', 'Discount codes'],
+                ['giftcards', 'Gift cards'],
+                ['made', 'All sales'],
+              ]
+            : restaurantOps
+              ? [
+                  ['customers', 'Customers'],
+                  ['invoices', 'Bills'],
+                  ['returns', 'Returns'],
+                ]
+            : [
+                ['customers', 'Customers'],
+                ['quotations', 'Quotes'],
+                ['orders', 'Orders'],
+                ['invoices', 'Invoices'],
+                ['returns', 'Returns'],
+                ['coupons', 'Coupons'],
+                ['giftcards', 'Gift cards'],
+                ['made', 'All sales'],
+              ]) as [Tab, string][]
         ).map(([id, label]) => (
           <button
             key={id}
@@ -1540,7 +1580,7 @@ export default function Page() {
                 aria-label="Customer profile type"
               >
                 <option value="registered">Registered</option>
-                <option value="walk_in">Walk-in</option>
+                <option value="walk_in">{hotelOps ? 'Walk-in guest' : restaurantOps ? 'Walk-in diner' : 'Walk-in'}</option>
               </select>
             </div>
             <div className="field">
@@ -1727,12 +1767,12 @@ export default function Page() {
           ) : null}
         </div>
 
-        <h4 className="sale-form-sub">Products</h4>
+        <h4 className="sale-form-sub">{hotelOps ? 'Supplies' : restaurantOps ? 'Menu items' : 'Products'}</h4>
         {addedLines.length ? (
           <table className="table sale-form-lines">
             <thead>
               <tr>
-                <th>Product</th>
+                <th>{hotelOps ? 'Supply' : restaurantOps ? 'Menu item' : 'Product'}</th>
                 <th className="num">Qty</th>
                 <th className="num">Price each</th>
                 <th aria-label="Remove" />
@@ -1761,14 +1801,14 @@ export default function Page() {
         ) : null}
         <div className="form-grid sale-form-line">
           <div className="field span-2">
-            <label htmlFor="sale-product">{addedLines.length ? 'Another product (optional)' : 'Product'}</label>
+            <label htmlFor="sale-product">{addedLines.length ? (hotelOps ? 'Another supply (optional)' : restaurantOps ? 'Another menu item (optional)' : 'Another product (optional)') : (hotelOps ? 'Supply' : restaurantOps ? 'Menu item' : 'Product')}</label>
             <select
               id="sale-product"
               value={productId}
               onChange={(e) => setProductId(e.target.value)}
-              aria-label="Sales product"
+              aria-label={hotelOps ? 'Sales supply' : restaurantOps ? 'Sales menu item' : 'Sales product'}
             >
-              <option value="">Choose a product</option>
+              <option value="">{hotelOps ? 'Choose a supply' : restaurantOps ? 'Choose a menu item' : 'Choose a product'}</option>
               {products
                 .filter((p) => p.is_active !== false)
                 .map((p) => (
@@ -1804,7 +1844,7 @@ export default function Page() {
               onChange={(e) => setUnitId(e.target.value)}
               aria-label="Sales unit"
             >
-              <option value="">Product&apos;s unit</option>
+              <option value="">{hotelOps ? 'Supply unit' : restaurantOps ? 'Menu item unit' : "Product's unit"}</option>
               {units.map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.code}
@@ -1857,7 +1897,7 @@ export default function Page() {
               id="sale-tax"
               value={taxRate}
               onChange={(e) => setTaxRate(e.target.value)}
-              placeholder="Product tax"
+              placeholder={hotelOps ? 'Supply tax' : restaurantOps ? 'Menu item tax' : 'Product tax'}
               inputMode="decimal"
               aria-label="Line tax percent"
             />
@@ -1942,7 +1982,7 @@ export default function Page() {
             </div>
             {composerKind === 'invoice' ? (
               <div className="field">
-                <label htmlFor="sale-coupon">Coupon code</label>
+                <label htmlFor="sale-coupon">{hotelOps ? 'Discount code' : restaurantOps ? 'Discount code' : 'Coupon code'}</label>
                 <input
                   id="sale-coupon"
                   value={couponCode}
@@ -2052,7 +2092,11 @@ export default function Page() {
               <option value="inactive">Inactive only</option>
             </select>
           </div>
-          <p className="sales-ui-note">Add a customer, then use that name on a quote, order, or invoice. A group gives its customers a set discount.</p>
+          <p className="sales-ui-note">{hotelOps
+            ? 'Add a customer, then use that name on a sales quote, order, or checkout invoice. A group gives its customers a set discount.'
+            : restaurantOps
+              ? 'Add a customer, then use that name on a restaurant bill.'
+              : 'Add a customer, then use that name on a quote, order, or invoice. A group gives its customers a set discount.'}</p>
           <div className="list-table-wrap">
             <table className="table">
               <thead>
@@ -2223,8 +2267,8 @@ export default function Page() {
                 <tr key={`${row.source}-${row.id}`}>
                   <td className="col-date">{formatWhen(row.when, fmt)}</td>
                   <td className="col-id">{row.number}</td>
-                  <td>{row.customer || 'Walk-in'}</td>
-                  <td>{saleWords(row.source)}</td>
+                  <td>{row.customer || (hotelOps ? 'Walk-in guest' : restaurantOps ? 'Walk-in diner' : 'Walk-in')}</td>
+                  <td>{saleWords(row.source, hotelOps, restaurantOps)}</td>
                   <td className="col-status"><StatusChip value={row.status} label={saleWords(row.status)} /></td>
                   <td className="col-num">{formatMoney(row.total, fmt, row.currency)}</td>
                   <td className="col-actions">
@@ -2238,7 +2282,11 @@ export default function Page() {
                   <td colSpan={7} className="muted">
                     {listSearch.trim()
                       ? 'No sales for this search. Clear the search to see every completed sale.'
-                      : 'No sales yet. Completed invoices and register sales show here.'}
+                      : hotelOps
+                        ? 'No sales yet. Checkout invoices and shop till sales show here.'
+                        : restaurantOps
+                          ? 'No sales yet. Restaurant till bills and checkout invoices show here.'
+                          : 'No sales yet. Completed invoices and register sales show here.'}
                   </td>
                 </tr>
               )}
@@ -2625,7 +2673,7 @@ export default function Page() {
         <>
           <div className="sales-ui-actions">
             <button type="button" className="btn-primary" onClick={() => openComposer('invoice')} aria-label="Create invoice">
-              Create invoice
+              {restaurantOps ? 'Create bill' : 'Create invoice'}
             </button>
           </div>
           {numberingPanel}
@@ -2691,16 +2739,25 @@ export default function Page() {
           <option value="overdue">Overdue only</option>
           <option value="cancelled">Cancelled only</option>
         </select>
-        <div className="list-table-wrap">
+        <div className={restaurantOps ? 'list-table-wrap rest-bill-table' : 'list-table-wrap'}>
         {invoicePaperBar()}
         <table className="table">
+          {restaurantOps && !showChannel ? (
+            <colgroup>
+              <col style={{ width: '32%' }} />
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '20%' }} />
+            </colgroup>
+          ) : null}
           <thead>
             <tr>
-              <th className="col-id">Number</th>
-              <th className="col-text">Customer</th>
+              <th className="col-id">{restaurantOps ? 'Bill' : 'Number'}</th>
+              {restaurantOps ? null : <th className="col-text">Customer</th>}
               {showChannel ? <th>Channel</th> : null}
               <th className="col-status">Status</th>
-              {showStore ? <th>Store</th> : null}
+              {!restaurantOps && showStore ? <th>Store</th> : null}
               <th className="col-num">Total</th>
               <th className="col-num">Paid</th>
               <th className="col-actions">Actions</th>
@@ -2808,14 +2865,22 @@ export default function Page() {
               ];
               return (
               <tr key={inv.id}>
-                <td className="col-id">{inv.invoice_number}</td>
-                <td className="col-text">{inv.customer_name || customerNameOf(inv.customer_id)}</td>
-                {showChannel ? <td>{channelLabel(inv.sales_channel)}</td> : null}
-                <td className="col-status"><StatusChip value={inv.status} label={saleWords(inv.status)} /></td>
-                {showStore ? <td>{storeName(inv.store_id) || '—'}</td> : null}
-                <td className="col-num">{formatMoney(inv.total_amount, fmt, inv.currency)}</td>
-                <td className="col-num">{formatMoney(inv.paid_amount, fmt, inv.currency)}</td>
-                <td className="col-actions">
+                <td className="col-id" data-label={restaurantOps ? 'Bill' : 'Number'}>
+                  {inv.invoice_number}
+                  {restaurantOps ? (
+                    <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                      {inv.customer_name || customerNameOf(inv.customer_id) || '—'}
+                      {showStore ? ` · ${storeName(inv.store_id) || 'No store'}` : ''}
+                    </span>
+                  ) : null}
+                </td>
+                {restaurantOps ? null : <td className="col-text" data-label="Customer">{inv.customer_name || customerNameOf(inv.customer_id)}</td>}
+                {showChannel ? <td data-label="Channel">{channelLabel(inv.sales_channel)}</td> : null}
+                <td className="col-status" data-label="Status"><StatusChip value={inv.status} label={saleWords(inv.status)} /></td>
+                {!restaurantOps && showStore ? <td data-label="Store">{storeName(inv.store_id) || '—'}</td> : null}
+                <td className="col-num" data-label="Total">{formatMoney(inv.total_amount, fmt, inv.currency)}</td>
+                <td className="col-num" data-label="Paid">{formatMoney(inv.paid_amount, fmt, inv.currency)}</td>
+                <td className="col-actions" data-label="Actions">
                   <RowActions label={`More actions for ${inv.invoice_number || inv.id}`} primaryMax={1} items={invoiceActions} />
                 </td>
               </tr>
@@ -2823,10 +2888,18 @@ export default function Page() {
             })}
             {managedInvoices.length === 0 && (
               <tr>
-                <td colSpan={invoiceCols} className="muted">
+                <td colSpan={restaurantOps ? (showChannel ? 6 : 5) : invoiceCols} className="muted">
                   {invoices.length === 0
-                    ? 'No invoices yet. Create an invoice when you are ready to bill the customer.'
-                    : 'No sales invoices for this filter. Choose All statuses to see every invoice.'}
+                    ? hotelOps
+                      ? 'No invoices yet. Create an invoice when you are ready to bill the customer.'
+                      : restaurantOps
+                        ? 'No bills yet. Create a bill when you are ready to charge the guest.'
+                        : 'No invoices yet. Create an invoice when you are ready to bill the customer.'
+                    : hotelOps
+                      ? 'No sales invoices for this filter. Choose All statuses to see every invoice.'
+                      : restaurantOps
+                        ? 'No bills for this filter. Choose All statuses to see every bill.'
+                        : 'No sales invoices for this filter. Choose All statuses to see every invoice.'}
                 </td>
               </tr>
             )}
@@ -2840,9 +2913,11 @@ export default function Page() {
         <div className="card cat-panel">
           <div className="coupon-head">
             <div>
-              <h3>Coupons</h3>
+              <h3>{hotelOps ? 'Discount codes' : 'Coupons'}</h3>
               <p className="sales-ui-note">
-                A coupon code takes a percent or a set amount off. Type it on a quote, order or invoice, or under Discount at the till. It is not a payment.
+                {hotelOps
+                  ? 'A discount code takes a percent or a set amount off. Type it on a sales quote, sales order, or checkout invoice, or under Discount on the shop till. It is not a payment.'
+                  : 'A coupon code takes a percent or a set amount off. Type it on a quote, order or invoice, or under Discount at the till. It is not a payment.'}
               </p>
             </div>
             <button
@@ -2855,12 +2930,12 @@ export default function Page() {
               }}
               aria-label="Add coupon"
             >
-              Add coupon
+              {hotelOps ? 'Add discount code' : 'Add coupon'}
             </button>
           </div>
           {couponFormOpen ? (
             <FormModal
-              title="Add coupon"
+              title={hotelOps ? 'Add discount code' : 'Add coupon'}
               busy={saveBusy}
               dirty={Boolean(newCouponCode.trim() || newCouponName.trim())}
               onClose={() => setCouponFormOpen(false)}
@@ -2872,7 +2947,7 @@ export default function Page() {
               ) : null}
               <div className="form-grid">
                 <div className="field">
-                  <label htmlFor="coupon-code">Code customers type</label>
+                  <label htmlFor="coupon-code">{hotelOps ? 'Code guests type' : 'Code customers type'}</label>
                   <input
                     id="coupon-code"
                     value={newCouponCode}
@@ -3009,7 +3084,9 @@ export default function Page() {
                 {coupons.length === 0 && (
                   <tr>
                     <td colSpan={7} className="muted">
-                      No coupons yet. Press Add coupon to make a code that takes a percent or a set amount off.
+                      {hotelOps
+                        ? 'No discount codes yet. Press Add discount code to make a code that takes a percent or a set amount off.'
+                        : 'No coupons yet. Press Add coupon to make a code that takes a percent or a set amount off.'}
                     </td>
                   </tr>
                 )}
@@ -3023,7 +3100,9 @@ export default function Page() {
         <div className="card cat-panel">
           <h3>Gift cards</h3>
           <p className="sales-ui-note">
-            Issue a card, then enter that code in Gift card code at the register. The balance stays a liability until the card is spent. This screen does not take till cash and does not charge a bank card. One loyalty point equals one currency unit. A named customer earns 1% of the sale.
+            {hotelOps
+              ? 'Issue a card, then enter that code in Gift card code on the shop till. The balance stays a liability until the card is used. This screen does not take till cash and does not charge a bank card. One loyalty point equals one currency unit. A named guest earns 1% of the sale.'
+              : 'Issue a card, then enter that code in Gift card code at the register. The balance stays a liability until the card is spent. This screen does not take till cash and does not charge a bank card. One loyalty point equals one currency unit. A named customer earns 1% of the sale.'}
           </p>
           <div className="sales-ui-actions">
             <AmountField
@@ -3104,7 +3183,7 @@ export default function Page() {
             <option value="">Select reason</option>
             {['damaged', 'wrong_item', 'defective', 'customer_change', 'other'].map((r) => (
               <option key={r} value={r}>
-                {saleWords(r)}
+                {saleWords(r, hotelOps, restaurantOps)}
               </option>
             ))}
           </select>
@@ -3114,8 +3193,8 @@ export default function Page() {
             aria-label="Return condition"
           >
             <option value="">Select condition</option>
-            <option value="sellable">Good to sell again</option>
-            <option value="discard">Do not restock</option>
+            <option value="sellable">{hotelOps ? 'Good to use again' : restaurantOps ? 'Good to sell again' : 'Good to sell again'}</option>
+            <option value="discard">{hotelOps ? 'Do not put back' : restaurantOps ? 'Do not restock' : 'Do not restock'}</option>
           </select>
           {(invoices.find((item) => item.id === invoiceId)?.items || []).length > 0 && (
             <select
@@ -3124,14 +3203,14 @@ export default function Page() {
                 const lines = invoices.find((item) => item.id === invoiceId)?.items || [];
                 applyReturnLine(lines.find((line: { product_id?: string }) => String(line.product_id) === e.target.value));
               }}
-              aria-label="Sales return product"
+              aria-label={hotelOps ? 'Sales return supply' : restaurantOps ? 'Sales return menu item' : 'Sales return product'}
             >
-              <option value="">Product on invoice</option>
+              <option value="">{hotelOps ? 'Supply on invoice' : restaurantOps ? 'Menu item on bill' : 'Product on invoice'}</option>
               {(invoices.find((item) => item.id === invoiceId)?.items || []).map((line: any) => {
                 const prod = products.find((p) => p.id === line.product_id);
                 return (
                   <option key={line.id || line.product_id} value={line.product_id}>
-                    {line.product_name || prod?.name || 'Product'} · {line.quantity}
+                    {line.product_name || prod?.name || (hotelOps ? 'Supply' : restaurantOps ? 'Menu item' : 'Product')} · {line.quantity}
                   </option>
                 );
               })}
@@ -3145,7 +3224,7 @@ export default function Page() {
             style={{ width: 80 }}
           />
           <label>
-            <input type="checkbox" checked={restock} onChange={(e) => setRestock(e.target.checked)} aria-label="Sales return restock" /> Restock
+            <input type="checkbox" checked={restock} onChange={(e) => setRestock(e.target.checked)} aria-label="Sales return restock" /> {hotelOps ? 'Put back on hand' : restaurantOps ? 'Put the menu item back' : 'Restock'}
           </label>
           <input
             value={returnNotes}
@@ -3206,15 +3285,24 @@ export default function Page() {
           <option value="posted">Posted only</option>
           <option value="cancelled">Cancelled only</option>
         </select>
-        <div className="list-table-wrap">
+        <div className={restaurantOps ? 'list-table-wrap rest-return-table' : 'list-table-wrap'}>
         <table className="table">
+          {restaurantOps ? (
+            <colgroup>
+              <col style={{ width: '32%' }} />
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '18%' }} />
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '18%' }} />
+            </colgroup>
+          ) : null}
           <thead>
             <tr>
-              <th className="col-id">Number</th>
-              <th className="col-id">Credit note</th>
+              <th className="col-id">{restaurantOps ? 'Return' : 'Number'}</th>
+              {restaurantOps ? null : <th className="col-id">Credit note</th>}
               <th className="col-status">Status</th>
               <th>Settlement</th>
-              <th className="col-status">Reason</th>
+              {restaurantOps ? null : <th className="col-status">Reason</th>}
               <th className="col-num">Total</th>
               <th className="col-actions">Actions</th>
             </tr>
@@ -3278,16 +3366,29 @@ export default function Page() {
               ];
               return (
               <tr key={r.id}>
-                <td className="col-id">{r.return_number}</td>
-                <td className="col-id">{r.credit_note_number || '—'}</td>
-                <td className="col-status"><StatusChip value={r.status} label={saleWords(r.status)} /></td>
-                <td>
+                <td className="col-id" data-label={restaurantOps ? 'Return' : 'Number'}>
+                  {r.return_number}
+                  {restaurantOps ? (
+                    <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                      {r.credit_note_number ? `Credit note ${r.credit_note_number}` : 'No credit note'}
+                      {' · '}
+                      {saleWords(r.reason, hotelOps, restaurantOps)}
+                    </span>
+                  ) : null}
+                </td>
+                {restaurantOps ? null : (
+                  <td className="col-id" data-label="Credit note">{r.credit_note_number || '—'}</td>
+                )}
+                <td className="col-status" data-label="Status"><StatusChip value={r.status} label={saleWords(r.status)} /></td>
+                <td data-label="Settlement">
                   {r.settlement_method ? saleWords(r.settlement_method) : '—'}
                   {r.refunded_amount > 0 ? ` · ${formatMoney(r.refunded_amount, fmt, r.currency)}` : ''}
                 </td>
-                <td className="col-status">{saleWords(r.reason)}</td>
-                <td className="col-num">{formatMoney(r.total_amount, fmt, r.currency)}</td>
-                <td className="col-actions">
+                {restaurantOps ? null : (
+                  <td className="col-status" data-label="Reason">{saleWords(r.reason, hotelOps, restaurantOps)}</td>
+                )}
+                <td className="col-num" data-label="Total">{formatMoney(r.total_amount, fmt, r.currency)}</td>
+                <td className="col-actions" data-label="Actions">
                   <RowActions label={`More actions for ${r.return_number || r.id}`} primaryMax={1} items={returnActions} />
                 </td>
               </tr>
@@ -3295,10 +3396,14 @@ export default function Page() {
             })}
             {managedReturns.length === 0 && (
               <tr>
-                <td colSpan={7} className="muted">
+                <td colSpan={restaurantOps ? 5 : 7} className="muted">
                   {returns.length === 0
-                    ? 'No returns yet. Create a return from a posted invoice.'
-                    : 'No sales returns for this filter. Choose All statuses to see every return.'}
+                    ? restaurantOps
+                      ? 'No returns yet. Create a return from a posted bill.'
+                      : 'No returns yet. Create a return from a posted invoice.'
+                    : restaurantOps
+                      ? 'No returns for this filter. Choose All statuses to see every return.'
+                      : 'No sales returns for this filter. Choose All statuses to see every return.'}
 
                 </td>
               </tr>
@@ -3358,7 +3463,7 @@ export default function Page() {
           <table className="table">
             <thead>
               <tr>
-                <th>Product</th>
+                <th>{hotelOps ? 'Supply' : restaurantOps ? 'Menu item' : 'Product'}</th>
                 <th className="col-id">SKU</th>
                 <th className="col-num">Qty</th>
                 {showFilled ? <th className="col-num">Filled</th> : null}
@@ -3376,7 +3481,7 @@ export default function Page() {
                 return (
                 <tr key={it.id}>
                   <td className="col-text">
-                    {it.product_name || prod?.name || 'Product'}
+                    {it.product_name || prod?.name || (hotelOps ? 'Supply' : restaurantOps ? 'Menu item' : 'Product')}
                     {it.is_reverse_charge ? ' · Reverse charge' : ''}
                   </td>
                   <td className="col-id">{prod?.sku || '—'}</td>
@@ -3388,7 +3493,7 @@ export default function Page() {
                     {it.discount_type === 'percent' ? formatNumber(it.discount ?? 0, fmt) : formatMoney(it.discount ?? 0, fmt, selected?.currency)}
                     {it.discount_type === 'percent' ? ` (${formatNumber(it.discount_percent, fmt)}%)` : ''}
                   </td>
-                  {showCondition ? <td className="col-status">{it.condition ? saleWords(it.condition) : '—'}</td> : null}
+                  {showCondition ? <td className="col-status">{it.condition ? saleWords(it.condition, hotelOps, restaurantOps) : '—'}</td> : null}
                   <td className="col-num">
                     {formatMoney(it.line_tax ?? 0, fmt, selected?.currency)}
                     {(it.tax_components || []).length

@@ -154,6 +154,7 @@ def create_challenge_token(*, user_id: str, tenant_id: str, role: str) -> str:
         "tenant_id": tenant_id,
         "role": role,
         "type": "mfa_challenge",
+        "jti": secrets.token_urlsafe(16),
         "iat": int(now.timestamp()),
         "exp": now + timedelta(minutes=CHALLENGE_TTL_MINUTES),
     }
@@ -170,6 +171,50 @@ def decode_challenge_token(token: str) -> dict:
     if not data.get("sub") or not data.get("tenant_id"):
         raise HTTPException(status_code=401, detail="Invalid 2FA challenge claims")
     return data
+
+
+async def load_login_challenge(db: AsyncSession, token: str) -> tuple[dict, m.AuthToken | None]:
+    """Decode a login challenge and refuse one that already completed."""
+    from app.security import hash_token
+
+    data = decode_challenge_token(token)
+    jti = (data.get("jti") or "").strip()
+    if not jti:
+        return data, None
+    token_hash = hash_token(jti)
+    row = (
+        await db.execute(
+            select(m.AuthToken).where(
+                m.AuthToken.token_hash == token_hash,
+                m.AuthToken.purpose == "mfa_challenge",
+            )
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        exp = data.get("exp")
+        try:
+            expires = datetime.utcfromtimestamp(int(exp)) if exp else datetime.utcnow() + timedelta(
+                minutes=CHALLENGE_TTL_MINUTES
+            )
+        except (TypeError, ValueError, OSError):
+            expires = datetime.utcnow() + timedelta(minutes=CHALLENGE_TTL_MINUTES)
+        row = m.AuthToken(
+            tenant_id=data["tenant_id"],
+            user_id=data["sub"],
+            purpose="mfa_challenge",
+            token_hash=token_hash,
+            expires_at=expires,
+        )
+        db.add(row)
+        await db.flush()
+    if row.used_at is not None or (row.expires_at is not None and row.expires_at < datetime.utcnow()):
+        raise HTTPException(status_code=401, detail="Invalid or expired 2FA challenge")
+    return data, row
+
+
+def consume_login_challenge(row: m.AuthToken | None) -> None:
+    if row is not None:
+        row.used_at = datetime.utcnow()
 
 
 async def replace_backup_codes(db: AsyncSession, user: m.User) -> list[str]:
@@ -285,34 +330,35 @@ def status_payload(user: m.User) -> dict:
     }
 
 
-# Paths allowed while admin must enroll 2FA
-ENROLLMENT_ALLOWED_SUFFIXES = (
-    "/me",
-    "/auth/me",
-    "/auth/logout",
-    "/auth/sessions",
-    "/auth/2fa/status",
-    "/auth/2fa/setup",
-    "/auth/2fa/confirm",
-    "/auth/2fa/disable",
-    "/auth/2fa/backup-codes",
-    "/auth/webauthn/register/options",
-    "/auth/webauthn/register/verify",
-    "/auth/webauthn/credentials",
-    "/settings/email",
-    "/health",
-    "/notifications/unread-count",
-    "/staff-guide",
+# Exact API paths allowed while a privileged role must enroll 2FA.
+# Suffix matching is intentionally avoided so /tenants/me* stays closed.
+ENROLLMENT_ALLOWED_PATHS = frozenset(
+    {
+        "/api/v1/me",
+        "/api/v1/auth/me",
+        "/api/v1/auth/logout",
+        "/api/v1/auth/sessions",
+        "/api/v1/auth/2fa/status",
+        "/api/v1/auth/2fa/setup",
+        "/api/v1/auth/2fa/confirm",
+        "/api/v1/auth/2fa/disable",
+        "/api/v1/auth/2fa/backup-codes",
+        "/api/v1/auth/webauthn/register/options",
+        "/api/v1/auth/webauthn/register/verify",
+        "/api/v1/auth/webauthn/credentials",
+        "/api/v1/health",
+        "/api/v1/notifications/unread-count",
+        "/api/v1/staff-guide",
+    }
 )
 
 
 def path_allowed_during_enrollment(path: str) -> bool:
-    for suffix in ENROLLMENT_ALLOWED_SUFFIXES:
-        if path.endswith(suffix) or f"{suffix}/" in path:
-            return True
-    # session revoke by id
-    if "/auth/sessions/" in path:
+    raw = (path or "").split("?", 1)[0].rstrip("/") or "/"
+    if raw in ENROLLMENT_ALLOWED_PATHS:
         return True
-    if "/auth/webauthn/credentials/" in path:
+    if raw.startswith("/api/v1/auth/sessions/"):
+        return True
+    if raw.startswith("/api/v1/auth/webauthn/credentials/"):
         return True
     return False

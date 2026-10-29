@@ -1624,13 +1624,24 @@ def purchase_order_print_html(
         named = {**item, "product_name": labels.get(pid) or item.get("product_name")}
         return document_item_label(named)
 
+    def _po_qty(value: object) -> str:
+        if value is None or value == "":
+            return ""
+        amount = money_json(value)
+        return f"{amount:g}" if isinstance(amount, (int, float)) else str(amount)
+
+    def _po_money(value: object) -> str:
+        if value is None or value == "":
+            return ""
+        return f"{currency} {money_json(value)}".strip()
+
     rows = "".join(
         f"<tr><td>{html.escape(_po_print_label(i))}</td>"
-        f'<td class="r">{html.escape(str(i.get("quantity") or ""))}</td>'
-        f'<td class="r">{html.escape(str(currency))} {html.escape(str(i.get("unit_price") or ""))}</td>'
-        f'<td class="r">{html.escape(str(i.get("tax_rate") or "0"))}%</td>'
-        f'<td class="r">{html.escape(str(i.get("discount") or "0"))}</td>'
-        f'<td class="r">{html.escape(str(currency))} {html.escape(str(i.get("line_total") or ""))}</td></tr>'
+        f'<td class="r">{html.escape(_po_qty(i.get("quantity")))}</td>'
+        f'<td class="r">{html.escape(_po_money(i.get("unit_price")))}</td>'
+        f'<td class="r">{html.escape(_po_qty(i.get("tax_rate") if i.get("tax_rate") is not None else 0))}%</td>'
+        f'<td class="r">{html.escape(_po_money(i.get("discount") if i.get("discount") is not None else 0))}</td>'
+        f'<td class="r">{html.escape(_po_money(i.get("line_total")))}</td></tr>'
         for i in (po.get("items") or [])
     )
     po_no = str(po.get("po_number") or "")
@@ -1660,12 +1671,13 @@ def purchase_order_print_html(
         f"{ship_html}"
         f"</div>"
         '<table class="doc"><thead><tr>'
-        "<th>Product</th><th>Qty</th><th>Unit</th><th>Tax</th><th>Discount</th><th>Total</th>"
+        '<th>Product</th><th class="r">Qty</th><th class="r">Unit</th>'
+        '<th class="r">Tax</th><th class="r">Discount</th><th class="r">Total</th>'
         f"</tr></thead><tbody>{rows}</tbody></table>"
         f'<div class="totals">'
-        f"Subtotal {html.escape(str(currency))} {html.escape(str(po.get('subtotal') or 0))}<br/>"
-        f"Tax {html.escape(str(currency))} {html.escape(str(po.get('tax_amount') or 0))}<br/>"
-        f"<strong>Total {html.escape(str(currency))} {html.escape(str(po.get('total_amount') or 0))}</strong>"
+        f"Subtotal {html.escape(_po_money(po.get('subtotal') or 0))}<br/>"
+        f"Tax {html.escape(_po_money(po.get('tax_amount') or 0))}<br/>"
+        f"<strong>Total {html.escape(_po_money(po.get('total_amount') or 0))}</strong>"
         f"</div>"
         f"{notes_html}"
         f'<div class="foot"><div class="powered">{html.escape(POWERED_BY_RIBDIGI)}</div></div>'

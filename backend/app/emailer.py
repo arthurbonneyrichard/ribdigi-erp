@@ -1397,11 +1397,13 @@ def render_grn_bodies(
     tenant: Any | None = None,
 ) -> tuple[str, str]:
     number = grn.get("grn_number") or ""
+    hotel = (getattr(tenant, "industry", None) or "").strip().lower() == "hotel"
+    title_word = "Supplies received" if hotel else "Goods Received"
     extra = []
     if grn.get("po_number"):
         extra.append(f"Purchase order: {grn.get('po_number')}")
     return render_catalog_document_bodies(
-        title=f"Goods Received {number}".strip() or "Goods Received",
+        title=f"{title_word} {number}".strip() or title_word,
         company_name=company_name,
         currency=currency,
         party_name=supplier_name,
@@ -1413,7 +1415,11 @@ def render_grn_bodies(
         item_kind="grn",
         totals=[],
         total_key="",
-        closing="Please keep this goods received note for your records.",
+        closing=(
+            "Please keep this supplies received note for your records."
+            if hotel
+            else "Please keep this goods received note for your records."
+        ),
     )
 
 
@@ -1436,7 +1442,9 @@ async def send_grn_email(
     )
     return await send_email(
         to=to,
-        subject=f"Goods received {number} from {company_name}".strip(),
+        subject=(
+            f"{'Supplies received' if (getattr(tenant, 'industry', None) or '').strip().lower() == 'hotel' else 'Goods received'} {number} from {company_name}"
+        ).strip(),
         text_body=text,
         html_body=html_body,
         tenant=tenant,

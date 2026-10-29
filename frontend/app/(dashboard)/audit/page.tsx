@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import PageHeader from '../../../components/PageHeader';
 import { api, apiFetch } from '../../../lib/api';
 import { formatWhen, plainLabel } from '../../../lib/format';
+import { normalizeIndustry } from '../../../lib/industries';
 import { getMe } from '../../../lib/meCache';
+import { isHotelIndustry } from '../../../lib/tenantNav';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import './audit-ui.css';
 
@@ -48,9 +50,15 @@ const AUDIT_MODULES = [
 const USER_ID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function areaLabel(value: string | null | undefined): string {
+function areaLabel(value: string | null | undefined, hotel = false, restaurant = false): string {
   const key = String(value || '').trim().toLowerCase();
   if (!key) return 'All modules';
+  if (hotel && key === 'inventory') return 'Supplies';
+  if (hotel && key === 'pos') return 'Shop till';
+  if (hotel && key === 'stores') return 'Locations';
+  if (restaurant && key === 'inventory') return 'Ingredients';
+  if (restaurant && key === 'pos') return 'Restaurant till';
+  if (restaurant && key === 'sales') return 'Bills';
   const special: Record<string, string> = {
     ai: 'AI',
     auth: 'Sign-in',
@@ -61,6 +69,15 @@ function areaLabel(value: string | null | undefined): string {
     webhooks: 'Connections',
   };
   return special[key] || plainLabel(key);
+}
+
+function recordTypeLabel(value: string | null | undefined, hotel = false, restaurant = false): string {
+  const key = String(value || '').trim().toLowerCase();
+  if (hotel && key === 'product') return 'Supply';
+  if (hotel && key === 'stock_movement') return 'Supply movement';
+  if (restaurant && key === 'product') return 'Menu item';
+  if (restaurant && key === 'stock_movement') return 'Ingredient movement';
+  return plainLabel(value);
 }
 
 /** Keep aligned with backend AuditActionValue (strip/lower; digit-start OK for 2fa_*). */
@@ -143,6 +160,8 @@ export default function Page() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [staffNames, setStaffNames] = useState<Record<string, string>>({});
+  const [hotelOps, setHotelOps] = useState(false);
+  const [restaurantOps, setRestaurantOps] = useState(false);
 
   const people = useMemo(
     () =>
@@ -171,6 +190,8 @@ export default function Page() {
     const [policy, me] = await Promise.all([api('/audit-logs/retention'), getMe()]);
     setRetention(policy.data || null);
     const role = me.data?.role || '';
+    setHotelOps(isHotelIndustry(me.data?.industry));
+    setRestaurantOps(normalizeIndustry(me.data?.industry) === 'restaurant');
     const admin = ARCHIVE_ROLES.has(role);
     setCanArchive(admin);
     if (admin) {
@@ -316,7 +337,7 @@ export default function Page() {
               >
                 {AUDIT_MODULES.map((m) => (
                   <option key={m || 'all'} value={m}>
-                    {areaLabel(m)}
+                    {areaLabel(m, hotelOps, restaurantOps)}
                   </option>
                 ))}
               </select>
@@ -422,46 +443,95 @@ export default function Page() {
           This list shows up to 200 records. Export CSV uses the same filters.
         </p>
 
-        <div className="audit-ui-scroll">
+        <div className={restaurantOps ? 'audit-ui-scroll rest-audit-table' : 'audit-ui-scroll'}>
           <table className="table">
+            {restaurantOps ? (
+              <colgroup>
+                <col style={{ width: '36%' }} />
+                <col style={{ width: '20%' }} />
+                <col style={{ width: '22%' }} />
+                <col style={{ width: '22%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
-                <th>When</th>
-                <th>Area</th>
-                <th>What happened</th>
-                <th>Record type</th>
+                {restaurantOps ? <th>What happened</th> : <th>When</th>}
+                {restaurantOps ? <th>When</th> : <th>Area</th>}
+                {restaurantOps ? null : <th>What happened</th>}
+                {restaurantOps ? null : <th>Record type</th>}
                 <th>Person</th>
-                <th>Network address</th>
+                {restaurantOps ? null : <th>Network address</th>}
                 <th>Record</th>
-                <th>Stored away</th>
+                {restaurantOps ? null : <th>Stored away</th>}
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="muted audit-ui-empty">
-                    No records match these filters. Clear a code or widen the dates, then choose Apply filters.
+                  <td colSpan={restaurantOps ? 4 : 8} className="muted audit-ui-empty">
+                    {restaurantOps
+                      ? 'No activity matches these filters. Clear a code or widen the dates, then choose Apply filters.'
+                      : 'No records match these filters. Clear a code or widen the dates, then choose Apply filters.'}
                   </td>
                 </tr>
               ) : null}
               {rows.map((r) => (
                 <tr key={r.id}>
-                  <td>{formatWhen(r.created_at) || '—'}</td>
-                  <td>{areaLabel(r.module)}</td>
-                  <td>{plainLabel(r.action)}</td>
-                  <td>{plainLabel(r.entity)}</td>
-                  <td>{r.user_id ? staffNames[String(r.user_id)] || 'Staff' : '—'}</td>
-                  <td>{r.ip_address || '—'}</td>
-                  <td>
-                    {recordHref(r.entity, r.entity_id) ? (
-                      <a href={recordHref(r.entity, r.entity_id) || '#'}>Open record</a>
-                    ) : (
-                      '—'
-                    )}
-                  </td>
-                  <td className="muted">
-                    {formatWhen(r.archived_at) || '—'}
-                  </td>
+                  {restaurantOps ? (
+                    <td data-label="What happened">
+                      {plainLabel(r.action)}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {areaLabel(r.module, hotelOps, restaurantOps)}
+                        {' · '}
+                        {recordTypeLabel(r.entity, hotelOps, restaurantOps)}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>{formatWhen(r.created_at) || '—'}</td>
+                  )}
+                  {restaurantOps ? (
+                    <td data-label="When">{formatWhen(r.created_at) || 'No date'}</td>
+                  ) : (
+                    <td>{areaLabel(r.module, hotelOps, restaurantOps)}</td>
+                  )}
+                  {restaurantOps ? null : <td>{plainLabel(r.action)}</td>}
+                  {restaurantOps ? null : <td>{recordTypeLabel(r.entity, hotelOps, restaurantOps)}</td>}
+                  {restaurantOps ? (
+                    <td data-label="Person">
+                      {r.user_id ? staffNames[String(r.user_id)] || 'Staff' : 'No person'}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {r.ip_address || 'No address'}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>{r.user_id ? staffNames[String(r.user_id)] || 'Staff' : '—'}</td>
+                  )}
+                  {restaurantOps ? null : <td>{r.ip_address || '—'}</td>}
+                  {restaurantOps ? (
+                    <td data-label="Record">
+                      {recordHref(r.entity, r.entity_id) ? (
+                        <a href={recordHref(r.entity, r.entity_id) || '#'}>Open record</a>
+                      ) : (
+                        'No link'
+                      )}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {formatWhen(r.archived_at) ? `Stored away ${formatWhen(r.archived_at)}` : 'Still here'}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>
+                      {recordHref(r.entity, r.entity_id) ? (
+                        <a href={recordHref(r.entity, r.entity_id) || '#'}>Open record</a>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                  )}
+                  {restaurantOps ? null : (
+                    <td className="muted">
+                      {formatWhen(r.archived_at) || '—'}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

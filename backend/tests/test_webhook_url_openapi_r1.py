@@ -38,6 +38,10 @@ def test_webhook_url_schema():
         "ftp://example.com/x",
         "http://example.com/hooks",
         "example.com/hooks",
+        "https://127.0.0.1/hooks",
+        "https://10.0.0.1/hooks",
+        "https://169.254.169.254/latest",
+        "https://user:pass@example.com/hooks",
     ):
         with pytest.raises(ValidationError):
             WebhookCreate.model_validate({"url": bad, "events": ["webhook.test"]})

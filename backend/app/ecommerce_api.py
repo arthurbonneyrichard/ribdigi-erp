@@ -610,6 +610,7 @@ async def public_bootstrap(
         host=host,
         forwarded_host=x_forwarded_host,
         preview_token=_public_preview(request, preview_token),
+        peer_ip=request.client.host if request.client else None,
     )
     redirect_host = None
     if domain and domain.redirect_to_id:
@@ -661,7 +662,7 @@ async def public_media(
     x_forwarded_host: Annotated[str | None, Header()] = None,
 ):
     tenant, storefront_row, _domain = await ecom.resolve_public_tenant(
-        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token)
+        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token), peer_ip=request.client.host if request.client else None
     )
     key = getattr(storefront_row, ecom.storefront_media_attr(kind))
     if not key:
@@ -685,7 +686,7 @@ async def public_product_image(
     x_forwarded_host: Annotated[str | None, Header()] = None,
 ):
     tenant, _storefront, _domain = await ecom.resolve_public_tenant(
-        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token)
+        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token), peer_ip=request.client.host if request.client else None
     )
     product = await db.get(m.Product, product_id)
     listing = await ecom.listing_for_product(db, tenant.id, product_id)
@@ -716,7 +717,7 @@ async def public_create_cart(
     x_forwarded_host: Annotated[str | None, Header()] = None,
 ):
     tenant, _storefront, _domain = await ecom.resolve_public_tenant(
-        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token)
+        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token), peer_ip=request.client.host if request.client else None
     )
     cart = await ecom.create_cart(db, tenant.id)
     await db.commit()
@@ -733,7 +734,7 @@ async def public_get_cart(
     x_forwarded_host: Annotated[str | None, Header()] = None,
 ):
     tenant, _storefront, _domain = await ecom.resolve_public_tenant(
-        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token)
+        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token), peer_ip=request.client.host if request.client else None
     )
     cart = await ecom.get_cart(db, tenant_id=tenant.id, token=token)
     return env(await ecom.serialize_cart(db, cart))
@@ -750,7 +751,7 @@ async def public_cart_item(
     x_forwarded_host: Annotated[str | None, Header()] = None,
 ):
     tenant, storefront_row, _domain = await ecom.resolve_public_tenant(
-        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token)
+        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token), peer_ip=request.client.host if request.client else None
     )
     cart = await ecom.get_cart(db, tenant_id=tenant.id, token=token)
     await ecom.set_cart_item(
@@ -776,7 +777,7 @@ async def public_checkout(
     x_forwarded_host: Annotated[str | None, Header()] = None,
 ):
     tenant, storefront_row, _domain = await ecom.resolve_public_tenant(
-        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token)
+        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token), peer_ip=request.client.host if request.client else None
     )
     cart = await ecom.get_cart(db, tenant_id=tenant.id, token=payload.cart_token)
     shopper = await ecom.get_shopper_by_session(
@@ -813,7 +814,7 @@ async def public_register_shopper(
     x_forwarded_host: Annotated[str | None, Header()] = None,
 ):
     tenant, _storefront, _domain = await ecom.resolve_public_tenant(
-        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token)
+        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token), peer_ip=request.client.host if request.client else None
     )
     row = await ecom.register_shopper(
         db, tenant=tenant, name=payload.name, email=str(payload.email), password=payload.password
@@ -832,7 +833,7 @@ async def public_login_shopper(
     x_forwarded_host: Annotated[str | None, Header()] = None,
 ):
     tenant, _storefront, _domain = await ecom.resolve_public_tenant(
-        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token)
+        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token), peer_ip=request.client.host if request.client else None
     )
     row = await ecom.login_shopper(db, tenant=tenant, email=str(payload.email), password=payload.password)
     await db.commit()
@@ -848,7 +849,7 @@ async def public_shopper_me(
     x_forwarded_host: Annotated[str | None, Header()] = None,
 ):
     tenant, _storefront, _domain = await ecom.resolve_public_tenant(
-        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token)
+        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token), peer_ip=request.client.host if request.client else None
     )
     shopper = await ecom.get_shopper_by_session(db, tenant_id=tenant.id, token=_shopper_token(request))
     if shopper is None:
@@ -865,7 +866,7 @@ async def public_logout_shopper(
     x_forwarded_host: Annotated[str | None, Header()] = None,
 ):
     tenant, _storefront, _domain = await ecom.resolve_public_tenant(
-        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token)
+        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token), peer_ip=request.client.host if request.client else None
     )
     shopper = await ecom.get_shopper_by_session(db, tenant_id=tenant.id, token=_shopper_token(request))
     if shopper is not None:
@@ -883,7 +884,7 @@ async def public_shopper_orders(
     x_forwarded_host: Annotated[str | None, Header()] = None,
 ):
     tenant, _storefront, _domain = await ecom.resolve_public_tenant(
-        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token)
+        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token), peer_ip=request.client.host if request.client else None
     )
     shopper = await ecom.get_shopper_by_session(db, tenant_id=tenant.id, token=_shopper_token(request))
     if shopper is None:
@@ -902,7 +903,7 @@ async def public_track_order(
     x_forwarded_host: Annotated[str | None, Header()] = None,
 ):
     tenant, _storefront, _domain = await ecom.resolve_public_tenant(
-        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token)
+        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token), peer_ip=request.client.host if request.client else None
     )
     order = await ecom.get_order_by_tracking(db, tenant_id=tenant.id, tracking_token=tracking_token)
     items = await ecom.order_items(db, order.id)
@@ -926,7 +927,7 @@ async def public_payment_return(
     x_forwarded_host: Annotated[str | None, Header()] = None,
 ):
     tenant, _storefront, _domain = await ecom.resolve_public_tenant(
-        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token)
+        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token), peer_ip=request.client.host if request.client else None
     )
     order = await ecom.get_order_by_tracking(db, tenant_id=tenant.id, tracking_token=tracking_token)
     return env(
@@ -959,6 +960,7 @@ async def public_payment_webhook(
         hostname=host,
         forwarded_host=x_forwarded_host,
         preview_token=_public_preview(request, preview_token),
+        peer_ip=request.client.host if request.client else None,
     )
     await db.commit()
     return env(result)
@@ -974,7 +976,7 @@ async def public_policy(
     x_forwarded_host: Annotated[str | None, Header()] = None,
 ):
     tenant, storefront_row, _domain = await ecom.resolve_public_tenant(
-        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token)
+        db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token), peer_ip=request.client.host if request.client else None
     )
     wanted = (slug or "").strip().lower()
     if wanted == "contact":

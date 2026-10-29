@@ -125,6 +125,13 @@ async def test_print_settings_and_invoice_branding(client, db_session, seeded, t
     assert b"/Im1" in a4.content
     assert b"/DCTDecode" in a4.content
 
+    html = await ac.get(f"/api/v1/sales/invoices/{iid}/print?template=a4&format=html", headers=admin)
+    assert html.status_code == 200, html.text
+    assert "text/html" in html.headers.get("content-type", "")
+    assert "table class=\"doc\"" in html.text
+    assert "<th>Product</th>" in html.text
+    assert seed["p1"].name in html.text or seed["p1"].sku in html.text
+
 
 def test_powered_by_line_uses_brand_green_in_pdf():
     from app.print_branding import build_text_pdf, style_powered_by_line

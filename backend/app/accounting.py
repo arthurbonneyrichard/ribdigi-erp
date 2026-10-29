@@ -932,18 +932,22 @@ async def post_sales_return_journal(
     # Reverse COGS only for restocked sellable lines (matches stock_in path)
     if sales_return.restock:
         items = await list_return_items(db, tenant_id, sales_return.id)
+        from app.restaurant import expand_pos_recipe_items
+
+        cogs_lines = [
+            {
+                "product_id": it.product_id,
+                "quantity": money_json(it.quantity),
+                "variant_id": it.variant_id,
+            }
+            for it in items
+            if (it.condition or "sellable") == "sellable"
+        ]
+        cogs_lines = await expand_pos_recipe_items(db, tenant_id, cogs_lines, "sales_return")
         cogs = await compute_standard_cogs(
             db,
             tenant_id=tenant_id,
-            lines=[
-                {
-                    "product_id": it.product_id,
-                    "quantity": money_json(it.quantity),
-                    "variant_id": it.variant_id,
-                }
-                for it in items
-                if (it.condition or "sellable") == "sellable"
-            ],
+            lines=cogs_lines,
         )
         append_cogs_lines(lines, cogs, reverse=True)
 
@@ -1500,7 +1504,11 @@ async def post_pos_sale_journal(
         )
 
     payload = tx.payload if isinstance(tx.payload, dict) else {}
-    pos_items = list(payload.get("items") or [])
+    from app.restaurant import expand_pos_recipe_items
+
+    pos_items = await expand_pos_recipe_items(
+        db, tenant_id, list(payload.get("items") or []), "pos_sale"
+    )
     cogs = await compute_standard_cogs(
         db,
         tenant_id=tenant_id,
@@ -1710,10 +1718,12 @@ async def _pnl_journal_ids_for_stores(
     *,
     branch_id: str | None = None,
 ) -> set[str]:
-    """Journal entries attributable to the given stores (sales/POS/expense/returns).
+    """Journal entries attributable to the given stores (sales, till, restaurant bills, expenses, returns).
 
     When `branch_id` is set, also include expenses assigned directly to that branch
-    (even when `store_id` is null).
+    (even when `store_id` is null). A restaurant bill is included only for a restaurant
+    company, and only for the store on the bill. Restaurant waste is included for the store on the warehouse.
+    A till return is included for the store on the original receipt.
     """
     if not store_ids and not branch_id:
         return set()
@@ -1755,6 +1765,8 @@ async def _pnl_journal_ids_for_stores(
         )
     tx_ids = set()
     return_ids = set()
+    order_ids = set()
+    waste_ids = set()
     if store_ids:
         tx_ids = set(
             (
@@ -1769,18 +1781,63 @@ async def _pnl_journal_ids_for_stores(
                 )
             ).scalars().all()
         )
-        return_ids = set(
+        invoice_return_ids = set(
             (
                 await db.execute(
                     select(m.SalesReturn.id)
-                    .outerjoin(m.SalesInvoice, m.SalesInvoice.id == m.SalesReturn.sales_invoice_id)
+                    .join(m.SalesInvoice, m.SalesInvoice.id == m.SalesReturn.sales_invoice_id)
                     .where(
                         m.SalesReturn.tenant_id == tenant_id,
-                        func.coalesce(m.SalesInvoice.store_id, m.SalesReturn.store_id).in_(store_ids),
+                        m.SalesInvoice.tenant_id == tenant_id,
+                        m.SalesInvoice.store_id.in_(store_ids),
                     )
                 )
             ).scalars().all()
         )
+        till_return_ids = set(
+            (
+                await db.execute(
+                    select(m.SalesReturn.id)
+                    .join(m.Transaction, m.Transaction.id == m.SalesReturn.transaction_id)
+                    .join(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+                    .where(
+                        m.SalesReturn.tenant_id == tenant_id,
+                        m.SalesReturn.sales_invoice_id.is_(None),
+                        m.Transaction.tenant_id == tenant_id,
+                        m.PosSession.tenant_id == tenant_id,
+                        m.PosSession.store_id.in_(store_ids),
+                    )
+                )
+            ).scalars().all()
+        )
+        return_ids = invoice_return_ids | till_return_ids
+        from app.packages import canonicalize_industry
+
+        tenant = await db.get(m.Tenant, tenant_id)
+        if tenant is not None and canonicalize_industry(getattr(tenant, "industry", None)) == "restaurant":
+            order_ids = set(
+                (
+                    await db.execute(
+                        select(m.RestaurantOrder.id).where(
+                            m.RestaurantOrder.tenant_id == tenant_id,
+                            m.RestaurantOrder.store_id.in_(store_ids),
+                        )
+                    )
+                ).scalars().all()
+            )
+            waste_ids = set(
+                (
+                    await db.execute(
+                        select(m.StockMovement.id)
+                        .join(m.Warehouse, m.Warehouse.id == m.StockMovement.warehouse_id)
+                        .where(
+                            m.StockMovement.tenant_id == tenant_id,
+                            m.Warehouse.tenant_id == tenant_id,
+                            m.Warehouse.store_id.in_(store_ids),
+                        )
+                    )
+                ).scalars().all()
+            )
 
     from sqlalchemy import or_
 
@@ -1804,6 +1861,16 @@ async def _pnl_journal_ids_for_stores(
         clauses.append(
             (m.JournalEntry.source_type.in_(("sales_return", "sales_return_refund")))
             & (m.JournalEntry.source_id.in_(return_ids))
+        )
+    if order_ids:
+        clauses.append(
+            (m.JournalEntry.source_type == "restaurant_order")
+            & (m.JournalEntry.source_id.in_(order_ids))
+        )
+    if waste_ids:
+        clauses.append(
+            (m.JournalEntry.source_type == "restaurant_waste")
+            & (m.JournalEntry.source_id.in_(waste_ids))
         )
     if not clauses:
         return set()
@@ -1866,7 +1933,7 @@ async def profit_and_loss(
 
     Without filters: lifetime income/expense account balances (back-compat).
     With date and/or store/branch filters: posted journal-line activity. Location
-    filters keep only sales_invoice / pos_sale / expense / sales_return journals
+    filters keep sales invoices, till receipts, restaurant bills, expenses, and sales returns
     attributable to the store(s); unattributable journals are excluded.
     """
     store_ids = await _pnl_store_ids(

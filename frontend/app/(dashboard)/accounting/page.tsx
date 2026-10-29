@@ -5,6 +5,9 @@ import AttachmentPreview from '../../../components/AttachmentPreview';
 import FormModal from '../../../components/FormModal';
 import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
+import { normalizeIndustry } from '../../../lib/industries';
+import { getMe } from '../../../lib/meCache';
+import { isHotelIndustry } from '../../../lib/tenantNav';
 import { downloadAttachment, uploadAttachment } from '../../../lib/attachments';
 import { createPaintGet } from '../../../lib/prefetchCache';
 import { currencySign, formatWhen, plainLabel } from '../../../lib/format';
@@ -35,8 +38,16 @@ const JOURNAL_SOURCE_LABEL: Record<string, string> = {
   pos_sale: 'POS sale',
 };
 
-function journalSourceLabel(sourceType?: string | null) {
+function journalSourceLabel(sourceType?: string | null, hotel = false, restaurant = false) {
   const key = String(sourceType || 'manual').toLowerCase();
+  if (hotel && key === 'opening_stock') return 'Opening supplies';
+  if (hotel && key === 'grn') return 'Supplies received';
+  if (hotel && key === 'pos_sale') return 'Shop till sale';
+  if (hotel && key === 'sales_invoice') return 'Checkout invoice';
+  if (restaurant && key === 'opening_stock') return 'Opening ingredients';
+  if (restaurant && key === 'grn') return 'Stock received';
+  if (restaurant && key === 'pos_sale') return 'Restaurant till sale';
+  if (restaurant && key === 'sales_invoice') return 'Restaurant bill';
   return JOURNAL_SOURCE_LABEL[key] || key.replace(/_/g, ' ');
 }
 
@@ -86,7 +97,17 @@ type Tab = 'overview' | 'ledger' | 'cash' | 'reconcile' | 'cheques';
 
 export default function Page() {
   const currency = '';
+  const [hotelOps, setHotelOps] = useState(false);
+  const [restaurantOps, setRestaurantOps] = useState(false);
   const [tab, setTab] = useState<Tab>('overview');
+  useEffect(() => {
+    getMe()
+      .then((r) => {
+        setHotelOps(isHotelIndustry(r.data?.industry));
+        setRestaurantOps(normalizeIndustry(r.data?.industry) === 'restaurant');
+      })
+      .catch(() => undefined);
+  }, []);
   const [journalPrefix, setJournalPrefix] = useState('');
   const [journalNext, setJournalNext] = useState('');
   const [xferNumPrefix, setXferNumPrefix] = useState('');
@@ -1052,7 +1073,13 @@ export default function Page() {
     <div className="work acc-page">
       <PageHeader
         title="Accounting"
-        subtitle="Sales, expenses and supplier bills post here automatically. Use the tabs for accounts, cash and bank, bank matching and cheques."
+        subtitle={
+          hotelOps
+            ? 'Checkout invoices, hotel expenses, and supplier bills post here. Guest folio payments stay on Billing until checkout.'
+            : restaurantOps
+              ? 'Restaurant till bills, restaurant expenses, and supplier bills post here. Table orders stay on the restaurant desk.'
+              : 'Sales, expenses and supplier bills post here automatically. Use the tabs for accounts, cash and bank, bank matching and cheques.'
+        }
       />
       <details className="page-settings">
         <summary>Numbering</summary>
@@ -1156,9 +1183,9 @@ export default function Page() {
                       <td>{j.description}</td>
                       <td>
                         {href ? (
-                          <a href={href}>{journalSourceLabel(j.source_type)}</a>
+                          <a href={href}>{journalSourceLabel(j.source_type, hotelOps, restaurantOps)}</a>
                         ) : (
-                          journalSourceLabel(j.source_type)
+                          journalSourceLabel(j.source_type, hotelOps, restaurantOps)
                         )}
                       </td>
                       <td>{fmtMoney(Number(j.total_debit || 0))}</td>
@@ -1536,26 +1563,41 @@ export default function Page() {
             {loading ? (
               <p className="muted">Loading accounts…</p>
             ) : (
-              <div className="table-wrap">
+              <div className={restaurantOps ? 'list-table-wrap rest-coa-table' : 'table-wrap'}>
                 <table className="table">
+                  {restaurantOps ? (
+                    <colgroup>
+                      <col style={{ width: '34%' }} />
+                      <col style={{ width: '14%' }} />
+                      <col style={{ width: '15%' }} />
+                      <col style={{ width: '15%' }} />
+                      <col style={{ width: '22%' }} />
+                    </colgroup>
+                  ) : null}
                   <thead>
                     <tr>
-                      <th>Code</th>
-                      <th>Name</th>
-                      <th>Type</th>
-                      <th>Parent</th>
-                      <th>Liquid</th>
+                      {restaurantOps ? <th>Account</th> : <th>Code</th>}
+                      {restaurantOps ? null : <th>Name</th>}
+                      {restaurantOps ? <th>Group</th> : <th>Type</th>}
+                      {restaurantOps ? null : <th>Parent</th>}
+                      {restaurantOps ? null : <th>Liquid</th>}
                       <th>Opening</th>
                       <th>Balance</th>
-                      <th>Active</th>
-                      <th />
+                      {restaurantOps ? null : <th>Active</th>}
+                      {restaurantOps ? <th>Actions</th> : <th />}
                     </tr>
                   </thead>
                   <tbody>
                     {managedAccounts.length === 0 && (
                       <tr>
-                        <td colSpan={9} className="muted">
-                          No accounts for this filter
+                        <td colSpan={restaurantOps ? 5 : 9} className="muted">
+                          {accounts.length === 0
+                            ? restaurantOps
+                              ? 'No accounts yet. Add an account when you are ready to group money.'
+                              : 'No accounts for this filter'
+                            : restaurantOps
+                              ? 'No accounts for this filter. Choose All statuses to see every account.'
+                              : 'No accounts for this filter'}
                         </td>
                       </tr>
                     )}
@@ -1563,7 +1605,22 @@ export default function Page() {
                       const parent = accounts.find((x) => x.id === r.parent_id);
                       return (
                         <tr key={r.id}>
-                          <td>{r.code}</td>
+                          {restaurantOps ? (
+                            <td data-label="Account">
+                              {r.name}
+                              {r.is_system ? ' · Built in' : ''}
+                              {r.is_active === false ? ' · Not in use' : ''}
+                              <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                                {r.code}
+                                {' · '}
+                                {parent ? `Under ${parent.code}` : 'Top level'}
+                                {r.is_cash_account ? ' · Cash' : r.is_bank_account ? ' · Bank' : ''}
+                              </span>
+                            </td>
+                          ) : (
+                            <td>{r.code}</td>
+                          )}
+                          {restaurantOps ? null : (
                           <td>
                             {r.name}
                             {r.is_system ? ' · system' : ''}
@@ -1573,13 +1630,30 @@ export default function Page() {
                               </span>
                             ) : null}
                           </td>
-                          <td>{r.account_type}</td>
-                          <td>{parent ? `${parent.code}` : '—'}</td>
+                          )}
+                          <td data-label={restaurantOps ? 'Group' : 'Type'}>
+                            {restaurantOps
+                              ? r.account_type === 'asset'
+                                ? 'Owns'
+                                : r.account_type === 'liability'
+                                  ? 'Owes'
+                                  : r.account_type === 'equity'
+                                    ? 'Equity'
+                                    : r.account_type === 'income'
+                                      ? 'Earns'
+                                      : r.account_type === 'expense'
+                                        ? 'Spends'
+                                        : r.account_type
+                              : r.account_type}
+                          </td>
+                          {restaurantOps ? null : <td>{parent ? `${parent.code}` : '—'}</td>}
+                          {restaurantOps ? null : (
                           <td>{r.is_cash_account ? 'cash' : r.is_bank_account ? 'bank' : '—'}</td>
-                          <td>{r.opening_balance ?? 0}</td>
-                          <td>{r.balance}</td>
-                          <td>{r.is_active === false ? 'no' : 'yes'}</td>
-                          <td style={{ whiteSpace: 'nowrap' }}>
+                          )}
+                          <td data-label="Opening">{r.opening_balance ?? 0}</td>
+                          <td data-label="Balance">{r.balance}</td>
+                          {restaurantOps ? null : <td>{r.is_active === false ? 'no' : 'yes'}</td>}
+                          <td data-label="Actions" style={restaurantOps ? undefined : { whiteSpace: 'nowrap' }}>
                             <button type="button" onClick={() => openEditAccount(r)} aria-label={`Edit account ${r.code}`}>
                               Edit
                             </button>{' '}
@@ -1667,7 +1741,9 @@ export default function Page() {
             <div className="card">
               <h3>Profit &amp; Loss</h3>
               <p className="muted" style={{ marginTop: 0 }}>
-                Income minus expenses for a period. Filters work like Reports: set dates/store, then Generate.
+                {hotelOps
+                  ? 'Income minus expenses for a period. Set the dates and location, then Generate.'
+                  : 'Income minus expenses for a period. Filters work like Reports: set dates/store, then Generate.'}
               </p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
                 <input
@@ -1702,11 +1778,13 @@ export default function Page() {
               aria-label="P&L store filter"
               title={
                 !pnlStoreId.trim() && headerStoreId.trim()
-                  ? "Using header store context — clear to All stores"
+                  ? hotelOps
+                    ? "Using header location — clear to All locations"
+                    : "Using header store context — clear to All stores"
                   : undefined
               }
             >
-              <option value="">All stores</option>
+              <option value="">{hotelOps ? 'All locations' : 'All stores'}</option>
               {stores
                 .filter((s) => !pnlBranchId || s.branch_id === pnlBranchId)
                 .map((s) => (
@@ -1731,7 +1809,7 @@ export default function Page() {
                   : 'All-time balances'}
               </p>
               <p>Revenue: {fmtMoney(pnl?.revenue ?? pnl?.income)}</p>
-              <p>Cost of goods: {fmtMoney(pnl?.cogs ?? 0)}</p>
+              <p>{hotelOps ? 'Cost of supplies' : restaurantOps ? 'Cost of ingredients' : 'Cost of goods'}: {fmtMoney(pnl?.cogs ?? 0)}</p>
               <p>Gross profit: {fmtMoney(pnl?.gross_profit ?? (pnl?.income ?? 0) - (pnl?.cogs ?? 0))}</p>
               <p>Operating expenses: {fmtMoney(pnl?.operating_expenses ?? pnl?.expense)}</p>
               <div className="kpi">{fmtMoney(pnl?.net_profit)}</div>
@@ -1805,7 +1883,7 @@ export default function Page() {
               ) : null}
               <p className="muted" style={{ fontSize: 12, marginBottom: 0 }}>
                 {(headerStoreId || pnlBranchId)
-                  ? 'Limited to the selected store or branch.'
+                  ? (hotelOps ? 'Limited to the selected location or branch.' : 'Limited to the selected store or branch.')
                   : 'Whole company.'}
               </p>
             </>
@@ -1873,7 +1951,7 @@ export default function Page() {
               ) : null}
               <p className="muted" style={{ fontSize: 12, marginBottom: 0 }}>
                 {(headerStoreId || pnlBranchId)
-                  ? 'Limited to the selected store or branch.'
+                  ? (hotelOps ? 'Limited to the selected location or branch.' : 'Limited to the selected store or branch.')
                   : 'Whole company.'}
               </p>
             </>
@@ -1916,12 +1994,22 @@ export default function Page() {
           <p className="muted" style={{ marginTop: 0 }}>
             The reason is kept with the entry.
           </p>
+          <div className={restaurantOps ? 'list-table-wrap rest-acc-table' : undefined}>
           <table className="table">
+            {restaurantOps ? (
+              <colgroup>
+                <col style={{ width: '32%' }} />
+                <col style={{ width: '14%' }} />
+                <col style={{ width: '16%' }} />
+                <col style={{ width: '16%' }} />
+                <col style={{ width: '22%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
                 <th>Entry</th>
-                <th>Description</th>
-                <th>Source</th>
+                {restaurantOps ? null : <th>Description</th>}
+                {restaurantOps ? null : <th>Source</th>}
                 <th>Status</th>
                 <th>Debit</th>
                 <th>Credit</th>
@@ -1931,28 +2019,51 @@ export default function Page() {
             <tbody>
               {managedJournals.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="muted">
+                  <td colSpan={restaurantOps ? 5 : 7} className="muted">
                     {journals.length === 0
-                      ? 'No entries yet'
-                      : 'No journals for this filter'}
+                      ? restaurantOps
+                        ? 'No entries yet. Bills, costs, and supplier bills show here when they are posted.'
+                        : 'No entries yet'
+                      : restaurantOps
+                        ? 'No entries for this filter. Choose All statuses to see every entry.'
+                        : 'No journals for this filter'}
                   </td>
                 </tr>
               ) : (
                 managedJournals.map((j) => (
                 <tr key={j.id}>
-                  <td>{j.entry_number}</td>
-                  <td>{j.description}</td>
-                  <td>
+                  <td data-label="Entry">
+                    {j.entry_number}
+                    {restaurantOps ? (
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {j.description || 'No description'}
+                        {' · '}
+                        {journalSourceLabel(j.source_type, hotelOps, restaurantOps)}
+                      </span>
+                    ) : null}
+                  </td>
+                  {restaurantOps ? null : <td data-label="Description">{j.description}</td>}
+                  {restaurantOps ? null : (
+                  <td data-label="Source">
                     {(() => {
                       const href = journalSourceHref(j.source_type);
-                      const label = journalSourceLabel(j.source_type);
+                      const label = journalSourceLabel(j.source_type, hotelOps, restaurantOps);
                       return href ? <a href={href}>{label}</a> : label;
                     })()}
                   </td>
-                  <td>{j.status}</td>
-                  <td>{j.total_debit}</td>
-                  <td>{j.total_credit}</td>
-                  <td>
+                  )}
+                  <td data-label="Status">
+                    {restaurantOps
+                      ? j.status === 'posted'
+                        ? 'Posted'
+                        : j.status === 'unposted'
+                          ? 'Not posted'
+                          : (j.status || '—')
+                      : j.status}
+                  </td>
+                  <td data-label="Debit">{j.total_debit}</td>
+                  <td data-label="Credit">{j.total_credit}</td>
+                  <td data-label="Actions">
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                       {j.can_unpost && j.status === 'posted' && (
                         <button
@@ -2016,6 +2127,7 @@ export default function Page() {
               )}
             </tbody>
           </table>
+          </div>
         </>
       )}
 
@@ -2106,32 +2218,78 @@ export default function Page() {
           </div>
 
           <h3>Cash and bank</h3>
+          <div className={restaurantOps ? 'list-table-wrap rest-cash-table' : undefined}>
           <table className="table">
+            {restaurantOps ? (
+              <colgroup>
+                <col style={{ width: '56%' }} />
+                <col style={{ width: '18%' }} />
+                <col style={{ width: '26%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
-                <th>Code</th>
-                <th>Name</th>
+                {restaurantOps ? <th>Account</th> : <th>Code</th>}
+                {restaurantOps ? null : <th>Name</th>}
                 <th>Kind</th>
-                <th>Bank</th>
+                {restaurantOps ? null : <th>Bank</th>}
                 <th>Balance</th>
               </tr>
             </thead>
             <tbody>
-              {liquid.map((a) => (
+              {liquid.length === 0 ? (
+                restaurantOps ? (
+                  <tr>
+                    <td colSpan={3} className="muted">
+                      No cash or bank accounts yet. Add one when you are ready to record a payment.
+                    </td>
+                  </tr>
+                ) : null
+              ) : (
+                liquid.map((a) => (
                 <tr key={a.id}>
-                  <td>{a.code}</td>
-                  <td>{a.name}</td>
-                  <td>{a.is_cash_account ? 'cash' : a.is_bank_account ? 'bank' : '—'}</td>
+                  {restaurantOps ? (
+                    <td data-label="Account">
+                      {a.name}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {a.code}
+                        {' · '}
+                        {a.bank_name
+                          ? `${a.bank_name}${a.bank_branch ? ` / ${a.bank_branch}` : ''}${a.account_number ? ` (#${a.account_number})` : ''}`
+                          : 'No bank details'}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>{a.code}</td>
+                  )}
+                  {restaurantOps ? null : <td>{a.name}</td>}
+                  <td data-label="Kind">
+                    {restaurantOps
+                      ? a.is_cash_account
+                        ? 'Cash'
+                        : a.is_bank_account
+                          ? 'Bank'
+                          : 'Other'
+                      : a.is_cash_account
+                        ? 'cash'
+                        : a.is_bank_account
+                          ? 'bank'
+                          : '—'}
+                  </td>
+                  {restaurantOps ? null : (
                   <td>
                     {a.bank_name || '—'}
                     {a.bank_branch ? ` / ${a.bank_branch}` : ''}
                     {a.account_number ? ` (#${a.account_number})` : ''}
                   </td>
-                  <td>{a.balance}</td>
+                  )}
+                  <td data-label="Balance">{a.balance}</td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
+          </div>
 
           <h3 style={{ marginTop: 16 }}>Recent movements</h3>
           <select
@@ -2150,36 +2308,101 @@ export default function Page() {
             <option value="deposit">Deposit only</option>
             <option value="withdrawal">Withdrawal only</option>
           </select>
+          <div className={restaurantOps ? 'list-table-wrap rest-move-table' : undefined}>
           <table className="table">
+            {restaurantOps ? (
+              <colgroup>
+                <col style={{ width: '28%' }} />
+                <col style={{ width: '26%' }} />
+                <col style={{ width: '26%' }} />
+                <col style={{ width: '20%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
-                <th>Kind</th>
+                {restaurantOps ? <th>Movement</th> : <th>Kind</th>}
                 <th>From</th>
                 <th>To</th>
                 <th>Amount</th>
-                <th>Reference</th>
+                {restaurantOps ? null : <th>Reference</th>}
               </tr>
             </thead>
             <tbody>
               {managedTransfers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="muted">
-                    No transfers for this filter
+                  <td colSpan={restaurantOps ? 4 : 5} className="muted">
+                    {transfers.length === 0
+                      ? restaurantOps
+                        ? 'No movements yet. Post a transfer, deposit, or withdrawal when you are ready.'
+                        : 'No transfers for this filter'
+                      : restaurantOps
+                        ? 'No movements for this filter. Choose All kinds to see every movement.'
+                        : 'No transfers for this filter'}
                   </td>
                 </tr>
               ) : (
                 managedTransfers.map((t) => (
                   <tr key={t.id}>
-                    <td>{t.kind}</td>
-                    <td>{t.from_account ? `${t.from_account.code} ${t.from_account.name}` : '—'}</td>
-                    <td>{t.to_account ? `${t.to_account.code} ${t.to_account.name}` : '—'}</td>
-                    <td>{t.amount}</td>
-                    <td>{t.reference || '—'}</td>
+                    <td data-label={restaurantOps ? 'Movement' : 'Kind'}>
+                      {restaurantOps ? (
+                        <>
+                          {t.kind === 'deposit'
+                            ? 'Deposit'
+                            : t.kind === 'withdrawal'
+                              ? 'Withdrawal'
+                              : 'Transfer'}
+                          <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                            {t.reference || 'No reference'}
+                          </span>
+                        </>
+                      ) : (
+                        t.kind
+                      )}
+                    </td>
+                    <td data-label="From">
+                      {restaurantOps ? (
+                        t.from_account ? (
+                          <>
+                            {t.from_account.name}
+                            <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                              {t.from_account.code}
+                            </span>
+                          </>
+                        ) : (
+                          'Not used'
+                        )
+                      ) : t.from_account ? (
+                        `${t.from_account.code} ${t.from_account.name}`
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td data-label="To">
+                      {restaurantOps ? (
+                        t.to_account ? (
+                          <>
+                            {t.to_account.name}
+                            <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                              {t.to_account.code}
+                            </span>
+                          </>
+                        ) : (
+                          'Not used'
+                        )
+                      ) : t.to_account ? (
+                        `${t.to_account.code} ${t.to_account.name}`
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td data-label="Amount">{t.amount}</td>
+                    {restaurantOps ? null : <td>{t.reference || '—'}</td>}
                   </tr>
                 ))
               )}
             </tbody>
           </table>
+          </div>
         </>
       )}
 
@@ -2411,39 +2634,71 @@ export default function Page() {
             <option value="in_progress">In progress only</option>
             <option value="reconciled">Reconciled only</option>
           </select>
+          <div className={restaurantOps ? 'list-table-wrap rest-stmt-table' : undefined}>
           <table className="table">
+            {restaurantOps ? (
+              <colgroup>
+                <col style={{ width: '32%' }} />
+                <col style={{ width: '16%' }} />
+                <col style={{ width: '16%' }} />
+                <col style={{ width: '16%' }} />
+                <col style={{ width: '20%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Status</th>
+                {restaurantOps ? <th>Statement</th> : <th>Date</th>}
+                {restaurantOps ? null : <th>Status</th>}
                 <th>Opening</th>
                 <th>Closing</th>
-                <th>Unmatched</th>
-                <th />
+                {restaurantOps ? <th>Left to match</th> : <th>Unmatched</th>}
+                {restaurantOps ? <th>Actions</th> : <th />}
               </tr>
             </thead>
             <tbody>
               {managedStatements.map((s) => (
                 <tr key={s.id}>
-                  <td>{String(s.statement_date).slice(0, 10)}</td>
-                  <td>{s.status}</td>
-                  <td>{s.opening_balance}</td>
-                  <td>{s.closing_balance}</td>
-                  <td>{s.unmatched_count}</td>
-                  <td>
+                  {restaurantOps ? (
+                    <td data-label="Statement">
+                      {formatWhen(s.statement_date) || String(s.statement_date).slice(0, 10)}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {s.status === 'reconciled'
+                          ? 'Matched'
+                          : s.status === 'in_progress'
+                            ? 'In progress'
+                            : s.status === 'draft'
+                              ? 'Draft'
+                              : s.status || 'Draft'}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>{String(s.statement_date).slice(0, 10)}</td>
+                  )}
+                  {restaurantOps ? null : <td>{s.status}</td>}
+                  <td data-label="Opening">{s.opening_balance}</td>
+                  <td data-label="Closing">{s.closing_balance}</td>
+                  <td data-label={restaurantOps ? 'Left to match' : 'Unmatched'}>{s.unmatched_count}</td>
+                  <td data-label={restaurantOps ? 'Actions' : undefined}>
                     <button onClick={() => openStatement(s.id)} aria-label={`Open bank statement ${s.id}`}>Open</button>
                   </td>
                 </tr>
               ))}
               {!managedStatements.length && (
                 <tr>
-                  <td colSpan={6} className="muted">
-                    No statements for this filter
+                  <td colSpan={restaurantOps ? 5 : 6} className="muted">
+                    {statements.length === 0
+                      ? restaurantOps
+                        ? 'No statements yet. Create a statement when you are ready to match the bank.'
+                        : 'No statements for this filter'
+                      : restaurantOps
+                        ? 'No statements for this filter. Choose All statuses to see every statement.'
+                        : 'No statements for this filter'}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+          </div>
 
           {selected && (
             <div style={{ marginTop: 16 }}>
@@ -2668,9 +2923,9 @@ export default function Page() {
                   void loadCheques(v, chequeStatus);
                 }}
               >
-                <option value="">All</option>
-                <option value="received">received</option>
-                <option value="issued">issued</option>
+                <option value="">{restaurantOps ? 'All directions' : 'All'}</option>
+                <option value="received">{restaurantOps ? 'Received' : 'received'}</option>
+                <option value="issued">{restaurantOps ? 'Issued' : 'issued'}</option>
               </select>
             </label>
             <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
@@ -2684,12 +2939,12 @@ export default function Page() {
                   void loadCheques(chequeDirection, v);
                 }}
               >
-                <option value="">All</option>
-                <option value="pending">pending</option>
-                <option value="deposited">deposited</option>
-                <option value="cleared">cleared</option>
-                <option value="bounced">bounced</option>
-                <option value="cancelled">cancelled</option>
+                <option value="">{restaurantOps ? 'All statuses' : 'All'}</option>
+                <option value="pending">{restaurantOps ? 'Waiting' : 'pending'}</option>
+                <option value="deposited">{restaurantOps ? 'Deposited' : 'deposited'}</option>
+                <option value="cleared">{restaurantOps ? 'Cleared' : 'cleared'}</option>
+                <option value="bounced">{restaurantOps ? 'Bounced' : 'bounced'}</option>
+                <option value="cancelled">{restaurantOps ? 'Cancelled' : 'cancelled'}</option>
               </select>
             </label>
           </div>
@@ -2706,33 +2961,70 @@ export default function Page() {
               />
             </label>
             <p className="muted" style={{ marginTop: 6 }}>
-              Appended to cheque notes and journal description (`POST .../bounce|cancel` {'{ reason }'}).
+              {restaurantOps
+                ? 'A reason is required before you bounce or cancel a cheque. It is kept with the cheque.'
+                : 'Appended to cheque notes and journal description (`POST .../bounce|cancel` { reason }).'}
             </p>
           </div>
+          <div className={restaurantOps ? 'list-table-wrap rest-cheque-table' : undefined}>
           <table className="table">
+            {restaurantOps ? (
+              <colgroup>
+                <col style={{ width: '40%' }} />
+                <col style={{ width: '18%' }} />
+                <col style={{ width: '18%' }} />
+                <col style={{ width: '24%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
-                <th>Number</th>
-                <th>Dir</th>
+                {restaurantOps ? <th>Cheque</th> : <th>Number</th>}
+                {restaurantOps ? null : <th>Dir</th>}
                 <th>Status</th>
                 <th>Amount</th>
-                <th>Bank</th>
-                <th>Notes</th>
+                {restaurantOps ? null : <th>Bank</th>}
+                {restaurantOps ? null : <th>Notes</th>}
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {cheques.map((c) => (
                 <tr key={c.id}>
-                  <td>{c.cheque_number}</td>
-                  <td>{c.direction}</td>
-                  <td>{c.status}</td>
-                  <td>{c.amount}</td>
-                  <td>{c.bank_name || '—'}</td>
+                  {restaurantOps ? (
+                    <td data-label="Cheque">
+                      {c.cheque_number}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {c.direction === 'issued' ? 'Issued' : 'Received'}
+                        {' · '}
+                        {c.bank_name || 'No bank name'}
+                        {c.notes ? ` · ${c.notes}` : ' · No notes'}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>{c.cheque_number}</td>
+                  )}
+                  {restaurantOps ? null : <td>{c.direction}</td>}
+                  <td data-label="Status">
+                    {restaurantOps
+                      ? c.status === 'deposited'
+                        ? 'Deposited'
+                        : c.status === 'cleared'
+                          ? 'Cleared'
+                          : c.status === 'bounced'
+                            ? 'Bounced'
+                            : c.status === 'cancelled'
+                              ? 'Cancelled'
+                              : 'Waiting'
+                      : c.status}
+                  </td>
+                  <td data-label="Amount">{c.amount}</td>
+                  {restaurantOps ? null : <td>{c.bank_name || '—'}</td>}
+                  {restaurantOps ? null : (
                   <td className="muted" style={{ maxWidth: 240, whiteSpace: 'pre-wrap' }}>
                     {c.notes || '—'}
                   </td>
-                  <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  )}
+                  <td data-label="Actions" style={restaurantOps ? undefined : { display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {c.direction === 'received' && c.status === 'pending' && (
                       <button className="btn-ok" onClick={() => chequeAction(c.id, 'deposit')} aria-label={`Deposit cheque ${c.id}`}>Deposit</button>
                     )}
@@ -2762,13 +3054,16 @@ export default function Page() {
               ))}
               {!cheques.length && (
                 <tr>
-                  <td colSpan={7} className="muted">
-                    No cheques — record a customer/supplier payment with method cheque
+                  <td colSpan={restaurantOps ? 4 : 7} className="muted">
+                    {restaurantOps
+                      ? 'No cheques yet. A cheque shows here after you record a customer or supplier payment by cheque.'
+                      : 'No cheques — record a customer/supplier payment with method cheque'}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+          </div>
         </>
       )}
       {acctFormOpen ? (

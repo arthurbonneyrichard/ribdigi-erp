@@ -252,7 +252,7 @@ async def analyze_upload(
     if len(data) > max_bytes:
         raise HTTPException(status_code=413, detail="File too large")
 
-    filename = upload.filename or "document.bin"
+    filename = storage_svc.sanitize_filename(upload.filename or "document.bin")
     content_type = upload.content_type or "application/octet-stream"
     media = storage_svc.MediaObject(
         key=f"{tenant_id}/ai-documents/{filename}",

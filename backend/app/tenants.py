@@ -9,6 +9,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, or_, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.attributes import flag_modified
 
 from app import models as m
 from app import packages as packages_svc
@@ -215,6 +216,26 @@ def _fiscal_year_label(tenant: m.Tenant) -> str:
     return fiscal_year_display_label(getattr(tenant, "fiscal_year_start", None) or "01-01")
 
 
+def count_drawer_on_sign_out(tenant: m.Tenant | None) -> bool:
+    """Cashiers count the drawer on Log out unless the company turns this off.
+
+    Stored on ``print_branding`` (same extra bag as POS receipt Email/SMS). Missing
+    key defaults to on so existing shops keep the cashier count.
+    """
+    raw = getattr(tenant, "print_branding", None) if tenant else None
+    if not isinstance(raw, dict) or "pos_count_drawer_on_sign_out" not in raw:
+        return True
+    return raw.get("pos_count_drawer_on_sign_out") is True
+
+
+def set_count_drawer_on_sign_out(tenant: m.Tenant, enabled: bool) -> bool:
+    current = dict(getattr(tenant, "print_branding", None) or {})
+    current["pos_count_drawer_on_sign_out"] = bool(enabled)
+    tenant.print_branding = current
+    flag_modified(tenant, "print_branding")
+    return bool(enabled)
+
+
 def serialize_tenant(tenant: m.Tenant) -> dict:
     now = datetime.utcnow()
     days_left = None
@@ -259,6 +280,7 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         "inactivity_timeout_minutes": int(
             getattr(tenant, "inactivity_timeout_minutes", None) or 30
         ),
+        "count_drawer_on_sign_out": count_drawer_on_sign_out(tenant),
         "offline_auth_hours": int(getattr(tenant, "offline_auth_hours", None) or 168),
         "expense_approval_threshold": money_json(tenant.expense_approval_threshold),
         "expense_l2_threshold": money_json(
@@ -1314,6 +1336,7 @@ async def update_profile(
     thousand_separator: str | None = None,
     time_format: str | None = None,
     inactivity_timeout_minutes: int | None = None,
+    count_drawer_on_sign_out: bool | None = None,
     offline_auth_hours: int | None = None,
 ) -> m.Tenant:
     if company_name is not None:
@@ -1471,6 +1494,8 @@ async def update_profile(
                 detail="inactivity_timeout_minutes must be between 5 and 480",
             )
         tenant.inactivity_timeout_minutes = minutes
+    if count_drawer_on_sign_out is not None:
+        set_count_drawer_on_sign_out(tenant, bool(count_drawer_on_sign_out))
     if offline_auth_hours is not None:
         from app.offline_pos import clamp_offline_auth_hours
         from app.config import settings as app_settings

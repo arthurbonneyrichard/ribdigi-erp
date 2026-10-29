@@ -393,6 +393,11 @@ def list_customer_system_roles_for_industry(industry: str | None) -> list[str]:
     )
 
 
+def can_assign_company_admin(actor_role: str | None) -> bool:
+    """users:write alone is not enough to mint a company admin."""
+    return (actor_role or "") in {"company_admin", "super_admin", "platform_owner"}
+
+
 def can_assign_platform_role(actor_role: str, target_role: str) -> bool:
     """Only platform owners can mint owners; admins can mint admin/support/finance."""
     if target_role not in PLATFORM_ROLES:

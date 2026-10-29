@@ -8,7 +8,9 @@ import { api } from '../../../lib/api';
 import { fetchAttachment, uploadAttachment } from '../../../lib/attachments';
 import { createPaintGet } from '../../../lib/prefetchCache';
 import { formatDate, formatMoney, formatWhen, plainLabel } from '../../../lib/format';
+import { normalizeIndustry } from '../../../lib/industries';
 import { getMe } from '../../../lib/meCache';
+import { isHotelIndustry } from '../../../lib/tenantNav';
 import { AmountField } from '../../../components/AmountField';
 import { useStoreContext } from '../../../lib/storeContext';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
@@ -68,9 +70,15 @@ export default function Page() {
   const [rows, setRows] = useState<Expense[]>([]);
   // The person who submitted an expense cannot approve it, so their own rows show who must act.
   const [meId, setMeId] = useState('');
+  const [hotelOps, setHotelOps] = useState(false);
+  const [restaurantOps, setRestaurantOps] = useState(false);
   useEffect(() => {
     getMe()
-      .then((r) => setMeId(String(r?.data?.id || '').trim()))
+      .then((r) => {
+        setMeId(String(r?.data?.id || '').trim());
+        setHotelOps(isHotelIndustry(r?.data?.industry));
+        setRestaurantOps(normalizeIndustry(r?.data?.industry) === 'restaurant');
+      })
       .catch(() => {});
   }, []);
   const [expPrefix, setExpPrefix] = useState('');
@@ -819,7 +827,13 @@ export default function Page() {
     <div className="work expenses-page">
       <PageHeader
         title="Expenses"
-        subtitle="Submit an expense with the form below. It stays pending until someone approves or rejects it."
+        subtitle={
+          hotelOps
+            ? 'Hotel costs. An expense stays pending until someone approves or rejects it.'
+            : restaurantOps
+              ? 'Restaurant costs. An expense stays pending until someone approves or rejects it.'
+              : 'Submit an expense with the form below. It stays pending until someone approves or rejects it.'
+        }
         subtitleClassName="muted expenses-lead"
         actions={
           <button
@@ -934,13 +948,22 @@ export default function Page() {
             <option value="rejected">Rejected</option>
           </select>
         </div>
-        <div className="list-table-wrap">
+        <div className={restaurantOps ? 'list-table-wrap rest-exp-table' : 'list-table-wrap'}>
         <table className="table compact">
+          {restaurantOps ? (
+            <colgroup>
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '32%' }} />
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '20%' }} />
+            </colgroup>
+          ) : null}
           <thead>
             <tr>
               <th>Date</th>
-              <th>Payee</th>
-              <th>Category</th>
+              <th>{restaurantOps ? 'Cost' : 'Payee'}</th>
+              {restaurantOps ? null : <th>Category</th>}
               <th>Amount</th>
               <th>Status</th>
               <th>Actions</th>
@@ -949,33 +972,48 @@ export default function Page() {
           <tbody>
             {managedExpenses.length === 0 ? (
               <tr>
-                <td colSpan={6} className="muted">
+                <td colSpan={restaurantOps ? 5 : 6} className="muted">
                   {expenseManageFilter !== 'all'
                     ? 'No expenses for this filter. Choose All to see every expense.'
                     : searchQuery.trim()
                       ? 'No expenses match this search. Try a payee, category, or amount.'
-                      : 'No expenses yet. Fill in the form above and submit one.'}
+                      : restaurantOps
+                        ? 'No costs yet. Submit a cost when you are ready to record it.'
+                        : 'No expenses yet. Fill in the form above and submit one.'}
                 </td>
               </tr>
             ) : (
               managedExpenses.map((r) => (
               <tr key={r.id}>
-                <td className="expenses-nowrap">{formatDate(r.expense_date || r.created_at, formatPrefs) || '—'}</td>
-                <td>
-                  {r.payee || '—'}
-                  {r.description ? <span className="expenses-payee-sub">{r.description}</span> : null}
+                <td className="expenses-nowrap" data-label="Date">{formatDate(r.expense_date || r.created_at, formatPrefs) || '—'}</td>
+                <td data-label={restaurantOps ? 'Cost' : 'Payee'}>
+                  {restaurantOps ? (r.payee || 'No payee') : (r.payee || '—')}
+                  {restaurantOps ? (
+                    <span className="expenses-payee-sub">
+                      {r.category || 'No category'}
+                      {r.description ? ` · ${r.description}` : ''}
+                    </span>
+                  ) : r.description ? (
+                    <span className="expenses-payee-sub">{r.description}</span>
+                  ) : null}
                 </td>
-                <td>{r.category}</td>
-                <td className="expenses-nowrap">{formatMoney(r.amount)}</td>
-                <td>
+                {restaurantOps ? null : <td data-label="Category">{r.category}</td>}
+                <td className="expenses-nowrap" data-label="Amount">{formatMoney(r.amount)}</td>
+                <td data-label="Status">
                   <span className={`expenses-status expenses-status-${r.status || 'pending'}`}>
-                    {r.status || 'pending'}
+                    {restaurantOps
+                      ? r.status === 'approved'
+                        ? 'Approved'
+                        : r.status === 'rejected'
+                          ? 'Rejected'
+                          : 'Pending'
+                      : (r.status || 'pending')}
                   </span>
                   {r.rejection_reason ? (
                     <span className="expenses-payee-sub">Reason: {r.rejection_reason}</span>
                   ) : null}
                 </td>
-                <td>
+                <td data-label="Actions">
                   <div className="expenses-actions">
                     <div className="expenses-actions-row">
                       {r.has_attachment ? (
@@ -1253,7 +1291,7 @@ export default function Page() {
           </select>
           </label>
           <label>
-            Store
+            {hotelOps ? 'Location' : 'Store'}
           <select
             value={storeId}
             onChange={(e) => {
@@ -1261,7 +1299,7 @@ export default function Page() {
               setCtxStoreId(e.target.value);
             }}
             aria-label="Expense store"
-            title="Store"
+            title={hotelOps ? 'Location' : 'Store'}
           >
             <option value="">None</option>
             {stores
@@ -1417,7 +1455,7 @@ export default function Page() {
       </div>
       </details>
       <details
-        className="erp-advanced"
+        className={restaurantOps ? 'erp-advanced rest-cat-span' : 'erp-advanced'}
         id="budgets"
         open={categoriesOpen}
         onToggle={(e) => {
@@ -1429,7 +1467,9 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 0, boxShadow: 'none', border: 0, padding: '0 0 8px' }}>
         <h3>Categories and monthly budgets</h3>
         <p className="muted">
-          Set a monthly budget for each category. Reports compare spending with that budget.
+          {restaurantOps
+            ? 'Each group is a kind of cost. Set a monthly budget, then reports compare what you spent with that budget.'
+            : 'Set a monthly budget for each category. Reports compare spending with that budget.'}
         </p>
         <div className="expenses-inline-fields">
           <input
@@ -1484,26 +1524,56 @@ export default function Page() {
           <option value="active">Active only</option>
           <option value="inactive">Inactive only</option>
         </select>
+        <div className={restaurantOps ? 'list-table-wrap rest-cat-table' : undefined}>
         <table className="table">
+          {restaurantOps ? (
+            <colgroup>
+              <col style={{ width: '28%' }} />
+              <col style={{ width: '22%' }} />
+              <col style={{ width: '28%' }} />
+              <col style={{ width: '22%' }} />
+            </colgroup>
+          ) : null}
           <thead>
             <tr>
-              <th>Code</th>
-              <th>Name</th>
+              {restaurantOps ? <th>Category</th> : <th>Code</th>}
+              {restaurantOps ? null : <th>Name</th>}
               <th>Monthly budget</th>
               <th>Account</th>
-              <th>Active</th>
-              <th></th>
+              {restaurantOps ? null : <th>Active</th>}
+              {restaurantOps ? <th>Actions</th> : <th></th>}
             </tr>
           </thead>
           <tbody>
+            {managedCategories.length === 0 && restaurantOps ? (
+              <tr>
+                <td colSpan={restaurantOps ? 4 : 6} className="muted">
+                  {categories.length === 0
+                    ? 'No cost groups yet. Add a group when you are ready to sort costs.'
+                    : 'No groups for this filter. Choose All statuses to see every group.'}
+                </td>
+              </tr>
+            ) : null}
             {managedCategories.map((c) => (
               <tr key={c.id}>
-                <td>{c.code}</td>
+                {restaurantOps ? (
+                  <td data-label="Category">
+                    {c.name}
+                    {c.is_active === false ? ' · Not in use' : ''}
+                    <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                      {c.code}
+                    </span>
+                  </td>
+                ) : (
+                  <td>{c.code}</td>
+                )}
+                {restaurantOps ? null : (
                 <td>
                   {c.name}
                   {c.is_active === false ? ' [inactive]' : ''}
                 </td>
-                <td>
+                )}
+                <td data-label="Monthly budget">
                   <input
                     value={budgetDrafts[c.id] ?? String(c.budget_amount ?? 0)}
                     onChange={(e) =>
@@ -1513,7 +1583,7 @@ export default function Page() {
                     className="expenses-budget-input"
                   />
                 </td>
-                <td>
+                <td data-label="Account">
                   <select
                     value={accountDrafts[c.id] ?? ''}
                     onChange={(e) =>
@@ -1529,8 +1599,8 @@ export default function Page() {
                     ))}
                   </select>
                 </td>
-                <td>{c.is_active === false ? 'No' : 'Yes'}</td>
-                <td>
+                {restaurantOps ? null : <td>{c.is_active === false ? 'No' : 'Yes'}</td>}
+                <td data-label="Actions">
                   <div className="expenses-actions-row">
                   <button
                     type="button"
@@ -1562,17 +1632,19 @@ export default function Page() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
       </details>
       </div>
       <div className="erp-split">
-      <details className="erp-advanced" id="recurring">
+      <details className={restaurantOps ? 'erp-advanced rest-sched-span' : 'erp-advanced'} id="recurring">
         <summary>Repeat on a schedule</summary>
       <div className="card" style={{ marginBottom: 0, boxShadow: 'none', border: 0, padding: '0 0 8px' }}>
         <h3>Repeat on a schedule</h3>
         <p className="muted">
-          A schedule creates the next expense when it is due. Skip next moves that date forward
-          without creating an expense. Edit changes the amount or payee for later expenses.
+          {restaurantOps
+            ? 'A schedule creates the next cost when it is due. Skip next moves that date forward without creating a cost. Edit changes the amount or who was paid for later costs.'
+            : 'A schedule creates the next expense when it is due. Skip next moves that date forward without creating an expense. Edit changes the amount or payee for later expenses.'}
         </p>
         <label style={{ display: 'block', marginBottom: 10 }}>
           Skip next reason{' '}
@@ -1585,7 +1657,9 @@ export default function Page() {
           />
         </label>
         <p className="muted" style={{ marginTop: 0, marginBottom: 10 }}>
-          Required before Skip next. The reason is kept with the record as recurring_expense_skipped.
+          {restaurantOps
+            ? 'A reason is required before you skip the next date. It is kept with the schedule.'
+            : 'Required before Skip next. The reason is kept with the record as recurring_expense_skipped.'}
         </p>
         {recEditId ? (
           <p style={{ color: 'var(--deep-green, #006B2E)', marginTop: 0 }}>
@@ -1722,28 +1796,49 @@ export default function Page() {
           <option value="active">Active only</option>
           <option value="inactive">Inactive only</option>
         </select>
+        <div className={restaurantOps ? 'list-table-wrap rest-sched-table' : undefined}>
         <table className="table">
+          {restaurantOps ? (
+            <colgroup>
+              <col style={{ width: '36%' }} />
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '22%' }} />
+              <col style={{ width: '26%' }} />
+            </colgroup>
+          ) : null}
           <thead>
             <tr>
-              <th>Category</th>
-              <th>Payee</th>
+              {restaurantOps ? <th>Schedule</th> : <th>Category</th>}
+              {restaurantOps ? null : <th>Payee</th>}
               <th>Amount</th>
-              <th>How often</th>
-              <th>Next date</th>
-              <th>Active</th>
-              <th></th>
+              {restaurantOps ? <th>Next</th> : <th>How often</th>}
+              {restaurantOps ? null : <th>Next date</th>}
+              {restaurantOps ? null : <th>Active</th>}
+              {restaurantOps ? <th>Actions</th> : <th></th>}
             </tr>
           </thead>
           <tbody>
             {managedRecurring.length === 0 && (
               <tr>
-                <td colSpan={7} className="muted">
-                  No recurring schedules yet. Fill in the fields above and create a schedule.
+                <td colSpan={restaurantOps ? 4 : 7} className="muted">
+                  {restaurantOps
+                    ? 'No repeating costs yet. Create a schedule when the same cost happens again.'
+                    : 'No recurring schedules yet. Fill in the fields above and create a schedule.'}
                 </td>
               </tr>
             )}
             {managedRecurring.map((r) => (
               <tr key={r.id}>
+                {restaurantOps ? (
+                  <td data-label="Schedule">
+                    {r.category}
+                    {r.is_active === false ? ' · Not in use' : ''}
+                    <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                      {r.payee || 'No payee'}
+                      {r.description ? ` · ${r.description}` : ''}
+                    </span>
+                  </td>
+                ) : (
                 <td>
                   {r.category}
                   {r.is_active === false ? ' [inactive]' : ''}
@@ -1753,14 +1848,26 @@ export default function Page() {
                     </div>
                   ) : null}
                 </td>
-                <td>{r.payee || '—'}</td>
-                <td>{formatMoney(r.amount)}</td>
-                <td>{plainLabel(r.frequency)}</td>
+                )}
+                {restaurantOps ? null : <td>{r.payee || '—'}</td>}
+                <td data-label="Amount">{formatMoney(r.amount)}</td>
+                {restaurantOps ? (
+                  <td data-label="Next">
+                    {plainLabel(r.frequency)}
+                    <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                      {formatWhen(r.next_run_at) || 'No date yet'}
+                    </span>
+                  </td>
+                ) : (
+                  <td>{plainLabel(r.frequency)}</td>
+                )}
+                {restaurantOps ? null : (
                 <td className="muted" style={{ fontSize: 12 }}>
                   {formatWhen(r.next_run_at) || '—'}
                 </td>
-                <td>{r.is_active ? 'On' : 'Off'}</td>
-                <td>
+                )}
+                {restaurantOps ? null : <td>{r.is_active ? 'On' : 'Off'}</td>}
+                <td data-label="Actions">
                   <div className="expenses-actions-row">
                   <button type="button" onClick={() => startRecurringEdit(r)} aria-label={`Edit recurring expense schedule ${r.id}`}>
                     Edit schedule
@@ -1799,13 +1906,18 @@ export default function Page() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
       </details>
 
       </div>
       <div className="card cat-panel expenses-income">
         <h3>Other income</h3>
-        <p className="muted">Money the company received that is not a sale. It is separate from an expense.</p>
+        <p className="muted">
+          {restaurantOps
+            ? 'Money the restaurant received that is not a bill. It stays separate from a cost.'
+            : 'Money the company received that is not a sale. It is separate from an expense.'}
+        </p>
         <div className="erp-form-grid">
           <input value={incomeDesc} onChange={(e) => setIncomeDesc(e.target.value)} placeholder="Description" aria-label="Income description" />
           <AmountField value={incomeAmount} onChange={(e) => setIncomeAmount(e.target.value)} placeholder="Amount" aria-label="Income amount" />
@@ -1818,7 +1930,7 @@ export default function Page() {
                 await api('/incomes', {
                   method: 'POST',
                   body: JSON.stringify({
-                    description: incomeDesc.trim(),
+                    description: incomeDesc.trim() || null,
                     amount: Number(incomeAmount),
                     payer: incomePayer.trim() || null,
                     payment_method: paymentMethod,
@@ -1839,28 +1951,52 @@ export default function Page() {
             Post income
           </button>
         </div>
-        <div className="list-table-wrap">
+        <div className={restaurantOps ? 'list-table-wrap rest-income-table' : 'list-table-wrap'}>
           <table className="table">
+            {restaurantOps ? (
+              <colgroup>
+                <col style={{ width: '52%' }} />
+                <col style={{ width: '22%' }} />
+                <col style={{ width: '26%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Description</th>
-                <th>Payer</th>
+                {restaurantOps ? <th>Receipt</th> : <th>Date</th>}
+                {restaurantOps ? <th>Date</th> : <th>Description</th>}
+                {restaurantOps ? null : <th>Payer</th>}
                 <th>Amount</th>
               </tr>
             </thead>
             <tbody>
               {incomes.map((row) => (
                 <tr key={row.id}>
-                  <td>{formatWhen(row.income_date) || '—'}</td>
-                  <td>{row.description}</td>
-                  <td>{row.payer || '—'}</td>
-                  <td>{formatMoney(row.amount)}</td>
+                  {restaurantOps ? (
+                    <td data-label="Receipt">
+                      {row.description || 'No description'}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {row.payer || 'No payer'}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>{formatWhen(row.income_date) || '—'}</td>
+                  )}
+                  {restaurantOps ? (
+                    <td data-label="Date">{formatWhen(row.income_date) || 'No date'}</td>
+                  ) : (
+                    <td>{row.description}</td>
+                  )}
+                  {restaurantOps ? null : <td>{row.payer || '—'}</td>}
+                  <td data-label="Amount">{formatMoney(row.amount)}</td>
                 </tr>
               ))}
               {incomes.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="muted">No other income recorded. Enter a description and amount, then post income.</td>
+                  <td colSpan={restaurantOps ? 3 : 4} className="muted">
+                    {restaurantOps
+                      ? 'No other money yet. Post it when the restaurant receives money that is not a bill.'
+                      : 'No other income recorded. Enter a description and amount, then post income.'}
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -1977,9 +2113,9 @@ export default function Page() {
               value={editDraft.store_id}
               onChange={(e) => setEditDraft({ ...editDraft, store_id: e.target.value })}
               aria-label="Edit expense store"
-              title="Store"
+              title={hotelOps ? 'Location' : 'Store'}
             >
-              <option value="">{editDraft.had_store ? 'Clear store' : 'No store'}</option>
+              <option value="">{editDraft.had_store ? (hotelOps ? 'Clear location' : 'Clear store') : (hotelOps ? 'No location' : 'No store')}</option>
               {stores
                 .filter((s) => s.is_active !== false || s.id === editDraft.store_id)
                 .filter((s) => !editDraft.branch_id || s.branch_id === editDraft.branch_id)

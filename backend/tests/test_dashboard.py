@@ -147,7 +147,7 @@ def test_dashboard_page_surfaces_load_errors():
     )
     assert "setDashError" in text
     assert "Retry dashboard" in text
-    assert "api(`/dashboard${qs}`)" in text
+    assert "getPrefetched(`/dashboard${qs}`" in text
     assert "out_of_stock" in text
     assert "/inventory?tab=lowstock" in text
     assert "/inventory?tab=products&stock=oos" in text
@@ -169,6 +169,7 @@ def test_dashboard_page_surfaces_load_errors():
     headline = text[text.find("const stats = [") : text.find("const liveIndustry")]
     assert "label: 'Gross profit'" in headline
     assert "dash-kpis" in text
+    assert 'aria-label="Total sales, purchases, expenses, net position, and gross profit"' in text
     assert "Batches" not in headline
     assert "featureCards.length > 0" in text
     assert "industryHomePath" in text
@@ -195,6 +196,40 @@ def test_dashboard_page_surfaces_load_errors():
     assert "Daily sales (7d)" in text
     assert "Revenue trend (30d)" in text
     assert "Monthly sales (12 mo)" in text
+    assert "EmptyState" in text
+    assert "Money owed" in text
+    assert "Receivables" in text
+    assert "Payables" in text
+    assert 'aria-label="New sale"' not in text
+    assert "Open point of sale" not in text
+    assert "Record expense" not in text
+    assert "Dashboard shortcuts" not in text
+    assert "dash-pair" in text
+    assert 'aria-label="Inventory health, business mix, cash flow, and money owed"' in text
+    assert 'aria-label="Daily sales, revenue trend, and monthly sales"' in text
+    assert "info-grid dash-charts" in text
+    css = (Path(__file__).resolve().parents[2] / "frontend/app/globals.css").read_text(encoding="utf-8")
+    compact = css.replace(" ", "").replace("\n", "")
+    assert ".info-grid>.panel:last-child{grid-column:1/-1}" in compact
+    assert ".info-grid.dash-charts{gap:14px;align-items:stretch;grid-template-columns:repeat(3,minmax(0,1fr))" in compact
+    assert ".info-grid.dash-charts>.panel:last-child{grid-column:auto}" in compact
+    assert ".info-grid.dash-charts{grid-template-columns:1fr;gap:12px}" in compact
+    assert ".dash-chart-svg,.dash-chartsvg{width:100%;height:168px;display:block}" in compact
+    assert ".dash-pair{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))" in compact
+    assert ".dash-pair.panel{min-width:0;padding:16px" in compact
+    assert ".dash-pair{grid-template-columns:repeat(2,minmax(0,1fr))" in compact
+    assert ".dash-pair.bar-row.bar-track{display:block" in compact
+    assert ".stat-grid.dash-kpis{grid-template-columns:repeat(5,minmax(0,1fr))" in compact
+    assert ".stat-grid.dash-kpis>.stat:last-child{grid-column:1/-1}" in compact
+    assert ".dash-hero.greet-clock,.greet-clock{display:none}" in compact
+    assert '[data-theme="dark"].dash-hero.greet,[data-theme="dark"].dash-hero.greet-hello{color:var(--mist)!important}' in compact
+    assert '[data-theme="dark"].dash-pair.health.pill,[data-theme="dark"].dash-pair.legend.li{background:#001A0E;color:#E8F5D8}' in compact
+    assert "credit_outstanding" in text
+    assert "d.store_name" in text
+    assert "top_products_by_quantity" in text
+    assert "Rank top products by revenue" in text
+    assert "Rank top products by quantity" in text
+    assert "returns_count" in text
 
 
 @pytest.mark.asyncio

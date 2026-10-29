@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import EmptyState from '../../../components/EmptyState';
 import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
+import { normalizeIndustry } from '../../../lib/industries';
+import { getMe } from '../../../lib/meCache';
+import { isHotelIndustry } from '../../../lib/tenantNav';
 import { openDocumentPrint } from '../../../lib/documentPrint';
 import { createPaintGet } from '../../../lib/prefetchCache';
 import { formatMoney, formatWhen } from '../../../lib/format';
@@ -32,11 +35,15 @@ function friendlyCreditError(raw: unknown): string {
 
 function CreateCreditForm({
   customers,
+  hotelOps = false,
+  restaurantOps = false,
   onCreated,
   onError,
   onMessage,
 }: {
   customers: { id: string; name: string }[];
+  hotelOps?: boolean;
+  restaurantOps?: boolean;
   onCreated: () => void;
   onError: (msg: string) => void;
   onMessage: (msg: string) => void;
@@ -89,7 +96,9 @@ function CreateCreditForm({
   return (
     <form onSubmit={submit} className="erp-form-grid">
       <p className="muted">
-        Posts an invoice the customer still owes. Recording a payment is a separate step.
+        {restaurantOps
+          ? 'Posts a restaurant bill the customer still owes. Recording a payment is a separate step. Table orders stay on the restaurant desk.'
+          : 'Posts an invoice the customer still owes. Recording a payment is a separate step.'}
       </p>
       <label>
         Customer
@@ -101,7 +110,7 @@ function CreateCreditForm({
         </select>
       </label>
       <label>
-        Product
+        {hotelOps ? 'Supply' : restaurantOps ? 'Menu item' : 'Product'}
         <select
           value={productId}
           onChange={(e) => {
@@ -141,6 +150,16 @@ export default function Page() {
   const searchParams = useSearchParams();
   const urlKind = searchParams.get('kind') === 'payable' ? 'payable' : 'receivable';
   const [kind, setKind] = useState<'receivable' | 'payable'>(urlKind);
+  const [hotelOps, setHotelOps] = useState(false);
+  const [restaurantOps, setRestaurantOps] = useState(false);
+  useEffect(() => {
+    getMe()
+      .then((r) => {
+        setHotelOps(isHotelIndustry(r.data?.industry));
+        setRestaurantOps(normalizeIndustry(r.data?.industry) === 'restaurant');
+      })
+      .catch(() => undefined);
+  }, []);
   const [report, setReport] = useState<any>(null);
   const [customers, setCustomers] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -704,7 +723,11 @@ export default function Page() {
         }
         subtitle={
           kind === 'receivable'
-            ? 'Choose the customer, check what they owe, then record the payment. Oldest open invoices are paid first.'
+            ? hotelOps
+              ? 'Amounts still owed after checkout. Oldest open invoices are paid first. The guest folio stays on Billing until checkout.'
+              : restaurantOps
+                ? 'Amounts still owed on restaurant bills. Oldest open bills are paid first. Table orders stay on the restaurant desk.'
+                : 'Choose the customer, check what they owe, then record the payment. Oldest open invoices are paid first.'
             : payPanel
               ? 'Choose the supplier, check what you owe, then record the payment. This records money going out.'
               : 'What this company still owes suppliers. Purchase orders stay separate until a bill is posted.'
@@ -789,6 +812,15 @@ export default function Page() {
       {kind === 'payable' && loadState === 'success' && Number(report?.commitment_total || 0) > 0 ? (
         <p className="muted credit-commitments" role="status">
           Open purchase orders (not yet billed): {formatMoney(report.commitment_total)}
+          {(report.commitment_totals_by_currency || []).length > 1 ? (
+            <span className="credit-money-lines" aria-label="Open purchase orders by currency">
+              {(report.commitment_totals_by_currency as { currency: string; total_due: number }[]).map((line) => (
+                <span key={line.currency}>
+                  {formatMoney(line.total_due, formatPrefs, line.currency)}
+                </span>
+              ))}
+            </span>
+          ) : null}
         </p>
       ) : null}
 
@@ -799,7 +831,7 @@ export default function Page() {
         <div className="card credit-compact-card">
           <h3>{kind === 'receivable' ? 'Create credit' : 'New supplier bill'}</h3>
           {kind === 'receivable' ? (
-            <CreateCreditForm customers={customers} onCreated={() => refresh()} onError={setError} onMessage={setMessage} />
+            <CreateCreditForm customers={customers} hotelOps={hotelOps} restaurantOps={restaurantOps} onCreated={() => refresh()} onError={setError} onMessage={setMessage} />
           ) : (
             <>
           <p className="muted">
@@ -1167,34 +1199,74 @@ export default function Page() {
       {loadState === 'empty' && kind === 'payable' ? (
         <EmptyState className="list-empty" title="No supplier bills with a remaining balance." />
       ) : null}
+      {loadState === 'empty' && kind === 'receivable' ? (
+        <EmptyState
+          className="list-empty"
+          title={
+            restaurantOps
+              ? 'No restaurant bills with a remaining balance.'
+              : 'No customer invoices with a remaining balance.'
+          }
+        />
+      ) : null}
       <div className="list-page-head page-head credit-parties-head">
         <h2>{kind === 'receivable' ? 'Customers' : 'Suppliers'}</h2>
       </div>
-      <div className="list-table-wrap credit-parties">
+      <div className={restaurantOps ? 'list-table-wrap credit-parties rest-credit-table' : 'list-table-wrap credit-parties'}>
       <table className="table compact">
+        {restaurantOps ? (
+          <colgroup>
+            <col style={{ width: '24%' }} />
+            <col style={{ width: '16%' }} />
+            <col style={{ width: '16%' }} />
+            <col style={{ width: '20%' }} />
+            <col style={{ width: '24%' }} />
+          </colgroup>
+        ) : null}
         <thead>
           <tr>
             <th>{kind === 'receivable' ? 'Customer' : 'Supplier'}</th>
             <th>Balance</th>
-            <th>Current</th>
-            <th>1–30</th>
-            <th>31–60</th>
-            <th>61–90</th>
-            <th>90+</th>
+            <th>{restaurantOps ? 'Not yet due' : 'Current'}</th>
+            {restaurantOps ? null : <th>1–30</th>}
+            {restaurantOps ? null : <th>31–60</th>}
+            {restaurantOps ? null : <th>61–90</th>}
+            {restaurantOps ? null : <th>90+</th>}
+            {restaurantOps ? <th>Overdue</th> : null}
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {(report?.parties || []).map((r: any) => (
+          {(report?.parties || []).map((r: any) => {
+            const overdue =
+              Number(r['1_30'] || 0) +
+              Number(r['31_60'] || 0) +
+              Number(r['61_90'] || 0) +
+              Number(r['90_plus'] || 0);
+            return (
             <tr key={r.party_id} className={r.party_id === partyId ? 'is-selected' : undefined}>
-              <td>{r.name}</td>
-              <td>{payableCurrencyLines(r)}</td>
-              <td>{formatMoney(r.current)}</td>
-              <td>{formatMoney(r['1_30'])}</td>
-              <td>{formatMoney(r['31_60'])}</td>
-              <td>{formatMoney(r['61_90'])}</td>
-              <td>{formatMoney(r['90_plus'])}</td>
-              <td>
+              <td data-label={kind === 'receivable' ? 'Customer' : 'Supplier'}>{r.name}</td>
+              <td data-label="Balance">{payableCurrencyLines(r)}</td>
+              <td data-label={restaurantOps ? 'Not yet due' : 'Current'}>{formatMoney(r.current)}</td>
+              {restaurantOps ? null : <td data-label="1–30">{formatMoney(r['1_30'])}</td>}
+              {restaurantOps ? null : <td data-label="31–60">{formatMoney(r['31_60'])}</td>}
+              {restaurantOps ? null : <td data-label="61–90">{formatMoney(r['61_90'])}</td>}
+              {restaurantOps ? null : <td data-label="90+">{formatMoney(r['90_plus'])}</td>}
+              {restaurantOps ? (
+                <td data-label="Overdue">
+                  {formatMoney(overdue)}
+                  <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                    1–30 {formatMoney(r['1_30'])}
+                    {' · '}
+                    31–60 {formatMoney(r['31_60'])}
+                    {' · '}
+                    61–90 {formatMoney(r['61_90'])}
+                    {' · '}
+                    90+ {formatMoney(r['90_plus'])}
+                  </span>
+                </td>
+              ) : null}
+              <td data-label="Actions">
                 <div className="credit-row-actions">
                   <button
                     type="button"
@@ -1207,7 +1279,17 @@ export default function Page() {
                 </div>
               </td>
             </tr>
-          ))}
+            );
+          })}
+          {restaurantOps && (report?.parties || []).length === 0 && loadState !== 'loading' && loadState !== 'error' ? (
+            <tr>
+              <td colSpan={5} className="muted">
+                {kind === 'receivable'
+                  ? 'No restaurant bills with a remaining balance.'
+                  : 'No supplier bills with a remaining balance.'}
+              </td>
+            </tr>
+          ) : null}
         </tbody>
       </table>
       </div>
@@ -1320,6 +1402,15 @@ export default function Page() {
           <p>
             Balance {formatMoney(statement.outstanding_balance ?? statement.supplier?.balance ?? statement.customer?.balance ?? statement.balance ?? statement.total_due) || '—'}
           </p>
+          {(statement.totals_by_currency || []).length > 1 ? (
+            <div className="credit-money-lines" aria-label="Statement balance by currency">
+              {(statement.totals_by_currency as { currency: string; total_due: number }[]).map((line) => (
+                <span key={line.currency}>
+                  {formatMoney(line.total_due, formatPrefs, line.currency)}
+                </span>
+              ))}
+            </div>
+          ) : null}
           {(statement.lines || statement.entries || statement.invoices) ? (
             <table className="table compact">
               <thead>
@@ -1347,6 +1438,8 @@ export default function Page() {
                             (row.type === 'payment' ? row.debit : row.credit) ??
                             row.total_amount ??
                             row.balance,
+                          formatPrefs,
+                          row.currency,
                         ) || '—'}
                       </td>
                     </tr>
@@ -1369,6 +1462,15 @@ export default function Page() {
             <div>
               <div className="muted">Outstanding</div>
               <div className="kpi">{formatMoney(creditInfo.outstanding_balance ?? 0)}</div>
+              {(creditInfo.totals_by_currency || []).length > 1 ? (
+                <div className="credit-money-lines" aria-label="Outstanding by currency">
+                  {(creditInfo.totals_by_currency as { currency: string; total_due: number }[]).map((line) => (
+                    <span key={line.currency}>
+                      {formatMoney(line.total_due, formatPrefs, line.currency)}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </div>
             {creditInfo.customer && (
               <>
@@ -1409,14 +1511,14 @@ export default function Page() {
                   <tr key={row.invoice_id}>
                     <td>{row.invoice_number}</td>
                     <td>{apiName(row.status)}</td>
-                    <td>{formatMoney(row.amount)}</td>
+                    <td>{formatMoney(row.amount, formatPrefs, row.currency)}</td>
                   </tr>
                 ))}
                 {(creditInfo.open_bills || []).map((row: any) => (
                   <tr key={row.purchase_invoice_id || row.purchase_order_id}>
                     <td>{row.invoice_number || row.po_number}</td>
                     <td>{apiName(row.status)}</td>
-                    <td>{formatMoney(row.amount)}</td>
+                    <td>{formatMoney(row.amount, formatPrefs, row.currency)}</td>
                   </tr>
                 ))}
               </tbody>

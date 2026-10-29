@@ -38,6 +38,7 @@ def test_numbering_industry_aria_ui_and_docs():
         "Invoice next number",
     ):
         assert f'aria-label="{label}"' in sales, label
+    assert "if (p) out.prefix = p;" in sales
 
     purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(
         encoding="utf-8"

@@ -35,3 +35,20 @@ export const POS_RETURN_PANEL_EVENT = 'ribdigi:pos-return-panel';
 export function requestPosReturnPanel() {
   window.dispatchEvent(new Event(POS_RETURN_PANEL_EVENT));
 }
+
+export const POS_DRAWER_KICK_EVENT = 'ribdigi:drawer-kick';
+
+/** Browser-bridge / local helper: publish ESC/POS kick bytes after Open drawer or a cash sale. */
+export function dispatchDrawerKick(payload: {
+  mode?: string | null;
+  kick_base64?: string | null;
+  bridge?: boolean;
+  ok?: boolean;
+} | null | undefined) {
+  if (typeof window === 'undefined' || !payload) return;
+  const kick = String(payload.kick_base64 || '').trim();
+  if (!kick) return;
+  const mode = String(payload.mode || '').trim().toLowerCase();
+  if (mode !== 'browser_bridge' && !payload.bridge) return;
+  window.dispatchEvent(new CustomEvent(POS_DRAWER_KICK_EVENT, { detail: { ...payload, kick_base64: kick } }));
+}

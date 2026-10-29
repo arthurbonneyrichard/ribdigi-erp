@@ -301,3 +301,32 @@
     overflow-wrap: normal;
   }
 }
+
+@media (min-width: 721px) {
+  .purchase-ui-page .cat-table-wrap.rest-purch-table { overflow-x: hidden; }
+  .purchase-ui-page .cat-table-wrap.rest-purch-table .table {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    table-layout: fixed;
+    white-space: normal;
+  }
+  .purchase-ui-page .cat-table-wrap.rest-purch-table .table th,
+  .purchase-ui-page .cat-table-wrap.rest-purch-table .table td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    overflow: hidden;
+    vertical-align: middle;
+  }
+  .purchase-ui-page .cat-table-wrap.rest-purch-table .table th.col-num,
+  .purchase-ui-page .cat-table-wrap.rest-purch-table .table td.col-num {
+    min-width: 0;
+    text-align: right;
+  }
+  .purchase-ui-page .cat-table-wrap.rest-purch-table .table td.col-actions {
+    text-align: right;
+  }
+  .purchase-ui-page .cat-table-wrap.rest-purch-table td.col-actions button:not(.menu-btn) {
+    padding: 0 8px;
+  }
+}

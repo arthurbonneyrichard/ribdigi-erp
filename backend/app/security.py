@@ -251,6 +251,7 @@ async def current_claims(
 
     # Platform catalog roles: always use ROLE_PERMISSIONS. Persisted User.permissions
     # snapshots go stale when the catalog gains modules (e.g. platform_packages:write).
+    data["role"] = user.role
     if is_platform_role(user.role):
         data["permissions"] = permissions_for_role(user.role)
     else:

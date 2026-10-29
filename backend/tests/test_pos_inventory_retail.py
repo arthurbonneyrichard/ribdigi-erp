@@ -17,7 +17,8 @@ def test_inventory_and_reports_tables_product_before_sku():
     inv = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
-    assert inv.index("<th>Product</th>") < inv.index("<th>SKU</th>")
+    assert "hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'" in inv
+    assert inv.index("hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'") < inv.index("<th>SKU</th>")
     assert reports.index("<th>Product</th>") < reports.index("<th>SKU</th>")
     assert "canWriteCredit" in pos
     assert "credit:write" not in pos or "canCreditSale" in pos

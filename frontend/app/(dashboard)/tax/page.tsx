@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import FormModal from '../../../components/FormModal';
 import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
+import { normalizeIndustry } from '../../../lib/industries';
+import { getMe } from '../../../lib/meCache';
+import { isHotelIndustry } from '../../../lib/tenantNav';
 import { downloadAttachment } from '../../../lib/attachments';
 import { AmountField } from '../../../components/AmountField';
 import { formatMoney } from '../../../lib/format';
@@ -23,6 +26,16 @@ type TaxRate = {
 
 export default function Page() {
   const [rows, setRows] = useState<TaxRate[]>([]);
+  const [hotelOps, setHotelOps] = useState(false);
+  const [restaurantOps, setRestaurantOps] = useState(false);
+  useEffect(() => {
+    getMe()
+      .then((r) => {
+        setHotelOps(isHotelIndustry(r.data?.industry));
+        setRestaurantOps(normalizeIndustry(r.data?.industry) === 'restaurant');
+      })
+      .catch(() => undefined);
+  }, []);
   const [report, setReport] = useState<any>(null);
   const [filing, setFiling] = useState<any>(null);
   const [fromDate, setFromDate] = useState('');
@@ -214,11 +227,25 @@ export default function Page() {
 
   const boxes = filing?.filing_boxes?.boxes || [];
 
+  function taxKindLabel(kind: string) {
+    if (kind === 'vat') return 'VAT';
+    if (kind === 'gst') return 'GST';
+    if (kind === 'sales_tax') return 'Sales tax';
+    if (kind === 'custom') return 'Custom';
+    return kind;
+  }
+
   return (
-    <div className="work">
+    <div className={restaurantOps ? 'work tax-page' : 'work'}>
       <PageHeader
         title="Tax"
-        subtitle="The default rate applies unless a product or line uses a different one. Inclusive means the price already contains tax; exclusive means tax is added on top. Changing a rate does not change past invoices. A Ghana VAT summary is available for export when your tax country is Ghana."
+        subtitle={
+          hotelOps
+            ? 'Room folio lines are nights times the nightly rate. A tax rate stored here is not added to that room line. It can apply to other charges. Changing a rate does not change past invoices.'
+            : restaurantOps
+              ? 'The default rate applies unless a menu item or bill line uses a different one. Inclusive means the price already contains tax; exclusive means tax is added on top. Changing a rate does not change past bills. Table orders stay on the restaurant desk until a bill is posted.'
+              : 'The default rate applies unless a product or line uses a different one. Inclusive means the price already contains tax; exclusive means tax is added on top. Changing a rate does not change past invoices. A Ghana VAT summary is available for export when your tax country is Ghana.'
+        }
         actions={
           <button type="button" className="list-btn-primary" onClick={() => setTaxAddOpen(true)} aria-label="Add a tax rate">
             Add a tax rate
@@ -253,7 +280,7 @@ export default function Page() {
             }}
             aria-label="Tax report store filter"
           >
-            <option value="">All stores</option>
+            <option value="">{hotelOps ? 'All locations' : 'All stores'}</option>
             {stores
               .filter((s) => s.is_active !== false)
               .map((s) => (
@@ -374,11 +401,17 @@ export default function Page() {
           <h3>This period{report?.store_name ? ` · ${report.store_name}` : ''}</h3>
           <p>VAT collected on sales: {report ? formatMoney(report.output_tax ?? 0) : '—'}</p>
           <p className="muted">
-            Invoices {formatMoney(report?.output_tax_invoices ?? 0)} · Till {formatMoney(report?.output_tax_pos ?? 0)}
+            {restaurantOps ? 'Bills' : 'Invoices'} {formatMoney(report?.output_tax_invoices ?? 0)} · {hotelOps ? 'Shop till' : restaurantOps ? 'Restaurant till' : 'Till'} {formatMoney(report?.output_tax_pos ?? 0)}
             {report?.reverse_charge_tax
               ? ` · Reverse charge (customer pays) ${formatMoney(report.reverse_charge_tax)}`
               : ''}
           </p>
+          {restaurantOps ? (
+            <>
+              <p className="muted">A restaurant till return comes off this till tax. The original receipt stays on the till report.</p>
+              <p className="muted">A completed restaurant bill is included in this bill tax.</p>
+            </>
+          ) : null}
           <p>VAT on purchases you can claim back: {report ? formatMoney(report.input_tax ?? 0) : '—'}</p>
           <p className="muted">
             {report?.input_tax_source === 'purchase_orders'
@@ -510,39 +543,83 @@ export default function Page() {
         <option value="active">Active only</option>
         <option value="inactive">Inactive only</option>
       </select>
+      <div className={restaurantOps ? 'list-table-wrap rest-tax-table' : undefined}>
       <table className="table">
+        {restaurantOps ? (
+          <colgroup>
+            <col style={{ width: '34%' }} />
+            <col style={{ width: '14%' }} />
+            <col style={{ width: '30%' }} />
+            <col style={{ width: '22%' }} />
+          </colgroup>
+        ) : null}
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Rate</th>
-            <th>Mode</th>
-            <th>RC</th>
-            <th>Components</th>
-            <th>Default</th>
-            <th>Active</th>
-            <th></th>
+            {restaurantOps ? <th>Rate</th> : <th>Name</th>}
+            {restaurantOps ? <th>Percent</th> : <th>Type</th>}
+            {restaurantOps ? null : <th>Rate</th>}
+            {restaurantOps ? <th>On the price</th> : <th>Mode</th>}
+            {restaurantOps ? null : <th>RC</th>}
+            {restaurantOps ? null : <th>Components</th>}
+            {restaurantOps ? null : <th>Default</th>}
+            {restaurantOps ? null : <th>Active</th>}
+            {restaurantOps ? <th>Actions</th> : <th></th>}
           </tr>
         </thead>
         <tbody>
           {managedRates.map((r) => (
             <tr key={r.id}>
-              <td>{r.name}</td>
-              <td>{r.tax_type}</td>
-              <td>{r.rate}%</td>
-              <td>{r.pricing_mode === 'inclusive' ? 'Included in price' : 'Added on top'}</td>
-              <td>{String(!!r.is_reverse_charge)}</td>
+              {restaurantOps ? (
+                <td data-label="Rate">
+                  {r.name}
+                  <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                    {taxKindLabel(r.tax_type)}
+                    {r.is_default ? ' · Default rate' : ''}
+                    {r.is_active === false ? ' · Not in use' : ''}
+                  </span>
+                </td>
+              ) : (
+                <td>{r.name}</td>
+              )}
+              {restaurantOps ? (
+                <td data-label="Percent">{r.rate}%</td>
+              ) : (
+                <td>{r.tax_type}</td>
+              )}
+              {restaurantOps ? null : <td>{r.rate}%</td>}
+              {restaurantOps ? (
+                <td data-label="On the price">
+                  {r.pricing_mode === 'inclusive' ? 'Included in price' : 'Added on top'}
+                  <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                    {r.is_reverse_charge
+                      ? 'Customer pays the tax'
+                      : r.components?.length
+                        ? ''
+                        : 'No extra parts'}
+                    {r.components?.length
+                      ? `${r.is_reverse_charge ? ' · ' : ''}${r.components.map((c) => `${c.code} ${c.rate}%`).join(' + ')}`
+                      : ''}
+                  </span>
+                </td>
+              ) : (
+                <td>{r.pricing_mode === 'inclusive' ? 'Included in price' : 'Added on top'}</td>
+              )}
+              {restaurantOps ? null : <td>{String(!!r.is_reverse_charge)}</td>}
+              {restaurantOps ? null : (
               <td className="muted">
                 {r.components?.length
                   ? r.components.map((c) => `${c.code}:${c.rate}%`).join(' + ')
                   : '—'}
               </td>
-              <td>{String(r.is_default)}</td>
+              )}
+              {restaurantOps ? null : <td>{String(r.is_default)}</td>}
+              {restaurantOps ? null : (
               <td>
                 {r.is_active === false ? 'no' : 'yes'}
                 {r.is_active === false ? ' [inactive]' : ''}
               </td>
-              <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              )}
+              <td data-label="Actions" style={restaurantOps ? undefined : { display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {r.is_active !== false && !r.is_default && (
                   <button type="button" onClick={() => makeDefault(r.id)} aria-label={`Set default tax rate ${r.id}`}>
                     Set default
@@ -563,8 +640,18 @@ export default function Page() {
               </td>
             </tr>
           ))}
+          {managedRates.length === 0 && restaurantOps && (
+            <tr>
+              <td colSpan={4} className="muted">
+                {taxRateManageFilter === 'all'
+                  ? 'No tax rates yet. Add a rate when you are ready to charge tax on a bill.'
+                  : 'No rates for this filter. Choose All statuses to see every rate.'}
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

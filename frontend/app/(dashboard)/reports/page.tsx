@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '../../../lib/api';
+import { printDocumentFromElement } from '../../../lib/documentPrint';
 import { downloadAttachment } from '../../../lib/attachments';
 import { getPrefetched } from '../../../lib/prefetchCache';
 import { formatMoney, formatNumber, formatWhen, plainLabel } from '../../../lib/format';
@@ -11,6 +12,8 @@ import {
   REPORT_GROUP_ORDER,
   reportFromTabView,
   findReport,
+  reportCopy,
+  reportGroupLabel,
   reportHasFilter,
   reportVisible,
   reportsHref,
@@ -19,7 +22,8 @@ import {
 } from '../../../lib/reportGroups';
 import SalesReportSheets from '../../../components/SalesReportSheets';
 import { getMe } from '../../../lib/meCache';
-import { tenantIsMultiStore } from '../../../lib/tenantNav';
+import { isHotelIndustry, tenantIsMultiStore } from '../../../lib/tenantNav';
+import { normalizeIndustry } from '../../../lib/industries';
 import { useStoreContext } from '../../../lib/storeContext';
 import OfflineProvisionalNotice from '../../../components/OfflineProvisionalNotice';
 import EmptyState from '../../../components/EmptyState';
@@ -378,7 +382,9 @@ export default function Page() {
           publish({
             loading: false,
             data: null,
-            error: 'Select an account for the statement',
+            error: restaurantReports
+              ? 'Choose an account, then choose Generate.'
+              : 'Select an account for the statement',
             generatedAt: '',
             sectionErrors: {},
           });
@@ -789,7 +795,7 @@ export default function Page() {
       (ln: any) => suggestSelected[suggestionKey(ln)]
     );
     if (!lines.length) {
-      setError('Select at least one low-stock line');
+      setError(hotelReports ? 'Select at least one low-supply line' : restaurantReports ? 'Select at least one low-ingredient line' : 'Select at least one low-stock line');
       return;
     }
     setError('');
@@ -967,12 +973,43 @@ export default function Page() {
     }
   }
 
+  const hotelReports = isHotelIndustry(industry);
+  const restaurantReports = !hotelReports && normalizeIndustry(industry) === 'restaurant';
+  useEffect(() => {
+    if (tab !== 'accountstatement' || statementAccountId.trim() || !industry) return;
+    const next = restaurantReports
+      ? 'Choose an account, then choose Generate.'
+      : 'Select an account for the statement';
+    setError((current) =>
+      current === '' ||
+      current === 'Select an account for the statement' ||
+      current === 'Choose an account, then choose Generate.'
+        ? next
+        : current,
+    );
+  }, [tab, statementAccountId, industry, restaurantReports]);
+  const posHeading = hotelReports ? 'Shop till' : restaurantReports ? 'Restaurant till' : 'POS';
+  const invoicePosHeading = hotelReports
+    ? 'Checkout invoice / shop till'
+    : restaurantReports
+      ? 'Bills / restaurant till'
+      : 'Invoice / POS';
+  const locationScopeNote = hotelReports
+    ? ' · this location only (checkout invoices, shop till, expenses, returns)'
+    : restaurantReports
+      ? ' · this location only (bills, restaurant till, costs, returns)'
+      : ' · this location only (sales, till, expenses, returns)';
+
   return (
     <div className="report-ui-page">
       <PageHeader
         className="no-print"
         title="Reports"
-        subtitle="Totals for this company. Choose a report, set the dates, then Generate. Export and print use the same filters."
+        subtitle={
+          isHotelIndustry(industry)
+            ? 'Occupancy and room revenue are on Hotel reports. These company reports use the same dates. Export and print use the same filters.'
+            : 'Totals for this company. Choose a report, set the dates, then Generate. Export and print use the same filters.'
+        }
       />
       <div className="no-print">
         <OfflineProvisionalNotice />
@@ -994,19 +1031,20 @@ export default function Page() {
                 type="button"
                 className="reports-nav-cat"
                 aria-pressed={groupActive}
-                aria-label={`Show ${group.label} reports`}
+                aria-label={`Show ${reportGroupLabel(group.id, group.label, industry)} reports`}
                 onClick={() => {
                   if (groupActive) return;
                   const first = visibleDefs[0];
                   if (first) selectReport(first);
                 }}
               >
-                {group.label}
+                {reportGroupLabel(group.id, group.label, industry)}
               </button>
               {visibleDefs.map((def) => {
                 const id = def.id;
                 const selected = activeReport.id === id;
                 const busy = !!loadingTabs[def.tab as Tab];
+                const shown = reportCopy(def, industry);
                 return (
                   <button
                     key={id}
@@ -1018,8 +1056,8 @@ export default function Page() {
                     aria-busy={busy && selected}
                     aria-label={`Show reports ${id} tab`}
                   >
-                    <strong>{busy && selected ? `${def.name}…` : def.name}</strong>
-                    <span>{def.description}</span>
+                    <strong>{busy && selected ? `${shown.name}…` : shown.name}</strong>
+                    <span>{shown.description}</span>
                   </button>
                 );
               })}
@@ -1029,11 +1067,15 @@ export default function Page() {
         </nav>
         <div className="reports-main report-ui-main" data-group={activeReport.group}>
           <p className="reports-crumb muted">
-            {REPORT_GROUP_ORDER.find((g) => g.id === activeReport.group)?.label || 'Reports'} ·{' '}
-            {activeReport.name}
+            {reportGroupLabel(
+              activeReport.group,
+              REPORT_GROUP_ORDER.find((g) => g.id === activeReport.group)?.label || 'Reports',
+              industry,
+            )}{' '}
+            · {reportCopy(activeReport, industry).name}
           </p>
-          <h2>{activeReport.name}</h2>
-          <p className="muted">{activeReport.description}</p>
+          <h2>{reportCopy(activeReport, industry).name}</h2>
+          <p className="muted">{reportCopy(activeReport, industry).description}</p>
           {error && (
             <p style={{ color: '#b91c1c' }} role="alert">
               {error}{' '}
@@ -1217,7 +1259,7 @@ export default function Page() {
               )}
               {reportHasFilter(activeReport, 'warehouse') && activeReport.group === 'inventory' && (
                 <label>
-                  Warehouse
+                  {hotelReports ? 'Location' : restaurantReports ? 'Warehouse' : 'Warehouse'}
                   <select
                     value={warehouseId}
                     onChange={(e) => {
@@ -1233,7 +1275,7 @@ export default function Page() {
                     }}
                     aria-label="Report inventory warehouse filter"
                   >
-                    <option value="">All warehouses</option>
+                    <option value="">{hotelReports ? 'All locations' : restaurantReports ? 'All warehouses' : 'All warehouses'}</option>
                     {warehouses
                       .filter((w) => w.is_active !== false)
                       .filter((w) => !effectiveStoreId || w.store_id === effectiveStoreId)
@@ -1247,7 +1289,7 @@ export default function Page() {
               )}
               {reportHasFilter(activeReport, 'warehouse') && activeReport.group === 'purchases' && (
                 <label>
-                  Warehouse
+                  {hotelReports ? 'Location' : restaurantReports ? 'Warehouse' : 'Warehouse'}
                   <select
                     value={warehouseId}
                     onChange={(e) => {
@@ -1263,7 +1305,7 @@ export default function Page() {
                     }}
                     aria-label="Report purchases warehouse filter"
                   >
-                    <option value="">All warehouses</option>
+                    <option value="">{hotelReports ? 'All locations' : restaurantReports ? 'All warehouses' : 'All warehouses'}</option>
                     {warehouses
                       .filter((w) => w.is_active !== false)
                       .filter((w) => !effectiveStoreId || w.store_id === effectiveStoreId)
@@ -1279,7 +1321,7 @@ export default function Page() {
                 activeReport.group !== 'inventory' &&
                 activeReport.group !== 'purchases' && (
                 <label>
-                  Warehouse
+                  {hotelReports ? 'Location' : restaurantReports ? 'Warehouse' : 'Warehouse'}
                   <select
                     value={warehouseId}
                     onChange={(e) => {
@@ -1295,7 +1337,7 @@ export default function Page() {
                     }}
                     aria-label="Report warehouse filter"
                   >
-                    <option value="">All warehouses</option>
+                    <option value="">{hotelReports ? 'All locations' : restaurantReports ? 'All warehouses' : 'All warehouses'}</option>
                     {warehouses
                       .filter((w) => w.is_active !== false)
                       .filter((w) => !effectiveStoreId || w.store_id === effectiveStoreId)
@@ -1407,9 +1449,9 @@ export default function Page() {
                     >
                       <option value="">all</option>
                       <option value="damaged">damaged</option>
-                      <option value="wrong_item">wrong item</option>
+                      <option value="wrong_item">{hotelReports ? 'wrong supply' : restaurantReports ? 'wrong menu item' : 'wrong item'}</option>
                       <option value="defective">defective</option>
-                      <option value="customer_change">customer change</option>
+                      <option value="customer_change">{hotelReports ? 'guest change' : restaurantReports ? 'diner change' : 'customer change'}</option>
                       <option value="other">other</option>
                     </select>
                   </label>
@@ -1451,7 +1493,7 @@ export default function Page() {
                     >
                       <option value="">all</option>
                       <option value="damaged">damaged</option>
-                      <option value="wrong_item">wrong item</option>
+                      <option value="wrong_item">{hotelReports ? 'wrong supply' : restaurantReports ? 'wrong ingredient' : 'wrong item'}</option>
                       <option value="expiry">expiry</option>
                       <option value="quality">quality</option>
                       <option value="other">other</option>
@@ -1633,7 +1675,16 @@ export default function Page() {
                   </>
                 ) : null}
                 {activeReport.print ? (
-                  <button type="button" onClick={() => window.print()} aria-label="Print report">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const sheet = document.querySelector('.report-ui-page .report-sheet');
+                      if (!(sheet instanceof HTMLElement) || !printDocumentFromElement(sheet, activeReport.name || 'Report')) {
+                        setError('Print failed');
+                      }
+                    }}
+                    aria-label="Print report"
+                  >
                     Print
                   </button>
                 ) : null}
@@ -1655,6 +1706,9 @@ export default function Page() {
           <div className="card">
             <div className="muted">Today sales</div>
             <div className="kpi">{fmtMoney(data.today_sales?.total_revenue)}</div>
+            {restaurantReports ? (
+              <p className="muted">A restaurant till return comes off today sales. The original receipt stays on the till report.</p>
+            ) : null}
           </div>
           <div className="card">
             <div className="muted">Month sales</div>
@@ -1667,7 +1721,7 @@ export default function Page() {
             ) : null}
           </div>
           <div className="card no-print">
-            <div className="muted">Low stock SKUs</div>
+            <div className="muted">{hotelReports ? 'Low supplies' : restaurantReports ? 'Low ingredients' : 'Low stock SKUs'}</div>
             <div className="kpi">{data.low_stock_report?.count ?? 0}</div>
           </div>
           <div className="card no-print">
@@ -1675,33 +1729,55 @@ export default function Page() {
             <div className="kpi">{fmtMoney(data.expenses_summary?.total_amount)}</div>
           </div>
         </div>
-        <h3 style={{ marginTop: 16 }}>Products sold</h3>
+        <h3 style={{ marginTop: 16 }}>{hotelReports ? 'Items sold' : restaurantReports ? 'Menu items sold' : 'Products sold'}</h3>
         <p className="muted">
           Qty {formatNumber(data.products_sold?.total_quantity)} · revenue {fmtMoney(data.products_sold?.total_revenue)}
         </p>
-        <div className="list-table-wrap">
+        {restaurantReports ? (
+          <>
+            <p className="muted">Menu item cost uses the ingredient cost. A menu item with no recipe uses its own cost. A restaurant till return comes off menu items sold. The original receipt stays on the till report.</p>
+            <p className="muted">A restaurant till tax stays off this menu amount. The till receipt keeps the tax.</p>
+          </>
+        ) : null}
+        <div className={restaurantReports ? 'list-table-wrap rest-sold-table' : 'list-table-wrap'}>
           <table className="table">
+            {restaurantReports ? (
+              <colgroup>
+                <col style={{ width: '52%' }} />
+                <col style={{ width: '18%' }} />
+                <col style={{ width: '30%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
-                <th>Product</th>
-                <th>SKU</th>
-                <th>Qty</th>
+                {hotelReports ? <th>Supply</th> : restaurantReports ? <th>Menu item</th> : <th>Product</th>}
+                {restaurantReports ? null : <th>SKU</th>}
+                {restaurantReports ? <th>Sold</th> : <th>Qty</th>}
                 <th>Revenue</th>
               </tr>
             </thead>
             <tbody>
               {(data.products_sold?.products || []).map((p: any) => (
                 <tr key={p.product_id}>
-                  <td>{p.name}</td>
-                  <td>{p.sku || '—'}</td>
-                  <td>{formatNumber(p.quantity)}</td>
-                  <td>{fmtMoney(p.revenue)}</td>
+                  {restaurantReports ? (
+                    <td data-label="Menu item">
+                      {p.name}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {p.sku || 'No code'}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>{p.name}</td>
+                  )}
+                  {restaurantReports ? null : <td>{p.sku || '—'}</td>}
+                  <td data-label={restaurantReports ? 'Sold' : undefined}>{formatNumber(p.quantity)}</td>
+                  <td data-label={restaurantReports ? 'Revenue' : undefined}>{fmtMoney(p.revenue)}</td>
                 </tr>
               ))}
               {(data.products_sold?.products || []).length === 0 && (
                 <tr>
-                  <td colSpan={4} className="muted">
-                    No products sold in this period
+                  <td colSpan={restaurantReports ? 3 : 4} className="muted">
+                    {hotelReports ? 'No items sold in this period' : restaurantReports ? 'No menu items sold in this period' : 'No products sold in this period'}
                   </td>
                 </tr>
               )}
@@ -1718,6 +1794,8 @@ export default function Page() {
             data={data}
             sectionErrors={sectionErrors}
             multiStore={multiStore}
+            hotel={hotelReports}
+            restaurant={restaurantReports}
             fmtMoney={fmtMoney}
             formatWhen={formatWhen}
             page={reportPage}
@@ -1728,6 +1806,12 @@ export default function Page() {
 
       {tab === 'salesperson' && data && (
         <>
+          {restaurantReports ? (
+            <>
+              <p className="muted">A restaurant till return comes off this staff member. The original receipt stays on the till report.</p>
+              <p className="muted">A completed restaurant bill is included for the staff member who rang it.</p>
+            </>
+          ) : null}
           <div className="grid">
             <div className="card">
               <div className="muted">Total revenue{data.store_name ? ` · ${data.store_name}` : ''}</div>
@@ -1738,47 +1822,96 @@ export default function Page() {
               <div className="kpi">{data.total_sales ?? 0}</div>
             </div>
             <div className="card">
-              <div className="muted">Invoice / POS</div>
+              <div className="muted">{invoicePosHeading}</div>
               <div className="kpi">
                 {fmtMoney(data.invoice_revenue ?? 0)} / {fmtMoney(data.pos_revenue ?? 0)}
               </div>
             </div>
           </div>
-          <div className="list-table-wrap">
+          <div className={restaurantReports ? 'list-table-wrap rest-staff-sales' : 'list-table-wrap'}>
           <table className="table" style={{ marginTop: 16 }}>
+            {restaurantReports ? (
+              <colgroup>
+                <col style={{ width: '34%' }} />
+                <col style={{ width: '22%' }} />
+                <col style={{ width: '22%' }} />
+                <col style={{ width: '22%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Department</th>
-                <th>Role</th>
-                <th>Invoices</th>
-                <th>POS</th>
-                <th>Sales</th>
+                {restaurantReports ? <th>Staff</th> : <th>Name</th>}
+                {restaurantReports ? null : <th>Department</th>}
+                {restaurantReports ? null : <th>Role</th>}
+                {restaurantReports ? <th>Bills</th> : <th>Invoices</th>}
+                {restaurantReports ? <th>Restaurant till</th> : <th>{posHeading}</th>}
+                {restaurantReports ? null : <th>Sales</th>}
                 <th>Revenue</th>
-                <th>Avg ticket</th>
+                {restaurantReports ? null : <th>Avg ticket</th>}
               </tr>
             </thead>
             <tbody>
               {(data.salespeople || []).map((s: any) => (
                 <tr key={s.user_id || s.full_name}>
-                  <td>{s.full_name}</td>
-                  <td>{s.department_name || '—'}</td>
-                  <td>{s.role || '—'}</td>
-                  <td>
-                    {s.invoice_count} ({fmtMoney(s.invoice_revenue)})
-                  </td>
-                  <td>
-                    {s.pos_count} ({fmtMoney(s.pos_revenue)})
-                  </td>
-                  <td>{s.sale_count}</td>
-                  <td>{fmtMoney(s.revenue)}</td>
-                  <td>{fmtMoney(s.avg_ticket)}</td>
+                  {restaurantReports ? (
+                    <td data-label="Staff">
+                      {s.full_name}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {s.department_name || 'No department'}
+                        {s.role ? ` · ${s.role}` : ' · No role'}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>{s.full_name}</td>
+                  )}
+                  {restaurantReports ? null : <td>{s.department_name || '—'}</td>}
+                  {restaurantReports ? null : <td>{s.role || '—'}</td>}
+                  {restaurantReports ? (
+                    <td data-label="Bills">
+                      {s.invoice_count}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {fmtMoney(s.invoice_revenue)}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>
+                      {s.invoice_count} ({fmtMoney(s.invoice_revenue)})
+                    </td>
+                  )}
+                  {restaurantReports ? (
+                    <td data-label="Restaurant till">
+                      {s.pos_count}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {fmtMoney(s.pos_revenue)}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>
+                      {s.pos_count} ({fmtMoney(s.pos_revenue)})
+                    </td>
+                  )}
+                  {restaurantReports ? null : <td>{s.sale_count}</td>}
+                  {restaurantReports ? (
+                    <td data-label="Revenue">
+                      {fmtMoney(s.revenue)}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        Average bill {fmtMoney(s.avg_ticket)}
+                      </span>
+                    </td>
+                  ) : (
+                    <>
+                      <td>{fmtMoney(s.revenue)}</td>
+                      <td>{fmtMoney(s.avg_ticket)}</td>
+                    </>
+                  )}
                 </tr>
               ))}
               {!(data.salespeople || []).length ? (
                 <tr>
-                  <td colSpan={8} className="muted">
-                    No staff sales for these dates; widen the dates, then choose Generate.
+                  <td colSpan={restaurantReports ? 4 : 8} className="muted">
+                    {restaurantReports
+                      ? 'No staff sales for these dates. Widen the dates, then choose Generate.'
+                      : 'No staff sales for these dates; widen the dates, then choose Generate.'}
                   </td>
                 </tr>
               ) : null}
@@ -1791,9 +1924,15 @@ export default function Page() {
       {tab === 'customers' && data && (
         <>
           <p className="muted">
-            Top customers by revenue (invoices + POS)
+            Top customers by revenue ({hotelReports ? 'checkout invoices + shop till' : restaurantReports ? 'bills + restaurant till' : 'invoices + POS'})
             {data.store_id ? ` · ${placeLabel(stores, data.store_id, 'store')}` : ''}
           </p>
+          {restaurantReports ? (
+            <>
+              <p className="muted">A restaurant till return comes off this customer. The original receipt stays on the till report.</p>
+              <p className="muted">A completed restaurant bill is included for this customer.</p>
+            </>
+          ) : null}
           <div className="grid">
             <div className="card">
               <div className="muted">Total revenue</div>
@@ -1804,50 +1943,101 @@ export default function Page() {
               <div className="kpi">{data.customer_count ?? data.customers?.length ?? 0}</div>
             </div>
             <div className="card">
-              <div className="muted">Sales / Invoice·POS</div>
+              <div className="muted">{hotelReports ? 'Sales / checkout invoice·shop till' : restaurantReports ? 'Sales / bill·restaurant till' : 'Sales / Invoice·POS'}</div>
               <div className="kpi">
                 {data.total_sales ?? 0} · {fmtMoney(data.invoice_revenue ?? 0)}/{fmtMoney(data.pos_revenue ?? 0)}
               </div>
             </div>
           </div>
-          <div className="list-table-wrap">
+          <div className={restaurantReports ? 'list-table-wrap rest-cust-sales' : 'list-table-wrap'}>
           <table className="table" style={{ marginTop: 16 }}>
+            {restaurantReports ? (
+              <colgroup>
+                <col style={{ width: '34%' }} />
+                <col style={{ width: '22%' }} />
+                <col style={{ width: '22%' }} />
+                <col style={{ width: '22%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
                 <th>Customer</th>
-                <th>Invoices</th>
-                <th>POS</th>
-                <th>Frequency</th>
+                {restaurantReports ? <th>Bills</th> : <th>Invoices</th>}
+                {restaurantReports ? <th>Restaurant till</th> : <th>{posHeading}</th>}
+                {restaurantReports ? null : <th>Frequency</th>}
                 <th>Revenue</th>
-                <th>Avg ticket</th>
+                {restaurantReports ? null : <th>Avg ticket</th>}
               </tr>
             </thead>
             <tbody>
               {(Array.isArray(data.customers) ? data.customers : []).map((c: any) => (
                 <tr key={c.customer_id || c.name}>
-                  <td>
-                    {c.name}
-                    {c.email ? (
-                      <span className="muted" style={{ display: 'block', fontSize: 12 }}>
-                        {c.email}
+                  {restaurantReports ? (
+                    <td data-label="Customer">
+                      {c.name}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {c.email || 'No email'}
                       </span>
-                    ) : null}
-                  </td>
-                  <td>
-                    {c.invoice_count} ({fmtMoney(c.invoice_revenue)})
-                  </td>
-                  <td>
-                    {c.pos_count} ({fmtMoney(c.pos_revenue)})
-                  </td>
-                  <td>{c.sale_count}</td>
-                  <td>{fmtMoney(c.revenue)}</td>
-                  <td>{fmtMoney(c.avg_ticket)}</td>
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        Visits {c.sale_count}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>
+                      {c.name}
+                      {c.email ? (
+                        <span className="muted" style={{ display: 'block', fontSize: 12 }}>
+                          {c.email}
+                        </span>
+                      ) : null}
+                    </td>
+                  )}
+                  {restaurantReports ? (
+                    <td data-label="Bills">
+                      {c.invoice_count}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {fmtMoney(c.invoice_revenue)}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>
+                      {c.invoice_count} ({fmtMoney(c.invoice_revenue)})
+                    </td>
+                  )}
+                  {restaurantReports ? (
+                    <td data-label="Restaurant till">
+                      {c.pos_count}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {fmtMoney(c.pos_revenue)}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>
+                      {c.pos_count} ({fmtMoney(c.pos_revenue)})
+                    </td>
+                  )}
+                  {restaurantReports ? null : <td>{c.sale_count}</td>}
+                  {restaurantReports ? (
+                    <td data-label="Revenue">
+                      {fmtMoney(c.revenue)}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        Average bill {fmtMoney(c.avg_ticket)}
+                      </span>
+                    </td>
+                  ) : (
+                    <>
+                      <td>{fmtMoney(c.revenue)}</td>
+                      <td>{fmtMoney(c.avg_ticket)}</td>
+                    </>
+                  )}
                 </tr>
               ))}
               {!data.customers?.length && (
                 <tr>
-                  <td colSpan={6} className="muted">
-                    No customer sales for these dates; widen the dates, then choose Generate.
+                  <td colSpan={restaurantReports ? 4 : 6} className="muted">
+                    {restaurantReports
+                      ? 'No customer sales for these dates. Widen the dates, then choose Generate.'
+                      : 'No customer sales for these dates; widen the dates, then choose Generate.'}
                   </td>
                 </tr>
               )}
@@ -1859,6 +2049,12 @@ export default function Page() {
 
       {tab === 'stores' && data && (
         <>
+          {restaurantReports ? (
+            <>
+              <p className="muted">A restaurant till return comes off this store. The original receipt stays on the till report.</p>
+              <p className="muted">A completed restaurant bill is included for the store on the bill.</p>
+            </>
+          ) : null}
           <div className="grid">
             <div className="card">
               <div className="muted">Total revenue</div>
@@ -1869,7 +2065,7 @@ export default function Page() {
               <div className="kpi">{data.total_sales ?? 0}</div>
             </div>
             <div className="card">
-              <div className="muted">Invoice / POS</div>
+              <div className="muted">{invoicePosHeading}</div>
               <div className="kpi">
                 {fmtMoney(data.invoice_revenue ?? 0)} / {fmtMoney(data.pos_revenue ?? 0)}
               </div>
@@ -1879,10 +2075,10 @@ export default function Page() {
           <table className="table" style={{ marginTop: 16 }}>
             <thead>
               <tr>
-                <th>Store</th>
+                <th>{hotelReports ? 'Location' : restaurantReports ? 'Store' : 'Store'}</th>
                 <th>Code</th>
                 <th>Invoices</th>
-                <th>POS</th>
+                <th>{posHeading}</th>
                 <th>Sales</th>
                 <th>Revenue</th>
                 <th>Avg ticket</th>
@@ -1907,7 +2103,9 @@ export default function Page() {
               {!(data.stores || []).length ? (
                 <tr>
                   <td colSpan={7} className="muted">
-                    No store sales for these dates; widen the dates, then choose Generate.
+                    {hotelReports
+                      ? 'No location sales for these dates; widen the dates, then choose Generate.'
+                      : 'No store sales for these dates; widen the dates, then choose Generate.'}
                   </td>
                 </tr>
               ) : null}
@@ -1919,6 +2117,12 @@ export default function Page() {
 
       {tab === 'departments' && data && (
         <>
+          {restaurantReports ? (
+            <>
+              <p className="muted">A restaurant till return comes off this department. The original receipt stays on the till report.</p>
+              <p className="muted">A completed restaurant bill is included for the department of the staff member who rang it.</p>
+            </>
+          ) : null}
           <div className="grid">
             <div className="card">
               <div className="muted">Total revenue</div>
@@ -1929,7 +2133,7 @@ export default function Page() {
               <div className="kpi">{data.total_sales ?? 0}</div>
             </div>
             <div className="card">
-              <div className="muted">Invoice / POS</div>
+              <div className="muted">{invoicePosHeading}</div>
               <div className="kpi">
                 {fmtMoney(data.invoice_revenue ?? 0)} / {fmtMoney(data.pos_revenue ?? 0)}
               </div>
@@ -1940,39 +2144,90 @@ export default function Page() {
               Filtered to {data.department_name}
             </p>
           ) : null}
-          <div className="list-table-wrap">
+          <div className={restaurantReports ? 'list-table-wrap rest-dept-sales' : 'list-table-wrap'}>
           <table className="table" style={{ marginTop: 16 }}>
+            {restaurantReports ? (
+              <colgroup>
+                <col style={{ width: '34%' }} />
+                <col style={{ width: '22%' }} />
+                <col style={{ width: '22%' }} />
+                <col style={{ width: '22%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
                 <th>Department</th>
-                <th>Code</th>
-                <th>Invoices</th>
-                <th>POS</th>
-                <th>Sales</th>
+                {restaurantReports ? null : <th>Code</th>}
+                {restaurantReports ? <th>Bills</th> : <th>Invoices</th>}
+                {restaurantReports ? <th>Restaurant till</th> : <th>{posHeading}</th>}
+                {restaurantReports ? null : <th>Sales</th>}
                 <th>Revenue</th>
-                <th>Avg ticket</th>
+                {restaurantReports ? null : <th>Avg ticket</th>}
               </tr>
             </thead>
             <tbody>
               {(data.departments || []).map((d: any) => (
                 <tr key={d.department_id || d.name}>
-                  <td>{d.name}</td>
-                  <td>{d.code || '—'}</td>
-                  <td>
-                    {d.invoice_count} ({fmtMoney(d.invoice_revenue)})
-                  </td>
-                  <td>
-                    {d.pos_count} ({fmtMoney(d.pos_revenue)})
-                  </td>
-                  <td>{d.sale_count}</td>
-                  <td>{fmtMoney(d.revenue)}</td>
-                  <td>{fmtMoney(d.avg_ticket)}</td>
+                  {restaurantReports ? (
+                    <td data-label="Department">
+                      {d.name}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {d.code || 'No code'}
+                      </span>
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        Sales {d.sale_count}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>{d.name}</td>
+                  )}
+                  {restaurantReports ? null : <td>{d.code || '—'}</td>}
+                  {restaurantReports ? (
+                    <td data-label="Bills">
+                      {d.invoice_count}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {fmtMoney(d.invoice_revenue)}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>
+                      {d.invoice_count} ({fmtMoney(d.invoice_revenue)})
+                    </td>
+                  )}
+                  {restaurantReports ? (
+                    <td data-label="Restaurant till">
+                      {d.pos_count}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {fmtMoney(d.pos_revenue)}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>
+                      {d.pos_count} ({fmtMoney(d.pos_revenue)})
+                    </td>
+                  )}
+                  {restaurantReports ? null : <td>{d.sale_count}</td>}
+                  {restaurantReports ? (
+                    <td data-label="Revenue">
+                      {fmtMoney(d.revenue)}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        Average bill {fmtMoney(d.avg_ticket)}
+                      </span>
+                    </td>
+                  ) : (
+                    <>
+                      <td>{fmtMoney(d.revenue)}</td>
+                      <td>{fmtMoney(d.avg_ticket)}</td>
+                    </>
+                  )}
                 </tr>
               ))}
               {!data.departments?.length && (
                 <tr>
-                  <td colSpan={7} className="muted">
-                    No department sales for these dates; widen the dates, then choose Generate.
+                  <td colSpan={restaurantReports ? 4 : 7} className="muted">
+                    {restaurantReports
+                      ? 'No department sales for these dates. Widen the dates, then choose Generate.'
+                      : 'No department sales for these dates; widen the dates, then choose Generate.'}
                   </td>
                 </tr>
               )}
@@ -1998,7 +2253,7 @@ export default function Page() {
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
               <h3 style={{ margin: 0 }}>
-                Low-stock suggestions ({data.suggestions?.count ?? data.lowStock?.count ?? 0})
+                {hotelReports ? 'Low-supply suggestions' : restaurantReports ? 'Low-ingredient suggestions' : 'Low-stock suggestions'} ({data.suggestions?.count ?? data.lowStock?.count ?? 0})
               </h3>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                 <input
@@ -2020,26 +2275,38 @@ export default function Page() {
               </div>
             </div>
             <p className="muted" style={{ marginTop: 8 }}>
-              Low stock {data.count ?? data.suggestions?.count ?? data.lowStock?.count ?? 0}
+              {hotelReports ? 'Low supplies' : restaurantReports ? 'Low ingredients' : 'Low stock'} {data.count ?? data.suggestions?.count ?? data.lowStock?.count ?? 0}
               {data.out_of_stock_count != null || data.lowStock?.out_of_stock_count != null
-                ? ` · out of stock ${data.out_of_stock_count ?? data.lowStock?.out_of_stock_count}`
+                ? hotelReports
+                  ? ` · none left ${data.out_of_stock_count ?? data.lowStock?.out_of_stock_count}`
+                  : ` · out of stock ${data.out_of_stock_count ?? data.lowStock?.out_of_stock_count}`
                 : ''}
-              . Select items to create draft purchase requests, then approve them in Purchasing.
+              . {hotelReports
+                ? 'Select supplies to create draft purchase requests, then approve them in Purchasing.'
+                : restaurantReports
+                  ? 'Select ingredients to create draft purchase requests, then approve them in Purchasing.'
+                  : 'Select items to create draft purchase requests, then approve them in Purchasing.'}
             </p>
             {(data.suggestions?.lines || []).length === 0 ? (
-              <p className="muted">No actionable low-stock lines (or all already on an open PR).</p>
+              <p className="muted">
+                {hotelReports
+                  ? 'No supplies need reordering (or all are already on an open purchase request).'
+                  : restaurantReports
+                    ? 'No ingredients need reordering (or all are already on an open purchase request).'
+                    : 'No actionable low-stock lines (or all already on an open PR).'}
+              </p>
             ) : (
               <div className="list-table-wrap">
               <table className="table" style={{ marginTop: 8 }}>
                 <thead>
                   <tr>
                     <th></th>
-                    <th>Product</th>
+                    <th>{hotelReports ? 'Supply' : restaurantReports ? 'Ingredient' : 'Product'}</th>
                     <th>SKU</th>
                     <th>On hand</th>
                     <th>Reorder</th>
                     <th>Suggest qty</th>
-                    <th>Warehouse</th>
+                    <th>{hotelReports ? 'Location' : restaurantReports ? 'Warehouse' : 'Warehouse'}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2072,13 +2339,19 @@ export default function Page() {
             )}
           </div>
           <div className="card" style={{ marginTop: 16 }}>
-            <h3>Low stock products ({data.lowStock?.count ?? 0})</h3>
+            <h3>{hotelReports ? 'Low supplies' : restaurantReports ? 'Low ingredients' : 'Low stock products'} ({data.lowStock?.count ?? 0})</h3>
             <p className="muted" style={{ marginBottom: 8 }}>
               {data.lowStock?.store_name
                 ? data.lowStock.store_name
                 : data.lowStock?.warehouse_id
-                  ? 'Warehouse filtered'
-                  : 'Company-wide product reorder'}
+                  ? hotelReports
+                    ? 'Location filtered'
+                    : 'Warehouse filtered'
+                  : hotelReports
+                    ? 'Company-wide supply reorder'
+                    : restaurantReports
+                      ? 'Company-wide ingredient reorder'
+                      : 'Company-wide product reorder'}
             </p>
             <ul>
               {(data.lowStock?.products || []).map((p: any) => (
@@ -2090,7 +2363,7 @@ export default function Page() {
             </ul>
             {(data.lowStock?.warehouse_low_stock || []).length > 0 && (
               <>
-                <h4 style={{ marginTop: 12 }}>Warehouse reorder breaches</h4>
+                <h4 style={{ marginTop: 12 }}>{hotelReports ? 'Location reorder breaches' : restaurantReports ? 'Warehouse reorder breaches' : 'Warehouse reorder breaches'}</h4>
                 <ul>
                   {(data.lowStock.warehouse_low_stock || []).map((w: any) => (
                     <li key={`${w.warehouse_id}-${w.product_id}`}>
@@ -2106,7 +2379,7 @@ export default function Page() {
           )}
           {activeReport.view === 'value' && (
           <div className="card" style={{ marginTop: 16 }}>
-            <h3>Stock valuation (standard cost)</h3>
+            <h3>{hotelReports ? 'Supply valuation (standard cost)' : restaurantReports ? 'Ingredient valuation (standard cost)' : 'Stock valuation (standard cost)'}</h3>
             <p className="muted">
               Method: standard
               {data.valuation?.store_name
@@ -2114,8 +2387,14 @@ export default function Page() {
                 : data.valuation?.warehouse_name
                   ? ` · ${data.valuation.warehouse_name}`
                   : data.valuation?.warehouse_id
-                    ? ' · warehouse filtered'
-                    : ' · company stock'}
+                    ? hotelReports
+                      ? ' · location filtered'
+                      : ' · warehouse filtered'
+                    : hotelReports
+                      ? ' · company supplies'
+                      : restaurantReports
+                        ? ' · company ingredients'
+                        : ' · company stock'}
             </p>
             <div className="grid">
               <div>
@@ -2139,7 +2418,7 @@ export default function Page() {
           )}
           {activeReport.view === 'movements' && (
           <div className="card" style={{ marginTop: 16 }}>
-            <h3>Stock movements</h3>
+            <h3>{hotelReports ? 'Supply movements' : restaurantReports ? 'Ingredient movements' : 'Stock movements'}</h3>
             <p className="muted">
               {data.movements?.count ?? 0} recent
               {data.movements?.store_name
@@ -2164,44 +2443,99 @@ export default function Page() {
                 Movements CSV
               </button>
             </div>
-            <div className="list-table-wrap">
+            <div className={restaurantReports ? 'list-table-wrap rest-ing-move' : 'list-table-wrap'}>
             <table className="table">
+              {restaurantReports ? (
+                <colgroup>
+                  <col style={{ width: '34%' }} />
+                  <col style={{ width: '24%' }} />
+                  <col style={{ width: '20%' }} />
+                  <col style={{ width: '22%' }} />
+                </colgroup>
+              ) : null}
               <thead>
                 <tr>
-                  <th>Product</th>
-                  <th>SKU</th>
+                  <th>{hotelReports ? 'Supply' : restaurantReports ? 'Ingredient' : 'Product'}</th>
+                  {restaurantReports ? null : <th>SKU</th>}
                   <th>When</th>
-                  <th>Type</th>
-                  <th>Reason</th>
-                  <th>Qty</th>
-                  <th>Before → after</th>
-                  <th>User</th>
-                  <th>Ref</th>
+                  {restaurantReports ? <th>Change</th> : <th>Type</th>}
+                  {restaurantReports ? <th>Record</th> : <th>Reason</th>}
+                  {restaurantReports ? null : <th>Qty</th>}
+                  {restaurantReports ? null : <th>Before → after</th>}
+                  {restaurantReports ? null : <th>User</th>}
+                  {restaurantReports ? null : <th>Ref</th>}
                 </tr>
               </thead>
               <tbody>
                 {(data.movements?.movements || []).slice(0, 25).map((mv: any) => (
                   <tr key={mv.id}>
-                    <td>{mv.product_name || (mv.product_id ? String(mv.product_id).slice(0, 8) : '—')}</td>
-                    <td>{mv.product_sku || '—'}</td>
-                    <td>{fmtDate(mv.created_at)}</td>
-                    <td>{mv.movement_type}</td>
-                    <td>{mv.reason || '—'}</td>
-                    <td>{mv.quantity}</td>
-                    <td>
-                      {mv.quantity_before} → {mv.quantity_after}
-                    </td>
-                    <td>{mv.created_by_name || mv.created_by_email || '—'}</td>
-                    <td>
-                      {mv.reference_type || '—'}
-                      {mv.reference_id ? ` ${String(mv.reference_id).slice(0, 8)}…` : ''}
-                    </td>
+                    {restaurantReports ? (
+                      <td data-label="Ingredient">
+                        {mv.product_name || (mv.product_id ? String(mv.product_id).slice(0, 8) : 'No ingredient')}
+                        <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                          {mv.product_sku || 'No code'}
+                        </span>
+                        <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                          {mv.created_by_name || mv.created_by_email || 'No person'}
+                        </span>
+                      </td>
+                    ) : (
+                      <td>{mv.product_name || (mv.product_id ? String(mv.product_id).slice(0, 8) : '—')}</td>
+                    )}
+                    {restaurantReports ? null : <td>{mv.product_sku || '—'}</td>}
+                    {restaurantReports ? (
+                      <td data-label="When">
+                        {fmtDate(mv.created_at)}
+                        <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                          {mv.movement_type ? plainLabel(mv.movement_type) : 'No type'}
+                          {' · '}
+                          {mv.reason ? plainLabel(mv.reason) : 'No reason'}
+                        </span>
+                      </td>
+                    ) : (
+                      <td>{fmtDate(mv.created_at)}</td>
+                    )}
+                    {restaurantReports ? (
+                      <td data-label="Change">
+                        {mv.quantity}
+                        <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                          Was {mv.quantity_before} · Now {mv.quantity_after}
+                        </span>
+                      </td>
+                    ) : (
+                      <td>{mv.movement_type}</td>
+                    )}
+                    {restaurantReports ? (
+                      <td data-label="Record">
+                        {mv.reference_type ? plainLabel(mv.reference_type) : 'No record'}
+                        {mv.reference_id ? ` ${String(mv.reference_id).slice(0, 8)}` : ''}
+                      </td>
+                    ) : (
+                      <td>{mv.reason || '—'}</td>
+                    )}
+                    {restaurantReports ? null : <td>{mv.quantity}</td>}
+                    {restaurantReports ? null : (
+                      <td>
+                        {mv.quantity_before} → {mv.quantity_after}
+                      </td>
+                    )}
+                    {restaurantReports ? null : <td>{mv.created_by_name || mv.created_by_email || '—'}</td>}
+                    {restaurantReports ? null : (
+                      <td>
+                        {mv.reference_type || '—'}
+                        {mv.reference_id ? ` ${String(mv.reference_id).slice(0, 8)}…` : ''}
+                      </td>
+                    )}
                   </tr>
                 ))}
                 {!data.movements?.movements?.length && (
                   <tr>
-                    <td colSpan={9} className="muted">
-                      No stock movements for these dates; widen the dates, then choose Generate.
+                    <td colSpan={restaurantReports ? 4 : 9} className="muted">
+                      {hotelReports
+                        ? 'No supply movements for these dates; widen the dates, then choose Generate.'
+                        : restaurantReports
+                          ? 'No ingredient movements for these dates. Widen the dates, then choose Generate.'
+                          : 'No stock movements for these dates; widen the dates, then choose Generate.'}
                     </td>
                   </tr>
                 )}
@@ -2213,15 +2547,29 @@ export default function Page() {
           {activeReport.view === 'value' && (
           <>
           <h3 style={{ marginTop: 16 }}>
-            Stock value: {fmtMoney(data.valuation?.total_value)}
+            {hotelReports ? 'Supply value' : restaurantReports ? 'Ingredient value' : 'Stock value'}: {fmtMoney(data.valuation?.total_value)}
           </h3>
-          <div className="list-table-wrap">
+          {restaurantReports ? (
+            <>
+            <p className="muted">A completed restaurant bill takes this store value down when the stock sits in that store's warehouse.</p>
+            <p className="muted">A restaurant till return puts the stock back in the store on the original receipt.</p>
+            </>
+          ) : null}
+          <div className={restaurantReports ? 'list-table-wrap rest-ing-value' : 'list-table-wrap'}>
           <table className="table">
+            {restaurantReports ? (
+              <colgroup>
+                <col style={{ width: '40%' }} />
+                <col style={{ width: '18%' }} />
+                <col style={{ width: '20%' }} />
+                <col style={{ width: '22%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
-                <th>Product</th>
-                <th>SKU</th>
-                <th>Qty</th>
+                <th>{hotelReports ? 'Supply' : restaurantReports ? 'Ingredient' : 'Product'}</th>
+                {restaurantReports ? null : <th>SKU</th>}
+                {restaurantReports ? <th>On hand</th> : <th>Qty</th>}
                 <th>Unit cost</th>
                 <th>Value</th>
               </tr>
@@ -2229,13 +2577,35 @@ export default function Page() {
             <tbody>
               {(data.valuation?.items || []).slice(0, 50).map((i: any) => (
                 <tr key={i.product_id}>
-                  <td>{i.name}</td>
-                  <td>{i.sku || '—'}</td>
-                  <td>{formatNumber(i.quantity)}</td>
-                  <td>{i.unit_cost != null || i.cost_price != null ? fmtMoney(i.unit_cost ?? i.cost_price) : '—'}</td>
-                  <td>{fmtMoney(i.value)}</td>
+                  {restaurantReports ? (
+                    <td data-label="Ingredient">
+                      {i.name}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {i.sku || 'No code'}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>{i.name}</td>
+                  )}
+                  {restaurantReports ? null : <td>{i.sku || '—'}</td>}
+                  <td data-label={restaurantReports ? 'On hand' : undefined}>{formatNumber(i.quantity)}</td>
+                  <td data-label={restaurantReports ? 'Unit cost' : undefined}>
+                    {i.unit_cost != null || i.cost_price != null
+                      ? fmtMoney(i.unit_cost ?? i.cost_price)
+                      : restaurantReports
+                        ? 'No cost'
+                        : '—'}
+                  </td>
+                  <td data-label={restaurantReports ? 'Value' : undefined}>{fmtMoney(i.value)}</td>
                 </tr>
               ))}
+              {restaurantReports && !(data.valuation?.items || []).length ? (
+                <tr>
+                  <td colSpan={4} className="muted">
+                    No ingredients to value yet.
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
           </div>
@@ -2243,9 +2613,9 @@ export default function Page() {
           )}
           {activeReport.view === 'expiry' && (
           <>
-          <h3 style={{ marginTop: 16 }}>Expiry</h3>
+          <h3 style={{ marginTop: 16 }}>{restaurantReports ? 'Lots nearing expiry' : 'Expiry'}</h3>
           <p className="muted">
-            {data.expiry?.count ?? 0} batches within {data.expiry?.within_days ?? expiryDays} days ·
+            {data.expiry?.count ?? 0} {hotelReports ? 'lots' : restaurantReports ? 'lots' : 'batches'} within {data.expiry?.within_days ?? expiryDays} days ·
             expired {data.expiry?.expired_count ?? 0} · qty {data.expiry?.total_quantity ?? 0}
             {data.expiry?.store_name
               ? ` · ${data.expiry.store_name}`
@@ -2269,33 +2639,65 @@ export default function Page() {
               Expiry CSV
             </button>
           </div>
-          <div className="list-table-wrap">
+          <div className={restaurantReports ? 'list-table-wrap rest-expiry' : 'list-table-wrap'}>
           <table className="table">
+            {restaurantReports ? (
+              <colgroup>
+                <col style={{ width: '40%' }} />
+                <col style={{ width: '18%' }} />
+                <col style={{ width: '24%' }} />
+                <col style={{ width: '18%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
-                <th>Product</th>
-                <th>SKU</th>
-                <th>Batch</th>
+                <th>{hotelReports ? 'Supply' : restaurantReports ? 'Ingredient' : 'Product'}</th>
+                {restaurantReports ? null : <th>SKU</th>}
+                <th>{hotelReports ? 'Lot' : restaurantReports ? 'Lot' : 'Batch'}</th>
                 <th>Expiry</th>
-                <th>Days</th>
+                {restaurantReports ? null : <th>Days</th>}
                 <th>Qty</th>
               </tr>
             </thead>
             <tbody>
               {(data.expiry?.batches || []).map((b: any) => (
                 <tr key={b.id}>
-                  <td>{b.name || '—'}</td>
-                  <td>{b.sku || '—'}</td>
-                  <td>{b.batch_number}</td>
-                  <td>{fmtDate(b.expiry_date)}</td>
-                  <td>{b.days_until_expiry ?? '—'}</td>
-                  <td>{b.quantity}</td>
+                  {restaurantReports ? (
+                    <td data-label="Ingredient">
+                      {b.name || 'No ingredient'}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {b.sku || 'No code'}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>{b.name || '—'}</td>
+                  )}
+                  {restaurantReports ? null : <td>{b.sku || '—'}</td>}
+                  <td data-label={restaurantReports ? 'Lot' : undefined}>{b.batch_number || (restaurantReports ? 'No lot' : '—')}</td>
+                  {restaurantReports ? (
+                    <td data-label="Expiry">
+                      {b.expiry_date ? fmtDate(b.expiry_date) : 'No date'}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {b.days_until_expiry == null
+                          ? 'No day count'
+                          : Number(b.days_until_expiry) < 0
+                            ? `Expired ${Math.abs(Number(b.days_until_expiry))} days`
+                            : `Days left ${b.days_until_expiry}`}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>{fmtDate(b.expiry_date)}</td>
+                  )}
+                  {restaurantReports ? null : <td>{b.days_until_expiry ?? '—'}</td>}
+                  <td data-label={restaurantReports ? 'Qty' : undefined}>{b.quantity}</td>
                 </tr>
               ))}
                 {!data.expiry?.batches?.length && (
                 <tr>
-                  <td colSpan={6} className="muted">
-                    No batches nearing expiry for this filter.
+                  <td colSpan={restaurantReports ? 4 : 6} className="muted">
+                    {restaurantReports
+                      ? 'No lots nearing expiry for this filter.'
+                      : 'No batches nearing expiry for this filter.'}
                   </td>
                 </tr>
               )}
@@ -2423,7 +2825,7 @@ export default function Page() {
           )}
           {activeReport.view === 'counts' && (
           <div className="card" style={{ marginTop: 16 }}>
-            <h3>Stock count variances</h3>
+            <h3>{hotelReports ? 'Supply count variances' : restaurantReports ? 'Ingredient count variances' : 'Stock count variances'}</h3>
             <p className="muted">
               {data.stockCounts?.count_sessions ?? 0} count
               {(data.stockCounts?.count_sessions ?? 0) === 1 ? '' : 's'} ·{' '}
@@ -2452,35 +2854,74 @@ export default function Page() {
                 Count variances CSV
               </button>
             </div>
-            <div className="list-table-wrap">
+            <div className={restaurantReports ? 'list-table-wrap rest-count-var' : 'list-table-wrap'}>
             <table className="table">
+              {restaurantReports ? (
+                <colgroup>
+                  <col style={{ width: '40%' }} />
+                  <col style={{ width: '22%' }} />
+                  <col style={{ width: '20%' }} />
+                  <col style={{ width: '18%' }} />
+                </colgroup>
+              ) : null}
               <thead>
                 <tr>
-                  <th>Product</th>
-                  <th>SKU</th>
-                  <th>Count</th>
-                  <th>Warehouse</th>
-                  <th>Expected</th>
-                  <th>Counted</th>
-                  <th>Variance</th>
+                  <th>{hotelReports ? 'Supply' : restaurantReports ? 'Ingredient' : 'Product'}</th>
+                  {restaurantReports ? null : <th>SKU</th>}
+                  {restaurantReports ? null : <th>Count</th>}
+                  {restaurantReports ? <th>Warehouse</th> : <th>{hotelReports ? 'Location' : 'Warehouse'}</th>}
+                  {restaurantReports ? <th>Counted</th> : <th>Expected</th>}
+                  {restaurantReports ? <th>Variance</th> : <th>Counted</th>}
+                  {restaurantReports ? null : <th>Variance</th>}
                 </tr>
               </thead>
               <tbody>
                 {(data.stockCounts?.lines || []).slice(0, 40).map((line: any, idx: number) => (
                   <tr key={`${line.count_id}-${line.product_id}-${idx}`}>
-                    <td>{line.name || '—'}</td>
-                    <td>{line.sku || '—'}</td>
-                    <td>{line.count_number}</td>
-                    <td>{line.warehouse_name || '—'}</td>
-                    <td>{line.expected_qty}</td>
-                    <td>{line.counted_qty}</td>
-                    <td>{line.variance}</td>
+                    {restaurantReports ? (
+                      <td data-label="Ingredient">
+                        {line.name || 'No ingredient'}
+                        <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                          {line.sku || 'No code'}
+                        </span>
+                        <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                          {line.count_number || 'No count'}
+                        </span>
+                      </td>
+                    ) : (
+                      <td>{line.name || '—'}</td>
+                    )}
+                    {restaurantReports ? null : <td>{line.sku || '—'}</td>}
+                    {restaurantReports ? null : <td>{line.count_number}</td>}
+                    <td data-label={restaurantReports ? 'Warehouse' : undefined}>
+                      {line.warehouse_name || (restaurantReports ? 'No warehouse' : '—')}
+                    </td>
+                    {restaurantReports ? (
+                      <td data-label="Counted">
+                        {line.counted_qty}
+                        <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                          Expected {line.expected_qty}
+                        </span>
+                      </td>
+                    ) : (
+                      <td>{line.expected_qty}</td>
+                    )}
+                    {restaurantReports ? (
+                      <td data-label="Variance">{line.variance}</td>
+                    ) : (
+                      <td>{line.counted_qty}</td>
+                    )}
+                    {restaurantReports ? null : <td>{line.variance}</td>}
                   </tr>
                 ))}
                 {!data.stockCounts?.lines?.length && (
                   <tr>
-                    <td colSpan={7} className="muted">
-                      No stock count variances for this filter
+                    <td colSpan={restaurantReports ? 4 : 7} className="muted">
+                      {hotelReports
+                        ? 'No supply count variances for this filter'
+                        : restaurantReports
+                          ? 'No ingredient count variances for this filter.'
+                          : 'No stock count variances for this filter'}
                     </td>
                   </tr>
                 )}
@@ -2522,22 +2963,45 @@ export default function Page() {
           {activeReport.view === 'returns' && (
           <>
           <p className="muted">
-            {data.returns?.return_count ?? 0} returns · total {fmtMoney(data.returns?.total_amount)} ·
-            posted {fmtMoney(data.returns?.posted_amount)} · qty {data.returns?.total_quantity ?? 0}
+            {restaurantReports ? (
+              <>
+                {data.returns?.return_count ?? 0}{' '}
+                {(data.returns?.return_count ?? 0) === 1 ? 'return' : 'returns'}
+                {' · Total '}
+                {fmtMoney(data.returns?.total_amount)}
+                {' · Posted '}
+                {fmtMoney(data.returns?.posted_amount)}
+                {' · Quantity '}
+                {data.returns?.total_quantity ?? 0}
+              </>
+            ) : (
+              <>
+                {data.returns?.return_count ?? 0} returns · total {fmtMoney(data.returns?.total_amount)} ·
+                posted {fmtMoney(data.returns?.posted_amount)} · qty {data.returns?.total_quantity ?? 0}
+              </>
+            )}
             {data.returns?.store_name
               ? ` · ${data.returns.store_name}`
               : data.returns?.warehouse_name
                 ? ` · ${data.returns.warehouse_name}`
                 : ''}
           </p>
-          <div className="list-table-wrap">
+          <div className={restaurantReports ? 'list-table-wrap rest-po-return' : 'list-table-wrap'}>
           <table className="table">
+            {restaurantReports ? (
+              <colgroup>
+                <col style={{ width: '40%' }} />
+                <col style={{ width: '24%' }} />
+                <col style={{ width: '16%' }} />
+                <col style={{ width: '20%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
                 <th>Return</th>
-                <th>Supplier</th>
+                {restaurantReports ? null : <th>Supplier</th>}
                 <th>Reason</th>
-                <th>Status</th>
+                {restaurantReports ? null : <th>Status</th>}
                 <th>Qty</th>
                 <th>Amount</th>
               </tr>
@@ -2545,18 +3009,36 @@ export default function Page() {
             <tbody>
               {(data.returns?.returns || []).map((ret: any) => (
                 <tr key={ret.id}>
-                  <td>{ret.return_number}</td>
-                  <td>{ret.supplier_name}</td>
-                  <td>{ret.reason}</td>
-                  <td>{ret.status}</td>
-                  <td>{ret.quantity}</td>
-                  <td>{fmtMoney(ret.total_amount)}</td>
+                  {restaurantReports ? (
+                    <td data-label="Return">
+                      {ret.return_number || 'No return'}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {ret.supplier_name || 'No supplier'}
+                      </span>
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {ret.status ? plainLabel(String(ret.status)) : 'No status'}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>{ret.return_number}</td>
+                  )}
+                  {restaurantReports ? null : <td>{ret.supplier_name}</td>}
+                  <td data-label={restaurantReports ? 'Reason' : undefined}>
+                    {restaurantReports
+                      ? (ret.reason ? plainLabel(String(ret.reason)) : 'No reason')
+                      : ret.reason}
+                  </td>
+                  {restaurantReports ? null : <td>{ret.status}</td>}
+                  <td data-label={restaurantReports ? 'Qty' : undefined}>{ret.quantity}</td>
+                  <td data-label={restaurantReports ? 'Amount' : undefined}>{fmtMoney(ret.total_amount)}</td>
                 </tr>
               ))}
               {!data.returns?.returns?.length && (
                 <tr>
-                  <td colSpan={6} className="muted">
-                    No purchase returns for these filters; change the dates or status, then choose Generate.
+                  <td colSpan={restaurantReports ? 4 : 6} className="muted">
+                    {restaurantReports
+                      ? 'No returns to suppliers for these dates. Change the dates or status, then choose Generate.'
+                      : 'No purchase returns for these filters; change the dates or status, then choose Generate.'}
                   </td>
                 </tr>
               )}
@@ -2579,41 +3061,78 @@ export default function Page() {
           )}
           {activeReport.view === 'pending' && (
           <>
-          <h3 style={{ marginTop: 16 }}>Pending orders (not fully received)</h3>
+          <h3 style={{ marginTop: 16 }}>{restaurantReports ? 'Orders still to receive' : 'Pending orders (not fully received)'}</h3>
           <p className="muted">
             {data.pending?.order_count ?? 0}{' '}
             {(data.pending?.order_count ?? 0) === 1 ? 'order' : 'orders'} · qty open{' '}
             {data.pending?.total_outstanding_qty ?? 0}
           </p>
-          <div className="list-table-wrap">
+          <div className={restaurantReports ? 'list-table-wrap rest-po-pending' : 'list-table-wrap'}>
           <table className="table">
+            {restaurantReports ? (
+              <colgroup>
+                <col style={{ width: '40%' }} />
+                <col style={{ width: '18%' }} />
+                <col style={{ width: '18%' }} />
+                <col style={{ width: '24%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
-                <th>PO</th>
-                <th>Supplier</th>
-                <th>Status</th>
+                {restaurantReports ? <th>Order</th> : <th>PO</th>}
+                {restaurantReports ? null : <th>Supplier</th>}
+                {restaurantReports ? null : <th>Status</th>}
                 <th>Ordered</th>
-                <th>Received</th>
-                <th>Outstanding qty</th>
+                {restaurantReports ? <th>Still open</th> : <th>Received</th>}
+                {restaurantReports ? null : <th>Outstanding qty</th>}
                 <th>Amount</th>
               </tr>
             </thead>
             <tbody>
               {(data.pending?.orders || []).map((o: any) => (
                 <tr key={o.id}>
-                  <td>{o.po_number}</td>
-                  <td>{o.supplier_name}</td>
-                  <td>{o.status}</td>
-                  <td>{o.ordered_qty}</td>
-                  <td>{o.received_qty}</td>
-                  <td>{o.outstanding_qty}</td>
-                  <td>{o.total_amount}</td>
+                  {restaurantReports ? (
+                    <td data-label="Order">
+                      {o.po_number}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {o.supplier_name || 'No supplier'}
+                      </span>
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {o.status ? plainLabel(o.status) : 'No status'}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>{o.po_number}</td>
+                  )}
+                  {restaurantReports ? null : <td>{o.supplier_name}</td>}
+                  {restaurantReports ? null : <td>{o.status}</td>}
+                  {restaurantReports ? (
+                    <td data-label="Ordered">
+                      {o.ordered_qty}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        Received {o.received_qty}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>{o.ordered_qty}</td>
+                  )}
+                  {restaurantReports ? (
+                    <td data-label="Still open">{o.outstanding_qty}</td>
+                  ) : (
+                    <td>{o.received_qty}</td>
+                  )}
+                  {restaurantReports ? null : <td>{o.outstanding_qty}</td>}
+                  <td data-label={restaurantReports ? 'Amount' : undefined}>
+                    {restaurantReports ? fmtMoney(o.total_amount) : o.total_amount}
+                  </td>
                 </tr>
               ))}
               {!data.pending?.orders?.length && (
                 <tr>
-                  <td colSpan={7} className="muted">
-                    No pending purchase orders for these filters; change the dates or status, then choose Generate.
+                  <td colSpan={restaurantReports ? 4 : 7} className="muted">
+                    {restaurantReports
+                      ? 'No orders are still waiting to be received.'
+                      : 'No pending purchase orders for these filters; change the dates or status, then choose Generate.'}
                   </td>
                 </tr>
               )}
@@ -2660,59 +3179,111 @@ export default function Page() {
       {tab === 'expenses' && data && (
         <>
           <p className="muted">
-            Period {data.period_days ?? '—'} days · scaled budgets vs approved spend
-            {data.branch_name ? ` · branch ${data.branch_name}` : ''}
-            {data.department_name ? ` · dept ${data.department_name}` : ''}
+            {restaurantReports
+              ? 'Approved costs compared with the budget for this period.'
+              : (
+                <>
+                  Period {data.period_days ?? '—'} days · scaled budgets vs approved spend
+                  {data.branch_name ? ` · branch ${data.branch_name}` : ''}
+                  {data.department_name ? ` · dept ${data.department_name}` : ''}
+                </>
+              )}
           </p>
           <div className="grid">
             <div className="card">
-              <div className="muted">Budget (scaled)</div>
-              <div className="kpi">{data.total_budget_scaled ?? 0}</div>
+              <div className="muted">{restaurantReports ? 'Budget' : 'Budget (scaled)'}</div>
+              <div className="kpi">{restaurantReports ? fmtMoney(data.total_budget_scaled ?? 0) : (data.total_budget_scaled ?? 0)}</div>
             </div>
             <div className="card">
-              <div className="muted">Actual</div>
-              <div className="kpi">{data.total_actual ?? data.total_amount ?? 0}</div>
+              <div className="muted">{restaurantReports ? 'Spent' : 'Actual'}</div>
+              <div className="kpi">{restaurantReports ? fmtMoney(data.total_actual ?? data.total_amount ?? 0) : (data.total_actual ?? data.total_amount ?? 0)}</div>
             </div>
             <div className="card">
-              <div className="muted">Variance</div>
-              <div className="kpi">{data.total_variance ?? 0}</div>
+              <div className="muted">{restaurantReports ? 'Difference' : 'Variance'}</div>
+              <div className="kpi">{restaurantReports ? fmtMoney(data.total_variance ?? 0) : (data.total_variance ?? 0)}</div>
             </div>
           </div>
-          <h3 style={{ marginTop: 16 }}>Top categories</h3>
+          <h3 style={{ marginTop: 16 }}>{restaurantReports ? 'Costs against the budget' : 'Top categories'}</h3>
           <ul>
             {(data.top_categories || []).map((c: any) => (
               <li key={c.category_id || c.category}>
-                {c.category}: {c.actual} ({c.status})
+                {restaurantReports
+                  ? `${c.category}: ${fmtMoney(c.actual)} · ${c.status ? plainLabel(String(c.status)) : 'No status'}`
+                  : `${c.category}: ${c.actual} (${c.status})`}
               </li>
             ))}
-            {!data.top_categories?.length && <li className="muted">No spend yet</li>}
+            {!data.top_categories?.length && <li className="muted">{restaurantReports ? 'No costs yet.' : 'No spend yet'}</li>}
           </ul>
-          <div className="list-table-wrap">
+          <div className={restaurantReports ? 'list-table-wrap rest-exp-budget' : 'list-table-wrap'}>
           <table className="table" style={{ marginTop: 16 }}>
+            {restaurantReports ? (
+              <colgroup>
+                <col style={{ width: '40%' }} />
+                <col style={{ width: '20%' }} />
+                <col style={{ width: '22%' }} />
+                <col style={{ width: '18%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
-                <th>Category</th>
-                <th>Budget (scaled)</th>
-                <th>Actual</th>
-                <th>Variance</th>
-                <th>%</th>
+                {restaurantReports ? <th>Cost group</th> : <th>Category</th>}
+                {restaurantReports ? <th>Budget</th> : <th>Budget (scaled)</th>}
+                {restaurantReports ? <th>Spent</th> : <th>Actual</th>}
+                {restaurantReports ? null : <th>Variance</th>}
+                {restaurantReports ? null : <th>%</th>}
                 <th>Status</th>
               </tr>
             </thead>
             <tbody>
               {(data.rows || data.by_category || []).map((c: any) => (
                 <tr key={c.category_id || c.category}>
-                  <td>
-                    {c.code ? `${c.code} — ` : ''}
-                    {c.category}
+                  {restaurantReports ? (
+                    <td data-label="Cost group">
+                      {c.category || 'No cost group'}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {c.code || 'No code'}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>
+                      {c.code ? `${c.code} — ` : ''}
+                      {c.category}
+                    </td>
+                  )}
+                  <td data-label={restaurantReports ? 'Budget' : undefined}>
+                    {restaurantReports ? fmtMoney(c.budget_scaled) : (c.budget_scaled ?? '—')}
                   </td>
-                  <td>{c.budget_scaled ?? '—'}</td>
-                  <td>{c.actual ?? c.amount}</td>
-                  <td>{c.variance ?? '—'}</td>
-                  <td>{c.variance_pct != null ? `${c.variance_pct}%` : '—'}</td>
-                  <td>{c.status || '—'}</td>
+                  {restaurantReports ? (
+                    <td data-label="Spent">
+                      {fmtMoney(c.actual ?? c.amount)}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {c.variance == null ? 'No difference' : `Difference ${fmtMoney(c.variance)}`}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>{c.actual ?? c.amount}</td>
+                  )}
+                  {restaurantReports ? null : <td>{c.variance ?? '—'}</td>}
+                  {restaurantReports ? null : <td>{c.variance_pct != null ? `${c.variance_pct}%` : '—'}</td>}
+                  {restaurantReports ? (
+                    <td data-label="Status">
+                      {c.status ? plainLabel(String(c.status)) : 'No status'}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {c.variance_pct != null ? `${c.variance_pct}% of budget` : 'No percent'}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>{c.status || '—'}</td>
+                  )}
                 </tr>
               ))}
+              {restaurantReports && !(data.rows || data.by_category || []).length ? (
+                <tr>
+                  <td colSpan={4} className="muted">
+                    No cost groups to compare yet.
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
           </div>
@@ -2722,7 +3293,7 @@ export default function Page() {
       {tab === 'cashflow' && data && (
         <>
           <p className="muted">
-            Cash and bank movements
+            {restaurantReports ? 'Money in and out of cash and the bank' : 'Cash and bank movements'}
             {data.store_id ? ` · ${placeLabel(stores, data.store_id, 'store')}` : ''}
             {data.branch_id ? ` · ${placeLabel(branches, data.branch_id, 'branch')}` : ''}
             {data.store_id || data.branch_id
@@ -2732,15 +3303,15 @@ export default function Page() {
           <div className="grid">
             <div className="card">
               <div className="muted">Inflows</div>
-              <div className="kpi">{data.inflows}</div>
+              <div className="kpi">{restaurantReports ? fmtMoney(data.inflows) : data.inflows}</div>
             </div>
             <div className="card">
               <div className="muted">Outflows</div>
-              <div className="kpi">{data.outflows}</div>
+              <div className="kpi">{restaurantReports ? fmtMoney(data.outflows) : data.outflows}</div>
             </div>
             <div className="card">
               <div className="muted">Net</div>
-              <div className="kpi">{data.net}</div>
+              <div className="kpi">{restaurantReports ? fmtMoney(data.net) : data.net}</div>
             </div>
           </div>
           <div className="grid" style={{ marginTop: 12 }}>
@@ -2754,20 +3325,29 @@ export default function Page() {
             ).map(([key, label]) => (
               <div className="card" key={key}>
                 <div className="muted">{label}</div>
-                <div className="kpi">{data[key]?.net ?? 0}</div>
+                <div className="kpi">{restaurantReports ? fmtMoney(data[key]?.net ?? 0) : (data[key]?.net ?? 0)}</div>
                 <p className="muted" style={{ margin: 0 }}>
-                  In {data[key]?.inflows ?? 0} · Out {data[key]?.outflows ?? 0}
+                  {restaurantReports
+                    ? `In ${fmtMoney(data[key]?.inflows ?? 0)} · Out ${fmtMoney(data[key]?.outflows ?? 0)}`
+                    : `In ${data[key]?.inflows ?? 0} · Out ${data[key]?.outflows ?? 0}`}
                 </p>
               </div>
             ))}
           </div>
-          <div className="list-table-wrap">
+          <div className={restaurantReports ? 'list-table-wrap rest-cash-flow' : 'list-table-wrap'}>
           <table className="table" style={{ marginTop: 16 }}>
+            {restaurantReports ? (
+              <colgroup>
+                <col style={{ width: '46%' }} />
+                <col style={{ width: '27%' }} />
+                <col style={{ width: '27%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Entry</th>
-                <th>Activity</th>
+                {restaurantReports ? <th>Movement</th> : <th>Date</th>}
+                {restaurantReports ? null : <th>Entry</th>}
+                {restaurantReports ? null : <th>Activity</th>}
                 <th>In</th>
                 <th>Out</th>
               </tr>
@@ -2775,13 +3355,32 @@ export default function Page() {
             <tbody>
               {(data.lines || []).slice(0, 40).map((l: any, idx: number) => (
                 <tr key={`${l.entry_number}-${idx}`}>
-                  <td>{String(l.date)}</td>
-                  <td>{l.entry_number}</td>
-                  <td>{l.activity || '—'}</td>
-                  <td>{l.inflow}</td>
-                  <td>{l.outflow}</td>
+                  {restaurantReports ? (
+                    <td data-label="Movement">
+                      {l.date ? fmtDate(l.date) : 'No date'}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {l.entry_number || 'No entry'}
+                      </span>
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {l.activity ? plainLabel(String(l.activity)) : 'No activity'}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>{String(l.date)}</td>
+                  )}
+                  {restaurantReports ? null : <td>{l.entry_number}</td>}
+                  {restaurantReports ? null : <td>{l.activity || '—'}</td>}
+                  <td data-label={restaurantReports ? 'In' : undefined}>{restaurantReports ? fmtMoney(l.inflow) : l.inflow}</td>
+                  <td data-label={restaurantReports ? 'Out' : undefined}>{restaurantReports ? fmtMoney(l.outflow) : l.outflow}</td>
                 </tr>
               ))}
+              {restaurantReports && !(data.lines || []).length ? (
+                <tr>
+                  <td colSpan={3} className="muted">
+                    No cash movements in this period.
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
           </div>
@@ -2791,57 +3390,86 @@ export default function Page() {
       {tab === 'pnl' && data && (
         <>
           <p className="muted">
-            {data.mode === 'journals'
-              ? 'For the selected period'
-              : 'All-time balances'}
+            {restaurantReports
+              ? (data.mode === 'journals' ? 'Income and costs for this period' : 'Balances so far')
+              : (data.mode === 'journals' ? 'For the selected period' : 'All-time balances')}
             {data.store_id ? ` · ${placeLabel(stores, data.store_id, 'store')}` : ''}
             {data.branch_id ? ` · ${placeLabel(branches, data.branch_id, 'branch')}` : ''}
           </p>
+          {restaurantReports ? (
+            <>
+              <p className="muted">A completed restaurant bill is included in profit and loss for the store on the bill.</p>
+              <p className="muted">Restaurant waste at this store is included in these operating expenses.</p>
+              <p className="muted">A restaurant till return follows the store on the original receipt.</p>
+            </>
+          ) : null}
           <div className="grid">
             <div className="card">
               <div className="muted">Revenue</div>
-              <div className="kpi">{data.revenue ?? data.income ?? 0}</div>
+              <div className="kpi">{restaurantReports ? fmtMoney(data.revenue ?? data.income ?? 0) : (data.revenue ?? data.income ?? 0)}</div>
             </div>
             <div className="card">
-              <div className="muted">COGS</div>
-              <div className="kpi">{data.cogs ?? 0}</div>
+              <div className="muted">{restaurantReports ? 'Ingredient cost' : 'COGS'}</div>
+              <div className="kpi">{restaurantReports ? fmtMoney(data.cogs ?? 0) : (data.cogs ?? 0)}</div>
             </div>
             <div className="card">
               <div className="muted">Gross profit</div>
-              <div className="kpi">{data.gross_profit ?? 0}</div>
+              <div className="kpi">{restaurantReports ? fmtMoney(data.gross_profit ?? 0) : (data.gross_profit ?? 0)}</div>
             </div>
             <div className="card">
-              <div className="muted">Operating expenses</div>
-              <div className="kpi">{data.operating_expenses ?? 0}</div>
+              <div className="muted">{restaurantReports ? 'Running costs' : 'Operating expenses'}</div>
+              <div className="kpi">{restaurantReports ? fmtMoney(data.operating_expenses ?? 0) : (data.operating_expenses ?? 0)}</div>
             </div>
             <div className="card">
               <div className="muted">Net profit</div>
-              <div className="kpi">{data.net_profit ?? 0}</div>
+              <div className="kpi">{restaurantReports ? fmtMoney(data.net_profit ?? 0) : (data.net_profit ?? 0)}</div>
             </div>
           </div>
-          <div className="list-table-wrap">
+          <div className={restaurantReports ? 'list-table-wrap rest-pnl' : 'list-table-wrap'}>
           <table className="table" style={{ marginTop: 16 }}>
+            {restaurantReports ? (
+              <colgroup>
+                <col style={{ width: '68%' }} />
+                <col style={{ width: '32%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
-                <th>Code</th>
-                <th>Name</th>
-                <th>Type</th>
+                {restaurantReports ? <th>Account</th> : <th>Code</th>}
+                {restaurantReports ? null : <th>Name</th>}
+                {restaurantReports ? null : <th>Type</th>}
                 <th>Amount</th>
               </tr>
             </thead>
             <tbody>
               {(data.accounts || []).map((a: any) => (
                 <tr key={a.code}>
-                  <td>{a.code}</td>
-                  <td>{a.name}</td>
-                  <td>{a.account_type}</td>
-                  <td>{a.balance}</td>
+                  {restaurantReports ? (
+                    <td data-label="Account">
+                      {a.name || 'No account'}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {a.code || 'No code'}
+                      </span>
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {a.account_type ? plainLabel(String(a.account_type)) : 'No type'}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>{a.code}</td>
+                  )}
+                  {restaurantReports ? null : <td>{a.name}</td>}
+                  {restaurantReports ? null : <td>{a.account_type}</td>}
+                  <td data-label={restaurantReports ? 'Amount' : undefined}>
+                    {restaurantReports ? fmtMoney(a.balance) : a.balance}
+                  </td>
                 </tr>
               ))}
               {!data.accounts?.length && (
                 <tr>
-                  <td colSpan={4} className="muted">
-                    No income/expense activity for this filter
+                  <td colSpan={restaurantReports ? 2 : 4} className="muted">
+                    {restaurantReports
+                      ? 'No income or costs for this period.'
+                      : 'No income/expense activity for this filter'}
                   </td>
                 </tr>
               )}
@@ -2858,18 +3486,27 @@ export default function Page() {
             {data.store_id ? ` · ${placeLabel(stores, data.store_id, 'store')}` : ''}
             {data.branch_id ? ` · ${placeLabel(branches, data.branch_id, 'branch')}` : ''}
             {data.store_id || data.branch_id
-              ? ' · this location only (sales, till, expenses, returns)'
+              ? locationScopeNote
               : ''}
             {' · '}
-            {data.balanced ? 'Balanced' : 'Not balanced'} · Debit {fmtMoney(data.total_debit)} · Credit {fmtMoney(data.total_credit)}
+            {restaurantReports
+              ? (data.balanced ? 'In balance' : 'Out of balance')
+              : (data.balanced ? 'Balanced' : 'Not balanced')} · Debit {fmtMoney(data.total_debit)} · Credit {fmtMoney(data.total_credit)}
           </p>
-          <div className="list-table-wrap">
+          <div className={restaurantReports ? 'list-table-wrap rest-trial' : 'list-table-wrap'}>
           <table className="table">
+            {restaurantReports ? (
+              <colgroup>
+                <col style={{ width: '52%' }} />
+                <col style={{ width: '24%' }} />
+                <col style={{ width: '24%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
-                <th>Code</th>
-                <th>Name</th>
-                <th>Type</th>
+                {restaurantReports ? <th>Account</th> : <th>Code</th>}
+                {restaurantReports ? null : <th>Name</th>}
+                {restaurantReports ? null : <th>Type</th>}
                 <th>Debit</th>
                 <th>Credit</th>
               </tr>
@@ -2877,17 +3514,31 @@ export default function Page() {
             <tbody>
               {(data.rows || []).map((r: any) => (
                 <tr key={r.account_id || r.code}>
-                  <td>{r.code}</td>
-                  <td>{r.name}</td>
-                  <td>{r.account_type}</td>
-                  <td>{fmtMoney(r.debit)}</td>
-                  <td>{fmtMoney(r.credit)}</td>
+                  {restaurantReports ? (
+                    <td data-label="Account">
+                      {r.name || 'No account'}
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {r.code || 'No code'}
+                      </span>
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {r.account_type ? plainLabel(String(r.account_type)) : 'No type'}
+                      </span>
+                    </td>
+                  ) : (
+                    <td>{r.code}</td>
+                  )}
+                  {restaurantReports ? null : <td>{r.name}</td>}
+                  {restaurantReports ? null : <td>{r.account_type}</td>}
+                  <td data-label={restaurantReports ? 'Debit' : undefined}>{fmtMoney(r.debit)}</td>
+                  <td data-label={restaurantReports ? 'Credit' : undefined}>{fmtMoney(r.credit)}</td>
                 </tr>
               ))}
               {!data.rows?.length && (
                 <tr>
-                  <td colSpan={5} className="muted">
-                    No balances for this as-of date; change the date, then choose Generate.
+                  <td colSpan={restaurantReports ? 3 : 5} className="muted">
+                    {restaurantReports
+                      ? 'No balances for this date. Change the date, then choose Generate.'
+                      : 'No balances for this as-of date; change the date, then choose Generate.'}
                   </td>
                 </tr>
               )}
@@ -2900,15 +3551,36 @@ export default function Page() {
       {tab === 'accountstatement' && data && (
         <>
           <p className="muted">
-            {data.code} {data.name} · opening {data.opening_balance} · closing {data.closing_balance}
+            {restaurantReports ? (
+              <>
+                {data.name || 'No account'}
+                {data.code ? ` · ${data.code}` : ' · No code'}
+                {' · Opening '}
+                {fmtMoney(data.opening_balance)}
+                {' · Closing '}
+                {fmtMoney(data.closing_balance)}
+              </>
+            ) : (
+              <>
+                {data.code} {data.name} · opening {data.opening_balance} · closing {data.closing_balance}
+              </>
+            )}
           </p>
-          <div className="list-table-wrap">
+          <div className={restaurantReports ? 'list-table-wrap rest-acct-lines' : 'list-table-wrap'}>
             <table className="table">
+              {restaurantReports ? (
+                <colgroup>
+                  <col style={{ width: '46%' }} />
+                  <col style={{ width: '18%' }} />
+                  <col style={{ width: '18%' }} />
+                  <col style={{ width: '18%' }} />
+                </colgroup>
+              ) : null}
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Entry</th>
-                  <th>Memo</th>
+                  {restaurantReports ? <th>When</th> : <th>Date</th>}
+                  {restaurantReports ? null : <th>Entry</th>}
+                  {restaurantReports ? null : <th>Memo</th>}
                   <th>Debit</th>
                   <th>Credit</th>
                   <th>Balance</th>
@@ -2917,18 +3589,38 @@ export default function Page() {
               <tbody>
                 {(data.lines || []).map((l: any, idx: number) => (
                   <tr key={`${l.journal_entry_id}-${idx}`}>
-                    <td>{fmtDate(l.date)}</td>
-                    <td>{l.entry_number}</td>
-                    <td>{l.description || '—'}</td>
-                    <td>{l.debit}</td>
-                    <td>{l.credit}</td>
-                    <td>{l.balance}</td>
+                    {restaurantReports ? (
+                      <td data-label="When">
+                        {l.date ? fmtDate(l.date) : 'No date'}
+                        <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                          {l.entry_number || 'No entry'}
+                        </span>
+                        <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                          {l.description ? plainLabel(String(l.description)) : 'No memo'}
+                        </span>
+                      </td>
+                    ) : (
+                      <td>{fmtDate(l.date)}</td>
+                    )}
+                    {restaurantReports ? null : <td>{l.entry_number}</td>}
+                    {restaurantReports ? null : <td>{l.description || '—'}</td>}
+                    <td data-label={restaurantReports ? 'Debit' : undefined}>
+                      {restaurantReports ? fmtMoney(l.debit) : l.debit}
+                    </td>
+                    <td data-label={restaurantReports ? 'Credit' : undefined}>
+                      {restaurantReports ? fmtMoney(l.credit) : l.credit}
+                    </td>
+                    <td data-label={restaurantReports ? 'Balance' : undefined}>
+                      {restaurantReports ? fmtMoney(l.balance) : l.balance}
+                    </td>
                   </tr>
                 ))}
                 {!(data.lines || []).length && (
                   <tr>
-                    <td colSpan={6} className="muted">
-                      No posted lines for this account in the date range
+                    <td colSpan={restaurantReports ? 4 : 6} className="muted">
+                      {restaurantReports
+                        ? 'No movements for this account in these dates.'
+                        : 'No posted lines for this account in the date range'}
                     </td>
                   </tr>
                 )}
@@ -2945,7 +3637,7 @@ export default function Page() {
             {data.store_id ? ` · ${placeLabel(stores, data.store_id, 'store')}` : ''}
             {data.branch_id ? ` · ${placeLabel(branches, data.branch_id, 'branch')}` : ''}
             {data.store_id || data.branch_id
-              ? ' · this location only (sales, till, expenses, returns)'
+              ? locationScopeNote
               : ''}
             {data.compare
               ? ` · compared with ${String(data.compare.mode).replace(/_/g, ' ')} (${fmtDate(data.compare.as_of)})`
@@ -2954,57 +3646,121 @@ export default function Page() {
           <div className="grid">
             <div className="card">
               <div className="muted">Total assets</div>
-              <div className="kpi">{data.total_assets}</div>
-              {data.compare && (
-                <p className="muted">Δ {data.compare.deltas?.total_assets ?? 0}</p>
-              )}
-            </div>
-            <div className="card">
-              <div className="muted">Liabilities + equity</div>
-              <div className="kpi">{data.total_liabilities_and_equity}</div>
+              <div className="kpi">{restaurantReports ? fmtMoney(data.total_assets) : data.total_assets}</div>
               {data.compare && (
                 <p className="muted">
-                  Δ {data.compare.deltas?.total_liabilities_and_equity ?? 0}
+                  {restaurantReports ? 'Change ' : 'Δ '}
+                  {restaurantReports ? fmtMoney(data.compare.deltas?.total_assets ?? 0) : (data.compare.deltas?.total_assets ?? 0)}
                 </p>
               )}
             </div>
             <div className="card">
-              <div className="muted">Balanced</div>
-              <div className="kpi">{String(data.balanced)}</div>
+              <div className="muted">{restaurantReports ? 'Owed and owner stake' : 'Liabilities + equity'}</div>
+              <div className="kpi">
+                {restaurantReports ? fmtMoney(data.total_liabilities_and_equity) : data.total_liabilities_and_equity}
+              </div>
+              {data.compare && (
+                <p className="muted">
+                  {restaurantReports ? 'Change ' : 'Δ '}
+                  {restaurantReports
+                    ? fmtMoney(data.compare.deltas?.total_liabilities_and_equity ?? 0)
+                    : (data.compare.deltas?.total_liabilities_and_equity ?? 0)}
+                </p>
+              )}
+            </div>
+            <div className="card">
+              <div className="muted">{restaurantReports ? 'Books' : 'Balanced'}</div>
+              <div className="kpi">
+                {restaurantReports
+                  ? (data.balanced ? 'In balance' : 'Out of balance')
+                  : String(data.balanced)}
+              </div>
             </div>
           </div>
           {(['assets', 'liabilities', 'equity'] as const).map((section) => (
             <div key={section} style={{ marginTop: 16 }}>
-              <h3>{section}</h3>
-              <div className="list-table-wrap">
+              <h3>
+                {restaurantReports
+                  ? (section === 'assets' ? 'Assets' : section === 'liabilities' ? 'Liabilities' : 'Equity')
+                  : section}
+              </h3>
+              <div className={restaurantReports ? `list-table-wrap rest-bs${data.compare ? ' rest-bs-compare' : ''}` : 'list-table-wrap'}>
               <table className="table">
+                {restaurantReports ? (
+                  <colgroup>
+                    <col style={{ width: data.compare ? '46%' : '68%' }} />
+                    <col style={{ width: data.compare ? '18%' : '32%' }} />
+                    {data.compare ? (
+                      <>
+                        <col style={{ width: '18%' }} />
+                        <col style={{ width: '18%' }} />
+                      </>
+                    ) : null}
+                  </colgroup>
+                ) : null}
                 <thead>
                   <tr>
-                    <th>Code</th>
-                    <th>Name</th>
+                    {restaurantReports ? <th>Account</th> : <th>Code</th>}
+                    {restaurantReports ? null : <th>Name</th>}
                     <th>Balance</th>
                     {data.compare && (
-                      <>
-                        <th>Prior</th>
-                        <th>Δ</th>
-                      </>
+                      restaurantReports ? (
+                        <>
+                          <th>Prior</th>
+                          <th>Change</th>
+                        </>
+                      ) : (
+                        <>
+                          <th>Prior</th>
+                          <th>Δ</th>
+                        </>
+                      )
                     )}
                   </tr>
                 </thead>
                 <tbody>
                   {(data[section] || []).map((r: any) => (
                     <tr key={`${section}-${r.code}`}>
-                      <td>{r.code}</td>
-                      <td>{r.name}</td>
-                      <td>{r.balance}</td>
+                      {restaurantReports ? (
+                        <td data-label="Account">
+                          {r.name || 'No account'}
+                          <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                            {r.code || 'No code'}
+                          </span>
+                        </td>
+                      ) : (
+                        <td>{r.code}</td>
+                      )}
+                      {restaurantReports ? null : <td>{r.name}</td>}
+                      <td data-label={restaurantReports ? 'Balance' : undefined}>
+                        {restaurantReports ? fmtMoney(r.balance) : r.balance}
+                      </td>
                       {data.compare && (
-                        <>
-                          <td>{r.prior_balance ?? 0}</td>
-                          <td>{r.delta ?? 0}</td>
-                        </>
+                        restaurantReports ? (
+                          <>
+                            <td data-label="Prior">{fmtMoney(r.prior_balance ?? 0)}</td>
+                            <td data-label="Change">{fmtMoney(r.delta ?? 0)}</td>
+                          </>
+                        ) : (
+                          <>
+                            <td>{r.prior_balance ?? 0}</td>
+                            <td>{r.delta ?? 0}</td>
+                          </>
+                        )
                       )}
                     </tr>
                   ))}
+                  {restaurantReports && !(data[section] || []).length && (
+                    <tr>
+                      <td colSpan={data.compare ? 4 : 2} className="muted">
+                        {section === 'assets'
+                          ? 'No assets yet.'
+                          : section === 'liabilities'
+                            ? 'Nothing owed yet.'
+                            : 'No equity yet.'}
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
               </div>
@@ -3114,9 +3870,9 @@ export default function Page() {
               title="Filter schedules by enabled flag"
               aria-label="Report schedule enabled filter"
             >
-              <option value="all">All enabled/disabled</option>
-              <option value="enabled">Enabled only</option>
-              <option value="disabled">Disabled only</option>
+              <option value="all">{restaurantReports ? 'All schedules' : 'All enabled/disabled'}</option>
+              <option value="enabled">{restaurantReports ? 'On' : 'Enabled only'}</option>
+              <option value="disabled">{restaurantReports ? 'Not in use' : 'Disabled only'}</option>
             </select>
             <select
               value={scheduleFrequencyFilter}
@@ -3131,47 +3887,87 @@ export default function Page() {
               <option value="weekly">Weekly only</option>
             </select>
           </div>
-          <div className="list-table-wrap">
+          <div className={restaurantReports ? 'list-table-wrap rest-report-sched' : 'list-table-wrap'}>
           <table className="table">
+            {restaurantReports ? (
+              <colgroup>
+                <col style={{ width: '34%' }} />
+                <col style={{ width: '28%' }} />
+                <col style={{ width: '16%' }} />
+                <col style={{ width: '22%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Report</th>
+                {restaurantReports ? <th>Schedule</th> : <th>Name</th>}
+                {restaurantReports ? null : <th>Report</th>}
                 <th>When</th>
-                <th>Recipients</th>
+                {restaurantReports ? null : <th>Recipients</th>}
                 <th>Last run</th>
-                <th />
+                {restaurantReports ? <th>Actions</th> : <th />}
               </tr>
             </thead>
             <tbody>
               {managedSchedules.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="muted">
-                    No schedules for this filter
+                  <td colSpan={restaurantReports ? 4 : 6} className="muted">
+                    {restaurantReports
+                      ? (schedules.length
+                        ? 'No schedules for this filter. Choose All schedules and All frequencies to see every schedule.'
+                        : 'No email reports yet. Create a schedule when you want a report sent on its own.')
+                      : 'No schedules for this filter'}
                   </td>
                 </tr>
               ) : (
                 managedSchedules.map((s) => (
                   <tr key={s.id}>
+                    {restaurantReports ? (
+                      <td data-label="Schedule">
+                        {s.name}
+                        {!s.enabled ? ' · Not in use' : ''}
+                        <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                          {plainLabel(s.report_type)} · {String(s.format || '').toUpperCase()}
+                        </span>
+                      </td>
+                    ) : (
                     <td>
                       {s.name} {!s.enabled && <span className="muted">(off)</span>}
                     </td>
+                    )}
+                    {restaurantReports ? null : (
                     <td>
                       {plainLabel(s.report_type)} · {String(s.format || '').toUpperCase()}
                     </td>
+                    )}
+                    {restaurantReports ? (
+                      <td data-label="When">
+                        {plainLabel(s.frequency)}
+                        {s.frequency === 'weekly' ? `, ${WEEKDAYS[Number(s.weekday)] || ''}` : ''}
+                        {` at ${String(s.hour_utc ?? 0).padStart(2, '0')}:00 GMT`}
+                        <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                          {(s.recipients || []).join(', ') || 'No recipients'}
+                        </span>
+                      </td>
+                    ) : (
                     <td>
                       {plainLabel(s.frequency)}
                       {s.frequency === 'weekly' ? `, ${WEEKDAYS[Number(s.weekday)] || ''}` : ''}
                       {` at ${String(s.hour_utc ?? 0).padStart(2, '0')}:00 UTC`}
                     </td>
-                    <td>{(s.recipients || []).join(', ')}</td>
-                    <td>
-                      {s.last_run_at ? formatWhen(s.last_run_at) : '—'}
+                    )}
+                    {restaurantReports ? null : <td>{(s.recipients || []).join(', ')}</td>}
+                    <td data-label={restaurantReports ? 'Last run' : undefined}>
+                      {restaurantReports
+                        ? (s.last_run_at ? formatWhen(s.last_run_at) : 'Not run yet')
+                        : (s.last_run_at ? formatWhen(s.last_run_at) : '—')}
                       {s.last_error ? (
                         <div style={{ color: '#b91c1c', fontSize: 12 }}>{s.last_error}</div>
                       ) : null}
                     </td>
-                    <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <td
+                      data-label={restaurantReports ? 'Actions' : undefined}
+                      style={restaurantReports ? undefined : { display: 'flex', gap: 6, flexWrap: 'wrap' }}
+                    >
                       <button onClick={() => runSchedule(s.id)} aria-label={`Run report schedule ${s.id}`}>
                         Run now
                       </button>
@@ -3186,7 +3982,7 @@ export default function Page() {
             </tbody>
           </table>
           </div>
-          {!schedules.length && !loading && <p className="muted">No schedules yet.</p>}
+          {!schedules.length && !loading && !restaurantReports && <p className="muted">No schedules yet.</p>}
         </>
       )}
         </div>

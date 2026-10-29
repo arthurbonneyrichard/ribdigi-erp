@@ -15,7 +15,8 @@ import { createPaintGet, peekPrefetch } from '../../../lib/prefetchCache';
 import { AmountField } from '../../../components/AmountField';
 import { getMe } from '../../../lib/meCache';
 import { useStoreContext } from '../../../lib/storeContext';
-import { tenantIsMultiStore } from '../../../lib/tenantNav';
+import { isHotelIndustry, tenantIsMultiStore } from '../../../lib/tenantNav';
+import { normalizeIndustry } from '../../../lib/industries';
 import { formatDate, formatNumber } from '../../../lib/format';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import './purchase-ui.css';
@@ -445,13 +446,19 @@ export default function Page() {
   const [warehouseId, setWarehouseId] = useState('');
   const [billWarehouseId, setBillWarehouseId] = useState('');
   const [hideWarehouseUx, setHideWarehouseUx] = useState(false);
+  const [hotelOps, setHotelOps] = useState(false);
+  const [restaurantOps, setRestaurantOps] = useState(false);
   const storeWarehouses = useMemo(
     () => warehouses.filter((w: any) => !w.store_id || !storeId || String(w.store_id) === String(storeId)),
     [warehouses, storeId],
   );
   useEffect(() => {
     getMe()
-      .then((r) => setHideWarehouseUx(!tenantIsMultiStore(r.data)))
+      .then((r) => {
+        setHideWarehouseUx(!tenantIsMultiStore(r.data));
+        setHotelOps(isHotelIndustry(r.data?.industry));
+        setRestaurantOps(normalizeIndustry(r.data?.industry) === 'restaurant');
+      })
       .catch(() => undefined);
   }, []);
   useEffect(() => {
@@ -699,7 +706,7 @@ export default function Page() {
       return;
     }
     if (!lines.length) {
-      setError('Add at least one product line with quantity and unit price.');
+      setError(hotelOps ? 'Add at least one supply line with quantity and unit price.' : restaurantOps ? 'Add at least one ingredient line with quantity and unit price.' : 'Add at least one product line with quantity and unit price.');
       return;
     }
     setError('');
@@ -865,7 +872,7 @@ export default function Page() {
     }
     const lines = amendLines.filter((line) => line.productId.trim());
     if (!lines.length) {
-      setError('Add at least one product before saving the amendment');
+      setError(hotelOps ? 'Add at least one supply before saving the amendment' : restaurantOps ? 'Add at least one ingredient before saving the amendment' : 'Add at least one product before saving the amendment');
       return;
     }
     try {
@@ -1145,7 +1152,7 @@ export default function Page() {
     const productId = billPickProductId.trim();
     const product = products.find((p) => p.id === productId);
     if (!product) {
-      setError('Choose a product first');
+      setError(hotelOps ? 'Choose a supply first' : restaurantOps ? 'Choose an ingredient first' : 'Choose a product first');
       return;
     }
     const draft: BillLineDraft = {
@@ -1157,7 +1164,7 @@ export default function Page() {
       discount: billPickDiscount,
     };
     if (!isValidBillLine(draft)) {
-      setError('Add at least one product line with quantity and unit cost.');
+      setError(hotelOps ? 'Add at least one supply line with quantity and unit cost.' : restaurantOps ? 'Add at least one ingredient line with quantity and unit cost.' : 'Add at least one product line with quantity and unit cost.');
       return;
     }
     setError('');
@@ -1174,7 +1181,7 @@ export default function Page() {
     setError('');
     const lines = billLines.filter(isValidBillLine);
     if (lines.length < 1) {
-      setError('Add at least one product line with quantity and unit cost.');
+      setError(hotelOps ? 'Add at least one supply line with quantity and unit cost.' : restaurantOps ? 'Add at least one ingredient line with quantity and unit cost.' : 'Add at least one product line with quantity and unit cost.');
       return;
     }
     setSaveBusy(true);
@@ -1374,7 +1381,7 @@ export default function Page() {
     if (saveBusy) return;
     const lines = prLines.filter((line) => line.productId.trim() && Number(line.qty) > 0);
     if (!lines.length) {
-      setError('Add at least one product line.');
+      setError(hotelOps ? 'Add at least one supply line.' : restaurantOps ? 'Add at least one ingredient line.' : 'Add at least one product line.');
       return;
     }
     setError('');
@@ -1692,17 +1699,43 @@ export default function Page() {
     return `${s.name} ${s.code || ''} ${s.category || ''}`.toLowerCase().includes(q);
   });
 
+  const lineName = hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product';
+  const addLineLabel = hotelOps ? 'Add supply' : restaurantOps ? 'Add ingredient' : 'Add product';
+  const pickLineLabel = hotelOps ? 'Select supply' : restaurantOps ? 'Select ingredient' : 'Select product';
+
   return (
     <div className="purch-desk purchase-ui-page">
       <PageHeader className="cat-head" title="Purchasing">
         <p className="purchase-ui-path">
-          <span>1 Suppliers</span>
-          <span>2 Orders</span>
-          <span>3 Receive goods</span>
-          <span>4 Supplier bills</span>
-          <span>5 Returns</span>
+          {hotelOps ? (
+            <>
+              <span>1 Suppliers</span>
+              <span>2 Orders</span>
+              <span>3 Receive supplies</span>
+              <span>4 Supplier bills</span>
+              <span>5 Returns</span>
+            </>
+          ) : restaurantOps ? (
+            <>
+              <span>1 Suppliers</span>
+              <span>2 Orders</span>
+              <span>3 Receive stock</span>
+              <span>4 Supplier bills</span>
+              <span>5 Returns</span>
+            </>
+          ) : (
+            <>
+              <span>1 Suppliers</span>
+              <span>2 Orders</span>
+              <span>3 Receive goods</span>
+              <span>4 Supplier bills</span>
+              <span>5 Returns</span>
+            </>
+          )}
         </p>
         <p className="purchase-ui-links">
+          {hotelOps ? <span>Suppliers, purchase orders, and goods received for hotel supplies.</span> : null}
+          {restaurantOps ? <span>Suppliers, purchase orders, and stock received for recipe ingredients.</span> : null}
           <a href="/credit?kind=payable">Supplier balances</a>
           <a href="/credit?kind=payable&panel=pay">Record a supplier payment</a>
         </p>
@@ -1731,7 +1764,7 @@ export default function Page() {
             aria-current={tab === id ? 'page' : undefined}
             aria-label={`Show purchasing ${id} tab`}
           >
-            {label}
+            {id === 'grn' && hotelOps ? 'Receive supplies' : id === 'grn' && restaurantOps ? 'Receive stock' : label}
           </button>
         ))}
       </nav>
@@ -1858,13 +1891,17 @@ export default function Page() {
               />
             </div>
             <p className="muted" style={{ marginTop: 8 }}>
-              Add every product for this supplier. Choosing a product opens the next line.
+              {hotelOps
+                ? 'Add every supply for this supplier. Choosing a supply opens the next line.'
+                : restaurantOps
+                  ? 'Add every ingredient for this supplier. Choosing an ingredient opens the next line.'
+                  : 'Add every product for this supplier. Choosing a product opens the next line.'}
             </p>
             <div className="cat-table-wrap" style={{ marginTop: 8 }}>
               <table className="table">
                 <thead>
                   <tr>
-                    <th className="col-text">Product</th>
+                    <th className="col-text">{lineName}</th>
                     <th className="col-num">Qty</th>
                     <th className="col-text">Line notes</th>
                     <th />
@@ -1889,7 +1926,7 @@ export default function Page() {
                           }}
                           aria-label="Purchase request product"
                         >
-                          <option value="">Select product</option>
+                          <option value="">{pickLineLabel}</option>
                           {products
                             .filter((p) => p.is_active !== false)
                             .map((p) => (
@@ -1954,7 +1991,7 @@ export default function Page() {
                 onClick={() => setPrLines((rows) => [...rows, emptyPrLine()])}
                 aria-label="Add purchase request product"
               >
-                Add product
+                {addLineLabel}
               </button>
               <button
                 onClick={createRequest}
@@ -2008,16 +2045,24 @@ export default function Page() {
             <option value="converted">Converted only</option>
           </select>
           </div>
-          <div className="cat-table-wrap">
-          <table className="table">
+          <div className={restaurantOps ? 'cat-table-wrap rest-purch-table' : 'cat-table-wrap'}>
+          <table className={restaurantOps ? 'table purchase-ui-stack' : 'table'}>
+            {restaurantOps ? (
+              <colgroup>
+                <col style={{ width: '34%' }} />
+                <col style={{ width: '18%' }} />
+                <col style={{ width: '22%' }} />
+                <col style={{ width: '26%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
-                <th className="col-id">Number</th>
+                <th className="col-id">{restaurantOps ? 'Request' : 'Number'}</th>
                 <th className="col-status">Status</th>
                 <th className="col-status">Approval</th>
-                <th className="col-text">Department</th>
-                <th className="col-text">Lines</th>
-                <th className="col-text">Reject reason</th>
+                {restaurantOps ? null : <th className="col-text">Department</th>}
+                {restaurantOps ? null : <th className="col-text">Lines</th>}
+                {restaurantOps ? null : <th className="col-text">Reject reason</th>}
                 <th className="col-actions">Actions</th>
               </tr>
             </thead>
@@ -2089,23 +2134,37 @@ export default function Page() {
                 ];
                 return (
                 <tr key={r.id}>
-                  <td className="col-id">{r.request_number}</td>
-                  <td className="col-status"><StatusChip value={r.status} /></td>
-                  <td className="col-status">
+                  <td className="col-id" data-label={restaurantOps ? 'Request' : 'Number'}>
+                    {r.request_number}
+                    {restaurantOps ? (
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {r.department || 'No department'}
+                        {' · '}
+                        {(r.items || [])
+                          .map((i) => `${productName(i.product_id, i)} × ${i.quantity}`)
+                          .join(', ') || 'No lines'}
+                        {r.rejection_reason ? ` · ${r.rejection_reason}` : ''}
+                      </span>
+                    ) : null}
+                  </td>
+                  <td className="col-status" data-label="Status"><StatusChip value={r.status} /></td>
+                  <td className="col-status" data-label="Approval">
                     {r.status === 'pending'
                       ? `L${r.awaiting_level || r.approval_step || 1}/${r.approval_steps_required || 1}`
                       : r.approval_steps_required
                         ? `${r.approval_steps_required} level(s)`
                         : '—'}
                   </td>
-                  <td className="col-text">{r.department || '—'}</td>
-                  <td className="col-text">
-                    {(r.items || [])
-                      .map((i) => `${productName(i.product_id, i)} × ${i.quantity}`)
-                      .join(', ') || '—'}
-                  </td>
-                  <td className="col-text muted">{r.rejection_reason || '—'}</td>
-                  <td className="col-actions">
+                  {restaurantOps ? null : <td className="col-text" data-label="Department">{r.department || '—'}</td>}
+                  {restaurantOps ? null : (
+                    <td className="col-text" data-label="Lines">
+                      {(r.items || [])
+                        .map((i) => `${productName(i.product_id, i)} × ${i.quantity}`)
+                        .join(', ') || '—'}
+                    </td>
+                  )}
+                  {restaurantOps ? null : <td className="col-text muted" data-label="Reject reason">{r.rejection_reason || '—'}</td>}
+                  <td className="col-actions" data-label="Actions">
                     <RowActions label={`More actions for ${r.request_number || r.id}`} primaryMax={1} items={prActions} />
                   </td>
                 </tr>
@@ -2113,9 +2172,11 @@ export default function Page() {
               })}
               {managedRequests.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="muted">
+                  <td colSpan={restaurantOps ? 4 : 7} className="muted">
                     {requests.length === 0
-                      ? 'Create a purchase request when you need approval before an order.'
+                      ? restaurantOps
+                        ? 'Create a purchase request when you need approval before buying ingredients.'
+                        : 'Create a purchase request when you need approval before an order.'
                       : 'No purchase requests for this filter, so choose All statuses to see them.'}
                   </td>
                 </tr>
@@ -2179,12 +2240,22 @@ export default function Page() {
               </p>
             </div>
           ) : (
-            <div className="cat-table-wrap">
+            <div className={restaurantOps ? 'cat-table-wrap rest-purch-table' : 'cat-table-wrap'}>
               <table className="table cat-table purchase-ui-stack">
+                {restaurantOps ? (
+                  <colgroup>
+                    <col style={{ width: '28%' }} />
+                    <col style={{ width: '14%' }} />
+                    <col style={{ width: '14%' }} />
+                    <col style={{ width: '14%' }} />
+                    <col style={{ width: '14%' }} />
+                    <col style={{ width: '16%' }} />
+                  </colgroup>
+                ) : null}
                 <thead>
                   <tr>
                     <th className="col-text">Name</th>
-                    <th className="col-id">Code</th>
+                    {restaurantOps ? null : <th className="col-id">Code</th>}
                     <th className="col-status">Status</th>
                     <th className="col-num">Open bills</th>
                     <th className="col-num">Total paid</th>
@@ -2221,8 +2292,13 @@ export default function Page() {
                     ];
                     return (
                     <tr key={s.id}>
-                      <td className="col-text" data-label="Name"><strong>{s.name}</strong></td>
-                      <td className="col-id" data-label="Code">{s.code || '—'}</td>
+                      <td className="col-text" data-label="Name">
+                        <strong>{s.name}</strong>
+                        {restaurantOps ? (
+                          <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>{s.code || '—'}</span>
+                        ) : null}
+                      </td>
+                      {restaurantOps ? null : <td className="col-id" data-label="Code">{s.code || '—'}</td>}
                       <td className="col-status" data-label="Status">
                         <StatusChip value={s.status === 'inactive' ? 'inactive' : 'active'} />
                       </td>
@@ -2235,7 +2311,7 @@ export default function Page() {
                       <td className="col-num" data-label="Amount left" aria-label={`Amount left for ${s.name}`}>
                         {supplierMoney(s, 'amount_left')}
                       </td>
-                      <td className="col-actions">
+                      <td className="col-actions" data-label="Actions">
                         <RowActions label={`More actions for ${s.name}`} primaryMax={1} items={supplierActions} />
                       </td>
                     </tr>
@@ -2559,7 +2635,7 @@ export default function Page() {
           />
           {!hideWarehouseUx ? (
           <label className="field">
-            <span>Warehouse (store context)</span>
+            <span>{hotelOps ? 'Location' : restaurantOps ? 'Warehouse (store context)' : 'Warehouse (store context)'}</span>
             <select aria-label="PO warehouse" value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
               <option value="">Default / any</option>
               {storeWarehouses.map((w: any) => (
@@ -2569,14 +2645,18 @@ export default function Page() {
           </label>
           ) : null}
           <span className="muted span-2">
-            Add one or more product lines from this supplier. Use Add product for each extra line.
+            {hotelOps
+              ? 'Add one or more supply lines from this supplier. Use Add supply for each extra line.'
+              : restaurantOps
+                ? 'Add one or more ingredient lines from this supplier. Use Add ingredient for each extra line.'
+                : 'Add one or more product lines from this supplier. Use Add product for each extra line.'}
           </span>
         </div>
         <div className="cat-table-wrap erp-modal-lines" style={{ marginTop: 12 }}>
           <table className="table">
             <thead>
               <tr>
-                <th className="col-text">Product</th>
+                <th className="col-text">{lineName}</th>
                 <th className="col-text">Unit</th>
                 <th className="col-num">Qty</th>
                 <th className="col-num">Unit price</th>
@@ -2612,7 +2692,7 @@ export default function Page() {
                       }}
                       aria-label="PO product"
                     >
-                      <option value="">Select product</option>
+                      <option value="">{pickLineLabel}</option>
                       {products
                         .filter((p) => p.is_active !== false)
                         .map((p) => (
@@ -2634,7 +2714,7 @@ export default function Page() {
                       }
                       aria-label="PO unit"
                     >
-                      <option value="">Unit (product default)</option>
+                      <option value="">{hotelOps ? 'Unit (supply default)' : restaurantOps ? 'Unit (ingredient default)' : 'Unit (product default)'}</option>
                       {units.map((u) => (
                         <option key={u.id} value={u.id}>
                           {u.code} — {u.name}
@@ -2714,7 +2794,7 @@ export default function Page() {
             onClick={() => setPoLines((rows) => [...rows, emptyPoLine()])}
             aria-label="Add purchase order product"
           >
-            Add product
+            {addLineLabel}
           </button>
           <button
             className="btn-primary"
@@ -2788,18 +2868,28 @@ export default function Page() {
             <option value="cancelled">Cancelled only</option>
           </select>
           </div>
-          <div className="cat-table-wrap">
+          <div className={restaurantOps ? 'cat-table-wrap rest-purch-table' : 'cat-table-wrap'}>
           <table className="table purchase-ui-stack">
+            {restaurantOps ? (
+              <colgroup>
+                <col style={{ width: '26%' }} />
+                <col style={{ width: '13%' }} />
+                <col style={{ width: '15%' }} />
+                <col style={{ width: '15%' }} />
+                <col style={{ width: '15%' }} />
+                <col style={{ width: '16%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
                 <th className="col-id">PO</th>
-                <th className="col-text">Supplier</th>
+                {restaurantOps ? null : <th className="col-text">Supplier</th>}
                 <th className="col-status">Status</th>
-                <th className="col-num">Rev</th>
+                {restaurantOps ? null : <th className="col-num">Rev</th>}
                 <th className="col-num">Total</th>
                 <th className="col-num">Amount paid</th>
                 <th className="col-num">Amount left</th>
-                <th className="col-text">Notes</th>
+                {restaurantOps ? null : <th className="col-text">Notes</th>}
                 <th className="col-actions">Actions</th>
               </tr>
             </thead>
@@ -2836,7 +2926,7 @@ export default function Page() {
                   },
                   {
                     key: 'receive',
-                    label: 'Receive goods',
+                    label: hotelOps ? 'Receive supplies' : restaurantOps ? 'Receive stock' : 'Receive goods',
                     variant: 'ok',
                     hidden: !(o.status === 'sent' || o.status === 'partially_received'),
                     ariaLabel: `Receive all for purchase order ${o.id}`,
@@ -2864,19 +2954,30 @@ export default function Page() {
                     >
                       {o.po_number}
                     </button>
+                    {restaurantOps ? (
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {supplierNameOf(o.supplier_id)}
+                        {o.revision_no ? ` · rev ${o.revision_no}` : ''}
+                      </span>
+                    ) : null}
+                    {restaurantOps && o.notes ? (
+                      <span className="list-secondary" style={{ display: 'block' }}>{o.notes}</span>
+                    ) : null}
                   </td>
-                  <td className="col-text" data-label="Supplier">{supplierNameOf(o.supplier_id)}</td>
+                  {restaurantOps ? null : <td className="col-text" data-label="Supplier">{supplierNameOf(o.supplier_id)}</td>}
                   <td className="col-status" data-label="Status"><StatusChip value={o.status} /></td>
-                  <td className="col-num" data-label="Rev">{o.revision_no ?? 0}</td>
+                  {restaurantOps ? null : <td className="col-num" data-label="Rev">{o.revision_no ?? 0}</td>}
                   <td className="col-num" data-label="Total">{formatNumber(o.total_amount, formatPrefs)}</td>
                   <td className="col-num" data-label="Amount paid">{formatNumber(o.paid_amount ?? 0, formatPrefs)}</td>
                   <td className="col-num" data-label="Amount left">
                     {formatNumber(o.balance_due ?? Math.max(Number(o.total_amount || 0) - Number(o.paid_amount || 0), 0), formatPrefs)}
                   </td>
+                  {restaurantOps ? null : (
                   <td className="col-text muted" data-label="Notes">
                     {o.notes || '—'}
                   </td>
-                  <td className="col-actions">
+                  )}
+                  <td className="col-actions" data-label="Actions">
                     <RowActions label={`More actions for ${o.po_number || o.id}`} primaryMax={1} items={poActions} />
                   </td>
                 </tr>
@@ -2884,7 +2985,7 @@ export default function Page() {
               })}
               {managedOrders.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="muted">
+                  <td colSpan={restaurantOps ? 6 : 9} className="muted">
                     {orders.length === 0
                       ? 'Add a purchase order for a supplier.'
                       : 'No purchase orders for this filter, so choose All statuses to see them.'}
@@ -2956,7 +3057,7 @@ export default function Page() {
               <table className="table">
                 <thead>
                   <tr>
-                    <th className="col-text">Product</th>
+                    <th className="col-text">{lineName}</th>
                     <th className="col-id">SKU</th>
                     <th className="col-num">Ordered</th>
                     <th className="col-num">Received</th>
@@ -3060,7 +3161,7 @@ export default function Page() {
                                 <input
                                   style={{ minWidth: 140 }}
                                   value={draft.reason}
-                                  placeholder="Damaged / wrong item…"
+                                  placeholder={hotelOps ? 'Damaged / wrong supply…' : restaurantOps ? 'Damaged / wrong ingredient…' : 'Damaged / wrong item…'}
                                   title="Required when rejecting qty"
                                   aria-label={`GRN rejection reason ${i.id}`}
                                   onChange={(e) =>
@@ -3158,7 +3259,7 @@ export default function Page() {
                       onClick={() => postPartialReceive(selected)}
                       aria-label="Post GRN"
                     >
-                      Post GRN (accept / reject)
+                      {hotelOps ? 'Receive supplies (accept / reject)' : restaurantOps ? 'Receive stock (accept / reject)' : 'Post GRN (accept / reject)'}
                     </button>
                     <button
                       type="button"
@@ -3169,22 +3270,27 @@ export default function Page() {
                       Receive all accepted
                     </button>
                     <span className="muted">
-                      Rejected qty requires a reason; only accepted qty is stocked. Batch/expiry apply to
-                      accepted stock (required when product tracks batches).
+                      {hotelOps
+                        ? 'Rejected quantity needs a reason; only accepted quantity is received. Lot and expiry apply to accepted supplies (required when the supply tracks lots).'
+                        : restaurantOps
+                          ? 'Rejected quantity needs a reason; only accepted quantity is received. Lot and expiry apply to accepted stock (required when the ingredient tracks lots).'
+                          : 'Rejected qty requires a reason; only accepted qty is stocked. Batch/expiry apply to accepted stock (required when product tracks batches).'}
                     </span>
                   </div>
                 )}
               {selected.can_amend && (
                 <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
-                  <h4 style={{ margin: 0 }}>Amend every product</h4>
+                  <h4 style={{ margin: 0 }}>{hotelOps ? 'Amend every supply' : restaurantOps ? 'Amend every ingredient' : 'Amend every product'}</h4>
                   <p className="muted" style={{ margin: 0 }}>
-                    Saving replaces the order lines with this list. Add or remove products before any goods are received.
+                    {hotelOps
+                      ? 'Saving replaces the order lines with this list. Add or remove supplies before any goods are received.'
+                      : 'Saving replaces the order lines with this list. Add or remove products before any goods are received.'}
                   </p>
                   <div className="cat-table-wrap">
                     <table className="table compact">
                       <thead>
                         <tr>
-                          <th className="col-text">Product</th>
+                          <th className="col-text">{lineName}</th>
                           <th className="col-text">Unit</th>
                           <th className="col-num">Qty</th>
                           <th className="col-num">Price</th>
@@ -3215,7 +3321,7 @@ export default function Page() {
                                   );
                                 }}
                               >
-                                <option value="">Select product</option>
+                                <option value="">{pickLineLabel}</option>
                                 {products
                                   .filter((p) => p.is_active !== false)
                                   .map((p) => (
@@ -3236,7 +3342,7 @@ export default function Page() {
                                   }
                                   aria-label="PO unit"
                                 >
-                                  <option value="">Unit (product default)</option>
+                                  <option value="">{hotelOps ? 'Unit (supply default)' : restaurantOps ? 'Unit (ingredient default)' : 'Unit (product default)'}</option>
                                   {units.map((u) => (
                                     <option key={u.id} value={u.id}>
                                       {u.code}
@@ -3253,7 +3359,7 @@ export default function Page() {
                                   }
                                   aria-label={`PO unit ${index + 1}`}
                                 >
-                                  <option value="">Unit (product default)</option>
+                                  <option value="">{hotelOps ? 'Unit (supply default)' : restaurantOps ? 'Unit (ingredient default)' : 'Unit (product default)'}</option>
                                   {units.map((u) => (
                                     <option key={u.id} value={u.id}>
                                       {u.code}
@@ -3361,7 +3467,7 @@ export default function Page() {
                     onClick={() => setAmendLines((rows) => [...rows, emptyAmendLine()])}
                     aria-label="Add purchase order amend product"
                   >
-                    Add product
+                    {addLineLabel}
                   </button>
                   <input
                     value={amendNotes}
@@ -3441,10 +3547,12 @@ export default function Page() {
       {tab === 'grn' && (
         <div className="card cat-panel">
         <div className="cat-head">
-          <h2 style={{ margin: 0 }}>Receive goods</h2>
+          <h2 style={{ margin: 0 }}>{hotelOps ? 'Receive supplies' : restaurantOps ? 'Receive stock' : 'Receive goods'}</h2>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          Choose the order to receive. Stock posts for that order only.
+          {hotelOps
+            ? 'Choose the order to receive. Supplies are received for that order only.'
+            : 'Choose the order to receive. Stock posts for that order only.'}
         </p>
         <div className="erp-form-grid" style={{ marginTop: 12 }}>
           <select
@@ -3481,7 +3589,7 @@ export default function Page() {
             <table className="table compact">
               <thead>
                 <tr>
-                  <th className="col-text">Product</th>
+                  <th className="col-text">{lineName}</th>
                   <th className="col-id">SKU</th>
                   <th className="col-num">Left</th>
                   <th className="col-num">Receive</th>
@@ -3611,22 +3719,32 @@ export default function Page() {
           </div>
         )}
         <h3 style={{ marginTop: 24 }}>Received</h3>
-        {grns.length === 0 ? (
+        {!restaurantOps && grns.length === 0 ? (
           <div className="cat-empty">
-            <p>Receive a sent order to list the goods receipt here.</p>
+            <p>{hotelOps ? 'Receive a sent order to list the delivery here.' : 'Receive a sent order to list the goods receipt here.'}</p>
           </div>
         ) : (
-        <div className="cat-table-wrap">
+        <div className={restaurantOps ? 'cat-table-wrap rest-purch-table' : 'cat-table-wrap'}>
         <table className="table cat-table purchase-ui-stack">
+          {restaurantOps ? (
+            <colgroup>
+              <col style={{ width: '28%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '12%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '18%' }} />
+            </colgroup>
+          ) : null}
           <thead>
             <tr>
-              <th className="col-id">GRN</th>
-              <th className="col-id">PO</th>
-              <th className="col-text">Supplier</th>
-              <th className="col-date">Date received</th>
+              <th className="col-id">{hotelOps ? 'Delivery' : restaurantOps ? 'Receipt' : 'GRN'}</th>
+              {restaurantOps ? null : <th className="col-id">PO</th>}
+              {restaurantOps ? null : <th className="col-text">Supplier</th>}
+              {restaurantOps ? null : <th className="col-date">Date received</th>}
               <th className="col-status">Status</th>
               <th className="col-num">Accepted</th>
-              <th className="col-num">Rejected</th>
+              {restaurantOps ? null : <th className="col-num">Rejected</th>}
               <th className="col-num">Amount paid</th>
               <th className="col-num">Amount left</th>
               <th className="col-actions">Actions</th>
@@ -3656,7 +3774,10 @@ export default function Page() {
                   label: 'Email',
                   ariaLabel: 'Email goods received note',
                   onClick: () =>
-                    sendPurchasingDoc(`/purchasing/grn/${g.id}/send`, 'Goods received note emailed to'),
+                    sendPurchasingDoc(
+                      `/purchasing/grn/${g.id}/send`,
+                      hotelOps ? 'Supplies received note emailed to' : restaurantOps ? 'Stock received note emailed to' : 'Goods received note emailed to',
+                    ),
                 },
                 {
                   key: 'bill',
@@ -3673,24 +3794,39 @@ export default function Page() {
               ];
               return (
                 <tr key={g.id}>
-                  <td className="col-id" data-label="GRN">{g.grn_number}</td>
-                  <td className="col-id" data-label="PO">{poNumberOf(g.purchase_order_id)}</td>
-                  <td className="col-text" data-label="Supplier">{supplierNameOf(g.supplier_id, g.purchase_order_id)}</td>
-                  <td className="col-date" data-label="Date received">
-                    {formatDate(g.received_at || g.created_at, formatPrefs) || '—'}
+                  <td className="col-id" data-label={hotelOps ? 'Delivery' : restaurantOps ? 'Receipt' : 'GRN'}>
+                    {g.grn_number}
+                    {restaurantOps ? (
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {poNumberOf(g.purchase_order_id) || 'No order'}
+                        {' · '}
+                        {supplierNameOf(g.supplier_id, g.purchase_order_id) || 'No supplier'}
+                        {' · '}
+                        {formatDate(g.received_at || g.created_at, formatPrefs) || 'No date'}
+                        {' · '}
+                        Rejected {rejected}
+                      </span>
+                    ) : null}
                   </td>
+                  {restaurantOps ? null : <td className="col-id" data-label="PO">{poNumberOf(g.purchase_order_id)}</td>}
+                  {restaurantOps ? null : <td className="col-text" data-label="Supplier">{supplierNameOf(g.supplier_id, g.purchase_order_id)}</td>}
+                  {restaurantOps ? null : (
+                    <td className="col-date" data-label="Date received">
+                      {formatDate(g.received_at || g.created_at, formatPrefs) || '—'}
+                    </td>
+                  )}
                   <td className="col-status" data-label="Status">
                     <StatusChip value={g.status} />
                   </td>
                   <td className="col-num" data-label="Accepted">{accepted}</td>
-                  <td className="col-num" data-label="Rejected">{rejected}</td>
+                  {restaurantOps ? null : <td className="col-num" data-label="Rejected">{rejected}</td>}
                   <td className="col-num" data-label="Amount paid">
                     {formatGrnBillField(billMoney, 'paid')}
                   </td>
                   <td className="col-num" data-label="Amount left">
                     {formatGrnBillField(billMoney, 'left')}
                   </td>
-                  <td className="col-actions">
+                  <td className="col-actions" data-label="Actions">
                     {billed ? (
                       <span className="muted">Billed</span>
                     ) : (
@@ -3700,6 +3836,13 @@ export default function Page() {
                 </tr>
               );
             })}
+            {restaurantOps && grns.length === 0 && (
+              <tr>
+                <td colSpan={restaurantOps ? 6 : 10} className="muted">
+                  Receive a sent order to list the stock receipt here.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
         </div>
@@ -3713,36 +3856,65 @@ export default function Page() {
             <h2 style={{ margin: 0 }}>Purchase history</h2>
           </div>
           <p className="muted" style={{ margin: 0 }}>
-            Orders, goods received, supplier bills, and returns — not the reports summary.
+            {restaurantOps
+              ? 'Orders, stock receipts, supplier bills, and returns. This is not the reports summary.'
+              : 'Orders, goods received, supplier bills, and returns — not the reports summary.'}
           </p>
-          <div className="cat-table-wrap">
-          <table className="table cat-table">
+          <div className={restaurantOps ? 'cat-table-wrap rest-purch-table' : 'cat-table-wrap'}>
+          <table className={restaurantOps ? 'table cat-table purchase-ui-stack' : 'table cat-table'}>
+            {restaurantOps ? (
+              <colgroup>
+                <col style={{ width: '18%' }} />
+                <col style={{ width: '40%' }} />
+                <col style={{ width: '18%' }} />
+                <col style={{ width: '24%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
                 <th className="col-date">Date</th>
-                <th className="col-text">Type</th>
-                <th className="col-id">Number</th>
-                <th className="col-text">Supplier</th>
+                {restaurantOps ? (
+                  <th className="col-text">Record</th>
+                ) : (
+                  <>
+                    <th className="col-text">Type</th>
+                    <th className="col-id">Number</th>
+                    <th className="col-text">Supplier</th>
+                  </>
+                )}
                 <th className="col-status">Status</th>
-                <th className="col-num">Amount / qty</th>
+                <th className="col-num">{restaurantOps ? 'Amount' : 'Amount / qty'}</th>
               </tr>
             </thead>
             <tbody>
               {purchaseHistory.map((row) => (
                 <tr key={row.key}>
-                  <td className="col-date">{row.at ? String(row.at).slice(0, 10) : '—'}</td>
-                  <td className="col-text">{row.kind}</td>
-                  <td className="col-id">{row.ref}</td>
-                  <td className="col-text">{row.party}</td>
-                  <td className="col-status">
+                  <td className="col-date" data-label="Date">{row.at ? String(row.at).slice(0, 10) : '—'}</td>
+                  {restaurantOps ? (
+                    <td className="col-text" data-label="Record">
+                      <strong>{row.kind === 'Received' ? 'Receipt' : row.kind}</strong>
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {row.ref || 'No number'}
+                        {' · '}
+                        {row.party || 'No supplier'}
+                      </span>
+                    </td>
+                  ) : (
+                    <>
+                      <td className="col-text" data-label="Type">{row.kind}</td>
+                      <td className="col-id" data-label="Number">{row.ref}</td>
+                      <td className="col-text" data-label="Supplier">{row.party}</td>
+                    </>
+                  )}
+                  <td className="col-status" data-label="Status">
                     <StatusChip value={row.status} />
                   </td>
-                  <td className="col-num">{row.amount || '—'}</td>
+                  <td className="col-num" data-label={restaurantOps ? 'Amount' : 'Amount / qty'}>{row.amount || '—'}</td>
                 </tr>
               ))}
               {purchaseHistory.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="muted">
+                  <td colSpan={restaurantOps ? 4 : 6} className="muted">
                     Add a supplier, then create an order, to see history for that supplier.
                   </td>
                 </tr>
@@ -3757,7 +3929,7 @@ export default function Page() {
         <>
           <div className="purchase-ui-actions">
             <button type="button" className="btn-primary" onClick={() => setBillCreateOpen(true)} aria-label="Create supplier bill from received goods">
-              Bill from GRN
+              {hotelOps ? 'Bill from a delivery' : restaurantOps ? 'Bill from a receipt' : 'Bill from GRN'}
             </button>
             <button type="button" onClick={() => setBillManualOpen(true)} aria-label="Create supplier bill">
               Create supplier bill
@@ -3785,7 +3957,7 @@ export default function Page() {
           <div className="erp-split">
       {billCreateOpen ? (
       <FormModal
-        title="Create supplier bill from received goods"
+        title={hotelOps ? 'Create supplier bill from a delivery' : restaurantOps ? 'Create supplier bill from received stock' : 'Create supplier bill from received goods'}
         busy={saveBusy}
         dirty={Boolean(invoiceGrnId || supplierInvoiceNo.trim())}
         onClose={() => setBillCreateOpen(false)}
@@ -3796,7 +3968,7 @@ export default function Page() {
             onChange={(e) => setInvoiceGrnId(e.target.value)}
             aria-label="Purchase invoice GRN"
           >
-            <option value="">Choose the delivery you received (GRN)</option>
+            <option value="">{hotelOps ? 'Choose the delivery you received' : restaurantOps ? 'Choose the stock you received' : 'Choose the delivery you received (GRN)'}</option>
             {grns.map((g) => (
               <option key={g.id} value={g.id}>
                 {g.grn_number} · {supplierNameOf(g.supplier_id, g.purchase_order_id)}
@@ -3910,7 +4082,7 @@ export default function Page() {
           </select>
           {!hideWarehouseUx ? (
           <label className="field">
-            <span>Warehouse (store context)</span>
+            <span>{hotelOps ? 'Location' : restaurantOps ? 'Warehouse (store context)' : 'Warehouse (store context)'}</span>
             <select
               aria-label="Purchase invoice warehouse"
               value={billWarehouseId}
@@ -3978,8 +4150,16 @@ export default function Page() {
             Reverse charge (self-assess VAT; AP = net)
           </label>
           <span className="muted span-2">
-            One supplier and bill header. Choose a product, then Add product — that line stays, and you can add another.
-            Header discount and FX apply once on the bill total (tax is not doubled). Draft saves the bill only; posting receives stock for every line at the selected warehouse.
+            {hotelOps
+              ? 'One supplier and bill header. Choose a supply, then Add supply — that line stays, and you can add another.'
+              : restaurantOps
+                ? 'One supplier and bill header. Choose an ingredient, then Add ingredient — that line stays, and you can add another.'
+                : 'One supplier and bill header. Choose a product, then Add product — that line stays, and you can add another.'}
+            {hotelOps
+              ? ' Header discount and FX apply once on the bill total (tax is not doubled). Draft saves the bill only; posting receives supplies for every line at the selected location.'
+              : restaurantOps
+                ? ' Header discount and FX apply once on the bill total (tax is not doubled). Draft saves the bill only; posting receives ingredients for every line at the selected warehouse.'
+                : ' Header discount and FX apply once on the bill total (tax is not doubled). Draft saves the bill only; posting receives stock for every line at the selected warehouse.'}
           </span>
         </div>
         <div className="erp-form-grid erp-modal-lines" style={{ marginTop: 12 }}>
@@ -3993,7 +4173,7 @@ export default function Page() {
             }}
             aria-label="Purchase invoice product"
           >
-            <option value="">Select product</option>
+            <option value="">{pickLineLabel}</option>
             {products
               .filter((p) => p.is_active !== false)
               .map((p) => (
@@ -4034,7 +4214,7 @@ export default function Page() {
             onClick={addBillProduct}
             aria-label="Add purchase invoice product"
           >
-            Add product
+            {addLineLabel}
           </button>
         </div>
         {products.filter((p) => p.is_active !== false).length === 0 ? (
@@ -4044,7 +4224,7 @@ export default function Page() {
           <table className="table">
             <thead>
               <tr>
-                <th className="col-text">Product</th>
+                <th className="col-text">{lineName}</th>
                 <th>SKU</th>
                 <th>Qty</th>
                 <th>Unit cost</th>
@@ -4059,7 +4239,7 @@ export default function Page() {
                 const product = products.find((p) => p.id === line.productId);
                 return (
                 <tr key={line.key}>
-                  <td className="col-text">{product?.name || 'Product'}</td>
+                  <td className="col-text">{product?.name || lineName}</td>
                   <td>{product?.sku || '—'}</td>
                   <td>
                     <input
@@ -4131,7 +4311,11 @@ export default function Page() {
               {billLines.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="muted">
-                    Choose a product above, then Add product. Each click keeps the earlier lines.
+                    {hotelOps
+                      ? 'Choose a supply above, then Add supply. Each click keeps the earlier lines.'
+                      : restaurantOps
+                        ? 'Choose an ingredient above, then Add ingredient. Each click keeps the earlier lines.'
+                        : 'Choose a product above, then Add product. Each click keeps the earlier lines.'}
                   </td>
                 </tr>
               ) : null}
@@ -4272,22 +4456,32 @@ export default function Page() {
           <option value="cancelled">Cancelled only</option>
         </select>
         </div>
-        <div className="cat-table-wrap">
+        <div className={restaurantOps ? 'cat-table-wrap rest-purch-table' : 'cat-table-wrap'}>
         <table className="table purchase-ui-stack">
+          {restaurantOps ? (
+            <colgroup>
+              <col style={{ width: '28%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '16%' }} />
+            </colgroup>
+          ) : null}
           <thead>
             <tr>
               <th className="col-id">Invoice</th>
-              <th className="col-text">Supplier</th>
-              <th className="col-id">Supplier #</th>
+              {restaurantOps ? null : <th className="col-text">Supplier</th>}
+              {restaurantOps ? null : <th className="col-id">Supplier #</th>}
               <th className="col-status">Status</th>
-              <th className="col-status">Currency</th>
+              {restaurantOps ? null : <th className="col-status">Currency</th>}
               <th className="col-num">Total</th>
-              <th className="col-num">RC</th>
+              {restaurantOps ? null : <th className="col-num">RC</th>}
               <th className="col-num">Amount paid</th>
               <th className="col-num">Amount left</th>
-              <th className="col-status">AP posted</th>
-              <th className="col-status">File</th>
-              <th className="col-text">Notes</th>
+              {restaurantOps ? null : <th className="col-status">AP posted</th>}
+              {restaurantOps ? null : <th className="col-status">File</th>}
+              {restaurantOps ? null : <th className="col-text">Notes</th>}
               <th className="col-actions">Actions</th>
             </tr>
           </thead>
@@ -4409,33 +4603,58 @@ export default function Page() {
                   >
                     {inv.invoice_number}
                   </button>
+                  {restaurantOps ? (
+                    <>
+                      <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                        {billSupplierName(inv)}
+                        {inv.supplier_invoice_number ? ` · ${inv.supplier_invoice_number}` : ''}
+                      </span>
+                      <span className="list-secondary" style={{ display: 'block' }}>
+                        {inv.ap_posted ? 'Posted' : 'From a receipt'}
+                        {inv.has_attachment ? ' · File' : ''}
+                        {inv.currency ? ` · ${inv.currency}` : ''}
+                        {inv.is_reverse_charge ? ` · RC ${inv.reverse_charge_tax ?? 0}` : ''}
+                      </span>
+                      {inv.notes ? <span className="list-secondary" style={{ display: 'block' }}>{inv.notes}</span> : null}
+                    </>
+                  ) : null}
                 </td>
-                <td className="col-text" data-label="Supplier">{billSupplierName(inv)}</td>
-                <td className="col-id" data-label="Supplier #">{inv.supplier_invoice_number || '—'}</td>
+                {restaurantOps ? null : <td className="col-text" data-label="Supplier">{billSupplierName(inv)}</td>}
+                {restaurantOps ? null : <td className="col-id" data-label="Supplier #">{inv.supplier_invoice_number || '—'}</td>}
                 <td className="col-status" data-label="Status"><StatusChip value={inv.status} /></td>
+                {restaurantOps ? null : (
                 <td className="col-status" data-label="Currency">
                   {inv.currency
                     ? `${inv.currency}${inv.exchange_rate != null ? ` @ ${inv.exchange_rate}` : ''}`
                     : '—'}
                 </td>
+                )}
                 <td className="col-num" data-label="Total">{formatNumber(inv.total_amount, formatPrefs)}</td>
+                {restaurantOps ? null : (
                 <td className="col-num" data-label="RC">
                   {inv.is_reverse_charge
                     ? `${inv.reverse_charge_tax ?? 0}`
                     : inv.tax_amount ?? '—'}
                 </td>
+                )}
                 <td className="col-num" data-label="Amount paid">{formatNumber(inv.paid_amount ?? 0, formatPrefs)}</td>
                 <td className="col-num" data-label="Amount left">{formatNumber(inv.balance_due, formatPrefs)}</td>
+                {restaurantOps ? null : (
                 <td className="col-status" data-label="AP posted">
-                  <StatusChip value={inv.ap_posted ? 'posted' : 'draft'} label={inv.ap_posted ? 'Posted' : 'Via GRN'} />
+                  <StatusChip value={inv.ap_posted ? 'posted' : 'draft'} label={inv.ap_posted ? 'Posted' : (hotelOps ? 'From a delivery' : restaurantOps ? 'From a receipt' : 'Via GRN')} />
                 </td>
+                )}
+                {restaurantOps ? null : (
                 <td className="col-status" data-label="File">
                   {inv.has_attachment ? <StatusChip value="active" label="Yes" /> : '—'}
                 </td>
+                )}
+                {restaurantOps ? null : (
                 <td className="col-text muted" data-label="Notes">
                   {inv.notes || '—'}
                 </td>
-                <td className="col-actions">
+                )}
+                <td className="col-actions" data-label="Actions">
                   <RowActions label={`More actions for ${inv.invoice_number || inv.id}`} primaryMax={1} items={piActions} />
                 </td>
               </tr>
@@ -4443,9 +4662,13 @@ export default function Page() {
             })}
             {managedInvoices.length === 0 && (
               <tr>
-                <td colSpan={13} className="muted">
+                <td colSpan={restaurantOps ? 6 : 13} className="muted">
                   {invoices.length === 0
-                    ? 'Receive goods, then create a supplier bill for that supplier.'
+                    ? (hotelOps
+                      ? 'Receive supplies, then create a supplier bill for that supplier.'
+                      : restaurantOps
+                        ? 'Receive stock, then create a supplier bill for that supplier.'
+                        : 'Receive goods, then create a supplier bill for that supplier.')
                     : 'No purchase invoices for this filter, so choose All statuses to see them.'}
                 </td>
               </tr>
@@ -4505,7 +4728,7 @@ export default function Page() {
             <table className="table">
               <thead>
                 <tr>
-                  <th className="col-text">Product</th>
+                  <th className="col-text">{lineName}</th>
                   <th className="col-id">SKU</th>
                   <th className="col-num">Qty</th>
                   <th className="col-text">Unit</th>
@@ -4621,7 +4844,7 @@ export default function Page() {
             }}
             aria-label="Return from GRN"
           >
-            <option value="">Select GRN</option>
+            <option value="">{hotelOps ? 'Select delivery' : restaurantOps ? 'Select receipt' : 'Select GRN'}</option>
             {grns.map((g) => (
               <option key={g.id} value={g.id}>
                 {g.grn_number} · {supplierNameOf(g.supplier_id, g.purchase_order_id)}
@@ -4629,14 +4852,16 @@ export default function Page() {
             ))}
           </select>
           <p className="muted" style={{ margin: '4px 0 0' }}>
-            Enter a quantity for every product you are sending back. Leave the other lines blank.
+            {hotelOps
+              ? 'Enter a quantity for every supply you are sending back. Leave the other lines blank.'
+              : 'Enter a quantity for every product you are sending back. Leave the other lines blank.'}
           </p>
           {returnLines.map((line, index) => {
             const source = (selectedGrn?.items || []).find((item) => item.id === line.grnItemId);
             const remaining = source?.remaining_return_qty ?? source?.accepted_qty;
             const lineOptions = (
               <>
-                <option value="">Select GRN line</option>
+                <option value="">{hotelOps ? 'Select delivery line' : restaurantOps ? 'Select receipt line' : 'Select GRN line'}</option>
                 {(selectedGrn?.items || []).map((item) => (
                   <option key={item.id} value={item.id}>
                     {productName(item.product_id, item)} (remaining {item.remaining_return_qty ?? item.accepted_qty})
@@ -4694,7 +4919,7 @@ export default function Page() {
           >
             <option value="">Select reason</option>
             <option value="damaged">Damaged</option>
-            <option value="wrong_item">Wrong item</option>
+            <option value="wrong_item">{hotelOps ? 'Wrong supply' : restaurantOps ? 'Wrong ingredient' : 'Wrong item'}</option>
             <option value="expiry">Expiry</option>
             <option value="quality">Quality</option>
             <option value="other">Other</option>
@@ -4730,7 +4955,7 @@ export default function Page() {
         </label>
         <p className="muted" style={{ marginTop: 6 }}>
           Appended to draft return notes and audit (<code>POST .../returns/.../cancel</code>{' '}
-          {'{ reason }'}). Draft only; no stock/AP.
+          {'{ reason }'}). {hotelOps ? 'Draft only; supplies and supplier bills stay unchanged.' : restaurantOps ? 'Draft only; ingredients and supplier bills stay unchanged.' : 'Draft only; no stock/AP.'}
         </p>
       </div>
         <div className="card cat-panel">
@@ -4751,18 +4976,27 @@ export default function Page() {
           <option value="cancelled">Cancelled only</option>
         </select>
         </div>
-        <div className="cat-table-wrap">
-        <table className="table">
+        <div className={restaurantOps ? 'cat-table-wrap rest-purch-table' : 'cat-table-wrap'}>
+        <table className={restaurantOps ? 'table purchase-ui-stack' : 'table'}>
+          {restaurantOps ? (
+            <colgroup>
+              <col style={{ width: '32%' }} />
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '20%' }} />
+            </colgroup>
+          ) : null}
           <thead>
             <tr>
               <th className="col-id">Return</th>
-              <th className="col-text">Supplier</th>
-              <th className="col-id">Debit note</th>
-              <th className="col-status">Reason</th>
+              {restaurantOps ? null : <th className="col-text">Supplier</th>}
+              {restaurantOps ? null : <th className="col-id">Debit note</th>}
+              {restaurantOps ? null : <th className="col-status">Reason</th>}
               <th className="col-status">Status</th>
               <th className="col-num">Discount</th>
               <th className="col-num">Total</th>
-              <th className="col-text">Notes</th>
+              {restaurantOps ? null : <th className="col-text">Notes</th>}
               <th className="col-actions">Actions</th>
             </tr>
           </thead>
@@ -4803,19 +5037,34 @@ export default function Page() {
                     sendPurchasingDoc(`/purchasing/returns/${r.id}/send`, 'Debit note emailed to'),
                 },
               ];
+              const supplierLabel = supplierNameOf(r.supplier_id || grns.find((g) => g.id === r.goods_receipt_id)?.supplier_id, grns.find((g) => g.id === r.goods_receipt_id)?.purchase_order_id);
               return (
               <tr key={r.id}>
-                <td className="col-id">{r.return_number}</td>
-                <td className="col-text">{supplierNameOf(r.supplier_id || grns.find((g) => g.id === r.goods_receipt_id)?.supplier_id, grns.find((g) => g.id === r.goods_receipt_id)?.purchase_order_id)}</td>
-                <td className="col-id">{r.debit_note_number || '—'}</td>
-                <td className="col-status"><StatusChip value={r.reason} /></td>
-                <td className="col-status"><StatusChip value={r.status} /></td>
-                <td className="col-num">{r.discount_amount ?? 0}</td>
-                <td className="col-num">{formatNumber(r.total_amount)}</td>
-                <td className="col-text muted">
-                  {r.notes || '—'}
+                <td className="col-id" data-label="Return">
+                  {r.return_number}
+                  {restaurantOps ? (
+                    <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                      {supplierLabel || 'No supplier'}
+                      {' · '}
+                      {r.debit_note_number ? `Debit note ${r.debit_note_number}` : 'No debit note'}
+                      {r.reason ? ' · ' : ''}
+                      {r.reason ? <StatusChip value={r.reason} /> : 'No reason'}
+                      {r.notes ? ` · ${r.notes}` : ''}
+                    </span>
+                  ) : null}
                 </td>
-                <td className="col-actions">
+                {restaurantOps ? null : <td className="col-text" data-label="Supplier">{supplierLabel}</td>}
+                {restaurantOps ? null : <td className="col-id" data-label="Debit note">{r.debit_note_number || '—'}</td>}
+                {restaurantOps ? null : <td className="col-status" data-label="Reason"><StatusChip value={r.reason} /></td>}
+                <td className="col-status" data-label="Status"><StatusChip value={r.status} /></td>
+                <td className="col-num" data-label="Discount">{r.discount_amount ?? 0}</td>
+                <td className="col-num" data-label="Total">{formatNumber(r.total_amount)}</td>
+                {restaurantOps ? null : (
+                  <td className="col-text muted" data-label="Notes">
+                    {r.notes || '—'}
+                  </td>
+                )}
+                <td className="col-actions" data-label="Actions">
                   <RowActions label={`More actions for ${r.return_number || r.id}`} primaryMax={1} items={returnActions} />
                 </td>
               </tr>
@@ -4823,9 +5072,13 @@ export default function Page() {
             })}
             {managedReturns.length === 0 && (
               <tr>
-                <td colSpan={9} className="muted">
+                  <td colSpan={restaurantOps ? 5 : 9} className="muted">
                   {returns.length === 0
-                    ? 'Receive goods first, then create a purchase return for that supplier.'
+                    ? (hotelOps
+                      ? 'Receive supplies first, then create a purchase return for that supplier.'
+                      : restaurantOps
+                        ? 'Receive stock first, then create a purchase return for that supplier.'
+                        : 'Receive goods first, then create a purchase return for that supplier.')
                     : 'No purchase returns for this filter, so choose All statuses to see them.'}
                 </td>
               </tr>

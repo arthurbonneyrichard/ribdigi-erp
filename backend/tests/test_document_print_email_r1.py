@@ -16,6 +16,35 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_hotel_grn_print_title_says_supplies_received():
+    from types import SimpleNamespace
+
+    from app.document_print import build_grn_print, document_body_html
+
+    grn = {
+        "grn_number": "GRN-1",
+        "status": "posted",
+        "items": [{"name": "Soap", "received_qty": 1, "accepted_qty": 1, "rejected_qty": 0}],
+    }
+    hotel = build_grn_print(
+        grn,
+        tenant=SimpleNamespace(industry="hotel", company_name="Hotel Audit Walk", currency="GHS"),
+        supplier=None,
+    )
+    retail = build_grn_print(
+        grn,
+        tenant=SimpleNamespace(industry="retail", company_name="Shop", currency="GHS"),
+        supplier=None,
+    )
+    assert hotel["title"] == "Supplies received GRN-1"
+    assert hotel["doc_heading"] == "SUPPLIES RECEIVED"
+    assert hotel["meta_html_lines"][0].startswith("Delivery ")
+    assert "<th>Supply</th>" in document_body_html(hotel)
+    assert retail["title"] == "Goods received GRN-1"
+    assert retail["doc_heading"] == "GOODS RECEIVED"
+    assert "<th>Product</th>" in document_body_html(retail)
+
+
 def _pdf_text(pdf: bytes) -> str:
     parts = []
     for raw in re.findall(rb"\((?:\\.|[^\\)])*\)", pdf):
@@ -139,8 +168,25 @@ def test_document_print_ui_and_docs():
     assert "apiFetch" in printer
     assert "NEXT_PUBLIC_API_URL" not in printer
     assert "localhost:8000" not in printer
+    assert "window.open" not in printer
+    assert "Allow pop-ups" not in printer
+    assert "frame.print()" in printer
+    assert "preferHtmlPrintPath" in printer
+    assert "printDocumentFromElement" in printer
+    branding = (ROOT / "backend" / "app" / "print_branding.py").read_text(encoding="utf-8")
+    assert "table-layout: fixed" in branding
+    assert "table.doc th.r" in branding
+    assert "format', 'html')" in printer or 'format", "html")' in printer
     assert "openDocumentPrint" in purchasing
     assert "apiFetch(`/sales/invoices/${invoiceId}/print?" in sales
+    assert "template=a4&format=html" in sales
+    reports = (ROOT / "frontend" / "app" / "(dashboard)" / "reports" / "page.tsx").read_text(
+        encoding="utf-8"
+    )
+    assert "printDocumentFromElement" in reports
+    assert "onClick={() => window.print()}" not in reports
+    pos_status = (ROOT / "frontend" / "components" / "PosPrintStatus.tsx").read_text(encoding="utf-8")
+    assert "window.print()" not in pos_status
 
 
 @pytest.mark.asyncio

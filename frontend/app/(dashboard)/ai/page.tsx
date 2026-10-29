@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import PageHeader from '../../../components/PageHeader';
 import { api, apiFetch } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
+import { isHotelIndustry } from '../../../lib/tenantNav';
+import { normalizeIndustry } from '../../../lib/industries';
 import { triggerBlobDownload } from '../../../lib/attachments';
 import { currencySign, formatWhen, plainLabel } from '../../../lib/format';
 import { AmountField } from '../../../components/AmountField';
@@ -27,6 +30,8 @@ function groupText(counts: Record<string, number> | undefined): string {
 
 export default function Page() {
   const { storeId: ctxStoreId, setStoreId: setCtxStoreId } = useStoreContext();
+  const [hotelOps, setHotelOps] = useState(false);
+  const [restaurantOps, setRestaurantOps] = useState(false);
   const [q, setQ] = useState('');
   const [a, setA] = useState('');
   const [error, setError] = useState('');
@@ -66,6 +71,18 @@ export default function Page() {
   const [assistCustomerId, setAssistCustomerId] = useState('');
   const [chatAvailable, setChatAvailable] = useState(false);
   const [aiStatusNote, setAiStatusNote] = useState('');
+
+  useEffect(() => {
+    getMe()
+      .then((me) => {
+        setHotelOps(isHotelIndustry(me.data?.industry));
+        setRestaurantOps(normalizeIndustry(me.data?.industry) === 'restaurant');
+      })
+      .catch(() => {
+        setHotelOps(false);
+        setRestaurantOps(false);
+      });
+  }, []);
 
   useEffect(() => {
     api('/ai/status')
@@ -152,7 +169,11 @@ export default function Page() {
       }
       setMessage(
         signals.some((s: any) => s.kind === 'action' || s.kind === 'sales_spike' || s.kind === 'sales_drop' || s.kind === 'expense_anomaly')
-          ? 'Loaded composed rule-based insights (sales, expenses, restock actions).'
+          ? hotelOps
+            ? 'Loaded composed rule-based insights (sales, expenses, supply reorder actions).'
+            : restaurantOps
+              ? 'Loaded composed rule-based insights (bills, costs, ingredient reorder actions).'
+              : 'Loaded composed rule-based insights (sales, expenses, restock actions).'
           : 'Loaded rule-based insights.'
       );
     } catch (err: any) {
@@ -211,10 +232,14 @@ export default function Page() {
               .slice(0, 20)
               .map(
                 (x: any) =>
-                  `${x.sku || x.product_name || 'Product'}: about ${x.days_to_stockout ?? '—'} days of stock left. Suggested order ${x.suggested_order_qty ?? '—'}. ${plainLabel(x.risk_reason)}`
+                  `${x.sku || x.product_name || (hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product')}: about ${x.days_to_stockout ?? '—'} ${hotelOps ? 'days on hand' : restaurantOps ? 'days of ingredients left' : 'days of stock left'}. Suggested order ${x.suggested_order_qty ?? '—'}. ${plainLabel(x.risk_reason)}`
               )
               .join('\n')
-          : 'No at-risk products in the prediction window'
+          : hotelOps
+            ? 'No at-risk supplies in the prediction window'
+            : restaurantOps
+              ? 'No at-risk ingredients in the prediction window'
+              : 'No at-risk products in the prediction window'
       );
       if (!lines.length) {
         setMessage('No at-risk lines — nothing to turn into draft PRs yet.');
@@ -333,7 +358,7 @@ export default function Page() {
         [
           `Next month forecast: ${amountText(d.trend?.forecast_next_month)}`,
           `Customers reviewed: ${d.rfm?.customer_count ?? 0}. Groups: ${groupText(d.rfm?.segment_counts)}`,
-          `Products often bought together: ${(d.affinity || []).length}`,
+          `${hotelOps ? 'Supplies' : restaurantOps ? 'Menu items' : 'Products'} often bought together: ${(d.affinity || []).length}`,
           `Busiest hours: ${(d.peaks?.hours || []).map((h: any) => `${String(h.hour).padStart(2, '0')}:00`).filter(Boolean).join(', ') || 'none yet'}`,
         ].join('\n')
       );
@@ -634,7 +659,11 @@ export default function Page() {
         <p className="muted ai-ui-note">
           {chatAvailable
             ? 'Type a question and choose Ask.'
-            : 'Choose Load insights to see notes from this company’s sales, expenses, and stock.'}
+            : hotelOps
+              ? 'Choose Load insights to see notes from this hotel’s sales, expenses, and supplies.'
+              : restaurantOps
+                ? 'Choose Load insights to see notes from this restaurant’s bills, costs, and ingredients.'
+                : 'Choose Load insights to see notes from this company’s sales, expenses, and stock.'}
         </p>
       )}
       {alerts.length > 0 && (
@@ -798,9 +827,9 @@ export default function Page() {
               if (next) setCtxStoreId(next);
             }}
             aria-label="AI document expense store"
-            title="Leave blank if this expense is not for a store"
+            title={hotelOps ? 'Leave blank if this expense is not for a location' : 'Leave blank if this expense is not for a store'}
           >
-            <option value="">No store</option>
+            <option value="">{hotelOps ? 'No location' : 'No store'}</option>
             {stores
               .filter((s) => s.is_active !== false)
               .filter((s) => !draftDocBranchId || s.branch_id === draftDocBranchId)
@@ -901,14 +930,14 @@ export default function Page() {
         </div>
       </details>
       <details className="card ai-ui-advanced">
-        <summary>Stock predictions</summary>
+        <summary>{hotelOps ? 'Supply predictions' : restaurantOps ? 'Ingredient predictions' : 'Stock predictions'}</summary>
         <div className="ai-ui-form">
           <button
             onClick={loadInventoryPredictions}
             disabled={predBusy}
-            aria-label="Inventory predictions"
+            aria-label={hotelOps ? 'Supply predictions' : restaurantOps ? 'Ingredient predictions' : 'Inventory predictions'}
           >
-            {predBusy ? 'Loading predictions…' : 'Inventory predictions'}
+            {predBusy ? 'Loading predictions…' : (hotelOps ? 'Supply predictions' : restaurantOps ? 'Ingredient predictions' : 'Inventory predictions')}
           </button>
           <button
             onClick={createDraftPrsFromPredictions}
@@ -944,7 +973,11 @@ export default function Page() {
           />
           <label
             style={{ display: 'inline-flex', gap: 4, alignItems: 'center', fontSize: 13 }}
-            title="Allow creating another draft PR even if the product is already on an open request"
+            title={hotelOps
+              ? 'Allow creating another draft purchase request even if the supply is already on an open request'
+              : restaurantOps
+                ? 'Allow creating another draft purchase request even if the ingredient is already on an open request'
+                : 'Allow creating another draft PR even if the product is already on an open request'}
           >
             <input
               type="checkbox"
@@ -991,7 +1024,12 @@ export default function Page() {
           Weekly AI insight digests are sent to active company and super admins every Monday at 07:00 UTC.
           Use <strong>Email digest to me</strong> to preview the tenant-scoped email with your account.
           {' '}
-          Inventory predictions lists at-risk SKUs (14-day window). <strong>Create draft PR(s)</strong> turns
+          {hotelOps
+            ? 'Supply predictions lists supplies that may run out (14-day window). '
+            : restaurantOps
+              ? 'Ingredient predictions lists ingredients that may run out (14-day window). '
+              : 'Inventory predictions lists at-risk SKUs (14-day window). '}
+          <strong>Create draft PR(s)</strong> turns
           those lines into draft purchase requests — open{' '}
           <Link href="/purchasing">Purchasing → Requests</Link> to submit. Requires purchasing write
           permission. After <strong>Analyze document</strong>, <strong>Create draft expense</strong> turns

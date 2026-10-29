@@ -25,6 +25,15 @@ export function middleware(request: NextRequest) {
   if (path === '/storefront' || path.startsWith('/storefront/')) {
     return NextResponse.next();
   }
+  if (path === '/book' || path.startsWith('/book/')) {
+    return NextResponse.next();
+  }
+  if (path === '/order' || path.startsWith('/order/')) {
+    return NextResponse.next();
+  }
+  if (path === '/stay' || path.startsWith('/stay/')) {
+    return NextResponse.next();
+  }
   const url = request.nextUrl.clone();
   url.pathname = '/storefront';
   return NextResponse.rewrite(url);

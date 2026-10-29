@@ -3,6 +3,7 @@ import { normalizeIndustry } from './industries';
 import { getMe } from './meCache';
 
 const POS_INDUSTRIES = new Set(['retail', 'retail_wholesale', 'pharmacy', 'restaurant', 'hotel']);
+const CASHIER_SIGN_OUT_ROLES = new Set(['cashier', 'hotel_cashier']);
 const PLATFORM_ROLES = new Set([
   'super_admin',
   'platform_owner',
@@ -25,6 +26,20 @@ export type CashierShift = {
   store_id?: string | null;
   [key: string]: unknown;
 };
+
+/** Till roles that may be asked to count the drawer on Log out. */
+export function isCashierSignOutRole(role?: string | null): boolean {
+  return CASHIER_SIGN_OUT_ROLES.has(String(role || '').toLowerCase());
+}
+
+/** Count-on-sign-out is cashiers only, and the company can turn it off for them. */
+export function shouldPromptDrawerCountOnSignOut(me: {
+  role?: string | null;
+  count_drawer_on_sign_out?: boolean | null;
+} | null | undefined): boolean {
+  if (!me || !isCashierSignOutRole(me.role)) return false;
+  return me.count_drawer_on_sign_out !== false;
+}
 
 /** Why the signed-in person cannot run a till, in words for them; '' when they can. */
 export function tillBlockedReason(me: MeData | null | undefined): string {
@@ -67,8 +82,12 @@ function rememberedStoreId(stores: Array<{ id?: string }>): string {
   return '';
 }
 
-/** Open the signed-in person's till. An existing open shift is reused. Opening cash is 0. */
-export async function openShiftForSignedInUser(preferredStoreId?: string | null): Promise<CashierShift | null> {
+/** Open the signed-in person's till. An existing open shift is reused. Login and the shell send 0. A hotel shop shift or restaurant till starts only when startShift is true. */
+export async function openShiftForSignedInUser(
+  preferredStoreId?: string | null,
+  openingCash = 0,
+  startShift = false
+): Promise<CashierShift | null> {
   if (typeof window === 'undefined') return null;
   try {
     const me = await getMe();
@@ -76,7 +95,22 @@ export async function openShiftForSignedInUser(preferredStoreId?: string | null)
     lastShiftOpenError = tillBlockedReason(data);
     if (lastShiftOpenError) return null;
     const current = await api('/pos/sessions/current');
-    if (current?.data?.session_id) return current.data as CashierShift;
+    const hotel = normalizeIndustry(data?.industry) === 'hotel';
+    const restaurantTill = normalizeIndustry(data?.industry) === 'restaurant';
+    if ((hotel || restaurantTill) && !startShift) {
+      lastShiftOpenError = '';
+      return (current?.data?.session_id ? current.data : null) as CashierShift | null;
+    }
+    if (current?.data?.session_id) {
+      const sess = current.data as CashierShift;
+      const want = Number(openingCash);
+      const unused =
+        !Number(sess.sale_count || 0) &&
+        !Number(sess.cash_in || 0) &&
+        !Number(sess.cash_out || 0);
+      if (want > 0 && unused) return setOpeningCash(want);
+      return sess;
+    }
     let storeId = String(preferredStoreId || '').trim();
     if (!storeId) {
       const stores = await api('/pos/stores');
@@ -87,7 +121,8 @@ export async function openShiftForSignedInUser(preferredStoreId?: string | null)
       const opened = await api('/pos/sessions/open', {
         method: 'POST',
         body: JSON.stringify({
-          opening_cash: 0,
+          // Auto-open and sign-in still send opening_cash: 0
+          opening_cash: Number(openingCash) > 0 ? Number(openingCash) : 0,
           store_id: storeId.trim() || null,
         }),
       });
@@ -96,7 +131,16 @@ export async function openShiftForSignedInUser(preferredStoreId?: string | null)
       const status = (err as { status?: number }).status;
       if (status === 409) {
         const again = await api('/pos/sessions/current');
-        if (again?.data) return again.data as CashierShift;
+        if (again?.data) {
+          const sess = again.data as CashierShift;
+          const want = Number(openingCash);
+          const unused =
+            !Number(sess.sale_count || 0) &&
+            !Number(sess.cash_in || 0) &&
+            !Number(sess.cash_out || 0);
+          if (want > 0 && unused) return setOpeningCash(want);
+          return sess;
+        }
       }
       lastShiftOpenError =
         (err instanceof Error && err.message) || 'Your shift could not be started. Sign out and sign in again.';
@@ -107,6 +151,21 @@ export async function openShiftForSignedInUser(preferredStoreId?: string | null)
       (err instanceof Error && err.message) || 'Your shift could not be started. Sign out and sign in again.';
     return null;
   }
+}
+
+/** Set opening float on an unused open shift (no sales or cash movements yet). */
+export async function setOpeningCash(amount: number): Promise<CashierShift> {
+  if (typeof window === 'undefined') {
+    throw new Error('Opening cash can only be set in the browser.');
+  }
+  const current = await api('/pos/sessions/current');
+  const session = current?.data as CashierShift | null;
+  if (!session?.session_id) throw new Error('There is no open shift to update.');
+  const updated = await api(`/pos/sessions/${session.session_id}/opening-cash`, {
+    method: 'PATCH',
+    body: JSON.stringify({ opening_cash: amount }),
+  });
+  return (updated?.data || session) as CashierShift;
 }
 
 /** Count the drawer and close the open shift. Pending offline sales stay on this device. */
@@ -141,6 +200,7 @@ export async function countAndCloseOpenShift(
     method: 'POST',
     body: JSON.stringify({
       actual_cash: actualCash,
+      closing_cash: actualCash,
       notes: notes && notes.trim() ? notes.trim() : null,
     }),
   });
@@ -154,34 +214,19 @@ export async function countAndCloseOpenShift(
   return (closed?.data || session) as CashierShift;
 }
 
-/** Close the open till when the person signs out. Counted cash matches the drawer. */
-export async function closeShiftForSignOut(): Promise<void> {
-  if (typeof window === 'undefined') return;
+/** Current open shift, or null. Used by Log out to ask for a cash count. */
+export async function peekOpenCashierShift(): Promise<CashierShift | null> {
+  if (typeof window === 'undefined') return null;
   try {
     const current = await api('/pos/sessions/current');
     const session = current?.data as CashierShift | null;
-    if (!session?.session_id) return;
-    try {
-      const offline = await import('./posOffline');
-      const unsynced = (await offline.listQueuedSales()).filter(
-        (rec) =>
-          rec.kind === 'sale' &&
-          ['pending', 'syncing', 'needs_attention'].includes(rec.state) &&
-          String(rec.payload?.session_id || '') === String(session.session_id)
-      );
-      if (unsynced.length) return;
-    } catch {
-      // Leave the shift open when the queue cannot be read.
-      return;
-    }
-    await api(`/pos/sessions/${session.session_id}/close`, {
-      method: 'POST',
-      body: JSON.stringify({
-        actual_cash: Number(session.expected_cash || 0),
-        notes: 'Closed when the cashier signed out',
-      }),
-    });
+    return session?.session_id ? session : null;
   } catch {
-    /* sign-out still proceeds */
+    return null;
   }
+}
+
+/** Idle or forced sign-out leaves the shift open so a zero-variance count is not invented. */
+export async function closeShiftForSignOut(): Promise<void> {
+  return;
 }

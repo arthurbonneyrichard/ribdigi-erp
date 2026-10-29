@@ -5,10 +5,15 @@ import PageHeader from '../../../components/PageHeader';
 import { api, apiFetch, apiOptional } from '../../../lib/api';
 import { getMe, invalidateMeCache } from '../../../lib/meCache';
 import { formatDateTime, formatNumber, formatWhen, plainLabel, rememberFormatPrefs } from '../../../lib/format';
-import { canDownloadStaffGuide, industryLabel } from '../../../lib/industries';
+import { canDownloadStaffGuide, industryLabel, normalizeIndustry } from '../../../lib/industries';
+import { isHotelIndustry } from '../../../lib/tenantNav';
 import { TAX_COUNTRIES } from '../../../lib/taxCountries';
 
 const FISCAL_MMDD = /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+
+function restaurantCompany(industry?: string | null) {
+  return normalizeIndustry(industry) === 'restaurant';
+}
 
 function fiscalStartError(raw: string): string {
   const value = raw.trim();
@@ -79,6 +84,9 @@ export default function Page() {
   const [offlineHours, setOfflineHours] = useState('168');
   const [storeLimitDraft, setStoreLimitDraft] = useState('');
   const [timeoutDraft, setTimeoutDraft] = useState('30');
+  const [countDrawerOnSignOut, setCountDrawerOnSignOut] = useState(true);
+  const [countDrawerBusy, setCountDrawerBusy] = useState(false);
+  const [countDrawerFlash, setCountDrawerFlash] = useState<{ ok?: string; err?: string }>({});
   const [taxFlash, setTaxFlash] = useState<{ ok?: string; err?: string }>({});
   const [fiscalFlash, setFiscalFlash] = useState<{ ok?: string; err?: string }>({});
   const [timeoutFlash, setTimeoutFlash] = useState<{ ok?: string; err?: string }>({});
@@ -133,6 +141,7 @@ export default function Page() {
         r.data.store_limit == null || r.data.store_limit === '' ? '' : String(r.data.store_limit),
       );
       setTimeoutDraft(String(r.data.inactivity_timeout_minutes ?? 30));
+      setCountDrawerOnSignOut(r.data.count_drawer_on_sign_out !== false);
     }
     setEmailStatus(e.data);
     if (e.data) {
@@ -411,6 +420,33 @@ export default function Page() {
     }
   }
 
+  async function saveCountDrawer(enabled: boolean) {
+    setCountDrawerFlash({});
+    setCountDrawerBusy(true);
+    try {
+      const r = await api('/tenants/me', {
+        method: 'PATCH',
+        body: JSON.stringify({ count_drawer_on_sign_out: enabled }),
+      });
+      setTenant((current: any) => mergeFields(current, r.data, ['count_drawer_on_sign_out']));
+      setCountDrawerOnSignOut(r.data?.count_drawer_on_sign_out !== false);
+      invalidateMeCache();
+      setCountDrawerFlash({
+        ok: isHotelIndustry(tenant?.industry)
+          ? enabled
+            ? 'Restaurant and hotel cashiers will count cash when they sign out.'
+            : 'Restaurant and hotel cashiers can sign out without counting cash.'
+          : enabled
+            ? 'Cashiers will count the drawer when they sign out.'
+            : 'Cashiers can sign out without counting the drawer.',
+      });
+    } catch (err: any) {
+      setCountDrawerFlash({ err: err.message || 'Could not save cashier sign-out' });
+    } finally {
+      setCountDrawerBusy(false);
+    }
+  }
+
   async function saveEmail() {
     setEmailFlash({});
     const body: Record<string, unknown> = {
@@ -641,7 +677,7 @@ export default function Page() {
     return (
       <>
         <PageHeader title="Company" subtitle="Company profile could not be loaded." />
-        {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
+        {error && <p className="form-flash err" role="alert">{error}</p>}
         {loadBusy ? (
           <p className="muted">Loading…</p>
         ) : (
@@ -704,7 +740,7 @@ export default function Page() {
           <button className="btn-ok" aria-label="Activate company" onClick={activate}>Activate to restore access</button>
         </div>
       ) : null}
-      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
+      {error && <p className="form-flash err" role="alert">{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
       <section className="card" aria-labelledby="company-profile-title">
@@ -1491,7 +1527,9 @@ export default function Page() {
             {canGuide ? (
               <>
                 <p className="muted" style={{ margin: 0 }}>
-                  Download the authorized PDF for this company. Requires staff_guide:download.
+                  {isHotelIndustry(tenant?.industry)
+                    ? 'Download the hotel staff guide for rooms, reservations, front desk, and folios.'
+                    : 'Download the authorized PDF for this company. Requires staff_guide:download.'}
                 </p>
                 <button
                   type="button"
@@ -1517,7 +1555,11 @@ export default function Page() {
         <div className="card">
           <h2>Users</h2>
           <p className="muted" style={{ margin: 0 }}>
-            Add and manage staff in Settings → Users.
+            {isHotelIndustry(tenant?.industry)
+              ? 'Add and manage hotel staff under User Management.'
+              : restaurantCompany(tenant?.industry)
+                ? 'Add and manage restaurant staff under User Management.'
+                : 'Add and manage staff in Settings → Users.'}
           </p>
           <a href="/users#create-user" aria-label="Add User">
             Add User
@@ -1527,6 +1569,7 @@ export default function Page() {
 
       {(meRole === 'company_admin' || meRole === 'super_admin') && tenant && (
         <>
+        {!isHotelIndustry(tenant.industry) ? (
         <section className="card" aria-labelledby="company-store-title">
           <h2 id="company-store-title">Store allocation</h2>
           <p className="muted">
@@ -1583,8 +1626,9 @@ export default function Page() {
             ) : null}
           </div>
         </section>
+        ) : null}
         <section className="card" aria-labelledby="company-admin-title">
-          <h2 id="company-admin-title">Company administration</h2>
+          <h2 id="company-admin-title">{isHotelIndustry(tenant.industry) ? 'Hotel administration' : restaurantCompany(tenant.industry) ? 'Restaurant administration' : 'Company administration'}</h2>
           <p className="muted">
             These tools stay inside this company. The sidebar is built from the saved industry,
             enabled modules, and your permissions. A hidden menu item is not permission to open the page.
@@ -1596,13 +1640,23 @@ export default function Page() {
           <p className="muted" style={{ marginTop: 0 }}>
             Enabled modules:{' '}
             {Array.isArray(tenant.enabled_modules) && tenant.enabled_modules.length
-              ? tenant.enabled_modules.map((code: string) => plainLabel(code)).join(', ')
+              ? tenant.enabled_modules
+                  .map((code: string) => {
+                    const key = String(code || '').trim().toLowerCase();
+                    if (isHotelIndustry(tenant.industry) && key === 'inventory') return 'Supplies';
+                    if (restaurantCompany(tenant.industry) && key === 'inventory') return 'Ingredients';
+                    if (isHotelIndustry(tenant.industry) && key === 'pos') return 'Shop till';
+                    if (restaurantCompany(tenant.industry) && key === 'pos') return 'Restaurant till';
+                    if (isHotelIndustry(tenant.industry) && key === 'stores') return 'Locations';
+                    return plainLabel(code);
+                  })
+                  .join(', ')
               : 'None'}
           </p>
           <div className="company-page-scroll">
             <nav aria-label="Company administration links" className="company-page-links">
-              <a href="/users">Users and roles</a>
-              <a href="/stores">Stores and locations</a>
+              <a href="/users">{isHotelIndustry(tenant.industry) || restaurantCompany(tenant.industry) ? 'Staff and permissions' : 'Users and roles'}</a>
+              {isHotelIndustry(tenant.industry) ? null : <a href="/stores">Stores and locations</a>}
               <a href="/notifications">Notifications</a>
               <a href="/audit">Activity log</a>
               <a href="/company/billing">Subscription billing</a>
@@ -1611,13 +1665,17 @@ export default function Page() {
             </nav>
           </div>
           <p className="muted">
-            Printers covers receipts and barcode output for this company&apos;s saved industry.
-            Barcode labels are also printed from Inventory. The cash drawer is on Multi-Store when
-            that module is enabled.
+            {isHotelIndustry(tenant.industry)
+              ? 'Printers covers reservation confirmations, folio print, and guest receipts for this hotel.'
+              : restaurantCompany(tenant.industry)
+                ? 'Printers covers the restaurant till, kitchen tickets, and bar tickets. Table orders stay on the restaurant desk.'
+                : 'Printers covers receipts and barcode output for this company\'s saved industry. Barcode labels are also printed from Inventory. The cash drawer is on Multi-Store when that module is enabled.'}
           </p>
           <div className="company-page-grid">
             <div className="company-page-field">
-              <label htmlFor="company-offline-hours">Company offline authorization hours</label>
+              <label htmlFor="company-offline-hours">
+                {isHotelIndustry(tenant.industry) ? 'Shop till offline hours' : restaurantCompany(tenant.industry) ? 'Restaurant till offline hours' : 'Company offline authorization hours'}
+              </label>
               <input
                 id="company-offline-hours"
                 type="number"
@@ -1626,10 +1684,20 @@ export default function Page() {
                 value={offlineHours}
                 onChange={(e) => setOfflineHours(e.target.value)}
                 aria-label="Company offline authorization hours"
-                title="Hours a signed-in device may sell offline (1–168)"
+                title={
+                  isHotelIndustry(tenant.industry)
+                    ? 'Hours a signed-in shop till may work offline (1–168)'
+                    : restaurantCompany(tenant.industry)
+                      ? 'Hours a signed-in restaurant till may work offline (1–168)'
+                      : 'Hours a signed-in device may sell offline (1–168)'
+                }
               />
               <p className="muted" style={{ margin: 0 }}>
-                How long a signed-in till may keep selling without internet. Offline sales upload when the till is back online with the Point of Sale page open.
+                {isHotelIndustry(tenant.industry)
+                  ? 'Hotel reservations, folios, and housekeeping stay online. These hours apply only if this hotel also uses the shop till offline.'
+                  : restaurantCompany(tenant.industry)
+                    ? 'Table orders stay on the restaurant desk. These hours apply only if this restaurant also uses the restaurant till offline.'
+                    : 'How long a signed-in till may keep selling without internet. Offline sales upload when the till is back online with the Point of Sale page open.'}
               </p>
             </div>
             <div className="company-page-actions company-page-span">
@@ -1686,6 +1754,52 @@ export default function Page() {
           ) : null}
           {timeoutFlash.err ? (
             <p className="form-flash err company-page-span" role="alert">{timeoutFlash.err}</p>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="card" aria-labelledby="company-cashier-signout-title">
+        <h2 id="company-cashier-signout-title">{isHotelIndustry(tenant?.industry) ? 'Sign-out cash count' : restaurantCompany(tenant?.industry) ? 'Restaurant till sign-out' : 'Cashier sign-out'}</h2>
+        <p className="muted">
+          {isHotelIndustry(tenant?.industry)
+            ? 'Only the shop cashier and the hotel cashier count cash when they log out. Owners, managers, and other roles sign out without this step. Idle sign-out still leaves the shift open.'
+            : restaurantCompany(tenant?.industry)
+              ? 'Only the restaurant cashier counts cash when they log out. Owners, managers, and other roles sign out without this step. Idle sign-out still leaves the shift open.'
+              : 'Only cashiers count the drawer when they log out. Owners, managers, and other roles sign out without this step. Idle sign-out still leaves the shift open.'}
+        </p>
+        <div className="company-page-grid">
+          <p className="company-page-span" role="status">
+            {isHotelIndustry(tenant?.industry)
+              ? `Cash count on sign-out is ${countDrawerOnSignOut ? 'enabled' : 'disabled'}.`
+              : restaurantCompany(tenant?.industry)
+                ? `Restaurant till cash count on sign-out is ${countDrawerOnSignOut ? 'enabled' : 'disabled'}.`
+                : `Count drawer when cashier signs out is ${countDrawerOnSignOut ? 'enabled' : 'disabled'}.`}
+          </p>
+          <div className="company-page-actions company-page-span">
+            <button
+              type="button"
+              className="btn-ok"
+              disabled={!!tenant.read_only || countDrawerBusy || countDrawerOnSignOut}
+              onClick={() => void saveCountDrawer(true)}
+              aria-label="Enable cashier drawer count on sign-out"
+            >
+              {countDrawerBusy && !countDrawerOnSignOut ? 'Saving…' : 'Enable'}
+            </button>
+            <button
+              type="button"
+              className="list-btn-secondary"
+              disabled={!!tenant.read_only || countDrawerBusy || !countDrawerOnSignOut}
+              onClick={() => void saveCountDrawer(false)}
+              aria-label="Disable cashier drawer count on sign-out"
+            >
+              {countDrawerBusy && countDrawerOnSignOut ? 'Saving…' : 'Disable'}
+            </button>
+          </div>
+          {countDrawerFlash.ok ? (
+            <p className="form-flash ok company-page-span" role="status">{countDrawerFlash.ok}</p>
+          ) : null}
+          {countDrawerFlash.err ? (
+            <p className="form-flash err company-page-span" role="alert">{countDrawerFlash.err}</p>
           ) : null}
         </div>
       </section>

@@ -31,6 +31,9 @@ async def test_jobs_list_and_run_sync(client, seeded):
     assert "jobs" in data
     assert "beat" in data
     assert "celery_enabled" in data
+    assert "broker" not in data
+    assert "result_backend" not in data
+    assert "broker_configured" in data
     for name in jobs_svc.JOB_HANDLERS:
         assert name in data["jobs"]
 

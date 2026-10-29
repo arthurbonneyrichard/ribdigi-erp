@@ -9,9 +9,18 @@ import { industryAllowsModule, INDUSTRY_SPECIFIC_MODULES } from '../lib/industry
 import { industryLabel, normalizeIndustry } from '../lib/industries';
 import { isStoreNetworkNavItem, tenantIsMultiStore, type StoreEntitlementMe } from '../lib/tenantNav';
 import { getMe, invalidateMeCache } from '../lib/meCache';
-import { closeShiftForSignOut, openShiftForSignedInUser } from '../lib/cashierShift';
+import {
+  closeShiftForSignOut,
+  countAndCloseOpenShift,
+  openShiftForSignedInUser,
+  peekOpenCashierShift,
+  shouldPromptDrawerCountOnSignOut,
+  type CashierShift,
+} from '../lib/cashierShift';
+import { AmountField } from './AmountField';
+import FormModal from './FormModal';
 import { linkStatusText, type LinkSnapshot } from '../lib/connectivity';
-import { requestPosReturnPanel, requestPosShiftPanel, subscribePosDrawerBridge, type PosDrawerBridgeState } from '../lib/posDrawerBridge';
+import { dispatchDrawerKick, requestPosReturnPanel, requestPosShiftPanel, subscribePosDrawerBridge, type PosDrawerBridgeState } from '../lib/posDrawerBridge';
 import { PosOfflineTopSlot } from '../lib/posOfflineSlot';
 import { prefetchGet } from '../lib/prefetchCache';
 import { prefetchPathsForHref } from '../lib/navPrefetch';
@@ -113,7 +122,7 @@ const TENANT_ITEMS: NavItem[] = [
 ];
 
 /** Never accordion — click navigates even if later given extra children. */
-const STANDALONE_NAV_IDS = new Set(['dashboard', 'notifications', 'hotel', 'support']);
+const STANDALONE_NAV_IDS = new Set(['dashboard', 'notifications', 'hotel', 'restaurant', 'support']);
 
 const TENANT_NAV_GROUPS: NavGroup[] = [
   { id: 'dashboard', label: 'Dashboard', items: [['Dashboard', '/dashboard', 'dashboard']] },
@@ -205,8 +214,7 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
 function usesAccordion(group: NavGroup): boolean {
   if (!group.label || STANDALONE_NAV_IDS.has(group.id)) return false;
   if (ALWAYS_LIST_NAV_GROUP_IDS.has(group.id)) return false;
-  if (group.id === 'hotel-inventory') return group.items.length > 0;
-  return group.items.length > 1;
+  return group.items.length > 0;
 }
 
 const PLATFORM_ROLES = new Set([
@@ -521,6 +529,27 @@ const ICONS: Record<string, React.ReactNode> = {
   ),
 };
 
+const NAV_GROUP_ICON: Record<string, string> = {
+  dashboard: 'dashboard',
+  inventory: 'inventory',
+  sales: 'sales',
+  purchases: 'purchasing',
+  finance: 'accounting',
+  reports: 'reports',
+  people: 'users',
+  notifications: 'notifications',
+  support: 'support',
+  settings: 'company',
+  industry: 'hotel',
+  'hotel-ops': 'hotel',
+  'hotel-sales': 'sales',
+  'hotel-finance': 'accounting',
+  'hotel-inventory': 'inventory',
+  'hotel-people': 'users',
+  'hotel-reports': 'reports',
+  'hotel-settings': 'company',
+};
+
 function NavIcon({ name }: { name: string }) {
   return (
     <svg
@@ -537,6 +566,10 @@ function NavIcon({ name }: { name: string }) {
       {ICONS[name] ?? ICONS.dashboard}
     </svg>
   );
+}
+
+function NavGroupIcon({ groupId }: { groupId: string }) {
+  return <NavIcon name={NAV_GROUP_ICON[groupId] || groupId} />;
 }
 
 function canReadModule(permissions: Record<string, string[]> | null | undefined, module: string) {
@@ -737,33 +770,6 @@ function enrollmentRequired(err: unknown): boolean {
   return e?.status === 403 && /2fa enrollment/i.test(String(e?.message || ''));
 }
 
-function MobileSideNavButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
-  const label = open ? 'Close sidebar' : 'Open sidebar';
-  return (
-    <button
-      type="button"
-      className="mobile-side-nav"
-      aria-expanded={open}
-      aria-controls="app-sidebar"
-      aria-label={label}
-      title={label}
-      onClick={onToggle}
-    >
-      <span className="mobile-side-nav-mark" aria-hidden="true">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
-          <path
-            d="M6 3.5 10.5 8 6 12.5"
-            stroke="currentColor"
-            strokeWidth="1.75"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </span>
-    </button>
-  );
-}
-
 function SideEdgeToggle({ compact, onToggle }: { compact: boolean; onToggle: () => void }) {
   const label = compact ? 'Expand sidebar' : 'Collapse sidebar';
   return (
@@ -777,11 +783,11 @@ function SideEdgeToggle({ compact, onToggle }: { compact: boolean; onToggle: () 
       onClick={onToggle}
     >
       <span className="side-edge-chevron" aria-hidden="true">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
           <path
             d="M10 3.5 5.5 8 10 12.5"
             stroke="currentColor"
-            strokeWidth="1.75"
+            strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
@@ -887,6 +893,7 @@ function PosDrawerTopControls() {
             .then((r) => {
               setDrawerReason('');
               setAsking(false);
+              dispatchDrawerKick(r.data);
               setDrawerNote(r.data?.message || r.message || 'Drawer opened');
             })
             .catch((err: unknown) => {
@@ -974,6 +981,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [industryValid, setIndustryValid] = useState<boolean | null>(null);
   const [multiStore, setMultiStore] = useState(true);
   const [role, setRole] = useState('');
+  const [countDrawerOnSignOut, setCountDrawerOnSignOut] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const [navCompact, setNavCompact] = useState(false);
@@ -995,6 +1003,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [idleMinutes, setIdleMinutes] = useState(30);
   const [idleWarn, setIdleWarn] = useState(false);
   const idleLoggingOut = useRef(false);
+  const [signOutShift, setSignOutShift] = useState<CashierShift | null>(null);
+  const [signOutCounted, setSignOutCounted] = useState('');
+  const [signOutNotes, setSignOutNotes] = useState('');
+  const [signOutError, setSignOutError] = useState('');
+  const [signOutBusy, setSignOutBusy] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [userId, setUserId] = useState('');
   const [bellOpen, setBellOpen] = useState(false);
@@ -1046,6 +1059,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         logo_version?: string | null;
         id?: string;
         inactivity_timeout_minutes?: number;
+        count_drawer_on_sign_out?: boolean;
       }) => {
         if (!active) return;
         setAuthGateError('');
@@ -1058,6 +1072,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         );
         setMultiStore(tenantIsMultiStore(data));
         setRole(data.role || '');
+        setCountDrawerOnSignOut(data.count_drawer_on_sign_out !== false);
         setFullName(data.full_name || '');
         setCompanyName(data.company_name || '');
         applyLogoVersion(data);
@@ -1206,12 +1221,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     void openShiftForSignedInUser();
   }, [authReady]);
 
-  async function logout() {
-    try {
-      await closeShiftForSignOut();
-    } catch {
-      /* sign-out still proceeds */
-    }
+  async function finishLogout() {
     try {
       const offline = await import('../lib/posOffline');
       await offline.releaseOfflineGrantIfIdle(api);
@@ -1224,6 +1234,56 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       /* revoke best-effort; clear client session regardless */
     }
     clearSessionAndRedirect();
+  }
+
+  async function logout() {
+    try {
+      if (
+        shouldPromptDrawerCountOnSignOut({
+          role,
+          count_drawer_on_sign_out: countDrawerOnSignOut,
+        })
+      ) {
+        const shift = await peekOpenCashierShift();
+        if (shift?.session_id) {
+          setSignOutShift(shift);
+          setSignOutCounted('');
+          setSignOutNotes('');
+          setSignOutError('');
+          return;
+        }
+      }
+    } catch {
+      /* no open shift — sign out */
+    }
+    await finishLogout();
+  }
+
+  async function confirmSignOutCount() {
+    if (!signOutShift || signOutBusy) return;
+    const raw = signOutCounted.trim();
+    const actual = Math.round(Number(raw) * 100) / 100;
+    if (!raw || !Number.isFinite(actual) || actual < 0) {
+      setSignOutError('Enter the counted cash. Use 0 if the drawer is empty.');
+      return;
+    }
+    const expected = Number(signOutShift.expected_cash || 0);
+    const variance = Math.round((actual - expected) * 100) / 100;
+    const note = signOutNotes.trim();
+    if (Math.abs(variance) >= 0.01 && note.length < 3) {
+      setSignOutError('Explain the difference between counted cash and the expected drawer.');
+      return;
+    }
+    setSignOutBusy(true);
+    setSignOutError('');
+    try {
+      await countAndCloseOpenShift(actual, note || null);
+      setSignOutShift(null);
+      await finishLogout();
+    } catch (err) {
+      setSignOutError(err instanceof Error ? err.message : 'The cash count could not be saved.');
+      setSignOutBusy(false);
+    }
   }
 
   function toggleTheme() {
@@ -1315,6 +1375,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         );
         setMultiStore(tenantIsMultiStore(meRes.data));
         setRole(meRes.data?.role || '');
+        setCountDrawerOnSignOut(meRes.data?.count_drawer_on_sign_out !== false);
         setFullName(meRes.data?.full_name || '');
         setCompanyName(meRes.data?.company_name || '');
         applyLogoVersion(meRes.data);
@@ -1516,6 +1577,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           );
           setMultiStore(tenantIsMultiStore(meRes.data));
           setRole(meRes.data?.role || '');
+          setCountDrawerOnSignOut(meRes.data?.count_drawer_on_sign_out !== false);
           setCompanyName(meRes.data?.company_name || '');
           applyLogoVersion(meRes.data);
           setLogoTick((n) => n + 1);
@@ -1724,7 +1786,12 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                   key={group.id}
                   className={`nav-group nav-group-static${childActive ? ' nav-group-has-active' : ''}`}
                 >
-                  <div className="nav-group-heading">{group.label}</div>
+                  <div className="nav-group-heading">
+                    <span className="nav-ico">
+                      <NavGroupIcon groupId={group.id} />
+                    </span>
+                    <span className="nav-group-title">{group.label}</span>
+                  </div>
                   <div className="nav-group-items">{links}</div>
                 </div>
               );
@@ -1752,6 +1819,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                     toggleNavGroup(group.id);
                   }}
                 >
+                  <span className="nav-ico">
+                    <NavGroupIcon groupId={group.id} />
+                  </span>
                   <span className="nav-group-title">{group.label}</span>
                   <span className="nav-group-arrow" aria-hidden="true" />
                 </summary>
@@ -1766,11 +1836,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           </a>
         </div>
       </aside>
-      <SideEdgeToggle compact={navCompact} onToggle={toggleNavCompact} />
-      <MobileSideNavButton
-        open={menuOpen}
+      <SideEdgeToggle
+        compact={mobileNav ? !menuOpen : navCompact}
         onToggle={() => {
           if (mobileNav) setMenuOpen((v) => !v);
+          else toggleNavCompact();
         }}
       />
       <div className="side-backdrop" onClick={() => setMenuOpen(false)} aria-hidden />
@@ -1787,18 +1857,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                 </div>
               </>
             ) : null}
-            <button
-              type="button"
-              className="menu-btn"
-              aria-label="Toggle navigation menu"
-              aria-expanded={mobileNav ? menuOpen : undefined}
-              onClick={() => {
-                if (mobileNav) setMenuOpen((v) => !v);
-              }}
-            >
-              <span aria-hidden>{'\u2630'}</span>
-              <span className="menu-btn-label">Menu</span>
-            </button>
           </div>
           {!isPlatformOwner ? (
             <div className="topbar-context">
@@ -1848,7 +1906,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                         bellNotes.map((n) => (
                           <div key={n.id} className="bell-item">
                             <div className="bell-item-meta">
-                              <span className={`bell-cat bell-cat-${n.category}`}>{notifyCategoryLabel(n.category)}</span>
+                              <span className={`bell-cat bell-cat-${n.category}`}>{notifyCategoryLabel(n.category, industry)}</span>
                               <span className="muted">{formatNoticeTime(n.created_at)}</span>
                             </div>
                             <div className="bell-item-title">{n.title}</div>
@@ -1934,6 +1992,60 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             Stay signed in
           </button>
         </div>
+      ) : null}
+      {signOutShift ? (
+        <FormModal
+          title="Count the drawer before signing out"
+          onClose={() => {
+            if (!signOutBusy) setSignOutShift(null);
+          }}
+          busy={signOutBusy}
+          dirty={Boolean(signOutCounted.trim() || signOutNotes.trim())}
+          closeAriaLabel="Cancel sign-out"
+          footer={
+            <button
+              type="button"
+              className="list-btn-primary"
+              disabled={signOutBusy}
+              onClick={() => void confirmSignOutCount()}
+              aria-label="Count drawer and sign out"
+            >
+              {signOutBusy ? 'Closing…' : 'Count and sign out'}
+            </button>
+          }
+        >
+          <p className="muted">
+            Expected drawer is {Number(signOutShift.expected_cash || 0).toFixed(2)}. Idle sign-out
+            leaves the shift open.
+          </p>
+          <label>
+            Counted cash
+            <AmountField
+              value={signOutCounted}
+              onChange={(e) => setSignOutCounted(e.target.value)}
+              inputMode="decimal"
+              placeholder="0.00"
+              autoComplete="off"
+              aria-label="Sign-out counted cash"
+            />
+          </label>
+          <label>
+            Difference note
+            <input
+              value={signOutNotes}
+              onChange={(e) => setSignOutNotes(e.target.value)}
+              placeholder="Required when the count differs"
+              maxLength={500}
+              autoComplete="off"
+              aria-label="Sign-out cash count notes"
+            />
+          </label>
+          {signOutError ? (
+            <p className="form-flash" role="alert">
+              {signOutError}
+            </p>
+          ) : null}
+        </FormModal>
       ) : null}
     </div>
     </StoreProvider>

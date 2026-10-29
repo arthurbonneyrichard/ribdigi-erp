@@ -31,8 +31,14 @@ def test_pos_session_close_notes_ui_and_docs():
     shell = (ROOT / "frontend/components/Shell.tsx").read_text(encoding="utf-8")
     assert "closeShiftForSignOut" in shell
     assert "openShiftForSignedInUser" in login
-    assert "Closed when the cashier signed out" in helper
-    assert "actual_cash: Number(session.expected_cash || 0)" in helper
+    assert "peekOpenCashierShift" in helper
+    assert "countAndCloseOpenShift" in helper
+    assert "shouldPromptDrawerCountOnSignOut" in helper
+    assert "Closed when the cashier signed out" not in helper
+    assert "actual_cash: Number(session.expected_cash || 0)" not in helper
+    assert 'aria-label="Sign-out counted cash"' in shell
+    assert 'aria-label="Count drawer and sign out"' in shell
+    assert "shouldPromptDrawerCountOnSignOut" in shell
     assert 'aria-label="Close shift"' not in page
     # A drawer cash count (not a close-shift form) may ask for counted cash.
     assert 'aria-label="Cash count"' in page

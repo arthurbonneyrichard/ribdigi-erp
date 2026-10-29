@@ -6,7 +6,7 @@ import { api, apiFetch } from '../../../lib/api';
 import { formatWhen, type FormatPrefs } from '../../../lib/format';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 
-type Option = { code: string; label: string };
+type Option = { code: string; label: string; help?: string };
 type Ticket = {
   id: string;
   reference: string;
@@ -70,6 +70,7 @@ function showWhen(value: string | null | undefined, prefs: FormatPrefs | null): 
 export default function HelpSupportPage() {
   const prefs = useCompanyFormat();
   const [categories, setCategories] = useState<Option[]>([]);
+  const [deskIndustry, setDeskIndustry] = useState('');
   const [priorities, setPriorities] = useState<string[]>(['low', 'normal', 'high', 'urgent']);
   const [rows, setRows] = useState<Ticket[]>([]);
   const [ticketTotal, setTicketTotal] = useState(0);
@@ -132,6 +133,7 @@ export default function HelpSupportPage() {
         if (cancelled) return;
         const cats: Option[] = meta.data?.categories || [];
         setCategories(cats);
+        setDeskIndustry(String(meta.data?.industry || ''));
         setPriorities(meta.data?.priorities || ['low', 'normal', 'high', 'urgent']);
         setCategory((current) => current || cats[0]?.code || '');
         await Promise.all([loadList(), loadCounts()]);
@@ -312,7 +314,11 @@ export default function HelpSupportPage() {
         kicker="Help"
         kickerClassName="plat-kicker"
         title="Help & Support"
-        subtitle="Find a topic, open the guide, or send a ticket if you still need help."
+        subtitle={
+          deskIndustry === 'hotel'
+            ? 'Hotel topics for reservations, front desk, folios, supplies, purchasing, and the rest of this hotel.'
+            : 'Find a topic, open the guide, or send a ticket if you still need help.'
+        }
         subtitleClassName="plat-sub"
         actions={
           <button type="button" className="btn btn-primary" onClick={() => void openGuide()} disabled={guideBusy} aria-label="Open staff guide">
@@ -343,7 +349,7 @@ export default function HelpSupportPage() {
                 }}
               >
                 <b>{item.label}</b>
-                <span>{TOPIC_HELP[item.code] || 'Covers this part of the product for your company.'}</span>
+                <span>{item.help || TOPIC_HELP[item.code] || 'Covers this part of the product for your company.'}</span>
                 <small>Ask about this →</small>
               </button>
             ))}

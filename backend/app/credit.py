@@ -393,6 +393,23 @@ def _currency_list(by_currency: dict[str, dict[str, float]], base: str) -> list[
     return sorted(by_currency.values(), key=lambda r: (r["currency"] != base, r["currency"]))
 
 
+def _add_due_currency(
+    by_currency: dict[str, dict[str, float]], currency: str, amount: float
+) -> None:
+    row = by_currency.setdefault(currency, {"currency": currency, "total_due": money_json(0)})
+    row["total_due"] = money_json(round(row["total_due"] + money_json(amount), 2))
+
+
+def _due_currency_list(by_currency: dict[str, dict[str, float]], base: str) -> list[dict]:
+    return _currency_list(by_currency, base)
+
+
+def _doc_fx(obj, base: str) -> tuple[str, float]:
+    from app.fx import doc_currency, doc_rate
+
+    return doc_currency(obj, base), doc_rate(obj)
+
+
 def empty_supplier_money(base_currency: str) -> dict:
     return {
         "total_paid": money_json(0),
@@ -594,15 +611,19 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
         )
 
     commitment_total = 0.0
+    commitment_by_currency: dict[str, dict[str, float]] = {}
     for po in orders:
         if po.id in invoiced_po_ids:
             continue
         due = max(money_json(po.total_amount) - money_json(po.paid_amount), 0)
         if due <= 0:
             continue
+        cur, rate = _doc_fx(po, base)
+        base_due = to_base(due, rate)
         row = _party_row(po.supplier_id)
-        row["commitment_total"] = money_json(round(row["commitment_total"] + due, 2))
-        commitment_total = money_json(round(commitment_total + due, 2))
+        row["commitment_total"] = money_json(round(row["commitment_total"] + base_due, 2))
+        commitment_total = money_json(round(commitment_total + base_due, 2))
+        _add_due_currency(commitment_by_currency, cur, due)
         commitments.append(
             {
                 "id": po.id,
@@ -612,6 +633,9 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
                 "party_name": row["name"],
                 "due_date": po.due_date,
                 "balance_due": money_json(due),
+                "currency": getattr(po, "currency", None) or "",
+                "exchange_rate": money_json(rate),
+                "balance_due_base": money_json(base_due),
                 "status": po.status,
             }
         )
@@ -637,6 +661,7 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
         "overdue_total": money_json(overdue_total),
         "not_yet_due_total": money_json(not_yet_due_total),
         "commitment_total": money_json(commitment_total),
+        "commitment_totals_by_currency": _due_currency_list(commitment_by_currency, base),
         "parties": sorted(by_supplier.values(), key=lambda x: x["total_due"], reverse=True),
         "documents": documents,
         "commitments": commitments,
@@ -644,6 +669,8 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
 
 
 async def customer_statement(db: AsyncSession, tenant_id: str, customer_id: str) -> dict:
+    from app.fx import get_base_currency, to_base
+
     customer = (
         await db.execute(
             select(m.Party).where(
@@ -677,8 +704,20 @@ async def customer_statement(db: AsyncSession, tenant_id: str, customer_id: str)
         )
     ).scalars().all()
 
+    base = await get_base_currency(db, tenant_id)
     lines = []
+    open_due = 0.0
+    due_by_currency: dict[str, dict[str, float]] = {}
     for inv in invoices:
+        cur, rate = _doc_fx(inv, base)
+        due = (
+            money_json(max(money_json(inv.total_amount) - money_json(inv.paid_amount), 0))
+            if inv.status in {"posted", "sent", "partial", "overdue"}
+            else money_json(0)
+        )
+        if due > 0:
+            open_due = money_json(round(open_due + to_base(due, rate), 2))
+            _add_due_currency(due_by_currency, cur, due)
         lines.append(
             {
                 "date": inv.posted_at or inv.created_at,
@@ -687,14 +726,14 @@ async def customer_statement(db: AsyncSession, tenant_id: str, customer_id: str)
                 "debit": money_json(inv.total_amount) if inv.status != "cancelled" else money_json(0),
                 "credit": money_json(0),
                 "status": inv.status,
-                "balance_due": money_json(
-                    max(money_json(inv.total_amount) - money_json(inv.paid_amount), 0)
-                )
-                if inv.status in {"posted", "sent", "partial", "overdue"}
-                else money_json(0),
+                "currency": getattr(inv, "currency", None) or "",
+                "exchange_rate": money_json(rate),
+                "balance_due": money_json(due),
+                "balance_due_base": money_json(to_base(due, rate)) if due else money_json(0),
             }
         )
     for pay in payments:
+        cur, rate = _doc_fx(pay, base)
         lines.append(
             {
                 "date": pay.created_at,
@@ -703,7 +742,10 @@ async def customer_statement(db: AsyncSession, tenant_id: str, customer_id: str)
                 "debit": money_json(0),
                 "credit": money_json(pay.amount),
                 "status": "posted",
+                "currency": getattr(pay, "currency", None) or "",
+                "exchange_rate": money_json(rate),
                 "balance_due": None,
+                "balance_due_base": None,
             }
         )
     lines.sort(key=lambda x: x["date"] or datetime.utcnow())
@@ -714,11 +756,18 @@ async def customer_statement(db: AsyncSession, tenant_id: str, customer_id: str)
             "credit_limit": money_json(customer.credit_limit),
             "balance": money_json(customer.balance),
         },
+        "base_currency": base,
+        "outstanding_balance": money_json(open_due),
+        "outstanding_balance_base": money_json(open_due),
+        "totals_by_currency": _due_currency_list(due_by_currency, base),
         "lines": lines,
     }
 
 
 async def supplier_statement(db: AsyncSession, tenant_id: str, supplier_id: str) -> dict:
+    from app.fx import get_base_currency, to_base
+    from app.purchasing import PURCHASE_INVOICE_OPEN
+
     supplier = (
         await db.execute(
             select(m.Party).where(
@@ -766,15 +815,29 @@ async def supplier_statement(db: AsyncSession, tenant_id: str, supplier_id: str)
         for inv in invoices
         if inv.purchase_order_id and inv.status != "cancelled"
     }
+    return_credit = await _posted_return_credit_by_po(db, tenant_id)
+    open_bills = {
+        inv.id: due
+        for inv, due in _open_bill_dues(
+            [inv for inv in invoices if inv.status in set(PURCHASE_INVOICE_OPEN)],
+            return_credit,
+        )
+    }
 
+    base = await get_base_currency(db, tenant_id)
     lines = []
     open_due = 0.0
+    due_by_currency: dict[str, dict[str, float]] = {}
     for inv in invoices:
         if inv.status == "cancelled":
             continue
-        due = max(money_json(inv.total_amount) - money_json(inv.paid_amount), 0)
-        if inv.status in ("unpaid", "partial", "overdue"):
-            open_due = money_json(round(open_due + due, 2))
+        cur, rate = _doc_fx(inv, base)
+        due = open_bills.get(
+            inv.id, max(money_json(inv.total_amount) - money_json(inv.paid_amount), 0)
+        )
+        if inv.id in open_bills:
+            open_due = money_json(round(open_due + to_base(due, rate), 2))
+            _add_due_currency(due_by_currency, cur, due)
         lines.append(
             {
                 "date": inv.invoice_date or inv.created_at,
@@ -783,12 +846,17 @@ async def supplier_statement(db: AsyncSession, tenant_id: str, supplier_id: str)
                 "debit": money_json(0),
                 "credit": money_json(inv.total_amount),
                 "status": inv.status,
+                "currency": getattr(inv, "currency", None) or "",
+                "exchange_rate": money_json(rate),
                 "balance_due": money_json(due),
+                "balance_due_base": money_json(to_base(due, rate)),
             }
         )
     for po in orders:
         if po.status == "cancelled" or po.id in invoiced_po_ids:
             continue
+        cur, rate = _doc_fx(po, base)
+        due = max(money_json(po.total_amount) - money_json(po.paid_amount), 0)
         lines.append(
             {
                 "date": po.created_at,
@@ -797,12 +865,14 @@ async def supplier_statement(db: AsyncSession, tenant_id: str, supplier_id: str)
                 "debit": money_json(0),
                 "credit": money_json(po.total_amount),
                 "status": po.status,
-                "balance_due": money_json(
-                    max(money_json(po.total_amount) - money_json(po.paid_amount), 0)
-                ),
+                "currency": getattr(po, "currency", None) or "",
+                "exchange_rate": money_json(rate),
+                "balance_due": money_json(due),
+                "balance_due_base": money_json(to_base(due, rate)),
             }
         )
     for pay in payments:
+        cur, rate = _doc_fx(pay, base)
         lines.append(
             {
                 "date": pay.created_at,
@@ -811,7 +881,10 @@ async def supplier_statement(db: AsyncSession, tenant_id: str, supplier_id: str)
                 "debit": money_json(pay.amount),
                 "credit": money_json(0),
                 "status": "posted",
+                "currency": getattr(pay, "currency", None) or "",
+                "exchange_rate": money_json(rate),
                 "balance_due": None,
+                "balance_due_base": None,
             }
         )
     lines.sort(key=lambda x: x["date"] or datetime.utcnow())
@@ -821,7 +894,10 @@ async def supplier_statement(db: AsyncSession, tenant_id: str, supplier_id: str)
             "name": supplier.name,
             "balance": money_json(supplier.balance),
         },
+        "base_currency": base,
         "outstanding_balance": money_json(open_due),
+        "outstanding_balance_base": money_json(open_due),
+        "totals_by_currency": _due_currency_list(due_by_currency, base),
         "lines": lines,
     }
 
@@ -846,6 +922,10 @@ async def customer_history(
     ).scalar_one_or_none()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
+
+    from app.fx import get_base_currency, to_base
+
+    base = await get_base_currency(db, tenant_id)
 
     inv_stmt = select(m.SalesInvoice).where(
         m.SalesInvoice.tenant_id == tenant_id,
@@ -896,6 +976,7 @@ async def customer_history(
 
     purchase_rows: list[dict] = []
     for inv in invoices:
+        cur, rate = _doc_fx(inv, base)
         purchase_rows.append(
             {
                 "id": inv.id,
@@ -905,14 +986,19 @@ async def customer_history(
                 "subtotal": money_json(inv.subtotal or 0),
                 "tax_amount": money_json(inv.tax_amount or 0),
                 "total_amount": money_json(inv.total_amount or 0),
+                "total_amount_base": money_json(to_base(inv.total_amount or 0, rate)),
                 "paid_amount": money_json(inv.paid_amount or 0),
                 "balance_due": money_json(
                     max(money_json(inv.total_amount or 0) - money_json(inv.paid_amount or 0), 0)
                 ),
+                "currency": getattr(inv, "currency", None) or "",
+                "exchange_rate": money_json(rate),
                 "posted_at": inv.posted_at,
                 "created_at": inv.created_at,
             }
         )
+    from app.dashboard import _tx_amount_base
+
     for tx in pos_rows:
         payload = tx.payload if isinstance(tx.payload, dict) else {}
         if payload.get("sales_invoice_id"):
@@ -931,6 +1017,7 @@ async def customer_history(
                 "subtotal": money_json(tx.subtotal or 0),
                 "tax_amount": money_json(tx.tax or 0),
                 "total_amount": money_json(tx.total or 0),
+                "total_amount_base": money_json(_tx_amount_base(tx)),
                 "paid_amount": settle["paid_amount"],
                 "balance_due": settle["balance_due"],
                 "posted_at": tx.created_at,
@@ -939,6 +1026,11 @@ async def customer_history(
         )
     purchase_rows.sort(key=lambda x: x["created_at"] or datetime.utcnow(), reverse=True)
 
+    from app.reports import _amount_base, _linked_sales_invoices
+
+    linked_invoices = await _linked_sales_invoices(
+        db, tenant_id, {r.sales_invoice_id for r in returns}
+    )
     return_rows = [
         {
             "id": r.id,
@@ -947,6 +1039,10 @@ async def customer_history(
             "status": r.status,
             "reason": r.reason,
             "total_amount": money_json(r.total_amount or 0),
+            "total_amount_base": _amount_base(
+                linked_invoices.get(str(r.sales_invoice_id or "")),
+                r.total_amount or 0,
+            ),
             "refunded_amount": money_json(r.refunded_amount),
             "settlement_method": r.settlement_method,
             "sales_invoice_id": r.sales_invoice_id,
@@ -960,6 +1056,7 @@ async def customer_history(
             "id": p.id,
             "payment_number": p.payment_number,
             "amount": money_json(p.amount or 0),
+            "amount_base": money_json(to_base(p.amount or 0, _doc_fx(p, base)[1])),
             "payment_method": p.payment_method,
             "sales_invoice_id": p.sales_invoice_id,
             "reference": p.reference,
@@ -968,9 +1065,9 @@ async def customer_history(
         for p in payments
     ]
 
-    purchase_total = money_json(round(sum(x["total_amount"] for x in purchase_rows), 2))
-    return_total = money_json(round(sum(x["total_amount"] for x in return_rows), 2))
-    payment_total = money_json(round(sum(x["amount"] for x in payment_rows), 2))
+    purchase_total = money_json(round(sum(x["total_amount_base"] for x in purchase_rows), 2))
+    return_total = money_json(round(sum(x["total_amount_base"] for x in return_rows), 2))
+    payment_total = money_json(round(sum(x["amount_base"] for x in payment_rows), 2))
     return {
         "customer": {
             "id": customer.id,
@@ -980,6 +1077,7 @@ async def customer_history(
         },
         "from_date": from_date,
         "to_date": to_date,
+        "base_currency": base,
         "purchases": purchase_rows,
         "returns": return_rows,
         "payments": payment_rows,
@@ -1014,6 +1112,10 @@ async def supplier_history(
     ).scalar_one_or_none()
     if not supplier:
         raise HTTPException(status_code=404, detail="Supplier not found")
+
+    from app.fx import get_base_currency, to_base
+
+    base = await get_base_currency(db, tenant_id)
 
     po_stmt = select(m.PurchaseOrder).where(
         m.PurchaseOrder.tenant_id == tenant_id,
@@ -1061,6 +1163,7 @@ async def supplier_history(
 
     purchase_rows: list[dict] = []
     for po in orders:
+        cur, rate = _doc_fx(po, base)
         purchase_rows.append(
             {
                 "id": po.id,
@@ -1068,11 +1171,13 @@ async def supplier_history(
                 "reference": po.po_number,
                 "status": po.status,
                 "total_amount": money_json(po.total_amount or 0),
+                "total_amount_base": money_json(to_base(po.total_amount or 0, rate)),
                 "paid_amount": money_json(po.paid_amount or 0),
                 "created_at": po.created_at,
             }
         )
     for inv in invoices:
+        cur, rate = _doc_fx(inv, base)
         purchase_rows.append(
             {
                 "id": inv.id,
@@ -1080,12 +1185,18 @@ async def supplier_history(
                 "reference": inv.invoice_number,
                 "status": inv.status,
                 "total_amount": money_json(inv.total_amount or 0),
+                "total_amount_base": money_json(to_base(inv.total_amount or 0, rate)),
                 "paid_amount": money_json(inv.paid_amount or 0),
                 "created_at": inv.created_at,
             }
         )
     purchase_rows.sort(key=lambda x: x["created_at"] or datetime.utcnow(), reverse=True)
 
+    from app.reports import _amount_base, _linked_purchase_invoices_by_po
+
+    linked_bills = await _linked_purchase_invoices_by_po(
+        db, tenant_id, {r.purchase_order_id for r in returns}
+    )
     return_rows = [
         {
             "id": r.id,
@@ -1094,6 +1205,10 @@ async def supplier_history(
             "status": r.status,
             "reason": r.reason,
             "total_amount": money_json(r.total_amount or 0),
+            "total_amount_base": _amount_base(
+                linked_bills.get(str(r.purchase_order_id or "")),
+                r.total_amount or 0,
+            ),
             "purchase_order_id": r.purchase_order_id,
             "goods_receipt_id": r.goods_receipt_id,
             "posted_at": r.posted_at,
@@ -1106,6 +1221,7 @@ async def supplier_history(
             "id": p.id,
             "payment_number": p.payment_number,
             "amount": money_json(p.amount or 0),
+            "amount_base": money_json(to_base(p.amount or 0, _doc_fx(p, base)[1])),
             "payment_method": p.payment_method,
             "purchase_order_id": p.purchase_order_id,
             "purchase_invoice_id": p.purchase_invoice_id,
@@ -1115,9 +1231,9 @@ async def supplier_history(
         for p in payments
     ]
 
-    purchase_total = money_json(round(sum(x["total_amount"] for x in purchase_rows), 2))
-    return_total = money_json(round(sum(x["total_amount"] for x in return_rows), 2))
-    payment_total = money_json(round(sum(x["amount"] for x in payment_rows), 2))
+    purchase_total = money_json(round(sum(x["total_amount_base"] for x in purchase_rows), 2))
+    return_total = money_json(round(sum(x["total_amount_base"] for x in return_rows), 2))
+    payment_total = money_json(round(sum(x["amount_base"] for x in payment_rows), 2))
     return {
         "supplier": {
             "id": supplier.id,
@@ -1127,6 +1243,7 @@ async def supplier_history(
         },
         "from_date": from_date,
         "to_date": to_date,
+        "base_currency": base,
         "purchases": purchase_rows,
         "returns": return_rows,
         "payments": payment_rows,
@@ -1143,6 +1260,8 @@ async def supplier_history(
 
 async def customer_credit_info(db: AsyncSession, tenant_id: str, customer_id: str) -> dict:
     """Real-time customer balance + credit limit snapshot (BR-7.1)."""
+    from app.fx import get_base_currency, to_base
+
     customer = (
         await db.execute(
             select(m.Party).where(
@@ -1167,22 +1286,30 @@ async def customer_credit_info(db: AsyncSession, tenant_id: str, customer_id: st
         )
     ).scalars().all()
 
+    base = await get_base_currency(db, tenant_id)
     credit_sales: list[dict] = []
     open_invoice_total = 0.0
+    due_by_currency: dict[str, dict[str, float]] = {}
     for inv in invoices:
         due = max(money_json(inv.total_amount) - money_json(inv.paid_amount), 0)
         if due <= 0:
             continue
-        open_invoice_total += due
+        cur, rate = _doc_fx(inv, base)
+        base_due = to_base(due, rate)
+        open_invoice_total += base_due
+        _add_due_currency(due_by_currency, cur, due)
         credit_sales.append(
             {
                 "invoice_id": inv.id,
                 "invoice_number": inv.invoice_number,
                 "amount": money_json(round(due, 2)),
+                "amount_base": money_json(base_due),
                 "total_amount": money_json(inv.total_amount or 0),
                 "paid_amount": money_json(inv.paid_amount or 0),
                 "due_date": inv.due_date,
                 "status": inv.status,
+                "currency": getattr(inv, "currency", None) or "",
+                "exchange_rate": money_json(rate),
             }
         )
 
@@ -1203,6 +1330,7 @@ async def customer_credit_info(db: AsyncSession, tenant_id: str, customer_id: st
             "phone": customer.phone,
             "payment_terms_days": getattr(customer, "payment_terms_days", None),
         },
+        "base_currency": base,
         "credit_limit": money_json(credit_limit),
         "credit_unlimited": unlimited,
         "outstanding_balance": money_json(round(outstanding, 2)),
@@ -1210,12 +1338,16 @@ async def customer_credit_info(db: AsyncSession, tenant_id: str, customer_id: st
         "is_over_limit": over_limit,
         "open_invoice_count": len(credit_sales),
         "open_invoice_total": money_json(round(open_invoice_total, 2)),
+        "totals_by_currency": _due_currency_list(due_by_currency, base),
         "credit_sales": credit_sales,
     }
 
 
 async def supplier_credit_info(db: AsyncSession, tenant_id: str, supplier_id: str) -> dict:
     """Real-time supplier payable balance snapshot (BR-6.1)."""
+    from app.fx import get_base_currency, to_base
+    from app.purchasing import PURCHASE_INVOICE_OPEN
+
     supplier = (
         await db.execute(
             select(m.Party).where(
@@ -1227,8 +1359,6 @@ async def supplier_credit_info(db: AsyncSession, tenant_id: str, supplier_id: st
     ).scalar_one_or_none()
     if not supplier:
         raise HTTPException(status_code=404, detail="Supplier not found")
-
-    from app.purchasing import PURCHASE_INVOICE_OPEN
 
     invoices = (
         await db.execute(
@@ -1249,15 +1379,20 @@ async def supplier_credit_info(db: AsyncSession, tenant_id: str, supplier_id: st
         )
     ).scalars().all()
     remaining_credit = await _posted_return_credit_by_po(db, tenant_id)
+    base = await get_base_currency(db, tenant_id)
 
     open_bills: list[dict] = []
     open_total = 0.0
+    due_by_currency: dict[str, dict[str, float]] = {}
     for inv in invoices:
         due = max(money_json(inv.total_amount) - money_json(inv.paid_amount), 0)
         due = _apply_po_return_credit(due, inv.purchase_order_id, remaining_credit)
         if due <= 0:
             continue
-        open_total += due
+        cur, rate = _doc_fx(inv, base)
+        base_due = to_base(due, rate)
+        open_total += base_due
+        _add_due_currency(due_by_currency, cur, due)
         open_bills.append(
             {
                 "document_type": "purchase_invoice",
@@ -1267,28 +1402,38 @@ async def supplier_credit_info(db: AsyncSession, tenant_id: str, supplier_id: st
                 "total_amount": money_json(inv.total_amount),
                 "paid_amount": money_json(inv.paid_amount),
                 "amount": money_json(round(due, 2)),
+                "amount_base": money_json(base_due),
                 "due_date": inv.due_date,
                 "status": inv.status,
+                "currency": getattr(inv, "currency", None) or "",
+                "exchange_rate": money_json(rate),
             }
         )
     invoiced_pos = {i.purchase_order_id for i in invoices if i.purchase_order_id}
     open_commitments: list[dict] = []
     commitment_total = 0.0
+    commitment_by_currency: dict[str, dict[str, float]] = {}
     for po in orders:
         if po.id in invoiced_pos:
             continue
         due = max(money_json(po.total_amount) - money_json(po.paid_amount), 0)
         if due <= 0:
             continue
-        commitment_total += due
+        cur, rate = _doc_fx(po, base)
+        base_due = to_base(due, rate)
+        commitment_total += base_due
+        _add_due_currency(commitment_by_currency, cur, due)
         open_commitments.append(
             {
                 "document_type": "purchase_order",
                 "purchase_order_id": po.id,
                 "po_number": po.po_number,
                 "amount": money_json(round(due, 2)),
+                "amount_base": money_json(base_due),
                 "due_date": po.due_date,
                 "status": po.status,
+                "currency": getattr(po, "currency", None) or "",
+                "exchange_rate": money_json(rate),
             }
         )
 
@@ -1302,12 +1447,15 @@ async def supplier_credit_info(db: AsyncSession, tenant_id: str, supplier_id: st
             "phone": getattr(supplier, "phone", None),
             "payment_terms_days": getattr(supplier, "payment_terms_days", None),
         },
+        "base_currency": base,
         "outstanding_balance": money_json(round(outstanding, 2)),
         "party_balance": money_json(supplier.balance or 0),
         "open_bill_count": len(open_bills),
         "open_bill_total": money_json(round(open_total, 2)),
+        "totals_by_currency": _due_currency_list(due_by_currency, base),
         "open_bills": open_bills,
         "commitment_total": money_json(round(commitment_total, 2)),
+        "commitment_totals_by_currency": _due_currency_list(commitment_by_currency, base),
         "open_commitments": open_commitments,
     }
 
@@ -1361,15 +1509,22 @@ async def supplier_payment_schedule(
         await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))
     ).scalar_one_or_none()
     ep = early_pay_settings(tenant) if tenant else {"enabled": False}
+    from app.fx import get_base_currency, to_base
+
+    base = await get_base_currency(db, tenant_id)
 
     items: list[dict] = []
     commitments: list[dict] = []
     remaining_credit = await _posted_return_credit_by_po(db, tenant_id)
+    due_by_currency: dict[str, dict[str, float]] = {}
+    commitment_by_currency: dict[str, dict[str, float]] = {}
     for inv in invoices:
         balance = max(money_json(inv.total_amount) - money_json(inv.paid_amount or 0), 0)
         balance = _apply_po_return_credit(balance, inv.purchase_order_id, remaining_credit)
         if balance <= 0:
             continue
+        cur, rate = _doc_fx(inv, base)
+        _add_due_currency(due_by_currency, cur, balance)
         overdue_days = days_overdue(as_of, inv.due_date, inv.invoice_date or inv.created_at)
         days_until = None
         if inv.due_date:
@@ -1397,10 +1552,12 @@ async def supplier_payment_schedule(
                 "purchase_order_id": inv.purchase_order_id,
                 "due_date": inv.due_date,
                 "balance_due": money_json(round(balance, 2)),
+                "balance_due_base": money_json(to_base(balance, rate)),
                 "status": inv.status,
                 "days_until_due": days_until,
                 "days_overdue": overdue_days,
                 "currency": getattr(inv, "currency", None) or "",
+                "exchange_rate": money_json(rate),
                 "early_discount": early,
             }
         )
@@ -1411,6 +1568,8 @@ async def supplier_payment_schedule(
         balance = max(money_json(po.total_amount) - money_json(po.paid_amount or 0), 0)
         if balance <= 0:
             continue
+        cur, rate = _doc_fx(po, base)
+        _add_due_currency(commitment_by_currency, cur, balance)
         overdue_days = days_overdue(as_of, po.due_date, po.created_at)
         days_until = None
         if po.due_date:
@@ -1423,10 +1582,12 @@ async def supplier_payment_schedule(
                 "purchase_order_id": po.id,
                 "due_date": po.due_date,
                 "balance_due": money_json(round(balance, 2)),
+                "balance_due_base": money_json(to_base(balance, rate)),
                 "status": po.status,
                 "days_until_due": days_until,
                 "days_overdue": overdue_days,
-                "currency": "",
+                "currency": getattr(po, "currency", None) or "",
+                "exchange_rate": money_json(rate),
                 "early_discount": None,
             }
         )
@@ -1440,8 +1601,8 @@ async def supplier_payment_schedule(
     items.sort(key=_sort_key)
     upcoming = [r for r in items if (r.get("days_until_due") is None or r["days_until_due"] >= 0)]
     overdue = [r for r in items if r.get("days_until_due") is not None and r["days_until_due"] < 0]
-    bill_due = money_json(round(sum(r["balance_due"] for r in items), 2))
-    commitment_total = money_json(round(sum(r["balance_due"] for r in commitments), 2))
+    bill_due = money_json(round(sum(r["balance_due_base"] for r in items), 2))
+    commitment_total = money_json(round(sum(r["balance_due_base"] for r in commitments), 2))
 
     return {
         "as_of": as_of,
@@ -1450,8 +1611,11 @@ async def supplier_payment_schedule(
             "name": supplier.name,
             "balance": money_json(supplier.balance),
         },
+        "base_currency": base,
         "total_due": bill_due,
+        "totals_by_currency": _due_currency_list(due_by_currency, base),
         "commitment_total": commitment_total,
+        "commitment_totals_by_currency": _due_currency_list(commitment_by_currency, base),
         "overdue_count": len(overdue),
         "upcoming_count": len(upcoming),
         "items": items,

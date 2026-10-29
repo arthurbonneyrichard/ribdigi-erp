@@ -32,7 +32,8 @@ export default function OnboardingChecklist({
   canManage: boolean;
 }) {
   const [data, setData] = useState<Checklist | null>(null);
-  const onDashboard = (usePathname() || '').startsWith('/dashboard');
+  const pathname = usePathname() || '';
+  const onDashboard = pathname.startsWith('/dashboard');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState(true);
@@ -51,7 +52,12 @@ export default function OnboardingChecklist({
 
   useEffect(() => {
     load().catch(() => undefined);
-  }, [load]);
+    const onRefresh = () => {
+      load().catch(() => undefined);
+    };
+    window.addEventListener('ribdigi-onboarding-refresh', onRefresh);
+    return () => window.removeEventListener('ribdigi-onboarding-refresh', onRefresh);
+  }, [load, pathname]);
 
   async function run(path: string) {
     setBusy(true);

@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
+import { isHotelIndustry } from '../../../lib/tenantNav';
+import { normalizeIndustry } from '../../../lib/industries';
 import { formatNoticeTime, notifyCategoryLabel } from '../../../lib/notifyText';
 import './notify-ui.css';
 
@@ -77,10 +79,16 @@ export default function Page() {
   const [error, setError] = useState('');
   const [prefsError, setPrefsError] = useState('');
   const [platformAudience, setPlatformAudience] = useState(false);
+  const [hotelOps, setHotelOps] = useState(false);
+  const [restaurantOps, setRestaurantOps] = useState(false);
 
   useEffect(() => {
     getMe()
-      .then((me) => setPlatformAudience(PLATFORM_ROLES.has(me.data?.role || '')))
+      .then((me) => {
+        setPlatformAudience(PLATFORM_ROLES.has(me.data?.role || ''));
+        setHotelOps(isHotelIndustry(me.data?.industry));
+        setRestaurantOps(normalizeIndustry(me.data?.industry) === 'restaurant');
+      })
       .catch(() => setPlatformAudience(false));
   }, []);
 
@@ -104,10 +112,17 @@ export default function Page() {
     }
   }
 
+  function chipLabel(id: string, label: string): string {
+    if (!id || (!hotelOps && !restaurantOps)) return label;
+    const named = notifyCategoryLabel(id, hotelOps ? 'hotel' : 'restaurant');
+    const retail = notifyCategoryLabel(id);
+    return named !== retail ? named : label;
+  }
+
   function categoryLabel(id: string): string {
     const chip = chips.find((c) => c.id === id);
-    if (chip) return chip.label;
-    return notifyCategoryLabel(id);
+    if (chip) return chipLabel(chip.id, chip.label);
+    return notifyCategoryLabel(id, hotelOps ? 'hotel' : restaurantOps ? 'restaurant' : null);
   }
 
   useEffect(() => {
@@ -153,7 +168,9 @@ export default function Page() {
       const quotes = r.data?.quotation_expiry ?? 0;
       const recurring = r.data?.recurring_expense_due ?? 0;
       setMessage(
-        `Due alerts created: ${r.data?.created ?? 0} (payment ${payment}, quotations ${quotes}, recurring ${recurring})`,
+        hotelOps
+          ? `Due alerts created: ${r.data?.created ?? 0} (payment ${payment}, sales quotes ${quotes}, recurring ${recurring})`
+          : `Due alerts created: ${r.data?.created ?? 0} (payment ${payment}, quotations ${quotes}, recurring ${recurring})`,
       );
       setStatus('unread');
       await refresh();
@@ -188,16 +205,30 @@ export default function Page() {
     status === 'unread'
       ? platformAudience
         ? 'No unread alerts. Choose All (90 days) to see older platform notices.'
-        : 'No unread alerts. Choose All (90 days) to see older ones, or Scan due alerts to look for payments and quotations.'
+          : hotelOps
+          ? 'No unread alerts. Choose All (90 days) to see older ones, or Scan due alerts to look for payments and sales quotes.'
+          : restaurantOps
+            ? 'No unread alerts. Choose All (90 days) to see older ones, or Scan due alerts to look for payments and restaurant orders.'
+            : 'No unread alerts. Choose All (90 days) to see older ones, or Scan due alerts to look for payments and quotations.'
       : platformAudience
         ? 'Nothing matches this view. Choose All platform or another type above.'
-        : 'Nothing matches this view. Choose All types, or Scan due alerts to look for payments and quotations.';
+          : hotelOps
+          ? 'Nothing matches this view. Choose All types, or Scan due alerts to look for payments and sales quotes.'
+          : restaurantOps
+            ? 'Nothing matches this view. Choose All types, or Scan due alerts to look for payments and restaurant orders.'
+            : 'Nothing matches this view. Choose All types, or Scan due alerts to look for payments and quotations.';
 
   return (
     <div className="notify-ui">
       <PageHeader
         title="Alerts"
-        subtitle="Things in your shop that need you: low stock, payments due, approvals and more. Mark one read when you have dealt with it."
+        subtitle={
+          hotelOps
+            ? 'Alerts for this hotel: low supplies, payments due, and approvals. Mark one read when you have dealt with it.'
+            : restaurantOps
+              ? 'Alerts for this restaurant: low ingredients, the restaurant till, and approvals. Mark one read when you have dealt with it.'
+              : 'Things in your shop that need you: low stock, payments due, approvals and more. Mark one read when you have dealt with it.'
+        }
       />
       {platformAudience ? (
         <p className="muted notify-ui-note">
@@ -246,42 +277,63 @@ export default function Page() {
             type="button"
             className={category === c.id ? 'notif-chip active' : 'notif-chip'}
             onClick={() => setCategory(c.id)}
-            aria-label={`Filter notifications by ${c.label}`}
+            aria-label={`Filter notifications by ${chipLabel(c.id, c.label)}`}
           >
-            {c.label}
+            {chipLabel(c.id, c.label)}
           </button>
         ))}
       </div>
 
-      <div className="notify-ui-scroll">
+      <div className={restaurantOps ? 'notify-ui-scroll rest-alert-table' : 'notify-ui-scroll'}>
       <table className="table">
+        {restaurantOps ? (
+          <colgroup>
+            <col style={{ width: '56%' }} />
+            <col style={{ width: '20%' }} />
+            <col style={{ width: '24%' }} />
+          </colgroup>
+        ) : null}
         <thead>
           <tr>
-            <th>When</th>
-            <th>Type</th>
-            <th>Alert</th>
+            {restaurantOps ? <th>Alert</th> : <th>When</th>}
+            {restaurantOps ? <th>When</th> : <th>Type</th>}
+            {restaurantOps ? null : <th>Alert</th>}
             <th>Action</th>
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={4} className="muted">
+              <td colSpan={restaurantOps ? 3 : 4} className="muted">
                 {emptyCopy}
               </td>
             </tr>
           ) : (
             rows.map((n) => (
             <tr key={n.id} className={n.status === 'unread' ? 'notify-ui-unread' : 'notify-ui-read'}>
-              <td className="notify-ui-when">{formatNoticeTime(n.created_at)}</td>
-              <td>
-                <span className={`notify-ui-cat notify-ui-cat-${n.category}`}>{categoryLabel(n.category)}</span>
-              </td>
+              {restaurantOps ? (
+                <td data-label="Alert">
+                  <b className="notify-ui-title">{n.title}</b>
+                  <span className="notify-ui-msg">{n.message}</span>
+                  <span className={`notify-ui-cat notify-ui-cat-${n.category}`}>{categoryLabel(n.category)}</span>
+                </td>
+              ) : (
+                <td className="notify-ui-when">{formatNoticeTime(n.created_at)}</td>
+              )}
+              {restaurantOps ? (
+                <td data-label="When" className="notify-ui-when">{formatNoticeTime(n.created_at)}</td>
+              ) : (
+                <td>
+                  <span className={`notify-ui-cat notify-ui-cat-${n.category}`}>{categoryLabel(n.category)}</span>
+                </td>
+              )}
+              {restaurantOps ? null : (
               <td>
                 <b className="notify-ui-title">{n.title}</b>
                 <span className="notify-ui-msg">{n.message}</span>
               </td>
-              <td>
+              )}
+              <td data-label="Action">
                 <div className="notify-ui-row-actions">
                 {n.status === 'unread' ? (
                   <button className="btn-ok" onClick={() => markRead(n.id)} aria-label={`Mark notification ${n.id} read`}>Mark read</button>
@@ -304,11 +356,19 @@ export default function Page() {
         </p>
         {prefsError ? <p className="notify-ui-alert" role="alert">{prefsError}</p> : null}
         {prefs ? (
-          <div className="notify-ui-scroll">
+          <div className={restaurantOps ? 'notify-ui-scroll rest-pref-table' : 'notify-ui-scroll'}>
           <table className="table" aria-label="Channel preferences">
+            {restaurantOps ? (
+              <colgroup>
+                <col style={{ width: '40%' }} />
+                <col style={{ width: '20%' }} />
+                <col style={{ width: '20%' }} />
+                <col style={{ width: '20%' }} />
+              </colgroup>
+            ) : null}
             <thead>
               <tr>
-                <th>Type</th>
+                {restaurantOps ? <th>Kind of alert</th> : <th>Type</th>}
                 <th>In the app</th>
                 <th>Email</th>
                 <th>SMS</th>
@@ -321,9 +381,16 @@ export default function Page() {
                 )
                 .map(([cat, channels]: any) => (
                 <tr key={cat}>
-                  <td>{categoryLabel(cat)}</td>
+                  <td data-label={restaurantOps ? 'Kind of alert' : undefined}>{categoryLabel(cat)}</td>
                   {(['dashboard', 'email', 'sms'] as const).map((ch) => (
-                    <td key={ch}>
+                    <td
+                      key={ch}
+                      data-label={
+                        restaurantOps
+                          ? (ch === 'dashboard' ? 'In the app' : ch === 'email' ? 'Email' : 'SMS')
+                          : undefined
+                      }
+                    >
                       <button
                         type="button"
                         role="switch"

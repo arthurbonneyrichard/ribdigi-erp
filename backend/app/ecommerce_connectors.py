@@ -125,18 +125,15 @@ def set_connector_http_put(fn) -> None:
 
 
 def validate_store_url(url: str) -> str:
+    from app.schemas import validate_webhook_url_value
+
     parsed = urlparse((url or "").strip())
     if parsed.scheme not in {"https", "http"} or not parsed.netloc:
         raise HTTPException(status_code=400, detail="Store URL must be an absolute http(s) address")
-    if parsed.username or parsed.password or "@" in (parsed.netloc or ""):
-        raise HTTPException(status_code=400, detail="Store URL must not include credentials")
-    if parsed.scheme == "http" and parsed.hostname not in {
-        "localhost",
-        "127.0.0.1",
-        "testserver",
-        "host.docker.internal",
-    }:
-        raise HTTPException(status_code=400, detail="Remote store URLs must use https")
+    try:
+        validate_webhook_url_value((url or "").strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return f"{parsed.scheme}://{parsed.netloc}"
 
 

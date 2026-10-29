@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import FormModal from '../../../components/FormModal';
 import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
+import { normalizeIndustry } from '../../../lib/industries';
 import { getMe } from '../../../lib/meCache';
 
 type Dept = {
@@ -31,6 +32,7 @@ export default function Page() {
   const [submitting, setSubmitting] = useState(false);
   const [deptAddOpen, setDeptAddOpen] = useState(false);
   const [canWrite, setCanWrite] = useState(false);
+  const [restaurantOps, setRestaurantOps] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
   async function loadList(search = q) {
@@ -45,6 +47,7 @@ export default function Page() {
     const me = await getMe();
     const perms = (me.data?.permissions || {}) as Record<string, string[]>;
     setCanWrite(canWriteUsers(me.data?.role || '', perms));
+    setRestaurantOps(normalizeIndustry(me.data?.industry) === 'restaurant');
     await loadList(search);
   }
 
@@ -130,7 +133,11 @@ export default function Page() {
     <>
       <PageHeader
         title="Departments"
-        subtitle="Departments in your company. Each name must be unique. Assign staff to them in User Management."
+        subtitle={
+          restaurantOps
+            ? 'Departments in this restaurant. Each name must be unique. Assign staff to them in User Management.'
+            : 'Departments in your company. Each name must be unique. Assign staff to them in User Management.'
+        }
         actions={
           canWrite ? (
             <button
@@ -168,7 +175,7 @@ export default function Page() {
         >
           <option value="all">All statuses</option>
           <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
+          <option value="inactive">{restaurantOps ? 'Not in use' : 'Inactive'}</option>
         </select>
       </div>
 
@@ -202,26 +209,56 @@ export default function Page() {
         </FormModal>
       ) : null}
 
+      <div className={restaurantOps ? 'list-table-wrap rest-dept-table' : undefined}>
       <table className="table">
+        {restaurantOps && canWrite ? (
+          <colgroup>
+            <col style={{ width: '52%' }} />
+            <col style={{ width: '18%' }} />
+            <col style={{ width: '30%' }} />
+          </colgroup>
+        ) : null}
         <thead>
           <tr>
-            <th>Code</th>
-            <th>Name</th>
-            <th>Active</th>
+            {restaurantOps ? <th>Department</th> : <th>Code</th>}
+            {restaurantOps ? null : <th>Name</th>}
+            {restaurantOps ? <th>Status</th> : <th>Active</th>}
             {canWrite && <th>Actions</th>}
           </tr>
         </thead>
         <tbody>
           {visible.length === 0 ? (
             <tr>
-              <td colSpan={canWrite ? 4 : 3} className="muted">
-                No departments match this filter.
+              <td colSpan={restaurantOps ? (canWrite ? 3 : 2) : (canWrite ? 4 : 3)} className="muted">
+                {restaurantOps
+                  ? (rows.length
+                    ? 'No departments for this filter. Choose All statuses to see every department.'
+                    : 'No departments yet. Create one when you are ready to group staff.')
+                  : 'No departments match this filter.'}
               </td>
             </tr>
           ) : (
             visible.map((r) => (
               <tr key={r.id}>
-                <td>{r.code}</td>
+                {restaurantOps ? (
+                  <td data-label="Department">
+                    {canWrite ? (
+                      <input
+                        defaultValue={r.name}
+                        aria-label={`Edit department name ${r.code}`}
+                        onBlur={(e) => rename(r, e.target.value)}
+                      />
+                    ) : (
+                      r.name
+                    )}
+                    <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
+                      {r.code}
+                    </span>
+                  </td>
+                ) : (
+                  <td>{r.code}</td>
+                )}
+                {restaurantOps ? null : (
                 <td>
                   {canWrite ? (
                     <input
@@ -233,9 +270,14 @@ export default function Page() {
                     r.name
                   )}
                 </td>
-                <td>{r.is_active === false ? 'Inactive' : 'Active'}</td>
+                )}
+                <td data-label={restaurantOps ? 'Status' : undefined}>
+                  {restaurantOps
+                    ? (r.is_active === false ? 'Not in use' : 'Active')
+                    : (r.is_active === false ? 'Inactive' : 'Active')}
+                </td>
                 {canWrite && (
-                  <td>
+                  <td data-label={restaurantOps ? 'Actions' : undefined}>
                     <button
                       type="button"
                       onClick={() => toggleActive(r)}
@@ -254,6 +296,7 @@ export default function Page() {
           )}
         </tbody>
       </table>
+      </div>
     </>
   );
 }

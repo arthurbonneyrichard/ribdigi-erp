@@ -3,6 +3,9 @@
 import { FormEvent, useEffect, useState } from 'react';
 import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
+import { isHotelIndustry } from '../../../lib/tenantNav';
+import { normalizeIndustry } from '../../../lib/industries';
 import { formatMoney, formatWhen } from '../../../lib/format';
 import { AmountField } from '../../../components/AmountField';
 
@@ -34,6 +37,8 @@ export default function BillingNoticePage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [hotelOps, setHotelOps] = useState(false);
+  const [restaurantOps, setRestaurantOps] = useState(false);
 
   async function load() {
     const res = await api('/billing/payment-notices');
@@ -41,6 +46,12 @@ export default function BillingNoticePage() {
   }
 
   useEffect(() => {
+    getMe()
+      .then((r) => {
+        setHotelOps(isHotelIndustry(r.data?.industry));
+        setRestaurantOps(normalizeIndustry(r.data?.industry) === 'restaurant');
+      })
+      .catch(() => undefined);
     load().catch((err: any) => setError(err?.message || 'Could not load payment notices'));
   }, []);
 
@@ -70,7 +81,13 @@ export default function BillingNoticePage() {
     <div className="work">
       <PageHeader
         title="Payment notice"
-        subtitle="Record a payment you already received. The amount, method, and reference stay in the list."
+        subtitle={
+          hotelOps
+            ? 'Record a payment already received outside the guest folio. Folio payments stay on Billing in Hotel until checkout.'
+            : restaurantOps
+              ? 'Record a payment already received outside a restaurant bill. Table orders stay on the restaurant desk until a bill is posted.'
+              : 'Record a payment you already received. The amount, method, and reference stay in the list.'
+        }
       />
       {error && <p className="erp-banner err" role="alert">{error}</p>}
       {message && <p className="erp-banner ok" role="status">{message}</p>}

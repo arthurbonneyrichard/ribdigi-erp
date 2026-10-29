@@ -5,6 +5,7 @@ import CashierPresencePanel from '../../../components/CashierPresencePanel';
 import FormModal from '../../../components/FormModal';
 import PageHeader from '../../../components/PageHeader';
 import { api, apiFetch } from '../../../lib/api';
+import { normalizeIndustry } from '../../../lib/industries';
 import { industryAllowsModule } from '../../../lib/industryModules';
 import { getMe } from '../../../lib/meCache';
 import { hideStoreUx as shouldHideStoreUx, isHotelIndustry } from '../../../lib/tenantNav';
@@ -260,9 +261,25 @@ function PermissionGrid({
           </tr>
         </thead>
         <tbody>
-          {modules.map((mod) => (
+          {modules.map((mod) => {
+            const hotel = isHotelIndustry(industry);
+            const restaurant = normalizeIndustry(industry) === 'restaurant';
+            const area = mod === 'inventory' && hotel
+              ? 'Supplies'
+              : mod === 'inventory' && restaurant
+                ? 'Ingredients'
+              : mod === 'pos' && hotel
+                ? 'Shop till'
+                : mod === 'pos' && restaurant
+                  ? 'Restaurant till'
+                : mod === 'reports' && hotel
+                  ? 'Company reports'
+                  : mod === 'sales' && restaurant
+                    ? 'Bills'
+                    : (MODULE_LABELS[mod] || mod);
+            return (
             <tr key={mod}>
-              <td>{MODULE_LABELS[mod] || mod}</td>
+              <td>{area}</td>
               {TENANT_RBAC_ACTIONS.map((act) => (
                 <td key={act}>
                   <input
@@ -270,12 +287,13 @@ function PermissionGrid({
                     checked={moduleGrants(value[mod], act)}
                     disabled={disabled}
                     onChange={() => onChange(togglePermAction(value, mod, act))}
-                    aria-label={`${MODULE_LABELS[mod] || mod}: ${PERM_ACTION_LABELS[act]}`}
+                    aria-label={`${area}: ${PERM_ACTION_LABELS[act]}`}
                   />
                 </td>
               ))}
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -388,9 +406,17 @@ export default function Page() {
   // Only show Branch and Store columns when the company has a choice to make.
   const showBranchCol = !hideStoreUx && branches.length > 0;
   const showStoreCol = !hideStoreAssign && stores.length > 1;
+  const restaurantOps = normalizeIndustry(meIndustry) === 'restaurant';
   const isCustomRole = (r: RoleRow) => r.system === false;
-  const roleChoiceText = (role: RoleRow) =>
-    `${role.label || role.role}${isCustomRole(role) ? ' (custom)' : ''}${role.is_active === false ? ' [inactive]' : ''}`;
+  const roleChoiceText = (role: RoleRow) => {
+    const hotelNames: Record<string, string> = isHotelIndustry(meIndustry)
+      ? { cashier: 'Shop cashier', inventory_officer: 'Supplies', sales_officer: 'Sales' }
+      : normalizeIndustry(meIndustry) === 'restaurant'
+        ? { cashier: 'Restaurant cashier', inventory_officer: 'Ingredients', sales_officer: 'Bills' }
+        : {};
+    const name = hotelNames[role.role] || role.label || role.role;
+    return `${name}${isCustomRole(role) ? ' (custom)' : ''}${role.is_active === false ? ' [inactive]' : ''}`;
+  };
   const isRoleActive = (r: RoleRow) => !isCustomRole(r) || r.is_active !== false;
   const assignableRoles = (currentRole?: string) =>
     roles.filter(
@@ -950,7 +976,13 @@ export default function Page() {
     <div className="user-manage">
       <PageHeader
         title="User Management"
-        subtitle="See who can sign in, then add a person with a name, email, password, and role. Deactivate stops sign-in and keeps their history."
+        subtitle={
+          hideStoreAssign
+            ? 'Hotel staff who can sign in. Add a person with a name, email, password, and role. Deactivate stops sign-in and keeps their history.'
+            : normalizeIndustry(meIndustry) === 'restaurant'
+              ? 'Restaurant staff who can sign in. Add a person with a name, email, password, and role. Deactivate stops sign-in and keeps their history.'
+              : 'See who can sign in, then add a person with a name, email, password, and role. Deactivate stops sign-in and keeps their history.'
+        }
         subtitleClassName="muted user-manage-lead"
         actions={
           (canWrite || (canWriteStores && !hideStoreUx)) ? (
@@ -983,14 +1015,14 @@ export default function Page() {
           ) : undefined
         }
       />
-      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
+      {error && <p className="form-flash err" role="alert">{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
       {permChecked && !canWrite ? (
         <div className="card users-perm-msg" role="status" style={{ margin: '12px 0' }}>
           <p style={{ margin: 0 }}>
             You can view users in this company, but you cannot create or edit them.
             Creating users requires <code>users:write</code> (Company Admin). Your role is{' '}
-            <strong>{meRole || 'unknown'}</strong>. Cashiers and other read-only roles cannot
+            <strong>{meRole || 'unknown'}</strong>. {hideStoreAssign ? 'Hotel cashiers' : 'Cashiers'} and other read-only roles cannot
             create users from this page, by URL, or via the API.
           </p>
         </div>
@@ -1328,7 +1360,7 @@ export default function Page() {
       >
         <option value="all">All</option>
         <option value="active">Active</option>
-        <option value="inactive">Inactive</option>
+        <option value="inactive">{restaurantOps ? 'Not in use' : 'Inactive'}</option>
       </select>
       </label>
       <label className="user-manage-field user-manage-search">
@@ -1399,17 +1431,27 @@ export default function Page() {
       </label>
         </div>
 
-      <div className="list-table-wrap user-manage-table-scroll">
+      <div className={restaurantOps ? 'list-table-wrap user-manage-table-scroll rest-user-table' : 'list-table-wrap user-manage-table-scroll'}>
       <table className="table">
+        {restaurantOps && canWrite && !showBranchCol && !showStoreCol ? (
+          <colgroup>
+            <col style={{ width: '24%' }} />
+            <col style={{ width: '18%' }} />
+            <col style={{ width: '16%' }} />
+            <col style={{ width: '14%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '18%' }} />
+          </colgroup>
+        ) : null}
         <thead>
           <tr>
-            <th className="user-manage-name">Name</th>
-            <th className="user-manage-email">Email</th>
-            <th className="user-manage-role">Role</th>
+            {restaurantOps ? <th>Person</th> : <th className="user-manage-name">Name</th>}
+            {restaurantOps ? null : <th className="user-manage-email">Email</th>}
+            <th className={restaurantOps ? undefined : 'user-manage-role'}>Role</th>
             {showBranchCol ? <th>Branch</th> : null}
             {showStoreCol ? <th>Store</th> : null}
             <th>Department</th>
-            <th>Scope</th>
+            {restaurantOps ? <th>Sees</th> : <th>Scope</th>}
             <th>Status</th>
             {canWrite && <th>Actions</th>}
           </tr>
@@ -1417,20 +1459,29 @@ export default function Page() {
         <tbody>
           {managedUsers.length === 0 && (
             <tr>
-              <td colSpan={(canWrite ? 7 : 6) + (showBranchCol ? 1 : 0) + (showStoreCol ? 1 : 0)} className="muted">
+              <td colSpan={restaurantOps
+                ? (canWrite ? 6 : 5) + (showBranchCol ? 1 : 0) + (showStoreCol ? 1 : 0)
+                : (canWrite ? 7 : 6) + (showBranchCol ? 1 : 0) + (showStoreCol ? 1 : 0)} className="muted">
                 {rows.length
-                  ? 'No users for this filter. Choose All to see everyone in this company.'
-                  : 'No users yet. Add a person with a name, email, password, and role.'}
+                  ? (restaurantOps
+                    ? 'No staff for this filter. Choose All to see everyone in this restaurant.'
+                    : 'No users for this filter. Choose All to see everyone in this company.')
+                  : (restaurantOps
+                    ? 'No staff yet. Add a person with a name, email, password, and role.'
+                    : 'No users yet. Add a person with a name, email, password, and role.')}
               </td>
             </tr>
           )}
           {managedUsers.map((r) => (
             <tr key={r.id}>
-              <td className="user-manage-name">
+              <td className={restaurantOps ? undefined : 'user-manage-name'} data-label={restaurantOps ? 'Person' : undefined}>
                 {r.full_name}
+                {restaurantOps ? (
+                  <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>{r.email}</span>
+                ) : null}
               </td>
-              <td className="user-manage-email">{r.email}</td>
-              <td className="user-manage-role">
+              {restaurantOps ? null : <td className="user-manage-email">{r.email}</td>}
+              <td className={restaurantOps ? undefined : 'user-manage-role'} data-label={restaurantOps ? 'Role' : undefined}>
                 {canWrite ? (
                   <select
                     value={r.role}
@@ -1448,7 +1499,7 @@ export default function Page() {
                 )}
               </td>
               {showBranchCol ? (
-              <td>
+              <td data-label={restaurantOps ? 'Branch' : undefined}>
                 {canWrite ? (
                   <select
                     value={r.branch_id || ''}
@@ -1468,7 +1519,7 @@ export default function Page() {
               </td>
               ) : null}
               {showStoreCol ? (
-              <td>
+              <td data-label={restaurantOps ? 'Store' : undefined}>
                 {canWrite && !PLATFORM_USER_ROLES.has(r.role) && r.role !== 'company_admin' ? (
                   stores.length <= 1 ? (
                     <select
@@ -1532,7 +1583,7 @@ export default function Page() {
                 )}
               </td>
               ) : null}
-              <td>
+              <td data-label={restaurantOps ? 'Department' : undefined}>
                 {canWrite ? (
                   <select
                     value={r.department_id || ''}
@@ -1550,7 +1601,7 @@ export default function Page() {
                   deptLabel(r.department_id)
                 )}
               </td>
-              <td>
+              <td data-label={restaurantOps ? 'Sees' : undefined}>
                 {canWrite ? (
                   <select
                     value={r.record_scope || 'own'}
@@ -1567,13 +1618,13 @@ export default function Page() {
                   r.record_scope || '—'
                 )}
               </td>
-              <td>
+              <td data-label={restaurantOps ? 'Status' : undefined}>
                 <span className={r.is_active ? 'user-manage-status' : 'user-manage-status is-off'}>
-                  {r.is_active ? 'Active' : 'Inactive'}
+                  {restaurantOps ? (r.is_active ? 'Active' : 'Not in use') : (r.is_active ? 'Active' : 'Inactive')}
                 </span>
               </td>
               {canWrite && (
-                <td className="user-manage-actions">
+                <td className="user-manage-actions" data-label={restaurantOps ? 'Actions' : undefined}>
                   <button
                     type="button"
                     className="btn-ok"
@@ -1620,13 +1671,21 @@ export default function Page() {
       </div>
       </section>
 
-      <CashierPresencePanel />
+      {permChecked && (
+        <CashierPresencePanel
+          hotel={isHotelIndustry(meIndustry)}
+          restaurant={normalizeIndustry(meIndustry) === 'restaurant'}
+        />
+      )}
 
       {canWrite && rolesOpen ? (
         <FormModal title="Roles" busy={busy} onClose={() => setRolesOpen(false)}>
           <p className="muted" style={{ marginTop: 0 }}>
-            Built-in roles such as Cashier and Accountant are ready to use. Make your own role when someone needs a
-            different mix, then choose it under Role for that person.
+            {isHotelIndustry(meIndustry)
+              ? 'Built-in roles such as Front Desk, Hotel Cashier, and Accountant are ready to use. Make your own role when someone needs a different mix, then choose it under Role for that person.'
+              : normalizeIndustry(meIndustry) === 'restaurant'
+                ? 'Built-in roles such as Restaurant cashier and Accountant are ready to use. Make your own role when someone needs a different mix, then choose it under Role for that person.'
+                : 'Built-in roles such as Cashier and Accountant are ready to use. Make your own role when someone needs a different mix, then choose it under Role for that person.'}
           </p>
           {error ? (
             <p className="list-toast err" role="alert">
@@ -1645,7 +1704,7 @@ export default function Page() {
                 id="role-label"
                 value={roleForm.label}
                 onChange={(e) => setRoleForm({ ...roleForm, label: e.target.value })}
-                placeholder="e.g. Shop supervisor"
+                placeholder={isHotelIndustry(meIndustry) ? 'e.g. Night auditor' : normalizeIndustry(meIndustry) === 'restaurant' ? 'e.g. Floor supervisor' : 'e.g. Shop supervisor'}
                 required
                 aria-label="Custom role label"
               />

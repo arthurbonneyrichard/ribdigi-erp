@@ -73,7 +73,7 @@ def test_uuid_id_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Sale customer"' in page
     assert "customer_id: customerId.trim()" in page
-    assert 'aria-label="Sales product"' in page
+    assert "hotelOps ? 'Sales supply' : restaurantOps ? 'Sales menu item' : 'Sales product'" in page
     assert "product_id: productId.trim()" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Sales invoice customer_id OpenAPI" in agents

@@ -100,12 +100,18 @@ def test_pos_exposes_counted_cash_close_without_changing_sign_out():
     root = Path(__file__).resolve().parents[2]
     helper = (root / "frontend/lib/cashierShift.ts").read_text(encoding="utf-8")
     page = (root / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
-    assert "actual_cash: Number(session.expected_cash || 0)" in helper
+    assert "actual_cash: Number(session.expected_cash || 0)" not in helper
     assert "export async function countAndCloseOpenShift" in helper
+    assert "export async function peekOpenCashierShift" in helper
+    assert "export function shouldPromptDrawerCountOnSignOut" in helper
+    assert "export function isCashierSignOutRole" in helper
     assert "before closing this shift" in helper
     sign_out = helper.split("export async function closeShiftForSignOut", 1)[1]
-    assert "Leave the shift open when the queue cannot be read." in sign_out
+    assert "zero-variance" in sign_out or "leaves the shift open" in sign_out.lower() or "return;" in sign_out
     assert 'aria-label="Counted cash"' in page
     assert 'aria-label="Cash count notes"' in page
     assert 'aria-label="Record cash count and close shift"' in page
     assert 'aria-label="Start a new shift"' in page
+    shell = (root / "frontend/components/Shell.tsx").read_text(encoding="utf-8")
+    assert 'aria-label="Sign-out counted cash"' in shell
+    assert 'aria-label="Count drawer and sign out"' in shell

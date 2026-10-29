@@ -2872,6 +2872,7 @@ class RestaurantOrderLine(Base):
     unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     station: Mapped[str] = mapped_column(String(20), default="kitchen")
+    prep_status: Mapped[str] = mapped_column(String(20), default="queued", server_default="queued")
 
 
 class RestaurantOrderModifier(Base):
@@ -3276,4 +3277,66 @@ class EcommerceSyncJob(Base):
     next_retry_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HotelBookingLink(Base):
+    """Hostname the hotel wants guests to use for online stay requests.
+
+    Saving the host records an existing website or a new domain. It does not
+    verify DNS or issue a certificate. A request is a tentative reservation.
+    It holds the room and does not take a payment.
+    """
+
+    __tablename__ = "hotel_booking_links"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", name="uq_hotel_booking_link_tenant"),
+        UniqueConstraint("hostname", name="uq_hotel_booking_link_hostname"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    hostname: Mapped[str] = mapped_column(String(253))
+    link_kind: Mapped[str] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class RestaurantBookingLink(Base):
+    """Hostname the restaurant wants guests to use for online booking.
+
+    Saving the host records an existing website or a new domain. It does not
+    verify DNS or issue a certificate.
+    """
+
+    __tablename__ = "restaurant_booking_links"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", name="uq_restaurant_booking_link_tenant"),
+        UniqueConstraint("hostname", name="uq_restaurant_booking_link_hostname"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    hostname: Mapped[str] = mapped_column(String(253))
+    link_kind: Mapped[str] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class RestaurantBooking(Base):
+    """Guest booking request. It is not an order and it does not take a payment."""
+
+    __tablename__ = "restaurant_bookings"
+    __table_args__ = (UniqueConstraint("tenant_id", "booking_number", name="uq_restaurant_booking_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    booking_number: Mapped[str] = mapped_column(String(40))
+    guest_name: Mapped[str] = mapped_column(String(180))
+    phone: Mapped[str] = mapped_column(String(20))
+    party_size: Mapped[int] = mapped_column(Integer)
+    booked_for: Mapped[datetime] = mapped_column(DateTime, index=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="requested")
+    table_id: Mapped[str | None] = mapped_column(ForeignKey("restaurant_tables.id"), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

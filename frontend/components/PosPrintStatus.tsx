@@ -29,7 +29,10 @@ export default function PosPrintStatus({
     setBusy(true);
     try {
       const opened = openReceiptPrintWindow(html, text);
-      if (!opened) window.print();
+      if (!opened) {
+        setNote('Print failed — the sale is still saved.');
+        return;
+      }
       await api(`/printers/jobs/${job.id}/browser-ack`, {
         method: 'POST',
         body: JSON.stringify({ status: 'printed' }),

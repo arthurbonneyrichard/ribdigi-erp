@@ -227,6 +227,7 @@ const PLAIN_LABELS: Record<string, string> = {
   pending: 'Pending',
   paid: 'Paid',
   unpaid: 'Unpaid',
+  table_bill: 'Table bill',
   partial: 'Partly paid',
   overdue: 'Overdue',
   cancelled: 'Cancelled',

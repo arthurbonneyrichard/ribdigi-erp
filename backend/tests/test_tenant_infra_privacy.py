@@ -216,7 +216,13 @@ async def test_platform_owner_diagnostics_still_work(client, monkeypatch):
 
     jobs = await ac.get("/api/v1/jobs", headers=ops)
     assert jobs.status_code == 200, jobs.text
-    assert "jobs" in jobs.json()["data"]
+    jdata = jobs.json()["data"]
+    assert "jobs" in jdata
+    assert "broker" not in jdata
+    assert "result_backend" not in jdata
+    assert "broker_configured" in jdata
+    assert "amqp://" not in jobs.text
+    assert "redis://" not in jobs.text
     ran = await ac.post("/api/v1/jobs/scan_quotation_expiry/run", headers=ops, json={})
     assert ran.status_code == 200, ran.text
 

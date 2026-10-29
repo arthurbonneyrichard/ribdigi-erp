@@ -33,12 +33,16 @@ _INDUSTRY_STEPS: dict[str, list[str]] = {
         "A retail sale must stay on POS. A wholesale order must stay on the sales desk.",
     ],
     "hotel": [
-        "Add rooms and guests, then book a stay.",
-        "Check-in and check-out keep the room status in step with the reservation.",
-        "Folio charges stay on the hotel desk. That desk needs the internet.",
+        "Add rooms and nightly rates, then add a guest and book a stay.",
+        "Online booking records an existing website or a new domain. A guest request holds the room as tentative until it is confirmed. The dashboard says how many stay requests are waiting. The request does not take a payment.",
+        "Confirm a tentative reservation, then check the guest in at the front desk.",
+        "Housekeeping and maintenance stay on the hotel desk. A dirty night is today only.",
+        "The room folio is nights times the nightly rate. Record a folio payment, then check out. That payment is a recorded tender, not a card charge.",
+        "Hotel reports count nights sold in the selected dates. Reservations, folios, and housekeeping need the internet.",
     ],
     "restaurant": [
         "Save tables, then save an order for dine-in, takeaway, or delivery.",
+        "Online booking records an existing website or a new domain. Guests request a table on that link. A time that has already passed is refused. Seating can name a table. Finishing a seated visit frees the table when no open order is using it. The request is not an order and not a payment.",
         "Send the order to the kitchen, then complete it when it is served.",
         "Recipes tie a menu item to ingredients. The restaurant desk needs the internet.",
     ],
@@ -59,6 +63,19 @@ _MODULE_STEPS: dict[str, str] = {
     "hospital": "Hospital: patients and visits for a hospital company only. Not a diagnosis or insurance desk.",
 }
 
+_HOTEL_MODULE_STEPS: dict[str, str] = {
+    "pos": "Shop till: walk-up shop sales for this hotel. Meals and drinks stay on the guest bill. Guest folio payments stay on Billing.",
+    "inventory": "Supplies: quantities on hand, counts, and low supplies. Rooms stay on Rooms and rates.",
+    "sales": "Sales: the invoice created from a guest folio at checkout. Stays start on Reservations.",
+    "purchasing": "Purchasing: suppliers, purchase orders, and supplies received for the hotel.",
+    "expenses": "Expenses: hotel costs with a category, an amount, and how they were paid.",
+    "accounting": "Accounting: journals for this hotel, including the checkout invoice.",
+    "credit": "Customer credit: amounts still owed after checkout. A credit row is not cash received.",
+    "reports": "Reports: occupancy and room revenue for the selected dates, plus the company reports.",
+    "customers": "Guests and customers: guest profiles on the hotel desk, and the customer used by a checkout invoice.",
+    "hotel": "Hotel: rooms, reservations, front desk, housekeeping, maintenance, folios, and cashiering.",
+}
+
 
 def guide_lines(
     *,
@@ -76,7 +93,7 @@ def guide_lines(
         f"Business type: {label}",
         "This guide lists only the workflows enabled for this company.",
         "",
-        "How this company sells",
+        "How this hotel runs" if canonical == "hotel" else "How this company sells",
     ]
     steps = _INDUSTRY_STEPS.get(canonical or "", [
         "Retail, hotel, and restaurant are the business types a new company can use.",
@@ -92,6 +109,8 @@ def guide_lines(
             continue
         if key in packages_svc.INDUSTRY_SPECIFIC_MODULES and not packages_svc.industry_allows_module(canonical, key):
             continue
+        if canonical == "hotel":
+            text = _HOTEL_MODULE_STEPS.get(key, text)
         lines.append(f"- {text}")
         shown = True
     if not shown:

@@ -3,9 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { api } from '../../../lib/api';
 import { getPrefetched } from '../../../lib/prefetchCache';
-import { formatDate, formatMoney, formatTime } from '../../../lib/format';
+import { formatDate, formatMoney, formatTime, type FormatPrefs } from '../../../lib/format';
 import { getMe } from '../../../lib/meCache';
 import { industryLabel, normalizeIndustry } from '../../../lib/industries';
 import {
@@ -19,6 +18,7 @@ import {
 } from '../../../lib/industryDashboard';
 import { WholesaleDeskCards } from '../../../components/IndustryDashboardViews';
 import { DailyBars, TrendLine } from '../../../components/RetailDashboardInfographic';
+import EmptyState from '../../../components/EmptyState';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import { useStoreContext } from '../../../lib/storeContext';
 import OfflineProvisionalNotice from '../../../components/OfflineProvisionalNotice';
@@ -161,6 +161,46 @@ const PANEL_ICONS: Record<string, React.ReactNode> = {
       <line x1="3" y1="18" x2="3.01" y2="18" />
     </>
   ),
+  owed: (
+    <>
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <line x1="2" y1="10" x2="22" y2="10" />
+    </>
+  ),
+};
+
+const STAT_ICONS: Record<string, React.ReactNode> = {
+  sales: (
+    <>
+      <line x1="12" y1="1" x2="12" y2="23" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </>
+  ),
+  buy: (
+    <>
+      <circle cx="9" cy="21" r="1" />
+      <circle cx="20" cy="21" r="1" />
+      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+    </>
+  ),
+  exp: (
+    <>
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      <path d="M3.27 6.96 12 12.01l8.73-5.05" />
+      <path d="M12 22.08V12" />
+    </>
+  ),
+  net: (
+    <>
+      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+      <polyline points="17 6 23 6 23 12" />
+    </>
+  ),
+  profit: (
+    <>
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    </>
+  ),
 };
 
 function PanelIcon({ name }: { name: string }) {
@@ -182,13 +222,38 @@ function PanelIcon({ name }: { name: string }) {
   );
 }
 
+function StatIcon({ name }: { name: string }) {
+  return (
+    <svg
+      className="stat-ico-svg"
+      viewBox="0 0 24 24"
+      width="20"
+      height="20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {STAT_ICONS[name]}
+    </svg>
+  );
+}
+
 function MonthlyBars({ data }: { data: { label: string; total: number }[] }) {
   const n = data.length || 1;
   const max = Math.max(1, ...data.map((x) => x.total || 0));
   const slot = 300 / n;
   const bw = Math.min(18, slot * 0.65);
   return (
-    <svg viewBox="0 0 300 172" width="100%" height="172" role="img" aria-label="Monthly sales">
+    <svg
+      className="dash-chart-svg"
+      viewBox="0 0 300 172"
+      preserveAspectRatio="xMidYMid meet"
+      role="img"
+      aria-label="Monthly sales"
+    >
       <line x1="8" y1="138" x2="292" y2="138" stroke="#D4E5C4" />
       {data.map((t, i) => {
         const v = t.total || 0;
@@ -197,12 +262,16 @@ function MonthlyBars({ data }: { data: { label: string; total: number }[] }) {
         const y = 138 - h;
         return (
           <g key={t.label + i}>
-            <rect x={x} y={y} width={bw} height={h} rx={3} fill="#38bdf8" />
-            {i % 2 === 0 && (
-              <text x={x + bw / 2} y={156} textAnchor="middle" className="vbar-label">
-                {t.label.split(' ')[0]}
-              </text>
-            )}
+            <title>{t.label}</title>
+            <rect x={x} y={y} width={bw} height={h} rx={3} fill="#4AB012" />
+            <text
+              x={x + bw / 2}
+              y={156}
+              textAnchor="middle"
+              className={i % 2 && i !== n - 1 ? 'vbar-label dash-tick-compact-hide' : 'vbar-label'}
+            >
+              {t.label.split(' ')[0].slice(0, 3)}
+            </text>
           </g>
         );
       })}
@@ -229,11 +298,11 @@ function subStatus(sub?: Subscription) {
   return null;
 }
 
-function fmtDate(value?: string | null) {
+function fmtDate(value?: string | null, prefs?: FormatPrefs | null) {
   if (!value) return '';
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  return formatDate(d, prefs);
 }
 
 function num(v?: number) {
@@ -244,10 +313,34 @@ function moneyNum(v?: number) {
   return formatMoney(v ?? 0);
 }
 
-function timeOfDay(hour: number): { greeting: string; icon: string; sub: string } {
-  if (hour < 12) return { greeting: 'Good morning', icon: '\u2600\ufe0f', sub: 'A bright new day for your business.' };
-  if (hour < 18) return { greeting: 'Good afternoon', icon: '\u26c5', sub: 'Keep the momentum going strong.' };
-  return { greeting: 'Good evening', icon: '\ud83c\udf19', sub: "Here's how today wrapped up." };
+function timeOfDay(hour: number): { greeting: string; icon: string; sub: string; period: 'morning' | 'afternoon' | 'evening' } {
+  if (hour < 12) return { greeting: 'Good morning', icon: '\u2600\ufe0f', sub: 'A bright new day for your business.', period: 'morning' };
+  if (hour < 18) return { greeting: 'Good afternoon', icon: '\u26c5', sub: 'Keep the momentum going strong.', period: 'afternoon' };
+  return { greeting: 'Good evening', icon: '\ud83c\udf19', sub: "Here's how today wrapped up.", period: 'evening' };
+}
+
+function GreetMark({ period }: { period: 'morning' | 'afternoon' | 'evening' }) {
+  if (period === 'morning') {
+    return (
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <circle cx="12" cy="12" r="5" fill="#F4C542" />
+        <path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M5.6 18.4l1.6-1.6M16.8 7.2l1.6-1.6" stroke="#F4C542" strokeWidth="1.7" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (period === 'afternoon') {
+    return (
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <circle cx="9" cy="11" r="4.2" fill="#F4C542" />
+        <path d="M8 17.5c1.8-2.6 6.8-2.8 8.8 0 2.2 0 3.7-1.6 3.7-3.4S19 10.7 16.9 10.7c-.4-2.2-2.3-3.8-4.6-3.8-1.4 0-2.7.6-3.5 1.6" fill="#E8F5D8" stroke="#4AB012" strokeWidth="1.4" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <path d="M15.2 4.2A7.6 7.6 0 1 0 20 14.6 6.4 6.4 0 0 1 15.2 4.2Z" fill="currentColor" />
+    </svg>
+  );
 }
 
 function greetingClockFace(now: Date, timeFormat: string | null | undefined) {
@@ -289,6 +382,7 @@ export default function Page() {
   const [industryRaw, setIndustryRaw] = useState<string | null>(null);
   const [accountRole, setAccountRole] = useState('');
   const [meReady, setMeReady] = useState(false);
+  const [topRank, setTopRank] = useState<'revenue' | 'quantity'>('revenue');
 
   useEffect(() => {
     let cancelled = false;
@@ -463,6 +557,8 @@ export default function Page() {
   const cmp = d.comparisons || {};
   const links = d.links || {};
   const topRev = d.top_products_by_revenue || [];
+  const topQty = d.top_products_by_quantity || [];
+  const topRows = topRank === 'quantity' ? topQty : topRev;
   const monthly = d.monthly_sales || [];
 
   const flow = [
@@ -488,49 +584,69 @@ export default function Page() {
   const dailyEmpty = daily.every((x) => !x.sales && !x.profit);
   const recent = d.recent_sales || [];
 
+  const salesToday = Number(cmp.sales_today || 0);
+  const salesTodayPct = cmp.sales_today_pct;
   const stats = [
     {
       cls: 's-sales',
-      ico: '\ud83d\udcb0',
+      ico: 'sales',
       label: 'Total Sales',
       val: moneyNum(sales),
       href: links.sales || '/sales',
       // Early in the day "-100% versus yesterday" reads as a collapse; say there are no sales yet instead.
-      sub: `Recorded sales. ${Number(cmp.sales_today || 0) > 0 ? `Today ${moneyNum(cmp.sales_today)}, ${pctLabel(cmp.sales_today_pct)} versus yesterday.` : 'No sales yet today.'} This month ${moneyNum(cmp.sales_mtd)}, ${pctLabel(cmp.sales_mtd_pct)} versus last month.`,
+      sub: `Recorded sales. ${salesToday > 0 ? `Today ${moneyNum(cmp.sales_today)}, ${pctLabel(salesTodayPct)} versus yesterday.` : 'No sales yet today.'} This month ${moneyNum(cmp.sales_mtd)}, ${pctLabel(cmp.sales_mtd_pct)} versus last month.`,
+      line: salesToday > 0 ? `Today ${moneyNum(cmp.sales_today)}` : 'No sales yet today.',
+      delta: salesToday > 0 ? pctLabel(salesTodayPct) : null,
+      deltaCls: salesTodayPct == null ? 'flat' : salesTodayPct > 0 ? 'up' : salesTodayPct < 0 ? 'down' : 'flat',
     },
     {
       cls: 's-buy',
-      ico: '\ud83d\uded2',
+      ico: 'buy',
       label: 'Purchases',
       val: moneyNum(purchases),
       href: links.purchases || '/purchasing',
       sub: 'Recorded purchases',
+      line: 'Recorded purchases',
+      delta: null,
+      deltaCls: 'flat',
     },
     {
       cls: 's-exp',
-      ico: '\ud83e\udde7',
+      ico: 'exp',
       label: 'Expenses',
       val: moneyNum(expenses),
       href: links.expenses || '/expenses',
       sub: 'Approved expenses, including company-wide',
+      line: 'Approved expenses',
+      delta: null,
+      deltaCls: 'flat',
     },
     {
       cls: 's-net',
-      ico: '\ud83d\udcc8',
+      ico: 'net',
       label: 'Net position',
       val: moneyNum(net),
       href: links.reports_sales || '/reports',
       sub: 'Sales minus purchases minus expenses',
+      line: 'Sales − purchases − expenses',
+      delta: null,
+      deltaCls: 'flat',
     },
     {
-      cls: 's-sales',
-      ico: '\ud83d\udcc8',
+      cls: 's-profit',
+      ico: 'profit',
       label: 'Gross profit',
       val: moneyNum(d.gross_profit_7d),
       href: links.reports_sales || '/reports',
       sub: `Sale price minus product cost, last 7 days. Last 30 days ${moneyNum(d.gross_profit_30d)}.`,
+      line: `30 days ${moneyNum(d.gross_profit_30d)}`,
+      delta: null,
+      deltaCls: 'flat',
     },
   ];
+  const receivables = Number(d.ar_total_due || 0);
+  const payables = Number(d.ap_total_due || 0);
+  const creditOutstanding = Number(d.credit_outstanding || receivables);
 
   const serverLayout = typeof d.dashboard_layout === 'string' ? d.dashboard_layout : '';
   const rawIndustry = industryRaw || (typeof d.industry === 'string' ? d.industry : null) || industry;
@@ -591,23 +707,48 @@ export default function Page() {
   return (
     <>
       <div className="dash">
-        <section className="dash-hero">
-          <div className="sun" />
-          <div className="cloud" />
-          <div className="cloud c2" />
-          {status && (
-            <span className={`status-pill ${status.cls}`}>
-              <span aria-hidden>{status.icon}</span> {status.label}
-            </span>
-          )}
+        <section className="dash-hero" data-period={tod.period} aria-label="Dashboard greeting">
+          <div className="sun" aria-hidden="true" />
+          <div className="cloud" aria-hidden="true" />
+          <div className="cloud c2" aria-hidden="true" />
+          <div className="dash-hero-top">
+            {status && (
+              <span className={`status-pill ${status.cls}`}>
+                <span className="st-dot" aria-hidden="true" /> {status.label}
+              </span>
+            )}
+            {(companyName || d.store_name) && (
+              <p className="greet-meta">
+                {companyName || 'Company'}
+                {d.store_name ? ` · ${d.store_name}` : d.scope === 'store' ? ' · This store' : ''}
+              </p>
+            )}
+          </div>
           <div className="greet-row">
             <div className="greet-copy">
               <h1 className="greet">
-                {tod.greeting}
-                {signedInName ? `, ${signedInName}` : ''}{' '}
-                <span className="wave">{tod.icon}</span>
+                <span className="greet-hello">{tod.greeting}</span>
+                {signedInName ? <span className="greet-name">{signedInName}</span> : null}
+                <span className="wave" aria-hidden="true">
+                  <GreetMark period={tod.period} />
+                </span>
               </h1>
               <p className="greet-sub">{tod.sub}</p>
+              <p className="greet-date">
+                {[
+                  dateLabel,
+                  liveIndustry && liveIndustry !== 'retail' ? `${industryLabel(liveIndustry)} dashboard` : '',
+                  sub?.status === 'trial' && sub?.trial_ends_at
+                    ? `Trial ends ${formatDate(sub.trial_ends_at, formatPrefs)}`
+                    : '',
+                  sub?.status === 'grace' && sub?.grace_ends_at
+                    ? `Grace period ends ${formatDate(sub.grace_ends_at, formatPrefs)}`
+                    : '',
+                  Number(d.returns_count || 0) > 0 ? `${num(d.returns_count)} returns` : '',
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </p>
             </div>
             {timeLabel && clockFace ? (
               <div className="greet-clock">
@@ -629,17 +770,7 @@ export default function Page() {
               </div>
             ) : null}
           </div>
-          <p className="greet-date">{dateLabel}</p>
           <OfflineProvisionalNotice />
-          {liveIndustry && liveIndustry !== 'retail' && (
-            <p className="greet-date">{industryLabel(liveIndustry)} dashboard</p>
-          )}
-          {sub?.status === 'trial' && sub?.trial_ends_at && (
-            <p className="greet-date">Trial ends {formatDate(sub.trial_ends_at, formatPrefs)}</p>
-          )}
-          {sub?.status === 'grace' && sub?.grace_ends_at && (
-            <p className="greet-date">Grace period ends {formatDate(sub.grace_ends_at, formatPrefs)}</p>
-          )}
           {dashStatus === 'loading' && (
             <p className="greet-date" role="status">
               Loading dashboard…
@@ -648,42 +779,46 @@ export default function Page() {
           {dashStatus === 'error' && (
             <p className="greet-date" role="alert">
               {dashError || 'Unable to load dashboard'}{' '}
-              <button type="button" onClick={() => setDashTick((n) => n + 1)} aria-label="Retry dashboard">
+              <button type="button" className="dash-retry" onClick={() => setDashTick((n) => n + 1)} aria-label="Retry dashboard">
                 Retry
               </button>
             </p>
           )}
         </section>
         {dashStatus !== 'ready' ? (
-          <section className="stat-grid" aria-busy={dashStatus === 'loading'}>
-            <div className="stat">
-              <div className="label">{dashStatus === 'error' ? 'Figures hidden until reload succeeds' : 'Waiting for figures'}</div>
-              <div className="val">{dashStatus === 'error' ? '—' : '…'}</div>
-            </div>
+          <section className="stat-grid dash-kpis" aria-label="Total sales, purchases, expenses, net position, and gross profit" aria-busy={dashStatus === 'loading'}>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div className="stat dash-skel" key={i}>
+                <div className="label">{dashStatus === 'error' ? 'Figures hidden until reload succeeds' : 'Waiting for figures'}</div>
+                <div className="val">{dashStatus === 'error' ? '—' : '…'}</div>
+              </div>
+            ))}
           </section>
         ) : (
         <>
-        <section className="stat-grid dash-kpis">
+        <section className="stat-grid dash-kpis" aria-label="Total sales, purchases, expenses, net position, and gross profit">
           {stats.map((s) => (
             <Link
               className={`stat ${s.cls}`}
               key={s.label}
               href={s.href}
-              style={{ textDecoration: 'none', color: 'inherit' }}
               aria-label={`${s.label}: ${s.val}${s.sub ? `. ${s.sub}` : ''}`}
             >
               <span className="rail" />
-              <div className="ico">{s.ico}</div>
-              <div className="label">{s.label}</div>
+              <div className="ico"><StatIcon name={s.ico} /></div>
+              <div className="stat-top">
+                <div className="label">{s.label}</div>
+                {s.delta ? <span className={`dash-delta ${s.deltaCls}`}>{s.delta}</span> : null}
+              </div>
               <div className="val">{s.val}</div>
-              {s.sub && <p className="hint" style={{ marginTop: 6, fontSize: 12 }}>{s.sub}</p>}
+              {s.line && <p className="hint">{s.line}</p>}
             </Link>
           ))}
         </section>
 
         {liveIndustry === 'pharmacy' && d.pharmacy_desk && (
-          <section aria-label="Pharmacy" style={{ marginTop: 16 }}>
-            <h2 style={{ margin: '0 0 8px', fontSize: 18 }}>Pharmacy</h2>
+          <section className="dash-section" aria-label="Pharmacy">
+            <h2>Pharmacy</h2>
             <div className="stat-grid">
               {[
                 { label: "Today's pharmacy sales", val: moneyNum(d.pharmacy_desk.sales_today), href: '/reports' },
@@ -699,13 +834,13 @@ export default function Page() {
                 { label: 'Recalled', val: num(d.pharmacy_desk.recalled), href: '/prescriptions?holds=recall#lot-holds' },
                 { label: 'Pending purchase orders', val: num(d.pharmacy_desk.pending_purchase_orders), href: '/purchasing' },
               ].map((card) => (
-                <Link className="stat" key={card.label} href={card.href} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <Link className="stat" key={card.label} href={card.href}>
                   <div className="label">{card.label}</div>
                   <div className="val">{card.val}</div>
                 </Link>
               ))}
             </div>
-            <div className="plat-actions" style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <div className="dash-actions plat-actions">
               <Link href="/prescriptions?new=1">New prescription</Link>
               <Link href="/prescriptions?status=approved">Dispense prescription</Link>
               <Link href="/inventory?tab=products">New medicine</Link>
@@ -717,7 +852,7 @@ export default function Page() {
         )}
 
         {featureCards.length > 0 && (
-          <section className="stat-grid" style={{ marginTop: 12 }} aria-label="Company shortcuts">
+          <section className="stat-grid dash-features" aria-label="Company shortcuts">
             {featureCards.map((f) => {
               let value = 'Open';
               if (f.id === 'expiry_lots') value = num(expiring);
@@ -729,7 +864,6 @@ export default function Page() {
                 className="stat"
                 key={f.id}
                 href={f.href}
-                style={{ textDecoration: 'none', color: 'inherit' }}
               >
                 <div className="label">{f.label}</div>
                 <div className="val">{value}</div>
@@ -743,7 +877,7 @@ export default function Page() {
           <WholesaleDeskCards status={dashStatus} desk={d.wholesale_desk} />
         )}
 
-        <section className="info-grid">
+        <section className="info-grid dash-charts" aria-label="Daily sales, revenue trend, and monthly sales">
           <div className="panel">
             <h3>
               <PanelIcon name="daily" />
@@ -753,9 +887,11 @@ export default function Page() {
               Last 7 days · <Link href={links.reports_sales || '/reports'}>Open reports</Link>
             </p>
             {dailyEmpty ? (
-              <div className="empty">No sales in the last 7 days yet.</div>
+              <EmptyState title="No sales in the last 7 days yet." />
             ) : (
-              <DailyBars data={daily} field="sales" color="#4AB012" />
+              <div className="dash-chart">
+                <DailyBars data={daily} field="sales" color="#4AB012" />
+              </div>
             )}
           </div>
 
@@ -766,9 +902,11 @@ export default function Page() {
             </h3>
             <p className="hint">Sales each day for the last 30 days</p>
             {dailyAll.every((x) => !x.sales) ? (
-              <div className="empty">No sales in the last 30 days yet.</div>
+              <EmptyState title="No sales in the last 30 days yet." />
             ) : (
-              <TrendLine data={dailyAll} color="#4AB012" />
+              <div className="dash-chart">
+                <TrendLine data={dailyAll} color="#4AB012" />
+              </div>
             )}
           </div>
 
@@ -779,23 +917,26 @@ export default function Page() {
             </h3>
             <p className="hint">Sales for each of the last 12 months</p>
             {monthly.every((x) => !x.total) ? (
-              <div className="empty">No monthly sales yet.</div>
+              <EmptyState title="No monthly sales yet." />
             ) : (
-              <MonthlyBars data={monthly} />
+              <div className="dash-chart">
+                <MonthlyBars data={monthly} />
+              </div>
             )}
           </div>
+        </section>
 
+        <section className="dash-pair" aria-label="Inventory health, business mix, cash flow, and money owed">
           <div className="panel">
             <h3>
               <PanelIcon name="health" />
               Inventory health
             </h3>
-            <p className="hint">
-              In stock, low stock, out of stock, and lots expiring within 30 days ·{' '}
-              <Link href={links.products || '/inventory'}>Inventory</Link>
+            <p className="hint" title="In stock, low stock, out of stock, and lots expiring within 30 days">
+              In, low, out, and expiring · <Link href={links.products || '/inventory'}>Inventory</Link>
             </p>
             <div className="health">
-              <svg width="130" height="130" viewBox="0 0 130 130" role="img" aria-label="Inventory health">
+              <svg width="88" height="88" viewBox="0 0 130 130" role="img" aria-label="Inventory health">
                 <circle cx="65" cy="65" r={rr} fill="none" stroke="#fee2e2" strokeWidth="14" />
                 <circle
                   cx="65"
@@ -816,21 +957,33 @@ export default function Page() {
                 </text>
               </svg>
               <div className="nums">
-                <span className="pill">
+                <span className="pill" title="In stock">
                   <span className="dot" style={{ background: '#4AB012', width: 12, height: 12, borderRadius: 4 }} />
-                  In stock&nbsp;<b>{num(inStock)}</b>
+                  <span className="pill-copy">
+                    In <span className="sr-only">stock</span>
+                    <b>{num(inStock)}</b>
+                  </span>
                 </span>
-                <Link className="pill" href={links.low_stock || '/inventory?tab=lowstock'}>
+                <Link className="pill" href={links.low_stock || '/inventory?tab=lowstock'} aria-label={`Low stock ${num(low)}`}>
                   <span className="dot" style={{ background: '#f59e0b', width: 12, height: 12, borderRadius: 4 }} />
-                  Low stock&nbsp;<b>{num(low)}</b>
+                  <span className="pill-copy">
+                    Low <span className="sr-only">stock</span>
+                    <b>{num(low)}</b>
+                  </span>
                 </Link>
-                <Link className="pill" href={links.out_of_stock || '/inventory?tab=products&stock=oos'}>
+                <Link className="pill" href={links.out_of_stock || '/inventory?tab=products&stock=oos'} aria-label={`Out of stock ${num(oos)}`}>
                   <span className="dot" style={{ background: '#ef4444', width: 12, height: 12, borderRadius: 4 }} />
-                  Out of stock&nbsp;<b>{num(oos)}</b>
+                  <span className="pill-copy">
+                    Out <span className="sr-only">of stock</span>
+                    <b>{num(oos)}</b>
+                  </span>
                 </Link>
-                <Link className="pill" href={links.expiring || '/inventory?tab=expiry'}>
+                <Link className="pill" href={links.expiring || '/inventory?tab=expiry'} aria-label={`Expiring soon ${num(expiring)}`}>
                   <span className="dot" style={{ background: '#fb923c', width: 12, height: 12, borderRadius: 4 }} />
-                  Expiring soon&nbsp;<b>{num(expiring)}</b>
+                  <span className="pill-copy">
+                    Expiring <span className="sr-only">soon</span>
+                    <b>{num(expiring)}</b>
+                  </span>
                 </Link>
               </div>
             </div>
@@ -838,42 +991,12 @@ export default function Page() {
 
           <div className="panel">
             <h3>
-              <PanelIcon name="cashflow" />
-              Cash flow
-            </h3>
-            <p className="hint">Sales, purchases &amp; approved expenses to date</p>
-            {flowEmpty ? (
-              <div className="empty">No cash flow recorded yet — your first sale will appear here.</div>
-            ) : (
-              <div className="bars">
-                {flow.map((f) => (
-                  <div className="bar-row" key={f.label}>
-                    <span className="bl">{f.label}</span>
-                    <span className="bar-track">
-                      <span
-                        className="bar-fill"
-                        style={{
-                          width: `${(f.value / flowMax) * 100}%`,
-                          minWidth: f.value > 0 ? 6 : 0,
-                          background: f.color,
-                        }}
-                      />
-                    </span>
-                    <span className="bv">{num(f.value)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="panel">
-            <h3>
               <PanelIcon name="mix" />
               Business mix
             </h3>
-            <p className="hint">Customers vs suppliers</p>
+            <p className="hint">Customers and suppliers</p>
             <div className="mix">
-              <svg width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="Customers vs suppliers">
+              <svg width="88" height="88" viewBox="0 0 140 140" role="img" aria-label="Customers and suppliers">
                 <circle cx="70" cy="70" r={r} fill="none" stroke="#EAF8D8" strokeWidth="16" />
                 {parties > 0 && (
                   <>
@@ -920,33 +1043,113 @@ export default function Page() {
               </div>
             </div>
           </div>
+
+          <div className="panel">
+            <h3>
+              <PanelIcon name="cashflow" />
+              Cash flow
+            </h3>
+            <p className="hint">Sales, purchases, and expenses</p>
+            {flowEmpty ? (
+              <EmptyState title="No cash flow recorded yet." detail="Your first sale will appear here." />
+            ) : (
+              <div className="bars">
+                {flow.map((f) => (
+                  <div className="bar-row" key={f.label}>
+                    <span className="bl">{f.label}</span>
+                    <span className="bar-track">
+                      <span
+                        className="bar-fill"
+                        style={{
+                          width: `${(f.value / flowMax) * 100}%`,
+                          minWidth: f.value > 0 ? 6 : 0,
+                          background: f.color,
+                        }}
+                      />
+                    </span>
+                    <span className="bv">{moneyNum(f.value)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="panel">
+            <h3>
+              <PanelIcon name="owed" />
+              Money owed
+            </h3>
+            <p className="hint">
+              <Link href="/credit">Receivables and payables</Link>
+            </p>
+            {receivables === 0 && payables === 0 && creditOutstanding === 0 ? (
+              <EmptyState title="No open receivables or payables." />
+            ) : (
+              <div className="dash-owed">
+                <Link className="dash-owed-card" href="/credit" aria-label={`Receivables ${moneyNum(receivables)}`}>
+                  <span className="label">Receivables</span>
+                  <span className="val">{moneyNum(receivables)}</span>
+                  <span className="hint">{num(d.ar_open_parties)} customers still owe</span>
+                </Link>
+                <Link className="dash-owed-card" href="/credit" aria-label={`Payables ${moneyNum(payables)}`}>
+                  <span className="label">Payables</span>
+                  <span className="val">{moneyNum(payables)}</span>
+                  <span className="hint">{num(d.ap_open_parties)} suppliers still owed</span>
+                </Link>
+              </div>
+            )}
+          </div>
         </section>
 
-        <section className="panel" style={{ marginTop: 16 }}>
+        <div className="dash-tables">
+        <section className="panel dash-table-panel">
           <h3>
             <PanelIcon name="recent" />
             Top products (30d)
           </h3>
-          <p className="hint">Best sellers by sales value · <Link href={links.reports_sales || '/reports'}>Reports</Link></p>
-          {topRev.length === 0 ? (
-            <div className="empty">No product sales in the last 30 days yet.</div>
+          <p className="hint">
+            Best sellers by {topRank === 'quantity' ? 'quantity' : 'sales value'} ·{' '}
+            <Link href={links.reports_sales || '/reports'}>Reports</Link>
+          </p>
+          <div className="dash-rank" role="group" aria-label="Top products ranking">
+            <button
+              type="button"
+              className={topRank === 'revenue' ? 'is-on' : undefined}
+              aria-pressed={topRank === 'revenue'}
+              aria-label="Rank top products by revenue"
+              onClick={() => setTopRank('revenue')}
+            >
+              Revenue
+            </button>
+            <button
+              type="button"
+              className={topRank === 'quantity' ? 'is-on' : undefined}
+              aria-pressed={topRank === 'quantity'}
+              aria-label="Rank top products by quantity"
+              onClick={() => setTopRank('quantity')}
+            >
+              Quantity
+            </button>
+          </div>
+          {topRows.length === 0 ? (
+            <EmptyState title="No product sales in the last 30 days yet." />
           ) : (
             <table className="table">
               <thead>
                 <tr>
                   <th>Product</th>
                   <th>SKU</th>
-                  <th style={{ textAlign: 'right' }}>Qty</th>
-                  <th style={{ textAlign: 'right' }}>Revenue</th>
+                  <th className="num">Qty</th>
+                  <th className="num">Revenue</th>
                 </tr>
               </thead>
               <tbody>
-                {topRev.map((p) => (
-                  <tr key={p.product_id}>
+                {topRows.map((p) => (
+                  <tr key={`${topRank}-${p.product_id}`}>
                     <td>{p.name}</td>
                     <td>{p.sku || '—'}</td>
-                    <td style={{ textAlign: 'right' }}>{num(p.quantity)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{moneyNum(p.revenue)}</td>
+                    <td className="num">{num(p.quantity)}</td>
+                    <td className="num">{moneyNum(p.revenue)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -954,14 +1157,17 @@ export default function Page() {
           )}
         </section>
 
-        <section className="panel">
+        <section className="panel dash-table-panel">
           <h3>
             <PanelIcon name="recent" />
             Recent sales
           </h3>
           <p className="hint">Latest 10 sales · <Link href={links.sales || '/sales'}>Sales</Link></p>
+          {liveIndustry === 'restaurant' ? (
+            <p className="hint">A restaurant till return comes off this list. The original receipt stays on the till report.</p>
+          ) : null}
           {recent.length === 0 ? (
-            <div className="empty">No sales yet — new sales will show up here.</div>
+            <EmptyState title="No sales yet." detail="New sales will show up here." />
           ) : (
             <table className="table">
               <thead>
@@ -970,7 +1176,7 @@ export default function Page() {
                   <th>Customer</th>
                   <th>Type</th>
                   <th>Date</th>
-                  <th style={{ textAlign: 'right' }}>Amount</th>
+                  <th className="num">Amount</th>
                 </tr>
               </thead>
               <tbody>
@@ -979,15 +1185,16 @@ export default function Page() {
                     <td>{s.reference}</td>
                     <td>{s.customer}</td>
                     <td>{s.type === 'pos_sale' ? 'POS' : 'Sale'}</td>
-                    <td>{fmtDate(s.date)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{moneyNum(s.total)}</td>
+                    <td>{fmtDate(s.date, formatPrefs)}</td>
+                    <td className="num">{moneyNum(s.total)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
         </section>
-        <p className="muted">A Ribdigi House product</p>
+        </div>
+        <p className="muted dash-foot">A Ribdigi House product</p>
         </>
         )}
       </div>

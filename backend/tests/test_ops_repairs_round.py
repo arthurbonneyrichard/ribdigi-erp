@@ -31,13 +31,18 @@ def test_staff_guide_follows_industry_and_role():
         guide_lines(
             company_name="Alpha Hotel",
             industry="hotel",
-            enabled_modules=["hotel", "fmcg"],
+            enabled_modules=["hotel", "pos", "inventory", "fmcg"],
             role="company_admin",
             permissions={"hotel": ["read", "write"]},
         )
     )
     assert "business type: hotel" in hotel.lower()
     assert "book a stay" in hotel.lower()
+    assert "how this hotel runs" in hotel.lower()
+    assert "nights times the nightly rate" in hotel.lower()
+    assert "open a shift, add products" not in hotel.lower()
+    assert "guest folio payments stay on billing" in hotel.lower()
+    assert "rooms stay on rooms and rates" in hotel.lower()
     assert "schemes, routes" not in hotel.lower()
     restaurant = "\n".join(
         guide_lines(

@@ -229,15 +229,20 @@ def document_print_shell(
     margin: 0 0 12px; font-size: 15px; text-transform: uppercase;
     letter-spacing: .08em; color: var(--forest);
   }}
-  table.doc {{ width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13px; }}
+  table.doc {{
+    width: 100%; border-collapse: collapse; table-layout: fixed;
+    margin: 12px 0 18px; font-size: 13px;
+  }}
   table.doc th {{
     background: var(--forest); color: #fff; text-align: left;
     padding: 10px 12px; font-weight: 700;
   }}
   table.doc td {{
     padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top;
+    overflow-wrap: anywhere;
   }}
-  table.doc td.r {{ text-align: right; white-space: nowrap; }}
+  table.doc th:first-child, table.doc td:first-child {{ width: 36%; }}
+  table.doc th.r, table.doc td.r {{ text-align: right; white-space: nowrap; width: auto; }}
   .meta {{
     margin: 0 0 16px; padding: 12px 14px; background: var(--sand);
     border-left: 3px solid var(--brand); font-size: 13px; line-height: 1.5;
