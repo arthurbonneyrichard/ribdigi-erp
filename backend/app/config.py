@@ -136,6 +136,8 @@ class Settings(BaseSettings):
     TRIAL_GRACE_DAYS: int = 7
     # Ops monitoring (Prometheus text + structured request logs)
     METRICS_ENABLED: bool = True
+    # When set, GET /metrics needs `Authorization: Bearer <token>`. In production it is required (no token → 404).
+    METRICS_TOKEN: str = ""
     REQUEST_LOG_ENABLED: bool = True
     LOG_LEVEL: str = "INFO"
     # AI Business Assistant (fail-closed until enabled + approved provider + key)

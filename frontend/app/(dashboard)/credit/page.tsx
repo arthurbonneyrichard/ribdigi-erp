@@ -347,6 +347,25 @@ export default function Page() {
     }
   }
 
+  function printStatement() {
+    const id = String(partyId).trim();
+    if (!id) return;
+    setError('');
+    openDocumentPrint(`/credit/customers/${id}/statement/print?format=html`).catch((err) => setError(friendlyCreditError(err)));
+  }
+
+  async function emailStatement() {
+    const id = String(partyId).trim();
+    if (!id) return;
+    setError('');
+    try {
+      const r = await api(`/credit/customers/${id}/statement/send`, { method: 'POST', body: '{}' });
+      setMessage(r.message || 'Statement emailed');
+    } catch (err: any) {
+      setError(friendlyCreditError(err));
+    }
+  }
+
   async function loadHistory(forParty?: string) {
     const id = String(forParty ?? partyId).trim();
     if (!id) return;
@@ -939,6 +958,16 @@ export default function Page() {
             <p className="muted">Loads the customer or supplier selected in Record payment.</p>
             <div className="credit-inline-fields">
               <button type="button" aria-label="Load party statement" onClick={() => loadStatement()}>Statement</button>
+              {kind === 'receivable' ? (
+                <>
+                  <button type="button" aria-label="Print customer statement" onClick={printStatement} disabled={!partyId}>
+                    Print statement
+                  </button>
+                  <button type="button" aria-label="Email customer statement" onClick={emailStatement} disabled={!partyId}>
+                    Email statement
+                  </button>
+                </>
+              ) : null}
               {kind === 'payable' ? (
                 <button type="button" aria-label="Load payment schedule" onClick={loadPaymentSchedule}>
                   Schedule

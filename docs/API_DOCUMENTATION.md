@@ -2059,3 +2059,9 @@ Note: rate-limit middleware may still bucket on the raw `X-Tenant-ID` string for
 **Document Version:** 1.0.0  
 **Compatible With:** RIBDIGI ERP MVP (Version 1.0)  
 **Technical Stack:** FastAPI, SQLAlchemy 2.0, PostgreSQL, Redis, JWT + OAuth2
+
+
+### Customer statement print and email
+
+- `GET /credit/customers/{customer_id}/statement/print` — statement of account as HTML; `?format=pdf` returns the A4 PDF. Needs `credit:read`.
+- `POST /credit/customers/{customer_id}/statement/send` — emails the statement with the PDF attached. Optional Query `to` ∈ `EmailStr`; omit → the customer's email (400 when the customer has none); bad address → 422. Needs `credit:read`.

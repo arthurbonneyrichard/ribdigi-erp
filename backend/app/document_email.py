@@ -158,6 +158,54 @@ async def send_customer_payment(
     return payment, delivery
 
 
+async def send_customer_statement(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    customer_id: str,
+    to: str | None = None,
+) -> tuple[dict, dict]:
+    """Email the statement of account with the A4 PDF attached."""
+    import html as html_mod
+
+    from app import credit as credit_svc
+    from app.document_print import build_customer_statement_print, to_document_a4_pdf
+
+    statement = await credit_svc.customer_statement(db, tenant_id, customer_id)
+    customer = await sales_svc.get_customer(db, tenant_id, customer_id)
+    recipient = require_recipient(
+        to,
+        getattr(customer, "email", None),
+        missing="This customer has no email address. Add one to the customer, or type an address in Email to.",
+    )
+    tenant, company, currency = await _tenant_context(db, tenant_id)
+    payload = build_customer_statement_print(statement, tenant=tenant)
+    owed = f"{payload.get('currency') or currency} {money_json(statement.get('outstanding_balance') or 0)}"
+    text = (
+        f"Dear {customer.name},\n\nPlease find your statement of account from {company} attached.\n"
+        f"Amount owed: {owed}.\n\nThank you."
+    )
+    inner = (
+        f"<p>Dear {html_mod.escape(customer.name)},</p>"
+        f"<p>Please find your statement of account from <strong>{html_mod.escape(company)}</strong> attached.</p>"
+        f"<p>Amount owed: <strong>{html_mod.escape(owed)}</strong></p><p>Thank you.</p>"
+    )
+    result = await emailer.send_email(
+        to=recipient,
+        subject=f"Statement of account from {company}".strip(),
+        text_body=text,
+        html_body=emailer.render_branded_html(body_html=inner, company_name=company, tenant=tenant, title="Statement of account"),
+        attachments=[{
+            "filename": f"statement_{customer.name}.pdf".replace(" ", "_"),
+            "content": to_document_a4_pdf(payload),
+            "content_type": "application/pdf",
+        }],
+        tenant=tenant,
+    )
+    delivery = await finish_send(result, recipient=recipient)
+    return statement, delivery
+
+
 async def send_purchase_request(
     db: AsyncSession,
     *,

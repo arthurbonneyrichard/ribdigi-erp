@@ -765,14 +765,25 @@ async def platform_health(
 
 
 @api.get("/metrics")
-async def metrics_endpoint():
-    """Prometheus text exposition (optional; disable with METRICS_ENABLED=false)."""
+async def metrics_endpoint(request: Request):
+    """Prometheus text exposition (optional; disable with METRICS_ENABLED=false).
+
+    With METRICS_TOKEN set, the scraper must send `Authorization: Bearer <token>`.
+    In production a token is required, so the page is not public.
+    """
+    import hmac
+
     from fastapi.responses import PlainTextResponse
 
     from app import metrics as metrics_svc
 
     if not metrics_svc.metrics_enabled():
         raise HTTPException(status_code=404, detail="Metrics disabled")
+    token = (settings.METRICS_TOKEN or "").strip()
+    if token or settings.APP_ENV.lower() == "production":
+        sent = (request.headers.get("authorization") or "").removeprefix("Bearer ").strip()
+        if not token or not hmac.compare_digest(sent, token):
+            raise HTTPException(status_code=404, detail="Not Found")
     return PlainTextResponse(
         metrics_svc.render_prometheus(),
         media_type="text/plain; version=0.0.4; charset=utf-8",
@@ -14897,6 +14908,53 @@ async def customer_credit_statement(
     db: AsyncSession = Depends(get_db),
 ):
     return env(await credit_svc.customer_statement(db, claims["tenant_id"], customer_id))
+
+
+@api.get("/credit/customers/{customer_id}/statement/print")
+async def print_customer_credit_statement(
+    customer_id: UuidIdValue,
+    format: Annotated[DocumentPrintFormatValue | None, Query()] = None,
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Printable statement of account (HTML, or A4 PDF with format=pdf)."""
+    from app.document_print import build_customer_statement_print, print_response
+
+    statement = await credit_svc.customer_statement(db, claims["tenant_id"], customer_id)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    payload = build_customer_statement_print(statement, tenant=tenant)
+    name = str((statement.get("customer") or {}).get("name") or customer_id).replace(" ", "_")
+    return print_response(payload, tenant=tenant, fmt=format, filename=f"statement_{name}.pdf")
+
+
+@api.post("/credit/customers/{customer_id}/statement/send")
+async def send_customer_credit_statement(
+    customer_id: UuidIdValue,
+    to: Annotated[EmailStr | None, Query()] = None,
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Email the statement of account with the PDF attached. Optional Query `to` ∈ EmailStr; omit → customer email."""
+    from app import document_email as document_email_svc
+
+    statement, delivery = await document_email_svc.send_customer_statement(
+        db, tenant_id=claims["tenant_id"], customer_id=customer_id, to=str(to) if to is not None else None
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="credit",
+        action="customer_statement_email",
+        entity="party",
+        entity_id=customer_id,
+        details=delivery,
+    )
+    await db.commit()
+    return env(
+        {"customer_id": customer_id, "outstanding_balance": statement.get("outstanding_balance"), "delivery": delivery},
+        f"Statement emailed to {delivery['to']}",
+    )
 
 
 @api.get("/customers/{customer_id}/history")

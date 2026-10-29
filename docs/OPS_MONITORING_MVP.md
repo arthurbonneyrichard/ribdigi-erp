@@ -47,7 +47,7 @@ Use `health/ready` for orchestrator readiness probes. Shallow `/health` stays sa
 
 | Endpoint | Role |
 |----------|------|
-| `GET /api/v1/metrics` | Prometheus text exposition (`METRICS_ENABLED`, default on) |
+| `GET /api/v1/metrics` | Prometheus text exposition (`METRICS_ENABLED`, default on). With `METRICS_TOKEN` set the scraper sends `Authorization: Bearer <token>`; in production a token is required, otherwise 404 |
 
 Series include `ribdigi_up`, `ribdigi_http_requests_total{method,status}`, and duration sum/count by coarse `path_group` (avoids high cardinality).
 

@@ -113,3 +113,19 @@ def test_monitoring_gate_complete_mvp_and_evidence():
     assert loaded["hosted_grafana_claimed"] is False
     assert loaded["pagerduty_wired"] is False
     assert loaded["siem_claimed"] is False
+
+
+def test_metrics_need_token_in_production(monkeypatch):
+    from app.main import app
+    from app.config import settings
+
+    client = TestClient(app)
+    monkeypatch.setattr(settings, "APP_ENV", "production")
+    monkeypatch.setattr(settings, "METRICS_TOKEN", "")
+    assert client.get("/api/v1/metrics").status_code == 404
+    monkeypatch.setattr(settings, "METRICS_TOKEN", "scrape-secret-123")
+    assert client.get("/api/v1/metrics").status_code == 404
+    assert client.get("/api/v1/metrics", headers={"Authorization": "Bearer wrong"}).status_code == 404
+    ok = client.get("/api/v1/metrics", headers={"Authorization": "Bearer scrape-secret-123"})
+    assert ok.status_code == 200
+    assert "ribdigi_up 1" in ok.text

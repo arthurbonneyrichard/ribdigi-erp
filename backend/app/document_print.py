@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import html
+from datetime import datetime
 from typing import Any
 
 from fastapi import HTTPException
@@ -206,11 +207,32 @@ def _request_table_html(items: list[dict]) -> str:
     )
 
 
+def _statement_table_html(items: list[dict], currency: str) -> str:
+    rows = "".join(
+        "<tr>"
+        f"<td>{html.escape(str(i.get('date') or ''))}</td>"
+        f"<td>{html.escape(str(i.get('type') or '').capitalize())}</td>"
+        f"<td>{html.escape(str(i.get('reference') or ''))}</td>"
+        f'<td class="r">{_money_cell(currency, i.get("debit")) if i.get("debit") else ""}</td>'
+        f'<td class="r">{_money_cell(currency, i.get("credit")) if i.get("credit") else ""}</td>'
+        f'<td class="r">{_money_cell(currency, i.get("balance_due")) if i.get("balance_due") else ""}</td>'
+        "</tr>"
+        for i in items
+    )
+    return (
+        '<table class="doc"><thead><tr>'
+        '<th>Date</th><th>Type</th><th>Reference</th><th class="r">Charged</th><th class="r">Paid</th>'
+        f'<th class="r">Still due</th></tr></thead><tbody>{rows}</tbody></table>'
+    )
+
+
 def document_body_html(payload: dict[str, Any]) -> str:
     currency = str(payload.get("currency") or "")
     table = str(payload.get("table") or "lines")
     items = list(payload.get("items") or [])
-    if table == "grn":
+    if table == "statement":
+        table_html = _statement_table_html(items, currency)
+    elif table == "grn":
         table_html = _grn_table_html(items, item_heading=str(payload.get("item_heading") or "Product"))
     elif table == "request":
         table_html = _request_table_html(items)
@@ -370,6 +392,15 @@ def to_document_a4_pdf(payload: dict[str, Any]) -> bytes:
                 (margin + 360, "Qty"),
                 (margin + 420, "Notes"),
             ]
+        elif table == "statement":
+            headers = [
+                (margin + 4, "Date"),
+                (margin + 90, "Type"),
+                (margin + 160, "Reference"),
+                (margin + 300, "Charged"),
+                (margin + 380, "Paid"),
+                (margin + 455, "Still due"),
+            ]
         else:
             headers = [
                 (margin + 4, "Product"),
@@ -407,6 +438,16 @@ def to_document_a4_pdf(payload: dict[str, Any]) -> bytes:
                 draw_text(name[:42], 9, x=margin + 4, y_pos=row_top)
                 draw_text(str(item.get("quantity") or ""), 9, x=margin + 360, y_pos=row_top)
                 draw_text(str(item.get("notes") or "")[:18], 9, x=margin + 420, y_pos=row_top)
+            elif table == "statement":
+                draw_text(str(item.get("date") or "")[:16], 9, x=margin + 4, y_pos=row_top)
+                draw_text(str(item.get("type") or "").capitalize(), 9, x=margin + 90, y_pos=row_top)
+                draw_text(str(item.get("reference") or "")[:24], 9, x=margin + 160, y_pos=row_top)
+                if item.get("debit"):
+                    draw_text(_money(money_json(item["debit"])), 9, x=margin + 300, y_pos=row_top)
+                if item.get("credit"):
+                    draw_text(_money(money_json(item["credit"])), 9, x=margin + 380, y_pos=row_top)
+                if item.get("balance_due"):
+                    draw_text(_money(money_json(item["balance_due"])), 9, x=margin + 455, y_pos=row_top, bold=True)
             else:
                 qty = money_json(item.get("quantity") or 0)
                 unit = money_json(item.get("unit_price") or 0)
@@ -686,6 +727,51 @@ def build_sales_return_print(
             "totals": [
                 ("TOTAL", _money_line(currency, ret.get("total_amount")), True),
             ],
+        }
+    )
+    return payload
+
+
+def build_customer_statement_print(statement: dict[str, Any], *, tenant: m.Tenant | None) -> dict[str, Any]:
+    """A4 statement of account from credit.customer_statement()."""
+    customer = statement.get("customer") or {}
+    currency = str(statement.get("base_currency") or getattr(tenant, "currency", None) or "GHS")
+    payload = letterhead_payload(tenant, company_name=getattr(tenant, "company_name", "") or "", currency=currency)
+    today = _fmt_when(datetime.utcnow(), tenant)
+    owed = statement.get("outstanding_balance") or 0
+    items = [
+        {
+            "name": str(line.get("reference") or ""),
+            "date": _fmt_when(line.get("date"), tenant),
+            "type": line.get("type"),
+            "reference": line.get("reference"),
+            "debit": line.get("debit"),
+            "credit": line.get("credit"),
+            "balance_due": line.get("balance_due"),
+        }
+        for line in statement.get("lines") or []
+    ]
+    name = str(customer.get("name") or "")
+    payload.update(
+        {
+            "document_type": "customer_statement",
+            "title": f"Statement of account {name}".strip(),
+            "doc_heading": "STATEMENT OF ACCOUNT",
+            "subtitle": f"As at {today}" if today else None,
+            "table": "statement",
+            "items": items,
+            "notes": None,
+            "party_label": "Customer",
+            "party_name": name,
+            "party_detail": None,
+            "meta_left": [f"Customer {name}", f"As at    {today}" if today else ""],
+            "meta_right": [f"Credit limit {_money_line(currency, customer.get('credit_limit'))}"],
+            "meta_html_lines": [
+                f"Customer <strong>{html.escape(name)}</strong>",
+                f"As at {html.escape(today)}" if today else "",
+                f"Credit limit {html.escape(_money_line(currency, customer.get('credit_limit')))}",
+            ],
+            "totals": [("Amount owed", _money_line(currency, owed), True)],
         }
     )
     return payload
