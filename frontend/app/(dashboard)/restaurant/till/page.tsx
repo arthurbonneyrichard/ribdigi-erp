@@ -6,7 +6,7 @@
  * the kitchen flow and never touch the retail till tables.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../../../lib/api';
 import { formatMoney } from '../../../../lib/format';
 import './restaurant-till.css';
@@ -65,6 +65,11 @@ function detail(err: unknown): string {
   return raw || 'Something went wrong. Try again.';
 }
 
+/** Extras are charged once per line, the way the restaurant bill adds them. */
+function lineAmount(line: DraftLine) {
+  return line.quantity * line.price + line.modifier_total;
+}
+
 function isMenuItem(row: Row, recipeMenu: Set<string>, recipeIngredient: Set<string>) {
   if (row.is_active === false) return false;
   const station = String(row.prep_station || '');
@@ -103,11 +108,15 @@ export default function RestaurantTillPage() {
   const [method, setMethod] = useState<Method>('cash');
   const [tendered, setTendered] = useState('');
   const [done, setDone] = useState<{ number: string; total: number; change: number; method: Method } | null>(null);
+  const [shift, setShift] = useState<Row | null>(null);
+  const [shiftOpen, setShiftOpen] = useState(false);
+  const [payAfterShift, setPayAfterShift] = useState(false);
+  const deepLinked = useRef(false);
 
   const load = useCallback(async () => {
     setError('');
     try {
-      const [productRes, recipeRes, soldRes, groupRes, tableRes, orderRes, storeRes] = await Promise.all([
+      const [productRes, recipeRes, soldRes, groupRes, tableRes, orderRes, storeRes, shiftRes] = await Promise.all([
         api('/products?is_active=true'),
         api('/restaurant/recipes').catch(() => ({ data: [] })),
         api('/restaurant/sold-out').catch(() => ({ data: { items: [] } })),
@@ -115,6 +124,7 @@ export default function RestaurantTillPage() {
         api('/restaurant/tables'),
         api('/restaurant/orders'),
         api('/stores?is_active=true').catch(() => ({ data: [] })),
+        api('/restaurant/till/shift').catch(() => ({ data: null })),
       ]);
       const recipes: Row[] = recipeRes?.data || [];
       const recipeMenu = new Set(recipes.map((r) => r.product_id));
@@ -127,7 +137,8 @@ export default function RestaurantTillPage() {
       setOrders(orderRes?.data || []);
       const storeRows: Row[] = storeRes?.data || [];
       setStores(storeRows);
-      setStoreId((prev) => prev || storeRows[0]?.id || '');
+      setStoreId((prev) => prev || shiftRes?.data?.store_id || storeRows[0]?.id || '');
+      setShift(shiftRes?.data || null);
     } catch (err) {
       setError(detail(err));
     } finally {
@@ -138,6 +149,23 @@ export default function RestaurantTillPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // The Orders and Bills screens open a bill here with ?order=<id> (and &pay=1 to take payment).
+  useEffect(() => {
+    if (loading || deepLinked.current || typeof window === 'undefined') return;
+    deepLinked.current = true;
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('order');
+    if (!id) return;
+    const order = orders.find((o) => o.id === id && OPEN_STATUSES.has(String(o.status)));
+    if (!order) {
+      setError('That bill is already paid or closed.');
+      return;
+    }
+    openBill(order);
+    if (params.get('pay') === '1') void startPayment(Boolean(shift), order);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, orders]);
 
   const categories = useMemo(() => {
     const names = new Set<string>();
@@ -161,7 +189,7 @@ export default function RestaurantTillPage() {
   );
   const table = tables.find((t) => t.id === tableId) || null;
 
-  const draftTotal = draft.reduce((sum, line) => sum + line.quantity * (line.price + line.modifier_total), 0);
+  const draftTotal = draft.reduce((sum, line) => sum + lineAmount(line), 0);
   const sentTotal = Number(current?.total_amount || 0);
 
   function resetTicket(nextMode: Mode = mode) {
@@ -301,7 +329,19 @@ export default function RestaurantTillPage() {
     }
   }
 
-  async function startPayment() {
+  /** Save what is on the ticket, then open the payment sheet. Money goes into a drawer, so a shift must be open. */
+  async function startPayment(shiftReady = Boolean(shift), bill: Row | null = null) {
+    if (!shiftReady) {
+      setPayAfterShift(true);
+      setShiftOpen(true);
+      return;
+    }
+    if (bill) {
+      setMethod('cash');
+      setTendered('');
+      setPaying(bill);
+      return;
+    }
     setBusy(true);
     setError('');
     try {
@@ -336,6 +376,9 @@ export default function RestaurantTillPage() {
         body: JSON.stringify({ payment_method: method }),
       });
       await api(`/restaurant/orders/${paying.id}/complete`, { method: 'POST' });
+      void api('/restaurant/till/shift')
+        .then((res) => setShift(res?.data || null))
+        .catch(() => undefined);
       setDone({
         number: paying.order_number,
         total,
@@ -350,6 +393,15 @@ export default function RestaurantTillPage() {
       setError(detail(err));
     } finally {
       setBusy(false);
+    }
+  }
+
+  function shiftChanged(next: Row | null) {
+    setShift(next);
+    if (next && next.status === 'open' && payAfterShift) {
+      setPayAfterShift(false);
+      setShiftOpen(false);
+      void startPayment(true);
     }
   }
 
@@ -431,6 +483,18 @@ export default function RestaurantTillPage() {
               ))}
             </select>
           ) : null}
+          <button
+            type="button"
+            className={`rtill-shift-btn${shift ? ' on' : ''}`}
+            aria-label={shift ? 'Till shift and cash drawer' : 'Open till shift'}
+            onClick={() => setShiftOpen(true)}
+          >
+            <span className="rtill-shift-dot" aria-hidden />
+            <span>
+              {shift ? 'Shift open' : 'Open shift'}
+              <small>{shift ? `Drawer ${money(shift.expected_cash)}` : 'Count the float'}</small>
+            </span>
+          </button>
           <button
             type="button"
             className="rtill-bills-btn"
@@ -571,7 +635,9 @@ export default function RestaurantTillPage() {
                         <small>{[...(item.modifiers || []), item.note].filter(Boolean).join(' · ')}</small>
                       ) : null}
                     </span>
-                    <span className="rtill-line-price">{money(Number(item.quantity) * Number(item.unit_price))}</span>
+                    <span className="rtill-line-price">
+                      {money(item.line_total ?? Number(item.quantity) * Number(item.unit_price))}
+                    </span>
                   </div>
                 ))
               : null}
@@ -600,9 +666,7 @@ export default function RestaurantTillPage() {
                     <small className="rtill-hint">Tap for extras or a note</small>
                   )}
                 </button>
-                <span className="rtill-line-price">
-                  {money(line.quantity * (line.price + line.modifier_total))}
-                </span>
+                <span className="rtill-line-price">{money(lineAmount(line))}</span>
               </div>
             ))}
             {!current && !draft.length ? (
@@ -827,6 +891,19 @@ export default function RestaurantTillPage() {
         </div>
       ) : null}
 
+      {shiftOpen ? (
+        <ShiftSheet
+          shift={shift}
+          storeId={storeId}
+          explain={payAfterShift ? 'Open your shift first. The money for this bill goes into your drawer.' : ''}
+          onClose={() => {
+            setShiftOpen(false);
+            setPayAfterShift(false);
+          }}
+          onChange={shiftChanged}
+        />
+      ) : null}
+
       {done ? (
         <div className="rtill-sheet" role="dialog" aria-modal="true" aria-label="Payment taken">
           <div className="rtill-sheet-card rtill-done">
@@ -932,6 +1009,304 @@ function LineEditor({
         <button type="button" className="rtill-send big" onClick={save}>
           Done
         </button>
+      </div>
+    </div>
+  );
+}
+
+const MOVE_WORDS: Record<string, string> = {
+  cash_in: 'Cash in',
+  cash_out: 'Cash out',
+  refund: 'Refund',
+};
+
+function ShiftSheet({
+  shift,
+  storeId,
+  explain,
+  onClose,
+  onChange,
+}: {
+  shift: Row | null;
+  storeId: string;
+  explain: string;
+  onClose: () => void;
+  onChange: (next: Row | null) => void;
+}) {
+  const [float, setFloat] = useState('');
+  const [moveType, setMoveType] = useState<'cash_in' | 'cash_out'>('cash_in');
+  const [moveAmount, setMoveAmount] = useState('');
+  const [moveReason, setMoveReason] = useState('');
+  const [counting, setCounting] = useState(false);
+  const [counted, setCounted] = useState('');
+  const [notes, setNotes] = useState('');
+  const [closed, setClosed] = useState<Row | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  async function run(fn: () => Promise<void>) {
+    setBusy(true);
+    setError('');
+    try {
+      await fn();
+    } catch (err) {
+      setError(detail(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const openShift = () =>
+    run(async () => {
+      const res = await api('/restaurant/till/shift/open', {
+        method: 'POST',
+        body: JSON.stringify({ opening_cash: Number(float || 0), store_id: storeId || null }),
+      });
+      onChange(res?.data || null);
+    });
+
+  const moveCash = () =>
+    run(async () => {
+      if (!(Number(moveAmount) > 0)) throw new Error('Enter how much cash.');
+      if (moveReason.trim().length < 3) throw new Error('Say why the cash moved.');
+      const res = await api(`/restaurant/till/shift/${shift!.id}/cash`, {
+        method: 'POST',
+        body: JSON.stringify({ movement_type: moveType, amount: Number(moveAmount), reason: moveReason.trim() }),
+      });
+      setMoveAmount('');
+      setMoveReason('');
+      onChange(res?.data || shift);
+    });
+
+  const closeShift = () =>
+    run(async () => {
+      if (counted.trim() === '') throw new Error('Count the cash in the drawer first.');
+      const res = await api(`/restaurant/till/shift/${shift!.id}/close`, {
+        method: 'POST',
+        body: JSON.stringify({ counted_cash: Number(counted), notes: notes.trim() || null }),
+      });
+      setClosed(res?.data || null);
+      onChange(null);
+    });
+
+  if (closed) {
+    const diff = Number(closed.variance || 0);
+    return (
+      <div className="rtill-sheet" role="dialog" aria-modal="true" aria-label="Shift closed">
+        <div className="rtill-sheet-card rtill-done">
+          <div className="rtill-done-tick" aria-hidden>
+            ✓
+          </div>
+          <h2>Shift {closed.shift_number} closed</h2>
+          <dl className="rtill-bill-sum">
+            <div>
+              <dt>Takings</dt>
+              <dd>{money(closed.total_sales)}</dd>
+            </div>
+            {Number(closed.refunded_sales || 0) > 0 ? (
+              <div>
+                <dt>Refunded since</dt>
+                <dd>{money(closed.refunded_sales)}</dd>
+              </div>
+            ) : null}
+            <div>
+              <dt>Cash expected</dt>
+              <dd>{money(closed.expected_cash)}</dd>
+            </div>
+            <div>
+              <dt>Cash counted</dt>
+              <dd>{money(closed.counted_cash)}</dd>
+            </div>
+          </dl>
+          <div className={`rtill-variance ${diff === 0 ? 'even' : diff > 0 ? 'over' : 'short'}`}>
+            {diff === 0 ? 'The drawer is exact' : diff > 0 ? `Over by ${money(diff)}` : `Short by ${money(-diff)}`}
+          </div>
+          <button type="button" className="rtill-pay big" onClick={onClose}>
+            Done
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rtill-sheet" role="dialog" aria-modal="true" aria-label="Till shift">
+      <div className="rtill-sheet-card">
+        <div className="rtill-sheet-head">
+          <h2>{shift ? `Shift ${shift.shift_number}` : 'Open your shift'}</h2>
+          <button type="button" className="rtill-link" onClick={onClose}>
+            Close
+          </button>
+        </div>
+        {explain ? <p className="rtill-explain">{explain}</p> : null}
+
+        {!shift ? (
+          <>
+            <label className="rtill-note">
+              <span>Cash in the drawer now (float)</span>
+              <input
+                aria-label="Opening cash float"
+                inputMode="decimal"
+                placeholder="0.00"
+                value={float}
+                onChange={(e) => setFloat(e.target.value.replace(/[^0-9.]/g, ''))}
+              />
+            </label>
+            {error ? (
+              <div className="rtill-error" role="alert">
+                {error}
+              </div>
+            ) : null}
+            <button type="button" className="rtill-pay big" aria-label="Start shift" disabled={busy} onClick={() => void openShift()}>
+              {busy ? 'Opening…' : 'Start shift'}
+            </button>
+          </>
+        ) : counting ? (
+          <>
+            <div className="rtill-expect">
+              <span>The drawer should hold</span>
+              <strong>{money(shift.expected_cash)}</strong>
+            </div>
+            <label className="rtill-note">
+              <span>Cash you counted</span>
+              <input
+                aria-label="Counted cash"
+                inputMode="decimal"
+                placeholder="0.00"
+                value={counted}
+                onChange={(e) => setCounted(e.target.value.replace(/[^0-9.]/g, ''))}
+              />
+            </label>
+            {counted.trim() !== '' ? (
+              <div
+                className={`rtill-variance ${
+                  Number(counted) === Number(shift.expected_cash)
+                    ? 'even'
+                    : Number(counted) > Number(shift.expected_cash)
+                      ? 'over'
+                      : 'short'
+                }`}
+              >
+                {Number(counted) === Number(shift.expected_cash)
+                  ? 'Exact'
+                  : Number(counted) > Number(shift.expected_cash)
+                    ? `Over by ${money(Number(counted) - Number(shift.expected_cash))}`
+                    : `Short by ${money(Number(shift.expected_cash) - Number(counted))}`}
+              </div>
+            ) : null}
+            <label className="rtill-note">
+              <span>Note (optional)</span>
+              <input aria-label="Shift close note" value={notes} maxLength={200} onChange={(e) => setNotes(e.target.value)} />
+            </label>
+            {error ? (
+              <div className="rtill-error" role="alert">
+                {error}
+              </div>
+            ) : null}
+            <div className="rtill-actions">
+              <button type="button" className="rtill-ghost" onClick={() => setCounting(false)}>
+                Back
+              </button>
+              <button type="button" className="rtill-pay" aria-label="Close shift" disabled={busy} onClick={() => void closeShift()}>
+                {busy ? 'Closing…' : 'Close shift'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="rtill-expect">
+              <span>Cash in drawer</span>
+              <strong>{money(shift.expected_cash)}</strong>
+            </div>
+            <div className="rtill-shift-grid">
+              <div>
+                <span>Bills paid</span>
+                <strong>{shift.sale_count}</strong>
+              </div>
+              <div>
+                <span>Takings</span>
+                <strong>{money(shift.total_sales)}</strong>
+              </div>
+              <div>
+                <span>Refunded</span>
+                <strong>{money(shift.refunded_sales)}</strong>
+              </div>
+              <div>
+                <span>Cash</span>
+                <strong>{money(shift.cash_sales)}</strong>
+              </div>
+              <div>
+                <span>Card</span>
+                <strong>{money(shift.card_sales)}</strong>
+              </div>
+              <div>
+                <span>MoMo and wallet</span>
+                <strong>{money(Number(shift.mobile_money_sales || 0) + Number(shift.wallet_sales || 0))}</strong>
+              </div>
+            </div>
+            <p className="rtill-tax-note">
+              Started with {money(shift.opening_cash)}
+              {Number(shift.cash_in) ? ` · in ${money(shift.cash_in)}` : ''}
+              {Number(shift.cash_out) ? ` · out ${money(shift.cash_out)}` : ''}
+              {Number(shift.cash_refunds) ? ` · refunds ${money(shift.cash_refunds)}` : ''}
+            </p>
+
+            <div className="rtill-move">
+              <div className="rtill-methods two" role="radiogroup" aria-label="Cash in or out">
+                {(['cash_in', 'cash_out'] as const).map((kind) => (
+                  <button
+                    key={kind}
+                    type="button"
+                    role="radio"
+                    aria-checked={moveType === kind}
+                    className={moveType === kind ? 'on' : ''}
+                    onClick={() => setMoveType(kind)}
+                  >
+                    {MOVE_WORDS[kind]}
+                  </button>
+                ))}
+              </div>
+              <div className="rtill-move-row">
+                <input
+                  aria-label="Cash amount"
+                  inputMode="decimal"
+                  placeholder="Amount"
+                  value={moveAmount}
+                  onChange={(e) => setMoveAmount(e.target.value.replace(/[^0-9.]/g, ''))}
+                />
+                <input
+                  aria-label="Why the cash moved"
+                  placeholder={moveType === 'cash_in' ? 'More change' : 'Paid the gas man'}
+                  value={moveReason}
+                  maxLength={200}
+                  onChange={(e) => setMoveReason(e.target.value)}
+                />
+                <button type="button" className="rtill-send" aria-label="Record cash move" disabled={busy} onClick={() => void moveCash()}>
+                  Save
+                </button>
+              </div>
+            </div>
+            {(shift.moves || []).length ? (
+              <ul className="rtill-moves">
+                {(shift.moves || []).slice(0, 5).map((row: Row) => (
+                  <li key={row.id}>
+                    <span>{MOVE_WORDS[row.movement_type] || row.movement_type}</span>
+                    <span>{row.reason}</span>
+                    <strong>{row.movement_type === 'cash_in' ? '+' : '−'}{money(row.amount)}</strong>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {error ? (
+              <div className="rtill-error" role="alert">
+                {error}
+              </div>
+            ) : null}
+            <button type="button" className="rtill-pay big" aria-label="Count and close shift" onClick={() => setCounting(true)}>
+              Count and close shift
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

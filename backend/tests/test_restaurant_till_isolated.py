@@ -36,3 +36,39 @@ def test_restaurant_till_has_its_own_look():
     css = TILL_CSS.read_text(encoding="utf-8")
     assert "--rt-accent" in css
     assert ".tpos" not in css
+
+
+FRONT = ROOT / "frontend/app/(dashboard)/restaurant"
+
+
+def test_restaurant_sidebar_uses_its_own_orders_bills_and_guests():
+    nav = NAV.read_text(encoding="utf-8")
+    assert "['Orders', '/restaurant/orders', 'restaurant']" in nav
+    assert "['Bills', '/restaurant/bills', 'restaurant']" in nav
+    assert "['Guests', '/restaurant/guests', 'restaurant']" in nav
+    start = nav.index("export const RESTAURANT_NAV_GROUPS")
+    groups = nav[start : nav.index("export const FMCG_NAV_ITEMS")]
+    assert "'/sales'" not in groups and "'/customers'" not in groups and "'/pos'" not in groups
+    rule = nav[nav.index("if (path === '/sales' || path === '/customers') {") :]
+    rule = rule[: rule.index("}")]
+    assert "'restaurant'" not in rule
+
+
+def test_restaurant_desk_screens_only_call_restaurant_apis():
+    for name in ("orders", "bills", "guests"):
+        page = (FRONT / name / "page.tsx").read_text(encoding="utf-8")
+        assert "restaurant-desk.css" in page
+        assert "/pos/" not in page and "'/sales" not in page and "'/customers" not in page
+    assert "'/restaurant/guests'" in (FRONT / "guests/page.tsx").read_text(encoding="utf-8")
+    assert "'/restaurant/till/shifts'" in (FRONT / "bills/page.tsx").read_text(encoding="utf-8")
+    css = (FRONT / "restaurant-desk.css").read_text(encoding="utf-8")
+    assert "--rd-brand:#4AB012" in css and ".tpos" not in css
+
+
+def test_restaurant_till_counts_its_own_drawer():
+    page = TILL.read_text(encoding="utf-8")
+    assert "'/restaurant/till/shift/open'" in page
+    assert "/close`" in page and "/cash`" in page
+    # Extras are charged once per line, like the bill.
+    assert "return line.quantity * line.price + line.modifier_total;" in page
+    assert "item.line_total" in page

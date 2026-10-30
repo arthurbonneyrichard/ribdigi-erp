@@ -29,6 +29,19 @@ def _clear_mock_charges():
     MockGateway._charged.clear()
 
 
+@pytest.fixture(autouse=True)
+def _seed_legacy_restaurant_till_history(monkeypatch):
+    """Restaurant till sales rung on /pos before the front-of-house split are still in
+    transactions / sales_returns, and reports keep reading them. These tests seed that
+    history through /pos; the live API refuses a restaurant company there
+    (tests/test_restaurant_till_shift.py)."""
+    from app import industry_dashboard
+
+    monkeypatch.setattr(
+        industry_dashboard, "POS_INDUSTRIES", industry_dashboard.POS_INDUSTRIES | {"restaurant"}
+    )
+
+
 def _sign(body: bytes, secret: str) -> str:
     return hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
 

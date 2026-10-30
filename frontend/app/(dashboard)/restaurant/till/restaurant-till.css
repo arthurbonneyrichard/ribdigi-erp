@@ -251,3 +251,48 @@
 .main .rtill .rtill-dish-name{text-align:left}
 .main .rtill button.rtill-dish:disabled{opacity:.5}
 .main .rtill .rtill-line-name,.main .rtill button.rtill-line-edit{align-items:flex-start;text-align:left}
+
+/* Till shift (cash drawer) */
+.main .rtill button.rtill-shift-btn{
+  min-height:48px;padding:6px 14px;border-radius:14px;cursor:pointer;display:flex;align-items:center;gap:10px;
+  border:2px dashed var(--rt-wait);background:var(--rt-panel);color:var(--rt-ink);font-weight:800;font-size:14px;text-align:left
+}
+.main .rtill button.rtill-shift-btn span{display:flex;flex-direction:column;line-height:1.15}
+.main .rtill button.rtill-shift-btn small{font-weight:600;font-size:12px;color:var(--rt-muted)}
+.main .rtill button.rtill-shift-btn.on{border:2px solid var(--rt-line)}
+.main .rtill .rtill-shift-dot{width:12px;height:12px;border-radius:50%;background:var(--rt-wait);flex:0 0 auto}
+.main .rtill button.rtill-shift-btn.on .rtill-shift-dot{background:var(--rt-amber);box-shadow:0 0 0 4px #E4F2D6}
+[data-theme="dark"] .main .rtill button.rtill-shift-btn.on .rtill-shift-dot{box-shadow:0 0 0 4px #1F3A26}
+.main .rtill .rtill-explain{margin:0;padding:10px 12px;border-radius:12px;background:#FFF4E0;color:#6B4300;font-weight:700}
+[data-theme="dark"] .main .rtill .rtill-explain{background:#3A2C10;color:#F6D9A0}
+.main .rtill .rtill-note input{min-height:52px;border-radius:12px;border:2px solid var(--rt-line);background:var(--rt-paper);color:var(--rt-ink);padding:0 12px;font-size:18px;font-weight:700}
+.main .rtill .rtill-expect{display:flex;justify-content:space-between;align-items:baseline;padding:14px 16px;border-radius:16px;background:var(--rt-olive);color:#fff}
+.main .rtill .rtill-expect span{font-weight:700;color:#C8E86A}
+.main .rtill .rtill-expect strong{font-size:30px;font-family:Georgia,'Times New Roman',serif}
+.main .rtill .rtill-shift-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.main .rtill .rtill-shift-grid div{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:12px;border:2px solid var(--rt-line);background:var(--rt-paper)}
+.main .rtill .rtill-shift-grid span{font-size:12px;font-weight:700;color:var(--rt-muted)}
+.main .rtill .rtill-shift-grid strong{font-size:17px}
+.main .rtill .rtill-move{display:flex;flex-direction:column;gap:8px;padding-top:6px;border-top:2px dashed var(--rt-line)}
+.main .rtill .rtill-methods.two button{min-height:48px;font-size:15px}
+.main .rtill .rtill-move-row{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:8px}
+.main .rtill .rtill-move-row input{min-height:48px;border-radius:12px;border:2px solid var(--rt-line);background:var(--rt-paper);color:var(--rt-ink);padding:0 10px;font-size:15px;min-width:0}
+.main .rtill .rtill-move-row button.rtill-send{min-height:48px;font-size:15px;padding:0 18px;border-radius:12px}
+.main .rtill .rtill-moves{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.main .rtill .rtill-moves li{display:grid;grid-template-columns:80px minmax(0,1fr) auto;gap:8px;padding:6px 4px;border-bottom:1px solid var(--rt-line);font-size:14px}
+.main .rtill .rtill-moves li span:first-child{font-weight:800;color:var(--rt-muted)}
+.main .rtill .rtill-variance{padding:10px 14px;border-radius:14px;font-weight:800;font-size:18px;text-align:center;width:100%}
+.main .rtill .rtill-variance.even{background:#E4F2D6;color:var(--rt-olive)}
+.main .rtill .rtill-variance.over{background:#FFF4E0;color:#6B4300}
+.main .rtill .rtill-variance.short{background:#FCE7E2;color:#8A2A12}
+[data-theme="dark"] .main .rtill .rtill-variance.even{background:#1F3A26;color:#C8E86A}
+[data-theme="dark"] .main .rtill .rtill-variance.over{background:#3A2C10;color:#F6D9A0}
+[data-theme="dark"] .main .rtill .rtill-variance.short{background:#4A2219;color:#FFD3C6}
+.main .rtill button.rtill-ghost{min-height:64px;border-radius:16px;border:2px solid var(--rt-line);background:var(--rt-paper);color:var(--rt-ink);font-weight:800;font-size:17px;cursor:pointer}
+.main .rtill .rtill-done .rtill-bill-sum{width:100%}
+.main .rtill button.rtill-ghost,.main .rtill button.rtill-shift-btn{justify-content:center}
+.main .rtill button.rtill-shift-btn{justify-content:flex-start}
+@media (max-width:760px){
+  .main .rtill .rtill-shift-grid{grid-template-columns:repeat(2,1fr)}
+  .main .rtill .rtill-move-row{grid-template-columns:1fr}
+}

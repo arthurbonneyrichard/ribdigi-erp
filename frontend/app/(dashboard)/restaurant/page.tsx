@@ -287,7 +287,7 @@ export default function RestaurantPage() {
       loadDesk('/restaurant/modifiers'),
       loadDesk('/restaurant/recipes'),
       loadDesk('/restaurant/waste'),
-      loadDesk('/pos/sessions/current'),
+      loadDesk('/restaurant/till/shift'),
       loadDesk('/stores'),
       loadDesk('/warehouses'),
       loadDesk('/restaurant/delivery-zones'),
@@ -1843,7 +1843,7 @@ export default function RestaurantPage() {
     tillSession
       ? null
       : {
-          href: '/pos',
+          href: '/restaurant/till',
           message: 'No restaurant shift is open.',
         },
     menuWithoutRecipe.length
@@ -1958,10 +1958,11 @@ export default function RestaurantPage() {
           <p className="hint">Open a restaurant desk.</p>
           <div className="hotel-quick" aria-label="Restaurant quick desks">
             <Link href="/restaurant?tab=tables">Tables and floor</Link>
-            <Link href="/restaurant?tab=orders">Orders</Link>
+            <Link href="/restaurant/orders">Orders</Link>
             <Link href="/restaurant?tab=kitchen">Kitchen</Link>
             <Link href="/restaurant?tab=booking">Online booking</Link>
-            <Link href="/pos">Restaurant till</Link>
+            <Link href="/restaurant/till">Restaurant till</Link>
+            <Link href="/restaurant/bills">Bills</Link>
           </div>
         </section>
       )}

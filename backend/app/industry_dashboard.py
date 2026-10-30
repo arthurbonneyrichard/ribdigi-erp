@@ -159,11 +159,12 @@ def industry_home_path(industry: str | None) -> str:
     return "/dashboard"
 
 
-POS_INDUSTRIES = frozenset({"retail", "restaurant", "hotel", "pharmacy"})
+# A restaurant rings on its own till (/restaurant/till/*, restaurant orders), never the retail POS.
+POS_INDUSTRIES = frozenset({"retail", "hotel", "pharmacy"})
 
 
 def assert_pos_for_industry(claims: dict) -> None:
-    """POS is a storefront for retail, restaurant, and hotel. Other industries get 403."""
+    """POS is a storefront for retail and hotel. Other industries (restaurant included) get 403."""
     from fastapi import HTTPException
 
     from app.rbac import is_platform_role

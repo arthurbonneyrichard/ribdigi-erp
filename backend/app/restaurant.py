@@ -17,6 +17,7 @@ from app import inventory
 from app import models as m
 from app.models import uid
 from app import packages as packages_svc
+from app import restaurant_till as till_svc
 from app import schema_compat
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 from app.store_access import assert_store_access, assigned_store_ids
@@ -3789,6 +3790,7 @@ async def complete_order(db: AsyncSession, tenant_id: str, order_id: str, *, use
     order.journal_entry_id = await _post_sale_journal(db, tenant_id, order, user_id=user_id, reverse=False)
     order.status = "completed"
     order.completed_at = _now()
+    await till_svc.stamp_paid_order(db, order, user_id=user_id)
     await _release_table_if_clear(db, tenant_id, order.table_id)
     tickets = (
         await db.execute(
@@ -3832,6 +3834,7 @@ async def refund_order(db: AsyncSession, tenant_id: str, order_id: str, *, user_
     await _deduct_or_restore(db, tenant_id, order, user_id=user_id, sign=1)
     await _post_sale_journal(db, tenant_id, order, user_id=user_id, reverse=True)
     order.status = "refunded"
+    await till_svc.record_cash_refund(db, order, user_id=user_id)
     await db.flush()
     await audit_svc.record_event(
         db, tenant_id=tenant_id, user_id=user_id, module="restaurant",
@@ -3871,6 +3874,87 @@ async def list_orders(db: AsyncSession, tenant_id: str, user_id: str | None = No
     if scope is not None:
         stmt = stmt.where(scope)
     return list((await db.execute(stmt)).scalars())
+
+
+def _guest_key(name: str | None, phone: str | None) -> str | None:
+    digits = re.sub(r"\D", "", phone or "")
+    if len(digits) >= 7:
+        return "p:" + digits[-9:]
+    text = " ".join((name or "").split()).lower()
+    if text and text not in {"walk-in", "walk in", "guest"}:
+        return "n:" + text
+    return None
+
+
+async def list_guests(db: AsyncSession, tenant_id: str, user_id: str | None = None) -> list[dict]:
+    """Restaurant guests, gathered from their orders and bookings (no retail customer records)."""
+    orders = [row for row in await list_orders(db, tenant_id, user_id=user_id) if row.status not in {"cancelled", "voided"}]
+    guests: dict[str, dict] = {}
+
+    def guest(key: str, name: str | None, phone: str | None) -> dict:
+        row = guests.get(key)
+        if row is None:
+            row = guests[key] = {
+                "key": key, "name": None, "phone": None, "email": None, "allergy": None,
+                "visits": 0, "bookings": 0, "spent": 0.0, "last_visit": None, "dishes": {},
+            }
+        if name and not row["name"]:
+            row["name"] = " ".join(name.split())
+        if phone and not row["phone"]:
+            row["phone"] = phone
+        return row
+
+    paid_order_guest: dict[str, str] = {}
+    for order in orders:
+        phone = phone_for_order(order.notes)
+        key = _guest_key(order.customer_name, phone)
+        if key is None:
+            continue
+        row = guest(key, order.customer_name, phone)
+        row["visits"] += 1
+        row["email"] = row["email"] or guest_email_for_order(order.notes)
+        row["allergy"] = row["allergy"] or allergy_for_order(order.notes)
+        if order.status == "completed":
+            row["spent"] += float(order.total_amount or 0)
+            paid_order_guest[order.id] = key
+        seen = order.completed_at or order.created_at
+        if seen and (row["last_visit"] is None or seen > row["last_visit"]):
+            row["last_visit"] = seen
+    for booking in await list_bookings(db, tenant_id):
+        if booking.status == "cancelled":
+            continue
+        key = _guest_key(booking.guest_name, booking.phone)
+        if key is None:
+            continue
+        row = guest(key, booking.guest_name, booking.phone)
+        row["bookings"] += 1
+    if paid_order_guest:
+        lines = (
+            await db.execute(
+                select(m.RestaurantOrderLine.order_id, m.RestaurantOrderLine.quantity, m.Product.name)
+                .join(m.Product, m.Product.id == m.RestaurantOrderLine.product_id)
+                .where(
+                    m.RestaurantOrderLine.tenant_id == tenant_id,
+                    m.RestaurantOrderLine.order_id.in_(set(paid_order_guest)),
+                )
+            )
+        ).all()
+        for order_id, qty, dish in lines:
+            dishes = guests[paid_order_guest[order_id]]["dishes"]
+            dishes[dish] = dishes.get(dish, 0) + float(qty or 0)
+    out = []
+    for row in guests.values():
+        dishes = row.pop("dishes")
+        favourite = max(dishes.items(), key=lambda kv: kv[1])[0] if dishes else None
+        last = row["last_visit"]
+        out.append({
+            **row,
+            "spent": money_json(round(row["spent"], 2)),
+            "favourite_dish": favourite,
+            "last_visit": last.isoformat() if last else None,
+        })
+    out.sort(key=lambda r: (r["last_visit"] or ""), reverse=True)
+    return out
 
 
 async def list_kitchen(db: AsyncSession, tenant_id: str, user_id: str | None = None) -> list[m.RestaurantKitchenTicket]:
@@ -3930,6 +4014,7 @@ def serialize_order(row: m.RestaurantOrder) -> dict:
         "receipt": receipt_for_order(row.notes),
         "opened_at": row.created_at.isoformat() if row.created_at else None,
         "completed_at": row.completed_at.isoformat() if row.completed_at else None,
+        "till_shift_id": row.till_shift_id,
     }
 
 
@@ -4007,6 +4092,7 @@ async def present_orders(
                     "id": line.id,
                     "quantity": money_json(line.quantity),
                     "unit_price": money_json(line.unit_price),
+                    "line_total": money_json(line.line_total),
                     "name": product.name if product else "Item",
                     "station": station,
                     "modifiers": [mod.name for mod in modifiers if mod.line_id == line.id],

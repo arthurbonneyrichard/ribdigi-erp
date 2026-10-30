@@ -11,9 +11,10 @@ from pydantic import BaseModel, BeforeValidator, ConfigDict, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import restaurant as restaurant_svc
+from app import restaurant_till as till_svc
 from app.db import get_db
 from app.honesty import money_json
-from app.schemas import AddressValue, E164PhoneValue, NonNegativeMoneyValue, PartyNameValue, PositiveQtyValue, StockOutNotesValue, UuidIdValue, WebsiteHostnameValue
+from app.schemas import AddressValue, E164PhoneValue, NonNegativeMoneyValue, PositiveMoneyValue, PartyNameValue, PositiveQtyValue, StockOutNotesValue, UuidIdValue, WebsiteHostnameValue
 from app.security import require_permission
 
 router = APIRouter(prefix="/restaurant", tags=["restaurant"])
@@ -893,6 +894,100 @@ async def restaurant_refund(
     row = await restaurant_svc.refund_order(db, claims["tenant_id"], order_id, user_id=claims.get("sub"))
     await db.commit()
     return _env(restaurant_svc.serialize_order(row), "Order refunded")
+
+
+class TillShiftOpenBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    opening_cash: NonNegativeMoneyValue = 0
+    store_id: UuidIdValue | None = None
+
+
+class TillCashMoveBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    movement_type: Literal["cash_in", "cash_out"]
+    amount: PositiveMoneyValue
+    reason: Annotated[str, Field(min_length=3, max_length=200)]
+
+
+class TillShiftCloseBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    counted_cash: NonNegativeMoneyValue
+    notes: Annotated[str, Field(max_length=500)] | None = None
+
+
+@router.get("/till/shift")
+async def restaurant_till_current_shift(
+    claims=Depends(require_permission("restaurant", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await till_svc.open_shift_for_user(db, claims["tenant_id"], claims.get("sub"))
+    return _env(await till_svc.present_shift(db, row, with_moves=True) if row else None)
+
+
+@router.post("/till/shift/open")
+async def restaurant_till_open_shift(
+    payload: TillShiftOpenBody,
+    claims=Depends(require_permission("restaurant", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await till_svc.open_shift(
+        db, claims["tenant_id"], user_id=claims["sub"],
+        opening_cash=payload.opening_cash, store_id=payload.store_id,
+    )
+    await db.commit()
+    return _env(await till_svc.present_shift(db, row, with_moves=True), "Shift opened")
+
+
+@router.post("/till/shift/{shift_id}/cash")
+async def restaurant_till_cash_move(
+    shift_id: UuidIdValue,
+    payload: TillCashMoveBody,
+    claims=Depends(require_permission("restaurant", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    await till_svc.move_cash(
+        db, claims["tenant_id"], shift_id, user_id=claims["sub"],
+        movement_type=payload.movement_type, amount=payload.amount, reason=payload.reason,
+    )
+    await db.commit()
+    row = await till_svc._shift(db, claims["tenant_id"], shift_id)
+    return _env(await till_svc.present_shift(db, row, with_moves=True), "Cash recorded")
+
+
+@router.post("/till/shift/{shift_id}/close")
+async def restaurant_till_close_shift(
+    shift_id: UuidIdValue,
+    payload: TillShiftCloseBody,
+    claims=Depends(require_permission("restaurant", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await till_svc.close_shift(
+        db, claims["tenant_id"], shift_id, user_id=claims["sub"],
+        counted_cash=payload.counted_cash, notes=payload.notes,
+    )
+    await db.commit()
+    return _env(await till_svc.present_shift(db, row, with_moves=True), "Shift closed")
+
+
+@router.get("/till/shifts")
+async def restaurant_till_shifts(
+    limit: Annotated[int, Query(ge=1, le=200)] = 30,
+    claims=Depends(require_permission("restaurant", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await till_svc.list_shifts(db, claims["tenant_id"], limit=limit)
+    return _env([await till_svc.present_shift(db, row) for row in rows])
+
+
+@router.get("/guests")
+async def restaurant_guests(
+    claims=Depends(require_permission("restaurant", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return _env(await restaurant_svc.list_guests(db, claims["tenant_id"], user_id=claims.get("sub")))
 
 
 @router.get("/kitchen")

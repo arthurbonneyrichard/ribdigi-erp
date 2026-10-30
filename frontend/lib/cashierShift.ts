@@ -56,7 +56,8 @@ export function tillBlockedReason(me: MeData | null | undefined): string {
   const perms = me.permissions;
   if (perms && typeof perms === 'object') {
     const star = perms['*'] || [];
-    const pos = perms.pos || [];
+    // A restaurant rings on its own till, which needs restaurant access (not the retail POS).
+    const pos = (industry === 'restaurant' ? perms.restaurant : perms.pos) || [];
     const allowed = star.includes('*') || star.includes('write') || pos.includes('write') || pos.includes('*');
     if (!allowed) return 'Your role cannot sell at the till. Ask the owner to give you till access in User Management.';
   }
@@ -71,6 +72,26 @@ function canRunTill(me: MeData | null | undefined): boolean {
 let lastShiftOpenError = '';
 export function shiftOpenError(): string {
   return lastShiftOpenError;
+}
+
+async function isRestaurantCompany(): Promise<boolean> {
+  try {
+    const me = await getMe();
+    return normalizeIndustry(((me as { data?: MeData }).data || null)?.industry) === 'restaurant';
+  } catch {
+    return false;
+  }
+}
+
+/** A restaurant till shift (restaurant_till_shifts) in the shape the shell already uses. */
+function asCashierShift(row: Record<string, unknown> | null | undefined): CashierShift | null {
+  if (!row || !row.id) return null;
+  return { ...row, session_id: String(row.id), session_number: String(row.shift_number || '') };
+}
+
+async function currentRestaurantShift(): Promise<CashierShift | null> {
+  const res = await api('/restaurant/till/shift');
+  return asCashierShift(res?.data as Record<string, unknown> | null);
 }
 
 function rememberedStoreId(stores: Array<{ id?: string }>): string {
@@ -94,10 +115,22 @@ export async function openShiftForSignedInUser(
     const data = ((me as { data?: MeData }).data || null) as MeData | null;
     lastShiftOpenError = tillBlockedReason(data);
     if (lastShiftOpenError) return null;
+    if (normalizeIndustry(data?.industry) === 'restaurant') {
+      // Restaurant shifts live on the restaurant till; they never open a retail POS session.
+      const open = await currentRestaurantShift();
+      if (open || !startShift) return open;
+      const opened = await api('/restaurant/till/shift/open', {
+        method: 'POST',
+        body: JSON.stringify({
+          opening_cash: Number(openingCash) > 0 ? Number(openingCash) : 0,
+          store_id: String(preferredStoreId || '').trim() || null,
+        }),
+      });
+      return asCashierShift(opened?.data as Record<string, unknown> | null);
+    }
     const current = await api('/pos/sessions/current');
     const hotel = normalizeIndustry(data?.industry) === 'hotel';
-    const restaurantTill = normalizeIndustry(data?.industry) === 'restaurant';
-    if ((hotel || restaurantTill) && !startShift) {
+    if (hotel && !startShift) {
       lastShiftOpenError = '';
       return (current?.data?.session_id ? current.data : null) as CashierShift | null;
     }
@@ -176,6 +209,15 @@ export async function countAndCloseOpenShift(
   if (typeof window === 'undefined') {
     throw new Error('Cash can only be counted in the browser.');
   }
+  if (await isRestaurantCompany()) {
+    const open = await currentRestaurantShift();
+    if (!open?.session_id) throw new Error('There is no open shift to count.');
+    const closed = await api(`/restaurant/till/shift/${open.session_id}/close`, {
+      method: 'POST',
+      body: JSON.stringify({ counted_cash: actualCash, notes: notes && notes.trim() ? notes.trim() : null }),
+    });
+    return asCashierShift(closed?.data as Record<string, unknown> | null) || open;
+  }
   const current = await api('/pos/sessions/current');
   const session = current?.data as CashierShift | null;
   if (!session?.session_id) throw new Error('There is no open shift to count.');
@@ -218,6 +260,7 @@ export async function countAndCloseOpenShift(
 export async function peekOpenCashierShift(): Promise<CashierShift | null> {
   if (typeof window === 'undefined') return null;
   try {
+    if (await isRestaurantCompany()) return await currentRestaurantShift();
     const current = await api('/pos/sessions/current');
     const session = current?.data as CashierShift | null;
     return session?.session_id ? session : null;

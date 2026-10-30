@@ -190,12 +190,12 @@ export const RESTAURANT_NAV_ITEMS: NavItem[] = [
   ['Restaurant dashboard', '/restaurant', 'restaurant'],
   ['Tables and floor', '/restaurant?tab=tables', 'restaurant'],
   ['Online booking', '/restaurant?tab=booking', 'restaurant'],
-  ['Orders', '/restaurant?tab=orders', 'restaurant'],
+  ['Orders', '/restaurant/orders', 'restaurant'],
   ['Kitchen', '/restaurant?tab=kitchen', 'restaurant'],
   ['Recipes', '/restaurant?tab=recipes', 'restaurant'],
   ['Waste', '/restaurant?tab=waste', 'restaurant'],
-  ['Bills', '/sales', 'sales'],
-  ['Customers', '/customers', 'sales'],
+  ['Bills', '/restaurant/bills', 'restaurant'],
+  ['Guests', '/restaurant/guests', 'restaurant'],
   ['Customer credit', '/credit?kind=receivable', 'credit'],
   ['Restaurant till', '/restaurant/till', 'restaurant'],
   ['Ingredients', '/inventory?tab=products', 'inventory'],
@@ -226,7 +226,7 @@ export const RESTAURANT_NAV_GROUPS: NavGroup[] = [
     items: [
       ['Tables and floor', '/restaurant?tab=tables', 'restaurant'],
       ['Online booking', '/restaurant?tab=booking', 'restaurant'],
-      ['Orders', '/restaurant?tab=orders', 'restaurant'],
+      ['Orders', '/restaurant/orders', 'restaurant'],
       ['Kitchen', '/restaurant?tab=kitchen', 'restaurant'],
       ['Recipes', '/restaurant?tab=recipes', 'restaurant'],
       ['Waste', '/restaurant?tab=waste', 'restaurant'],
@@ -236,9 +236,9 @@ export const RESTAURANT_NAV_GROUPS: NavGroup[] = [
     id: 'restaurant-service',
     label: 'Service',
     items: [
-      ['Bills', '/sales', 'sales'],
-      ['Customers', '/customers', 'sales'],
       ['Restaurant till', '/restaurant/till', 'restaurant'],
+      ['Bills', '/restaurant/bills', 'restaurant'],
+      ['Guests', '/restaurant/guests', 'restaurant'],
     ],
   },
   {
@@ -387,8 +387,9 @@ export function industryNavHrefOk(href: string, industry: string | null | undefi
   if (path === '/pos') {
     return ind === 'retail' || ind === 'hotel';
   }
+  // A restaurant keeps its bills and guests on its own screens (/restaurant/bills, /restaurant/guests).
   if (path === '/sales' || path === '/customers') {
-    return ind === 'retail' || ind === 'restaurant' || ind === 'hotel' || ind === 'pharmacy';
+    return ind === 'retail' || ind === 'hotel' || ind === 'pharmacy';
   }
   return true;
 }

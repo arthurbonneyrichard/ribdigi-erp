@@ -149,9 +149,10 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     departments = (root / "frontend/app/(dashboard)/departments/page.tsx").read_text(encoding="utf-8")
     pos = (root / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     shift = (root / "frontend/lib/cashierShift.ts").read_text(encoding="utf-8")
-    assert "if ((hotel || restaurantTill) && !startShift)" in shift
+    assert "if (hotel && !startShift)" in shift
     assert "const hotel = normalizeIndustry(data?.industry) === 'hotel'" in shift
-    assert "restaurantTill" in shift
+    # A restaurant shift is the restaurant till's own, never a retail POS session.
+    assert "'/restaurant/till/shift/open'" in shift
     assert "HOTEL_OMIT_NAV_GROUP_IDS" in nav
     assert "'inventory'" in nav and "'sales'" in nav and "'purchases'" in nav
     assert "'stores'" in nav
@@ -730,7 +731,8 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     hotel_settings = nav.split("id: 'hotel-settings'", 1)[1].split("export const RESTAURANT", 1)[0]
     assert "['AI Assistant', '/ai', 'ai']" in hotel_settings
     assert "loadDesk('/restaurant/waste')" in restaurant
-    assert "loadDesk('/pos/sessions/current')" in restaurant
+    assert "loadDesk('/restaurant/till/shift')" in restaurant
+    assert "/pos/sessions/current" not in restaurant
     assert "spoilage: 'Spoilage'" in restaurant
     assert "Walk-in or phone request" in restaurant
     assert 'aria-label="Save restaurant walk-in booking"' in restaurant
