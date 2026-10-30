@@ -586,3 +586,53 @@
   .main .rdesk.rd-dayclose .rd-kpi.hero{background:#fff;color:#000}
   .main .rdesk.rd-dayclose .rd-kpi.hero span,.main .rdesk.rd-dayclose .rd-kpi.hero small{color:#333}
 }
+
+/* Profit and loss */
+.main .rdesk .rd-kpi.hero.loss{background:var(--rd-bad-ink)}
+.main .rdesk .rd-change{font-weight:800;white-space:nowrap}
+.main .rdesk .rd-change.good{color:var(--rd-deep)}
+.main .rdesk .rd-change.bad{color:var(--rd-bad-ink)}
+.main .rdesk .rd-statement tr.group td{font-weight:800;background:var(--rd-bg)}
+.main .rdesk .rd-statement tr.sub td:first-child{padding-left:26px;color:var(--rd-muted)}
+.main .rdesk .rd-statement tr.label td{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--rd-muted);padding-top:14px}
+.main .rdesk .rd-statement tr.total td{font-weight:800;font-size:18px;border-top:3px solid var(--rd-deep);border-bottom:0;color:var(--rd-deep)}
+.main .rdesk .rd-statement tr.total.loss td{color:var(--rd-bad-ink);border-top-color:var(--rd-bad-ink)}
+.main .rdesk .rd-trend{display:flex;gap:12px;height:200px;align-items:stretch}
+.main .rdesk .rd-trend-col{position:relative;flex:1;display:flex;flex-direction:column;gap:4px;outline:none;min-width:0}
+.main .rdesk .rd-trend-col .bars{flex:1;display:flex;align-items:flex-end;justify-content:center;gap:2px;border-bottom:1px solid var(--rd-line)}
+.main .rdesk .rd-trend-col .bars div{width:min(28px,40%);border-radius:4px 4px 0 0}
+.main .rdesk .rd-trend-col .sales{background:#A9D88F}
+.main .rdesk .rd-trend-col .profit{background:var(--rd-forest)}
+.main .rdesk .rd-trend-col .profit.loss{background:var(--rd-bad-ink)}
+.main .rdesk .rd-trend-col small{text-align:center;font-weight:700;color:var(--rd-muted);font-size:12px}
+.main .rdesk .rd-trend-col:hover .rd-bar-tip,.main .rdesk .rd-trend-col:focus .rd-bar-tip{display:block}
+.main .rdesk .rd-trend-col:first-child .rd-bar-tip{left:0;transform:none}
+.main .rdesk .rd-trend-col:last-child .rd-bar-tip{left:auto;right:0;transform:none}
+.main .rdesk .rd-legend-row{display:flex;gap:16px;font-size:13px;font-weight:700;color:var(--rd-muted)}
+.main .rdesk .rd-legend-row i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.main .rdesk .rd-legend-row i.sales{background:#A9D88F}
+.main .rdesk .rd-legend-row i.profit{background:var(--rd-forest)}
+.main .rdesk .rd-legend-row i.loss{background:var(--rd-bad-ink)}
+[data-theme="dark"] .main .rdesk .rd-trend-col .sales,[data-theme="dark"] .main .rdesk .rd-legend-row i.sales{background:#3E6B2A}
+[data-theme="dark"] .main .rdesk .rd-trend-col .profit,[data-theme="dark"] .main .rdesk .rd-legend-row i.profit{background:#C8E86A}
+
+/* Help */
+.main .rdesk .rd-help-search{width:100%;min-height:52px;font-size:16px}
+.main .rdesk .rd-help{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;align-items:start}
+.main .rdesk .rd-guides{list-style:none;margin:0;padding:0}
+.main .rdesk .rd-guides > li{border-top:1px solid var(--rd-line)}
+.main .rdesk .rd-guides > li:first-child{border-top:0}
+.main .rdesk button.rd-guide-q{width:100%;text-align:left;border:0;background:none;min-height:44px;padding:8px 0;font-weight:700;color:var(--rd-ink);display:flex;justify-content:space-between;gap:8px}
+.main .rdesk button.rd-guide-q::after{content:'+';color:var(--rd-deep);font-weight:800}
+.main .rdesk .rd-guides > li.open button.rd-guide-q::after{content:'−'}
+.main .rdesk .rd-guide-a{padding:0 0 12px}
+.main .rdesk .rd-guide-a ol{margin:0 0 8px;padding-left:20px;display:flex;flex-direction:column;gap:4px;color:var(--rd-muted);font-weight:600}
+.main .rdesk .rd-guide-a a{color:var(--rd-deep);font-weight:800}
+.main .rdesk .rd-thread{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;overflow:auto}
+.main .rdesk .rd-thread li{max-width:88%;border-radius:14px;padding:10px 12px;background:var(--rd-bg)}
+.main .rdesk .rd-thread li.mine{align-self:flex-end;background:var(--rd-tint)}
+.main .rdesk .rd-thread li.file{align-self:flex-start;background:none;padding:0}
+.main .rdesk .rd-thread small{color:var(--rd-muted);font-weight:700}
+.main .rdesk .rd-thread p{margin:4px 0 0;white-space:pre-wrap}
+.main .rdesk .rd-check{flex-direction:row !important;align-items:center;gap:10px !important;color:var(--rd-ink) !important}
+.main .rdesk .rd-form-grid .rd-check input{width:20px;min-height:20px}

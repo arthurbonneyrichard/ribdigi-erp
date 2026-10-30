@@ -624,7 +624,9 @@ async def test_ticket_categories_follow_industry_desk(client):
     assert "Till sales" not in hotel_help["pos_sales"]
     assert hotel_meta.json()["data"]["industry"] == "hotel"
     restaurant = await labels_for("restaurant")
-    assert restaurant.get("pos_sales") == "POS and sales"
+    assert restaurant.get("pos_sales") == "Till, orders and bills"
+    assert restaurant.get("inventory_stock") == "Ingredients, menu and recipes"
+    assert restaurant.get("purchases_suppliers") == "Supplier orders and market runs"
     pharmacy = await labels_for("pharmacy")
     assert pharmacy.get("pos_sales") == "POS and sales"
     for removed in ("wholesale", "fmcg", "hospital"):

@@ -132,6 +132,42 @@ _HOTEL_CATEGORY_COPY: dict[str, tuple[str, str]] = {
     ),
 }
 
+# Same ticket codes. Restaurant companies see their own desk words (till, kitchen, ingredients).
+_RESTAURANT_CATEGORY_COPY: dict[str, tuple[str, str]] = {
+    "account_login": (
+        "Staff sign-in and access",
+        "Signing in, passwords, and which restaurant screens a waiter, cashier or manager can open.",
+    ),
+    "pos_sales": (
+        "Till, orders and bills",
+        "Taking orders, the kitchen screen, paying and splitting bills, refunds, till shifts and the website orders.",
+    ),
+    "inventory_stock": (
+        "Ingredients, menu and recipes",
+        "Ingredients on hand, menu items, recipes, sold-out dishes, counts and waste.",
+    ),
+    "purchases_suppliers": (
+        "Supplier orders and market runs",
+        "Ordering from suppliers, receiving deliveries, market runs and paying suppliers.",
+    ),
+    "finance_reports": (
+        "Money, expenses, tax and reports",
+        "Expenses, cash and bank, end of day, profit and loss, tax and the GRA VAT return.",
+    ),
+    "printing_barcode_receipt": (
+        "Printers and receipts",
+        "Kitchen and receipt printers, and printed bills.",
+    ),
+    "settings_configuration": (
+        "Restaurant profile and settings",
+        "Restaurant profile, tables, the booking website and company settings.",
+    ),
+    "bug_other": (
+        "Something else",
+        "A restaurant problem that is not covered by the topics above.",
+    ),
+}
+
 _EVENT_LABELS = {
     "tenant_created": "New support ticket",
     "tenant_replied": "Tenant reply",
@@ -272,6 +308,9 @@ def _category_visible(
     if industry not in _OPERATING_INDUSTRIES:
         return False
     if code == "pos_sales":
+        if industry == "restaurant":
+            # The restaurant rings on its own till (restaurant module), not the retail POS.
+            return _module_any(tenant, ("restaurant", "pos"))
         if industry in _POS_TICKET_INDUSTRIES:
             return _module_any(tenant, "pos")
         if industry in _SALES_DESK_INDUSTRIES:
@@ -297,6 +336,8 @@ def categories_for(tenant: m.Tenant | None, *, all_categories: bool = False) -> 
         help_text = _CATEGORY_HELP.get(code, "Covers this part of the product for your company.")
         if industry == "hotel" and code in _HOTEL_CATEGORY_COPY:
             shown, help_text = _HOTEL_CATEGORY_COPY[code]
+        if industry == "restaurant" and code in _RESTAURANT_CATEGORY_COPY:
+            shown, help_text = _RESTAURANT_CATEGORY_COPY[code]
         rows.append({"code": code, "label": shown, "help": help_text})
     return rows
 
@@ -431,6 +472,16 @@ def tenant_brief(tenant: m.Tenant | None) -> dict | None:
     }
 
 
+async def _tenant_category_labels(db: AsyncSession, items: list[dict]) -> None:
+    """A company sees its own desk words for ticket topics (hotel, restaurant)."""
+    tenants: dict[str, m.Tenant | None] = {}
+    for item in items:
+        tid = item.get("tenant_id")
+        if tid not in tenants:
+            tenants[tid] = await db.get(m.Tenant, tid) if tid else None
+        item["category_label"] = category_label_for(tenants[tid], item.get("category") or "")
+
+
 def _ticket_dict(
     ticket: m.SupportTicket,
     users: dict[str, m.User],
@@ -526,8 +577,11 @@ async def ticket_detail(db: AsyncSession, ticket: m.SupportTicket, *, desk: bool
     ids.update(row.author_user_id for row in messages if row.author_user_id)
     ids.update(row.actor_user_id for row in events if row.actor_user_id)
     users = await _user_map(db, ids)
+    ticket_payload = _ticket_dict(ticket, users, desk=desk)
+    if not desk:
+        await _tenant_category_labels(db, [ticket_payload])
     payload = {
-        "ticket": _ticket_dict(ticket, users, desk=desk),
+        "ticket": ticket_payload,
         "messages": [_message_dict(row, users) for row in messages],
         "attachments": [_attachment_dict(row) for row in attachments],
         "events": [_event_dict(row, users) for row in events],
@@ -653,6 +707,8 @@ async def list_tickets(
             ids.add(row.assignee_user_id)
     users = await _user_map(db, ids)
     items = [_ticket_dict(row, users, desk=desk) for row in rows]
+    if not desk:
+        await _tenant_category_labels(db, items)
     if desk:
         tenant_ids = {row.tenant_id for row in rows}
         tenants = (

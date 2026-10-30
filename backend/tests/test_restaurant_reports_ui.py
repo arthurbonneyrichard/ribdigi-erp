@@ -20,7 +20,7 @@ def test_restaurant_nav_points_reports_at_own_screen():
     start = NAV.index("export const RESTAURANT_NAV_GROUPS")
     block = NAV[start : NAV.index("];", start)]
     assert "['Reports', '/restaurant/reports', 'reports']" in block
-    assert "['Profit and loss', '/reports?tab=pnl', 'reports']" in block
+    assert "['Profit and loss', '/restaurant/profit', 'accounting']" in block
     assert "['Reports', '/reports', 'reports']" not in block
 
 

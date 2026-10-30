@@ -55,3 +55,28 @@ def test_restaurant_finance_nav_uses_own_screens():
         assert entry in block
     for old in ("'/expenses'", "'/accounting'", "'/tax'", "/credit?kind"):
         assert old not in block
+
+
+PROFIT = (BASE / "profit/page.tsx").read_text(encoding="utf-8")
+HELP = (BASE / "help/page.tsx").read_text(encoding="utf-8")
+
+
+def test_profit_screen_statement_compare_and_trend():
+    assert "/accounting/profit-loss?from_date=${a}&to_date=${b}" in PROFIT
+    assert "previousRange(a, b)" in PROFIT
+    assert "Food and drink cost" in PROFIT and "Running costs" in PROFIT
+    assert "report_type: 'profit_loss'" in PROFIT
+    assert "Last six months" in PROFIT and 'className="rd-legend-row"' in PROFIT
+
+
+def test_help_screen_guides_and_support_requests():
+    assert "Record a market run" in HELP and "Prepare the VAT return" in HELP
+    assert "'/support/categories'" in HELP and "'/support/tickets'" in HELP
+    assert "`/support/tickets/${id}/replies`" in HELP and "`/support/tickets/${id}/close`" in HELP
+
+
+def test_restaurant_nav_profit_and_help():
+    assert "['Profit and loss', '/restaurant/profit', 'accounting']" in NAV
+    assert "{ id: 'restaurant-help', label: '', items: [['Help', '/restaurant/help', 'support']] }" in NAV
+    block = NAV.split("export const RESTAURANT_NAV_GROUPS", 1)[1].split("\n];", 1)[0]
+    assert "/reports?tab=pnl" not in block
