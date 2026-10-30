@@ -1708,7 +1708,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <StoreProvider enabled={Boolean(role) && !isPlatformOwner}>
-      <div className={`shell shell-secure${menuOpen ? ' nav-open' : ''}${navCompact ? ' nav-compact' : ''}${pathname === '/pos' ? ' is-pos' : ''}`}>
+      <div className={`shell shell-secure${menuOpen ? ' nav-open' : ''}${navCompact ? ' nav-compact' : ''}${pathname === '/pos' ? ' is-pos' : ''}${pathname === '/restaurant/till' ? ' is-pos is-rtill' : ''}`}>
       <aside
         id="app-sidebar"
         className="side"

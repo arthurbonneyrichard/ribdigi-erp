@@ -197,7 +197,7 @@ export const RESTAURANT_NAV_ITEMS: NavItem[] = [
   ['Bills', '/sales', 'sales'],
   ['Customers', '/customers', 'sales'],
   ['Customer credit', '/credit?kind=receivable', 'credit'],
-  ['Restaurant till', '/pos', 'pos'],
+  ['Restaurant till', '/restaurant/till', 'restaurant'],
   ['Ingredients', '/inventory?tab=products', 'inventory'],
   ['Low ingredients', '/inventory?tab=lowstock', 'inventory'],
   ['Purchase orders', '/purchasing?tab=orders', 'purchasing'],
@@ -238,7 +238,7 @@ export const RESTAURANT_NAV_GROUPS: NavGroup[] = [
     items: [
       ['Bills', '/sales', 'sales'],
       ['Customers', '/customers', 'sales'],
-      ['Restaurant till', '/pos', 'pos'],
+      ['Restaurant till', '/restaurant/till', 'restaurant'],
     ],
   },
   {
@@ -383,8 +383,9 @@ export function industryNavHrefOk(href: string, industry: string | null | undefi
   if (path === '/ecommerce' || path.startsWith('/ecommerce/')) {
     return ind === 'retail' || ind === 'pharmacy';
   }
+  // Restaurant rings on its own till (/restaurant/till); the retail POS stays off its menus.
   if (path === '/pos') {
-    return ind === 'retail' || ind === 'hotel' || ind === 'restaurant';
+    return ind === 'retail' || ind === 'hotel';
   }
   if (path === '/sales' || path === '/customers') {
     return ind === 'retail' || ind === 'restaurant' || ind === 'hotel' || ind === 'pharmacy';

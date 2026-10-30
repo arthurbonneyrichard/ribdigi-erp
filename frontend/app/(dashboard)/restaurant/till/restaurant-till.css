@@ -1,0 +1,252 @@
+/* Restaurant till: its own look, separate from the retail POS (pos-modern.css). */
+/* Clear the shell's global button look (.main button:not(.menu-btn)) inside the till. */
+.main .rtill button:not(.menu-btn){
+  display:inline-flex;align-items:center;justify-content:flex-start;gap:0;padding:0;
+  border:0;border-radius:0;background:none;color:inherit;font:inherit;font-weight:inherit;
+  box-shadow:none;transform:none;transition:background .12s,border-color .12s,transform .08s
+}
+.main .rtill button:not(.menu-btn):hover,.main .rtill button:not(.menu-btn):active{transform:none;box-shadow:none}
+.main .rtill{
+  --rt-bg:#F7F1E8;
+  --rt-panel:#FFFDF9;
+  --rt-ink:#2B211B;
+  --rt-muted:#7A6A5E;
+  --rt-line:#E6D9C8;
+  --rt-accent:#C2502E;
+  --rt-accent-dark:#9E3D20;
+  --rt-amber:#E39B2D;
+  --rt-olive:#3E5A3A;
+  --rt-olive-dark:#2C4229;
+  --rt-paper:#FFFFFF;
+  --rt-shadow:0 1px 2px rgba(60,36,20,.08),0 6px 18px rgba(60,36,20,.07);
+  display:flex;flex-direction:column;gap:12px;
+  flex:1 1 auto;min-height:0;min-width:0;
+  color:var(--rt-ink);
+  background:var(--rt-bg);
+  border-radius:18px;padding:12px;
+  font-size:15px;
+}
+[data-theme="dark"] .main .rtill{
+  --rt-bg:#1C1714;
+  --rt-panel:#26201B;
+  --rt-ink:#F4EADF;
+  --rt-muted:#B8A898;
+  --rt-line:#3A3029;
+  --rt-paper:#2E2620;
+  --rt-shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.3);
+}
+.main .rtill.rtill-loading{align-items:center;justify-content:center;font-weight:700;color:var(--rt-muted)}
+
+/* Top bar */
+.main .rtill .rtill-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.main .rtill .rtill-brand{display:flex;align-items:center;gap:8px}
+.main .rtill .rtill-brand h1{margin:0;font-size:20px;font-weight:800;letter-spacing:-.01em;font-family:Georgia,'Times New Roman',serif}
+.main .rtill .rtill-mark{color:var(--rt-accent);font-size:14px}
+.main .rtill .rtill-modes{display:flex;gap:8px;flex:1 1 auto;justify-content:center}
+.main .rtill .rtill-modes button{
+  display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+  min-width:130px;min-height:56px;padding:8px 16px;
+  border:2px solid var(--rt-line);border-radius:14px;
+  background:var(--rt-panel);color:var(--rt-ink);cursor:pointer;text-align:left
+}
+.main .rtill .rtill-modes button strong{font-size:16px}
+.main .rtill .rtill-modes button small{font-size:12px;color:var(--rt-muted)}
+.main .rtill .rtill-modes button.on{border-color:var(--rt-accent);background:var(--rt-accent);color:#fff}
+.main .rtill .rtill-modes button.on small{color:#FBE3D8}
+.main .rtill .rtill-modes button:disabled{opacity:.45;cursor:not-allowed}
+.main .rtill .rtill-top-right{display:flex;align-items:center;gap:8px}
+.main .rtill .rtill-top-right select{min-height:44px;border-radius:12px;border:2px solid var(--rt-line);background:var(--rt-panel);color:var(--rt-ink);padding:0 10px;font-weight:700}
+.main .rtill button.rtill-bills-btn{
+  min-height:48px;padding:0 16px;border-radius:14px;border:0;cursor:pointer;
+  background:var(--rt-olive);color:#fff;font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px
+}
+.main .rtill button.rtill-bills-btn:hover{background:var(--rt-olive-dark)}
+.main .rtill .rtill-count{background:#fff;color:var(--rt-olive);border-radius:999px;min-width:26px;padding:2px 8px;font-size:13px}
+.main .rtill .rtill-notice{background:var(--rt-olive);color:#fff;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer}
+
+/* Body: sections | dishes | ticket */
+.main .rtill .rtill-body{display:grid;grid-template-columns:170px minmax(0,1fr) minmax(320px,380px);gap:12px;flex:1 1 auto;min-height:0}
+.main .rtill .rtill-cats{display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:0;padding-right:2px}
+.main .rtill .rtill-cats button{
+  min-height:58px;padding:10px 14px;text-align:left;border-radius:14px;cursor:pointer;
+  border:0;background:var(--rt-panel);color:var(--rt-ink);font-weight:700;font-size:15px;box-shadow:var(--rt-shadow)
+}
+.main .rtill .rtill-cats button.on{background:var(--rt-ink);color:var(--rt-bg)}
+
+.main .rtill .rtill-menu{display:flex;flex-direction:column;gap:10px;min-height:0;min-width:0}
+.main .rtill .rtill-search{min-height:48px;border-radius:14px;border:2px solid var(--rt-line);background:var(--rt-panel);color:var(--rt-ink);padding:0 16px;font-size:16px}
+.main .rtill .rtill-search:focus{outline:none;border-color:var(--rt-accent)}
+.main .rtill .rtill-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;overflow:auto;min-height:0;padding:2px 2px 8px}
+.main .rtill button.rtill-dish{
+  position:relative;display:flex;flex-direction:column;align-items:stretch;gap:6px;
+  min-height:150px;padding:10px;border-radius:18px;border:0;cursor:pointer;text-align:left;
+  background:var(--rt-panel);color:var(--rt-ink);box-shadow:var(--rt-shadow);transition:transform .08s ease
+}
+.main .rtill button.rtill-dish:active{transform:scale(.97)}
+.main .rtill button.rtill-dish:hover{outline:2px solid var(--rt-accent)}
+.main .rtill button.rtill-dish img,.main .rtill .rtill-dish-initial{width:100%;height:78px;border-radius:12px;object-fit:cover}
+.main .rtill .rtill-dish-initial{
+  display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:800;
+  font-family:Georgia,'Times New Roman',serif;color:var(--rt-accent);background:#F6E2D5
+}
+[data-theme="dark"] .main .rtill .rtill-dish-initial{background:#3A2A22}
+.main .rtill .rtill-dish-name{font-weight:800;font-size:15px;line-height:1.2}
+.main .rtill .rtill-dish-price{margin-top:auto;font-weight:800;color:var(--rt-accent)}
+.main .rtill .rtill-dish-qty{
+  position:absolute;top:8px;right:8px;min-width:30px;height:30px;border-radius:999px;
+  display:flex;align-items:center;justify-content:center;background:var(--rt-accent);color:#fff;font-weight:800
+}
+.main .rtill button.rtill-dish.out{opacity:.5;cursor:not-allowed}
+.main .rtill button.rtill-dish.out:hover{outline:0}
+.main .rtill button.rtill-dish.out .rtill-dish-price{color:var(--rt-muted)}
+.main .rtill .rtill-empty{padding:24px;color:var(--rt-muted);font-weight:600}
+.main .rtill .rtill-empty a{color:var(--rt-accent)}
+
+/* Ticket: a kitchen docket */
+.main .rtill .rtill-ticket{
+  display:flex;flex-direction:column;min-height:0;
+  background:var(--rt-paper);border-radius:18px;box-shadow:var(--rt-shadow);
+  border-top:6px solid var(--rt-accent);overflow:hidden
+}
+.main .rtill .rtill-ticket-head{display:flex;align-items:flex-start;gap:10px;padding:14px 16px 10px;border-bottom:2px dashed var(--rt-line)}
+.main .rtill .rtill-ticket-head > div{flex:1 1 auto}
+.main .rtill .rtill-ticket-head h2{margin:0;font-size:19px;font-family:Georgia,'Times New Roman',serif}
+.main .rtill .rtill-ticket-head small{color:var(--rt-muted);font-weight:700}
+.main .rtill button.rtill-link{background:none;border:0;color:var(--rt-accent);font-weight:800;cursor:pointer;min-height:36px;padding:0 6px;font-size:14px}
+.main .rtill .rtill-guest{display:flex;flex-direction:column;gap:6px;padding:10px 16px;border-bottom:2px dashed var(--rt-line)}
+.main .rtill .rtill-guest input,.main .rtill .rtill-note input,.main .rtill .rtill-cash input{
+  min-height:44px;border-radius:12px;border:2px solid var(--rt-line);background:var(--rt-panel);color:var(--rt-ink);padding:0 12px;font-size:15px
+}
+.main .rtill .rtill-lines{flex:1 1 auto;overflow:auto;padding:8px 12px;display:flex;flex-direction:column;gap:6px}
+.main .rtill .rtill-line{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--rt-line)}
+.main .rtill .rtill-line.sent{color:var(--rt-muted)}
+.main .rtill .rtill-line-qty{font-weight:800;min-width:34px}
+.main .rtill .rtill-line-name{display:flex;flex-direction:column;font-weight:700;min-width:0}
+.main .rtill .rtill-line-name small{font-weight:500;color:var(--rt-muted);font-size:12px}
+.main .rtill button.rtill-line-edit{background:none;border:0;text-align:left;color:inherit;cursor:pointer;padding:4px 0;font-size:15px}
+.main .rtill .rtill-hint{font-style:italic}
+.main .rtill .rtill-line-price{font-weight:800;white-space:nowrap}
+.main .rtill .rtill-stepper{display:flex;align-items:center;gap:4px}
+.main .rtill .rtill-stepper button{
+  width:40px;height:40px;border-radius:12px;border:0;cursor:pointer;font-size:22px;font-weight:800;line-height:1;
+  background:#F6E2D5;color:var(--rt-accent-dark)
+}
+[data-theme="dark"] .main .rtill .rtill-stepper button{background:#3A2A22;color:#F2B79F}
+.main .rtill .rtill-stepper span{min-width:24px;text-align:center;font-weight:800}
+.main .rtill .rtill-divider{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--rt-accent);padding:6px 4px 0}
+.main .rtill .rtill-empty-ticket{padding:30px 10px;text-align:center;color:var(--rt-muted);font-weight:600}
+.main .rtill .rtill-error{margin:0 12px 8px;padding:10px 12px;border-radius:12px;background:#FCE7E2;color:#8A2A12;font-weight:700}
+[data-theme="dark"] .main .rtill .rtill-error{background:#4A2219;color:#FFD3C6}
+
+.main .rtill .rtill-foot{padding:12px 16px 16px;border-top:2px dashed var(--rt-line);display:flex;flex-direction:column;gap:8px}
+.main .rtill .rtill-total{display:flex;align-items:baseline;justify-content:space-between}
+.main .rtill .rtill-total span{font-weight:700;color:var(--rt-muted)}
+.main .rtill .rtill-total strong{font-size:28px;font-family:Georgia,'Times New Roman',serif}
+.main .rtill .rtill-tax-note{color:var(--rt-muted);font-size:12px}
+.main .rtill .rtill-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.main .rtill button.rtill-send,.main .rtill button.rtill-pay{min-height:64px;border:0;border-radius:16px;font-size:18px;font-weight:800;cursor:pointer;color:#fff}
+.main .rtill button.rtill-send{background:var(--rt-amber);color:#2B1A05}
+.main .rtill button.rtill-send:hover{background:#D08A1E}
+.main .rtill button.rtill-pay{background:var(--rt-accent)}
+.main .rtill button.rtill-pay:hover{background:var(--rt-accent-dark)}
+.main .rtill button.rtill-send:disabled,.main .rtill button.rtill-pay:disabled{opacity:.4;cursor:not-allowed}
+.main .rtill button.rtill-send.big,.main .rtill button.rtill-pay.big{width:100%;min-height:68px;margin-top:6px}
+
+/* Sheets */
+.main .rtill .rtill-sheet{position:fixed;inset:0;z-index:60;background:rgba(30,20,12,.5);display:flex;align-items:center;justify-content:center;padding:16px}
+.main .rtill .rtill-sheet-card{
+  width:min(520px,100%);max-height:90vh;overflow:auto;background:var(--rt-panel);color:var(--rt-ink);
+  border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,.3)
+}
+.main .rtill .rtill-sheet-card.wide{width:min(900px,100%)}
+.main .rtill .rtill-sheet-head{display:flex;align-items:center;justify-content:space-between}
+.main .rtill .rtill-sheet-head h2{margin:0;font-family:Georgia,'Times New Roman',serif;font-size:22px}
+.main .rtill .rtill-tables{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}
+.main .rtill button.rtill-table{
+  aspect-ratio:1/1;border-radius:50%;border:4px solid var(--rt-line);cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  background:var(--rt-paper);color:var(--rt-ink);padding:8px;text-align:center
+}
+.main .rtill button.rtill-table strong{font-size:22px;font-family:Georgia,'Times New Roman',serif}
+.main .rtill button.rtill-table small{font-size:12px;color:var(--rt-muted);font-weight:700}
+.main .rtill button.rtill-table.st-available{border-color:#8DB38A}
+.main .rtill button.rtill-table.st-occupied{border-color:var(--rt-accent);background:#FBEDE6}
+.main .rtill button.rtill-table.st-reserved,.main .rtill button.rtill-table.st-held{border-color:var(--rt-amber)}
+[data-theme="dark"] .main .rtill button.rtill-table.st-occupied{background:#3A2A22}
+.main .rtill .rtill-bills{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.main .rtill button.rtill-bill{
+  display:grid;grid-template-columns:1fr auto;gap:4px 8px;text-align:left;padding:14px;border-radius:16px;cursor:pointer;
+  border:2px solid var(--rt-line);background:var(--rt-paper);color:var(--rt-ink);border-left:8px solid var(--rt-muted)
+}
+.main .rtill button.rtill-bill strong{font-size:16px}
+.main .rtill .rtill-bill-status{font-size:12px;font-weight:700;color:var(--rt-muted)}
+.main .rtill .rtill-bill-total{font-weight:800;text-align:right}
+.main .rtill button.rtill-bill.st-open{border-left-color:var(--rt-muted)}
+.main .rtill button.rtill-bill.st-sent,.main .rtill button.rtill-bill.st-preparing{border-left-color:var(--rt-amber)}
+.main .rtill button.rtill-bill.st-ready{border-left-color:var(--rt-olive)}
+
+.main .rtill .rtill-bill-sum{margin:0;display:flex;flex-direction:column;gap:6px}
+.main .rtill .rtill-bill-sum div{display:flex;justify-content:space-between}
+.main .rtill .rtill-bill-sum dt{color:var(--rt-muted);font-weight:700}
+.main .rtill .rtill-bill-sum dd{margin:0;font-weight:800}
+.main .rtill .rtill-bill-sum .grand{padding-top:8px;border-top:2px dashed var(--rt-line)}
+.main .rtill .rtill-bill-sum .grand dd{font-size:30px;font-family:Georgia,'Times New Roman',serif;color:var(--rt-accent)}
+.main .rtill .rtill-methods{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.main .rtill .rtill-methods button{
+  min-height:60px;border-radius:16px;border:2px solid var(--rt-line);background:var(--rt-paper);color:var(--rt-ink);
+  font-size:17px;font-weight:800;cursor:pointer
+}
+.main .rtill .rtill-methods button.on{border-color:var(--rt-olive);background:var(--rt-olive);color:#fff}
+.main .rtill .rtill-cash{display:flex;flex-direction:column;gap:8px}
+.main .rtill .rtill-cash label,.main .rtill .rtill-note{display:flex;flex-direction:column;gap:4px;font-weight:700}
+.main .rtill .rtill-cash input{font-size:22px;font-weight:800;min-height:56px}
+.main .rtill .rtill-quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.main .rtill .rtill-quick button{min-height:50px;border-radius:12px;border:0;background:#F6E2D5;color:var(--rt-accent-dark);font-weight:800;cursor:pointer}
+[data-theme="dark"] .main .rtill .rtill-quick button{background:#3A2A22;color:#F2B79F}
+.main .rtill .rtill-change{display:flex;justify-content:space-between;align-items:baseline;padding:10px 14px;border-radius:14px;background:#E7EFE5;color:var(--rt-olive-dark);font-weight:800}
+.main .rtill .rtill-change strong{font-size:24px}
+.main .rtill .rtill-change.big strong{font-size:34px}
+[data-theme="dark"] .main .rtill .rtill-change{background:#26331F;color:#CFE6C9}
+.main .rtill .rtill-mod-group h3{margin:4px 0 6px;font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--rt-muted)}
+.main .rtill .rtill-mods{display:flex;flex-wrap:wrap;gap:8px}
+.main .rtill .rtill-mods button{
+  min-height:48px;padding:6px 14px;border-radius:999px;border:2px solid var(--rt-line);background:var(--rt-paper);
+  color:var(--rt-ink);font-weight:700;cursor:pointer;display:flex;gap:6px;align-items:center
+}
+.main .rtill .rtill-mods button small{color:var(--rt-muted)}
+.main .rtill .rtill-mods button.on{border-color:var(--rt-accent);background:var(--rt-accent);color:#fff}
+.main .rtill .rtill-mods button.on small{color:#FBE3D8}
+.main .rtill .rtill-done{align-items:center;text-align:center}
+.main .rtill .rtill-done-tick{width:84px;height:84px;border-radius:50%;background:var(--rt-olive);color:#fff;font-size:44px;display:flex;align-items:center;justify-content:center}
+.main .rtill .rtill-done h2{margin:0;font-family:Georgia,'Times New Roman',serif}
+.main .rtill .rtill-done p{margin:0;color:var(--rt-muted);font-weight:700}
+.main .rtill .rtill-done .rtill-change{width:100%}
+
+/* Tablet / phone */
+@media (max-width:1100px){
+  .main .rtill .rtill-body{grid-template-columns:minmax(0,1fr) minmax(300px,340px)}
+  .main .rtill .rtill-cats{grid-column:1 / -1;flex-direction:row;overflow-x:auto}
+  .main .rtill .rtill-cats button{min-height:48px;white-space:nowrap}
+}
+@media (max-width:760px){
+  .main .rtill{padding:8px;border-radius:0}
+  .main .rtill .rtill-modes{order:3;width:100%}
+  .main .rtill .rtill-modes button{min-width:0;flex:1 1 0}
+  .main .rtill .rtill-modes button small{display:none}
+  .main .rtill .rtill-body{grid-template-columns:minmax(0,1fr);overflow:auto}
+  .main .rtill .rtill-ticket{min-height:360px}
+  .main .rtill .rtill-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+  .main .rtill .rtill-quick{grid-template-columns:repeat(2,1fr)}
+}
+
+/* Centred controls (the reset above left-aligns button content). */
+.main .rtill .rtill-stepper button,
+.main .rtill .rtill-methods button,
+.main .rtill .rtill-quick button,
+.main .rtill button.rtill-send,
+.main .rtill button.rtill-pay,
+.main .rtill button.rtill-bills-btn{justify-content:center;text-align:center}
+.main .rtill .rtill-cats button{justify-content:flex-start}
+.main .rtill .rtill-dish-name{text-align:left}
+.main .rtill button.rtill-dish:disabled{opacity:.5}
+.main .rtill .rtill-line-name,.main .rtill button.rtill-line-edit{align-items:flex-start;text-align:left}
