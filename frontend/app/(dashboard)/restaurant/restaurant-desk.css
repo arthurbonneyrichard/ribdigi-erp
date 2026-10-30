@@ -511,3 +511,61 @@
   .main .rdesk .rd-table .rank,.main .rdesk .rd-table .col-sales{display:none}
   .main .rdesk .rd-table th,.main .rdesk .rd-table td{padding:8px 6px}
 }
+
+/* Expenses, pay suppliers, money, tax */
+.main .rdesk .rd-list-flat{box-shadow:none;border:1px solid var(--rd-line)}
+.main .rdesk .rd-stock-row.muted{opacity:.6}
+.main .rdesk .rd-stock-row > .rd-link{justify-self:end}
+.main .rdesk .rd-inline-input{min-height:40px;border-radius:12px;border:2px solid var(--rd-line);background:var(--rd-panel);color:var(--rd-ink);padding:0 10px;width:100%}
+.main .rdesk .rd-form-grid input.rd-big-input{min-height:60px;font-size:28px;font-family:Georgia,'Times New Roman',serif;font-weight:700}
+.main .rdesk .rd-field-label{font-size:13px;font-weight:700;color:var(--rd-muted);margin-bottom:-6px}
+.main .rdesk .rd-form-grid .rd-chips button{min-height:40px}
+.main .rdesk .rd-needs-inline{flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.main .rdesk .rd-meter{height:6px;border-radius:999px;background:var(--rd-bg);margin-top:6px;overflow:hidden;max-width:260px}
+.main .rdesk .rd-meter div{height:100%;border-radius:999px;background:var(--rd-deep)}
+.main .rdesk .rd-budget-row.low .rd-meter div{background:var(--rd-wait)}
+.main .rdesk .rd-party{border-bottom:1px solid var(--rd-line)}
+.main .rdesk .rd-party:last-child{border-bottom:0}
+.main .rdesk .rd-party .rd-stock-row{border-bottom:0}
+.main .rdesk .rd-party.late .rd-stock-row{border-left-color:var(--rd-wait)}
+.main .rdesk .rd-docs{list-style:none;margin:0;padding:0 16px 12px 21px}
+.main .rdesk .rd-drawer .rd-docs{padding:0}
+.main .rdesk .rd-docs li{display:grid;grid-template-columns:120px minmax(0,1fr) auto 110px;gap:10px;align-items:center;padding:7px 0;border-top:1px dashed var(--rd-line);font-size:14px}
+.main .rdesk .rd-docs li strong{text-align:right}
+.main .rdesk .rd-moves li{grid-template-columns:70px 140px minmax(0,1fr) 120px}
+.main .rdesk .rd-moves .desc{color:var(--rd-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.main .rdesk .rd-row-actions.right{margin-left:auto}
+.main .rdesk .rd-accounts{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.main .rdesk .rd-account{border-radius:16px;padding:14px;background:var(--rd-tint);display:flex;flex-direction:column;gap:2px;border-top:5px solid var(--rd-deep)}
+.main .rdesk .rd-account.momo{border-top-color:#E6B800}
+.main .rdesk .rd-account.cash{border-top-color:var(--rd-brand)}
+.main .rdesk .rd-account .kind{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--rd-muted)}
+.main .rdesk .rd-account strong{font-size:24px;font-family:Georgia,'Times New Roman',serif}
+.main .rdesk .rd-account small{color:var(--rd-muted);font-weight:600}
+.main .rdesk .rd-panel-head .rd-chips{margin-left:auto}
+.main .rdesk .rd-pnl{display:flex;flex-direction:column;max-width:560px}
+.main .rdesk .rd-pnl > div{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;padding:9px 0;border-bottom:1px solid var(--rd-line)}
+.main .rdesk .rd-pnl > div span{font-weight:700}
+.main .rdesk .rd-pnl > div strong{text-align:right;font-size:17px}
+.main .rdesk .rd-pnl > div small{grid-column:1 / -1;color:var(--rd-muted);font-weight:600}
+.main .rdesk .rd-pnl .minus strong{color:var(--rd-muted)}
+.main .rdesk .rd-pnl .sub{background:var(--rd-bg);padding-left:10px;padding-right:10px;border-radius:10px}
+.main .rdesk .rd-pnl .total{border-bottom:0;border-top:3px solid var(--rd-deep);margin-top:4px}
+.main .rdesk .rd-pnl .total strong{font-size:26px;font-family:Georgia,'Times New Roman',serif;color:var(--rd-deep)}
+.main .rdesk .rd-pnl .total.loss strong{color:var(--rd-bad-ink)}
+.main .rdesk .rd-tax-sum{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr);gap:12px;align-items:stretch}
+.main .rdesk .rd-tax-sum > div{background:var(--rd-panel);border-radius:18px;box-shadow:var(--rd-shadow);padding:16px 18px;display:flex;flex-direction:column;gap:4px}
+.main .rdesk .rd-tax-sum > div span{font-weight:700;color:var(--rd-muted);font-size:14px}
+.main .rdesk .rd-tax-sum > div strong{font-size:26px;font-family:Georgia,'Times New Roman',serif}
+.main .rdesk .rd-tax-sum > div small{color:var(--rd-muted);font-weight:600}
+.main .rdesk .rd-tax-sum > div.result{background:var(--rd-forest);color:#fff}
+.main .rdesk .rd-tax-sum > div.result span{color:#C8E86A}
+.main .rdesk .rd-tax-sum > div.result small{color:#D9F0C8}
+.main .rdesk .rd-tax-sum .op{align-self:center;font-size:30px;font-weight:800;color:var(--rd-muted)}
+@media (max-width:900px){
+  .main .rdesk .rd-tax-sum{grid-template-columns:1fr}
+  .main .rdesk .rd-tax-sum .op{display:none}
+  .main .rdesk .rd-docs li,.main .rdesk .rd-moves li{grid-template-columns:minmax(0,1fr) auto}
+  .main .rdesk .rd-docs li > span:nth-child(3),.main .rdesk .rd-moves .desc{display:none}
+  .main .rdesk .rd-panel-head .rd-chips{margin-left:0}
+}

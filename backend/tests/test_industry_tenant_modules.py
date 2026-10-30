@@ -1035,7 +1035,8 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "['Reports', '/restaurant/reports', 'reports']" in (root / "frontend/lib/tenantNav.ts").read_text(encoding="utf-8")
     assert "['Waste', '/restaurant?tab=waste', 'restaurant']" in (root / "frontend/lib/tenantNav.ts").read_text(encoding="utf-8")
     restaurant_finance = nav.split("id: 'restaurant-finance'", 1)[1].split("id: 'restaurant-people'", 1)[0]
-    assert "['Customer credit', '/credit?kind=receivable', 'credit']" in restaurant_finance
+    assert "['Pay suppliers', '/restaurant/payables', 'credit']" in restaurant_finance
+    assert "/credit?kind=receivable" not in restaurant_finance
     assert "Add at least one ingredient" in restaurant
     assert "Choose an ingredient first" in restaurant
     assert "item.modifiers" in restaurant

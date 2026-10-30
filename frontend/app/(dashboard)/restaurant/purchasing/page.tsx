@@ -167,7 +167,7 @@ export default function RestaurantPurchasingPage() {
               <span>Owed to suppliers</span>
               <strong>{money(owed)}</strong>
               <small>
-                <Link href="/credit">Pay suppliers</Link>
+                <Link href="/restaurant/payables">Pay suppliers</Link>
               </small>
             </div>
           </div>
