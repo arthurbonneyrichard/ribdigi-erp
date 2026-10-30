@@ -82,3 +82,39 @@ async def test_period_report_is_restaurant_only(client, db_session):
     admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
     res = await ac.get("/api/v1/restaurant/reports/period", headers=admin)
     assert res.status_code in {403, 404}, res.text
+
+
+async def test_day_close_counts_shifts_and_open_bills(client, db_session):
+    ac, seed = client
+    await set_tenant_industry(db_session, seed["t1"], "restaurant")
+    admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    opened = await ac.post("/api/v1/restaurant/till/shift/open", headers=admin, json={"opening_cash": 50})
+    sid = opened.json()["data"]["id"]
+    dish = await _product(ac, admin, name="Day waakye", selling_price=20, stock_qty=50, prep_station="kitchen")
+    await _paid(ac, admin, dish["id"], "1", "cash")
+    still_open = await ac.post(
+        "/api/v1/restaurant/orders",
+        json={"service_mode": "takeaway", "payment_method": "cash", "customer_name": "Kofi", "lines": [{"product_id": dish["id"], "quantity": "1"}]},
+        headers=admin,
+    )
+    assert still_open.status_code == 200, still_open.text
+
+    day = (await ac.get("/api/v1/restaurant/reports/day", headers=admin)).json()["data"]
+    assert day["totals"]["orders"] == 1
+    assert day["open_shifts"] == 1 and len(day["open_orders"]) == 1
+    assert day["ready_to_close"] is False
+    shift = next(s for s in day["shifts"] if s["id"] == sid)
+    assert shift["status"] == "open"
+
+    await ac.post(f"/api/v1/restaurant/orders/{still_open.json()['data']['id']}/cancel", headers=admin, json={"reason": "Guest left"})
+    expected = shift["expected_cash"]
+    closed = await ac.post(f"/api/v1/restaurant/till/shift/{sid}/close", headers=admin, json={"counted_cash": expected - 2})
+    assert closed.status_code == 200, closed.text
+    day = (await ac.get("/api/v1/restaurant/reports/day", headers=admin)).json()["data"]
+    assert day["open_shifts"] == 0
+    assert day["cash_variance"] == -2
+    if not day["open_orders"]:
+        assert day["ready_to_close"] is True
+
+    garbage = await ac.get("/api/v1/restaurant/reports/day?date=not-a-date", headers=admin)
+    assert garbage.status_code == 422, garbage.text

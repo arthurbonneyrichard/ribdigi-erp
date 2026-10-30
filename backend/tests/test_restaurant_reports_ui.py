@@ -22,3 +22,13 @@ def test_restaurant_nav_points_reports_at_own_screen():
     assert "['Reports', '/restaurant/reports', 'reports']" in block
     assert "['Profit and loss', '/reports?tab=pnl', 'reports']" in block
     assert "['Reports', '/reports', 'reports']" not in block
+
+
+def test_day_close_screen_and_nav():
+    page = (ROOT / "app/(dashboard)/restaurant/day-close/page.tsx").read_text(encoding="utf-8")
+    assert "/restaurant/reports/day?date=${day}" in page
+    assert "Count the cash and close it" in page and "Take payment or cancel" in page
+    assert "window.print()" in page
+    start = NAV.index("export const RESTAURANT_NAV_GROUPS")
+    block = NAV[start : NAV.index("];", start)]
+    assert "['End of day', '/restaurant/day-close', 'restaurant']" in block

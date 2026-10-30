@@ -569,3 +569,20 @@
   .main .rdesk .rd-docs li > span:nth-child(3),.main .rdesk .rd-moves .desc{display:none}
   .main .rdesk .rd-panel-head .rd-chips{margin-left:0}
 }
+
+/* End of day */
+.main .rdesk .rd-close-status{border-radius:16px;padding:14px 18px;background:var(--rd-wait-tint);color:var(--rd-wait-ink);display:flex;flex-direction:column;gap:6px}
+.main .rdesk .rd-close-status ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-weight:600}
+.main .rdesk .rd-close-status a{color:inherit;font-weight:800}
+.main .rdesk .rd-close-status.ok{background:var(--rd-tint);color:var(--rd-forest)}
+.main .rdesk .rd-bad-text{color:var(--rd-bad-ink) !important}
+.main .rdesk.rd-dayclose .rd-head-actions{flex-wrap:nowrap}
+.main .rdesk .rd-date-pick{width:170px;flex:0 0 auto;min-height:44px;border-radius:12px;border:2px solid var(--rd-line);background:var(--rd-panel);color:var(--rd-ink);padding:0 10px}
+.main .rdesk .rd-sheet-list li{grid-template-columns:minmax(0,1fr) auto 0 110px}
+@media print{
+  .main .rdesk .rd-noprint{display:none !important}
+  .main .rdesk.rd-dayclose{background:#fff;padding:0}
+  .main .rdesk.rd-dayclose .rd-panel,.main .rdesk.rd-dayclose .rd-kpi{box-shadow:none;border:1px solid #ccc;break-inside:avoid}
+  .main .rdesk.rd-dayclose .rd-kpi.hero{background:#fff;color:#000}
+  .main .rdesk.rd-dayclose .rd-kpi.hero span,.main .rdesk.rd-dayclose .rd-kpi.hero small{color:#333}
+}

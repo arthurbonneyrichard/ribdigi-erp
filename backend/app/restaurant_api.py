@@ -1082,6 +1082,20 @@ async def restaurant_reports(
     return _env(await restaurant_svc.reports(db, claims["tenant_id"], user_id=claims.get("sub")))
 
 
+@router.get("/reports/day")
+async def restaurant_day_close(
+    # date ∈ IsoDateQueryValue; omit → today; blank/garbage → **422**.
+    date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    claims=Depends(require_permission("restaurant", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.reports import parse_date
+
+    return _env(
+        await report_svc.day_close(db, claims["tenant_id"], user_id=claims.get("sub"), day=parse_date(date))
+    )
+
+
 @router.get("/reports/period")
 async def restaurant_period_report(
     # Dates ∈ IsoDateQueryValue; omit → the last 7 days; blank/garbage → **422**.

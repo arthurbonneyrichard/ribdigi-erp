@@ -200,3 +200,94 @@ async def period_report(
             key=lambda r: -r["cost"],
         ),
     }
+
+
+async def day_close(db: AsyncSession, tenant_id: str, *, user_id: str | None, day: datetime | None = None) -> dict:
+    """One day on one sheet: takings, each till shift's cash count, refunds, cash spent, waste,
+    and what is still open. Ready to close when every shift is counted and no bill is unpaid."""
+    from sqlalchemy import or_
+
+    from app import restaurant_till as till_svc
+
+    day = day or restaurant_svc._now()
+    period = await period_report(db, tenant_id, user_id=user_id, from_date=day, to_date=day)
+    start = datetime.fromisoformat(period["from_date"])
+    end = start + timedelta(days=1)
+    scope = restaurant_svc._store_clause(
+        m.RestaurantOrder.store_id, await restaurant_svc._allowed_stores(db, tenant_id, user_id)
+    )
+
+    shift_rows = list(
+        (
+            await db.execute(
+                select(m.RestaurantTillShift)
+                .where(
+                    m.RestaurantTillShift.tenant_id == tenant_id,
+                    m.RestaurantTillShift.opened_at < end,
+                    or_(m.RestaurantTillShift.closed_at.is_(None), m.RestaurantTillShift.closed_at >= start),
+                )
+                .order_by(m.RestaurantTillShift.opened_at)
+            )
+        ).scalars()
+    )
+    shifts = [await till_svc.present_shift(db, s) for s in shift_rows]
+
+    open_stmt = select(m.RestaurantOrder).where(
+        m.RestaurantOrder.tenant_id == tenant_id,
+        m.RestaurantOrder.status.in_(tuple(restaurant_svc.OPEN_STATUSES)),
+        m.RestaurantOrder.created_at < end,
+    )
+    if scope is not None:
+        open_stmt = open_stmt.where(scope)
+    open_orders = list((await db.execute(open_stmt)).scalars())
+
+    cash_spent = list(
+        (
+            await db.execute(
+                select(m.Expense).where(
+                    m.Expense.tenant_id == tenant_id,
+                    m.Expense.status == "approved",
+                    m.Expense.payment_method == "cash",
+                    m.Expense.expense_date >= start,
+                    m.Expense.expense_date < end,
+                )
+            )
+        ).scalars()
+    )
+
+    counted_short = sum(float(s["variance"]) for s in shifts if s.get("variance") is not None)
+    open_shifts = [s for s in shifts if s["status"] != "closed"]
+    return {
+        "date": period["from_date"],
+        "totals": period["totals"],
+        "by_payment_method": period["by_payment_method"],
+        "by_staff": period["by_staff"],
+        "top_dishes": period["dishes"][:5],
+        "waste": period["waste"],
+        "shifts": shifts,
+        "cash_variance": money_json(round(counted_short, 2)),
+        "open_shifts": len(open_shifts),
+        "open_orders": [
+            {
+                "id": o.id,
+                "order_number": o.order_number,
+                "customer_name": o.customer_name,
+                "service_mode": o.service_mode,
+                "total_amount": money_json(o.total_amount),
+                "created_at": o.created_at.isoformat() if o.created_at else None,
+            }
+            for o in sorted(open_orders, key=lambda o: o.created_at or start)
+        ],
+        "cash_expenses": [
+            {
+                "id": e.id,
+                "payee": e.payee,
+                "category": e.category,
+                "description": e.description,
+                "amount": money_json(e.amount),
+            }
+            for e in cash_spent
+        ],
+        "cash_expenses_total": money_json(round(sum(float(e.amount or 0) for e in cash_spent), 2)),
+        "ready_to_close": not open_shifts and not open_orders,
+    }

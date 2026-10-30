@@ -196,6 +196,7 @@ export const RESTAURANT_NAV_ITEMS: NavItem[] = [
   ['Waste', '/restaurant?tab=waste', 'restaurant'],
   ['Bills', '/restaurant/bills', 'restaurant'],
   ['Guests', '/restaurant/guests', 'restaurant'],
+  ['End of day', '/restaurant/day-close', 'restaurant'],
   ['Pay suppliers', '/restaurant/payables', 'credit'],
   ['Restaurant till', '/restaurant/till', 'restaurant'],
   ['Ingredients', '/restaurant/ingredients', 'inventory'],
@@ -239,6 +240,7 @@ export const RESTAURANT_NAV_GROUPS: NavGroup[] = [
       ['Restaurant till', '/restaurant/till', 'restaurant'],
       ['Bills', '/restaurant/bills', 'restaurant'],
       ['Guests', '/restaurant/guests', 'restaurant'],
+      ['End of day', '/restaurant/day-close', 'restaurant'],
     ],
   },
   {
