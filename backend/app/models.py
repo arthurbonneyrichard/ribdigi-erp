@@ -3340,3 +3340,161 @@ class RestaurantBooking(Base):
     status: Mapped[str] = mapped_column(String(20), default="requested")
     table_id: Mapped[str | None] = mapped_column(ForeignKey("restaurant_tables.id"), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+# Restaurant front of house: the restaurant till keeps its own shifts, receipts and returns.
+# Retail POS (pos_sessions / transactions / sales_returns) is never written by a restaurant company.
+
+
+class RestaurantTillShift(Base):
+    """Restaurant till shift with cash reconciliation."""
+
+    __tablename__ = "restaurant_till_shifts"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "shift_number", name="uq_restaurant_till_shift_number"),
+        Index(
+            "uq_restaurant_till_shifts_one_open_per_user",
+            "tenant_id",
+            "user_id",
+            unique=True,
+            postgresql_where=text("status = 'open'"),
+            sqlite_where=text("status = 'open'"),
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    shift_number: Mapped[str] = mapped_column(String(50), index=True)
+    status: Mapped[str] = mapped_column(String(20), default="open", index=True)
+    opening_cash: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    expected_cash: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    actual_cash: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    cash_sales: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    cash_in: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    cash_out: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    card_sales: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    other_sales: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    total_sales: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    sale_count: Mapped[int] = mapped_column(Integer, default=0)
+    variance: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    opened_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class RestaurantTillCashMove(Base):
+    """Cash in / cash out against an open restaurant till shift."""
+
+    __tablename__ = "restaurant_till_cash_moves"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    shift_id: Mapped[str] = mapped_column(ForeignKey("restaurant_till_shifts.id"), index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    movement_type: Mapped[str] = mapped_column(String(20), index=True)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    reason: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class RestaurantTillReceipt(Base):
+    """Walk-up sale rung on the restaurant till. Table bills stay on restaurant_orders."""
+
+    __tablename__ = "restaurant_till_receipts"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "receipt_number", name="uq_restaurant_till_receipt_number"),
+        UniqueConstraint("tenant_id", "client_request_id", name="uq_restaurant_till_receipt_request"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    receipt_number: Mapped[str] = mapped_column(String(80), index=True)
+    shift_id: Mapped[str | None] = mapped_column(ForeignKey("restaurant_till_shifts.id"), nullable=True, index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    customer_id: Mapped[str | None] = mapped_column(ForeignKey("parties.id"), nullable=True, index=True)
+    customer_name: Mapped[str | None] = mapped_column(String(180), nullable=True)
+    client_request_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    payment_method: Mapped[str] = mapped_column(String(40), default="cash")
+    subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    discount_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    status: Mapped[str] = mapped_column(String(30), default="completed", index=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class RestaurantTillReceiptLine(Base):
+    __tablename__ = "restaurant_till_receipt_lines"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    receipt_id: Mapped[str] = mapped_column(ForeignKey("restaurant_till_receipts.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    name: Mapped[str] = mapped_column(String(200), default="")
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    discount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
+    line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+
+
+class RestaurantTillPayment(Base):
+    """Tender line on a restaurant till receipt (split payments)."""
+
+    __tablename__ = "restaurant_till_payments"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    receipt_id: Mapped[str] = mapped_column(ForeignKey("restaurant_till_receipts.id"), index=True)
+    payment_method: Mapped[str] = mapped_column(String(40), default="cash")
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    reference: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    liquid_account_id: Mapped[str | None] = mapped_column(ForeignKey("accounts.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class RestaurantTillReturn(Base):
+    """Return of a restaurant till receipt. Posted in one step."""
+
+    __tablename__ = "restaurant_till_returns"
+    __table_args__ = (UniqueConstraint("tenant_id", "return_number", name="uq_restaurant_till_return_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    return_number: Mapped[str] = mapped_column(String(50), index=True)
+    receipt_id: Mapped[str] = mapped_column(ForeignKey("restaurant_till_receipts.id"), index=True)
+    shift_id: Mapped[str | None] = mapped_column(ForeignKey("restaurant_till_shifts.id"), nullable=True, index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    customer_id: Mapped[str | None] = mapped_column(ForeignKey("parties.id"), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(30), default="posted", index=True)
+    reason: Mapped[str] = mapped_column(String(80), default="other")
+    subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tax_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    total_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    refund_payment_method: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    refunded_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    posted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class RestaurantTillReturnLine(Base):
+    __tablename__ = "restaurant_till_return_lines"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    return_id: Mapped[str] = mapped_column(ForeignKey("restaurant_till_returns.id"), index=True)
+    receipt_line_id: Mapped[str | None] = mapped_column(
+        ForeignKey("restaurant_till_receipt_lines.id"), nullable=True, index=True
+    )
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
+    line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    restock: Mapped[bool] = mapped_column(Boolean, default=True)
