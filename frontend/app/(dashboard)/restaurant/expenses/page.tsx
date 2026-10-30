@@ -29,6 +29,7 @@ const FREQUENCY: Record<string, string> = { daily: 'Every day', weekly: 'Every w
 // Ingredients are bought under Purchasing.
 const STARTER_CATEGORIES: [string, string][] = [
   ['GAS', 'Gas and fuel'],
+  ['STAFFMEAL', 'Staff meals'],
   ['REPAIR', 'Repairs'],
   ['CLEAN', 'Cleaning'],
   ['PACK', 'Packaging'],

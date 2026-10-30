@@ -53,3 +53,10 @@ def test_restaurant_nav_uses_own_stock_screens():
 def test_stock_rows_styled_inside_desk_scope():
     assert ".main .rdesk .rd-stock-row{" in CSS
     assert ".main .rdesk .rd-po-line{" in CSS
+
+
+def test_market_run_buys_receives_and_pays_in_one_step():
+    assert "function MarketRunSheet" in BUY
+    assert "tax_rate: 0" in BUY
+    assert "`/suppliers/${seller.id}/payments`" in BUY and "purchase_order_id: po.id" in BUY
+    assert "Stopped while ${step}" in BUY

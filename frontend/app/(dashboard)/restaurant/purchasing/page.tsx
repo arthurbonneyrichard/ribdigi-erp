@@ -19,6 +19,7 @@ type Sheet =
   | { kind: 'new-order'; lines: Line[]; supplierId?: string }
   | { kind: 'order'; po: Row }
   | { kind: 'add-supplier' }
+  | { kind: 'market' }
   | null;
 
 const OPEN = new Set(['draft', 'sent', 'partially_received']);
@@ -119,6 +120,11 @@ export default function RestaurantPurchasingPage() {
         </div>
         <div className="rd-head-actions">
           <Link className="rd-linkish" href="/restaurant/ingredients">← Stock</Link>
+          {tab === 'orders' ? (
+            <button type="button" aria-label="Record a market run" onClick={() => setSheet({ kind: 'market' })}>
+              Market run
+            </button>
+          ) : null}
           {tab === 'orders' ? (
             <button type="button" className="rd-primary" aria-label="New supplier order" onClick={() => startOrder(false)}>
               + New order
@@ -266,6 +272,7 @@ export default function RestaurantPurchasingPage() {
         <OrderSheet po={sheet.po} supplier={supplierName[sheet.po.supplier_id] || 'Supplier'} productName={productName} onClose={() => setSheet(null)} onDone={done} />
       ) : null}
       {sheet?.kind === 'add-supplier' ? <SupplierSheet onClose={() => setSheet(null)} onDone={done} /> : null}
+      {sheet?.kind === 'market' ? <MarketRunSheet suppliers={suppliers} ingredients={ingredients} onClose={() => setSheet(null)} onDone={done} /> : null}
     </div>
   );
 }
@@ -583,6 +590,172 @@ function OrderSheet({
               ) : null}
             </>
           )}
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+/**
+ * A market run: ingredients bought and paid for on the spot. Recorded as a supplier order that is
+ * sent, delivered and paid in one go, so stock, cost and cash all move together. No VAT on market buys.
+ */
+function MarketRunSheet({
+  suppliers,
+  ingredients,
+  onClose,
+  onDone,
+}: {
+  suppliers: Row[];
+  ingredients: Row[];
+  onClose: () => void;
+  onDone: (message: string) => Promise<void>;
+}) {
+  const [where, setWhere] = useState('Market');
+  const [method, setMethod] = useState('cash');
+  const [lines, setLines] = useState<Line[]>([blankLine()]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const total = lines.reduce((s, l) => s + Number(l.quantity || 0) * Number(l.unit_price || 0), 0);
+
+  function setLine(index: number, patch: Partial<Line>) {
+    setLines((prev) =>
+      prev.map((l, i) => {
+        if (i !== index) return l;
+        const next = { ...l, ...patch };
+        if (patch.product_id && !l.unit_price) {
+          const cost = ingredients.find((p) => p.id === patch.product_id)?.cost_price;
+          if (cost) next.unit_price = String(cost);
+        }
+        return next;
+      }),
+    );
+  }
+
+  async function save() {
+    const ready = lines.filter((l) => l.product_id && Number(l.quantity) > 0);
+    if (!where.trim()) return setError('Say where you bought it.');
+    if (!ready.length) return setError('Add at least one ingredient with a quantity.');
+    if (ready.some((l) => !(Number(l.unit_price) > 0))) return setError('Enter what each ingredient cost.');
+    setBusy(true);
+    setError('');
+    let step = 'saving the seller';
+    try {
+      let seller = suppliers.find((s) => String(s.name).trim().toLowerCase() === where.trim().toLowerCase());
+      if (!seller) seller = (await api('/suppliers', { method: 'POST', body: JSON.stringify({ name: where.trim() }) }))?.data;
+      if (!seller) throw new Error('The seller could not be saved.');
+      step = 'saving the purchase';
+      const po = (
+        await api('/purchasing/orders', {
+          method: 'POST',
+          body: JSON.stringify({
+            supplier_id: seller.id,
+            notes: 'Market run',
+            items: ready.map((l) => ({ product_id: l.product_id, quantity: Number(l.quantity), unit_price: Number(l.unit_price), tax_rate: 0 })),
+          }),
+        })
+      )?.data;
+      step = `putting ${po.po_number} into stock`;
+      await api(`/purchasing/orders/${po.id}/issue`, { method: 'POST' });
+      await api('/purchasing/grn', {
+        method: 'POST',
+        body: JSON.stringify({
+          purchase_order_id: po.id,
+          notes: 'Market run',
+          items: (po.items as Row[]).map((i) => ({ po_item_id: i.id, received_qty: Number(i.quantity), accepted_qty: Number(i.quantity) })),
+        }),
+      });
+      step = `recording the payment for ${po.po_number}`;
+      await api(`/suppliers/${seller.id}/payments`, {
+        method: 'POST',
+        body: JSON.stringify({
+          supplier_id: seller.id,
+          amount: Number(po.total_amount),
+          payment_method: method,
+          purchase_order_id: po.id,
+          reference: 'Market run',
+        }),
+      });
+      await onDone(`Market run of ${money(po.total_amount)} is in stock and paid`);
+    } catch (err) {
+      setError(`Stopped while ${step}: ${problem(err)}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rd-scrim" role="dialog" aria-modal="true" aria-label="Market run" onClick={onClose}>
+      <aside className="rd-drawer" onClick={(e) => e.stopPropagation()}>
+        <div className="rd-drawer-head">
+          <div>
+            <h2>Market run</h2>
+            <p>Ingredients bought and paid for on the spot. They go into stock and the money comes off your cash.</p>
+          </div>
+          <button type="button" className="rd-link" onClick={onClose}>Close</button>
+        </div>
+        <div className="rd-form-grid">
+          <label>
+            <span>Bought from</span>
+            <input aria-label="Bought from" list="rd-market-sellers" value={where} onChange={(e) => setWhere(e.target.value)} />
+            <datalist id="rd-market-sellers">
+              {suppliers.map((s) => (
+                <option key={s.id} value={s.name} />
+              ))}
+            </datalist>
+          </label>
+          <div>
+            <span className="rd-field-label">Paid with</span>
+            <div className="rd-chips" role="radiogroup" aria-label="Market run paid with">
+              {([['cash', 'Cash'], ['mobile_money', 'MoMo']] as const).map(([key, label]) => (
+                <button key={key} type="button" role="radio" aria-checked={method === key} className={method === key ? 'on' : ''} onClick={() => setMethod(key)}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="rd-po-lines">
+          <div className="rd-po-head">
+            <span>Ingredient</span>
+            <span>Qty</span>
+            <span>Cost each</span>
+            <span className="sum">Line</span>
+            <span />
+          </div>
+          {lines.map((line, i) => (
+            <div key={i} className="rd-po-line">
+              <select aria-label={`Market ingredient ${i + 1}`} value={line.product_id} onChange={(e) => setLine(i, { product_id: e.target.value })}>
+                <option value="">Pick an ingredient</option>
+                {ingredients.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                    {p.unit_name ? ` (${p.unit_name})` : ''}
+                  </option>
+                ))}
+              </select>
+              <input aria-label={`Market quantity ${i + 1}`} inputMode="decimal" value={line.quantity} onChange={(e) => setLine(i, { quantity: e.target.value.replace(/[^0-9.]/g, '') })} />
+              <input aria-label={`Market cost each ${i + 1}`} inputMode="decimal" value={line.unit_price} onChange={(e) => setLine(i, { unit_price: e.target.value.replace(/[^0-9.]/g, '') })} />
+              <span className="sum">{money(Number(line.quantity || 0) * Number(line.unit_price || 0))}</span>
+              <button type="button" aria-label={`Remove market line ${i + 1}`} onClick={() => setLines((prev) => (prev.length > 1 ? prev.filter((_, j) => j !== i) : [blankLine()]))}>
+                ×
+              </button>
+            </div>
+          ))}
+          <button type="button" className="rd-link" onClick={() => setLines((prev) => [...prev, blankLine()])}>
+            + Add ingredient
+          </button>
+        </div>
+        <div className="rd-po-total">
+          <span>Paid</span>
+          <strong>{money(total)}</strong>
+        </div>
+        {error ? <div className="rd-error" role="alert">{error}</div> : null}
+        <div className="rd-actions">
+          <button type="button" onClick={onClose}>Cancel</button>
+          <button type="button" className="rd-primary" aria-label="Save market run" disabled={busy} onClick={() => void save()}>
+            {busy ? 'Saving…' : `Save ${money(total)}`}
+          </button>
         </div>
       </aside>
     </div>
