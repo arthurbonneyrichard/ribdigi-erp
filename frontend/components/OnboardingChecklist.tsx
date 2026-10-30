@@ -26,6 +26,8 @@ type Checklist = {
   dismiss_threshold_pct: number;
 };
 
+const EXPANDED_KEY = 'ribdigi.onboarding.expanded';
+
 export default function OnboardingChecklist({
   canManage,
 }: {
@@ -33,10 +35,33 @@ export default function OnboardingChecklist({
 }) {
   const [data, setData] = useState<Checklist | null>(null);
   const pathname = usePathname() || '';
-  const onDashboard = pathname.startsWith('/dashboard');
+  // Each industry's home page: the full checklist shows there; elsewhere it stays a slim bar.
+  const onDashboard = pathname.startsWith('/dashboard') || pathname === '/restaurant' || pathname === '/hotel';
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem(EXPANDED_KEY);
+    } catch {
+      /* private window: fall back to the page default */
+    }
+    const homeTab = typeof window !== 'undefined' && !new URLSearchParams(window.location.search).get('tab');
+    setExpanded(saved === '1' ? true : saved === '0' ? false : onDashboard && homeTab);
+  }, [pathname, onDashboard]);
+
+  function toggleExpanded() {
+    setExpanded((v) => {
+      try {
+        localStorage.setItem(EXPANDED_KEY, v ? '0' : '1');
+      } catch {
+        /* ignore */
+      }
+      return !v;
+    });
+  }
 
   const load = useCallback(async () => {
     try {
@@ -120,7 +145,7 @@ export default function OnboardingChecklist({
         </span>
         <button
           type="button"
-          onClick={() => setExpanded((v) => !v)}
+          onClick={toggleExpanded}
           disabled={busy}
           aria-label={expanded ? 'Collapse onboarding checklist' : 'Expand onboarding checklist'}
         >
@@ -219,7 +244,7 @@ export default function OnboardingChecklist({
           ))}
         </ul>
       )}
-      {canManage && !data.dismissible && (
+      {expanded && canManage && !data.dismissible && (
         <p className="muted" style={{ margin: 0, fontSize: 12 }}>
           Dismiss available after {data.dismiss_threshold_pct}% complete (skip counts).
         </p>
