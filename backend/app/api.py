@@ -17619,6 +17619,7 @@ async def ai_customer_assist(
 
 @api.post("/ai/documents/analyze")
 async def ai_documents_analyze(
+    request: Request,
     file: UploadFile = File(...),
     # None default (not "auto"): empty Form "" must 422, not silently become auto.
     document_type: Annotated[AiDocumentTypeValue | None, Form()] = None,
@@ -17628,6 +17629,13 @@ async def ai_documents_analyze(
     db: AsyncSession = Depends(get_db),
 ):
     """BR-21.8 rule-based document OCR + party/PO match + discrepancy flags."""
+    # FastAPI treats an empty form field as missing; a sent-but-blank document_type is still an error.
+    form = await request.form()
+    if "document_type" in form and not str(form.get("document_type") or "").strip():
+        raise HTTPException(
+            status_code=422,
+            detail=[{"loc": ["body", "document_type"], "msg": "document_type must not be blank", "type": "value_error"}],
+        )
     data = await ai_documents_svc.analyze_upload(
         db,
         tenant_id=claims["tenant_id"],
