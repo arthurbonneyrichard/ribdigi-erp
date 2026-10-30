@@ -2106,7 +2106,7 @@ export default function RestaurantPage() {
                       <strong>{row.order_number || 'Order'}</strong>
                       <small>{orderWord(row.station || 'kitchen')}</small>
                       <span className={`rd-pill ${row.status === 'ready' ? '' : 'wait'}`}>{orderWord(row.status)}</span>
-                      <b>{(row.items || []).length} items</b>
+                      <b>{(row.items || []).length} {(row.items || []).length === 1 ? 'item' : 'items'}</b>
                     </Link>
                   </li>
                 ))}

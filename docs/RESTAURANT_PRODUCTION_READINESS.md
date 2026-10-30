@@ -26,6 +26,7 @@ Restaurant front of house is its own desk, isolated from retail and hotel (`REST
 - **Orders:** a live board (not sent yet, in the kitchen, ready to serve) with wait timers, allergy and rush flags, and one-tap send, add dishes, take payment, cancel or void. Seat, course and pager details stay in the full order editor.
 - **Bills:** takings by day and payment method, refunds, and every till shift with its count.
 - **Guests:** built from orders and bookings: visits, spend, favourite dish, allergy, bill history.
+- **Back-of-house desks** (redesigned 30 Oct): Dashboard (quick desks, today's figures, alert pills), Tables and floor (status floor, one Save per table), Website and booking (website card, bookings as time cards, seat in one step), Kitchen (kitchen display: tickets by age, Start / Ready per dish, All ready), Recipes (dishes with no recipe, one Save per recipe), Waste (reason chips, history). Each desk refreshes only what it shows.
 - **Website** (`/order/<slug>` and `/book/<slug>`, one page): the menu with photos and descriptions, a bag, checkout for pickup or delivery (name, phone, address and area, pickup time, cash / Mobile Money / card on collection, allergy, kitchen note), live order tracking (received, in the kitchen, ready, done), and table booking with an optional "have my food ready" pre-order. Website orders show on the Orders board marked Online; bookings land on the booking desk. Turned on under **Website and booking** (`GET|POST /public/restaurant-site/<slug>…`, own rate-limit bucket).
 
 ## Known limits to tell customers
