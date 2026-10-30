@@ -8372,3 +8372,8 @@ input[type=file]::file-selector-button:hover{border-color:var(--brand)}
 .rest-site-card a{color:var(--deep-green, #006B2E);font-weight:700}
 .rest-site-status{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .rest-site-status li{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+/* Restaurant desk save / error notices */
+.rest-flash{display:inline-flex;align-items:center;gap:8px;margin:4px 0 12px;padding:10px 16px;border-radius:12px;background:var(--forest);color:#fff;font-weight:700;cursor:pointer}
+.rest-flash::before{content:'✓';color:var(--brand-light)}
+.rest-flash.is-bad{background:#FCE7E2;color:#8A2A12;cursor:default}
+.rest-flash.is-bad::before{content:'!';color:#8A2A12}

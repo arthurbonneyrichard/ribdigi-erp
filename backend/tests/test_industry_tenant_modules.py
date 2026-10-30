@@ -730,8 +730,11 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "['AI Assistant', '/ai', 'ai']" in restaurant_settings
     hotel_settings = nav.split("id: 'hotel-settings'", 1)[1].split("export const RESTAURANT", 1)[0]
     assert "['AI Assistant', '/ai', 'ai']" in hotel_settings
-    assert "loadDesk('/restaurant/waste')" in restaurant
-    assert "loadDesk('/restaurant/till/shift')" in restaurant
+    # Everything loads once; the 15 s refresh only fetches the live lists plus the open desk's extras.
+    all_extras = restaurant.split("const ALL_EXTRAS = [", 1)[1].split("];", 1)[0]
+    assert "'/restaurant/waste'" in all_extras and "'/restaurant/till/shift'" in all_extras
+    assert "DESK_EXTRAS[tab]" in restaurant and "refresh(true)" in restaurant
+    assert "document.hidden" in restaurant
     assert "/pos/sessions/current" not in restaurant
     assert "spoilage: 'Spoilage'" in restaurant
     assert "Walk-in or phone request" in restaurant
@@ -1003,10 +1006,12 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "No servings." in recipes_desk
     assert "No recipes yet." in recipes_desk
     assert "Restaurant recipes" in recipes_desk
-    assert 'className="rest-order-form" onSubmit={saveStation}' in recipes_desk
-    assert 'className="rest-order-form" onSubmit={createRecipe}' in recipes_desk
+    assert 'onSubmit={saveStation}' in recipes_desk
+    assert "await createRecipe(event);" in recipes_desk
     assert 'className="rest-order-list" aria-label="Restaurant recipes"' in recipes_desk
-    assert 'className="rest-order-form" onSubmit={saveWaste}' in restaurant
+    assert 'onSubmit={saveWaste}' in restaurant
+    # Recipes and waste: one Save per recipe; edit opens only for the chosen recipe.
+    assert "editingRecipe === row.id" in recipes_desk and "Save leftover cook time" not in recipes_desk
     assert "Leftover recipe name ${row.name}" in recipes_desk
     assert "Leftover recipe line quantity ${line.name} on ${row.name}" in recipes_desk
     assert "Remove leftover recipe line ${line.name} on ${row.name}" in recipes_desk

@@ -273,6 +273,9 @@ export default function RestaurantPage() {
   const [leftoverBookings, setLeftoverBookings] = useState<Record<string, { guest_name: string; phone: string; party_size: string; booked_for: string; notes: string }>>({});
   const [leftoverTurns, setLeftoverTurns] = useState<Record<string, string>>({});
   const [bookingFilter, setBookingFilter] = useState('upcoming');
+  const [addingRecipe, setAddingRecipe] = useState(false);
+  const [editingRecipe, setEditingRecipe] = useState('');
+  const [retiringRecipe, setRetiringRecipe] = useState('');
   const [addingBooking, setAddingBooking] = useState(false);
   const [editingBooking, setEditingBooking] = useState('');
   const [cancellingBooking, setCancellingBooking] = useState('');
@@ -292,7 +295,95 @@ export default function RestaurantPage() {
   const heardTickets = useRef<Set<string> | null>(null);
   const kitchenAudio = useRef<AudioContext | null>(null);
 
-  async function refresh() {
+  // What each desk shows on top of the live lists. The full set loads once when the page opens;
+  // after that a refresh (every 15 s, and after each button) only fetches the live lists plus the
+  // open desk's extras, so a busy kitchen screen stays well inside the request limit.
+  const DESK_EXTRAS: Record<string, string[]> = {
+    dashboard: ['/products', '/restaurant/recipes', '/restaurant/booking-link', '/restaurant/bookings', '/restaurant/till/shift'],
+    tables: ['/stores', '/restaurant/floor-places'],
+    booking: ['/restaurant/booking-link', '/restaurant/bookings', '/restaurant/online-orders'],
+    kitchen: ['/restaurant/kitchen-sound', '/restaurant/clock'],
+    recipes: ['/products', '/restaurant/recipes', '/restaurant/sold-out'],
+    waste: ['/products', '/restaurant/recipes', '/warehouses', '/restaurant/waste'],
+  };
+  const ALL_EXTRAS = [
+    '/products',
+    '/restaurant/booking-link',
+    '/restaurant/bookings',
+    '/restaurant/modifiers',
+    '/restaurant/recipes',
+    '/restaurant/waste',
+    '/restaurant/till/shift',
+    '/stores',
+    '/warehouses',
+    '/restaurant/delivery-zones',
+    '/restaurant/online-orders',
+    '/restaurant/floor-places',
+    '/restaurant/kitchen-sound',
+    '/restaurant/clock',
+    '/restaurant/sold-out',
+    '/restaurant/service-charge',
+  ];
+
+  function applyDesk(path: string, data: any) {
+    switch (path) {
+      case '/products':
+        setProducts(Array.isArray(data) ? data : data?.items || []);
+        break;
+      case '/restaurant/waste':
+        setWasteRows(Array.isArray(data) ? data : []);
+        break;
+      case '/restaurant/modifiers':
+        setModifierGroups(Array.isArray(data) ? data : []);
+        break;
+      case '/restaurant/recipes':
+        setRecipes(Array.isArray(data) ? data : []);
+        break;
+      case '/restaurant/till/shift':
+        setTillSession(data || null);
+        break;
+      case '/stores':
+        setStores(Array.isArray(data) ? data : data?.items || []);
+        break;
+      case '/warehouses':
+        setWarehouses(Array.isArray(data) ? data : data?.items || []);
+        break;
+      case '/restaurant/booking-link':
+        setBookingLink(data || null);
+        if (data?.hostname) setLinkForm({ hostname: data.hostname, link_kind: data.link_kind || 'existing' });
+        break;
+      case '/restaurant/bookings':
+        setBookings(Array.isArray(data) ? data : []);
+        break;
+      case '/restaurant/delivery-zones':
+        setDeliveryZones(Array.isArray(data) ? data : []);
+        break;
+      case '/restaurant/online-orders':
+        setOnlineOrders(data && typeof data === 'object' ? data : { open: false });
+        break;
+      case '/restaurant/floor-places':
+        setFloorPlaces(Array.isArray(data) ? data : []);
+        break;
+      case '/restaurant/kitchen-sound':
+        setKitchenSound({ on: data?.on === true });
+        break;
+      case '/restaurant/clock':
+        setClock({ open: Array.isArray(data?.open) ? data.open : [], mine_open: data?.mine_open === true });
+        break;
+      case '/restaurant/sold-out':
+        setSoldOut(Array.isArray(data?.items) ? data.items : []);
+        break;
+      case '/restaurant/service-charge': {
+        const servicePercent = Number(data?.percent || 0);
+        setServiceDraft(servicePercent > 0 ? String(servicePercent) : '');
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  async function refresh(everything = false) {
     const [sum, tableRes, orderRes, kitchenRes] = await Promise.all([
       api('/restaurant/summary'),
       api('/restaurant/tables'),
@@ -303,51 +394,10 @@ export default function RestaurantPage() {
     setTables(tableRes?.data || []);
     setOrders(orderRes?.data || []);
     setKitchen(kitchenRes?.data || []);
-    const [productRes, linkRes, bookingRes, modifierRes, recipeRes, wasteRes, tillRes, storeRes, warehouseRes, zoneRes, onlineRes, floorRes, soundRes, clockRes, soldOutRes, serviceRes] = await Promise.all([
-      loadDesk('/products'),
-      loadDesk('/restaurant/booking-link'),
-      loadDesk('/restaurant/bookings'),
-      loadDesk('/restaurant/modifiers'),
-      loadDesk('/restaurant/recipes'),
-      loadDesk('/restaurant/waste'),
-      loadDesk('/restaurant/till/shift'),
-      loadDesk('/stores'),
-      loadDesk('/warehouses'),
-      loadDesk('/restaurant/delivery-zones'),
-      loadDesk('/restaurant/online-orders'),
-      loadDesk('/restaurant/floor-places'),
-      loadDesk('/restaurant/kitchen-sound'),
-      loadDesk('/restaurant/clock'),
-      loadDesk('/restaurant/sold-out'),
-      loadDesk('/restaurant/service-charge'),
-    ]);
-    const catalog = productRes?.data;
-    setProducts(Array.isArray(catalog) ? catalog : catalog?.items || []);
-    setWasteRows(Array.isArray(wasteRes?.data) ? wasteRes.data : []);
-    setModifierGroups(Array.isArray(modifierRes?.data) ? modifierRes.data : []);
-    setRecipes(Array.isArray(recipeRes?.data) ? recipeRes.data : []);
-    setTillSession(tillRes?.data || null);
-    const storeCatalog = storeRes?.data;
-    setStores(Array.isArray(storeCatalog) ? storeCatalog : storeCatalog?.items || []);
-    const warehouseCatalog = warehouseRes?.data;
-    setWarehouses(Array.isArray(warehouseCatalog) ? warehouseCatalog : warehouseCatalog?.items || []);
-    const link = linkRes?.data || null;
-    setBookingLink(link);
-    setBookings(Array.isArray(bookingRes?.data) ? bookingRes.data : []);
-    setDeliveryZones(Array.isArray(zoneRes?.data) ? zoneRes.data : []);
-    setOnlineOrders(onlineRes?.data && typeof onlineRes.data === 'object' ? onlineRes.data : { open: false });
-    setFloorPlaces(Array.isArray(floorRes?.data) ? floorRes.data : []);
-    setKitchenSound({ on: soundRes?.data?.on === true });
-    setClock({
-      open: Array.isArray(clockRes?.data?.open) ? clockRes.data.open : [],
-      mine_open: clockRes?.data?.mine_open === true,
-    });
-    setSoldOut(Array.isArray(soldOutRes?.data?.items) ? soldOutRes.data.items : []);
-    const servicePercent = Number(serviceRes?.data?.percent || 0);
-    setServiceDraft(servicePercent > 0 ? String(servicePercent) : '');
-    if (link?.hostname) {
-      setLinkForm({ hostname: link.hostname, link_kind: link.link_kind || 'existing' });
-    }
+    // The full order editor uses nearly everything, so it keeps the full reload.
+    const paths = everything || tab === 'orders' ? ALL_EXTRAS : DESK_EXTRAS[tab] || [];
+    const results = await Promise.all(paths.map((path) => loadDesk(path)));
+    paths.forEach((path, index) => applyDesk(path, results[index]?.data));
   }
 
   useEffect(() => {
@@ -360,7 +410,7 @@ export default function RestaurantPage() {
           setError('Restaurant is not available for this company.');
           return;
         }
-        return refresh();
+        return refresh(true);
       })
       .catch((err) => setError(err.message || 'Could not load restaurant'));
   }, []);
@@ -368,10 +418,24 @@ export default function RestaurantPage() {
   useEffect(() => {
     if (!restaurantDesk) return undefined;
     const timer = window.setInterval(() => {
+      // A hidden browser tab does not need fresh lists.
+      if (typeof document !== 'undefined' && document.hidden) return;
       void refresh();
     }, 15000);
     return () => window.clearInterval(timer);
-  }, [restaurantDesk]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restaurantDesk, tab]);
+
+  // Opening another desk fetches what it shows straight away.
+  const firstTab = useRef(true);
+  useEffect(() => {
+    if (firstTab.current) {
+      firstTab.current = false;
+      return;
+    }
+    if (restaurantDesk) void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
 
   useEffect(() => {
     const ids = kitchen.map((row) => String(row.id));
@@ -614,49 +678,23 @@ export default function RestaurantPage() {
         ingredient_id: line.ingredient_id,
         quantity: leftoverRecipeLineQuantities[`${row.id}:${line.ingredient_id}`] ?? String(line.quantity ?? '0'),
       }));
+      // One Save: name, ingredients, cook time and servings (the last two only when changed).
+      const body: Record<string, unknown> = { name: leftoverName, lines: leftoverLines };
+      const cook = (leftoverCookTimes[row.id] ?? (row.cook_time ? String(row.cook_time) : '')).trim();
+      if ((cook ? Number(cook) : null) !== (row.cook_time ?? null)) body.cook_time = cook ? Number(cook) : null;
+      const serves = (leftoverServings[row.id] ?? (row.servings ? String(row.servings) : '')).trim();
+      if ((serves ? Number(serves) : null) !== (row.servings ?? null)) body.servings = serves ? Number(serves) : null;
       await api(`/restaurant/recipes/${row.id}`, {
         method: 'PATCH',
-        body: JSON.stringify({
-          name: leftoverName,
-          lines: leftoverLines,
-        }),
+        body: JSON.stringify(body),
       });
       setMessage(`Saved leftover recipe ${leftoverName}`);
+      setEditingRecipe('');
       setLeftoverRecipeAdded((current) => ({ ...current, [row.id]: [] }));
       setLeftoverRecipeRemoved((current) => ({ ...current, [row.id]: [] }));
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the leftover recipe');
-    }
-  }
-
-  async function saveLeftoverCookTime(row: Row) {
-    setError('');
-    const text = (leftoverCookTimes[row.id] ?? (row.cook_time ? String(row.cook_time) : '')).trim();
-    try {
-      await api(`/restaurant/recipes/${row.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ cook_time: text ? Number(text) : null }),
-      });
-      setMessage(`Saved leftover cook time on ${row.name}`);
-      await refresh();
-    } catch (err: any) {
-      setError(err.message || 'Could not save the cook time');
-    }
-  }
-
-  async function saveLeftoverServings(row: Row) {
-    setError('');
-    const text = (leftoverServings[row.id] ?? (row.servings ? String(row.servings) : '')).trim();
-    try {
-      await api(`/restaurant/recipes/${row.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ servings: text ? Number(text) : null }),
-      });
-      setMessage(`Saved leftover servings on ${row.name}`);
-      await refresh();
-    } catch (err: any) {
-      setError(err.message || 'Could not save the servings');
     }
   }
 
@@ -1678,6 +1716,7 @@ export default function RestaurantPage() {
       setRecipeLines([]);
       setRecipeForm((current) => ({ ...current, product_id: '', ingredient_id: '', quantity: '1', name: '', cook_time: '', servings: '' }));
       setMessage('Recipe saved');
+      setAddingRecipe(false);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save recipe');
@@ -1924,8 +1963,12 @@ export default function RestaurantPage() {
           subtitle={(TAB_HEADINGS[tab] || TAB_HEADINGS.orders)[1]}
         />
       ) : null}
-      {error && <p role="alert">{error}</p>}
-      {message && <p>{message}</p>}
+      {error && <p className="rest-flash is-bad" role="alert">{error}</p>}
+      {message && (
+        <p className="rest-flash" role="status" onClick={() => setMessage('')}>
+          {message}
+        </p>
+      )}
       {restaurantDesk && tab === 'dashboard' && !summary && !error ? (
         <p className="empty">Loading restaurant totals…</p>
       ) : null}
@@ -4174,284 +4217,444 @@ export default function RestaurantPage() {
         </section>
       )}
       {restaurantDesk && tab === 'recipes' && (
-        <section className="card">
-          <h2>Recipes</h2>
-          <form className="rest-order-form" onSubmit={saveStation}>
-            <label>
-              <span>Menu item</span>
-            <select aria-label="Restaurant menu station item" value={stationForm.product_id} onChange={(e) => setStationForm({ ...stationForm, product_id: e.target.value })}>
-              <option value="">Menu item</option>
-              {products.filter((row) => !recipeIngredientIds.has(row.id) || recipeMenuIds.has(row.id)).map((row) => (
-                <option key={row.id} value={row.id}>{menuLabel(row)}</option>
-              ))}
-            </select>
-            </label>
-            <label>
-              <span>Station</span>
-            <select aria-label="Restaurant menu station" value={stationForm.station} onChange={(e) => setStationForm({ ...stationForm, station: e.target.value })}>
-              <option value="kitchen">Kitchen</option>
-              <option value="bar">Bar</option>
-            </select>
-            </label>
-            <button type="submit" aria-label="Save restaurant menu station">Save station</button>
-          </form>
-          <form className="rest-order-form" onSubmit={createRecipe}>
-            <label>
-              <span>Name</span>
-            <input aria-label="Restaurant recipe name" value={recipeForm.name} onChange={(e) => setRecipeForm({ ...recipeForm, name: e.target.value })} />
-            </label>
-            <label>
-              <span>Menu item</span>
-            <select aria-label="Restaurant recipe menu item" value={recipeForm.product_id} onChange={(e) => setRecipeForm({ ...recipeForm, product_id: e.target.value })} required>
-              <option value="">Menu item</option>
-              {menuItems.map((row) => (
-                <option key={row.id} value={row.id}>{menuLabel(row)}</option>
-              ))}
-            </select>
-            </label>
-            <label>
-              <span>Ingredient</span>
-            <select aria-label="Restaurant recipe ingredient" value={recipeForm.ingredient_id} onChange={(e) => setRecipeForm({ ...recipeForm, ingredient_id: e.target.value })}>
-              <option value="">Ingredient</option>
-              {ingredientItems.map((row) => (
-                <option key={row.id} value={row.id}>{row.name}</option>
-              ))}
-            </select>
-            </label>
-            <label>
-              <span>Quantity</span>
-            <input aria-label="Restaurant recipe quantity" value={recipeForm.quantity} onChange={(e) => setRecipeForm({ ...recipeForm, quantity: e.target.value })} />
-            </label>
-            <label>
-              <span>Cook time</span>
-            <input aria-label="Restaurant recipe cook time" value={recipeForm.cook_time} onChange={(e) => setRecipeForm({ ...recipeForm, cook_time: e.target.value })} />
-            </label>
-            <label>
-              <span>Servings</span>
-            <input aria-label="Restaurant recipe servings" value={recipeForm.servings} onChange={(e) => setRecipeForm({ ...recipeForm, servings: e.target.value })} />
-            </label>
-            <button type="button" aria-label="Add restaurant ingredient" onClick={addRecipeLine}>Add ingredient</button>
-            {recipeLines.length > 0 ? (
-              <ul aria-label="Restaurant recipe lines">
-                {recipeLines.map((line, index) => (
-                  <li key={`${line.ingredient_id}-${index}`}>
-                    {line.quantity} × {products.find((row) => row.id === line.ingredient_id)?.name || 'Ingredient'}
-                    <button
-                      type="button"
-                      aria-label={`Remove ingredient ${index + 1}`}
-                      onClick={() => setRecipeLines((current) => current.filter((_, item) => item !== index))}
-                    >
-                      Remove
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-            <button type="submit" aria-label="Save restaurant recipe">Save recipe</button>
-          </form>
-          {recipes.length ? (
-            <ul className="rest-order-list" aria-label="Restaurant recipes">
-              {recipes.map((row) => (
-                <li key={row.id} className="rest-order">
-                  <div className="rest-order-head">
-                    <strong>{row.name}</strong>
-                    {scanFacts([
-                      ['Menu item', row.menu_item],
-                      ['Station', orderWord(row.station)],
-                      ['Cook time', row.cook_time ? `${row.cook_time} min` : 'No cook time.'],
-                      ['Servings', row.servings ? (Number(row.servings) === 1 ? '1 serving' : `${row.servings} servings`) : 'No servings.'],
-                    ])}
-                  </div>
-                  <div className="rest-order-line-fields">
-                  <label>
-                    <span>Name</span>
-                  <input
-                    aria-label={`Leftover recipe name ${row.name}`}
-                    value={leftoverRecipeNames[row.id] ?? String(row.name ?? '')}
-                    onChange={(e) => setLeftoverRecipeNames((current) => ({ ...current, [row.id]: e.target.value }))}
-                  />
-                  </label>
-                  </div>
-                  <div className="rest-order-actions">
-                  <button type="button" aria-label={`Save leftover recipe ${row.name}`} onClick={() => saveLeftoverRecipe(row)}>
-                    Save recipe
-                  </button>
-                  <label>
-                    <span>Cook time</span>
-                    <input
-                      aria-label={`Leftover recipe cook time ${row.name}`}
-                      value={leftoverCookTimes[row.id] ?? (row.cook_time ? String(row.cook_time) : '')}
-                      onChange={(e) => setLeftoverCookTimes((current) => ({ ...current, [row.id]: e.target.value }))}
-                    />
-                  </label>
-                  <button type="button" aria-label={`Save leftover cook time on ${row.name}`} onClick={() => saveLeftoverCookTime(row)}>
-                    Save cook time
-                  </button>
-                  <label>
-                    <span>Servings</span>
-                    <input
-                      aria-label={`Leftover recipe servings ${row.name}`}
-                      value={leftoverServings[row.id] ?? (row.servings ? String(row.servings) : '')}
-                      onChange={(e) => setLeftoverServings((current) => ({ ...current, [row.id]: e.target.value }))}
-                    />
-                  </label>
-                  <button type="button" aria-label={`Save leftover servings on ${row.name}`} onClick={() => saveLeftoverServings(row)}>
-                    Save servings
-                  </button>
+        <section className="rdesk rd-recipes" aria-label="Restaurant recipes desk">
+          <div className="rd-head">
+            <div className="rd-kpis rd-kpis-inline">
+              <div className="rd-kpi">
+                <span>Recipes</span>
+                <strong>{recipes.length}</strong>
+              </div>
+              <div className="rd-kpi">
+                <span>Dishes with no recipe</span>
+                <strong>{menuWithoutRecipe.length}</strong>
+              </div>
+              <div className="rd-kpi">
+                <span>Ingredients</span>
+                <strong>{ingredientItems.length}</strong>
+              </div>
+            </div>
+            <div className="rd-head-actions">
+              <button
+                type="button"
+                className="rd-primary"
+                aria-label="Start a new recipe"
+                onClick={() => setAddingRecipe((open) => !open)}
+              >
+                {addingRecipe ? 'Close' : '+ New recipe'}
+              </button>
+            </div>
+          </div>
+
+          {!ingredientItems.length ? (
+            <div className="rd-panel rd-needs">
+              <strong>Add your ingredients first</strong>
+              <span className="rd-hint-line">
+                Recipes are built from ingredients (rice, chicken, oil…). Add them, with their cost and stock, under{' '}
+                <Link href="/inventory?tab=products">Ingredients and purchasing → Ingredients</Link>.
+              </span>
+            </div>
+          ) : null}
+          {menuWithoutRecipe.length ? (
+            <div className="rd-panel rd-needs">
+              <strong>These dishes have no recipe yet</strong>
+              <span className="rd-hint-line">Without a recipe, selling a dish does not take its ingredients off stock.</span>
+              <div className="rd-facts">
+                {menuWithoutRecipe.slice(0, 24).map((row) => (
                   <button
+                    key={row.id}
                     type="button"
-                    aria-label={`Retire leftover recipe ${row.name}`}
-                    onClick={async () => {
-                      setError('');
-                      try {
-                        await api(`/restaurant/recipes/${row.id}/retire`, { method: 'POST', body: JSON.stringify({}) });
-                        setMessage(`Retired leftover recipe ${row.name}`);
-                        await refresh();
-                      } catch (err: any) {
-                        setError(err.message || 'Could not retire the leftover recipe');
-                      }
+                    className="rd-chip-btn"
+                    aria-label={`Write a recipe for ${row.name}`}
+                    onClick={() => {
+                      setAddingRecipe(true);
+                      setRecipeForm((current) => ({ ...current, product_id: row.id, name: current.name || row.name }));
                     }}
                   >
-                    Retire recipe
+                    + {row.name}
                   </button>
-                  </div>
-                  <ul className="rest-order-lines">
-                    {leftoverRecipeLines(row).map((line: Row) => (
-                      <li key={`${row.id}-${line.ingredient_id}`} className="rest-order-line">
-                        <div className="rest-order-head">
-                          {scanFacts([
-                            ['Ingredient', line.name],
-                            ['Quantity', line.quantity],
-                          ])}
-                        </div>
-                        <div className="rest-order-line-fields">
-                        <label>
-                          <span>Quantity</span>
-                        <input
-                          aria-label={`Leftover recipe line quantity ${line.name} on ${row.name}`}
-                          value={leftoverRecipeLineQuantities[`${row.id}:${line.ingredient_id}`] ?? String(line.quantity ?? '0')}
-                          onChange={(e) => setLeftoverRecipeLineQuantities((current) => ({
-                            ...current,
-                            [`${row.id}:${line.ingredient_id}`]: e.target.value,
-                          }))}
-                        />
-                        </label>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {addingRecipe ? (
+            <form className="rest-order-form rd-panel rd-form-grid" onSubmit={async (event) => {
+              await createRecipe(event);
+            }}>
+              <h3>New recipe</h3>
+              <label>
+                <span>Menu item</span>
+                <select aria-label="Restaurant recipe menu item" value={recipeForm.product_id} onChange={(e) => setRecipeForm({ ...recipeForm, product_id: e.target.value })} required>
+                  <option value="">Choose a dish</option>
+                  {menuItems.map((row) => (
+                    <option key={row.id} value={row.id}>{menuLabel(row)}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Name</span>
+                <input aria-label="Restaurant recipe name" placeholder="Jollof recipe" value={recipeForm.name} onChange={(e) => setRecipeForm({ ...recipeForm, name: e.target.value })} />
+              </label>
+              <label>
+                <span>Cook time</span>
+                <input aria-label="Restaurant recipe cook time" inputMode="numeric" placeholder="Minutes" value={recipeForm.cook_time} onChange={(e) => setRecipeForm({ ...recipeForm, cook_time: e.target.value })} />
+              </label>
+              <label>
+                <span>Servings</span>
+                <input aria-label="Restaurant recipe servings" inputMode="numeric" placeholder="1" value={recipeForm.servings} onChange={(e) => setRecipeForm({ ...recipeForm, servings: e.target.value })} />
+              </label>
+              <div className="rd-span rd-ingredients">
+                <strong>Ingredients for one serving</strong>
+                {recipeLines.length > 0 ? (
+                  <ul aria-label="Restaurant recipe lines">
+                    {recipeLines.map((line, index) => (
+                      <li key={`${line.ingredient_id}-${index}`}>
+                        <span>
+                          <b>{line.quantity}</b> × {products.find((row) => row.id === line.ingredient_id)?.name || 'Ingredient'}
+                        </span>
                         <button
                           type="button"
-                          aria-label={`Remove leftover recipe line ${line.name} on ${row.name}`}
-                          onClick={() => removeLeftoverRecipeLine(row, line)}
+                          className="rd-link"
+                          aria-label={`Remove ingredient ${index + 1}`}
+                          onClick={() => setRecipeLines((current) => current.filter((_, item) => item !== index))}
                         >
                           Remove
                         </button>
-                        </div>
                       </li>
                     ))}
                   </ul>
-                  <div className="rest-order-line-fields">
+                ) : (
+                  <span className="rd-hint-line">Pick an ingredient and how much one dish uses, then Add.</span>
+                )}
+                <div className="rd-ingredient-add">
                   <label>
                     <span>Ingredient</span>
-                  <select
-                    aria-label={`Leftover recipe ingredient ${row.name}`}
-                    value={leftoverRecipeIngredient[row.id] ?? ''}
-                    onChange={(e) => setLeftoverRecipeIngredient((current) => ({ ...current, [row.id]: e.target.value }))}
-                  >
-                    <option value="">Ingredient</option>
-                    {ingredientItems
-                      .filter((item) => !leftoverRecipeLines(row).some((line) => line.ingredient_id === item.id))
-                      .map((item) => (
-                        <option key={item.id} value={item.id}>{item.name}</option>
+                    <select aria-label="Restaurant recipe ingredient" value={recipeForm.ingredient_id} onChange={(e) => setRecipeForm({ ...recipeForm, ingredient_id: e.target.value })}>
+                      <option value="">Ingredient</option>
+                      {ingredientItems.map((row) => (
+                        <option key={row.id} value={row.id}>{row.name}</option>
                       ))}
-                  </select>
+                    </select>
                   </label>
-                  <button
-                    type="button"
-                    aria-label={`Add leftover recipe ingredient ${row.name}`}
-                    onClick={() => addLeftoverRecipeIngredient(row)}
-                  >
-                    Add ingredient
-                  </button>
-                  </div>
-                </li>
-              ))}
+                  <label>
+                    <span>Quantity</span>
+                    <input aria-label="Restaurant recipe quantity" inputMode="decimal" value={recipeForm.quantity} onChange={(e) => setRecipeForm({ ...recipeForm, quantity: e.target.value })} />
+                  </label>
+                  <button type="button" aria-label="Add restaurant ingredient" onClick={addRecipeLine}>+ Add</button>
+                </div>
+              </div>
+              <div className="rd-form-actions">
+                <button type="submit" className="rd-primary" aria-label="Save restaurant recipe">Save recipe</button>
+              </div>
+            </form>
+          ) : null}
+
+          <details className="rd-panel rd-domain">
+            <summary>
+              <strong>Kitchen or bar</strong>
+              <span>Choose where each dish is made</span>
+            </summary>
+            <form className="rest-order-form rd-form-grid" onSubmit={saveStation}>
+              <label>
+                <span>Menu item</span>
+                <select aria-label="Restaurant menu station item" value={stationForm.product_id} onChange={(e) => setStationForm({ ...stationForm, product_id: e.target.value })}>
+                  <option value="">Menu item</option>
+                  {products.filter((row) => !recipeIngredientIds.has(row.id) || recipeMenuIds.has(row.id)).map((row) => (
+                    <option key={row.id} value={row.id}>{menuLabel(row)}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Station</span>
+                <select aria-label="Restaurant menu station" value={stationForm.station} onChange={(e) => setStationForm({ ...stationForm, station: e.target.value })}>
+                  <option value="kitchen">Kitchen</option>
+                  <option value="bar">Bar</option>
+                </select>
+              </label>
+              <div className="rd-form-actions">
+                <button type="submit" aria-label="Save restaurant menu station">Save station</button>
+              </div>
+            </form>
+          </details>
+
+          {recipes.length ? (
+            <ul className="rest-order-list" aria-label="Restaurant recipes">
+              {recipes.map((row) => {
+                const editing = editingRecipe === row.id;
+                const lines = leftoverRecipeLines(row);
+                const facts: Array<[string, string]> = [
+                  ['Menu item', row.menu_item],
+                  ['Station', orderWord(row.station)],
+                  ['Cook time', row.cook_time ? `${row.cook_time} min` : 'No cook time.'],
+                  ['Servings', row.servings ? (Number(row.servings) === 1 ? '1 serving' : `${row.servings} servings`) : 'No servings.'],
+                ];
+                return (
+                  <li key={row.id} className={`rest-order rd-recipe-card${editing ? ' editing' : ''}`}>
+                    <div className="rd-recipe-head">
+                      <span className="rd-table-code" aria-hidden>{String(row.menu_item || row.name || '?').slice(0, 1)}</span>
+                      <div className="rd-table-what">
+                        <strong>{row.name}</strong>
+                        <small>{facts.filter(([key]) => key !== 'Menu item').map(([, value]) => value).join(' · ')}</small>
+                      </div>
+                      {row.menu_item && row.menu_item !== row.name ? <span className="rd-pill">{row.menu_item}</span> : null}
+                    </div>
+                    {!editing ? (
+                      <>
+                        <ul className="rd-ing-list">
+                          {lines.map((line: Row) => (
+                            <li key={`${row.id}-${line.ingredient_id}`}>
+                              <b>{Number(line.quantity)}</b> {line.name}
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="rest-order-actions rd-row-actions">
+                          <button type="button" aria-label={`Edit recipe ${row.name}`} onClick={() => setEditingRecipe(row.id)}>
+                            Edit
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="rest-order-line-fields rd-form-grid">
+                          <label>
+                            <span>Name</span>
+                            <input
+                              aria-label={`Leftover recipe name ${row.name}`}
+                              value={leftoverRecipeNames[row.id] ?? String(row.name ?? '')}
+                              onChange={(e) => setLeftoverRecipeNames((current) => ({ ...current, [row.id]: e.target.value }))}
+                            />
+                          </label>
+                          <label>
+                            <span>Cook time</span>
+                            <input
+                              aria-label={`Leftover recipe cook time ${row.name}`}
+                              inputMode="numeric"
+                              placeholder="Minutes"
+                              value={leftoverCookTimes[row.id] ?? (row.cook_time ? String(row.cook_time) : '')}
+                              onChange={(e) => setLeftoverCookTimes((current) => ({ ...current, [row.id]: e.target.value }))}
+                            />
+                          </label>
+                          <label>
+                            <span>Servings</span>
+                            <input
+                              aria-label={`Leftover recipe servings ${row.name}`}
+                              inputMode="numeric"
+                              value={leftoverServings[row.id] ?? (row.servings ? String(row.servings) : '')}
+                              onChange={(e) => setLeftoverServings((current) => ({ ...current, [row.id]: e.target.value }))}
+                            />
+                          </label>
+                        </div>
+                        <ul className="rest-order-lines rd-ing-edit">
+                          {lines.map((line: Row) => (
+                            <li key={`${row.id}-${line.ingredient_id}`} className="rest-order-line">
+                              <span className="name">{line.name}</span>
+                              <input
+                                aria-label={`Leftover recipe line quantity ${line.name} on ${row.name}`}
+                                inputMode="decimal"
+                                value={leftoverRecipeLineQuantities[`${row.id}:${line.ingredient_id}`] ?? String(line.quantity ?? '0')}
+                                onChange={(e) => setLeftoverRecipeLineQuantities((current) => ({
+                                  ...current,
+                                  [`${row.id}:${line.ingredient_id}`]: e.target.value,
+                                }))}
+                              />
+                              <button
+                                type="button"
+                                className="rd-link"
+                                aria-label={`Remove leftover recipe line ${line.name} on ${row.name}`}
+                                onClick={() => removeLeftoverRecipeLine(row, line)}
+                              >
+                                Remove
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="rd-ingredient-add">
+                          <label>
+                            <span>Ingredient</span>
+                            <select
+                              aria-label={`Leftover recipe ingredient ${row.name}`}
+                              value={leftoverRecipeIngredient[row.id] ?? ''}
+                              onChange={(e) => setLeftoverRecipeIngredient((current) => ({ ...current, [row.id]: e.target.value }))}
+                            >
+                              <option value="">Ingredient</option>
+                              {ingredientItems
+                                .filter((item) => !lines.some((line) => line.ingredient_id === item.id))
+                                .map((item) => (
+                                  <option key={item.id} value={item.id}>{item.name}</option>
+                                ))}
+                            </select>
+                          </label>
+                          <button
+                            type="button"
+                            aria-label={`Add leftover recipe ingredient ${row.name}`}
+                            onClick={() => addLeftoverRecipeIngredient(row)}
+                          >
+                            + Add
+                          </button>
+                        </div>
+                        {retiringRecipe === row.id ? (
+                          <div className="rd-confirm" role="alert">
+                            Retire {row.name}? Sales of {row.menu_item} stop taking ingredients off stock.
+                            <div>
+                              <button type="button" onClick={() => setRetiringRecipe('')}>Keep it</button>
+                              <button
+                                type="button"
+                                className="rd-danger"
+                                aria-label={`Retire leftover recipe ${row.name}`}
+                                onClick={async () => {
+                                  setError('');
+                                  try {
+                                    await api(`/restaurant/recipes/${row.id}/retire`, { method: 'POST', body: JSON.stringify({}) });
+                                    setMessage(`Retired leftover recipe ${row.name}`);
+                                    setRetiringRecipe('');
+                                    setEditingRecipe('');
+                                    await refresh();
+                                  } catch (err: any) {
+                                    setError(err.message || 'Could not retire the leftover recipe');
+                                  }
+                                }}
+                              >
+                                Yes, retire
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+                        <div className="rest-order-actions rd-row-actions">
+                          <button type="button" className="rd-primary" aria-label={`Save leftover recipe ${row.name}`} onClick={() => saveLeftoverRecipe(row)}>
+                            Save
+                          </button>
+                          <button type="button" onClick={() => setEditingRecipe('')}>Close</button>
+                          <button type="button" className="rd-danger right" aria-label={`Ask to retire recipe ${row.name}`} onClick={() => setRetiringRecipe(row.id)}>
+                            Retire recipe
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           ) : (
-            <p className="muted">No recipes yet.</p>
+            <p className="rd-mini-empty">No recipes yet.</p>
           )}
         </section>
       )}
       {restaurantDesk && tab === 'waste' && (
-        <section className="card">
-          <h2>Waste</h2>
-          <p className="muted">
-            Waste takes an ingredient off hand. It is not a sale and it does not open a bill. The cost is posted to operating expenses and taken off inventory. An ingredient with no cost still leaves stock and does not post a journal.
-          </p>
-          <form className="rest-order-form" onSubmit={saveWaste}>
-            <label>
-              <span>Ingredient</span>
-            <select
-              aria-label="Restaurant waste ingredient"
-              value={wasteForm.product_id}
-              onChange={(e) => setWasteForm({ ...wasteForm, product_id: e.target.value })}
-            >
-              <option value="">Ingredient</option>
-              {ingredientItems.map((row) => (
-                <option key={row.id} value={row.id}>{row.name}</option>
-              ))}
-            </select>
-            </label>
-            <label>
-              <span>Quantity</span>
-            <input
-              aria-label="Restaurant waste quantity"
-              value={wasteForm.quantity}
-              onChange={(e) => setWasteForm({ ...wasteForm, quantity: e.target.value })}
-            />
-            </label>
-            <label>
-              <span>Reason</span>
-            <select
-              aria-label="Restaurant waste reason"
-              value={wasteForm.reason}
-              onChange={(e) => setWasteForm({ ...wasteForm, reason: e.target.value })}
-            >
-              <option value="spoilage">Spoilage</option>
-              <option value="damage">Damage</option>
-              <option value="waste">Waste</option>
-            </select>
-            </label>
-            <label>
-              <span>Notes</span>
-            <input
-              aria-label="Restaurant waste notes"
-              value={wasteForm.notes}
-              onChange={(e) => setWasteForm({ ...wasteForm, notes: e.target.value })}
-            />
-            </label>
-            <label>
-              <span>Warehouse</span>
-            <select
-              aria-label="Restaurant waste warehouse"
-              value={wasteForm.warehouse_id}
-              onChange={(e) => setWasteForm({ ...wasteForm, warehouse_id: e.target.value })}
-            >
-              <option value="">No warehouse</option>
-              {warehouses.filter((row) => row.is_active !== false).map((row) => (
-                <option key={row.id} value={row.id}>{row.code} · {row.name}</option>
-              ))}
-            </select>
-            </label>
-            <button type="submit" aria-label="Record restaurant waste">Record waste</button>
-          </form>
-          <ul aria-label="Restaurant waste history">
-            {wasteRows.map((row) => (
-              <li key={row.id}>
-                {row.name} · {row.quantity} · {row.reason}
-                {row.notes ? ` · ${row.notes}` : ''}
-                {row.journal_entry_id ? ' · On the books' : ''}
-              </li>
-            ))}
-            {!wasteRows.length && <li className="muted">No waste recorded yet.</li>}
-          </ul>
+        <section className="rdesk rd-waste" aria-label="Restaurant waste desk">
+          <div className="rd-split">
+            <form className="rest-order-form rd-panel rd-form-grid" onSubmit={saveWaste}>
+              <h3>Record waste</h3>
+              <p className="rd-hint-line rd-span">
+                Waste takes an ingredient off hand. It is not a sale and it does not open a bill. The cost is posted to operating expenses and taken off inventory. An ingredient with no cost still leaves stock and does not post a journal.
+              </p>
+              <label className="rd-span">
+                <span>Ingredient</span>
+                <select
+                  aria-label="Restaurant waste ingredient"
+                  value={wasteForm.product_id}
+                  onChange={(e) => setWasteForm({ ...wasteForm, product_id: e.target.value })}
+                >
+                  <option value="">Choose an ingredient</option>
+                  {ingredientItems.map((row) => (
+                    <option key={row.id} value={row.id}>
+                      {row.name}
+                      {row.stock_qty !== undefined ? ` · ${Number(row.stock_qty)} on hand` : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Quantity</span>
+                <input
+                  aria-label="Restaurant waste quantity"
+                  inputMode="decimal"
+                  value={wasteForm.quantity}
+                  onChange={(e) => setWasteForm({ ...wasteForm, quantity: e.target.value })}
+                />
+              </label>
+              <label>
+                <span>Warehouse</span>
+                <select
+                  aria-label="Restaurant waste warehouse"
+                  value={wasteForm.warehouse_id}
+                  onChange={(e) => setWasteForm({ ...wasteForm, warehouse_id: e.target.value })}
+                >
+                  <option value="">No warehouse</option>
+                  {warehouses.filter((row) => row.is_active !== false).map((row) => (
+                    <option key={row.id} value={row.id}>{row.code} · {row.name}</option>
+                  ))}
+                </select>
+              </label>
+              <div className="rd-field rd-span">
+                <span>Reason</span>
+                <div className="rd-chips" role="radiogroup" aria-label="Waste reason">
+                  {[
+                    ['spoilage', 'Spoilage'],
+                    ['damage', 'Damage'],
+                    ['waste', 'Waste'],
+                  ].map(([id, label]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      role="radio"
+                      aria-checked={wasteForm.reason === id}
+                      className={wasteForm.reason === id ? 'on' : ''}
+                      onClick={() => setWasteForm({ ...wasteForm, reason: id })}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <select
+                  className="rd-sr"
+                  aria-label="Restaurant waste reason"
+                  value={wasteForm.reason}
+                  onChange={(e) => setWasteForm({ ...wasteForm, reason: e.target.value })}
+                >
+                  <option value="spoilage">Spoilage</option>
+                  <option value="damage">Damage</option>
+                  <option value="waste">Waste</option>
+                </select>
+              </div>
+              <label className="rd-span">
+                <span>Notes</span>
+                <input
+                  aria-label="Restaurant waste notes"
+                  placeholder="Fridge failed overnight, dropped tray…"
+                  value={wasteForm.notes}
+                  onChange={(e) => setWasteForm({ ...wasteForm, notes: e.target.value })}
+                />
+              </label>
+              <div className="rd-form-actions">
+                <button type="submit" className="rd-primary" aria-label="Record restaurant waste">Record waste</button>
+              </div>
+            </form>
+
+            <div className="rd-panel">
+              <div className="rd-panel-head">
+                <h3>Recent waste</h3>
+                <span className="rd-hint">{wasteRows.length} records</span>
+              </div>
+              <ul className="rd-mini rd-waste-list" aria-label="Restaurant waste history">
+                {wasteRows.map((row) => (
+                  <li key={row.id}>
+                    <div>
+                      <strong>
+                        {Number(row.quantity)} × {row.name}
+                      </strong>
+                      <small>
+                        {orderWord(row.reason)}
+                        {row.notes ? ` · ${row.notes}` : ''}
+                        {row.journal_entry_id ? ' · On the books' : ''}
+                      </small>
+                    </div>
+                    <span className="rd-hint">{row.created_at ? formatDateTime(row.created_at) : ''}</span>
+                  </li>
+                ))}
+                {!wasteRows.length && <li className="rd-mini-empty">No waste recorded yet.</li>}
+              </ul>
+            </div>
+          </div>
         </section>
       )}
     </main>
