@@ -14252,9 +14252,9 @@ async def report_sales_pos(
 ):
     from app import reports as reports_svc
     from app import sales_reports as sales_reports_svc
-    from app.industry_dashboard import assert_pos_for_industry
+    from app.industry_dashboard import assert_pos_history_for_industry
 
-    assert_pos_for_industry(claims)
+    assert_pos_history_for_industry(claims)
     scope = await _sales_report_scope(db, claims, store_id)
     return env(
         await sales_reports_svc.pos_sales(

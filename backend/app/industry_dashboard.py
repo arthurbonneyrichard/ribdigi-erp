@@ -163,6 +163,33 @@ def industry_home_path(industry: str | None) -> str:
 POS_INDUSTRIES = frozenset({"retail", "pharmacy"})
 
 
+# Industries that rang sales on the retail POS at some point. Restaurant and hotel moved to their
+# own tills; their earlier till sales stay readable in the POS sales report (read only).
+POS_HISTORY_INDUSTRIES = POS_INDUSTRIES | {"restaurant", "hotel"}
+
+
+def assert_pos_history_for_industry(claims: dict) -> None:
+    """Reading past POS sales: allowed wherever a till was used, including restaurant and hotel history."""
+    from fastapi import HTTPException
+
+    from app.rbac import is_platform_role
+
+    if is_platform_role(claims.get("role")):
+        return
+    industry = canonicalize_industry(claims.get("industry"))
+    if industry in POS_HISTORY_INDUSTRIES:
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "INDUSTRY_MODULE_DISABLED",
+            "message": "This feature is not available for this company.",
+            "module": "pos",
+            "industry": industry,
+        },
+    )
+
+
 def assert_pos_for_industry(claims: dict) -> None:
     """POS is a retail storefront. Other industries (restaurant and hotel included) get 403."""
     from fastapi import HTTPException
