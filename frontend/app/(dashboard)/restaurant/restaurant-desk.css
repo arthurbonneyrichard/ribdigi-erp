@@ -461,3 +461,53 @@
   .main .rdesk .rd-po-line,.main .rdesk .rd-po-head{grid-template-columns:minmax(0,1fr) 64px 76px 32px}
   .main .rdesk .rd-po-line .sum,.main .rdesk .rd-po-head .sum{display:none}
 }
+
+/* Reports */
+.main .rdesk .rd-period{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.main .rdesk .rd-dates{display:flex;gap:8px;align-items:center;font-weight:700;color:var(--rd-muted)}
+.main .rdesk .rd-dates input{min-height:40px;border-radius:12px;border:2px solid var(--rd-line);background:var(--rd-panel);color:var(--rd-ink);padding:0 10px}
+.main .rdesk .rd-report{display:flex;flex-direction:column;gap:14px;transition:opacity .15s}
+.main .rdesk .rd-report.is-loading{opacity:.55}
+.main .rdesk .rd-warn-text{color:var(--rd-wait-ink) !important;font-weight:800}
+.main .rdesk .rd-split-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.main .rdesk .rd-panel-head small{color:var(--rd-muted);font-weight:600}
+.main .rdesk .rd-panel-head h2{margin:0;font-size:19px;font-family:Georgia,'Times New Roman',serif}
+.main .rdesk .rd-bars{display:flex;align-items:stretch;gap:2px;height:200px;padding-top:8px}
+.main .rdesk .rd-bar-col{position:relative;flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:4px;outline:none;cursor:default}
+.main .rdesk .rd-bar-track{flex:1;display:flex;align-items:flex-end;border-bottom:1px solid var(--rd-line)}
+.main .rdesk .rd-bar{width:100%;max-width:38px;margin:0 auto;border-radius:4px 4px 0 0;background:#2F7A0C}
+.main .rdesk .rd-bar.top{background:var(--rd-forest)}
+[data-theme="dark"] .main .rdesk .rd-bar{background:#4AB012}
+[data-theme="dark"] .main .rdesk .rd-bar.top{background:#C8E86A}
+.main .rdesk .rd-panel-head .rd-link{margin-left:auto}
+.main .rdesk .rd-bar-col:hover .rd-bar,.main .rdesk .rd-bar-col:focus .rd-bar{filter:brightness(.8)}
+.main .rdesk .rd-bar-col small{text-align:center;font-size:11px;font-weight:700;color:var(--rd-muted);white-space:nowrap;overflow:hidden;min-height:14px}
+.main .rdesk .rd-bar-tip{display:none;position:absolute;bottom:calc(100% - 4px);left:50%;transform:translateX(-50%);z-index:3;white-space:nowrap;background:var(--rd-ink);color:var(--rd-panel);font-size:12px;font-weight:700;padding:5px 9px;border-radius:8px;pointer-events:none}
+.main .rdesk .rd-bar-col:hover .rd-bar-tip,.main .rdesk .rd-bar-col:focus .rd-bar-tip{display:block}
+.main .rdesk .rd-bar-col:first-child .rd-bar-tip{left:0;transform:none}
+.main .rdesk .rd-bar-col:last-child .rd-bar-tip{left:auto;right:0;transform:none}
+.main .rdesk .rd-table-wrap{overflow-x:auto}
+.main .rdesk .rd-table{width:100%;border-collapse:collapse;font-size:15px}
+.main .rdesk .rd-table th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--rd-muted);padding:8px 10px;border-bottom:2px solid var(--rd-line)}
+.main .rdesk .rd-table td{padding:10px;border-bottom:1px solid var(--rd-line)}
+.main .rdesk .rd-table .num{text-align:right;white-space:nowrap}
+.main .rdesk .rd-table .strong{font-weight:800}
+.main .rdesk .rd-table .rank{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;margin-right:8px;border-radius:999px;background:var(--rd-tint);color:var(--rd-forest);font-size:12px;font-weight:800}
+.main .rdesk .rd-breakdown{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.main .rdesk .rd-breakdown .line{display:flex;justify-content:space-between;gap:8px;font-weight:700}
+.main .rdesk .rd-breakdown .track{height:8px;border-radius:999px;background:var(--rd-bg);margin:4px 0;overflow:hidden}
+.main .rdesk .rd-breakdown .track div{height:100%;border-radius:999px;background:var(--rd-deep)}
+.main .rdesk .rd-breakdown small{color:var(--rd-muted);font-weight:600}
+.main .rdesk .rd-waste-report{list-style:none;margin:0;padding:0}
+.main .rdesk .rd-waste-report li{display:grid;grid-template-columns:minmax(0,1fr) 80px 110px;gap:10px;padding:8px 0;border-bottom:1px solid var(--rd-line)}
+.main .rdesk .rd-waste-report li strong{text-align:right}
+@media (max-width:1000px){.main .rdesk .rd-split-3{grid-template-columns:1fr}}
+@media (max-width:640px){
+  .main .rdesk .rd-bars{height:160px}
+  .main .rdesk .rd-panel-head{flex-wrap:wrap}
+  .main .rdesk .rd-bar-col small{overflow:visible;font-size:10px}
+  .main .rdesk .rd-bars.many .rd-bar-col:nth-child(even) small{visibility:hidden}
+  .main .rdesk .rd-table{font-size:14px}
+  .main .rdesk .rd-table .rank,.main .rdesk .rd-table .col-sales{display:none}
+  .main .rdesk .rd-table th,.main .rdesk .rd-table td{padding:8px 6px}
+}

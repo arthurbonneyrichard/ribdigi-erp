@@ -11,10 +11,11 @@ from pydantic import BaseModel, BeforeValidator, ConfigDict, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import restaurant as restaurant_svc
+from app import restaurant_report as report_svc
 from app import restaurant_till as till_svc
 from app.db import get_db
 from app.honesty import money_json
-from app.schemas import AddressValue, E164PhoneValue, NonNegativeMoneyValue, PositiveMoneyValue, PartyNameValue, PositiveQtyValue, StockOutNotesValue, UuidIdValue, WebsiteHostnameValue
+from app.schemas import AddressValue, E164PhoneValue, IsoDateQueryValue, NonNegativeMoneyValue, PositiveMoneyValue, PartyNameValue, PositiveQtyValue, StockOutNotesValue, UuidIdValue, WebsiteHostnameValue
 from app.security import require_permission
 
 router = APIRouter(prefix="/restaurant", tags=["restaurant"])
@@ -1079,6 +1080,27 @@ async def restaurant_reports(
     db: AsyncSession = Depends(get_db),
 ):
     return _env(await restaurant_svc.reports(db, claims["tenant_id"], user_id=claims.get("sub")))
+
+
+@router.get("/reports/period")
+async def restaurant_period_report(
+    # Dates ∈ IsoDateQueryValue; omit → the last 7 days; blank/garbage → **422**.
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    claims=Depends(require_permission("restaurant", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.reports import parse_date
+
+    return _env(
+        await report_svc.period_report(
+            db,
+            claims["tenant_id"],
+            user_id=claims.get("sub"),
+            from_date=parse_date(from_date),
+            to_date=parse_date(to_date),
+        )
+    )
 
 
 class BookingLinkBody(BaseModel):

@@ -1032,7 +1032,7 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert 'aria-label="Restaurant waste warehouse"' in restaurant
     assert "warehouse_id: wasteForm.warehouse_id.trim() || null" in restaurant
     assert "Choose an ingredient first." in restaurant
-    assert "['Reports', '/reports', 'reports']" in (root / "frontend/lib/tenantNav.ts").read_text(encoding="utf-8")
+    assert "['Reports', '/restaurant/reports', 'reports']" in (root / "frontend/lib/tenantNav.ts").read_text(encoding="utf-8")
     assert "['Waste', '/restaurant?tab=waste', 'restaurant']" in (root / "frontend/lib/tenantNav.ts").read_text(encoding="utf-8")
     restaurant_finance = nav.split("id: 'restaurant-finance'", 1)[1].split("id: 'restaurant-people'", 1)[0]
     assert "['Customer credit', '/credit?kind=receivable', 'credit']" in restaurant_finance
