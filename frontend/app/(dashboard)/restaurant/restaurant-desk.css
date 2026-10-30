@@ -419,3 +419,45 @@
   .main .rdesk .rd-kpi{padding:10px 12px}
   .main .rdesk .rd-kpi strong{font-size:18px}
 }
+
+/* Stock and purchasing (restaurant's own screens over the shared stock engine) */
+.main .rdesk .rd-tabs button small{margin-left:6px;opacity:.7;font-weight:800}
+.main .rdesk button.rd-kpi-btn{border:2px solid transparent;text-align:left;align-items:flex-start;min-height:0;font:inherit;color:var(--rd-ink);cursor:pointer}
+.main .rdesk button.rd-kpi-btn:hover{border-color:var(--rd-brand)}
+.main .rdesk button.rd-kpi-btn.on{border-color:var(--rd-deep);background:var(--rd-tint)}
+.main .rdesk .rd-stock-row{display:grid;grid-template-columns:minmax(0,1fr) 150px 110px auto;gap:14px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--rd-line);border-left:5px solid transparent}
+.main .rdesk .rd-stock-row:last-child{border-bottom:0}
+.main .rdesk .rd-stock-row.low{border-left-color:var(--rd-wait)}
+.main .rdesk .rd-stock-row.out{border-left-color:var(--rd-bad-ink)}
+.main .rdesk .rd-stock-row .what{display:flex;flex-direction:column;min-width:0}
+.main .rdesk .rd-stock-row .what strong{font-size:16px}
+.main .rdesk .rd-stock-row .what small,.main .rdesk .rd-stock-row .onhand small{color:var(--rd-muted);font-weight:600}
+.main .rdesk .rd-stock-row .what small a{color:var(--rd-deep);font-weight:800}
+.main .rdesk .rd-stock-row .onhand{display:flex;flex-direction:column}
+.main .rdesk .rd-stock-row .onhand strong{font-size:20px;font-family:Georgia,'Times New Roman',serif}
+.main .rdesk .rd-stock-row.low .onhand small{color:var(--rd-wait-ink)}
+.main .rdesk .rd-stock-row.out .onhand small{color:var(--rd-bad-ink)}
+.main .rdesk .rd-stock-row .value{font-weight:800;text-align:right}
+.main .rdesk .rd-stock-row .acts{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.main .rdesk .rd-stock-row .acts button:not(.menu-btn){min-height:40px;padding:0 12px;font-size:14px}
+.main .rdesk .rd-po-lines{display:flex;flex-direction:column;gap:8px}
+.main .rdesk .rd-po-line{display:grid;grid-template-columns:minmax(130px,1fr) 64px 76px 78px 32px;gap:8px;align-items:center}
+.main .rdesk .rd-po-line input,.main .rdesk .rd-po-line select{min-height:44px;border-radius:12px;border:2px solid var(--rd-line);background:var(--rd-panel);color:var(--rd-ink);padding:0 10px;font-size:15px;width:100%}
+.main .rdesk .rd-po-line .sum,.main .rdesk .rd-po-head .sum{text-align:right;font-weight:800;white-space:nowrap;font-size:14px}
+.main .rdesk .rd-po-line > span:first-child{min-width:0;overflow-wrap:anywhere}
+.main .rdesk .rd-head-actions .rd-search{min-width:0;flex:0 1 240px}
+.main .rdesk .rd-po-line button:not(.menu-btn){min-height:36px;padding:0;border-radius:10px}
+.main .rdesk .rd-po-head{display:grid;grid-template-columns:minmax(130px,1fr) 64px 76px 78px 32px;gap:8px;font-size:12px;font-weight:800;color:var(--rd-muted);text-transform:uppercase;letter-spacing:.04em}
+.main .rdesk .rd-po-total{display:flex;justify-content:space-between;align-items:baseline;padding-top:8px;border-top:2px solid var(--rd-line)}
+.main .rdesk .rd-po-total strong{font-size:24px;font-family:Georgia,'Times New Roman',serif}
+.main .rdesk .rd-steps{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.main .rdesk .rd-steps span{padding:3px 10px;border-radius:999px;font-size:12px;font-weight:800;background:var(--rd-bg);color:var(--rd-muted)}
+.main .rdesk .rd-steps span.done{background:var(--rd-tint);color:var(--rd-forest)}
+.main .rdesk .rd-steps span.now{background:var(--rd-deep);color:#fff}
+@media (max-width:760px){
+  .main .rdesk .rd-stock-row{grid-template-columns:minmax(0,1fr) auto;row-gap:8px}
+  .main .rdesk .rd-stock-row .value{text-align:left}
+  .main .rdesk .rd-stock-row .acts{grid-column:1 / -1;justify-content:flex-start}
+  .main .rdesk .rd-po-line,.main .rdesk .rd-po-head{grid-template-columns:minmax(0,1fr) 64px 76px 32px}
+  .main .rdesk .rd-po-line .sum,.main .rdesk .rd-po-head .sum{display:none}
+}

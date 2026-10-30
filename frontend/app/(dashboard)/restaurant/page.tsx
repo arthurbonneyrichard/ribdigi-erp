@@ -1922,7 +1922,7 @@ export default function RestaurantPage() {
       : null,
     lowIngredients.length
       ? {
-          href: '/inventory?tab=lowstock',
+          href: '/restaurant/ingredients',
           message:
             lowIngredients.length === 1
               ? '1 ingredient is low.'
@@ -4328,7 +4328,7 @@ export default function RestaurantPage() {
               <strong>Add your ingredients first</strong>
               <span className="rd-hint-line">
                 Recipes are built from ingredients (rice, chicken, oil…). Add them, with their cost and stock, under{' '}
-                <Link href="/inventory?tab=products">Ingredients and purchasing → Ingredients</Link>.
+                <Link href="/restaurant/ingredients">Ingredients and purchasing → Ingredients</Link>.
               </span>
             </div>
           ) : null}
