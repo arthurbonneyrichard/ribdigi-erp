@@ -192,3 +192,90 @@
   .main .rdesk .rd-drawer{box-shadow:none;width:100%}
   .main .rdesk .rd-actions,.main .rdesk .rd-drawer-head button{display:none}
 }
+
+/* Restaurant dashboard */
+.main .rdesk.rd-dash{background:transparent;padding:0;min-height:0}
+.main .rdesk .rd-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.main .rdesk .rd-actionbar{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+@media (max-width:1280px){.main .rdesk .rd-actionbar{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:640px){.main .rdesk .rd-actionbar{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.main .rdesk a.rd-action{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:16px;background:var(--rd-panel);box-shadow:var(--rd-shadow);color:var(--rd-ink);text-decoration:none;border:2px solid transparent;transition:border-color .15s ease,transform .12s ease}
+.main .rdesk a.rd-action:hover{border-color:var(--rd-brand);transform:translateY(-1px)}
+.main .rdesk a.rd-action .ico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--rd-tint);color:var(--rd-deep);font-size:20px;font-weight:800;flex:0 0 auto}
+.main .rdesk a.rd-action span:last-child{display:flex;flex-direction:column;min-width:0}
+.main .rdesk a.rd-action strong{font-size:15px}
+.main .rdesk a.rd-action small{color:var(--rd-muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.main .rdesk a.rd-action.primary{background:var(--rd-deep);color:#fff}
+.main .rdesk a.rd-action.primary .ico{background:var(--rd-brand);color:var(--rd-ink)}
+.main .rdesk a.rd-action.primary small{color:#C8E86A}
+.main .rdesk .rd-kpi small{font-size:12px;font-weight:600;color:var(--rd-muted)}
+.main .rdesk .rd-kpi.hero small{color:#D9F0C8}
+.main .rdesk .rd-alerts{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.main .rdesk .rd-alerts a{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:var(--rd-wait-tint);color:var(--rd-wait-ink);font-weight:700;font-size:14px;text-decoration:none}
+.main .rdesk .rd-alerts a:hover{background:var(--rd-wait);color:#2B1A05}
+.main .rdesk .rd-alerts .dot{width:8px;height:8px;border-radius:50%;background:var(--rd-wait)}
+.main .rdesk .rd-allgood{margin:0;padding:10px 14px;border-radius:12px;background:var(--rd-tint);color:var(--rd-forest);font-weight:700}
+.main .rdesk .rd-split{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.main .rdesk .rd-panel{background:var(--rd-panel);border-radius:18px;box-shadow:var(--rd-shadow);padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.main .rdesk .rd-panel-head{display:flex;align-items:baseline;gap:8px}
+.main .rdesk .rd-panel-head h3{margin:0;font-size:18px;font-family:Georgia,'Times New Roman',serif}
+.main .rdesk .rd-panel-head a{margin-left:auto;color:var(--rd-deep);font-weight:700;font-size:14px;text-decoration:none}
+.main .rdesk .rd-mini{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.main .rdesk .rd-mini a{display:grid;grid-template-columns:minmax(0,1fr) auto auto;grid-template-rows:auto auto;column-gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--rd-line);color:var(--rd-ink);text-decoration:none}
+.main .rdesk .rd-mini a:hover{background:var(--rd-bg)}
+.main .rdesk .rd-mini strong{grid-column:1;font-size:15px}
+.main .rdesk .rd-mini small{grid-column:1;grid-row:2;color:var(--rd-muted);font-size:13px}
+.main .rdesk .rd-mini .rd-pill{grid-column:2;grid-row:1 / span 2}
+.main .rdesk .rd-mini b{grid-column:3;grid-row:1 / span 2;text-align:right}
+.main .rdesk .rd-mini-empty{padding:18px 4px;color:var(--rd-muted);font-weight:600}
+.main .rdesk .rd-howto{color:var(--rd-muted);font-size:14px}
+.main .rdesk .rd-howto summary{cursor:pointer;font-weight:700;color:var(--rd-deep)}
+.main .rdesk .rd-howto p{margin:8px 0 0;max-width:70em}
+@media (max-width:900px){.main .rdesk .rd-split{grid-template-columns:1fr}}
+
+/* Shared form grid inside desk panels */
+.main .rdesk .rd-hint{color:var(--rd-muted);font-size:13px;font-weight:600;margin-left:auto}
+.main .rdesk .rd-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;align-items:end}
+.main .rdesk .rd-form-grid h3{grid-column:1 / -1;margin:0;font-size:18px;font-family:Georgia,'Times New Roman',serif}
+.main .rdesk .rd-form-grid label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:700;color:var(--rd-muted)}
+.main .rdesk .rd-form-grid input,.main .rdesk .rd-form-grid select,.main .rdesk .rd-form-grid textarea{min-height:44px;border-radius:12px;border:2px solid var(--rd-line);background:var(--rd-panel);color:var(--rd-ink);padding:0 12px;font-size:15px;width:100%}
+.main .rdesk .rd-form-grid textarea{padding:10px 12px;min-height:70px}
+.main .rdesk .rd-form-grid input:focus,.main .rdesk .rd-form-grid select:focus{outline:none;border-color:var(--rd-brand)}
+.main .rdesk .rd-form-actions{grid-column:1 / -1;display:flex;gap:8px;justify-content:flex-end}
+.main .rdesk .rd-row-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.main .rdesk .rd-row-actions .right{margin-left:auto}
+
+/* Tables and floor */
+.main .rdesk.rd-tables{background:transparent;padding:0;min-height:0}
+.main .rdesk .rd-legend{display:flex;gap:8px;flex-wrap:wrap}
+.main .rdesk .rd-legend-item{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--rd-panel);box-shadow:var(--rd-shadow);font-weight:700;font-size:14px}
+.main .rdesk .rd-legend-item b{color:var(--rd-muted)}
+.main .rdesk .rd-legend-item .sw{width:12px;height:12px;border-radius:50%;background:var(--rd-brand)}
+.main .rdesk .rd-legend-item.is-occupied .sw{background:var(--rd-wait)}
+.main .rdesk .rd-legend-item.is-reserved .sw{background:#5B8DEF}
+.main .rdesk .rd-legend-item.is-held .sw{background:var(--rd-muted)}
+.main .rdesk .rest-floor-map.rd-floor{height:360px;margin:0;border:2px dashed var(--rd-line);border-radius:16px;background:
+  radial-gradient(circle,rgba(0,61,31,.08) 1px,transparent 1px) 0 0/22px 22px,var(--rd-bg)}
+.main .rdesk button.rest-floor-spot.rd-spot{
+  position:absolute;width:86px;height:86px;min-height:0;padding:0;border-radius:50%;border:4px solid var(--rd-brand);
+  background:var(--rd-panel);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;text-align:center;
+  box-shadow:0 6px 16px rgba(0,61,31,.15);cursor:grab;touch-action:none
+}
+.main .rdesk button.rest-floor-spot.rd-spot.big{width:110px;height:76px;border-radius:22px}
+.main .rdesk button.rest-floor-spot.rd-spot strong{font-size:18px;font-family:Georgia,'Times New Roman',serif}
+.main .rdesk button.rest-floor-spot.rd-spot span{font-size:12px;color:var(--rd-muted);font-weight:700}
+.main .rdesk button.rest-floor-spot.rd-spot.is-occupied{border-color:var(--rd-wait);background:var(--rd-wait-tint)}
+.main .rdesk button.rest-floor-spot.rd-spot.is-reserved{border-color:#5B8DEF}
+.main .rdesk button.rest-floor-spot.rd-spot.is-held{border-color:var(--rd-muted);border-style:dashed}
+.main .rdesk button.rest-floor-spot.rd-spot.on{outline:4px solid var(--rd-forest);outline-offset:3px}
+.main .rdesk .rd-table-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.main .rdesk .rd-table-card{background:var(--rd-panel);border-radius:18px;box-shadow:var(--rd-shadow);padding:14px 16px;display:flex;flex-direction:column;gap:12px;border-top:5px solid var(--rd-brand)}
+.main .rdesk .rd-table-card.is-occupied{border-top-color:var(--rd-wait)}
+.main .rdesk .rd-table-card.is-reserved{border-top-color:#5B8DEF}
+.main .rdesk .rd-table-card.is-held{border-top-color:var(--rd-muted)}
+.main .rdesk .rd-table-card.editing{outline:2px solid var(--rd-brand)}
+.main .rdesk .rd-table-top{display:flex;align-items:center;gap:12px}
+.main .rdesk .rd-table-code{width:52px;height:52px;border-radius:14px;background:var(--rd-tint);color:var(--rd-forest);display:flex;align-items:center;justify-content:center;font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:18px;flex:0 0 auto}
+.main .rdesk .rd-table-what{display:flex;flex-direction:column;min-width:0;flex:1 1 auto}
+.main .rdesk .rd-table-what strong{font-size:16px}
+.main .rdesk .rd-table-what small{color:var(--rd-muted)}

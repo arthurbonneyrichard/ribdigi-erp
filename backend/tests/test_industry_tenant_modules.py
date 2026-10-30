@@ -746,7 +746,7 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert " · Occupied" not in restaurant
     assert "1 menu item has no recipe." in restaurant
     assert "no recipe" in restaurant
-    assert 'hotel-kpi is-cio' in restaurant
+    assert 'rd-kpis' in restaurant and 'Kitchen and bar' in restaurant
     assert "1 ticket is ready to serve." in restaurant
     assert "1 ingredient is low." in restaurant
     assert "Booking link for the website" in restaurant
@@ -761,17 +761,14 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "seats" in tables_desk
     assert 'aria-label="Restaurant floor"' in tables_desk
     assert "rest-floor" in tables_desk
-    assert "rest-table-form" in tables_desk
     assert "rest-floor-fields" in tables_desk
-    floor_fields = tables_desk.split('className="rest-floor-fields"', 1)[1].split('className="rest-floor-actions"', 1)[0]
+    floor_fields = tables_desk.split('className="rest-floor-fields', 1)[1].split('className="rest-floor-actions', 1)[0]
     assert "<span>Code</span>" in floor_fields
     assert "<span>Name</span>" in floor_fields
     assert "<span>Seats</span>" in floor_fields
     assert "<span>Store</span>" in floor_fields
     assert "Leftover table store ${row.code}" in floor_fields
-    assert "repeat(4,minmax(0,1fr))" in (root / "frontend/app/globals.css").read_text(encoding="utf-8")
     assert "rest-floor-actions" in tables_desk
-    assert "auto-fit,minmax(320px,1fr)" in (root / "frontend/app/globals.css").read_text(encoding="utf-8")
     assert "Drag a table to place it on the floor." in tables_desk
     assert 'aria-label="Restaurant floor map"' in tables_desk
     assert "Place table ${row.code} on the floor" in tables_desk
@@ -784,8 +781,10 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert 'aria-label="Restaurant table room"' in tables_desk
     assert "No room." in tables_desk
     assert "store_id: tableForm.store_id.trim() || null" in restaurant
-    assert "Leftover table store ${row.code}" in tables_desk
-    assert "Save leftover table store ${row.code}" in tables_desk
+    # One Save covers code, name, seats, store and room; editing opens only for the chosen table.
+    assert "saveWholeTable(row)" in tables_desk
+    assert "Save leftover table store" not in tables_desk
+    assert "editingTable === row.id" in tables_desk
     assert "code: edit.code.trim()" in restaurant
     assert "/restaurant/tables/${row.id}" in restaurant
     booking_desk = restaurant.split("tab === 'booking'", 1)[1].split("tab === 'orders'", 1)[0]
@@ -982,7 +981,7 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "row.customer_name" in restaurant
     assert "['Guest', row.customer_name]" in restaurant
     assert 'className="rest-scan-list"' in restaurant
-    assert 'className="rest-scan"' in restaurant
+    assert 'className="rd-mini" aria-label="Restaurant open orders"' in restaurant
     assert "orderWord(row.service_mode)" in restaurant
     recipes_desk = restaurant.split("tab === 'recipes'", 1)[1].split("tab === 'dashboard'", 1)[0]
     assert 'aria-label="Restaurant menu station"' in recipes_desk
@@ -1031,11 +1030,11 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "Choose an ingredient first" in restaurant
     assert "item.modifiers" in restaurant
     assert "Mark ${item.name} ready on ${row.order_number}" in restaurant
-    assert 'lbl">Tables' in restaurant
+    assert "<span>Tables</span>" in restaurant
     assert "function tableFloor" in restaurant
-    kitchen_kpi = restaurant.split('lbl">Kitchen and bar', 1)[1].split('lbl">Tables', 1)[0]
+    kitchen_kpi = restaurant.split("<span>Kitchen and bar</span>", 1)[1].split("<span>Tables</span>", 1)[0]
     assert "summary.tables" not in kitchen_kpi
-    tables_kpi = restaurant.split('lbl">Tables', 1)[1].split("hotel-alert-list", 1)[0]
+    tables_kpi = restaurant.split("<span>Tables</span>", 1)[1].split("rd-alerts", 1)[0]
     assert "summary.tables" in tables_kpi
     assert "Restaurant is not available for this company." in restaurant
     assert "Open front-desk float" in hotel

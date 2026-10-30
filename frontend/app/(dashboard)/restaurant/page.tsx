@@ -9,6 +9,8 @@ import { api } from '../../../lib/api';
 import { formatDateTime, formatMoney } from '../../../lib/format';
 import { getMe } from '../../../lib/meCache';
 import { moduleEnabledForTenant } from '../../../lib/industryModules';
+import { whereWords as deskWhere } from '../../../lib/restaurantDesk';
+import './restaurant-desk.css';
 
 type Row = Record<string, any>;
 
@@ -35,6 +37,7 @@ const ORDER_WORDS: Record<string, string> = {
   available: 'Available',
   occupied: 'Occupied',
   held: 'Held',
+  reserved: 'Reserved',
   requested: 'Requested',
   seated: 'Seated',
   finished: 'Finished',
@@ -100,6 +103,19 @@ function tenderLabel(row: Row) {
   return row.payment_method ? orderWord(row.payment_method) : '';
 }
 
+/** Each desk says what it is for, in one line. */
+const TAB_HEADINGS: Record<string, [string, string]> = {
+  tables: ['Tables and floor', 'Drag tables to match your room. Take an order, hold a table, or edit it from its card.'],
+  booking: ['Website and booking', 'Your public website, table bookings and walk-ins.'],
+  kitchen: ['Kitchen', 'Every dish to cook, oldest first. Start it, then mark it ready.'],
+  recipes: ['Recipes', 'What goes into each dish, so stock comes off when it sells.'],
+  waste: ['Waste', 'Record spoiled or dropped ingredients so stock stays right.'],
+  orders: [
+    'Full order editor',
+    'Dine-in, takeaway, and delivery. Kitchen tickets follow each item station. Completing an order deducts recipe ingredients.',
+  ],
+};
+
 function onlineLabel(row: Row) {
   return row.channel === 'online' ? 'Online' : '';
 }
@@ -141,6 +157,9 @@ export default function RestaurantPage() {
   const [extraForm, setExtraForm] = useState({ group: '', name: '', price: '0' });
   const [tableForm, setTableForm] = useState({ code: '', name: '', seats: '2', store_id: '', room: '' });
   const [leftoverTableStores, setLeftoverTableStores] = useState<Record<string, string>>({});
+  const [addingTable, setAddingTable] = useState(false);
+  const [editingTable, setEditingTable] = useState('');
+  const [retiringTable, setRetiringTable] = useState('');
   const [leftoverTableRooms, setLeftoverTableRooms] = useState<Record<string, string>>({});
   const [tableEdits, setTableEdits] = useState<Record<string, { code: string; name: string; seats: string }>>({});
   const [leftoverNotes, setLeftoverNotes] = useState<Record<string, string>>({});
@@ -391,38 +410,8 @@ export default function RestaurantPage() {
     };
   }
 
-  async function saveLeftoverTableStore(row: Row) {
-    setError('');
-    try {
-      await api(`/restaurant/tables/${row.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          store_id: (leftoverTableStores[row.id] ?? row.store_id ?? '').trim() || null,
-        }),
-      });
-      setMessage(`Saved leftover store on ${row.code}`);
-      await refresh();
-    } catch (err: any) {
-      setError(err.message || 'Could not save the leftover table store');
-    }
-  }
-
-  async function saveLeftoverTableRoom(row: Row) {
-    setError('');
-    const room = (leftoverTableRooms[row.id] ?? row.room ?? '').trim();
-    try {
-      await api(`/restaurant/tables/${row.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ room: room || null }),
-      });
-      setMessage(`Saved leftover room on ${row.code}`);
-      await refresh();
-    } catch (err: any) {
-      setError(err.message || 'Could not save the room');
-    }
-  }
-
-  async function saveTableChanges(row: Row) {
+  /** One Save for everything on a table: code, name, seats, store and room. */
+  async function saveWholeTable(row: Row) {
     const edit = tableEdit(row);
     setError('');
     try {
@@ -432,14 +421,18 @@ export default function RestaurantPage() {
           code: edit.code.trim(),
           name: edit.name.trim(),
           seats: Number(edit.seats) || 2,
+          store_id: (leftoverTableStores[row.id] ?? row.store_id ?? '').trim() || null,
+          room: (leftoverTableRooms[row.id] ?? row.room ?? '').trim() || null,
         }),
       });
       setMessage(`Saved ${row.code}`);
+      setEditingTable('');
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the table');
     }
   }
+
 
   async function retireTable(row: Row) {
     setError('');
@@ -451,6 +444,8 @@ export default function RestaurantPage() {
         return next;
       });
       setMessage(`Retired ${row.code}`);
+      setEditingTable('');
+      setRetiringTable('');
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not retire the table');
@@ -1863,8 +1858,8 @@ export default function RestaurantPage() {
         <DashboardGreeting desk="Restaurant dashboard" />
       ) : restaurantDesk ? (
         <PageHeader
-          title="Restaurant"
-          subtitle="Dine-in, takeaway, and delivery. Kitchen tickets follow each item station. Completing an order deducts recipe ingredients."
+          title={(TAB_HEADINGS[tab] || TAB_HEADINGS.orders)[0]}
+          subtitle={(TAB_HEADINGS[tab] || TAB_HEADINGS.orders)[1]}
         />
       ) : null}
       {error && <p role="alert">{error}</p>}
@@ -1873,279 +1868,431 @@ export default function RestaurantPage() {
         <p className="empty">Loading restaurant totals…</p>
       ) : null}
       {restaurantDesk && tab === 'dashboard' && summary && (
-        <section className="hotel-ops" aria-label="Restaurant dashboard">
-          <div className="hotel-ops-kpis">
-            <div className="hotel-kpi is-rev">
-              <div className="lbl">Sales today</div>
-              <div className="val">{formatMoney(summary.sales_today)}</div>
-              <div className="hint">
+        <section className="rdesk rd-dash" aria-label="Restaurant dashboard">
+          <div className="rd-actionbar" aria-label="Restaurant quick desks">
+            <Link className="rd-action primary" href="/restaurant/till">
+              <span className="ico" aria-hidden>＋</span>
+              <span>
+                <strong>New order</strong>
+                <small>Open the restaurant till</small>
+              </span>
+            </Link>
+            <Link className="rd-action" href="/restaurant/orders">
+              <span className="ico" aria-hidden>☰</span>
+              <span>
+                <strong>Orders</strong>
+                <small>{openOrders.length} on the floor</small>
+              </span>
+            </Link>
+            <Link className="rd-action" href="/restaurant?tab=kitchen">
+              <span className="ico" aria-hidden>♨</span>
+              <span>
+                <strong>Kitchen</strong>
+                <small>{liveTickets.length} cooking · {readyTickets.length} ready</small>
+              </span>
+            </Link>
+            <Link className="rd-action" href="/restaurant?tab=tables">
+              <span className="ico" aria-hidden>▦</span>
+              <span>
+                <strong>Tables and floor</strong>
+                <small>{tableFloor(summary.tables)}</small>
+              </span>
+            </Link>
+            <Link className="rd-action" href="/restaurant?tab=booking">
+              <span className="ico" aria-hidden>☏</span>
+              <span>
+                <strong>Website and booking</strong>
+                <small>{waitingBookings.length} waiting</small>
+              </span>
+            </Link>
+            <Link className="rd-action" href="/restaurant/bills">
+              <span className="ico" aria-hidden>₵</span>
+              <span>
+                <strong>Bills</strong>
+                <small>Today&apos;s takings</small>
+              </span>
+            </Link>
+          </div>
+          <p className="rd-sr">Open a restaurant desk.</p>
+
+          <div className="rd-kpis">
+            <div className="rd-kpi hero">
+              <span>Sales today</span>
+              <strong>{formatMoney(summary.sales_today)}</strong>
+              <small>
                 Table bills {formatMoney(Number(summary.table_sales_today || 0))} · Restaurant till{' '}
                 {formatMoney(Number(summary.till_sales_today || 0))}
-              </div>
-              <p className="muted">
-                Company dashboard profit uses the ingredient cost. A menu item with no recipe uses its own cost.
-                A restaurant till return comes off Sales today. The original receipt stays on the till report.
-                A restaurant till return comes off Sales today for the store on the original receipt.
-                A restaurant till return comes off company dashboard profit without the tax. Sales today keeps the tax.
-                A completed restaurant bill includes its service charge in company dashboard profit.
-                A restaurant till discount comes off company dashboard profit. Top dishes stay at the menu amount.
-              </p>
+              </small>
             </div>
-            <div className="hotel-kpi is-occ">
-              <div className="lbl">Open orders</div>
-              <div className="val">{summary.open_orders ?? openOrders.length}</div>
+            <div className="rd-kpi">
+              <span>Open orders</span>
+              <strong>{summary.open_orders ?? openOrders.length}</strong>
             </div>
-            <div className="hotel-kpi is-cio">
-              <div className="lbl">Kitchen and bar</div>
-              <div className="val">{liveTickets.length + readyTickets.length}</div>
-              <div className="hint">Kitchen {summary.kitchen_queue ?? summary.kitchen_backlog ?? 0} · Bar {summary.bar_queue ?? 0}</div>
+            <div className="rd-kpi">
+              <span>Kitchen and bar</span>
+              <strong>{liveTickets.length + readyTickets.length}</strong>
+              <small>
+                Kitchen {summary.kitchen_queue ?? summary.kitchen_backlog ?? 0} · Bar {summary.bar_queue ?? 0}
+              </small>
             </div>
-            <div className="hotel-kpi is-avail">
-              <div className="lbl">Tables</div>
-              <div className="val">
+            <div className="rd-kpi">
+              <span>Tables</span>
+              <strong>
                 {Object.values(summary.tables || {}).reduce((total: number, count) => total + Number(count || 0), 0)}
-              </div>
-              <div className="hint">{tableFloor(summary.tables)}</div>
+              </strong>
+              <small>{tableFloor(summary.tables)}</small>
+            </div>
+            <div className="rd-kpi">
+              <span>Booking requests</span>
+              <strong>{waitingBookings.length}</strong>
             </div>
           </div>
+
           {dashAlerts.length ? (
-            <ul className="hotel-alert-list" aria-label="Restaurant operational alerts">
+            <ul className="rd-alerts" aria-label="Restaurant operational alerts">
               {dashAlerts.map((row) => (
                 <li key={row.message}>
-                  <Link href={row.href}>{row.message}</Link>
+                  <Link href={row.href}>
+                    <span className="dot" aria-hidden />
+                    {row.message}
+                    <span className="go" aria-hidden>→</span>
+                  </Link>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="hint">No operational alerts.</p>
+            <p className="rd-allgood">No operational alerts.</p>
           )}
-          <div className="hotel-ops-split">
-            <div className="panel">
-              <h3>Open orders</h3>
-              <ul className="rest-scan-list" aria-label="Restaurant open orders">
-                {openOrders.slice(0, 4).map((row) => (
-                  <li key={row.id} className="rest-scan">
-                    {scanFacts([
-                      ['Order', row.order_number],
-                      ['Service', orderWord(row.service_mode)],
-                      ['From', onlineLabel(row)],
-                      ['Status', orderWord(row.status)],
-                      ['Total', formatMoney(row.total_amount)],
-                    ])}
+
+          <div className="rd-split">
+            <div className="rd-panel">
+              <div className="rd-panel-head">
+                <h3>Open orders</h3>
+                <Link href="/restaurant/orders">See all →</Link>
+              </div>
+              <ul className="rd-mini" aria-label="Restaurant open orders">
+                {openOrders.slice(0, 6).map((row) => (
+                  <li key={row.id}>
+                    <Link href="/restaurant/orders">
+                      <strong>{deskWhere(row, tables)}</strong>
+                      <small>
+                        {row.order_number} · {orderWord(row.service_mode)}
+                        {onlineLabel(row) === 'Online' ? ' · Online' : ''}
+                      </small>
+                      <span className={`rd-pill ${row.status === 'ready' ? '' : row.status === 'open' ? 'grey' : 'wait'}`}>
+                        {orderWord(row.status)}
+                      </span>
+                      <b>{formatMoney(row.total_amount)}</b>
+                    </Link>
                   </li>
                 ))}
-                {!openOrders.length && <li className="muted">No open orders.</li>}
+                {!openOrders.length && <li className="rd-mini-empty">No open orders.</li>}
               </ul>
-              <p><Link href="/restaurant?tab=orders">Open orders</Link></p>
             </div>
-            <div className="panel">
-              <h3>Kitchen and bar</h3>
-              <ul className="rest-scan-list" aria-label="Restaurant live tickets">
-                {liveTickets.slice(0, 4).map((row) => (
-                  <li key={row.id} className="rest-scan">
-                    {scanFacts([
-                      ['Order', row.order_number || 'Order'],
-                      ['Station', orderWord(row.station || 'kitchen')],
-                      ['Status', orderWord(row.status)],
-                    ])}
+            <div className="rd-panel">
+              <div className="rd-panel-head">
+                <h3>Kitchen and bar</h3>
+                <Link href="/restaurant?tab=kitchen">Open kitchen →</Link>
+              </div>
+              <ul className="rd-mini" aria-label="Restaurant live tickets">
+                {[...readyTickets, ...liveTickets].slice(0, 6).map((row) => (
+                  <li key={row.id}>
+                    <Link href="/restaurant?tab=kitchen">
+                      <strong>{row.order_number || 'Order'}</strong>
+                      <small>{orderWord(row.station || 'kitchen')}</small>
+                      <span className={`rd-pill ${row.status === 'ready' ? '' : 'wait'}`}>{orderWord(row.status)}</span>
+                      <b>{(row.items || []).length} items</b>
+                    </Link>
                   </li>
                 ))}
-                {!liveTickets.length && <li className="muted">No tickets in the kitchen or at the bar.</li>}
+                {!liveTickets.length && !readyTickets.length && (
+                  <li className="rd-mini-empty">No tickets in the kitchen or at the bar.</li>
+                )}
               </ul>
-              <p><Link href="/restaurant?tab=kitchen">Open kitchen</Link></p>
             </div>
           </div>
-          <p className="hint">Open a restaurant desk.</p>
-          <div className="hotel-quick" aria-label="Restaurant quick desks">
-            <Link href="/restaurant?tab=tables">Tables and floor</Link>
-            <Link href="/restaurant/orders">Orders</Link>
-            <Link href="/restaurant?tab=kitchen">Kitchen</Link>
-            <Link href="/restaurant?tab=booking">Website and booking</Link>
-            <Link href="/restaurant/till">Restaurant till</Link>
-            <Link href="/restaurant/bills">Bills</Link>
-          </div>
+
+          <details className="rd-howto">
+            <summary>How these numbers are worked out</summary>
+            <p>
+              Company dashboard profit uses the ingredient cost. A menu item with no recipe uses its own cost.
+              A restaurant till return comes off Sales today. The original receipt stays on the till report.
+              A restaurant till return comes off Sales today for the store on the original receipt.
+              A restaurant till return comes off company dashboard profit without the tax. Sales today keeps the tax.
+              A completed restaurant bill includes its service charge in company dashboard profit.
+              A restaurant till discount comes off company dashboard profit. Top dishes stay at the menu amount.
+            </p>
+          </details>
         </section>
       )}
       {restaurantDesk && tab === 'tables' && (
-        <section className="card">
-          <h2>Tables and floor</h2>
-          <p className="muted">Drag a table to place it on the floor.</p>
-          <div className="rest-floor-map" aria-label="Restaurant floor map" ref={floorMapRef}>
-            {tables.map((row, index) => {
-              const spot = floorSpot(row, index);
-              return (
-                <button
-                  key={row.id}
-                  type="button"
-                  className={`rest-floor-spot is-${row.status || 'available'}`}
-                  style={{ left: `${spot.x}%`, top: `${spot.y}%` }}
-                  aria-label={`Place table ${row.code} on the floor`}
-                  onPointerDown={(event) => startFloorDrag(event, row, index)}
-                >
-                  <strong>{row.code}</strong>
-                  <span>{Number(row.seats || 0) === 1 ? '1 seat' : `${row.seats} seats`}</span>
-                </button>
-              );
-            })}
+        <section className="rdesk rd-tables" aria-label="Restaurant tables and floor">
+          <div className="rd-head">
+            <div className="rd-legend" aria-label="Table status">
+              {(['available', 'occupied', 'reserved', 'held'] as const).map((status) => (
+                <span key={status} className={`rd-legend-item is-${status}`}>
+                  <span className="sw" aria-hidden />
+                  {orderWord(status)} <b>{tables.filter((row) => (row.status || 'available') === status).length}</b>
+                </span>
+              ))}
+            </div>
+            <div className="rd-head-actions">
+              <button
+                type="button"
+                className="rd-primary"
+                aria-label="Add a table"
+                onClick={() => {
+                  setAddingTable((open) => !open);
+                  setEditingTable('');
+                }}
+              >
+                {addingTable ? 'Close' : '+ Add table'}
+              </button>
+            </div>
           </div>
-          <form className="rest-table-form" onSubmit={createTable}>
-            <label>
-              <span>Code</span>
-              <input aria-label="Restaurant table code" value={tableForm.code} onChange={(e) => setTableForm({ ...tableForm, code: e.target.value })} required />
-            </label>
-            <label>
-              <span>Name</span>
-              <input aria-label="Restaurant table name" value={tableForm.name} onChange={(e) => setTableForm({ ...tableForm, name: e.target.value })} required />
-            </label>
-            <label>
-              <span>Seats</span>
-              <input aria-label="Restaurant table seats" value={tableForm.seats} onChange={(e) => setTableForm({ ...tableForm, seats: e.target.value })} />
-            </label>
-            <label>
-              <span>Store</span>
-              <select aria-label="Restaurant table store" value={tableForm.store_id} onChange={(e) => setTableForm({ ...tableForm, store_id: e.target.value })}>
-                <option value="">No store</option>
-                {stores.filter((row) => row.is_active !== false).map((row) => (
-                  <option key={row.id} value={row.id}>{row.code} · {row.name}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span>Room</span>
-              <select aria-label="Restaurant table room" value={tableForm.room} onChange={(e) => setTableForm({ ...tableForm, room: e.target.value })}>
-                <option value="">No room</option>
-                <option value="dining">Dining</option>
-                <option value="patio">Patio</option>
-                <option value="private">Private</option>
-              </select>
-            </label>
-            <button type="submit" aria-label="Save restaurant table">Save table</button>
-          </form>
-          <ul className="rest-floor" aria-label="Restaurant floor">
-            {tables.map((row) => (
-              <li key={row.id} className={`rest-floor-card is-${row.status || 'available'}`}>
-                <div className="rest-floor-head">
-                  <strong>{row.code}</strong>
-                  <span className="rest-order-fact"><span>Name</span>{row.name}</span>
-                  <span className="rest-order-fact"><span>Seats</span>{Number(row.seats || 0) === 1 ? '1 seat' : `${row.seats} seats`}</span>
-                  <span className="rest-order-fact"><span>Room</span>{row.room ? orderWord(row.room) : 'No room.'}</span>
-                  <span className="rest-floor-status">{orderWord(row.status)}</span>
-                </div>
-                <div className="rest-floor-fields">
-                  <label>
-                    <span>Code</span>
-                  <input
-                    aria-label={`Leftover table code ${row.code}`}
-                    value={tableEdit(row).code}
-                    onChange={(e) => setTableEdits((current) => ({
-                      ...current,
-                      [row.id]: { ...tableEdit(row), code: e.target.value },
-                    }))}
-                  />
-                  </label>
-                  <label>
-                    <span>Name</span>
-                  <input
-                    aria-label={`Edit table ${row.code} name`}
-                    value={tableEdit(row).name}
-                    onChange={(e) => setTableEdits((current) => ({
-                      ...current,
-                      [row.id]: { ...tableEdit(row), name: e.target.value },
-                    }))}
-                  />
-                  </label>
-                  <label>
-                    <span>Seats</span>
-                  <input
-                    aria-label={`Edit table ${row.code} seats`}
-                    value={tableEdit(row).seats}
-                    onChange={(e) => setTableEdits((current) => ({
-                      ...current,
-                      [row.id]: { ...tableEdit(row), seats: e.target.value },
-                    }))}
-                  />
-                  </label>
-                  <label>
-                    <span>Store</span>
-                <select
-                  aria-label={`Leftover table store ${row.code}`}
-                  value={leftoverTableStores[row.id] ?? row.store_id ?? ''}
-                  onChange={(e) => setLeftoverTableStores((current) => ({ ...current, [row.id]: e.target.value }))}
-                >
+
+          {addingTable ? (
+            <form className="rd-panel rd-form-grid" onSubmit={async (event) => {
+              await createTable(event);
+              setAddingTable(false);
+            }}>
+              <h3>New table</h3>
+              <label>
+                <span>Code</span>
+                <input aria-label="Restaurant table code" placeholder="T9" value={tableForm.code} onChange={(e) => setTableForm({ ...tableForm, code: e.target.value })} required />
+              </label>
+              <label>
+                <span>Name</span>
+                <input aria-label="Restaurant table name" placeholder="Window 1" value={tableForm.name} onChange={(e) => setTableForm({ ...tableForm, name: e.target.value })} required />
+              </label>
+              <label>
+                <span>Seats</span>
+                <input aria-label="Restaurant table seats" inputMode="numeric" value={tableForm.seats} onChange={(e) => setTableForm({ ...tableForm, seats: e.target.value })} />
+              </label>
+              <label>
+                <span>Store</span>
+                <select aria-label="Restaurant table store" value={tableForm.store_id} onChange={(e) => setTableForm({ ...tableForm, store_id: e.target.value })}>
                   <option value="">No store</option>
-                  {stores.filter((store) => store.is_active !== false).map((store) => (
-                    <option key={store.id} value={store.id}>{store.code} · {store.name}</option>
+                  {stores.filter((row) => row.is_active !== false).map((row) => (
+                    <option key={row.id} value={row.id}>{row.code} · {row.name}</option>
                   ))}
                 </select>
-                  </label>
-                  <label>
-                    <span>Room</span>
-                <select
-                  aria-label={`Leftover table room ${row.code}`}
-                  value={leftoverTableRooms[row.id] ?? row.room ?? ''}
-                  onChange={(e) => setLeftoverTableRooms((current) => ({ ...current, [row.id]: e.target.value }))}
-                >
+              </label>
+              <label>
+                <span>Room</span>
+                <select aria-label="Restaurant table room" value={tableForm.room} onChange={(e) => setTableForm({ ...tableForm, room: e.target.value })}>
                   <option value="">No room</option>
                   <option value="dining">Dining</option>
                   <option value="patio">Patio</option>
                   <option value="private">Private</option>
                 </select>
-                  </label>
-                </div>
-                <div className="rest-floor-actions">
-                <button type="button" aria-label={`Save table ${row.code}`} onClick={() => saveTableChanges(row)}>
-                  Save
-                </button>
-                <button type="button" aria-label={`Save leftover table store ${row.code}`} onClick={() => saveLeftoverTableStore(row)}>
-                  Save store
-                </button>
-                <button type="button" aria-label={`Save leftover room on ${row.code}`} onClick={() => saveLeftoverTableRoom(row)}>
-                  Save room
-                </button>
-                {row.status === 'available' ? (
-                  <>
+              </label>
+              <div className="rd-form-actions">
+                <button type="submit" className="rd-primary" aria-label="Save restaurant table">Save table</button>
+              </div>
+            </form>
+          ) : null}
+
+          <div className="rd-panel">
+            <div className="rd-panel-head">
+              <h3>Floor</h3>
+              <span className="rd-hint">Drag a table to place it on the floor. Double-tap it to edit.</span>
+            </div>
+            <div className="rest-floor-map rd-floor" aria-label="Restaurant floor map" ref={floorMapRef}>
+              {tables.map((row, index) => {
+                const spot = floorSpot(row, index);
+                const bill = openOrders.find((order) => order.table_id === row.id);
+                return (
                   <button
+                    key={row.id}
                     type="button"
-                    aria-label={`Hold table ${row.code}`}
-                    onClick={async () => {
-                      setError('');
-                      try {
-                        await api(`/restaurant/tables/${row.id}/hold`, { method: 'POST', body: JSON.stringify({}) });
-                        setMessage(`Held ${row.code}`);
-                        await refresh();
-                      } catch (err: any) {
-                        setError(err.message || 'Could not hold the table');
-                      }
+                    className={`rest-floor-spot rd-spot is-${bill ? 'occupied' : row.status || 'available'}${Number(row.seats || 0) > 4 ? ' big' : ''}${editingTable === row.id ? ' on' : ''}`}
+                    style={{ left: `${spot.x}%`, top: `${spot.y}%` }}
+                    aria-label={`Place table ${row.code} on the floor`}
+                    onPointerDown={(event) => startFloorDrag(event, row, index)}
+                    onDoubleClick={() => {
+                      setEditingTable(row.id);
+                      setAddingTable(false);
                     }}
                   >
-                    Hold
+                    <strong>{row.code}</strong>
+                    <span>{bill ? formatMoney(bill.total_amount) : Number(row.seats || 0) === 1 ? '1 seat' : `${row.seats} seats`}</span>
                   </button>
-                  <button type="button" aria-label={`Retire table ${row.code}`} onClick={() => retireTable(row)}>
-                    Retire
-                  </button>
-                  </>
-                ) : row.status === 'held' ? (
-                  <button
-                    type="button"
-                    aria-label={`Release table ${row.code}`}
-                    onClick={async () => {
-                      setError('');
-                      try {
-                        await api(`/restaurant/tables/${row.id}/release`, { method: 'POST', body: JSON.stringify({}) });
-                        setMessage(`Released ${row.code}`);
-                        await refresh();
-                      } catch (err: any) {
-                        setError(err.message || 'Could not release the table');
-                      }
-                    }}
-                  >
-                    Release
-                  </button>
-                ) : null}
-                </div>
-              </li>
-            ))}
-            {!tables.length && <li className="muted">No tables yet.</li>}
+                );
+              })}
+            </div>
+          </div>
+
+          <ul className="rest-floor rd-table-list" aria-label="Restaurant floor">
+            {tables.map((row) => {
+              const bill = openOrders.find((order) => order.table_id === row.id);
+              const editing = editingTable === row.id;
+              return (
+                <li key={row.id} className={`rd-table-card is-${bill ? 'occupied' : row.status || 'available'}${editing ? ' editing' : ''}`}>
+                  <div className="rd-table-top">
+                    <span className="rd-table-code">{row.code}</span>
+                    <div className="rd-table-what">
+                      <strong>{row.name}</strong>
+                      <small>
+                        {Number(row.seats || 0) === 1 ? '1 seat' : `${row.seats} seats`} · {row.room ? orderWord(row.room) : 'No room.'}
+                      </small>
+                    </div>
+                    <span className={`rd-pill ${bill || row.status === 'occupied' ? 'wait' : row.status === 'available' ? '' : 'grey'}`}>
+                      {bill ? `Open bill ${formatMoney(bill.total_amount)}` : orderWord(row.status)}
+                    </span>
+                  </div>
+                  {editing ? (
+                    <>
+                      <div className="rest-floor-fields rd-form-grid">
+                        <label>
+                          <span>Code</span>
+                          <input
+                            aria-label={`Leftover table code ${row.code}`}
+                            value={tableEdit(row).code}
+                            onChange={(e) => setTableEdits((current) => ({ ...current, [row.id]: { ...tableEdit(row), code: e.target.value } }))}
+                          />
+                        </label>
+                        <label>
+                          <span>Name</span>
+                          <input
+                            aria-label={`Edit table ${row.code} name`}
+                            value={tableEdit(row).name}
+                            onChange={(e) => setTableEdits((current) => ({ ...current, [row.id]: { ...tableEdit(row), name: e.target.value } }))}
+                          />
+                        </label>
+                        <label>
+                          <span>Seats</span>
+                          <input
+                            aria-label={`Edit table ${row.code} seats`}
+                            inputMode="numeric"
+                            value={tableEdit(row).seats}
+                            onChange={(e) => setTableEdits((current) => ({ ...current, [row.id]: { ...tableEdit(row), seats: e.target.value } }))}
+                          />
+                        </label>
+                        <label>
+                          <span>Store</span>
+                          <select
+                            aria-label={`Leftover table store ${row.code}`}
+                            value={leftoverTableStores[row.id] ?? row.store_id ?? ''}
+                            onChange={(e) => setLeftoverTableStores((current) => ({ ...current, [row.id]: e.target.value }))}
+                          >
+                            <option value="">No store</option>
+                            {stores.filter((store) => store.is_active !== false).map((store) => (
+                              <option key={store.id} value={store.id}>{store.code} · {store.name}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          <span>Room</span>
+                          <select
+                            aria-label={`Leftover table room ${row.code}`}
+                            value={leftoverTableRooms[row.id] ?? row.room ?? ''}
+                            onChange={(e) => setLeftoverTableRooms((current) => ({ ...current, [row.id]: e.target.value }))}
+                          >
+                            <option value="">No room</option>
+                            <option value="dining">Dining</option>
+                            <option value="patio">Patio</option>
+                            <option value="private">Private</option>
+                          </select>
+                        </label>
+                      </div>
+                      {retiringTable === row.id ? (
+                        <div className="rd-confirm" role="alert">
+                          Retire {row.code}? It leaves the floor and the till. Past bills stay.
+                          <div>
+                            <button type="button" onClick={() => setRetiringTable('')}>Keep it</button>
+                            <button type="button" className="rd-danger" aria-label={`Retire table ${row.code}`} onClick={() => retireTable(row)}>
+                              Yes, retire
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+                      <div className="rest-floor-actions rd-row-actions">
+                        <button type="button" className="rd-primary" aria-label={`Save table ${row.code}`} onClick={() => saveWholeTable(row)}>
+                          Save
+                        </button>
+                        <button type="button" onClick={() => setEditingTable('')}>Cancel</button>
+                        {row.status === 'available' && !bill ? (
+                          <button type="button" className="rd-danger right" aria-label={`Ask to retire table ${row.code}`} onClick={() => setRetiringTable(row.id)}>
+                            Retire table
+                          </button>
+                        ) : null}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="rest-floor-actions rd-row-actions">
+                      {bill ? (
+                        <button
+                          type="button"
+                          className="rd-primary"
+                          aria-label={`Open bill on table ${row.code}`}
+                          onClick={() => (window.location.href = `/restaurant/till?order=${encodeURIComponent(bill.id)}`)}
+                        >
+                          Open bill
+                        </button>
+                      ) : row.status === 'available' ? (
+                        <button
+                          type="button"
+                          className="rd-go"
+                          aria-label={`Seat guests at table ${row.code}`}
+                          onClick={() => (window.location.href = '/restaurant/till')}
+                        >
+                          Take order
+                        </button>
+                      ) : null}
+                      {row.status === 'available' && !bill ? (
+                        <button
+                          type="button"
+                          aria-label={`Hold table ${row.code}`}
+                          onClick={async () => {
+                            setError('');
+                            try {
+                              await api(`/restaurant/tables/${row.id}/hold`, { method: 'POST', body: JSON.stringify({}) });
+                              setMessage(`Held ${row.code}`);
+                              await refresh();
+                            } catch (err: any) {
+                              setError(err.message || 'Could not hold the table');
+                            }
+                          }}
+                        >
+                          Hold
+                        </button>
+                      ) : row.status === 'held' ? (
+                        <button
+                          type="button"
+                          aria-label={`Release table ${row.code}`}
+                          onClick={async () => {
+                            setError('');
+                            try {
+                              await api(`/restaurant/tables/${row.id}/release`, { method: 'POST', body: JSON.stringify({}) });
+                              setMessage(`Released ${row.code}`);
+                              await refresh();
+                            } catch (err: any) {
+                              setError(err.message || 'Could not release the table');
+                            }
+                          }}
+                        >
+                          Release
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        className="right"
+                        aria-label={`Edit table ${row.code}`}
+                        onClick={() => {
+                          setEditingTable(row.id);
+                          setAddingTable(false);
+                          setRetiringTable('');
+                        }}
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+            {!tables.length && <li className="rd-mini-empty">No tables yet. Add your first table above.</li>}
           </ul>
         </section>
       )}
