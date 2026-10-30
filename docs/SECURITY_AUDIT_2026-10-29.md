@@ -39,9 +39,10 @@ Method: dependency scans (pip-audit, npm audit), static analysis (bandit), a rou
 | O5 | python-jose 3.5.0 (unmaintained, advisory) | Replaced with PyJWT 2.15.1; `cryptography` pinned directly. HS256 is still pinned. |
 | O6 | Refresh-token reuse not detected | An already-rotated refresh token reused more than 60 s later revokes every session of that user and writes `refresh_token_reuse` to the audit log. Within 60 s (two tabs refreshing at once) it is only refused. Test: `test_refresh_token_reuse.py`. |
 | O8 | `Server: uvicorn` header; deprecated `on_event` | `--no-server-header` added to the Dockerfile and both compose files; startup moved to a lifespan handler. |
+| O7 | DNS-rebind race in the outbound guard | 30 Oct: `outbound.public_transport()` resolves the host, refuses it if any address is not public, and connects to that checked address (TLS still verifies the original host name). Used by webhooks, bank feeds and the WooCommerce connector. Test: `test_outbound_guard_production.py`. |
 | O2 (part) | Encryption keys derived from the JWT secret | Production now logs a warning at startup unless `BACKUP_ENCRYPTION_KEY` and `TOTP_ENCRYPTION_KEY` are both set. A dedicated billing/shop key still needs a re-encryption migration. |
 
-Still open: O1 (Next 16 upgrade), O2 (dedicated key and migration), O3 (enforce the full CSP), O7 (pin the resolved IP), O9 (external pentest, production restore drill).
+Still open: O1 (Next 16 upgrade), O2 (dedicated key and migration), O3 (enforce the full CSP), O9 (external pentest, production restore drill).
 
 ## Verified in place
 

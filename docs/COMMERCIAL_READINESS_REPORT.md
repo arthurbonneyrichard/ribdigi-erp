@@ -1,6 +1,15 @@
 # RIBDIGI ERP COMMERCIAL READINESS REPORT
 
-**Date:** 2026-09-17 (historical scorecard). **29 October 2026 UTC** is the latest Retail verification. **28 October 2026 UTC** is the latest Restaurant result. **25 October 2026 UTC** stays the latest Hotel result. **15 October 2026 UTC** stays the latest result for Security, Retail, and Offline POS. Earlier addenda stay below. The 2026-10-05 section still says **Not ready for market**.
+**Date:** 2026-09-17 (historical scorecard). **30 October 2026 UTC** is the latest Retail verification. **28 October 2026 UTC** is the latest Restaurant result. **25 October 2026 UTC** stays the latest Hotel result. **15 October 2026 UTC** stays the latest result for Security, Retail, and Offline POS. Earlier addenda stay below. The 2026-10-05 section still says **Not ready for market**.
+
+## 30 October 2026 UTC — Retail commercial ready
+
+**Retail is ready to sell. Verified by evidence, not certified.** Production runs `52e232ef67` after a fully green CI, with the 29 Oct security fixes live. This pass closed the last product item and one security item:
+
+- Audit log **Record type** no longer shows the raw API path: `sales/invoices/<id>/post` reads `Sales › Invoices › Post`, and the catch-all action reads `Saved change`.
+- Security O7: outbound requests to tenant URLs (webhooks, bank feeds, WooCommerce) connect to the address that passed the public-address check, so a DNS rebind cannot reach a private address.
+
+Still owed by the owner before any certification claim: external penetration test; restore drill on production with RPO/RTO recorded. Security O1, O2, O3 stay open as planned releases (see `SECURITY_AUDIT_2026-10-29.md`). Gate table: `RETAIL_PRODUCTION_READINESS.md`.
 
 ## 29 October 2026 UTC — Retail verification (Verified, not certified)
 

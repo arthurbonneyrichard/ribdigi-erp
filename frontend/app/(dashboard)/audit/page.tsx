@@ -77,6 +77,20 @@ function recordTypeLabel(value: string | null | undefined, hotel = false, restau
   if (hotel && key === 'stock_movement') return 'Supply movement';
   if (restaurant && key === 'product') return 'Menu item';
   if (restaurant && key === 'stock_movement') return 'Ingredient movement';
+  // Catch-all HTTP entries store the API path (e.g. sales/invoices/<id>/post).
+  // Show its words, not the path: "Sales › Invoices › Post".
+  if (key.includes('/')) {
+    const words = key
+      .split('/')
+      .filter((part) => part && !USER_ID_RE.test(part))
+      .map((part) => plainLabel(part));
+    return words.join(' › ') || 'Record';
+  }
+  return plainLabel(value);
+}
+
+function actionLabel(value: string | null | undefined): string {
+  if (String(value || '').trim().toLowerCase() === 'http_write') return 'Saved change';
   return plainLabel(value);
 }
 
@@ -479,7 +493,7 @@ export default function Page() {
                 <tr key={r.id}>
                   {restaurantOps ? (
                     <td data-label="What happened">
-                      {plainLabel(r.action)}
+                      {actionLabel(r.action)}
                       <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>
                         {areaLabel(r.module, hotelOps, restaurantOps)}
                         {' · '}
@@ -494,7 +508,7 @@ export default function Page() {
                   ) : (
                     <td>{areaLabel(r.module, hotelOps, restaurantOps)}</td>
                   )}
-                  {restaurantOps ? null : <td>{plainLabel(r.action)}</td>}
+                  {restaurantOps ? null : <td>{actionLabel(r.action)}</td>}
                   {restaurantOps ? null : <td>{recordTypeLabel(r.entity, hotelOps, restaurantOps)}</td>}
                   {restaurantOps ? (
                     <td data-label="Person">

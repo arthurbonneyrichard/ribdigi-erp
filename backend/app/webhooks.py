@@ -366,8 +366,9 @@ async def _deliver_http(
         "User-Agent": "RIBDIGI-Webhooks/1.0",
     }
     if transport is None:
-        from app.outbound import assert_public_destination
+        from app.outbound import assert_public_destination, public_transport
 
+        transport = public_transport()
         try:
             await assert_public_destination(url)
         except HTTPException as exc:

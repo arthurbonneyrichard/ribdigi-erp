@@ -63,10 +63,10 @@ class WooCommerceConnector:
             return await self._http_get(url, self.consumer_key, self.consumer_secret)
         import httpx
 
-        from app.outbound import assert_public_destination
+        from app.outbound import assert_public_destination, public_transport
 
         await assert_public_destination(url)
-        async with httpx.AsyncClient(timeout=20.0) as client:
+        async with httpx.AsyncClient(timeout=20.0, transport=public_transport()) as client:
             response = await client.get(
                 url,
                 auth=(self.consumer_key, self.consumer_secret),
@@ -91,10 +91,10 @@ class WooCommerceConnector:
             return await self._http_put(url, self.consumer_key, self.consumer_secret, body)
         import httpx
 
-        from app.outbound import assert_public_destination
+        from app.outbound import assert_public_destination, public_transport
 
         await assert_public_destination(url)
-        async with httpx.AsyncClient(timeout=20.0) as client:
+        async with httpx.AsyncClient(timeout=20.0, transport=public_transport()) as client:
             response = await client.put(
                 url,
                 auth=(self.consumer_key, self.consumer_secret),
