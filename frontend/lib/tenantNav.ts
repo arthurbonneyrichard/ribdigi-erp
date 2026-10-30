@@ -72,7 +72,7 @@ export const HOTEL_NAV_ITEMS: NavItem[] = [
   ['Customers', '/customers', 'sales'],
   ['Discount codes', '/sales?tab=coupons', 'sales'],
   ['Gift cards', '/sales?tab=giftcards', 'sales'],
-  ['Shop till', '/pos', 'pos'],
+  ['Shop till', '/hotel/shop', 'hotel'],
   ['Billing and Guest Folios', '/hotel?tab=billing', 'hotel'],
   ['Hotel Finance and Cashiering', '/hotel?tab=cashier', 'hotel'],
   ['Night audit', '/hotel?tab=cashier#night-audit', 'hotel'],
@@ -131,7 +131,7 @@ export const HOTEL_NAV_GROUPS: NavGroup[] = [
       ['Customers', '/customers', 'sales'],
       ['Discount codes', '/sales?tab=coupons', 'sales'],
       ['Gift cards', '/sales?tab=giftcards', 'sales'],
-      ['Shop till', '/pos', 'pos'],
+      ['Shop till', '/hotel/shop', 'hotel'],
     ],
   },
   {
@@ -385,7 +385,8 @@ export function industryNavHrefOk(href: string, industry: string | null | undefi
   }
   // Restaurant rings on its own till (/restaurant/till); the retail POS stays off its menus.
   if (path === '/pos') {
-    return ind === 'retail' || ind === 'hotel';
+    // Restaurant and hotel ring on their own tills (/restaurant/till, /hotel/shop).
+    return ind === 'retail';
   }
   // A restaurant keeps its bills and guests on its own screens (/restaurant/bills, /restaurant/guests).
   if (path === '/sales' || path === '/customers') {

@@ -3,6 +3,8 @@ import { normalizeIndustry } from './industries';
 import { getMe } from './meCache';
 
 const POS_INDUSTRIES = new Set(['retail', 'retail_wholesale', 'pharmacy', 'restaurant', 'hotel']);
+/** Restaurant and hotel keep their own drawers; they never open a retail POS session. */
+type OwnTill = 'restaurant' | 'hotel' | null;
 const CASHIER_SIGN_OUT_ROLES = new Set(['cashier', 'hotel_cashier']);
 const PLATFORM_ROLES = new Set([
   'super_admin',
@@ -57,7 +59,7 @@ export function tillBlockedReason(me: MeData | null | undefined): string {
   if (perms && typeof perms === 'object') {
     const star = perms['*'] || [];
     // A restaurant rings on its own till, which needs restaurant access (not the retail POS).
-    const pos = (industry === 'restaurant' ? perms.restaurant : perms.pos) || [];
+    const pos = (industry === 'restaurant' ? perms.restaurant : industry === 'hotel' ? perms.hotel : perms.pos) || [];
     const allowed = star.includes('*') || star.includes('write') || pos.includes('write') || pos.includes('*');
     if (!allowed) return 'Your role cannot sell at the till. Ask the owner to give you till access in User Management.';
   }
@@ -74,13 +76,28 @@ export function shiftOpenError(): string {
   return lastShiftOpenError;
 }
 
-async function isRestaurantCompany(): Promise<boolean> {
+async function ownTill(): Promise<OwnTill> {
   try {
     const me = await getMe();
-    return normalizeIndustry(((me as { data?: MeData }).data || null)?.industry) === 'restaurant';
+    const industry = normalizeIndustry(((me as { data?: MeData }).data || null)?.industry);
+    return industry === 'restaurant' || industry === 'hotel' ? industry : null;
   } catch {
-    return false;
+    return null;
   }
+}
+
+/** The hotel front-desk cashier shift (hotel_cashier_shifts) in the shell's shape. */
+async function currentHotelShift(): Promise<CashierShift | null> {
+  const res = await api('/hotel/cashier/shift');
+  const row = res?.data as Record<string, unknown> | null;
+  if (!row || !row.id) return null;
+  return { ...row, session_id: String(row.id), session_number: 'Front desk', opening_cash: row.opening_float };
+}
+
+async function currentOwnShift(kind: OwnTill): Promise<CashierShift | null> {
+  if (kind === 'restaurant') return currentRestaurantShift();
+  if (kind === 'hotel') return currentHotelShift();
+  return null;
 }
 
 /** A restaurant till shift (restaurant_till_shifts) in the shape the shell already uses. */
@@ -128,12 +145,22 @@ export async function openShiftForSignedInUser(
       });
       return asCashierShift(opened?.data as Record<string, unknown> | null);
     }
-    const current = await api('/pos/sessions/current');
     const hotel = normalizeIndustry(data?.industry) === 'hotel';
-    if (hotel && !startShift) {
-      lastShiftOpenError = '';
-      return (current?.data?.session_id ? current.data : null) as CashierShift | null;
+    if (hotel) {
+      // Hotel money goes through the front-desk cashier shift, not a retail POS session.
+      const open = await currentHotelShift();
+      if (hotel && !startShift) {
+        lastShiftOpenError = '';
+        return open;
+      }
+      if (open) return open;
+      const opened = await api('/hotel/cashier/shift/open', {
+        method: 'POST',
+        body: JSON.stringify({ opening_float: Number(openingCash) > 0 ? Number(openingCash) : 0 }),
+      });
+      return opened?.data ? await currentHotelShift() : null;
     }
+    const current = await api('/pos/sessions/current');
     if (current?.data?.session_id) {
       const sess = current.data as CashierShift;
       const want = Number(openingCash);
@@ -209,7 +236,17 @@ export async function countAndCloseOpenShift(
   if (typeof window === 'undefined') {
     throw new Error('Cash can only be counted in the browser.');
   }
-  if (await isRestaurantCompany()) {
+  const kind = await ownTill();
+  if (kind === 'hotel') {
+    const open = await currentHotelShift();
+    if (!open?.session_id) throw new Error('There is no open shift to count.');
+    const closed = await api('/hotel/cashier/shift/close', {
+      method: 'POST',
+      body: JSON.stringify({ closing_float: actualCash, notes: notes && notes.trim() ? notes.trim() : null }),
+    });
+    return (closed?.data as CashierShift) || open;
+  }
+  if (kind === 'restaurant') {
     const open = await currentRestaurantShift();
     if (!open?.session_id) throw new Error('There is no open shift to count.');
     const closed = await api(`/restaurant/till/shift/${open.session_id}/close`, {
@@ -260,7 +297,8 @@ export async function countAndCloseOpenShift(
 export async function peekOpenCashierShift(): Promise<CashierShift | null> {
   if (typeof window === 'undefined') return null;
   try {
-    if (await isRestaurantCompany()) return await currentRestaurantShift();
+    const kind = await ownTill();
+    if (kind) return await currentOwnShift(kind);
     const current = await api('/pos/sessions/current');
     const session = current?.data as CashierShift | null;
     return session?.session_id ? session : null;

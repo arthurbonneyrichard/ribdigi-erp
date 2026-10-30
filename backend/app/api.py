@@ -428,6 +428,9 @@ api.include_router(restaurant_api_mod.router)
 api.include_router(restaurant_api_mod.public_router)
 api.include_router(restaurant_api_mod.order_public_router)
 api.include_router(restaurant_api_mod.site_public_router)
+from app import hotel_shop_api as hotel_shop_api_mod
+
+api.include_router(hotel_shop_api_mod.router)
 from app import hotel_booking_api as hotel_booking_api_mod
 
 api.include_router(hotel_booking_api_mod.router)

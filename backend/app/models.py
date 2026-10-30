@@ -3401,3 +3401,42 @@ class RestaurantTillCashMove(Base):
     amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     reason: Mapped[str] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HotelShopSale(Base):
+    """A hotel shop sale (walk-up or charged to a guest's room). Hotel's own till; never retail transactions."""
+
+    __tablename__ = "hotel_shop_sales"
+    __table_args__ = (UniqueConstraint("tenant_id", "sale_number", name="uq_hotel_shop_sale_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    sale_number: Mapped[str] = mapped_column(String(40), index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    shift_id: Mapped[str | None] = mapped_column(ForeignKey("hotel_cashier_shifts.id"), nullable=True, index=True)
+    folio_id: Mapped[str | None] = mapped_column(ForeignKey("hotel_folios.id"), nullable=True, index=True)
+    folio_charge_id: Mapped[str | None] = mapped_column(ForeignKey("hotel_folio_charges.id"), nullable=True)
+    customer_name: Mapped[str | None] = mapped_column(String(180), nullable=True)
+    payment_method: Mapped[str] = mapped_column(String(20), default="cash")
+    subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    status: Mapped[str] = mapped_column(String(20), default="completed", index=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    refunded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class HotelShopSaleLine(Base):
+    __tablename__ = "hotel_shop_sale_lines"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    sale_id: Mapped[str] = mapped_column(ForeignKey("hotel_shop_sales.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    name: Mapped[str] = mapped_column(String(200), default="")
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)

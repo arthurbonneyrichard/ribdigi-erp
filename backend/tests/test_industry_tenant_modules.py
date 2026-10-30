@@ -168,7 +168,8 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "label: 'Pharmacy'" not in nav
     assert "'/pharmacy'" not in nav and '"/pharmacy"' not in nav
     assert "['POS'" not in nav and '["POS"' not in nav
-    assert "['Shop till', '/pos', 'pos']" in nav
+    assert "['Shop till', '/hotel/shop', 'hotel']" in nav
+    assert "['Shop till', '/pos'" not in nav
     assert "['Rate plans', '/hotel?tab=rooms#rate-plans', 'hotel']" in nav
     assert "['Guest requests', '/hotel?tab=front-desk#guest-requests', 'hotel']" in nav
     assert "['Lost and found', '/hotel?tab=housekeeping#lost-found', 'hotel']" in nav

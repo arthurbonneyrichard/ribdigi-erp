@@ -1,0 +1,98 @@
+/* Hotel shop till: hotel's own screen. Brand greens; every selector sits under .main .hshop
+   so retail and restaurant screens (and the global .main button styles) stay out. */
+
+.main .hshop{
+  --hs-bg:#F2F7EC;--hs-panel:#FFFFFF;--hs-ink:#10211B;--hs-muted:#4D5D56;--hs-line:#D4E5C4;
+  --hs-brand:#4AB012;--hs-deep:#006B2E;--hs-forest:#003D1F;--hs-tint:#E4F2D6;
+  --hs-gold:#B8862B;--hs-gold-tint:#FBF1DC;--hs-bad:#8A2A12;--hs-bad-tint:#FCE7E2;
+  --hs-shadow:0 1px 2px rgba(0,61,31,.06),0 8px 24px rgba(0,61,31,.07);
+  display:flex;flex-direction:column;gap:14px;padding:18px;border-radius:20px;background:var(--hs-bg);color:var(--hs-ink)
+}
+[data-theme="dark"] .main .hshop{--hs-bg:#0F1A14;--hs-panel:#16241C;--hs-ink:#E8F2E4;--hs-muted:#A3B5AA;--hs-line:#2A3D31;--hs-tint:#1F3A26;--hs-gold-tint:#3A2C10;--hs-bad-tint:#4A2219}
+.main .hshop.hshop-loading{align-items:center;justify-content:center;min-height:300px;font-weight:700;color:var(--hs-muted)}
+.main .hshop button:not(.menu-btn){box-shadow:none;transform:none;text-transform:none;letter-spacing:normal;font-family:inherit;cursor:pointer;border:2px solid var(--hs-line);background:var(--hs-panel);color:var(--hs-ink);border-radius:12px;min-height:44px;padding:0 14px;font-weight:700;font-size:15px}
+.main .hshop button:not(.menu-btn):disabled{opacity:.5;cursor:not-allowed}
+.main .hshop button.hs-primary{background:var(--hs-deep);border-color:var(--hs-deep);color:#fff}
+.main .hshop button.hs-primary:hover{background:var(--hs-forest)}
+.main .hshop button.hs-big{min-height:60px;font-size:18px;border-radius:16px;width:100%}
+.main .hshop button.hs-link{border:0;background:none;color:var(--hs-deep);min-height:36px;padding:0 6px}
+.main .hshop button.hs-danger{color:var(--hs-bad);border-color:var(--hs-bad-tint)}
+.main .hshop button.hs-danger:hover{background:var(--hs-bad-tint)}
+.main .hshop .hs-top{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.main .hshop .hs-top h1{margin:0;font-family:Georgia,'Times New Roman',serif;font-size:28px}
+.main .hshop .hs-top p{margin:2px 0 0;color:var(--hs-muted);font-weight:600}
+.main .hshop .hs-shift{margin-left:auto;display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:16px;background:var(--hs-panel);box-shadow:var(--hs-shadow);border:2px dashed var(--hs-gold)}
+.main .hshop .hs-shift.on{border:2px solid var(--hs-line)}
+.main .hshop .hs-shift .dot{width:12px;height:12px;border-radius:50%;background:var(--hs-gold);flex:0 0 auto}
+.main .hshop .hs-shift.on .dot{background:var(--hs-brand)}
+.main .hshop .hs-shift > span{display:flex;flex-direction:column}
+.main .hshop .hs-shift small{color:var(--hs-muted)}
+.main .hshop .hs-shift small a{color:var(--hs-deep);font-weight:700}
+.main .hshop .hs-shift input{width:90px;min-height:44px;border-radius:12px;border:2px solid var(--hs-line);padding:0 10px;background:var(--hs-panel);color:var(--hs-ink)}
+.main .hshop .hs-notice{padding:10px 14px;border-radius:12px;background:var(--hs-forest);color:#fff;font-weight:700;cursor:pointer}
+.main .hshop .hs-error{padding:10px 14px;border-radius:12px;background:var(--hs-bad-tint);color:var(--hs-bad);font-weight:700}
+.main .hshop .hs-warn{margin:0;padding:8px 12px;border-radius:10px;background:var(--hs-gold-tint);color:#6B4300;font-weight:700}
+.main .hshop .hs-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,360px);gap:14px;align-items:start}
+.main .hshop .hs-items{display:flex;flex-direction:column;gap:10px;min-width:0}
+.main .hshop .hs-filter{display:flex;flex-direction:column;gap:8px}
+.main .hshop .hs-search{min-height:48px;border-radius:14px;border:2px solid var(--hs-line);padding:0 16px;font-size:16px;background:var(--hs-panel);color:var(--hs-ink)}
+.main .hshop .hs-chips{display:flex;gap:8px;flex-wrap:wrap}
+.main .hshop .hs-chips button{min-height:40px;border-radius:999px}
+.main .hshop .hs-chips button.on{background:var(--hs-forest);border-color:var(--hs-forest);color:#fff}
+.main .hshop .hs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.main .hshop button.hs-item{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px;min-height:150px;border:2px solid transparent;border-radius:18px;background:var(--hs-panel);box-shadow:var(--hs-shadow);text-align:left}
+.main .hshop button.hs-item:hover{border-color:var(--hs-brand)}
+.main .hshop button.hs-item.in{border-color:var(--hs-deep)}
+.main .hshop .hs-mono{width:100%;height:64px;border-radius:12px;background:var(--hs-tint);color:var(--hs-deep);display:flex;align-items:center;justify-content:center;font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:700}
+.main .hshop .hs-name{font-weight:800;font-size:15px;line-height:1.2}
+.main .hshop .hs-price{font-weight:800;color:var(--hs-deep)}
+.main .hshop .hs-stock{font-size:12px;color:var(--hs-muted)}
+.main .hshop .hs-qty{position:absolute;top:8px;right:8px;min-width:28px;height:28px;border-radius:999px;background:var(--hs-deep);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
+.main .hshop .hs-basket{position:sticky;top:12px;display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:20px;background:var(--hs-panel);box-shadow:var(--hs-shadow);border-top:6px solid var(--hs-gold)}
+.main .hshop .hs-basket h2,.main .hshop .hs-sales h2{margin:0;font-family:Georgia,'Times New Roman',serif;font-size:22px}
+.main .hshop .hs-basket ul,.main .hshop .hs-sales ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.main .hshop .hs-basket li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--hs-line)}
+.main .hshop .hs-basket li div:first-child{display:flex;flex-direction:column;min-width:0}
+.main .hshop .hs-basket small{color:var(--hs-muted)}
+.main .hshop .hs-step{display:flex;align-items:center;gap:4px}
+.main .hshop .hs-step button{min-height:34px;min-width:34px;padding:0;border-radius:10px;background:var(--hs-tint);border-color:var(--hs-tint);color:var(--hs-forest);font-size:18px}
+.main .hshop .hs-total{display:flex;justify-content:space-between;align-items:baseline}
+.main .hshop .hs-total span{font-weight:700;color:var(--hs-muted)}
+.main .hshop .hs-total strong{font-family:Georgia,'Times New Roman',serif;font-size:28px}
+.main .hshop .hs-empty{color:var(--hs-muted);font-weight:600;margin:0}
+.main .hshop .hs-sales{display:flex;flex-direction:column;gap:8px;padding:16px;border-radius:20px;background:var(--hs-panel);box-shadow:var(--hs-shadow)}
+.main .hshop .hs-sales li{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--hs-line)}
+.main .hshop .hs-sales li.refunded{opacity:.6}
+.main .hshop .hs-sales li div{display:flex;flex-direction:column;min-width:0}
+.main .hshop .hs-sales small{color:var(--hs-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.main .hshop .hs-pill{padding:3px 10px;border-radius:999px;font-size:12px;font-weight:800;background:var(--hs-tint);color:var(--hs-forest);white-space:nowrap}
+.main .hshop .hs-pill.room{background:var(--hs-gold-tint);color:#6B4300}
+.main .hshop .hs-pill.grey{background:var(--hs-bg);color:var(--hs-muted)}
+.main .hshop .hs-confirm{display:flex;gap:6px}
+.main .hshop .hs-sheet{position:fixed;inset:0;z-index:60;background:rgba(0,26,14,.5);display:flex;align-items:center;justify-content:center;padding:16px}
+.main .hshop .hs-card{width:min(520px,100%);max-height:90vh;overflow:auto;background:var(--hs-panel);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.main .hshop .hs-card-head{display:flex;align-items:center}
+.main .hshop .hs-card-head h2{margin:0;font-family:Georgia,'Times New Roman',serif}
+.main .hshop .hs-card-head button{margin-left:auto}
+.main .hshop .hs-due{margin:0;font-family:Georgia,'Times New Roman',serif;font-size:30px;color:var(--hs-deep)}
+.main .hshop .hs-due small{font-family:inherit;font-size:13px;color:var(--hs-muted)}
+.main .hshop .hs-methods{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.main .hshop .hs-methods button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:62px;padding:8px 12px;text-align:left}
+.main .hshop .hs-methods button small{color:var(--hs-muted);font-weight:600;font-size:12px}
+.main .hshop .hs-methods button.on{background:var(--hs-forest);border-color:var(--hs-forest);color:#fff}
+.main .hshop .hs-methods button.on small{color:#C8E86A}
+.main .hshop .hs-methods button:last-child{grid-column:1 / -1}
+.main .hshop .hs-field{display:flex;flex-direction:column;gap:4px;font-weight:700;font-size:14px;color:var(--hs-muted)}
+.main .hshop .hs-field select,.main .hshop .hs-field input{min-height:50px;border-radius:12px;border:2px solid var(--hs-line);padding:0 12px;font-size:16px;background:var(--hs-panel);color:var(--hs-ink)}
+.main .hshop .hs-done{align-items:center;text-align:center}
+.main .hshop .hs-done h2{margin:0;font-family:Georgia,'Times New Roman',serif}
+.main .hshop .hs-done p{margin:0;font-weight:700;color:var(--hs-muted)}
+.main .hshop .hs-tick{width:80px;height:80px;border-radius:50%;background:var(--hs-deep);color:#fff;font-size:40px;display:flex;align-items:center;justify-content:center}
+.main .hshop .hs-change{padding:10px 14px;border-radius:14px;background:var(--hs-tint);color:var(--hs-forest) !important;width:100%}
+.main .hshop .hs-change strong{font-size:24px}
+@media (max-width:900px){
+  .main .hshop .hs-body{grid-template-columns:1fr}
+  .main .hshop .hs-basket{position:static}
+  .main .hshop .hs-shift{margin-left:0;width:100%;flex-wrap:wrap}
+  .main .hshop .hs-sales li{grid-template-columns:minmax(0,1fr) auto;row-gap:4px}
+}
