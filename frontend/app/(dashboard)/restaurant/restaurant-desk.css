@@ -279,3 +279,49 @@
 .main .rdesk .rd-table-what{display:flex;flex-direction:column;min-width:0;flex:1 1 auto}
 .main .rdesk .rd-table-what strong{font-size:16px}
 .main .rdesk .rd-table-what small{color:var(--rd-muted)}
+
+/* Website and booking */
+.main .rdesk.rd-booking{background:transparent;padding:0;min-height:0}
+.main .rdesk .rd-h2{margin:0;font-size:24px;font-family:Georgia,'Times New Roman',serif}
+.main .rdesk .rd-hint-line{margin:4px 0 0;color:var(--rd-muted);font-size:14px}
+.main .rdesk .rd-span{grid-column:1 / -1}
+.main .rdesk .rd-site{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr);gap:16px;padding:20px;border-radius:20px;background:linear-gradient(135deg,var(--rd-forest),#00592B);color:#fff;box-shadow:var(--rd-shadow)}
+.main .rdesk .rd-site-main{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.main .rdesk .rd-site h3{margin:0;font-size:24px;font-family:Georgia,'Times New Roman',serif;color:#fff}
+.main .rdesk .rd-site p{margin:0;color:#CFE3D2;max-width:40em}
+.main .rdesk .rd-site .rd-hint-line{color:#C8E86A}
+.main .rdesk .rd-site-link{display:flex;gap:8px;flex-wrap:wrap;width:100%;margin-top:6px}
+.main .rdesk .rd-site-link input{flex:1 1 260px;min-height:44px;border-radius:12px;border:0;padding:0 12px;font-size:14px;background:#fff;color:var(--rd-ink)}
+.main .rdesk .rd-site-link button:not(.menu-btn){background:#fff;border-color:#fff;color:var(--rd-forest)}
+.main .rdesk a.rd-btn-link{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:12px;background:#4AB012;color:#10211B;font-weight:800;text-decoration:none}
+.main .rdesk a.rd-btn-link:hover{background:#C8E86A}
+.main .rdesk .rd-site-switches{display:flex;flex-direction:column;gap:10px}
+.main .rdesk .rd-switch{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.15)}
+.main .rdesk .rd-switch.on{border-color:#4AB012}
+.main .rdesk .rd-switch div{display:flex;flex-direction:column;flex:1 1 auto}
+.main .rdesk .rd-switch small{color:#CFE3D2}
+.main .rdesk .rd-switch button:not(.menu-btn){background:#fff;color:var(--rd-forest);border-color:#fff}
+.main .rdesk .rd-switch button.rd-primary{background:#4AB012;border-color:#4AB012;color:#10211B}
+.main .rdesk .rd-domain summary{cursor:pointer;display:flex;gap:10px;align-items:baseline;list-style:none}
+.main .rdesk .rd-domain summary::-webkit-details-marker{display:none}
+.main .rdesk .rd-domain summary::before{content:'▸';color:var(--rd-deep)}
+.main .rdesk .rd-domain[open] summary::before{content:'▾'}
+.main .rdesk .rd-domain summary span{color:var(--rd-muted);font-weight:600}
+.main .rdesk .rd-readonly{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:700;color:var(--rd-muted);margin-top:8px}
+.main .rdesk .rd-readonly input{min-height:42px;border-radius:12px;border:2px solid var(--rd-line);padding:0 12px;max-width:560px;background:var(--rd-bg);color:var(--rd-ink)}
+.main .rdesk .rd-bookings{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.main .rdesk .rd-booking-card{display:grid;grid-template-columns:96px minmax(0,1fr);gap:14px;background:var(--rd-panel);border-radius:18px;box-shadow:var(--rd-shadow);padding:14px 16px;border-left:6px solid var(--rd-wait)}
+.main .rdesk .rd-booking-card.is-seated{border-left-color:var(--rd-brand)}
+.main .rdesk .rd-booking-card.is-cancelled,.main .rdesk .rd-booking-card.is-finished{border-left-color:var(--rd-line);opacity:.75}
+.main .rdesk .rd-when{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:14px;background:var(--rd-tint);padding:10px 6px;height:max-content}
+.main .rdesk .rd-when small{font-size:12px;font-weight:700;color:var(--rd-muted);text-align:center}
+.main .rdesk .rd-when strong{font-size:22px;font-family:Georgia,'Times New Roman',serif;color:var(--rd-forest)}
+.main .rdesk .rd-booking-body{display:flex;flex-direction:column;gap:6px;min-width:0}
+.main .rdesk .rd-booking-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.main .rdesk .rd-booking-top strong{font-size:17px}
+.main .rdesk .rd-booking-meta{color:var(--rd-muted)}
+.main .rdesk .rd-booking-meta a{color:var(--rd-deep);font-weight:700}
+.main .rdesk .rd-booking-note{margin:0;font-size:14px}
+.main .rdesk .rd-booking-pre{margin:0;padding:8px 12px;border-radius:12px;background:var(--rd-tint);color:var(--rd-forest);font-weight:700;font-size:14px}
+.main .rdesk select.rd-seat-pick{width:auto;flex:0 1 220px;min-height:44px;border-radius:12px;border:2px solid var(--rd-line);padding:0 10px;background:var(--rd-panel);color:var(--rd-ink);font-weight:600}
+@media (max-width:900px){.main .rdesk .rd-site{grid-template-columns:1fr}.main .rdesk .rd-booking-card{grid-template-columns:72px minmax(0,1fr)}}

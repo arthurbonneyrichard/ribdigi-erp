@@ -795,8 +795,11 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "<span>Guest</span>" in booking_desk
     assert "<span>Phone</span>" in booking_desk
     assert "<span>When</span>" in booking_desk
-    assert "rest-order-fact" in booking_desk
-    assert "<span>Status</span>" in booking_desk
+    # Each booking is a card (time, guest, party, status); its edit form opens only on Edit.
+    assert "rd-booking-card" in booking_desk
+    assert "orderWord(row.status)" in booking_desk
+    assert "editingBooking === row.id" in booking_desk
+    assert "saveWholeBooking(row)" in booking_desk
     assert 'aria-label="Restaurant booking turn"' in booking_desk
     assert "No turn." in booking_desk
     assert "Leftover booking guest ${row.booking_number}" in booking_desk

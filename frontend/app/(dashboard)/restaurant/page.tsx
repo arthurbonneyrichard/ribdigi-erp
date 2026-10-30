@@ -272,6 +272,10 @@ export default function RestaurantPage() {
   const [seatTables, setSeatTables] = useState<Record<string, string>>({});
   const [leftoverBookings, setLeftoverBookings] = useState<Record<string, { guest_name: string; phone: string; party_size: string; booked_for: string; notes: string }>>({});
   const [leftoverTurns, setLeftoverTurns] = useState<Record<string, string>>({});
+  const [bookingFilter, setBookingFilter] = useState('upcoming');
+  const [addingBooking, setAddingBooking] = useState(false);
+  const [editingBooking, setEditingBooking] = useState('');
+  const [cancellingBooking, setCancellingBooking] = useState('');
   const [tillSession, setTillSession] = useState<Row | null>(null);
   const [deliveryZones, setDeliveryZones] = useState<string[]>([]);
   const [zoneName, setZoneName] = useState('');
@@ -408,6 +412,40 @@ export default function RestaurantPage() {
       name: String(row.name || ''),
       seats: String(row.seats || 2),
     };
+  }
+
+  function bookingDraft(row: Row, draft?: { guest_name: string; phone: string; party_size: string; booked_for: string; notes: string }) {
+    return draft || {
+      guest_name: String(row.guest_name ?? ''),
+      phone: String(row.phone ?? ''),
+      party_size: String(row.party_size ?? '2'),
+      booked_for: String(row.booked_for || '').slice(0, 16),
+      notes: String(row.notes ?? ''),
+    };
+  }
+
+  /** One Save for a booking. Only changed fields go up, so an unchanged past time is not re-checked. */
+  async function saveWholeBooking(row: Row) {
+    setError('');
+    const draft = bookingDraft(row, leftoverBookings[row.id]);
+    const body: Record<string, unknown> = {};
+    if (draft.guest_name.trim() !== String(row.guest_name ?? '')) body.guest_name = draft.guest_name.trim();
+    if (draft.phone.trim() !== String(row.phone ?? '')) body.phone = draft.phone.trim();
+    if ((Number(draft.party_size) || 1) !== Number(row.party_size)) body.party_size = Number(draft.party_size) || 1;
+    if (draft.booked_for && draft.booked_for !== String(row.booked_for || '').slice(0, 16)) body.booked_for = draft.booked_for;
+    if (draft.notes.trim() !== String(row.notes ?? '')) body.notes = draft.notes.trim() || null;
+    const turnText = (leftoverTurns[row.id] ?? (row.turn == null ? '' : String(row.turn))).trim();
+    if ((turnText ? Number(turnText) : null) !== (row.turn ?? null)) body.turn = turnText ? Number(turnText) : null;
+    try {
+      if (Object.keys(body).length) {
+        await api(`/restaurant/bookings/${row.id}`, { method: 'PATCH', body: JSON.stringify(body) });
+      }
+      setMessage(`Saved leftover booking ${row.booking_number}`);
+      setEditingBooking('');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message || 'Could not save the booking');
+    }
   }
 
   /** One Save for everything on a table: code, name, seats, store and room. */
@@ -2297,8 +2335,7 @@ export default function RestaurantPage() {
         </section>
       )}
       {restaurantDesk && tab === 'booking' && (
-        <section className="card" aria-label="Online booking">
-          <h2>Website and booking</h2>
+        <section className="rdesk rd-booking" aria-label="Online booking">
           {(() => {
             // One public website: the menu, food and drink orders (pickup or delivery) and table booking.
             const sitePath = String(
@@ -2309,447 +2346,465 @@ export default function RestaurantPage() {
             const live = Boolean(onlineOrders.open || bookingLink?.open);
             const siteUrl = sitePath ? `${pageOrigin || ''}${sitePath}` : '';
             return (
-              <div className="rest-site-card" aria-label="Your restaurant website">
-                <h3>Your restaurant website</h3>
-                <p className="muted">
-                  Guests see your menu with photos, order food and drinks for pickup or delivery, follow their order,
-                  and book a table. Orders land on the Orders board; bookings land below. Nothing is charged online:
-                  guests pay when they collect, on delivery, or at the table.
-                </p>
-                <ul className="rest-site-status">
-                  <li>
-                    <strong>Food and drink orders:</strong> {onlineOrders.open ? 'open' : 'closed'}{' '}
+              <div className="rd-site" aria-label="Your restaurant website">
+                <div className="rd-site-main">
+                  <span className={`rd-pill ${live ? '' : 'grey'}`}>{live ? 'Live' : 'Not published'}</span>
+                  <h3>Your restaurant website</h3>
+                  <p>
+                    Guests see your menu, order food and drinks for pickup or delivery, follow their order, and book a
+                    table. Nothing is charged online: they pay when they collect, on delivery, or at the table.
+                  </p>
+                  {live && siteUrl ? (
+                    <div className="rd-site-link">
+                      <input readOnly aria-label="Restaurant website link" value={siteUrl} onFocus={(e) => e.target.select()} />
+                      <button
+                        type="button"
+                        aria-label="Copy website link"
+                        onClick={() => {
+                          void navigator.clipboard?.writeText(siteUrl).then(() => setMessage('Website link copied'));
+                        }}
+                      >
+                        Copy
+                      </button>
+                      <a className="rd-btn-link" href={sitePath} target="_blank" rel="noreferrer" aria-label="Open my restaurant website">
+                        Open website →
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="rd-hint-line">Open orders, or save your domain below, to publish the page.</p>
+                  )}
+                </div>
+                <div className="rd-site-switches">
+                  <div className={`rd-switch ${onlineOrders.open ? 'on' : ''}`}>
+                    <div>
+                      <strong>Food and drink orders</strong>
+                      <small>{onlineOrders.open ? 'Guests can order now' : 'Closed'}</small>
+                    </div>
                     {onlineOrders.open ? (
                       <button type="button" aria-label="Close online food orders" onClick={() => saveOnlineOrders(false)}>
                         Close orders
                       </button>
                     ) : (
-                      <button type="button" className="btn-ok" aria-label="Open online food orders" onClick={() => saveOnlineOrders(true)}>
+                      <button type="button" className="rd-primary" aria-label="Open online food orders" onClick={() => saveOnlineOrders(true)}>
                         Open orders
                       </button>
                     )}
-                  </li>
-                  <li>
-                    <strong>Table booking:</strong>{' '}
-                    {bookingLink?.open ? 'open' : 'closed until you save your website or domain below'}
-                  </li>
-                </ul>
-                {live && siteUrl ? (
-                  <>
-                    <label>
-                      <span>Website link to share (WhatsApp, Instagram, Google)</span>
-                      <input readOnly aria-label="Restaurant website link" value={siteUrl} />
-                    </label>
-                    <p>
-                      <a href={sitePath} target="_blank" rel="noreferrer" aria-label="Open my restaurant website">
-                        Open my website →
-                      </a>
-                    </p>
-                  </>
-                ) : (
-                  <p className="muted">Open orders or save a website below to publish the page.</p>
-                )}
+                  </div>
+                  <div className={`rd-switch ${bookingLink?.open ? 'on' : ''}`}>
+                    <div>
+                      <strong>Table booking</strong>
+                      <small>{bookingLink?.open ? `On · ${bookingLink.hostname}` : 'Save your domain below to turn it on'}</small>
+                    </div>
+                  </div>
+                </div>
               </div>
             );
           })()}
-          <p className="muted">
-            Record an existing website or a new domain. Guests use the booking link and the request lands here.
-            Saving the host does not move DNS or issue a certificate, and the request does not take a payment.
-          </p>
-          <form
-            className="rest-order-form"
-            onSubmit={async (event) => {
-              event.preventDefault();
-              setError('');
-              setMessage('');
-              try {
-                const saved = await api('/restaurant/booking-link', {
-                  method: 'PUT',
-                  body: JSON.stringify({
-                    hostname: linkForm.hostname.trim(),
-                    link_kind: linkForm.link_kind,
-                  }),
-                });
-                setBookingLink(saved?.data || null);
-                setMessage('Booking link saved');
-              } catch (err: any) {
-                setError(err.message || 'Could not save the booking link');
-              }
-            }}
-          >
-            <label>
-              <span>Website or domain</span>
-              <input
-                aria-label="Restaurant booking website"
-                value={linkForm.hostname}
-                onChange={(e) => setLinkForm({ ...linkForm, hostname: e.target.value })}
-                placeholder="bistro.example"
-                required
-              />
-            </label>
-            <label>
-              <span>Where this host comes from</span>
-              <select
-                aria-label="Restaurant booking host kind"
-                value={linkForm.link_kind}
-                onChange={(e) => setLinkForm({ ...linkForm, link_kind: e.target.value })}
-              >
-                <option value="existing">Existing website</option>
-                <option value="new">New domain</option>
-              </select>
-            </label>
-            <button type="submit" aria-label="Save restaurant booking link">Save booking link</button>
-          </form>
-          {bookingLink?.open && bookingLink.path ? (
-            <>
+
+          <details className="rd-panel rd-domain" open={!bookingLink?.open}>
+            <summary>
+              <strong>Your own domain</strong>
+              <span>{bookingLink?.hostname ? bookingLink.hostname : 'Not saved yet'}</span>
+            </summary>
+            <p className="rd-hint-line">
+              Record an existing website or a new domain. Guests use the booking link and the request lands here.
+              Saving the host does not move DNS or issue a certificate, and the request does not take a payment.
+            </p>
+            <form
+              className="rest-order-form rd-form-grid"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                setError('');
+                setMessage('');
+                try {
+                  const saved = await api('/restaurant/booking-link', {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                      hostname: linkForm.hostname.trim(),
+                      link_kind: linkForm.link_kind,
+                    }),
+                  });
+                  setBookingLink(saved?.data || null);
+                  setMessage('Booking link saved');
+                } catch (err: any) {
+                  setError(err.message || 'Could not save the booking link');
+                }
+              }}
+            >
               <label>
-                <span>Link to put on the website</span>
+                <span>Website or domain</span>
                 <input
-                  readOnly
-                  aria-label="Booking link for the website"
-                  value={pageOrigin ? `${pageOrigin}${bookingLink.path}` : bookingLink.path}
+                  aria-label="Restaurant booking website"
+                  value={linkForm.hostname}
+                  onChange={(e) => setLinkForm({ ...linkForm, hostname: e.target.value })}
+                  placeholder="bistro.example"
+                  required
                 />
               </label>
-              <p className="muted">
-                Put this link on {bookingLink.hostname}. Guests who open it request a table here. This does not take a payment.
-              </p>
-              {bookingLink.link_kind === 'new' ? (
-                <p className="muted">
-                  After {bookingLink.hostname} points at this ERP, guests can open https://{bookingLink.hostname}/book.
-                  Saving the domain does not move DNS.
+              <label>
+                <span>Where this host comes from</span>
+                <select
+                  aria-label="Restaurant booking host kind"
+                  value={linkForm.link_kind}
+                  onChange={(e) => setLinkForm({ ...linkForm, link_kind: e.target.value })}
+                >
+                  <option value="existing">Existing website</option>
+                  <option value="new">New domain</option>
+                </select>
+              </label>
+              <div className="rd-form-actions">
+                <button type="submit" className="rd-primary" aria-label="Save restaurant booking link">Save booking link</button>
+              </div>
+            </form>
+            {bookingLink?.open && bookingLink.path ? (
+              <>
+                <label className="rd-readonly">
+                  <span>Link to put on the website</span>
+                  <input
+                    readOnly
+                    aria-label="Booking link for the website"
+                    value={pageOrigin ? `${pageOrigin}${bookingLink.path}` : bookingLink.path}
+                  />
+                </label>
+                <p className="rd-hint-line">
+                  Put this link on {bookingLink.hostname}. Guests who open it request a table here. This does not take a payment.
+                  {bookingLink.link_kind === 'new'
+                    ? ` After ${bookingLink.hostname} points at this ERP, guests can open https://${bookingLink.hostname}/book. Saving the domain does not move DNS.`
+                    : ''}
                 </p>
-              ) : null}
-            </>
-          ) : (
-            <p className="muted">Save a website or domain before guests can request a table.</p>
-          )}
-          <h3>Walk-in or phone request</h3>
-          <p className="muted">Record a guest here. This does not need a booking website and does not take a payment.</p>
-          <form
-            className="rest-order-form"
-            onSubmit={async (event) => {
-              event.preventDefault();
-              setError('');
-              setMessage('');
-              try {
-                await api('/restaurant/bookings', {
-                  method: 'POST',
-                  body: JSON.stringify({
-                    guest_name: walkInForm.guest_name.trim(),
-                    phone: walkInForm.phone.trim(),
-                    party_size: Number(walkInForm.party_size) || 1,
-                    booked_for: walkInForm.booked_for.trim(),
-                    notes: walkInForm.notes.trim() || null,
-                    turn: walkInForm.turn ? Number(walkInForm.turn) : null,
-                  }),
-                });
-                setWalkInForm({ guest_name: '', phone: '', party_size: '2', booked_for: '', notes: '', turn: '' });
-                setMessage('Booking requested');
-                await refresh();
-              } catch (err: any) {
-                setError(err.message || 'Could not save the booking');
-              }
-            }}
-          >
-            <label>
-              <span>Guest</span>
-              <input
-                aria-label="Restaurant walk-in guest name"
-                value={walkInForm.guest_name}
-                onChange={(e) => setWalkInForm({ ...walkInForm, guest_name: e.target.value })}
-                required
-              />
-            </label>
-            <label>
-              <span>Phone</span>
-              <input
-                aria-label="Restaurant walk-in guest phone"
-                value={walkInForm.phone}
-                onChange={(e) => setWalkInForm({ ...walkInForm, phone: e.target.value })}
-                required
-              />
-            </label>
-            <label>
-              <span>Party</span>
-              <input
-                aria-label="Restaurant walk-in party size"
-                value={walkInForm.party_size}
-                onChange={(e) => setWalkInForm({ ...walkInForm, party_size: e.target.value })}
-              />
-            </label>
-            <label>
-              <span>When</span>
-              <input
-                aria-label="Restaurant walk-in booked for"
-                type="datetime-local"
-                value={walkInForm.booked_for}
-                onChange={(e) => setWalkInForm({ ...walkInForm, booked_for: e.target.value })}
-                required
-              />
-            </label>
-            <label>
-              <span>Notes</span>
-              <input
-                aria-label="Restaurant walk-in notes"
-                value={walkInForm.notes}
-                onChange={(e) => setWalkInForm({ ...walkInForm, notes: e.target.value })}
-              />
-            </label>
-            <label>
-              <span>Turn</span>
-              <select aria-label="Restaurant booking turn" value={walkInForm.turn} onChange={(e) => setWalkInForm({ ...walkInForm, turn: e.target.value })}>
-                <option value="">No turn</option>
-                <option value="60">1 hour</option>
-                <option value="90">90 minutes</option>
-                <option value="120">2 hours</option>
-              </select>
-            </label>
-            <button type="submit" aria-label="Save restaurant walk-in booking">Save walk-in booking</button>
-          </form>
-          <h3>Requests</h3>
-          <p className="muted">
-            Seat names a table when you pick one. Finish frees that table when no open order is using it.
-            Neither one takes a payment.
-          </p>
-          <ul className="rest-order-list">
-            {bookings.map((row) => {
-              const seatedAt = tables.find((table) => table.id === row.table_id);
-              const openTables = tables.filter(
-                (table) => ['available', 'held'].includes(String(table.status)) && Number(table.seats || 0) >= Number(row.party_size || 0)
-              );
-              return (
-              <li key={row.id} className="rest-order">
-                <div className="rest-order-head">
-                  <strong>{row.booking_number}</strong>
-                  <span className="rest-order-fact"><span>Guest</span>{row.guest_name}</span>
-                  <span className="rest-order-fact"><span>Phone</span>{row.phone}</span>
-                  <span className="rest-order-fact"><span>Party</span>{row.party_size}</span>
-                  <span className="rest-order-fact"><span>When</span>{formatDateTime(row.booked_for) || row.booked_for}</span>
-                  <span className="rest-order-fact"><span>Status</span>{orderWord(row.status)}</span>
-                  <span className="rest-order-fact"><span>Turn</span>{row.turn === 60 ? '1 hour' : row.turn === 90 ? '90 minutes' : row.turn === 120 ? '2 hours' : 'No turn.'}</span>
-                  {row.notes ? <span className="rest-order-fact"><span>Notes</span>{row.notes}</span> : null}
-                  {seatedAt ? <span className="rest-order-fact"><span>Table</span>{seatedAt.code}</span> : null}
+              </>
+            ) : (
+              <p className="rd-hint-line">Save a website or domain before guests can request a table.</p>
+            )}
+          </details>
+
+          {(() => {
+            const now = new Date();
+            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const endOfDay = startOfDay + 86400000;
+            const when = (row: Row) => new Date(String(row.booked_for || '')).getTime();
+            const filters: Array<[string, string, (row: Row) => boolean]> = [
+              ['upcoming', 'Coming up', (row) => row.status === 'requested'],
+              ['today', 'Today', (row) => when(row) >= startOfDay && when(row) < endOfDay && row.status !== 'cancelled'],
+              ['seated', 'Seated now', (row) => row.status === 'seated'],
+              ['all', 'All', () => true],
+            ];
+            const pick = filters.find((f) => f[0] === bookingFilter) || filters[0];
+            const shown = bookings
+              .filter(pick[2])
+              .sort((x, y) => String(x.booked_for || '').localeCompare(String(y.booked_for || '')));
+            return (
+              <>
+                <div className="rd-head">
+                  <div>
+                    <h2 className="rd-h2">Bookings</h2>
+                    <p className="rd-hint-line">
+                      Seat names a table when you pick one. Finish frees that table when no open order is using it.
+                      Neither one takes a payment.
+                    </p>
+                  </div>
+                  <div className="rd-head-actions">
+                    <button
+                      type="button"
+                      className="rd-primary"
+                      aria-label="Add a booking"
+                      onClick={() => setAddingBooking((open) => !open)}
+                    >
+                      {addingBooking ? 'Close' : '+ Add booking'}
+                    </button>
+                  </div>
                 </div>
-                {row.status === 'requested' ? (
-                  <>
-                    <div className="rest-order-line-fields">
+                <div className="rd-chips" role="tablist" aria-label="Which bookings">
+                  {filters.map(([id, label, test]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      role="tab"
+                      aria-selected={bookingFilter === id}
+                      className={bookingFilter === id ? 'on' : ''}
+                      onClick={() => setBookingFilter(id)}
+                    >
+                      {label} <small>{bookings.filter(test).length}</small>
+                    </button>
+                  ))}
+                </div>
+
+                {addingBooking ? (
+                  <form
+                    className="rest-order-form rd-panel rd-form-grid"
+                    onSubmit={async (event) => {
+                      event.preventDefault();
+                      setError('');
+                      setMessage('');
+                      try {
+                        await api('/restaurant/bookings', {
+                          method: 'POST',
+                          body: JSON.stringify({
+                            guest_name: walkInForm.guest_name.trim(),
+                            phone: walkInForm.phone.trim(),
+                            party_size: Number(walkInForm.party_size) || 1,
+                            booked_for: walkInForm.booked_for.trim(),
+                            notes: walkInForm.notes.trim() || null,
+                            turn: walkInForm.turn ? Number(walkInForm.turn) : null,
+                          }),
+                        });
+                        setWalkInForm({ guest_name: '', phone: '', party_size: '2', booked_for: '', notes: '', turn: '' });
+                        setMessage('Booking requested');
+                        setAddingBooking(false);
+                        await refresh();
+                      } catch (err: any) {
+                        setError(err.message || 'Could not save the booking');
+                      }
+                    }}
+                  >
+                    <h3>Walk-in or phone request</h3>
+                    <p className="rd-hint-line rd-span">Record a guest here. This does not need a booking website and does not take a payment.</p>
                     <label>
                       <span>Guest</span>
-                    <input
-                      aria-label={`Leftover booking guest ${row.booking_number}`}
-                      value={leftoverBookings[row.id]?.guest_name ?? row.guest_name ?? ''}
-                      onChange={(e) => setLeftoverBookings((current) => ({
-                        ...current,
-                        [row.id]: {
-                          guest_name: e.target.value,
-                          phone: current[row.id]?.phone ?? row.phone ?? '',
-                          party_size: current[row.id]?.party_size ?? String(row.party_size ?? '2'),
-                          booked_for: current[row.id]?.booked_for ?? String(row.booked_for || '').slice(0, 16),
-                          notes: current[row.id]?.notes ?? row.notes ?? '',
-                        },
-                      }))}
-                    />
+                      <input aria-label="Restaurant walk-in guest name" value={walkInForm.guest_name} onChange={(e) => setWalkInForm({ ...walkInForm, guest_name: e.target.value })} required />
                     </label>
                     <label>
                       <span>Phone</span>
-                    <input
-                      aria-label={`Leftover booking phone ${row.booking_number}`}
-                      value={leftoverBookings[row.id]?.phone ?? row.phone ?? ''}
-                      onChange={(e) => setLeftoverBookings((current) => ({
-                        ...current,
-                        [row.id]: {
-                          guest_name: current[row.id]?.guest_name ?? row.guest_name ?? '',
-                          phone: e.target.value,
-                          party_size: current[row.id]?.party_size ?? String(row.party_size ?? '2'),
-                          booked_for: current[row.id]?.booked_for ?? String(row.booked_for || '').slice(0, 16),
-                          notes: current[row.id]?.notes ?? row.notes ?? '',
-                        },
-                      }))}
-                    />
+                      <input aria-label="Restaurant walk-in guest phone" placeholder="+233241234567" value={walkInForm.phone} onChange={(e) => setWalkInForm({ ...walkInForm, phone: e.target.value })} required />
                     </label>
                     <label>
                       <span>Party</span>
-                    <input
-                      aria-label={`Leftover booking party ${row.booking_number}`}
-                      value={leftoverBookings[row.id]?.party_size ?? String(row.party_size ?? '2')}
-                      onChange={(e) => setLeftoverBookings((current) => ({
-                        ...current,
-                        [row.id]: {
-                          guest_name: current[row.id]?.guest_name ?? row.guest_name ?? '',
-                          phone: current[row.id]?.phone ?? row.phone ?? '',
-                          party_size: e.target.value,
-                          booked_for: current[row.id]?.booked_for ?? String(row.booked_for || '').slice(0, 16),
-                          notes: current[row.id]?.notes ?? row.notes ?? '',
-                        },
-                      }))}
-                    />
+                      <input aria-label="Restaurant walk-in party size" inputMode="numeric" value={walkInForm.party_size} onChange={(e) => setWalkInForm({ ...walkInForm, party_size: e.target.value })} />
                     </label>
                     <label>
                       <span>When</span>
-                    <input
-                      aria-label={`Leftover booking time ${row.booking_number}`}
-                      type="datetime-local"
-                      value={leftoverBookings[row.id]?.booked_for ?? String(row.booked_for || '').slice(0, 16)}
-                      onChange={(e) => setLeftoverBookings((current) => ({
-                        ...current,
-                        [row.id]: {
-                          guest_name: current[row.id]?.guest_name ?? row.guest_name ?? '',
-                          phone: current[row.id]?.phone ?? row.phone ?? '',
-                          party_size: current[row.id]?.party_size ?? String(row.party_size ?? '2'),
-                          booked_for: e.target.value,
-                          notes: current[row.id]?.notes ?? row.notes ?? '',
-                        },
-                      }))}
-                    />
-                    </label>
-                    <label>
-                      <span>Notes</span>
-                    <input
-                      aria-label={`Leftover booking notes ${row.booking_number}`}
-                      value={leftoverBookings[row.id]?.notes ?? row.notes ?? ''}
-                      onChange={(e) => setLeftoverBookings((current) => ({
-                        ...current,
-                        [row.id]: {
-                          guest_name: current[row.id]?.guest_name ?? row.guest_name ?? '',
-                          phone: current[row.id]?.phone ?? row.phone ?? '',
-                          party_size: current[row.id]?.party_size ?? String(row.party_size ?? '2'),
-                          booked_for: current[row.id]?.booked_for ?? String(row.booked_for || '').slice(0, 16),
-                          notes: e.target.value,
-                        },
-                      }))}
-                    />
+                      <input aria-label="Restaurant walk-in booked for" type="datetime-local" value={walkInForm.booked_for} onChange={(e) => setWalkInForm({ ...walkInForm, booked_for: e.target.value })} required />
                     </label>
                     <label>
                       <span>Turn</span>
-                      <select
-                        aria-label={`Leftover booking turn ${row.booking_number}`}
-                        value={leftoverTurns[row.id] ?? (row.turn == null ? '' : String(row.turn))}
-                        onChange={(e) => setLeftoverTurns((current) => ({ ...current, [row.id]: e.target.value }))}
-                      >
+                      <select aria-label="Restaurant booking turn" value={walkInForm.turn} onChange={(e) => setWalkInForm({ ...walkInForm, turn: e.target.value })}>
                         <option value="">No turn</option>
                         <option value="60">1 hour</option>
                         <option value="90">90 minutes</option>
                         <option value="120">2 hours</option>
                       </select>
                     </label>
-                    <label>
-                      <span>Table</span>
-                      <select
-                        aria-label={`Seat booking ${row.booking_number} at table`}
-                        value={seatTables[row.id] || ''}
-                        onChange={(e) => setSeatTables({ ...seatTables, [row.id]: e.target.value })}
-                      >
-                        <option value="">No table</option>
-                        {openTables.map((table) => (
-                          <option key={table.id} value={table.id}>
-                            {table.code} · {table.seats} seats
-                          </option>
-                        ))}
-                      </select>
+                    <label className="rd-span">
+                      <span>Notes</span>
+                      <input aria-label="Restaurant walk-in notes" placeholder="Birthday, high chair, window seat…" value={walkInForm.notes} onChange={(e) => setWalkInForm({ ...walkInForm, notes: e.target.value })} />
                     </label>
+                    <div className="rd-form-actions">
+                      <button type="submit" className="rd-primary" aria-label="Save restaurant walk-in booking">Save walk-in booking</button>
                     </div>
-                    <div className="rest-order-actions">
-                    <button
-                      type="button"
-                      aria-label={`Save leftover booking ${row.booking_number}`}
-                      onClick={async () => {
-                        setError('');
-                        const leftover = leftoverBookings[row.id];
-                        try {
-                          await api(`/restaurant/bookings/${row.id}`, {
-                            method: 'PATCH',
-                            body: JSON.stringify({
-                              guest_name: (leftover?.guest_name ?? row.guest_name ?? '').trim(),
-                              phone: (leftover?.phone ?? row.phone ?? '').trim(),
-                              party_size: Number(leftover?.party_size ?? row.party_size) || 1,
-                              booked_for: leftover?.booked_for || String(row.booked_for || '').slice(0, 16),
-                              notes: (leftover?.notes ?? row.notes ?? '').trim() || null,
-                            }),
-                          });
-                          setMessage(`Saved leftover booking ${row.booking_number}`);
-                          await refresh();
-                        } catch (err: any) {
-                          setError(err.message || 'Could not save the leftover booking');
-                        }
-                      }}
-                    >
-                      Save booking
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Save leftover turn on ${row.booking_number}`}
-                      onClick={async () => {
-                        setError('');
-                        const text = (leftoverTurns[row.id] ?? (row.turn == null ? '' : String(row.turn))).trim();
-                        try {
-                          await api(`/restaurant/bookings/${row.id}`, {
-                            method: 'PATCH',
-                            body: JSON.stringify({ turn: text ? Number(text) : null }),
-                          });
-                          setMessage(`Saved leftover turn on ${row.booking_number}`);
-                          await refresh();
-                        } catch (err: any) {
-                          setError(err.message || 'Could not save the turn');
-                        }
-                      }}
-                    >
-                      Save turn
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Seat booking ${row.booking_number}`}
-                      onClick={async () => {
-                        setError('');
-                        const tableId = (seatTables[row.id] || '').trim();
-                        try {
-                          await api(`/restaurant/bookings/${row.id}/seat`, {
-                            method: 'POST',
-                            body: JSON.stringify(tableId ? { table_id: tableId } : {}),
-                          });
-                          await refresh();
-                        } catch (err: any) {
-                          setError(err.message || 'Could not seat the booking');
-                        }
-                      }}
-                    >
-                      Seat
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Cancel booking ${row.booking_number}`}
-                      onClick={async () => {
-                        await api(`/restaurant/bookings/${row.id}/cancel`, { method: 'POST' });
-                        await refresh();
-                      }}
-                    >
-                      Cancel
-                    </button>
-                    </div>
-                  </>
-                ) : row.status === 'seated' ? (
-                  <div className="rest-order-actions">
-                  <button
-                    type="button"
-                    aria-label={`Finish booking ${row.booking_number}`}
-                    onClick={async () => {
-                      setError('');
-                      try {
-                        await api(`/restaurant/bookings/${row.id}/finish`, { method: 'POST', body: JSON.stringify({}) });
-                        await refresh();
-                      } catch (err: any) {
-                        setError(err.message || 'Could not finish the booking');
-                      }
-                    }}
-                  >
-                    Finish
-                  </button>
-                  </div>
+                  </form>
                 ) : null}
-              </li>
-              );
-            })}
-            {!bookings.length && <li className="muted">No booking requests yet.</li>}
-          </ul>
+
+                <ul className="rest-order-list rd-bookings">
+                  {shown.map((row) => {
+                    const seatedAt = tables.find((table) => table.id === row.table_id);
+                    const openTables = tables.filter(
+                      (table) => ['available', 'held'].includes(String(table.status)) && Number(table.seats || 0) >= Number(row.party_size || 0)
+                    );
+                    const at = new Date(String(row.booked_for || ''));
+                    const valid = !Number.isNaN(at.getTime());
+                    const [note, preOrder] = String(row.notes || '').split(/(?=Pre-order:)/);
+                    const edit = leftoverBookings[row.id];
+                    const editing = editingBooking === row.id;
+                    return (
+                      <li key={row.id} className={`rest-order rd-booking-card is-${row.status}`}>
+                        <div className="rd-when">
+                          <small>{valid ? at.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' }) : ''}</small>
+                          <strong>{valid ? at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }) : row.booked_for}</strong>
+                        </div>
+                        <div className="rd-booking-body">
+                          <div className="rd-booking-top">
+                            <strong>{row.guest_name}</strong>
+                            <span className="rd-pill grey">{row.party_size} {Number(row.party_size) === 1 ? 'guest' : 'guests'}</span>
+                            <span className={`rd-pill ${row.status === 'requested' ? 'wait' : row.status === 'seated' ? '' : 'grey'}`}>
+                              {orderWord(row.status)}
+                            </span>
+                            {seatedAt ? <span className="rd-pill">Table {seatedAt.code}</span> : null}
+                          </div>
+                          <small className="rd-booking-meta">
+                            {row.booking_number} · <a href={`tel:${row.phone}`}>{row.phone}</a> ·{' '}
+                            {row.turn === 60 ? '1 hour' : row.turn === 90 ? '90 minutes' : row.turn === 120 ? '2 hours' : 'No turn.'}
+                          </small>
+                          {note && note.trim() ? <p className="rd-booking-note">{note.replace(/\.\s*$/, '')}</p> : null}
+                          {preOrder ? <p className="rd-booking-pre">{preOrder}</p> : null}
+
+                          {row.status === 'requested' && editing ? (
+                            <div className="rest-order-line-fields rd-form-grid">
+                              <label>
+                                <span>Guest</span>
+                                <input
+                                  aria-label={`Leftover booking guest ${row.booking_number}`}
+                                  value={edit?.guest_name ?? row.guest_name ?? ''}
+                                  onChange={(e) => setLeftoverBookings((current) => ({ ...current, [row.id]: { ...bookingDraft(row, current[row.id]), guest_name: e.target.value } }))}
+                                />
+                              </label>
+                              <label>
+                                <span>Phone</span>
+                                <input
+                                  aria-label={`Leftover booking phone ${row.booking_number}`}
+                                  value={edit?.phone ?? row.phone ?? ''}
+                                  onChange={(e) => setLeftoverBookings((current) => ({ ...current, [row.id]: { ...bookingDraft(row, current[row.id]), phone: e.target.value } }))}
+                                />
+                              </label>
+                              <label>
+                                <span>Party</span>
+                                <input
+                                  aria-label={`Leftover booking party ${row.booking_number}`}
+                                  inputMode="numeric"
+                                  value={edit?.party_size ?? String(row.party_size ?? '2')}
+                                  onChange={(e) => setLeftoverBookings((current) => ({ ...current, [row.id]: { ...bookingDraft(row, current[row.id]), party_size: e.target.value } }))}
+                                />
+                              </label>
+                              <label>
+                                <span>When</span>
+                                <input
+                                  aria-label={`Leftover booking time ${row.booking_number}`}
+                                  type="datetime-local"
+                                  value={edit?.booked_for ?? String(row.booked_for || '').slice(0, 16)}
+                                  onChange={(e) => setLeftoverBookings((current) => ({ ...current, [row.id]: { ...bookingDraft(row, current[row.id]), booked_for: e.target.value } }))}
+                                />
+                              </label>
+                              <label>
+                                <span>Turn</span>
+                                <select
+                                  aria-label={`Leftover booking turn ${row.booking_number}`}
+                                  value={leftoverTurns[row.id] ?? (row.turn == null ? '' : String(row.turn))}
+                                  onChange={(e) => setLeftoverTurns((current) => ({ ...current, [row.id]: e.target.value }))}
+                                >
+                                  <option value="">No turn</option>
+                                  <option value="60">1 hour</option>
+                                  <option value="90">90 minutes</option>
+                                  <option value="120">2 hours</option>
+                                </select>
+                              </label>
+                              <label className="rd-span">
+                                <span>Notes</span>
+                                <input
+                                  aria-label={`Leftover booking notes ${row.booking_number}`}
+                                  value={edit?.notes ?? row.notes ?? ''}
+                                  onChange={(e) => setLeftoverBookings((current) => ({ ...current, [row.id]: { ...bookingDraft(row, current[row.id]), notes: e.target.value } }))}
+                                />
+                              </label>
+                            </div>
+                          ) : null}
+
+                          {cancellingBooking === row.id ? (
+                            <div className="rd-confirm" role="alert">
+                              Cancel {row.guest_name}&apos;s booking? Call them to let them know.
+                              <div>
+                                <button type="button" onClick={() => setCancellingBooking('')}>Keep it</button>
+                                <button
+                                  type="button"
+                                  className="rd-danger"
+                                  aria-label={`Cancel booking ${row.booking_number}`}
+                                  onClick={async () => {
+                                    setError('');
+                                    try {
+                                      await api(`/restaurant/bookings/${row.id}/cancel`, { method: 'POST' });
+                                      setCancellingBooking('');
+                                      await refresh();
+                                    } catch (err: any) {
+                                      setError(err.message || 'Could not cancel the booking');
+                                    }
+                                  }}
+                                >
+                                  Yes, cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {row.status === 'requested' ? (
+                            <div className="rest-order-actions rd-row-actions">
+                              {editing ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    className="rd-primary"
+                                    aria-label={`Save leftover booking ${row.booking_number}`}
+                                    onClick={() => saveWholeBooking(row)}
+                                  >
+                                    Save
+                                  </button>
+                                  <button type="button" onClick={() => setEditingBooking('')}>Close</button>
+                                </>
+                              ) : (
+                                <>
+                                  <select
+                                    className="rd-seat-pick"
+                                    aria-label={`Seat booking ${row.booking_number} at table`}
+                                    value={seatTables[row.id] || ''}
+                                    onChange={(e) => setSeatTables({ ...seatTables, [row.id]: e.target.value })}
+                                  >
+                                    <option value="">Pick a table</option>
+                                    {openTables.map((table) => (
+                                      <option key={table.id} value={table.id}>
+                                        {table.code} · {table.seats} seats
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <button
+                                    type="button"
+                                    className="rd-go"
+                                    aria-label={`Seat booking ${row.booking_number}`}
+                                    onClick={async () => {
+                                      setError('');
+                                      const tableId = (seatTables[row.id] || '').trim();
+                                      try {
+                                        await api(`/restaurant/bookings/${row.id}/seat`, {
+                                          method: 'POST',
+                                          body: JSON.stringify(tableId ? { table_id: tableId } : {}),
+                                        });
+                                        await refresh();
+                                      } catch (err: any) {
+                                        setError(err.message || 'Could not seat the booking');
+                                      }
+                                    }}
+                                  >
+                                    Seat
+                                  </button>
+                                  <button type="button" aria-label={`Edit booking ${row.booking_number}`} onClick={() => setEditingBooking(row.id)}>
+                                    Edit
+                                  </button>
+                                  <button type="button" className="rd-danger right" aria-label={`Ask to cancel booking ${row.booking_number}`} onClick={() => setCancellingBooking(row.id)}>
+                                    Cancel
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          ) : row.status === 'seated' ? (
+                            <div className="rest-order-actions rd-row-actions">
+                              <button
+                                type="button"
+                                className="rd-primary"
+                                aria-label={`Finish booking ${row.booking_number}`}
+                                onClick={async () => {
+                                  setError('');
+                                  try {
+                                    await api(`/restaurant/bookings/${row.id}/finish`, { method: 'POST', body: JSON.stringify({}) });
+                                    await refresh();
+                                  } catch (err: any) {
+                                    setError(err.message || 'Could not finish the booking');
+                                  }
+                                }}
+                              >
+                                Finish visit
+                              </button>
+                              <button type="button" onClick={() => (window.location.href = '/restaurant/till')}>
+                                Take order
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
+                      </li>
+                    );
+                  })}
+                  {!shown.length && (
+                    <li className="rd-mini-empty">{bookings.length ? 'No bookings here.' : 'No booking requests yet.'}</li>
+                  )}
+                </ul>
+              </>
+            );
+          })()}
         </section>
       )}
       {restaurantDesk && tab === 'orders' && (
