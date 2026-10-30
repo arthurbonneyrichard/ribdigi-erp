@@ -110,8 +110,8 @@ test('hideStoreUx covers hotel and single-store, keeps multi-store retail', () =
   assert.equal(hideStoreUx({ industry: 'mart', max_stores: 10 }), false);
 });
 
-test('cashier nav allowlist is POS and Help & Support', () => {
-  assert.deepEqual([...CASHIER_NAV_MODULES].sort(), ['pos', 'sales', 'support']);
+test('cashier nav allowlist is POS (or the restaurant till) and Help & Support', () => {
+  assert.deepEqual([...CASHIER_NAV_MODULES].sort(), ['pos', 'restaurant', 'sales', 'support']);
   assert.equal(CASHIER_NAV_MODULES.includes('dashboard'), false);
   assert.equal(CASHIER_NAV_MODULES.includes('inventory'), false);
   assert.equal(CASHIER_NAV_MODULES.includes('sales'), true);
@@ -120,11 +120,13 @@ test('cashier nav allowlist is POS and Help & Support', () => {
   assert.equal(unauthorizedNavRedirect('/pos', 'cashier', CASHIER_NAV_MODULES), null);
   assert.equal(unauthorizedNavRedirect('/support', 'cashier', CASHIER_NAV_MODULES), null);
   assert.equal(unauthorizedNavRedirect('/dashboard', 'cashier', CASHIER_NAV_MODULES), '/pos');
-  assert.equal(unauthorizedNavRedirect('/restaurant', 'cashier', CASHIER_NAV_MODULES), '/pos');
-  assert.equal(unauthorizedNavRedirect('/restaurant?tab=kitchen', 'cashier', CASHIER_NAV_MODULES), '/pos');
+  // Restaurant screens are allowed by module; non-restaurant companies are blocked by the industry filter.
+  assert.equal(unauthorizedNavRedirect('/restaurant/till', 'cashier', CASHIER_NAV_MODULES, 'restaurant'), null);
+  assert.equal(unauthorizedNavRedirect('/restaurant?tab=kitchen', 'cashier', CASHIER_NAV_MODULES, 'restaurant'), null);
+  assert.equal(unauthorizedNavRedirect('/dashboard', 'cashier', CASHIER_NAV_MODULES, 'restaurant'), '/restaurant/till');
   assert.equal(unauthorizedNavRedirect('/gift-cards', 'cashier', CASHIER_NAV_MODULES), '/pos');
   assert.equal(roleHomePath('cashier'), '/pos');
-  assert.equal(roleHomePath('cashier', 'restaurant'), '/pos');
+  assert.equal(roleHomePath('cashier', 'restaurant'), '/restaurant/till');
   assert.equal(roleHomePath('cashier', 'retail'), '/pos');
   assert.equal(roleHomePath('store_manager', 'restaurant'), '/restaurant');
   assert.equal(roleHomePath('company_admin'), '/dashboard');

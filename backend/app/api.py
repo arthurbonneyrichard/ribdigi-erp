@@ -2272,6 +2272,13 @@ async def settings_sms_test(
     )
 
 
+
+
+async def _login_industry(db: AsyncSession, tenant_id: str | None) -> str | None:
+    """The company's business type, so sign-in lands each role on the right home screen."""
+    tenant = await db.get(m.Tenant, tenant_id) if tenant_id else None
+    return packages_svc.canonicalize_industry(getattr(tenant, "industry", None)) if tenant else None
+
 @api.post("/auth/login")
 async def login(payload: Login, request: Request, db: AsyncSession = Depends(get_db)):
     tenant = await tenants_svc.resolve_tenant(db, payload.tenant_id)
@@ -2508,6 +2515,7 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
                 "email": user.email,
                 "role": user.role,
                 "tenant_id": tenant_id,
+                "industry": await _login_industry(db, tenant_id),
                 "email_verified": user.email_verified,
                 "totp_enabled": bool(user.totp_enabled),
                 "webauthn_enabled": has_webauthn,
@@ -2581,6 +2589,7 @@ async def auth_2fa_verify(payload: TwoFactorVerify, request: Request, db: AsyncS
                 "email": user.email,
                 "role": user.role,
                 "tenant_id": user.tenant_id,
+                "industry": await _login_industry(db, user.tenant_id),
                 "email_verified": user.email_verified,
                 "totp_enabled": True,
             },
@@ -2746,6 +2755,7 @@ async def webauthn_login_verify(
                 "email": user.email,
                 "role": user.role,
                 "tenant_id": user.tenant_id,
+                "industry": await _login_industry(db, user.tenant_id),
                 "email_verified": user.email_verified,
                 "totp_enabled": bool(user.totp_enabled),
                 "webauthn_enabled": True,

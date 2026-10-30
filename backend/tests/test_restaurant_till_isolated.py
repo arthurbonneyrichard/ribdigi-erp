@@ -84,3 +84,13 @@ def test_public_website_orders_and_books_on_one_page():
         assert "RestaurantSite" in page
     nav = NAV.read_text(encoding="utf-8")
     assert "['Website and booking', '/restaurant?tab=booking', 'restaurant']" in nav
+
+
+def test_restaurant_cashier_lands_on_restaurant_till():
+    nav = NAV.read_text(encoding="utf-8")
+    assert "if (role === 'cashier') return ind === 'restaurant' ? '/restaurant/till' : '/pos';" in nav
+    assert "export const CASHIER_NAV_MODULES: string[] = ['sales', 'pos', 'restaurant', 'support'];" in nav
+    root = (ROOT / "frontend/app/page.tsx").read_text(encoding="utf-8")
+    assert "router.replace(roleHomePath('cashier', me.data?.industry))" in root
+    dash = (ROOT / "frontend/app/(dashboard)/dashboard/page.tsx").read_text(encoding="utf-8")
+    assert "router.replace('/pos')" not in dash

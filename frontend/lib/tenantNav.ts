@@ -627,8 +627,9 @@ export function groupedTenantNav(
   return [...hotelGroups, ...pointed];
 }
 
-/** Cashier sidebar: Sales, POS, and Help & Support. */
-export const CASHIER_NAV_MODULES: string[] = ['sales', 'pos', 'support'];
+/** Cashier sidebar: Sales, POS (or the restaurant till at a restaurant), and Help & Support.
+ * Restaurant screens only show for restaurant companies (industry filter). */
+export const CASHIER_NAV_MODULES: string[] = ['sales', 'pos', 'restaurant', 'support'];
 
 /** Gift cards share the POS module. Cashiers stay on the till; other roles keep the page. */
 export function navItemVisibleForRole(role: string, href: string): boolean {
@@ -705,8 +706,9 @@ export function navModuleForPath(pathname: string): string | null {
 }
 
 export function roleHomePath(role: string, industry?: string | null): string {
-  if (role === 'cashier') return '/pos';
   const ind = normalizeIndustry(industry);
+  // A restaurant rings on its own till; the retail POS refuses restaurant companies.
+  if (role === 'cashier') return ind === 'restaurant' ? '/restaurant/till' : '/pos';
   if (
     ind === 'restaurant' &&
     (role === 'store_manager' || role === 'sales_officer' || role === 'inventory_officer')

@@ -95,7 +95,7 @@ export default function Login() {
               clearSessionAndRedirect();
               return;
             }
-            if (String(me.data?.role || '') === 'cashier') router.replace('/pos');
+            if (String(me.data?.role || '') === 'cashier') router.replace(roleHomePath('cashier', me.data?.industry));
           } catch (err) {
             const again = await probeApi();
             if ((err as { status?: number }).status === undefined && again !== 'online') {

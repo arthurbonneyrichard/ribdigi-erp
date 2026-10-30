@@ -7,6 +7,7 @@ import { getPrefetched } from '../../../lib/prefetchCache';
 import { formatDate, formatMoney, formatTime, type FormatPrefs } from '../../../lib/format';
 import { getMe } from '../../../lib/meCache';
 import { industryLabel, normalizeIndustry } from '../../../lib/industries';
+import { roleHomePath } from '../../../lib/tenantNav';
 import {
   dashboardLayout,
   filterIndustryDashboardFeatures,
@@ -396,7 +397,7 @@ export default function Page() {
         const ind = normalizeIndustry(me.data?.industry);
         setIndustry(ind);
         if (role === 'cashier') {
-          router.replace('/pos');
+          router.replace(roleHomePath(role, me.data?.industry));
           return;
         }
         if (softwareOwnerDashboardPath(role, raw)) {
@@ -488,7 +489,7 @@ export default function Page() {
           setD({});
           setDashStatus('loading');
           if (role === 'cashier') {
-            router.replace('/pos');
+            router.replace(roleHomePath(role, r.data?.industry));
             return;
           }
           if (softwareOwnerDashboardPath(role, raw)) {
