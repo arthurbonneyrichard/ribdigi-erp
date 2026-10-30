@@ -189,7 +189,7 @@ export const HOTEL_NAV_GROUPS: NavGroup[] = [
 export const RESTAURANT_NAV_ITEMS: NavItem[] = [
   ['Restaurant dashboard', '/restaurant', 'restaurant'],
   ['Tables and floor', '/restaurant?tab=tables', 'restaurant'],
-  ['Online booking', '/restaurant?tab=booking', 'restaurant'],
+  ['Website and booking', '/restaurant?tab=booking', 'restaurant'],
   ['Orders', '/restaurant/orders', 'restaurant'],
   ['Kitchen', '/restaurant?tab=kitchen', 'restaurant'],
   ['Recipes', '/restaurant?tab=recipes', 'restaurant'],
@@ -225,7 +225,7 @@ export const RESTAURANT_NAV_GROUPS: NavGroup[] = [
     label: 'Restaurant',
     items: [
       ['Tables and floor', '/restaurant?tab=tables', 'restaurant'],
-      ['Online booking', '/restaurant?tab=booking', 'restaurant'],
+      ['Website and booking', '/restaurant?tab=booking', 'restaurant'],
       ['Orders', '/restaurant/orders', 'restaurant'],
       ['Kitchen', '/restaurant?tab=kitchen', 'restaurant'],
       ['Recipes', '/restaurant?tab=recipes', 'restaurant'],

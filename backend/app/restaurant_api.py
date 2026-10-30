@@ -6,7 +6,7 @@ from decimal import Decimal
 import re
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, BeforeValidator, ConfigDict, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -1479,3 +1479,96 @@ async def public_restaurant_order_create(
     body = restaurant_svc.serialize_order(row)
     body["pay_at_counter"] = True
     return _env(body, "Order received. Pay at the counter.")
+
+
+class SiteLine(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    product_id: UuidIdValue
+    quantity: float = Field(gt=0, le=40, allow_inf_nan=False)
+
+
+class SiteOrderBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    service: Literal["pickup", "delivery"]
+    customer_name: PartyNameValue
+    phone: E164PhoneValue
+    email: EmailStr | None = None
+    pay_with: Literal["cash", "mobile_money", "card"] = "cash"
+    ready_by: ReadyByValue | None = None
+    delivery_address: AddressValue | None = None
+    delivery_zone: Annotated[str, Field(max_length=80)] | None = None
+    allergy: AllergyValue | None = None
+    notes: Annotated[str, Field(max_length=300)] | None = None
+    lines: list[SiteLine] = Field(min_length=1, max_length=30)
+
+
+class SiteBookingBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    guest_name: PartyNameValue
+    phone: E164PhoneValue
+    party_size: int = Field(ge=1, le=40)
+    booked_for: str = Field(min_length=10, max_length=40)
+    notes: Annotated[str, Field(max_length=300)] | None = None
+    pre_order: list[SiteLine] = Field(default_factory=list, max_length=12)
+
+
+# The restaurant's public website: menu, online orders and table bookings on one page.
+site_public_router = APIRouter(prefix="/public/restaurant-site", tags=["restaurant-site"])
+
+
+@site_public_router.get("/{slug}")
+async def public_restaurant_site(slug: str, db: AsyncSession = Depends(get_db)):
+    from app import restaurant_site as site_svc
+
+    return _env(await site_svc.site_page(db, slug))
+
+
+@site_public_router.get("/{slug}/logo")
+async def public_restaurant_site_logo(slug: str, request: Request, db: AsyncSession = Depends(get_db)):
+    from app import logo_media as logo_media_svc
+    from app import restaurant_site as site_svc
+
+    tenant = await site_svc.site_logo_tenant(db, slug)
+    return logo_media_svc.tenant_logo_response(tenant, request=request, requested_version=None)
+
+
+@site_public_router.get("/{slug}/menu/{product_id}/image")
+async def public_restaurant_site_menu_image(
+    slug: str, product_id: UuidIdValue, request: Request, db: AsyncSession = Depends(get_db)
+):
+    from app import logo_media as logo_media_svc
+    from app import restaurant_site as site_svc
+
+    tenant, key = await site_svc.menu_image_key(db, slug, product_id)
+    # Revalidate so a dish taken off the menu stops showing at once; 304 still skips the bytes.
+    return logo_media_svc.keyed_media_response(
+        key, tenant_id=tenant.id, request=request, cache_control="public, no-cache", vary="Accept"
+    )
+
+
+@site_public_router.post("/{slug}/order")
+async def public_restaurant_site_order(slug: str, payload: SiteOrderBody, db: AsyncSession = Depends(get_db)):
+    from app import restaurant_site as site_svc
+
+    row = await site_svc.create_site_order(db, slug, payload)
+    await db.commit()
+    return _env(await site_svc.track_order(db, slug, row.id), "Order received")
+
+
+@site_public_router.get("/{slug}/order/{order_id}")
+async def public_restaurant_site_track(slug: str, order_id: UuidIdValue, db: AsyncSession = Depends(get_db)):
+    from app import restaurant_site as site_svc
+
+    return _env(await site_svc.track_order(db, slug, order_id))
+
+
+@site_public_router.post("/{slug}/book")
+async def public_restaurant_site_book(slug: str, payload: SiteBookingBody, db: AsyncSession = Depends(get_db)):
+    from app import restaurant_site as site_svc
+
+    row = await site_svc.create_site_booking(db, slug, payload)
+    await db.commit()
+    return _env(restaurant_svc.serialize_booking(row), "Booking requested")

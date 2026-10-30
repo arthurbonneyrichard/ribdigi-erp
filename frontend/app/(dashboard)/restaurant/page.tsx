@@ -1960,7 +1960,7 @@ export default function RestaurantPage() {
             <Link href="/restaurant?tab=tables">Tables and floor</Link>
             <Link href="/restaurant/orders">Orders</Link>
             <Link href="/restaurant?tab=kitchen">Kitchen</Link>
-            <Link href="/restaurant?tab=booking">Online booking</Link>
+            <Link href="/restaurant?tab=booking">Website and booking</Link>
             <Link href="/restaurant/till">Restaurant till</Link>
             <Link href="/restaurant/bills">Bills</Link>
           </div>
@@ -2151,7 +2151,60 @@ export default function RestaurantPage() {
       )}
       {restaurantDesk && tab === 'booking' && (
         <section className="card" aria-label="Online booking">
-          <h2>Online booking</h2>
+          <h2>Website and booking</h2>
+          {(() => {
+            // One public website: the menu, food and drink orders (pickup or delivery) and table booking.
+            const sitePath = String(
+              (bookingLink?.open && bookingLink.path) ||
+                onlineOrders.path ||
+                (bookingLink?.path ? String(bookingLink.path).replace('/book/', '/order/') : ''),
+            );
+            const live = Boolean(onlineOrders.open || bookingLink?.open);
+            const siteUrl = sitePath ? `${pageOrigin || ''}${sitePath}` : '';
+            return (
+              <div className="rest-site-card" aria-label="Your restaurant website">
+                <h3>Your restaurant website</h3>
+                <p className="muted">
+                  Guests see your menu with photos, order food and drinks for pickup or delivery, follow their order,
+                  and book a table. Orders land on the Orders board; bookings land below. Nothing is charged online:
+                  guests pay when they collect, on delivery, or at the table.
+                </p>
+                <ul className="rest-site-status">
+                  <li>
+                    <strong>Food and drink orders:</strong> {onlineOrders.open ? 'open' : 'closed'}{' '}
+                    {onlineOrders.open ? (
+                      <button type="button" aria-label="Close online food orders" onClick={() => saveOnlineOrders(false)}>
+                        Close orders
+                      </button>
+                    ) : (
+                      <button type="button" className="btn-ok" aria-label="Open online food orders" onClick={() => saveOnlineOrders(true)}>
+                        Open orders
+                      </button>
+                    )}
+                  </li>
+                  <li>
+                    <strong>Table booking:</strong>{' '}
+                    {bookingLink?.open ? 'open' : 'closed until you save your website or domain below'}
+                  </li>
+                </ul>
+                {live && siteUrl ? (
+                  <>
+                    <label>
+                      <span>Website link to share (WhatsApp, Instagram, Google)</span>
+                      <input readOnly aria-label="Restaurant website link" value={siteUrl} />
+                    </label>
+                    <p>
+                      <a href={sitePath} target="_blank" rel="noreferrer" aria-label="Open my restaurant website">
+                        Open my website →
+                      </a>
+                    </p>
+                  </>
+                ) : (
+                  <p className="muted">Open orders or save a website below to publish the page.</p>
+                )}
+              </div>
+            );
+          })()}
           <p className="muted">
             Record an existing website or a new domain. Guests use the booking link and the request lands here.
             Saving the host does not move DNS or issue a certificate, and the request does not take a payment.

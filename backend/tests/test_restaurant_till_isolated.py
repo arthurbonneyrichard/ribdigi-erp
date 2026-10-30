@@ -72,3 +72,15 @@ def test_restaurant_till_counts_its_own_drawer():
     # Extras are charged once per line, like the bill.
     assert "return line.quantity * line.price + line.modifier_total;" in page
     assert "item.line_total" in page
+
+
+def test_public_website_orders_and_books_on_one_page():
+    site = (ROOT / "frontend/components/restaurant-site/RestaurantSite.tsx").read_text(encoding="utf-8")
+    assert "/public/restaurant-site/" in site
+    assert "/order`" in site and "/book`" in site
+    assert "pre_order" in site and "Follow your order" in site
+    for route in ("book", "order"):
+        page = (ROOT / f"frontend/app/{route}/[slug]/page.tsx").read_text(encoding="utf-8")
+        assert "RestaurantSite" in page
+    nav = NAV.read_text(encoding="utf-8")
+    assert "['Website and booking', '/restaurant?tab=booking', 'restaurant']" in nav

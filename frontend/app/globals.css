@@ -8364,3 +8364,11 @@ input[type=file]::file-selector-button:hover{border-color:var(--brand)}
     text-align: left;
   }
 }
+/* Restaurant desk: "Your restaurant website" card */
+.rest-site-card{border:2px solid var(--line);border-radius:14px;padding:14px 16px;margin:8px 0 18px;background:var(--mist);display:flex;flex-direction:column;gap:8px}
+.rest-site-card h3{margin:0}
+.rest-site-card label{display:flex;flex-direction:column;gap:4px;font-weight:700}
+.rest-site-card input{max-width:520px}
+.rest-site-card a{color:var(--deep-green, #006B2E);font-weight:700}
+.rest-site-status{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.rest-site-status li{display:flex;align-items:center;gap:8px;flex-wrap:wrap}

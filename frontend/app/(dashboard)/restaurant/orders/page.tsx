@@ -212,6 +212,7 @@ export default function RestaurantOrdersPage() {
                           ⏱ {waitWords(mins)}
                         </span>
                         {o.service_mode !== 'dine_in' ? <span className="rd-pill">{MODE_WORDS[o.service_mode]}</span> : null}
+                        {o.channel ? <span className="rd-pill">Online</span> : null}
                         {o.allergy || o.allergen ? <span className="rd-pill bad">Allergy</span> : null}
                         {o.rush ? <span className="rd-pill wait">Rush</span> : null}
                         {o.bill_asked ? <span className="rd-pill wait">Wants the bill</span> : null}
@@ -273,6 +274,7 @@ function OrderDrawer({
   }
 
   const facts: { text: string; tone?: string }[] = [];
+  if (order.channel) facts.push({ text: 'Ordered on your website' });
   if (order.covers) facts.push({ text: `${order.covers} guests` });
   if (order.phone) facts.push({ text: order.phone });
   if (order.delivery_address) facts.push({ text: order.delivery_address });
