@@ -398,3 +398,19 @@
 .main .rdesk .rd-waste-list li div{display:flex;flex-direction:column}
 .main .rdesk .rd-waste-list li strong{font-size:15px}
 .main .rdesk .rd-waste-list li small{color:var(--rd-muted)}
+
+/* Full order editor */
+.main .rdesk.rd-editor{background:transparent;padding:0;min-height:0}
+.main .rdesk .rd-editor-intro p{margin:0}
+.main .rdesk .rd-editor-intro a{color:var(--rd-deep);font-weight:700}
+.main .rdesk .rd-settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;align-items:start}
+.main .rdesk .rd-settings .rd-domain[open]{grid-column:1 / -1}
+.main .rdesk .rd-domain form,.main .rdesk .rd-domain section{margin-top:10px}
+.main .rdesk .rd-domain h3{font-size:16px;margin:0 0 6px}
+.main .rdesk .rd-edit-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.main .rdesk li.rest-order.rd-edit-order{margin:0;border:0;background:var(--rd-panel);border-radius:16px;box-shadow:var(--rd-shadow);padding:12px 16px}
+.main .rdesk li.rest-order.rd-edit-order.open{outline:2px solid var(--rd-brand)}
+.main .rdesk .rd-edit-summary{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.main .rdesk .rd-edit-summary strong{font-size:16px;min-width:70px}
+.main .rdesk .rd-edit-summary .who{flex:1 1 200px;color:var(--rd-muted);font-weight:600}
+.main .rdesk .rd-edit-summary b{min-width:100px;text-align:right}

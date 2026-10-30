@@ -110,10 +110,7 @@ const TAB_HEADINGS: Record<string, [string, string]> = {
   kitchen: ['Kitchen', 'Every dish to cook, oldest first. Start it, then mark it ready.'],
   recipes: ['Recipes', 'What goes into each dish, so stock comes off when it sells.'],
   waste: ['Waste', 'Record spoiled or dropped ingredients so stock stays right.'],
-  orders: [
-    'Full order editor',
-    'Dine-in, takeaway, and delivery. Kitchen tickets follow each item station. Completing an order deducts recipe ingredients.',
-  ],
+  orders: ['Full order editor', 'Menu settings, and every detail on an order.'],
 };
 
 function onlineLabel(row: Row) {
@@ -273,6 +270,8 @@ export default function RestaurantPage() {
   const [leftoverBookings, setLeftoverBookings] = useState<Record<string, { guest_name: string; phone: string; party_size: string; booked_for: string; notes: string }>>({});
   const [leftoverTurns, setLeftoverTurns] = useState<Record<string, string>>({});
   const [bookingFilter, setBookingFilter] = useState('upcoming');
+  const [expandedOrder, setExpandedOrder] = useState('');
+  const [showClosedOrders, setShowClosedOrders] = useState(false);
   const [addingRecipe, setAddingRecipe] = useState(false);
   const [editingRecipe, setEditingRecipe] = useState('');
   const [retiringRecipe, setRetiringRecipe] = useState('');
@@ -504,7 +503,7 @@ export default function RestaurantPage() {
       if (Object.keys(body).length) {
         await api(`/restaurant/bookings/${row.id}`, { method: 'PATCH', body: JSON.stringify(body) });
       }
-      setMessage(`Saved leftover booking ${row.booking_number}`);
+      setMessage(`Saved booking ${row.booking_number}`);
       setEditingBooking('');
       await refresh();
     } catch (err: any) {
@@ -590,10 +589,10 @@ export default function RestaurantPage() {
       setLeftoverNewItems((current) => ({ ...current, [row.id]: '' }));
       setLeftoverNewQuantities((current) => ({ ...current, [row.id]: '1' }));
       setLeftoverNewModifiers((current) => ({ ...current, [row.id]: [] }));
-      setMessage(`Saved leftover item on ${row.order_number}`);
+      setMessage(`Saved item on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
-      setError(err.message || 'Could not add the leftover item');
+      setError(err.message || 'Could not add the item');
     }
   }
 
@@ -608,10 +607,10 @@ export default function RestaurantPage() {
         method: 'PATCH',
         body: JSON.stringify({ remove_line_ids: [item.id] }),
       });
-      setMessage(`Removed leftover ${item.name} on ${row.order_number}`);
+      setMessage(`Removed ${item.name} on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
-      setError(err.message || 'Could not remove the leftover item');
+      setError(err.message || 'Could not remove the item');
     }
   }
 
@@ -688,13 +687,13 @@ export default function RestaurantPage() {
         method: 'PATCH',
         body: JSON.stringify(body),
       });
-      setMessage(`Saved leftover recipe ${leftoverName}`);
+      setMessage(`Saved recipe ${leftoverName}`);
       setEditingRecipe('');
       setLeftoverRecipeAdded((current) => ({ ...current, [row.id]: [] }));
       setLeftoverRecipeRemoved((current) => ({ ...current, [row.id]: [] }));
       await refresh();
     } catch (err: any) {
-      setError(err.message || 'Could not save the leftover recipe');
+      setError(err.message || 'Could not save the recipe');
     }
   }
 
@@ -711,10 +710,10 @@ export default function RestaurantPage() {
           line_modifiers: [{ line_id: item.id, modifier_ids: leftoverExtraIds(item) }],
         }),
       });
-      setMessage(`Saved leftover extras on ${row.order_number}`);
+      setMessage(`Saved extras on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
-      setError(err.message || 'Could not save the leftover extras');
+      setError(err.message || 'Could not save the extras');
     }
   }
 
@@ -730,10 +729,10 @@ export default function RestaurantPage() {
           }],
         }),
       });
-      setMessage(`Saved leftover station on ${row.order_number}`);
+      setMessage(`Saved station on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
-      setError(err.message || 'Could not save the leftover station');
+      setError(err.message || 'Could not save the station');
     }
   }
 
@@ -749,10 +748,10 @@ export default function RestaurantPage() {
           }],
         }),
       });
-      setMessage(`Saved leftover course on ${row.order_number}`);
+      setMessage(`Saved course on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
-      setError(err.message || 'Could not save the leftover course');
+      setError(err.message || 'Could not save the course');
     }
   }
 
@@ -769,7 +768,7 @@ export default function RestaurantPage() {
           }],
         }),
       });
-      setMessage(`Saved leftover item note on ${row.order_number}`);
+      setMessage(`Saved item note on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the item note');
@@ -790,7 +789,7 @@ export default function RestaurantPage() {
           }],
         }),
       });
-      setMessage(`Saved leftover seat on ${row.order_number}`);
+      setMessage(`Saved seat on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the seat');
@@ -810,7 +809,7 @@ export default function RestaurantPage() {
           }],
         }),
       });
-      setMessage(`Saved leftover spice on ${row.order_number}`);
+      setMessage(`Saved spice on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the spice');
@@ -830,7 +829,7 @@ export default function RestaurantPage() {
           }],
         }),
       });
-      setMessage(`Saved leftover doneness on ${row.order_number}`);
+      setMessage(`Saved doneness on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the doneness');
@@ -865,10 +864,10 @@ export default function RestaurantPage() {
           }],
         }),
       });
-      setMessage(`Saved leftover price on ${row.order_number}`);
+      setMessage(`Saved price on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
-      setError(err.message || 'Could not save the leftover price');
+      setError(err.message || 'Could not save the price');
     }
   }
 
@@ -884,10 +883,10 @@ export default function RestaurantPage() {
           }],
         }),
       });
-      setMessage(`Saved leftover quantity on ${row.order_number}`);
+      setMessage(`Saved quantity on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
-      setError(err.message || 'Could not save the leftover quantity');
+      setError(err.message || 'Could not save the quantity');
     }
   }
 
@@ -907,10 +906,10 @@ export default function RestaurantPage() {
         method: 'PATCH',
         body: JSON.stringify(body),
       });
-      setMessage(`Saved leftover service on ${row.order_number}`);
+      setMessage(`Saved service on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
-      setError(err.message || 'Could not save the leftover service');
+      setError(err.message || 'Could not save the service');
     }
   }
 
@@ -923,10 +922,10 @@ export default function RestaurantPage() {
           store_id: (leftoverOrderStores[row.id] ?? row.store_id ?? '').trim() || null,
         }),
       });
-      setMessage(`Saved leftover store on ${row.order_number}`);
+      setMessage(`Saved store on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
-      setError(err.message || 'Could not save the leftover store');
+      setError(err.message || 'Could not save the store');
     }
   }
 
@@ -939,10 +938,10 @@ export default function RestaurantPage() {
           payment_method: leftoverPaymentMethods[row.id] ?? row.payment_method ?? 'cash',
         }),
       });
-      setMessage(`Saved leftover payment on ${row.order_number}`);
+      setMessage(`Saved payment on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
-      setError(err.message || 'Could not save the leftover payment');
+      setError(err.message || 'Could not save the payment');
     }
   }
 
@@ -955,10 +954,10 @@ export default function RestaurantPage() {
           customer_name: (leftoverCustomerNames[row.id] ?? row.customer_name ?? '').trim() || null,
         }),
       });
-      setMessage(`Saved leftover customer on ${row.order_number}`);
+      setMessage(`Saved customer on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
-      setError(err.message || 'Could not save the leftover customer');
+      setError(err.message || 'Could not save the customer');
     }
   }
 
@@ -1113,10 +1112,10 @@ export default function RestaurantPage() {
           delivery_zone: (leftoverDeliveryZones[row.id] ?? row.delivery_zone ?? '').trim() || null,
         }),
       });
-      setMessage(`Saved leftover delivery address on ${row.order_number}`);
+      setMessage(`Saved delivery address on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
-      setError(err.message || 'Could not save the leftover delivery address');
+      setError(err.message || 'Could not save the delivery address');
     }
   }
 
@@ -1127,10 +1126,10 @@ export default function RestaurantPage() {
         method: 'PATCH',
         body: JSON.stringify({ notes: (leftoverNotes[row.id] ?? row.notes ?? '').trim() || null }),
       });
-      setMessage(`Saved leftover notes on ${row.order_number}`);
+      setMessage(`Saved notes on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
-      setError(err.message || 'Could not save leftover notes');
+      setError(err.message || 'Could not save notes');
     }
   }
 
@@ -1147,7 +1146,7 @@ export default function RestaurantPage() {
         method: 'PATCH',
         body: JSON.stringify({ covers }),
       });
-      setMessage(`Saved leftover covers on ${row.order_number}`);
+      setMessage(`Saved covers on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the covers');
@@ -1162,7 +1161,7 @@ export default function RestaurantPage() {
         method: 'PATCH',
         body: JSON.stringify({ allergy: allergy || null }),
       });
-      setMessage(`Saved leftover allergy on ${row.order_number}`);
+      setMessage(`Saved allergy on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the allergy');
@@ -1177,7 +1176,7 @@ export default function RestaurantPage() {
         method: 'PATCH',
         body: JSON.stringify({ allergen: allergen || null }),
       });
-      setMessage(`Saved leftover allergen on ${row.order_number}`);
+      setMessage(`Saved allergen on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the allergen');
@@ -1192,7 +1191,7 @@ export default function RestaurantPage() {
         method: 'PATCH',
         body: JSON.stringify({ occasion: occasion || null }),
       });
-      setMessage(`Saved leftover occasion on ${row.order_number}`);
+      setMessage(`Saved occasion on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the occasion');
@@ -1207,7 +1206,7 @@ export default function RestaurantPage() {
         method: 'PATCH',
         body: JSON.stringify({ phone: phone || null }),
       });
-      setMessage(`Saved leftover phone on ${row.order_number}`);
+      setMessage(`Saved phone on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the phone');
@@ -1225,7 +1224,7 @@ export default function RestaurantPage() {
           pager: text && Number.isInteger(number) ? number : text || null,
         }),
       });
-      setMessage(`Saved leftover pager on ${row.order_number}`);
+      setMessage(`Saved pager on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the pager');
@@ -1240,7 +1239,7 @@ export default function RestaurantPage() {
         method: 'PATCH',
         body: JSON.stringify({ ready_by: readyBy || null }),
       });
-      setMessage(`Saved leftover ready by on ${row.order_number}`);
+      setMessage(`Saved ready by on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the ready time');
@@ -1256,7 +1255,7 @@ export default function RestaurantPage() {
         method: 'PATCH',
         body: JSON.stringify({ quoted_wait: text ? (Number.isInteger(number) ? number : text) : null }),
       });
-      setMessage(`Saved leftover quoted wait on ${row.order_number}`);
+      setMessage(`Saved quoted wait on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the quoted wait');
@@ -1271,7 +1270,7 @@ export default function RestaurantPage() {
         method: 'PATCH',
         body: JSON.stringify({ fire_at: fireAt || null }),
       });
-      setMessage(`Saved leftover fire at on ${row.order_number}`);
+      setMessage(`Saved fire at on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the fire time');
@@ -1286,7 +1285,7 @@ export default function RestaurantPage() {
         method: 'PATCH',
         body: JSON.stringify({ packaging: packaging || null }),
       });
-      setMessage(`Saved leftover packaging on ${row.order_number}`);
+      setMessage(`Saved packaging on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the packaging');
@@ -1371,7 +1370,7 @@ export default function RestaurantPage() {
         method: 'PATCH',
         body: JSON.stringify({ diet: diet || null }),
       });
-      setMessage(`Saved leftover diet on ${row.order_number}`);
+      setMessage(`Saved diet on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the diet');
@@ -1386,7 +1385,7 @@ export default function RestaurantPage() {
         method: 'PATCH',
         body: JSON.stringify({ guest_source: guestSource || null }),
       });
-      setMessage(`Saved leftover source on ${row.order_number}`);
+      setMessage(`Saved source on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the source');
@@ -1401,7 +1400,7 @@ export default function RestaurantPage() {
         method: 'PATCH',
         body: JSON.stringify({ vehicle: vehicle || null }),
       });
-      setMessage(`Saved leftover vehicle on ${row.order_number}`);
+      setMessage(`Saved vehicle on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the vehicle');
@@ -1417,7 +1416,7 @@ export default function RestaurantPage() {
         method: 'PATCH',
         body: JSON.stringify({ bay: text ? (Number.isInteger(number) ? number : text) : null }),
       });
-      setMessage(`Saved leftover bay on ${row.order_number}`);
+      setMessage(`Saved bay on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the bay');
@@ -1432,7 +1431,7 @@ export default function RestaurantPage() {
         method: 'PATCH',
         body: JSON.stringify({ handoff: handoff || null }),
       });
-      setMessage(`Saved leftover handoff on ${row.order_number}`);
+      setMessage(`Saved handoff on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the handoff');
@@ -1447,7 +1446,7 @@ export default function RestaurantPage() {
         method: 'PATCH',
         body: JSON.stringify({ guest_email: guestEmail || null }),
       });
-      setMessage(`Saved leftover email on ${row.order_number}`);
+      setMessage(`Saved email on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the email');
@@ -1462,7 +1461,7 @@ export default function RestaurantPage() {
         method: 'PATCH',
         body: JSON.stringify({ receipt: receipt || null }),
       });
-      setMessage(`Saved leftover receipt on ${row.order_number}`);
+      setMessage(`Saved receipt on ${row.order_number}`);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not save the receipt');
@@ -2875,11 +2874,24 @@ export default function RestaurantPage() {
         </section>
       )}
       {restaurantDesk && tab === 'orders' && (
-        <section className="card">
-          <h2>Orders</h2>
-          <p className="muted">
+        <section className="rdesk rd-editor" aria-label="Restaurant full order editor">
+          <div className="rd-panel rd-editor-intro">
+            <p>
+              For everyday service use the <Link href="/restaurant/orders">Orders board</Link> and the{' '}
+              <Link href="/restaurant/till">restaurant till</Link>. This page holds the menu settings and every detail on an
+              order (seat, course, pager, packaging and more).
+            </p>
+            <p className="rd-hint-line">
             Completing a bill posts the ingredient cost to cost of goods and takes it off inventory. A menu item with no recipe uses its own stock and cost. A refund puts that cost back. A restaurant bill cannot be put on credit. Credit stays on the restaurant till, where a customer can be selected.
-          </p>
+            </p>
+          </div>
+          <h2 className="rd-h2">Menu settings</h2>
+          <div className="rd-settings">
+          <details className="rd-panel rd-domain">
+            <summary>
+              <strong>Service charge</strong>
+              <span>{serviceDraft ? `${serviceDraft}%` : 'None'}</span>
+            </summary>
           <form
             className="rest-order-form"
             onSubmit={async (event) => {
@@ -2908,6 +2920,12 @@ export default function RestaurantPage() {
             </label>
             <button type="submit" aria-label="Save restaurant service charge">Save service charge</button>
           </form>
+          </details>
+          <details className="rd-panel rd-domain">
+            <summary>
+              <strong>Extras</strong>
+              <span>{modifierGroups.reduce((n, group) => n + (group.modifiers || []).length, 0)} extras in {modifierGroups.length} {modifierGroups.length === 1 ? 'group' : 'groups'}</span>
+            </summary>
           <form className="rest-order-form" onSubmit={saveExtra}>
             <label>
               <span>Group</span>
@@ -2951,10 +2969,10 @@ export default function RestaurantPage() {
                             name: leftoverExtraGroupNames[group.id] ?? group.name,
                           }),
                         });
-                        setMessage(`Saved leftover extra group ${leftoverExtraGroupNames[group.id] ?? group.name}`);
+                        setMessage(`Saved extra group ${leftoverExtraGroupNames[group.id] ?? group.name}`);
                         await refresh();
                       } catch (err: any) {
-                        setError(err.message || 'Could not save the leftover extra group');
+                        setError(err.message || 'Could not save the extra group');
                       }
                     }}
                   >
@@ -2967,10 +2985,10 @@ export default function RestaurantPage() {
                       setError('');
                       try {
                         await api(`/restaurant/modifier-groups/${group.id}/retire`, { method: 'POST', body: JSON.stringify({}) });
-                        setMessage(`Retired leftover extra group ${group.name}`);
+                        setMessage(`Retired extra group ${group.name}`);
                         await refresh();
                       } catch (err: any) {
-                        setError(err.message || 'Could not retire the leftover extra group');
+                        setError(err.message || 'Could not retire the extra group');
                       }
                     }}
                   >
@@ -3020,10 +3038,10 @@ export default function RestaurantPage() {
                             price: leftoverExtraPrices[row.id] ?? String(row.price ?? '0'),
                           }),
                         });
-                        setMessage(`Saved leftover extra ${row.name}`);
+                        setMessage(`Saved extra ${row.name}`);
                         await refresh();
                       } catch (err: any) {
-                        setError(err.message || 'Could not save the leftover extra');
+                        setError(err.message || 'Could not save the extra');
                       }
                     }}
                   >
@@ -3052,6 +3070,12 @@ export default function RestaurantPage() {
           ) : (
             <p className="muted">No extras yet.</p>
           )}
+          </details>
+          <details className="rd-panel rd-domain">
+            <summary>
+              <strong>Delivery zones</strong>
+              <span>{deliveryZones.length ? deliveryZones.join(', ') : 'None yet'}</span>
+            </summary>
           <form
             className="rest-order-form"
             onSubmit={(event) => {
@@ -3084,6 +3108,12 @@ export default function RestaurantPage() {
           ) : (
             <p className="muted">No delivery zones yet.</p>
           )}
+          </details>
+          <details className="rd-panel rd-domain">
+            <summary>
+              <strong>Online food orders</strong>
+              <span>{onlineOrders.open ? 'Open' : 'Closed'}</span>
+            </summary>
           <section aria-label="Restaurant online food orders">
             <h3>Online food orders</h3>
             <p className="muted">Pay at the counter. This does not charge a card.</p>
@@ -3107,6 +3137,12 @@ export default function RestaurantPage() {
               </>
             )}
           </section>
+          </details>
+          <details className="rd-panel rd-domain" open={soldOut.length > 0}>
+            <summary>
+              <strong>Sold out today</strong>
+              <span>{soldOut.length ? soldOut.map((row) => row.name).join(', ') : 'Nothing'}</span>
+            </summary>
           <section aria-label="Restaurant sold out">
             <h3>Sold out</h3>
             <p className="muted">A sold-out item stays on the menu. New orders cannot add it. This does not change stock.</p>
@@ -3152,6 +3188,13 @@ export default function RestaurantPage() {
               <button type="submit" aria-label="Mark menu item sold out">Mark sold out</button>
             </form>
           </section>
+          </details>
+          </div>
+          <details className="rd-panel rd-domain">
+            <summary>
+              <strong>New order with every detail</strong>
+              <span>The till is quicker for normal orders</span>
+            </summary>
           <form className="rest-order-form" onSubmit={createOrder}>
             <label>
               <span>Service</span>
@@ -3456,11 +3499,44 @@ export default function RestaurantPage() {
             </label>
             <button type="submit" aria-label="Save restaurant order">Save order</button>
           </form>
-          <ul className="rest-order-list" aria-label="Restaurant orders">
-            {orders.map((row) => (
-              <li key={row.id} className="rest-order">
-                <div className="rest-order-head">
+          </details>
+          <div className="rd-head">
+            <h2 className="rd-h2">Orders</h2>
+            <div className="rd-chips" role="tablist" aria-label="Which orders">
+              <button type="button" role="tab" aria-selected={!showClosedOrders} className={!showClosedOrders ? 'on' : ''} onClick={() => setShowClosedOrders(false)}>
+                Open now <small>{openOrders.length}</small>
+              </button>
+              <button type="button" role="tab" aria-selected={showClosedOrders} className={showClosedOrders ? 'on' : ''} onClick={() => setShowClosedOrders(true)}>
+                All <small>{orders.length}</small>
+              </button>
+            </div>
+          </div>
+          <ul className="rest-order-list rd-edit-list" aria-label="Restaurant orders">
+            {orders
+              .filter((row) => showClosedOrders || ['open', 'sent', 'preparing', 'ready'].includes(String(row.status)))
+              .map((row) => (
+              <li key={row.id} className={`rest-order rd-edit-order${expandedOrder === row.id ? ' open' : ''}`}>
+                <div className="rd-edit-summary">
                   <strong>{row.order_number}</strong>
+                  <span className="who">
+                    {deskWhere(row, tables)} · {orderWord(row.service_mode)}
+                    {onlineLabel(row) === 'Online' ? ' · Online' : ''}
+                  </span>
+                  <span className={`rd-pill ${row.status === 'completed' ? '' : ['cancelled', 'voided', 'refunded'].includes(String(row.status)) ? 'grey' : 'wait'}`}>
+                    {orderWord(row.status)}
+                  </span>
+                  <b>{formatMoney(row.total_amount)}</b>
+                  <button
+                    type="button"
+                    aria-label={`${expandedOrder === row.id ? 'Close' : 'Edit'} details of ${row.order_number}`}
+                    onClick={() => setExpandedOrder((current) => (current === row.id ? '' : row.id))}
+                  >
+                    {expandedOrder === row.id ? 'Close' : 'Edit details'}
+                  </button>
+                </div>
+                {expandedOrder === row.id ? (
+                <>
+                <div className="rest-order-head">
                   {scanFacts([
                     ['Service', orderWord(row.service_mode)],
                     ['From', onlineLabel(row)],
@@ -4147,6 +4223,8 @@ export default function RestaurantPage() {
                   <button type="button" aria-label={`Refund order ${row.order_number}`} onClick={() => act(row.id, 'refund')}>Refund</button>
                 )}
                 </div>
+                </>
+                ) : null}
               </li>
             ))}
             {!orders.length && <li className="muted">No orders yet.</li>}
@@ -4505,12 +4583,12 @@ export default function RestaurantPage() {
                                   setError('');
                                   try {
                                     await api(`/restaurant/recipes/${row.id}/retire`, { method: 'POST', body: JSON.stringify({}) });
-                                    setMessage(`Retired leftover recipe ${row.name}`);
+                                    setMessage(`Retired recipe ${row.name}`);
                                     setRetiringRecipe('');
                                     setEditingRecipe('');
                                     await refresh();
                                   } catch (err: any) {
-                                    setError(err.message || 'Could not retire the leftover recipe');
+                                    setError(err.message || 'Could not retire the recipe');
                                   }
                                 }}
                               >
