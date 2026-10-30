@@ -325,3 +325,48 @@
 .main .rdesk .rd-booking-pre{margin:0;padding:8px 12px;border-radius:12px;background:var(--rd-tint);color:var(--rd-forest);font-weight:700;font-size:14px}
 .main .rdesk select.rd-seat-pick{width:auto;flex:0 1 220px;min-height:44px;border-radius:12px;border:2px solid var(--rd-line);padding:0 10px;background:var(--rd-panel);color:var(--rd-ink);font-weight:600}
 @media (max-width:900px){.main .rdesk .rd-site{grid-template-columns:1fr}.main .rdesk .rd-booking-card{grid-template-columns:72px minmax(0,1fr)}}
+
+/* Kitchen display */
+.main .rdesk.rd-kitchen{background:transparent;padding:0;min-height:0}
+.main .rdesk .rd-kds-bar{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.main .rdesk .rd-kds-counts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.main .rdesk .rd-kds-counts .rd-pill{font-size:14px;padding:6px 14px}
+.main .rdesk .rd-kds-tools{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap}
+.main .rdesk .rd-tool{display:flex;align-items:center;gap:12px;padding:8px 10px 8px 14px;border-radius:14px;background:var(--rd-panel);box-shadow:var(--rd-shadow);max-width:380px}
+.main .rdesk .rd-tool > span{display:flex;flex-direction:column;min-width:0}
+.main .rdesk .rd-tool strong{font-size:14px}
+.main .rdesk .rd-tool small{font-size:12px;color:var(--rd-muted)}
+.main .rdesk .rd-kds{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px;align-items:start}
+.main .rdesk .rd-kds-col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.main .rdesk .rd-kds-col .rd-col-head .dot{background:var(--rd-wait)}
+.main .rdesk .rd-kds-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.main .rdesk .rd-ticket{display:flex;flex-direction:column;gap:8px;background:var(--rd-panel);border-radius:16px;box-shadow:var(--rd-shadow);overflow:hidden;padding:0 0 12px;border-top:6px solid var(--rd-line)}
+.main .rdesk .rd-ticket.is-warm{border-top-color:var(--rd-wait)}
+.main .rdesk .rd-ticket.is-late{border-top-color:#C0392B}
+.main .rdesk .rd-ticket.is-ready{border-top-color:var(--rd-brand);opacity:.85}
+.main .rdesk .rd-ticket-head{display:flex;align-items:baseline;gap:8px;padding:10px 14px 0}
+.main .rdesk .rd-ticket-head strong{font-size:18px;font-family:Georgia,'Times New Roman',serif}
+.main .rdesk .rd-ticket-head .num{color:var(--rd-muted);font-size:13px;font-weight:700}
+.main .rdesk .rd-ticket-head .age{margin-left:auto;font-weight:800;font-size:14px;color:var(--rd-muted)}
+.main .rdesk .rd-ticket.is-warm .age{color:var(--rd-wait-ink)}
+.main .rdesk .rd-ticket.is-late .age{color:#C0392B}
+.main .rdesk .rd-ticket > .rd-facts,.main .rdesk .rd-ticket-note{padding:0 14px}
+.main .rdesk .rd-ticket-note{margin:0;font-weight:700;font-size:14px;color:var(--rd-wait-ink)}
+.main .rdesk .rd-ticket-alert{margin:0 14px;padding:8px 12px;border-radius:10px;background:var(--rd-bad-tint);color:var(--rd-bad-ink);font-weight:800}
+.main .rdesk .rd-ticket-rush{margin:0 14px;padding:4px 12px;border-radius:999px;background:var(--rd-wait);color:#2B1A05;font-weight:800;width:max-content}
+.main .rdesk .rd-ticket-items{list-style:none;margin:0;padding:0 14px;display:flex;flex-direction:column}
+.main .rdesk .rd-dish-line{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--rd-line)}
+.main .rdesk .rd-dish-line .q{font-size:20px;font-weight:800;font-family:Georgia,'Times New Roman',serif}
+.main .rdesk .rd-dish-line .what{display:flex;flex-direction:column;min-width:0}
+.main .rdesk .rd-dish-line .what strong{font-size:16px}
+.main .rdesk .rd-dish-line .what small{color:var(--rd-muted);font-size:13px}
+.main .rdesk .rd-dish-line .what small.held{color:var(--rd-wait-ink);font-weight:800}
+.main .rdesk .rd-dish-line.is-ready .what strong{text-decoration:line-through;color:var(--rd-muted)}
+.main .rdesk .rd-dish-line.is-preparing{background:linear-gradient(90deg,var(--rd-wait-tint),transparent)}
+.main .rdesk .rd-dish-line button:not(.menu-btn){min-height:48px;min-width:84px;font-size:16px}
+.main .rdesk button.rd-bump{margin:0 14px;min-height:48px;background:var(--rd-forest);border-color:var(--rd-forest);color:#fff}
+@media (max-width:1100px){.main .rdesk .rd-kds{grid-template-columns:1fr}.main .rdesk .rd-kds-tools{margin-left:0}}
+.main .rdesk li.rest-order.rd-ticket{border-left:0;border-right:0;border-bottom:0;margin:0}
+.main .rdesk li.rest-order-line.rd-dish-line{border:0;border-bottom:1px dashed var(--rd-line);border-radius:0;margin:0;padding:8px 0;box-shadow:none}
+.main .rdesk .rd-tool button:not(.menu-btn){white-space:nowrap;flex:0 0 auto}
+.main .rdesk li.rest-order.rd-booking-card{margin:0;border-top:0;border-right:0;border-bottom:0}

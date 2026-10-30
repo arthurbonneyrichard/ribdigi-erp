@@ -1695,122 +1695,146 @@ export default function RestaurantPage() {
       ));
   }
 
+  async function kitchenLine(item: Row, row: Row, step: 'start' | 'ready') {
+    setError('');
+    try {
+      await api(`/restaurant/kitchen/lines/${item.id}/${step}`, { method: 'POST', body: JSON.stringify({}) });
+      setMessage(step === 'start' ? `${item.name} is being prepared` : `${item.name} is ready`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message || (step === 'start' ? 'Could not start this item' : 'Could not mark the item ready'));
+    }
+  }
+
+  /** Mark every dish on a ticket ready, one after another (the kitchen API is per dish). */
+  async function bumpTicket(row: Row) {
+    setError('');
+    try {
+      for (const item of (row.items || []) as Row[]) {
+        if (item.prep_status === 'ready') continue;
+        await api(`/restaurant/kitchen/lines/${item.id}/ready`, { method: 'POST', body: JSON.stringify({}) });
+      }
+      setMessage(`${row.order_number || 'Order'} is ready`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message || 'Could not mark the order ready');
+      await refresh();
+    }
+  }
+
   function stationQueue(station: string, title: string, empty: string, label: string) {
-    const rows = kitchen.filter((row) => (row.station || 'kitchen') === station);
+    const rows = kitchen
+      .filter((row) => (row.station || 'kitchen') === station)
+      .sort((a, b) => String(a.opened_at || '').localeCompare(String(b.opened_at || '')));
+    const nowMs = Date.now();
     return (
-      <section className="card" aria-label={label}>
-        <h2>{title}</h2>
-        <ul className="rest-scan-list">
-          {rows.map((row) => (
-            <li key={row.id} className="rest-order">
-              <div className="rest-order-head">
-                <strong>{row.order_number || 'Order'}</strong>
-                {scanFacts([
-                  ['Service', row.service_mode ? orderWord(row.service_mode) : ''],
-                  ['From', onlineLabel(row)],
-                  ['Guest', row.customer_name],
-                  ['Covers', row.covers ? String(row.covers) : ''],
-                  ['Allergy', row.allergy || ''],
-                  ['Allergen', row.allergen ? orderWord(row.allergen) : ''],
-                  ['Occasion', row.occasion || ''],
-                  ['Phone', row.phone || ''],
-                  ['Email', row.guest_email || ''],
-                  ['Receipt', row.receipt ? orderWord(row.receipt) : ''],
-                  ['Pager', row.pager ? String(row.pager) : ''],
-                  ['Ready by', row.ready_by || ''],
-                  ['Quoted wait', row.quoted_wait ? `${row.quoted_wait} min` : ''],
-                  ['Fire at', row.fire_at || ''],
-                  ['Packaging', row.packaging ? orderWord(row.packaging) : ''],
-                  ['Rush', row.rush ? 'Rush' : ''],
-                  ['Bill', row.bill_asked ? 'Bill asked' : ''],
-                  ['Arrived', row.guest_arrived ? 'Arrived' : ''],
-                  ['Cutlery', row.cutlery ? 'Cutlery' : ''],
-                  ['High chair', row.high_chair ? 'High chair' : ''],
-                  ['Diet', row.diet ? orderWord(row.diet) : ''],
-                  ['Source', row.guest_source ? orderWord(row.guest_source) : ''],
-                  ['Vehicle', row.vehicle || ''],
-                  ['Bay', row.bay ? String(row.bay) : ''],
-                  ['Handoff', row.handoff ? orderWord(row.handoff) : ''],
-                  ['Server', row.server || ''],
-                  ['Opened', row.opened_at ? formatDateTime(row.opened_at) : ''],
-                  ['Table', row.table_code],
-                  ['Deliver to', row.delivery_address],
-                  ['Zone', row.delivery_zone],
-                  ['Status', orderWord(row.status)],
-                ])}
-              </div>
-              {row.notes ? <p className="muted">{row.notes}</p> : null}
-              <ul className="rest-scan-list">
-                {(row.items || []).map((item: Row, index: number) => (
-                  <li key={`${row.id}-${index}`} className="rest-order-line">
-                    <div className="rest-order-head">
-                      {scanFacts([
-                        ['Item', item.name],
-                        ['Qty', item.quantity],
-                        ['Extras', item.modifiers?.length ? item.modifiers.join(', ') : ''],
-                        ['Course', orderWord(item.course || 'main')],
-                        ['Note', item.note || ''],
-                        ['Hold', item.hold ? 'Held' : ''],
-                        ['Seat', item.seat ? String(item.seat) : ''],
-                        ['Spice', item.spice ? orderWord(item.spice) : ''],
-                        ['Doneness', item.doneness ? orderWord(item.doneness) : ''],
-                        ['Prep', orderWord(item.prep_status || 'queued')],
-                      ])}
-                    </div>
-                    {item.prep_status === 'ready' ? null : (
-                      <div className="rest-order-actions">
-                        {item.prep_status === 'preparing' ? null : (
+      <section className="rd-kds-col" aria-label={label}>
+        <div className="rd-col-head">
+          <span className="dot" aria-hidden />
+          {title}
+          <span className="n">{rows.length}</span>
+        </div>
+        {!rows.length ? <div className="rd-col-empty">{empty}</div> : null}
+        <ul className="rest-scan-list rd-kds-list">
+          {rows.map((row) => {
+            const opened = row.opened_at ? new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(String(row.opened_at)) ? String(row.opened_at) : `${row.opened_at}Z`).getTime() : 0;
+            const mins = opened ? Math.max(0, Math.round((nowMs - opened) / 60000)) : 0;
+            const items: Row[] = row.items || [];
+            const allReady = items.length > 0 && items.every((item) => item.prep_status === 'ready');
+            const facts = [
+              ['Service', row.service_mode ? orderWord(row.service_mode) : ''],
+              ['From', onlineLabel(row)],
+              ['Guest', row.customer_name],
+              ['Covers', row.covers ? `${row.covers} guests` : ''],
+              ['Pager', row.pager ? `Pager ${row.pager}` : ''],
+              ['Ready by', row.ready_by ? `Ready by ${row.ready_by}` : ''],
+              ['Fire at', row.fire_at ? `Fire at ${row.fire_at}` : ''],
+              ['Diet', row.diet ? orderWord(row.diet) : ''],
+              ['Packaging', row.packaging ? orderWord(row.packaging) : ''],
+              ['Server', row.server || ''],
+            ].filter(([key, value]) => value && (key !== 'Guest' || row.table_code)) as Array<[string, string]>;
+            return (
+              <li
+                key={row.id}
+                className={`rest-order rd-ticket${allReady ? ' is-ready' : mins >= 20 ? ' is-late' : mins >= 10 ? ' is-warm' : ''}`}
+              >
+                <div className="rd-ticket-head">
+                  <strong>{row.table_code ? `Table ${row.table_code}` : row.customer_name || orderWord(row.service_mode)}</strong>
+                  <span className="num">{row.order_number || 'Order'}</span>
+                  <span className="age">{mins < 1 ? 'now' : `${mins} min`}</span>
+                </div>
+                {row.allergy || row.allergen ? (
+                  <div className="rd-ticket-alert" role="note">
+                    Allergy: {[row.allergy, row.allergen ? orderWord(row.allergen) : ''].filter(Boolean).join(' · ')}
+                  </div>
+                ) : null}
+                {row.rush ? <div className="rd-ticket-rush">Rush</div> : null}
+                {facts.length ? (
+                  <div className="rd-facts">
+                    {facts.map(([key, value]) => (
+                      <span key={key} className="rd-pill grey">{value}</span>
+                    ))}
+                  </div>
+                ) : null}
+                {row.notes ? <p className="rd-ticket-note">{row.notes}</p> : null}
+                <ul className="rd-ticket-items">
+                  {items.map((item, index) => {
+                    const extras = [
+                      ...(item.modifiers || []),
+                      item.note,
+                      item.spice ? `${orderWord(item.spice)} spice` : '',
+                      item.doneness ? orderWord(item.doneness) : '',
+                      item.seat ? `Seat ${item.seat}` : '',
+                      item.course && item.course !== 'main' ? orderWord(item.course) : '',
+                    ].filter(Boolean);
+                    const status = String(item.prep_status || 'queued');
+                    return (
+                      <li key={`${row.id}-${index}`} className={`rest-order-line rd-dish-line is-${status}${item.hold ? ' is-held' : ''}`}>
+                        <span className="q">{Number(item.quantity)}</span>
+                        <div className="what">
+                          <strong>{item.name}</strong>
+                          {extras.length ? <small>{extras.join(' · ')}</small> : null}
+                          {item.hold ? <small className="held">Hold until called</small> : null}
+                        </div>
+                        {status === 'ready' ? (
+                          <span className="rd-pill">Ready</span>
+                        ) : status === 'preparing' ? (
                           <button
                             type="button"
+                            className="rd-go"
+                            aria-label={`Mark ${item.name} ready on ${row.order_number}`}
+                            onClick={() => kitchenLine(item, row, 'ready')}
+                          >
+                            Ready
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="rd-primary"
                             aria-label={`Start ${item.name} on ${row.order_number}`}
-                            onClick={async () => {
-                              setError('');
-                              try {
-                                await api(`/restaurant/kitchen/lines/${item.id}/start`, {
-                                  method: 'POST',
-                                  body: JSON.stringify({}),
-                                });
-                                setMessage(`${item.name} is being prepared`);
-                                await refresh();
-                              } catch (err: any) {
-                                setError(err.message || 'Could not start this item');
-                              }
-                            }}
+                            onClick={() => kitchenLine(item, row, 'start')}
                           >
                             Start
                           </button>
                         )}
-                        <button
-                          type="button"
-                          aria-label={`Mark ${item.name} ready on ${row.order_number}`}
-                          onClick={async () => {
-                            setError('');
-                            try {
-                              await api(`/restaurant/kitchen/lines/${item.id}/ready`, {
-                                method: 'POST',
-                                body: JSON.stringify({}),
-                              });
-                              setMessage(`${item.name} is ready`);
-                              await refresh();
-                            } catch (err: any) {
-                              setError(err.message || 'Could not mark the item ready');
-                            }
-                          }}
-                        >
-                          Ready
-                        </button>
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ))}
-          {!rows.length && <li className="muted">{empty}</li>}
+                      </li>
+                    );
+                  })}
+                </ul>
+                {!allReady && items.length > 1 ? (
+                  <button type="button" className="rd-bump" aria-label={`Mark all of ${row.order_number} ready`} onClick={() => bumpTicket(row)}>
+                    All ready
+                  </button>
+                ) : null}
+                <span className="rd-sr">{orderWord(row.status)}</span>
+              </li>
+            );
+          })}
         </ul>
       </section>
     );
   }
+
 
   const waitingBookings = bookings.filter((row) => row.status === 'requested');
   const openOrders = orders.filter((row) => ['open', 'sent', 'preparing', 'ready'].includes(String(row.status)));
@@ -4087,47 +4111,67 @@ export default function RestaurantPage() {
         </section>
       )}
       {restaurantDesk && tab === 'kitchen' && (
-        <>
-          <section className="card" aria-label="Restaurant kitchen sound">
-            <h2>Kitchen sound</h2>
-            <p className="muted">A new ticket plays a short chime when the kitchen refreshes.</p>
-            {kitchenSound.on ? (
-              <>
-                <p>Kitchen sound is on.</p>
-                <button type="button" aria-label="Turn off kitchen sound" onClick={() => saveKitchenSound(false)}>
-                  Turn off kitchen sound
-                </button>
-              </>
-            ) : (
-              <>
-                <p className="muted">Kitchen sound is off.</p>
-                <button type="button" aria-label="Turn on kitchen sound" onClick={() => saveKitchenSound(true)}>
-                  Turn on kitchen sound
-                </button>
-              </>
-            )}
-          </section>
-          <section className="card" aria-label="Restaurant clock">
-            <h2>Who is here</h2>
-            <p className="muted">Clock in when the shift starts. Clock out when it ends. This does not open the till.</p>
-            {clock.mine_open ? (
-              <button type="button" aria-label="Clock out" onClick={() => punchClock('out')}>Clock out</button>
-            ) : (
-              <>
-                <p className="muted">Not clocked in.</p>
-                <button type="button" aria-label="Clock in" onClick={() => punchClock('in')}>Clock in</button>
-              </>
-            )}
-            <ul className="rest-scan-list" aria-label="Restaurant clock list">
-              {clock.open.map((row) => (
-                <li key={row.id}>{row.name} · {formatDateTime(row.in_at)}</li>
-              ))}
-              {!clock.open.length && <li className="muted">No one is clocked in.</li>}
-            </ul>
-          </section>
-          {stationQueue('kitchen', 'Kitchen', 'No tickets in the kitchen.', 'Kitchen queue')}
-          {stationQueue('bar', 'Bar', 'No tickets at the bar.', 'Bar queue')}
-        </>
+        <section className="rdesk rd-kitchen" aria-label="Restaurant kitchen">
+          <div className="rd-kds-bar">
+            <div className="rd-kds-counts">
+              <span className="rd-pill grey">{kitchen.filter((row) => row.status === 'queued').length} waiting</span>
+              <span className="rd-pill wait">{kitchen.filter((row) => row.status === 'preparing').length} cooking</span>
+              <span className="rd-pill">{kitchen.filter((row) => row.status === 'ready').length} ready</span>
+              <span className="rd-hint">Refreshes every 15 seconds.</span>
+            </div>
+            <div className="rd-kds-tools">
+              <div className="rd-tool" aria-label="Restaurant kitchen sound">
+                <span>
+                  <strong>Kitchen sound</strong>
+                  <small>A new ticket plays a short chime when the kitchen refreshes.</small>
+                </span>
+                {kitchenSound.on ? (
+                  <>
+                    <span className="rd-sr">Kitchen sound is on.</span>
+                    <button type="button" className="rd-primary" aria-label="Turn off kitchen sound" onClick={() => saveKitchenSound(false)}>
+                      On
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="rd-sr">Kitchen sound is off.</span>
+                    <button type="button" aria-label="Turn on kitchen sound" onClick={() => saveKitchenSound(true)}>
+                      Off
+                    </button>
+                  </>
+                )}
+              </div>
+              <div className="rd-tool" aria-label="Restaurant clock">
+                <span>
+                  <strong>Who is here</strong>
+                  <small>
+                    {clock.open.length
+                      ? clock.open.map((row) => row.name).join(', ')
+                      : 'No one is clocked in.'}{' '}
+                    This does not open the till.
+                  </small>
+                </span>
+                {clock.mine_open ? (
+                  <button type="button" aria-label="Clock out" onClick={() => punchClock('out')}>Clock out</button>
+                ) : (
+                  <>
+                    <span className="rd-sr">Not clocked in.</span>
+                    <button type="button" className="rd-go" aria-label="Clock in" onClick={() => punchClock('in')}>Clock in</button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          <ul className="rd-sr" aria-label="Restaurant clock list">
+            {clock.open.map((row) => (
+              <li key={row.id}>{row.name} · {formatDateTime(row.in_at)}</li>
+            ))}
+          </ul>
+          <div className="rd-kds">
+            {stationQueue('kitchen', 'Kitchen', 'No tickets in the kitchen.', 'Kitchen queue')}
+            {stationQueue('bar', 'Bar', 'No tickets at the bar.', 'Bar queue')}
+          </div>
+        </section>
       )}
       {restaurantDesk && tab === 'recipes' && (
         <section className="card">

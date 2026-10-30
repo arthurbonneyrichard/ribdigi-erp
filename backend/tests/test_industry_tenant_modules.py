@@ -983,8 +983,9 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "'Bar queue'" in kitchen_desk
     assert "row.customer_name" in restaurant
     assert "['Guest', row.customer_name]" in restaurant
-    assert 'className="rest-scan-list"' in restaurant
     assert 'className="rd-mini" aria-label="Restaurant open orders"' in restaurant
+    # Kitchen display: one big Start / Ready per dish, allergies flagged on the ticket.
+    assert "rd-kds-list" in restaurant and "rd-ticket-alert" in restaurant
     assert "orderWord(row.service_mode)" in restaurant
     recipes_desk = restaurant.split("tab === 'recipes'", 1)[1].split("tab === 'dashboard'", 1)[0]
     assert 'aria-label="Restaurant menu station"' in recipes_desk
