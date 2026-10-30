@@ -414,3 +414,8 @@
 .main .rdesk .rd-edit-summary strong{font-size:16px;min-width:70px}
 .main .rdesk .rd-edit-summary .who{flex:1 1 200px;color:var(--rd-muted);font-weight:600}
 .main .rdesk .rd-edit-summary b{min-width:100px;text-align:right}
+@media (max-width:640px){
+  .main .rdesk .rd-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .main .rdesk .rd-kpi{padding:10px 12px}
+  .main .rdesk .rd-kpi strong{font-size:18px}
+}

@@ -580,7 +580,7 @@ export default function RestaurantTillPage() {
           )}
         </section>
 
-        <aside className="rtill-ticket" aria-label="Order ticket">
+        <aside className="rtill-ticket" id="rtill-ticket" aria-label="Order ticket">
           <div className="rtill-ticket-head">
             <div>
               <h2>{ticketTitle}</h2>
@@ -709,6 +709,21 @@ export default function RestaurantTillPage() {
           </div>
         </aside>
       </div>
+
+      {current || draft.length ? (
+        <button
+          type="button"
+          className="rtill-jump"
+          aria-label="Go to the order"
+          onClick={() => document.getElementById('rtill-ticket')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        >
+          <span>
+            {ticketTitle} · {draft.reduce((n, l) => n + l.quantity, 0) + (current?.items || []).length}{' '}
+            {draft.reduce((n, l) => n + l.quantity, 0) + (current?.items || []).length === 1 ? 'dish' : 'dishes'}
+          </span>
+          <strong>{money(sentTotal + draftTotal)} →</strong>
+        </button>
+      ) : null}
 
       {tablePicker ? (
         <div className="rtill-sheet" role="dialog" aria-modal="true" aria-label="Pick a table">
