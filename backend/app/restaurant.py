@@ -7,7 +7,7 @@ from datetime import datetime
 
 from fastapi import HTTPException
 from sqlalchemy import false as sql_false
-from sqlalchemy import delete, func, insert, select, update
+from sqlalchemy import delete, func, insert, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import accounting
@@ -4486,20 +4486,25 @@ async def record_waste(
 async def list_waste(
     db: AsyncSession, tenant_id: str, user_id: str | None = None
 ) -> list[dict]:
-    await _require_store_for_scoped_user(db, tenant_id, user_id, None)
-    rows = (
-        await db.execute(
-            select(m.StockMovement, m.Product.name)
-            .join(m.Product, m.Product.id == m.StockMovement.product_id)
-            .where(
-                m.StockMovement.tenant_id == tenant_id,
-                m.StockMovement.notes.is_not(None),
-                m.StockMovement.notes.contains(WASTE_PREFIX),
-            )
-            .order_by(m.StockMovement.created_at.desc())
-            .limit(50)
+    stmt = (
+        select(m.StockMovement, m.Product.name)
+        .join(m.Product, m.Product.id == m.StockMovement.product_id)
+        .where(
+            m.StockMovement.tenant_id == tenant_id,
+            m.StockMovement.notes.is_not(None),
+            m.StockMovement.notes.contains(WASTE_PREFIX),
         )
-    ).all()
+    )
+    # Staff tied to stores see waste from their stores' warehouses (and waste with no warehouse).
+    allowed = await _allowed_stores(db, tenant_id, user_id)
+    if allowed is not None:
+        store_warehouses = select(m.Warehouse.id).where(
+            m.Warehouse.tenant_id == tenant_id, m.Warehouse.store_id.in_(list(allowed) or [""])
+        )
+        stmt = stmt.where(
+            or_(m.StockMovement.warehouse_id.is_(None), m.StockMovement.warehouse_id.in_(store_warehouses))
+        )
+    rows = (await db.execute(stmt.order_by(m.StockMovement.created_at.desc()).limit(50))).all()
     out: list[dict] = []
     for move, name in rows:
         reason, leftover = unpack_waste_notes(move.notes)

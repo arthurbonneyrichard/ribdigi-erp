@@ -16,9 +16,60 @@ from app import restaurant_till as till_svc
 from app.db import get_db
 from app.honesty import money_json
 from app.schemas import AddressValue, E164PhoneValue, IsoDateQueryValue, NonNegativeMoneyValue, PositiveMoneyValue, PartyNameValue, PositiveQtyValue, StockOutNotesValue, UuidIdValue, WebsiteHostnameValue
-from app.security import require_permission
+from app.security import current_claims, require_permission
 
-router = APIRouter(prefix="/restaurant", tags=["restaurant"])
+# Restaurant staff roles do one job each. Reads stay open to the module; writes are
+# limited per role (a waiter cannot take payment, the kitchen cannot ring up orders,
+# only a manager refunds or changes the menu, tables and settings). Other roles are
+# unchanged: their module grants decide.
+_WAITER_WRITES = (
+    r"POST /tables/[^/]+/(hold|release)",
+    r"POST /orders",
+    r"PATCH /orders/[^/]+",
+    r"POST /orders/[^/]+/(send|cancel)",
+    r"POST /bookings",
+    r"PATCH /bookings/[^/]+",
+    r"POST /bookings/[^/]+/(seat|finish|cancel)",
+    r"POST /clock/(in|out)",
+)
+_RESTAURANT_ROLE_WRITES: dict[str, tuple[str, ...]] = {
+    "restaurant_waiter": _WAITER_WRITES,
+    "restaurant_cashier": _WAITER_WRITES
+    + (
+        r"POST /orders/[^/]+/complete",
+        r"POST /till/shift/open",
+        r"POST /till/shift/[^/]+/(cash|close)",
+        r"PUT /sold-out",
+    ),
+    "restaurant_kitchen": (
+        r"POST /kitchen/lines/[^/]+/(start|ready)",
+        r"PUT /sold-out",
+        r"POST /waste",
+        r"POST /clock/(in|out)",
+    ),
+}
+_RESTAURANT_JOB_WORDS = {
+    "restaurant_waiter": "A waiter takes orders and seats guests. Payment, refunds and menu changes need a cashier or manager.",
+    "restaurant_cashier": "A cashier takes orders and payment. Refunds, menu and settings changes need a manager.",
+    "restaurant_kitchen": "The kitchen prepares orders, marks dishes sold out and records waste. Orders and payment are taken at the till.",
+}
+
+
+async def _restaurant_job_gate(request: Request, claims: dict = Depends(current_claims)) -> None:
+    allowed = _RESTAURANT_ROLE_WRITES.get(str(claims.get("role") or ""))
+    if allowed is None or request.method in {"GET", "HEAD", "OPTIONS"}:
+        return
+    path = request.url.path.split("/restaurant", 1)[-1] or "/"
+    action = f"{request.method} {path.rstrip('/') or '/'}"
+    if any(re.fullmatch(rule, action) for rule in allowed):
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={"code": "RESTAURANT_ROLE_JOB", "message": _RESTAURANT_JOB_WORDS[str(claims.get("role"))]},
+    )
+
+
+router = APIRouter(prefix="/restaurant", tags=["restaurant"], dependencies=[Depends(_restaurant_job_gate)])
 
 
 def _allergy_value(value):

@@ -401,6 +401,10 @@ SystemRoleValue = Annotated[
         "hotel_maintenance",
         "hotel_cashier",
         "hotel_auditor",
+        "restaurant_manager",
+        "restaurant_cashier",
+        "restaurant_waiter",
+        "restaurant_kitchen",
     ],
     BeforeValidator(coerce_platform_role_value),
 ]

@@ -632,7 +632,33 @@ export function groupedTenantNav(
 export const CASHIER_NAV_MODULES: string[] = ['sales', 'pos', 'restaurant', 'support'];
 
 /** Gift cards share the POS module. Cashiers stay on the till; other roles keep the page. */
-export function navItemVisibleForRole(role: string, href: string): boolean {
+/** Restaurant staff see only their job's screens (the server enforces the same jobs). */
+export const RESTAURANT_ROLE_HREFS: Record<string, string[]> = {
+  restaurant_waiter: ['/restaurant/till', '/restaurant/orders', '/restaurant?tab=tables', '/restaurant?tab=kitchen', '/restaurant/help', '/notifications', '/security'],
+  restaurant_cashier: [
+    '/restaurant/till',
+    '/restaurant/orders',
+    '/restaurant/bills',
+    '/restaurant/guests',
+    '/restaurant/day-close',
+    '/restaurant?tab=tables',
+    '/restaurant?tab=kitchen',
+    '/restaurant/help',
+    '/notifications',
+    '/security',
+  ],
+  restaurant_kitchen: ['/restaurant?tab=kitchen', '/restaurant?tab=waste', '/restaurant/ingredients?tab=menu', '/restaurant/help', '/notifications', '/security'],
+};
+
+export function navItemVisibleForRole(role: string, href: string, menu = false): boolean {
+  const jobs = RESTAURANT_ROLE_HREFS[role];
+  if (jobs) {
+    // A menu link must be on the list exactly. A page path (from the address bar) is allowed
+    // when one of the role's links lives on it (the kitchen tab lives on /restaurant).
+    if (menu || href.includes('?')) return jobs.includes(href);
+    const path = (href.split('#')[0] || '').replace(/\/$/, '') || '/';
+    return jobs.some((job) => job.split('?')[0] === path);
+  }
   if (role !== 'cashier') return true;
   const path = (href.split('?')[0] || '').split('#')[0];
   if (path === '/gift-cards' || path.startsWith('/gift-cards/')) return false;
@@ -709,6 +735,9 @@ export function roleHomePath(role: string, industry?: string | null): string {
   const ind = normalizeIndustry(industry);
   // A restaurant rings on its own till; the retail POS refuses restaurant companies.
   if (role === 'cashier') return ind === 'restaurant' ? '/restaurant/till' : '/pos';
+  if (role === 'restaurant_waiter' || role === 'restaurant_cashier') return '/restaurant/till';
+  if (role === 'restaurant_kitchen') return '/restaurant?tab=kitchen';
+  if (role === 'restaurant_manager') return '/restaurant';
   if (
     ind === 'restaurant' &&
     (role === 'store_manager' || role === 'sales_officer' || role === 'inventory_officer')

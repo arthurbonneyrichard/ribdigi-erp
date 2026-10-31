@@ -148,6 +148,49 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "printers": ["read"],
         "staff_guide": ["read", "download"],
     },
+    # Restaurant staff. Server-side jobs (who may pay, refund, change the menu) are enforced
+    # per role in restaurant_api._restaurant_job_gate on top of these module grants.
+    "restaurant_manager": {
+        "dashboard": ["read"],
+        "restaurant": ["read", "write"],
+        "inventory": ["read", "write"],
+        "purchasing": ["read", "write"],
+        "expenses": ["read", "write", "approve"],
+        "credit": ["read", "write"],
+        "accounting": ["read", "write"],
+        "tax": ["read"],
+        "reports": ["read"],
+        "stores": ["read"],
+        "printers": ["read", "write"],
+        "notifications": ["read", "write"],
+        "audit": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "restaurant_cashier": {
+        "restaurant": ["read", "write"],
+        "inventory": ["read"],
+        "stores": ["read"],
+        "notifications": ["read", "write"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "restaurant_waiter": {
+        "restaurant": ["read", "write"],
+        "inventory": ["read"],
+        "stores": ["read"],
+        "notifications": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "restaurant_kitchen": {
+        "restaurant": ["read", "write"],
+        "inventory": ["read"],
+        "stores": ["read"],
+        "notifications": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
     "hotel_reservations": {
         "hotel": ["read", "write"],
         "notifications": ["read", "write"],
@@ -206,6 +249,10 @@ ROLE_LABELS: dict[str, str] = {
     "hotel_maintenance": "Maintenance",
     "hotel_cashier": "Hotel Cashier",
     "hotel_auditor": "Hotel Auditor",
+    "restaurant_manager": "Restaurant Manager",
+    "restaurant_cashier": "Restaurant Cashier",
+    "restaurant_waiter": "Waiter",
+    "restaurant_kitchen": "Kitchen",
 }
 
 PLATFORM_ROLES = frozenset(
@@ -265,6 +312,9 @@ HOTEL_ONLY_ROLES = frozenset(
     }
 )
 RETAIL_ONLY_ROLES = frozenset({"store_manager"})
+RESTAURANT_ONLY_ROLES = frozenset(
+    {"restaurant_manager", "restaurant_cashier", "restaurant_waiter", "restaurant_kitchen"}
+)
 
 # Frontend nav href → required module (read). Used for menu filtering.
 # Platform owner (super_admin) UI only surfaces /platform + a small ops set;
@@ -382,6 +432,8 @@ def system_role_visible_for_industry(role: str, industry: str | None) -> bool:
     ind = canonicalize_industry(industry)
     if role in HOTEL_ONLY_ROLES:
         return ind == "hotel"
+    if role in RESTAURANT_ONLY_ROLES:
+        return ind == "restaurant"
     if role in RETAIL_ONLY_ROLES:
         return ind != "hotel"
     return True
@@ -433,6 +485,10 @@ ROLE_RECORD_SCOPE: dict[str, str] = {
     "hotel_maintenance": "all",
     "hotel_cashier": "all",
     "hotel_auditor": "all",
+    "restaurant_manager": "all",
+    "restaurant_cashier": "all",
+    "restaurant_waiter": "all",
+    "restaurant_kitchen": "all",
 }
 
 

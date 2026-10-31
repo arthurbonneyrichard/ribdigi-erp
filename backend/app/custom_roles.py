@@ -247,6 +247,12 @@ async def resolve_role_assignment(
             detail="Role key must be lowercase letters/numbers/underscore, start with a letter (2–49 chars)",
         )
     if role_key in VALID_ROLES:
+        # Industry roles stay with their industry (hotel_* for hotels, restaurant_* for restaurants).
+        # Platform roles pass through; callers reject them with their own message.
+        if not is_platform_role(role_key) and not system_role_visible_for_industry(
+            role_key, await tenant_industry(db, tenant_id)
+        ):
+            raise HTTPException(status_code=400, detail=f"Role '{role_key}' is not used by this type of business")
         perms = permissions_for_role(role_key)
         scope = record_scope_for_role(role_key)
         return role_key, permissions_payload(perms, scope)

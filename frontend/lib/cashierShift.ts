@@ -5,7 +5,7 @@ import { getMe } from './meCache';
 const POS_INDUSTRIES = new Set(['retail', 'retail_wholesale', 'pharmacy', 'restaurant', 'hotel']);
 /** Restaurant and hotel keep their own drawers; they never open a retail POS session. */
 type OwnTill = 'restaurant' | 'hotel' | null;
-const CASHIER_SIGN_OUT_ROLES = new Set(['cashier', 'hotel_cashier']);
+const CASHIER_SIGN_OUT_ROLES = new Set(['cashier', 'hotel_cashier', 'restaurant_cashier']);
 const PLATFORM_ROLES = new Set([
   'super_admin',
   'platform_owner',

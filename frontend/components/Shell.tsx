@@ -325,6 +325,26 @@ const ROLE_NAV_MODULES: Record<string, string[] | '*'> = {
   hotel_housekeeping: ['hotel', 'inventory', 'notifications', 'security', 'support'],
   hotel_maintenance: ['hotel', 'inventory', 'notifications', 'security', 'support'],
   hotel_cashier: [...HOTEL_CASHIER_NAV_MODULES],
+  restaurant_manager: [
+    'dashboard',
+    'restaurant',
+    'inventory',
+    'purchasing',
+    'expenses',
+    'credit',
+    'accounting',
+    'tax',
+    'reports',
+    'stores',
+    'printers',
+    'notifications',
+    'audit',
+    'security',
+    'support',
+  ],
+  restaurant_cashier: ['restaurant', 'notifications', 'security', 'support'],
+  restaurant_waiter: ['restaurant', 'notifications', 'security', 'support'],
+  restaurant_kitchen: ['restaurant', 'inventory', 'notifications', 'security', 'support'],
   hotel_auditor: ['hotel', 'reports', 'audit', 'accounting', 'notifications', 'security', 'support'],
 };
 
@@ -682,7 +702,7 @@ function navItemsForRole(
     ) {
       return false;
     }
-    if (!navItemVisibleForRole(role, href)) return false;
+    if (!navItemVisibleForRole(role, href, true)) return false;
     return canReadModule(permissions, permModule);
   });
 }
