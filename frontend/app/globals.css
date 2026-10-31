@@ -8377,3 +8377,9 @@ input[type=file]::file-selector-button:hover{border-color:var(--brand)}
 .rest-flash::before{content:'✓';color:var(--brand-light)}
 .rest-flash.is-bad{background:#FCE7E2;color:#8A2A12;cursor:default}
 .rest-flash.is-bad::before{content:'!';color:#8A2A12}
+
+/* Company settings tabs */
+.company-tabs{display:flex;flex-wrap:wrap;gap:6px;padding:4px;border-radius:14px;background:var(--panel,#fff);box-shadow:0 1px 2px rgba(0,61,31,.06);width:max-content;max-width:100%}
+.company-tabs button{border:0;background:none;min-height:40px;padding:0 14px;border-radius:10px;font-weight:700;color:var(--ink,#10211B);cursor:pointer;box-shadow:none}
+.company-tabs button.on{background:var(--brand-dark,#2F7A0C);color:#fff}
+@media(max-width:720px){.company-tabs{width:100%}.company-tabs button{flex:1 1 auto}}

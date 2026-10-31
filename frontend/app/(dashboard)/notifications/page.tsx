@@ -70,6 +70,10 @@ const CATEGORY_CHIPS: { id: string; label: string }[] = [
   { id: 'billing', label: 'Billing' },
 ];
 
+// A restaurant never gets these: bills cannot go on credit, and it has no quotations,
+// batch expiry or store transfers.
+const RESTAURANT_HIDDEN_CHIPS = new Set(['credit_limit', 'quotation_expiry', 'batch_expiry', 'transfer']);
+
 export default function Page() {
   const [rows, setRows] = useState<Note[]>([]);
   const [status, setStatus] = useState('');
@@ -92,7 +96,11 @@ export default function Page() {
       .catch(() => setPlatformAudience(false));
   }, []);
 
-  const chips = platformAudience ? PLATFORM_CATEGORY_CHIPS : CATEGORY_CHIPS;
+  const chips = platformAudience
+    ? PLATFORM_CATEGORY_CHIPS
+    : restaurantOps
+      ? CATEGORY_CHIPS.filter((c) => !RESTAURANT_HIDDEN_CHIPS.has(c.id))
+      : CATEGORY_CHIPS;
 
   async function refresh() {
     const params = new URLSearchParams();

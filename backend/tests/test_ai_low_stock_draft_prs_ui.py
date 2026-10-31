@@ -7,12 +7,12 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_ai_page_draft_pr_button_wired():
     ai = (ROOT / "frontend/app/(dashboard)/ai/page.tsx").read_text(encoding="utf-8")
-    assert "Create draft PR(s)" in ai
+    assert "Create draft purchase requests" in ai
     assert "createDraftPrsFromPredictions" in ai
     assert "/ai/inventory/low-stock-prediction/requests" in ai
     assert "lastAtRisk" in ai
     assert "include_open" in ai
-    assert "Include open PRs" in ai
+    assert "Include items already on an open purchase request" in ai
     assert "Inventory predictions" in ai
 
 

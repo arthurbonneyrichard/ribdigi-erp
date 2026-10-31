@@ -587,7 +587,7 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "r.is_active ? 'Active' : 'Inactive'" in users
     assert "See who can sign in, then add a person" in users
     assert "cashier: 'Shop cashier'" in users
-    assert "cashier: 'Restaurant cashier'" in users
+    assert "cashier: 'Cashier (all service screens)'" in users
     assert "e.g. Night auditor" in users
     assert "e.g. Floor supervisor" in users
     assert "e.g. Shop supervisor" in users

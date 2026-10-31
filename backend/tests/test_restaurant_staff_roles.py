@@ -79,3 +79,22 @@ def test_restaurant_role_menus_and_homes():
     assert "navItemVisibleForRole(role, href, true)" in shell
     for role in ("restaurant_manager", "restaurant_cashier", "restaurant_waiter", "restaurant_kitchen"):
         assert f"  {role}: [" in shell
+
+
+def test_restaurant_staff_screen_and_settings_polish():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2] / "frontend"
+    staff = (root / "app/(dashboard)/restaurant/staff/page.tsx").read_text(encoding="utf-8")
+    nav = (root / "lib/tenantNav.ts").read_text(encoding="utf-8")
+    company = (root / "app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
+    ai = (root / "app/(dashboard)/ai/page.tsx").read_text(encoding="utf-8")
+    notes = (root / "app/(dashboard)/notifications/page.tsx").read_text(encoding="utf-8")
+    assert "['KITCHEN', 'Kitchen']" in staff and "OFFICE_DEFAULTS" in staff
+    assert "api(`/users/${row.id}`, { method: 'DELETE' })" in staff
+    block = nav.split("export const RESTAURANT_NAV_GROUPS", 1)[1].split("\n];", 1)[0]
+    assert "['Staff', '/restaurant/staff', 'users']" in block
+    assert "['Departments', '/restaurant/staff?tab=departments', 'users']" in block
+    assert "const COMPANY_TABS" in company and "{tab === 'messages' ? (" in company
+    assert 'title="AI Assistant"' in ai and "No external LLM" not in ai and "tenant-scoped" not in ai
+    assert "RESTAURANT_HIDDEN_CHIPS" in notes

@@ -90,13 +90,13 @@ export default function Page() {
         setChatAvailable(Boolean(r.data?.chat_available));
         setAiStatusNote(
           r.data?.chat_available
-            ? 'You can ask a question on this screen. Chat is limited to the configured provider and is not a complete assistant.'
-            : 'No external LLM is used. Chat stays off until a provider is configured. Rule-based insights use this company’s data only.',
+            ? 'Notes from your own records, and you can ask a question below.'
+            : 'Notes worked out from your own records. Nothing is sent outside the company.',
         );
       })
       .catch(() => {
         setChatAvailable(false);
-        setAiStatusNote('Rule-based insights use this company’s data only. Chat is not configured.');
+        setAiStatusNote('Notes worked out from your own records. Nothing is sent outside the company.');
       });
     api('/expenses/categories')
       .then((r) => setExpenseCategories(r.data || []))
@@ -334,7 +334,7 @@ export default function Page() {
             .join('\n')
         );
         setError(
-          `${detail?.message || err.message || 'No lines eligible'}. Enable “Include open PRs” to allow duplicates, or cancel existing requests.`
+          `${detail?.message || err.message || 'No lines eligible'}. Tick “Include items already on an open purchase request” to add them anyway.`
         );
       } else {
         setError(err.message || 'Unable to create draft purchase requests');
@@ -642,11 +642,11 @@ export default function Page() {
   return (
     <div className="ai-ui">
       <PageHeader
-        title="Load insights"
-        subtitle={aiStatusNote || 'Start with insights. They use this company’s records and do not need a chat provider.'}
+        title="AI Assistant"
+        subtitle={aiStatusNote || 'Notes worked out from your own records. Nothing is sent outside the company.'}
       />
       <div className="ai-ui-actions">
-        <button aria-label="Load AI insights" onClick={loadInsights}>Load insights</button>
+        <button className="btn-primary" aria-label="Load AI insights" onClick={loadInsights}>Show my notes</button>
         <button aria-label="Email AI insight digest" onClick={emailInsightDigest} disabled={digestBusy}>
           {digestBusy ? 'Emailing digest…' : 'Email digest to me'}
         </button>
@@ -660,10 +660,10 @@ export default function Page() {
           {chatAvailable
             ? 'Type a question and choose Ask.'
             : hotelOps
-              ? 'Choose Load insights to see notes from this hotel’s sales, expenses, and supplies.'
+              ? 'Show my notes: sales that jumped or dropped, costs out of line, and supplies to restock.'
               : restaurantOps
-                ? 'Choose Load insights to see notes from this restaurant’s bills, costs, and ingredients.'
-                : 'Choose Load insights to see notes from this company’s sales, expenses, and stock.'}
+                ? 'Show my notes: sales that jumped or dropped, costs out of line, and ingredients to restock.'
+                : 'Show my notes: sales that jumped or dropped, costs out of line, and stock to reorder.'}
         </p>
       )}
       {alerts.length > 0 && (
@@ -678,7 +678,7 @@ export default function Page() {
       {chatAvailable ? (
       <div className="card ai-ui-ask">
         <h2>Ask a question</h2>
-        <p className="muted ai-ui-note">Chat stays off until a provider is configured. A blank question is not sent.</p>
+        <p className="muted ai-ui-note">Ask about your own sales, costs, stock or customers.</p>
         <textarea
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -945,7 +945,7 @@ export default function Page() {
             title="Creates draft purchase requests from at-risk prediction lines (requires purchasing:write)"
             aria-label="Create draft purchase requests from predictions"
           >
-            {draftPrBusy ? 'Creating draft PR(s)…' : 'Create draft PR(s)'}
+            {draftPrBusy ? 'Creating draft purchase requests…' : 'Create draft purchase requests'}
           </button>
           <input
             value={minConfidence}
@@ -985,7 +985,7 @@ export default function Page() {
               onChange={(e) => setIncludeOpenPr(e.target.checked)}
               aria-label="Include open purchase requests"
             />
-            Include open PRs
+            Include items already on an open purchase request
           </label>
         </div>
       </details>
@@ -1021,20 +1021,7 @@ export default function Page() {
         </div>
       </details>
         <p className="muted ai-ui-note">
-          Weekly AI insight digests are sent to active company and super admins every Monday at 07:00 UTC.
-          Use <strong>Email digest to me</strong> to preview the tenant-scoped email with your account.
-          {' '}
-          {hotelOps
-            ? 'Supply predictions lists supplies that may run out (14-day window). '
-            : restaurantOps
-              ? 'Ingredient predictions lists ingredients that may run out (14-day window). '
-              : 'Inventory predictions lists at-risk SKUs (14-day window). '}
-          <strong>Create draft PR(s)</strong> turns
-          those lines into draft purchase requests — open{' '}
-          <Link href="/purchasing">Purchasing → Requests</Link> to submit. Requires purchasing write
-          permission. After <strong>Analyze document</strong>, <strong>Create draft expense</strong> turns
-          the extracted amount/payee/category into a pending expense — open{' '}
-          <Link href="/expenses">Expenses</Link> to review (requires expenses write).
+          Every Monday at 07:00 (GMT) the owner and admins get these notes by email. Email digest to me sends you a copy now.
         </p>
     </div>
   );

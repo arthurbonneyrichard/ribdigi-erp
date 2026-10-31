@@ -412,7 +412,7 @@ export default function Page() {
     const hotelNames: Record<string, string> = isHotelIndustry(meIndustry)
       ? { cashier: 'Shop cashier', inventory_officer: 'Supplies', sales_officer: 'Sales' }
       : normalizeIndustry(meIndustry) === 'restaurant'
-        ? { cashier: 'Restaurant cashier', inventory_officer: 'Ingredients', sales_officer: 'Bills' }
+        ? { cashier: 'Cashier (all service screens)', inventory_officer: 'Ingredients', sales_officer: 'Bills' }
         : {};
     const name = hotelNames[role.role] || role.label || role.role;
     return `${name}${isCustomRole(role) ? ' (custom)' : ''}${role.is_active === false ? ' [inactive]' : ''}`;
@@ -1684,7 +1684,7 @@ export default function Page() {
             {isHotelIndustry(meIndustry)
               ? 'Built-in roles such as Front Desk, Hotel Cashier, and Accountant are ready to use. Make your own role when someone needs a different mix, then choose it under Role for that person.'
               : normalizeIndustry(meIndustry) === 'restaurant'
-                ? 'Built-in roles such as Restaurant cashier and Accountant are ready to use. Make your own role when someone needs a different mix, then choose it under Role for that person.'
+                ? 'Built-in roles such as Waiter, Restaurant Cashier, Kitchen and Accountant are ready to use. Make your own role when someone needs a different mix, then choose it under Role for that person.'
                 : 'Built-in roles such as Cashier and Accountant are ready to use. Make your own role when someone needs a different mix, then choose it under Role for that person.'}
           </p>
           {error ? (

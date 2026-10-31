@@ -38,7 +38,22 @@ function mergeFields(current: any, data: any, keys: string[]) {
   return next;
 }
 
+type CompanyTab = 'business' | 'branding' | 'messages' | 'tax' | 'staff' | 'plan';
+const COMPANY_TABS: [CompanyTab, string][] = [
+  ['business', 'Business details'],
+  ['branding', 'Logo and printing'],
+  ['messages', 'Email and SMS'],
+  ['tax', 'Tax and year'],
+  ['staff', 'Staff sign-in'],
+  ['plan', 'Plan and admin'],
+];
+
 export default function Page() {
+  const [tab, setTab] = useState<CompanyTab>(() => {
+    if (typeof window === 'undefined') return 'business';
+    const want = new URLSearchParams(window.location.search).get('tab');
+    return (COMPANY_TABS.find(([k]) => k === want)?.[0] || 'business') as CompanyTab;
+  });
   const [tenant, setTenant] = useState<any>(null);
   const [emailStatus, setEmailStatus] = useState<any>(null);
   const [smsStatus, setSmsStatus] = useState<any>(null);
@@ -743,6 +758,22 @@ export default function Page() {
       {error && <p className="form-flash err" role="alert">{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
+      <div className="company-tabs" role="tablist" aria-label="Company settings sections">
+        {COMPANY_TABS.map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={tab === key}
+            className={tab === key ? 'on' : ''}
+            onClick={() => setTab(key)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'business' ? (
       <section className="card" aria-labelledby="company-profile-title">
         <h2 id="company-profile-title">Company profile</h2>
         <p className="muted">
@@ -976,6 +1007,9 @@ export default function Page() {
         </div>
       </section>
 
+      ) : null}
+
+      {tab === 'messages' ? (
       <div className="company-page-pair">
           <div className="card">
             <h2>Email</h2>
@@ -1254,6 +1288,9 @@ export default function Page() {
             </div>
         </div>
 
+      ) : null}
+
+      {tab === 'branding' ? (
       <div className="company-page-pair">
         <section className="card" aria-labelledby="company-logo-title">
           <h2 id="company-logo-title">Logo</h2>
@@ -1419,6 +1456,9 @@ export default function Page() {
         </section>
       </div>
 
+      ) : null}
+
+      {tab === 'tax' ? (
       <div className="company-page-pair">
         <section className="card" aria-labelledby="company-tax-title">
           <h2 id="company-tax-title">Tax</h2>
@@ -1521,6 +1561,9 @@ export default function Page() {
         </section>
       </div>
 
+      ) : null}
+
+      {tab === 'staff' ? (
       <div className="company-page-pair">
           <div className="card">
             <h2>Staff user guide</h2>
@@ -1558,15 +1601,25 @@ export default function Page() {
             {isHotelIndustry(tenant?.industry)
               ? 'Add and manage hotel staff under User Management.'
               : restaurantCompany(tenant?.industry)
-                ? 'Add and manage restaurant staff under User Management.'
+                ? 'Add waiters, cashiers and kitchen staff on the Staff screen.'
                 : 'Add and manage staff in Settings → Users.'}
           </p>
-          <a href="/users#create-user" aria-label="Add User">
-            Add User
-          </a>
+          {restaurantCompany(tenant?.industry) ? (
+            <a href="/restaurant/staff" aria-label="Add User">
+              Add staff
+            </a>
+          ) : (
+            <a href="/users#create-user" aria-label="Add User">
+              Add User
+            </a>
+          )}
         </div>
       </div>
 
+      ) : null}
+
+      {tab === 'plan' ? (
+      <>
       {(meRole === 'company_admin' || meRole === 'super_admin') && tenant && (
         <>
         {!isHotelIndustry(tenant.industry) ? (
@@ -1726,6 +1779,11 @@ export default function Page() {
         </>
       )}
 
+      </>
+      ) : null}
+
+      {tab === 'staff' ? (
+      <>
       <section className="card" aria-labelledby="company-timeout-title">
         <h2 id="company-timeout-title">Inactivity timeout</h2>
         <p className="muted">
@@ -1804,12 +1862,17 @@ export default function Page() {
         </div>
       </section>
 
+      </>
+      ) : null}
+
+      {tab === 'plan' ? (
       <section className="card company-page-danger" aria-labelledby="company-suspension-title">
         <h2 id="company-suspension-title">Suspension</h2>
         <p className="muted" style={{ marginBottom: 0 }}>
           Current status: {plainLabel(tenant.status)}.
         </p>
       </section>
+      ) : null}
     </div>
   );
 }

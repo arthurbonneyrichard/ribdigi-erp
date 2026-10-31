@@ -636,3 +636,22 @@
 .main .rdesk .rd-thread p{margin:4px 0 0;white-space:pre-wrap}
 .main .rdesk .rd-check{flex-direction:row !important;align-items:center;gap:10px !important;color:var(--rd-ink) !important}
 .main .rdesk .rd-form-grid .rd-check input{width:20px;min-height:20px}
+
+/* Staff */
+.main .rdesk .rd-staff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.main .rdesk button.rd-staff-card{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"av who" "role role" "meta meta";gap:8px 12px;text-align:left;padding:14px;min-height:0;border:2px solid transparent;border-radius:18px;background:var(--rd-panel);box-shadow:var(--rd-shadow);color:var(--rd-ink);font-weight:400}
+.main .rdesk button.rd-staff-card:hover{border-color:var(--rd-brand)}
+.main .rdesk button.rd-staff-card.off{opacity:.6}
+.main .rdesk .rd-staff-card .rd-avatar{grid-area:av}
+.main .rdesk .rd-staff-card .who{grid-area:who;display:flex;flex-direction:column;min-width:0}
+.main .rdesk .rd-staff-card .who strong{font-size:16px}
+.main .rdesk .rd-staff-card .who small{color:var(--rd-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.main .rdesk .rd-staff-card .role{grid-area:role;font-weight:800;color:var(--rd-deep)}
+.main .rdesk .rd-staff-card .meta{grid-area:meta;display:flex;gap:6px;align-items:center;flex-wrap:wrap;color:var(--rd-muted);font-size:13px;font-weight:600}
+.main .rdesk .rd-staff-card em{font-style:normal}
+.main .rdesk .rd-role-pick{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.main .rdesk .rd-role-pick button:not(.menu-btn){display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;min-height:68px;padding:8px 12px}
+.main .rdesk .rd-role-pick button small{color:var(--rd-muted);font-weight:600;font-size:12px}
+.main .rdesk .rd-role-pick button.on{background:var(--rd-forest);border-color:var(--rd-forest);color:#fff}
+.main .rdesk .rd-role-pick button.on small{color:#C8E86A}
+@media (max-width:640px){.main .rdesk .rd-role-pick{grid-template-columns:1fr}}
