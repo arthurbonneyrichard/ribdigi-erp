@@ -15,7 +15,7 @@ type Guide = { area: string; q: string; steps: string[]; href: string; go: strin
 
 const GUIDES: Guide[] = [
   { area: 'Service', q: 'Take an order at a table', href: '/restaurant/till', go: 'Open the till', steps: ['Open the till and start your shift with the cash float.', 'Pick the table (or Takeaway / Delivery), then tap dishes to add them.', 'Tap Send to kitchen. The kitchen screen shows it straight away.'] },
-  { area: 'Service', q: 'Take payment and split a bill', href: '/restaurant/bills', go: 'Open bills', steps: ['Open Bills and pick the table’s bill.', 'Choose Cash, Card or MoMo. For cash, type what the guest handed over to see the change.', 'To split, pay part of the bill one way and the rest another way.'] },
+  { area: 'Service', q: 'Take payment for a bill', href: '/restaurant/till', go: 'Open the till', steps: ['On the till, tap Open bills and pick the table’s bill, then Pay.', 'Choose Cash, Card, Mobile Money or Wallet. For cash, tap or type what the guest handed over to see the change.', 'A bill is paid one way. If guests want to pay separately, ring their dishes as separate bills.'] },
   { area: 'Service', q: 'Refund a paid bill', href: '/restaurant/orders', go: 'Open orders', steps: ['Open Orders and show all, including paid ones.', 'Open the bill and choose Refund.', 'A cash refund comes out of the open till shift, so the cash count stays right.'] },
   { area: 'Service', q: 'Open and close a till shift', href: '/restaurant/till', go: 'Open the till', steps: ['On the till, tap Shift and enter the opening float.', 'Use Cash in / Cash out for change top-ups or money taken to the bank.', 'At the end, count the cash and close. Over or short shows on End of day.'] },
   { area: 'Service', q: 'Close off the day', href: '/restaurant/day-close', go: 'Open End of day', steps: ['Open End of day.', 'Clear what it lists: shifts still open, bills not paid.', 'Print the sheet for your file.'] },
@@ -104,7 +104,7 @@ export default function RestaurantHelpPage() {
         </div>
       ) : null}
 
-      <input className="rd-search rd-help-search" type="search" placeholder="How do I… (refund, split a bill, VAT, market run)" aria-label="Search help" value={search} onChange={(e) => setSearch(e.target.value)} />
+      <input className="rd-search rd-help-search" type="search" placeholder="How do I… (refund, pay a bill, VAT, market run)" aria-label="Search help" value={search} onChange={(e) => setSearch(e.target.value)} />
 
       <div className="rd-help">
         {areas.map((area) => (
