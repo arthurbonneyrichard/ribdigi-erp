@@ -1710,6 +1710,7 @@ async def summary(db: AsyncSession, tenant_id: str, user_id: str | None = None) 
         .where(
             m.RestaurantKitchenTicket.tenant_id == tenant_id,
             m.RestaurantKitchenTicket.status.in_(("queued", "preparing")),
+            m.RestaurantOrder.status.not_in(("cancelled", "voided", "refunded")),
         )
         .group_by(m.RestaurantKitchenTicket.station)
     )
@@ -3867,6 +3868,12 @@ async def cancel_order(db: AsyncSession, tenant_id: str, order_id: str, *, user_
         return order
     order.status = "voided" if void else "cancelled"
     await _release_table_if_clear(db, tenant_id, order.table_id)
+    # Take its tickets off the kitchen and bar screens, so nobody cooks a cancelled order.
+    tickets = (
+        await db.execute(select(m.RestaurantKitchenTicket).where(m.RestaurantKitchenTicket.order_id == order.id))
+    ).scalars()
+    for ticket in tickets:
+        ticket.status = "cancelled"
     await db.flush()
     await audit_svc.record_event(
         db, tenant_id=tenant_id, user_id=user_id, module="restaurant",
@@ -4015,6 +4022,7 @@ async def list_kitchen(db: AsyncSession, tenant_id: str, user_id: str | None = N
         .where(
             m.RestaurantKitchenTicket.tenant_id == tenant_id,
             m.RestaurantKitchenTicket.status.in_(("queued", "preparing", "ready")),
+            m.RestaurantOrder.status.not_in(("cancelled", "voided", "refunded")),
         )
         .order_by(m.RestaurantKitchenTicket.created_at)
     )

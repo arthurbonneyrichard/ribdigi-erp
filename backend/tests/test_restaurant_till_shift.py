@@ -64,6 +64,28 @@ async def test_short_stock_names_the_dish_not_the_sku(client, db_session):
     assert "recipe" in detail["message"]
 
 
+async def test_cancelled_order_leaves_the_kitchen_screen(client, db_session):
+    ac, seed = client
+    await set_tenant_industry(db_session, seed["t1"], "restaurant")
+    admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    dish = await _dish(ac, admin, "Banku", 40)
+    order = await ac.post(
+        "/api/v1/restaurant/orders",
+        headers=admin,
+        json={"service_mode": "takeaway", "customer_name": "Kojo", "lines": [{"product_id": dish["id"], "quantity": "1"}]},
+    )
+    assert order.status_code == 200, order.text
+    oid = order.json()["data"]["id"]
+    sent = await ac.post(f"/api/v1/restaurant/orders/{oid}/send", headers=admin)
+    assert sent.status_code == 200, sent.text
+    before = (await ac.get("/api/v1/restaurant/kitchen", headers=admin)).json()["data"]
+    assert any(t.get("order_id") == oid or t.get("order_number") == order.json()["data"]["order_number"] for t in before)
+    cancelled = await ac.post(f"/api/v1/restaurant/orders/{oid}/cancel", headers=admin)
+    assert cancelled.status_code == 200, cancelled.text
+    after = (await ac.get("/api/v1/restaurant/kitchen", headers=admin)).json()["data"]
+    assert not any(t.get("order_id") == oid or t.get("order_number") == order.json()["data"]["order_number"] for t in after)
+
+
 async def test_restaurant_cannot_use_the_retail_till(client, db_session):
     ac, seed = client
     await set_tenant_industry(db_session, seed["t1"], "restaurant")

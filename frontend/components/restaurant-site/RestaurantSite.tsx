@@ -266,7 +266,7 @@ export default function RestaurantSite({ slug, focus }: { slug: string; focus: '
           {site.phone ? <a href={`tel:${site.phone}`}>Call</a> : null}
         </nav>
         {site.ordering_open ? (
-          <button type="button" className="rs-bag-btn" aria-label={`Open your bag, ${bagCount} items`} onClick={() => setPanel('bag')}>
+          <button type="button" className="rs-bag-btn" aria-label={`Open your bag, ${bagCount} ${bagCount === 1 ? 'item' : 'items'}`} onClick={() => setPanel('bag')}>
             Your bag <span>{bagCount}</span>
           </button>
         ) : null}
