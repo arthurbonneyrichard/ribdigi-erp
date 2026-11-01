@@ -167,9 +167,9 @@ def test_dashboard_page_surfaces_load_errors():
     assert "ap_total_due" in text
     assert "credit_outstanding" in text
     headline = text[text.find("const stats = [") : text.find("const liveIndustry")]
-    assert "label: 'Gross profit'" in headline
+    assert "label: 'Gross profit, 7 days'" in headline
     assert "dash-kpis" in text
-    assert 'aria-label="Total sales, purchases, expenses, net position, and gross profit"' in text
+    assert 'aria-label="Sales today, sales this month, gross profit, and money owed"' in text
     assert "Batches" not in headline
     assert "featureCards.length > 0" in text
     assert "industryHomePath" in text
@@ -183,7 +183,7 @@ def test_dashboard_page_surfaces_load_errors():
     assert "if (ind === 'restaurant') return '/restaurant';" in home_src
     assert "return '/dashboard';" in home_src
     assert "Retail operations" not in text
-    assert "label: 'Gross profit'" in text
+    assert "label: 'Gross profit, 7 days'" in text
     assert "rx_queue" in text
     assert "aria-label=\"Pharmacy\"" in text
     assert "New prescription" in text

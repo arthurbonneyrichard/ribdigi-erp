@@ -547,7 +547,6 @@ export default function Page() {
   const sales = d.total_sales || 0;
   const purchases = d.total_purchases || 0;
   const expenses = d.total_expenses || 0;
-  const net = sales - purchases - expenses;
   const products = d.products || 0;
   const low = d.low_stock || 0;
   const oos = d.out_of_stock || 0;
@@ -587,60 +586,65 @@ export default function Page() {
 
   const salesToday = Number(cmp.sales_today || 0);
   const salesTodayPct = cmp.sales_today_pct;
+  const salesMtdPct = cmp.sales_mtd_pct;
+  const arDue = Number(d.ar_total_due || 0);
+  const apDue = Number(d.ap_total_due || 0);
+  // Every card names its period; the all-time totals sit in the money-movement card further down.
   const stats = [
     {
       cls: 's-sales',
       ico: 'sales',
-      label: 'Total Sales',
-      val: moneyNum(sales),
+      label: 'Sales today',
+      val: moneyNum(cmp.sales_today),
       href: links.sales || '/sales',
       // Early in the day "-100% versus yesterday" reads as a collapse; say there are no sales yet instead.
-      sub: `Recorded sales. ${salesToday > 0 ? `Today ${moneyNum(cmp.sales_today)}, ${pctLabel(salesTodayPct)} versus yesterday.` : 'No sales yet today.'} This month ${moneyNum(cmp.sales_mtd)}, ${pctLabel(cmp.sales_mtd_pct)} versus last month.`,
-      line: salesToday > 0 ? `Today ${moneyNum(cmp.sales_today)}` : 'No sales yet today.',
+      sub: salesToday > 0 ? `Today ${moneyNum(cmp.sales_today)}, ${pctLabel(salesTodayPct)} versus yesterday.` : 'No sales yet today.',
+      line: salesToday > 0 ? `Yesterday ${moneyNum(cmp.sales_yesterday)}` : 'No sales yet today',
       delta: salesToday > 0 ? pctLabel(salesTodayPct) : null,
       deltaCls: salesTodayPct == null ? 'flat' : salesTodayPct > 0 ? 'up' : salesTodayPct < 0 ? 'down' : 'flat',
     },
     {
       cls: 's-buy',
-      ico: 'buy',
-      label: 'Purchases',
-      val: moneyNum(purchases),
-      href: links.purchases || '/purchasing',
-      sub: 'Recorded purchases',
-      line: 'Recorded purchases',
-      delta: null,
-      deltaCls: 'flat',
+      ico: 'sales',
+      label: 'Sales this month',
+      val: moneyNum(cmp.sales_mtd),
+      href: links.reports_sales || '/reports',
+      sub: `This month so far ${moneyNum(cmp.sales_mtd)}. All of last month ${moneyNum(cmp.sales_prev_month)}.`,
+      line: `Last month ${moneyNum(cmp.sales_prev_month)}`,
+      // Early in the month the whole of last month makes any change look like a collapse.
+      delta: Number(cmp.sales_mtd || 0) > 0 && Number(cmp.sales_prev_month || 0) > 0 ? pctLabel(salesMtdPct) : null,
+      deltaCls: salesMtdPct == null ? 'flat' : salesMtdPct > 0 ? 'up' : salesMtdPct < 0 ? 'down' : 'flat',
     },
     {
-      cls: 's-exp',
-      ico: 'exp',
-      label: 'Expenses',
-      val: moneyNum(expenses),
-      href: links.expenses || '/expenses',
-      sub: 'Approved expenses, including company-wide',
-      line: 'Approved expenses',
+      cls: 's-profit',
+      ico: 'profit',
+      label: 'Gross profit, 7 days',
+      val: moneyNum(d.gross_profit_7d),
+      href: links.reports_sales || '/reports',
+      sub: `Sale price minus product cost, last 7 days. Last 30 days ${moneyNum(d.gross_profit_30d)}.`,
+      line: `30 days ${moneyNum(d.gross_profit_30d)}`,
       delta: null,
       deltaCls: 'flat',
     },
     {
       cls: 's-net',
       ico: 'net',
-      label: 'Net position',
-      val: moneyNum(net),
-      href: links.reports_sales || '/reports',
-      sub: 'Sales minus purchases minus expenses',
-      line: 'Sales − purchases − expenses',
+      label: 'Customers owe you',
+      val: moneyNum(arDue),
+      href: '/credit?kind=receivable',
+      sub: 'Unpaid customer invoices and credit sales.',
+      line: arDue > 0 ? `${num(d.ar_open_parties)} customers` : 'Nothing owed',
       delta: null,
       deltaCls: 'flat',
     },
     {
-      cls: 's-profit',
-      ico: 'profit',
-      label: 'Gross profit',
-      val: moneyNum(d.gross_profit_7d),
-      href: links.reports_sales || '/reports',
-      sub: `Sale price minus product cost, last 7 days. Last 30 days ${moneyNum(d.gross_profit_30d)}.`,
-      line: `30 days ${moneyNum(d.gross_profit_30d)}`,
+      cls: 's-exp',
+      ico: 'buy',
+      label: 'You owe suppliers',
+      val: moneyNum(apDue),
+      href: '/credit?kind=payable',
+      sub: 'Unpaid supplier bills and deliveries.',
+      line: apDue > 0 ? `${num(d.ap_open_parties)} suppliers` : 'Nothing owed',
       delta: null,
       deltaCls: 'flat',
     },
@@ -787,7 +791,7 @@ export default function Page() {
           )}
         </section>
         {dashStatus !== 'ready' ? (
-          <section className="stat-grid dash-kpis" aria-label="Total sales, purchases, expenses, net position, and gross profit" aria-busy={dashStatus === 'loading'}>
+          <section className="stat-grid dash-kpis" aria-label="Sales today, sales this month, gross profit, and money owed" aria-busy={dashStatus === 'loading'}>
             {[0, 1, 2, 3, 4].map((i) => (
               <div className="stat dash-skel" key={i}>
                 <div className="label">{dashStatus === 'error' ? 'Figures hidden until reload succeeds' : 'Waiting for figures'}</div>
@@ -797,7 +801,7 @@ export default function Page() {
           </section>
         ) : (
         <>
-        <section className="stat-grid dash-kpis" aria-label="Total sales, purchases, expenses, net position, and gross profit">
+        <section className="stat-grid dash-kpis" aria-label="Sales today, sales this month, gross profit, and money owed">
           {stats.map((s) => (
             <Link
               className={`stat ${s.cls}`}
@@ -1050,7 +1054,7 @@ export default function Page() {
               <PanelIcon name="cashflow" />
               Cash flow
             </h3>
-            <p className="hint">Sales, purchases, and expenses</p>
+            <p className="hint">All time: sales, purchases and expenses</p>
             {flowEmpty ? (
               <EmptyState title="No cash flow recorded yet." detail="Your first sale will appear here." />
             ) : (
