@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { industryHomePath } from '../lib/industryDashboard';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, clearSessionAndRedirect, idleTimeoutMs, isConfirmedAuthExpiry, tenantHeaderValue, getAccessToken, hydrateAuth } from '../lib/api';
@@ -1995,6 +1996,12 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             <p className="muted" role="status">
               Opening an allowed page…
             </p>
+          ) : industryPageBlock ? (
+            <div className="card industry-page-block" role="alert">
+              <h2>Not used by this business</h2>
+              <p>{industryPageBlock}</p>
+              <Link href={industryHomePath(industry)}>Back to the dashboard</Link>
+            </div>
           ) : (
             children
           )}

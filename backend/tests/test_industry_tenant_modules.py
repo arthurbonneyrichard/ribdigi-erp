@@ -176,8 +176,11 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "['Group stays', '/hotel?tab=reservations#group-stay', 'hotel']" in nav
     assert "['Online booking', '/hotel?tab=reservations#online-booking', 'hotel']" in nav
     assert "['Night audit', '/hotel?tab=cashier#night-audit', 'hotel']" in nav
-    assert "['Discount codes', '/sales?tab=coupons', 'sales']" in nav
-    assert "['Gift cards', '/sales?tab=giftcards', 'sales']" in hotel_block
+    # Hotels bill guests on their own screen; retail sales, gift cards and coupons are not on the hotel menu.
+    assert "['Guest invoices', '/hotel/invoices', 'hotel']" in hotel_block
+    assert "['Gift cards', '/sales?tab=giftcards', 'sales']" not in hotel_block
+    assert "['Customers', '/customers', 'sales']" not in hotel_block
+    assert "['Discount codes', '/sales?tab=coupons', 'sales']" not in hotel_block
     assert "'/gift-cards'" not in hotel_block
     assert "['Lots', '/inventory?tab=batches', 'inventory']" in nav
     assert "['Supplier bills', '/purchasing?tab=invoices', 'purchasing']" in nav

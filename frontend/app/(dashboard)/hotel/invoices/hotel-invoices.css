@@ -1,0 +1,66 @@
+/* Hotel guest invoices: hotel's own screen. Brand greens with the hotel gold accent; every selector
+   sits under .main .hinv so retail and restaurant screens (and the global .main button styles) stay out. */
+
+.main .hinv{
+  --hi-bg:#F2F7EC;--hi-panel:#FFFFFF;--hi-ink:#10211B;--hi-muted:#4D5D56;--hi-line:#D4E5C4;
+  --hi-brand:#4AB012;--hi-deep:#006B2E;--hi-forest:#003D1F;--hi-tint:#E4F2D6;
+  --hi-gold:#B8862B;--hi-gold-tint:#FBF1DC;--hi-bad:#8A2A12;--hi-bad-tint:#FCE7E2;
+  --hi-shadow:0 1px 2px rgba(0,61,31,.06),0 8px 24px rgba(0,61,31,.07);
+  display:flex;flex-direction:column;gap:14px;padding:18px;border-radius:20px;background:var(--hi-bg);color:var(--hi-ink)
+}
+[data-theme="dark"] .main .hinv{--hi-bg:#0F1A14;--hi-panel:#16241C;--hi-ink:#E8F2E4;--hi-muted:#A3B5AA;--hi-line:#2A3D31;--hi-tint:#1F3A26;--hi-gold-tint:#3A2C10;--hi-bad-tint:#4A2219}
+.main .hinv button:not(.menu-btn){box-shadow:none;transform:none;text-transform:none;letter-spacing:normal;font-family:inherit;cursor:pointer;border:2px solid var(--hi-line);background:var(--hi-panel);color:var(--hi-ink);border-radius:12px;min-height:44px;padding:0 14px;font-weight:700;font-size:15px}
+.main .hinv button:not(.menu-btn):disabled{opacity:.5;cursor:not-allowed}
+.main .hinv button.hi-primary{background:var(--hi-deep);border-color:var(--hi-deep);color:#fff}
+.main .hinv button.hi-primary:hover{background:var(--hi-forest)}
+.main .hinv button.hi-plain{border:0;background:none;color:var(--hi-deep);min-height:36px}
+.main .hinv .hi-head{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.main .hinv .hi-head h1{margin:0;font-family:Georgia,'Times New Roman',serif;font-size:28px}
+.main .hinv .hi-head p{margin:2px 0 0;color:var(--hi-muted);font-weight:600}
+.main .hinv .hi-link{margin-left:auto;color:var(--hi-deep);font-weight:800}
+.main .hinv .hi-notice{padding:10px 14px;border-radius:12px;background:var(--hi-forest);color:#fff;font-weight:700;cursor:pointer}
+.main .hinv .hi-error{padding:10px 14px;border-radius:12px;background:var(--hi-bad-tint);color:var(--hi-bad);font-weight:700}
+.main .hinv .hi-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.main .hinv .hi-kpi{background:var(--hi-panel);border-radius:16px;padding:14px 16px;box-shadow:var(--hi-shadow);display:flex;flex-direction:column;gap:4px;border-top:5px solid var(--hi-gold)}
+.main .hinv .hi-kpi span{font-size:13px;font-weight:700;color:var(--hi-muted)}
+.main .hinv .hi-kpi strong{font-family:Georgia,'Times New Roman',serif;font-size:24px}
+.main .hinv .hi-kpi small{color:var(--hi-muted);font-weight:600}
+.main .hinv .hi-kpi.hero{background:var(--hi-forest);color:#fff;border-top-color:var(--hi-brand)}
+.main .hinv .hi-kpi.hero span,.main .hinv .hi-kpi.hero small{color:#C8E86A}
+.main .hinv .hi-kpi ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.main .hinv .hi-kpi li{display:flex;justify-content:space-between;gap:8px;font-weight:600}
+.main .hinv .hi-kpi li strong{font-family:inherit;font-size:15px}
+.main .hinv .hi-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.main .hinv .hi-tools input{flex:1 1 240px;min-height:44px;border-radius:12px;border:2px solid var(--hi-line);background:var(--hi-panel);color:var(--hi-ink);padding:0 14px;font-size:15px}
+.main .hinv .hi-chips{display:flex;gap:8px;flex-wrap:wrap}
+.main .hinv .hi-chips button{min-height:40px;border-radius:999px}
+.main .hinv .hi-chips button.on{background:var(--hi-forest);border-color:var(--hi-forest);color:#fff}
+.main .hinv .hi-list{background:var(--hi-panel);border-radius:18px;box-shadow:var(--hi-shadow);overflow:hidden}
+.main .hinv .hi-empty{margin:0;padding:24px;text-align:center;color:var(--hi-muted);font-weight:600}
+.main .hinv .hi-row{display:grid;grid-template-columns:minmax(0,1fr) 150px auto;gap:14px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--hi-line);border-left:5px solid transparent}
+.main .hinv .hi-row:last-child{border-bottom:0}
+.main .hinv .hi-row.owed{border-left-color:var(--hi-gold)}
+.main .hinv .hi-row .who{display:flex;flex-direction:column;min-width:0}
+.main .hinv .hi-row .who strong{font-size:16px}
+.main .hinv .hi-row .who small{color:var(--hi-muted);font-weight:600}
+.main .hinv .hi-row .who small.ref{font-size:12px}
+.main .hinv .hi-row .amt{display:flex;flex-direction:column;text-align:right}
+.main .hinv .hi-row .amt strong{font-family:Georgia,'Times New Roman',serif;font-size:19px}
+.main .hinv .hi-row.owed .amt small{color:#6B4300;font-weight:800}
+.main .hinv .hi-row .amt small{color:var(--hi-muted);font-weight:600}
+.main .hinv .hi-row .acts{display:flex;gap:6px}
+.main .hinv .hi-sheet{position:fixed;inset:0;z-index:60;background:rgba(0,26,14,.5);display:flex;align-items:center;justify-content:center;padding:16px}
+.main .hinv .hi-card{width:min(480px,100%);max-height:90vh;overflow:auto;background:var(--hi-panel);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.main .hinv .hi-card-head{display:flex;align-items:center}
+.main .hinv .hi-card-head h2{margin:0;font-family:Georgia,'Times New Roman',serif}
+.main .hinv .hi-card-head button{margin-left:auto}
+.main .hinv .hi-sub{margin:0;color:var(--hi-muted);font-weight:600}
+.main .hinv .hi-field{display:flex;flex-direction:column;gap:4px;font-weight:700;font-size:14px;color:var(--hi-muted)}
+.main .hinv .hi-field input{min-height:50px;border-radius:12px;border:2px solid var(--hi-line);padding:0 12px;font-size:16px;background:var(--hi-panel);color:var(--hi-ink)}
+.main .hinv .hi-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.main .hinv .hi-actions button:not(.menu-btn){min-height:54px}
+@media (max-width:760px){
+  .main .hinv .hi-row{grid-template-columns:minmax(0,1fr) auto;row-gap:8px}
+  .main .hinv .hi-row .acts{grid-column:1 / -1}
+  .main .hinv .hi-link{margin-left:0}
+}

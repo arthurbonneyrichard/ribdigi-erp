@@ -68,10 +68,7 @@ export const HOTEL_NAV_ITEMS: NavItem[] = [
   ['Hotel Services', '/hotel?tab=services', 'hotel'],
   ['Hotel restaurant', '/hotel?tab=restaurant', 'hotel'],
   ['Hotel bar', '/hotel?tab=bar', 'hotel'],
-  ['Sales', '/sales', 'sales'],
-  ['Customers', '/customers', 'sales'],
-  ['Discount codes', '/sales?tab=coupons', 'sales'],
-  ['Gift cards', '/sales?tab=giftcards', 'sales'],
+  ['Guest invoices', '/hotel/invoices', 'hotel'],
   ['Shop till', '/hotel/shop', 'hotel'],
   ['Billing and Guest Folios', '/hotel?tab=billing', 'hotel'],
   ['Hotel Finance and Cashiering', '/hotel?tab=cashier', 'hotel'],
@@ -79,7 +76,6 @@ export const HOTEL_NAV_ITEMS: NavItem[] = [
   ['Expenses', '/expenses', 'expenses'],
   ['Accounting', '/accounting', 'accounting'],
   ['Payment notice', '/billing', 'accounting'],
-  ['Customer credit', '/credit?kind=receivable', 'credit'],
   ['Tax', '/tax', 'tax'],
   ['Inventory and Procurement', HOTEL_INVENTORY_PARENT_HREF, 'inventory'],
   ['Staff and Permissions', '/users', 'users'],
@@ -125,12 +121,9 @@ export const HOTEL_NAV_GROUPS: NavGroup[] = [
   },
   {
     id: 'hotel-sales',
-    label: 'Sales and POS',
+    label: 'Guest billing and shop',
     items: [
-      ['Sales', '/sales', 'sales'],
-      ['Customers', '/customers', 'sales'],
-      ['Discount codes', '/sales?tab=coupons', 'sales'],
-      ['Gift cards', '/sales?tab=giftcards', 'sales'],
+      ['Guest invoices', '/hotel/invoices', 'hotel'],
       ['Shop till', '/hotel/shop', 'hotel'],
     ],
   },
@@ -144,7 +137,6 @@ export const HOTEL_NAV_GROUPS: NavGroup[] = [
       ['Expenses', '/expenses', 'expenses'],
       ['Accounting', '/accounting', 'accounting'],
       ['Payment notice', '/billing', 'accounting'],
-      ['Customer credit', '/credit?kind=receivable', 'credit'],
       ['Tax', '/tax', 'tax'],
     ],
   },
@@ -393,8 +385,10 @@ export function industryNavHrefOk(href: string, industry: string | null | undefi
     return ind === 'retail';
   }
   // A restaurant keeps its bills and guests on its own screens (/restaurant/bills, /restaurant/guests).
+  // Restaurant and hotel keep bills and guests on their own screens
+  // (/restaurant/bills, /restaurant/guests; /hotel/invoices, Guests and CRM).
   if (path === '/sales' || path === '/customers') {
-    return ind === 'retail' || ind === 'hotel' || ind === 'pharmacy';
+    return ind === 'retail' || ind === 'pharmacy';
   }
   return true;
 }
@@ -535,6 +529,13 @@ export function industryFeatureBlock(
   }
   if ((path === '/pos' || path.startsWith('/pos/')) && !industryNavHrefOk('/pos', industry)) {
     return 'Point of sale is not available for this company.';
+  }
+  const salesPath = path === '/sales' || path.startsWith('/sales/') ? '/sales' : path === '/customers' || path.startsWith('/customers/') ? '/customers' : null;
+  if (salesPath && !industryNavHrefOk(salesPath, industry)) {
+    const ind = normalizeIndustry(industry);
+    if (ind === 'hotel') return 'Hotel bills are under Guest billing → Guest invoices, and guests under Guests and CRM.';
+    if (ind === 'restaurant') return 'Restaurant bills are under Service → Bills, and guests under Service → Guests.';
+    return 'This feature is not available for this company.';
   }
   return null;
 }
