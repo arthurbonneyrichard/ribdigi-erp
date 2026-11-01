@@ -349,7 +349,7 @@ export default function PrinterSettingsPage() {
           hotelPrint
             ? 'Printers for reservation confirmations, folio print, and guest receipts.'
             : restaurantPrint
-              ? 'Printers for the restaurant till, kitchen tickets, and bar tickets. Table orders stay on the restaurant desk.'
+              ? 'Printers for the restaurant till, kitchen tickets and bar tickets. When an order is sent, dishes made in the kitchen print on Kitchen printers and drinks made at the bar print on Bar printers. A printer plugged into the kitchen tablet prints when that screen has Print tickets here turned on.'
               : `Link a printer in three steps. The size next to Pay only changes the browser receipt. A paired till agent uses the paper size stored on that printer.${industry ? ` Set up for ${industryLabel(industry)}.` : ''}`
         }
       />

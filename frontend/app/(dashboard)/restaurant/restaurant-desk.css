@@ -655,3 +655,4 @@
 .main .rdesk .rd-role-pick button.on{background:var(--rd-forest);border-color:var(--rd-forest);color:#fff}
 .main .rdesk .rd-role-pick button.on small{color:#C8E86A}
 @media (max-width:640px){.main .rdesk .rd-role-pick{grid-template-columns:1fr}}
+.main .rdesk .rd-tool select{min-height:40px;border-radius:10px;border:2px solid var(--rd-line);background:var(--rd-panel);color:var(--rd-ink);padding:0 8px;font-weight:700}

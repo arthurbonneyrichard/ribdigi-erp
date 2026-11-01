@@ -31,6 +31,7 @@ _WAITER_WRITES = (
     r"PATCH /bookings/[^/]+",
     r"POST /bookings/[^/]+/(seat|finish|cancel)",
     r"POST /clock/(in|out)",
+    r"POST /print-queue/[^/]+/printed",
 )
 _RESTAURANT_ROLE_WRITES: dict[str, tuple[str, ...]] = {
     "restaurant_waiter": _WAITER_WRITES,
@@ -42,6 +43,7 @@ _RESTAURANT_ROLE_WRITES: dict[str, tuple[str, ...]] = {
         r"PUT /sold-out",
     ),
     "restaurant_kitchen": (
+        r"POST /print-queue/[^/]+/printed",
         r"POST /kitchen/lines/[^/]+/(start|ready)",
         r"PUT /sold-out",
         r"POST /waste",
@@ -1040,6 +1042,74 @@ async def restaurant_guests(
     db: AsyncSession = Depends(get_db),
 ):
     return _env(await restaurant_svc.list_guests(db, claims["tenant_id"], user_id=claims.get("sub")))
+
+
+class PrintedBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["printed", "failed"] = "printed"
+
+
+@router.get("/print-queue")
+async def restaurant_print_queue(
+    station: Literal["kitchen", "bar"],
+    claims=Depends(require_permission("restaurant", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Kitchen or bar tickets waiting for a browser printer (the screen that prints them opens the dialog)."""
+    from datetime import datetime, timedelta
+
+    from sqlalchemy import select
+
+    from app import models as m
+
+    since = datetime.utcnow() - timedelta(hours=12)
+    rows = (
+        await db.execute(
+            select(m.PrintJob)
+            .where(
+                m.PrintJob.tenant_id == claims["tenant_id"],
+                m.PrintJob.source_type == "restaurant_order",
+                m.PrintJob.purpose == station,
+                m.PrintJob.status == "browser_pending",
+                m.PrintJob.created_at >= since,
+            )
+            .order_by(m.PrintJob.created_at.asc())
+            .limit(30)
+        )
+    ).scalars()
+    return _env(
+        [
+            {
+                "id": job.id,
+                "station": job.purpose,
+                "reference": (job.payload or {}).get("reference"),
+                "text": (job.payload or {}).get("text") or "",
+                "created_at": job.created_at.isoformat() if job.created_at else None,
+            }
+            for job in rows
+        ]
+    )
+
+
+@router.post("/print-queue/{job_id}/printed")
+async def restaurant_print_queue_done(
+    job_id: UuidIdValue,
+    payload: PrintedBody,
+    claims=Depends(require_permission("restaurant", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import models as m
+    from app import printers as printers_svc
+
+    job = await db.get(m.PrintJob, job_id)
+    if job is None or job.tenant_id != claims["tenant_id"] or job.source_type != "restaurant_order":
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    job = await printers_svc.ack_browser_job(
+        db, tenant_id=claims["tenant_id"], job_id=job_id, status=payload.status, user_id=claims.get("sub")
+    )
+    await db.commit()
+    return _env({"id": job.id, "status": job.status}, "Ticket printed" if payload.status == "printed" else "Ticket not printed")
 
 
 @router.get("/kitchen")

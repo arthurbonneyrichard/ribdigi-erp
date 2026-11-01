@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from datetime import datetime
 
@@ -21,6 +22,8 @@ from app import restaurant_till as till_svc
 from app import schema_compat
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 from app.store_access import assert_store_access, assigned_store_ids
+
+logger = logging.getLogger(__name__)
 
 WASTE_REASONS = {"spoilage", "damage", "waste"}
 WASTE_PREFIX = "[[waste:"
@@ -3432,6 +3435,9 @@ async def update_order(
                 delete(m.RestaurantKitchenTicket).where(m.RestaurantKitchenTicket.id.in_(empty_queued))
             )
         await db.flush()
+        if added_stations:
+            # Dishes added to an order already in the kitchen print as the next ticket.
+            await _print_new_lines(db, tenant_id, order, user_id=user_id)
     await audit_svc.record_event(
         db,
         tenant_id=tenant_id,
@@ -3478,7 +3484,19 @@ async def send_to_kitchen(db: AsyncSession, tenant_id: str, order_id: str, *, us
     if order.status == "open":
         order.status = "sent"
     await db.flush()
+    await _print_new_lines(db, tenant_id, order, user_id=user_id)
     return order
+
+
+async def _print_new_lines(db: AsyncSession, tenant_id: str, order: m.RestaurantOrder, *, user_id: str | None) -> None:
+    """Kitchen and bar tickets for dishes not printed yet. A printer problem never stops the order."""
+    from app import printers as printers_svc
+
+    try:
+        async with db.begin_nested():
+            await printers_svc.enqueue_restaurant_prep_prints(db, tenant_id=tenant_id, order=order, user_id=user_id)
+    except Exception:  # noqa: BLE001 - printing is best effort; the kitchen screen still shows the order
+        logger.warning("restaurant prep print failed for order %s", order.id, exc_info=True)
 
 
 async def expand_pos_recipe_items(

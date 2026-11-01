@@ -724,7 +724,10 @@ def _idempotency_key(
     purpose: str,
     printer_id: str,
     reprint_seq: int = 0,
+    batch: int = 0,
 ) -> str:
+    if batch:
+        return f"{source_type}:{source_id}:{purpose}:{printer_id}:batch:{batch}"
     if reprint_seq:
         return f"{source_type}:{source_id}:{purpose}:{printer_id}:reprint:{reprint_seq}"
     return f"{source_type}:{source_id}:{purpose}:{printer_id}"
@@ -881,6 +884,7 @@ async def enqueue_job(
     reprint_of_job_id: str | None = None,
     reprint_seq: int = 0,
     industry: str | None = None,
+    batch: int = 0,
 ) -> m.PrintJob:
     if industry is None:
         industry = await load_tenant_industry(db, tenant_id)
@@ -895,6 +899,7 @@ async def enqueue_job(
         purpose=purpose,
         printer_id=printer.id,
         reprint_seq=reprint_seq,
+        batch=batch,
     )
     existing = (
         await db.execute(
@@ -1347,3 +1352,138 @@ async def list_jobs(
             raise HTTPException(status_code=400, detail="Invalid job status filter")
         stmt = stmt.where(m.PrintJob.status == wanted)
     return list((await db.execute(stmt)).scalars().all())
+
+
+
+async def enqueue_restaurant_prep_prints(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    order: m.RestaurantOrder,
+    user_id: str | None,
+) -> list[m.PrintJob]:
+    """Kitchen and bar tickets for a restaurant order's lines not printed yet.
+
+    Each line goes to the printers for its station (kitchen or bar). Extras print under the dish.
+    A later send prints only the dishes added since, as the next batch. No printer: nothing happens.
+    """
+    industry = await load_tenant_industry(db, tenant_id)
+    if not (purpose_allowed_for_industry("kitchen", industry) or purpose_allowed_for_industry("bar", industry)):
+        return []
+    previous = list(
+        (
+            await db.execute(
+                select(m.PrintJob).where(
+                    m.PrintJob.tenant_id == tenant_id,
+                    m.PrintJob.source_type == "restaurant_order",
+                    m.PrintJob.source_id == order.id,
+                    m.PrintJob.reprint_of_job_id.is_(None),
+                )
+            )
+        ).scalars()
+    )
+    printed: set[str] = set()
+    batch = 0
+    for job in previous:
+        payload = job.payload or {}
+        printed.update(str(x) for x in payload.get("line_ids") or [])
+        batch = max(batch, int(payload.get("batch") or 0))
+    lines = [
+        line
+        for line in (
+            await db.execute(
+                select(m.RestaurantOrderLine).where(
+                    m.RestaurantOrderLine.tenant_id == tenant_id,
+                    m.RestaurantOrderLine.order_id == order.id,
+                )
+            )
+        ).scalars()
+        if line.id not in printed
+    ]
+    if not lines:
+        return []
+    products = {
+        p.id: p
+        for p in (
+            await db.execute(
+                select(m.Product).where(
+                    m.Product.tenant_id == tenant_id,
+                    m.Product.id.in_({line.product_id for line in lines}),
+                )
+            )
+        ).scalars()
+    }
+    extras: dict[str, list[str]] = {}
+    for mod in (
+        await db.execute(
+            select(m.RestaurantOrderModifier).where(
+                m.RestaurantOrderModifier.tenant_id == tenant_id,
+                m.RestaurantOrderModifier.line_id.in_([line.id for line in lines]),
+            )
+        )
+    ).scalars():
+        extras.setdefault(mod.line_id, []).append(mod.name)
+
+    where = "Takeaway" if order.service_mode == "takeaway" else "Delivery" if order.service_mode == "delivery" else ""
+    if order.table_id:
+        table = await db.get(m.RestaurantTable, order.table_id)
+        if table is not None:
+            where = f"Table {table.code}"
+    reference = " · ".join(x for x in (order.order_number, where, order.customer_name or "") if x)
+    store = await db.get(m.Store, order.store_id) if order.store_id else None
+    batch += 1
+
+    by_station: dict[str, list[m.RestaurantOrderLine]] = {}
+    for line in lines:
+        station = normalize_prep_station(line.station or "kitchen") or "kitchen"
+        by_station.setdefault(station if station in {"kitchen", "bar"} else "kitchen", []).append(line)
+
+    jobs: list[m.PrintJob] = []
+    for station, station_lines in by_station.items():
+        items = [
+            {
+                "name": products[line.product_id].name if line.product_id in products else "Item",
+                "quantity": float(line.quantity or 0),
+                "notes": ", ".join(extras.get(line.id, [])) or None,
+                "product_id": line.product_id,
+            }
+            for line in station_lines
+        ]
+        if batch > 1:
+            items[0]["notes"] = ("Added to the order. " + (items[0]["notes"] or "")).strip()
+        for printer in await matching_printers(
+            db, tenant_id=tenant_id, store_id=order.store_id, purpose=station, industry=industry
+        ):
+            paper = printer.paper if printer.paper in {"58mm", "80mm"} else "80mm"
+            jobs.append(
+                await enqueue_job(
+                    db,
+                    tenant_id=tenant_id,
+                    printer=printer,
+                    source_type="restaurant_order",
+                    source_id=order.id,
+                    purpose=station,
+                    payload={
+                        "kind": "prep_ticket",
+                        "station": station,
+                        "reference": reference,
+                        "order_id": order.id,
+                        "batch": batch,
+                        "line_ids": [line.id for line in station_lines],
+                        "items": items,
+                        "text": render_prep_ticket(
+                            reference=reference,
+                            station=station,
+                            items=items,
+                            store_name=store.name if store else None,
+                            paper=paper,
+                        ),
+                        "payments_included": False,
+                        "browser_fallback": printer.connection_type == "browser_dialog",
+                    },
+                    user_id=user_id,
+                    industry=industry,
+                    batch=batch,
+                )
+            )
+    return jobs

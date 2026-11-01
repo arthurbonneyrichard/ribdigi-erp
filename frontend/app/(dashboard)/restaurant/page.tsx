@@ -10,6 +10,7 @@ import { formatDateTime, formatMoney } from '../../../lib/format';
 import { getMe } from '../../../lib/meCache';
 import { moduleEnabledForTenant } from '../../../lib/industryModules';
 import { whereWords as deskWhere } from '../../../lib/restaurantDesk';
+import KitchenPrintTool from './KitchenPrintTool';
 import './restaurant-desk.css';
 
 type Row = Record<string, any>;
@@ -4241,6 +4242,7 @@ export default function RestaurantPage() {
               <span className="rd-hint">Refreshes every 15 seconds.</span>
             </div>
             <div className="rd-kds-tools">
+              <KitchenPrintTool />
               <div className="rd-tool" aria-label="Restaurant kitchen sound">
                 <span>
                   <strong>Kitchen sound</strong>
