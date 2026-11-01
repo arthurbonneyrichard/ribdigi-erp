@@ -235,3 +235,9 @@
     max-width: 100%;
   }
 }
+
+/* One row of inventory tabs (the sidebar moves between areas) */
+.inv-ui-page .inv-ui-tabs{display:flex;flex-wrap:wrap;gap:4px;padding:4px;border-radius:14px;background:var(--panel,#fff);box-shadow:0 1px 2px rgba(0,61,31,.06);width:max-content;max-width:100%}
+.inv-ui-page .inv-ui-tabs button{border:0;background:none;box-shadow:none;min-height:40px;padding:0 14px;border-radius:10px;font-weight:700;color:var(--ink,#10211B);cursor:pointer}
+.inv-ui-page .inv-ui-tabs button.on{background:var(--brand-dark,#2F7A0C);color:#fff}
+@media(max-width:720px){.inv-ui-page .inv-ui-tabs{width:100%}.inv-ui-page .inv-ui-tabs button{flex:1 1 auto}}

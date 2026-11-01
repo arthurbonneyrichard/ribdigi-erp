@@ -77,12 +77,12 @@ def test_stock_tabs_ui_matches_categories_pattern():
     assert "Adjust stock" in adjust
     assert "Confirm adjustment" in adjust
     assert "Select reason" in adjust
-    assert "Manage stock" in adjust
+    assert "Receive stock in Stock levels" in adjust
 
     assert "Stock out" in stockout
     assert "Issue stock" in stockout
 
-    assert "Manage stock" in whstock
+    assert "Stock on hand" in whstock
     assert "Low stock" in whstock
     assert "Receive stock" in whstock
     assert "Adjust stock" in whstock

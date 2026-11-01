@@ -376,3 +376,9 @@
     text-align: left;
   }
 }
+
+/* Print size sits small at the right of the list, not as a form above it. */
+.sales-ui-page .sales-paper-bar { justify-content: flex-end; align-items: center; }
+.sales-ui-page .sales-paper-bar .print-ui-paper { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--muted, #4D5D56); }
+.sales-ui-page .sales-paper-bar .print-ui-paper select { min-height: 36px; width: auto; }
+.sales-ui-page .sales-paper-bar label.print-ui-paper { flex-direction: row; }

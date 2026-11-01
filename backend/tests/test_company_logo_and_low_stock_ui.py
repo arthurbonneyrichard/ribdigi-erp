@@ -20,7 +20,7 @@ def test_company_logo_upload_uses_api_helper():
 
 def test_low_stock_nav_is_inventory_not_reports():
     shell = (ROOT / "frontend/components/Shell.tsx").read_text(encoding="utf-8")
-    assert "['Low Stock', '/inventory?tab=lowstock', 'inventory']" in shell
+    assert "['Low stock', '/inventory?tab=lowstock', 'inventory']" in shell
     assert "['Low Stock', '/reports?tab=inventory', 'reports']" not in shell
     inv = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert "'lowstock'" in inv

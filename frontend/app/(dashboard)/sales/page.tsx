@@ -1157,8 +1157,8 @@ export default function Page() {
   function invoicePaperBar() {
     return (
       <div className="sales-paper-bar">
-        <label className="print-ui-paper">
-          Paper
+        <label className="print-ui-paper" title="Print from an invoice's menu uses this size">
+          Print size
           <select
             value={invoicePaper}
             onChange={(e) => {
@@ -1172,9 +1172,6 @@ export default function Page() {
             <option value="58mm">58mm receipt</option>
           </select>
         </label>
-        <p className="print-ui-help">
-          Choose A4 for a full invoice, or 58mm or 80mm for a receipt slip. Print from the row menu uses this size.
-        </p>
       </div>
     );
   }
@@ -1369,37 +1366,14 @@ export default function Page() {
   return (
     <div className="sales-desk work sales-ui-page">
       <PageHeader className="sales-desk-head" title={restaurantOps ? 'Bills' : 'Sales'}>
-        <p className="sales-ui-path">
-          {hotelOps ? (
-            <>
-              <span>1 Customers</span>
-              <span>2 Invoices</span>
-              <span>3 Returns</span>
-            </>
-          ) : restaurantOps ? (
-            <>
-              <span>1 Customers</span>
-              <span>2 Bills</span>
-              <span>3 Returns</span>
-            </>
-          ) : (
-            <>
-              <span>1 Customers</span>
-              <span>2 Quotes</span>
-              <span>3 Orders</span>
-              <span>4 Invoices</span>
-              <span>5 Returns</span>
-            </>
-          )}
-        </p>
         <p className="sales-ui-note">
           {hotelOps
             ? 'Checkout invoices from guest folios land here. Room charges stay on Billing until checkout.'
             : restaurantOps
               ? 'Bills from the restaurant till land here. Table orders stay on the restaurant desk.'
               : wholesaleOps
-              ? 'Quotes and orders are not sales until they are invoiced. Coupons and gift cards are codes, not a card charge.'
-              : 'Coupons and gift cards are codes, not a card charge.'}
+              ? 'Quotes and orders are not sales until they are invoiced.'
+              : 'Invoices, quotes, orders and returns for customers you bill. Counter sales are rung up on the POS.'}
         </p>
       </PageHeader>
 
@@ -2343,7 +2317,7 @@ export default function Page() {
           }
           title="Filter quotation list by status"
           aria-label="Quotation status filter"
-          style={{ marginBottom: 12 }}
+          style={{ marginBottom: 12, width: 'auto', minWidth: 220, maxWidth: '100%', alignSelf: 'flex-start' }}
         >
           <option value="all">All statuses</option>
           <option value="draft">Draft only</option>
@@ -2728,7 +2702,7 @@ export default function Page() {
           }
           title="Filter sales invoice list by status"
           aria-label="Sales invoice status filter"
-          style={{ marginBottom: 12 }}
+          style={{ marginBottom: 12, width: 'auto', minWidth: 220, maxWidth: '100%', alignSelf: 'flex-start' }}
         >
           <option value="all">All statuses</option>
           <option value="draft">Draft only</option>
@@ -3278,7 +3252,7 @@ export default function Page() {
           }
           title="Filter sales return list by status"
           aria-label="Sales return status filter"
-          style={{ marginBottom: 12 }}
+          style={{ marginBottom: 12, width: 'auto', minWidth: 220, maxWidth: '100%', alignSelf: 'flex-start' }}
         >
           <option value="all">All statuses</option>
           <option value="draft">Draft only</option>

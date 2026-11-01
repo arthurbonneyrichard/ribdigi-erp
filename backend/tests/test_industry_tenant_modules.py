@@ -387,7 +387,7 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "Draft only; supplies and supplier bills stay unchanged." in purchasing
     assert "Draft only; no stock/AP." in purchasing
     assert "['invoices', 'Bills']" in sales
-    assert "Coupons and gift cards are codes, not a card charge." in sales
+    assert "Counter sales are rung up on the POS." in sales
     assert "Guest profiles stay on Guests and CRM" in customers
     assert "Customers on restaurant bills" in customers
     assert "Your customers, used on quotes, orders and invoices." in customers

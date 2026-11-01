@@ -8,6 +8,8 @@ import PageHeader from '../../../components/PageHeader';
 import { api, apiOptional, apiFetch, isAbortError, getAccessToken, apiRoot, tenantHeaderValue } from '../../../lib/api';
 import { downloadAttachment, fetchAttachment, uploadAttachment } from '../../../lib/attachments';
 import { getMe } from '../../../lib/meCache';
+import { formatMoney } from '../../../lib/format';
+import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import { getPrefetched, peekPrefetch } from '../../../lib/prefetchCache';
 import { pageLoadStarted } from '../../../lib/navTiming';
 import { printDocumentHtml } from '../../../lib/documentPrint';
@@ -103,7 +105,7 @@ const VIEW_TITLE: Record<Tab, string> = {
   adjust: 'Stock Adjustment',
   stockout: 'Stock out',
   lowstock: 'Low Stock',
-  whstock: 'Manage Stock',
+  whstock: 'Stock levels',
   transfers: 'Stock transfer',
 };
 
@@ -362,6 +364,7 @@ const ADJUST_REASON_LABEL: Record<string, string> = {
 };
 
 export default function Page() {
+  const formatPrefs = useCompanyFormat();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>('products');
@@ -3356,70 +3359,52 @@ export default function Page() {
       {error && <p className="form-flash err" role="alert">{error}</p>}
       {message && <p className="form-flash ok">{message}</p>}
 
-      <div className="inv-ui-nav">
-        <div className="inv-ui-nav-group">
-          <p className="inv-ui-nav-label">{hotelOps ? 'Supplies' : restaurantOps ? 'Ingredients' : 'Products'}</p>
-          <div className="inv-ui-nav-row">
-            <button type="button" onClick={() => selectTab('products')} disabled={tab === 'products'} aria-label="Show inventory products tab">{hotelOps ? 'Supplies' : restaurantOps ? 'Ingredients' : 'Products'}</button>
-          </div>
-        </div>
-        <div className="inv-ui-nav-group">
-          <p className="inv-ui-nav-label">Catalog</p>
-          <div className="inv-ui-nav-row">
-            {(
-              [
-                ['categories', 'Categories'],
-                ['brands', 'Brands'],
-                ['units', 'Units'],
-                ['variants', 'Variants'],
-              ] as const
-            ).map(([id, label]) => (
-              <button key={id} type="button" onClick={() => selectTab(id)} disabled={tab === id} aria-label={`Show inventory ${id} tab`}>
-                {label}
+      {(() => {
+        // One row of tabs: the ones that belong with the screen you are on. The sidebar moves between areas.
+        type Row = [Tab, string, string, string];
+        const catalog: Row[] = [
+          ['categories', 'Categories', 'Categories', 'Categories'],
+          ['brands', 'Brands', 'Brands', 'Brands'],
+          ['units', 'Units', 'Units', 'Units'],
+          ['variants', 'Variants', 'Variants', 'Variants'],
+        ];
+        const stock: Row[] = [
+          ['whstock', 'Stock levels', 'Supplies on hand', 'Ingredients on hand'],
+          ['adjust', 'Adjust stock', 'Adjust supplies', 'Adjust ingredients'],
+          ['counts', 'Stock count', 'Supply count', 'Ingredient count'],
+          ['movements', 'Stock history', 'Supply history', 'Ingredient history'],
+          ['lowstock', 'Low stock', 'Low supplies', 'Low ingredients'],
+          ['expiry', 'Expiry', 'Expiry', 'Expiry'],
+          ['batches', 'Batches', 'Lots', 'Ingredient lots'],
+          ['stockout', 'Stock out', 'Supplies out', 'Ingredients out'],
+          ...(retailTransfers ? [['transfers', 'Stock transfer', 'Supply transfer', 'Ingredient transfer'] as Row] : []),
+        ];
+        const productTools: Row[] = [
+          ['products', hotelOps ? 'Supplies' : restaurantOps ? 'Ingredients' : 'Products', '', ''],
+          ['lookup', 'Lookup', 'Lookup', 'Lookup'],
+          ['labels', 'Barcode labels', 'Labels', 'Labels'],
+          ['import', 'Import', 'Import', 'Import'],
+          ['opening', 'Opening stock', 'Opening supplies', 'Opening ingredients'],
+        ];
+        const rows = catalog.some(([id]) => id === tab) ? catalog : stock.some(([id]) => id === tab) ? stock : productTools;
+        return (
+          <div className="inv-ui-tabs" role="tablist" aria-label="Inventory screens">
+            {rows.map(([id, retail, hotel, restaurant]) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={tab === id}
+                className={tab === id ? 'on' : ''}
+                onClick={() => selectTab(id)}
+                aria-label={`Show inventory ${id} tab`}
+              >
+                {id === 'products' ? retail : hotelOps ? hotel : restaurantOps ? restaurant : retail}
               </button>
             ))}
           </div>
-        </div>
-        <div className="inv-ui-nav-group">
-          <p className="inv-ui-nav-label">{hotelOps || restaurantOps ? 'On hand' : 'Stock'}</p>
-          <div className="inv-ui-nav-row">
-            {(
-              [
-                ['whstock', 'Warehouse stock', 'Supplies on hand', 'Ingredients on hand'],
-                ['adjust', 'Adjust stock', 'Adjust supplies', 'Adjust ingredients'],
-                ['counts', 'Stock count', 'Supply count', 'Ingredient count'],
-                ['movements', 'Stock history', 'Supply history', 'Ingredient history'],
-                ['lowstock', 'Low stock', 'Low supplies', 'Low ingredients'],
-                ['expiry', 'Expiry', 'Expiry', 'Expiry'],
-                ['batches', 'Batches', 'Lots', 'Ingredient lots'],
-              ] as const
-            ).map(([id, retail, hotel, restaurant]) => (
-              <button key={id} type="button" onClick={() => selectTab(id)} disabled={tab === id} aria-label={`Show inventory ${id} tab`}>
-                {hotelOps ? hotel : restaurantOps ? restaurant : retail}
-              </button>
-            ))}
-          </div>
-        </div>
-        <details className="inv-ui-more">
-          <summary>{hotelOps ? 'More supply tools' : restaurantOps ? 'More ingredient tools' : 'More inventory tools'}</summary>
-          <div className="inv-ui-nav-row">
-            {(
-              [
-                ['labels', 'Labels', 'Labels', 'Labels'],
-                ['lookup', 'Lookup', 'Lookup', 'Lookup'],
-                ['import', 'Import', 'Import', 'Import'],
-                ['opening', 'Opening stock', 'Opening supplies', 'Opening ingredients'],
-                ['stockout', 'Stock out', 'Supplies out', 'Ingredients out'],
-                ...(retailTransfers ? [['transfers', 'Stock transfer', 'Supply transfer', 'Ingredient transfer'] as [Tab, string, string, string]] : []),
-              ] as [Tab, string, string, string][]
-            ).map(([id, retail, hotel, restaurant]) => (
-              <button key={id} type="button" onClick={() => selectTab(id)} disabled={tab === id} aria-label={`Show inventory ${id} tab`}>
-                {hotelOps ? hotel : restaurantOps ? restaurant : retail}
-              </button>
-            ))}
-          </div>
-        </details>
-      </div>
+        );
+      })()}
 
       {tab !== 'products' &&
         tab !== 'labels' &&
@@ -3939,7 +3924,7 @@ export default function Page() {
                           {restaurantOps ? 'On hand' : 'Qty'}{productSort === 'qty' ? (productSortDir === 1 ? ' ↑' : ' ↓') : ''}
                         </button>
                       </th>
-                      {restaurantOps ? <th className="col-num">Reorder</th> : null}
+                      {restaurantOps ? <th className="col-num">Reorder at</th> : null}
                       <th className="col-actions">Actions</th>
                     </tr>
                   </thead>
@@ -4040,7 +4025,7 @@ export default function Page() {
                           ) : (
                           <td data-label="Brand" className="list-secondary">{p.brand || '—'}</td>
                           )}
-                          <td data-label={hotelOps ? 'Price' : 'Selling Price'} className="col-num">{p.selling_price ?? 0}</td>
+                          <td data-label={hotelOps ? 'Price' : 'Selling Price'} className="col-num">{formatMoney(Number(p.selling_price ?? 0), formatPrefs)}</td>
                           <td data-label={restaurantOps ? 'On hand' : 'Qty'} className={`col-num${st === 'out' || st === 'red' ? ' list-qty-low' : ''}`}>
                             <StockStatusBadge product={p} hotel={hotelOps} restaurant={restaurantOps} />
                           </td>
@@ -7021,7 +7006,7 @@ export default function Page() {
               ? 'Use this only to correct supplies on hand. Receive supplies from Supplies on hand. Count with Supply count.'
               : restaurantOps
                 ? 'Use this only to correct ingredients on hand. Receive ingredients from Ingredients on hand. Count with Ingredient count.'
-                : 'Use this only to correct on-hand quantity. Receive stock in Manage stock. Move stock with Stock transfer. Count with Stock count.'}
+                : 'Use this only to correct on-hand quantity. Receive stock in Stock levels. Move stock with Stock transfer. Count with Stock count.'}
           </p>
           <div className="list-toolbar">
             <input
@@ -7453,7 +7438,7 @@ export default function Page() {
       {tab === 'whstock' && (
         <div className="card cat-panel">
           <div className="cat-head">
-            <h2 style={{ margin: 0 }}>{hotelOps ? (whLowOnly ? 'Low supplies' : 'Supplies on hand') : restaurantOps ? (whLowOnly ? 'Low ingredients' : 'Ingredients on hand') : (whLowOnly ? 'Low stock' : 'Manage stock')}</h2>
+            <h2 style={{ margin: 0 }}>{hotelOps ? (whLowOnly ? 'Low supplies' : 'Supplies on hand') : restaurantOps ? (whLowOnly ? 'Low ingredients' : 'Ingredients on hand') : (whLowOnly ? 'Low stock' : 'Stock on hand')}</h2>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button
                 type="button"
@@ -7600,14 +7585,10 @@ export default function Page() {
                       {restaurantOps ? null : <td data-label="SKU" className="list-secondary">{r.sku || '—'}</td>}
                       <td data-label={restaurantOps ? 'On hand' : 'Qty'} className="col-num">{r.quantity}</td>
                       <td data-label="Reorder" className="col-num">
-                        {restaurantOps ? (
-                          <>
-                            <span>{r.low_stock_floor ?? r.reorder_level ?? 0}</span>
-                            <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>Order {r.reorder_qty ?? 0}</span>
-                          </>
-                        ) : (
-                          <>{r.low_stock_floor ?? r.reorder_level} / {r.reorder_qty}</>
-                        )}
+                        <span>{r.low_stock_floor ?? r.reorder_level ?? 0}</span>
+                        {Number(r.reorder_qty || 0) > 0 ? (
+                          <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>Order {r.reorder_qty}</span>
+                        ) : null}
                       </td>
                       <td data-label="Status" style={{ color: r.is_out_of_stock || warehouseRowIsLow(r) ? '#b91c1c' : undefined }}>
                         {stockStatusText(String(r.stock_status_label || r.stock_status || 'ok'), hotelOps, restaurantOps)}
