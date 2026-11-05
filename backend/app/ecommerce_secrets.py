@@ -5,18 +5,14 @@ Distinct from TOTP and subscription-billing ciphertext.
 
 from __future__ import annotations
 
-import base64
-import hashlib
-
-from cryptography.fernet import Fernet, InvalidToken
+from cryptography.fernet import InvalidToken, MultiFernet
 from fastapi import HTTPException
 
-from app.config import settings
+from app.secret_keys import secret_fernet
 
 
-def _fernet() -> Fernet:
-    material = hashlib.sha256(b"ribdigi-ecommerce-v1" + settings.JWT_SECRET_KEY.encode()).digest()
-    return Fernet(base64.urlsafe_b64encode(material))
+def _fernet() -> MultiFernet:
+    return secret_fernet(b"ribdigi-ecommerce-v1")
 
 
 def encrypt_ecommerce_secret(plain: str) -> str:

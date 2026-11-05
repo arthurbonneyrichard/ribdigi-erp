@@ -71,6 +71,8 @@ class Settings(BaseSettings):
     BACKUP_RETENTION_COUNT: int = 30
     BACKUP_ENCRYPTION_KEY: str = ""
     TOTP_ENCRYPTION_KEY: str = ""
+    # Own key for billing and online-shop gateway secrets. Empty keeps the JWT-derived key.
+    SECRETS_ENCRYPTION_KEY: str = ""
     # Keys the cashier passcode lookup. Empty derives it from JWT_SECRET_KEY, so rotating that
     # secret would mean reissuing every passcode. Set this once in production.
     POS_PASSCODE_PEPPER: str = ""

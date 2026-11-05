@@ -36,10 +36,13 @@ async def _align_hybrid_schema_on_startup() -> None:
 
 @asynccontextmanager
 async def _lifespan(_app: FastAPI):
-    if is_prod and not ((settings.BACKUP_ENCRYPTION_KEY or "").strip() and (settings.TOTP_ENCRYPTION_KEY or "").strip()):
+    if is_prod and not all(
+        (key or "").strip()
+        for key in (settings.BACKUP_ENCRYPTION_KEY, settings.TOTP_ENCRYPTION_KEY, settings.SECRETS_ENCRYPTION_KEY)
+    ):
         # Without them, stored secrets are encrypted with keys derived from JWT_SECRET_KEY.
         logging.getLogger("ribdigi.security").warning(
-            "BACKUP_ENCRYPTION_KEY and TOTP_ENCRYPTION_KEY should both be set in production"
+            "BACKUP_ENCRYPTION_KEY, TOTP_ENCRYPTION_KEY and SECRETS_ENCRYPTION_KEY should all be set in production"
         )
     await _align_hybrid_schema_on_startup()
     yield
