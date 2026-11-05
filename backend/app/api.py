@@ -210,6 +210,7 @@ from app.schemas import (
     HotelFolioChargeTransfer,
     HotelFolioChargeVoid,
     HotelFolioPaymentCreate,
+    HotelFolioPaymentRefund,
     HotelGuestCreate,
     HotelGuestMerge,
     HotelGuestUpdate,
@@ -392,6 +393,7 @@ from app import platform_reports as platform_reports_svc
 from app import user_accounts as user_accounts_svc
 from app import hotel as hotel_svc
 from app import hotel_pms as hotel_pms_svc
+from app import hotel_jobs as hotel_jobs_mod
 from app import fmcg as fmcg_svc
 from app import pharmacy as pharmacy_svc
 from app.rbac import (
@@ -17942,7 +17944,10 @@ async def hotel_summary(
     claims=Depends(require_permission("hotel", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return env(await hotel_svc.summary(db, tenant_id=claims["tenant_id"], on_date=on_date))
+    data = await hotel_svc.summary(db, tenant_id=claims["tenant_id"], on_date=on_date)
+    if claims.get("role") in hotel_jobs_mod.NO_MONEY_ROLES:
+        data = {k: v for k, v in data.items() if not any(w in k for w in ("revenue", "payment", "balance", "adr", "revpar"))}
+    return env(data)
 
 
 @api.get("/hotel/availability")
@@ -18720,6 +18725,7 @@ async def hotel_folio_void_charge(
         tenant_id=claims["tenant_id"],
         charge_id=charge_id,
         void_reason=payload.void_reason,
+        user_id=claims["sub"],
     )
     await audit_svc.record_event(
         db,
@@ -18810,6 +18816,45 @@ async def hotel_folio_add_payment(
             db, tenant_id=claims["tenant_id"], folio=folio, charges=charges, payments=payments
         ),
         "Payment information recorded",
+    )
+
+
+@api.post("/hotel/folios/{folio_id}/payments/{payment_id}/refund")
+async def hotel_folio_refund_payment(
+    folio_id: UuidIdValue,
+    payment_id: UuidIdValue,
+    payload: HotelFolioPaymentRefund,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_svc.refund_folio_payment(
+        db,
+        tenant_id=claims["tenant_id"],
+        folio_id=folio_id,
+        payment_id=payment_id,
+        amount=payload.amount,
+        reason=payload.reason,
+        recorded_by=claims["sub"],
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="folio_payment_refunded",
+        entity="hotel_folio_payment",
+        entity_id=row.id,
+        details={"folio_id": folio_id, "amount": float(row.amount or 0), "reason": payload.reason},
+    )
+    await db.commit()
+    folio, charges, payments = await hotel_svc.get_folio_detail(
+        db, tenant_id=claims["tenant_id"], folio_id=folio_id
+    )
+    return env(
+        await hotel_svc.present_folio(
+            db, tenant_id=claims["tenant_id"], folio=folio, charges=charges, payments=payments
+        ),
+        "Payment refunded",
     )
 
 
@@ -19084,8 +19129,7 @@ async def hotel_cashier_shift_get(
     claims=Depends(require_permission("hotel", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    row = await hotel_pms_svc.current_shift(db, tenant_id=claims["tenant_id"])
-    return env(hotel_pms_svc.serialize_shift(row) if row else None)
+    return env(await hotel_pms_svc.live_shift(db, tenant_id=claims["tenant_id"]))
 
 
 @api.post("/hotel/cashier/shift/open")

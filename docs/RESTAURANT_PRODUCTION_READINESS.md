@@ -4,6 +4,8 @@
 
 **Verdict: Ready to sell to restaurants once this work passes CI and is promoted to `production`. Verified by evidence, not certified.** The same two owner actions as retail remain before anyone may call it certified (external penetration test, production restore drill).
 
+**Re-checked 5 November 2026:** every restaurant page walked signed in with no crash, junk text or sideways scroll; books balance on the demo company; retail and hotel pages closed to a restaurant company; CI green on `0bda9f569a`. Verdict stands once `main` is promoted: the till, digital menu and passcodes are not on production yet.
+
 Restaurant front of house is its own desk, isolated from retail and hotel (`RESTAURANT_FRONT_OF_HOUSE_SPLIT.md`). The back office (ingredient stock, purchasing, accounting, tax, reports) is the shared engine, kept per company by `tenant_id`.
 
 | Gate | Status | Evidence |

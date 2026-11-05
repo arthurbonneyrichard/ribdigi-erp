@@ -367,7 +367,11 @@ async def optional_platform_ops_claims(
 
 
 def require_permission(module: str, action: str = "read"):
-    async def dep(claims: dict = Depends(current_claims)) -> dict:
+    async def dep(request: Request, claims: dict = Depends(current_claims)) -> dict:
+        if module == "hotel":
+            from app import hotel_jobs
+
+            hotel_jobs.enforce(claims.get("role"), request.method, request.url.path)
         if claims.get("read_only") and action != "read":
             raise HTTPException(
                 status_code=403,

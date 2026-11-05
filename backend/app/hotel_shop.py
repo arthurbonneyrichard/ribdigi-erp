@@ -254,7 +254,8 @@ async def refund_sale(db: AsyncSession, tenant_id: str, sale_id: str, *, user_id
         if folio is not None and folio.status != "open":
             raise HTTPException(status_code=409, detail="The guest has checked out; refund it from the guest's bill")
         await hotel_svc.void_folio_charge(
-            db, tenant_id=tenant_id, charge_id=sale.folio_charge_id, void_reason=f"Shop refund {sale.sale_number}"
+            db, tenant_id=tenant_id, charge_id=sale.folio_charge_id, void_reason=f"Shop refund {sale.sale_number}",
+            user_id=user_id,
         )
     await _move_stock(db, tenant_id, sale, user_id=user_id, sign=1)
     await _post_journal(db, tenant_id, sale, user_id=user_id, reverse=True)

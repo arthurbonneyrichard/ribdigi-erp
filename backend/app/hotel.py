@@ -14,6 +14,7 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import undefer
 
+from app import accounting
 from app import models as m
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
@@ -410,6 +411,7 @@ def serialize_payment(row: m.HotelFolioPayment) -> dict:
         "amount": money_json(row.amount or 0),
         "reference": row.reference,
         "notes": row.notes,
+        "refund_of_id": row.refund_of_id,
         "created_at": row.created_at.isoformat() if row.created_at else None,
     }
 
@@ -584,6 +586,18 @@ async def list_rooms(
     if housekeeping_status:
         stmt = stmt.where(m.HotelRoom.housekeeping_status == housekeeping_status.strip().lower())
     return list((await db.execute(stmt)).scalars().all())
+
+
+def _blended_nightly(room: m.HotelRoom, check_in: date | None, check_out: date | None) -> float:
+    """Each night at its own rate: Saturday and Sunday nights at the weekend rate, the rest at the room rate."""
+    base = money_json(room.rate_amount or 0)
+    weekend = getattr(room, "weekend_rate", None)
+    if weekend is None or not check_in or not check_out or check_out <= check_in:
+        return base
+    nights = (check_out - check_in).days
+    weekend_nights = sum(1 for i in range(nights) if (check_in + timedelta(days=i)).weekday() >= 5)
+    total = base * (nights - weekend_nights) + money_json(weekend) * weekend_nights
+    return money_json(round(total / nights, 2))
 
 
 async def create_room(
@@ -1211,17 +1225,7 @@ async def create_reservation(
     if nightly_rate is not None:
         rate = money_json(nightly_rate)
     else:
-        # Prefer weekend rate for stays that include Sat/Sun nights when configured.
-        rate = money_json(room.rate_amount or 0)
-        weekend = getattr(room, "weekend_rate", None)
-        if weekend is not None:
-            d = check_in
-            while d < check_out:
-                if d.weekday() >= 5:  # Sat/Sun
-                    rate = money_json(weekend)
-                    break
-                from datetime import timedelta as _td
-                d = d + _td(days=1)
+        rate = _blended_nightly(room, check_in, check_out)
     status_key = (status or "booked").strip().lower()
     if walk_in:
         status_key = "booked"
@@ -1504,7 +1508,11 @@ async def transfer_folio_charge(
         tax_amount=money_json(charge.tax_amount or 0),
         discount_amount=money_json(charge.discount_amount or 0),
         created_by=created_by,
+        post_books=False,
     )
+    # Same receivable, a different guest: the journal moves with the charge.
+    moved.journal_entry_id = charge.journal_entry_id
+    charge.journal_entry_id = None
     await void_folio_charge(
         db,
         tenant_id=tenant_id,
@@ -1569,6 +1577,7 @@ async def _get_or_create_folio(
         quantity=nights,
         unit_amount=money_json(reservation.nightly_rate or 0),
         created_by=created_by,
+        stay_tax=True,
     )
     deposit = money_json(getattr(reservation, "deposit_amount", 0) or 0)
     if deposit > 0:
@@ -1732,6 +1741,8 @@ async def add_folio_charge(
     tax_amount: float = 0,
     discount_amount: float = 0,
     created_by: str | None = None,
+    stay_tax: bool = False,
+    post_books: bool = True,
 ) -> m.HotelFolioCharge:
     folio = (
         await db.execute(
@@ -1751,7 +1762,10 @@ async def add_folio_charge(
     unit = money_json(unit_amount or 0)
     tax = money_json(tax_amount or 0)
     disc = money_json(discount_amount or 0)
-    gross = money_json(qty * unit + tax)
+    tax_inside = False
+    if stay_tax:
+        tax, tax_inside = await _stay_tax(db, tenant_id=tenant_id, amount=qty * unit)
+    gross = money_json(qty * unit + (0 if tax_inside else tax))
     if disc > gross:
         raise HTTPException(status_code=422, detail="Folio charge discount cannot be above the line")
     line_total = money_json(gross - disc)
@@ -1770,7 +1784,153 @@ async def add_folio_charge(
     db.add(row)
     folio.updated_at = datetime.utcnow()
     await db.flush()
+    if post_books:
+        await _post_charge_journal(db, tenant_id=tenant_id, charge=row, folio=folio, user_id=created_by)
     return row
+
+
+async def _stay_tax(db: AsyncSession, *, tenant_id: str, amount: float) -> tuple[float, bool]:
+    """Tax on a stay charge from Hotel settings, and whether it already sits inside the price."""
+    settings = (
+        await db.execute(select(m.HotelSettings).where(m.HotelSettings.tenant_id == tenant_id))
+    ).scalar_one_or_none()
+    percent = money_json(getattr(settings, "tax_percent", 0) or 0)
+    if percent <= 0:
+        return 0.0, False
+    included = bool(getattr(settings, "room_rates_include_tax", True))
+    if included:
+        return money_json(round(amount * percent / (100 + percent), 2)), True
+    return money_json(round(amount * percent / 100, 2)), False
+
+
+async def _post_books(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str | None,
+    description: str,
+    lines: list[dict],
+    reference: str | None,
+    source_type: str,
+    source_id: str,
+) -> str:
+    await accounting.ensure_default_accounts(db, tenant_id)
+    entry = await accounting.post_journal_entry(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        description=description,
+        lines=lines,
+        reference=reference,
+        source_type=source_type,
+        source_id=source_id,
+    )
+    return entry.id
+
+
+def _charge_lines(charge: m.HotelFolioCharge, description: str, *, reverse: bool = False) -> list[dict]:
+    total = money_json(charge.line_total or 0)
+    tax = min(money_json(charge.tax_amount or 0), total)
+    net = money_json(round(total - tax, 2))
+    lines = [{"account_code": "1100", "debit": total, "credit": 0, "description": description}]
+    if net > 0:
+        lines.append({"account_code": "4000", "debit": 0, "credit": net, "description": description})
+    if tax > 0:
+        lines.append({"account_code": "2100", "debit": 0, "credit": tax, "description": description})
+    if reverse:
+        lines = [{**x, "debit": x["credit"], "credit": x["debit"]} for x in lines]
+    return lines
+
+
+async def _post_charge_journal(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    charge: m.HotelFolioCharge,
+    folio: m.HotelFolio,
+    user_id: str | None,
+) -> None:
+    """A folio charge is money the guest owes: receivables up, revenue and tax recognised."""
+    if money_json(charge.line_total or 0) <= 0 or charge.journal_entry_id:
+        return
+    description = f"Hotel folio {folio.folio_number}: {charge.description}"[:255]
+    charge.journal_entry_id = await _post_books(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        description=description,
+        lines=_charge_lines(charge, description),
+        reference=folio.folio_number,
+        source_type="hotel_folio_charge",
+        source_id=charge.id,
+    )
+
+
+def _payment_account(method: str | None) -> str:
+    settlement = {"momo": "mobile_money", "card": "card", "bank": "bank_transfer"}.get(method or "", "cash")
+    return accounting.liquid_gl_for_payment_method(settlement)[0]
+
+
+async def _post_payment_journal(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    payment: m.HotelFolioPayment,
+    folio: m.HotelFolio,
+    user_id: str | None,
+) -> None:
+    """Money in clears the receivable. On-account ("credit") moves no money, so it stays owed."""
+    amount = money_json(payment.amount or 0)
+    if payment.method == "credit" or amount == 0 or payment.journal_entry_id:
+        return
+    word = "refund" if amount < 0 else "payment"
+    description = f"Hotel folio {folio.folio_number} {word} ({payment.method})"
+    size = abs(amount)
+    money_line = {"account_code": _payment_account(payment.method), "description": description}
+    receivable = {"account_code": "1100", "description": description}
+    if amount > 0:
+        lines = [{**money_line, "debit": size, "credit": 0}, {**receivable, "debit": 0, "credit": size}]
+    else:
+        lines = [{**receivable, "debit": size, "credit": 0}, {**money_line, "debit": 0, "credit": size}]
+    payment.journal_entry_id = await _post_books(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        description=description,
+        lines=lines,
+        reference=folio.folio_number,
+        source_type="hotel_folio_payment",
+        source_id=payment.id,
+    )
+
+
+async def _sync_folio_books(
+    db: AsyncSession, *, tenant_id: str, folio: m.HotelFolio, user_id: str | None
+) -> None:
+    """Book anything on an open folio from before charges reached the ledger. Safe to repeat."""
+    charges = (
+        await db.execute(
+            select(m.HotelFolioCharge).where(
+                m.HotelFolioCharge.tenant_id == tenant_id,
+                m.HotelFolioCharge.folio_id == folio.id,
+                m.HotelFolioCharge.is_void.is_(False),
+                m.HotelFolioCharge.journal_entry_id.is_(None),
+            )
+        )
+    ).scalars().all()
+    for charge in charges:
+        await _post_charge_journal(db, tenant_id=tenant_id, charge=charge, folio=folio, user_id=user_id)
+    payments = (
+        await db.execute(
+            select(m.HotelFolioPayment).where(
+                m.HotelFolioPayment.tenant_id == tenant_id,
+                m.HotelFolioPayment.folio_id == folio.id,
+                m.HotelFolioPayment.journal_entry_id.is_(None),
+            )
+        )
+    ).scalars().all()
+    for payment in payments:
+        await _post_payment_journal(db, tenant_id=tenant_id, payment=payment, folio=folio, user_id=user_id)
 
 
 _TIMING_FEE_LABELS = {
@@ -1842,6 +2002,7 @@ async def post_timing_fee(
         quantity=1,
         unit_amount=amount,
         created_by=created_by,
+        stay_tax=True,
     )
 
 
@@ -1966,6 +2127,7 @@ async def post_no_show_fee(
         quantity=1,
         unit_amount=amount,
         created_by=created_by,
+        stay_tax=True,
     )
     return folio
 
@@ -1976,6 +2138,7 @@ async def void_folio_charge(
     tenant_id: str,
     charge_id: str,
     void_reason: str,
+    user_id: str | None = None,
 ) -> m.HotelFolioCharge:
     row = (
         await db.execute(
@@ -1989,8 +2152,23 @@ async def void_folio_charge(
         raise HTTPException(status_code=404, detail="Charge not found")
     if row.is_void:
         raise HTTPException(status_code=400, detail="Charge already voided")
+    folio = await db.get(m.HotelFolio, row.folio_id)
+    if folio is not None and folio.status != "open":
+        raise HTTPException(status_code=400, detail="Folio is closed")
     row.is_void = True
     row.void_reason = require_honest_narrative(void_reason, label="void reason", max_length=255)
+    if row.journal_entry_id:
+        description = f"Void on folio {folio.folio_number if folio else row.folio_id}: {row.description}"[:255]
+        await _post_books(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            description=description,
+            lines=_charge_lines(row, description, reverse=True),
+            reference=folio.folio_number if folio else None,
+            source_type="hotel_folio_charge_void",
+            source_id=row.id,
+        )
     await db.flush()
     return row
 
@@ -2036,6 +2214,70 @@ async def record_folio_payment(
     )
     db.add(row)
     folio.updated_at = datetime.utcnow()
+    await db.flush()
+    await _sync_folio_books(db, tenant_id=tenant_id, folio=folio, user_id=recorded_by)
+    await db.flush()
+    return row
+
+
+async def refund_folio_payment(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    folio_id: str,
+    payment_id: str,
+    amount: float | None,
+    reason: str,
+    recorded_by: str | None = None,
+) -> m.HotelFolioPayment:
+    """Give money back, or correct a mistyped payment. The original row stays on the folio."""
+    folio = (
+        await db.execute(
+            select(m.HotelFolio).where(m.HotelFolio.id == folio_id, m.HotelFolio.tenant_id == tenant_id)
+        )
+    ).scalar_one_or_none()
+    if not folio:
+        raise HTTPException(status_code=404, detail="Folio not found")
+    if folio.status != "open":
+        raise HTTPException(status_code=400, detail="Folio is closed")
+    original = (
+        await db.execute(
+            select(m.HotelFolioPayment).where(
+                m.HotelFolioPayment.id == payment_id,
+                m.HotelFolioPayment.tenant_id == tenant_id,
+                m.HotelFolioPayment.folio_id == folio_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not original or money_json(original.amount or 0) <= 0:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    done = (
+        await db.execute(
+            select(func.coalesce(func.sum(m.HotelFolioPayment.amount), 0)).where(
+                m.HotelFolioPayment.tenant_id == tenant_id,
+                m.HotelFolioPayment.refund_of_id == original.id,
+            )
+        )
+    ).scalar_one()
+    left = money_json(round(float(original.amount) + float(done), 2))
+    size = money_json(amount) if amount is not None else left
+    if left <= 0:
+        raise HTTPException(status_code=409, detail="This payment has already been refunded")
+    if size > left + 0.004:
+        raise HTTPException(status_code=422, detail=f"That is more than the {left:.2f} left on this payment")
+    row = m.HotelFolioPayment(
+        tenant_id=tenant_id,
+        folio_id=folio_id,
+        method=original.method,
+        amount=money_json(-size),
+        notes=require_honest_narrative(reason, label="refund reason", max_length=255),
+        refund_of_id=original.id,
+        recorded_by=recorded_by,
+    )
+    db.add(row)
+    folio.updated_at = datetime.utcnow()
+    await db.flush()
+    await _sync_folio_books(db, tenant_id=tenant_id, folio=folio, user_id=recorded_by)
     await db.flush()
     return row
 
@@ -2246,7 +2488,9 @@ async def create_invoice_from_folio(
             )
         )
     ).scalars().all()
-    paid = money_json(sum(money_json(p.amount or 0) for p in payments))
+    # On-account ("credit") is a promise, not money, so it stays owed on the invoice.
+    paid = max(0.0, money_json(sum(money_json(p.amount or 0) for p in payments if p.method != "credit")))
+    tax_total = money_json(round(sum(money_json(c.tax_amount or 0) for c in charges), 2))
     inv_number = await next_sales_invoice_number(db, tenant_id)
     status = "paid" if paid + 1e-9 >= total else ("partial" if paid > 0 else "posted")
     invoice = m.SalesInvoice(
@@ -2254,8 +2498,8 @@ async def create_invoice_from_folio(
         invoice_number=inv_number,
         customer_id=party.id,
         status=status,
-        subtotal=total,
-        tax_amount=money_json(0),
+        subtotal=money_json(round(total - tax_total, 2)),
+        tax_amount=tax_total,
         discount_amount=money_json(0),
         total_amount=total,
         paid_amount=money_json(min(paid, total)),
@@ -2269,18 +2513,23 @@ async def create_invoice_from_folio(
     db.add(invoice)
     await db.flush()
     for charge in charges:
+        quantity = money_json(charge.quantity or 1)
+        line_total = money_json(charge.line_total or 0)
+        tax = money_json(charge.tax_amount or 0)
+        net = money_json(round(line_total - tax, 2))
         db.add(
             m.SalesInvoiceItem(
                 tenant_id=tenant_id,
                 sales_invoice_id=invoice.id,
                 product_id=product.id,
-                quantity=money_json(charge.quantity or 1),
-                unit_price=money_json(charge.unit_amount or 0),
-                tax_rate=0,
-                discount=money_json(charge.discount_amount or 0),
-                line_total=money_json(charge.line_total or 0),
+                quantity=quantity,
+                unit_price=money_json(round(net / quantity, 2)) if tax > 0 else money_json(charge.unit_amount or 0),
+                tax_rate=money_json(round(tax / net * 100, 4)) if tax > 0 and net > 0 else 0,
+                discount=0 if tax > 0 else money_json(charge.discount_amount or 0),
+                line_total=line_total,
             )
         )
+    party.balance = money_json(party.balance or 0) + max(0.0, money_json(round(total - paid, 2)))
     folio.sales_invoice_id = invoice.id
     await db.flush()
     return invoice
@@ -2306,6 +2555,12 @@ async def check_out(
                 status_code=400,
                 detail=f"Folio balance outstanding ({money_json(bal)}). Record payment or allow_balance.",
             )
+        if bal < -0.009:
+            raise HTTPException(
+                status_code=400,
+                detail=f"The guest has {money_json(-bal):.2f} in credit. Refund it before checking out.",
+            )
+        await _sync_folio_books(db, tenant_id=tenant_id, folio=folio, user_id=user_id)
         await create_invoice_from_folio(
             db,
             tenant_id=tenant_id,
@@ -2411,6 +2666,7 @@ async def extend_stay(
                 quantity=extra_nights,
                 unit_amount=money_json(row.nightly_rate or 0),
                 created_by=created_by,
+                stay_tax=True,
             )
     await db.flush()
     return row, room, guest
@@ -3021,6 +3277,7 @@ def serialize_settings(row: m.HotelSettings) -> dict:
         "early_checkin_fee": money_json(row.early_checkin_fee or 0),
         "late_checkout_fee": money_json(row.late_checkout_fee or 0),
         "tax_percent": money_json(row.tax_percent or 0),
+        "room_rates_include_tax": bool(getattr(row, "room_rates_include_tax", True)),
         "service_charge_percent": money_json(row.service_charge_percent or 0),
         "food_outlet_mode": food_outlet_mode,
         "notes": notes,
@@ -3039,6 +3296,7 @@ def default_settings_payload() -> dict:
         "early_checkin_fee": 0,
         "late_checkout_fee": 0,
         "tax_percent": 0,
+        "room_rates_include_tax": True,
         "service_charge_percent": 0,
         "food_outlet_mode": "together",
         "notes": None,
@@ -3083,6 +3341,7 @@ async def update_settings(
     early_checkin_fee: float | None = None,
     late_checkout_fee: float | None = None,
     tax_percent: float | None = None,
+    room_rates_include_tax: bool | None = None,
     service_charge_percent: float | None = None,
     notes: str | None = None,
     property_name: str | None = None,
@@ -3103,6 +3362,8 @@ async def update_settings(
         row.late_checkout_fee = money_json(late_checkout_fee)
     if tax_percent is not None:
         row.tax_percent = money_json(tax_percent)
+    if room_rates_include_tax is not None:
+        row.room_rates_include_tax = bool(room_rates_include_tax)
     if service_charge_percent is not None:
         row.service_charge_percent = money_json(service_charge_percent)
     if notes is not None or food_outlet_mode is not None:
@@ -3779,15 +4040,7 @@ async def _hotel_booking_page_by_tenant(db: AsyncSession, tenant_id: str) -> dic
 
 
 def _preview_nightly(room: m.HotelRoom, check_in: date, check_out: date, adults: int, children: int) -> float:
-    rate = money_json(room.rate_amount or 0)
-    weekend = getattr(room, "weekend_rate", None)
-    if weekend is not None:
-        night = check_in
-        while night < check_out:
-            if night.weekday() >= 5:
-                rate = money_json(weekend)
-                break
-            night = night + timedelta(days=1)
+    rate = _blended_nightly(room, check_in, check_out)
     occ = max(1, int(adults or 1)) + max(0, int(children or 0))
     included = 1 if int(room.max_occupancy or 1) <= 1 else 2
     extra_people = max(0, occ - included)

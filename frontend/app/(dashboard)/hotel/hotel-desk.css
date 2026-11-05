@@ -1,0 +1,72 @@
+/* Hotel desk: room board, front-desk tiles, the guest bill. Brand greens; amber marks work
+   waiting, red marks a room that cannot be sold. Selectors stay under .main so other desks are untouched. */
+
+.main .hdesk-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.main button.hdesk-tile:not(.menu-btn){
+  display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:84px;padding:14px 16px;margin:0;
+  border:1px solid var(--line);border-radius:14px;background:var(--white);color:var(--ink);
+  box-shadow:none;text-align:left;font-weight:700;cursor:pointer
+}
+.main .hdesk-tile b{font-size:28px;line-height:1.1;font-weight:800;letter-spacing:-.5px}
+.main .hdesk-tile span{font-size:13px;font-weight:700;color:var(--muted)}
+.main button.hdesk-tile:not(.menu-btn):hover{border-color:var(--brand)}
+.main button.hdesk-tile[aria-pressed="true"]:not(.menu-btn){background:var(--forest);border-color:var(--forest);color:#fff}
+.main .hdesk-tile[aria-pressed="true"] span{color:#CFE3C8}
+
+.main .hboard{display:flex;flex-direction:column;gap:14px}
+.main .hboard-key{display:flex;flex-wrap:wrap;gap:8px 16px}
+.main .hboard-key-item{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}
+.main .hboard-key-item b{color:var(--ink)}
+.main .hboard-key-item i{width:12px;height:12px;border-radius:4px;border:1px solid var(--line);background:var(--hb,var(--white))}
+.main .hboard-floor h3{margin:0 0 8px;font-size:14px;font-weight:800;color:var(--muted)}
+.main .hboard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:10px}
+.main button.hboard-room:not(.menu-btn){
+  display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:84px;padding:10px 12px;margin:0;
+  border:1px solid var(--line);border-left:5px solid var(--hb,var(--line));border-radius:12px;
+  background:var(--white);color:var(--ink);box-shadow:none;text-align:left;cursor:pointer;min-width:0;width:100%
+}
+.main button.hboard-room:not(.menu-btn):hover{border-color:var(--hb,var(--brand));background:var(--mist)}
+.main .hboard-room strong{font-size:18px;font-weight:800;letter-spacing:-.3px}
+.main .hboard-who{max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:13px;font-weight:600;color:var(--muted)}
+.main .hboard-owes{font-size:12px;font-weight:700;color:#8A5A00}
+.main .is-occupied{--hb:var(--forest)}
+.main .is-leaving{--hb:var(--deep-green)}
+.main .is-arriving{--hb:var(--brand)}
+.main .is-ready{--hb:#BFD9AE}
+.main .is-dirty{--hb:#E39B2D}
+.main .is-closed{--hb:#C2452D}
+
+.main .hdesk-add-note{margin:0 0 12px}
+.main .hdesk-form{padding:14px;margin-bottom:14px;border:1px solid var(--line);border-radius:12px;background:var(--mist)}
+
+.main .hbill-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:12px 0}
+.main .hbill-tile{padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--white)}
+.main .hbill-tile span{display:block;font-size:13px;font-weight:700;color:var(--muted)}
+.main .hbill-tile b{display:block;margin-top:2px;font-size:20px;font-weight:800;letter-spacing:-.3px;color:var(--ink)}
+.main .hbill-tile.is-due{background:var(--forest);border-color:var(--forest)}
+.main .hbill-tile.is-due span{color:#CFE3C8}
+.main .hbill-tile.is-due b{color:#fff}
+.main .hbill-tile.is-credit{background:#FFF4E0;border-color:#E39B2D}
+.main .hbill-tile.is-credit b{color:#6B4300}
+.main .hbill-pay{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+.main .hbill-pays{list-style:none;margin:8px 0 0;padding:0}
+.main .hdesk-links{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:12px}
+.main .hdesk-links a{display:block;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--white);color:var(--ink);font-weight:700;text-decoration:none}
+.main .hdesk-links a:hover{border-color:var(--brand);background:var(--mist)}
+
+[data-theme="dark"] .main button.hdesk-tile:not(.menu-btn),[data-theme="dark"] .main button.hboard-room:not(.menu-btn),[data-theme="dark"] .main .hbill-tile,[data-theme="dark"] .main .hdesk-links a{background:#16241C;border-color:#2A3D31;color:#E8F2E4}
+[data-theme="dark"] .main .hbill-tile b{color:#E8F2E4}
+[data-theme="dark"] .main .hdesk-form{background:#0F1A14;border-color:#2A3D31}
+[data-theme="dark"] .main .hboard-owes{color:#F6D9A0}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .main button.hdesk-tile:not(.menu-btn),:root:not([data-theme="light"]) .main button.hboard-room:not(.menu-btn),:root:not([data-theme="light"]) .main .hbill-tile,:root:not([data-theme="light"]) .main .hdesk-links a{background:#16241C;border-color:#2A3D31;color:#E8F2E4}
+  :root:not([data-theme="light"]) .main .hbill-tile b{color:#E8F2E4}
+  :root:not([data-theme="light"]) .main .hdesk-form{background:#0F1A14;border-color:#2A3D31}
+  :root:not([data-theme="light"]) .main .hboard-owes{color:#F6D9A0}
+}
+@media (max-width:640px){
+  .main .hboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .main .hdesk-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+.main .hdesk-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.main .hboard-owes{white-space:nowrap}

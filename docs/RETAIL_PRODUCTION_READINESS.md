@@ -4,6 +4,8 @@
 
 **Verdict: Ready to sell to retailers. Verified by evidence, not certified.** Two owner actions remain before anyone may call it certified (external penetration test, production restore drill).
 
+**Re-checked 5 November 2026:** every retail page walked signed in with no crash, junk text or sideways scroll; books balance on the demo company (debits equal credits, balance sheet balanced); hotel and restaurant pages closed to a retail company; CI green on `0bda9f569a`, including a brand-new company taken to balanced books. Verdict stands. Production still runs the 30 October release until `main` is promoted.
+
 Feature audit Status rows: **64 / 64 complete** (API/source proof).
 
 | Gate | Status | Evidence |

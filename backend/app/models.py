@@ -1971,6 +1971,7 @@ class HotelSettings(Base):
     early_checkin_fee: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     late_checkout_fee: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
+    room_rates_include_tax: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     service_charge_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -2069,6 +2070,7 @@ class HotelFolioCharge(Base):
     line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     is_void: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     void_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -2085,6 +2087,8 @@ class HotelFolioPayment(Base):
     amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     reference: Mapped[str | None] = mapped_column(String(120), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    refund_of_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     recorded_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -2226,6 +2230,7 @@ class HotelCashierShift(Base):
     closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     closing_float: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     payments_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    cash_total: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="open", index=True)
 

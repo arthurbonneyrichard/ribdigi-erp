@@ -9738,6 +9738,13 @@ class HotelFolioPaymentCreate(BaseModel):
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
 
 
+class HotelFolioPaymentRefund(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    amount: PositiveMoneyValue | None = None
+    reason: Annotated[str, Field(min_length=3, max_length=255)]
+
+
 class HotelHousekeepingCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -9894,6 +9901,7 @@ class HotelSettingsUpdate(BaseModel):
     early_checkin_fee: NonNegativeMoneyValue | None = None
     late_checkout_fee: NonNegativeMoneyValue | None = None
     tax_percent: NonNegativeMoneyValue | None = None
+    room_rates_include_tax: bool | None = None
     service_charge_percent: PercentRateValue | None = None
     notes: Annotated[str, Field(min_length=1, max_length=1000)] | None = None
     property_name: Annotated[str, Field(min_length=1, max_length=150)] | None = None

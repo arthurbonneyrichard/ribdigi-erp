@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import DashboardGreeting from '../../../components/DashboardGreeting';
 import PageHeader from '../../../components/PageHeader';
+import { navItemVisibleForRole, roleHomePath } from '../../../lib/tenantNav';
+import HotelRoomBoard from '../../../components/HotelRoomBoard';
+import './hotel-desk.css';
 import EmptyState from '../../../components/EmptyState';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
@@ -95,8 +98,8 @@ type Folio = {
   checked_out_at?: string | null;
   charges_total: number;
   payments_total: number;
-  charges: { id: string; description: string; charge_type?: string | null; quantity?: number; unit_amount?: number; discount_amount?: number; line_total: number; is_void: boolean }[];
-  payments: { id: string; method: string; amount: number; reference?: string | null; notes?: string | null }[];
+  charges: { id: string; description: string; charge_type?: string | null; quantity?: number; unit_amount?: number; tax_amount?: number; discount_amount?: number; line_total: number; is_void: boolean }[];
+  payments: { id: string; method: string; amount: number; reference?: string | null; notes?: string | null; refund_of_id?: string | null }[];
 };
 
 type HkTask = {
@@ -547,6 +550,9 @@ export default function HotelPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [guests, setGuests] = useState<Guest[]>([]);
   const [listsReady, setListsReady] = useState(false);
+  const [loadedTab, setLoadedTab] = useState('');
+  const [addOpen, setAddOpen] = useState(false);
+  const [boardStays, setBoardStays] = useState<Reservation[]>([]);
   const [sectionHash, setSectionHash] = useState('');
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [hkTasks, setHkTasks] = useState<HkTask[]>([]);
@@ -736,6 +742,7 @@ export default function HotelPage() {
     check_out_time: '11:00',
     cancellation_hours: '24',
     tax_percent: '0',
+    room_rates_include_tax: true,
     early_checkin_fee: '0',
     late_checkout_fee: '0',
     no_show_fee_percent: '0',
@@ -772,6 +779,33 @@ export default function HotelPage() {
     const seq = ++refreshSeq.current;
     const filter = tab === 'front-desk' ? deskKind : listKind;
     const qs = filter ? `?list_kind=${filter}` : '';
+    const extraPaths: string[] = [];
+    if (tab === 'dashboard' || tab === 'front-desk') extraPaths.push('/hotel/guest-requests');
+    if (tab === 'rooms' || tab === 'reservations') extraPaths.push('/hotel/rate-plans');
+    if (tab === 'reservations') extraPaths.push('/hotel/booking-link');
+    if (tab === 'housekeeping' || tab === 'dashboard') extraPaths.push('/hotel/housekeeping');
+    if (tab === 'maintenance') extraPaths.push('/hotel/maintenance');
+    if (tab === 'services' || tab === 'restaurant' || tab === 'bar') extraPaths.push('/hotel/services');
+    if (tab === 'restaurant' || tab === 'bar') extraPaths.push('/hotel/folios');
+    if (tab === 'billing' || tab === 'reservations' || tab === 'front-desk') extraPaths.push('/hotel/folios');
+    if (tab === 'reports') extraPaths.push(`/hotel/reports?start_date=${reportStart}&end_date=${reportEnd}`);
+    if (tab === 'front-desk' || tab === 'housekeeping') extraPaths.push('/hotel/lost-found');
+    if (tab === 'cashier') {
+      extraPaths.push('/hotel/cashier/shift', '/hotel/cashier/shifts', '/hotel/night-audits');
+    }
+    if (tab === 'events') extraPaths.push('/hotel/events');
+    if (tab === 'front-desk' || tab === 'rooms') extraPaths.push('/hotel/reservations');
+    const extraFailed: string[] = [];
+    const extraLoad = Promise.all(
+      extraPaths.map(async (path) => ({
+        path,
+        data: await soft<any>(
+          path,
+          path.includes('/reports') || path.includes('/shift') || path === '/hotel/booking-link' ? null : [],
+          extraFailed
+        ),
+      }))
+    );
     const [sRes, rRes, gRes, resvRes, setRes] = await Promise.allSettled([
       api(`/hotel/summary?on_date=${dashDate}`),
       api('/hotel/rooms?is_active=true'),
@@ -793,6 +827,7 @@ export default function HotelPage() {
           check_out_time: setData.check_out_time || '11:00',
           cancellation_hours: String(setData.cancellation_hours ?? 24),
           tax_percent: String(setData.tax_percent ?? 0),
+          room_rates_include_tax: setData.room_rates_include_tax !== false,
           early_checkin_fee: String(setData.early_checkin_fee ?? 0),
           late_checkout_fee: String(setData.late_checkout_fee ?? 0),
           no_show_fee_percent: String(setData.no_show_fee_percent ?? 0),
@@ -811,40 +846,15 @@ export default function HotelPage() {
     } else {
       setError('');
     }
-    const extraFailed: string[] = [];
     if (guestFail) extraFailed.push('/hotel/guests');
     if (sRes.status === 'rejected') extraFailed.push('/hotel/summary');
     if (setRes.status === 'rejected') extraFailed.push('/hotel/settings');
 
-    const extraPaths: string[] = [];
-    if (tab === 'dashboard' || tab === 'front-desk') extraPaths.push('/hotel/guest-requests');
-    if (tab === 'rooms' || tab === 'reservations') extraPaths.push('/hotel/rate-plans');
-    if (tab === 'reservations') extraPaths.push('/hotel/booking-link');
-    if (tab === 'housekeeping' || tab === 'dashboard') extraPaths.push('/hotel/housekeeping');
-    if (tab === 'maintenance') extraPaths.push('/hotel/maintenance');
-    if (tab === 'services' || tab === 'restaurant' || tab === 'bar') extraPaths.push('/hotel/services');
-    if (tab === 'restaurant' || tab === 'bar') extraPaths.push('/hotel/folios');
-    if (tab === 'billing' || tab === 'reservations' || tab === 'front-desk') extraPaths.push('/hotel/folios');
-    if (tab === 'reports') extraPaths.push(`/hotel/reports?start_date=${reportStart}&end_date=${reportEnd}`);
-    if (tab === 'front-desk' || tab === 'housekeeping') extraPaths.push('/hotel/lost-found');
-    if (tab === 'cashier') {
-      extraPaths.push('/hotel/cashier/shift', '/hotel/cashier/shifts', '/hotel/night-audits');
-    }
-    if (tab === 'events') extraPaths.push('/hotel/events');
-
-    const extraResults = await Promise.all(
-      extraPaths.map(async (path) => ({
-        path,
-        data: await soft<any>(
-          path,
-          path.includes('/reports') || path.includes('/shift') || path === '/hotel/booking-link' ? null : [],
-          extraFailed
-        ),
-      }))
-    );
+    const extraResults = await extraLoad;
     if (seq !== refreshSeq.current) return;
     for (const row of extraResults) {
       if (row.path === '/hotel/housekeeping') setHkTasks(row.data || []);
+      else if (row.path === '/hotel/reservations') setBoardStays(row.data || []);
       else if (row.path === '/hotel/maintenance') setMaint(row.data || []);
       else if (row.path.startsWith('/hotel/reports')) setReport(row.data);
       else if (row.path === '/hotel/services') setServices(row.data || []);
@@ -869,6 +879,7 @@ export default function HotelPage() {
     );
     setCalTick((n) => n + 1);
     setListsReady(true);
+    setLoadedTab(tab);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('ribdigi-onboarding-refresh'));
     }
@@ -907,6 +918,11 @@ export default function HotelPage() {
         if (!active) return;
         setModuleAllowed(ok);
         setStaffId(typeof me.data?.id === 'string' ? me.data.id : '');
+        const myRole = String(me.data?.role || '');
+        if (ok && !navItemVisibleForRole(myRole, rawTab ? `/hotel?tab=${rawTab}` : '/hotel', true)) {
+          router.replace(roleHomePath(myRole, 'hotel'));
+          return;
+        }
         const perms = (me.data?.permissions || {}) as Record<string, string[]>;
         const companyActions = perms.company || [];
         setCanReadCompany(
@@ -962,6 +978,10 @@ export default function HotelPage() {
       live = false;
     };
   }, [moduleAllowed, tab, dashDate, resGridStart, resGridSpan, calTick]);
+
+  useEffect(() => {
+    setAddOpen(false);
+  }, [tab]);
 
   useEffect(() => {
     setFolioNote(folio?.notes || '');
@@ -1275,7 +1295,7 @@ export default function HotelPage() {
     const html = hotelSlipHtml(
       `Folio ${folio.folio_number}`,
       `${stayLines.map((line) => `<p>${escapeSlip(line)}</p>`).join('')}` +
-        `<p>Charges ${escapeSlip(money(folio.charges_total))} · Payments ${escapeSlip(money(folio.payments_total))} · Balance <strong>${escapeSlip(money(folio.balance))}</strong></p>` +
+        `<p>Charges ${escapeSlip(money(folio.charges_total))} (includes tax ${escapeSlip(money(folio.charges.filter((c) => !c.is_void).reduce((sum, c) => sum + Number(c.tax_amount || 0), 0)))}) · Payments ${escapeSlip(money(folio.payments_total))} · Balance <strong>${escapeSlip(money(folio.balance))}</strong></p>` +
         `<h2>Charges</h2><table><thead><tr><th>Description</th><th>Amount</th></tr></thead><tbody>${chargeRows || '<tr><td colspan="2">No charges</td></tr>'}</tbody></table>` +
         `<h2>Payments</h2><table><thead><tr><th>Method</th><th>Amount</th></tr></thead><tbody>${payRows || '<tr><td colspan="2">No payments</td></tr>'}</tbody></table>`,
     );
@@ -1477,6 +1497,44 @@ export default function HotelPage() {
 
   const foodTogether = (settingsForm.food_outlet_mode || 'together') !== 'separate';
   const foodKind = tab === 'bar' ? 'bar' : 'restaurant';
+  const tabReady = loadedTab === tab;
+  const emptyOr = (text: string) => (tabReady ? text : 'Loading…');
+  const addLabel = ({
+    rooms: 'Add room',
+    guests: 'Add guest',
+    housekeeping: 'Add task',
+    maintenance: 'Report a fault',
+    services: 'Add service',
+    events: 'Book an event',
+  } as Record<string, string>)[tab];
+  const addCounts: Record<string, number> = {
+    rooms: rooms.length,
+    guests: guests.length,
+    housekeeping: hkTasks.length,
+    maintenance: maint.length,
+    services: services.length,
+    events: events.length,
+  };
+  /** Lists come first. A form opens from the header, or by itself while the list is empty. */
+  const addShown = (section: string) => addOpen || (tabReady && !addCounts[section]);
+  const deskToday = dashDate;
+  const deskArrivals = boardStays.filter((r) => r.status === 'booked' && r.check_in_date === deskToday).length;
+  const deskLeaving = boardStays.filter((r) => r.status === 'checked_in' && r.check_out_date === deskToday).length;
+  const deskInHouse = boardStays.filter((r) => r.status === 'checked_in').length;
+  const deskTiles: [string, string, number | null][] = [
+    ['arrivals', 'Arriving today', deskArrivals],
+    ['departures', 'Leaving today', deskLeaving],
+    ['in_house', 'In house', deskInHouse],
+    ['', 'All stays', null],
+  ];
+  async function showStayBill(stayId: string) {
+    await openFolio(stayId);
+    window.setTimeout(() => document.getElementById('guest-bill')?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 120);
+  }
+  function openEmptyRoom(roomId: string, roomCode: string) {
+    prefillStay(roomId, dashDate, roomCode);
+    router.push('/hotel?tab=reservations');
+  }
   const foodCategories = foodTogether ? ['restaurant', 'bar'] : [foodKind];
   const foodCharge =
     foodTogether && (mealForm.charge_type === 'bar' || mealForm.charge_type === 'restaurant')
@@ -1490,20 +1548,45 @@ export default function HotelPage() {
         <DashboardGreeting desk="Hotel dashboard" place={settings?.property_name || ''} />
       ) : (
       <PageHeader
-        title="Hotel management"
+        title={
+          ({
+            reservations: 'Reservations',
+            'front-desk': 'Front desk',
+            rooms: 'Rooms and rates',
+            housekeeping: 'Housekeeping',
+            maintenance: 'Maintenance',
+            guests: 'Guests',
+            billing: 'Guest bills',
+            cashier: 'Cash and night audit',
+            supplies: 'Supplies',
+            services: 'Hotel services',
+            restaurant: foodTogether ? 'Restaurant and bar' : 'Restaurant',
+            bar: foodTogether ? 'Restaurant and bar' : 'Bar',
+            reports: 'Hotel reports',
+            events: 'Events and banquets',
+            settings: 'Hotel settings',
+          } as Record<string, string>)[tab] || 'Hotel'
+        }
+        actions={
+          addLabel ? (
+            <button type="button" className="btn-primary" onClick={() => setAddOpen((v) => !v)} aria-expanded={addOpen}>
+              {addOpen ? 'Close' : addLabel}
+            </button>
+          ) : undefined
+        }
         subtitle={
           ({
             dashboard: 'Occupancy, arrivals, and alerts for today.',
-            reservations: 'Search rooms, then book a stay. Same room cannot overlap.',
-            'front-desk': 'Check guests in and out, and log requests.',
-            rooms: 'Room list, nightly rates, and rate plans.',
-            housekeeping: 'Cleaning tasks and lost-and-found notes.',
-            maintenance: 'Repair tickets. Dated blocks only close those nights.',
-            guests: 'Guest profiles, stay history, and merge duplicates.',
-            billing: 'Guest bills and payment notes. Cards are not charged here.',
-            cashier: 'Front-desk float and night audit. This is a payment note, not the shop till and not a card charge.',
+            reservations: 'See who is coming, find a free room, and book a stay.',
+            'front-desk': 'Who is arriving, who is leaving, and every room right now.',
+            rooms: 'Your rooms, their nightly rates, and rate plans.',
+            housekeeping: 'Rooms to clean, and things guests left behind.',
+            maintenance: 'Faults in rooms, and which rooms they close.',
+            guests: 'Everyone who has stayed, with their stays and details.',
+            billing: 'What each guest owes. Payments go to your accounts by themselves.',
+            cashier: 'Count the front-desk float and close the day. This is not the shop till and not a card charge.',
             supplies: 'Linen, toiletries, food and beverage, and cleaning supplies.',
-            services: 'Extras (laundry, spa, meals, drinks) posted onto a guest bill.',
+            services: 'Laundry, spa, meals and other extras you add to a guest bill.',
             restaurant: foodTogether
               ? 'Meals and drinks on one desk. Both post to the guest bill. This is not the sales till.'
               : 'Meals on the restaurant desk. Drinks stay on the bar desk. Both post to the guest bill.',
@@ -1512,7 +1595,7 @@ export default function HotelPage() {
               : 'Drinks on the bar desk. Meals stay on the restaurant desk. Both post to the guest bill.',
             reports: 'Occupancy, room revenue, payments, and supplies.',
             events: 'Banquets and meeting space. Optional room hold blocks that room.',
-            settings: 'Property name, check-in times, and fees.',
+            settings: 'Your hotel name, check-in times, tax and fees.',
           } as Record<string, string>)[tab]
         }
       />
@@ -1812,7 +1895,7 @@ export default function HotelPage() {
                           {q.room_id ? <div className="muted">{rooms.find((r) => r.id === q.room_id)?.code}</div> : null}
                         </li>
                       ))}
-                      {!guestRequests.length && <li className="muted">No guest requests.</li>}
+                      {!guestRequests.length && <li className="muted">{emptyOr('No guest requests.')}</li>}
                     </ul>
                     {(summary.online_stay_requests || 0) > 0 && (
                       <p className="hint" style={{ marginTop: 10 }}>
@@ -2033,16 +2116,14 @@ export default function HotelPage() {
       {show('front-desk') && (
         <>
         <div className="card" style={{ marginBottom: 16 }}>
-          <h2>Front desk</h2>
-          <p className="muted">
-            Filter arrivals, departures, or in-house guests. Check-in and check-out keep room status in sync.
-          </p>
-          <select value={deskKind} onChange={(e) => setDeskKind(e.target.value)} aria-label="Front desk list filter">
-            <option value="arrivals">Arrivals today</option>
-            <option value="departures">Departures today</option>
-            <option value="in_house">In house</option>
-            <option value="">All reservations</option>
-          </select>
+          <div className="hdesk-tiles" role="group" aria-label="Front desk list filter">
+            {deskTiles.map(([key, label, count]) => (
+              <button key={key || 'all'} type="button" className="hdesk-tile" aria-pressed={deskKind === key} onClick={() => setDeskKind(key)}>
+                <b>{count === null ? ' ' : tabReady ? count : '–'}</b>
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
           <div className="list-table-wrap">
           <table className="table">
             <thead>
@@ -2069,13 +2150,16 @@ export default function HotelPage() {
                     {leftEarlyWhen(r) ? <div className="muted">Left {stayWhen(leftEarlyWhen(r), formatPrefs)}</div> : null}
                   </td>
                   <td><span className={statusClass(r.status)}>{hotelWord(r.status)}</span></td>
-                  <td>
+                  <td className="hdesk-actions">
                     {r.can_check_in && (
                       <button type="button" className="btn-ok" disabled={busy} onClick={() => act(`/hotel/reservations/${r.id}/check-in`, 'Checked in')}>Check in</button>
                     )}
                     {r.can_check_out && (
                       <button type="button" className="btn-ok" disabled={busy} onClick={() => checkOutStay(r.id)}>Check out</button>
                     )}
+                    {r.folio_id ? (
+                      <button type="button" disabled={busy} onClick={() => void showStayBill(r.id)} aria-label={`Open bill for ${r.guest_name || r.reservation_number}`}>Bill</button>
+                    ) : null}
                     {r.can_move && (
                       <button type="button" disabled={busy || !moveRoomId} onClick={() => act(`/hotel/reservations/${r.id}/move`, 'Guest moved', { new_room_id: moveRoomId })}>Change room</button>
                     )}
@@ -2083,7 +2167,7 @@ export default function HotelPage() {
                 </tr>
               ))}
               {!reservations.length && (
-                <tr><td colSpan={6} className="muted">No stays in this filter.</td></tr>
+                <tr><td colSpan={6} className="muted">{emptyOr('No stays in this list.')}</td></tr>
               )}
             </tbody>
           </table>
@@ -2097,6 +2181,11 @@ export default function HotelPage() {
               ))}
             </select>
           </label>
+        </div>
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h2>Rooms right now</h2>
+          <p className="muted">Tap a room with a guest to open the bill. Tap an empty room to book it.</p>
+          <HotelRoomBoard rooms={rooms} stays={boardStays} today={dashDate} money={money} onStay={(id) => void showStayBill(id)} onEmptyRoom={openEmptyRoom} />
         </div>
         <h2 id="guest-requests">Guest requests</h2>
         <p className="muted">Leave the room empty when the request is not for a specific room.</p>
@@ -2189,14 +2278,20 @@ export default function HotelPage() {
               )}
             </li>
           ))}
-          {!guestRequests.length && <li className="muted">No guest requests.</li>}
+          {!guestRequests.length && <li className="muted">{emptyOr('No guest requests.')}</li>}
         </ul>
         </>
       )}
 
       {show('rooms') && (
+      <>
       <div className="card" style={{ marginBottom: 16 }}>
-        <h2>Add room</h2>
+        <h2>Rooms right now</h2>
+        <HotelRoomBoard rooms={rooms} stays={boardStays} today={dashDate} money={money} onStay={(id) => { router.push('/hotel?tab=front-desk'); void showStayBill(id); }} onEmptyRoom={openEmptyRoom} />
+      </div>
+      <div className="card" style={{ marginBottom: 16 }}>
+        {addShown('rooms') && (
+        <div className="hdesk-form">
         <form
           onSubmit={createRoom}
           style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))' }}
@@ -2275,6 +2370,8 @@ export default function HotelPage() {
             <button type="submit" disabled={busy} aria-label="Create hotel room">{busy ? 'Saving…' : 'Create room'}</button>
           </div>
         </form>
+        </div>
+        )}
         <div className="list-table-wrap">
         <table className="table">
           <thead>
@@ -2313,7 +2410,7 @@ export default function HotelPage() {
               </tr>
             ))}
             {!rooms.length && (
-              <tr><td colSpan={5} className="muted">No rooms yet.</td></tr>
+              <tr><td colSpan={5} className="muted">{emptyOr('No rooms yet.')}</td></tr>
             )}
           </tbody>
         </table>
@@ -2407,12 +2504,14 @@ export default function HotelPage() {
           {!ratePlans.length && <li className="muted">No rate plans yet. Rooms still use their base rate.</li>}
         </ul>
       </div>
+      </>
       )}
 
       {show('guests') && (
       <div className="card" style={{ marginBottom: 16 }}>
-        <h2>Guests</h2>
-        <form onSubmit={createGuest} style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}>
+        {addShown('guests') && (
+          <div className="hdesk-form">
+          <form onSubmit={createGuest} style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}>
           <label>
             <span>Full name</span>
             <input value={guestForm.full_name} onChange={(e) => setGuestForm((f) => ({ ...f, full_name: e.target.value }))} aria-label="Hotel guest full name" required />
@@ -2478,6 +2577,8 @@ export default function HotelPage() {
             <button type="submit" disabled={busy} aria-label="Create hotel guest">{busy ? 'Saving…' : 'Create guest'}</button>
           </div>
         </form>
+          </div>
+          )}
         <div className="list-table-wrap">
         <table className="table">
           <thead>
@@ -3150,7 +3251,7 @@ export default function HotelPage() {
               </tr>
             ))}
             {!reservations.length && (
-              <tr><td colSpan={7} className="muted">No reservations.</td></tr>
+              <tr><td colSpan={7} className="muted">{emptyOr('No reservations.')}</td></tr>
             )}
           </tbody>
         </table>
@@ -3179,9 +3280,9 @@ export default function HotelPage() {
       </>
       )}
 
-      {(show('billing') || show('reservations') || show('services')) && folio && (
-        <div className="card" style={{ marginBottom: 16 }}>
-          <h2>Folio {folio.folio_number}</h2>
+      {(show('billing') || show('reservations') || show('services') || show('front-desk')) && folio && (
+        <div className="card" id="guest-bill" style={{ marginBottom: 16 }}>
+          <h2>Guest bill {folio.folio_number}</h2>
           {(folio.guest_name || folio.room_code || folio.check_in_date) ? (
             <p className="muted">
               {[folio.guest_name, folio.room_code ? `Room ${folio.room_code}` : '', folio.reservation_number].filter(Boolean).join(' · ')}
@@ -3193,19 +3294,18 @@ export default function HotelPage() {
                 : ''}
             </p>
           ) : null}
-          <p className="muted">
-            Charges {money(folio.charges_total)} · Payments {money(folio.payments_total)} · Balance{' '}
-            <strong>{money(folio.balance)}</strong> (payment information only — not a gateway)
-          </p>
-          <label>
-            <span>Folio note</span>
-            <input aria-label="Hotel folio notes" value={folioNote} onChange={(e) => setFolioNote(e.target.value)} />
-          </label>
-          <p className="muted">Leave the note empty and the saved note stays. It is not printed on the guest slip.</p>
-          <button type="button" disabled={busy} onClick={saveFolioNote}>Save folio note</button>
-          <button type="button" disabled={busy} onClick={printFolioSlip} aria-label={`Print folio ${folio.folio_number}`}>
-            Print folio
-          </button>
+          <div className="hbill-tiles">
+            <div className="hbill-tile"><span>Charges</span><b>{money(folio.charges_total)}</b></div>
+            <div className="hbill-tile"><span>Includes tax</span><b>{money(folio.charges.filter((c) => !c.is_void).reduce((sum, c) => sum + Number(c.tax_amount || 0), 0))}</b></div>
+            <div className="hbill-tile"><span>Paid</span><b>{money(folio.payments_total)}</b></div>
+            <div className={`hbill-tile ${Number(folio.balance) < -0.004 ? 'is-credit' : 'is-due'}`}>
+              <span>{Number(folio.balance) < -0.004 ? 'Guest is in credit' : 'Still to pay'}</span>
+              <b>{money(Math.abs(Number(folio.balance)))}</b>
+            </div>
+          </div>
+          {Number(folio.balance) < -0.004 && folio.status === 'open' ? (
+            <p className="hotel-banner warn" role="status">The guest has paid too much. Refund the difference from a payment below before checking out.</p>
+          ) : null}
           {folio.status === 'open' && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
               <button
@@ -3299,6 +3399,7 @@ export default function HotelPage() {
                   <td>
                     {c.description}
                     <div className="muted">{folioChargeWord(c.charge_type)} · {c.quantity ?? 1} × {money(c.unit_amount)}</div>
+                    {Number(c.tax_amount) > 0 ? <div className="muted">Tax {money(c.tax_amount)}</div> : null}
                     {Number(c.discount_amount) > 0 ? <div className="muted">Discount {money(c.discount_amount)}</div> : null}
                   </td>
                   <td>{money(c.line_total)}</td>
@@ -3348,7 +3449,7 @@ export default function HotelPage() {
             style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', marginTop: 8 }}
           >
             <label>
-              <span>Split / transfer charge</span>
+              <span>Move a charge to another bill</span>
               <select value={transferChargeId} onChange={(e) => setTransferChargeId(e.target.value)} aria-label="Charge to transfer">
                 <option value="">Select charge</option>
                 {folio.charges.filter((c) => !c.is_void).map((c) => (
@@ -3357,18 +3458,19 @@ export default function HotelPage() {
               </select>
             </label>
             <label>
-              <span>To folio</span>
+              <span>To bill</span>
               <select value={transferFolioId} onChange={(e) => setTransferFolioId(e.target.value)} aria-label="Target folio">
-                <option value="">Select folio</option>
+                <option value="">Select bill</option>
                 {folioRows.filter((f) => f.id !== folio.id && f.status === 'open').map((f) => (
                   <option key={f.id} value={f.id}>{f.folio_number} {f.guest_name || ''}</option>
                 ))}
               </select>
             </label>
             <div style={{ alignSelf: 'end' }}>
-              <button type="submit" disabled={busy || !transferChargeId || !transferFolioId}>Transfer charge</button>
+              <button type="submit" disabled={busy || !transferChargeId || !transferFolioId}>Move charge</button>
             </div>
           </form>
+          <h3 style={{ marginTop: 16 }}>Add a charge</h3>
           <form onSubmit={addCharge} style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', marginTop: 8 }}>
             <label>
               <span>Description</span>
@@ -3398,6 +3500,7 @@ export default function HotelPage() {
               <button type="submit" disabled={busy}>Post charge</button>
             </div>
           </form>
+          <h3 style={{ marginTop: 16 }}>Take a payment</h3>
           <form onSubmit={addPayment} style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', marginTop: 8 }}>
             <label>
               <span>Method</span>
@@ -3420,15 +3523,51 @@ export default function HotelPage() {
               <input value={payForm.notes} onChange={(e) => setPayForm((f) => ({ ...f, notes: e.target.value }))} aria-label="Folio payment notes" />
             </label>
             <div style={{ alignSelf: 'end' }}>
-              <button type="submit" disabled={busy}>Record payment info</button>
+              <button type="submit" disabled={busy}>Record payment</button>
             </div>
           </form>
-          <ul>
+          <ul className="hbill-pays">
             {folio.payments.map((p) => (
-              <li key={p.id}>
-                {tenderWord(p.method)} · {money(p.amount)}
-                {p.reference ? <div className="muted">{p.reference}</div> : null}
-                {p.notes ? <div className="muted">{p.notes}</div> : null}
+              <li key={p.id} className="hbill-pay">
+                <div>
+                  {Number(p.amount) < 0 ? 'Refund' : tenderWord(p.method)} · {money(Math.abs(Number(p.amount)))}
+                  {p.reference ? <div className="muted">{p.reference}</div> : null}
+                  {p.notes ? <div className="muted">{p.notes}</div> : null}
+                </div>
+                {folio.status === 'open' && Number(p.amount) > 0 && p.method !== 'credit' ? (
+                  <button
+                    type="button"
+                    className="btn-danger"
+                    disabled={busy}
+                    aria-label={`Refund ${tenderWord(p.method)} payment of ${money(p.amount)}`}
+                    onClick={() => {
+                      const owed = Number(folio.balance) < 0 ? String(Math.abs(Number(folio.balance))) : String(p.amount);
+                      const amount = window.prompt('Amount to give back', owed);
+                      if (!amount) return;
+                      const reason = window.prompt('Why are you refunding this?');
+                      if (!reason) return;
+                      void (async () => {
+                        setBusy(true);
+                        setError('');
+                        try {
+                          const f = await api(`/hotel/folios/${folio.id}/payments/${p.id}/refund`, {
+                            method: 'POST',
+                            body: JSON.stringify({ amount: Number(amount), reason }),
+                          });
+                          setFolio(f.data || null);
+                          setMessage('Payment refunded');
+                          await refresh();
+                        } catch (err: unknown) {
+                          setError(hotelErr(err, 'Could not refund this payment'));
+                        } finally {
+                          setBusy(false);
+                        }
+                      })();
+                    }}
+                  >
+                    Refund
+                  </button>
+                ) : null}
               </li>
             ))}
             {!folio.payments.length && <li className="muted">No payments recorded.</li>}
@@ -3477,14 +3616,22 @@ export default function HotelPage() {
               </div>
             </form>
           )}
+          <h3 style={{ marginTop: 16 }}>Notes and printing</h3>
+          <label>
+            <span>Bill note</span>
+            <input aria-label="Hotel folio notes" value={folioNote} onChange={(e) => setFolioNote(e.target.value)} />
+          </label>
+          <p className="muted">For your staff. It is not printed on the guest slip.</p>
+          <button type="button" disabled={busy} onClick={saveFolioNote}>Save note</button>
+          <button type="button" disabled={busy} onClick={printFolioSlip} aria-label={`Print folio ${folio.folio_number}`}>
+            Print bill
+          </button>
         </div>
       )}
 
       {show('billing') && (
         <div className="card" style={{ marginBottom: 16 }}>
-          <h2>Billing and payments</h2>
-          <p className="muted">Payment information only — Ribdigi does not process or settle funds.</p>
-          <div className="list-table-wrap">
+                    <div className="list-table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -3536,7 +3683,7 @@ export default function HotelPage() {
                 </tr>
               ))}
               {!folioRows.length && (
-                <tr><td colSpan={6} className="muted">No guest bills yet. Check a guest in to open a folio.</td></tr>
+                <tr><td colSpan={6} className="muted">{emptyOr('No guest bills yet. A bill opens when a guest checks in.')}</td></tr>
               )}
             </tbody>
           </table>
@@ -3546,8 +3693,9 @@ export default function HotelPage() {
 
       {show('services') && (
         <div className="card" style={{ marginBottom: 16 }}>
-          <h2>Hotel services</h2>
-          <p className="muted">Tax percent is added when this service is posted to a bill. Room nights stay untaxed. Choose Restaurant or Bar to use the item on those desks.</p>
+          <p className="muted">Tax percent is added when this service goes on a bill. Room tax is set under Hotel settings. Choose Restaurant or Bar to use the item on those desks.</p>
+          {addShown('services') && (
+          <div className="hdesk-form">
           <form
             onSubmit={async (e) => {
               e.preventDefault();
@@ -3608,6 +3756,8 @@ export default function HotelPage() {
               <button type="submit" disabled={busy}>Add service</button>
             </div>
           </form>
+          </div>
+          )}
           <div className="list-table-wrap">
           <table className="table">
             <thead>
@@ -3633,19 +3783,20 @@ export default function HotelPage() {
                 </tr>
               ))}
               {!services.length && (
-                <tr><td colSpan={5} className="muted">No hotel services yet.</td></tr>
+                <tr><td colSpan={5} className="muted">{emptyOr('No hotel services yet.')}</td></tr>
               )}
             </tbody>
           </table>
           </div>
-          <p className="muted">Open a folio under Billing to post an approved service charge to a guest bill.</p>
+          <p className="muted">To add a service to a stay, open the guest bill.</p>
         </div>
       )}
 
       {show('housekeeping') && (
       <div className="card" style={{ marginBottom: 16 }}>
-        <h2>Housekeeping</h2>
-        <p className="muted">A room with open maintenance stays out of service after cleaning is marked done. Leave the due date empty and the task is due in two hours. Priority starts at normal.</p>
+                <p className="muted">A room with open maintenance stays out of service after cleaning is marked done. Leave the due date empty and the task is due in two hours. Priority starts at normal.</p>
+        {addShown('housekeeping') && (
+        <div className="hdesk-form">
         <form onSubmit={createHk} style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}>
           <label>
             <span>Room</span>
@@ -3697,6 +3848,8 @@ export default function HotelPage() {
             <button type="submit" disabled={busy}>Create task</button>
           </div>
         </form>
+        </div>
+        )}
         <div className="list-table-wrap">
         <table className="table">
           <thead><tr><th>Room</th><th>Status</th><th>Priority</th><th>Due</th><th>Assignee</th><th></th></tr></thead>
@@ -3720,7 +3873,7 @@ export default function HotelPage() {
                 </td>
               </tr>
             ))}
-            {!hkTasks.length && <tr><td colSpan={6} className="muted">No housekeeping tasks.</td></tr>}
+            {!hkTasks.length && <tr><td colSpan={6} className="muted">{emptyOr('No housekeeping tasks.')}</td></tr>}
           </tbody>
         </table>
         </div>
@@ -3778,16 +3931,17 @@ export default function HotelPage() {
               {x.notes ? <div className="muted">{x.notes}</div> : null}
             </li>
           ))}
-          {!lostFound.length && <li className="muted">No lost-and-found records.</li>}
+          {!lostFound.length && <li className="muted">{emptyOr('No lost-and-found records.')}</li>}
         </ul>
       </div>
       )}
 
       {show('maintenance') && (
       <div className="card" style={{ marginBottom: 16 }}>
-        <h2>Maintenance</h2>
         <p className="muted">Leave the dates empty to take the room out of service until the ticket is completed. A dated range only blocks those nights. Uncheck Block the room to log the issue and leave the room in service. Priority starts at normal. High or urgent takes a blocked room out of order.</p>
-        <form onSubmit={createMaint} style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}>
+        {addShown('maintenance') && (
+          <div className="hdesk-form">
+          <form onSubmit={createMaint} style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}>
           <label>
             <span>Room</span>
             <select value={maintForm.room_id} onChange={(e) => setMaintForm((f) => ({ ...f, room_id: e.target.value }))} required aria-label="Maintenance room">
@@ -3848,6 +4002,8 @@ export default function HotelPage() {
             <button type="submit" disabled={busy}>Create ticket</button>
           </div>
         </form>
+          </div>
+          )}
         <div className="list-table-wrap">
         <table className="table">
           <thead><tr><th>Room</th><th>Title</th><th>Out of order</th><th>Status</th><th></th></tr></thead>
@@ -3876,7 +4032,7 @@ export default function HotelPage() {
                 </td>
               </tr>
             ))}
-            {!maint.length && <tr><td colSpan={5} className="muted">No maintenance tickets.</td></tr>}
+            {!maint.length && <tr><td colSpan={5} className="muted">{emptyOr('No maintenance tickets.')}</td></tr>}
           </tbody>
         </table>
         </div>
@@ -3885,19 +4041,21 @@ export default function HotelPage() {
 
       {show('cashier') && (
         <div className="card" style={{ marginBottom: 16 }}>
-          <h2>Hotel finance and cashiering</h2>
-          <p className="muted">
-            This records the front-desk float and payment notes. It does not open the shop till, process cards, hold funds, or settle to a bank.
-            Ledger posting uses existing{' '}
-            <Link href="/accounting">Accounting</Link> and <Link href="/expenses">Expenses</Link>.
+                    <p className="muted">
+            The float is the cash in the front-desk drawer. Charges and payments on guest bills reach{' '}
+            <Link href="/accounting">Accounting</Link> by themselves. Hotel costs go under <Link href="/expenses">Expenses</Link>.
           </p>
           {cashierShift ? (
-            <p>Front-desk float open since {cashierShift.opened_at} · opening float {money(cashierShift.opening_float)}</p>
+            <div className="hbill-tiles">
+              <div className="hbill-tile"><span>Opened {stayClock(cashierShift.opened_at, formatPrefs)}</span><b>{money(cashierShift.opening_float)}</b></div>
+              <div className="hbill-tile"><span>Cash taken</span><b>{money(cashierShift.cash_taken)}</b></div>
+              <div className="hbill-tile is-due"><span>Should be in the drawer</span><b>{money(cashierShift.expected_cash)}</b></div>
+            </div>
           ) : (
             <p className="muted">No front-desk float is open.</p>
           )}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            <label className="muted" htmlFor="hotel-cashier-float">Float</label>
+            <label className="muted" htmlFor="hotel-cashier-float">{cashierShift ? 'Cash counted' : 'Opening float'}</label>
             <AmountField
               id="hotel-cashier-float"
               type="number"
@@ -3936,7 +4094,7 @@ export default function HotelPage() {
             >
               Close front-desk float
             </button>
-            <h3 id="night-audit" style={{ margin: '12px 0 0' }}>Night audit</h3>
+            <h3 id="night-audit" style={{ margin: '12px 0 0', width: '100%' }}>Night audit</h3>
             <label className="muted" htmlFor="hotel-night-audit-note">Night audit note</label>
             <input
               id="hotel-night-audit-note"
@@ -3967,11 +4125,19 @@ export default function HotelPage() {
           <ul>
             {closedShifts.map((s) => (
               <li key={s.id}>
-                {stayClock(s.closed_at, formatPrefs)} · closing float {money(s.closing_float)}
+                {stayClock(s.closed_at, formatPrefs)} · counted {money(s.closing_float)}
+                {s.expected_cash != null ? ` · expected ${money(s.expected_cash)}` : ''}
+                {s.over_short != null
+                  ? Math.abs(Number(s.over_short)) < 0.005
+                    ? ' · exact'
+                    : Number(s.over_short) < 0
+                      ? ` · short ${money(Math.abs(Number(s.over_short)))}`
+                      : ` · over ${money(s.over_short)}`
+                  : ''}
                 {s.notes ? <div className="muted">{s.notes}</div> : null}
               </li>
             ))}
-            {!closedShifts.length && <li className="muted">No closed front-desk floats.</li>}
+            {!closedShifts.length && <li className="muted">{emptyOr('No closed front-desk floats.')}</li>}
           </ul>
           <h3>Night audits</h3>
           <ul>
@@ -3981,28 +4147,27 @@ export default function HotelPage() {
                 {n.snapshot?.note ? <div className="muted">{n.snapshot.note}</div> : null}
               </li>
             ))}
-            {!nightAudits.length && <li className="muted">No night audits posted yet.</li>}
+            {!nightAudits.length && <li className="muted">{emptyOr('No night audits posted yet.')}</li>}
           </ul>
         </div>
       )}
 
       {show('supplies') && (
         <div className="card" style={{ marginBottom: 16 }}>
-          <h2>Supplies</h2>
-          <p className="muted">
+                    <p className="muted">
             Linen, toiletries, food and drink, and cleaning supplies are kept with purchasing.
           </p>
-          <ul>
-            <li><Link href="/inventory?tab=products">Supplies</Link></li>
-            <li><Link href="/inventory?tab=lowstock">Low supplies</Link></li>
-            <li><Link href="/inventory?tab=adjust">Stock adjustments</Link></li>
-            <li><Link href="/purchasing?tab=orders">Purchase orders</Link></li>
-            <li><Link href="/purchasing?tab=grn">Receive supplies</Link></li>
-            <li><Link href="/inventory?tab=batches">Lots</Link></li>
-            <li><Link href="/purchasing?tab=invoices">Supplier bills</Link></li>
-            <li><Link href="/purchasing?tab=returns">Purchase returns</Link></li>
-            <li><Link href="/purchasing?tab=suppliers">Suppliers</Link></li>
-          </ul>
+          <div className="hdesk-links">
+            <Link href="/inventory?tab=products">Supplies</Link>
+            <Link href="/inventory?tab=lowstock">Low supplies</Link>
+            <Link href="/inventory?tab=adjust">Stock adjustments</Link>
+            <Link href="/purchasing?tab=orders">Purchase orders</Link>
+            <Link href="/purchasing?tab=grn">Receive supplies</Link>
+            <Link href="/inventory?tab=batches">Lots</Link>
+            <Link href="/purchasing?tab=invoices">Supplier bills</Link>
+            <Link href="/purchasing?tab=returns">Purchase returns</Link>
+            <Link href="/purchasing?tab=suppliers">Suppliers</Link>
+          </div>
         </div>
       )}
 
@@ -4189,7 +4354,7 @@ export default function HotelPage() {
               : foodKind === 'bar'
                 ? 'The bar runs on its own desk. Post a drink on an open guest bill. This is not the sales till and it does not charge a card.'
                 : 'The restaurant runs on its own desk. Post a meal on an open guest bill. This is not the sales till, it does not print a kitchen ticket, and it does not charge a card.'}
-            {' '}A catalog {foodNoun} uses that service’s tax. A one-off {foodNoun} stays untaxed. Room nights stay untaxed.
+            {' '}A catalog {foodNoun} uses that service’s tax. A one-off {foodNoun} has no tax.
           </p>
           <form
             onSubmit={async (e) => {
@@ -4330,10 +4495,11 @@ export default function HotelPage() {
 
       {show('events') && (
         <div className="card" style={{ marginBottom: 16 }}>
-          <h2>Events and banquets</h2>
           <p className="muted">
             Book a named space. A guest room on the booking blocks overlapping stays. A deposit is stored on the event. When that guest has an open bill, or checks in for overlapping dates, the same amount is recorded as cash on the bill. It is not a card charge.
           </p>
+          {addShown('events') && (
+          <div className="hdesk-form">
           <form
             onSubmit={async (e) => {
               e.preventDefault();
@@ -4438,6 +4604,8 @@ export default function HotelPage() {
               <button type="submit" disabled={busy}>Book event</button>
             </div>
           </form>
+          </div>
+          )}
           <div className="list-table-wrap">
           <table className="table">
             <thead>
@@ -4473,7 +4641,7 @@ export default function HotelPage() {
                 </tr>
               ))}
               {!events.length && (
-                <tr><td colSpan={5} className="muted">No events booked yet.</td></tr>
+                <tr><td colSpan={5} className="muted">{emptyOr('No events booked yet.')}</td></tr>
               )}
             </tbody>
           </table>
@@ -4483,12 +4651,9 @@ export default function HotelPage() {
 
       {show('settings') && (
         <div className="card" style={{ marginBottom: 16 }}>
-          <h2>Hotel settings</h2>
-          <p className="muted">
-            Tax % and the service charge % are stored for the property. Room folio lines stay nights × nightly rate.
-            Post the service charge on an open folio when it applies.
-            Post extras or fees on the folio when they apply.
-            Leave the note empty and the saved note stays.
+                    <p className="muted">
+            A room charge is nights × nightly rate. Tax % applies to rooms and to the early, late and no-show fees, and shows on the bill, the invoice and your tax report.
+            Add the service charge from a guest bill when it applies.
           </p>
           {canReadCompany && (
             <p className="muted">
@@ -4509,6 +4674,7 @@ export default function HotelPage() {
                     check_out_time: settingsForm.check_out_time,
                     cancellation_hours: Number(settingsForm.cancellation_hours) || 24,
                     tax_percent: Number(settingsForm.tax_percent) || 0,
+                    room_rates_include_tax: settingsForm.room_rates_include_tax,
                     early_checkin_fee: Number(settingsForm.early_checkin_fee) || 0,
                     late_checkout_fee: Number(settingsForm.late_checkout_fee) || 0,
                     no_show_fee_percent: Number(settingsForm.no_show_fee_percent) || 0,
@@ -4563,6 +4729,15 @@ export default function HotelPage() {
             <label>
               <span>Service charge %</span>
               <input type="number" min={0} max={100} step="0.01" value={settingsForm.service_charge_percent} onChange={(e) => setSettingsForm((f) => ({ ...f, service_charge_percent: e.target.value }))} aria-label="Hotel service charge percent" />
+            </label>
+            <label style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={settingsForm.room_rates_include_tax}
+                onChange={(e) => setSettingsForm((f) => ({ ...f, room_rates_include_tax: e.target.checked }))}
+                aria-label="Room rates include tax"
+              />
+              <span>My room rates already include tax. Untick to add tax on top of the rate.</span>
             </label>
             <label style={{ gridColumn: '1 / -1' }}>
               <span>Restaurant and bar</span>

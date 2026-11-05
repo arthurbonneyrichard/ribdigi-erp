@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -259,7 +259,17 @@ async def create_lost_found(
 
 
 def serialize_shift(row: m.HotelCashierShift) -> dict:
+    cash = money_json(row.cash_total) if row.cash_total is not None else None
+    expected = money_json(round(float(row.opening_float or 0) + float(cash), 2)) if cash is not None else None
+    counted = money_json(row.closing_float) if row.closing_float is not None else None
     return {
+        "cash_taken": cash,
+        "expected_cash": expected,
+        "over_short": (
+            money_json(round(float(counted) - float(expected), 2))
+            if counted is not None and expected is not None
+            else None
+        ),
         "id": row.id,
         "opened_by": row.opened_by,
         "opened_at": row.opened_at.isoformat() if row.opened_at else None,
@@ -270,6 +280,42 @@ def serialize_shift(row: m.HotelCashierShift) -> dict:
         "payments_total": money_json(row.payments_total or 0),
         "notes": row.notes,
         "status": row.status,
+    }
+
+
+async def drawer_cash(db: AsyncSession, *, tenant_id: str, shift: m.HotelCashierShift) -> float:
+    """Cash into the front-desk drawer on this float: guest bills, less refunds, plus shop cash sales."""
+    bills = (
+        await db.execute(
+            select(func.coalesce(func.sum(m.HotelFolioPayment.amount), 0)).where(
+                m.HotelFolioPayment.tenant_id == tenant_id,
+                m.HotelFolioPayment.method == "cash",
+                m.HotelFolioPayment.created_at >= shift.opened_at,
+            )
+        )
+    ).scalar_one()
+    shop = (
+        await db.execute(
+            select(func.coalesce(func.sum(m.HotelShopSale.total), 0)).where(
+                m.HotelShopSale.tenant_id == tenant_id,
+                m.HotelShopSale.shift_id == shift.id,
+                m.HotelShopSale.payment_method == "cash",
+                m.HotelShopSale.status == "completed",
+            )
+        )
+    ).scalar_one()
+    return money_json(round(float(bills) + float(shop), 2))
+
+
+async def live_shift(db: AsyncSession, *, tenant_id: str) -> dict | None:
+    row = await current_shift(db, tenant_id=tenant_id)
+    if row is None:
+        return None
+    cash = await drawer_cash(db, tenant_id=tenant_id, shift=row)
+    return {
+        **serialize_shift(row),
+        "cash_taken": cash,
+        "expected_cash": money_json(round(float(row.opening_float or 0) + cash, 2)),
     }
 
 
@@ -326,6 +372,7 @@ async def close_shift(
     row.closed_at = datetime.utcnow()
     row.closing_float = money_json(closing_float or 0)
     row.payments_total = money_json(total)
+    row.cash_total = await drawer_cash(db, tenant_id=tenant_id, shift=row)
     row.notes = optional_honest_narrative(notes, label="notes", max_length=500)
     row.status = "closed"
     await _flush_pms(db)

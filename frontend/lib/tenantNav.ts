@@ -653,8 +653,55 @@ export const RESTAURANT_ROLE_HREFS: Record<string, string[]> = {
   restaurant_kitchen: ['/restaurant?tab=kitchen', '/restaurant?tab=waste', '/restaurant/ingredients?tab=menu', '/restaurant/help', '/notifications', '/security'],
 };
 
+const HOTEL_STAFF_LINKS = ['/notifications', '/security', '/support'];
+const HOTEL_ROOM_CARE_HREFS = [
+  '/hotel?tab=housekeeping',
+  '/hotel?tab=housekeeping#lost-found',
+  '/hotel?tab=maintenance',
+  '/inventory?tab=products',
+  ...HOTEL_STAFF_LINKS,
+];
+const HOTEL_BOOKING_HREFS = [
+  '/hotel',
+  '/hotel?tab=reservations',
+  '/hotel?tab=reservations#group-stay',
+  '/hotel?tab=front-desk',
+  '/hotel?tab=front-desk#guest-requests',
+  '/hotel?tab=guests',
+  '/hotel?tab=events',
+];
+const HOTEL_BILLING_HREFS = ['/hotel?tab=billing', '/hotel/invoices', '/hotel/shop', '/hotel?tab=cashier'];
+
+/** Hotel staff menus. The server enforces the same jobs in `hotel_jobs.py`. */
+export const HOTEL_ROLE_HREFS: Record<string, string[]> = {
+  hotel_housekeeping: HOTEL_ROOM_CARE_HREFS,
+  hotel_maintenance: HOTEL_ROOM_CARE_HREFS,
+  hotel_reservations: [...HOTEL_BOOKING_HREFS, '/hotel?tab=rooms', ...HOTEL_STAFF_LINKS],
+  hotel_front_desk: [
+    ...HOTEL_BOOKING_HREFS,
+    ...HOTEL_BILLING_HREFS,
+    '/hotel?tab=rooms',
+    '/hotel?tab=housekeeping',
+    '/hotel?tab=housekeeping#lost-found',
+    '/hotel?tab=maintenance',
+    '/hotel?tab=services',
+    '/hotel?tab=restaurant',
+    '/hotel?tab=bar',
+    '/printers',
+    ...HOTEL_STAFF_LINKS,
+  ],
+  hotel_cashier: [
+    '/hotel',
+    '/hotel?tab=front-desk',
+    '/hotel?tab=cashier#night-audit',
+    '/accounting',
+    ...HOTEL_BILLING_HREFS,
+    ...HOTEL_STAFF_LINKS,
+  ],
+};
+
 export function navItemVisibleForRole(role: string, href: string, menu = false): boolean {
-  const jobs = RESTAURANT_ROLE_HREFS[role];
+  const jobs = RESTAURANT_ROLE_HREFS[role] || HOTEL_ROLE_HREFS[role];
   if (jobs) {
     // A menu link must be on the list exactly. A page path (from the address bar) is allowed
     // when one of the role's links lives on it (the kitchen tab lives on /restaurant).
@@ -747,6 +794,10 @@ export function roleHomePath(role: string, industry?: string | null): string {
   ) {
     return '/restaurant';
   }
+  if (role === 'hotel_housekeeping') return '/hotel?tab=housekeeping';
+  if (role === 'hotel_maintenance') return '/hotel?tab=maintenance';
+  if (role === 'hotel_front_desk') return '/hotel?tab=front-desk';
+  if (role === 'hotel_reservations') return '/hotel?tab=reservations';
   if (role.startsWith('hotel_')) return '/hotel';
   if (role === 'super_admin' || role.startsWith('platform_')) return '/platform';
   return '/dashboard';
