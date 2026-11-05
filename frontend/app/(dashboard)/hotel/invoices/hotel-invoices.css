@@ -15,7 +15,7 @@
 .main .hinv button.hi-primary:hover{background:var(--hi-forest)}
 .main .hinv button.hi-plain{border:0;background:none;color:var(--hi-deep);min-height:36px}
 .main .hinv .hi-head{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
-.main .hinv .hi-head h1{margin:0;font-family:Georgia,'Times New Roman',serif;font-size:28px}
+.main .hinv .hi-head h1{margin:0;font-family:inherit;font-size:28px}
 .main .hinv .hi-head p{margin:2px 0 0;color:var(--hi-muted);font-weight:600}
 .main .hinv .hi-link{margin-left:auto;color:var(--hi-deep);font-weight:800}
 .main .hinv .hi-notice{padding:10px 14px;border-radius:12px;background:var(--hi-forest);color:#fff;font-weight:700;cursor:pointer}
@@ -23,7 +23,7 @@
 .main .hinv .hi-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
 .main .hinv .hi-kpi{background:var(--hi-panel);border-radius:16px;padding:14px 16px;box-shadow:var(--hi-shadow);display:flex;flex-direction:column;gap:4px;border-top:5px solid var(--hi-gold)}
 .main .hinv .hi-kpi span{font-size:13px;font-weight:700;color:var(--hi-muted)}
-.main .hinv .hi-kpi strong{font-family:Georgia,'Times New Roman',serif;font-size:24px}
+.main .hinv .hi-kpi strong{font-family:inherit;font-size:24px}
 .main .hinv .hi-kpi small{color:var(--hi-muted);font-weight:600}
 .main .hinv .hi-kpi.hero{background:var(--hi-forest);color:#fff;border-top-color:var(--hi-brand)}
 .main .hinv .hi-kpi.hero span,.main .hinv .hi-kpi.hero small{color:#C8E86A}
@@ -45,14 +45,14 @@
 .main .hinv .hi-row .who small{color:var(--hi-muted);font-weight:600}
 .main .hinv .hi-row .who small.ref{font-size:12px}
 .main .hinv .hi-row .amt{display:flex;flex-direction:column;text-align:right}
-.main .hinv .hi-row .amt strong{font-family:Georgia,'Times New Roman',serif;font-size:19px}
+.main .hinv .hi-row .amt strong{font-family:inherit;font-size:19px}
 .main .hinv .hi-row.owed .amt small{color:#6B4300;font-weight:800}
 .main .hinv .hi-row .amt small{color:var(--hi-muted);font-weight:600}
 .main .hinv .hi-row .acts{display:flex;gap:6px}
 .main .hinv .hi-sheet{position:fixed;inset:0;z-index:60;background:rgba(0,26,14,.5);display:flex;align-items:center;justify-content:center;padding:16px}
 .main .hinv .hi-card{width:min(480px,100%);max-height:90vh;overflow:auto;background:var(--hi-panel);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:12px}
 .main .hinv .hi-card-head{display:flex;align-items:center}
-.main .hinv .hi-card-head h2{margin:0;font-family:Georgia,'Times New Roman',serif}
+.main .hinv .hi-card-head h2{margin:0;font-family:inherit}
 .main .hinv .hi-card-head button{margin-left:auto}
 .main .hinv .hi-sub{margin:0;color:var(--hi-muted);font-weight:600}
 .main .hinv .hi-field{display:flex;flex-direction:column;gap:4px;font-weight:700;font-size:14px;color:var(--hi-muted)}

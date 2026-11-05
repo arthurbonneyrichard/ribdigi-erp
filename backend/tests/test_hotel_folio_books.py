@@ -287,3 +287,22 @@ def test_each_hotel_role_does_its_own_job(role, method, path, allowed):
         hotel_jobs.enforce(role, method, url)
     assert refused.value.status_code == 403
     assert refused.value.detail["code"] == "HOTEL_ROLE_JOB"
+
+
+@pytest.mark.asyncio
+async def test_leaving_early_takes_unused_nights_off_the_bill_and_the_books(client, seeded, db_session):
+    ac, seed = client
+    await set_tenant_industry(db_session, seed["t1"], "hotel")
+    h = await _admin(ac, seed)
+    before = await _balances(ac, h)
+    res_id, folio_id = await _stay(ac, h, rate=100, nights=4)
+    left = await ac.post(f"/api/v1/hotel/reservations/{res_id}/leave-early", headers=h, json={})
+    assert left.status_code == 200, left.text
+    assert left.json()["data"]["check_out_date"] == (date.today() + timedelta(days=1)).isoformat()
+
+    folio = (await ac.get(f"/api/v1/hotel/folios/{folio_id}", headers=h)).json()["data"]
+    assert folio["charges_total"] == 100  # one night stayed, three taken off
+    assert _moved(before, await _balances(ac, h), "4000") == -100
+
+    again = await ac.post(f"/api/v1/hotel/reservations/{res_id}/leave-early", headers=h, json={})
+    assert again.status_code == 400

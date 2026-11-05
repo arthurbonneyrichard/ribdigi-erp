@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import DashboardGreeting from '../../../components/DashboardGreeting';
 import PageHeader from '../../../components/PageHeader';
+import RowActions, { type RowActionItem } from '../../../components/RowActions';
 import { navItemVisibleForRole, roleHomePath } from '../../../lib/tenantNav';
 import HotelRoomBoard from '../../../components/HotelRoomBoard';
 import './hotel-desk.css';
@@ -382,6 +383,7 @@ function statusClass(status: string) {
 function hotelWord(value: string | null | undefined) {
   const text = String(value || '').replace(/_/g, ' ').trim();
   if (!text) return '';
+  if (text.toLowerCase() === 'ota') return 'Booking sites';
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
@@ -1235,7 +1237,7 @@ export default function HotelPage() {
           `This guest bill still has ${money(bal)} outstanding. Check out anyway and leave the balance, or cancel and record payment first.`,
         );
         if (!ok) {
-          setError('Record a folio payment before check-out, or confirm leaving the balance.');
+          setError('Take a payment before check-out, or confirm leaving the balance.');
           return;
         }
         await act(`/hotel/reservations/${reservationId}/check-out`, 'Checked out', { allow_balance: true });
@@ -1300,10 +1302,10 @@ export default function HotelPage() {
         `<h2>Payments</h2><table><thead><tr><th>Method</th><th>Amount</th></tr></thead><tbody>${payRows || '<tr><td colspan="2">No payments</td></tr>'}</tbody></table>`,
     );
     if (!printDocumentHtml(html)) {
-      setError('Could not open the folio for printing.');
+      setError('Could not open the bill for printing.');
       return;
     }
-    setMessage('Folio sent to print');
+    setMessage('Bill sent to print');
   }
 
   async function openFolio(reservationId: string) {
@@ -1313,7 +1315,7 @@ export default function HotelPage() {
       const f = await api(`/hotel/reservations/${reservationId}/folio`);
       setFolio(f.data || null);
     } catch (err: any) {
-      setError(hotelErr(err, 'No folio yet — check the guest in first'));
+      setError(hotelErr(err, 'No bill yet. Check the guest in first.'));
       setFolio(null);
     } finally {
       setBusy(false);
@@ -1335,9 +1337,9 @@ export default function HotelPage() {
         body: JSON.stringify({ notes: note }),
       });
       setFolio(f.data || folio);
-      setMessage('Folio note saved');
+      setMessage('Note saved');
     } catch (err: any) {
-      setError(hotelErr(err, 'Could not save the folio note'));
+      setError(hotelErr(err, 'Could not save the note'));
     } finally {
       setBusy(false);
     }
@@ -1568,7 +1570,11 @@ export default function HotelPage() {
           } as Record<string, string>)[tab] || 'Hotel'
         }
         actions={
-          addLabel ? (
+          tab === 'reservations' ? (
+            <button type="button" className="btn-primary" onClick={() => document.getElementById('book-stay')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+              Book a stay
+            </button>
+          ) : addLabel ? (
             <button type="button" className="btn-primary" onClick={() => setAddOpen((v) => !v)} aria-expanded={addOpen}>
               {addOpen ? 'Close' : addLabel}
             </button>
@@ -2098,8 +2104,8 @@ export default function HotelPage() {
                     {(summary.open_folio_count ?? 0) > 0 ? (
                       <p className="hint" style={{ marginTop: 12 }}>
                         {(summary.open_folio_count ?? 0) === 1
-                          ? '1 guest folio still open'
-                          : `${summary.open_folio_count} guest folios still open`}
+                          ? '1 guest bill still open'
+                          : `${summary.open_folio_count} guest bills still open`}
                         {Number(summary.outstanding_folio_balance || 0) > 0
                           ? ` · ${money(summary.outstanding_folio_balance)}`
                           : ''}
@@ -2639,7 +2645,7 @@ export default function HotelPage() {
         </table>
         </div>
         <h3 style={{ marginTop: 16 }}>Merge duplicate profiles</h3>
-        <p className="muted">Keeps this guest, moves stays and folios from the duplicate, then deactivates the duplicate.</p>
+        <p className="muted">Keeps this guest, moves stays and bills from the duplicate, then deactivates the duplicate.</p>
         <label>
           <span>Merge into {guestHistory?.guest?.full_name || 'selected guest (load stay history first)'}</span>
           <select value={mergeSource} onChange={(e) => setMergeSource(e.target.value)} aria-label="Duplicate guest to merge">
@@ -2784,7 +2790,7 @@ export default function HotelPage() {
         )}
       </div>
       <div className="card" id="hotel-book-stay" style={{ marginBottom: 16 }}>
-        <h2>Book a stay</h2>
+        <h2 id="book-stay">Book a stay</h2>
         <p className="muted">Pick dates and a room. Walk-in checks the guest in now. Tick extra rooms below for a group stay. A discount percent above zero lowers the nightly rate and records the signed-in staff member. Zero leaves the rate unchanged. A group stay uses that same discount on each room.</p>
         <form onSubmit={createReservation} style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}>
           <label>
@@ -3132,7 +3138,7 @@ export default function HotelPage() {
               : `${summary?.online_stay_requests} stay requests are waiting.`}
           </p>
         )}
-        <div className="list-table-wrap">
+        <div className="list-table-wrap hdesk-res-wrap">
         <table className="table">
           <thead>
             <tr>
@@ -3172,81 +3178,119 @@ export default function HotelPage() {
                 </td>
                 <td>{r.folio_balance != null ? money(r.folio_balance) : '—'}</td>
                 <td>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {r.can_confirm && (
-                      <button type="button" disabled={busy} onClick={() => act(`/hotel/reservations/${r.id}/confirm`, r.status === 'waitlisted' ? 'Moved off the waiting list' : 'Confirmed')} aria-label={`Confirm ${r.reservation_number}`}>{r.status === 'waitlisted' ? 'Offer room' : 'Confirm booking'}</button>
-                    )}
-                    {r.can_check_in && (
-                      <button type="button" className="btn-ok" disabled={busy} onClick={() => act(`/hotel/reservations/${r.id}/check-in`, 'Checked in')} aria-label={`Check in ${r.reservation_number}`}>Check in</button>
-                    )}
-                    {r.can_check_out && (
-                      <button type="button" className="btn-ok" disabled={busy} onClick={() => checkOutStay(r.id)} aria-label={`Check out ${r.reservation_number}`}>Check out</button>
-                    )}
-                    {r.can_cancel && (
-                      <button type="button" className="btn-danger" disabled={busy} onClick={() => {
-                        const late = r.inside_cancellation_window
-                          ? ` This stay is inside the ${r.cancellation_hours}-hour cancellation window. Cancelling does not add a fee.`
-                          : '';
-                        if (!window.confirm(`Cancel reservation ${r.reservation_number}? This cannot be undone.${late}`)) return;
-                        void act(`/hotel/reservations/${r.id}/cancel`, 'Cancelled');
-                      }} aria-label={`Cancel ${r.reservation_number}`}>Cancel</button>
-                    )}
-                    {r.can_no_show && (
-                      <button type="button" disabled={busy} onClick={() => act(`/hotel/reservations/${r.id}/no-show`, 'Marked no-show')} aria-label={`No-show ${r.reservation_number}`}>No-show</button>
-                    )}
-                    {r.status === 'no_show' && (
-                      <button type="button" disabled={busy} onClick={() => {
-                        if (!window.confirm(`Post the no-show fee once for ${r.reservation_number}?`)) return;
-                        void act(`/hotel/reservations/${r.id}/no-show-fee`, 'No-show fee posted');
-                      }} aria-label={`Post no-show fee ${r.reservation_number}`}>Post no-show fee</button>
-                    )}
-                    {(r.can_check_out || r.status === 'checked_in' || r.status === 'checked_out') && (
-                      <button type="button" disabled={busy} onClick={() => openFolio(r.id)} aria-label={`Open folio ${r.reservation_number}`}>Folio</button>
-                    )}
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => printStaySlip(r.id, r.reservation_number)}
-                      aria-label={`Print confirmation ${r.reservation_number}`}
-                    >
-                      Print slip
-                    </button>
-                    {r.can_extend && (
-                      <button
-                        type="button"
-                        disabled={busy || !extendDate}
-                        onClick={() => act(`/hotel/reservations/${r.id}/extend`, 'Stay extended', { new_check_out_date: extendDate })}
-                        aria-label={`Extend ${r.reservation_number}`}
-                      >
-                        Extend
-                      </button>
-                    )}
-                    {r.can_move && (
-                      <button
-                        type="button"
-                        disabled={busy || !moveRoomId}
-                        onClick={() => act(`/hotel/reservations/${r.id}/move`, 'Guest moved', { new_room_id: moveRoomId })}
-                        aria-label={`Move ${r.reservation_number}`}
-                      >
-                        Move
-                      </button>
-                    )}
-                    {r.can_duplicate && (
-                      <button
-                        type="button"
-                        disabled={busy || !extendDate}
-                        onClick={() =>
-                          act(`/hotel/reservations/${r.id}/duplicate`, 'Stay duplicated', {
+                  <RowActions
+                    label={`More actions for ${r.reservation_number}`}
+                    primaryMax={1}
+                    items={[
+                      r.can_confirm && {
+                        key: 'confirm',
+                        label: r.status === 'waitlisted' ? 'Take off waiting list' : 'Confirm booking',
+                        variant: 'ok',
+                        disabled: busy,
+                        ariaLabel: `Confirm ${r.reservation_number}`,
+                        onClick: () => void act(`/hotel/reservations/${r.id}/confirm`, r.status === 'waitlisted' ? 'Moved off the waiting list' : 'Booking confirmed'),
+                      },
+                      r.can_check_in && {
+                        key: 'in',
+                        label: 'Check in',
+                        variant: 'ok',
+                        disabled: busy,
+                        ariaLabel: `Check in ${r.reservation_number}`,
+                        onClick: () => void act(`/hotel/reservations/${r.id}/check-in`, 'Checked in'),
+                      },
+                      r.can_check_out && {
+                        key: 'out',
+                        label: 'Check out',
+                        variant: 'ok',
+                        disabled: busy,
+                        ariaLabel: `Check out ${r.reservation_number}`,
+                        onClick: () => void checkOutStay(r.id),
+                      },
+                      (r.can_check_out || r.status === 'checked_in' || r.status === 'checked_out') && {
+                        key: 'bill',
+                        label: 'Open bill',
+                        disabled: busy,
+                        ariaLabel: `Open bill ${r.reservation_number}`,
+                        onClick: () => void showStayBill(r.id),
+                      },
+                      r.status === 'checked_in' && r.check_out_date > localIso() && {
+                        key: 'early',
+                        label: 'Leaving early',
+                        disabled: busy,
+                        ariaLabel: `Leaving early ${r.reservation_number}`,
+                        onClick: () => {
+                          if (!window.confirm(`Take the unused nights off ${r.guest_name || r.reservation_number}'s bill and free the room?`)) return;
+                          void act(`/hotel/reservations/${r.id}/leave-early`, 'Unused nights removed');
+                        },
+                      },
+                      {
+                        key: 'slip',
+                        label: 'Print slip',
+                        disabled: busy,
+                        ariaLabel: `Print confirmation ${r.reservation_number}`,
+                        onClick: () => void printStaySlip(r.id, r.reservation_number),
+                      },
+                      r.can_extend && {
+                        key: 'extend',
+                        label: 'Extend',
+                        disabled: busy || !extendDate,
+                        title: extendDate ? undefined : 'Pick the new date under the list first',
+                        ariaLabel: `Extend ${r.reservation_number}`,
+                        onClick: () => void act(`/hotel/reservations/${r.id}/extend`, 'Stay extended', { new_check_out_date: extendDate }),
+                      },
+                      r.can_move && {
+                        key: 'move',
+                        label: 'Move',
+                        disabled: busy || !moveRoomId,
+                        title: moveRoomId ? undefined : 'Pick the room under the list first',
+                        ariaLabel: `Move ${r.reservation_number}`,
+                        onClick: () => void act(`/hotel/reservations/${r.id}/move`, 'Guest moved', { new_room_id: moveRoomId }),
+                      },
+                      r.can_duplicate && {
+                        key: 'dup',
+                        label: 'Duplicate',
+                        disabled: busy || !extendDate,
+                        title: extendDate ? undefined : 'Pick the new date under the list first',
+                        ariaLabel: `Duplicate ${r.reservation_number}`,
+                        onClick: () =>
+                          void act(`/hotel/reservations/${r.id}/duplicate`, 'Stay duplicated', {
                             check_in_date: extendDate,
                             check_out_date: shiftIso(extendDate, Math.max(1, r.nights || 1)),
-                          })
-                        }
-                        aria-label={`Duplicate ${r.reservation_number}`}
-                      >
-                        Duplicate
-                      </button>
-                    )}
-                  </div>
+                          }),
+                      },
+                      r.can_no_show && {
+                        key: 'noshow',
+                        label: 'No-show',
+                        disabled: busy,
+                        ariaLabel: `No-show ${r.reservation_number}`,
+                        onClick: () => void act(`/hotel/reservations/${r.id}/no-show`, 'Marked no-show'),
+                      },
+                      r.status === 'no_show' && {
+                        key: 'noshowfee',
+                        label: 'Post no-show fee',
+                        disabled: busy,
+                        ariaLabel: `Post no-show fee ${r.reservation_number}`,
+                        onClick: () => {
+                          if (!window.confirm(`Post the no-show fee once for ${r.reservation_number}?`)) return;
+                          void act(`/hotel/reservations/${r.id}/no-show-fee`, 'No-show fee posted');
+                        },
+                      },
+                      r.can_cancel && {
+                        key: 'cancel',
+                        label: 'Cancel',
+                        variant: 'danger',
+                        disabled: busy,
+                        ariaLabel: `Cancel ${r.reservation_number}`,
+                        onClick: () => {
+                          const late = r.inside_cancellation_window
+                            ? ` This stay is inside the ${r.cancellation_hours}-hour cancellation window. Cancelling does not add a fee.`
+                            : '';
+                          if (!window.confirm(`Cancel reservation ${r.reservation_number}? This cannot be undone.${late}`)) return;
+                          void act(`/hotel/reservations/${r.id}/cancel`, 'Cancelled');
+                        },
+                      },
+                    ].filter(Boolean) as RowActionItem[]}
+                  />
                 </td>
               </tr>
             ))}
@@ -3312,7 +3356,7 @@ export default function HotelPage() {
                 type="button"
                 disabled={busy || Number(settingsForm.early_checkin_fee) <= 0}
                 onClick={() => {
-                  if (!window.confirm('Post the early check-in fee once on this folio?')) return;
+                  if (!window.confirm('Post the early check-in fee once on this bill?')) return;
                   void (async () => {
                     setBusy(true);
                     setError('');
@@ -3339,7 +3383,7 @@ export default function HotelPage() {
                 type="button"
                 disabled={busy || Number(settingsForm.late_checkout_fee) <= 0}
                 onClick={() => {
-                  if (!window.confirm('Post the late check-out fee once on this folio?')) return;
+                  if (!window.confirm('Post the late check-out fee once on this bill?')) return;
                   void (async () => {
                     setBusy(true);
                     setError('');
@@ -3588,7 +3632,7 @@ export default function HotelPage() {
                     }),
                   });
                   setFolio(f.data || null);
-                  setMessage('Hotel service posted to folio');
+                  setMessage('Service added to the bill');
                   await refresh();
                 } catch (err: any) {
                   setError(err.message || 'Could not post service');
@@ -3635,7 +3679,7 @@ export default function HotelPage() {
           <table className="table">
             <thead>
               <tr>
-                <th>Folio</th>
+                <th>Bill</th>
                 <th>Guest</th>
                 <th>Stay</th>
                 <th>Status</th>
@@ -3671,7 +3715,7 @@ export default function HotelPage() {
                           const d = await api(`/hotel/folios/${f.id}`);
                           setFolio(d.data || null);
                         } catch (err: any) {
-                          setError(err.message || 'Could not open folio');
+                          setError(err.message || 'Could not open the bill');
                         } finally {
                           setBusy(false);
                         }
@@ -4173,13 +4217,11 @@ export default function HotelPage() {
 
       {show('reports') && !report && !listsReady && (
         <div className="card" style={{ marginBottom: 16 }}>
-          <h2>Hotel reports</h2>
           <p className="muted">Loading hotel reports…</p>
         </div>
       )}
       {show('reports') && !report && listsReady && (
         <div className="card" style={{ marginBottom: 16 }}>
-          <h2>Hotel reports</h2>
           <EmptyState
             title="Reports unavailable"
             detail="Hotel reports are not available right now. Occupancy on the dashboard still uses rooms and reservations."
@@ -4188,7 +4230,6 @@ export default function HotelPage() {
       )}
       {show('reports') && report && (
         <div className="card" style={{ marginBottom: 16 }}>
-          <h2>Hotel reports</h2>
           <p className="muted">
             Occupancy and room revenue count planned nights in the selected date range. An early leave still counts
             here. The dashboard counts only the nights the room is still held.
@@ -4254,12 +4295,12 @@ export default function HotelPage() {
             <div className="hotel-kpi">
               <div className="lbl">Payments</div>
               <div className="val">{money(report.payments_total)}</div>
-              <div className="hint">Recorded on guest folios in this range</div>
+              <div className="hint">Recorded on guest bills in this range</div>
             </div>
             <div className="hotel-kpi">
               <div className="lbl">Outstanding</div>
               <div className="val">{money(report.outstanding_guest_balances)}</div>
-              <div className="hint">Open guest folios</div>
+              <div className="hint">Open guest bills</div>
             </div>
             <div className="hotel-kpi">
               <div className="lbl">Cancellations</div>
@@ -4347,10 +4388,9 @@ export default function HotelPage() {
 
       {(show('restaurant') || show('bar')) && (
         <div className="card" style={{ marginBottom: 16 }}>
-          <h2>{foodTogether ? 'Restaurant and bar' : foodKind === 'bar' ? 'Hotel bar' : 'Hotel restaurant'}</h2>
           <p className="muted">
             {foodTogether
-              ? 'Restaurant and bar run as one desk. Post a meal or a drink on an open guest bill. This is not the sales till, it does not print a kitchen ticket, and it does not charge a card.'
+              ? 'Add a meal or a drink to an open guest bill.'
               : foodKind === 'bar'
                 ? 'The bar runs on its own desk. Post a drink on an open guest bill. This is not the sales till and it does not charge a card.'
                 : 'The restaurant runs on its own desk. Post a meal on an open guest bill. This is not the sales till, it does not print a kitchen ticket, and it does not charge a card.'}

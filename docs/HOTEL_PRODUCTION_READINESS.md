@@ -21,7 +21,7 @@ Hotel is its own desk, isolated from retail and restaurant. The back office (acc
 
 ## Screens
 
-Each tab has its own title. Lists come first, with forms behind an Add button. **Front desk** has arriving, leaving and in-house tiles, and a **room board** by floor: tap a guest to open the bill, tap an empty room to book it. The **guest bill** shows charges, tax, paid and still to pay. The cash screen shows what should be in the drawer. Brand greens throughout; amber and red only mark status.
+Each tab has its own title. Reservation rows show one main action, with the rest under a menu. Lists come first, with forms behind an Add button. **Front desk** has arriving, leaving and in-house tiles, and a **room board** by floor: tap a guest to open the bill, tap an empty room to book it. The **guest bill** shows charges, tax, paid and still to pay. The cash screen shows what should be in the drawer. Brand greens throughout; amber and red only mark status.
 
 ## Checks run
 
@@ -40,7 +40,7 @@ Each tab has its own title. Lists come first, with forms behind an Add button. *
 ## Known limits to tell customers
 
 - Card, Mobile Money and bank tenders are recorded, not charged through a gateway.
-- The whole stay is counted as revenue at check-in, not night by night. A guest who leaves early needs the unused nights voided by hand.
+- The whole stay is counted as revenue at check-in, not night by night. **Leaving early** on a reservation takes the unused nights off the bill and the books and frees the room.
 - A deposit reaches the books at check-in, not when it was taken. A deposit on a stay that never arrives is not in the books.
 - An event deposit reaches the books only when it lands on a guest's open bill.
 - Cash taken on **Guest invoices** after checkout is in the books, but not in the front-desk drawer count.

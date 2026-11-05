@@ -3071,6 +3071,13 @@ a.plat-stat{color:inherit;text-decoration:none}
 .cat-table-wrap .table tbody tr:hover td{background:#f7fbf2}
 .list-table-wrap .table tbody tr:last-child td,
 .cat-table-wrap .table tbody tr:last-child td{border-bottom:0}
+/* Dark theme: list tables follow the page, so their pale buttons and notes stay readable. */
+[data-theme="dark"] .cat-table-wrap,[data-theme="dark"] .list-table-wrap{background:var(--forest);border-color:#0a3d30}
+[data-theme="dark"] .list-table-wrap .table th,[data-theme="dark"] .cat-table-wrap .table th,[data-theme="dark"] .panel .table th{background:var(--forest-deep);color:var(--muted-on-dark);border-bottom-color:#0a3d30}
+[data-theme="dark"] .list-table-wrap .table td,[data-theme="dark"] .cat-table-wrap .table td,[data-theme="dark"] .panel .table td{background:var(--forest);color:var(--white);border-bottom-color:#0a3d30}
+[data-theme="dark"] .list-table-wrap .table tbody tr:hover td,[data-theme="dark"] .cat-table-wrap .table tbody tr:hover td{background:var(--forest-deep)}
+[data-theme="dark"] .list-table-wrap .table .muted,[data-theme="dark"] .cat-table-wrap .table .muted{color:var(--muted-on-dark)}
+[data-theme="dark"] .main button.erp-row-menu-trigger:not(.menu-btn){color:#fff !important;-webkit-text-fill-color:#fff;border-color:var(--muted-on-dark) !important}
 .list-table-wrap .table th.col-text,.list-table-wrap .table td.col-text,
 .cat-table-wrap .table th.col-text,.cat-table-wrap .table td.col-text{
   white-space:nowrap;overflow:visible;text-overflow:clip;word-break:normal;overflow-wrap:normal;line-height:1.4

@@ -38,7 +38,7 @@ _TAKING_MONEY = (
     rf"PATCH /folios/{_ID}",
     rf"POST /folios/{_ID}/(charges|payments|timing-fee|service-charge|service-charges)",
     rf"POST /folios/{_ID}/charges/{_ID}/transfer",
-    rf"POST /reservations/{_ID}/(check-in|check-out|no-show|no-show-fee)",
+    rf"POST /reservations/{_ID}/(check-in|check-out|leave-early|no-show|no-show-fee)",
     rf"POST /invoices/{_ID}/payments",
     r"POST /shop/sales",
     r"POST /cashier/shift/(open|close)",

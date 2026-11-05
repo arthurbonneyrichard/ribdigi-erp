@@ -2594,6 +2594,70 @@ async def check_out(
     return row, room, guest, folio
 
 
+async def leave_early(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    reservation_id: str,
+    created_by: str | None = None,
+) -> tuple[m.HotelReservation, m.HotelRoom, m.HotelGuest]:
+    """The guest goes before the booked date: take the unused nights off the bill and free the room."""
+    row, room, guest = await _get_reservation(db, tenant_id, reservation_id)
+    if row.status != "checked_in":
+        raise HTTPException(status_code=400, detail="Only an in-house stay can leave early")
+    new_out = max(date.today(), row.check_in_date + timedelta(days=1))
+    unused = (row.check_out_date - new_out).days
+    if unused <= 0:
+        raise HTTPException(status_code=400, detail="This stay already ends today")
+    folio = await get_folio_for_reservation(db, tenant_id=tenant_id, reservation_id=row.id)
+    if not folio or folio.status != "open":
+        raise HTTPException(status_code=400, detail="This stay has no open bill")
+    charges = (
+        await db.execute(
+            select(m.HotelFolioCharge)
+            .where(
+                m.HotelFolioCharge.tenant_id == tenant_id,
+                m.HotelFolioCharge.folio_id == folio.id,
+                m.HotelFolioCharge.charge_type == "room",
+                m.HotelFolioCharge.is_void.is_(False),
+            )
+            .order_by(m.HotelFolioCharge.created_at.desc())
+        )
+    ).scalars().all()
+    left = unused
+    for charge in charges:
+        if left <= 0:
+            break
+        nights = int(money_json(charge.quantity or 0))
+        cut = min(left, nights)
+        if cut <= 0:
+            continue
+        left -= cut
+        unit = money_json(charge.unit_amount or 0)
+        discount = money_json(charge.discount_amount or 0)
+        had_tax = money_json(charge.tax_amount or 0) > 0
+        await void_folio_charge(
+            db, tenant_id=tenant_id, charge_id=charge.id, void_reason="Guest left early", user_id=created_by
+        )
+        if nights > cut:
+            await add_folio_charge(
+                db,
+                tenant_id=tenant_id,
+                folio_id=folio.id,
+                charge_type="room",
+                description=f"Room charge ({nights - cut} night(s))",
+                quantity=nights - cut,
+                unit_amount=unit,
+                discount_amount=money_json(round(discount * (nights - cut) / nights, 2)),
+                created_by=created_by,
+                stay_tax=had_tax,
+            )
+    row.check_out_date = new_out
+    row.updated_at = datetime.utcnow()
+    await db.flush()
+    return row, room, guest
+
+
 async def cancel_reservation(
     db: AsyncSession, *, tenant_id: str, reservation_id: str
 ) -> tuple[m.HotelReservation, m.HotelRoom, m.HotelGuest]:
@@ -3167,7 +3231,7 @@ async def summary(db: AsyncSession, *, tenant_id: str, on_date: date | None = No
             {
                 "code": "unpaid_balances",
                 "href": "/hotel?tab=billing",
-                "message": f"Unpaid guest balances: {money_json(outstanding)}",
+                "message": f"Unpaid guest balances: {money_json(outstanding):,.2f}",
             }
         )
     if expected_arrivals:

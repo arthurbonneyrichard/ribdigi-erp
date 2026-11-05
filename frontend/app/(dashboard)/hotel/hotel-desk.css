@@ -70,3 +70,20 @@
 }
 .main .hdesk-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
 .main .hboard-owes{white-space:nowrap}
+
+/* Money stays on one line on the dashboard and report tiles. */
+.main .hotel-kpi .val,.main .hotel-ops-kpi .val,.main .hotel-report-kpi .val{font-size:clamp(19px,1.9vw,28px);white-space:nowrap}
+
+/* Reservations: the row menu must not be cut off by the scroll box on a desktop screen. */
+@media (min-width:1200px){
+  .main .hdesk-res-wrap{overflow:visible}
+  .main .hdesk-res-wrap .table{table-layout:auto;width:100%}
+  .main .hdesk-res-wrap .table th,.main .hdesk-res-wrap .table td{padding-left:7px;padding-right:7px}
+  .main .hdesk-res-wrap code{font-size:12px}
+}
+
+.main .hdesk-actions button:not(.menu-btn){padding:6px 12px;white-space:nowrap}
+[data-theme="dark"] .main button.hdesk-tile:not(.menu-btn) span{color:#A3B5AA}
+[data-theme="dark"] .main .hboard-who,[data-theme="dark"] .main .hboard-key-item,[data-theme="dark"] .main .hboard-floor h3{color:#A3B5AA}
+[data-theme="dark"] .main .hboard-key-item b{color:#E8F2E4}
+[data-theme="dark"] .main button.hboard-room:not(.menu-btn):hover{background:#1F3A26}

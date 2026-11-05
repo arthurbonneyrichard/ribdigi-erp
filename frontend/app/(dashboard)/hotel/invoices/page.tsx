@@ -89,7 +89,7 @@ export default function HotelInvoicesPage() {
           <h1>Guest invoices</h1>
           <p>Each stay becomes an invoice at check-out. See what guests and companies still owe and take payment.</p>
         </div>
-        <Link href="/hotel?tab=billing" className="hi-link">Open folios →</Link>
+        <Link href="/hotel?tab=billing" className="hi-link">Open guest bills →</Link>
       </header>
 
       {notice ? <div className="hi-notice" role="status" onClick={() => setNotice('')}>{notice}</div> : null}

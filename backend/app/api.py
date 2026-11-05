@@ -18367,6 +18367,29 @@ async def hotel_reservation_check_out(
     )
 
 
+@api.post("/hotel/reservations/{reservation_id}/leave-early")
+async def hotel_reservation_leave_early(
+    reservation_id: UuidIdValue,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row, room, guest = await hotel_svc.leave_early(
+        db, tenant_id=claims["tenant_id"], reservation_id=reservation_id, created_by=claims["sub"]
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="stay_left_early",
+        entity="hotel_reservation",
+        entity_id=row.id,
+        details={"reservation_number": row.reservation_number, "check_out_date": row.check_out_date.isoformat()},
+    )
+    await db.commit()
+    return env(hotel_svc.serialize_reservation(row, room=room, guest=guest), "Unused nights removed")
+
+
 @api.post("/hotel/reservations/{reservation_id}/cancel")
 async def hotel_reservation_cancel(
     reservation_id: UuidIdValue,
