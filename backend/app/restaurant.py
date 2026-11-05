@@ -1710,6 +1710,7 @@ async def summary(db: AsyncSession, tenant_id: str, user_id: str | None = None) 
         .where(
             m.RestaurantKitchenTicket.tenant_id == tenant_id,
             m.RestaurantKitchenTicket.status.in_(("queued", "preparing")),
+            m.RestaurantOrder.status.not_in(("cancelled", "voided", "refunded")),
         )
         .group_by(m.RestaurantKitchenTicket.station)
     )
@@ -3665,6 +3666,36 @@ async def _stamp_bill_movement_warehouse(
             return
 
 
+async def _short_stock_problem(db, tenant_id, exc: HTTPException, product_id: str, dish_id: str) -> HTTPException:
+    """Say which dish or ingredient is short, in kitchen words, instead of the SKU."""
+    detail = exc.detail if isinstance(exc.detail, dict) else {}
+    if detail.get("code") != "INSUFFICIENT_STOCK":
+        return exc
+    names = dict(
+        (
+            await db.execute(
+                select(m.Product.id, m.Product.name).where(
+                    m.Product.tenant_id == tenant_id, m.Product.id.in_({product_id, dish_id})
+                )
+            )
+        ).all()
+    )
+    item = names.get(product_id, "an item")
+    left = money_json(detail.get("available") or 0)
+    needed = money_json(detail.get("requested") or 0)
+    if product_id == dish_id:
+        message = (
+            f"Not enough {item} in stock to finish this bill ({left:g} left, {needed:g} needed). "
+            "Receive more under Ingredients and purchasing, or give it a recipe so its ingredients are used instead."
+        )
+    else:
+        message = (
+            f"Not enough {item} in stock for {names.get(dish_id, 'this dish')} ({left:g} left, {needed:g} needed). "
+            "Receive more under Ingredients and purchasing."
+        )
+    return HTTPException(status_code=409, detail={**detail, "message": message, "item": item})
+
+
 async def _deduct_or_restore(db, tenant_id, order, *, user_id, sign: float) -> None:
     lines = (
         await db.execute(select(m.RestaurantOrderLine).where(m.RestaurantOrderLine.order_id == order.id))
@@ -3681,17 +3712,20 @@ async def _deduct_or_restore(db, tenant_id, order, *, user_id, sign: float) -> N
                     warehouse_id = candidate
             else:
                 warehouse_id = await _refund_warehouse_id(db, tenant_id, order.id, product_id, need)
-            await inventory.apply_stock_change(
-                db,
-                tenant_id=tenant_id,
-                product_id=product_id,
-                quantity_delta=delta,
-                movement_type="stock_out" if sign < 0 else "stock_in",
-                user_id=user_id,
-                reference_type="restaurant_order",
-                reference_id=order.id,
-                notes=f"Restaurant order {order.order_number}",
-            )
+            try:
+                await inventory.apply_stock_change(
+                    db,
+                    tenant_id=tenant_id,
+                    product_id=product_id,
+                    quantity_delta=delta,
+                    movement_type="stock_out" if sign < 0 else "stock_in",
+                    user_id=user_id,
+                    reference_type="restaurant_order",
+                    reference_id=order.id,
+                    notes=f"Restaurant order {order.order_number}",
+                )
+            except HTTPException as exc:
+                raise await _short_stock_problem(db, tenant_id, exc, product_id, line.product_id) from exc
             if not warehouse_id:
                 continue
             await inventory.apply_warehouse_stock_change(
@@ -3838,6 +3872,12 @@ async def cancel_order(db: AsyncSession, tenant_id: str, order_id: str, *, user_
         return order
     order.status = "voided" if void else "cancelled"
     await _release_table_if_clear(db, tenant_id, order.table_id)
+    # Take its tickets off the kitchen and bar screens, so nobody cooks a cancelled order.
+    tickets = (
+        await db.execute(select(m.RestaurantKitchenTicket).where(m.RestaurantKitchenTicket.order_id == order.id))
+    ).scalars()
+    for ticket in tickets:
+        ticket.status = "cancelled"
     await db.flush()
     await audit_svc.record_event(
         db, tenant_id=tenant_id, user_id=user_id, module="restaurant",
@@ -3987,6 +4027,7 @@ async def list_kitchen(db: AsyncSession, tenant_id: str, user_id: str | None = N
         .where(
             m.RestaurantKitchenTicket.tenant_id == tenant_id,
             m.RestaurantKitchenTicket.status.in_(("queued", "preparing", "ready")),
+            m.RestaurantOrder.status.not_in(("cancelled", "voided", "refunded")),
         )
         .order_by(m.RestaurantKitchenTicket.created_at)
     )

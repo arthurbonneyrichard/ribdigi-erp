@@ -735,7 +735,7 @@ function RestaurantTill() {
                 type="button"
                 className="rtill-send"
                 aria-label="Send to kitchen"
-                disabled={busy || !draft.length}
+                disabled={busy || (!draft.length && current?.status !== 'open')}
                 onClick={() => void sendToKitchen()}
               >
                 Send to kitchen

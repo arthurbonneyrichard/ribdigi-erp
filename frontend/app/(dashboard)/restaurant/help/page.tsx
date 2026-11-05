@@ -15,11 +15,11 @@ type Guide = { area: string; q: string; steps: string[]; href: string; go: strin
 
 const GUIDES: Guide[] = [
   { area: 'Service', q: 'Take an order at a table', href: '/restaurant/till', go: 'Open the till', steps: ['Open the till and start your shift with the cash float.', 'Pick the table (or Takeaway / Delivery), then tap dishes to add them.', 'Tap Send to kitchen. The kitchen screen shows it straight away.'] },
-  { area: 'Service', q: 'Take payment and split a bill', href: '/restaurant/bills', go: 'Open bills', steps: ['Open Bills and pick the table’s bill.', 'Choose Cash, Card or MoMo. For cash, type what the guest handed over to see the change.', 'To split, pay part of the bill one way and the rest another way.'] },
-  { area: 'Service', q: 'Refund a paid bill', href: '/restaurant/orders', go: 'Open orders', steps: ['Open Orders and show all, including paid ones.', 'Open the bill and choose Refund.', 'A cash refund comes out of the open till shift, so the cash count stays right.'] },
+  { area: 'Service', q: 'Take payment for a bill', href: '/restaurant/till', go: 'Open the till', steps: ['On the till, tap Open bills and pick the table’s bill, then Pay.', 'Choose Cash, Card, Mobile Money or Wallet. For cash, tap or type what the guest handed over to see the change.', 'A bill is paid one way. If guests want to pay separately, ring their dishes as separate bills.'] },
+  { area: 'Service', q: 'Refund a paid bill', href: '/restaurant/bills', go: 'Open bills', steps: ['Open Bills (or Paid bills on the Orders board) and find the bill.', 'Open it, choose Refund and confirm. The dishes go back into stock.', 'A cash refund comes out of the open till shift, so the cash count stays right.'] },
   { area: 'Service', q: 'Open and close a till shift', href: '/restaurant/till', go: 'Open the till', steps: ['On the till, tap Shift and enter the opening float.', 'Use Cash in / Cash out for change top-ups or money taken to the bank.', 'At the end, count the cash and close. Over or short shows on End of day.'] },
   { area: 'Service', q: 'Close off the day', href: '/restaurant/day-close', go: 'Open End of day', steps: ['Open End of day.', 'Clear what it lists: shifts still open, bills not paid.', 'Print the sheet for your file.'] },
-  { area: 'Kitchen', q: 'Use the kitchen screen', href: '/restaurant?tab=kitchen', go: 'Open the kitchen', steps: ['Put the Kitchen screen on a tablet in the kitchen (and one at the bar).', 'Tap a dish when it is ready; tap Bump when the whole ticket is done.', 'Tickets turn amber, then red, the longer they wait.'] },
+  { area: 'Kitchen', q: 'Use the kitchen screen', href: '/restaurant?tab=kitchen', go: 'Open the kitchen', steps: ['Put the Kitchen screen on a tablet in the kitchen (and one at the bar).', 'Tap Start when you begin a dish and Ready when it is done; All ready finishes the whole ticket.', 'Tickets turn amber, then red, the longer they wait.'] },
   { area: 'Kitchen', q: 'Print kitchen and bar tickets', href: '/printers', go: 'Open printers', steps: ['Under Printers, add the kitchen printer with the purpose Kitchen and the bar printer with Bar.', 'Each dish prints where it is made: kitchen dishes on the kitchen printer, drinks on the bar printer, as soon as the order is sent. Dishes added later print as a new ticket.', 'A printer plugged into the kitchen tablet: open Kitchen on that tablet and set Print tickets here to Kitchen tickets.'] },
   { area: 'Kitchen', q: 'Mark a dish sold out', href: '/restaurant/ingredients?tab=menu', go: 'Open menu items', steps: ['Open Menu items.', 'Tap Sold out next to the dish. It disappears from the till and the website.', 'Tap Put back when it is available again.'] },
   { area: 'Menu', q: 'Add a dish and its recipe', href: '/restaurant/ingredients?tab=menu', go: 'Open menu items', steps: ['Under Menu items, tap + Menu item: name, price, section, kitchen or bar.', 'Open Recipes and list the ingredients one plate uses.', 'Every sale then takes those ingredients off stock and counts the food cost.'] },
@@ -104,7 +104,7 @@ export default function RestaurantHelpPage() {
         </div>
       ) : null}
 
-      <input className="rd-search rd-help-search" type="search" placeholder="How do I… (refund, split a bill, VAT, market run)" aria-label="Search help" value={search} onChange={(e) => setSearch(e.target.value)} />
+      <input className="rd-search rd-help-search" type="search" placeholder="How do I… (refund, pay a bill, VAT, market run)" aria-label="Search help" value={search} onChange={(e) => setSearch(e.target.value)} />
 
       <div className="rd-help">
         {areas.map((area) => (
