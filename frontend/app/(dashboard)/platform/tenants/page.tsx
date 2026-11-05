@@ -7,7 +7,7 @@ import PageSkeleton from '../../../../components/PageSkeleton';
 import EmptyState from '../../../../components/EmptyState';
 import FormModal from '../../../../components/FormModal';
 import RowActions from '../../../../components/RowActions';
-import { Avatar, Drawer, Tabs, TenantStatus, moduleName, plainWords } from '../../../../components/PlatformUi';
+import { Avatar, Drawer, QUIET_DAYS, Tabs, TenantStatus, isQuiet, lastActiveLabel, moduleName, plainWords } from '../../../../components/PlatformUi';
 import { api } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
 import { getPrefetched } from '../../../../lib/prefetchCache';
@@ -71,6 +71,7 @@ type TenantRow = {
   grace_ends_at?: string | null;
   suspended_reason?: string | null;
   created_at?: string | null;
+  last_active_at?: string | null;
   package_code?: string;
   max_stores_override?: number | null;
   store_limit?: number | null;
@@ -253,7 +254,7 @@ export default function PlatformTenantsPage() {
   useEffect(() => {
     // The console links here with ?status=grace and similar.
     const wanted = new URLSearchParams(window.location.search).get('status') || '';
-    if (['active', 'trial', 'grace', 'suspended'].includes(wanted)) setFilter(wanted);
+    if (['active', 'trial', 'grace', 'suspended', 'quiet'].includes(wanted)) setFilter(wanted);
     refresh().catch((err) => setError(err.message || 'Failed to load tenants'));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -317,6 +318,7 @@ export default function PlatformTenantsPage() {
       trial: count('trial'),
       grace: count('grace'),
       suspended: count('suspended'),
+      quiet: tenants.filter(isQuiet).length,
     };
   }, [tenants]);
 
@@ -325,7 +327,7 @@ export default function PlatformTenantsPage() {
       const needle = search.trim().toLowerCase();
       return tenants.filter(
         (t) =>
-          (filter === 'all' || t.status === filter) &&
+          (filter === 'all' || t.status === filter || (filter === 'quiet' && isQuiet(t))) &&
           (!needle ||
             String(t.company_name || '').toLowerCase().includes(needle) ||
             String(t.slug || '').toLowerCase().includes(needle)),
@@ -710,18 +712,19 @@ export default function PlatformTenantsPage() {
 
         <div className="plat-toolbar">
           <div className="plat-filters" role="group" aria-label="Tenant status">
-            {['all', 'active', 'trial', 'grace', 'suspended'].map((s) => (
+            {['all', 'active', 'trial', 'grace', 'suspended', 'quiet'].map((s) => (
               <button
                 key={s}
                 type="button"
                 className={filter === s ? 'plat-chip active' : 'plat-chip'}
                 aria-pressed={filter === s}
                 aria-label={s === 'all' ? 'Tenant status all' : `Tenant status ${s}`}
+                title={s === 'quiet' ? `Active or trial, no sign-in for ${QUIET_DAYS} days or more` : undefined}
                 onClick={() => setFilter(s)}
               >
                 {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
                 <span className="plat-chip-count">
-                  {s === 'all' ? stats.total : stats[s as 'active' | 'trial' | 'grace' | 'suspended']}
+                  {s === 'all' ? stats.total : stats[s as 'active' | 'trial' | 'grace' | 'suspended' | 'quiet']}
                 </span>
               </button>
             ))}
@@ -765,9 +768,9 @@ export default function PlatformTenantsPage() {
                     <th>Tenant</th>
                     <th>Status</th>
                     <th className="plat-hide-sm">Plan</th>
-                    <th className="plat-hide-sm">Industry</th>
                     <th className="plat-hide-md">Stores</th>
                     <th className="plat-hide-md">Users</th>
+                    <th className="plat-hide-md">Last active</th>
                     <th className="plat-hide-sm">Administrator</th>
                     <th className="plat-hide-lg">Created</th>
                     <th className="col-right">Actions</th>
@@ -800,8 +803,8 @@ export default function PlatformTenantsPage() {
                         </td>
                         <td className="plat-hide-sm">
                           {t.subscription?.package_name || plainWords(t.package_code) || '—'}
+                          <span className="plat-small">{industryLabel(t.industry)}</span>
                         </td>
-                        <td className="plat-hide-sm">{industryLabel(t.industry)}</td>
                         <td className="plat-hide-md">
                           {t.store_count ?? 0} {t.store_count === 1 ? 'store' : 'stores'}
                           <span className="plat-small">
@@ -809,6 +812,10 @@ export default function PlatformTenantsPage() {
                           </span>
                         </td>
                         <td className="plat-hide-md">{t.user_count ?? '—'}</td>
+                        <td className="plat-hide-md" style={{ whiteSpace: 'nowrap' }}>
+                          {lastActiveLabel(t.last_active_at)}
+                          {isQuiet(t) ? <span className="plat-small">Gone quiet</span> : null}
+                        </td>
                         <td className="plat-hide-sm">
                           <span className="plat-clip" title={t.admin_email || undefined}>
                             {t.admin_email || '—'}
@@ -1225,6 +1232,10 @@ export default function PlatformTenantsPage() {
                     <div className="plat-fact">
                       <small>Created</small>
                       <strong>{fmtDate(selected.created_at)}</strong>
+                    </div>
+                    <div className="plat-fact">
+                      <small>Last active</small>
+                      <strong>{lastActiveLabel(selected.last_active_at)}</strong>
                     </div>
                     {selected.email && selected.email !== selected.admin_email ? (
                       <div className="plat-fact">

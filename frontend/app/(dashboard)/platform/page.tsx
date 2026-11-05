@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import PageHeader from '../../../components/PageHeader';
 import PageSkeleton from '../../../components/PageSkeleton';
-import { Metric, Tag, daysLeft, timeAgo } from '../../../components/PlatformUi';
+import { MonthBars, Metric, QUIET_DAYS, Tag, daysLeft, isQuiet, timeAgo } from '../../../components/PlatformUi';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { getPrefetched } from '../../../lib/prefetchCache';
@@ -26,6 +26,32 @@ type ActivityRow = {
   action?: string;
 };
 
+type HealthBody = {
+  status?: string;
+  build_id?: string;
+  checks?: Record<string, { status?: string }>;
+};
+
+const CHECK_NAMES: Record<string, string> = {
+  database: 'Database',
+  redis: 'Cache and rate limits',
+  celery_broker: 'Background jobs',
+  platform_workspace: 'Owner workspace',
+};
+
+function healthTone(status?: string) {
+  if (status === 'ok') return 'ok' as const;
+  if (status === 'degraded' || status === 'skipped') return 'warn' as const;
+  return 'bad' as const;
+}
+
+function healthLabel(status?: string) {
+  if (status === 'ok') return 'Healthy';
+  if (status === 'degraded') return 'Degraded';
+  if (status === 'skipped') return 'Not checked';
+  return 'Down';
+}
+
 type UpcomingRow = {
   tenant_id: string;
   company_name: string;
@@ -40,6 +66,7 @@ type PlatformSummary = {
   open_support_tickets?: number;
   paid_invoice_count?: number;
   paid_revenue_by_currency?: Record<string, number>;
+  paid_revenue_by_month?: Record<string, { month: string; amount: number }[]>;
   active_billing_accounts?: number;
   attention_count?: number;
 };
@@ -150,6 +177,9 @@ export default function PlatformConsole() {
   const [activity, setActivity] = useState<ActivityRow[]>([]);
   const [summary, setSummary] = useState<PlatformSummary | null>(null);
   const [upcoming, setUpcoming] = useState<UpcomingRow[] | null>(null);
+  const [health, setHealth] = useState<HealthBody | null>(null);
+  const [healthFailed, setHealthFailed] = useState(false);
+  const [quietCount, setQuietCount] = useState(0);
   const [summaryMissing, setSummaryMissing] = useState(false);
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
@@ -168,11 +198,13 @@ export default function PlatformConsole() {
       }
       setRole(role);
       setPermissions(me.data?.permissions || {});
-      const [tenantRes, activityRes, summaryRes, upcomingRes] = await Promise.allSettled([
+      const [tenantRes, activityRes, summaryRes, upcomingRes, healthRes, directoryRes] = await Promise.allSettled([
         getPrefetched('/tenants'),
         api('/platform/activity'),
         api('/platform/reports/summary'),
         api('/platform/reports/trials'),
+        api('/platform/health'),
+        api('/platform/directory'),
       ]);
       if (cancelled) return;
       const problems: string[] = [];
@@ -190,6 +222,12 @@ export default function PlatformConsole() {
       }
       // Some staff roles cannot read reports. The panel just stays hidden for them.
       if (upcomingRes.status === 'fulfilled') setUpcoming(upcomingRes.value.data?.rows || []);
+      // A failed service answers 503, so a rejected call is itself a warning for the owner.
+      if (healthRes.status === 'fulfilled') setHealth(healthRes.value.data || null);
+      else setHealthFailed(true);
+      if (directoryRes.status === 'fulfilled') {
+        setQuietCount((directoryRes.value.data || []).filter(isQuiet).length);
+      }
       if (problems.length) setError(problems.join(' '));
       setReady(true);
     })().catch((err) => {
@@ -289,6 +327,16 @@ export default function PlatformConsole() {
       href: '/platform/reports',
     });
   }
+  if (quietCount) {
+    todo.push({
+      key: 'quiet',
+      count: quietCount,
+      tone: 'info',
+      title: `${plural(quietCount, 'Company has', 'Companies have')} gone quiet`,
+      sub: `Nobody has signed in for ${QUIET_DAYS} days or more. A call now can save the renewal.`,
+      href: '/platform/tenants?status=quiet',
+    });
+  }
   if (counts.suspended) {
     todo.push({
       key: 'suspended',
@@ -305,6 +353,7 @@ export default function PlatformConsole() {
   }
 
   const firstRevenue = paidRevenue[0];
+  const revenueMonths = Object.entries(summary?.paid_revenue_by_month || {});
 
   return (
     <div className="plat">
@@ -418,6 +467,29 @@ export default function PlatformConsole() {
             )}
           </section>
 
+          <section className="plat-panel" aria-label="Paid revenue by month">
+            <div className="plat-panel-head">
+              <h2>Paid revenue by month</h2>
+              <Link href="/platform/reports">Reports</Link>
+            </div>
+            {revenueMonths.length === 0 ? (
+              <p className="muted">No paid subscription invoices in the last 12 months.</p>
+            ) : (
+              <div className={revenueMonths.length > 1 ? 'plat-cols-even' : undefined}>
+                {revenueMonths.map(([currency, months]) => (
+                  <div key={currency}>
+                    {revenueMonths.length > 1 ? <p className="plat-months-title">{currency}</p> : null}
+                    <MonthBars
+                      label={`Paid revenue in ${currency}`}
+                      rows={months.map((row) => ({ month: row.month, value: row.amount }))}
+                      format={(value) => fmtMoney(currency, value)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
           <section className="plat-panel" aria-label="Platform activity">
             <div className="plat-panel-head">
               <h2>Platform activity</h2>
@@ -444,6 +516,32 @@ export default function PlatformConsole() {
         </div>
 
         <div className="plat-stack">
+          {health || healthFailed ? (
+            <section className="plat-panel" aria-label="System health">
+              <div className="plat-panel-head">
+                <h2>System health</h2>
+                {health ? (
+                  <Tag tone={healthTone(health.status)}>{healthLabel(health.status)}</Tag>
+                ) : (
+                  <Tag tone="bad">Needs checking</Tag>
+                )}
+              </div>
+              {health?.checks ? (
+                <ul className="plat-checks">
+                  {Object.entries(health.checks).map(([name, check]) => (
+                    <li key={name}>
+                      <span>{CHECK_NAMES[name] || name}</span>
+                      <Tag tone={healthTone(check?.status)}>{healthLabel(check?.status)}</Tag>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted">
+                  A required service is down, or the health check could not run. Check the server now.
+                </p>
+              )}
+            </section>
+          ) : null}
           <section className="plat-panel">
             <div className="plat-panel-head">
               <h2>Tenants by status</h2>

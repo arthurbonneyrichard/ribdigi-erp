@@ -6,7 +6,7 @@ import { formatNumber } from '../../../../lib/format';
 import PageHeader from '../../../../components/PageHeader';
 import PageSkeleton from '../../../../components/PageSkeleton';
 import EmptyState from '../../../../components/EmptyState';
-import { Metric, Tag, TenantStatus, daysLeft, plainWords } from '../../../../components/PlatformUi';
+import { Metric, MonthBars, Tag, TenantStatus, daysLeft, plainWords } from '../../../../components/PlatformUi';
 import { apiFetch } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
 import { getPrefetched } from '../../../../lib/prefetchCache';
@@ -88,6 +88,10 @@ export default function PlatformReportsPage() {
   const subs = data?.subscriptions?.rows || [];
   const trials = data?.trials?.rows || [];
   const maxPackage = Math.max(1, ...packages.map((p: any) => Number(p.tenant_count) || 0));
+  const signups: { month: string; count: number }[] = summary.new_companies_by_month || [];
+  const revenueMonths = Object.entries(
+    (summary.paid_revenue_by_month || {}) as Record<string, { month: string; amount: number }[]>,
+  );
 
   return (
     <>
@@ -131,6 +135,42 @@ export default function PlatformReportsPage() {
           {Object.entries(summary.by_status || {}).map(([k, v]) => (
             <Metric key={k} label={plainWords(k)} value={v as number} />
           ))}
+        </div>
+
+        <div className="plat-cols-even">
+          <div className="plat-panel">
+            <div className="plat-panel-head">
+              <h2>New companies by month</h2>
+              <span className="muted" style={{ fontSize: 13 }}>
+                {signups.reduce((sum, row) => sum + row.count, 0)} in 12 months
+              </span>
+            </div>
+            <MonthBars
+              label="New companies"
+              rows={signups.map((row) => ({ month: row.month, value: row.count }))}
+            />
+          </div>
+          <div className="plat-panel">
+            <div className="plat-panel-head">
+              <h2>Paid revenue by month</h2>
+            </div>
+            {revenueMonths.length === 0 ? (
+              <p className="muted">No paid subscription invoices in the last 12 months.</p>
+            ) : (
+              <div className="plat-stack">
+                {revenueMonths.map(([currency, months]) => (
+                  <div key={currency}>
+                    {revenueMonths.length > 1 ? <p className="plat-months-title">{currency}</p> : null}
+                    <MonthBars
+                      label={`Paid revenue in ${currency}`}
+                      rows={months.map((row) => ({ month: row.month, value: row.amount }))}
+                      format={(value) => `${currency} ${formatNumber(value, prefs)}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="plat-panel">

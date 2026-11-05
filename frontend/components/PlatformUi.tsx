@@ -253,3 +253,75 @@ export function daysLeft(days?: number | null) {
   if (days < 0) return `${Math.abs(days)} day${days === -1 ? '' : 's'} overdue`;
   return `${days} day${days === 1 ? '' : 's'} left`;
 }
+
+/** The API sends UTC without a zone marker; without this, browsers read it as local time. */
+function asUtc(value: string) {
+  return /[zZ]|[+-]\d{2}:?\d{2}$/.test(value) ? value : `${value}Z`;
+}
+
+export const QUIET_DAYS = 14;
+
+/**
+ * A paying or trial company nobody has used for QUIET_DAYS. Brand-new companies get that long
+ * to sign in first. Suspended and grace companies already show up elsewhere.
+ */
+export function isQuiet(row: {
+  slug?: string;
+  status?: string;
+  created_at?: string | null;
+  last_active_at?: string | null;
+}) {
+  if (row.status !== 'active' && row.status !== 'trial') return false;
+  if (row.slug === 'platform' || row.slug === 'ribdigi-platform') return false;
+  const seen = row.last_active_at || row.created_at;
+  if (!seen) return false;
+  return Date.now() - new Date(asUtc(seen)).getTime() > QUIET_DAYS * 86400000;
+}
+
+export function lastActiveLabel(value?: string | null) {
+  return value ? timeAgo(asUtc(value)) : 'Never';
+}
+
+function monthName(key: string) {
+  const [year, month] = key.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString(undefined, {
+    month: 'short',
+    year: '2-digit',
+    timeZone: 'UTC',
+  });
+}
+
+/** Twelve months of one measure. One hue, baseline-anchored, value on hover. */
+export function MonthBars({
+  label,
+  rows,
+  format = (value) => String(value),
+}: {
+  label: string;
+  rows: { month: string; value: number }[];
+  format?: (value: number) => string;
+}) {
+  const max = Math.max(0, ...rows.map((row) => row.value));
+  const last = rows[rows.length - 1];
+  return (
+    <figure className="plat-months-fig">
+      <div
+        className="plat-months"
+        role="img"
+        aria-label={`${label}, last ${rows.length} months: ${rows
+          .map((row) => `${monthName(row.month)} ${format(row.value)}`)
+          .join(', ')}`}
+      >
+        {rows.map((row) => (
+          <div key={row.month} className="plat-month" data-tip={`${monthName(row.month)}: ${format(row.value)}`}>
+            <span style={{ height: max ? `${Math.max(row.value ? 3 : 0, (row.value / max) * 100)}%` : 0 }} />
+          </div>
+        ))}
+      </div>
+      <figcaption className="plat-months-axis">
+        <span>{rows.length ? monthName(rows[0].month) : ''}</span>
+        <span>{last ? `${monthName(last.month)}: ${format(last.value)}` : ''}</span>
+      </figcaption>
+    </figure>
+  );
+}

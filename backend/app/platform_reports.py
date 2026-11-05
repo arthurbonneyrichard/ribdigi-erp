@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import io
 from datetime import datetime
+from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import and_, func, or_, select
@@ -53,6 +54,9 @@ _SECRET_DETAIL_KEYS = frozenset(
 )
 
 
+_OWNER_SLUGS = {"platform", "ribdigi-platform"}
+
+
 async def build_platform_summary(db: AsyncSession) -> dict[str, Any]:
     rows = (await db.execute(select(m.Tenant).order_by(m.Tenant.created_at.desc()))).scalars().all()
     by_status: dict[str, int] = {}
@@ -79,7 +83,67 @@ async def build_platform_summary(db: AsyncSession) -> dict[str, Any]:
         "open_support_tickets": open_support_tickets,
     }
     body.update(await _paid_billing_figures(db))
+    body.update(await _monthly_trends(db, rows))
     return body
+
+
+def _last_month_keys(now: datetime, count: int = 12) -> list[str]:
+    """``YYYY-MM`` for the last ``count`` calendar months, oldest first, this month last."""
+    year, month = now.year, now.month
+    keys: list[str] = []
+    for _ in range(count):
+        keys.append(f"{year:04d}-{month:02d}")
+        month -= 1
+        if month == 0:
+            year, month = year - 1, 12
+    return list(reversed(keys))
+
+
+async def _monthly_trends(db: AsyncSession, tenants: list[m.Tenant]) -> dict[str, Any]:
+    """New companies and paid revenue per month, last 12 months.
+
+    Revenue uses the same source as ``_paid_billing_figures`` (paid invoices only, by the
+    month they were paid). Currencies stay separate and are never added together.
+    """
+    keys = _last_month_keys(datetime.utcnow())
+    signups = dict.fromkeys(keys, 0)
+    for tenant in tenants:
+        created = tenant.created_at
+        if created is None or (tenant.slug or "").strip().lower() in _OWNER_SLUGS:
+            continue
+        key = created.strftime("%Y-%m")
+        if key in signups:
+            signups[key] += 1
+
+    revenue: dict[str, dict[str, Decimal]] = {}
+    if await schema_compat.table_column_names(db, "tenant_billing_invoices"):
+        start = datetime(int(keys[0][:4]), int(keys[0][5:]), 1)
+        paid = (
+            await db.execute(
+                select(
+                    m.TenantBillingInvoice.currency,
+                    m.TenantBillingInvoice.amount,
+                    m.TenantBillingInvoice.paid_at,
+                ).where(
+                    m.TenantBillingInvoice.status == "paid",
+                    m.TenantBillingInvoice.paid_at >= start,
+                )
+            )
+        ).all()
+        for currency, amount, paid_at in paid:
+            code = (currency or "").upper()
+            key = paid_at.strftime("%Y-%m")
+            if not code or key not in signups:
+                continue
+            months = revenue.setdefault(code, {k: Decimal("0") for k in keys})
+            months[key] += Decimal(str(amount or 0))
+    return {
+        "new_companies_by_month": [{"month": k, "count": signups[k]} for k in keys],
+        "paid_revenue_by_month": {
+            code: [{"month": k, "amount": money_json(months[k])} for k in keys]
+            for code, months in sorted(revenue.items())
+        },
+    }
 
 
 async def _paid_billing_figures(db: AsyncSession) -> dict[str, Any]:
@@ -386,6 +450,17 @@ async def build_platform_directory(db: AsyncSession) -> list[dict[str, Any]]:
             )
         ).all()
     )
+    # A session row is written at sign-in and again on every token refresh, so the newest
+    # one is when someone at the company last used the software. No business data is read.
+    last_active = dict(
+        (
+            await db.execute(
+                select(m.AuthSession.tenant_id, func.max(m.AuthSession.created_at)).group_by(
+                    m.AuthSession.tenant_id
+                )
+            )
+        ).all()
+    )
     admins = (
         await db.execute(
             select(
@@ -428,6 +503,7 @@ async def build_platform_directory(db: AsyncSession) -> list[dict[str, Any]]:
                 "store_count": int(store_counts.get(tenant.id) or 0),
                 "branch_count": int(branch_counts.get(tenant.id) or 0),
                 "created_at": tenant.created_at,
+                "last_active_at": last_active.get(tenant.id),
                 "admin_email": admin_emails.get(tenant.id),
                 "account_status": account_status,
                 "provisioning_status": account_status,
