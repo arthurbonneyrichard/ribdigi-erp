@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import FormModal from '../../../../components/FormModal';
 import PageHeader from '../../../../components/PageHeader';
+import PageSkeleton from '../../../../components/PageSkeleton';
+import EmptyState from '../../../../components/EmptyState';
+import RowActions from '../../../../components/RowActions';
+import { Avatar, Tag, plainWords } from '../../../../components/PlatformUi';
 import { api } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
 import { getPrefetched } from '../../../../lib/prefetchCache';
@@ -272,11 +276,7 @@ export default function PlatformStaffPage() {
   }
 
   if (!ready && !error) {
-    return (
-      <>
-        <p className="muted">Loading platform staff…</p>
-      </>
-    );
+    return <PageSkeleton label="Loading platform staff…" cards={2} />;
   }
 
   return (
@@ -289,20 +289,14 @@ export default function PlatformStaffPage() {
           title="Platform staff"
           subtitle="Invite RIBDIGI staff who open the software owner dashboard."
           subtitleClassName="plat-sub"
+          actions={
+            <button type="button" className="list-btn-primary" onClick={() => setStaffAddOpen(true)} aria-label="Add staff user">
+              Add staff user
+            </button>
+          }
         />
 
-        {error && (
-          <p className="login-error" role="alert">
-            {error}
-          </p>
-        )}
-        {message && <p className="plat-msg">{message}</p>}
 
-        <div style={{ marginBottom: 12 }}>
-          <button type="button" className="list-btn-primary" onClick={() => setStaffAddOpen(true)} aria-label="Add staff user">
-            Add staff user
-          </button>
-        </div>
         {staffAddOpen ? (
         <FormModal
           title="Add staff user"
@@ -365,27 +359,150 @@ export default function PlatformStaffPage() {
                 aria-label="Platform staff phone"
               />
             </label>
-            <button
-              type="submit"
-              disabled={busy || !form.full_name.trim() || !form.password.trim()}
-              aria-label="Create platform staff"
-            >
-              {busy ? 'Saving…' : 'Create staff'}
-            </button>
+            <div className="plat-form-actions">
+              <button
+                type="submit"
+                disabled={busy || !form.full_name.trim() || !form.password.trim()}
+                aria-label="Create platform staff"
+              >
+                {busy ? 'Saving…' : 'Create staff'}
+              </button>
+            </div>
           </form>
         </FormModal>
         ) : null}
 
         <div className="plat-panel">
-          <h2>Staff directory</h2>
-          <p className="muted" style={{ marginTop: 0 }}>
-            The platform owner can edit a staff account or set a new password. Leave the password
-            blank when editing to keep the current one. Deactivate keeps the account signed out but
-            listed.
+          <div className="plat-panel-head">
+            <h2>Staff directory</h2>
+          </div>
+          <p className="plat-panel-sub">
+            The platform owner can edit a staff account or set a new password. Deactivate keeps the
+            account signed out but listed.
           </p>
-          {canEditStaff && editingId ? (
-            <form className="plat-form" onSubmit={saveEdit} style={{ marginBottom: 16 }}>
-              <h3 style={{ margin: '0 0 4px', fontSize: 16 }}>Edit staff</h3>
+          {staff.length === 0 ? (
+            <EmptyState title="No platform staff yet." detail="Add the first person who helps run RIBDIGI." />
+          ) : (
+            <div className="plat-table-wrap is-open">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th className="col-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {staff.map((u) => (
+                    <tr key={u.id}>
+                      <td>
+                        <div className="plat-who">
+                          <Avatar name={u.full_name} />
+                          <div>
+                            <div className="plat-co">{u.full_name}</div>
+                            <span className="plat-small">{u.email}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <select
+                          className="plat-select"
+                          value={u.role}
+                          disabled={busy}
+                          onChange={(e) => changeRole(u, e.target.value)}
+                          aria-label={`Change platform staff role for ${u.email}`}
+                        >
+                          {roles.map((r) => (
+                            <option key={r.key} value={r.key}>
+                              {r.label}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <span className="plat-row-actions" style={{ justifyContent: 'flex-start', flexWrap: 'wrap' }}>
+                          <Tag tone={u.is_active === false ? 'none' : 'ok'}>
+                            {u.is_active === false ? 'Inactive' : 'Active'}
+                          </Tag>
+                          {u.email_verified === false ? <Tag tone="warn">Unverified</Tag> : null}
+                        </span>
+                      </td>
+                      <td className="plat-actions-cell col-right">
+                        <span className="plat-row-actions">
+                          {u.is_active === false ? (
+                            <button
+                              type="button"
+                              className="btn-ok"
+                              disabled={busy}
+                              onClick={() => setActive(u, true)}
+                              aria-label={`Activate platform staff ${u.id}`}
+                            >
+                              Activate
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn-danger"
+                              disabled={busy}
+                              onClick={() => setActive(u, false)}
+                              aria-label={`Deactivate platform staff ${u.id}`}
+                            >
+                              Deactivate
+                            </button>
+                          )}
+                          <RowActions
+                            primaryMax={0}
+                            label={`More actions for ${u.email}`}
+                            items={[
+                              {
+                                key: 'edit',
+                                label: 'Edit',
+                                ariaLabel: `Edit platform staff ${u.email}`,
+                                hidden: !canEditStaff,
+                                disabled: busy,
+                                onClick: () => openEdit(u),
+                              },
+                              {
+                                key: 'resend',
+                                label: 'Resend email',
+                                ariaLabel: `Resend verification email for ${u.email}`,
+                                hidden: !canEditStaff || u.email_verified !== false,
+                                disabled: busy,
+                                onClick: () => resendStaffEmail(u),
+                              },
+                              {
+                                key: 'verify',
+                                label: 'Verify account',
+                                ariaLabel: `Verify account for ${u.email}`,
+                                variant: 'ok',
+                                hidden: !canEditStaff || u.email_verified !== false,
+                                disabled: busy,
+                                onClick: () => verifyStaff(u),
+                              },
+                              {
+                                key: 'revoke',
+                                label: 'Revoke dashboard',
+                                ariaLabel: `Revoke dashboard access ${u.id}`,
+                                variant: 'danger',
+                                hidden: u.role === 'super_admin',
+                                disabled: busy,
+                                onClick: () => revokeAccess(u),
+                              },
+                            ]}
+                          />
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+        {canEditStaff && editingId ? (
+          <FormModal title="Edit staff" busy={busy} onClose={() => setEditingId('')}>
+            <form className="plat-form" onSubmit={saveEdit}>
               <label>
                 <span>Full name</span>
                 <input
@@ -441,7 +558,7 @@ export default function PlatformStaffPage() {
                   aria-label="Edit platform staff phone"
                 />
               </label>
-              <div className="plat-actions">
+              <div className="plat-form-actions">
                 <button type="submit" disabled={busy || !editForm.full_name.trim()} aria-label="Save platform staff">
                   {busy ? 'Saving…' : 'Save staff'}
                 </button>
@@ -455,113 +572,10 @@ export default function PlatformStaffPage() {
                 </button>
               </div>
             </form>
-          ) : null}
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {staff.map((u) => (
-                <tr key={u.id}>
-                  <td className="plat-co">{u.full_name}</td>
-                  <td>{u.email}</td>
-                  <td>
-                    <select
-                      value={u.role}
-                      disabled={busy}
-                      onChange={(e) => changeRole(u, e.target.value)}
-                      aria-label={`Change platform staff role for ${u.email}`}
-                    >
-                      {roles.map((r) => (
-                        <option key={r.key} value={r.key}>
-                          {r.label}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>
-                    {u.is_active === false ? 'inactive' : 'active'}
-                    {u.email_verified === false ? ' · unverified' : ''}
-                  </td>
-                  <td>
-                    <div className="plat-actions">
-                      {canEditStaff && u.email_verified === false && (
-                        <>
-                          <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() => resendStaffEmail(u)}
-                            aria-label={`Resend verification email for ${u.email}`}
-                          >
-                            Resend email
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-ok"
-                            disabled={busy}
-                            onClick={() => verifyStaff(u)}
-                            aria-label={`Verify account for ${u.email}`}
-                          >
-                            Verify account
-                          </button>
-                        </>
-                      )}
-                      {canEditStaff && (
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => openEdit(u)}
-                          aria-label={`Edit platform staff ${u.email}`}
-                        >
-                          Edit
-                        </button>
-                      )}
-                      {u.is_active === false ? (
-                        <button
-                          type="button"
-                          className="btn-ok"
-                          disabled={busy}
-                          onClick={() => setActive(u, true)}
-                          aria-label={`Activate platform staff ${u.id}`}
-                        >
-                          Activate
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className="btn-danger"
-                          disabled={busy}
-                          onClick={() => setActive(u, false)}
-                          aria-label={`Deactivate platform staff ${u.id}`}
-                        >
-                          Deactivate
-                        </button>
-                      )}
-                      {u.role !== 'super_admin' && (
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => revokeAccess(u)}
-                          aria-label={`Revoke dashboard access ${u.id}`}
-                        >
-                          Revoke dashboard
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+          </FormModal>
+        ) : null}
         <form
-          className="card"
+          className="plat-panel"
           onSubmit={async (e) => {
             e.preventDefault();
             setError('');
@@ -578,20 +592,52 @@ export default function PlatformStaffPage() {
             }
           }}
         >
-          <h2>Grant as</h2>
-          <select value={grantUserId} onChange={(e) => setGrantUserId(e.target.value)} aria-label="Grant access user">
-            <option value="">Select user</option>
-            {staff.map((u) => (
-              <option key={u.id} value={u.id}>{u.full_name}</option>
-            ))}
-          </select>
-          <select value={grantRole} onChange={(e) => setGrantRole(e.target.value)} aria-label="Platform grant role">
-            {PLATFORM_ROLES.map((role) => (
-              <option key={role} value={role}>{role}</option>
-            ))}
-          </select>
-          <button type="submit">Grant as</button>
+          <div className="plat-panel-head">
+            <h2>Grant as</h2>
+          </div>
+          <p className="plat-panel-sub">Move someone already on the staff list to another platform role.</p>
+          <div className="plat-inline">
+            <label className="plat-field">
+              <span>Person</span>
+              <select value={grantUserId} onChange={(e) => setGrantUserId(e.target.value)} aria-label="Grant access user">
+                <option value="">Select user</option>
+                {staff.map((u) => (
+                  <option key={u.id} value={u.id}>{u.full_name}</option>
+                ))}
+              </select>
+            </label>
+            <label className="plat-field">
+              <span>Role</span>
+              <select value={grantRole} onChange={(e) => setGrantRole(e.target.value)} aria-label="Platform grant role">
+                {PLATFORM_ROLES.map((role) => (
+                  <option key={role} value={role}>{roles.find((r) => r.key === role)?.label || plainWords(role)}</option>
+                ))}
+              </select>
+            </label>
+            <button type="submit" disabled={!grantUserId}>Grant as</button>
+          </div>
         </form>
+
+        {(error || message) && (
+          <div className="plat-feedback-dock" aria-live="polite">
+            {error ? (
+              <div className="plat-toast is-bad" role="alert">
+                <p>{error}</p>
+                <button type="button" aria-label="Dismiss error" onClick={() => setError('')}>
+                  ×
+                </button>
+              </div>
+            ) : null}
+            {message ? (
+              <div className="plat-toast" role="status">
+                <p>{message}</p>
+                <button type="button" aria-label="Dismiss message" onClick={() => setMessage('')}>
+                  ×
+                </button>
+              </div>
+            ) : null}
+          </div>
+        )}
       </div>
     </>
   );

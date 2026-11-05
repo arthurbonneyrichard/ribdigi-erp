@@ -3,6 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import PageHeader from '../../../../components/PageHeader';
+import PageSkeleton from '../../../../components/PageSkeleton';
+import EmptyState from '../../../../components/EmptyState';
+import FormModal from '../../../../components/FormModal';
+import RowActions from '../../../../components/RowActions';
+import { Avatar, Drawer, Tabs, TenantStatus, moduleName, plainWords } from '../../../../components/PlatformUi';
 import { api } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
 import { getPrefetched } from '../../../../lib/prefetchCache';
@@ -112,12 +117,13 @@ const emptyCreate = {
   max_stores: '10',
 };
 
-function statusClass(status: string) {
-  if (status === 'active') return 'st-active';
-  if (status === 'trial') return 'st-trial';
-  if (status === 'grace') return 'st-grace';
-  if (status === 'suspended') return 'st-suspended';
-  return '';
+const LOCKED_MODULES = ['dashboard', 'notifications', 'security'];
+
+function accountLabel(status?: string) {
+  if (status === 'verified') return 'Verified';
+  if (status === 'pending_verification') return 'Pending verification';
+  if (status === 'no_administrator') return 'No administrator';
+  return status || '—';
 }
 
 function fmtDate(value?: string | null) {
@@ -174,8 +180,11 @@ export default function PlatformTenantsPage() {
   const [industryDraft, setIndustryDraft] = useState('');
   const [industryReason, setIndustryReason] = useState('');
   const [meRole, setMeRole] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [suspendTarget, setSuspendTarget] = useState<TenantRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<TenantRow | null>(null);
+  const [manageTab, setManageTab] = useState('overview');
   const managePanelRef = useRef<HTMLDivElement | null>(null);
-  const feedbackRef = useRef<HTMLDivElement | null>(null);
 
   const selected = useMemo(
     () => tenants.find((t) => t.id === selectedId) || null,
@@ -189,11 +198,14 @@ export default function PlatformTenantsPage() {
     setSelectedId(row.id);
     setIndustryDraft(row.industry || '');
     setIndustryReason('');
-    setMessage(`Managing ${row.company_name} (workspace: ${row.slug})`);
-    // Defer scroll until the panel has rendered.
-    window.setTimeout(() => {
-      managePanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 50);
+    // A password typed for one company must never carry over to the next one.
+    setAdminPasswordDraft('');
+    setManageTab('overview');
+  }
+
+  function closeManage() {
+    setSelectedId(null);
+    setAdminPasswordDraft('');
   }
 
   async function refresh(options?: { force?: boolean }) {
@@ -239,6 +251,9 @@ export default function PlatformTenantsPage() {
   }
 
   useEffect(() => {
+    // The console links here with ?status=grace and similar.
+    const wanted = new URLSearchParams(window.location.search).get('status') || '';
+    if (['active', 'trial', 'grace', 'suspended'].includes(wanted)) setFilter(wanted);
     refresh().catch((err) => setError(err.message || 'Failed to load tenants'));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -291,9 +306,6 @@ export default function PlatformTenantsPage() {
         );
       })
       .catch(() => undefined);
-    window.setTimeout(() => {
-      managePanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 80);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
@@ -355,6 +367,7 @@ export default function PlatformTenantsPage() {
         }),
       });
       setForm(emptyCreate);
+      setCreateOpen(false);
       const createdSlug = String(r.data?.slug || form.slug).trim().toLowerCase();
       const sent = Boolean(r.data?.email?.sent);
       const createdId = String(r.data?.tenant_id || r.data?.id || '').trim();
@@ -433,6 +446,7 @@ export default function PlatformTenantsPage() {
         body: JSON.stringify({ reason }),
       });
       setSuspendReason('');
+      setSuspendTarget(null);
       setMessage(`Suspended ${row.company_name}`);
       await refresh({ force: true });
     } catch (err: any) {
@@ -491,6 +505,7 @@ export default function PlatformTenantsPage() {
       });
       if (selectedId === row.id) setSelectedId(null);
       setDeleteConfirmSlug('');
+      setDeleteTarget(null);
       setMessage(`Deleted ${row.company_name}`);
       await refresh({ force: true });
     } catch (err: any) {
@@ -600,7 +615,7 @@ export default function PlatformTenantsPage() {
   }
 
   function toggleModule(mod: string) {
-    if (['dashboard', 'notifications', 'security'].includes(mod)) return;
+    if (LOCKED_MODULES.includes(mod)) return;
     setModuleDraft((prev) =>
       prev.includes(mod) ? prev.filter((m) => m !== mod) : [...prev, mod]
     );
@@ -649,20 +664,24 @@ export default function PlatformTenantsPage() {
     }
   }
 
-  useEffect(() => {
-    if (!(error || message)) return;
-    feedbackRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }, [error, message]);
-
   if (!ready && !error) {
-    return (
-      <>
-        <p className="muted">Loading tenants…</p>
-      </>
-    );
+    return <PageSkeleton label="Loading tenants…" cards={3} />;
   }
 
   const sub = selected?.subscription;
+  const assignPackage = packages.find((p) => p.code === subForm.package_code);
+  const storesActive = selected?.subscription?.stores_active ?? selected?.store_usage?.stores_active ?? null;
+  const storeLimit =
+    selected?.subscription?.effective_store_limit ?? selected?.store_usage?.effective_store_limit ?? null;
+  const overEntitlement = Boolean(
+    selected?.subscription?.over_entitlement || selected?.store_usage?.over_entitlement,
+  );
+  const offeredModules = selected
+    ? packageable.filter((mod) => industryAllowsModule(selected.industry, mod))
+    : [];
+  const enabledCount = offeredModules.filter(
+    (mod) => moduleDraft.includes(mod) || LOCKED_MODULES.includes(mod),
+  ).length;
 
   return (
     <>
@@ -675,874 +694,1018 @@ export default function PlatformTenantsPage() {
           subtitle="Create a workspace and manage its subscription, stores, and account. Paid self-serve checkout is not live — this page assigns entitlements only."
           subtitleClassName="plat-sub"
           actions={
-            <div className="plat-filters" role="group" aria-label="Tenant status">
-              <input
-                type="search"
-                aria-label="Search tenants"
-                placeholder="Search company or slug"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              {['all', 'active', 'trial', 'grace', 'suspended'].map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  className={filter === s ? 'plat-chip active' : 'plat-chip'}
-                  aria-pressed={filter === s}
-                  aria-label={s === 'all' ? 'Tenant status all' : `Tenant status ${s}`}
-                  onClick={() => setFilter(s)}
-                >
-                  {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
-                </button>
-              ))}
-            </div>
+            <button
+              type="button"
+              className="plat-cta"
+              onClick={() => {
+                setError('');
+                setCreateOpen(true);
+              }}
+              aria-label="Open new tenant form"
+            >
+              New tenant
+            </button>
           }
         />
 
-        <div className="plat-stats">
-          <div className="plat-stat">
-            <span>Total tenants</span>
-            <strong>{stats.total}</strong>
-          </div>
-          <div className="plat-stat ok">
-            <span>Active</span>
-            <strong>{stats.active}</strong>
-          </div>
-          <div className="plat-stat trial">
-            <span>Trial</span>
-            <strong>{stats.trial}</strong>
-          </div>
-          <div className="plat-stat grace">
-            <span>Grace</span>
-            <strong>{stats.grace}</strong>
-          </div>
-          <div className="plat-stat bad">
-            <span>Suspended</span>
-            <strong>{stats.suspended}</strong>
-          </div>
-        </div>
-
-        <div className="plat-panel">
-          <h2>Create tenant</h2>
-          <form className="plat-form" onSubmit={createTenant}>
-            <label>
-              <span>Company name</span>
-              <input
-                value={form.company_name}
-                onChange={(e) => {
-                  const company_name = e.target.value;
-                  setForm((f) => ({
-                    ...f,
-                    company_name,
-                    slug: f.slug && f.slug !== slugify(f.company_name) ? f.slug : slugify(company_name),
-                  }));
-                }}
-                placeholder="Sunrise Mart Ltd"
-                aria-label="Tenant company name"
-                required
-              />
-            </label>
-            <label>
-              <span>Slug</span>
-              <input
-                aria-label="Tenant slug"
-                value={form.slug}
-                onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value.toLowerCase() }))}
-                placeholder="sunrise-mart"
-                pattern="[a-z0-9-]{2,80}"
-                required
-              />
-            </label>
-            <label>
-              <span>Industry</span>
-              <select
-                value={form.industry}
-                onChange={(e) => setForm((f) => ({ ...f, industry: e.target.value }))}
-                aria-label="Tenant industry"
-                required
-              >
-                <option value="">Select business type</option>
-                {CREATE_INDUSTRIES.map((i) => (
-                  <option key={i} value={i}>
-                    {industryLabel(i)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span>Currency</span>
-              <input
-                value={form.currency}
-                onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))}
-                aria-label="Tenant currency"
-                required
-              />
-            </label>
-            <label>
-              <span>Admin email</span>
-              <input
-                type="email"
-                value={form.admin_email}
-                onChange={(e) => setForm((f) => ({ ...f, admin_email: e.target.value }))}
-                placeholder="admin@company.example.com"
-                aria-label="Tenant admin email"
-                required
-              />
-            </label>
-            <label>
-              <span>Admin password</span>
-              <input
-                type="password"
-                value={form.admin_password}
-                onChange={(e) => setForm((f) => ({ ...f, admin_password: e.target.value }))}
-                placeholder="Min 8 chars; upper, lower, number, symbol (! @ # …); no spaces"
-                aria-label="Tenant admin password"
-                required
-              />
-            </label>
-            <fieldset style={{ border: '1px solid var(--border, #ddd)', borderRadius: 8, padding: 10 }}>
-              <legend>Store layout</legend>
-              <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <input
-                  type="radio"
-                  name="create-store-mode"
-                  checked={form.store_mode === 'single'}
-                  onChange={() => setForm((f) => ({ ...f, store_mode: 'single' }))}
-                  aria-label="Single store"
-                />
-                Single store
-              </label>
-              <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <input
-                  type="radio"
-                  name="create-store-mode"
-                  checked={form.store_mode === 'multi'}
-                  onChange={() => setForm((f) => ({ ...f, store_mode: 'multi' }))}
-                  aria-label="Multi-store"
-                />
-                Multi-store (includes branches)
-              </label>
-              {form.store_mode === 'multi' ? (
-                <label style={{ marginTop: 8 }}>
-                  <span>Max stores</span>
-                  <input
-                    type="number"
-                    min={2}
-                    value={form.max_stores}
-                    onChange={(e) => setForm((f) => ({ ...f, max_stores: e.target.value }))}
-                    aria-label="Create tenant max stores"
-                  />
-                </label>
-              ) : (
-                <p className="muted" style={{ fontSize: 13, margin: '8px 0 0' }}>
-                  One operating store. Extra store create is blocked until you switch this tenant to
-                  Multi-store.
-                </p>
-              )}
-            </fieldset>
-            <button
-              type="submit"
-              disabled={creating || !form.admin_password.trim()}
-              aria-label="Create tenant"
-            >
-              {creating ? 'Creating…' : 'Create tenant'}
-            </button>
-          </form>
-        </div>
-
-        <div className="plat-panel">
-          <h2>Tenant management</h2>
-          <p className="muted" style={{ marginTop: 0, marginBottom: 12 }}>
-            Click <strong>Manage</strong> for subscription and modules. A new company admin stays
-            inactive until they open the verification email. <strong>Resend email</strong> sends that
-            link again. <strong>Verify account</strong> is the platform owner override, so they can
-            sign in without the email. They use that company&apos;s <strong>slug</strong>, not{' '}
-            <code>platform</code>.
-          </p>
-          <div className="card" style={{ marginBottom: 12 }}>
-            <label>
-              Suspend reason{' '}
-              <input
-                value={suspendReason}
-                onChange={(e) => setSuspendReason(e.target.value)}
-                placeholder="Required before Suspend"
-                title="Required suspend reason"
-                aria-label="Tenant suspend reason"
-                style={{ minWidth: 280 }}
-              />
-            </label>
-            <p className="muted" style={{ marginTop: 6 }}>
-              Used by Suspend on non-suspended tenants (stored as <code>suspended_reason</code>).
-            </p>
-            {canHardDeleteTenant ? (
-              <>
-                <label style={{ display: 'block', marginTop: 10 }}>
-                  Delete confirmation{' '}
-                  <input
-                    value={deleteConfirmSlug}
-                    onChange={(e) => setDeleteConfirmSlug(e.target.value)}
-                    placeholder="Type the tenant slug"
-                    aria-label="Delete tenant confirmation"
-                    style={{ minWidth: 280 }}
-                  />
-                </label>
-                <p className="muted" style={{ marginTop: 6 }}>
-                  Delete removes the company and its data. Type that tenant&apos;s slug, then Delete.
-                  Only the software owner can delete a company.
-                </p>
-              </>
-            ) : null}
-          </div>
-
-          {selected ? (
-            <div
-              className="plat-msg"
-              style={{ marginBottom: 12 }}
-              role="status"
-            >
-              Managing <strong>{selected.company_name}</strong> — workspace/slug:{' '}
-              <code>{selected.slug}</code>
-              {selected.admin_email ? (
-                <>
-                  {' '}
-                  — admin email: <strong>{selected.admin_email}</strong>
-                </>
-              ) : null}
-              . Scroll to the panel below or use the highlighted section under the table.
-            </div>
-          ) : null}
-
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Tenant</th>
-                <th>Admin email</th>
-                <th>Status</th>
-                <th>Industry</th>
-                <th>Store mode</th>
-                <th>Users</th>
-                <th>Stores / branches</th>
-                <th>Created</th>
-                <th>Account</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map((t) => {
-                return (
-                  <tr key={t.id} className={selectedId === t.id ? 'plat-row-selected' : undefined}>
-                    <td>
-                      <div className="plat-co">{t.company_name}</div>
-                      <div className="muted" style={{ fontSize: 12 }}>
-                        {t.slug}
-                      </div>
-                    </td>
-                    <td style={{ fontSize: 13 }}>
-                      {t.admin_email || '—'}
-                    </td>
-                    <td>
-                      <span className={`status-pill ${statusClass(t.status)}`} style={{ margin: 0 }}>
-                        {t.status}
-                      </span>
-                    </td>
-                    <td>{industryLabel(t.industry)}</td>
-                    <td>{t.store_mode === 'multi' ? 'Multi-store' : 'Single store'}</td>
-                    <td>{t.user_count ?? '—'}</td>
-                    <td>
-                      {t.store_count ?? 0} / {t.branch_count ?? 0}
-                    </td>
-                    <td>{fmtDate(t.created_at)}</td>
-                    <td style={{ fontSize: 13 }}>
-                      {t.account_status === 'verified'
-                        ? 'Verified'
-                        : t.account_status === 'pending_verification'
-                          ? 'Pending verification'
-                          : t.account_status === 'no_administrator'
-                            ? 'No administrator'
-                            : t.account_status || '—'}
-                    </td>
-                    <td>
-                      <div className="plat-actions">
-                        <button
-                          type="button"
-                          disabled={busy === t.id}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            openManage(t);
-                          }}
-                          aria-label={`Manage tenant ${t.slug || t.id}`}
-                        >
-                          {selectedId === t.id ? 'Managing…' : 'Manage'}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={busy === t.id}
-                          onClick={() => resendAdminEmail(t)}
-                          aria-label={`Resend verification email for tenant ${t.slug || t.id}`}
-                        >
-                          Resend email
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-ok"
-                          disabled={busy === t.id}
-                          onClick={() => allowAdminSignIn(t)}
-                          aria-label={`Verify account for tenant ${t.slug || t.id}`}
-                        >
-                          Verify account
-                        </button>
-                        {canDeleteTenant ? (
-                          <button
-                            type="button"
-                            disabled={busy === t.id}
-                            onClick={() => resetTenantAdminPassword(t)}
-                            aria-label={`Reset administrator password for tenant ${t.slug || t.id}`}
-                          >
-                            Reset admin password
-                          </button>
-                        ) : null}
-                        {t.status === 'suspended' ? (
-                          <button type="button" className="btn-ok" disabled={busy === t.id} onClick={() => activateTenant(t)} aria-label={`Activate tenant ${t.id}`}>
-                            Activate
-                          </button>
-                        ) : t.slug !== 'platform' && t.slug !== 'ribdigi-platform' ? (
-                          <button
-                            type="button"
-                            className="btn-danger"
-                            disabled={busy === t.id}
-                            onClick={() => suspendTenant(t)}
-                            aria-label={`Suspend tenant ${t.id}`}
-                          >
-                            Suspend
-                          </button>
-                        ) : null}
-                        {canHardDeleteTenant && t.slug !== 'platform' && t.slug !== 'ribdigi-platform' ? (
-                          <button
-                            type="button"
-                            className="btn-danger"
-                            disabled={busy === t.id}
-                            onClick={() => deleteTenant(t)}
-                            aria-label={`Delete tenant ${t.slug || t.id}`}
-                          >
-                            Delete
-                          </button>
-                        ) : null}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {selected && (
-          <div
-            className="plat-panel plat-manage-panel"
-            id="subscription-panel"
-            ref={managePanelRef}
-            tabIndex={-1}
-            style={{ borderColor: 'var(--brand)', boxShadow: '0 0 0 2px #4AB01233' }}
-          >
-            <h2>
-              Subscription & features — {selected.company_name}
-              <span className="muted" style={{ fontWeight: 600, fontSize: 13, marginLeft: 8 }}>
-                slug: {selected.slug}
-              </span>
+        <div className="plat-toolbar">
+          <div className="plat-filters" role="group" aria-label="Tenant status">
+            {['all', 'active', 'trial', 'grace', 'suspended'].map((s) => (
               <button
+                key={s}
                 type="button"
-                style={{ float: 'right', fontSize: 13 }}
-                onClick={() => {
-                  setSelectedId(null);
-                  setMessage('');
-                }}
-                aria-label="Close tenant management panel"
+                className={filter === s ? 'plat-chip active' : 'plat-chip'}
+                aria-pressed={filter === s}
+                aria-label={s === 'all' ? 'Tenant status all' : `Tenant status ${s}`}
+                onClick={() => setFilter(s)}
               >
-                Close
-              </button>
-            </h2>
-            <p style={{ margin: '0 0 12px', fontSize: 14 }}>
-              Administrator email:{' '}
-              <strong aria-label="Tenant administrator email">
-                {selected.admin_email || '—'}
-              </strong>
-              {selected.email &&
-              selected.email !== selected.admin_email ? (
-                <span className="muted" style={{ marginLeft: 12 }}>
-                  Company contact: {selected.email}
+                {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+                <span className="plat-chip-count">
+                  {s === 'all' ? stats.total : stats[s as 'active' | 'trial' | 'grace' | 'suspended']}
                 </span>
-              ) : null}
-            </p>
-            <p className="muted" style={{ fontSize: 13, margin: '0 0 12px' }} aria-label="Tenant ecommerce health">
-              Online store:{' '}
-              {selected.ecommerce_health
-                ? `${selected.ecommerce_health.entitled ? 'entitled' : 'not entitled'} · ${
-                    selected.ecommerce_health.storefront_enabled ? 'enabled' : 'disabled'
-                  } · ${(selected.ecommerce_health.domains || [])
-                    .map((d) => `${d.hostname} ${d.display_status || ''}`)
-                    .join(', ') || 'no domain'} · gateway ${
-                    selected.ecommerce_health.gateway?.configured ? 'configured' : 'not configured'
-                  }`
-                : 'health not loaded'}
-            </p>
-            <div className="plat-stats" style={{ marginBottom: 16 }}>
-              <div className="plat-stat">
-                <span>Assigned</span>
-                <strong style={{ fontSize: 18 }}>
-                  {sub?.months_assigned ?? '—'} mo
-                  {sub?.years_assigned != null ? ` / ${sub.years_assigned} y` : ''}
-                </strong>
-              </div>
-              <div className="plat-stat trial">
-                <span>Used</span>
-                <strong style={{ fontSize: 18 }}>
-                  {sub?.months_used ?? 0} mo
-                  {sub?.years_used != null ? ` / ${sub.years_used} y` : ''}
-                </strong>
-              </div>
-              <div className="plat-stat ok">
-                <span>Remaining</span>
-                <strong style={{ fontSize: 18 }}>
-                  {sub?.months_remaining ?? '—'} mo
-                  {sub?.days_remaining != null ? ` (${sub.days_remaining}d)` : ''}
-                </strong>
-              </div>
-              <div className="plat-stat">
-                <span>Amount</span>
-                <strong style={{ fontSize: 16 }}>
-                  {subscriptionAmountLabel(
-                    planAmounts[selected.slug]?.amount,
-                    planAmounts[selected.slug]?.currency || selected.currency,
-                    planAmounts[selected.slug]?.amount == null
-                      ? ''
-                      : formatNumber(planAmounts[selected.slug]?.amount, prefs),
-                  )}
-                </strong>
-              </div>
-              <div className="plat-stat">
-                <span>Renewal</span>
-                <strong style={{ fontSize: 16 }}>{fmtDate(sub?.subscription_ends_at)}</strong>
-              </div>
+              </button>
+            ))}
+          </div>
+          <div className="plat-search">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="M20 20l-3.5-3.5" />
+            </svg>
+            <input
+              type="search"
+              aria-label="Search tenants"
+              placeholder="Search company or slug"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="plat-panel">
+          <div className="plat-panel-head">
+            <h2>Tenant management</h2>
+            <span className="muted" style={{ fontSize: 13 }}>
+              {visible.length} of {stats.total}
+            </span>
+          </div>
+          <p className="plat-panel-sub">
+            A new company admin stays inactive until they open the verification email. They sign in
+            with that company&apos;s slug, not <code>platform</code>.
+          </p>
+          {visible.length === 0 ? (
+            <EmptyState
+              title={stats.total === 0 ? 'No tenants yet' : 'No tenants match'}
+              detail={stats.total === 0 ? 'Create the first company to get started.' : 'Try another search or status.'}
+            />
+          ) : (
+            <div className="plat-table-wrap is-open">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Tenant</th>
+                    <th>Status</th>
+                    <th className="plat-hide-sm">Plan</th>
+                    <th className="plat-hide-sm">Industry</th>
+                    <th className="plat-hide-md">Stores</th>
+                    <th className="plat-hide-md">Users</th>
+                    <th className="plat-hide-sm">Administrator</th>
+                    <th className="plat-hide-lg">Created</th>
+                    <th className="col-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visible.map((t) => {
+                    const canBeRemoved = t.slug !== 'platform' && t.slug !== 'ribdigi-platform';
+                    const verified = t.account_status === 'verified' || t.account_status === 'no_administrator';
+                    return (
+                      <tr key={t.id} className={selectedId === t.id ? 'plat-row-selected' : undefined}>
+                        <td>
+                          <div className="plat-who">
+                            <Avatar name={t.company_name} />
+                            <div>
+                              <div className="plat-co">{t.company_name}</div>
+                              <span className="plat-small">{t.slug}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <TenantStatus status={t.status} />
+                          {t.status === 'suspended' && t.suspended_reason ? (
+                            <span className="plat-small" title={t.suspended_reason}>
+                              {t.suspended_reason.length > 34
+                                ? `${t.suspended_reason.slice(0, 34)}…`
+                                : t.suspended_reason}
+                            </span>
+                          ) : null}
+                        </td>
+                        <td className="plat-hide-sm">
+                          {t.subscription?.package_name || plainWords(t.package_code) || '—'}
+                        </td>
+                        <td className="plat-hide-sm">{industryLabel(t.industry)}</td>
+                        <td className="plat-hide-md">
+                          {t.store_count ?? 0} {t.store_count === 1 ? 'store' : 'stores'}
+                          <span className="plat-small">
+                            {t.store_mode === 'multi' ? 'Multi-store' : 'Single store'}
+                          </span>
+                        </td>
+                        <td className="plat-hide-md">{t.user_count ?? '—'}</td>
+                        <td className="plat-hide-sm">
+                          <span className="plat-clip" title={t.admin_email || undefined}>
+                            {t.admin_email || '—'}
+                          </span>
+                          <span className="plat-small">{accountLabel(t.account_status)}</span>
+                        </td>
+                        <td className="plat-hide-lg" style={{ whiteSpace: 'nowrap' }}>
+                          {fmtDate(t.created_at)}
+                        </td>
+                        <td className="plat-actions-cell col-right">
+                          <RowActions
+                            label={`More actions for ${t.company_name}`}
+                            items={[
+                              {
+                                key: 'manage',
+                                label: 'Manage',
+                                ariaLabel: `Manage tenant ${t.slug || t.id}`,
+                                disabled: busy === t.id,
+                                onClick: () => openManage(t),
+                              },
+                              {
+                                key: 'resend',
+                                label: 'Resend verification email',
+                                ariaLabel: `Resend verification email for tenant ${t.slug || t.id}`,
+                                disabled: busy === t.id,
+                                hidden: verified,
+                                onClick: () => resendAdminEmail(t),
+                              },
+                              {
+                                key: 'verify',
+                                label: 'Verify account',
+                                ariaLabel: `Verify account for tenant ${t.slug || t.id}`,
+                                variant: 'ok',
+                                disabled: busy === t.id,
+                                hidden: verified,
+                                onClick: () => allowAdminSignIn(t),
+                              },
+                              {
+                                key: 'password',
+                                label: 'Reset admin password',
+                                ariaLabel: `Reset administrator password for tenant ${t.slug || t.id}`,
+                                disabled: busy === t.id,
+                                hidden: !canDeleteTenant,
+                                onClick: () => resetTenantAdminPassword(t),
+                              },
+                              {
+                                key: 'status',
+                                hidden: t.status !== 'suspended' && !canBeRemoved,
+                                closeOnClick: true,
+                                node:
+                                  t.status === 'suspended' ? (
+                                    <button type="button" className="btn-ok" disabled={busy === t.id} onClick={() => activateTenant(t)} aria-label={`Activate tenant ${t.id}`}>
+                                      Activate
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      className="btn-danger"
+                                      disabled={busy === t.id}
+                                      onClick={() => {
+                                        setError('');
+                                        setSuspendReason('');
+                                        setSuspendTarget(t);
+                                      }}
+                                      aria-label={`Suspend tenant ${t.id}`}
+                                    >
+                                      Suspend
+                                    </button>
+                                  ),
+                              },
+                              {
+                                key: 'delete',
+                                hidden: !canHardDeleteTenant || !canBeRemoved,
+                                closeOnClick: true,
+                                node: (
+                                  <button
+                                    type="button"
+                                    className="btn-danger"
+                                    disabled={busy === t.id}
+                                    onClick={() => {
+                                      setError('');
+                                      setDeleteConfirmSlug('');
+                                      setDeleteTarget(t);
+                                    }}
+                                    aria-label={`Delete tenant ${t.slug || t.id}`}
+                                  >
+                                    Delete
+                                  </button>
+                                ),
+                              },
+                            ]}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
+          )}
+        </div>
 
-            <h3 style={{ marginTop: 20, fontSize: 15 }}>Business type</h3>
-            <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>
-              Current: {industryLabel(selected.industry)}. Only the Platform Owner can change this.
-              Choose Retail, Hotel, or Restaurant. APIs follow the saved industry immediately. Ask
-              staff to refresh or sign in again so the sidebar matches. Existing records are kept.
-            </p>
-            {canDeleteTenant ? (
-              <div className="plat-form" style={{ marginTop: 8, display: 'grid', gap: 8 }}>
-                <label>
-                  <span>New business type</span>
-                  <select
-                    value={industryDraft || selected.industry || ''}
-                    onChange={(e) => setIndustryDraft(e.target.value)}
-                    aria-label="Change tenant business type"
-                  >
-                    {selected.industry &&
-                    !(INDUSTRIES as readonly string[]).includes(selected.industry) ? (
-                      <option value={selected.industry} disabled>
-                        {industryLabel(selected.industry)} (current, not available)
-                      </option>
-                    ) : null}
-                    {INDUSTRIES.map((i) => (
-                      <option key={i} value={i}>
-                        {industryLabel(i)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  <span>Reason</span>
-                  <input
-                    value={industryReason}
-                    onChange={(e) => setIndustryReason(e.target.value)}
-                    placeholder="Why this change is required"
-                    aria-label="Business type change reason"
-                  />
-                </label>
-                <button
-                  type="button"
-                  disabled={busy === selected.id}
-                  aria-label="Save tenant business type"
-                  onClick={async () => {
-                    setError('');
-                    const stored = selected.industry || '';
-                    const selectable = INDUSTRIES as readonly string[];
-                    const nextIndustry = (industryDraft || (selectable.includes(stored) ? stored : '')).trim();
-                    if (!selectable.includes(nextIndustry)) {
-                      setError('Choose retail, hotel, or restaurant.');
-                      return;
-                    }
-                    setBusy(selected.id);
-                    try {
-                      await api(`/tenants/${selected.id}/industry`, {
-                        method: 'PATCH',
-                        body: JSON.stringify({
-                          industry: nextIndustry,
-                          reason: industryReason.trim(),
-                        }),
-                      });
-                      setMessage('Business type updated');
-                      setIndustryReason('');
-                      await refresh({ force: true });
-                    } catch (err: any) {
-                      setError(err.message || 'Business type change failed');
-                    } finally {
-                      setBusy(null);
-                    }
-                  }}
-                >
-                  Save business type
-                </button>
-              </div>
-            ) : (
-              <p className="muted">Platform Owner access is required to change business type.</p>
-            )}
-
-            <form className="plat-form" onSubmit={assignSubscription}>
+        {createOpen ? (
+          <FormModal
+            title="Create tenant"
+            busy={creating}
+            dirty={Boolean(form.company_name.trim() || form.admin_email.trim() || form.admin_password.trim())}
+            onClose={() => setCreateOpen(false)}
+          >
+            <form className="plat-form" onSubmit={createTenant}>
               <label>
-                <span>Package</span>
-                <select
-                  value={subForm.package_code}
+                <span>Company name</span>
+                <input
+                  value={form.company_name}
                   onChange={(e) => {
-                    const package_code = e.target.value;
-                    setSubForm((f) => ({ ...f, package_code }));
-                    applyPackageModules(package_code);
+                    const company_name = e.target.value;
+                    setForm((f) => ({
+                      ...f,
+                      company_name,
+                      slug: f.slug && f.slug !== slugify(f.company_name) ? f.slug : slugify(company_name),
+                    }));
                   }}
-                  aria-label="Subscription package"
+                  placeholder="Sunrise Mart Ltd"
+                  aria-label="Tenant company name"
+                  required
+                />
+              </label>
+              <label>
+                <span>Slug</span>
+                <input
+                  aria-label="Tenant slug"
+                  value={form.slug}
+                  onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value.toLowerCase() }))}
+                  placeholder="sunrise-mart"
+                  pattern="[a-z0-9-]{2,80}"
+                  required
+                />
+              </label>
+              <label>
+                <span>Industry</span>
+                <select
+                  value={form.industry}
+                  onChange={(e) => setForm((f) => ({ ...f, industry: e.target.value }))}
+                  aria-label="Tenant industry"
+                  required
                 >
-                  {packages.map((p) => (
-                    <option key={p.code} value={p.code}>
-                      {p.name}
+                  <option value="">Select business type</option>
+                  {CREATE_INDUSTRIES.map((i) => (
+                    <option key={i} value={i}>
+                      {industryLabel(i)}
                     </option>
                   ))}
                 </select>
               </label>
               <label>
-                <span>Term length</span>
+                <span>Currency</span>
                 <input
-                  type="number"
-                  min={1}
-                  max={120}
-                  value={subForm.term_value}
-                  onChange={(e) =>
-                    setSubForm((f) => ({ ...f, term_value: Number(e.target.value) || 1 }))
-                  }
-                  aria-label="Subscription term length"
+                  value={form.currency}
+                  onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))}
+                  aria-label="Tenant currency"
                   required
                 />
               </label>
               <label>
-                <span>Term unit</span>
-                <select
-                  value={subForm.term_unit}
-                  onChange={(e) => setSubForm((f) => ({ ...f, term_unit: e.target.value }))}
-                  aria-label="Subscription term unit"
-                >
-                  <option value="months">Months</option>
-                  <option value="years">Years</option>
-                </select>
-              </label>
-              <label>
-                <span>Amount</span>
-                <AmountField
-                  aria-label="Subscription amount"
-                  currency={planAmounts[selected.slug]?.currency || selected.currency}
-                  inputMode="decimal"
-                  value={subForm.amount}
-                  onChange={(e) => setSubForm((f) => ({ ...f, amount: e.target.value }))}
+                <span>Admin email</span>
+                <input
+                  type="email"
+                  value={form.admin_email}
+                  onChange={(e) => setForm((f) => ({ ...f, admin_email: e.target.value }))}
+                  placeholder="admin@company.example.com"
+                  aria-label="Tenant admin email"
                   required
                 />
               </label>
               <label>
-                <span>Start date</span>
+                <span>Admin password</span>
                 <input
-                  aria-label="Subscription start date"
-                  type="text"
-                  placeholder="YYYY-MM-DD (blank = now)"
-                  title="Start date (optional; today if blank)"
-                  value={subForm.start_at}
-                  onChange={(e) => setSubForm((f) => ({ ...f, start_at: e.target.value }))}
+                  type="password"
+                  value={form.admin_password}
+                  onChange={(e) => setForm((f) => ({ ...f, admin_password: e.target.value }))}
+                  aria-label="Tenant admin password"
+                  autoComplete="new-password"
+                  required
                 />
+                <small className="plat-hint">At least 8 characters with upper, lower, number, and symbol. No spaces.</small>
               </label>
-              <fieldset style={{ border: '1px solid var(--border, #ddd)', borderRadius: 8, padding: 10 }}>
+              <fieldset>
                 <legend>Store layout</legend>
-                <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input
-                    type="radio"
-                    name="assign-store-mode"
-                    checked={
-                      subForm.max_stores_override === '1' ||
-                      (subForm.max_stores_override === '' &&
-                        (packages.find((p) => p.code === subForm.package_code)?.max_stores ?? 1) === 1)
-                    }
-                    onChange={() => setSubForm((f) => ({ ...f, max_stores_override: '1' }))}
-                    aria-label="Assign single store"
-                  />
-                  Single store
-                </label>
-                <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input
-                    type="radio"
-                    name="assign-store-mode"
-                    checked={
-                      subForm.max_stores_override !== '1' &&
-                      !(
-                        subForm.max_stores_override === '' &&
-                        (packages.find((p) => p.code === subForm.package_code)?.max_stores ?? 1) === 1
-                      )
-                    }
-                    onChange={() =>
-                      setSubForm((f) => ({
-                        ...f,
-                        max_stores_override: f.max_stores_override === '1' ? '10' : f.max_stores_override || '10',
-                      }))
-                    }
-                    aria-label="Assign multi-store"
-                  />
-                  Multi-store (includes branches)
-                </label>
-                <label style={{ marginTop: 8 }}>
-                  <span>Store entitlement override</span>
-                  <input
-                    type="number"
-                    min={0}
-                    placeholder="Package default"
-                    value={subForm.max_stores_override}
-                    onChange={(e) =>
-                      setSubForm((f) => ({ ...f, max_stores_override: e.target.value }))
-                    }
-                    aria-label="Store entitlement override"
-                  />
-                </label>
-              </fieldset>
-              <button
-                type="submit"
-                disabled={busy === selected.id}
-                aria-label="Assign package and term"
-              >
-                {busy === selected.id ? 'Saving…' : 'Assign package & term'}
-              </button>
-            </form>
-            <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
-              Package max stores:{' '}
-              {packages.find((p) => p.code === subForm.package_code)?.max_stores ?? '—'}{' '}
-              (blank override = catalog / unlimited for Enterprise). Active stores:{' '}
-              {selected.subscription?.stores_active ?? selected.store_usage?.stores_active ?? '—'} /{' '}
-              {selected.subscription?.effective_store_limit ??
-                selected.store_usage?.effective_store_limit ??
-                '∞'}
-              {selected.subscription?.over_entitlement || selected.store_usage?.over_entitlement
-                ? ' · over entitlement'
-                : ''}
-            </p>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
-              <span className="muted">Save store layout</span>
-              <button
-                type="button"
-                disabled={busy === selected.id}
-                aria-label="Save as single store"
-                onClick={async () => {
-                  setBusy(selected.id);
-                  setError('');
-                  try {
-                    await api(`/tenants/${selected.slug || selected.id}/store-entitlement`, {
-                      method: 'PATCH',
-                      body: JSON.stringify({ max_stores_override: 1 }),
-                    });
-                    setOverrideDraft('1');
-                    setMessage('Store entitlement set to Single store');
-                    await refresh({ force: true });
-                  } catch (err: any) {
-                    setError(err.message || 'Override failed');
-                  } finally {
-                    setBusy(null);
-                  }
-                }}
-              >
-                Single store
-              </button>
-              <button
-                type="button"
-                disabled={busy === selected.id}
-                aria-label="Save as multi-store"
-                onClick={async () => {
-                  setBusy(selected.id);
-                  setError('');
-                  try {
-                    const raw = overrideDraft.trim();
-                    const n = raw === '' || Number(raw) <= 1 ? 10 : Number(raw);
-                    await api(`/tenants/${selected.slug || selected.id}/store-entitlement`, {
-                      method: 'PATCH',
-                      body: JSON.stringify({ max_stores_override: n }),
-                    });
-                    setOverrideDraft(String(n));
-                    setMessage('Store entitlement set to Multi-store');
-                    await refresh({ force: true });
-                  } catch (err: any) {
-                    setError(err.message || 'Override failed');
-                  } finally {
-                    setBusy(null);
-                  }
-                }}
-              >
-                Multi-store
-              </button>
-              <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                <span>max_stores_override</span>
-                <input
-                  type="number"
-                  min={0}
-                  placeholder="Clear / package"
-                  value={overrideDraft}
-                  onChange={(e) => setOverrideDraft(e.target.value)}
-                  aria-label="Store entitlement override draft"
-                  style={{ width: 120 }}
-                />
-              </label>
-              <button
-                type="button"
-                disabled={busy === selected.id}
-                aria-label="Save store entitlement override"
-                onClick={async () => {
-                  setBusy(selected.id);
-                  setError('');
-                  try {
-                    const raw = overrideDraft.trim();
-                    await api(`/tenants/${selected.slug || selected.id}/store-entitlement`, {
-                      method: 'PATCH',
-                      body: JSON.stringify(
-                        raw === ''
-                          ? { clear: true }
-                          : { max_stores_override: Number(raw) }
-                      ),
-                    });
-                    setMessage('Store entitlement override updated');
-                    await refresh({ force: true });
-                  } catch (err: any) {
-                    setError(err.message || 'Override failed');
-                  } finally {
-                    setBusy(null);
-                  }
-                }}
-              >
-                Save store override
-              </button>
-            </div>
-
-            <h3 style={{ marginTop: 20, fontSize: 15 }}>Feature modules (package control)</h3>
-            <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>
-              Modules offered here match {industryLabel(selected.industry)}. Shared ERP modules stay
-              available when the plan includes them. Another industry&apos;s features are not listed.
-              Dashboard, notifications, and security stay on.
-            </p>
-            {canDeleteTenant ? (
-              <div style={{ marginTop: 12 }}>
-                <p style={{ margin: '0 0 8px', fontSize: 13 }}>
-                  Administrator email:{' '}
-                  <strong>{selected.admin_email || 'No company administrator'}</strong>
-                </p>
-                <div className="plat-actions" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
-                  <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                    <span>Temporary password</span>
+                <div className="plat-radio-row">
+                  <label className="plat-radio">
                     <input
-                      type="password"
-                      value={adminPasswordDraft}
-                      onChange={(e) => setAdminPasswordDraft(e.target.value)}
-                      placeholder="Leave blank to email a reset link"
-                      aria-label="Tenant administrator temporary password"
-                      autoComplete="new-password"
-                      style={{ minWidth: 220 }}
+                      type="radio"
+                      name="create-store-mode"
+                      checked={form.store_mode === 'single'}
+                      onChange={() => setForm((f) => ({ ...f, store_mode: 'single' }))}
+                      aria-label="Single store"
+                    />
+                    Single store
+                  </label>
+                  <label className="plat-radio">
+                    <input
+                      type="radio"
+                      name="create-store-mode"
+                      checked={form.store_mode === 'multi'}
+                      onChange={() => setForm((f) => ({ ...f, store_mode: 'multi' }))}
+                      aria-label="Multi-store"
+                    />
+                    Multi-store (includes branches)
+                  </label>
+                </div>
+                {form.store_mode === 'multi' ? (
+                  <label className="plat-field" style={{ marginTop: 10 }}>
+                    <span>Max stores</span>
+                    <input
+                      type="number"
+                      min={2}
+                      value={form.max_stores}
+                      onChange={(e) => setForm((f) => ({ ...f, max_stores: e.target.value }))}
+                      aria-label="Create tenant max stores"
                     />
                   </label>
+                ) : (
+                  <p className="plat-hint">
+                    One operating store. Extra store create is blocked until you switch this tenant to
+                    Multi-store.
+                  </p>
+                )}
+              </fieldset>
+              <div className="plat-form-actions">
+                <button
+                  type="submit"
+                  disabled={creating || !form.admin_password.trim()}
+                  aria-label="Create tenant"
+                >
+                  {creating ? 'Creating…' : 'Create tenant'}
+                </button>
+              </div>
+            </form>
+          </FormModal>
+        ) : null}
+
+        {suspendTarget ? (
+          <FormModal
+            title={`Suspend ${suspendTarget.company_name}`}
+            busy={busy === suspendTarget.id}
+            dirty={Boolean(suspendReason.trim())}
+            onClose={() => setSuspendTarget(null)}
+          >
+            <form
+              className="plat-form"
+              style={{ gridTemplateColumns: 'minmax(0,1fr)' }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                suspendTenant(suspendTarget);
+              }}
+            >
+              <p className="plat-note">
+                Staff lose access until you activate this company again. The reason is saved as{' '}
+                <code>suspended_reason</code>.
+              </p>
+              <label>
+                <span>Suspend reason</span>
+                <input
+                  value={suspendReason}
+                  onChange={(e) => setSuspendReason(e.target.value)}
+                  placeholder="Required before Suspend"
+                  title="Required suspend reason"
+                  aria-label="Tenant suspend reason"
+                />
+              </label>
+              <div className="plat-form-actions">
+                <button
+                  type="submit"
+                  className="btn-danger plat-quiet"
+                  disabled={busy === suspendTarget.id || !suspendReason.trim()}
+                  aria-label="Confirm suspend tenant"
+                >
+                  Suspend company
+                </button>
+              </div>
+            </form>
+          </FormModal>
+        ) : null}
+
+        {deleteTarget ? (
+          <FormModal
+            title={`Delete ${deleteTarget.company_name}`}
+            busy={busy === deleteTarget.id}
+            dirty={Boolean(deleteConfirmSlug.trim())}
+            onClose={() => setDeleteTarget(null)}
+          >
+            <form
+              className="plat-form"
+              style={{ gridTemplateColumns: 'minmax(0,1fr)' }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                deleteTenant(deleteTarget);
+              }}
+            >
+              <p className="plat-note is-bad">
+                Delete removes the company and its data. This cannot be undone.{' '}
+                Only the software owner can delete a company.
+              </p>
+              <label>
+                <span>
+                  Type <code>{deleteTarget.slug}</code> to confirm
+                </span>
+                <input
+                  value={deleteConfirmSlug}
+                  onChange={(e) => setDeleteConfirmSlug(e.target.value)}
+                  placeholder="Type the tenant slug"
+                  aria-label="Delete tenant confirmation"
+                  autoComplete="off"
+                />
+              </label>
+              <div className="plat-form-actions">
+                <button
+                  type="submit"
+                  className="btn-danger plat-quiet"
+                  disabled={busy === deleteTarget.id || deleteConfirmSlug.trim() !== deleteTarget.slug}
+                  aria-label="Confirm delete tenant"
+                >
+                  Delete company
+                </button>
+              </div>
+            </form>
+          </FormModal>
+        ) : null}
+
+        {selected && (
+          <Drawer
+            id="subscription-panel"
+            title={selected.company_name}
+            subtitle={`${selected.slug} · ${industryLabel(selected.industry)}`}
+            badge={<TenantStatus status={selected.status} />}
+            closeLabel="Close tenant management panel"
+            busy={busy === selected.id}
+            panelRef={managePanelRef}
+            onClose={closeManage}
+            tabs={
+              <Tabs
+                label="Tenant sections"
+                active={manageTab}
+                onChange={setManageTab}
+                tabs={[
+                  { key: 'overview', label: 'Overview' },
+                  { key: 'subscription', label: 'Subscription' },
+                  { key: 'stores', label: 'Stores' },
+                  { key: 'modules', label: 'Feature modules', count: enabledCount },
+                  { key: 'account', label: 'Account' },
+                ]}
+              />
+            }
+          >
+            {manageTab === 'overview' ? (
+              <>
+                <div className="plat-section">
+                  <h3>Subscription</h3>
+                  <div className="plat-facts">
+                    <div className="plat-fact">
+                      <small>Package</small>
+                      <strong>{sub?.package_name || plainWords(selected.package_code) || '—'}</strong>
+                    </div>
+                    <div className="plat-fact">
+                      <small>Amount</small>
+                      <strong>
+                        {subscriptionAmountLabel(
+                          planAmounts[selected.slug]?.amount,
+                          planAmounts[selected.slug]?.currency || selected.currency,
+                          planAmounts[selected.slug]?.amount == null
+                            ? ''
+                            : formatNumber(planAmounts[selected.slug]?.amount, prefs),
+                        )}
+                      </strong>
+                    </div>
+                    <div className="plat-fact">
+                      <small>Renewal</small>
+                      <strong>{fmtDate(sub?.subscription_ends_at)}</strong>
+                    </div>
+                    <div className="plat-fact">
+                      <small>Assigned</small>
+                      <strong>
+                        {sub?.months_assigned ?? '—'} mo
+                        {sub?.years_assigned != null ? ` / ${sub.years_assigned} y` : ''}
+                      </strong>
+                    </div>
+                    <div className="plat-fact">
+                      <small>Used</small>
+                      <strong>
+                        {sub?.months_used ?? 0} mo
+                        {sub?.years_used != null ? ` / ${sub.years_used} y` : ''}
+                      </strong>
+                    </div>
+                    <div className="plat-fact">
+                      <small>Remaining</small>
+                      <strong>
+                        {sub?.months_remaining ?? '—'} mo
+                        {sub?.days_remaining != null ? ` (${sub.days_remaining}d)` : ''}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+                <div className="plat-section">
+                  <h3>Contacts</h3>
+                  <div className="plat-facts">
+                    <div className="plat-fact">
+                      <small>Administrator email</small>
+                      <strong aria-label="Tenant administrator email">{selected.admin_email || '—'}</strong>
+                    </div>
+                    <div className="plat-fact">
+                      <small>Account</small>
+                      <strong>{accountLabel(selected.account_status)}</strong>
+                    </div>
+                    <div className="plat-fact">
+                      <small>Created</small>
+                      <strong>{fmtDate(selected.created_at)}</strong>
+                    </div>
+                    {selected.email && selected.email !== selected.admin_email ? (
+                      <div className="plat-fact">
+                        <small>Company contact</small>
+                        <strong>{selected.email}</strong>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="plat-section">
+                  <h3>Online store</h3>
+                  <p className="muted" style={{ fontSize: 13 }} aria-label="Tenant ecommerce health">
+                    {selected.ecommerce_health
+                      ? `${selected.ecommerce_health.entitled ? 'Entitled' : 'Not entitled'} · ${
+                          selected.ecommerce_health.storefront_enabled ? 'enabled' : 'disabled'
+                        } · ${(selected.ecommerce_health.domains || [])
+                          .map((d) => `${d.hostname} ${d.display_status || ''}`)
+                          .join(', ') || 'no domain'} · gateway ${
+                          selected.ecommerce_health.gateway?.configured ? 'configured' : 'not configured'
+                        }`
+                      : 'Health not loaded'}
+                  </p>
+                </div>
+              </>
+            ) : null}
+
+            {manageTab === 'subscription' ? (
+              <div className="plat-section">
+                <h3>Assign package and term</h3>
+                <p className="muted" style={{ fontSize: 13 }}>
+                  This changes the entitlement only. No payment is recorded.
+                </p>
+                <form className="plat-form" onSubmit={assignSubscription}>
+                  <label>
+                    <span>Package</span>
+                    <select
+                      value={subForm.package_code}
+                      onChange={(e) => {
+                        const package_code = e.target.value;
+                        setSubForm((f) => ({ ...f, package_code }));
+                        applyPackageModules(package_code);
+                      }}
+                      aria-label="Subscription package"
+                    >
+                      {packages.map((p) => (
+                        <option key={p.code} value={p.code}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Amount</span>
+                    <AmountField
+                      aria-label="Subscription amount"
+                      currency={planAmounts[selected.slug]?.currency || selected.currency}
+                      inputMode="decimal"
+                      value={subForm.amount}
+                      onChange={(e) => setSubForm((f) => ({ ...f, amount: e.target.value }))}
+                      required
+                    />
+                  </label>
+                  <label>
+                    <span>Term length</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={120}
+                      value={subForm.term_value}
+                      onChange={(e) =>
+                        setSubForm((f) => ({ ...f, term_value: Number(e.target.value) || 1 }))
+                      }
+                      aria-label="Subscription term length"
+                      required
+                    />
+                  </label>
+                  <label>
+                    <span>Term unit</span>
+                    <select
+                      value={subForm.term_unit}
+                      onChange={(e) => setSubForm((f) => ({ ...f, term_unit: e.target.value }))}
+                      aria-label="Subscription term unit"
+                    >
+                      <option value="months">Months</option>
+                      <option value="years">Years</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Start date</span>
+                    <input
+                      aria-label="Subscription start date"
+                      type="text"
+                      placeholder="YYYY-MM-DD (blank = now)"
+                      title="Start date (optional; today if blank)"
+                      value={subForm.start_at}
+                      onChange={(e) => setSubForm((f) => ({ ...f, start_at: e.target.value }))}
+                    />
+                  </label>
+                  <label>
+                    <span>Store entitlement override</span>
+                    <input
+                      type="number"
+                      min={0}
+                      placeholder="Package default"
+                      value={subForm.max_stores_override}
+                      onChange={(e) =>
+                        setSubForm((f) => ({ ...f, max_stores_override: e.target.value }))
+                      }
+                      aria-label="Store entitlement override"
+                    />
+                  </label>
+                  <fieldset>
+                    <legend>Store layout</legend>
+                    <div className="plat-radio-row">
+                      <label className="plat-radio">
+                        <input
+                          type="radio"
+                          name="assign-store-mode"
+                          checked={
+                            subForm.max_stores_override === '1' ||
+                            (subForm.max_stores_override === '' && (assignPackage?.max_stores ?? 1) === 1)
+                          }
+                          onChange={() => setSubForm((f) => ({ ...f, max_stores_override: '1' }))}
+                          aria-label="Assign single store"
+                        />
+                        Single store
+                      </label>
+                      <label className="plat-radio">
+                        <input
+                          type="radio"
+                          name="assign-store-mode"
+                          checked={
+                            subForm.max_stores_override !== '1' &&
+                            !(subForm.max_stores_override === '' && (assignPackage?.max_stores ?? 1) === 1)
+                          }
+                          onChange={() =>
+                            setSubForm((f) => ({
+                              ...f,
+                              max_stores_override: f.max_stores_override === '1' ? '10' : f.max_stores_override || '10',
+                            }))
+                          }
+                          aria-label="Assign multi-store"
+                        />
+                        Multi-store (includes branches)
+                      </label>
+                    </div>
+                    <p className="plat-hint">
+                      Package max stores: {assignPackage?.max_stores ?? '—'} (blank override = catalog /
+                      unlimited for Enterprise).
+                    </p>
+                  </fieldset>
+                  <div className="plat-form-actions">
+                    <button
+                      type="submit"
+                      disabled={busy === selected.id}
+                      aria-label="Assign package and term"
+                    >
+                      {busy === selected.id ? 'Saving…' : 'Assign package & term'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            ) : null}
+
+            {manageTab === 'stores' ? (
+              <>
+                <div className="plat-section">
+                  <h3>Store usage</h3>
+                  <div className="plat-facts">
+                    <div className="plat-fact">
+                      <small>Active stores</small>
+                      <strong>
+                        {storesActive ?? '—'} / {storeLimit ?? '∞'}
+                      </strong>
+                    </div>
+                    <div className="plat-fact">
+                      <small>Package max stores</small>
+                      <strong>{sub?.package_max_stores ?? '—'}</strong>
+                    </div>
+                    <div className="plat-fact">
+                      <small>Branches</small>
+                      <strong>{selected.branch_count ?? 0}</strong>
+                    </div>
+                  </div>
+                  {overEntitlement ? (
+                    <p className="plat-note is-bad">
+                      This company is over its store entitlement. Nothing is deleted, but new stores are
+                      blocked until this is resolved.
+                    </p>
+                  ) : null}
+                </div>
+                <div className="plat-section">
+                  <h3>Save store layout</h3>
+                  <div className="plat-row-actions" style={{ justifyContent: 'flex-start' }}>
+                    <button
+                      type="button"
+                      disabled={busy === selected.id}
+                      aria-label="Save as single store"
+                      onClick={async () => {
+                        setBusy(selected.id);
+                        setError('');
+                        try {
+                          await api(`/tenants/${selected.slug || selected.id}/store-entitlement`, {
+                            method: 'PATCH',
+                            body: JSON.stringify({ max_stores_override: 1 }),
+                          });
+                          setOverrideDraft('1');
+                          setMessage('Store entitlement set to Single store');
+                          await refresh({ force: true });
+                        } catch (err: any) {
+                          setError(err.message || 'Override failed');
+                        } finally {
+                          setBusy(null);
+                        }
+                      }}
+                    >
+                      Single store
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy === selected.id}
+                      aria-label="Save as multi-store"
+                      onClick={async () => {
+                        setBusy(selected.id);
+                        setError('');
+                        try {
+                          const raw = overrideDraft.trim();
+                          const n = raw === '' || Number(raw) <= 1 ? 10 : Number(raw);
+                          await api(`/tenants/${selected.slug || selected.id}/store-entitlement`, {
+                            method: 'PATCH',
+                            body: JSON.stringify({ max_stores_override: n }),
+                          });
+                          setOverrideDraft(String(n));
+                          setMessage('Store entitlement set to Multi-store');
+                          await refresh({ force: true });
+                        } catch (err: any) {
+                          setError(err.message || 'Override failed');
+                        } finally {
+                          setBusy(null);
+                        }
+                      }}
+                    >
+                      Multi-store
+                    </button>
+                  </div>
+                  <div className="plat-inline">
+                    <label className="plat-field">
+                      <span>Store limit override</span>
+                      <input
+                        type="number"
+                        min={0}
+                        placeholder="Blank clears it back to the package"
+                        value={overrideDraft}
+                        onChange={(e) => setOverrideDraft(e.target.value)}
+                        aria-label="Store entitlement override draft"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="plat-cta"
+                      disabled={busy === selected.id}
+                      aria-label="Save store entitlement override"
+                      onClick={async () => {
+                        setBusy(selected.id);
+                        setError('');
+                        try {
+                          const raw = overrideDraft.trim();
+                          await api(`/tenants/${selected.slug || selected.id}/store-entitlement`, {
+                            method: 'PATCH',
+                            body: JSON.stringify(
+                              raw === ''
+                                ? { clear: true }
+                                : { max_stores_override: Number(raw) }
+                            ),
+                          });
+                          setMessage('Store entitlement override updated');
+                          await refresh({ force: true });
+                        } catch (err: any) {
+                          setError(err.message || 'Override failed');
+                        } finally {
+                          setBusy(null);
+                        }
+                      }}
+                    >
+                      Save store override
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : null}
+
+            {manageTab === 'modules' ? (
+              <div className="plat-section">
+                <h3>Feature modules (package control)</h3>
+                <p className="muted" style={{ fontSize: 13 }}>
+                  Modules offered here match {industryLabel(selected.industry)}. Shared ERP modules stay
+                  available when the plan includes them. Another industry&apos;s features are not listed.
+                </p>
+                <div className="plat-modules">
+                  {packageable
+                    .filter((mod) => industryAllowsModule(selected.industry, mod))
+                    .map((mod) => {
+                      const locked = LOCKED_MODULES.includes(mod);
+                      const on = moduleDraft.includes(mod) || locked;
+                      return (
+                        <label key={mod} className={`plat-module${locked ? ' is-locked' : ''}`}>
+                          <span>
+                            {moduleName(mod)}
+                            {locked ? <small>Always on</small> : null}
+                          </span>
+                          <input
+                            type="checkbox"
+                            role="switch"
+                            aria-label={`Platform feature module ${mod}`}
+                            checked={on}
+                            disabled={locked}
+                            onChange={() => toggleModule(mod)}
+                          />
+                        </label>
+                      );
+                    })}
+                </div>
+                <div className="plat-row-actions" style={{ justifyContent: 'flex-start' }}>
+                  <button type="button" className="plat-cta" disabled={busy === selected.id} onClick={saveModules} aria-label="Save feature modules">
+                    Save feature modules
+                  </button>
                   <button
                     type="button"
                     disabled={busy === selected.id}
-                    onClick={() => resetTenantAdminPassword(selected)}
-                    aria-label={`Reset administrator password for ${selected.company_name}`}
+                    onClick={resetModules}
+                    aria-label="Reset feature modules to package default"
                   >
-                    {adminPasswordDraft.trim() ? 'Set administrator password' : 'Email reset link'}
+                    Reset to package default
                   </button>
                 </div>
-                <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-                  Enter a temporary password to set it for them, or leave blank to email a reset link.
-                  The password is never shown back on this page.
-                </p>
               </div>
             ) : null}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-                gap: 8,
-                marginTop: 12,
-              }}
-            >
-              {packageable
-                .filter((mod) => industryAllowsModule(selected.industry, mod))
-                .map((mod) => {
-                const locked = ['dashboard', 'notifications', 'security'].includes(mod);
-                const on = moduleDraft.includes(mod) || locked;
-                return (
-                  <label
-                    key={mod}
-                    style={{
-                      display: 'flex',
-                      gap: 8,
-                      alignItems: 'center',
-                      fontSize: 13,
-                      padding: '6px 8px',
-                      border: '1px solid var(--line, #D4E5C4)',
-                      borderRadius: 8,
-                      opacity: locked ? 0.7 : 1,
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      aria-label={`Platform feature module ${mod}`}
-                      checked={on}
-                      disabled={locked}
-                      onChange={() => toggleModule(mod)}
-                    />
-                    {mod}
-                  </label>
-                );
-              })}
-            </div>
-            <div className="plat-actions" style={{ marginTop: 14 }}>
-              <button type="button" disabled={busy === selected.id} onClick={saveModules} aria-label="Save feature modules">
-                Save feature modules
-              </button>
-              <button
-                type="button"
-                disabled={busy === selected.id}
-                onClick={resetModules}
-                aria-label="Reset feature modules to package default"
-              >
-                Reset to package default
-              </button>
-            </div>
+
+            {manageTab === 'account' ? (
+              <>
+                <div className="plat-section">
+                  <h3>Administrator password</h3>
+                  {canDeleteTenant ? (
+                    <>
+                      <p className="muted" style={{ fontSize: 13 }}>
+                        {selected.admin_email || 'No company administrator'}. Enter a temporary password
+                        to set it for them, or leave blank to email a reset link. The password is never
+                        shown back on this page.
+                      </p>
+                      <div className="plat-inline">
+                        <label className="plat-field">
+                          <span>Temporary password</span>
+                          <input
+                            type="password"
+                            value={adminPasswordDraft}
+                            onChange={(e) => setAdminPasswordDraft(e.target.value)}
+                            placeholder="Leave blank to email a reset link"
+                            aria-label="Tenant administrator temporary password"
+                            autoComplete="new-password"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          disabled={busy === selected.id}
+                          onClick={() => resetTenantAdminPassword(selected)}
+                          aria-label={`Reset administrator password for ${selected.company_name}`}
+                        >
+                          {adminPasswordDraft.trim() ? 'Set administrator password' : 'Email reset link'}
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="muted">Platform Owner access is required to reset this password.</p>
+                  )}
+                </div>
+                <div className="plat-section">
+                  <h3>Business type</h3>
+                  <p className="muted" style={{ fontSize: 13 }}>
+                    Current: {industryLabel(selected.industry)}. Only the Platform Owner can change this.
+                    Choose Retail, Hotel, or Restaurant. APIs follow the saved industry immediately. Ask
+                    staff to refresh or sign in again so the sidebar matches. Existing records are kept.
+                  </p>
+                  {canDeleteTenant ? (
+                    <div className="plat-form">
+                      <label>
+                        <span>New business type</span>
+                        <select
+                          value={industryDraft || selected.industry || ''}
+                          onChange={(e) => setIndustryDraft(e.target.value)}
+                          aria-label="Change tenant business type"
+                        >
+                          {selected.industry &&
+                          !(INDUSTRIES as readonly string[]).includes(selected.industry) ? (
+                            <option value={selected.industry} disabled>
+                              {industryLabel(selected.industry)} (current, not available)
+                            </option>
+                          ) : null}
+                          {INDUSTRIES.map((i) => (
+                            <option key={i} value={i}>
+                              {industryLabel(i)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        <span>Reason</span>
+                        <input
+                          value={industryReason}
+                          onChange={(e) => setIndustryReason(e.target.value)}
+                          placeholder="Why this change is required"
+                          aria-label="Business type change reason"
+                        />
+                      </label>
+                      <div className="plat-form-actions">
+                        <button
+                          type="button"
+                          className="plat-cta"
+                          disabled={busy === selected.id}
+                          aria-label="Save tenant business type"
+                          onClick={async () => {
+                            setError('');
+                            const stored = selected.industry || '';
+                            const selectable = INDUSTRIES as readonly string[];
+                            const nextIndustry = (industryDraft || (selectable.includes(stored) ? stored : '')).trim();
+                            if (!selectable.includes(nextIndustry)) {
+                              setError('Choose retail, hotel, or restaurant.');
+                              return;
+                            }
+                            setBusy(selected.id);
+                            try {
+                              await api(`/tenants/${selected.id}/industry`, {
+                                method: 'PATCH',
+                                body: JSON.stringify({
+                                  industry: nextIndustry,
+                                  reason: industryReason.trim(),
+                                }),
+                              });
+                              setMessage('Business type updated');
+                              setIndustryReason('');
+                              await refresh({ force: true });
+                            } catch (err: any) {
+                              setError(err.message || 'Business type change failed');
+                            } finally {
+                              setBusy(null);
+                            }
+                          }}
+                        >
+                          Save business type
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="muted">Platform Owner access is required to change business type.</p>
+                  )}
+                </div>
+              </>
+            ) : null}
+          </Drawer>
+        )}
+
+        {(error || message) && (
+          <div className="plat-feedback-dock" aria-live="polite">
+            {error ? (
+              <div className="plat-toast is-bad" role="alert">
+                <p>{error}</p>
+                <button type="button" aria-label="Dismiss error" onClick={() => setError('')}>
+                  ×
+                </button>
+              </div>
+            ) : null}
+            {message ? (
+              <div className="plat-toast" role="status">
+                <p>{message}</p>
+                <button type="button" aria-label="Dismiss message" onClick={() => setMessage('')}>
+                  ×
+                </button>
+              </div>
+            ) : null}
           </div>
         )}
       </div>
-
-      {(error || message) && (
-        <div
-          ref={feedbackRef}
-          className="plat-feedback-dock"
-          aria-live="polite"
-        >
-          {error ? (
-            <p className="login-error" role="alert">
-              {error}
-            </p>
-          ) : null}
-          {message ? <p className="plat-msg">{message}</p> : null}
-        </div>
-      )}
     </>
   );
 }

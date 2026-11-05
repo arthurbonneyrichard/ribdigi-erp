@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import StatusChip from '../../../../components/StatusChip';
 import PageHeader from '../../../../components/PageHeader';
 import { api, apiFetch } from '../../../../lib/api';
 import { formatWhen, type FormatPrefs } from '../../../../lib/format';
@@ -559,8 +560,7 @@ export default function SupportDeskPage() {
         </button>
       </div>
       <section className="plat-panel desk-filters">
-        <div className="desk-panel-head"><h2>Filters</h2></div>
-        <form className="support-filters" onSubmit={applyFilters}>
+                <form className="support-filters" onSubmit={applyFilters}>
           <label><span>Reference or company</span><input aria-label="Search tickets" value={q} onChange={(event) => setQ(event.target.value)} /></label>
           <label><span>Status</span>
             <select aria-label="Desk status filter" value={status} onChange={(event) => setStatus(event.target.value)}>
@@ -804,7 +804,7 @@ export default function SupportDeskPage() {
                         <input aria-label={`Edit recipient ${row.email}`} value={editEmail} onChange={(event) => setEditEmail(event.target.value)} />
                       ) : row.email}
                     </td>
-                    <td>{row.is_active ? 'Active' : 'Inactive'}</td>
+                    <td><StatusChip value={row.is_active ? 'active' : 'inactive'} /></td>
                     <td>{row.latest_delivery?.status || '—'} {row.latest_delivery?.last_error || ''}</td>
                     <td>{row.last_test_status || '—'} {row.last_test_error || ''}</td>
                     <td>
@@ -848,7 +848,7 @@ export default function SupportDeskPage() {
                 <tr key={row.id}>
                   <td>{row.recipient_email}</td>
                   <td>{row.event_type}</td>
-                  <td>{row.status}</td>
+                  <td><StatusChip value={row.status} /></td>
                   <td>{row.attempts}</td>
                   <td>{row.last_error || '—'}</td>
                   <td><button className="btn" type="button" aria-label={`Retry delivery to ${row.recipient_email}`} onClick={() => retryDelivery(row)}>Retry</button></td>

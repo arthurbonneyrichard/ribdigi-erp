@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import PageHeader from '../../../components/PageHeader';
+import PageSkeleton from '../../../components/PageSkeleton';
+import { Metric, Tag, daysLeft, timeAgo } from '../../../components/PlatformUi';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { getPrefetched } from '../../../lib/prefetchCache';
@@ -22,6 +24,14 @@ type ActivityRow = {
   summary?: string;
   module?: string;
   action?: string;
+};
+
+type UpcomingRow = {
+  tenant_id: string;
+  company_name: string;
+  status?: string;
+  kind?: string;
+  days_remaining?: number | null;
 };
 
 type PlatformSummary = {
@@ -49,26 +59,6 @@ const PLATFORM_ROLES = [
   'platform_finance',
 ];
 
-const CONSOLE_NOTES: Record<string, string> = {
-  '/platform/tenants': 'Companies, subscriptions, feature modules, usage, and store entitlement.',
-  '/platform/billing': 'Company plans, amounts, and subscription terms.',
-  '/platform/staff': 'Platform staff accounts. Owner actions stay with the software owner.',
-  '/platform/reports': 'Subscriptions, packages, trials, and cross-tenant usage.',
-  '/platform/settings': 'Trial, grace, and billing retry settings, and gateway status.',
-  '/jobs': 'Scheduled jobs. Viewing is open to platform staff; running a job stays with the owner.',
-  '/notifications': 'Platform notifications.',
-  '/audit': 'Audit log.',
-  '/security': 'Security settings for this account.',
-  '/platform/support': 'Company tickets, public replies, and staff notes.',
-};
-
-const STATUS_BARS = [
-  { key: 'active', label: 'Active', color: '#3D8B40' },
-  { key: 'trial', label: 'Trial', color: '#C4A035' },
-  { key: 'grace', label: 'Grace', color: '#D97706' },
-  { key: 'suspended', label: 'Suspended', color: '#C24141' },
-] as const;
-
 function fmtDate(value?: string | null) {
   if (!value) return '—';
   try {
@@ -84,58 +74,73 @@ function fmtDate(value?: string | null) {
   }
 }
 
-function StatusBars({
+const STATUS_ROWS = [
+  { key: 'active', label: 'Active', mark: 'plat-mark-ok' },
+  { key: 'trial', label: 'Trial', mark: 'plat-mark-info' },
+  { key: 'grace', label: 'Grace', mark: 'plat-mark-warn' },
+  { key: 'suspended', label: 'Suspended', mark: 'plat-mark-bad' },
+] as const;
+
+type TodoItem = {
+  key: string;
+  count: number;
+  tone: 'bad' | 'warn' | 'info';
+  title: string;
+  sub: string;
+  href: string;
+};
+
+function plural(count: number, one: string, many: string) {
+  return count === 1 ? one : many;
+}
+
+function StatusSplit({
   counts,
 }: {
-  counts: { active: number; trial: number; grace: number; suspended: number };
+  counts: { total: number; active: number; trial: number; grace: number; suspended: number };
 }) {
-  const max = Math.max(1, ...STATUS_BARS.map((row) => counts[row.key]));
+  const shown = STATUS_ROWS.filter((row) => counts[row.key] > 0);
   return (
-    <svg viewBox="0 0 360 168" width="100%" height="168" role="img" aria-label="Tenants by status">
-      {STATUS_BARS.map((row, i) => {
-        const value = counts[row.key];
-        const width = Math.max(0, (value / max) * 220);
-        const y = 18 + i * 38;
-        return (
-          <g key={row.key}>
-            <text x="0" y={y + 14} className="vbar-label">
-              {row.label}
-            </text>
-            <rect x="92" y={y} width="220" height="18" rx="4" fill="#E8F0E4" />
-            <rect x="92" y={y} width={width} height="18" rx="4" fill={row.color} />
-            <text x="320" y={y + 14} className="vbar-val">
-              {value}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
+    <>
+      <div className={`plat-split${shown.length ? '' : ' is-empty'}`} role="img" aria-label="Tenants by status">
+        {shown.map((row) => (
+          <span
+            key={row.key}
+            className={row.mark}
+            style={{ flexGrow: counts[row.key] }}
+            title={`${row.label}: ${counts[row.key]}`}
+          />
+        ))}
+      </div>
+      <ul className="plat-legend">
+        {STATUS_ROWS.map((row) => (
+          <li key={row.key}>
+            <i className={row.mark} aria-hidden="true" />
+            {row.label}
+            <b>{counts[row.key]}</b>
+            <small>{counts.total ? `${Math.round((counts[row.key] / counts.total) * 100)}%` : '—'}</small>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 
 function IndustryBars({ rows }: { rows: { label: string; count: number }[] }) {
-  const data = rows.length ? rows : [{ label: 'None', count: 0 }];
-  const max = Math.max(1, ...data.map((row) => row.count));
-  const height = Math.max(120, data.length * 28 + 8);
+  if (!rows.length) return <p className="muted">No companies yet.</p>;
+  const max = Math.max(1, ...rows.map((row) => row.count));
   return (
-    <svg viewBox={`0 0 360 ${height}`} width="100%" height={height} role="img" aria-label="Tenants by industry">
-      {data.map((row, i) => {
-        const width = Math.max(0, (row.count / max) * 180);
-        const y = 8 + i * 28;
-        return (
-          <g key={row.label}>
-            <text x="0" y={y + 14} className="vbar-label">
-              {row.label}
-            </text>
-            <rect x="128" y={y} width="180" height="16" rx="4" fill="#E8F0E4" />
-            <rect x="128" y={y} width={width} height="16" rx="4" fill="#2F6B4F" />
-            <text x="316" y={y + 13} className="vbar-val">
-              {row.count}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
+    <ul className="plat-bars" aria-label="Tenants by industry">
+      {rows.map((row) => (
+        <li key={row.label} title={`${row.label}: ${row.count}`}>
+          <span>{row.label}</span>
+          <b>{row.count}</b>
+          <div>
+            <span style={{ width: `${(row.count / max) * 100}%` }} />
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -144,6 +149,7 @@ export default function PlatformConsole() {
   const [tenants, setTenants] = useState<TenantRow[]>([]);
   const [activity, setActivity] = useState<ActivityRow[]>([]);
   const [summary, setSummary] = useState<PlatformSummary | null>(null);
+  const [upcoming, setUpcoming] = useState<UpcomingRow[] | null>(null);
   const [summaryMissing, setSummaryMissing] = useState(false);
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
@@ -162,10 +168,11 @@ export default function PlatformConsole() {
       }
       setRole(role);
       setPermissions(me.data?.permissions || {});
-      const [tenantRes, activityRes, summaryRes] = await Promise.allSettled([
+      const [tenantRes, activityRes, summaryRes, upcomingRes] = await Promise.allSettled([
         getPrefetched('/tenants'),
         api('/platform/activity'),
         api('/platform/reports/summary'),
+        api('/platform/reports/trials'),
       ]);
       if (cancelled) return;
       const problems: string[] = [];
@@ -181,6 +188,8 @@ export default function PlatformConsole() {
         setSummaryMissing(true);
         problems.push(summaryRes.reason?.message || 'Platform counts did not load');
       }
+      // Some staff roles cannot read reports. The panel just stays hidden for them.
+      if (upcomingRes.status === 'fulfilled') setUpcoming(upcomingRes.value.data?.rows || []);
       if (problems.length) setError(problems.join(' '));
       setReady(true);
     })().catch((err) => {
@@ -203,7 +212,7 @@ export default function PlatformConsole() {
   }, [tenants]);
 
   const tools = useMemo(
-    () => platformNavItemsForRole(role, permissions).filter(([, href]) => href !== '/platform'),
+    () => platformNavItemsForRole(role, permissions).map(([, href]) => href),
     [role, permissions],
   );
 
@@ -217,7 +226,7 @@ export default function PlatformConsole() {
     ? Object.values(summary.by_package).reduce((sum, value) => sum + Number(value || 0), 0)
     : null;
   const openTickets = typeof summary?.open_support_tickets === 'number' ? summary.open_support_tickets : null;
-  const canOpenDesk = tools.some(([, href]) => href === '/platform/support');
+  const canOpenDesk = tools.includes('/platform/support');
   const paidCount = typeof summary?.paid_invoice_count === 'number' ? summary.paid_invoice_count : null;
   const paidRevenue = Object.entries(summary?.paid_revenue_by_currency || {});
   const activeBilling =
@@ -235,9 +244,67 @@ export default function PlatformConsole() {
       .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
   }, [tenants]);
 
-  if (!ready && !error) {
-    return <p className="muted">Loading platform console…</p>;
+  const endingSoon = (upcoming || []).filter(
+    (row) => row.status !== 'suspended' && row.status !== 'grace' && (row.days_remaining ?? 99) <= 14,
+  ).length;
+
+  const todo: TodoItem[] = [];
+  if (attention) {
+    todo.push({
+      key: 'billing',
+      count: attention,
+      tone: 'bad',
+      title: `${plural(attention, 'Company needs', 'Companies need')} billing attention`,
+      sub: 'Past due, payment needed, or suspended for billing.',
+      href: '/platform/billing?tab=attention',
+    });
   }
+  if (openTickets && canOpenDesk) {
+    todo.push({
+      key: 'tickets',
+      count: openTickets,
+      tone: 'warn',
+      title: `Open support ${plural(openTickets, 'ticket', 'tickets')}`,
+      sub: 'Waiting on your team or the company.',
+      href: '/platform/support',
+    });
+  }
+  if (counts.grace) {
+    todo.push({
+      key: 'grace',
+      count: counts.grace,
+      tone: 'warn',
+      title: `${plural(counts.grace, 'Company', 'Companies')} in grace period`,
+      sub: 'Access ends unless the subscription is renewed.',
+      href: '/platform/tenants?status=grace',
+    });
+  }
+  if (endingSoon) {
+    todo.push({
+      key: 'ending',
+      count: endingSoon,
+      tone: 'info',
+      title: `${plural(endingSoon, 'Trial or renewal', 'Trials and renewals')} ending within 14 days`,
+      sub: 'A good moment to contact them.',
+      href: '/platform/reports',
+    });
+  }
+  if (counts.suspended) {
+    todo.push({
+      key: 'suspended',
+      count: counts.suspended,
+      tone: 'bad',
+      title: `Suspended ${plural(counts.suspended, 'company', 'companies')}`,
+      sub: 'Staff cannot sign in until reactivated.',
+      href: '/platform/tenants?status=suspended',
+    });
+  }
+
+  if (!ready && !error) {
+    return <PageSkeleton label="Loading platform console…" cards={4} />;
+  }
+
+  const firstRevenue = paidRevenue[0];
 
   return (
     <div className="plat">
@@ -246,7 +313,7 @@ export default function PlatformConsole() {
         kicker="Software owner"
         kickerClassName="plat-kicker"
         title="Platform console"
-        subtitle="Platform activity and workspace totals. Subscriptions, modules, usage, and store entitlement are on the Tenant page. Paid self-serve checkout is not live."
+        subtitle="How every company on RIBDIGI is doing, and what needs you today."
         subtitleClassName="plat-sub"
       />
 
@@ -256,141 +323,159 @@ export default function PlatformConsole() {
         </p>
       )}
 
-      <div className="plat-panel">
-        <h2>Platform tools</h2>
-        <ul className="plat-tools">
-          {tools.map(([label, href]) => (
-            <li key={href}>
-              <Link href={href}>{label}</Link>
-              {CONSOLE_NOTES[href] ? <p className="muted">{CONSOLE_NOTES[href]}</p> : null}
-            </li>
+      <div className="plat-metrics" aria-label="Platform counts">
+        <Metric
+          label="Companies"
+          href="/platform/tenants"
+          value={companyCount == null ? '—' : companyCount}
+          note={
+            companyCount == null
+              ? 'Company count did not load.'
+              : companyCount === 0
+                ? 'No companies yet.'
+                : `${counts.active} active · ${counts.trial} on trial`
+          }
+        />
+        <Metric
+          label="Subscriptions"
+          href="/platform/reports"
+          value={subscriptionCount == null ? '—' : subscriptionCount}
+          note={
+            subscriptionCount == null
+              ? 'Subscription count did not load.'
+              : subscriptionCount === 0
+                ? 'No subscriptions yet.'
+                : activeBilling == null
+                  ? undefined
+                  : `${activeBilling} active billing ${plural(activeBilling, 'account', 'accounts')}`
+          }
+        />
+        <Metric
+          label="Paid revenue (all time)"
+          href="/platform/billing"
+          note={
+            summary == null
+              ? 'Revenue did not load.'
+              : paidRevenue.length === 0
+                ? 'No paid subscription invoices yet.'
+                : paidCount == null
+                  ? undefined
+                  : `${paidCount} paid ${plural(paidCount, 'invoice', 'invoices')}`
+          }
+        >
+          <strong className="plat-metric-value is-sm">
+            {firstRevenue ? fmtMoney(firstRevenue[0], firstRevenue[1]) : '—'}
+          </strong>
+          {paidRevenue.slice(1).map(([currency, amount]) => (
+            <span key={currency} className="plat-metric-second">
+              {fmtMoney(currency, amount)}
+            </span>
           ))}
-        </ul>
+        </Metric>
+        <Metric
+          label="Open support tickets"
+          href={canOpenDesk ? '/platform/support' : undefined}
+          value={openTickets == null ? '—' : openTickets}
+          note={
+            openTickets == null
+              ? 'Open ticket count did not load.'
+              : openTickets === 0
+                ? 'No open support tickets.'
+                : undefined
+          }
+        />
       </div>
 
-      <div className="plat-stats" aria-label="Platform counts">
-        <Link href="/platform/tenants" className="plat-stat">
-          <span>Companies</span>
-          <strong>{companyCount == null ? '—' : companyCount}</strong>
-          {companyCount === 0 ? <p className="muted">No companies yet.</p> : null}
-          {companyCount == null ? <p className="muted">Company count did not load.</p> : null}
-        </Link>
-        <Link href="/platform/reports" className="plat-stat">
-          <span>Subscriptions</span>
-          <strong>{subscriptionCount == null ? '—' : subscriptionCount}</strong>
-          {subscriptionCount === 0 ? <p className="muted">No subscriptions yet.</p> : null}
-          {subscriptionCount == null ? <p className="muted">Subscription count did not load.</p> : null}
-        </Link>
-        {canOpenDesk ? (
-          <Link href="/platform/support" className="plat-stat">
-            <span>Open support tickets</span>
-            <strong>{openTickets == null ? '—' : openTickets}</strong>
-            {openTickets === 0 ? <p className="muted">No open support tickets.</p> : null}
-            {openTickets == null ? <p className="muted">Open ticket count did not load.</p> : null}
-          </Link>
-        ) : (
-          <div className="plat-stat">
-            <span>Open support tickets</span>
-            <strong>{openTickets == null ? '—' : openTickets}</strong>
-            {openTickets === 0 ? <p className="muted">No open support tickets.</p> : null}
-            {openTickets == null ? <p className="muted">Open ticket count did not load.</p> : null}
-          </div>
-        )}
-      </div>
+      <div className="plat-cols">
+        <div className="plat-stack">
+          <section className="plat-panel" aria-label="Needs attention">
+            <div className="plat-panel-head">
+              <h2>Needs attention</h2>
+            </div>
+            {todo.length === 0 ? (
+              summary == null ? (
+                <p className="muted">Counts did not load, so this list may be incomplete.</p>
+              ) : (
+                <p className="plat-allclear">Nothing needs you right now.</p>
+              )
+            ) : (
+              <ul className="plat-todo">
+                {todo.map((item) => (
+                  <li key={item.key}>
+                    <Link href={item.href}>
+                      <span className={`plat-todo-count is-${item.tone}`}>{item.count}</span>
+                      <span className="plat-todo-text">
+                        <span className="plat-todo-title">{item.title}</span>
+                        <span className="plat-todo-sub">{item.sub}</span>
+                      </span>
+                      <svg className="plat-todo-go" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M9 6l6 6-6 6" />
+                      </svg>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
 
-      <div className="plat-stats" aria-label="Platform billing">
-        <Link href="/platform/billing" className="plat-stat">
-          <span>Paid revenue (all time)</span>
-          {summary == null ? (
-            <>
-              <strong>—</strong>
-              <p className="muted">Revenue did not load.</p>
-            </>
-          ) : paidRevenue.length === 0 ? (
-            <>
-              <strong>—</strong>
-              <p className="muted">No paid subscription invoices yet.</p>
-            </>
-          ) : (
-            paidRevenue.map(([currency, amount]) => (
-              <strong key={currency}>{fmtMoney(currency, amount)}</strong>
-            ))
-          )}
-        </Link>
-        <Link href="/platform/billing" className="plat-stat">
-          <span>Paid invoices</span>
-          <strong>{paidCount == null ? '—' : paidCount}</strong>
-        </Link>
-        <Link href="/platform/billing" className="plat-stat ok">
-          <span>Active billing accounts</span>
-          <strong>{activeBilling == null ? '—' : activeBilling}</strong>
-        </Link>
-        <Link href="/platform/billing" className="plat-stat bad">
-          <span>Billing needs attention</span>
-          <strong>{attention == null ? '—' : attention}</strong>
-        </Link>
-      </div>
+          <section className="plat-panel" aria-label="Platform activity">
+            <div className="plat-panel-head">
+              <h2>Platform activity</h2>
+            </div>
+            <p className="plat-panel-sub">
+              Tenant creation, industry and package changes, administrator password resets, and staff
+              account changes. Store stock, orders, POS, and payments are not listed here.
+            </p>
+            {activity.length === 0 ? (
+              <p className="muted">No platform events yet.</p>
+            ) : (
+              <ol className="plat-feed">
+                {activity.map((event) => (
+                  <li key={event.id}>
+                    <span>{event.summary || `${event.module || ''} ${event.action || ''}`}</span>
+                    <time dateTime={event.created_at} title={fmtDate(event.created_at)}>
+                      {timeAgo(event.created_at)}
+                    </time>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+        </div>
 
-      <div className="plat-stats">
-        <div className="plat-stat">
-          <span>Total tenants</span>
-          <strong>{counts.total}</strong>
+        <div className="plat-stack">
+          <section className="plat-panel">
+            <div className="plat-panel-head">
+              <h2>Tenants by status</h2>
+              <Link href="/platform/tenants">View all</Link>
+            </div>
+            <StatusSplit counts={counts} />
+          </section>
+          <section className="plat-panel">
+            <div className="plat-panel-head">
+              <h2>Tenants by industry</h2>
+            </div>
+            <IndustryBars rows={industries} />
+          </section>
+          {upcoming && upcoming.length > 0 ? (
+            <section className="plat-panel">
+              <div className="plat-panel-head">
+                <h2>Coming up</h2>
+                <Link href="/platform/reports">All renewals</Link>
+              </div>
+              <ul className="plat-upcoming">
+                {upcoming.slice(0, 5).map((row) => (
+                  <li key={`${row.tenant_id}-${row.kind}`}>
+                    <span title={row.company_name}>{row.company_name}</span>
+                    <Tag tone={(row.days_remaining ?? 0) < 0 ? 'bad' : (row.days_remaining ?? 0) <= 7 ? 'warn' : 'none'}>
+                      {daysLeft(row.days_remaining)}
+                    </Tag>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
         </div>
-        <div className="plat-stat ok">
-          <span>Active</span>
-          <strong>{counts.active}</strong>
-        </div>
-        <div className="plat-stat trial">
-          <span>Trial</span>
-          <strong>{counts.trial}</strong>
-        </div>
-        <div className="plat-stat grace">
-          <span>Grace</span>
-          <strong>{counts.grace}</strong>
-        </div>
-        <div className="plat-stat bad">
-          <span>Suspended</span>
-          <strong>{counts.suspended}</strong>
-        </div>
-      </div>
-
-      <div className="plat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
-        <div className="plat-panel">
-          <h2>Tenants by status</h2>
-          <StatusBars counts={counts} />
-        </div>
-        <div className="plat-panel">
-          <h2>Tenants by industry</h2>
-          <IndustryBars rows={industries} />
-        </div>
-      </div>
-
-      <div className="plat-panel">
-        <h2>Platform activity</h2>
-        <p className="muted" style={{ marginTop: 0 }}>
-          Tenant creation, industry and package changes, administrator password resets, and staff
-          account changes. Store stock, orders, POS, and payments are not listed here.
-        </p>
-        {activity.length === 0 ? (
-          <p className="muted">No platform events yet.</p>
-        ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>When</th>
-                <th>Event</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activity.map((event) => (
-                <tr key={event.id}>
-                  <td>{fmtDate(event.created_at)}</td>
-                  <td>{event.summary || `${event.module || ''} ${event.action || ''}`}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
       </div>
     </div>
   );

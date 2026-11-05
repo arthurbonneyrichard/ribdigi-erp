@@ -13,6 +13,8 @@ export type RowActionItem = {
   hidden?: boolean;
   /** Custom content (pay field, etc.) instead of a plain button. */
   node?: ReactNode;
+  /** Close the ⋯ menu after a click inside custom `node` content. */
+  closeOnClick?: boolean;
 };
 
 type Props = {
@@ -56,7 +58,11 @@ export default function RowActions({ label = 'More actions', primaryMax = 1, ite
   const renderItem = (item: RowActionItem, inMenu: boolean) => {
     if (item.node) {
       return (
-        <div key={item.key} className={inMenu ? 'erp-row-menu-slot' : 'erp-row-action-slot'}>
+        <div
+          key={item.key}
+          className={inMenu ? 'erp-row-menu-slot' : 'erp-row-action-slot'}
+          onClick={item.closeOnClick ? () => setOpen(false) : undefined}
+        >
           {item.node}
         </div>
       );

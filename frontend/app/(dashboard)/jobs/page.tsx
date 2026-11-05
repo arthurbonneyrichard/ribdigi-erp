@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import PageHeader from '../../../components/PageHeader';
+import { Metric } from '../../../components/PlatformUi';
+import '../platform/platform-ui.css';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 
@@ -104,27 +106,15 @@ export default function Page() {
   const beat = info?.beat || {};
 
   return (
-    <>
+    <div className="plat">
       <PageHeader
+        className="plat-hero"
+        kicker="Software owner"
+        kickerClassName="plat-kicker"
         title="Jobs"
         subtitle="Background job handlers and schedules for Ribdigi House operators. Platform staff can view; platform owner can run or enqueue."
-      />
-      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
-
-      <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 6 }}>
-        <h3 style={{ margin: 0 }}>Broker</h3>
-        <div className="muted" style={{ fontSize: 13 }}>
-          Celery enabled: {info?.celery_enabled ? 'yes' : 'no'}
-          {info?.task_always_eager ? ' · always eager' : ''}
-        </div>
-        <div className="muted" style={{ fontSize: 12, wordBreak: 'break-all' }}>
-          Broker: {info?.broker_configured ? 'configured' : 'not configured'}
-        </div>
-        <div className="muted" style={{ fontSize: 12, wordBreak: 'break-all' }}>
-          Results: {info?.result_backend_configured ? 'configured' : 'not configured'}
-        </div>
-        <div>
+        subtitleClassName="plat-sub"
+        actions={
           <button
             type="button"
             onClick={() => refresh().catch((e) => setError(e.message))}
@@ -133,87 +123,107 @@ export default function Page() {
           >
             Refresh
           </button>
-        </div>
+        }
+      />
+
+      <div className="plat-metrics" aria-label="Broker">
+        <Metric
+          label="Celery enabled"
+          value={info?.celery_enabled ? 'Yes' : 'No'}
+          note={info?.task_always_eager ? 'Always eager' : undefined}
+        />
+        <Metric label="Broker" value={info?.broker_configured ? 'Configured' : 'Not configured'} />
+        <Metric label="Results" value={info?.result_backend_configured ? 'Configured' : 'Not configured'} />
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h3>Handlers</h3>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Job</th>
-              <th>Beat</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {jobs.length === 0 && (
-              <tr>
-                <td colSpan={3} className="muted">
-                  No jobs loaded
-                </td>
-              </tr>
-            )}
-            {jobs.map((name) => (
-              <tr key={name}>
-                <td>
-                  <div style={{ fontWeight: 600 }}>{JOB_LABELS[name] || name}</div>
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    {name}
-                  </div>
-                </td>
-                <td className="muted" style={{ fontSize: 13 }}>
-                  {beatForJob(beat, name)}
-                </td>
-                <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {canRun ? (
-                    <>
-                      <button
-                        type="button"
-                        disabled={!!busy}
-                        onClick={() => runJob(name, false)}
-                        aria-label={`Run sync ${name}`}
-                      >
-                        {busy === `${name}:run` ? 'Running…' : 'Run sync'}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={!!busy || !info?.celery_enabled}
-                        title={!info?.celery_enabled ? 'Background processing is not available' : undefined}
-                        onClick={() => runJob(name, true)}
-                        aria-label={`Enqueue ${name}`}
-                      >
-                        {busy === `${name}:enqueue` ? 'Enqueue…' : 'Enqueue'}
-                      </button>
-                    </>
-                  ) : (
-                    <span className="muted" style={{ fontSize: 12 }}>
-                      View only
-                    </span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="plat-panel">
+        <div className="plat-panel-head">
+          <h2>Handlers</h2>
+        </div>
+        {jobs.length === 0 ? (
+          <p className="muted">No jobs loaded</p>
+        ) : (
+          <div className="plat-table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Job</th>
+                  <th>Schedule</th>
+                  <th className="col-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {jobs.map((name) => (
+                  <tr key={name}>
+                    <td>
+                      <div className="plat-co">{JOB_LABELS[name] || name}</div>
+                      <span className="plat-small">{name}</span>
+                    </td>
+                    <td>{beatForJob(beat, name)}</td>
+                    <td className="plat-actions-cell col-right">
+                      {canRun ? (
+                        <span className="plat-row-actions">
+                          <button
+                            type="button"
+                            disabled={!!busy}
+                            onClick={() => runJob(name, false)}
+                            aria-label={`Run sync ${name}`}
+                          >
+                            {busy === `${name}:run` ? 'Running…' : 'Run sync'}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!!busy || !info?.celery_enabled}
+                            title={!info?.celery_enabled ? 'Background processing is not available' : undefined}
+                            onClick={() => runJob(name, true)}
+                            aria-label={`Enqueue ${name}`}
+                          >
+                            {busy === `${name}:enqueue` ? 'Enqueue…' : 'Enqueue'}
+                          </button>
+                        </span>
+                      ) : (
+                        <span className="muted" style={{ fontSize: 12 }}>
+                          View only
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {lastResult && (
-        <div className="card">
-          <h3>Last result</h3>
-          <pre
-            style={{
-              margin: 0,
-              fontSize: 12,
-              overflow: 'auto',
-              maxHeight: 320,
-              whiteSpace: 'pre-wrap',
-            }}
-          >
-            {JSON.stringify(lastResult, null, 2)}
-          </pre>
+        <div className="plat-panel">
+          <div className="plat-panel-head">
+            <h2>Last result</h2>
+          </div>
+          <pre className="plat-code">{JSON.stringify(lastResult, null, 2)}</pre>
         </div>
       )}
-    </>
+
+      {(error || message) && (
+        <div className="plat-feedback-dock" aria-live="polite">
+          {error ? (
+            <div className="plat-toast is-bad" role="alert">
+              <p>{error}</p>
+              <button type="button" aria-label="Dismiss error" onClick={() => setError('')}>
+                ×
+              </button>
+            </div>
+          ) : null}
+          {message ? (
+            <div className="plat-toast" role="status">
+              <p>{message}</p>
+              <button type="button" aria-label="Dismiss message" onClick={() => setMessage('')}>
+                ×
+              </button>
+            </div>
+          ) : null}
+        </div>
+      )}
+    </div>
   );
 }

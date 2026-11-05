@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatNumber } from '../../../../lib/format';
 import PageHeader from '../../../../components/PageHeader';
+import PageSkeleton from '../../../../components/PageSkeleton';
+import EmptyState from '../../../../components/EmptyState';
+import { Metric, Tag, TenantStatus, daysLeft, plainWords } from '../../../../components/PlatformUi';
 import { apiFetch } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
 import { getPrefetched } from '../../../../lib/prefetchCache';
@@ -77,17 +80,14 @@ export default function PlatformReportsPage() {
   }, [router]);
 
   if (!ready && !error) {
-    return (
-      <>
-        <p className="muted">Loading platform reports…</p>
-      </>
-    );
+    return <PageSkeleton label="Loading platform reports…" cards={3} />;
   }
 
   const summary = data?.summary || {};
   const packages = data?.packages?.packages || [];
   const subs = data?.subscriptions?.rows || [];
   const trials = data?.trials?.rows || [];
+  const maxPackage = Math.max(1, ...packages.map((p: any) => Number(p.tenant_count) || 0));
 
   return (
     <>
@@ -99,6 +99,25 @@ export default function PlatformReportsPage() {
           title="Platform reports"
           subtitle="Cross-tenant overview: status mix, package distribution, subscription usage, and upcoming renewals / trial endings."
           subtitleClassName="plat-sub"
+          actions={
+            <details className="plat-menu">
+              <summary>Export CSV</summary>
+              <div className="plat-menu-pop">
+                <button type="button" className="btn-primary" aria-label="Export platform summary CSV" onClick={() => exportCsv('summary')}>
+                  Summary
+                </button>
+                <button type="button" className="btn-primary" aria-label="Export platform subscriptions CSV" onClick={() => exportCsv('subscriptions')}>
+                  Subscriptions
+                </button>
+                <button type="button" className="btn-primary" aria-label="Export platform packages CSV" onClick={() => exportCsv('packages')}>
+                  Packages
+                </button>
+                <button type="button" className="btn-primary" aria-label="Export platform trials CSV" onClick={() => exportCsv('trials')}>
+                  Trials and renewals
+                </button>
+              </div>
+            </details>
+          }
         />
 
         {error && (
@@ -107,153 +126,158 @@ export default function PlatformReportsPage() {
           </p>
         )}
 
-        <div className="plat-panel">
-          <h2>Export CSV</h2>
-          <p className="muted" style={{ marginTop: 0 }}>
-            Download platform report data as CSV. Revenue figures come from paid subscription
-            invoices only.
-          </p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button type="button" className="btn-primary" aria-label="Export platform summary CSV" onClick={() => exportCsv('summary')}>
-              Summary
-            </button>
-            <button type="button" className="btn-primary" aria-label="Export platform subscriptions CSV" onClick={() => exportCsv('subscriptions')}>
-              Subscriptions
-            </button>
-            <button type="button" className="btn-primary" aria-label="Export platform packages CSV" onClick={() => exportCsv('packages')}>
-              Packages
-            </button>
-            <button type="button" className="btn-primary" aria-label="Export platform trials CSV" onClick={() => exportCsv('trials')}>
-              Trials and renewals
-            </button>
-          </div>
-        </div>
-
-        <div className="plat-stats">
-          <div className="plat-stat">
-            <span>Total tenants</span>
-            <strong>{summary.tenant_count ?? 0}</strong>
-          </div>
+        <div className="plat-metrics">
+          <Metric label="Total tenants" value={summary.tenant_count ?? 0} />
           {Object.entries(summary.by_status || {}).map(([k, v]) => (
-            <div key={k} className="plat-stat">
-              <span>{k}</span>
-              <strong>{v as number}</strong>
-            </div>
+            <Metric key={k} label={plainWords(k)} value={v as number} />
           ))}
         </div>
 
         <div className="plat-panel">
-          <h2>Package distribution</h2>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Package</th>
-                <th>Tenants</th>
-                <th>Active</th>
-                <th>Trial</th>
-                <th>Grace</th>
-                <th>Suspended</th>
-              </tr>
-            </thead>
-            <tbody>
-              {packages.map((p: any) => (
-                <tr key={p.package_code}>
-                  <td className="plat-co">{p.package_name}</td>
-                  <td>{p.tenant_count}</td>
-                  <td>{p.active}</td>
-                  <td>{p.trial}</td>
-                  <td>{p.grace}</td>
-                  <td>{p.suspended}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="plat-panel">
-          <h2>Subscription usage</h2>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Company</th>
-                <th>Package</th>
-                <th>Amount</th>
-                <th>Used</th>
-                <th>Remaining</th>
-                <th>Renewal</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {subs.map((r: any) => (
-                <tr key={r.tenant_id}>
-                  <td>
-                    <div className="plat-co">{r.company_name}</div>
-                    <div className="muted" style={{ fontSize: 12 }}>
-                      {r.slug}
-                    </div>
-                  </td>
-                  <td>{r.package_name || r.package_code}</td>
-                  <td>
-                    {subscriptionAmountLabel(
-                      r.amount,
-                      r.currency,
-                      r.amount == null ? '' : formatNumber(r.amount, prefs),
-                    )}
-                  </td>
-                  <td>{r.months_used ?? 0} mo</td>
-                  <td>
-                    {r.months_remaining != null ? `${r.months_remaining} mo` : '—'}
-                    {r.days_remaining != null ? (
-                      <div className="muted" style={{ fontSize: 11 }}>
-                        {r.days_remaining}d
-                      </div>
-                    ) : null}
-                  </td>
-                  <td>{fmtDate(r.renewal_due)}</td>
-                  <td>{r.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="plat-panel">
-          <h2>Upcoming renewals / trial ends ({data?.trials?.within_days ?? 45}d)</h2>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Company</th>
-                <th>Kind</th>
-                <th>Package</th>
-                <th>Ends</th>
-                <th>Days left</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {trials.length === 0 ? (
+          <div className="plat-panel-head">
+            <h2>Package distribution</h2>
+          </div>
+          <div className="plat-table-wrap">
+            <table className="table">
+              <thead>
                 <tr>
-                  <td colSpan={6} className="muted">
-                    None in window
-                  </td>
+                  <th>Package</th>
+                  <th>Tenants</th>
+                  <th className="col-right">Active</th>
+                  <th className="col-right">Trial</th>
+                  <th className="col-right">Grace</th>
+                  <th className="col-right">Suspended</th>
                 </tr>
-              ) : (
-                trials.map((r: any) => (
-                  <tr key={r.tenant_id + String(r.ends_at)}>
-                    <td className="plat-co">{r.company_name}</td>
-                    <td>{r.kind}</td>
-                    <td>{r.package_code}</td>
-                    <td>{fmtDate(r.ends_at)}</td>
-                    <td>{r.days_remaining}</td>
-                    <td>{r.status}</td>
+              </thead>
+              <tbody>
+                {packages.map((p: any) => (
+                  <tr key={p.package_code}>
+                    <td className="plat-co">{p.package_name}</td>
+                    <td>
+                      <div className="plat-meter" title={`${p.tenant_count} tenants`}>
+                        <span className="plat-meter-track">
+                          <span style={{ width: `${(Number(p.tenant_count) / maxPackage) * 100}%` }} />
+                        </span>
+                        <b>{p.tenant_count}</b>
+                      </div>
+                    </td>
+                    <td className="col-right">{p.active}</td>
+                    <td className="col-right">{p.trial}</td>
+                    <td className="col-right">{p.grace}</td>
+                    <td className="col-right">{p.suspended}</td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="plat-panel">
+          <div className="plat-panel-head">
+            <h2>Subscription usage</h2>
+          </div>
+          {subs.length === 0 ? (
+            <EmptyState title="No subscriptions yet." />
+          ) : (
+            <div className="plat-table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Company</th>
+                    <th className="plat-hide-sm">Package</th>
+                    <th className="col-right">Amount</th>
+                    <th className="plat-hide-sm">Term used</th>
+                    <th className="plat-hide-sm">Remaining</th>
+                    <th className="plat-hide-sm">Renewal</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {subs.map((r: any) => {
+                    const assigned = Number(r.months_assigned) || 0;
+                    const used = Number(r.months_used) || 0;
+                    return (
+                      <tr key={r.tenant_id}>
+                        <td>
+                          <div className="plat-co">{r.company_name}</div>
+                          <span className="plat-small">{r.slug}</span>
+                        </td>
+                        <td className="plat-hide-sm">{r.package_name || r.package_code}</td>
+                        <td className="col-right">
+                          {subscriptionAmountLabel(
+                            r.amount,
+                            r.currency,
+                            r.amount == null ? '' : formatNumber(r.amount, prefs),
+                          )}
+                        </td>
+                        <td className="plat-hide-sm">
+                          <div className="plat-meter">
+                            <span className="plat-meter-track">
+                              <span style={{ width: `${assigned ? Math.min(100, (used / assigned) * 100) : 0}%` }} />
+                            </span>
+                            <small>{used} mo</small>
+                          </div>
+                        </td>
+                        <td className="plat-hide-sm">
+                          {r.months_remaining != null ? `${r.months_remaining} mo` : '—'}
+                          {r.days_remaining != null ? <span className="plat-small">{daysLeft(r.days_remaining)}</span> : null}
+                        </td>
+                        <td className="plat-hide-sm">{fmtDate(r.renewal_due)}</td>
+                        <td>
+                          <TenantStatus status={r.status} />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="plat-panel">
+          <div className="plat-panel-head">
+            <h2>Upcoming renewals / trial ends ({data?.trials?.within_days ?? 45}d)</h2>
+          </div>
+          {trials.length === 0 ? (
+            <p className="muted">None in window</p>
+          ) : (
+            <div className="plat-table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Company</th>
+                    <th>Kind</th>
+                    <th className="plat-hide-sm">Package</th>
+                    <th className="plat-hide-sm">Ends</th>
+                    <th>Time left</th>
+                    <th className="plat-hide-sm">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {trials.map((r: any) => (
+                    <tr key={r.tenant_id + String(r.ends_at)}>
+                      <td className="plat-co">{r.company_name}</td>
+                      <td>{plainWords(r.kind)}</td>
+                      <td className="plat-hide-sm">{plainWords(r.package_code)}</td>
+                      <td className="plat-hide-sm">{fmtDate(r.ends_at)}</td>
+                      <td>
+                        <Tag tone={r.days_remaining < 0 ? 'bad' : r.days_remaining <= 7 ? 'warn' : 'none'}>
+                          {daysLeft(r.days_remaining)}
+                        </Tag>
+                      </td>
+                      <td className="plat-hide-sm">
+                        <TenantStatus status={r.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
+
     </>
   );
 }

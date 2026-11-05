@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { api } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
 import PageHeader from '../../../../components/PageHeader';
-import StatusChip from '../../../../components/StatusChip';
+import PageSkeleton from '../../../../components/PageSkeleton';
+import { Metric, Tag, plainWords } from '../../../../components/PlatformUi';
 
 const OWNER_ROLES = ['super_admin', 'platform_owner'];
 
@@ -70,7 +71,8 @@ type PlatformSettings = {
 };
 
 function Flag({ on, onLabel = 'On', offLabel = 'Off' }: { on?: boolean; onLabel?: string; offLabel?: string }) {
-  return <StatusChip value={on ? 'yes' : 'no'} label={on ? onLabel : offLabel} />;
+  // Off is a normal setting here, so it stays neutral rather than red.
+  return <Tag tone={on ? 'ok' : 'none'}>{on ? onLabel : offLabel}</Tag>;
 }
 
 function SettingRow({ label, children }: { label: string; children: ReactNode }) {
@@ -111,7 +113,7 @@ export default function PlatformSettingsPage() {
     };
   }, [router]);
 
-  if (!ready && !error) return <p className="muted">Loading platform settings…</p>;
+  if (!ready && !error) return <PageSkeleton label="Loading platform settings…" cards={3} />;
 
   const billing = data?.billing || {};
   const auth = data?.auth || {};
@@ -120,7 +122,7 @@ export default function PlatformSettingsPage() {
   const audit = data?.audit || {};
   const deploy = data?.deploy || {};
   const reminders = (data?.billing_reminder_days || []).join(', ');
-  const totpRoles = (auth.totp_enforced_roles || []).join(', ') || '—';
+  const totpRoles = (auth.totp_enforced_roles || []).map(plainWords).join(', ') || '—';
 
   return (
     <div className="plat">
@@ -133,9 +135,9 @@ export default function PlatformSettingsPage() {
         subtitleClassName="plat-sub"
         actions={
           data ? (
-            <div className="plat-filters" aria-label="Settings source">
-              <span className="plat-chip active">{data.source || 'environment'}</span>
-              <span className="plat-chip">{data.editable ? 'Editable' : 'Read-only'}</span>
+            <div className="plat-row-actions" aria-label="Settings source">
+              <Tag>{plainWords(data.source || 'environment')}</Tag>
+              <Tag>{data.editable ? 'Editable' : 'Read-only'}</Tag>
             </div>
           ) : undefined
         }
@@ -149,40 +151,27 @@ export default function PlatformSettingsPage() {
 
       {data && (
         <>
-          <div className="plat-stats" aria-label="Subscription lifecycle">
-            <div className="plat-stat">
-              <span>Trial days</span>
-              <strong>{data.trial_days}</strong>
-            </div>
-            <div className="plat-stat">
-              <span>Trial grace</span>
-              <strong>{data.grace_days}</strong>
-            </div>
-            <div className="plat-stat">
-              <span>Billing grace</span>
-              <strong>{data.billing_grace_days}</strong>
-            </div>
-            <div className="plat-stat">
-              <span>Max attempts</span>
-              <strong>{data.billing_max_attempts}</strong>
-            </div>
-            <div className="plat-stat">
-              <span>Reminder days</span>
-              <strong style={{ fontSize: 18 }}>{reminders || '—'}</strong>
-              <p className="muted">Before renewal</p>
-            </div>
+          <div className="plat-metrics" aria-label="Subscription lifecycle">
+            <Metric label="Trial days" value={data.trial_days} />
+            <Metric label="Trial grace" value={data.grace_days} note="Days" />
+            <Metric label="Billing grace" value={data.billing_grace_days} note="Days" />
+            <Metric label="Max attempts" value={data.billing_max_attempts} />
+            <Metric label="Reminder days" value={reminders || '—'} note="Before renewal" />
           </div>
 
+          <div className="plat-masonry">
           <div className="plat-panel">
-            <h2>Billing gateway</h2>
-            <div className="list-table-wrap">
-              <table className="table" aria-label="Billing gateway status">
+            <div className="plat-panel-head">
+              <h2>Billing gateway</h2>
+            </div>
+            <div>
+              <table className="plat-kv" aria-label="Billing gateway status">
                 <tbody>
-                  <SettingRow label="Provider">{billing.provider || 'Not set'}</SettingRow>
+                  <SettingRow label="Provider">{plainWords(billing.provider) || 'Not set'}</SettingRow>
                   <SettingRow label="Configured">
                     <Flag on={billing.configured} onLabel="Yes" offLabel="No" />
                   </SettingRow>
-                  <SettingRow label="Mode">{billing.gateway_mode || '—'}</SettingRow>
+                  <SettingRow label="Mode">{plainWords(billing.gateway_mode) || '—'}</SettingRow>
                   <SettingRow label="Enabled">
                     <Flag on={billing.gateway_enabled} />
                   </SettingRow>
@@ -196,7 +185,7 @@ export default function PlatformSettingsPage() {
               </table>
             </div>
             {!data.live_charges ? (
-              <p className="muted" style={{ marginTop: 12 }}>
+              <p className="plat-hint">
                 Live charges are off. Paid self-serve checkout is not live until a tested live gateway
                 is configured on Billing.
               </p>
@@ -204,9 +193,11 @@ export default function PlatformSettingsPage() {
           </div>
 
           <div className="plat-panel">
-            <h2>Security & access</h2>
-            <div className="list-table-wrap">
-              <table className="table" aria-label="Security and access settings">
+            <div className="plat-panel-head">
+              <h2>Security & access</h2>
+            </div>
+            <div>
+              <table className="plat-kv" aria-label="Security and access settings">
                 <tbody>
                   <SettingRow label="Login 2FA">
                     <Flag on={auth.login_2fa_enabled} onLabel="Required" offLabel="Optional" />
@@ -225,9 +216,11 @@ export default function PlatformSettingsPage() {
           </div>
 
           <div className="plat-panel">
-            <h2>System services</h2>
-            <div className="list-table-wrap">
-              <table className="table" aria-label="System service settings">
+            <div className="plat-panel-head">
+              <h2>System services</h2>
+            </div>
+            <div>
+              <table className="plat-kv" aria-label="System service settings">
                 <tbody>
                   <SettingRow label="Rate limiting">
                     <Flag on={services.rate_limit_enabled} />
@@ -278,9 +271,11 @@ export default function PlatformSettingsPage() {
           </div>
 
           <div className="plat-panel">
-            <h2>Backup & audit</h2>
-            <div className="list-table-wrap">
-              <table className="table" aria-label="Backup and audit settings">
+            <div className="plat-panel-head">
+              <h2>Backup & audit</h2>
+            </div>
+            <div>
+              <table className="plat-kv" aria-label="Backup and audit settings">
                 <tbody>
                   <SettingRow label="Backup retention">{backup.retention_count ?? '—'}</SettingRow>
                   <SettingRow label="Backup interval">
@@ -306,9 +301,11 @@ export default function PlatformSettingsPage() {
           </div>
 
           <div className="plat-panel">
-            <h2>Deploy identity</h2>
-            <div className="list-table-wrap">
-              <table className="table" aria-label="Deploy identity">
+            <div className="plat-panel-head">
+              <h2>Deploy identity</h2>
+            </div>
+            <div>
+              <table className="plat-kv" aria-label="Deploy identity">
                 <tbody>
                   <SettingRow label="App environment">{deploy.app_env || '—'}</SettingRow>
                   <SettingRow label="Release channel">{deploy.release_channel || '—'}</SettingRow>
@@ -318,41 +315,38 @@ export default function PlatformSettingsPage() {
               </table>
             </div>
           </div>
+          </div>
         </>
       )}
 
       <div className="plat-panel">
-        <h2>Related</h2>
-        <ul className="plat-tools">
+        <div className="plat-panel-head">
+          <h2>Related</h2>
+        </div>
+        <ul className="plat-links">
           <li>
             <Link href="/platform/billing" aria-label="Open billing gateway">
               Billing gateway
+              <small>Change the gateway, plans, and subscriptions.</small>
             </Link>
-            <p className="muted">Change the gateway, plans, and subscriptions.</p>
           </li>
           <li>
             <Link href="/jobs" aria-label="Open scheduled jobs">
               Jobs
+              <small>Run sync jobs and Celery workers.</small>
             </Link>
-            <p className="muted">Run sync jobs and Celery workers.</p>
           </li>
           <li>
             <Link href="/security" aria-label="Open security settings">
               Security
+              <small>Two-factor and passkeys for this account.</small>
             </Link>
-            <p className="muted">Two-factor and passkeys for this account.</p>
-          </li>
-          <li>
-            <Link href="/platform" aria-label="Open platform health console">
-              Platform console
-            </Link>
-            <p className="muted">Tenant health, revenue, and attention queue.</p>
           </li>
           <li>
             <Link href="/platform/reports" aria-label="Open platform reports">
               Platform reports
+              <small>Export summary, subscriptions, packages, and trials.</small>
             </Link>
-            <p className="muted">Export summary, subscriptions, packages, and trials.</p>
           </li>
         </ul>
       </div>
