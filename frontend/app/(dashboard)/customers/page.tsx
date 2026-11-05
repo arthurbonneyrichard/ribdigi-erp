@@ -8,7 +8,8 @@ import CustomerGroupsWindow from '../../../components/CustomerGroupsWindow';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import { api } from '../../../lib/api';
 import { createPaintGet, peekPrefetch } from '../../../lib/prefetchCache';
-import { currencySign, formatNumber } from '../../../lib/format';
+import { currencySign, formatDate, formatMoney } from '../../../lib/format';
+import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import RowActions, { type RowActionItem } from '../../../components/RowActions';
 import { AmountField } from '../../../components/AmountField';
 import { normalizeIndustry } from '../../../lib/industries';
@@ -93,6 +94,9 @@ const emptyForm = {
 };
 
 export default function Page() {
+  const formatPrefs = useCompanyFormat();
+  const money = (v: unknown) => formatMoney(Number(v ?? 0) || 0, formatPrefs);
+  const moneyOrBlank = (v: unknown) => (v == null || v === '' || Number(v) === 0 ? '' : money(v));
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
@@ -507,10 +511,10 @@ export default function Page() {
                 <th>Phone</th>
                 <th>
                   <button type="button" className="list-sort" onClick={() => toggleSort('balance')}>
-                    Balance
+                    Owes you
                   </button>
                 </th>
-                {restaurantOps ? null : <th>Loyalty</th>}
+                {restaurantOps ? null : <th className="col-num">Points</th>}
                 <th className="col-actions">{restaurantOps ? 'Actions' : ''}</th>
               </tr>
             </thead>
@@ -533,8 +537,8 @@ export default function Page() {
                   {restaurantOps ? null : <td data-label="Group">{c.customer_group?.name || '—'}</td>}
                   <td data-label="Email">{c.email || '—'}</td>
                   <td data-label="Phone">{c.phone || '—'}</td>
-                  <td className="col-num" data-label="Balance">{formatNumber(c.balance ?? 0)}</td>
-                  {restaurantOps ? null : <td data-label="Loyalty">{c.loyalty_points ?? 0}</td>}
+                  <td className="col-num" data-label="Owes you">{formatMoney(Number(c.balance ?? 0), formatPrefs)}</td>
+                  {restaurantOps ? null : <td className="col-num" data-label="Points">{Math.floor(Number(c.loyalty_points ?? 0)).toLocaleString()}</td>}
                   <td className="col-actions" data-label="Actions">
                     <RowActions
                       label={`More actions for ${c.name}`}
@@ -926,9 +930,13 @@ export default function Page() {
             ) : null}
             {arCredit ? (
               <p>
-                Balance {arCredit.balance ?? arCustomer.balance ?? 0}
-                {arCredit.credit_limit != null ? ` · limit ${arCredit.credit_limit}` : ''}
-                {arCredit.overdue_amount != null ? ` · overdue ${arCredit.overdue_amount}` : ''}
+                Owes you <strong>{money(arCredit.balance ?? arCustomer.balance ?? 0)}</strong>
+                {arCredit.credit_limit != null && Number(arCredit.credit_limit) > 0
+                  ? ` · credit limit ${money(arCredit.credit_limit)}`
+                  : ''}
+                {arCredit.overdue_amount != null && Number(arCredit.overdue_amount) > 0
+                  ? ` · overdue ${money(arCredit.overdue_amount)}`
+                  : ''}
               </p>
             ) : null}
             {arStatement?.lines?.length ? (
@@ -936,30 +944,26 @@ export default function Page() {
                 <thead>
                   <tr>
                     <th>Date</th>
-                    <th>Doc</th>
-                    <th>Debit</th>
-                    <th>Credit</th>
-                    <th>Balance</th>
+                    <th>Document</th>
+                    <th className="col-num">Charged</th>
+                    <th className="col-num">Paid</th>
+                    <th className="col-num">Owes after</th>
                   </tr>
                 </thead>
                 <tbody>
                   {arStatement.lines.map((line: any, idx: number) => (
                     <tr key={line.id || idx}>
-                      <td>
-                        {line.date
-                          ? String(line.date).replace('T', ' ').slice(0, 16)
-                          : '—'}
-                      </td>
+                      <td>{line.date ? formatDate(line.date, formatPrefs) : '—'}</td>
                       <td>{line.document_number || line.reference || line.description || line.type || '—'}</td>
-                      <td>{line.debit ?? line.amount_debit ?? ''}</td>
-                      <td>{line.credit ?? line.amount_credit ?? ''}</td>
-                      <td>{line.balance ?? ''}</td>
+                      <td className="col-num">{moneyOrBlank(line.debit ?? line.amount_debit)}</td>
+                      <td className="col-num">{moneyOrBlank(line.credit ?? line.amount_credit)}</td>
+                      <td className="col-num">{moneyOrBlank(line.balance)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             ) : !arBusy ? (
-              <p className="muted">No statement lines.</p>
+              <p className="muted">Nothing charged or paid yet.</p>
             ) : null}
             {arHistory?.summary || arHistory?.purchases?.length || arHistory?.payments?.length ? (
               <p className="muted">

@@ -72,6 +72,26 @@ export default function Page() {
   const [meId, setMeId] = useState('');
   const [hotelOps, setHotelOps] = useState(false);
   const [restaurantOps, setRestaurantOps] = useState(false);
+  // Close an open row ⋯ menu when the person clicks elsewhere or picks a button in it.
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      const target = e.target as Element | null;
+      document.querySelectorAll<HTMLDetailsElement>('details.expenses-more[open]').forEach((d) => {
+        if (!target || !d.contains(target)) d.open = false;
+      });
+    };
+    const onClick = (e: MouseEvent) => {
+      const btn = (e.target as Element | null)?.closest?.('.expenses-more-pop button');
+      const menu = btn?.closest('details.expenses-more') as HTMLDetailsElement | null;
+      if (menu) menu.open = false;
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('click', onClick);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('click', onClick);
+    };
+  }, []);
   useEffect(() => {
     getMe()
       .then((r) => {
@@ -1016,63 +1036,6 @@ export default function Page() {
                 <td data-label="Actions">
                   <div className="expenses-actions">
                     <div className="expenses-actions-row">
-                      {r.has_attachment ? (
-                        <>
-                          <button
-                            type="button"
-                            aria-label={`Preview expense attachment ${r.id}`}
-                            onClick={() =>
-                              setAttachPreview({
-                                apiPath: `/expenses/${r.id}/attachment`,
-                                title: `Receipt — ${r.reference || r.description || r.id.slice(0, 8)}`,
-                              })
-                            }
-                          >
-                            Preview
-                          </button>
-                          <button onClick={() => downloadExpenseAttachment(r.id)} aria-label="Download expense attachment">
-                            Download
-                          </button>
-                          <button onClick={() => suggestOcr(r.id)} aria-label={`Suggest expense OCR ${r.id}`}>OCR</button>
-                          <button onClick={() => removeAttachment(r.id)} aria-label={`Remove expense attachment ${r.id}`}>Remove</button>
-                        </>
-                      ) : (
-                        <label className="expenses-upload">
-                          Attach receipt
-                          <input
-                            type="file"
-                            aria-label={`Upload expense attachment ${r.id}`}
-                            onChange={(e) => {
-                              const f = e.target.files?.[0];
-                              if (f) uploadExpenseAttachment(r.id, f);
-                              e.target.value = '';
-                            }}
-                          />
-                        </label>
-                      )}
-                    </div>
-                    <div className="expenses-actions-row">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          openDocumentPrint(`/expenses/${r.id}/print?format=pdf`).catch((err) =>
-                            setError(String((err as { message?: string })?.message || err)),
-                          )
-                        }
-                        aria-label="Print expense"
-                      >
-                        Print
-                      </button>
-                      {(r.status === 'pending' || r.status === 'rejected') && (
-                        <button
-                          type="button"
-                          onClick={() => startEdit(r)}
-                          aria-label={`Edit expense ${r.id}`}
-                          disabled={rowBusyId === r.id}
-                        >
-                          Edit
-                        </button>
-                      )}
                       {r.status === 'pending' && meId && r.created_by === meId ? (
                         <span className="muted" title="The person who submitted an expense cannot approve it.">
                           Needs another approver
@@ -1109,6 +1072,67 @@ export default function Page() {
                           Remove
                         </button>
                       )}
+                      {/* Print, edit and receipt actions sit in the ⋯ menu so each row stays one line. */}
+                      <details className="erp-row-menu expenses-more">
+                        <summary className="erp-row-menu-trigger" aria-label={`More actions for expense ${r.id}`}>⋯</summary>
+                        <div className="erp-row-menu-pop expenses-more-pop">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          openDocumentPrint(`/expenses/${r.id}/print?format=pdf`).catch((err) =>
+                            setError(String((err as { message?: string })?.message || err)),
+                          )
+                        }
+                        aria-label="Print expense"
+                      >
+                        Print
+                      </button>
+                      {(r.status === 'pending' || r.status === 'rejected') && (
+                        <button
+                          type="button"
+                          onClick={() => startEdit(r)}
+                          aria-label={`Edit expense ${r.id}`}
+                          disabled={rowBusyId === r.id}
+                        >
+                          Edit
+                        </button>
+                      )}
+                      {r.has_attachment ? (
+                        <>
+                          <button
+                            type="button"
+                            aria-label={`Preview expense attachment ${r.id}`}
+                            onClick={() =>
+                              setAttachPreview({
+                                apiPath: `/expenses/${r.id}/attachment`,
+                                title: `Receipt — ${r.reference || r.description || r.id.slice(0, 8)}`,
+                              })
+                            }
+                          >
+                            View receipt
+                          </button>
+                          <button onClick={() => downloadExpenseAttachment(r.id)} aria-label="Download expense attachment">
+                            Download receipt
+                          </button>
+                          <button onClick={() => suggestOcr(r.id)} aria-label={`Suggest expense OCR ${r.id}`}>Fill in from receipt</button>
+                          <button className="btn-danger" onClick={() => removeAttachment(r.id)} aria-label={`Remove expense attachment ${r.id}`}>Remove receipt</button>
+                        </>
+                      ) : (
+                        <label className="expenses-upload">
+                          Attach receipt
+                          <input
+                            type="file"
+                            aria-label={`Upload expense attachment ${r.id}`}
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) uploadExpenseAttachment(r.id, f);
+                              e.target.value = '';
+                            }}
+                          />
+                        </label>
+                      )}
+                        </div>
+                      </details>
                     </div>
                   </div>
                 </td>

@@ -52,7 +52,7 @@ const USER_ID_RE =
 
 function areaLabel(value: string | null | undefined, hotel = false, restaurant = false): string {
   const key = String(value || '').trim().toLowerCase();
-  if (!key) return 'All modules';
+  if (!key) return 'All areas';
   if (hotel && key === 'inventory') return 'Supplies';
   if (hotel && key === 'pos') return 'Shop till';
   if (hotel && key === 'stores') return 'Locations';
@@ -355,37 +355,30 @@ export default function Page() {
                   </option>
                 ))}
               </select>
-              <span className="audit-ui-hint">Leave this as All modules to include every area.</span>
             </label>
             <label className="audit-ui-field">
               <span className="audit-ui-label">What happened</span>
               <input
                 value={action}
                 onChange={(e) => setAction(e.target.value)}
-                placeholder="invoice_posted"
+                placeholder="Any, or a code like invoice_posted"
                 title="For example invoice_posted"
                 aria-label="Audit action filter"
                 autoComplete="off"
                 spellCheck={false}
               />
-              <span className="audit-ui-hint">
-                Code such as invoice_posted. It is sent only when you choose Apply filters.
-              </span>
             </label>
             <label className="audit-ui-field">
               <span className="audit-ui-label">Record type</span>
               <input
                 value={entity}
                 onChange={(e) => setEntity(e.target.value)}
-                placeholder="sales_invoice"
+                placeholder="Any, or a code like sales_invoice"
                 title="For example sales_invoice"
                 aria-label="Audit entity filter"
                 autoComplete="off"
                 spellCheck={false}
               />
-              <span className="audit-ui-hint">
-                Code such as sales_invoice. It is sent only when you choose Apply filters.
-              </span>
             </label>
             <label className="audit-ui-field">
               <span className="audit-ui-label">From</span>
@@ -396,7 +389,6 @@ export default function Page() {
                 title="From date"
                 aria-label="Audit from date"
               />
-              <span className="audit-ui-hint">Leave blank for any start date.</span>
             </label>
             <label className="audit-ui-field">
               <span className="audit-ui-label">To</span>
@@ -407,7 +399,6 @@ export default function Page() {
                 title="To date"
                 aria-label="Audit to date"
               />
-              <span className="audit-ui-hint">Leave blank for any end date.</span>
             </label>
             <label className="audit-ui-field">
               <span className="audit-ui-label">Person</span>
@@ -424,9 +415,6 @@ export default function Page() {
                   </option>
                 ))}
               </select>
-              <span className="audit-ui-hint">
-                Everyone leaves the person blank, so it is not sent. Choose Apply filters to use a person.
-              </span>
             </label>
           </div>
           <div className="audit-ui-actions">

@@ -119,7 +119,29 @@ type Transfer = {
   created_at?: string | null;
 };
 
+type MsTab = 'stores' | 'transfers' | 'warehouses' | 'branches' | 'departments' | 'settings';
+const MS_TABS: [MsTab, string][] = [
+  ['stores', 'Stores'],
+  ['transfers', 'Move stock'],
+  ['warehouses', 'Warehouses'],
+  ['branches', 'Branches'],
+  ['departments', 'Departments'],
+  ['settings', 'Settings'],
+];
+
 export default function Page() {
+  const [msTab, setMsTab] = useState<MsTab>('stores');
+  useEffect(() => {
+    // Menu links (#branches, #stores) and ?tab= open the matching tab.
+    const pick = () => {
+      const want = new URLSearchParams(window.location.search).get('tab') || window.location.hash.replace('#', '');
+      const hit = MS_TABS.find(([k]) => k === want);
+      if (hit) setMsTab(hit[0]);
+    };
+    pick();
+    window.addEventListener('hashchange', pick);
+    return () => window.removeEventListener('hashchange', pick);
+  }, []);
   const router = useRouter();
   const [hotelHome, setHotelHome] = useState<boolean | null>(null);
   const [stores, setStores] = useState<Store[]>([]);
@@ -918,7 +940,7 @@ export default function Page() {
   }
 
   return (
-    <div className="work">
+    <div className="work stores-ui-page">
       <PageHeader
         title="Multi-Store"
         subtitle="Your stores, moving stock between them, and the warehouses, branches and departments behind them."
@@ -932,6 +954,14 @@ export default function Page() {
       />
       {error && <p className="erp-banner err" role="alert">{error}</p>}
       {message && <p className="erp-banner ok" role="status">{message}</p>}
+      <div className="ms-tabs" role="tablist" aria-label="Multi-store sections">
+        {MS_TABS.map(([key, label]) => (
+          <button key={key} type="button" role="tab" aria-selected={msTab === key} className={msTab === key ? 'on' : ''} onClick={() => setMsTab(key)}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {msTab === 'stores' ? (
       <section className="ms-section" aria-label="Your stores">
       <h3 id="stores">Your stores</h3>
       <p className="muted">Manager, branch, opening hours and warehouse. Deactivating hides the store from the till and new sales, and keeps its history.</p>
@@ -997,7 +1027,7 @@ export default function Page() {
             <th>Branch</th>
             <th>Address</th>
             <th>Hours</th>
-            <th>Active</th>
+            <th>Status</th>
             <th></th>
           </tr>
         </thead>
@@ -1013,7 +1043,7 @@ export default function Page() {
               <td>{s.branch_id ? branchLabel(s.branch_id) : '—'}</td>
               <td>{s.address || '—'}</td>
               <td style={{ maxWidth: 280, fontSize: 13 }}>{summarizeHours(s.operating_hours)}</td>
-              <td>{s.is_active === false ? 'no' : 'yes'}</td>
+              <td>{s.is_active === false ? 'Inactive' : 'Active'}</td>
               <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 <button type="button" onClick={() => startEditStore(s)} aria-label={`Edit store ${s.id}`}>
                   Edit
@@ -1173,6 +1203,7 @@ export default function Page() {
         </div>
       )}
       </section>
+      ) : null}
         {storeAddOpen ? (
         <FormModal
           title="New store"
@@ -1248,6 +1279,7 @@ export default function Page() {
           </div>
         </FormModal>
         ) : null}
+      {msTab === 'transfers' ? (
       <section className="ms-section" aria-label="Move stock between stores">
       <h3>Move stock between stores</h3>
         <div className="card">
@@ -1497,6 +1529,8 @@ export default function Page() {
         </tbody>
       </table>
       </section>
+      ) : null}
+      {msTab === 'warehouses' ? (
       <section className="ms-section" aria-label="Warehouses">
       <h3>Warehouses</h3>
       <p className="muted">
@@ -1523,7 +1557,7 @@ export default function Page() {
             <th>Manager</th>
             <th>Address</th>
             <th>Capacity</th>
-            <th>Active</th>
+            <th>Status</th>
             <th></th>
           </tr>
         </thead>
@@ -1539,7 +1573,7 @@ export default function Page() {
               <td>{w.manager_id ? userLabel(w.manager_id) : '—'}</td>
               <td>{w.address || '—'}</td>
               <td>{w.capacity != null ? w.capacity : '—'}</td>
-              <td>{w.is_active === false ? 'no' : 'yes'}</td>
+              <td>{w.is_active === false ? 'Inactive' : 'Active'}</td>
               <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 <button type="button" onClick={() => startEditWarehouse(w)} aria-label={`Edit warehouse ${w.id}`}>
                   Edit
@@ -1682,6 +1716,8 @@ export default function Page() {
         </div>
         </details>
       </section>
+      ) : null}
+      {msTab === 'branches' ? (
       <section className="ms-section" aria-label="Branches">
       <h3 id="branches">Branches</h3>
       <p className="muted">Code, manager, address and contact. Deactivating keeps the history.</p>
@@ -1705,7 +1741,7 @@ export default function Page() {
             <th>Phone</th>
             <th>Email</th>
             <th>Address</th>
-            <th>Active</th>
+            <th>Status</th>
             <th></th>
           </tr>
         </thead>
@@ -1718,7 +1754,7 @@ export default function Page() {
               <td>{b.phone || '—'}</td>
               <td>{b.email || '—'}</td>
               <td>{b.address || '—'}</td>
-              <td>{b.is_active === false ? 'no' : 'yes'}</td>
+              <td>{b.is_active === false ? 'Inactive' : 'Active'}</td>
               <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 <button type="button" onClick={() => startEditBranch(b)} aria-label={`Edit branch ${b.id}`}>
                   Edit
@@ -1811,6 +1847,8 @@ export default function Page() {
         </div>
         </details>
       </section>
+      ) : null}
+      {msTab === 'departments' ? (
       <section className="ms-section" aria-label="Departments">
       <h3>Departments</h3>
       <p className="muted">Code, branch (optional) and department head. Deactivating keeps the history.</p>
@@ -1832,7 +1870,7 @@ export default function Page() {
             <th>Name</th>
             <th>Branch</th>
             <th>Head</th>
-            <th>Active</th>
+            <th>Status</th>
             <th></th>
           </tr>
         </thead>
@@ -1843,7 +1881,7 @@ export default function Page() {
               <td>{d.name}</td>
               <td>{d.branch_id ? branchLabel(d.branch_id) : '—'}</td>
               <td>{d.head_user_id ? userLabel(d.head_user_id) : '—'}</td>
-              <td>{d.is_active === false ? 'no' : 'yes'}</td>
+              <td>{d.is_active === false ? 'Inactive' : 'Active'}</td>
               <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 <button type="button" onClick={() => startEditDepartment(d)} aria-label={`Edit department ${d.id}`}>
                   Edit
@@ -1943,7 +1981,9 @@ export default function Page() {
         </div>
         </details>
       </section>
-      <details className="page-settings ms-settings">
+      ) : null}
+      {msTab === 'settings' ? (
+      <details className="page-settings ms-settings" open>
         <summary>Store settings: expiry-first selling and cash drawer</summary>
         <div className="ms-settings-body">
       <div className="card">
@@ -2025,6 +2065,7 @@ export default function Page() {
         </div>
         </div>
       </details>
+      ) : null}
     </div>
   );
 }

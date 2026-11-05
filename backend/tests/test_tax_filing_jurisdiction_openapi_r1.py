@@ -52,7 +52,7 @@ def test_tax_filing_jurisdiction_ui_and_docs():
     assert "filingJurisdictionFilter" in page
     assert 'aria-label="Tax filing jurisdiction filter"' in page
     assert 'value="GH"' in page
-    assert "Tenant default" in page
+    assert "My tax country" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Tax filing jurisdiction Query OpenAPI" in agents
     assert "TaxFilingJurisdictionValue" in agents

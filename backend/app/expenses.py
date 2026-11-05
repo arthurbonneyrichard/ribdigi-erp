@@ -732,10 +732,10 @@ async def create_expense(
             db,
             tenant_id=tenant_id,
             category="expense_approval",
-            title="Expense Approval Required",
+            title="Expense approval required",
             message=(
-                f"Expense {cat_name} of {expense.amount:.2f} exceeds approval threshold "
-                f"({auto_t:.2f}) and awaits level-1 review"
+                f"Expense {cat_name} of {money_json(expense.amount):,.2f} is over the approval limit "
+                f"({money_json(auto_t):,.2f}) and needs a first approval"
                 + (f" (of {steps} levels)." if steps > 1 else ".")
             ),
             entity_type="expense",

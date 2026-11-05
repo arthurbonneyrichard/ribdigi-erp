@@ -1789,7 +1789,7 @@ async def test_restaurant_retires_an_extra(client, db_session):
         json={},
     )
     assert busy_group.status_code == 409, busy_group.text
-    assert busy_group.json()["detail"] == "Retire leftover extras first."
+    assert busy_group.json()["detail"] == "Retire the extras in this group first."
     blank_group = await ac.patch(
         f"/api/v1/restaurant/modifier-groups/{group_id}",
         headers=admin,

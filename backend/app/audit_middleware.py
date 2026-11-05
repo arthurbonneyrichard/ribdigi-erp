@@ -24,6 +24,8 @@ MUTATING = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
 SKIP_PREFIXES = (
     "/api/v1/audit-logs",
+    # The till checks in every minute; logging each check-in buried real activity.
+    "/api/v1/pos/devices/heartbeat",
     "/docs",
     "/redoc",
     "/openapi.json",

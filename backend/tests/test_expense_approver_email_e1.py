@@ -52,7 +52,7 @@ async def test_expense_approval_emails_current_step_roles(db_session, seeded, mo
     assert "super@alpha.example.com" in recipients1
     # Creator (cashier) must not be emailed as an approver
     assert "cashier@alpha.example.com" not in recipients1
-    assert all("Expense Approval Required" in (m.get("subject") or "") for m in emailer.get_dev_outbox())
+    assert all("Expense approval required" in (m.get("subject") or "") for m in emailer.get_dev_outbox())
 
     emailer.clear_dev_outbox()
     mid = await expenses_svc.approve_expense(

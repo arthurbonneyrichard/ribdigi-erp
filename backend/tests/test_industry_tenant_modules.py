@@ -346,9 +346,9 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "products: 'Products'" in inventory
     assert "Linen, toiletries, F&B and cleaning supplies use the same supply records as the rest of the hotel." in inventory
     purchasing = (root / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
-    assert "3 Receive stock" in purchasing
-    assert "3 Receive supplies" in purchasing
-    assert "3 Receive goods" in purchasing
+    assert "id === 'grn' && restaurantOps ? 'Receive stock'" in purchasing
+    assert "id === 'grn' && hotelOps ? 'Receive supplies'" in purchasing
+    assert "['grn', 'Receive goods']" in purchasing
     assert "stock received for recipe ingredients" in purchasing
     assert "hotelOps ? 'Supply' : restaurantOps ? 'Ingredient' : 'Product'" in purchasing
     assert "hotelOps ? 'Add supply' : restaurantOps ? 'Add ingredient' : 'Add product'" in purchasing
@@ -382,7 +382,7 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "Post GRN (accept / reject)" in purchasing
     assert "Bill from a receipt" in purchasing
     assert "Bill from a delivery" in purchasing
-    assert "Bill from GRN" in purchasing
+    assert "Bill from goods received" in purchasing
     assert "Draft only; ingredients and supplier bills stay unchanged." in purchasing
     assert "Draft only; supplies and supplier bills stay unchanged." in purchasing
     assert "Draft only; no stock/AP." in purchasing
@@ -394,7 +394,7 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "Add a customer to use them on restaurant bills" in customers
     assert "rest-cust-table" in customers
     assert "restaurantOps ? 'Customer' : 'Name'" in customers
-    assert "<th>Loyalty</th>" in customers
+    assert "<th className=\"col-num\">Points</th>" in customers
     assert "hotelOps ? 'Walk-in guest' : restaurantOps ? 'Walk-in diner' : 'Walk-in'" in customers
     assert "(walk-in diner)" in customers
     assert "(walk-in guest)" in customers
@@ -743,8 +743,8 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "spoilage: 'Spoilage'" in restaurant
     assert "Walk-in or phone request" in restaurant
     assert 'aria-label="Save restaurant walk-in booking"' in restaurant
-    assert "Save leftover booking ${row.booking_number}" in restaurant
-    assert "Leftover booking notes ${row.booking_number}" in restaurant
+    assert "Save booking ${row.booking_number}" in restaurant
+    assert "Booking notes ${row.booking_number}" in restaurant
     assert "/restaurant/bookings/${row.id}" in restaurant
     assert "This does not need a booking website and does not take a payment." in restaurant
     assert 'aria-label="Save restaurant booking link"' in restaurant
@@ -774,7 +774,7 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "<span>Name</span>" in floor_fields
     assert "<span>Seats</span>" in floor_fields
     assert "<span>Store</span>" in floor_fields
-    assert "Leftover table store ${row.code}" in floor_fields
+    assert "Table store ${row.code}" in floor_fields
     assert "rest-floor-actions" in tables_desk
     assert "Drag a table to place it on the floor." in tables_desk
     assert 'aria-label="Restaurant floor map"' in tables_desk
@@ -783,14 +783,14 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "Save table ${row.code}" in tables_desk
     assert "Retire table ${row.code}" in tables_desk
     assert "Edit table ${row.code} name" in tables_desk
-    assert "Leftover table code ${row.code}" in tables_desk
+    assert "Table code ${row.code}" in tables_desk
     assert 'aria-label="Restaurant table store"' in tables_desk
     assert 'aria-label="Restaurant table room"' in tables_desk
     assert "No room." in tables_desk
     assert "store_id: tableForm.store_id.trim() || null" in restaurant
     # One Save covers code, name, seats, store and room; editing opens only for the chosen table.
     assert "saveWholeTable(row)" in tables_desk
-    assert "Save leftover table store" not in tables_desk
+    assert "Save table store" not in tables_desk
     assert "editingTable === row.id" in tables_desk
     assert "code: edit.code.trim()" in restaurant
     assert "/restaurant/tables/${row.id}" in restaurant
@@ -809,7 +809,7 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "saveWholeBooking(row)" in booking_desk
     assert 'aria-label="Restaurant booking turn"' in booking_desk
     assert "No turn." in booking_desk
-    assert "Leftover booking guest ${row.booking_number}" in booking_desk
+    assert "Booking guest ${row.booking_number}" in booking_desk
     assert "Release table ${row.code}" in tables_desk
     assert "held: 'Held'" in restaurant
     assert "is-held" in (root / "frontend/app/globals.css").read_text(encoding="utf-8")
@@ -819,35 +819,35 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "Add at least one menu item" in restaurant
     orders_desk = restaurant.split("tab === 'orders'", 1)[1].split("tab === 'kitchen'", 1)[0]
     assert "Add restaurant menu item" in orders_desk
-    assert "Add leftover item to ${row.order_number}" in orders_desk
+    assert "Add item to ${row.order_number}" in orders_desk
     assert "rest-order-form" in orders_desk
     assert "rest-order-line-fields" in orders_desk
     assert "rest-order-actions" in orders_desk
-    assert "Leftover menu item ${row.order_number}" in orders_desk
-    assert "Leftover new quantity ${row.order_number}" in orders_desk
-    assert "Leftover new extra ${extra.name} on ${row.order_number}" in orders_desk
+    assert "Menu item ${row.order_number}" in orders_desk
+    assert "New quantity ${row.order_number}" in orders_desk
+    assert "New extra ${extra.name} on ${row.order_number}" in orders_desk
     assert "leftoverNewItems[row.id]" in orders_desk
-    assert "Save leftover notes on ${row.order_number}" in orders_desk
-    assert "Leftover customer name ${row.order_number}" in orders_desk
-    assert "Leftover payment method ${row.order_number}" in orders_desk
-    assert "Leftover service mode ${row.order_number}" in orders_desk
-    assert "Save leftover service on ${row.order_number}" in orders_desk
-    assert "Leftover service table ${row.order_number}" in orders_desk
-    assert "Save leftover payment on ${row.order_number}" in orders_desk
-    assert "Save leftover customer on ${row.order_number}" in orders_desk
-    assert "Leftover delivery address ${row.order_number}" in orders_desk
-    assert "Save leftover delivery address on ${row.order_number}" in orders_desk
+    assert "Save notes on ${row.order_number}" in orders_desk
+    assert "Customer name ${row.order_number}" in orders_desk
+    assert "Payment method ${row.order_number}" in orders_desk
+    assert "Service mode ${row.order_number}" in orders_desk
+    assert "Save service on ${row.order_number}" in orders_desk
+    assert "Service table ${row.order_number}" in orders_desk
+    assert "Save payment on ${row.order_number}" in orders_desk
+    assert "Save customer on ${row.order_number}" in orders_desk
+    assert "Delivery address ${row.order_number}" in orders_desk
+    assert "Save delivery address on ${row.order_number}" in orders_desk
     assert "(leftoverServiceModes[row.id] ?? row.service_mode) === 'delivery'" in orders_desk
     assert "customer_name: (leftoverCustomerNames[row.id] ?? row.customer_name ?? '').trim() || null" in restaurant
-    assert "Remove leftover ${item.name} on ${row.order_number}" in orders_desk
-    assert "Leftover quantity ${item.name} on ${row.order_number}" in orders_desk
-    assert "Save leftover quantity ${item.name} on ${row.order_number}" in orders_desk
-    assert "Leftover price ${item.name} on ${row.order_number}" in orders_desk
-    assert "Save leftover price ${item.name} on ${row.order_number}" in orders_desk
-    assert "Leftover station ${item.name} on ${row.order_number}" in orders_desk
-    assert "Save leftover station ${item.name} on ${row.order_number}" in orders_desk
-    assert "Leftover course ${item.name} on ${row.order_number}" in orders_desk
-    assert "Save leftover course ${item.name} on ${row.order_number}" in orders_desk
+    assert "Remove ${item.name} on ${row.order_number}" in orders_desk
+    assert "Quantity ${item.name} on ${row.order_number}" in orders_desk
+    assert "Save quantity ${item.name} on ${row.order_number}" in orders_desk
+    assert "Price ${item.name} on ${row.order_number}" in orders_desk
+    assert "Save price ${item.name} on ${row.order_number}" in orders_desk
+    assert "Station ${item.name} on ${row.order_number}" in orders_desk
+    assert "Save station ${item.name} on ${row.order_number}" in orders_desk
+    assert "Course ${item.name} on ${row.order_number}" in orders_desk
+    assert "Save course ${item.name} on ${row.order_number}" in orders_desk
     assert 'aria-label="Restaurant order course"' in orders_desk
     assert 'aria-label="Restaurant delivery zone"' in orders_desk
     assert 'aria-label="Add restaurant delivery zone"' in orders_desk
@@ -862,13 +862,13 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "This does not change stock." in orders_desk
     assert 'aria-label="Restaurant order covers"' in orders_desk
     assert "No covers." in orders_desk
-    assert "Save leftover covers on ${row.order_number}" in orders_desk
+    assert "Save covers on ${row.order_number}" in orders_desk
     assert 'aria-label="Restaurant order allergy"' in orders_desk
     assert "No allergy." in orders_desk
-    assert "Save leftover allergy on ${row.order_number}" in orders_desk
+    assert "Save allergy on ${row.order_number}" in orders_desk
     assert 'aria-label="Restaurant order ready by"' in orders_desk
     assert "No ready time." in orders_desk
-    assert "Save leftover ready by on ${row.order_number}" in orders_desk
+    assert "Save ready by on ${row.order_number}" in orders_desk
     assert 'aria-label="Restaurant order rush"' in orders_desk
     assert "Not rushed." in orders_desk
     assert "Mark ${row.order_number} rush" in orders_desk
@@ -934,13 +934,13 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "line_courses" in restaurant
     assert "line_stations" in restaurant
     assert "line_prices" in restaurant
-    assert "Leftover extra ${extra.name} on ${item.name} ${row.order_number}" in orders_desk
-    assert "Save leftover extras ${item.name} on ${row.order_number}" in orders_desk
+    assert "Extra ${extra.name} on ${item.name} ${row.order_number}" in orders_desk
+    assert "Save extras ${item.name} on ${row.order_number}" in orders_desk
     assert "line_modifiers" in restaurant
     assert 'aria-label="Restaurant order store"' in orders_desk
     assert "store_id: orderForm.store_id.trim() || null" in restaurant
-    assert "Leftover order store ${row.order_number}" in orders_desk
-    assert "Save leftover store on ${row.order_number}" in orders_desk
+    assert "Order store ${row.order_number}" in orders_desk
+    assert "Save store on ${row.order_number}" in orders_desk
     assert "line_quantities" in restaurant
     assert "remove_line_ids" in restaurant
     assert "{menuItems.map((row) => (" in orders_desk
@@ -952,12 +952,12 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert 'aria-label="Restaurant extra name"' in orders_desk
     assert "Save restaurant extra" in orders_desk
     assert "Retire extra ${row.name}" in orders_desk
-    assert "Save leftover extra ${row.name}" in orders_desk
-    assert "Leftover extra name ${row.name}" in orders_desk
-    assert "Leftover extra price ${row.name}" in orders_desk
-    assert "Leftover extra group name ${group.name}" in orders_desk
-    assert "Save leftover extra group ${group.name}" in orders_desk
-    assert "Retire leftover extra group ${group.name}" in orders_desk
+    assert "Save extra ${row.name}" in orders_desk
+    assert "Extra name ${row.name}" in orders_desk
+    assert "Extra price ${row.name}" in orders_desk
+    assert "Extra group name ${group.name}" in orders_desk
+    assert "Save extra group ${group.name}" in orders_desk
+    assert "Retire extra group ${group.name}" in orders_desk
     assert "/restaurant/modifier-groups/${group.id}" in orders_desk
     assert "name: leftoverExtraNames[row.id] ?? row.name" in orders_desk
     assert "/restaurant/modifiers/${row.id}" in orders_desk
@@ -1015,14 +1015,14 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert 'className="rest-order-list" aria-label="Restaurant recipes"' in recipes_desk
     assert 'onSubmit={saveWaste}' in restaurant
     # Recipes and waste: one Save per recipe; edit opens only for the chosen recipe.
-    assert "editingRecipe === row.id" in recipes_desk and "Save leftover cook time" not in recipes_desk
-    assert "Leftover recipe name ${row.name}" in recipes_desk
-    assert "Leftover recipe line quantity ${line.name} on ${row.name}" in recipes_desk
-    assert "Remove leftover recipe line ${line.name} on ${row.name}" in recipes_desk
-    assert "Leftover recipe ingredient ${row.name}" in recipes_desk
-    assert "Add leftover recipe ingredient ${row.name}" in recipes_desk
-    assert "Save leftover recipe ${row.name}" in recipes_desk
-    assert "Retire leftover recipe ${row.name}" in recipes_desk
+    assert "editingRecipe === row.id" in recipes_desk and "Save cook time" not in recipes_desk
+    assert "Recipe name ${row.name}" in recipes_desk
+    assert "Recipe line quantity ${line.name} on ${row.name}" in recipes_desk
+    assert "Remove recipe line ${line.name} on ${row.name}" in recipes_desk
+    assert "Recipe ingredient ${row.name}" in recipes_desk
+    assert "Add recipe ingredient ${row.name}" in recipes_desk
+    assert "Save recipe ${row.name}" in recipes_desk
+    assert "Retire recipe ${row.name}" in recipes_desk
     assert "/restaurant/recipes/${row.id}/retire" in recipes_desk
     assert "/restaurant/recipes/${row.id}" in restaurant
     assert "Waste takes an ingredient off hand." in restaurant

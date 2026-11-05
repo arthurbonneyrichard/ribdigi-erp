@@ -20,7 +20,8 @@ def test_pi_cancel_reason_ui_wired():
     assert "Enter a cancel reason before cancelling a purchase invoice" in page
     assert "JSON.stringify({ reason })" in page
     assert "setPiCancelReason" in page
-    assert "Required before Cancel" in page
+    # The reason is asked for in a pop-up when Cancel is pressed.
+    assert "Why are you cancelling?" in page
     assert 'aria-label="Purchase invoice cancel reason"' in page
     assert "ariaLabel: `Cancel purchase invoice ${inv.id}`" in page
 

@@ -48,7 +48,9 @@ function journalSourceLabel(sourceType?: string | null, hotel = false, restauran
   if (restaurant && key === 'grn') return 'Stock received';
   if (restaurant && key === 'pos_sale') return 'Restaurant till sale';
   if (restaurant && key === 'sales_invoice') return 'Restaurant bill';
-  return JOURNAL_SOURCE_LABEL[key] || key.replace(/_/g, ' ');
+  if (JOURNAL_SOURCE_LABEL[key]) return JOURNAL_SOURCE_LABEL[key];
+  const plain = key.replace(/_/g, ' ');
+  return plain.charAt(0).toUpperCase() + plain.slice(1);
 }
 
 function fieldErrorsFromDetail(detail: unknown): Record<string, string> {
@@ -1140,26 +1142,30 @@ export default function Page() {
           <div className="erp-kpis">
             <div className="card">
               <div className="muted">Income</div>
-              <div className="kpi">{fmtMoney(Number(pnl?.revenue ?? pnl?.income ?? 0))}</div>
+              <div className="kpi">{loading && !pnl ? '—' : fmtMoney(Number(pnl?.revenue ?? pnl?.income ?? 0))}</div>
             </div>
             <div className="card">
               <div className="muted">Expenses</div>
-              <div className="kpi">{fmtMoney(Number(pnl?.operating_expenses ?? pnl?.expense ?? 0))}</div>
+              <div className="kpi">
+                {loading && !pnl ? '—' : fmtMoney(Number(pnl?.operating_expenses ?? pnl?.expense ?? 0))}
+              </div>
             </div>
             <div className="card">
               <div className="muted">Customers owe us</div>
-              <div className="kpi">{fmtMoney(Number(arAging?.total_due ?? 0))}</div>
+              <div className="kpi">{loading && !arAging ? '—' : fmtMoney(Number(arAging?.total_due ?? 0))}</div>
             </div>
             <div className="card">
               <div className="muted">We owe suppliers</div>
-              <div className="kpi">{fmtMoney(Number(apAging?.total_due ?? 0))}</div>
+              <div className="kpi">{loading && !apAging ? '—' : fmtMoney(Number(apAging?.total_due ?? 0))}</div>
             </div>
             <div className="card">
               <div className="muted">Cash and bank</div>
               <div className="kpi">
-                {fmtMoney(
-                  liquid.reduce((s: number, a: any) => s + Number(a.balance ?? a.current_balance ?? 0), 0),
-                )}
+                {loading && !liquid.length
+                  ? '—'
+                  : fmtMoney(
+                      liquid.reduce((s: number, a: any) => s + Number(a.balance ?? a.current_balance ?? 0), 0),
+                    )}
               </div>
             </div>
           </div>
@@ -1171,7 +1177,7 @@ export default function Page() {
                   <th>Entry</th>
                   <th>What happened</th>
                   <th>From</th>
-                  <th>Amount</th>
+                  <th className="col-num">Amount</th>
                 </tr>
               </thead>
               <tbody>
@@ -1188,14 +1194,14 @@ export default function Page() {
                           journalSourceLabel(j.source_type, hotelOps, restaurantOps)
                         )}
                       </td>
-                      <td>{fmtMoney(Number(j.total_debit || 0))}</td>
+                      <td className="col-num">{fmtMoney(Number(j.total_debit || 0))}</td>
                     </tr>
                   );
                 })}
                 {!journals.length && (
                   <tr>
                     <td colSpan={4} className="muted">
-                      No entries yet
+                      {loading ? 'Loading…' : 'No entries yet'}
                     </td>
                   </tr>
                 )}

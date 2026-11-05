@@ -799,7 +799,7 @@ async def post_sales_invoice(
         tenant_id=tenant_id,
         category="system",
         title="Sales invoice posted",
-        message=f"Invoice {invoice.invoice_number} posted for {money_json(invoice.total_amount):.2f}.",
+        message=f"Invoice {invoice.invoice_number} posted for {money_json(invoice.total_amount):,.2f}.",
         entity_type="sales_invoice",
         entity_id=invoice.id,
     )

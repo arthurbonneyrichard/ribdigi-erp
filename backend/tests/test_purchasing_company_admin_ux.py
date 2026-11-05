@@ -28,19 +28,17 @@ def test_purchasing_nav_distinguishes_receive_goods_and_supplier_bills():
     page = (
         ROOT / "frontend" / "app" / "(dashboard)" / "purchasing" / "page.tsx"
     ).read_text(encoding="utf-8")
-    assert "['Supplier Bills', '/purchasing?tab=invoices'" in shell
-    assert "['Receive Goods', '/purchasing?tab=grn'" in shell
+    assert "['Supplier bills', '/purchasing?tab=invoices'" in shell
+    assert "['Receive goods', '/purchasing?tab=grn'" in shell
     assert "['History', '/purchasing?tab=history'" in shell
     assert "/reports?tab=purchases" not in shell
     assert "['Purchases', '/purchasing?tab=invoices'" not in shell
     assert "Purchase Goods" not in shell
-    assert "1 Suppliers" in page
-    assert "2 Orders" in page
-    assert "3 Receive goods" in page
-    assert "4 Supplier bills" in page
-    assert "5 Returns" in page
-    assert "['grn', 'Receive Goods']" in page
-    assert "['invoices', 'Supplier Bills']" in page
+    # The numbered step row repeated the menu; one plain line explains the flow instead.
+    assert "1 Suppliers" not in page
+    assert "receive the goods into stock, then enter and pay the supplier bill" in page
+    assert "['grn', 'Receive goods']" in page
+    assert "['invoices', 'Supplier bills']" in page
     assert "['history', 'History']" in page
     assert "Purchase history" in page
     assert "BR-6.3" not in page

@@ -17,6 +17,19 @@
   margin: 8px 0 0;
 }
 
+.purchase-ui-note {
+  margin: 4px 0 12px;
+  max-width: 70ch;
+}
+
+/* Status filters sit at their own width instead of stretching across the page. */
+.purchase-ui-page .purch-filter-row > select {
+  width: auto;
+  min-width: 220px;
+  max-width: 100%;
+  flex: 0 0 auto;
+}
+
 .purchase-ui-links {
   margin: 6px 0 0;
 }

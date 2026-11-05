@@ -683,8 +683,8 @@ async def scan_payment_due(db: AsyncSession, tenant_id: str, within_days: int = 
             category="payment_due",
             title="Customer payment due",
             message=(
-                f"Invoice {inv.invoice_number} has {due:.2f} due "
-                f"by {inv.due_date.date().isoformat()}."
+                f"Invoice {inv.invoice_number} has {due:,.2f} due "
+                f"by {inv.due_date:%d %b %Y}."
             ),
             entity_type="sales_invoice",
             entity_id=inv.id,
@@ -723,8 +723,8 @@ async def scan_payment_due(db: AsyncSession, tenant_id: str, within_days: int = 
             category="payment_due",
             title="Supplier payment due",
             message=(
-                f"Bill {inv.invoice_number} has {due:.2f} due "
-                f"by {inv.due_date.date().isoformat()}."
+                f"Bill {inv.invoice_number} has {due:,.2f} due "
+                f"by {inv.due_date:%d %b %Y}."
             ),
             entity_type="purchase_invoice",
             entity_id=inv.id,
@@ -828,12 +828,12 @@ async def scan_recurring_expense_due(db: AsyncSession, tenant_id: str, within_da
         if existing:
             continue
         when = row.next_run_at
-        when_label = when.date().isoformat() if when else "unknown"
+        when_label = f"{when:%d %b %Y}" if when else "an unknown date"
         past = bool(when and when <= now)
         title = "Recurring expense due" if past else "Recurring expense due soon"
         amount = money_json(row.amount or 0)
         message = (
-            f"Recurring {row.category} ({amount:.2f}) "
+            f"Recurring {row.category} ({amount:,.2f}) "
             + (
                 f"is due to generate (scheduled {when_label})."
                 if past

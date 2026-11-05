@@ -297,7 +297,7 @@ export default function Page() {
             }}
             aria-label="Tax filing jurisdiction filter"
           >
-            <option value="">Tenant default</option>
+            <option value="">My tax country</option>
             {(filing?.jurisdiction === 'GH' || filingJurisdictionFilter === 'GH') && (
               <option value="GH">GH — Ghana VAT</option>
             )}

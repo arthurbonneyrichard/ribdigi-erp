@@ -43,7 +43,7 @@ def test_api_key_expires_at_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/integrations/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="API key expiry"' in page
     assert "keyExpires.trim()" in page
-    assert "YYYY-MM-DD or ISO datetime" in page
+    assert "Expires on (optional)" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "API key expires_at OpenAPI" in agents
     assert "IsoDateQueryValue" in agents

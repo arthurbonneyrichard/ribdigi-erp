@@ -10531,7 +10531,9 @@ async def pos_device_heartbeat(
         )
     ).scalar_one_or_none()
     ua = (request.headers.get("user-agent") or "")[:300] or None
+    created = False
     if row is None:
+        created = True
         row = m.PosDevice(
             tenant_id=claims["tenant_id"],
             device_id=payload.device_id,
@@ -10545,7 +10547,22 @@ async def pos_device_heartbeat(
         )
         note_selling_state(row, selling_online=selling_online, now=now)
         db.add(row)
-    else:
+        try:
+            await db.flush()
+        except IntegrityError:
+            # Two check-ins from a freshly opened till raced on the first insert;
+            # the other one created the row, so update it instead of failing.
+            await db.rollback()
+            row = (
+                await db.execute(
+                    select(m.PosDevice).where(
+                        m.PosDevice.tenant_id == claims["tenant_id"],
+                        m.PosDevice.device_id == payload.device_id,
+                    )
+                )
+            ).scalar_one()
+            created = False
+    if not created:
         row.label = payload.label if payload.label is not None else row.label
         if payload.store_id is not None:
             row.store_id = payload.store_id

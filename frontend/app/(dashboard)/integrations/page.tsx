@@ -340,8 +340,8 @@ export default function Page() {
   return (
     <div className="integ-ui">
       <PageHeader
-        title="Create an API key"
-        subtitle="Type a name, then create the key. Copy it when it appears. It is shown only this once."
+        title="Integrations"
+        subtitle="Connect other apps: an API key lets them read your data, a webhook tells them when something happens. A new key or secret is shown only once, so copy it when it appears."
       />
       {error && <p className="integ-ui-alert" role="alert">{error}</p>}
       {message && <p className="integ-ui-ok" role="status">{message}</p>}
@@ -398,14 +398,16 @@ export default function Page() {
             aria-label="API key name"
             style={{ minWidth: 160 }}
           />
-          <input
-            type="text"
-            value={keyExpires}
-            onChange={(e) => setKeyExpires(e.target.value)}
-            placeholder="YYYY-MM-DD or ISO datetime"
-            title="Expiry date (optional)"
-            aria-label="API key expiry"
-          />
+          <label className="field">
+            <span>Expires on (optional)</span>
+            <input
+              type="date"
+              value={keyExpires}
+              onChange={(e) => setKeyExpires(e.target.value)}
+              title="Leave blank for a key that does not expire"
+              aria-label="API key expiry"
+            />
+          </label>
           <button
             type="button"
             onClick={createKey}
@@ -430,7 +432,7 @@ export default function Page() {
           <option value="expired">Expired only</option>
           </select>
         <div className="integ-ui-scroll">
-        <table>
+        <table className="table">
           <thead>
             <tr>
               <th>Name</th>
@@ -603,7 +605,7 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
         </select>
 
         <div className="integ-ui-scroll">
-        <table>
+        <table className="table">
           <thead>
             <tr>
               <th>URL</th>

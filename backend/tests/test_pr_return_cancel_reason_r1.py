@@ -19,7 +19,8 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_pr_return_cancel_reason_ui_wired():
     page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert "prCancelReason" in page
-    assert "Required before Cancel" in page
+    # The reason is asked for in a pop-up when Cancel is pressed.
+    assert "Why are you cancelling?" in page
     assert "Enter a cancel reason before cancelling a purchase return" in page
     assert "cancelReturn" in page
     assert "/purchasing/returns/${ret.id}/cancel" in page or "/purchasing/returns/${" in page

@@ -106,7 +106,7 @@ def map_return(pack: dict, tenant: m.Tenant) -> dict:
     tin = (getattr(tenant, "tax_registration_number", None) or "").strip() or None
     warnings: list[str] = []
     if not tin:
-        warnings.append("tax_registration_number (TIN) is not set on the company profile")
+        warnings.append("Your TIN (tax number) is not set yet. Add it on the Company page so it prints on the return.")
 
     period = pack.get("period") or {}
     return {

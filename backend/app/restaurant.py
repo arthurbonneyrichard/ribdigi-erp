@@ -2190,7 +2190,7 @@ async def retire_modifier_group(
         )
     ).scalar_one()
     if leftover:
-        raise HTTPException(status_code=409, detail="Retire leftover extras first.")
+        raise HTTPException(status_code=409, detail="Retire the extras in this group first.")
     row.is_active = False
     await db.flush()
     await audit_svc.record_event(

@@ -538,6 +538,13 @@ export default function Page() {
   const [prCancelReason, setPrCancelReason] = useState('');
   const [poEmailTo, setPoEmailTo] = useState('');
   const [poOptionsOpen, setPoOptionsOpen] = useState(false);
+  /** Cancel asks why in a small pop-up instead of a reason box that is always on screen. */
+  const [cancelAsk, setCancelAsk] = useState<
+    | { kind: 'po'; row: PurchaseOrder; hint: string }
+    | { kind: 'pi'; row: PurchaseInvoice; hint: string }
+    | { kind: 'ret'; row: PurchaseReturn; hint: string }
+    | null
+  >(null);
   const [amendEmailTo, setAmendEmailTo] = useState('');
   const [prLevels, setPrLevels] = useState<{ roles: string[]; label?: string }[]>([
     { roles: ['store_manager'], label: 'Store Manager' },
@@ -808,10 +815,10 @@ export default function Page() {
     setMessage('');
     const reason = poCancelReason.trim();
     if (!reason) {
-      setPoOptionsOpen(true);
-      setError('Enter a cancel reason before cancelling a purchase order');
+      setCancelAsk({ kind: 'po', row: po, hint: 'Enter a cancel reason before cancelling a purchase order' });
       return;
     }
+    setCancelAsk(null);
     try {
       const r = await api(`/purchasing/orders/${po.id}/cancel`, {
         method: 'POST',
@@ -1255,9 +1262,10 @@ export default function Page() {
     setMessage('');
     const reason = piCancelReason.trim();
     if (!reason) {
-      setError('Enter a cancel reason before cancelling a purchase invoice');
+      setCancelAsk({ kind: 'pi', row: inv, hint: 'Enter a cancel reason before cancelling a purchase invoice' });
       return;
     }
+    setCancelAsk(null);
     try {
       const r = await api(`/purchasing/invoices/${inv.id}/cancel`, {
         method: 'POST',
@@ -1361,9 +1369,10 @@ export default function Page() {
     setMessage('');
     const reason = prCancelReason.trim();
     if (!reason) {
-      setError('Enter a cancel reason before cancelling a purchase return');
+      setCancelAsk({ kind: 'ret', row: ret, hint: 'Enter a cancel reason before cancelling a purchase return' });
       return;
     }
+    setCancelAsk(null);
     try {
       const r = await api(`/purchasing/returns/${ret.id}/cancel`, {
         method: 'POST',
@@ -1576,6 +1585,11 @@ export default function Page() {
     (o) => o.status === 'sent' || o.status === 'partially_received',
   );
   const receivePo = receivableOrders.find((o) => o.id === receiveOrderId) || null;
+  // Currency and File columns only show when some bill needs them.
+  const showBillCurrency =
+    new Set(invoices.map((inv) => inv.currency || '')).size > 1 ||
+    invoices.some((inv) => inv.exchange_rate != null && Number(inv.exchange_rate) !== 1);
+  const showBillFile = invoices.some((inv) => inv.has_attachment);
   const openBills = invoices.filter((inv) =>
     inv.status === 'unpaid' || inv.status === 'partial' || inv.status === 'overdue',
   );
@@ -1706,50 +1720,98 @@ export default function Page() {
   return (
     <div className="purch-desk purchase-ui-page">
       <PageHeader className="cat-head" title="Purchasing">
-        <p className="purchase-ui-path">
-          {hotelOps ? (
-            <>
-              <span>1 Suppliers</span>
-              <span>2 Orders</span>
-              <span>3 Receive supplies</span>
-              <span>4 Supplier bills</span>
-              <span>5 Returns</span>
-            </>
-          ) : restaurantOps ? (
-            <>
-              <span>1 Suppliers</span>
-              <span>2 Orders</span>
-              <span>3 Receive stock</span>
-              <span>4 Supplier bills</span>
-              <span>5 Returns</span>
-            </>
-          ) : (
-            <>
-              <span>1 Suppliers</span>
-              <span>2 Orders</span>
-              <span>3 Receive goods</span>
-              <span>4 Supplier bills</span>
-              <span>5 Returns</span>
-            </>
-          )}
-        </p>
-        <p className="purchase-ui-links">
-          {hotelOps ? <span>Suppliers, purchase orders, and goods received for hotel supplies.</span> : null}
-          {restaurantOps ? <span>Suppliers, purchase orders, and stock received for recipe ingredients.</span> : null}
-          <a href="/credit?kind=payable">Supplier balances</a>
-          <a href="/credit?kind=payable&panel=pay">Record a supplier payment</a>
+        <p className="purchase-ui-note">
+          {hotelOps
+            ? 'Suppliers, purchase orders, and goods received for hotel supplies.'
+            : restaurantOps
+              ? 'Suppliers, purchase orders, and stock received for recipe ingredients.'
+              : 'Order from a supplier, receive the goods into stock, then enter and pay the supplier bill.'}
         </p>
       </PageHeader>
       {error ? <p className="form-flash err" role="alert">{error}</p> : null}
       {message ? <p className="form-flash ok">{message}</p> : null}
+
+      {cancelAsk ? (
+        <FormModal
+          title={
+            cancelAsk.kind === 'po'
+              ? `Cancel order ${cancelAsk.row.po_number || ''}`
+              : cancelAsk.kind === 'pi'
+                ? `Cancel supplier bill ${cancelAsk.row.invoice_number || ''}`
+                : `Cancel return ${cancelAsk.row.return_number || ''}`
+          }
+          onClose={() => setCancelAsk(null)}
+          headerClose
+          closeLabel="Keep it"
+          footer={
+            <button
+              type="button"
+              className="btn-danger"
+              disabled={
+                !(cancelAsk.kind === 'po' ? poCancelReason : cancelAsk.kind === 'pi' ? piCancelReason : prCancelReason).trim()
+              }
+              onClick={() => {
+                if (cancelAsk.kind === 'po') cancelPo(cancelAsk.row);
+                else if (cancelAsk.kind === 'pi') cancelInvoice(cancelAsk.row);
+                else cancelReturn(cancelAsk.row);
+              }}
+            >
+              Cancel it
+            </button>
+          }
+        >
+          <label className="field">
+            <span>Why are you cancelling?</span>
+            {cancelAsk.kind === 'po' ? (
+              <input
+                className="purch-reason"
+                autoFocus
+                value={poCancelReason}
+                onChange={(e) => setPoCancelReason(e.target.value)}
+                placeholder="For example: supplier is out of stock"
+                aria-label="Purchase order cancel reason"
+              />
+            ) : cancelAsk.kind === 'pi' ? (
+              <input
+                className="purch-reason"
+                autoFocus
+                value={piCancelReason}
+                onChange={(e) => setPiCancelReason(e.target.value)}
+                placeholder="For example: bill entered twice"
+                aria-label="Purchase invoice cancel reason"
+              />
+            ) : (
+              <input
+                className="purch-reason"
+                autoFocus
+                value={prCancelReason}
+                onChange={(e) => setPrCancelReason(e.target.value)}
+                placeholder="For example: supplier will replace the goods"
+                aria-label="Purchase return cancel reason"
+              />
+            )}
+          </label>
+          <p className="muted" style={{ marginTop: 8 }} title={cancelAsk.hint}>
+            {cancelAsk.kind === 'po'
+              ? 'The reason is saved on the order notes.'
+              : cancelAsk.kind === 'pi'
+                ? 'The reason is saved on the supplier bill notes.'
+                : hotelOps
+                  ? 'Draft only; supplies and supplier bills stay unchanged.'
+                  : restaurantOps
+                    ? 'Draft only; ingredients and supplier bills stay unchanged.'
+                    : 'Draft only; no stock/AP.'}
+          </p>
+        </FormModal>
+      ) : null}
 
       <nav className="sales-toolbar" aria-label="Purchasing workflow">
         {(
           [
             ['suppliers', 'Suppliers'],
             ['orders', 'Orders'],
-            ['grn', 'Receive Goods'],
-            ['invoices', 'Supplier Bills'],
+            ['grn', 'Receive goods'],
+            ['invoices', 'Supplier bills'],
             ['returns', 'Returns'],
             ['requests', 'Requests'],
             ['history', 'History'],
@@ -2545,7 +2607,7 @@ export default function Page() {
         </button>
       </div>
       <details className="purchase-ui-settings">
-        <summary>Numbering</summary>
+        <summary>Document numbers</summary>
         <div className="purchase-ui-actions">
         <input value={poPrefix} onChange={(e) => setPoPrefix(e.target.value)} aria-label="Purchase order number prefix" placeholder="PO prefix" />
         <input value={poNext} onChange={(e) => setPoNext(e.target.value)} aria-label="Purchase order next number" placeholder="Next #" />
@@ -2814,17 +2876,7 @@ export default function Page() {
             open={poOptionsOpen}
             onToggle={(e) => setPoOptionsOpen((e.currentTarget as HTMLDetailsElement).open)}
           >
-            <summary>Cancel or email options</summary>
-            <label className="field">
-              <span>Reason for cancelling an order</span>
-              <input
-                className="purch-reason"
-                value={poCancelReason}
-                onChange={(e) => setPoCancelReason(e.target.value)}
-                placeholder="Needed before you press Cancel on an order"
-                aria-label="Purchase order cancel reason"
-              />
-            </label>
+            <summary>Email to a different address</summary>
             <label className="field" style={{ marginTop: 8 }}>
               <span>Email the document to</span>
               <input
@@ -2885,7 +2937,7 @@ export default function Page() {
                 <th className="col-id">PO</th>
                 {restaurantOps ? null : <th className="col-text">Supplier</th>}
                 <th className="col-status">Status</th>
-                {restaurantOps ? null : <th className="col-num">Rev</th>}
+                {restaurantOps ? null : <th className="col-num" title="How many times the order was changed after it was sent">Changed</th>}
                 <th className="col-num">Total</th>
                 <th className="col-num">Amount paid</th>
                 <th className="col-num">Amount left</th>
@@ -2966,7 +3018,7 @@ export default function Page() {
                   </td>
                   {restaurantOps ? null : <td className="col-text" data-label="Supplier">{supplierNameOf(o.supplier_id)}</td>}
                   <td className="col-status" data-label="Status"><StatusChip value={o.status} /></td>
-                  {restaurantOps ? null : <td className="col-num" data-label="Rev">{o.revision_no ?? 0}</td>}
+                  {restaurantOps ? null : <td className="col-num" data-label="Changed">{Number(o.revision_no ?? 0) > 0 ? `${o.revision_no}×` : "—"}</td>}
                   <td className="col-num" data-label="Total">{formatNumber(o.total_amount, formatPrefs)}</td>
                   <td className="col-num" data-label="Amount paid">{formatNumber(o.paid_amount ?? 0, formatPrefs)}</td>
                   <td className="col-num" data-label="Amount left">
@@ -3929,7 +3981,7 @@ export default function Page() {
         <>
           <div className="purchase-ui-actions">
             <button type="button" className="btn-primary" onClick={() => setBillCreateOpen(true)} aria-label="Create supplier bill from received goods">
-              {hotelOps ? 'Bill from a delivery' : restaurantOps ? 'Bill from a receipt' : 'Bill from GRN'}
+              {hotelOps ? 'Bill from a delivery' : restaurantOps ? 'Bill from a receipt' : 'Bill from goods received'}
             </button>
             <button type="button" onClick={() => setBillManualOpen(true)} aria-label="Create supplier bill">
               Create supplier bill
@@ -4412,22 +4464,6 @@ export default function Page() {
               </div>
             </div>
           )}
-        <div className="card">
-          <label className="field">
-            <span>Cancel reason</span>
-            <input
-              className="purch-reason"
-              value={piCancelReason}
-              onChange={(e) => setPiCancelReason(e.target.value)}
-              placeholder="Required before Cancel"
-              title="Required cancel reason"
-              aria-label="Purchase invoice cancel reason"
-            />
-          </label>
-          <p className="muted" style={{ marginTop: 6 }}>
-            Saved on the supplier bill notes.
-          </p>
-        </div>
         <div className="card cat-panel">
         <div className="purch-filter-row">
         <select
@@ -4474,13 +4510,12 @@ export default function Page() {
               {restaurantOps ? null : <th className="col-text">Supplier</th>}
               {restaurantOps ? null : <th className="col-id">Supplier #</th>}
               <th className="col-status">Status</th>
-              {restaurantOps ? null : <th className="col-status">Currency</th>}
+              {restaurantOps || !showBillCurrency ? null : <th className="col-status">Currency</th>}
               <th className="col-num">Total</th>
-              {restaurantOps ? null : <th className="col-num">RC</th>}
+              {restaurantOps ? null : <th className="col-num">Tax</th>}
               <th className="col-num">Amount paid</th>
               <th className="col-num">Amount left</th>
-              {restaurantOps ? null : <th className="col-status">AP posted</th>}
-              {restaurantOps ? null : <th className="col-status">File</th>}
+              {restaurantOps || !showBillFile ? null : <th className="col-status">File</th>}
               {restaurantOps ? null : <th className="col-text">Notes</th>}
               <th className="col-actions">Actions</th>
             </tr>
@@ -4622,29 +4657,26 @@ export default function Page() {
                 {restaurantOps ? null : <td className="col-text" data-label="Supplier">{billSupplierName(inv)}</td>}
                 {restaurantOps ? null : <td className="col-id" data-label="Supplier #">{inv.supplier_invoice_number || '—'}</td>}
                 <td className="col-status" data-label="Status"><StatusChip value={inv.status} /></td>
-                {restaurantOps ? null : (
+                {restaurantOps || !showBillCurrency ? null : (
                 <td className="col-status" data-label="Currency">
                   {inv.currency
-                    ? `${inv.currency}${inv.exchange_rate != null ? ` @ ${inv.exchange_rate}` : ''}`
+                    ? `${inv.currency}${inv.exchange_rate != null && Number(inv.exchange_rate) !== 1 ? ` at ${inv.exchange_rate}` : ''}`
                     : '—'}
                 </td>
                 )}
                 <td className="col-num" data-label="Total">{formatNumber(inv.total_amount, formatPrefs)}</td>
                 {restaurantOps ? null : (
-                <td className="col-num" data-label="RC">
+                <td className="col-num" data-label="Tax">
                   {inv.is_reverse_charge
-                    ? `${inv.reverse_charge_tax ?? 0}`
-                    : inv.tax_amount ?? '—'}
+                    ? `${formatNumber(inv.reverse_charge_tax ?? 0, formatPrefs)} (reverse charge)`
+                    : inv.tax_amount != null
+                      ? formatNumber(inv.tax_amount, formatPrefs)
+                      : '—'}
                 </td>
                 )}
                 <td className="col-num" data-label="Amount paid">{formatNumber(inv.paid_amount ?? 0, formatPrefs)}</td>
                 <td className="col-num" data-label="Amount left">{formatNumber(inv.balance_due, formatPrefs)}</td>
-                {restaurantOps ? null : (
-                <td className="col-status" data-label="AP posted">
-                  <StatusChip value={inv.ap_posted ? 'posted' : 'draft'} label={inv.ap_posted ? 'Posted' : (hotelOps ? 'From a delivery' : restaurantOps ? 'From a receipt' : 'Via GRN')} />
-                </td>
-                )}
-                {restaurantOps ? null : (
+                {restaurantOps || !showBillFile ? null : (
                 <td className="col-status" data-label="File">
                   {inv.has_attachment ? <StatusChip value="active" label="Yes" /> : '—'}
                 </td>
@@ -4941,23 +4973,6 @@ export default function Page() {
         </div>
       </FormModal>
       ) : null}
-      <div className="card">
-        <label className="field">
-          <span>Cancel reason</span>
-          <input
-            className="purch-reason"
-            value={prCancelReason}
-            onChange={(e) => setPrCancelReason(e.target.value)}
-            placeholder="Required before Cancel"
-            title="Required cancel reason"
-            aria-label="Purchase return cancel reason"
-          />
-        </label>
-        <p className="muted" style={{ marginTop: 6 }}>
-          Appended to draft return notes and audit (<code>POST .../returns/.../cancel</code>{' '}
-          {'{ reason }'}). {hotelOps ? 'Draft only; supplies and supplier bills stay unchanged.' : restaurantOps ? 'Draft only; ingredients and supplier bills stay unchanged.' : 'Draft only; no stock/AP.'}
-        </p>
-      </div>
         <div className="card cat-panel">
         <div className="purch-filter-row">
         <select

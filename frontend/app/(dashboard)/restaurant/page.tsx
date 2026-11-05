@@ -599,7 +599,7 @@ export default function RestaurantPage() {
 
   async function removeLeftoverItem(row: Row, item: Row) {
     if (!item.id) {
-      setError('Choose a leftover item first');
+      setError('Choose an item first');
       return;
     }
     setError('');
@@ -2252,7 +2252,7 @@ export default function RestaurantPage() {
                         <label>
                           <span>Code</span>
                           <input
-                            aria-label={`Leftover table code ${row.code}`}
+                            aria-label={`Table code ${row.code}`}
                             value={tableEdit(row).code}
                             onChange={(e) => setTableEdits((current) => ({ ...current, [row.id]: { ...tableEdit(row), code: e.target.value } }))}
                           />
@@ -2277,7 +2277,7 @@ export default function RestaurantPage() {
                         <label>
                           <span>Store</span>
                           <select
-                            aria-label={`Leftover table store ${row.code}`}
+                            aria-label={`Table store ${row.code}`}
                             value={leftoverTableStores[row.id] ?? row.store_id ?? ''}
                             onChange={(e) => setLeftoverTableStores((current) => ({ ...current, [row.id]: e.target.value }))}
                           >
@@ -2290,7 +2290,7 @@ export default function RestaurantPage() {
                         <label>
                           <span>Room</span>
                           <select
-                            aria-label={`Leftover table room ${row.code}`}
+                            aria-label={`Table room ${row.code}`}
                             value={leftoverTableRooms[row.id] ?? row.room ?? ''}
                             onChange={(e) => setLeftoverTableRooms((current) => ({ ...current, [row.id]: e.target.value }))}
                           >
@@ -2699,7 +2699,7 @@ export default function RestaurantPage() {
                               <label>
                                 <span>Guest</span>
                                 <input
-                                  aria-label={`Leftover booking guest ${row.booking_number}`}
+                                  aria-label={`Booking guest ${row.booking_number}`}
                                   value={edit?.guest_name ?? row.guest_name ?? ''}
                                   onChange={(e) => setLeftoverBookings((current) => ({ ...current, [row.id]: { ...bookingDraft(row, current[row.id]), guest_name: e.target.value } }))}
                                 />
@@ -2707,7 +2707,7 @@ export default function RestaurantPage() {
                               <label>
                                 <span>Phone</span>
                                 <input
-                                  aria-label={`Leftover booking phone ${row.booking_number}`}
+                                  aria-label={`Booking phone ${row.booking_number}`}
                                   value={edit?.phone ?? row.phone ?? ''}
                                   onChange={(e) => setLeftoverBookings((current) => ({ ...current, [row.id]: { ...bookingDraft(row, current[row.id]), phone: e.target.value } }))}
                                 />
@@ -2715,7 +2715,7 @@ export default function RestaurantPage() {
                               <label>
                                 <span>Party</span>
                                 <input
-                                  aria-label={`Leftover booking party ${row.booking_number}`}
+                                  aria-label={`Booking party ${row.booking_number}`}
                                   inputMode="numeric"
                                   value={edit?.party_size ?? String(row.party_size ?? '2')}
                                   onChange={(e) => setLeftoverBookings((current) => ({ ...current, [row.id]: { ...bookingDraft(row, current[row.id]), party_size: e.target.value } }))}
@@ -2724,7 +2724,7 @@ export default function RestaurantPage() {
                               <label>
                                 <span>When</span>
                                 <input
-                                  aria-label={`Leftover booking time ${row.booking_number}`}
+                                  aria-label={`Booking time ${row.booking_number}`}
                                   type="datetime-local"
                                   value={edit?.booked_for ?? String(row.booked_for || '').slice(0, 16)}
                                   onChange={(e) => setLeftoverBookings((current) => ({ ...current, [row.id]: { ...bookingDraft(row, current[row.id]), booked_for: e.target.value } }))}
@@ -2733,7 +2733,7 @@ export default function RestaurantPage() {
                               <label>
                                 <span>Turn</span>
                                 <select
-                                  aria-label={`Leftover booking turn ${row.booking_number}`}
+                                  aria-label={`Booking turn ${row.booking_number}`}
                                   value={leftoverTurns[row.id] ?? (row.turn == null ? '' : String(row.turn))}
                                   onChange={(e) => setLeftoverTurns((current) => ({ ...current, [row.id]: e.target.value }))}
                                 >
@@ -2746,7 +2746,7 @@ export default function RestaurantPage() {
                               <label className="rd-span">
                                 <span>Notes</span>
                                 <input
-                                  aria-label={`Leftover booking notes ${row.booking_number}`}
+                                  aria-label={`Booking notes ${row.booking_number}`}
                                   value={edit?.notes ?? row.notes ?? ''}
                                   onChange={(e) => setLeftoverBookings((current) => ({ ...current, [row.id]: { ...bookingDraft(row, current[row.id]), notes: e.target.value } }))}
                                 />
@@ -2787,7 +2787,7 @@ export default function RestaurantPage() {
                                   <button
                                     type="button"
                                     className="rd-primary"
-                                    aria-label={`Save leftover booking ${row.booking_number}`}
+                                    aria-label={`Save booking ${row.booking_number}`}
                                     onClick={() => saveWholeBooking(row)}
                                   >
                                     Save
@@ -2951,7 +2951,7 @@ export default function RestaurantPage() {
                   <label>
                     <span>Group</span>
                   <input
-                    aria-label={`Leftover extra group name ${group.name}`}
+                    aria-label={`Extra group name ${group.name}`}
                     value={leftoverExtraGroupNames[group.id] ?? String(group.name ?? '')}
                     onChange={(e) => setLeftoverExtraGroupNames((current) => ({ ...current, [group.id]: e.target.value }))}
                   />
@@ -2960,7 +2960,7 @@ export default function RestaurantPage() {
                   <div className="rest-order-actions">
                   <button
                     type="button"
-                    aria-label={`Save leftover extra group ${group.name}`}
+                    aria-label={`Save extra group ${group.name}`}
                     onClick={async () => {
                       setError('');
                       try {
@@ -2981,7 +2981,7 @@ export default function RestaurantPage() {
                   </button>
                   <button
                     type="button"
-                    aria-label={`Retire leftover extra group ${group.name}`}
+                    aria-label={`Retire extra group ${group.name}`}
                     onClick={async () => {
                       setError('');
                       try {
@@ -3011,7 +3011,7 @@ export default function RestaurantPage() {
                   <label>
                     <span>Name</span>
                   <input
-                    aria-label={`Leftover extra name ${row.name}`}
+                    aria-label={`Extra name ${row.name}`}
                     value={leftoverExtraNames[row.id] ?? String(row.name ?? '')}
                     onChange={(e) => setLeftoverExtraNames((current) => ({ ...current, [row.id]: e.target.value }))}
                   />
@@ -3019,7 +3019,7 @@ export default function RestaurantPage() {
                   <label>
                     <span>Price</span>
                   <input
-                    aria-label={`Leftover extra price ${row.name}`}
+                    aria-label={`Extra price ${row.name}`}
                     value={leftoverExtraPrices[row.id] ?? String(row.price ?? '0')}
                     onChange={(e) => setLeftoverExtraPrices((current) => ({ ...current, [row.id]: e.target.value }))}
                   />
@@ -3028,7 +3028,7 @@ export default function RestaurantPage() {
                   <div className="rest-order-actions">
                   <button
                     type="button"
-                    aria-label={`Save leftover extra ${row.name}`}
+                    aria-label={`Save extra ${row.name}`}
                     onClick={async () => {
                       setError('');
                       try {
@@ -3600,13 +3600,13 @@ export default function RestaurantPage() {
                           <div className="rest-order-cell">
                           <span>Quantity</span>
                           <input
-                            aria-label={`Leftover quantity ${item.name} on ${row.order_number}`}
+                            aria-label={`Quantity ${item.name} on ${row.order_number}`}
                             value={leftoverLineQuantities[item.id] ?? String(item.quantity ?? '1')}
                             onChange={(e) => setLeftoverLineQuantities((current) => ({ ...current, [item.id]: e.target.value }))}
                           />
                           <button
                             type="button"
-                            aria-label={`Save leftover quantity ${item.name} on ${row.order_number}`}
+                            aria-label={`Save quantity ${item.name} on ${row.order_number}`}
                             onClick={() => saveLeftoverQuantity(row, item)}
                           >
                             Save quantity
@@ -3615,13 +3615,13 @@ export default function RestaurantPage() {
                           <div className="rest-order-cell">
                           <span>Price</span>
                           <input
-                            aria-label={`Leftover price ${item.name} on ${row.order_number}`}
+                            aria-label={`Price ${item.name} on ${row.order_number}`}
                             value={leftoverLinePrices[item.id] ?? String(item.unit_price ?? '0')}
                             onChange={(e) => setLeftoverLinePrices((current) => ({ ...current, [item.id]: e.target.value }))}
                           />
                           <button
                             type="button"
-                            aria-label={`Save leftover price ${item.name} on ${row.order_number}`}
+                            aria-label={`Save price ${item.name} on ${row.order_number}`}
                             onClick={() => saveLeftoverPrice(row, item)}
                           >
                             Save price
@@ -3630,7 +3630,7 @@ export default function RestaurantPage() {
                           <div className="rest-order-cell">
                           <span>Station</span>
                           <select
-                            aria-label={`Leftover station ${item.name} on ${row.order_number}`}
+                            aria-label={`Station ${item.name} on ${row.order_number}`}
                             value={leftoverLineStations[item.id] ?? item.station ?? 'kitchen'}
                             onChange={(e) => setLeftoverLineStations((current) => ({ ...current, [item.id]: e.target.value }))}
                           >
@@ -3639,7 +3639,7 @@ export default function RestaurantPage() {
                           </select>
                           <button
                             type="button"
-                            aria-label={`Save leftover station ${item.name} on ${row.order_number}`}
+                            aria-label={`Save station ${item.name} on ${row.order_number}`}
                             onClick={() => saveLeftoverStation(row, item)}
                           >
                             Save station
@@ -3648,7 +3648,7 @@ export default function RestaurantPage() {
                           <div className="rest-order-cell">
                           <span>Course</span>
                           <select
-                            aria-label={`Leftover course ${item.name} on ${row.order_number}`}
+                            aria-label={`Course ${item.name} on ${row.order_number}`}
                             value={leftoverLineCourses[item.id] ?? item.course ?? 'main'}
                             onChange={(e) => setLeftoverLineCourses((current) => ({ ...current, [item.id]: e.target.value }))}
                           >
@@ -3659,7 +3659,7 @@ export default function RestaurantPage() {
                           </select>
                           <button
                             type="button"
-                            aria-label={`Save leftover course ${item.name} on ${row.order_number}`}
+                            aria-label={`Save course ${item.name} on ${row.order_number}`}
                             onClick={() => saveLeftoverCourse(row, item)}
                           >
                             Save course
@@ -3668,13 +3668,13 @@ export default function RestaurantPage() {
                           <div className="rest-order-cell">
                           <span>Item note</span>
                           <input
-                            aria-label={`Leftover item note ${item.name} on ${row.order_number}`}
+                            aria-label={`Item note ${item.name} on ${row.order_number}`}
                             value={leftoverLineNotes[item.id] ?? item.note ?? ''}
                             onChange={(e) => setLeftoverLineNotes((current) => ({ ...current, [item.id]: e.target.value }))}
                           />
                           <button
                             type="button"
-                            aria-label={`Save leftover item note ${item.name} on ${row.order_number}`}
+                            aria-label={`Save item note ${item.name} on ${row.order_number}`}
                             onClick={() => saveLeftoverItemNote(row, item)}
                           >
                             Save item note
@@ -3683,13 +3683,13 @@ export default function RestaurantPage() {
                           <div className="rest-order-cell">
                           <span>Seat</span>
                           <input
-                            aria-label={`Leftover seat ${item.name} on ${row.order_number}`}
+                            aria-label={`Seat ${item.name} on ${row.order_number}`}
                             value={leftoverLineSeats[item.id] ?? (item.seat != null ? String(item.seat) : '')}
                             onChange={(e) => setLeftoverLineSeats((current) => ({ ...current, [item.id]: e.target.value }))}
                           />
                           <button
                             type="button"
-                            aria-label={`Save leftover seat ${item.name} on ${row.order_number}`}
+                            aria-label={`Save seat ${item.name} on ${row.order_number}`}
                             onClick={() => saveLeftoverSeat(row, item)}
                           >
                             Save seat
@@ -3698,7 +3698,7 @@ export default function RestaurantPage() {
                           <div className="rest-order-cell">
                           <span>Spice</span>
                           <select
-                            aria-label={`Leftover spice ${item.name} on ${row.order_number}`}
+                            aria-label={`Spice ${item.name} on ${row.order_number}`}
                             value={leftoverLineSpices[item.id] ?? item.spice ?? ''}
                             onChange={(e) => setLeftoverLineSpices((current) => ({ ...current, [item.id]: e.target.value }))}
                           >
@@ -3709,7 +3709,7 @@ export default function RestaurantPage() {
                           </select>
                           <button
                             type="button"
-                            aria-label={`Save leftover spice ${item.name} on ${row.order_number}`}
+                            aria-label={`Save spice ${item.name} on ${row.order_number}`}
                             onClick={() => saveLeftoverSpice(row, item)}
                           >
                             Save spice
@@ -3718,7 +3718,7 @@ export default function RestaurantPage() {
                           <div className="rest-order-cell">
                           <span>Doneness</span>
                           <select
-                            aria-label={`Leftover doneness ${item.name} on ${row.order_number}`}
+                            aria-label={`Doneness ${item.name} on ${row.order_number}`}
                             value={leftoverLineDoneness[item.id] ?? item.doneness ?? ''}
                             onChange={(e) => setLeftoverLineDoneness((current) => ({ ...current, [item.id]: e.target.value }))}
                           >
@@ -3729,7 +3729,7 @@ export default function RestaurantPage() {
                           </select>
                           <button
                             type="button"
-                            aria-label={`Save leftover doneness ${item.name} on ${row.order_number}`}
+                            aria-label={`Save doneness ${item.name} on ${row.order_number}`}
                             onClick={() => saveLeftoverDoneness(row, item)}
                           >
                             Save doneness
@@ -3752,7 +3752,7 @@ export default function RestaurantPage() {
                             <label key={extra.id}>
                               <input
                                 type="checkbox"
-                                aria-label={`Leftover extra ${extra.name} on ${item.name} ${row.order_number}`}
+                                aria-label={`Extra ${extra.name} on ${item.name} ${row.order_number}`}
                                 checked={leftoverExtraIds(item).includes(extra.id)}
                                 onChange={(e) => setLeftoverLineModifiers((current) => {
                                   const selected = current[item.id] ?? (Array.isArray(item.modifier_ids) ? item.modifier_ids : []);
@@ -3770,7 +3770,7 @@ export default function RestaurantPage() {
                           {modifierGroups.some((group) => (group.modifiers || []).length > 0) ? (
                             <button
                               type="button"
-                              aria-label={`Save leftover extras ${item.name} on ${row.order_number}`}
+                              aria-label={`Save extras ${item.name} on ${row.order_number}`}
                               onClick={() => saveLeftoverExtras(row, item)}
                             >
                               Save extras
@@ -3778,7 +3778,7 @@ export default function RestaurantPage() {
                           ) : null}
                           <button
                             type="button"
-                            aria-label={`Remove leftover ${item.name} on ${row.order_number}`}
+                            aria-label={`Remove ${item.name} on ${row.order_number}`}
                             onClick={() => removeLeftoverItem(row, item)}
                           >
                             Remove
@@ -3795,7 +3795,7 @@ export default function RestaurantPage() {
                     <label>
                       <span>Service</span>
                     <select
-                      aria-label={`Leftover service mode ${row.order_number}`}
+                      aria-label={`Service mode ${row.order_number}`}
                       value={leftoverServiceModes[row.id] ?? row.service_mode ?? 'takeaway'}
                       onChange={(e) => setLeftoverServiceModes((current) => ({ ...current, [row.id]: e.target.value }))}
                     >
@@ -3808,7 +3808,7 @@ export default function RestaurantPage() {
                       <label>
                         <span>Table</span>
                       <select
-                        aria-label={`Leftover service table ${row.order_number}`}
+                        aria-label={`Service table ${row.order_number}`}
                         value={leftoverServiceTables[row.id] ?? row.table_id ?? ''}
                         onChange={(e) => setLeftoverServiceTables((current) => ({ ...current, [row.id]: e.target.value }))}
                       >
@@ -3819,13 +3819,13 @@ export default function RestaurantPage() {
                       </select>
                       </label>
                     ) : null}
-                    <button type="button" aria-label={`Save leftover service on ${row.order_number}`} onClick={() => saveLeftoverService(row)}>
+                    <button type="button" aria-label={`Save service on ${row.order_number}`} onClick={() => saveLeftoverService(row)}>
                       Save service
                     </button>
                     <label>
                       <span>Tender</span>
                     <select
-                      aria-label={`Leftover payment method ${row.order_number}`}
+                      aria-label={`Payment method ${row.order_number}`}
                       value={leftoverPaymentMethods[row.id] ?? row.payment_method ?? 'cash'}
                       onChange={(e) => setLeftoverPaymentMethods((current) => ({ ...current, [row.id]: e.target.value }))}
                     >
@@ -3835,13 +3835,13 @@ export default function RestaurantPage() {
                       <option value="mobile_money">Mobile Money</option>
                     </select>
                     </label>
-                    <button type="button" aria-label={`Save leftover payment on ${row.order_number}`} onClick={() => saveLeftoverPayment(row)}>
+                    <button type="button" aria-label={`Save payment on ${row.order_number}`} onClick={() => saveLeftoverPayment(row)}>
                       Save payment
                     </button>
                     <label>
                       <span>Store</span>
                     <select
-                      aria-label={`Leftover order store ${row.order_number}`}
+                      aria-label={`Order store ${row.order_number}`}
                       value={leftoverOrderStores[row.id] ?? row.store_id ?? ''}
                       onChange={(e) => setLeftoverOrderStores((current) => ({ ...current, [row.id]: e.target.value }))}
                     >
@@ -3851,46 +3851,46 @@ export default function RestaurantPage() {
                       ))}
                     </select>
                     </label>
-                    <button type="button" aria-label={`Save leftover store on ${row.order_number}`} onClick={() => saveLeftoverStore(row)}>
+                    <button type="button" aria-label={`Save store on ${row.order_number}`} onClick={() => saveLeftoverStore(row)}>
                       Save store
                     </button>
                     <label>
                       <span>Guest</span>
                     <input
-                      aria-label={`Leftover customer name ${row.order_number}`}
+                      aria-label={`Customer name ${row.order_number}`}
                       value={leftoverCustomerNames[row.id] ?? row.customer_name ?? ''}
                       onChange={(e) => setLeftoverCustomerNames((current) => ({ ...current, [row.id]: e.target.value }))}
                     />
                     </label>
-                    <button type="button" aria-label={`Save leftover customer on ${row.order_number}`} onClick={() => saveLeftoverCustomer(row)}>
+                    <button type="button" aria-label={`Save customer on ${row.order_number}`} onClick={() => saveLeftoverCustomer(row)}>
                       Save customer
                     </button>
                     <label>
                       <span>Covers</span>
                     <input
-                      aria-label={`Leftover covers ${row.order_number}`}
+                      aria-label={`Covers ${row.order_number}`}
                       value={leftoverCovers[row.id] ?? (row.covers ? String(row.covers) : '')}
                       onChange={(e) => setLeftoverCovers((current) => ({ ...current, [row.id]: e.target.value }))}
                     />
                     </label>
-                    <button type="button" aria-label={`Save leftover covers on ${row.order_number}`} onClick={() => saveLeftoverCovers(row)}>
+                    <button type="button" aria-label={`Save covers on ${row.order_number}`} onClick={() => saveLeftoverCovers(row)}>
                       Save covers
                     </button>
                     <label>
                       <span>Allergy</span>
                     <input
-                      aria-label={`Leftover allergy ${row.order_number}`}
+                      aria-label={`Allergy ${row.order_number}`}
                       value={leftoverAllergies[row.id] ?? row.allergy ?? ''}
                       onChange={(e) => setLeftoverAllergies((current) => ({ ...current, [row.id]: e.target.value }))}
                     />
                     </label>
-                    <button type="button" aria-label={`Save leftover allergy on ${row.order_number}`} onClick={() => saveLeftoverAllergy(row)}>
+                    <button type="button" aria-label={`Save allergy on ${row.order_number}`} onClick={() => saveLeftoverAllergy(row)}>
                       Save allergy
                     </button>
                     <label>
                       <span>Allergen</span>
                     <select
-                      aria-label={`Leftover allergen ${row.order_number}`}
+                      aria-label={`Allergen ${row.order_number}`}
                       value={leftoverAllergens[row.id] ?? row.allergen ?? ''}
                       onChange={(e) => setLeftoverAllergens((current) => ({ ...current, [row.id]: e.target.value }))}
                     >
@@ -3901,46 +3901,46 @@ export default function RestaurantPage() {
                       <option value="shellfish">Shellfish</option>
                     </select>
                     </label>
-                    <button type="button" aria-label={`Save leftover allergen on ${row.order_number}`} onClick={() => saveLeftoverAllergen(row)}>
+                    <button type="button" aria-label={`Save allergen on ${row.order_number}`} onClick={() => saveLeftoverAllergen(row)}>
                       Save allergen
                     </button>
                     <label>
                       <span>Occasion</span>
                     <input
-                      aria-label={`Leftover occasion ${row.order_number}`}
+                      aria-label={`Occasion ${row.order_number}`}
                       value={leftoverOccasions[row.id] ?? row.occasion ?? ''}
                       onChange={(e) => setLeftoverOccasions((current) => ({ ...current, [row.id]: e.target.value }))}
                     />
                     </label>
-                    <button type="button" aria-label={`Save leftover occasion on ${row.order_number}`} onClick={() => saveLeftoverOccasion(row)}>
+                    <button type="button" aria-label={`Save occasion on ${row.order_number}`} onClick={() => saveLeftoverOccasion(row)}>
                       Save occasion
                     </button>
                     <label>
                       <span>Phone</span>
                     <input
-                      aria-label={`Leftover phone ${row.order_number}`}
+                      aria-label={`Phone ${row.order_number}`}
                       value={leftoverPhones[row.id] ?? row.phone ?? ''}
                       onChange={(e) => setLeftoverPhones((current) => ({ ...current, [row.id]: e.target.value }))}
                     />
                     </label>
-                    <button type="button" aria-label={`Save leftover phone on ${row.order_number}`} onClick={() => saveLeftoverPhone(row)}>
+                    <button type="button" aria-label={`Save phone on ${row.order_number}`} onClick={() => saveLeftoverPhone(row)}>
                       Save phone
                     </button>
                     <label>
                       <span>Email</span>
                     <input
-                      aria-label={`Leftover email ${row.order_number}`}
+                      aria-label={`Email ${row.order_number}`}
                       value={leftoverGuestEmails[row.id] ?? row.guest_email ?? ''}
                       onChange={(e) => setLeftoverGuestEmails((current) => ({ ...current, [row.id]: e.target.value }))}
                     />
                     </label>
-                    <button type="button" aria-label={`Save leftover email on ${row.order_number}`} onClick={() => saveLeftoverGuestEmail(row)}>
+                    <button type="button" aria-label={`Save email on ${row.order_number}`} onClick={() => saveLeftoverGuestEmail(row)}>
                       Save email
                     </button>
                     <label>
                       <span>Receipt</span>
                     <select
-                      aria-label={`Leftover receipt ${row.order_number}`}
+                      aria-label={`Receipt ${row.order_number}`}
                       value={leftoverReceipts[row.id] ?? row.receipt ?? ''}
                       onChange={(e) => setLeftoverReceipts((current) => ({ ...current, [row.id]: e.target.value }))}
                     >
@@ -3950,57 +3950,57 @@ export default function RestaurantPage() {
                       <option value="declined">Declined</option>
                     </select>
                     </label>
-                    <button type="button" aria-label={`Save leftover receipt on ${row.order_number}`} onClick={() => saveLeftoverReceipt(row)}>
+                    <button type="button" aria-label={`Save receipt on ${row.order_number}`} onClick={() => saveLeftoverReceipt(row)}>
                       Save receipt
                     </button>
                     <label>
                       <span>Pager</span>
                     <input
-                      aria-label={`Leftover pager ${row.order_number}`}
+                      aria-label={`Pager ${row.order_number}`}
                       value={leftoverPagers[row.id] ?? (row.pager != null ? String(row.pager) : '')}
                       onChange={(e) => setLeftoverPagers((current) => ({ ...current, [row.id]: e.target.value }))}
                     />
                     </label>
-                    <button type="button" aria-label={`Save leftover pager on ${row.order_number}`} onClick={() => saveLeftoverPager(row)}>
+                    <button type="button" aria-label={`Save pager on ${row.order_number}`} onClick={() => saveLeftoverPager(row)}>
                       Save pager
                     </button>
                     <label>
                       <span>Ready by</span>
                     <input
-                      aria-label={`Leftover ready by ${row.order_number}`}
+                      aria-label={`Ready by ${row.order_number}`}
                       value={leftoverReadyBy[row.id] ?? row.ready_by ?? ''}
                       onChange={(e) => setLeftoverReadyBy((current) => ({ ...current, [row.id]: e.target.value }))}
                     />
                     </label>
-                    <button type="button" aria-label={`Save leftover ready by on ${row.order_number}`} onClick={() => saveLeftoverReadyBy(row)}>
+                    <button type="button" aria-label={`Save ready by on ${row.order_number}`} onClick={() => saveLeftoverReadyBy(row)}>
                       Save ready by
                     </button>
                     <label>
                       <span>Quoted wait</span>
                     <input
-                      aria-label={`Leftover quoted wait ${row.order_number}`}
+                      aria-label={`Quoted wait ${row.order_number}`}
                       value={leftoverQuotedWaits[row.id] ?? (row.quoted_wait == null ? '' : String(row.quoted_wait))}
                       onChange={(e) => setLeftoverQuotedWaits((current) => ({ ...current, [row.id]: e.target.value }))}
                     />
                     </label>
-                    <button type="button" aria-label={`Save leftover quoted wait on ${row.order_number}`} onClick={() => saveLeftoverQuotedWait(row)}>
+                    <button type="button" aria-label={`Save quoted wait on ${row.order_number}`} onClick={() => saveLeftoverQuotedWait(row)}>
                       Save quoted wait
                     </button>
                     <label>
                       <span>Fire at</span>
                     <input
-                      aria-label={`Leftover fire at ${row.order_number}`}
+                      aria-label={`Fire at ${row.order_number}`}
                       value={leftoverFireAt[row.id] ?? row.fire_at ?? ''}
                       onChange={(e) => setLeftoverFireAt((current) => ({ ...current, [row.id]: e.target.value }))}
                     />
                     </label>
-                    <button type="button" aria-label={`Save leftover fire at on ${row.order_number}`} onClick={() => saveLeftoverFireAt(row)}>
+                    <button type="button" aria-label={`Save fire at on ${row.order_number}`} onClick={() => saveLeftoverFireAt(row)}>
                       Save fire at
                     </button>
                     <label>
                       <span>Packaging</span>
                     <select
-                      aria-label={`Leftover packaging ${row.order_number}`}
+                      aria-label={`Packaging ${row.order_number}`}
                       value={leftoverPackaging[row.id] ?? row.packaging ?? ''}
                       onChange={(e) => setLeftoverPackaging((current) => ({ ...current, [row.id]: e.target.value }))}
                     >
@@ -4009,7 +4009,7 @@ export default function RestaurantPage() {
                       <option value="box">Box</option>
                     </select>
                     </label>
-                    <button type="button" aria-label={`Save leftover packaging on ${row.order_number}`} onClick={() => saveLeftoverPackaging(row)}>
+                    <button type="button" aria-label={`Save packaging on ${row.order_number}`} onClick={() => saveLeftoverPackaging(row)}>
                       Save packaging
                     </button>
                     {row.rush ? (
@@ -4060,7 +4060,7 @@ export default function RestaurantPage() {
                     <label>
                       <span>Diet</span>
                     <select
-                      aria-label={`Leftover diet ${row.order_number}`}
+                      aria-label={`Diet ${row.order_number}`}
                       value={leftoverDiets[row.id] ?? row.diet ?? ''}
                       onChange={(e) => setLeftoverDiets((current) => ({ ...current, [row.id]: e.target.value }))}
                     >
@@ -4070,13 +4070,13 @@ export default function RestaurantPage() {
                       <option value="halal">Halal</option>
                     </select>
                     </label>
-                    <button type="button" aria-label={`Save leftover diet on ${row.order_number}`} onClick={() => saveLeftoverDiet(row)}>
+                    <button type="button" aria-label={`Save diet on ${row.order_number}`} onClick={() => saveLeftoverDiet(row)}>
                       Save diet
                     </button>
                     <label>
                       <span>Source</span>
                     <select
-                      aria-label={`Leftover source ${row.order_number}`}
+                      aria-label={`Source ${row.order_number}`}
                       value={leftoverSources[row.id] ?? row.guest_source ?? ''}
                       onChange={(e) => setLeftoverSources((current) => ({ ...current, [row.id]: e.target.value }))}
                     >
@@ -4086,35 +4086,35 @@ export default function RestaurantPage() {
                       <option value="booking">Booking</option>
                     </select>
                     </label>
-                    <button type="button" aria-label={`Save leftover source on ${row.order_number}`} onClick={() => saveLeftoverSource(row)}>
+                    <button type="button" aria-label={`Save source on ${row.order_number}`} onClick={() => saveLeftoverSource(row)}>
                       Save source
                     </button>
                     <label>
                       <span>Vehicle</span>
                     <input
-                      aria-label={`Leftover vehicle ${row.order_number}`}
+                      aria-label={`Vehicle ${row.order_number}`}
                       value={leftoverVehicles[row.id] ?? row.vehicle ?? ''}
                       onChange={(e) => setLeftoverVehicles((current) => ({ ...current, [row.id]: e.target.value }))}
                     />
                     </label>
-                    <button type="button" aria-label={`Save leftover vehicle on ${row.order_number}`} onClick={() => saveLeftoverVehicle(row)}>
+                    <button type="button" aria-label={`Save vehicle on ${row.order_number}`} onClick={() => saveLeftoverVehicle(row)}>
                       Save vehicle
                     </button>
                     <label>
                       <span>Bay</span>
                     <input
-                      aria-label={`Leftover bay ${row.order_number}`}
+                      aria-label={`Bay ${row.order_number}`}
                       value={leftoverBays[row.id] ?? (row.bay == null ? '' : String(row.bay))}
                       onChange={(e) => setLeftoverBays((current) => ({ ...current, [row.id]: e.target.value }))}
                     />
                     </label>
-                    <button type="button" aria-label={`Save leftover bay on ${row.order_number}`} onClick={() => saveLeftoverBay(row)}>
+                    <button type="button" aria-label={`Save bay on ${row.order_number}`} onClick={() => saveLeftoverBay(row)}>
                       Save bay
                     </button>
                     <label>
                       <span>Handoff</span>
                     <select
-                      aria-label={`Leftover handoff ${row.order_number}`}
+                      aria-label={`Handoff ${row.order_number}`}
                       value={leftoverHandoffs[row.id] ?? row.handoff ?? ''}
                       onChange={(e) => setLeftoverHandoffs((current) => ({ ...current, [row.id]: e.target.value }))}
                     >
@@ -4123,24 +4123,24 @@ export default function RestaurantPage() {
                       <option value="door">Leave at door</option>
                     </select>
                     </label>
-                    <button type="button" aria-label={`Save leftover handoff on ${row.order_number}`} onClick={() => saveLeftoverHandoff(row)}>
+                    <button type="button" aria-label={`Save handoff on ${row.order_number}`} onClick={() => saveLeftoverHandoff(row)}>
                       Save handoff
                     </button>
                     <label>
                       <span>Notes</span>
                     <input
-                      aria-label={`Leftover notes ${row.order_number}`}
+                      aria-label={`Notes ${row.order_number}`}
                       value={leftoverNotes[row.id] ?? row.notes ?? ''}
                       onChange={(e) => setLeftoverNotes((current) => ({ ...current, [row.id]: e.target.value }))}
                     />
                     </label>
-                    <button type="button" aria-label={`Save leftover notes on ${row.order_number}`} onClick={() => saveLeftoverNotes(row)}>
+                    <button type="button" aria-label={`Save notes on ${row.order_number}`} onClick={() => saveLeftoverNotes(row)}>
                       Save notes
                     </button>
                     <label>
                       <span>Menu item</span>
                     <select
-                      aria-label={`Leftover menu item ${row.order_number}`}
+                      aria-label={`Menu item ${row.order_number}`}
                       value={leftoverNewItems[row.id] ?? ''}
                       onChange={(e) => setLeftoverNewItems((current) => ({ ...current, [row.id]: e.target.value }))}
                     >
@@ -4153,7 +4153,7 @@ export default function RestaurantPage() {
                     <label>
                       <span>Quantity</span>
                     <input
-                      aria-label={`Leftover new quantity ${row.order_number}`}
+                      aria-label={`New quantity ${row.order_number}`}
                       value={leftoverNewQuantities[row.id] ?? '1'}
                       onChange={(e) => setLeftoverNewQuantities((current) => ({ ...current, [row.id]: e.target.value }))}
                     />
@@ -4162,7 +4162,7 @@ export default function RestaurantPage() {
                       <label key={`${row.id}-${extra.id}`}>
                         <input
                           type="checkbox"
-                          aria-label={`Leftover new extra ${extra.name} on ${row.order_number}`}
+                          aria-label={`New extra ${extra.name} on ${row.order_number}`}
                           checked={(leftoverNewModifiers[row.id] || []).includes(extra.id)}
                           onChange={(e) => setLeftoverNewModifiers((current) => {
                             const selected = current[row.id] || [];
@@ -4177,20 +4177,20 @@ export default function RestaurantPage() {
                         {extra.name}
                       </label>
                     ))}
-                    <button type="button" aria-label={`Add leftover item to ${row.order_number}`} onClick={() => addLeftoverItem(row)}>
-                      Add leftover item
+                    <button type="button" aria-label={`Add item to ${row.order_number}`} onClick={() => addLeftoverItem(row)}>
+                      Add item
                     </button>
                     </div>
                     {(leftoverServiceModes[row.id] ?? row.service_mode) === 'delivery' ? (
                       <>
                         <input
-                          aria-label={`Leftover delivery address ${row.order_number}`}
+                          aria-label={`Delivery address ${row.order_number}`}
                           value={leftoverDeliveryAddresses[row.id] ?? row.delivery_address ?? ''}
                           onChange={(e) => setLeftoverDeliveryAddresses((current) => ({ ...current, [row.id]: e.target.value }))}
                         />
                         {deliveryZones.length ? (
                           <select
-                            aria-label={`Leftover delivery zone ${row.order_number}`}
+                            aria-label={`Delivery zone ${row.order_number}`}
                             value={leftoverDeliveryZones[row.id] ?? row.delivery_zone ?? ''}
                             onChange={(e) => setLeftoverDeliveryZones((current) => ({ ...current, [row.id]: e.target.value }))}
                           >
@@ -4200,7 +4200,7 @@ export default function RestaurantPage() {
                             ))}
                           </select>
                         ) : null}
-                        <button type="button" aria-label={`Save leftover delivery address on ${row.order_number}`} onClick={() => saveLeftoverDelivery(row)}>
+                        <button type="button" aria-label={`Save delivery address on ${row.order_number}`} onClick={() => saveLeftoverDelivery(row)}>
                           Save address
                         </button>
                       </>
@@ -4499,7 +4499,7 @@ export default function RestaurantPage() {
                           <label>
                             <span>Name</span>
                             <input
-                              aria-label={`Leftover recipe name ${row.name}`}
+                              aria-label={`Recipe name ${row.name}`}
                               value={leftoverRecipeNames[row.id] ?? String(row.name ?? '')}
                               onChange={(e) => setLeftoverRecipeNames((current) => ({ ...current, [row.id]: e.target.value }))}
                             />
@@ -4507,7 +4507,7 @@ export default function RestaurantPage() {
                           <label>
                             <span>Cook time</span>
                             <input
-                              aria-label={`Leftover recipe cook time ${row.name}`}
+                              aria-label={`Recipe cook time ${row.name}`}
                               inputMode="numeric"
                               placeholder="Minutes"
                               value={leftoverCookTimes[row.id] ?? (row.cook_time ? String(row.cook_time) : '')}
@@ -4517,7 +4517,7 @@ export default function RestaurantPage() {
                           <label>
                             <span>Servings</span>
                             <input
-                              aria-label={`Leftover recipe servings ${row.name}`}
+                              aria-label={`Recipe servings ${row.name}`}
                               inputMode="numeric"
                               value={leftoverServings[row.id] ?? (row.servings ? String(row.servings) : '')}
                               onChange={(e) => setLeftoverServings((current) => ({ ...current, [row.id]: e.target.value }))}
@@ -4529,7 +4529,7 @@ export default function RestaurantPage() {
                             <li key={`${row.id}-${line.ingredient_id}`} className="rest-order-line">
                               <span className="name">{line.name}</span>
                               <input
-                                aria-label={`Leftover recipe line quantity ${line.name} on ${row.name}`}
+                                aria-label={`Recipe line quantity ${line.name} on ${row.name}`}
                                 inputMode="decimal"
                                 value={leftoverRecipeLineQuantities[`${row.id}:${line.ingredient_id}`] ?? String(line.quantity ?? '0')}
                                 onChange={(e) => setLeftoverRecipeLineQuantities((current) => ({
@@ -4540,7 +4540,7 @@ export default function RestaurantPage() {
                               <button
                                 type="button"
                                 className="rd-link"
-                                aria-label={`Remove leftover recipe line ${line.name} on ${row.name}`}
+                                aria-label={`Remove recipe line ${line.name} on ${row.name}`}
                                 onClick={() => removeLeftoverRecipeLine(row, line)}
                               >
                                 Remove
@@ -4552,7 +4552,7 @@ export default function RestaurantPage() {
                           <label>
                             <span>Ingredient</span>
                             <select
-                              aria-label={`Leftover recipe ingredient ${row.name}`}
+                              aria-label={`Recipe ingredient ${row.name}`}
                               value={leftoverRecipeIngredient[row.id] ?? ''}
                               onChange={(e) => setLeftoverRecipeIngredient((current) => ({ ...current, [row.id]: e.target.value }))}
                             >
@@ -4566,7 +4566,7 @@ export default function RestaurantPage() {
                           </label>
                           <button
                             type="button"
-                            aria-label={`Add leftover recipe ingredient ${row.name}`}
+                            aria-label={`Add recipe ingredient ${row.name}`}
                             onClick={() => addLeftoverRecipeIngredient(row)}
                           >
                             + Add
@@ -4580,7 +4580,7 @@ export default function RestaurantPage() {
                               <button
                                 type="button"
                                 className="rd-danger"
-                                aria-label={`Retire leftover recipe ${row.name}`}
+                                aria-label={`Retire recipe ${row.name}`}
                                 onClick={async () => {
                                   setError('');
                                   try {
@@ -4600,7 +4600,7 @@ export default function RestaurantPage() {
                           </div>
                         ) : null}
                         <div className="rest-order-actions rd-row-actions">
-                          <button type="button" className="rd-primary" aria-label={`Save leftover recipe ${row.name}`} onClick={() => saveLeftoverRecipe(row)}>
+                          <button type="button" className="rd-primary" aria-label={`Save recipe ${row.name}`} onClick={() => saveLeftoverRecipe(row)}>
                             Save
                           </button>
                           <button type="button" onClick={() => setEditingRecipe('')}>Close</button>

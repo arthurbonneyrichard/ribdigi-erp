@@ -96,8 +96,8 @@ const TENANT_ITEMS: NavItem[] = [
   ['POS', '/pos', 'pos'],
   ['Suppliers', '/purchasing?tab=suppliers', 'purchasing'],
   ['Orders', '/purchasing?tab=orders', 'purchasing'],
-  ['Receive Goods', '/purchasing?tab=grn', 'purchasing'],
-  ['Supplier Bills', '/purchasing?tab=invoices', 'purchasing'],
+  ['Receive goods', '/purchasing?tab=grn', 'purchasing'],
+  ['Supplier bills', '/purchasing?tab=invoices', 'purchasing'],
   ['Returns', '/purchasing?tab=returns', 'purchasing'],
   ['Payments', '/credit?kind=payable&panel=pay', 'credit'],
   ['Balances', '/credit?kind=payable', 'credit'],
@@ -153,8 +153,8 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
   { id: 'purchases', label: 'Purchases', items: [
     ['Suppliers', '/purchasing?tab=suppliers', 'purchasing'],
     ['Orders', '/purchasing?tab=orders', 'purchasing'],
-    ['Receive Goods', '/purchasing?tab=grn', 'purchasing'],
-    ['Supplier Bills', '/purchasing?tab=invoices', 'purchasing'],
+    ['Receive goods', '/purchasing?tab=grn', 'purchasing'],
+    ['Supplier bills', '/purchasing?tab=invoices', 'purchasing'],
     ['Returns', '/purchasing?tab=returns', 'purchasing'],
     ['Payments', '/credit?kind=payable&panel=pay', 'credit'],
     ['Balances', '/credit?kind=payable', 'credit'],
@@ -539,6 +539,19 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
     </>
   ),
+  customers: (
+    <>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21v-1a7 7 0 0 1 14 0v1" />
+    </>
+  ),
+  gift: (
+    <>
+      <rect x="3" y="8" width="18" height="4" rx="1" />
+      <path d="M12 8v13M5 12v9h14v-9" />
+      <path d="M12 8c-2-4-6-4-6-1.5S9 8 12 8c3 0 6-1 6-1.5S14 4 12 8z" />
+    </>
+  ),
   support: (
     <>
       <circle cx="12" cy="12" r="9" />
@@ -567,6 +580,14 @@ const NAV_GROUP_ICON: Record<string, string> = {
   'hotel-people': 'users',
   'hotel-reports': 'reports',
   'hotel-settings': 'company',
+};
+
+/** Items whose module icon would repeat a sibling's get their own picture. */
+const NAV_ITEM_ICON: Record<string, string> = {
+  '/customers': 'customers',
+  '/gift-cards': 'gift',
+  '/platform': 'dashboard',
+  '/platform/billing': 'credit',
 };
 
 function NavIcon({ name }: { name: string }) {
@@ -1809,7 +1830,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                   onTouchStart={() => warmDestination(h)}
                 >
                   <span className="nav-ico">
-                    <NavIcon name={module} />
+                    <NavIcon name={NAV_ITEM_ICON[hrefParts(h).path] || module} />
                   </span>
                   <span className="nav-label">{label}</span>
                 </Link>

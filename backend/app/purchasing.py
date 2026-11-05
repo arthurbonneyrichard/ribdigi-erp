@@ -1946,7 +1946,7 @@ async def post_purchase_return(
         tenant_id=tenant_id,
         category="system",
         title="Purchase return posted",
-        message=f"Return {ret.return_number} / {ret.debit_note_number} for {credit:.2f}.",
+        message=f"Return {ret.return_number} / {ret.debit_note_number} for {credit:,.2f}.",
         entity_type="purchase_return",
         entity_id=ret.id,
     )

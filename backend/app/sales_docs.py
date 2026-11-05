@@ -1326,8 +1326,8 @@ async def post_return(
         title="Sales return posted",
         message=(
             f"Return {ret.return_number} / {ret.credit_note_number} posted for "
-            f"{return_total:.2f} ({method}"
-            + (f", refunded {excess:.2f}" if method == "refund" and excess > 1e-9 else "")
+            f"{return_total:,.2f} ({method}"
+            + (f", refunded {excess:,.2f}" if method == "refund" and excess > 1e-9 else "")
             + ")."
         ),
         entity_type="sales_return",
