@@ -9,6 +9,7 @@ const out = fs.mkdtempSync(path.join(os.tmpdir(), 'ribdigi-offline-test-'));
 const tests = [
   'lib/connectivity.test.ts',
   'lib/formatSession.test.ts',
+  'lib/posLock.test.ts',
   'lib/posOffline.test.ts',
   'lib/posOfflineQueue.test.ts',
 ];

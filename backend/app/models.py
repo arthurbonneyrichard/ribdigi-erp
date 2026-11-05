@@ -2862,6 +2862,9 @@ class RestaurantOrder(Base):
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Who took the money and on which till (the waiter who opened the bill stays in created_by).
+    completed_by: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    completed_device_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 class RestaurantOrderLine(Base):
@@ -3440,3 +3443,135 @@ class HotelShopSaleLine(Base):
     unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+
+
+class PosCashierPasscode(Base):
+    """A staff member's personal till passcode.
+
+    ``lookup_hash`` is a keyed HMAC, so a typed passcode finds its cashier in one indexed
+    read and two active cashiers in a company cannot share a code. ``passcode_hash`` is
+    bcrypt and is what proves the match. The passcode itself is never stored.
+    """
+
+    __tablename__ = "pos_cashier_passcodes"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "user_id", name="uq_pos_cashier_passcode_user"),
+        Index(
+            "uq_pos_cashier_passcode_active_lookup",
+            "tenant_id",
+            "lookup_hash",
+            unique=True,
+            postgresql_where=text("is_active"),
+            sqlite_where=text("is_active = 1"),
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    lookup_hash: Mapped[str] = mapped_column(String(64))
+    passcode_hash: Mapped[str] = mapped_column(String(255))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class PosOperatorSession(Base):
+    """One cashier's stint on one till. A takeover ends this row and starts a new one."""
+
+    __tablename__ = "pos_operator_sessions"
+    __table_args__ = (
+        Index(
+            "uq_pos_operator_session_live",
+            "tenant_id",
+            "device_id",
+            "surface",
+            unique=True,
+            postgresql_where=text("ended_at IS NULL"),
+            sqlite_where=text("ended_at IS NULL"),
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    # retail | restaurant: each desk's till keeps its own sessions.
+    surface: Mapped[str] = mapped_column(String(20), default="retail")
+    device_id: Mapped[str] = mapped_column(String(64), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    # The account signed in on the browser; may differ from the cashier at the till.
+    login_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    unlock_method: Mapped[str] = mapped_column(String(20), default="passcode")
+    previous_session_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    last_activity_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    locked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    end_reason: Mapped[str | None] = mapped_column(String(30), nullable=True)
+
+
+class PosUnlockThrottle(Base):
+    """Wrong-passcode counter for a till or a signed-in account."""
+
+    __tablename__ = "pos_unlock_throttles"
+    __table_args__ = (UniqueConstraint("tenant_id", "scope_key", name="uq_pos_unlock_throttle_scope"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    scope_key: Mapped[str] = mapped_column(String(120))
+    failed_count: Mapped[int] = mapped_column(Integer, default=0)
+    window_started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class RestaurantMenuSettings(Base):
+    """A restaurant's public digital menu: its private link and how the board looks."""
+
+    __tablename__ = "restaurant_menu_settings"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", name="uq_restaurant_menu_settings_tenant"),
+        UniqueConstraint("public_token", name="uq_restaurant_menu_public_token"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    public_token: Mapped[str] = mapped_column(String(48))
+    is_published: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    tagline: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    accent_color: Mapped[str] = mapped_column(String(7), default="#4AB012", server_default="#4AB012")
+    # forest (dark) | mist (light)
+    board_style: Mapped[str] = mapped_column(String(20), default="forest", server_default="forest")
+    board_rotate_seconds: Mapped[int] = mapped_column(Integer, default=12, server_default="12")
+    show_unavailable: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class RestaurantMenuCategory(Base):
+    __tablename__ = "restaurant_menu_categories"
+    __table_args__ = (UniqueConstraint("tenant_id", "name", name="uq_restaurant_menu_category_name"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    is_published: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class RestaurantMenuItem(Base):
+    """A dish on the digital menu. Name, price, description and photo stay on the dish itself,
+    so the till and the menu can never show different prices."""
+
+    __tablename__ = "restaurant_menu_items"
+    __table_args__ = (UniqueConstraint("tenant_id", "product_id", name="uq_restaurant_menu_item_product"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    category_id: Mapped[str] = mapped_column(ForeignKey("restaurant_menu_categories.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    is_published: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    is_featured: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    promo_label: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

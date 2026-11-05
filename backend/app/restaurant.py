@@ -3795,7 +3795,9 @@ async def _release_table_if_clear(db: AsyncSession, tenant_id: str, table_id: st
         table.status = "available"
 
 
-async def complete_order(db: AsyncSession, tenant_id: str, order_id: str, *, user_id: str | None) -> m.RestaurantOrder:
+async def complete_order(
+    db: AsyncSession, tenant_id: str, order_id: str, *, user_id: str | None, device_id: str | None = None
+) -> m.RestaurantOrder:
     order = await _order(db, tenant_id, order_id, user_id=user_id)
     if order.status == "completed":
         return order
@@ -3808,6 +3810,8 @@ async def complete_order(db: AsyncSession, tenant_id: str, order_id: str, *, use
     order.journal_entry_id = await _post_sale_journal(db, tenant_id, order, user_id=user_id, reverse=False)
     order.status = "completed"
     order.completed_at = _now()
+    order.completed_by = user_id
+    order.completed_device_id = device_id
     await till_svc.stamp_paid_order(db, order, user_id=user_id)
     await _release_table_if_clear(db, tenant_id, order.table_id)
     tickets = (
@@ -3838,7 +3842,8 @@ async def cancel_order(db: AsyncSession, tenant_id: str, order_id: str, *, user_
     await audit_svc.record_event(
         db, tenant_id=tenant_id, user_id=user_id, module="restaurant",
         action="restaurant_order_voided" if void else "restaurant_order_cancelled",
-        entity="restaurant_order", entity_id=order.id, details={"status": order.status},
+        entity="restaurant_order", entity_id=order.id,
+        details={"status": order.status, "total": money_json(order.total_amount)},
     )
     return order
 
@@ -4033,6 +4038,8 @@ def serialize_order(row: m.RestaurantOrder) -> dict:
         "opened_at": row.created_at.isoformat() if row.created_at else None,
         "completed_at": row.completed_at.isoformat() if row.completed_at else None,
         "till_shift_id": row.till_shift_id,
+        "created_by": row.created_by,
+        "completed_by": row.completed_by,
     }
 
 

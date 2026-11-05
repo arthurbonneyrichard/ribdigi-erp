@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import CashierPresencePanel from '../../../components/CashierPresencePanel';
 import FormModal from '../../../components/FormModal';
 import PageHeader from '../../../components/PageHeader';
+import CashierPasscodes from '../../../components/CashierPasscodes';
 import { api, apiFetch } from '../../../lib/api';
 import { normalizeIndustry } from '../../../lib/industries';
 import { industryAllowsModule } from '../../../lib/industryModules';
@@ -1670,6 +1671,8 @@ export default function Page() {
       </table>
       </div>
       </section>
+
+      {permChecked ? <CashierPasscodes canManage={canWrite} /> : null}
 
       {permChecked && (
         <CashierPresencePanel

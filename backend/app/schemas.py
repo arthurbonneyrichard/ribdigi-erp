@@ -9355,6 +9355,8 @@ class PosSaleCreate(BaseModel):
     device_id: str | None = Field(default=None, max_length=64)
     offline_created_at: IsoDateQueryValue | None = None
     offline_sync: bool = False
+    # The cashier who began this sale, when another cashier took it over at the till.
+    started_by_user_id: UuidIdValue | None = None
     # Server-issued offline grant the sale was rung under; omit for legacy queue rows.
     offline_grant_id: UuidIdValue | None = None
     # Manager-approved conflict resolution (OfflineSyncEvent id) for this queued sale.

@@ -20,6 +20,7 @@ import {
   type PassphraseCiphertext,
 } from './deviceCrypto';
 import { fetchOutsideJournal, mirrorSaleToOutsideJournal } from './posOfflineJournal';
+import { clearOfflineVerifier, isTillLocked } from './posLock';
 
 const DB_NAME = 'ribdigi-pos-offline';
 const DB_VERSION = 3;
@@ -866,6 +867,8 @@ export async function flushOfflineQueue(
   }
   const result: FlushResult = { synced: 0, needsAttention: 0, retrying: 0, authRequired: false, otherUsers: 0 };
   if (!ctx.tenant_id || !ctx.user_id) return result;
+  // Behind the lock nobody is the operator, so a sale would sync under the wrong person.
+  if (isTillLocked()) return result;
   await migrateLegacyQueueStates();
   const now = Date.now();
   const all = await listQueuedSales();
@@ -922,6 +925,14 @@ export async function flushOfflineQueue(
         rec.last_error_message = 'Sign in again to sync. The sale is kept on this device.';
         await persistRecord(rec);
         result.authRequired = true;
+        break;
+      }
+      if (status === 423) {
+        // The till locked while syncing. Nothing is wrong with the sale.
+        rec.state = 'pending';
+        rec.retry_count = Math.max(0, rec.retry_count - 1);
+        await persistRecord(rec);
+        result.retrying += 1;
         break;
       }
       if (!status || status >= 500 || status === 429 || status === 408) {
@@ -1339,6 +1350,7 @@ export async function importRecoveryPackage(
 
 /** Sign-out removes the grant and cached catalogue/customers. Queued records always stay. */
 export async function clearOfflineOnLogout(): Promise<void> {
+  clearOfflineVerifier();
   catalogMem = null;
   const db = await openDb();
   await new Promise<void>((resolve, reject) => {

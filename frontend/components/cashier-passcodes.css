@@ -1,0 +1,17 @@
+.cpass{display:grid;gap:10px;margin-top:22px}
+.cpass h2{margin:0;font-size:18px;color:var(--forest,#003D1F)}
+.cpass-note{margin:0;font-size:14px;color:var(--muted,#4D5D56)}
+.cpass-error{margin:0;font-weight:600;color:#B3261E}
+.cpass-ok{margin:0;color:var(--deep-green,#006B2E)}
+.cpass-reveal{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--brand,#4AB012);border-radius:10px;background:var(--mist,#F5FAF0)}
+.cpass-reveal code{font-size:24px;font-weight:700;letter-spacing:.14em;color:var(--forest,#003D1F)}
+.cpass-scroll{overflow-x:auto}
+.cpass-table{width:100%;border-collapse:collapse;font-size:14px}
+.cpass-table th,.cpass-table td{padding:9px 10px;border-bottom:1px solid var(--line,#D4E5C4);text-align:left;font-weight:400}
+.cpass-table thead th{font-size:12.5px;color:var(--muted,#4D5D56)}
+.cpass-table tbody th{font-weight:600}
+.cpass-chip{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12.5px;background:#EEF2EC;color:var(--muted,#4D5D56)}
+.cpass-chip.is-active{background:#DDF2CC;color:#1F5A06}
+.cpass-chip.is-inactive{background:#FFF6E0;color:#7A5200}
+.cpass-actions,.cpass-edit{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.cpass-edit input{width:104px;min-height:34px;padding:0 8px;border:1px solid var(--line,#D4E5C4);border-radius:8px;letter-spacing:.1em}

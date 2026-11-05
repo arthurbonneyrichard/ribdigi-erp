@@ -1,0 +1,18 @@
+.cperf{display:grid;gap:18px}
+.cperf-controls{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px}
+.cperf-controls label{display:grid;gap:3px;font-size:13px;color:var(--muted,#4D5D56)}
+.cperf-controls input,.cperf-controls select{min-height:38px;padding:0 8px;border:1px solid var(--line,#D4E5C4);border-radius:8px;background:#fff;color:var(--ink,#10211B)}
+.cperf-chips{display:flex;gap:6px}
+.cperf-chips button{min-height:38px;padding:0 14px;border:1px solid var(--line,#D4E5C4);border-radius:999px;background:#fff;color:var(--ink,#10211B);cursor:pointer}
+.cperf-chips button.on{background:var(--forest,#003D1F);border-color:var(--forest,#003D1F);color:#fff}
+.cperf-scroll{overflow-x:auto}
+.cperf-table{width:100%;border-collapse:collapse;font-size:14px;background:#fff;border:1px solid var(--line,#D4E5C4);border-radius:10px}
+.cperf-table caption{padding:0 0 8px;text-align:left;font-size:15px;font-weight:700;color:var(--forest,#003D1F)}
+.cperf-table th,.cperf-table td{padding:9px 12px;border-bottom:1px solid var(--line,#D4E5C4);text-align:left;font-weight:400;white-space:nowrap}
+.cperf-table thead th{font-size:12.5px;color:var(--muted,#4D5D56);background:var(--mist,#F5FAF0)}
+.cperf-table tbody th{font-weight:600}
+.cperf-table tfoot th,.cperf-table tfoot td{font-weight:700;border-bottom:0}
+.cperf-table .num{text-align:right;font-variant-numeric:tabular-nums}
+.cperf-table small{color:var(--muted,#4D5D56)}
+.cperf-note{margin:0;color:var(--muted,#4D5D56)}
+.cperf-error{margin:0;color:#B3261E;font-weight:600}

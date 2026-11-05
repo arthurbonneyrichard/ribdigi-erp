@@ -908,7 +908,9 @@ async def restaurant_complete(
     claims=Depends(require_permission("restaurant", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    row = await restaurant_svc.complete_order(db, claims["tenant_id"], order_id, user_id=claims.get("sub"))
+    row = await restaurant_svc.complete_order(
+        db, claims["tenant_id"], order_id, user_id=claims.get("sub"), device_id=claims.get("pos_device_id")
+    )
     await db.commit()
     return _env(restaurant_svc.serialize_order(row), "Order completed")
 
@@ -1234,6 +1236,66 @@ async def restaurant_period_report(
             user_id=claims.get("sub"),
             from_date=parse_date(from_date),
             to_date=parse_date(to_date),
+        )
+    )
+
+
+@router.get("/reports/cashiers")
+async def restaurant_cashier_report(
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    period: Annotated[Literal["day", "week", "month"], Query()] = "day",
+    cashier_id: Annotated[UuidIdValue | None, Query()] = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import cashier_reports
+    from app import store_access
+    from app.reports import parse_date
+
+    scope = await store_access.report_store_kwargs(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], store_id=None
+    )
+    return _env(
+        await cashier_reports.restaurant_performance(
+            db,
+            claims["tenant_id"],
+            from_date=parse_date(from_date),
+            to_date=parse_date(to_date, end_of_day=True),
+            period=period,
+            cashier_id=cashier_id,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
+        )
+    )
+
+
+@router.get("/reports/cashiers/transactions")
+async def restaurant_cashier_transactions(
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    cashier_id: Annotated[UuidIdValue | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=500)] = 200,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import cashier_reports
+    from app import store_access
+    from app.reports import parse_date
+
+    scope = await store_access.report_store_kwargs(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], store_id=None
+    )
+    return _env(
+        await cashier_reports.restaurant_transactions(
+            db,
+            claims["tenant_id"],
+            from_date=parse_date(from_date),
+            to_date=parse_date(to_date, end_of_day=True),
+            cashier_id=cashier_id,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
+            limit=limit,
         )
     )
 

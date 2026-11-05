@@ -14,6 +14,8 @@ import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import { countAndCloseOpenShift, openShiftForSignedInUser, setOpeningCash, shiftOpenError, tillBlockedReason } from '../../../lib/cashierShift';
 import { dispatchDrawerKick, POS_RETURN_PANEL_EVENT, POS_SHIFT_PANEL_EVENT, setPosDrawerBridge } from '../../../lib/posDrawerBridge';
 import { TillReturnPanel } from './TillReturnPanel';
+import PosLockGate, { useTillSale } from '../../../components/PosLockGate';
+import { isTillLocked } from '../../../lib/posLock';
 import { setPosOfflinePanelProps } from '../../../lib/posOfflineSlot';
 import {
   CATALOG_NOT_SAVED,
@@ -421,6 +423,14 @@ const ProductThumb = memo(function ProductThumb({
 });
 
 export default function Page() {
+  return (
+    <PosLockGate surface="retail">
+      <PosTill />
+    </PosLockGate>
+  );
+}
+
+function PosTill() {
   useCompanyFormat();
   const [q, setQ] = useState('');
   const [rows, setRows] = useState<Product[]>([]);
@@ -588,6 +598,8 @@ export default function Page() {
   }, [cart, cartDiscount, cartDiscountType, groupDiscountPct]);
   const cartDiscountAmount = cartTotals.discount;
   const cartTotal = cartTotals.due;
+  // The cashier who began this sale, when someone else took it over at the till.
+  const [saleStartedBy, setSaleStartedBy] = useState<string | null>(null);
   const cartCount = useMemo(() => cart.reduce((sum, c) => sum + c.quantity, 0), [cart]);
   const catalogCategories = useMemo(() => {
     const names = new Set<string>();
@@ -679,8 +691,37 @@ export default function Page() {
     if (!canCreditSale && paymentMethod === 'credit') setPaymentMethod('cash');
   }, [canCreditSale, paymentMethod]);
 
+  const saleOwner = useMemo(
+    () => (meId && tenantId ? { id: meId, name: cashierName || 'Cashier', tenantId } : null),
+    [cashierName, meId, tenantId]
+  );
+  const saleData = useMemo(
+    () => ({ cart, cartDiscount, cartDiscountType, couponCode, customerId, customerName }),
+    [cart, cartDiscount, cartDiscountType, couponCode, customerId, customerName]
+  );
+  const { handover } = useTillSale({
+    surface: 'retail',
+    owner: saleOwner,
+    itemCount: cart.length,
+    total: cartTotal,
+    data: saleData,
+    startedBy: saleStartedBy,
+    restore: (saved, startedBy) => {
+      setCart(saved.cart || []);
+      setCartDiscount(saved.cartDiscount || '');
+      setCartDiscountType(saved.cartDiscountType === 'percent' ? 'percent' : 'fixed');
+      setCouponCode(saved.couponCode || '');
+      setCustomerId(saved.customerId || '');
+      setCustomerName(saved.customerName || '');
+      setSaleStartedBy(startedBy);
+    },
+  });
+  const tillHeld = useRef(false);
+  tillHeld.current = Boolean(handover);
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if (isTillLocked() || tillHeld.current) return;
       consumeWedgeKey(event, wedgeState.current, (query) => {
         wedgeLookupRef.current(query);
       });
@@ -695,7 +736,7 @@ export default function Page() {
     pay: () => void checkout(),
     next: startNextSale,
     done: payAsReprint,
-    blocked: shiftPanelOpen || returnPanelOpen,
+    blocked: shiftPanelOpen || returnPanelOpen || isTillLocked() || tillHeld.current,
   };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -1658,6 +1699,7 @@ export default function Page() {
   }
 
   function clearCart() {
+    setSaleStartedBy(null);
     setCart([]);
     setCartDiscount('');
     setCouponCode('');
@@ -1797,6 +1839,7 @@ export default function Page() {
       customer_name: customerName.trim() || null,
       items,
     };
+    if (saleStartedBy) body.started_by_user_id = saleStartedBy;
     let payments: { payment_method: string; amount: number; reference: string | null }[] | null = null;
     if (splitTender) {
       if (splitError) {
@@ -2292,6 +2335,7 @@ export default function Page() {
 
   return (
     <>
+      {handover}
       <div className="tpos pos-ui">
         <TillReturnPanel
           open={returnPanelOpen}

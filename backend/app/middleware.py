@@ -48,6 +48,7 @@ STOREFRONT_PUBLIC_PREFIXES = (
     "/api/v1/storefront/account",
     # Restaurant website (menu, online orders, bookings): guests get their own bucket too.
     "/api/v1/public/restaurant-site",
+    "/api/v1/public/menu",
 )
 
 AUTH_PATH_PREFIXES = (

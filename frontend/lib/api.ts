@@ -7,6 +7,7 @@ import {
   hydrateAuth,
   setAuthTokens,
 } from './authStorage';
+import { POS_OPERATOR_HEADER, notePosLockedResponse, tillOperatorToken } from './posLock';
 
 /** Browser calls the Next.js origin; Next rewrites /api/v1 to the backend (avoids CORS Failed to fetch). */
 export function apiRoot(): string {
@@ -343,6 +344,9 @@ export async function apiFetch(path: string, opts: RequestInit = {}, retryOn401 
   if (token) headers.Authorization = `Bearer ${token}`;
   const tenantId = tenantHeaderValue(tenant);
   if (tenantId) headers['X-Tenant-ID'] = tenantId;
+  // On a till screen the cashier who unlocked it acts, not the account signed in on the browser.
+  const operatorToken = !publicAuth && !headers[POS_OPERATOR_HEADER] ? tillOperatorToken() : null;
+  if (operatorToken) headers[POS_OPERATOR_HEADER] = operatorToken;
   // Let the browser set multipart boundary for FormData
   if (isFormData) delete headers['Content-Type'];
 
@@ -376,6 +380,8 @@ export async function apiFetch(path: string, opts: RequestInit = {}, retryOn401 
     throw err;
   }
   merged.cleanup();
+
+  if (response.status === 423) notePosLockedResponse();
 
   if (response.status === 401 && retryOn401 && !path.startsWith('/auth/') && typeof window !== 'undefined') {
     const refreshed = await refreshSession();

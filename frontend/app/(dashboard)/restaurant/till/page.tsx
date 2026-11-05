@@ -8,6 +8,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../../../lib/api';
+import { getMe } from '../../../../lib/meCache';
+import PosLockGate, { PosLockButton, useTillSale } from '../../../../components/PosLockGate';
 import { formatMoney } from '../../../../lib/format';
 import './restaurant-till.css';
 
@@ -78,6 +80,14 @@ function isMenuItem(row: Row, recipeMenu: Set<string>, recipeIngredient: Set<str
 }
 
 export default function RestaurantTillPage() {
+  return (
+    <PosLockGate surface="restaurant">
+      <RestaurantTill />
+    </PosLockGate>
+  );
+}
+
+function RestaurantTill() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -190,6 +200,38 @@ export default function RestaurantTillPage() {
   const table = tables.find((t) => t.id === tableId) || null;
 
   const draftTotal = draft.reduce((sum, line) => sum + lineAmount(line), 0);
+
+  const [ticketOwner, setTicketOwner] = useState<{ id: string; name: string; tenantId: string } | null>(null);
+  useEffect(() => {
+    let live = true;
+    void getMe()
+      .then((res) => {
+        const me = res?.data;
+        if (live && me?.id && me?.tenant_id) {
+          setTicketOwner({ id: String(me.id), name: String(me.full_name || me.email || 'Cashier'), tenantId: String(me.tenant_id) });
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, []);
+  const ticketData = useMemo(() => ({ draft, mode, tableId, guest, phone, address }), [draft, mode, tableId, guest, phone, address]);
+  const { handover } = useTillSale({
+    surface: 'restaurant',
+    owner: ticketOwner,
+    itemCount: draft.length,
+    total: draftTotal,
+    data: ticketData,
+    restore: (saved) => {
+      setDraft(saved.draft || []);
+      setMode(saved.mode || 'dine_in');
+      setTableId(saved.tableId || '');
+      setGuest(saved.guest || '');
+      setPhone(saved.phone || '');
+      setAddress(saved.address || '');
+    },
+  });
   const sentTotal = Number(current?.total_amount || 0);
 
   function resetTicket(nextMode: Mode = mode) {
@@ -444,6 +486,7 @@ export default function RestaurantTillPage() {
 
   return (
     <div className="rtill">
+      {handover}
       <header className="rtill-top">
         <div className="rtill-brand">
           <span className="rtill-mark" aria-hidden>
@@ -469,6 +512,7 @@ export default function RestaurantTillPage() {
           ))}
         </div>
         <div className="rtill-top-right">
+          <PosLockButton className="rtill-shift-btn" />
           {stores.length > 1 ? (
             <select
               aria-label="Restaurant branch"

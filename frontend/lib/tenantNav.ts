@@ -193,6 +193,7 @@ export const RESTAURANT_NAV_ITEMS: NavItem[] = [
   ['Restaurant till', '/restaurant/till', 'restaurant'],
   ['Ingredients', '/restaurant/ingredients', 'inventory'],
   ['Menu items', '/restaurant/ingredients?tab=menu', 'inventory'],
+  ['Digital menu', '/restaurant/menu', 'inventory'],
   ['Purchasing', '/restaurant/purchasing', 'purchasing'],
   ['Suppliers', '/restaurant/purchasing?tab=suppliers', 'purchasing'],
   ['Expenses', '/restaurant/expenses', 'expenses'],
@@ -250,6 +251,7 @@ export const RESTAURANT_NAV_GROUPS: NavGroup[] = [
     items: [
       ['Ingredients', '/restaurant/ingredients', 'inventory'],
       ['Menu items', '/restaurant/ingredients?tab=menu', 'inventory'],
+      ['Digital menu', '/restaurant/menu', 'inventory'],
       ['Purchasing', '/restaurant/purchasing', 'purchasing'],
       ['Suppliers', '/restaurant/purchasing?tab=suppliers', 'purchasing'],
     ],

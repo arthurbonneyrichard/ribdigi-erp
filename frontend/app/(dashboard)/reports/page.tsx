@@ -28,12 +28,14 @@ import { useStoreContext } from '../../../lib/storeContext';
 import OfflineProvisionalNotice from '../../../components/OfflineProvisionalNotice';
 import EmptyState from '../../../components/EmptyState';
 import PageHeader from '../../../components/PageHeader';
+import CashierPerformance from '../../../components/CashierPerformance';
 import './report-ui.css';
 
 type Tab =
   | 'summary'
   | 'sales'
   | 'salesperson'
+  | 'cashiers'
   | 'customers'
   | 'stores'
   | 'departments'
@@ -51,6 +53,7 @@ const REPORT_TABS: Tab[] = [
   'summary',
   'sales',
   'salesperson',
+  'cashiers',
   'customers',
   'stores',
   'departments',
@@ -353,6 +356,12 @@ export default function Page() {
     }
 
     try {
+      // This report loads its own data, with its own day, week and month controls.
+      if (nextTab === 'cashiers') {
+        setData(null);
+        setLoading(false);
+        return;
+      }
       if (nextTab === 'schedules') {
         const r = await fetchReport('/reports/schedules');
         if (isStale()) return;
@@ -393,7 +402,7 @@ export default function Page() {
       }
 
       const categoryTrim = categoryId.trim();
-      const paths: Record<Exclude<Tab, 'schedules'>, string> = {
+      const paths: Record<Exclude<Tab, 'schedules' | 'cashiers'>, string> = {
         summary: `/reports/summary${qs()}`,
         sales: `/reports/sales/products${qs(categoryTrim ? { category_id: categoryTrim } : {})}`,
         salesperson: `/reports/sales/salesperson${qs()}`,
@@ -409,7 +418,7 @@ export default function Page() {
         balancesheet: `/reports/balance-sheet${balanceSheetQs()}`,
         accountstatement: `/reports/account-statement${qs({ account_id: statementAccountId.trim() })}`,
       };
-      const path = paths[nextTab as Exclude<Tab, 'schedules'>];
+      const path = paths[nextTab as Exclude<Tab, 'schedules' | 'cashiers'>];
 
       if (nextTab === 'sales') {
         const report = reportFromTabView('sales', activeView);
@@ -1802,6 +1811,10 @@ export default function Page() {
             onPage={setReportPage}
           />
         </div>
+      )}
+
+      {tab === 'cashiers' && (
+        <CashierPerformance base="/reports/sales/cashiers" storeId={multiStore ? (storeId || ctxStoreId || '').trim() : ''} />
       )}
 
       {tab === 'salesperson' && data && (

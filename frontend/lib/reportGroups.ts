@@ -421,6 +421,15 @@ export const REPORT_CATALOG: ReportDef[] = [
     print: true,
   },
   {
+    id: 'cashiers',
+    tab: 'cashiers',
+    group: 'staff',
+    name: 'Cashier performance',
+    description: 'Till sales, discounts, refunds and sensitive actions by cashier, by day, week or month.',
+    filters: ['store'],
+    audience: 'pos',
+  },
+  {
     id: 'salesperson',
     tab: 'salesperson',
     group: 'staff',

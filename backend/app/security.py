@@ -235,6 +235,11 @@ async def current_claims(
     tenant = await db.get(m.Tenant, tenant_id)
     if not tenant:
         raise HTTPException(status_code=403, detail="Tenant suspended or missing")
+    # On till paths the cashier who unlocked the till acts, not the account signed in on it.
+    from app import pos_lock as pos_lock_svc
+
+    user = await pos_lock_svc.apply_operator(db, request, claims=data, login_user=user)
+    user_id = user.id
     from app import tenants as tenants_svc
 
     tenant = await tenants_svc.ensure_trial_state(db, tenant)

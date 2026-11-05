@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../../../../lib/api';
 import { METHOD_WORDS, MODE_WORDS, money, problem, type Row } from '../../../../lib/restaurantDesk';
+import CashierPerformance from '../../../../components/CashierPerformance';
 import '../restaurant-desk.css';
 
 type Preset = 'today' | '7' | '30' | 'month' | 'custom';
@@ -280,6 +281,14 @@ export default function RestaurantReportsPage() {
           ) : null}
         </div>
       ) : null}
+
+      <section className="rd-panel" aria-label="Cashier performance">
+        <div className="rd-panel-head">
+          <h2>Cashier performance</h2>
+          <small>Who took the money, plus refunds and voids.</small>
+        </div>
+        <CashierPerformance base="/restaurant/reports/cashiers" from={from} to={to} showDiscounts={false} />
+      </section>
     </div>
   );
 }

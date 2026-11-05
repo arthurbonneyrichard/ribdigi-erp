@@ -11,6 +11,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../../../../lib/api';
 import { initials, problem, type Row } from '../../../../lib/restaurantDesk';
+import CashierPasscodes from '../../../../components/CashierPasscodes';
 import '../restaurant-desk.css';
 
 type Tab = 'people' | 'departments';
@@ -240,6 +241,8 @@ export default function RestaurantStaffPage() {
           </label>
         </>
       )}
+
+      {tab === 'people' ? <CashierPasscodes canManage /> : null}
 
       {sheet?.kind === 'person' ? (
         <PersonSheet

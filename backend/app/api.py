@@ -428,6 +428,12 @@ api.include_router(restaurant_api_mod.router)
 api.include_router(restaurant_api_mod.public_router)
 api.include_router(restaurant_api_mod.order_public_router)
 api.include_router(restaurant_api_mod.site_public_router)
+from app import pos_lock_api as pos_lock_api_mod  # noqa: E402
+from app import restaurant_menu_api as restaurant_menu_api_mod  # noqa: E402
+
+api.include_router(pos_lock_api_mod.router)
+api.include_router(restaurant_menu_api_mod.router)
+api.include_router(restaurant_menu_api_mod.public_router)
 from app import hotel_shop_api as hotel_shop_api_mod
 
 api.include_router(hotel_shop_api_mod.router)
@@ -10650,6 +10656,13 @@ async def _pos_sale_impl_body(payload: PosSaleCreate, claims: dict, db: AsyncSes
             )
 
     items = [i.model_dump() for i in payload.items]
+    cashier_row = await db.get(m.User, claims.get("sub"))
+    started_by_id = None
+    if payload.started_by_user_id and payload.started_by_user_id != claims.get("sub"):
+        starter = await db.get(m.User, payload.started_by_user_id)
+        if starter is None or starter.tenant_id != claims["tenant_id"]:
+            raise HTTPException(status_code=422, detail="The cashier who started this sale was not found")
+        started_by_id = starter.id
     offline_sync = bool(payload.offline_sync or payload.offline_created_at)
     offline_grant = None
     resolution = None
@@ -10945,9 +10958,13 @@ async def _pos_sale_impl_body(payload: PosSaleCreate, claims: dict, db: AsyncSes
         "offline_resolution_event_id": resolution.id if resolution is not None else None,
         "local_receipt_number": payload.local_receipt_number,
         "original_session_id": original_session_id,
-        "device_id": payload.device_id,
+        "device_id": payload.device_id or claims.get("pos_device_id"),
         "request_fingerprint": request_fingerprint,
         "cashier_user_id": claims.get("sub"),
+        "cashier_name": cashier_row.full_name if cashier_row is not None else None,
+        "pos_operator_session_id": claims.get("pos_operator_session_id"),
+        # Set when this cashier took over a sale another cashier had started.
+        "started_by_user_id": started_by_id,
         "paid_amount": settlement["paid_amount"],
         "credit_amount": settlement["credit_amount"],
         "balance_due": settlement["balance_due"],
@@ -14048,6 +14065,66 @@ async def report_sales_returns(
             status=status,
             store_id=scope["store_id"],
             store_ids=scope["store_ids"],
+        )
+    )
+
+
+@api.get("/reports/sales/cashiers")
+async def report_sales_cashiers(
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    period: Annotated[Literal["day", "week", "month"], Query()] = "day",
+    cashier_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import cashier_reports as cashier_reports_svc
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], store_id=store_id
+    )
+    return env(
+        await cashier_reports_svc.retail_performance(
+            db,
+            claims["tenant_id"],
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            period=period,
+            cashier_id=cashier_id,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
+        )
+    )
+
+
+@api.get("/reports/sales/cashiers/transactions")
+async def report_sales_cashier_transactions(
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    cashier_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=500)] = 200,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import cashier_reports as cashier_reports_svc
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], store_id=store_id
+    )
+    return env(
+        await cashier_reports_svc.retail_transactions(
+            db,
+            claims["tenant_id"],
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+            cashier_id=cashier_id,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
+            limit=limit,
         )
     )
 

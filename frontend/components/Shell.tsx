@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { industryHomePath } from '../lib/industryDashboard';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { POS_LOCK_NOW_EVENT, wasLeftLocked } from '../lib/posLock';
 import { api, clearSessionAndRedirect, idleTimeoutMs, isConfirmedAuthExpiry, tenantHeaderValue, getAccessToken, hydrateAuth } from '../lib/api';
 import { formatNoticeTime, notifyCategoryLabel } from '../lib/notifyText';
 import { industryAllowsModule, INDUSTRY_SPECIFIC_MODULES } from '../lib/industryModules';
@@ -840,6 +841,20 @@ function PosShiftTopButton() {
   );
 }
 
+/** Locks the till at once: to step away, or to hand it to another cashier. */
+function PosLockTopButton() {
+  return (
+    <button
+      type="button"
+      className="tpos-btn pos-top-drawer-btn"
+      aria-label="Lock this till"
+      onClick={() => window.dispatchEvent(new Event(POS_LOCK_NOW_EVENT))}
+    >
+      Lock
+    </button>
+  );
+}
+
 /** Opens the till's return panel: find a receipt, choose items, refund. */
 function PosReturnTopButton() {
   return (
@@ -1255,6 +1270,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   }
 
   async function logout() {
+    // A locked till signs out only after its passcode: send them back to the lock.
+    if (wasLeftLocked()) {
+      window.location.assign(normalizeIndustry(industry) === 'restaurant' ? '/restaurant/till' : '/pos');
+      return;
+    }
     try {
       if (
         shouldPromptDrawerCountOnSignOut({
@@ -1871,6 +1891,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                 <div className="pos-top-tools">
                   <PosShiftTopButton />
                   <PosReturnTopButton />
+                  <PosLockTopButton />
                   <PosDrawerTopControls />
                 </div>
               </>

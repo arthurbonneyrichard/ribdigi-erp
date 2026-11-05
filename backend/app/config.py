@@ -71,6 +71,9 @@ class Settings(BaseSettings):
     BACKUP_RETENTION_COUNT: int = 30
     BACKUP_ENCRYPTION_KEY: str = ""
     TOTP_ENCRYPTION_KEY: str = ""
+    # Keys the cashier passcode lookup. Empty derives it from JWT_SECRET_KEY, so rotating that
+    # secret would mean reissuing every passcode. Set this once in production.
+    POS_PASSCODE_PEPPER: str = ""
     TOTP_ENFORCED_ROLES: str = "company_admin,super_admin,platform_owner,platform_admin"
     # When false, login skips TOTP/passkey challenge and enrollment gates (password + tenant only).
     # Set true in production to require enrolled second factors at sign-in.

@@ -35,6 +35,9 @@ export function middleware(request: NextRequest) {
   if (path === '/order' || path.startsWith('/order/')) {
     return NextResponse.next();
   }
+  if (path === '/menu' || path.startsWith('/menu/')) {
+    return NextResponse.next();
+  }
   if (path === '/stay' || path.startsWith('/stay/')) {
     return NextResponse.next();
   }
