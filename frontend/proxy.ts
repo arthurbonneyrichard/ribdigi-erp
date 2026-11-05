@@ -15,7 +15,7 @@ function hostnameOf(request: NextRequest): string {
   return raw.split(':')[0];
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // Image optimizer is disabled (next.config images.unoptimized); refuse its endpoint outright.
   if (request.nextUrl.pathname.startsWith('/_next/image')) {
     return new NextResponse(null, { status: 404 });

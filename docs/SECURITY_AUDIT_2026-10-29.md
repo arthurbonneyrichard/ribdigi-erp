@@ -42,7 +42,9 @@ Method: dependency scans (pip-audit, npm audit), static analysis (bandit), a rou
 | O7 | DNS-rebind race in the outbound guard | 30 Oct: `outbound.public_transport()` resolves the host, refuses it if any address is not public, and connects to that checked address (TLS still verifies the original host name). Used by webhooks, bank feeds and the WooCommerce connector. Test: `test_outbound_guard_production.py`. |
 | O2 (part) | Encryption keys derived from the JWT secret | Production now logs a warning at startup unless `BACKUP_ENCRYPTION_KEY` and `TOTP_ENCRYPTION_KEY` are both set. 5 Nov: `SECRETS_ENCRYPTION_KEY` gives billing and online-shop gateway secrets their own key; old values keep opening, and `scripts/reencrypt_secrets.py --apply` moves them over. Owner action: set the key in Dokploy, then run the script. |
 
-Still open: O1 (Next 16 upgrade), O2 (owner sets `SECRETS_ENCRYPTION_KEY` and runs the script), O3 (enforce the full CSP), O9 (external pentest, production restore drill).
+5 Nov: O1 and O3 done on branch `next16-upgrade`: Next 16.4.5 and React 19, build still on webpack, `middleware.ts` renamed `proxy.ts`, and the full CSP enforced on production builds (it allows the analytics host and blob: previews). Checked by opening 54 pages on a production build with no errors or CSP violations.
+
+Still open: O2 (owner sets `SECRETS_ENCRYPTION_KEY` and runs the script), O9 (external pentest, production restore drill).
 
 ## Verified in place
 
