@@ -1917,7 +1917,7 @@ export default function HotelPage() {
   return (
     <>
       {show('dashboard') ? (
-        <div className="hdash-hero"><DashboardGreeting desk="Hotel dashboard" place={settings?.property_name || ''} /></div>
+        <DashboardGreeting desk="Hotel dashboard" place={settings?.property_name || ''} />
       ) : (
       <PageHeader
         title={

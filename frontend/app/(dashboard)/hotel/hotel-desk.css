@@ -364,16 +364,7 @@ html[data-theme="dark"] body .main .hotel-rng-nav button.is-on[type="button"]:no
 [data-theme="dark"] .main .hotel-avail-quad .q[class] .k{color:#A9C4B3}
 [data-theme="dark"] .main .hotel-avail-quad .q[class] .n{color:#E8F2E4}
 
-/* Dashboard, second pass: a slim greeting, tinted room tiles, one quiet style below the fold. */
-.main .hdash-hero .dash{margin-bottom:12px !important}
-.main .hdash-hero .dash-hero{padding:14px 20px;min-height:0;border-radius:18px}
-.main .hdash-hero .dash-hero-top{display:none}
-.main .hdash-hero .greet-row{align-items:center;gap:12px}
-.main .hdash-hero .greet{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 8px;margin:0;font-size:24px;line-height:1.2}
-.main .hdash-hero .greet-hello,.main .hdash-hero .greet-name{font-size:24px;line-height:1.2}
-.main .hdash-hero .greet-sub{display:none}
-.main .hdash-hero .greet-date{margin:2px 0 0;font-size:13px}
-.main .hdash-hero .greet-clock{padding:6px 10px;transform:scale(.72);transform-origin:right center;margin:-14px 0}
+/* Dashboard, second pass: tinted room tiles, one quiet style below the fold. */
 .main .hdash button.hboard-room:not(.menu-btn){position:relative;min-height:74px;padding:10px 12px;border:1px solid color-mix(in srgb,var(--hb,var(--line)) 28%,var(--line));border-left-width:1px;border-radius:14px;background:color-mix(in srgb,var(--hb,var(--line)) 9%,var(--white));transition:transform .15s,border-color .15s}
 .main .hdash button.hboard-room:not(.menu-btn):hover{transform:translateY(-2px);border-color:var(--hb,var(--brand));background:color-mix(in srgb,var(--hb,var(--line)) 14%,var(--white))}
 .main .hdash button.hboard-room:not(.menu-btn)::after{content:"";position:absolute;top:12px;right:12px;width:9px;height:9px;border-radius:50%;background:var(--hb,var(--line))}
@@ -394,7 +385,6 @@ html[data-theme="dark"] body .main .hotel-rng-nav button.is-on[type="button"]:no
 .main .hdash .hotel-book-list li,.main .hdash .hotel-room-chip[class]{padding:10px 2px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;box-shadow:none}
 .main .hdash .hotel-book-list li:last-child,.main .hdash .hotel-room-chip[class]:last-child{border-bottom:0}
 @media (max-width:640px){
-  .main .hdash-hero .greet-clock{display:none}
   .main .hdash .hboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 [data-theme="dark"] .main .hdash .is-occupied,[data-theme="dark"] .main .hdash .is-leaving{--hb:#6FD12F}
