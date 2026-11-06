@@ -185,7 +185,7 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "['Lots', '/inventory?tab=batches', 'inventory']" in nav
     assert "['Supplier bills', '/purchasing?tab=invoices', 'purchasing']" in nav
     assert "['Purchase returns', '/purchasing?tab=returns', 'purchasing']" in nav
-    assert "['Hotel Dashboard', '/hotel', 'hotel']" in nav or '["Hotel Dashboard", "/hotel", "hotel"]' in nav
+    assert "['Dashboard', '/hotel', 'hotel']" in nav or '["Dashboard", "/hotel", "hotel"]' in nav
     assert "['Company profile', '/company', 'company']" in nav or '["Company profile", "/company", "company"]' in nav
     assert "Events and Banquets" in nav
     assert "HOTEL_INVENTORY_PROCUREMENT_CHILDREN" in nav
@@ -693,9 +693,9 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "Good morning" in greet and "Good afternoon" in greet and "Good evening" in greet
     assert "dash-hero" in greet
     hotel = (root / "frontend/app/(dashboard)/hotel/page.tsx").read_text(encoding="utf-8")
-    assert 'desk="Hotel dashboard"' in hotel
+    assert 'desk="Dashboard"' in hotel
     restaurant = (root / "frontend/app/(dashboard)/restaurant/page.tsx").read_text(encoding="utf-8")
-    assert 'desk="Restaurant dashboard"' in restaurant
+    assert 'desk="Dashboard"' in restaurant
     assert "restaurantDesk && tab === 'dashboard'" in restaurant
     assert "Kitchen and bar" in restaurant
     assert "Open a restaurant desk." in restaurant

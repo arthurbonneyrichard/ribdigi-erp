@@ -28,13 +28,13 @@ export const HOSPITAL_DASHBOARD_FEATURES: readonly IndustryDashboardFeature[] = 
 ];
 
 export const HOTEL_DASHBOARD_FEATURES: readonly IndustryDashboardFeature[] = [
-  { id: 'hotel_home', label: 'Hotel dashboard', href: '/hotel', module: 'hotel' },
+  { id: 'hotel_home', label: 'Dashboard', href: '/hotel', module: 'hotel' },
   { id: 'hotel_reservations', label: 'Reservations', href: '/hotel?tab=reservations', module: 'hotel' },
   { id: 'hotel_front_desk', label: 'Front desk', href: '/hotel?tab=front-desk', module: 'hotel' },
 ];
 
 export const RESTAURANT_DASHBOARD_FEATURES: readonly IndustryDashboardFeature[] = [
-  { id: 'restaurant_home', label: 'Restaurant dashboard', href: '/restaurant', module: 'restaurant' },
+  { id: 'restaurant_home', label: 'Dashboard', href: '/restaurant', module: 'restaurant' },
   { id: 'restaurant_orders', label: 'Orders', href: '/restaurant?tab=orders', module: 'restaurant' },
   { id: 'restaurant_kitchen', label: 'Kitchen', href: '/restaurant?tab=kitchen', module: 'restaurant' },
   { id: 'printers', label: 'Printers', href: '/printers', module: 'printers' },
@@ -134,7 +134,7 @@ export function industryDashboardSectionLabel(industry?: string | null): string 
   if (ind === 'retail') return null;
   if (ind === 'pharmacy') return 'Lots and prescriptions';
   if (ind === 'restaurant') return 'Restaurant operations';
-  if (ind === 'hotel') return 'Hotel dashboard';
+  if (ind === 'hotel') return 'Dashboard';
   return null;
 }
 

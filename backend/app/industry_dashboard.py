@@ -68,7 +68,7 @@ _FMCG_FEATURES: tuple[dict[str, str], ...] = (
 )
 
 _HOTEL_FEATURES: tuple[dict[str, str], ...] = (
-    {"id": "hotel_home", "label": "Hotel dashboard", "href": "/hotel", "module": "hotel"},
+    {"id": "hotel_home", "label": "Dashboard", "href": "/hotel", "module": "hotel"},
     {
         "id": "hotel_reservations",
         "label": "Reservations",
@@ -85,7 +85,7 @@ _HOTEL_FEATURES: tuple[dict[str, str], ...] = (
 
 # Restaurant floor, kitchen, and printers. Hotel rooms stay off this list.
 _RESTAURANT_FEATURES: tuple[dict[str, str], ...] = (
-    {"id": "restaurant_home", "label": "Restaurant dashboard", "href": "/restaurant", "module": "restaurant"},
+    {"id": "restaurant_home", "label": "Dashboard", "href": "/restaurant", "module": "restaurant"},
     {"id": "restaurant_orders", "label": "Orders", "href": "/restaurant?tab=orders", "module": "restaurant"},
     {"id": "restaurant_kitchen", "label": "Kitchen", "href": "/restaurant?tab=kitchen", "module": "restaurant"},
     {"id": "printers", "label": "Printers", "href": "/printers", "module": "printers"},

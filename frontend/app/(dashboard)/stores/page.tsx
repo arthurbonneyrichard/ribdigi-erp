@@ -936,7 +936,7 @@ export default function Page() {
     ((entitlement?.stores_remaining ?? 0) > 0 && !entitlement?.over_entitlement);
 
   if (hotelHome !== false) {
-    return <p className="muted">{hotelHome ? 'Opening hotel dashboard…' : 'Checking account…'}</p>;
+    return <p className="muted">{hotelHome ? 'Opening dashboard…' : 'Checking account…'}</p>;
   }
 
   return (

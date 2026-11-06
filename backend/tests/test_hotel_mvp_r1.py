@@ -20,7 +20,7 @@ def test_hotel_module_registered():
     shell = (ROOT / "frontend/components/Shell.tsx").read_text(encoding="utf-8")
     nav = (ROOT / "frontend/lib/tenantNav.ts").read_text(encoding="utf-8")
     assert "HOTEL_NAV_ITEMS" in shell
-    assert "['Hotel Dashboard', '/hotel', 'hotel']" in nav or '["Hotel Dashboard", "/hotel", "hotel"]' in nav
+    assert "['Dashboard', '/hotel', 'hotel']" in nav or '["Dashboard", "/hotel", "hotel"]' in nav
     assert "['Company profile', '/company', 'company']" in nav or '["Company profile", "/company", "company"]' in nav
     assert "HOTEL_INVENTORY_PROCUREMENT_CHILDREN" in nav
     assert "Supplies" in nav

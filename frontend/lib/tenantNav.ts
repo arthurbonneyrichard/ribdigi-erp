@@ -53,7 +53,7 @@ export const HOTEL_INVENTORY_PROCUREMENT_CHILDREN: NavItem[] = [
 ];
 
 export const HOTEL_NAV_ITEMS: NavItem[] = [
-  ['Hotel Dashboard', '/hotel', 'hotel'],
+  ['Dashboard', '/hotel', 'hotel'],
   ['Reservations', '/hotel?tab=reservations', 'hotel'],
   ['Group stays', '/hotel?tab=reservations#group-stay', 'hotel'],
   ['Online booking', '/hotel?tab=reservations#online-booking', 'hotel'],
@@ -95,9 +95,9 @@ export const HOTEL_NAV_ITEMS: NavItem[] = [
 ];
 
 /** Hotel sidebar mothers. Children sit under these labels as dropdowns.
- * Hotel Dashboard stays a standalone home link (`id: 'hotel'`). */
+ * The hotel Dashboard stays a standalone home link (`id: 'hotel'`). */
 export const HOTEL_NAV_GROUPS: NavGroup[] = [
-  { id: 'hotel', label: '', items: [['Hotel Dashboard', '/hotel', 'hotel']] },
+  { id: 'hotel', label: '', items: [['Dashboard', '/hotel', 'hotel']] },
   {
     id: 'hotel-ops',
     label: 'Hotel',
@@ -179,7 +179,7 @@ export const HOTEL_NAV_GROUPS: NavGroup[] = [
 ];
 
 export const RESTAURANT_NAV_ITEMS: NavItem[] = [
-  ['Restaurant dashboard', '/restaurant', 'restaurant'],
+  ['Dashboard', '/restaurant', 'restaurant'],
   ['Tables and floor', '/restaurant?tab=tables', 'restaurant'],
   ['Website and booking', '/restaurant?tab=booking', 'restaurant'],
   ['Orders', '/restaurant/orders', 'restaurant'],
@@ -214,7 +214,7 @@ export const RESTAURANT_NAV_ITEMS: NavItem[] = [
 
 /** Restaurant sidebar. Retail POS, Batches, and hotel rooms stay off this list. */
 export const RESTAURANT_NAV_GROUPS: NavGroup[] = [
-  { id: 'restaurant', label: '', items: [['Restaurant dashboard', '/restaurant', 'restaurant']] },
+  { id: 'restaurant', label: '', items: [['Dashboard', '/restaurant', 'restaurant']] },
   {
     id: 'restaurant-floor',
     label: 'Restaurant',

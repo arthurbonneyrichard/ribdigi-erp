@@ -78,6 +78,7 @@ export default function DashboardGreeting({ desk, place }: { desk: string; place
 
   const tod = useMemo(() => timeOfDay(now ? now.getHours() : 9), [now]);
   const dateLabel = useMemo(() => (now ? formatDate(now, formatPrefs) : ''), [now, formatPrefs]);
+  const dayName = useMemo(() => (now ? now.toLocaleDateString('en-GB', { weekday: 'long' }) : ''), [now]);
   const timeLabel = useMemo(() => (now ? formatTime(now, formatPrefs) : ''), [now, formatPrefs]);
   const clockFace = useMemo(
     () => (now ? greetingClockFace(now, formatPrefs?.time_format) : null),
@@ -88,7 +89,7 @@ export default function DashboardGreeting({ desk, place }: { desk: string; place
 
   return (
     <div className="dash" style={{ marginBottom: 16 }}>
-      <section className="dash-hero" data-period={tod.period} aria-label="Dashboard greeting">
+      <section className="dash-hero desk-greet" data-period={tod.period} aria-label="Dashboard greeting">
         <div className="sun" aria-hidden="true" />
         <div className="cloud" aria-hidden="true" />
         <div className="cloud c2" aria-hidden="true" />
@@ -103,14 +104,18 @@ export default function DashboardGreeting({ desk, place }: { desk: string; place
         <div className="greet-row">
           <div className="greet-copy">
             <h1 className="greet">
-              <span className="greet-hello">{tod.greeting}</span>
+              <span className="greet-hello">{tod.greeting}{signedInName ? ',' : ''}</span>
               {signedInName ? <span className="greet-name">{signedInName}</span> : null}
               <span className="wave" aria-hidden="true">
                 <GreetMark period={tod.period} />
               </span>
             </h1>
             <p className="greet-sub">{tod.sub}</p>
-            <p className="greet-date">{[dateLabel, desk].filter(Boolean).join(' · ')}</p>
+            <p className="greet-date">
+              {dayName ? <span className="greet-chip">{dayName}</span> : null}
+              {dateLabel ? <span className="greet-chip">{dateLabel}</span> : null}
+              <span className="greet-chip is-desk">{desk}</span>
+            </p>
           </div>
           {timeLabel && clockFace ? (
             <div className="greet-clock">

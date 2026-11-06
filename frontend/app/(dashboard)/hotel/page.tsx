@@ -1969,7 +1969,7 @@ export default function HotelPage() {
   return (
     <>
       {show('dashboard') ? (
-        <DashboardGreeting desk="Hotel dashboard" place={settings?.property_name || ''} />
+        <DashboardGreeting desk="Dashboard" place={settings?.property_name || ''} />
       ) : (
       <PageHeader
         title={

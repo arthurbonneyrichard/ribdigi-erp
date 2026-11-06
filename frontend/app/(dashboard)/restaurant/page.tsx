@@ -1956,7 +1956,7 @@ export default function RestaurantPage() {
   return (
     <main className="page">
       {restaurantDesk && tab === 'dashboard' ? (
-        <DashboardGreeting desk="Restaurant dashboard" />
+        <DashboardGreeting desk="Dashboard" />
       ) : restaurantDesk ? (
         <PageHeader
           title={(TAB_HEADINGS[tab] || TAB_HEADINGS.orders)[0]}
@@ -1973,7 +1973,7 @@ export default function RestaurantPage() {
         <p className="empty">Loading restaurant totals…</p>
       ) : null}
       {restaurantDesk && tab === 'dashboard' && summary && (
-        <section className="rdesk rd-dash" aria-label="Restaurant dashboard">
+        <section className="rdesk rd-dash" aria-label="Dashboard">
           <div className="rd-actionbar" aria-label="Restaurant quick desks">
             <Link className="rd-action primary" href="/restaurant/till">
               <span className="ico" aria-hidden>＋</span>
