@@ -8,7 +8,6 @@ import PageHeader from '../../../components/PageHeader';
 import RowActions, { type RowActionItem } from '../../../components/RowActions';
 import { navItemVisibleForRole, roleHomePath } from '../../../lib/tenantNav';
 import HotelRoomBoard from '../../../components/HotelRoomBoard';
-import CompanyPage from '../company/page';
 import './hotel-desk.css';
 import EmptyState from '../../../components/EmptyState';
 import FormModal from '../../../components/FormModal';
@@ -798,7 +797,6 @@ export default function HotelPage() {
   const resView = ['calendar', 'book-stay', 'group-stay', 'online-booking'].includes(sectionHash) ? sectionHash : 'list';
   const roomView = sectionHash === 'rate-plans' ? 'rate-plans' : 'rooms';
   const hkPage = sectionHash === 'lost-found' ? 'lost-found' : 'tasks';
-  const settingsView = sectionHash === 'company' ? 'company' : 'hotel';
   const canManage = !HOTEL_STAFF_ROLES.has(myRole);
   const canCorrectMoney = canManage || myRole === 'hotel_cashier';
   const canDiscount = !['hotel_front_desk', 'hotel_reservations'].includes(myRole);
@@ -5251,29 +5249,16 @@ export default function HotelPage() {
         </div>
       )}
 
-      {show('settings') && canReadCompany && (
-        <HotelViews
-          label="Hotel and company settings"
-          value={settingsView}
-          onPick={(k) => goView(k === 'hotel' ? '' : k)}
-          items={[['hotel', 'Hotel'], ['company', 'Company']]}
-        />
-      )}
-      {show('settings') && settingsView === 'company' && canReadCompany && (
-        <div className="hset-company">
-          <CompanyPage />
-        </div>
-      )}
-      {show('settings') && (settingsView === 'hotel' || !canReadCompany) && (
-        <div className="card" style={{ marginBottom: 16 }}>
-                    <p className="muted">
+      {show('settings') && (
+        <div className="card hset-card" style={{ marginBottom: 16 }}>
+          <p className="muted">
             A room charge is nights × nightly rate. Tax % applies to rooms and to the early, late and no-show fees, and shows on the bill, the invoice and your tax report.
             Add the service charge from a guest bill when it applies.
           </p>
           {canReadCompany && (
             <p className="muted">
               Logo, legal name, address, and tax IDs:{' '}
-              <Link href="/company" className="hlink" onClick={(e) => { e.preventDefault(); goView('company'); }}>Company profile</Link>
+              <Link href="/company" className="hlink">Company profile</Link>
             </p>
           )}
           <form
@@ -5307,7 +5292,7 @@ export default function HotelPage() {
                 setBusy(false);
               }
             }}
-            style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))' }}
+            className="hset-form"
           >
             <h3 className="hform-head">Your hotel</h3>
             <label>
@@ -5331,7 +5316,7 @@ export default function HotelPage() {
               <span>Tax %</span>
               <input type="number" min={0} step="0.01" value={settingsForm.tax_percent} onChange={(e) => setSettingsForm((f) => ({ ...f, tax_percent: e.target.value }))} aria-label="Hotel tax percent" />
             </label>
-            <label style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <label className="hset-check">
               <input
                 type="checkbox"
                 checked={settingsForm.room_rates_include_tax}
@@ -5361,7 +5346,7 @@ export default function HotelPage() {
               <input type="number" min={0} max={100} step="0.01" value={settingsForm.service_charge_percent} onChange={(e) => setSettingsForm((f) => ({ ...f, service_charge_percent: e.target.value }))} aria-label="Hotel service charge percent" />
             </label>
             <h3 className="hform-head">Restaurant and bar</h3>
-            <label style={{ gridColumn: '1 / -1' }}>
+            <label className="hset-half">
               <span>How they run</span>
               <select
                 value={settingsForm.food_outlet_mode === 'separate' ? 'separate' : 'together'}
@@ -5372,11 +5357,11 @@ export default function HotelPage() {
                 <option value="separate">Separate — restaurant and bar each have a desk</option>
               </select>
             </label>
-            <label style={{ gridColumn: '1 / -1' }}>
+            <label className="hset-half">
               <span>Note</span>
               <input value={settingsForm.notes} onChange={(e) => setSettingsForm((f) => ({ ...f, notes: e.target.value }))} aria-label="Hotel settings notes" />
             </label>
-            <div style={{ alignSelf: 'end' }}>
+            <div className="hset-save">
               <button type="submit" className="btn-ok" disabled={busy}>Save settings</button>
             </div>
           </form>

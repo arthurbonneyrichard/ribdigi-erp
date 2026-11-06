@@ -209,7 +209,7 @@ export const HOTEL_GUIDES: Record<string, HotelGuideText> = {
       'Check the hotel name and your check-in and check-out times.',
       'Set your tax, and say if your room rates already include it.',
       'Set any fees you charge. Leave a fee at 0 if you do not charge it.',
-      'Press Save settings. Then open Company for your logo, address and tax numbers.',
+      'Press Save settings.',
     ],
   },
 };

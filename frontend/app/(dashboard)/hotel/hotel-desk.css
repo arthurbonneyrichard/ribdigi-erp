@@ -166,8 +166,16 @@
 .main #guest-bill{scroll-margin-top:72px}
 .main a.hlink{color:var(--brand-dark);font-weight:700;text-decoration:underline}
 [data-theme="dark"] .main a.hlink{color:#C8E86A}
-/* Company details sit inside Hotel settings, under the same page title. */
-.main .hset-company .company-page>.page-head{display:none}
+.main .hset-card>p.muted{margin:0 0 8px}
+.main .hset-form{display:grid;gap:12px;grid-template-columns:repeat(4,minmax(0,1fr));align-items:end;margin-top:6px}
+.main .hset-form .hform-head{align-self:start}
+.main .hset-form input,.main .hset-form select{width:100%}
+.main .hset-form .hset-check{grid-column:span 3;display:flex;align-items:center;gap:8px;min-height:42px}
+.main .hset-form .hset-check input{width:auto}
+.main .hset-form .hset-half{grid-column:span 2}
+.main .hset-form .hset-save,.main .hset-form .hint{grid-column:1/-1}
+@media(max-width:900px){.main .hset-form{grid-template-columns:repeat(2,minmax(0,1fr))}.main .hset-form .hset-check,.main .hset-form .hset-half{grid-column:1/-1}}
+@media(max-width:520px){.main .hset-form{grid-template-columns:minmax(0,1fr)}}
 
 [data-theme="dark"] .main{--hd-on:#4AB012;--hd-pick:#1F3A26}
 [data-theme="dark"] .main .hguide-tip,[data-theme="dark"] .main .hdesk-links small{color:#A3B5AA}
