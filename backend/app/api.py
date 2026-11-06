@@ -227,6 +227,7 @@ from app.schemas import (
     HotelRoomStatusValue,
     HotelHousekeepingStatusValue,
     HotelRatePlanCreate,
+    HotelRatePlanUpdate,
     HotelGuestRequestCreate,
     HotelLostFoundCreate,
     HotelCashierShiftOpen,
@@ -17968,6 +17969,33 @@ async def hotel_availability(
     return env([hotel_svc.serialize_room(r) for r in rows])
 
 
+@api.get("/hotel/quote")
+async def hotel_stay_quote(
+    room_id: UuidIdValue,
+    check_in_date: IsoDateQueryValue,
+    check_out_date: IsoDateQueryValue,
+    adults: Annotated[int, Query(ge=1, le=20)] = 1,
+    children: Annotated[int, Query(ge=0, le=20)] = 0,
+    rate_plan_id: UuidIdValue | None = None,
+    discount_percent: Annotated[float, Query(ge=0, le=100)] = 0,
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(
+        await hotel_svc.quote_stay(
+            db,
+            tenant_id=claims["tenant_id"],
+            room_id=room_id,
+            check_in_date=check_in_date,
+            check_out_date=check_out_date,
+            adults=adults,
+            children=children,
+            rate_plan_id=rate_plan_id,
+            discount_percent=discount_percent,
+        )
+    )
+
+
 @api.get("/hotel/rooms")
 async def hotel_rooms_list(
     is_active: bool | None = None,
@@ -19073,6 +19101,23 @@ async def hotel_rate_plans_create(
     return env(hotel_pms_svc.serialize_rate_plan(row), "Rate plan created")
 
 
+@api.patch("/hotel/rate-plans/{plan_id}")
+async def hotel_rate_plans_update(
+    plan_id: UuidIdValue,
+    payload: HotelRatePlanUpdate,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_pms_svc.update_rate_plan(
+        db,
+        tenant_id=claims["tenant_id"],
+        plan_id=plan_id,
+        **payload.model_dump(exclude_unset=True),
+    )
+    await db.commit()
+    return env(hotel_pms_svc.serialize_rate_plan(row), "Rate plan saved")
+
+
 @api.get("/hotel/guest-requests")
 async def hotel_guest_requests_list(
     status: Annotated[str | None, Query(max_length=20)] = None,
@@ -19145,6 +19190,17 @@ async def hotel_lost_found_create(
     )
     await db.commit()
     return env(hotel_pms_svc.serialize_lost_found(row), "Record saved")
+
+
+@api.post("/hotel/lost-found/{item_id}/close")
+async def hotel_lost_found_close(
+    item_id: UuidIdValue,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_pms_svc.close_lost_found(db, tenant_id=claims["tenant_id"], item_id=item_id)
+    await db.commit()
+    return env(hotel_pms_svc.serialize_lost_found(row), "Record closed")
 
 
 @api.get("/hotel/cashier/shift")

@@ -66,6 +66,38 @@ async def list_rate_plans(db: AsyncSession, *, tenant_id: str, is_active: bool |
     return await _pms_scalars(db, stmt)
 
 
+async def update_rate_plan(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    plan_id: str,
+    name: str | None = None,
+    amount: float | None = None,
+    min_nights: int | None = None,
+    is_active: bool | None = None,
+) -> m.HotelRatePlan:
+    row = (
+        await db.execute(
+            select(m.HotelRatePlan).where(
+                m.HotelRatePlan.id == plan_id, m.HotelRatePlan.tenant_id == tenant_id
+            )
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Rate plan not found")
+    if name is not None:
+        row.name = require_honest_narrative(name, label="rate plan name", max_length=150)
+    if amount is not None:
+        row.amount = money_json(amount)
+    if min_nights is not None:
+        row.min_nights = max(1, int(min_nights))
+    if is_active is not None:
+        row.is_active = is_active
+    row.updated_at = datetime.utcnow()
+    await db.flush()
+    return row
+
+
 async def create_rate_plan(
     db: AsyncSession,
     *,
@@ -218,6 +250,22 @@ def serialize_lost_found(row: m.HotelLostFound) -> dict:
         "notes": row.notes,
         "created_at": row.created_at.isoformat() if row.created_at else None,
     }
+
+
+async def close_lost_found(db: AsyncSession, *, tenant_id: str, item_id: str) -> m.HotelLostFound:
+    row = (
+        await db.execute(
+            select(m.HotelLostFound).where(
+                m.HotelLostFound.id == item_id, m.HotelLostFound.tenant_id == tenant_id
+            )
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Record not found")
+    row.status = "closed"
+    row.updated_at = datetime.utcnow()
+    await db.flush()
+    return row
 
 
 async def list_lost_found(db: AsyncSession, *, tenant_id: str):

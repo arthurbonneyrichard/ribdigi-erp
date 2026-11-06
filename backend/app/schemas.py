@@ -9929,6 +9929,15 @@ class HotelReservationDuplicate(BaseModel):
     check_out_date: IsoDateQueryValue
 
 
+class HotelRatePlanUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
+    amount: NonNegativeMoneyValue | None = None
+    min_nights: Annotated[int, Field(ge=1, le=365)] | None = None
+    is_active: bool | None = None
+
+
 class HotelRatePlanCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

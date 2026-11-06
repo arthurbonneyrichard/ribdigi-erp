@@ -20,6 +20,7 @@ _ROOM_CARE = (
     r"POST /maintenance",
     rf"POST /maintenance/{_ID}/complete",
     r"POST /lost-found",
+    rf"POST /lost-found/{_ID}/close",
     rf"POST /guest-requests/{_ID}/complete",
 )
 _BOOKING = (

@@ -11,6 +11,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../../../../lib/api';
 import { fetchAttachment } from '../../../../lib/attachments';
 import { formatMoney } from '../../../../lib/format';
+import HotelGuide from '../../../../components/HotelGuide';
+import '../hotel-desk.css';
 import './hotel-invoices.css';
 
 type Row = Record<string, any>;
@@ -84,6 +86,7 @@ export default function HotelInvoicesPage() {
 
   return (
     <div className="hinv">
+      <HotelGuide id="invoices" />
       <header className="hi-head">
         <div>
           <h1>Guest invoices</h1>

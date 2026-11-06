@@ -54,7 +54,7 @@ export const HOTEL_INVENTORY_PROCUREMENT_CHILDREN: NavItem[] = [
 
 export const HOTEL_NAV_ITEMS: NavItem[] = [
   ['Hotel Dashboard', '/hotel', 'hotel'],
-  ['Reservations and Booking', '/hotel?tab=reservations', 'hotel'],
+  ['Reservations', '/hotel?tab=reservations', 'hotel'],
   ['Group stays', '/hotel?tab=reservations#group-stay', 'hotel'],
   ['Online booking', '/hotel?tab=reservations#online-booking', 'hotel'],
   ['Front Desk', '/hotel?tab=front-desk', 'hotel'],
@@ -70,8 +70,8 @@ export const HOTEL_NAV_ITEMS: NavItem[] = [
   ['Hotel bar', '/hotel?tab=bar', 'hotel'],
   ['Guest invoices', '/hotel/invoices', 'hotel'],
   ['Shop till', '/hotel/shop', 'hotel'],
-  ['Billing and Guest Folios', '/hotel?tab=billing', 'hotel'],
-  ['Hotel Finance and Cashiering', '/hotel?tab=cashier', 'hotel'],
+  ['Guest bills', '/hotel?tab=billing', 'hotel'],
+  ['Cash and night audit', '/hotel?tab=cashier', 'hotel'],
   ['Night audit', '/hotel?tab=cashier#night-audit', 'hotel'],
   ['Expenses', '/expenses', 'expenses'],
   ['Accounting', '/accounting', 'accounting'],
@@ -84,7 +84,7 @@ export const HOTEL_NAV_ITEMS: NavItem[] = [
   ['Audit', '/audit', 'audit'],
   ['Events and Banquets', '/hotel?tab=events', 'hotel'],
   ['Notifications', '/notifications', 'notifications'],
-  ['Hotel Profile and Settings', '/hotel?tab=settings', 'hotel'],
+  ['Hotel settings', '/hotel?tab=settings', 'hotel'],
   ['Company profile', '/company', 'company'],
   ['Subscription billing', '/company/billing', 'company'],
   ['Integrations', '/integrations', 'company'],
@@ -102,7 +102,7 @@ export const HOTEL_NAV_GROUPS: NavGroup[] = [
     id: 'hotel-ops',
     label: 'Hotel',
     items: [
-      ['Reservations and Booking', '/hotel?tab=reservations', 'hotel'],
+      ['Reservations', '/hotel?tab=reservations', 'hotel'],
       ['Group stays', '/hotel?tab=reservations#group-stay', 'hotel'],
   ['Online booking', '/hotel?tab=reservations#online-booking', 'hotel'],
       ['Front Desk', '/hotel?tab=front-desk', 'hotel'],
@@ -131,8 +131,8 @@ export const HOTEL_NAV_GROUPS: NavGroup[] = [
     id: 'hotel-finance',
     label: 'Finance and Accounts',
     items: [
-      ['Billing and Guest Folios', '/hotel?tab=billing', 'hotel'],
-      ['Hotel Finance and Cashiering', '/hotel?tab=cashier', 'hotel'],
+      ['Guest bills', '/hotel?tab=billing', 'hotel'],
+      ['Cash and night audit', '/hotel?tab=cashier', 'hotel'],
       ['Night audit', '/hotel?tab=cashier#night-audit', 'hotel'],
       ['Expenses', '/expenses', 'expenses'],
       ['Accounting', '/accounting', 'accounting'],
@@ -166,7 +166,7 @@ export const HOTEL_NAV_GROUPS: NavGroup[] = [
     id: 'hotel-settings',
     label: 'Settings',
     items: [
-      ['Hotel Profile and Settings', '/hotel?tab=settings', 'hotel'],
+      ['Hotel settings', '/hotel?tab=settings', 'hotel'],
       ['Company profile', '/company', 'company'],
       ['Subscription billing', '/company/billing', 'company'],
       ['Integrations', '/integrations', 'company'],

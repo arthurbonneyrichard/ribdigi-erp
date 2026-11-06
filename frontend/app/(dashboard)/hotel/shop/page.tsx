@@ -10,6 +10,8 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../../../../lib/api';
 import { formatMoney } from '../../../../lib/format';
+import HotelGuide from '../../../../components/HotelGuide';
+import '../hotel-desk.css';
 import './hotel-shop.css';
 
 type Row = Record<string, any>;
@@ -180,6 +182,7 @@ export default function HotelShopPage() {
 
   return (
     <div className="hshop">
+      <HotelGuide id="shop" />
       <header className="hs-top">
         <div>
           <h1>Shop till</h1>

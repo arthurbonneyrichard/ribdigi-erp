@@ -588,6 +588,15 @@ async def list_rooms(
     return list((await db.execute(stmt)).scalars().all())
 
 
+def _nights_word(nights: int) -> str:
+    return "1 night" if nights == 1 else f"{nights} nights"
+
+
+def _dirty_blocks_stay(room: m.HotelRoom, check_in: date | None) -> bool:
+    """A room waiting to be cleaned cannot take a guest today, but it can be booked for a later date."""
+    return room.status == "dirty" and (check_in is None or check_in <= date.today())
+
+
 def _blended_nightly(room: m.HotelRoom, check_in: date | None, check_out: date | None) -> float:
     """Each night at its own rate: Saturday and Sunday nights at the weekend rate, the rest at the room rate."""
     base = money_json(room.rate_amount or 0)
@@ -1245,7 +1254,7 @@ async def create_reservation(
         )
         if room.status in {"maintenance", "out_of_order", "blocked"}:
             raise HTTPException(status_code=409, detail=f"Room is {room.status.replace('_', ' ')}")
-        if room.status == "dirty":
+        if _dirty_blocks_stay(room, check_in):
             raise HTTPException(status_code=409, detail="Room is dirty — complete housekeeping first")
     if rate_plan_id:
         try:
@@ -1356,6 +1365,63 @@ def _assert_rate_plan_fits(plan, room: m.HotelRoom, check_in: date, check_out: d
         raise HTTPException(status_code=409, detail="Stay ends after this rate plan")
 
 
+async def quote_stay(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    room_id: str,
+    check_in_date: date,
+    check_out_date: date,
+    adults: int = 1,
+    children: int = 0,
+    rate_plan_id: str | None = None,
+    discount_percent: float = 0,
+) -> dict:
+    """What booking this stay would charge, worked out the same way as create_reservation."""
+    room = await _get_room(db, tenant_id, room_id)
+    check_in = _as_date(check_in_date)
+    check_out = _as_date(check_out_date)
+    if not check_in or not check_out or check_out <= check_in:
+        raise HTTPException(status_code=400, detail="check_out_date must be after check_in_date")
+    nights = (check_out - check_in).days
+    rate = _blended_nightly(room, check_in, check_out)
+    plan_name = None
+    if rate_plan_id:
+        plan = (
+            await db.execute(
+                select(m.HotelRatePlan).where(
+                    m.HotelRatePlan.id == rate_plan_id,
+                    m.HotelRatePlan.tenant_id == tenant_id,
+                    m.HotelRatePlan.is_active.is_(True),
+                )
+            )
+        ).scalar_one_or_none()
+        if not plan:
+            raise HTTPException(status_code=404, detail="Rate plan not found")
+        if nights < int(plan.min_nights or 1):
+            raise HTTPException(status_code=409, detail="Stay is shorter than the rate plan minimum nights")
+        _assert_rate_plan_fits(plan, room, check_in, check_out)
+        rate = money_json(plan.amount or 0)
+        plan_name = plan.name
+    occ = max(1, int(adults or 1)) + max(0, int(children or 0))
+    included = 1 if int(room.max_occupancy or 1) <= 1 else 2
+    extra_people = max(0, occ - included)
+    extra_each = money_json(getattr(room, "extra_person_charge", 0) or 0)
+    if extra_people and extra_each > 0:
+        rate = money_json(rate + (extra_people * extra_each))
+    disc = min(100.0, max(0.0, money_json(discount_percent or 0)))
+    if disc:
+        rate = money_json(rate * (1 - disc / 100.0))
+    return {
+        "nights": nights,
+        "nightly_rate": rate,
+        "total": money_json(Decimal(str(rate)) * nights),
+        "rate_plan": plan_name,
+        "over_capacity": occ > int(room.max_occupancy or 1),
+        "max_occupancy": int(room.max_occupancy or 1),
+    }
+
+
 async def update_reservation(
     db: AsyncSession,
     *,
@@ -1379,10 +1445,10 @@ async def update_reservation(
         new_room = await _get_room(db, tenant_id, room_id, for_update=True)
         if new_room.status in {"maintenance", "out_of_order", "blocked"}:
             raise HTTPException(status_code=409, detail=f"Room is {new_room.status.replace('_', ' ')}")
-        if new_room.status == "dirty":
-            raise HTTPException(status_code=409, detail="Room is dirty — complete housekeeping first")
     check_in = _as_date(check_in_date) or row.check_in_date
     check_out = _as_date(check_out_date) or row.check_out_date
+    if room_id and room_id != row.room_id and _dirty_blocks_stay(new_room, check_in):
+        raise HTTPException(status_code=409, detail="Room is dirty — complete housekeeping first")
     await _assert_room_available(
         db,
         tenant_id=tenant_id,
@@ -1435,7 +1501,7 @@ async def confirm_reservation(
     )
     if room.status in {"maintenance", "out_of_order", "blocked"}:
         raise HTTPException(status_code=409, detail=f"Room is {room.status.replace('_', ' ')}")
-    if room.status == "dirty":
+    if _dirty_blocks_stay(room, row.check_in_date):
         raise HTTPException(status_code=409, detail="Room is dirty — complete housekeeping first")
     row.status = "booked"
     row.updated_at = datetime.utcnow()
@@ -1573,7 +1639,7 @@ async def _get_or_create_folio(
         tenant_id=tenant_id,
         folio_id=folio.id,
         charge_type="room",
-        description=f"Room charge ({nights} night(s))",
+        description=f"Room charge ({_nights_word(nights)})",
         quantity=nights,
         unit_amount=money_json(reservation.nightly_rate or 0),
         created_by=created_by,
@@ -2645,7 +2711,7 @@ async def leave_early(
                 tenant_id=tenant_id,
                 folio_id=folio.id,
                 charge_type="room",
-                description=f"Room charge ({nights - cut} night(s))",
+                description=f"Room charge ({_nights_word(nights - cut)})",
                 quantity=nights - cut,
                 unit_amount=unit,
                 discount_amount=money_json(round(discount * (nights - cut) / nights, 2)),
@@ -2726,7 +2792,7 @@ async def extend_stay(
                 tenant_id=tenant_id,
                 folio_id=folio.id,
                 charge_type="room",
-                description=f"Stay extension ({extra_nights} night(s))",
+                description=f"Stay extension ({_nights_word(extra_nights)})",
                 quantity=extra_nights,
                 unit_amount=money_json(row.nightly_rate or 0),
                 created_by=created_by,
@@ -3014,7 +3080,7 @@ async def availability(
     for room in rooms:
         if type_key and room.room_type != type_key:
             continue
-        if room.status in {"maintenance", "out_of_order", "blocked", "dirty"}:
+        if room.status in {"maintenance", "out_of_order", "blocked"} or _dirty_blocks_stay(room, check_in):
             continue
         try:
             await _assert_room_available(
@@ -3164,7 +3230,10 @@ async def summary(db: AsyncSession, *, tenant_id: str, on_date: date | None = No
         return f"{n} {one if int(n) == 1 else many}"
 
     alerts: list[dict] = []
-    dirty_n = sum(1 for r in rooms if r.status == "dirty" or r.housekeeping_status == "dirty")
+    # A room with a guest in it is marked dirty at check-in; it is not waiting for housekeeping.
+    dirty_n = sum(
+        1 for r in rooms if r.status != "occupied" and (r.status == "dirty" or r.housekeeping_status == "dirty")
+    )
     sold_night = _sold_on(today)
     from datetime import timedelta as _td
 
@@ -3593,26 +3662,22 @@ async def calendar(
     return {"start_date": start.isoformat(), "end_date": end.isoformat(), "days": days, "rooms": grid}
 
 
-async def reports(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    start_date: date | None = None,
-    end_date: date | None = None,
-) -> dict:
-    start = _as_date(start_date) or date.today().replace(day=1)
-    end = _as_date(end_date) or date.today()
-    if end < start:
-        raise HTTPException(status_code=400, detail="end_date must be on or after start_date")
-    rooms = await list_rooms(db, tenant_id=tenant_id, is_active=True)
-    reservations = await list_reservations(db, tenant_id=tenant_id)
-    room_nights_available = max(1, len(rooms) * max(1, (end - start).days + 1))
+def _stay_numbers(reservations: list, rooms_total: int, start: date, end: date) -> dict:
+    """Room nights and room revenue between two dates, both included, plus the stays that started in them."""
+    days = max(1, (end - start).days + 1)
+    room_nights_available = max(1, rooms_total * days)
     occupied_nights = 0
     room_revenue = 0.0
     by_source: dict[str, float] = {}
     by_type: dict[str, float] = {}
+    source_detail: dict[str, dict] = {}
+    type_detail: dict[str, dict] = {}
+    room_detail: dict[str, dict] = {}
+    daily = {start + timedelta(days=i): {"sold": 0, "revenue": 0.0} for i in range(days)}
     cancellations = 0
     no_shows = 0
+    stays = 0
+    stay_nights = 0
     for r, room, _guest in reservations:
         check_in = _as_date(r.check_in_date)
         check_out = _as_date(r.check_out_date)
@@ -3628,6 +3693,13 @@ async def reports(
             continue
         if r.status == "waitlisted":
             continue
+        src = getattr(r, "booking_source", None) or "direct"
+        rtype = room.room_type if room else "unknown"
+        code = room.code if room else "unknown"
+        if start <= check_in <= end:
+            stays += 1
+            stay_nights += max(0, (check_out - check_in).days)
+            source_detail.setdefault(src, {"stays": 0, "nights": 0, "revenue": 0.0})["stays"] += 1
         # Count nights overlapping report window for checked_in/out/booked.
         # Rooms and reservations stay separate rows; extras (folios) are optional below.
         night = max(check_in, start)
@@ -3637,14 +3709,78 @@ async def reports(
                 occupied_nights += 1
                 rate = money_json(r.nightly_rate or 0)
                 room_revenue = money_json(room_revenue + rate)
-                src = getattr(r, "booking_source", None) or "direct"
                 by_source[src] = money_json(by_source.get(src, 0) + rate)
-                rtype = room.room_type if room else "unknown"
                 by_type[rtype] = money_json(by_type.get(rtype, 0) + rate)
+                daily[night]["sold"] += 1
+                daily[night]["revenue"] = money_json(daily[night]["revenue"] + rate)
+                for bucket in (
+                    source_detail.setdefault(src, {"stays": 0, "nights": 0, "revenue": 0.0}),
+                    type_detail.setdefault(rtype, {"nights": 0, "revenue": 0.0}),
+                    room_detail.setdefault(code, {"nights": 0, "revenue": 0.0}),
+                ):
+                    bucket["nights"] += 1
+                    bucket["revenue"] = money_json(bucket["revenue"] + rate)
             night = night + timedelta(days=1)
-    occupancy = round(100.0 * occupied_nights / room_nights_available, 2)
-    adr = round(room_revenue / occupied_nights, 2) if occupied_nights else 0.0
-    revpar = round(room_revenue / room_nights_available, 2)
+    return {
+        "room_nights_available": room_nights_available,
+        "occupied_nights": occupied_nights,
+        "occupancy_rate": round(100.0 * occupied_nights / room_nights_available, 2),
+        "room_revenue": money_json(room_revenue),
+        "adr": money_json(round(room_revenue / occupied_nights, 2) if occupied_nights else 0.0),
+        "revpar": money_json(round(room_revenue / room_nights_available, 2)),
+        "cancellations": cancellations,
+        "no_shows": no_shows,
+        "stays": stays,
+        "average_stay_nights": round(stay_nights / stays, 1) if stays else 0,
+        "by_source": by_source,
+        "by_type": by_type,
+        "source_detail": source_detail,
+        "type_detail": type_detail,
+        "room_detail": room_detail,
+        "daily": [
+            {
+                "date": day.isoformat(),
+                "sold": row["sold"],
+                "occupancy_rate": round(100.0 * row["sold"] / max(1, rooms_total), 2),
+                "room_revenue": money_json(row["revenue"]),
+            }
+            for day, row in sorted(daily.items())
+        ],
+    }
+
+
+async def reports(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> dict:
+    start = _as_date(start_date) or date.today().replace(day=1)
+    end = _as_date(end_date) or date.today()
+    if end < start:
+        raise HTTPException(status_code=400, detail="end_date must be on or after start_date")
+    rooms = await list_rooms(db, tenant_id=tenant_id, is_active=True)
+    reservations = await list_reservations(db, tenant_id=tenant_id)
+    numbers = _stay_numbers(reservations, len(rooms), start, end)
+    room_nights_available = numbers["room_nights_available"]
+    occupied_nights = numbers["occupied_nights"]
+    occupancy = numbers["occupancy_rate"]
+    room_revenue = numbers["room_revenue"]
+    adr = numbers["adr"]
+    revpar = numbers["revpar"]
+    by_source = numbers["by_source"]
+    by_type = numbers["by_type"]
+    cancellations = numbers["cancellations"]
+    no_shows = numbers["no_shows"]
+    span = (end - start).days + 1
+    before_end = start - timedelta(days=1)
+    before_start = before_end - timedelta(days=span - 1)
+    before = _stay_numbers(reservations, len(rooms), before_start, before_end)
+    today = date.today()
+    still_coming = [row for row in reservations if row[0].status not in {"checked_out"}]
+    ahead_week = _stay_numbers(still_coming, len(rooms), today, today + timedelta(days=6))
+    ahead_month = _stay_numbers(still_coming, len(rooms), today, today + timedelta(days=29))
     charges = await _optional_scalars(
         db,
         select(m.HotelFolioCharge).where(
@@ -3656,26 +3792,47 @@ async def reports(
         db, select(m.HotelFolioPayment).where(m.HotelFolioPayment.tenant_id == tenant_id)
     )
     service_sales: dict[str, float] = {}
+    tax_charged = 0.0
     payments_total = 0.0
+    payments_before = 0.0
+    payments_by_method: dict[str, float] = {}
     for ch in charges:
         created = ch.created_at.date() if ch.created_at else None
         if created and start <= created <= end:
             service_sales[ch.charge_type] = money_json(
                 service_sales.get(ch.charge_type, 0) + money_json(ch.line_total or 0)
             )
+            tax_charged = money_json(tax_charged + money_json(ch.tax_amount or 0))
     for p in payments:
         created = p.created_at.date() if p.created_at else None
         if created and start <= created <= end:
             payments_total = money_json(payments_total + money_json(p.amount or 0))
+            method = p.method or "other"
+            payments_by_method[method] = money_json(payments_by_method.get(method, 0) + money_json(p.amount or 0))
+        elif created and before_start <= created <= before_end:
+            payments_before = money_json(payments_before + money_json(p.amount or 0))
     outstanding = 0.0
+    stay_by_id = {row[0].id: row for row in reservations}
+    owing: list[dict] = []
     open_folios = await _optional_scalars(
         db,
         select(m.HotelFolio).where(m.HotelFolio.tenant_id == tenant_id, m.HotelFolio.status == "open"),
     )
     for f in open_folios:
-        outstanding = money_json(
-            outstanding + await folio_balance(db, tenant_id=tenant_id, folio_id=f.id)
-        )
+        balance = await folio_balance(db, tenant_id=tenant_id, folio_id=f.id)
+        outstanding = money_json(outstanding + balance)
+        if balance > 0.004:
+            stay = stay_by_id.get(f.reservation_id)
+            owing.append(
+                {
+                    "folio_number": f.folio_number,
+                    "guest_name": stay[2].full_name if stay and stay[2] else None,
+                    "room_code": stay[1].code if stay and stay[1] else None,
+                    "check_out_date": stay[0].check_out_date.isoformat() if stay and stay[0].check_out_date else None,
+                    "balance": money_json(balance),
+                }
+            )
+    owing.sort(key=lambda row: row["balance"], reverse=True)
     inventory_usage: list[dict] = []
     products = await _optional_scalars(
         db,
@@ -3711,6 +3868,48 @@ async def reports(
         "inventory_usage": inventory_usage,
         "revenue_by_source": {k: money_json(v) for k, v in sorted(by_source.items())},
         "revenue_by_room_type": {k: money_json(v) for k, v in sorted(by_type.items())},
+        "days": numbers["daily"],
+        "stays": numbers["stays"],
+        "average_stay_nights": numbers["average_stay_nights"],
+        "tax_charged": money_json(tax_charged),
+        "payments_by_method": {k: money_json(v) for k, v in sorted(payments_by_method.items())},
+        "source_detail": numbers["source_detail"],
+        "room_type_detail": numbers["type_detail"],
+        "rooms": sorted(
+            (
+                {
+                    "code": code,
+                    "nights": row["nights"],
+                    "revenue": money_json(row["revenue"]),
+                    "occupancy_rate": round(100.0 * row["nights"] / span, 2),
+                }
+                for code, row in numbers["room_detail"].items()
+            ),
+            key=lambda row: row["revenue"],
+            reverse=True,
+        ),
+        "owing": owing[:20],
+        "previous": {
+            "start_date": before_start.isoformat(),
+            "end_date": before_end.isoformat(),
+            "occupancy_rate": before["occupancy_rate"],
+            "room_revenue": before["room_revenue"],
+            "adr": before["adr"],
+            "revpar": before["revpar"],
+            "payments_total": money_json(payments_before),
+        },
+        "on_the_books": {
+            "next_7": {
+                "occupied_nights": ahead_week["occupied_nights"],
+                "occupancy_rate": ahead_week["occupancy_rate"],
+                "room_revenue": ahead_week["room_revenue"],
+            },
+            "next_30": {
+                "occupied_nights": ahead_month["occupied_nights"],
+                "occupancy_rate": ahead_month["occupancy_rate"],
+                "room_revenue": ahead_month["room_revenue"],
+            },
+        },
     }
 
 
@@ -4115,7 +4314,7 @@ def _preview_nightly(room: m.HotelRoom, check_in: date, check_out: date, adults:
 
 
 async def _room_free_for_stay(db: AsyncSession, tenant_id: str, room: m.HotelRoom, check_in: date, check_out: date) -> bool:
-    if room.status in {"maintenance", "out_of_order", "blocked", "dirty"} or not room.is_active:
+    if room.status in {"maintenance", "out_of_order", "blocked"} or _dirty_blocks_stay(room, check_in) or not room.is_active:
         return False
     clash = (
         await db.execute(
