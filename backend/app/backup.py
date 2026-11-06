@@ -108,6 +108,22 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("hotel_booking_links", m.HotelBookingLink),
     ("hotel_shop_sales", m.HotelShopSale),
     ("hotel_shop_sale_lines", m.HotelShopSaleLine),
+    ("restaurant_tables", m.RestaurantTable),
+    ("restaurant_till_shifts", m.RestaurantTillShift),
+    ("restaurant_till_cash_moves", m.RestaurantTillCashMove),
+    ("restaurant_menu_settings", m.RestaurantMenuSettings),
+    ("restaurant_menu_categories", m.RestaurantMenuCategory),
+    ("restaurant_menu_items", m.RestaurantMenuItem),
+    ("restaurant_modifier_groups", m.RestaurantModifierGroup),
+    ("restaurant_modifiers", m.RestaurantModifier),
+    ("restaurant_recipes", m.RestaurantRecipe),
+    ("restaurant_recipe_lines", m.RestaurantRecipeLine),
+    ("restaurant_orders", m.RestaurantOrder),
+    ("restaurant_order_lines", m.RestaurantOrderLine),
+    ("restaurant_order_modifiers", m.RestaurantOrderModifier),
+    ("restaurant_kitchen_tickets", m.RestaurantKitchenTicket),
+    ("restaurant_bookings", m.RestaurantBooking),
+    ("restaurant_booking_links", m.RestaurantBookingLink),
 ]
 
 
