@@ -32,6 +32,7 @@ _BOOKING = (
     rf"POST /reservations/{_ID}/(confirm|cancel|duplicate|extend|move)",
     r"POST /guest-requests",
     rf"POST /guest-requests/{_ID}/complete",
+    rf"POST /reservations/{_ID}/confirmation/send",
     r"POST /events",
     rf"POST /events/{_ID}/(confirm|cancel)",
 )
@@ -39,6 +40,7 @@ _TAKING_MONEY = (
     rf"PATCH /folios/{_ID}",
     rf"POST /folios/{_ID}/(charges|payments|timing-fee|service-charge|service-charges)",
     rf"POST /folios/{_ID}/charges/{_ID}/transfer",
+    rf"POST /folios/{_ID}/send",
     rf"POST /reservations/{_ID}/(check-in|check-out|leave-early|no-show|no-show-fee)",
     rf"POST /invoices/{_ID}/payments",
     r"POST /shop/sales",
@@ -48,6 +50,7 @@ _CORRECTING_MONEY = (
     rf"POST /folios/{_ID}/charges/{_ID}/void",
     rf"POST /folios/{_ID}/payments/{_ID}/refund",
     rf"POST /shop/sales/{_ID}/refund",
+    rf"POST /reservations/{_ID}/deposit",
     r"POST /night-audits",
 )
 
@@ -59,7 +62,7 @@ _WRITES: dict[str, tuple[str, ...]] = {
     "hotel_cashier": _TAKING_MONEY + _CORRECTING_MONEY,
 }
 
-_MONEY_PAGES = r"/(reports|folios|invoices|cashier|night-audits|shop)(/.*)?|/reservations/[^/]+/folio"
+_MONEY_PAGES = r"/(reports|folios|invoices|cashier|night-audits|shop|deposits)(/.*)?|/reservations/[^/]+/folio"
 _READS_REFUSED: dict[str, str] = {
     "hotel_housekeeping": _MONEY_PAGES,
     "hotel_maintenance": _MONEY_PAGES,

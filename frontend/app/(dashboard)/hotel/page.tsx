@@ -120,7 +120,10 @@ type HotelDialog =
   | { kind: 'guest'; guest: Guest }
   | { kind: 'history' }
   | { kind: 'service'; service: HotelService }
-  | { kind: 'plan'; plan: any };
+  | { kind: 'plan'; plan: any }
+  | { kind: 'deposit'; deposit: HeldDeposit };
+
+type HeldDeposit = { reservation_id: string; reservation_number: string; guest_name: string; status: string; amount: number; method?: string | null };
 
 type StayQuote = {
   nights: number;
@@ -587,6 +590,7 @@ export default function HotelPage() {
   const [hkView, setHkView] = useState('open');
   const [maintView, setMaintView] = useState('open');
   const [reqOpen, setReqOpen] = useState(false);
+  const [heldDeposits, setHeldDeposits] = useState<HeldDeposit[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [hkTasks, setHkTasks] = useState<HkTask[]>([]);
   const [maint, setMaint] = useState<MaintTicket[]>([]);
@@ -823,7 +827,7 @@ export default function HotelPage() {
 
   async function refresh() {
     const seq = ++refreshSeq.current;
-    const filter = tab === 'front-desk' ? deskKind : listKind;
+    const filter = tab === 'front-desk' ? (deskKind === 'late' ? '' : deskKind) : listKind;
     const qs = filter ? `?list_kind=${filter}` : '';
     const extraPaths: string[] = [];
     if (tab === 'dashboard' || tab === 'front-desk') extraPaths.push('/hotel/guest-requests');
@@ -832,6 +836,7 @@ export default function HotelPage() {
     const needSummary = tab === 'dashboard' || tab === 'reservations';
     if (tab === 'reservations') extraPaths.push('/hotel/booking-link');
     if (tab === 'housekeeping' || tab === 'dashboard') extraPaths.push('/hotel/housekeeping');
+    if (tab === 'dashboard' || tab === 'reservations') extraPaths.push('/hotel/deposits');
     if (tab === 'maintenance') extraPaths.push('/hotel/maintenance');
     if (['services', 'restaurant', 'bar', 'billing', 'reservations', 'front-desk'].includes(tab)) extraPaths.push('/hotel/services');
     if (tab === 'restaurant' || tab === 'bar') extraPaths.push('/hotel/folios');
@@ -902,6 +907,7 @@ export default function HotelPage() {
     if (seq !== refreshSeq.current) return;
     for (const row of extraResults) {
       if (row.path === '/hotel/housekeeping') setHkTasks(row.data || []);
+      else if (row.path === '/hotel/deposits') setHeldDeposits(row.data || []);
       else if (row.path === '/hotel/reservations') setBoardStays(row.data || []);
       else if (row.path === '/hotel/maintenance') setMaint(row.data || []);
       else if (row.path.startsWith('/hotel/reports')) setReport(row.data);
@@ -932,6 +938,11 @@ export default function HotelPage() {
       window.dispatchEvent(new Event('ribdigi-onboarding-refresh'));
     }
   }
+
+  useEffect(() => {
+    const kind = searchParams?.get('desk');
+    if (kind) setDeskKind(kind);
+  }, [searchParams]);
 
   useEffect(() => {
     setStayOrigin(window.location.origin);
@@ -1202,6 +1213,8 @@ export default function HotelPage() {
         tax_percent: String(v.tax_percent ?? 0),
         notes: v.notes || '',
       };
+    } else if (next.kind === 'deposit') {
+      fields = { refund: String(next.deposit.amount) };
     } else if (next.kind === 'plan') {
       fields = { name: next.plan.name || '', amount: String(next.plan.amount ?? 0), min_nights: String(next.plan.min_nights ?? 1) };
     }
@@ -1513,8 +1526,27 @@ export default function HotelPage() {
     }
   }
 
+  async function emailGuest(path: string, okWord: string) {
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const res = await api(path, { method: 'POST', body: JSON.stringify({}) });
+      setMessage(`${okWord} sent to ${res.data?.sent_to || 'the guest'}.`);
+    } catch (err: unknown) {
+      setError(hotelErr(err, 'Could not send the email'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function printStaySlip(reservationId: string, reservationNumber: string) {
     try {
+      const page = await api(`/hotel/reservations/${reservationId}/print`).catch(() => null);
+      if (page?.data?.html && printDocumentHtml(page.data.html)) {
+        setMessage('Confirmation sent to print');
+        return;
+      }
       const conf = await api(`/hotel/reservations/${reservationId}/confirmation`);
       const text = String(conf.data?.text || 'Confirmation loaded');
       const html = hotelSlipHtml(
@@ -1529,6 +1561,16 @@ export default function HotelPage() {
     } catch (err: unknown) {
       setError(hotelErr(err, 'Could not load confirmation slip'));
     }
+  }
+
+  async function printGuestBill() {
+    if (!folio) return;
+    const page = await api(`/hotel/folios/${folio.id}/print`).catch(() => null);
+    if (page?.data?.html && printDocumentHtml(page.data.html)) {
+      setMessage('Bill sent to print');
+      return;
+    }
+    printFolioSlip();
   }
 
   function printFolioSlip() {
@@ -1812,12 +1854,18 @@ export default function HotelPage() {
   const deskArrivals = boardStays.filter((r) => r.status === 'booked' && r.check_in_date === deskToday).length;
   const deskLeaving = boardStays.filter((r) => r.status === 'checked_in' && r.check_out_date === deskToday).length;
   const deskInHouse = boardStays.filter((r) => r.status === 'checked_in').length;
+  const isLate = (r: Reservation) =>
+    (r.status === 'checked_in' && r.check_out_date < deskToday) ||
+    (['booked', 'tentative'].includes(r.status) && r.check_in_date < deskToday);
+  const lateStays = boardStays.filter(isLate);
   const deskTiles: [string, string, number | null][] = [
     ['arrivals', 'Arriving today', deskArrivals],
     ['departures', 'Leaving today', deskLeaving],
     ['in_house', 'In house', deskInHouse],
+    ['late', 'Late', lateStays.length],
     ['', 'All stays', null],
   ];
+  const deskRows = deskKind === 'late' ? reservations.filter(isLate) : reservations;
   async function showStayBill(stayId: string) {
     await openFolio(stayId);
   }
@@ -2067,6 +2115,20 @@ export default function HotelPage() {
                 href: '/hotel?tab=reservations',
               });
             }
+            if (lateStays.length > 0) {
+              attention.push({
+                key: 'overdue_hk_late',
+                text: lateStays.length === 1 ? '1 stay is late: a guest has not left or not arrived' : `${lateStays.length} stays are late: guests have not left or not arrived`,
+                href: '/hotel?tab=front-desk&desk=late',
+              });
+            }
+            if (heldDeposits.length > 0) {
+              attention.push({
+                key: 'unpaid_balances_deposits',
+                text: heldDeposits.length === 1 ? '1 deposit needs a decision' : `${heldDeposits.length} deposits need a decision`,
+                href: '/hotel?tab=reservations',
+              });
+            }
             if (reqOpen > 0) {
               attention.push({
                 key: 'requests',
@@ -2082,7 +2144,7 @@ export default function HotelPage() {
                 href: alert.href,
               });
             }
-            const attentionShown = attention.filter((x) => mayOpen(x.href));
+            const attentionShown = attention.filter((x) => mayOpen(x.href.split('&')[0].split('#')[0]) || mayOpen(x.href));
             const quickActions: [string, string][] = [
               ['Book a stay', '/hotel?tab=reservations#book-stay'],
               ['Front desk', '/hotel?tab=front-desk'],
@@ -2136,7 +2198,7 @@ export default function HotelPage() {
                         {attentionShown.map((x) => (
                           <li key={x.key}>
                             <Link href={x.href}>
-                              <i className={['overdue_hk', 'maintenance', 'out_of_stock', 'unpaid_balances'].includes(x.key) ? 'is-warn' : ''} aria-hidden="true" />
+                              <i className={['overdue_hk', 'maintenance', 'out_of_stock', 'unpaid'].some((k) => x.key.startsWith(k)) ? 'is-warn' : ''} aria-hidden="true" />
                               <em>{x.text}</em>
                               <span aria-hidden="true">›</span>
                             </Link>
@@ -2337,7 +2399,7 @@ export default function HotelPage() {
               </tr>
             </thead>
             <tbody>
-              {reservations.map((r) => (
+              {deskRows.map((r) => (
                 <tr key={r.id}>
                   <td><code>{r.reservation_number}</code></td>
                   <td>
@@ -2348,6 +2410,7 @@ export default function HotelPage() {
                   <td>
                     {stayWhen(r.check_in_date, formatPrefs)} – {stayWhen(r.check_out_date, formatPrefs)}
                     {leftEarlyWhen(r) ? <div className="muted">Left {stayWhen(leftEarlyWhen(r), formatPrefs)}</div> : null}
+                    {isLate(r) ? <div className="hstay-late">{r.status === 'checked_in' ? 'Should have left' : 'Did not arrive'}</div> : null}
                   </td>
                   <td><span className={statusClass(r.status)}>{hotelWord(r.status)}</span></td>
                   <td className="hdesk-actions">
@@ -2363,11 +2426,17 @@ export default function HotelPage() {
                     {r.can_move && (
                       <button type="button" disabled={busy} onClick={() => openDialog({ kind: 'move', stay: r })} aria-label={`Change room for ${r.guest_name || r.reservation_number}`}>Change room</button>
                     )}
+                    {isLate(r) && r.status === 'checked_in' && (
+                      <button type="button" disabled={busy} onClick={() => openDialog({ kind: 'extend', stay: r })} aria-label={`Extend ${r.guest_name || r.reservation_number}`}>Extend stay</button>
+                    )}
+                    {isLate(r) && r.can_no_show && (
+                      <button type="button" className="btn-danger" disabled={busy} onClick={() => act(`/hotel/reservations/${r.id}/no-show`, 'Marked no-show')} aria-label={`Mark no-show ${r.guest_name || r.reservation_number}`}>No-show</button>
+                    )}
                   </td>
                 </tr>
               ))}
-              {!reservations.length && (
-                <tr><td colSpan={6} className="muted">{emptyOr('No stays in this list.')}</td></tr>
+              {!deskRows.length && (
+                <tr><td colSpan={6} className="muted">{emptyOr(deskKind === 'late' ? 'Nobody is late.' : 'No stays in this list.')}</td></tr>
               )}
             </tbody>
           </table>
@@ -3390,6 +3459,25 @@ export default function HotelPage() {
               : `${summary?.online_stay_requests} stay requests are waiting.`}
           </p>
         )}
+        {heldDeposits.length > 0 && (
+          <section className="hbill-box" aria-label="Deposits to settle">
+            <h3>Deposits to settle</h3>
+            <p className="muted">These stays will not happen, but the money is still held. Give it back or keep it.</p>
+            <ul className="hbill-pays">
+              {heldDeposits.map((d) => (
+                <li key={d.reservation_id} className="hbill-pay">
+                  <div>
+                    {d.guest_name} · {money(d.amount)}
+                    <div className="muted">{d.reservation_number} · {hotelWord(d.status)} · {tenderWord(d.method)}</div>
+                  </div>
+                  {canCorrectMoney ? (
+                    <button type="button" className="btn-ok" disabled={busy} onClick={() => openDialog({ kind: 'deposit', deposit: d })} aria-label={`Settle deposit ${d.reservation_number}`}>Settle</button>
+                  ) : <span className="muted">A cashier or manager settles this</span>}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         <div className="list-table-wrap hdesk-res-wrap">
         <table className="table">
           <thead>
@@ -3503,6 +3591,13 @@ export default function HotelPage() {
                         ariaLabel: `Print confirmation ${r.reservation_number}`,
                         onClick: () => void printStaySlip(r.id, r.reservation_number),
                       },
+                      r.can_cancel && {
+                        key: 'mail',
+                        label: 'Email confirmation',
+                        disabled: busy,
+                        ariaLabel: `Email confirmation ${r.reservation_number}`,
+                        onClick: () => void emailGuest(`/hotel/reservations/${r.id}/confirmation/send`, 'Confirmation'),
+                      },
                       r.can_check_in && r.check_in_date > localIso() && {
                         key: 'in-early',
                         label: 'Check in early',
@@ -3575,7 +3670,8 @@ export default function HotelPage() {
               {folio.status === 'open' && folio.reservation_status === 'checked_in' && folio.reservation_id ? (
                 <button type="button" className="btn-ok" disabled={busy} onClick={() => void checkOutStay(String(folio.reservation_id), folio.guest_name || folio.folio_number)}>Check out</button>
               ) : null}
-              <button type="button" disabled={busy} onClick={printFolioSlip} aria-label={`Print folio ${folio.folio_number}`}>Print bill</button>
+              <button type="button" disabled={busy} onClick={() => void printGuestBill()} aria-label={`Print folio ${folio.folio_number}`}>Print bill</button>
+              <button type="button" disabled={busy} onClick={() => void emailGuest(`/hotel/folios/${folio.id}/send`, 'Bill')}>Email bill</button>
               <button type="button" onClick={() => setFolio(null)} aria-label="Close this bill">Close</button>
             </div>
           </div>
@@ -5755,6 +5851,35 @@ export default function HotelPage() {
             <label><span>Tax %</span><input type="number" min={0} step="0.01" value={dlg.tax_percent || ''} onChange={(e) => setDlg((d) => ({ ...d, tax_percent: e.target.value }))} aria-label="Edit service tax" /></label>
             <label><span>Notes</span><input value={dlg.notes || ''} onChange={(e) => setDlg((d) => ({ ...d, notes: e.target.value }))} aria-label="Edit service notes" /></label>
           </div>
+        </FormModal>
+      )}
+
+      {dialog?.kind === 'deposit' && (
+        <FormModal
+          title={`Settle deposit for ${dialog.deposit.guest_name}`}
+          onClose={() => setDialog(null)}
+          busy={busy}
+          footer={
+            <button
+              type="button"
+              className="btn-ok"
+              disabled={busy || !(Number(dlg.refund) >= 0) || Number(dlg.refund) > Number(dialog.deposit.amount)}
+              onClick={() => {
+                if (!window.confirm(`Give back ${money(Number(dlg.refund) || 0)} and keep ${money(Number(dialog.deposit.amount) - (Number(dlg.refund) || 0))}? This cannot be undone.`)) return;
+                void dialogSave(`/hotel/reservations/${dialog.deposit.reservation_id}/deposit`, { refund_amount: Number(dlg.refund) || 0 }, 'Deposit settled');
+              }}
+            >
+              Settle deposit
+            </button>
+          }
+        >
+          {dlgError ? <p className="hotel-banner warn" role="alert">{dlgError}</p> : null}
+          <p className="muted">{dialog.deposit.reservation_number} · {money(dialog.deposit.amount)} held · {tenderWord(dialog.deposit.method)}</p>
+          <label>
+            <span>Amount to give back</span>
+            <AmountField type="number" min={0} step="0.01" value={dlg.refund || ''} onChange={(e) => setDlg((d) => ({ ...d, refund: e.target.value }))} aria-label="Deposit refund amount" />
+          </label>
+          <p className="muted">Type 0 to keep it all. Whatever is not given back counts as income.</p>
         </FormModal>
       )}
 

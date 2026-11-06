@@ -6,6 +6,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
+from html import escape
 from typing import AsyncIterator
 
 from fastapi import HTTPException
@@ -14,6 +15,7 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import undefer
 
+from app.document_display import format_tenant_date
 from app import accounting
 from app import models as m
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
@@ -1336,6 +1338,7 @@ async def create_reservation(
             check_out=check_out,
             exclude_id=row.id,
         )
+    await book_deposit(db, tenant_id=tenant_id, row=row, user_id=created_by)
     return row, room, guest
 
 
@@ -1656,6 +1659,7 @@ async def _get_or_create_folio(
             reference="deposit",
             notes="Reservation deposit",
             recorded_by=created_by,
+            journal_entry_id=await _deposit_entry_id(db, tenant_id, reservation.id),
         )
     return folio
 
@@ -1935,6 +1939,114 @@ async def _post_charge_journal(
 def _payment_account(method: str | None) -> str:
     settlement = {"momo": "mobile_money", "card": "card", "bank": "bank_transfer"}.get(method or "", "cash")
     return accounting.liquid_gl_for_payment_method(settlement)[0]
+
+
+DEPOSIT_TAKEN = "hotel_deposit"
+DEPOSIT_SETTLED = "hotel_deposit_settled"
+
+
+async def _deposit_entry_id(db: AsyncSession, tenant_id: str, reservation_id: str, source: str = DEPOSIT_TAKEN) -> str | None:
+    return (
+        await db.execute(
+            select(m.JournalEntry.id).where(
+                m.JournalEntry.tenant_id == tenant_id,
+                m.JournalEntry.source_type == source,
+                m.JournalEntry.source_id == reservation_id,
+            ).limit(1)
+        )
+    ).scalar_one_or_none()
+
+
+async def book_deposit(db: AsyncSession, *, tenant_id: str, row: m.HotelReservation, user_id: str | None) -> None:
+    """A deposit is money in hand the moment it is taken, whatever later happens to the stay."""
+    amount = money_json(getattr(row, "deposit_amount", 0) or 0)
+    method = (getattr(row, "deposit_method", None) or "cash").strip().lower()
+    if amount <= 0 or method == "credit":
+        return
+    description = f"Hotel deposit {row.reservation_number} ({method})"
+    await _post_books(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        description=description,
+        lines=[
+            {"account_code": _payment_account(method), "debit": amount, "credit": 0, "description": description},
+            {"account_code": "1100", "debit": 0, "credit": amount, "description": description},
+        ],
+        reference=row.reservation_number,
+        source_type=DEPOSIT_TAKEN,
+        source_id=row.id,
+    )
+
+
+async def deposits_held(db: AsyncSession, *, tenant_id: str) -> list[dict]:
+    """Deposits on stays that will not happen, still waiting for someone to refund or keep them."""
+    taken = select(m.JournalEntry.source_id).where(
+        m.JournalEntry.tenant_id == tenant_id, m.JournalEntry.source_type == DEPOSIT_TAKEN
+    )
+    settled = select(m.JournalEntry.source_id).where(
+        m.JournalEntry.tenant_id == tenant_id, m.JournalEntry.source_type == DEPOSIT_SETTLED
+    )
+    rows = (
+        await db.execute(
+            select(m.HotelReservation, m.HotelGuest)
+            .join(m.HotelGuest, m.HotelGuest.id == m.HotelReservation.guest_id)
+            .where(
+                m.HotelReservation.tenant_id == tenant_id,
+                m.HotelReservation.status.in_(("cancelled", "no_show")),
+                m.HotelReservation.id.in_(taken),
+                m.HotelReservation.id.not_in(settled),
+            )
+            .order_by(m.HotelReservation.updated_at.desc())
+        )
+    ).all()
+    return [
+        {
+            "reservation_id": r.id,
+            "reservation_number": r.reservation_number,
+            "guest_name": g.full_name,
+            "status": r.status,
+            "amount": money_json(r.deposit_amount or 0),
+            "method": r.deposit_method,
+        }
+        for r, g in rows
+    ]
+
+
+async def settle_deposit(
+    db: AsyncSession, *, tenant_id: str, reservation_id: str, refund_amount: float, user_id: str | None
+) -> dict:
+    """Give some or all of a held deposit back. Whatever is not given back is kept as income."""
+    row, _room, _guest = await _get_reservation(db, tenant_id, reservation_id)
+    if row.status not in {"cancelled", "no_show"}:
+        raise HTTPException(status_code=409, detail="Only a cancelled or no-show stay has a deposit to settle")
+    if not await _deposit_entry_id(db, tenant_id, row.id):
+        raise HTTPException(status_code=404, detail="This stay has no deposit in the books")
+    if await _deposit_entry_id(db, tenant_id, row.id, DEPOSIT_SETTLED):
+        raise HTTPException(status_code=409, detail="This deposit is already settled")
+    held = money_json(row.deposit_amount or 0)
+    refund = money_json(refund_amount or 0)
+    if refund < 0 or refund > held + 0.004:
+        raise HTTPException(status_code=422, detail=f"You can give back up to {held:.2f}")
+    kept = money_json(round(held - refund, 2))
+    method = (row.deposit_method or "cash").strip().lower()
+    description = f"Hotel deposit {row.reservation_number} settled"
+    lines = [{"account_code": "1100", "debit": held, "credit": 0, "description": description}]
+    if refund > 0:
+        lines.append({"account_code": _payment_account(method), "debit": 0, "credit": refund, "description": description})
+    if kept > 0:
+        lines.append({"account_code": "4000", "debit": 0, "credit": kept, "description": description})
+    await _post_books(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        description=description,
+        lines=lines,
+        reference=row.reservation_number,
+        source_type=DEPOSIT_SETTLED,
+        source_id=row.id,
+    )
+    return {"reservation_id": row.id, "refunded": refund, "kept": kept}
 
 
 async def _post_payment_journal(
@@ -2249,6 +2361,7 @@ async def record_folio_payment(
     reference: str | None = None,
     notes: str | None = None,
     recorded_by: str | None = None,
+    journal_entry_id: str | None = None,
 ) -> m.HotelFolioPayment:
     folio = (
         await db.execute(
@@ -2277,6 +2390,7 @@ async def record_folio_payment(
         reference=optional_honest_narrative(reference, label="reference", max_length=120),
         notes=optional_honest_narrative(notes, label="notes", max_length=500),
         recorded_by=recorded_by,
+        journal_entry_id=journal_entry_id,
     )
     db.add(row)
     folio.updated_at = datetime.utcnow()
@@ -3988,6 +4102,74 @@ async def reservation_confirmation(
         "reservation": serialize_reservation(row, room=room, guest=guest),
         "settings": serialize_settings(settings),
         "text": "\n".join(lines),
+    }
+
+
+def _money_word(tenant: m.Tenant | None, amount: float | int | None) -> str:
+    currency = (getattr(tenant, "currency", None) or "").strip()
+    return f"{currency} {money_json(amount or 0):,.2f}".strip()
+
+
+def _rows_html(rows: list[tuple[str, str]]) -> str:
+    return "".join(f"<tr><td>{escape(str(a))}</td><td>{escape(str(b))}</td></tr>" for a, b in rows)
+
+
+async def _document_owner(db: AsyncSession, tenant_id: str) -> tuple[m.Tenant, str]:
+    tenant = await db.get(m.Tenant, tenant_id)
+    settings = await get_or_create_settings(db, tenant_id=tenant_id)
+    return tenant, (settings.property_name or getattr(tenant, "company_name", "") or "Hotel")
+
+
+async def guest_bill_document(db: AsyncSession, *, tenant_id: str, folio_id: str) -> dict:
+    """The guest's bill with the hotel's name, address and tax number on it."""
+    folio, charges, payments = await get_folio_detail(db, tenant_id=tenant_id, folio_id=folio_id)
+    view = await present_folio(db, tenant_id=tenant_id, folio=folio, charges=charges, payments=payments)
+    tenant, name = await _document_owner(db, tenant_id)
+    live = [c for c in charges if not c.is_void]
+    tax = sum(money_json(c.tax_amount or 0) for c in live)
+    facts = [
+        ("Guest", view.get("guest_name") or ""),
+        ("Room", view.get("room_code") or ""),
+        ("Stay", view.get("reservation_number") or ""),
+        ("Check-in", format_tenant_date(view.get("check_in_date"), tenant)),
+        ("Check-out", format_tenant_date(view.get("check_out_date"), tenant)),
+    ]
+    body = (
+        f"<table><tbody>{_rows_html([f for f in facts if f[1]])}</tbody></table>"
+        "<h2>Charges</h2><table><thead><tr><th>Description</th><th>Amount</th></tr></thead><tbody>"
+        f"{_rows_html([(c.description, _money_word(tenant, c.line_total)) for c in live]) or '<tr><td colspan=2>No charges</td></tr>'}"
+        "</tbody></table><h2>Payments</h2><table><thead><tr><th>Method</th><th>Amount</th></tr></thead><tbody>"
+        f"{_rows_html([(('Refund' if money_json(p.amount) < 0 else (p.method or '').replace('_', ' ').title()), _money_word(tenant, p.amount)) for p in payments]) or '<tr><td colspan=2>No payments</td></tr>'}"
+        "</tbody></table>"
+        f"<table><tbody>{_rows_html([('Total charges', _money_word(tenant, view.get('charges_total'))), ('Includes tax', _money_word(tenant, tax)), ('Paid', _money_word(tenant, view.get('payments_total'))), ('Balance', _money_word(tenant, view.get('balance')))])}</tbody></table>"
+    )
+    return {
+        "title": f"Guest bill {folio.folio_number}",
+        "company": name,
+        "tenant": tenant,
+        "body": body,
+        "email": await _guest_email(db, tenant_id, folio.guest_id),
+    }
+
+
+async def _guest_email(db: AsyncSession, tenant_id: str, guest_id: str | None) -> str:
+    guest = await db.get(m.HotelGuest, guest_id) if guest_id else None
+    if guest is None or guest.tenant_id != tenant_id:
+        return ""
+    return (guest.email or "").strip()
+
+
+async def confirmation_document(db: AsyncSession, *, tenant_id: str, reservation_id: str) -> dict:
+    data = await reservation_confirmation(db, tenant_id=tenant_id, reservation_id=reservation_id)
+    row, _room, guest = await _get_reservation(db, tenant_id, reservation_id)
+    tenant, name = await _document_owner(db, tenant_id)
+    lines = [line.split(": ", 1) for line in data["text"].split("\n")[1:] if ": " in line]
+    return {
+        "title": f"Reservation {row.reservation_number}",
+        "company": name,
+        "tenant": tenant,
+        "body": f"<table><tbody>{_rows_html([(a, b) for a, b in lines])}</tbody></table>",
+        "email": (guest.email or "").strip(),
     }
 
 

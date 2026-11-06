@@ -399,3 +399,6 @@ html[data-theme="dark"] body .main .hotel-rng-nav button.is-on[type="button"]:no
 [data-theme="dark"] .main .hdash .hotel-occ-hero-pct{color:#E8F2E4}
 [data-theme="dark"] .main .hdash .hotel-book-list li,[data-theme="dark"] .main .hdash .hotel-room-chip[class]{background:transparent;border-color:#1F5A3A}
 [data-theme="dark"] .main .hdash .hotel-area-chart path{fill:#1F5A3A;opacity:1}
+
+.main .hstay-late{font-size:13px;font-weight:700;color:#8A5A00}
+[data-theme="dark"] .main .hstay-late{color:#F6D9A0}

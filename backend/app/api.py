@@ -228,6 +228,7 @@ from app.schemas import (
     HotelHousekeepingStatusValue,
     HotelRatePlanCreate,
     HotelRatePlanUpdate,
+    HotelDepositSettle,
     HotelGuestRequestCreate,
     HotelLostFoundCreate,
     HotelCashierShiftOpen,
@@ -19889,6 +19890,107 @@ async def hotel_reports(
             end_date=end_date,
         )
     )
+
+
+def _hotel_print(doc: dict) -> dict:
+    from app.document_print import render_document_print_html
+
+    return {
+        "html": render_document_print_html(
+            title=doc["title"], company_name=doc["company"], body_html=doc["body"], tenant=doc["tenant"]
+        )
+    }
+
+
+async def _hotel_send(doc: dict, to: str | None) -> dict:
+    from app import emailer
+
+    target = (to or doc["email"] or "").strip()
+    if not target:
+        raise HTTPException(status_code=400, detail="This guest has no email address. Add one under Guests.")
+    html = emailer.render_branded_html(body_html=doc["body"], tenant=doc["tenant"], title=doc["title"])
+    result = await emailer.send_email(
+        to=target, subject=f"{doc['title']} from {doc['company']}", text_body=doc["title"], html_body=html, tenant=doc["tenant"]
+    )
+    if not result.sent:
+        raise HTTPException(status_code=409, detail="Email is not set up yet. Set it up under Company settings.")
+    return {"sent_to": target}
+
+
+@api.get("/hotel/deposits")
+async def hotel_deposits_held(
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(await hotel_svc.deposits_held(db, tenant_id=claims["tenant_id"]))
+
+
+@api.post("/hotel/reservations/{reservation_id}/deposit")
+async def hotel_deposit_settle(
+    reservation_id: UuidIdValue,
+    payload: HotelDepositSettle,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    body = await hotel_svc.settle_deposit(
+        db,
+        tenant_id=claims["tenant_id"],
+        reservation_id=reservation_id,
+        refund_amount=money_json(payload.refund_amount),
+        user_id=claims["sub"],
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="deposit_settled",
+        entity="hotel_reservation",
+        entity_id=reservation_id,
+        details=body,
+    )
+    await db.commit()
+    return env(body, "Deposit settled")
+
+
+@api.get("/hotel/reservations/{reservation_id}/print")
+async def hotel_reservation_print(
+    reservation_id: UuidIdValue,
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(_hotel_print(await hotel_svc.confirmation_document(db, tenant_id=claims["tenant_id"], reservation_id=reservation_id)))
+
+
+@api.post("/hotel/reservations/{reservation_id}/confirmation/send")
+async def hotel_reservation_send(
+    reservation_id: UuidIdValue,
+    to: Annotated[EmailStr | None, Query()] = None,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    doc = await hotel_svc.confirmation_document(db, tenant_id=claims["tenant_id"], reservation_id=reservation_id)
+    return env(await _hotel_send(doc, to), "Confirmation sent")
+
+
+@api.get("/hotel/folios/{folio_id}/print")
+async def hotel_folio_print(
+    folio_id: UuidIdValue,
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(_hotel_print(await hotel_svc.guest_bill_document(db, tenant_id=claims["tenant_id"], folio_id=folio_id)))
+
+
+@api.post("/hotel/folios/{folio_id}/send")
+async def hotel_folio_send(
+    folio_id: UuidIdValue,
+    to: Annotated[EmailStr | None, Query()] = None,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    doc = await hotel_svc.guest_bill_document(db, tenant_id=claims["tenant_id"], folio_id=folio_id)
+    return env(await _hotel_send(doc, to), "Bill sent")
 
 
 @api.get("/hotel/reservations/{reservation_id}/confirmation")

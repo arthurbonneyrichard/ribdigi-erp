@@ -26,6 +26,8 @@ Hotel is its own desk, isolated from retail and restaurant. The back office (acc
 | Dashboard | Today comes first: arriving, leaving, in house and free tonight tiles open the work. **Needs attention** lists what is waiting, **Quick actions** follow the signed-in role, then charged, paid and owed, then the room board. Charts sit under **More numbers**. Rooms waiting for housekeeping no longer count rooms with guests in them, the amount owed shows its currency, and a desk left open overnight moves to the new day. |
 | Reports | Five views: Overview, Rooms, Income, Money owed, Supplies. Today, Last 7 days, This month and Last month. Changes against the same number of days before, occupancy and revenue by day, what is booked ahead, income per room and room type, stays by source, how guests paid, extras without room charges, tax charged, and who owes. Download CSV and Print. |
 | Dark mode | Every hotel screen was measured for text contrast and bright panels: 56 problems, now none on the last full check. Shared dialogs had no dark styling and showed white text on white; that fix is in `globals.css` and helps every desk. |
+| Guest documents | The bill and confirmation print with the hotel name, address and tax number, and can be emailed to the guest once company email is set up. |
+| Late list | Front desk shows guests who should have left and arrivals who did not come, with Extend and No-show on the row. The dashboard flags them. |
 | Help | Every hotel feature has **How this works**: what it is for and the steps in order (`lib/hotelGuides.ts`). It opens at first and stays closed once hidden. The dashboard shows a normal day from morning to night audit. |
 | Reservations | One screen at a time: **Stays**, **Calendar**, **Book a stay**, **Group stay**, **Online booking**. The list comes first and can be searched. |
 | Book a stay | Three steps. Free rooms follow the dates, the price comes from the server (`GET /hotel/quote`), the guest is found by typing, and extras sit under More options. |
@@ -65,9 +67,8 @@ Each tab has its own title. Reservation rows show one main action, with the rest
 
 - Card, Mobile Money and bank tenders are recorded, not charged through a gateway.
 - The whole stay is counted as revenue at check-in, not night by night. **Leaving early** on a reservation takes the unused nights off the bill and the books and frees the room.
-- A deposit reaches the books at check-in, not when it was taken. A deposit on a stay that never arrives is not in the books.
+- A deposit reaches the books when it is taken. On a cancelled or no-show stay it waits under **Deposits to settle** until a cashier or manager gives it back or keeps it. Deposits taken before this release reach the books at check-in as before.
 - An event deposit reaches the books only when it lands on a guest's open bill.
-- Cash taken on **Guest invoices** after checkout is in the books, but not in the front-desk drawer count.
 - Hotel Reports show room revenue as charged, so with tax inside the rate it includes tax. Accounting and the tax report split it correctly.
 - Custom roles copied from a hotel role follow their own permissions, not the job lists.
 - Stays closed before this release are not in the books. Open bills catch up on their next payment or at checkout.

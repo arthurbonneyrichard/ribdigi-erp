@@ -9929,6 +9929,12 @@ class HotelReservationDuplicate(BaseModel):
     check_out_date: IsoDateQueryValue
 
 
+class HotelDepositSettle(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    refund_amount: NonNegativeMoneyValue
+
+
 class HotelRatePlanUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

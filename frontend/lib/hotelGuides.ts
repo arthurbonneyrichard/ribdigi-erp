@@ -19,7 +19,7 @@ export const HOTEL_GUIDES: Record<string, HotelGuideText> = {
   'front-desk': {
     what: 'Your working screen for today: who comes in, who goes out, and every room.',
     steps: [
-      'Press a tile to see arrivals, departures or guests in the house.',
+      'Press a tile to see arrivals, departures or guests in the house. Late shows guests who should have left, and arrivals who did not come.',
       'Press Check in when the guest arrives. Press Check out when they leave.',
       'Press Bill to add charges or take a payment.',
       'Use the room board below: a guest opens their bill, an empty room starts a booking.',
@@ -32,8 +32,9 @@ export const HOTEL_GUIDES: Record<string, HotelGuideText> = {
       'Stays lists every booking. Search by guest, phone, room or number.',
       'Calendar shows each room by date. Press an empty night to book it.',
       'Book a stay takes a new booking in three steps.',
-      'Use the menu on a row to extend, change room, edit or cancel.',
+      'Use the menu on a row to extend, change room, email the confirmation, edit or cancel.',
     ],
+    tip: 'A cancelled stay with a deposit stays at the top until a cashier or manager gives the money back or keeps it.',
   },
   'book-stay': {
     what: 'Three steps: dates, room, guest.',

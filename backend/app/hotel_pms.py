@@ -5,11 +5,12 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.accounting import liquid_gl_for_payment_method
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 
@@ -332,13 +333,46 @@ def serialize_shift(row: m.HotelCashierShift) -> dict:
 
 
 async def drawer_cash(db: AsyncSession, *, tenant_id: str, shift: m.HotelCashierShift) -> float:
-    """Cash into the front-desk drawer on this float: guest bills, less refunds, plus shop cash sales."""
+    """Cash into the front-desk drawer on this float: guest bills less refunds, deposits when they were
+    taken or given back, payments on guest invoices, and shop cash sales."""
+    deposit_entries = select(m.JournalEntry.id).where(
+        m.JournalEntry.tenant_id == tenant_id, m.JournalEntry.source_type == "hotel_deposit"
+    )
     bills = (
         await db.execute(
             select(func.coalesce(func.sum(m.HotelFolioPayment.amount), 0)).where(
                 m.HotelFolioPayment.tenant_id == tenant_id,
                 m.HotelFolioPayment.method == "cash",
                 m.HotelFolioPayment.created_at >= shift.opened_at,
+                # A deposit carried onto the bill at check-in was counted the day it was taken.
+                or_(m.HotelFolioPayment.journal_entry_id.is_(None), m.HotelFolioPayment.journal_entry_id.not_in(deposit_entries)),
+            )
+        )
+    ).scalar_one()
+    deposits = (
+        await db.execute(
+            select(func.coalesce(func.sum(m.JournalEntryLine.debit - m.JournalEntryLine.credit), 0))
+            .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
+            .join(m.Account, m.Account.id == m.JournalEntryLine.account_id)
+            .where(
+                m.JournalEntry.tenant_id == tenant_id,
+                m.JournalEntry.source_type.in_(("hotel_deposit", "hotel_deposit_settled")),
+                m.JournalEntry.created_at >= shift.opened_at,
+                m.Account.code == liquid_gl_for_payment_method("cash")[0],
+            )
+        )
+    ).scalar_one()
+    invoices = (
+        await db.execute(
+            select(func.coalesce(func.sum(m.CustomerPayment.amount), 0)).where(
+                m.CustomerPayment.tenant_id == tenant_id,
+                m.CustomerPayment.payment_method == "cash",
+                m.CustomerPayment.created_at >= shift.opened_at,
+                m.CustomerPayment.sales_invoice_id.in_(
+                    select(m.HotelFolio.sales_invoice_id).where(
+                        m.HotelFolio.tenant_id == tenant_id, m.HotelFolio.sales_invoice_id.is_not(None)
+                    )
+                ),
             )
         )
     ).scalar_one()
@@ -352,7 +386,7 @@ async def drawer_cash(db: AsyncSession, *, tenant_id: str, shift: m.HotelCashier
             )
         )
     ).scalar_one()
-    return money_json(round(float(bills) + float(shop), 2))
+    return money_json(round(float(bills) + float(deposits) + float(invoices) + float(shop), 2))
 
 
 async def live_shift(db: AsyncSession, *, tenant_id: str) -> dict | None:
