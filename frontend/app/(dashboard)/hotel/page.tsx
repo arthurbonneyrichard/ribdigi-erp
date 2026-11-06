@@ -5258,7 +5258,7 @@ export default function HotelPage() {
           {canReadCompany && (
             <p className="muted">
               Logo, legal name, address, and tax IDs:{' '}
-              <Link href="/company">Company profile</Link>
+              <Link href="/company" className="hlink">Company profile</Link>
             </p>
           )}
           <form

@@ -1494,7 +1494,7 @@ export default function Page() {
                 id="company-tin"
                 value={tenant.tax_registration_number || ''}
                 onChange={(e) => setTenant({ ...tenant, tax_registration_number: e.target.value })}
-                placeholder="TIN / VAT registration number (tax ID)"
+                placeholder="e.g. C0012345678"
                 aria-label="TIN / VAT registration number"
               />
             </div>
