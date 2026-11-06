@@ -554,8 +554,10 @@ async def next_series_document_number(
     table = model.__tablename__
     extra_eq = meta.get("extra_eq") if isinstance(meta.get("extra_eq"), dict) else None
 
+    # key_share keeps numbers one at a time without blocking the key lock every insert for this
+    # company takes on this row. A plain FOR UPDATE deadlocks against the audit chain's lock.
     tenant = (
-        await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id).with_for_update())
+        await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id).with_for_update(key_share=True))
     ).scalar_one()
     year = datetime.utcnow().year
     scope_company = await _resolve_series_company_id(db, tenant_id, kind, company_id)

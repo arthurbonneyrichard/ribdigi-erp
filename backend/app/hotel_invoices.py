@@ -25,18 +25,19 @@ def _due(invoice: m.SalesInvoice) -> float:
 
 
 async def list_invoices(db: AsyncSession, tenant_id: str, *, show: str = "owed") -> dict:
-    rows = (
-        await db.execute(
-            select(m.HotelFolio, m.SalesInvoice, m.HotelGuest, m.HotelReservation, m.HotelRoom)
-            .join(m.SalesInvoice, m.SalesInvoice.id == m.HotelFolio.sales_invoice_id)
-            .join(m.HotelGuest, m.HotelGuest.id == m.HotelFolio.guest_id)
-            .join(m.HotelReservation, m.HotelReservation.id == m.HotelFolio.reservation_id)
-            .outerjoin(m.HotelRoom, m.HotelRoom.id == m.HotelReservation.room_id)
-            .where(m.HotelFolio.tenant_id == tenant_id, m.SalesInvoice.tenant_id == tenant_id)
-            .order_by(m.SalesInvoice.created_at.desc())
-            .limit(300)
-        )
-    ).all()
+    stmt = (
+        select(m.HotelFolio, m.SalesInvoice, m.HotelGuest, m.HotelReservation, m.HotelRoom)
+        .join(m.SalesInvoice, m.SalesInvoice.id == m.HotelFolio.sales_invoice_id)
+        .join(m.HotelGuest, m.HotelGuest.id == m.HotelFolio.guest_id)
+        .join(m.HotelReservation, m.HotelReservation.id == m.HotelFolio.reservation_id)
+        .outerjoin(m.HotelRoom, m.HotelRoom.id == m.HotelReservation.room_id)
+        .where(m.HotelFolio.tenant_id == tenant_id, m.SalesInvoice.tenant_id == tenant_id)
+        .order_by(m.SalesInvoice.created_at.desc())
+    )
+    if show == "owed":
+        # The window is taken from what is owed, so an old debt cannot fall behind newer paid invoices.
+        stmt = stmt.where(m.SalesInvoice.total_amount - m.SalesInvoice.paid_amount > 0.004)
+    rows = (await db.execute(stmt.limit(300))).all()
     items = []
     for folio, invoice, guest, reservation, room in rows:
         due = _due(invoice)

@@ -43,7 +43,7 @@ class PublicStayBody(BaseModel):
     adults: int = Field(default=1, ge=1, le=20)
     children: int = Field(default=0, ge=0, le=20)
     room_id: UuidIdValue
-    notes: str | None = None
+    notes: str | None = Field(default=None, max_length=1000)
 
 
 @router.get("/booking-link")

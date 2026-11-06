@@ -34,7 +34,7 @@ export const HOTEL_GUIDES: Record<string, HotelGuideText> = {
       'Book a stay takes a new booking in three steps.',
       'Use the menu on a row to extend, change room, email the confirmation, edit or cancel.',
     ],
-    tip: 'A cancelled stay with a deposit stays at the top until a cashier or manager gives the money back or keeps it.',
+    tip: 'A cancelled stay with a deposit stays at the top until a cashier or manager gives the money back or keeps it. On a no-show, the fee takes the deposit first; a cashier or manager then closes the bill from Open bill.',
   },
   'book-stay': {
     what: 'Three steps: dates, room, guest.',

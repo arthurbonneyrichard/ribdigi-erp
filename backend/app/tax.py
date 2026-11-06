@@ -918,6 +918,45 @@ async def tax_filing_pack(
                     "store_id": order.store_id,
                 }
             )
+    # Hotel shop sales paid at the till. A sale charged to a room reaches tax on the guest's invoice.
+    from app.reports import apply_store_scope_or_unassigned as _scope_shop
+
+    shop_stmt = select(m.HotelShopSale).where(
+        m.HotelShopSale.tenant_id == tenant_id,
+        m.HotelShopSale.status == "completed",
+        m.HotelShopSale.payment_method != "room",
+    )
+    if from_date:
+        shop_stmt = shop_stmt.where(m.HotelShopSale.created_at >= from_date)
+    if to_date:
+        shop_stmt = shop_stmt.where(m.HotelShopSale.created_at <= to_date)
+    shop_stmt = _scope_shop(
+        shop_stmt,
+        m.HotelShopSale.store_id,
+        store_id,
+        list(store_ids) if store_ids is not None else None,
+    )
+    for sale in (await db.execute(shop_stmt)).scalars().all():
+        total = money_json(sale.total or 0)
+        tax = money_json(sale.tax or 0)
+        net = money_json(round(total - tax, 2))
+        output_invoices += tax
+        _bump_supply("standard", net)
+        output_schedule.append(
+            {
+                "schedule": "output_sales_invoices",
+                "document_type": "hotel_shop_sale",
+                "document_number": sale.sale_number,
+                "document_id": sale.id,
+                "document_date": sale.created_at,
+                "net_amount": net,
+                "tax_amount": tax,
+                "reverse_charge_tax": money_json(0),
+                "gross_amount": total,
+                "party_id": None,
+                "store_id": sale.store_id,
+            }
+        )
     taxable_outputs = standard_outputs
 
     # Prefer approved purchase invoices for input tax; fall back to POs.

@@ -195,6 +195,7 @@ from app.schemas import (
     FmcgTradeSchemeActiveUpdate,
     FmcgTradeSchemeCreate,
     HotelCheckoutBody,
+    HotelCloseBill,
     HotelServiceChargeBody,
     HotelTimingFeeBody,
     HotelFolioServiceChargeCreate,
@@ -17940,6 +17941,24 @@ async def ai_report_templates_delete(
 # --- Hotel module ---
 
 
+_HOTEL_STAY_PRIVATE = (
+    "nightly_rate",
+    "estimated_total",
+    "deposit_amount",
+    "deposit_method",
+    "folio_balance",
+    "guest_phone",
+    "guest_email",
+)
+
+
+def _hotel_stay_view(row: dict, role: str | None) -> dict:
+    """Room staff need to know who is in which room, not what they pay or how to reach them."""
+    if role not in hotel_jobs_mod.NO_MONEY_ROLES:
+        return row
+    return {k: v for k, v in row.items() if k not in _HOTEL_STAY_PRIVATE}
+
+
 @api.get("/hotel/summary")
 async def hotel_summary(
     on_date: IsoDateQueryValue | None = None,
@@ -17949,6 +17968,10 @@ async def hotel_summary(
     data = await hotel_svc.summary(db, tenant_id=claims["tenant_id"], on_date=on_date)
     if claims.get("role") in hotel_jobs_mod.NO_MONEY_ROLES:
         data = {k: v for k, v in data.items() if not any(w in k for w in ("revenue", "payment", "balance", "adr", "revpar"))}
+        data["alerts"] = [a for a in data.get("alerts", []) if a.get("code") != "unpaid_balances"]
+        data["recent_reservations"] = [
+            _hotel_stay_view(r, claims.get("role")) for r in data.get("recent_reservations", [])
+        ]
     return env(data)
 
 
@@ -18218,15 +18241,18 @@ async def hotel_reservations_list(
     check_in_time = await hotel_svc.stored_check_in_time(db, tenant_id=claims["tenant_id"])
     return env(
         [
-            hotel_svc.serialize_reservation(
-                r,
-                room=room,
-                guest=guest,
-                folio_id=folio_map.get(r.id, (None, None))[0],
-                folio_balance=folio_map.get(r.id, (None, None))[1] if r.id in folio_map else None,
-                cancellation_hours=cancel_hours,
-                check_in_time=check_in_time,
-                group_name=labels.get(str(hotel_svc._opt(r, "group_id") or "")),
+            _hotel_stay_view(
+                hotel_svc.serialize_reservation(
+                    r,
+                    room=room,
+                    guest=guest,
+                    folio_id=folio_map.get(r.id, (None, None))[0],
+                    folio_balance=folio_map.get(r.id, (None, None))[1] if r.id in folio_map else None,
+                    cancellation_hours=cancel_hours,
+                    check_in_time=check_in_time,
+                    group_name=labels.get(str(hotel_svc._opt(r, "group_id") or "")),
+                ),
+                claims.get("role"),
             )
             for r, room, guest in rows
         ]
@@ -18239,6 +18265,7 @@ async def hotel_reservations_create(
     claims=Depends(require_permission("hotel", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    hotel_svc.assert_discount_allowed(claims.get("role"), payload.discount_percent)
     # Hold lock through commit so overlapping concurrent bookings serialize.
     async with hotel_svc.room_booking_lock(claims["tenant_id"], payload.room_id):
         row, room, guest = await hotel_svc.create_reservation(
@@ -18271,7 +18298,15 @@ async def hotel_reservations_create(
             action="reservation_created",
             entity="hotel_reservation",
             entity_id=row.id,
-            details={"reservation_number": row.reservation_number, "room_id": row.room_id},
+            details={
+                "reservation_number": row.reservation_number,
+                "room_id": row.room_id,
+                "nightly_rate": money_json(row.nightly_rate or 0),
+                "rate_typed_by_staff": payload.nightly_rate is not None,
+                "discount_percent": money_json(payload.discount_percent or 0),
+                "discount_authorized_by": payload.discount_authorized_by,
+                "deposit_amount": money_json(row.deposit_amount or 0),
+            },
         )
         await db.commit()
     cancel_hours = await hotel_svc.stored_cancellation_hours(db, tenant_id=claims["tenant_id"])
@@ -18304,6 +18339,8 @@ async def hotel_reservation_update(
         )
         lock_room = existing.room_id
     async with hotel_svc.room_booking_lock(claims["tenant_id"], lock_room):
+        before, _, _ = await hotel_svc._get_reservation(db, claims["tenant_id"], reservation_id)
+        rate_before = money_json(before.nightly_rate or 0)
         row, room, guest = await hotel_svc.update_reservation(
             db,
             tenant_id=claims["tenant_id"],
@@ -18318,7 +18355,11 @@ async def hotel_reservation_update(
             action="reservation_updated",
             entity="hotel_reservation",
             entity_id=row.id,
-            details={"reservation_number": row.reservation_number},
+            details={
+                "reservation_number": row.reservation_number,
+                "nightly_rate_before": rate_before,
+                "nightly_rate_after": money_json(row.nightly_rate or 0),
+            },
         )
         await db.commit()
     return env(
@@ -18637,6 +18678,8 @@ async def hotel_folio_add_charge(
     claims=Depends(require_permission("hotel", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    if payload.charge_type == "discount":
+        hotel_svc.assert_discount_allowed(claims.get("role"), payload.unit_amount)
     row = await hotel_svc.add_folio_charge(
         db,
         tenant_id=claims["tenant_id"],
@@ -18731,6 +18774,40 @@ async def hotel_folio_service_charge(
     return env(await hotel_svc.present_folio(
         db, tenant_id=claims["tenant_id"], folio=folio, charges=charges, payments=payments
     ), "Service charge posted")
+
+
+@api.post("/hotel/reservations/{reservation_id}/close-bill")
+async def hotel_reservation_close_bill(
+    reservation_id: UuidIdValue,
+    payload: HotelCloseBill,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    folio = await hotel_svc.close_unused_bill(
+        db,
+        tenant_id=claims["tenant_id"],
+        reservation_id=reservation_id,
+        leftover=payload.leftover,
+        reason=payload.reason,
+        user_id=claims["sub"],
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="unused_bill_closed",
+        entity="hotel_folio",
+        entity_id=folio.id,
+        details={"reservation_id": reservation_id, "leftover": payload.leftover, "reason": payload.reason},
+    )
+    await db.commit()
+    folio, charges, payments = await hotel_svc.get_folio_detail(
+        db, tenant_id=claims["tenant_id"], folio_id=folio.id
+    )
+    return env(await hotel_svc.present_folio(
+        db, tenant_id=claims["tenant_id"], folio=folio, charges=charges, payments=payments
+    ), "Bill closed")
 
 
 @api.post("/hotel/reservations/{reservation_id}/no-show-fee")
@@ -19819,6 +19896,7 @@ async def hotel_group_create(
     claims=Depends(require_permission("hotel", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    hotel_svc.assert_discount_allowed(claims.get("role"), payload.discount_percent)
     group, created = await hotel_svc.create_group_reservation(
         db,
         tenant_id=claims["tenant_id"],

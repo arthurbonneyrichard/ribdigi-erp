@@ -9609,6 +9609,7 @@ class HotelRoomUpdate(BaseModel):
     max_occupancy: Annotated[int, Field(ge=1, le=20)] | None = None
     rate_amount: NonNegativeMoneyValue | None = None
     weekend_rate: NonNegativeMoneyValue | None = None
+    clear_weekend_rate: bool = False
     extra_person_charge: NonNegativeMoneyValue | None = None
     amenities: HotelRoomAmenities | None = None
     description: Annotated[str, Field(min_length=1, max_length=2000)] | None = None
@@ -9710,6 +9711,15 @@ class HotelCheckoutBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     allow_balance: bool = False
+
+
+class HotelCloseBill(BaseModel):
+    """A cancelled or no-show stay: what to do with any deposit left, then close the bill."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    leftover: Literal["refund", "keep"] | None = None
+    reason: Annotated[str, Field(min_length=3, max_length=255)] | None = None
 
 
 class HotelFolioChargeCreate(BaseModel):
@@ -9897,10 +9907,10 @@ class HotelSettingsUpdate(BaseModel):
     check_in_time: Annotated[str, Field(min_length=4, max_length=8)] | None = None
     check_out_time: Annotated[str, Field(min_length=4, max_length=8)] | None = None
     cancellation_hours: Annotated[int, Field(ge=0, le=720)] | None = None
-    no_show_fee_percent: NonNegativeMoneyValue | None = None
+    no_show_fee_percent: PercentRateValue | None = None
     early_checkin_fee: NonNegativeMoneyValue | None = None
     late_checkout_fee: NonNegativeMoneyValue | None = None
-    tax_percent: NonNegativeMoneyValue | None = None
+    tax_percent: PercentRateValue | None = None
     room_rates_include_tax: bool | None = None
     service_charge_percent: PercentRateValue | None = None
     notes: Annotated[str, Field(min_length=1, max_length=1000)] | None = None
@@ -9953,7 +9963,7 @@ class HotelRatePlanCreate(BaseModel):
     room_type: HotelRoomTypeValue | None = None
     weekday_only: bool = False
     weekend_only: bool = False
-    min_nights: Annotated[int, Field(ge=1, le=30)] = 1
+    min_nights: Annotated[int, Field(ge=1, le=365)] = 1
     starts_on: IsoDateQueryValue | None = None
     ends_on: IsoDateQueryValue | None = None
 
@@ -10004,7 +10014,7 @@ class HotelServiceCreate(BaseModel):
     name: Annotated[str, Field(min_length=1, max_length=150)]
     category: Literal["restaurant", "bar", "laundry", "transport", "spa", "extra", "service"] = "extra"
     unit_amount: NonNegativeMoneyValue = 0
-    tax_percent: NonNegativeMoneyValue = 0
+    tax_percent: PercentRateValue = 0
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
 
 
@@ -10014,7 +10024,7 @@ class HotelServiceUpdate(BaseModel):
     name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
     category: Literal["restaurant", "bar", "laundry", "transport", "spa", "extra", "service"] | None = None
     unit_amount: NonNegativeMoneyValue | None = None
-    tax_percent: NonNegativeMoneyValue | None = None
+    tax_percent: PercentRateValue | None = None
     is_active: bool | None = None
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
 

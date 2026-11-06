@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 from contextlib import asynccontextmanager
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
@@ -156,6 +157,21 @@ HK_TASK_STATUSES = frozenset({"pending", "in_progress", "completed", "cancelled"
 HK_PRIORITIES = frozenset({"low", "normal", "high", "urgent"})
 MAINT_STATUSES = frozenset({"open", "in_progress", "completed", "cancelled"})
 BLOCKING_ROOM_STATUSES = frozenset({"maintenance", "out_of_order", "blocked", "occupied", "dirty"})
+CLOSED_ROOM_STATUSES = frozenset({"maintenance", "out_of_order", "blocked"})
+# These roles book stays and take payment. A discount is a manager's or cashier's decision.
+DISCOUNT_REFUSED_ROLES = frozenset({"hotel_front_desk", "hotel_reservations"})
+ONLINE_MAX_NIGHTS = 60
+ONLINE_MAX_DAYS_AHEAD = 365
+ONLINE_MAX_OPEN_REQUESTS = 3
+
+
+def assert_discount_allowed(role: str | None, amount: float | None) -> None:
+    """A clerk cannot give away the hotel's money and sign for it themselves."""
+    if money_json(amount or 0) > 0 and str(role or "") in DISCOUNT_REFUSED_ROLES:
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "HOTEL_ROLE_JOB", "message": "A discount needs a cashier or manager."},
+        )
 
 
 def _as_date(value: date | datetime | str | None) -> date | None:
@@ -200,6 +216,16 @@ def _departure_day(row) -> date | None:
     if status != "checked_out":
         return None
     return _as_date(getattr(row, "checked_out_at", None)) or planned
+
+
+def _leaves_on(row, day: date) -> bool:
+    """On the departures list: leaving this day, or still here after the date they were due out."""
+    leaving = _departure_day(row)
+    if leaving is None:
+        return False
+    if getattr(row, "status", None) == "checked_in":
+        return leaving <= day
+    return leaving == day
 
 
 def _room_description(value: str | None) -> str | None:
@@ -310,7 +336,8 @@ async def stored_cancellation_hours(db: AsyncSession, *, tenant_id: str) -> int:
     )
     if not rows:
         return 24
-    return max(0, int(getattr(rows[0], "cancellation_hours", 24) or 24))
+    stored = getattr(rows[0], "cancellation_hours", None)
+    return 24 if stored is None else max(0, int(stored))
 
 
 async def stored_check_in_time(db: AsyncSession, *, tenant_id: str) -> str:
@@ -675,8 +702,10 @@ async def create_room(
 _READY_ROOM_STATUSES = frozenset({"available", "clean", "inspected", "reserved"})
 
 
-async def _ready_block_reason(db: AsyncSession, *, tenant_id: str, room_id: str) -> str | None:
-    """Why a room must not be marked sellable right now."""
+async def _repair_today(
+    db: AsyncSession, *, tenant_id: str, room_id: str, skip_ticket_id: str | None = None
+) -> bool:
+    """A blocking repair covers today."""
     today = date.today()
     tickets = await _optional_scalars(
         db,
@@ -688,22 +717,78 @@ async def _ready_block_reason(db: AsyncSession, *, tenant_id: str, room_id: str)
         ),
     )
     for ticket in tickets:
+        if ticket.id == skip_ticket_id:
+            continue
         start = _as_date(getattr(ticket, "ooo_starts_on", None)) or date.min
         end = _as_date(getattr(ticket, "ooo_ends_on", None)) or date.max
         if start <= today <= end:
-            return "Room stays out of service until maintenance is finished"
-    stay = (
-        await db.execute(
-            select(m.HotelReservation.id).where(
-                m.HotelReservation.tenant_id == tenant_id,
-                m.HotelReservation.room_id == room_id,
-                m.HotelReservation.status == "checked_in",
-            ).limit(1)
-        )
-    ).first()
-    if stay:
+            return True
+    return False
+
+
+async def _guest_in_room(
+    db: AsyncSession, *, tenant_id: str, room_id: str, skip_stay_id: str | None = None
+) -> m.HotelReservation | None:
+    """The stay physically in this room now, whatever its planned dates say."""
+    stmt = select(m.HotelReservation).where(
+        m.HotelReservation.tenant_id == tenant_id,
+        m.HotelReservation.room_id == room_id,
+        m.HotelReservation.status == "checked_in",
+    )
+    if skip_stay_id:
+        stmt = stmt.where(m.HotelReservation.id != skip_stay_id)
+    return (await db.execute(stmt.limit(1))).scalars().first()
+
+
+async def _ready_block_reason(db: AsyncSession, *, tenant_id: str, room_id: str) -> str | None:
+    """Why a room must not be marked sellable right now."""
+    if await _repair_today(db, tenant_id=tenant_id, room_id=room_id):
+        return "Room stays out of service until maintenance is finished"
+    if await _guest_in_room(db, tenant_id=tenant_id, room_id=room_id):
         return "Room is occupied"
     return None
+
+
+async def _refresh_room_hold(db: AsyncSession, *, tenant_id: str, room: m.HotelRoom) -> None:
+    """A sellable room shows reserved while a confirmed booking waits for it, and free once none does."""
+    if room.status not in {"available", "clean", "inspected", "reserved"}:
+        return
+    waiting = (
+        await db.execute(
+            select(m.HotelReservation.id)
+            .where(
+                m.HotelReservation.tenant_id == tenant_id,
+                m.HotelReservation.room_id == room.id,
+                m.HotelReservation.status == "booked",
+            )
+            .limit(1)
+        )
+    ).first()
+    if waiting:
+        room.status = "reserved"
+    elif room.status == "reserved":
+        room.status = "available"
+    room.updated_at = datetime.utcnow()
+
+
+def _assert_room_fits(room: m.HotelRoom, adults: int | None, children: int | None) -> None:
+    occ = max(1, int(adults or 1)) + max(0, int(children or 0))
+    if occ > int(room.max_occupancy or 1):
+        raise HTTPException(status_code=409, detail="Occupancy exceeds room capacity")
+
+
+def _add_cleaning_task(db: AsyncSession, *, tenant_id: str, room: m.HotelRoom, notes: str) -> None:
+    db.add(
+        m.HotelHousekeepingTask(
+            tenant_id=tenant_id,
+            room_id=room.id,
+            task_type="cleaning",
+            priority="high",
+            status="pending",
+            due_at=datetime.utcnow() + timedelta(hours=2),
+            notes=notes,
+        )
+    )
 
 
 async def update_room(
@@ -718,6 +803,7 @@ async def update_room(
     max_occupancy: int | None = None,
     rate_amount: float | None = None,
     weekend_rate: float | None = None,
+    clear_weekend_rate: bool = False,
     extra_person_charge: float | None = None,
     amenities: dict | None = None,
     description: str | None = None,
@@ -750,6 +836,8 @@ async def update_room(
         row.rate_amount = money_json(rate_amount)
     if weekend_rate is not None:
         row.weekend_rate = money_json(weekend_rate)
+    elif clear_weekend_rate:
+        row.weekend_rate = None
     if extra_person_charge is not None:
         row.extra_person_charge = money_json(extra_person_charge)
     if amenities is not None:
@@ -760,6 +848,15 @@ async def update_room(
         status_key = status.strip().lower()
         if status_key not in ROOM_STATUSES:
             raise HTTPException(status_code=422, detail="Invalid room status")
+        if status_key != row.status:
+            in_room = await _guest_in_room(db, tenant_id=tenant_id, room_id=row.id)
+            if in_room:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"{in_room.reservation_number} is in this room. Check the guest out or move them first.",
+                )
+            if status_key == "occupied":
+                raise HTTPException(status_code=409, detail="A room becomes occupied at check-in")
         if status_key in _READY_ROOM_STATUSES:
             reason = await _ready_block_reason(db, tenant_id=tenant_id, room_id=row.id)
             if reason:
@@ -775,6 +872,27 @@ async def update_room(
             raise HTTPException(status_code=422, detail="Room notes cannot be blank")
         row.notes = optional_honest_narrative(notes, label="notes", max_length=500)
     if is_active is not None:
+        if row.is_active and not is_active:
+            stay = (
+                await db.execute(
+                    select(m.HotelReservation)
+                    .where(
+                        m.HotelReservation.tenant_id == tenant_id,
+                        m.HotelReservation.room_id == row.id,
+                        or_(
+                            m.HotelReservation.status == "checked_in",
+                            (m.HotelReservation.status.in_(("tentative", "booked", "waitlisted")))
+                            & (m.HotelReservation.check_out_date >= date.today()),
+                        ),
+                    )
+                    .limit(1)
+                )
+            ).scalars().first()
+            if stay:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"{stay.reservation_number} is on this room. Move or cancel it before taking the room off sale.",
+                )
         row.is_active = bool(is_active)
     row.updated_at = datetime.utcnow()
     await db.flush()
@@ -852,7 +970,7 @@ async def create_guest(
                     m.HotelGuest.is_active.is_(True),
                 )
             )
-        ).scalar_one_or_none()
+        ).scalars().first()
         if dup:
             raise HTTPException(
                 status_code=409,
@@ -967,7 +1085,7 @@ async def merge_guests(
 ) -> m.HotelGuest:
     if keep_guest_id == source_guest_id:
         raise HTTPException(status_code=400, detail="Cannot merge a guest into itself")
-    keep = await _get_guest(db, tenant_id, keep_guest_id, require_active=False)
+    keep = await _get_guest(db, tenant_id, keep_guest_id)
     source = await _get_guest(db, tenant_id, source_guest_id, require_active=False)
     res_rows = (
         await db.execute(
@@ -990,6 +1108,21 @@ async def merge_guests(
     for folio in folios:
         folio.guest_id = keep.id
         folio.updated_at = datetime.utcnow()
+    for model in (m.HotelReservationGroup, m.HotelEvent):
+        linked = await _optional_scalars(
+            db, select(model).where(model.tenant_id == tenant_id, model.guest_id == source.id)
+        )
+        for row in linked:
+            row.guest_id = keep.id
+    # The email is unique per company: free it first, then give it to the guest who stays.
+    moved_email = source.email
+    source.email = None
+    await db.flush()
+    if moved_email and not keep.email:
+        keep.email = moved_email
+    if source.phone and not keep.phone:
+        keep.phone = source.phone
+    keep.updated_at = datetime.utcnow()
     source.is_active = False
     note = f"Merged into {keep.full_name} ({keep.id})"
     source.notes = ((source.notes or "") + "\n" + note).strip()[:500]
@@ -998,7 +1131,15 @@ async def merge_guests(
     return keep
 
 
+async def _lock_numbers(db: AsyncSession, tenant_id: str) -> None:
+    """One number at a time per company, so two desks or the desk and the website never take the same one."""
+    # key_share: every insert for this company takes a key lock on this row. A plain FOR UPDATE
+    # blocks those, and with the audit chain's advisory lock that deadlocks on Postgres.
+    await db.execute(select(m.Tenant.id).where(m.Tenant.id == tenant_id).with_for_update(key_share=True))
+
+
 async def _next_reservation_number(db: AsyncSession, tenant_id: str) -> str:
+    await _lock_numbers(db, tenant_id)
     year = datetime.utcnow().year
     prefix = f"HR-{year}-"
     count = (
@@ -1015,6 +1156,7 @@ async def _next_reservation_number(db: AsyncSession, tenant_id: str) -> str:
 
 
 async def _next_folio_number(db: AsyncSession, tenant_id: str) -> str:
+    await _lock_numbers(db, tenant_id)
     year = datetime.utcnow().year
     prefix = f"HF-{year}-"
     count = (
@@ -1031,13 +1173,18 @@ async def _next_folio_number(db: AsyncSession, tenant_id: str) -> str:
 
 
 async def _get_room(
-    db: AsyncSession, tenant_id: str, room_id: str, *, for_update: bool = False
+    db: AsyncSession,
+    tenant_id: str,
+    room_id: str,
+    *,
+    for_update: bool = False,
+    require_active: bool = True,
 ) -> m.HotelRoom:
     stmt = select(m.HotelRoom).where(m.HotelRoom.id == room_id, m.HotelRoom.tenant_id == tenant_id)
     if for_update:
         stmt = stmt.with_for_update()
     row = (await db.execute(stmt)).scalar_one_or_none()
-    if not row or not row.is_active:
+    if not row or (require_active and not row.is_active):
         raise HTTPException(status_code=404, detail="Room not found")
     return row
 
@@ -1063,20 +1210,24 @@ async def _assert_room_available(
     check_in: date,
     check_out: date,
     exclude_id: str | None = None,
+    exclude_event_id: str | None = None,
+    lock: bool = True,
 ) -> None:
     if check_out <= check_in:
         raise HTTPException(status_code=400, detail="check_out_date must be after check_in_date")
-    stmt = (
-        select(m.HotelReservation)
-        .where(
-            m.HotelReservation.tenant_id == tenant_id,
-            m.HotelReservation.room_id == room_id,
-            m.HotelReservation.status.in_(ACTIVE_BOOKING_STATUSES),
+    stmt = select(m.HotelReservation).where(
+        m.HotelReservation.tenant_id == tenant_id,
+        m.HotelReservation.room_id == room_id,
+        m.HotelReservation.status.in_(ACTIVE_BOOKING_STATUSES),
+        # A guest who checked in early holds the room from today, whatever the booked start says.
+        or_(
             m.HotelReservation.check_in_date < check_out,
-            m.HotelReservation.check_out_date > check_in,
-        )
-        .with_for_update()
+            (m.HotelReservation.status == "checked_in") & (date.today() < check_out),
+        ),
+        m.HotelReservation.check_out_date > check_in,
     )
+    if lock:
+        stmt = stmt.with_for_update()
     if exclude_id:
         stmt = stmt.where(m.HotelReservation.id != exclude_id)
     clash = (await db.execute(stmt.limit(1))).scalar_one_or_none()
@@ -1113,6 +1264,7 @@ async def _assert_room_available(
             m.HotelEvent.ends_on > check_in,
         ),
     )
+    events = [event for event in events if event.id != exclude_event_id]
     if events:
         raise HTTPException(
             status_code=409,
@@ -1166,7 +1318,7 @@ async def list_reservations(
     rows = (await db.execute(stmt)).all()
     picked = [(r, room, guest) for r, room, guest in rows]
     if kind == "departures":
-        picked = [item for item in picked if _departure_day(item[0]) == day]
+        picked = [item for item in picked if _leaves_on(item[0], day)]
     return picked
 
 
@@ -1292,6 +1444,9 @@ async def create_reservation(
     if disc > 0 and not discount_authorized_by:
         raise HTTPException(status_code=422, detail="discount_authorized_by is required when applying a discount")
     if disc:
+        signer = await db.get(m.User, discount_authorized_by)
+        if signer is None or signer.tenant_id not in {tenant_id, None}:
+            raise HTTPException(status_code=422, detail="discount_authorized_by is not a user of this company")
         rate = money_json(rate * (1 - disc / 100.0))
     if notes is not None and not str(notes).strip():
         raise HTTPException(status_code=422, detail="Reservation notes cannot be blank")
@@ -1452,6 +1607,11 @@ async def update_reservation(
     check_out = _as_date(check_out_date) or row.check_out_date
     if room_id and room_id != row.room_id and _dirty_blocks_stay(new_room, check_in):
         raise HTTPException(status_code=409, detail="Room is dirty — complete housekeeping first")
+    _assert_room_fits(
+        new_room,
+        row.adults if adults is None else adults,
+        row.children if children is None else children,
+    )
     await _assert_room_available(
         db,
         tenant_id=tenant_id,
@@ -1483,13 +1643,17 @@ async def update_reservation(
             raise HTTPException(status_code=422, detail="Reservation notes cannot be blank")
         row.notes = optional_honest_narrative(notes, label="notes", max_length=500)
     await db.flush()
+    if new_room.id != room.id:
+        await _refresh_room_hold(db, tenant_id=tenant_id, room=room)
+        await _refresh_room_hold(db, tenant_id=tenant_id, room=new_room)
+        await db.flush()
     return row, new_room, guest
 
 
 async def confirm_reservation(
     db: AsyncSession, *, tenant_id: str, reservation_id: str
 ) -> tuple[m.HotelReservation, m.HotelRoom, m.HotelGuest]:
-    row, room, guest = await _get_reservation(db, tenant_id, reservation_id)
+    row, room, guest = await _get_reservation(db, tenant_id, reservation_id, for_update=True)
     if row.status not in {"tentative", "waitlisted"}:
         raise HTTPException(
             status_code=400, detail="Only tentative or waiting-list reservations can be confirmed"
@@ -1563,9 +1727,20 @@ async def transfer_folio_charge(
         raise HTTPException(status_code=404, detail="Charge not found")
     if charge.folio_id == target_folio_id:
         raise HTTPException(status_code=400, detail="Charge is already on that folio")
+    source, _, _ = await get_folio_detail(db, tenant_id=tenant_id, folio_id=charge.folio_id)
+    if source.status != "open":
+        raise HTTPException(status_code=400, detail="Folio is closed")
     target, _, _ = await get_folio_detail(db, tenant_id=tenant_id, folio_id=target_folio_id)
     if target.status != "open":
         raise HTTPException(status_code=400, detail="Target folio is closed")
+    before_tax = money_json(
+        money_json(charge.quantity or 1) * money_json(charge.unit_amount or 0)
+        - money_json(charge.discount_amount or 0)
+    )
+    tax_was_inside = (
+        money_json(charge.tax_amount or 0) > 0
+        and abs(abs(money_json(charge.line_total or 0)) - before_tax) < 0.01
+    )
     moved = await add_folio_charge(
         db,
         tenant_id=tenant_id,
@@ -1578,6 +1753,7 @@ async def transfer_folio_charge(
         discount_amount=money_json(charge.discount_amount or 0),
         created_by=created_by,
         post_books=False,
+        tax_included=tax_was_inside,
     )
     # Same receivable, a different guest: the journal moves with the charge.
     moved.journal_entry_id = charge.journal_entry_id
@@ -1587,24 +1763,26 @@ async def transfer_folio_charge(
         tenant_id=tenant_id,
         charge_id=charge.id,
         void_reason="Transferred to another folio",
+        user_id=created_by,
     )
     return moved
 
 
 async def _get_reservation(
-    db: AsyncSession, tenant_id: str, reservation_id: str
+    db: AsyncSession, tenant_id: str, reservation_id: str, *, for_update: bool = False
 ) -> tuple[m.HotelReservation, m.HotelRoom, m.HotelGuest]:
-    row = (
-        await db.execute(
-            select(m.HotelReservation).where(
-                m.HotelReservation.id == reservation_id,
-                m.HotelReservation.tenant_id == tenant_id,
-            )
-        )
-    ).scalar_one_or_none()
+    stmt = select(m.HotelReservation).where(
+        m.HotelReservation.id == reservation_id,
+        m.HotelReservation.tenant_id == tenant_id,
+    )
+    if for_update:
+        # A double click or two desks wait here, then see the status the first one left.
+        stmt = stmt.with_for_update()
+    row = (await db.execute(stmt)).scalar_one_or_none()
     if not row:
         raise HTTPException(status_code=404, detail="Reservation not found")
-    room = await _get_room(db, tenant_id, row.room_id)
+    # A stay still finishes in a room that has since gone off sale.
+    room = await _get_room(db, tenant_id, row.room_id, require_active=False)
     guest = await _get_guest(db, tenant_id, row.guest_id, require_active=False)
     return row, room, guest
 
@@ -1813,6 +1991,7 @@ async def add_folio_charge(
     created_by: str | None = None,
     stay_tax: bool = False,
     post_books: bool = True,
+    tax_included: bool = False,
 ) -> m.HotelFolioCharge:
     folio = (
         await db.execute(
@@ -1832,13 +2011,26 @@ async def add_folio_charge(
     unit = money_json(unit_amount or 0)
     tax = money_json(tax_amount or 0)
     disc = money_json(discount_amount or 0)
-    tax_inside = False
+    tax_inside = tax_included
     if stay_tax:
         tax, tax_inside = await _stay_tax(db, tenant_id=tenant_id, amount=qty * unit)
+    if ctype == "tax":
+        # A levy is all tax: it belongs in the tax account, not in revenue.
+        tax = money_json(qty * unit)
+        tax_inside = True
+    if ctype == "discount":
+        tax = 0.0
     gross = money_json(qty * unit + (0 if tax_inside else tax))
     if disc > gross:
         raise HTTPException(status_code=422, detail="Folio charge discount cannot be above the line")
     line_total = money_json(gross - disc)
+    if ctype == "discount":
+        if line_total <= 0:
+            raise HTTPException(status_code=422, detail="Enter the amount to take off the bill")
+        charged, _paid, _balance = await folio_totals(db, tenant_id=tenant_id, folio_id=folio_id)
+        if line_total > charged + 0.004:
+            raise HTTPException(status_code=422, detail=f"A discount cannot be more than the {charged:.2f} on this bill")
+        line_total = money_json(-line_total)
     row = m.HotelFolioCharge(
         tenant_id=tenant_id,
         folio_id=folio_id,
@@ -1899,7 +2091,8 @@ async def _post_books(
 
 
 def _charge_lines(charge: m.HotelFolioCharge, description: str, *, reverse: bool = False) -> list[dict]:
-    total = money_json(charge.line_total or 0)
+    signed = money_json(charge.line_total or 0)
+    total = abs(signed)
     tax = min(money_json(charge.tax_amount or 0), total)
     net = money_json(round(total - tax, 2))
     lines = [{"account_code": "1100", "debit": total, "credit": 0, "description": description}]
@@ -1907,7 +2100,8 @@ def _charge_lines(charge: m.HotelFolioCharge, description: str, *, reverse: bool
         lines.append({"account_code": "4000", "debit": 0, "credit": net, "description": description})
     if tax > 0:
         lines.append({"account_code": "2100", "debit": 0, "credit": tax, "description": description})
-    if reverse:
+    # A discount line is a credit, so it and a void each turn the entry round.
+    if reverse != (signed < 0):
         lines = [{**x, "debit": x["credit"], "credit": x["debit"]} for x in lines]
     return lines
 
@@ -1921,7 +2115,7 @@ async def _post_charge_journal(
     user_id: str | None,
 ) -> None:
     """A folio charge is money the guest owes: receivables up, revenue and tax recognised."""
-    if money_json(charge.line_total or 0) <= 0 or charge.journal_entry_id:
+    if money_json(charge.line_total or 0) == 0 or charge.journal_entry_id:
         return
     description = f"Hotel folio {folio.folio_number}: {charge.description}"[:255]
     charge.journal_entry_id = await _post_books(
@@ -1984,6 +2178,11 @@ async def deposits_held(db: AsyncSession, *, tenant_id: str) -> list[dict]:
     taken = select(m.JournalEntry.source_id).where(
         m.JournalEntry.tenant_id == tenant_id, m.JournalEntry.source_type == DEPOSIT_TAKEN
     )
+    on_a_bill = (
+        select(m.JournalEntry.source_id)
+        .join(m.HotelFolioPayment, m.HotelFolioPayment.journal_entry_id == m.JournalEntry.id)
+        .where(m.JournalEntry.tenant_id == tenant_id, m.JournalEntry.source_type == DEPOSIT_TAKEN)
+    )
     settled = select(m.JournalEntry.source_id).where(
         m.JournalEntry.tenant_id == tenant_id, m.JournalEntry.source_type == DEPOSIT_SETTLED
     )
@@ -1996,6 +2195,7 @@ async def deposits_held(db: AsyncSession, *, tenant_id: str) -> list[dict]:
                 m.HotelReservation.status.in_(("cancelled", "no_show")),
                 m.HotelReservation.id.in_(taken),
                 m.HotelReservation.id.not_in(settled),
+                m.HotelReservation.id.not_in(on_a_bill),
             )
             .order_by(m.HotelReservation.updated_at.desc())
         )
@@ -2013,17 +2213,53 @@ async def deposits_held(db: AsyncSession, *, tenant_id: str) -> list[dict]:
     ]
 
 
+async def _deposit_on_bill(db: AsyncSession, tenant_id: str, reservation_id: str) -> bool:
+    entry = await _deposit_entry_id(db, tenant_id, reservation_id)
+    if not entry:
+        return False
+    used = await db.execute(
+        select(m.HotelFolioPayment.id)
+        .where(m.HotelFolioPayment.tenant_id == tenant_id, m.HotelFolioPayment.journal_entry_id == entry)
+        .limit(1)
+    )
+    return used.first() is not None
+
+
+async def _deposit_pays_bill(
+    db: AsyncSession, *, tenant_id: str, row: m.HotelReservation, folio: m.HotelFolio, user_id: str | None
+) -> None:
+    """A held deposit pays a fee on the same stay. It reuses its journal, so the money counts once."""
+    entry = await _deposit_entry_id(db, tenant_id, row.id)
+    if not entry or await _deposit_entry_id(db, tenant_id, row.id, DEPOSIT_SETTLED):
+        return
+    if await _deposit_on_bill(db, tenant_id, row.id):
+        return
+    await record_folio_payment(
+        db,
+        tenant_id=tenant_id,
+        folio_id=folio.id,
+        method=(row.deposit_method or "cash"),
+        amount=money_json(row.deposit_amount or 0),
+        reference="deposit",
+        notes="Reservation deposit",
+        recorded_by=user_id,
+        journal_entry_id=entry,
+    )
+
+
 async def settle_deposit(
     db: AsyncSession, *, tenant_id: str, reservation_id: str, refund_amount: float, user_id: str | None
 ) -> dict:
     """Give some or all of a held deposit back. Whatever is not given back is kept as income."""
-    row, _room, _guest = await _get_reservation(db, tenant_id, reservation_id)
+    row, _room, _guest = await _get_reservation(db, tenant_id, reservation_id, for_update=True)
     if row.status not in {"cancelled", "no_show"}:
         raise HTTPException(status_code=409, detail="Only a cancelled or no-show stay has a deposit to settle")
     if not await _deposit_entry_id(db, tenant_id, row.id):
         raise HTTPException(status_code=404, detail="This stay has no deposit in the books")
     if await _deposit_entry_id(db, tenant_id, row.id, DEPOSIT_SETTLED):
         raise HTTPException(status_code=409, detail="This deposit is already settled")
+    if await _deposit_on_bill(db, tenant_id, row.id):
+        raise HTTPException(status_code=409, detail="This deposit is already paying this stay's bill")
     held = money_json(row.deposit_amount or 0)
     refund = money_json(refund_amount or 0)
     if refund < 0 or refund > held + 0.004:
@@ -2129,7 +2365,7 @@ async def _existing_open_charge(
                 m.HotelFolioCharge.is_void.is_(False),
             )
         )
-    ).scalar_one_or_none()
+    ).scalars().first()
 
 
 async def post_timing_fee(
@@ -2225,22 +2461,9 @@ async def post_service_charge(
         raise HTTPException(status_code=422, detail="This service charge is not configured")
     if percent > 100:
         raise HTTPException(status_code=422, detail="Service charge percent cannot exceed 100")
-    room_lines = (
-        await db.execute(
-            select(m.HotelFolioCharge).where(
-                m.HotelFolioCharge.tenant_id == tenant_id,
-                m.HotelFolioCharge.folio_id == folio.id,
-                m.HotelFolioCharge.charge_type == "room",
-                m.HotelFolioCharge.is_void.is_(False),
-            )
-        )
-    ).scalars().all()
-    room_total = money_json(sum(money_json(line.line_total or 0) for line in room_lines))
-    if room_total <= 0:
-        raise HTTPException(status_code=422, detail="No room charge to apply a service charge to")
-    amount = money_json(room_total * percent / 100.0)
+    amount = await _service_charge_amount(db, tenant_id=tenant_id, folio_id=folio.id, percent=percent)
     if amount <= 0:
-        raise HTTPException(status_code=422, detail="This service charge is not configured")
+        raise HTTPException(status_code=422, detail="No room charge to apply a service charge to")
     return await add_folio_charge(
         db,
         tenant_id=tenant_id,
@@ -2253,6 +2476,53 @@ async def post_service_charge(
     )
 
 
+async def _service_charge_amount(db: AsyncSession, *, tenant_id: str, folio_id: str, percent: float) -> float:
+    room_lines = (
+        await db.execute(
+            select(m.HotelFolioCharge).where(
+                m.HotelFolioCharge.tenant_id == tenant_id,
+                m.HotelFolioCharge.folio_id == folio_id,
+                m.HotelFolioCharge.charge_type == "room",
+                m.HotelFolioCharge.is_void.is_(False),
+            )
+        )
+    ).scalars().all()
+    room_total = money_json(sum(money_json(line.line_total or 0) for line in room_lines))
+    return money_json(round(room_total * percent / 100.0, 2))
+
+
+async def _refresh_service_charge(
+    db: AsyncSession, *, tenant_id: str, folio: m.HotelFolio, user_id: str | None
+) -> None:
+    """The nights changed, so a service charge already on the bill follows them."""
+    line = await _existing_open_charge(
+        db, tenant_id=tenant_id, folio_id=folio.id, description=_SERVICE_CHARGE_LABEL
+    )
+    if line is None:
+        return
+    settings = await get_or_create_settings(db, tenant_id=tenant_id)
+    percent = money_json(getattr(settings, "service_charge_percent", 0) or 0)
+    if percent <= 0:
+        return
+    amount = await _service_charge_amount(db, tenant_id=tenant_id, folio_id=folio.id, percent=percent)
+    if abs(amount - money_json(line.line_total or 0)) < 0.005:
+        return
+    await void_folio_charge(
+        db, tenant_id=tenant_id, charge_id=line.id, void_reason="Nights on the stay changed", user_id=user_id
+    )
+    if amount > 0:
+        await add_folio_charge(
+            db,
+            tenant_id=tenant_id,
+            folio_id=folio.id,
+            charge_type="service",
+            description=_SERVICE_CHARGE_LABEL,
+            quantity=1,
+            unit_amount=amount,
+            created_by=user_id,
+        )
+
+
 async def post_no_show_fee(
     db: AsyncSession,
     *,
@@ -2261,7 +2531,7 @@ async def post_no_show_fee(
     created_by: str | None = None,
 ) -> m.HotelFolio:
     """Post the configured no-show percent once, without a room-night charge."""
-    row, _room, _guest = await _get_reservation(db, tenant_id, reservation_id)
+    row, _room, _guest = await _get_reservation(db, tenant_id, reservation_id, for_update=True)
     if row.status != "no_show":
         raise HTTPException(status_code=400, detail="No-show fee applies only after the stay is marked no-show")
     settings = await get_or_create_settings(db, tenant_id=tenant_id)
@@ -2307,6 +2577,7 @@ async def post_no_show_fee(
         created_by=created_by,
         stay_tax=True,
     )
+    await _deposit_pays_bill(db, tenant_id=tenant_id, row=row, folio=folio, user_id=created_by)
     return folio
 
 
@@ -2413,7 +2684,9 @@ async def refund_folio_payment(
     """Give money back, or correct a mistyped payment. The original row stays on the folio."""
     folio = (
         await db.execute(
-            select(m.HotelFolio).where(m.HotelFolio.id == folio_id, m.HotelFolio.tenant_id == tenant_id)
+            select(m.HotelFolio)
+            .where(m.HotelFolio.id == folio_id, m.HotelFolio.tenant_id == tenant_id)
+            .with_for_update()
         )
     ).scalar_one_or_none()
     if not folio:
@@ -2542,11 +2815,31 @@ async def _post_overlapping_event_deposits(
 async def check_in(
     db: AsyncSession, *, tenant_id: str, reservation_id: str, created_by: str | None = None
 ) -> tuple[m.HotelReservation, m.HotelRoom, m.HotelGuest, m.HotelFolio]:
-    row, room, guest = await _get_reservation(db, tenant_id, reservation_id)
+    row, room, guest = await _get_reservation(db, tenant_id, reservation_id, for_update=True)
     if row.status != "booked":
         raise HTTPException(status_code=400, detail=f"Cannot check in a reservation with status {row.status}")
-    if room.status in {"maintenance", "out_of_order", "blocked"}:
+    if room.status in CLOSED_ROOM_STATUSES:
         raise HTTPException(status_code=409, detail=f"Room is {room.status.replace('_', ' ')}")
+    if await _repair_today(db, tenant_id=tenant_id, room_id=room.id):
+        raise HTTPException(status_code=409, detail="Room is closed for maintenance today")
+    # Dates cannot catch a guest who stayed past their checkout: only the room can.
+    still_here = await _guest_in_room(db, tenant_id=tenant_id, room_id=room.id, skip_stay_id=row.id)
+    if still_here:
+        raise HTTPException(
+            status_code=409,
+            detail=f"{still_here.reservation_number} is still in this room. Check them out or move this guest first.",
+        )
+    today = date.today()
+    if row.check_in_date > today:
+        # Arriving days early: the room must be free from now until the booking starts.
+        await _assert_room_available(
+            db,
+            tenant_id=tenant_id,
+            room_id=room.id,
+            check_in=today,
+            check_out=row.check_in_date,
+            exclude_id=row.id,
+        )
     row.status = "checked_in"
     row.checked_in_at = datetime.utcnow()
     room.status = "occupied"
@@ -2578,7 +2871,7 @@ async def _ensure_guest_party(db: AsyncSession, *, tenant_id: str, guest: m.Hote
                     m.Party.email == guest.email,
                 )
             )
-        ).scalar_one_or_none()
+        ).scalars().first()
         if existing:
             return existing
     # Prefer exact name match among active customers when no email hit.
@@ -2591,7 +2884,7 @@ async def _ensure_guest_party(db: AsyncSession, *, tenant_id: str, guest: m.Hote
                 m.Party.status == "active",
             )
         )
-    ).scalar_one_or_none()
+    ).scalars().first()
     if by_name and not guest.email:
         return by_name
     party = m.Party(
@@ -2697,13 +2990,14 @@ async def create_invoice_from_folio(
         line_total = money_json(charge.line_total or 0)
         tax = money_json(charge.tax_amount or 0)
         net = money_json(round(line_total - tax, 2))
+        unit_price = money_json(round(net / quantity, 2)) if tax > 0 else money_json(charge.unit_amount or 0)
         db.add(
             m.SalesInvoiceItem(
                 tenant_id=tenant_id,
                 sales_invoice_id=invoice.id,
                 product_id=product.id,
                 quantity=quantity,
-                unit_price=money_json(round(net / quantity, 2)) if tax > 0 else money_json(charge.unit_amount or 0),
+                unit_price=money_json(-abs(unit_price)) if line_total < 0 else unit_price,
                 tax_rate=money_json(round(tax / net * 100, 4)) if tax > 0 and net > 0 else 0,
                 discount=0 if tax > 0 else money_json(charge.discount_amount or 0),
                 line_total=line_total,
@@ -2724,7 +3018,7 @@ async def check_out(
     allow_balance: bool = False,
     user_id: str | None = None,
 ) -> tuple[m.HotelReservation, m.HotelRoom, m.HotelGuest, m.HotelFolio | None]:
-    row, room, guest = await _get_reservation(db, tenant_id, reservation_id)
+    row, room, guest = await _get_reservation(db, tenant_id, reservation_id, for_update=True)
     if row.status != "checked_in":
         raise HTTPException(status_code=400, detail=f"Cannot check out a reservation with status {row.status}")
     folio = await get_folio_for_reservation(db, tenant_id=tenant_id, reservation_id=row.id)
@@ -2758,20 +3052,103 @@ async def check_out(
     room.housekeeping_status = "dirty"
     room.updated_at = datetime.utcnow()
     row.updated_at = datetime.utcnow()
-    # Auto-create housekeeping task after checkout
-    db.add(
-        m.HotelHousekeepingTask(
-            tenant_id=tenant_id,
-            room_id=room.id,
-            task_type="cleaning",
-            priority="high",
-            status="pending",
-            due_at=datetime.utcnow() + timedelta(hours=2),
-            notes=f"Auto-created after checkout of {row.reservation_number}",
-        )
+    _add_cleaning_task(
+        db, tenant_id=tenant_id, room=room, notes=f"Auto-created after checkout of {row.reservation_number}"
     )
     await db.flush()
     return row, room, guest, folio
+
+
+async def close_unused_bill(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    reservation_id: str,
+    leftover: str | None = None,
+    reason: str | None = None,
+    user_id: str | None = None,
+) -> m.HotelFolio:
+    """Finish the bill of a stay that never happened: deal with any deposit left, then invoice what is owed."""
+    row, _room, guest = await _get_reservation(db, tenant_id, reservation_id, for_update=True)
+    if row.status not in {"cancelled", "no_show"}:
+        raise HTTPException(status_code=400, detail="Only a cancelled or no-show stay closes its bill this way")
+    folio = await get_folio_for_reservation(db, tenant_id=tenant_id, reservation_id=row.id)
+    if not folio or folio.status != "open":
+        raise HTTPException(status_code=400, detail="This stay has no open bill")
+    balance = await folio_balance(db, tenant_id=tenant_id, folio_id=folio.id)
+    if balance < -0.009:
+        choice = (leftover or "").strip().lower()
+        if choice not in {"refund", "keep"}:
+            raise HTTPException(status_code=422, detail="Choose whether to refund the deposit or keep it")
+        why = require_honest_narrative(reason, label="reason", max_length=255)
+        left = money_json(-balance)
+        if choice == "keep":
+            await add_folio_charge(
+                db,
+                tenant_id=tenant_id,
+                folio_id=folio.id,
+                charge_type="extra",
+                description="Deposit kept",
+                quantity=1,
+                unit_amount=left,
+                created_by=user_id,
+            )
+        else:
+            await _refund_up_to(
+                db, tenant_id=tenant_id, folio_id=folio.id, amount=left, reason=why, user_id=user_id
+            )
+    await _sync_folio_books(db, tenant_id=tenant_id, folio=folio, user_id=user_id)
+    await create_invoice_from_folio(
+        db, tenant_id=tenant_id, user_id=user_id, folio=folio, guest=guest, reservation=row
+    )
+    folio.status = "closed"
+    folio.closed_at = datetime.utcnow()
+    folio.updated_at = datetime.utcnow()
+    await db.flush()
+    return folio
+
+
+async def _refund_up_to(
+    db: AsyncSession, *, tenant_id: str, folio_id: str, amount: float, reason: str, user_id: str | None
+) -> None:
+    """Refund across the bill's payments, newest first, until the amount is back with the guest."""
+    payments = (
+        await db.execute(
+            select(m.HotelFolioPayment)
+            .where(
+                m.HotelFolioPayment.tenant_id == tenant_id,
+                m.HotelFolioPayment.folio_id == folio_id,
+            )
+            .order_by(m.HotelFolioPayment.created_at.desc())
+        )
+    ).scalars().all()
+    given_back: dict[str, float] = {}
+    for payment in payments:
+        if payment.refund_of_id:
+            given_back[payment.refund_of_id] = money_json(
+                given_back.get(payment.refund_of_id, 0) - money_json(payment.amount or 0)
+            )
+    left = money_json(amount)
+    for payment in payments:
+        if left <= 0:
+            break
+        size = money_json(payment.amount or 0)
+        if size <= 0:
+            continue
+        room_left = money_json(round(size - given_back.get(payment.id, 0), 2))
+        part = min(left, room_left)
+        if part <= 0:
+            continue
+        await refund_folio_payment(
+            db,
+            tenant_id=tenant_id,
+            folio_id=folio_id,
+            payment_id=payment.id,
+            amount=part,
+            reason=reason,
+            recorded_by=user_id,
+        )
+        left = money_json(round(left - part, 2))
 
 
 async def leave_early(
@@ -2782,7 +3159,7 @@ async def leave_early(
     created_by: str | None = None,
 ) -> tuple[m.HotelReservation, m.HotelRoom, m.HotelGuest]:
     """The guest goes before the booked date: take the unused nights off the bill and free the room."""
-    row, room, guest = await _get_reservation(db, tenant_id, reservation_id)
+    row, room, guest = await _get_reservation(db, tenant_id, reservation_id, for_update=True)
     if row.status != "checked_in":
         raise HTTPException(status_code=400, detail="Only an in-house stay can leave early")
     new_out = max(date.today(), row.check_in_date + timedelta(days=1))
@@ -2832,6 +3209,7 @@ async def leave_early(
                 created_by=created_by,
                 stay_tax=had_tax,
             )
+    await _refresh_service_charge(db, tenant_id=tenant_id, folio=folio, user_id=created_by)
     row.check_out_date = new_out
     row.updated_at = datetime.utcnow()
     await db.flush()
@@ -2841,15 +3219,13 @@ async def leave_early(
 async def cancel_reservation(
     db: AsyncSession, *, tenant_id: str, reservation_id: str
 ) -> tuple[m.HotelReservation, m.HotelRoom, m.HotelGuest]:
-    row, room, guest = await _get_reservation(db, tenant_id, reservation_id)
+    row, room, guest = await _get_reservation(db, tenant_id, reservation_id, for_update=True)
     if row.status not in {"tentative", "booked", "waitlisted"}:
         raise HTTPException(status_code=400, detail=f"Cannot cancel a reservation with status {row.status}")
     row.status = "cancelled"
     row.cancelled_at = datetime.utcnow()
     row.updated_at = datetime.utcnow()
-    if room.status == "reserved":
-        room.status = "available"
-        room.updated_at = datetime.utcnow()
+    await _refresh_room_hold(db, tenant_id=tenant_id, room=room)
     await db.flush()
     return row, room, guest
 
@@ -2857,7 +3233,7 @@ async def cancel_reservation(
 async def mark_no_show(
     db: AsyncSession, *, tenant_id: str, reservation_id: str
 ) -> tuple[m.HotelReservation, m.HotelRoom, m.HotelGuest]:
-    row, room, guest = await _get_reservation(db, tenant_id, reservation_id)
+    row, room, guest = await _get_reservation(db, tenant_id, reservation_id, for_update=True)
     if row.status != "booked":
         raise HTTPException(status_code=400, detail=f"Cannot mark no-show with status {row.status}")
     arrival = _as_date(row.check_in_date)
@@ -2866,9 +3242,7 @@ async def mark_no_show(
     row.status = "no_show"
     row.no_show_at = datetime.utcnow()
     row.updated_at = datetime.utcnow()
-    if room.status == "reserved":
-        room.status = "available"
-        room.updated_at = datetime.utcnow()
+    await _refresh_room_hold(db, tenant_id=tenant_id, room=room)
     await db.flush()
     return row, room, guest
 
@@ -2881,9 +3255,10 @@ async def extend_stay(
     new_check_out_date: date,
     created_by: str | None = None,
 ) -> tuple[m.HotelReservation, m.HotelRoom, m.HotelGuest]:
-    row, room, guest = await _get_reservation(db, tenant_id, reservation_id)
+    row, room, guest = await _get_reservation(db, tenant_id, reservation_id, for_update=True)
     if row.status not in {"tentative", "booked", "checked_in"}:
         raise HTTPException(status_code=400, detail="Can only extend tentative, booked, or in-house stays")
+    await _get_room(db, tenant_id, row.room_id, for_update=True, require_active=False)
     new_out = _as_date(new_check_out_date)
     if not new_out or new_out <= row.check_out_date:
         raise HTTPException(status_code=400, detail="new_check_out_date must be after current check_out_date")
@@ -2912,6 +3287,7 @@ async def extend_stay(
                 created_by=created_by,
                 stay_tax=True,
             )
+            await _refresh_service_charge(db, tenant_id=tenant_id, folio=folio, user_id=created_by)
     await db.flush()
     return row, room, guest
 
@@ -2923,14 +3299,19 @@ async def move_room(
     reservation_id: str,
     new_room_id: str,
 ) -> tuple[m.HotelReservation, m.HotelRoom, m.HotelGuest]:
-    row, old_room, guest = await _get_reservation(db, tenant_id, reservation_id)
+    row, old_room, guest = await _get_reservation(db, tenant_id, reservation_id, for_update=True)
     if row.status not in {"tentative", "booked", "checked_in"}:
         raise HTTPException(status_code=400, detail="Can only move tentative, booked, or in-house stays")
-    new_room = await _get_room(db, tenant_id, new_room_id)
+    new_room = await _get_room(db, tenant_id, new_room_id, for_update=True)
     if new_room.id == old_room.id:
         raise HTTPException(status_code=400, detail="New room is the same as current room")
-    if new_room.status in {"maintenance", "out_of_order", "blocked", "occupied", "dirty"}:
+    in_house = row.status == "checked_in"
+    # What a room looks like today only matters to a guest moving into it today.
+    busy_now = new_room.status == "occupied" and in_house
+    dirty_now = (new_room.status == "dirty" and in_house) or _dirty_blocks_stay(new_room, row.check_in_date)
+    if new_room.status in CLOSED_ROOM_STATUSES or busy_now or dirty_now:
         raise HTTPException(status_code=409, detail=f"Target room is {new_room.status.replace('_', ' ')}")
+    _assert_room_fits(new_room, row.adults, row.children)
     await _assert_room_available(
         db,
         tenant_id=tenant_id,
@@ -2941,16 +3322,17 @@ async def move_room(
     )
     row.room_id = new_room.id
     row.updated_at = datetime.utcnow()
-    if row.status == "checked_in":
+    if in_house:
         old_room.status = "dirty"
         old_room.housekeeping_status = "dirty"
         new_room.status = "occupied"
         new_room.housekeeping_status = "dirty"
+        _add_cleaning_task(
+            db, tenant_id=tenant_id, room=old_room, notes=f"Auto-created after room change on {row.reservation_number}"
+        )
     else:
-        if old_room.status == "reserved":
-            old_room.status = "available"
-        if new_room.status in {"available", "clean", "inspected"}:
-            new_room.status = "reserved"
+        await _refresh_room_hold(db, tenant_id=tenant_id, room=old_room)
+        await _refresh_room_hold(db, tenant_id=tenant_id, room=new_room)
     old_room.updated_at = datetime.utcnow()
     new_room.updated_at = datetime.utcnow()
     await db.flush()
@@ -3049,7 +3431,9 @@ async def complete_housekeeping_task(
         raise HTTPException(status_code=404, detail="Housekeeping task not found")
     if row.status == "completed":
         raise HTTPException(status_code=400, detail="Task already completed")
-    room = await _get_room(db, tenant_id, row.room_id)
+    if row.status == "cancelled":
+        raise HTTPException(status_code=400, detail="Task was cancelled")
+    room = await _get_room(db, tenant_id, row.room_id, require_active=False)
     row.status = "completed"
     row.completed_at = datetime.utcnow()
     row.updated_at = datetime.utcnow()
@@ -3059,9 +3443,13 @@ async def complete_housekeeping_task(
         room.housekeeping_status = "inspected"
     else:
         room.housekeeping_status = "clean"
-    reason = await _ready_block_reason(db, tenant_id=tenant_id, room_id=room.id)
-    if not reason and room.status in {"dirty", "clean", "inspected", "available"}:
-        room.status = "available"
+    if room.status in {"dirty", "clean", "inspected", "available", "reserved"}:
+        if await _repair_today(db, tenant_id=tenant_id, room_id=room.id):
+            # Clean but still broken: it waits for the repair, not for housekeeping.
+            room.status = "maintenance"
+        elif room.status != "reserved":
+            room.status = "available"
+        await _refresh_room_hold(db, tenant_id=tenant_id, room=room)
     room.updated_at = datetime.utcnow()
     await db.flush()
     return row, room
@@ -3152,25 +3540,18 @@ async def complete_maintenance_ticket(
         raise HTTPException(status_code=404, detail="Maintenance ticket not found")
     if row.status == "completed":
         raise HTTPException(status_code=400, detail="Ticket already completed")
-    room = await _get_room(db, tenant_id, row.room_id)
+    room = await _get_room(db, tenant_id, row.room_id, require_active=False)
     row.status = "completed"
     row.completed_at = datetime.utcnow()
     row.updated_at = datetime.utcnow()
-    # Return to service if no other open blocking tickets
-    open_other = (
-        await db.execute(
-            select(m.HotelMaintenanceTicket).where(
-                m.HotelMaintenanceTicket.tenant_id == tenant_id,
-                m.HotelMaintenanceTicket.room_id == room.id,
-                m.HotelMaintenanceTicket.id != row.id,
-                m.HotelMaintenanceTicket.status.in_(("open", "in_progress")),
-                m.HotelMaintenanceTicket.block_room.is_(True),
-            )
-        )
-    ).scalar_one_or_none()
-    if not open_other and room.status in {"maintenance", "out_of_order", "blocked"}:
-        room.status = "available"
-        room.housekeeping_status = "clean"
+    # Back to service once nothing else keeps it closed today. Fixing a room does not clean it.
+    still_closed = await _repair_today(db, tenant_id=tenant_id, room_id=room.id, skip_ticket_id=row.id)
+    if not still_closed and room.status in CLOSED_ROOM_STATUSES:
+        if room.housekeeping_status == "dirty":
+            room.status = "dirty"
+        else:
+            room.status = "available"
+            await _refresh_room_hold(db, tenant_id=tenant_id, room=room)
         room.updated_at = datetime.utcnow()
     await db.flush()
     return row, room
@@ -3203,6 +3584,7 @@ async def availability(
                 room_id=room.id,
                 check_in=check_in,
                 check_out=check_out,
+                lock=False,
             )
         except HTTPException:
             continue
@@ -3233,7 +3615,13 @@ async def summary(db: AsyncSession, *, tenant_id: str, on_date: date | None = No
     expected_arrivals = sum(
         1 for r, _, _ in reservations if _as_date(r.check_in_date) == today and r.status in {"tentative", "booked"}
     )
-    departures_today = sum(1 for r, _, _ in reservations if _departure_day(r) == today)
+    departures_today = sum(1 for r, _, _ in reservations if _leaves_on(r, today))
+    overstays = sum(
+        1 for r, _, _ in reservations if r.status == "checked_in" and _as_date(r.check_out_date) < today
+    )
+    late_arrivals = sum(
+        1 for r, _, _ in reservations if r.status == "booked" and _as_date(r.check_in_date) < today
+    )
     occupied = sum(1 for r in rooms if r.status == "occupied")
     total = len(rooms) or 1
 
@@ -3250,14 +3638,19 @@ async def summary(db: AsyncSession, *, tenant_id: str, on_date: date | None = No
     )
     outstanding = 0.0
     for f in open_folios:
+        # A guest in credit is the hotel's debt to them. It must not hide what others owe.
         outstanding = money_json(
-            outstanding + await folio_balance(db, tenant_id=tenant_id, folio_id=f.id)
+            outstanding + max(0.0, await folio_balance(db, tenant_id=tenant_id, folio_id=f.id))
         )
+    day_start = datetime.combine(today, time.min)
+    day_end = day_start + timedelta(days=1)
     today_charges = await _optional_scalars(
         db,
         select(m.HotelFolioCharge).where(
             m.HotelFolioCharge.tenant_id == tenant_id,
             m.HotelFolioCharge.is_void.is_(False),
+            m.HotelFolioCharge.created_at >= day_start,
+            m.HotelFolioCharge.created_at < day_end,
         ),
     )
     revenue_today = 0.0
@@ -3278,14 +3671,31 @@ async def summary(db: AsyncSession, *, tenant_id: str, on_date: date | None = No
                     meal_revenue = money_json(meal_revenue + amt)
                 elif ch.charge_type == "bar":
                     drink_revenue = money_json(drink_revenue + amt)
+    shop_today = await _optional_scalars(
+        db,
+        select(m.HotelShopSale).where(
+            m.HotelShopSale.tenant_id == tenant_id,
+            m.HotelShopSale.status == "completed",
+            m.HotelShopSale.payment_method != "room",
+            m.HotelShopSale.created_at >= day_start,
+            m.HotelShopSale.created_at < day_end,
+        ),
+    )
+    shop_revenue = money_json(sum(money_json(s.total or 0) for s in shop_today))
+    revenue_today = money_json(revenue_today + shop_revenue)
+    service_revenue = money_json(service_revenue + shop_revenue)
     payments_today = 0.0
     pays = await _optional_scalars(
-        db, select(m.HotelFolioPayment).where(m.HotelFolioPayment.tenant_id == tenant_id)
+        db,
+        select(m.HotelFolioPayment).where(
+            m.HotelFolioPayment.tenant_id == tenant_id,
+            m.HotelFolioPayment.method != "credit",  # on account is a promise, not money in
+            m.HotelFolioPayment.created_at >= day_start,
+            m.HotelFolioPayment.created_at < day_end,
+        ),
     )
     for p in pays:
-        created = p.created_at.date() if p.created_at else None
-        if created == today:
-            payments_today = money_json(payments_today + money_json(p.amount or 0))
+        payments_today = money_json(payments_today + money_json(p.amount or 0))
     recent = []
     folio_schema_ok = True
     for r, room, guest in reservations[:8]:
@@ -3383,7 +3793,7 @@ async def summary(db: AsyncSession, *, tenant_id: str, on_date: date | None = No
     for room in rooms:
         if room.id in sold_ids:
             continue
-        if room.status in {"maintenance", "out_of_order", "blocked"}:
+        if room.status in CLOSED_ROOM_STATUSES or await _repair_today(db, tenant_id=tenant_id, room_id=room.id):
             ooo_ids.add(room.id)
         elif room.status == "dirty" or getattr(room, "housekeeping_status", None) == "dirty":
             dirty_ids.add(room.id)
@@ -3417,6 +3827,10 @@ async def summary(db: AsyncSession, *, tenant_id: str, on_date: date | None = No
                 "message": f"Unpaid guest balances: {money_json(outstanding):,.2f}",
             }
         )
+    if overstays:
+        alerts.append({"code": "overstays", "href": "/hotel?tab=front-desk", "message": _n(overstays, "guest is past their check-out date", "guests are past their check-out date")})
+    if late_arrivals:
+        alerts.append({"code": "late_arrivals", "href": "/hotel?tab=reservations", "message": _n(late_arrivals, "booking is past its arrival date: check in or mark no-show", "bookings are past their arrival date: check in or mark no-show")})
     if expected_arrivals:
         alerts.append({"code": "arrivals", "href": "/hotel?tab=front-desk", "message": _n(expected_arrivals, "expected arrival", "expected arrivals")})
     if overdue_hk:
@@ -3460,11 +3874,14 @@ async def summary(db: AsyncSession, *, tenant_id: str, on_date: date | None = No
         "arrivals_today": arrivals_today,
         "expected_arrivals": expected_arrivals,
         "departures_today": departures_today,
+        "overstays": overstays,
+        "late_arrivals": late_arrivals,
         "open_folio_count": len(open_folios),
         "outstanding_folio_balance": money_json(outstanding),
         "revenue_today": money_json(revenue_today),
         "room_revenue": money_json(room_revenue),
         "service_revenue": money_json(service_revenue),
+        "shop_revenue": money_json(shop_revenue),
         "meal_revenue": money_json(meal_revenue),
         "drink_revenue": money_json(drink_revenue),
         "payments_received": money_json(payments_today),
@@ -3519,7 +3936,7 @@ def serialize_settings(row: m.HotelSettings) -> dict:
         "property_name": _opt(row, "property_name"),
         "check_in_time": row.check_in_time,
         "check_out_time": row.check_out_time,
-        "cancellation_hours": int(row.cancellation_hours or 24),
+        "cancellation_hours": 24 if row.cancellation_hours is None else int(row.cancellation_hours),
         "no_show_fee_percent": money_json(row.no_show_fee_percent or 0),
         "early_checkin_fee": money_json(row.early_checkin_fee or 0),
         "late_checkout_fee": money_json(row.late_checkout_fee or 0),
@@ -3596,9 +4013,9 @@ async def update_settings(
 ) -> m.HotelSettings:
     row = await get_or_create_settings(db, tenant_id=tenant_id)
     if check_in_time is not None:
-        row.check_in_time = require_honest_narrative(check_in_time, label="check_in_time", max_length=8)
+        row.check_in_time = _clock_value(check_in_time)
     if check_out_time is not None:
-        row.check_out_time = require_honest_narrative(check_out_time, label="check_out_time", max_length=8)
+        row.check_out_time = _clock_value(check_out_time)
     if cancellation_hours is not None:
         row.cancellation_hours = max(0, int(cancellation_hours))
     if no_show_fee_percent is not None:
@@ -3635,7 +4052,16 @@ async def update_settings(
     return row
 
 
+def _clock_value(value: str) -> str:
+    text = str(value or "").strip()
+    match = re.fullmatch(r"([01]?\d|2[0-3]):([0-5]\d)", text)
+    if not match:
+        raise HTTPException(status_code=422, detail="Use a 24-hour time such as 14:00")
+    return f"{int(match.group(1)):02d}:{match.group(2)}"
+
+
 async def _next_group_number(db: AsyncSession, tenant_id: str) -> str:
+    await _lock_numbers(db, tenant_id)
     year = datetime.utcnow().year
     prefix = f"HG-{year}-"
     count = (
@@ -3905,6 +4331,14 @@ async def reports(
     payments = await _optional_scalars(
         db, select(m.HotelFolioPayment).where(m.HotelFolioPayment.tenant_id == tenant_id)
     )
+    shop_sales = await _optional_scalars(
+        db,
+        select(m.HotelShopSale).where(
+            m.HotelShopSale.tenant_id == tenant_id,
+            m.HotelShopSale.status == "completed",
+            m.HotelShopSale.payment_method != "room",  # a room charge is already on the guest's bill
+        ),
+    )
     service_sales: dict[str, float] = {}
     tax_charged = 0.0
     payments_total = 0.0
@@ -3917,13 +4351,19 @@ async def reports(
                 service_sales.get(ch.charge_type, 0) + money_json(ch.line_total or 0)
             )
             tax_charged = money_json(tax_charged + money_json(ch.tax_amount or 0))
+    for sale in shop_sales:
+        created = sale.created_at.date() if sale.created_at else None
+        if created and start <= created <= end:
+            service_sales["shop"] = money_json(service_sales.get("shop", 0) + money_json(sale.total or 0))
+            tax_charged = money_json(tax_charged + money_json(sale.tax or 0))
     for p in payments:
         created = p.created_at.date() if p.created_at else None
+        method = p.method or "other"
         if created and start <= created <= end:
-            payments_total = money_json(payments_total + money_json(p.amount or 0))
-            method = p.method or "other"
             payments_by_method[method] = money_json(payments_by_method.get(method, 0) + money_json(p.amount or 0))
-        elif created and before_start <= created <= before_end:
+            if method != "credit":  # on account stays owed; it is not money received
+                payments_total = money_json(payments_total + money_json(p.amount or 0))
+        elif created and before_start <= created <= before_end and method != "credit":
             payments_before = money_json(payments_before + money_json(p.amount or 0))
     outstanding = 0.0
     stay_by_id = {row[0].id: row for row in reservations}
@@ -3934,7 +4374,7 @@ async def reports(
     )
     for f in open_folios:
         balance = await folio_balance(db, tenant_id=tenant_id, folio_id=f.id)
-        outstanding = money_json(outstanding + balance)
+        outstanding = money_json(outstanding + max(0.0, balance))
         if balance > 0.004:
             stay = stay_by_id.get(f.reservation_id)
             owing.append(
@@ -4496,31 +4936,15 @@ def _preview_nightly(room: m.HotelRoom, check_in: date, check_out: date, adults:
 
 
 async def _room_free_for_stay(db: AsyncSession, tenant_id: str, room: m.HotelRoom, check_in: date, check_out: date) -> bool:
-    if room.status in {"maintenance", "out_of_order", "blocked"} or _dirty_blocks_stay(room, check_in) or not room.is_active:
+    if room.status in CLOSED_ROOM_STATUSES or _dirty_blocks_stay(room, check_in) or not room.is_active:
         return False
-    clash = (
-        await db.execute(
-            select(m.HotelReservation.id).where(
-                m.HotelReservation.tenant_id == tenant_id,
-                m.HotelReservation.room_id == room.id,
-                m.HotelReservation.status.in_(ACTIVE_BOOKING_STATUSES),
-                m.HotelReservation.check_in_date < check_out,
-                m.HotelReservation.check_out_date > check_in,
-            ).limit(1)
+    try:
+        await _assert_room_available(
+            db, tenant_id=tenant_id, room_id=room.id, check_in=check_in, check_out=check_out, lock=False
         )
-    ).scalar_one_or_none()
-    if clash is not None:
+    except HTTPException:
         return False
-    tickets = await _optional_scalars(
-        db,
-        select(m.HotelMaintenanceTicket).where(
-            m.HotelMaintenanceTicket.tenant_id == tenant_id,
-            m.HotelMaintenanceTicket.room_id == room.id,
-            m.HotelMaintenanceTicket.block_room.is_(True),
-            m.HotelMaintenanceTicket.status.in_(("open", "in_progress")),
-        ),
-    )
-    return not list(tickets)
+    return True
 
 
 def _stay_dates(check_in_date: str, check_out_date: str) -> tuple[date, date]:
@@ -4532,6 +4956,12 @@ def _stay_dates(check_in_date: str, check_out_date: str) -> tuple[date, date]:
         raise HTTPException(status_code=422, detail="Check-in must be today or later")
     if check_out <= check_in:
         raise HTTPException(status_code=422, detail="Check-out must be after check-in")
+    if (check_in - datetime.utcnow().date()).days > ONLINE_MAX_DAYS_AHEAD:
+        raise HTTPException(status_code=422, detail="Bookings open one year ahead. Please call the hotel.")
+    if (check_out - check_in).days > ONLINE_MAX_NIGHTS:
+        raise HTTPException(
+            status_code=422, detail=f"Online stays are up to {ONLINE_MAX_NIGHTS} nights. Please call the hotel."
+        )
     return check_in, check_out
 
 
@@ -4590,6 +5020,7 @@ async def create_public_stay(
     check_in, check_out = _stay_dates(check_in_date, check_out_date)
     name = require_honest_narrative(guest_name, label="guest name", min_length=1, max_length=150)
     phone_clean = (phone or "").strip()
+    email_clean = (email or "").strip().lower() or None
     existing = (
         await db.execute(
             select(m.HotelGuest).where(
@@ -4599,17 +5030,47 @@ async def create_public_stay(
                 m.HotelGuest.is_active.is_(True),
             )
         )
-    ).scalar_one_or_none()
+    ).scalars().first()
+    email_owner = None
+    if existing is None and email_clean:
+        email_owner = (
+            await db.execute(
+                select(m.HotelGuest).where(
+                    m.HotelGuest.tenant_id == tenant.id, m.HotelGuest.email == email_clean
+                )
+            )
+        ).scalars().first()
+        if email_owner is not None and email_owner.is_active:
+            # A returning guest on a new phone. Staff see the request before anything is confirmed.
+            existing = email_owner
     if existing is None:
         guest = await create_guest(
             db,
             tenant_id=tenant.id,
             full_name=name,
             phone=phone_clean,
-            email=(email or "").strip().lower() or None,
+            email=None if email_owner is not None else email_clean,
         )
     else:
         guest = existing
+    waiting = (
+        await db.execute(
+            select(func.count())
+            .select_from(m.HotelReservation)
+            .where(
+                m.HotelReservation.tenant_id == tenant.id,
+                m.HotelReservation.guest_id == guest.id,
+                m.HotelReservation.status == "tentative",
+                m.HotelReservation.booking_source == "online",
+                m.HotelReservation.check_out_date >= datetime.utcnow().date(),
+            )
+        )
+    ).scalar_one()
+    if int(waiting or 0) >= ONLINE_MAX_OPEN_REQUESTS:
+        raise HTTPException(
+            status_code=429,
+            detail="You already have stay requests waiting. The hotel will contact you about them.",
+        )
     reservation, room, guest = await create_reservation(
         db,
         tenant_id=tenant.id,
@@ -4624,5 +5085,24 @@ async def create_public_stay(
         deposit_amount=0,
         status="tentative",
     )
-    return serialize_reservation(reservation, room=room, guest=guest)
+    # The caller is anonymous: answer with what they typed and the request itself, never with
+    # the guest record it matched.
+    nights = max(0, (reservation.check_out_date - reservation.check_in_date).days)
+    return {
+        "id": reservation.id,
+        "reservation_number": reservation.reservation_number,
+        "status": reservation.status,
+        "booking_source": reservation.booking_source,
+        "guest_phone": phone_clean,
+        "special_requests": reservation.special_requests,
+        "deposit_amount": 0,
+        "folio_id": None,
+        "can_check_in": False,
+        "check_in_date": reservation.check_in_date.isoformat(),
+        "check_out_date": reservation.check_out_date.isoformat(),
+        "nights": nights,
+        "room_name": room.name,
+        "nightly_rate": money_json(reservation.nightly_rate or 0),
+        "estimated_total": money_json(Decimal(str(reservation.nightly_rate or 0)) * nights),
+    }
 

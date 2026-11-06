@@ -121,7 +121,8 @@ type HotelDialog =
   | { kind: 'history' }
   | { kind: 'service'; service: HotelService }
   | { kind: 'plan'; plan: any }
-  | { kind: 'deposit'; deposit: HeldDeposit };
+  | { kind: 'deposit'; deposit: HeldDeposit }
+  | { kind: 'closebill' };
 
 type HeldDeposit = { reservation_id: string; reservation_number: string; guest_name: string; status: string; amount: number; method?: string | null };
 
@@ -798,6 +799,7 @@ export default function HotelPage() {
   const hkPage = sectionHash === 'lost-found' ? 'lost-found' : 'tasks';
   const canManage = !HOTEL_STAFF_ROLES.has(myRole);
   const canCorrectMoney = canManage || myRole === 'hotel_cashier';
+  const canDiscount = !['hotel_front_desk', 'hotel_reservations'].includes(myRole);
 
   function goView(hash: string) {
     if (hash) {
@@ -1215,6 +1217,8 @@ export default function HotelPage() {
       };
     } else if (next.kind === 'deposit') {
       fields = { refund: String(next.deposit.amount) };
+    } else if (next.kind === 'closebill') {
+      fields = { leftover: 'refund', reason: '' };
     } else if (next.kind === 'plan') {
       fields = { name: next.plan.name || '', amount: String(next.plan.amount ?? 0), min_nights: String(next.plan.min_nights ?? 1) };
     }
@@ -1499,7 +1503,7 @@ export default function HotelPage() {
     const when = String(r.check_in_date).slice(0, 10);
     const room = rooms.find((x) => x.id === r.room_id);
     const warnings: string[] = [];
-    if (when > localIso()) warnings.push(`This stay starts on ${stayWhen(when, formatPrefs)}.`);
+    if (when > localIso()) warnings.push(`This stay starts on ${stayWhen(when, formatPrefs)}. Its dates and bill stay as booked, so if the guest is paying for the extra nights, press Cancel and use Edit stay first.`);
     if (room?.status === 'dirty' || room?.housekeeping_status === 'dirty') warnings.push(`Room ${r.room_code || ''} still needs cleaning.`);
     if (warnings.length && !window.confirm(`${warnings.join(' ')} Check the guest in anyway?`)) return;
     void act(`/hotel/reservations/${r.id}/check-in`, `${r.guest_name || r.reservation_number} is checked in.`);
@@ -3111,10 +3115,12 @@ export default function HotelPage() {
                 ))}
               </select>
             </label>
+            {canDiscount ? (
             <label>
               <span>Discount %</span>
               <input type="number" min={0} max={100} step="0.01" value={resForm.discount_percent} onChange={(e) => setResForm((f) => ({ ...f, discount_percent: e.target.value }))} aria-label="Hotel stay discount percent" />
             </label>
+            ) : null}
             <label>
               <span>How they booked</span>
               <select value={resForm.booking_source} onChange={(e) => setResForm((f) => ({ ...f, booking_source: e.target.value }))} aria-label="Hotel booking source">
@@ -3317,7 +3323,7 @@ export default function HotelPage() {
             </label>
             <label>
               <span>Discount %</span>
-              <input type="number" min={0} max={100} step="0.01" value={resForm.discount_percent} onChange={(e) => setResForm((f) => ({ ...f, discount_percent: e.target.value }))} aria-label="Group discount percent" />
+              <input type="number" min={0} max={100} step="0.01" disabled={!canDiscount} title={canDiscount ? undefined : 'A cashier or manager gives discounts'} value={resForm.discount_percent} onChange={(e) => setResForm((f) => ({ ...f, discount_percent: e.target.value }))} aria-label="Group discount percent" />
             </label>
           </div>
         </section>
@@ -3546,7 +3552,7 @@ export default function HotelPage() {
                         ariaLabel: `Check out ${r.reservation_number}`,
                         onClick: () => void checkOutStay(r.id, r.guest_name || r.reservation_number),
                       },
-                      (r.can_check_out || r.status === 'checked_in' || r.status === 'checked_out') && {
+                      (r.can_check_out || r.status === 'checked_in' || r.status === 'checked_out' || (Boolean(r.folio_id) && ['no_show', 'cancelled'].includes(r.status))) && {
                         key: 'bill',
                         label: 'Open bill',
                         disabled: busy,
@@ -3670,6 +3676,9 @@ export default function HotelPage() {
               {folio.status === 'open' && folio.reservation_status === 'checked_in' && folio.reservation_id ? (
                 <button type="button" className="btn-ok" disabled={busy} onClick={() => void checkOutStay(String(folio.reservation_id), folio.guest_name || folio.folio_number)}>Check out</button>
               ) : null}
+              {canCorrectMoney && folio.status === 'open' && ['no_show', 'cancelled'].includes(String(folio.reservation_status)) ? (
+                <button type="button" className="btn-ok" disabled={busy} onClick={() => openDialog({ kind: 'closebill' })} aria-label={`Close bill ${folio.folio_number}`}>Close bill</button>
+              ) : null}
               <button type="button" disabled={busy} onClick={() => void printGuestBill()} aria-label={`Print folio ${folio.folio_number}`}>Print bill</button>
               <button type="button" disabled={busy} onClick={() => void emailGuest(`/hotel/folios/${folio.id}/send`, 'Bill')}>Email bill</button>
               <button type="button" onClick={() => setFolio(null)} aria-label="Close this bill">Close</button>
@@ -3696,7 +3705,7 @@ export default function HotelPage() {
             </div>
           </div>
           {Number(folio.balance) < -0.004 && folio.status === 'open' ? (
-            <p className="hotel-banner warn" role="status">The guest has paid too much. Refund the difference from a payment below before checking out.</p>
+            <p className="hotel-banner warn" role="status">{['no_show', 'cancelled'].includes(String(folio.reservation_status)) ? 'Some of the deposit is left. Close bill gives it back or keeps it.' : 'The guest has paid too much. Refund the difference from a payment below before checking out.'}</p>
           ) : null}
           {folio.status !== 'open' ? (
             <p className="hint">This bill is closed. {Number(folio.balance) > 0.004 ? <>Collect what is still owed under <Link href="/hotel/invoices">Guest invoices</Link>.</> : 'Nothing more can be added to it.'}</p>
@@ -3854,7 +3863,7 @@ export default function HotelPage() {
             <label>
               <span>Type</span>
               <select value={chargeForm.charge_type} onChange={(e) => setChargeForm((f) => ({ ...f, charge_type: e.target.value }))} aria-label="Folio charge type">
-                {['extra', 'restaurant', 'bar', 'laundry', 'service', 'damage', 'tax', 'discount'].map((t) => (
+                {['extra', 'restaurant', 'bar', 'laundry', 'service', 'damage', 'tax', ...(canDiscount ? ['discount'] : [])].map((t) => (
                   <option key={t} value={t}>{hotelWord(t)}</option>
                 ))}
               </select>
@@ -5668,6 +5677,7 @@ export default function HotelPage() {
                     amenities: dlgAmenities,
                   };
                   if (dlg.weekend_rate.trim()) body.weekend_rate = Number(dlg.weekend_rate) || 0;
+                  else body.clear_weekend_rate = true;
                   for (const key of ['floor', 'bed_type', 'description', 'notes']) {
                     if (dlg[key].trim()) body[key] = dlg[key].trim();
                   }
@@ -5880,6 +5890,53 @@ export default function HotelPage() {
             <AmountField type="number" min={0} step="0.01" value={dlg.refund || ''} onChange={(e) => setDlg((d) => ({ ...d, refund: e.target.value }))} aria-label="Deposit refund amount" />
           </label>
           <p className="muted">Type 0 to keep it all. Whatever is not given back counts as income.</p>
+        </FormModal>
+      )}
+
+      {dialog?.kind === 'closebill' && folio && (
+        <FormModal
+          title={`Close bill ${folio.folio_number}`}
+          onClose={() => setDialog(null)}
+          busy={busy}
+          footer={
+            <button
+              type="button"
+              className="btn-ok"
+              disabled={busy || (Number(folio.balance) < -0.004 && String(dlg.reason || '').trim().length < 3)}
+              onClick={() => {
+                const leftover = Number(folio.balance) < -0.004;
+                void dialogSave(
+                  `/hotel/reservations/${folio.reservation_id}/close-bill`,
+                  leftover ? { leftover: dlg.leftover, reason: String(dlg.reason || '').trim() } : {},
+                  'Bill closed',
+                );
+              }}
+            >
+              Close bill
+            </button>
+          }
+        >
+          {dlgError ? <p className="hotel-banner warn" role="alert">{dlgError}</p> : null}
+          {Number(folio.balance) < -0.004 ? (
+            <>
+              <p className="muted">{money(-Number(folio.balance))} of the deposit is left after the fee.</p>
+              <label>
+                <span>What happens to it</span>
+                <select value={dlg.leftover || 'refund'} onChange={(e) => setDlg((d) => ({ ...d, leftover: e.target.value }))} aria-label="Leftover deposit">
+                  <option value="refund">Give it back to the guest</option>
+                  <option value="keep">Keep it as income</option>
+                </select>
+              </label>
+              <label>
+                <span>Reason</span>
+                <input value={dlg.reason || ''} onChange={(e) => setDlg((d) => ({ ...d, reason: e.target.value }))} aria-label="Reason for leftover deposit" />
+              </label>
+            </>
+          ) : Number(folio.balance) > 0.004 ? (
+            <p className="muted">{money(folio.balance)} is still owed. It moves to Guest invoices so you can collect it.</p>
+          ) : (
+            <p className="muted">Nothing is owed on this bill. Closing it finishes the stay's paperwork.</p>
+          )}
         </FormModal>
       )}
 

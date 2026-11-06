@@ -19,6 +19,43 @@ Hotel is its own desk, isolated from retail and restaurant. The back office (acc
 | Float close could not catch a shortfall | Total of all payment types, no expected cash | Cash taken, what should be in the drawer, and over or short on close | same |
 | Lists said "No tasks" while loading | Empty messages during a two-step load | Everything loads at once; "Loading…" until it arrives | browser walk |
 
+## Full audit, 6 November 2026
+
+Every test below is in `tests/test_hotel_audit_2026_11.py`. 105 hotel tests passed before this audit, so none of these were being caught.
+
+| Area | Finding | Now |
+| --- | --- | --- |
+| Backups | No hotel table was in a company backup, so a restore lost rooms, guests, stays and bills | All 20 hotel tables are backed up and restored; date columns now restore correctly |
+| Tax | VAT on shop sales paid at the till never reached the tax filing | In the filing. A sale charged to a room is counted once, on the guest's invoice |
+| Rooms | A second guest could check into a room whose guest had overstayed | Refused until the first guest leaves or moves |
+| Rooms | Taking a room off sale stranded its guest: no check-out, no bill | Refused while a stay is on the room, and old cases can still finish |
+| Rooms | Room status could be changed under a guest; a room could be marked occupied with nobody in it | Refused |
+| Rooms | A fault reported during a stay could leave the room stuck as dirty; fixing a dirty room marked it clean | Clean and repaired are tracked apart, and the room returns when both are done |
+| Rooms | Closing a repair crashed with two other tickets open on the room | Fixed |
+| Stays | Checking in days early left the stay on its future dates, so the room looked free tonight and could be sold again | The room must be free until the booking starts, and an in-house guest holds the room from today. Dates and bill stay as booked, and the desk says to use Edit stay first for extra nights |
+| Stays | Move and Edit ignored room size; a room in use tonight could not take next week's booking | Size is checked; only the stay's own dates matter |
+| Stays | Overstaying guests and arrivals that never came showed nowhere | On departures and in alerts |
+| Bills | Moving a tax-inclusive charge added the tax again | The amount is kept |
+| Bills | A Discount line added to the bill | It takes money off the bill and the books, and cannot exceed the bill |
+| Bills | A tax line posted to revenue | It posts to tax |
+| Bills | Service charge stayed the same when nights changed | It follows the room charge |
+| Bills | On-account counted as money received; a guest in credit hid what others owed | Both corrected on the dashboard, reports and float |
+| Bills | Check-out crashed when two customers shared a name | Fixed |
+| Deposits | A no-show fee and a kept deposit counted the same money twice | The deposit pays the fee first, using its original journal |
+| Deposits | A no-show bill could never be closed or chased | **Close bill** refunds or keeps what is left, and moves what is owed to Guest invoices |
+| Cash | A shop refund on a later float never left that drawer | It comes out, and cash refunds need an open float |
+| Shop | Could charge a no-show or cancelled guest; accepted another company's store | Refused |
+| Staff | Housekeeping could read guest ID numbers, phones, rates and bills | Refused or removed |
+| Staff | A clerk could sign off their own discount, up to 100% | Cashier or manager only, and the approver must be a real user. Rate changes are in the audit log |
+| Online | The booking reply showed a known guest's email; a returning guest on a new phone was refused | The reply says nothing about the guest record, and returning guests can book |
+| Online | Rooms were offered and then refused, or hidden for a repair on other dates | Same rules as the desk |
+| Online | Requests could hold rooms without limit | 60 nights, one year ahead, three open requests per guest, and its own rate limit |
+| Data | Events, lost items and requests could point at another company's records | Refused |
+| Data | Merging guests left events and the email behind | They move to the kept guest |
+| Data | Two desks could take the same reservation, bill or sale number | Numbers are taken one at a time per company |
+| Settings | Free cancellation of 0 hours came back as 24; bad times and percents above 100 were accepted | Fixed |
+| Lists | Old debts could fall off Guest invoices behind newer paid ones | The list is taken from what is owed |
+
 ## Made easy to use, feature by feature
 
 | Feature | What changed |
@@ -67,7 +104,7 @@ Each tab has its own title. Reservation rows show one main action, with the rest
 
 - Card, Mobile Money and bank tenders are recorded, not charged through a gateway.
 - The whole stay is counted as revenue at check-in, not night by night. **Leaving early** on a reservation takes the unused nights off the bill and the books and frees the room.
-- A deposit reaches the books when it is taken. On a cancelled or no-show stay it waits under **Deposits to settle** until a cashier or manager gives it back or keeps it. Deposits taken before this release reach the books at check-in as before.
+- A deposit reaches the books when it is taken. On a cancelled or no-show stay it waits under **Deposits to settle** until a cashier or manager gives it back or keeps it, or until a no-show fee takes it. Deposits taken before this release reach the books at check-in as before.
 - An event deposit reaches the books only when it lands on a guest's open bill.
 - Hotel Reports show room revenue as charged, so with tax inside the rate it includes tax. Accounting and the tax report split it correctly.
 - Custom roles copied from a hotel role follow their own permissions, not the job lists.
@@ -76,4 +113,11 @@ Each tab has its own title. Reservation rows show one main action, with the rest
 - There are no hotel tutorial videos yet.
 - Money owed lists open bills as they stand today, not for the dates chosen. Guests who already left are on Guest invoices. Rooms that sold nothing in the period are not listed.
 - **Edit stay** does not reprice by itself. The price per night stays as shown until staff change it, and the window says so.
-- The server still allows a check-in into a dirty room or before the arrival date. The desk warns; it does not block.
+- The server still allows a check-in into a dirty room. The desk warns; it does not block.
+- Checking in before the arrival date keeps the booked dates and bill. For extra nights, use Edit stay first.
+- A discount line reduces revenue, not tax, so VAT on a discounted stay stays at the full amount until an accountant adjusts it. That can only overstate tax.
+- A closed bill cannot be changed. A mistake found after check-out needs an accountant's journal.
+- The hotel's "today" is the server's date, which is UTC. That is right for Ghana. A hotel in another timezone rolls over at the wrong local hour.
+- Weekend rate applies to Saturday and Sunday nights.
+- A repair dated ahead closes the room for bookings straight away, but the room's status changes only when someone next touches it. The dashboard and check-in already treat it as closed on the day.
+- An online request holds its room until staff confirm or cancel it. There is no automatic expiry.

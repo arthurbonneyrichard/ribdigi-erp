@@ -6,7 +6,7 @@ import base64
 import gzip
 import hashlib
 import json
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -88,6 +88,26 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("sales_coupons", m.SalesCoupon),
     ("sales_coupon_redemptions", m.SalesCouponRedemption),
     ("other_incomes", m.OtherIncome),
+    ("hotel_rooms", m.HotelRoom),
+    ("hotel_guests", m.HotelGuest),
+    ("hotel_settings", m.HotelSettings),
+    ("hotel_reservation_groups", m.HotelReservationGroup),
+    ("hotel_reservations", m.HotelReservation),
+    ("hotel_folios", m.HotelFolio),
+    ("hotel_folio_charges", m.HotelFolioCharge),
+    ("hotel_folio_payments", m.HotelFolioPayment),
+    ("hotel_housekeeping_tasks", m.HotelHousekeepingTask),
+    ("hotel_maintenance_tickets", m.HotelMaintenanceTicket),
+    ("hotel_services", m.HotelService),
+    ("hotel_rate_plans", m.HotelRatePlan),
+    ("hotel_guest_requests", m.HotelGuestRequest),
+    ("hotel_lost_found", m.HotelLostFound),
+    ("hotel_cashier_shifts", m.HotelCashierShift),
+    ("hotel_night_audits", m.HotelNightAudit),
+    ("hotel_events", m.HotelEvent),
+    ("hotel_booking_links", m.HotelBookingLink),
+    ("hotel_shop_sales", m.HotelShopSale),
+    ("hotel_shop_sale_lines", m.HotelShopSaleLine),
 ]
 
 
@@ -516,6 +536,11 @@ def _parse_value(model: type, key: str, value: Any) -> Any:
     if python_type is datetime and isinstance(value, str):
         try:
             return datetime.fromisoformat(value.replace("Z", "+00:00")).replace(tzinfo=None)
+        except ValueError:
+            return value
+    if python_type is date and isinstance(value, str):
+        try:
+            return date.fromisoformat(value[:10])
         except ValueError:
             return value
     return value

@@ -162,6 +162,8 @@
 
 /* A message stays in view while the page scrolls. */
 .main .hotel-banner{position:sticky;top:8px;z-index:30}
+/* The bill scrolls to the top of the screen: keep its Check out and Print buttons clear of that message. */
+.main #guest-bill{scroll-margin-top:72px}
 
 [data-theme="dark"] .main{--hd-on:#4AB012;--hd-pick:#1F3A26}
 [data-theme="dark"] .main .hguide-tip,[data-theme="dark"] .main .hdesk-links small{color:#A3B5AA}

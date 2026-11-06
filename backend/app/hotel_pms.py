@@ -119,9 +119,19 @@ async def create_rate_plan(
         raise HTTPException(status_code=422, detail="A rate plan cannot be both weekday-only and weekend-only")
     if starts_on and ends_on and ends_on < starts_on:
         raise HTTPException(status_code=422, detail="Rate plan end is before the start")
+    code_clean = require_honest_narrative(code, label="code", max_length=40).upper()
+    taken = (
+        await db.execute(
+            select(m.HotelRatePlan.id).where(
+                m.HotelRatePlan.tenant_id == tenant_id, m.HotelRatePlan.code == code_clean
+            )
+        )
+    ).first()
+    if taken:
+        raise HTTPException(status_code=409, detail="Rate plan code already exists")
     row = m.HotelRatePlan(
         tenant_id=tenant_id,
-        code=require_honest_narrative(code, label="code", max_length=40).upper(),
+        code=code_clean,
         name=require_honest_narrative(name, label="name", max_length=150),
         room_type=(room_type or "").strip().lower() or None,
         amount=money_json(amount or 0),
@@ -198,6 +208,17 @@ async def create_guest_request(
         raise HTTPException(status_code=422, detail="Invalid request kind")
     if notes is not None and not str(notes).strip():
         raise HTTPException(status_code=422, detail="Guest request notes cannot be blank")
+    if reservation_id:
+        stay = (
+            await db.execute(
+                select(m.HotelReservation.id).where(
+                    m.HotelReservation.id == reservation_id,
+                    m.HotelReservation.tenant_id == tenant_id,
+                )
+            )
+        ).first()
+        if not stay:
+            raise HTTPException(status_code=404, detail="Reservation not found")
     if room_id:
         room = (
             await db.execute(
@@ -293,6 +314,10 @@ async def create_lost_found(
         raise HTTPException(status_code=422, detail="kind must be lost, found, or damage")
     if notes is not None and not str(notes).strip():
         raise HTTPException(status_code=422, detail="Lost and found notes cannot be blank")
+    if room_id:
+        from app.hotel import _get_room
+
+        await _get_room(db, tenant_id, room_id, require_active=False)
     row = m.HotelLostFound(
         tenant_id=tenant_id,
         room_id=room_id,
@@ -386,7 +411,20 @@ async def drawer_cash(db: AsyncSession, *, tenant_id: str, shift: m.HotelCashier
             )
         )
     ).scalar_one()
-    return money_json(round(float(bills) + float(deposits) + float(invoices) + float(shop), 2))
+    # A shop sale from an earlier float refunded on this one. A same-float refund needs no line:
+    # the sale itself stops counting.
+    late_refunds = (
+        await db.execute(
+            select(func.coalesce(func.sum(m.HotelShopSale.total), 0)).where(
+                m.HotelShopSale.tenant_id == tenant_id,
+                m.HotelShopSale.payment_method == "cash",
+                m.HotelShopSale.status == "refunded",
+                m.HotelShopSale.refunded_at >= shift.opened_at,
+                or_(m.HotelShopSale.shift_id.is_(None), m.HotelShopSale.shift_id != shift.id),
+            )
+        )
+    ).scalar_one()
+    return money_json(round(float(bills) + float(deposits) + float(invoices) + float(shop) - float(late_refunds), 2))
 
 
 async def live_shift(db: AsyncSession, *, tenant_id: str) -> dict | None:
@@ -443,6 +481,7 @@ async def close_shift(
         await db.execute(
             select(m.HotelFolioPayment).where(
                 m.HotelFolioPayment.tenant_id == tenant_id,
+                m.HotelFolioPayment.method != "credit",  # on account is a promise, not money in
                 m.HotelFolioPayment.created_at >= row.opened_at,
             )
         )
@@ -571,7 +610,7 @@ async def create_event(
     st = (status or "inquiry").strip().lower()
     if st not in {"inquiry", "confirmed"}:
         raise HTTPException(status_code=422, detail="Invalid event status")
-    from app.hotel import HOTEL_FEATURE_UNAVAILABLE, _as_date, _assert_room_available
+    from app.hotel import _as_date, _assert_room_available, _get_guest, _get_room
 
     start = _as_date(starts_on)
     end = _as_date(ends_on)
@@ -579,7 +618,10 @@ async def create_event(
         raise HTTPException(status_code=400, detail="Event end date must be after start date")
     if notes is not None and not str(notes).strip():
         raise HTTPException(status_code=422, detail="Event notes cannot be blank")
+    if guest_id:
+        await _get_guest(db, tenant_id, guest_id)
     if room_id:
+        await _get_room(db, tenant_id, room_id)
         await _assert_room_available(
             db,
             tenant_id=tenant_id,
@@ -621,6 +663,21 @@ async def set_event_status(
     st = (status or "").strip().lower()
     if st not in EVENT_STATUSES:
         raise HTTPException(status_code=422, detail="Invalid event status")
+    if st == row.status:
+        return row
+    if row.status in {"cancelled", "completed"}:
+        raise HTTPException(status_code=409, detail=f"This event is {row.status}. Book a new one instead.")
+    if st == "confirmed" and row.room_id:
+        from app.hotel import _assert_room_available
+
+        await _assert_room_available(
+            db,
+            tenant_id=tenant_id,
+            room_id=row.room_id,
+            check_in=row.starts_on,
+            check_out=row.ends_on,
+            exclude_event_id=row.id,
+        )
     row.status = st
     row.updated_at = datetime.utcnow()
     await _flush_pms(db)

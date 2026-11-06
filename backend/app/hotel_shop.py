@@ -2,9 +2,9 @@
 
 Sales land on ``hotel_shop_sales`` (never retail ``transactions``). Cash, card,
 Mobile Money and wallet sales go through the open front-desk cashier shift and
-post a sale journal. "Charge to room" adds one charge to the guest's open folio
-(paid at checkout, where the folio invoice carries the revenue) and posts only
-the cost of goods now. Stock comes off at the sale and goes back on a refund.
+post a sale journal. "Charge to room" adds one charge to the guest's open folio,
+whose own journal books the revenue and tax, so the sale posts only the cost of
+goods. Stock comes off at the sale and goes back on a refund.
 """
 
 from __future__ import annotations
@@ -67,7 +67,11 @@ async def open_room_folios(db: AsyncSession, tenant_id: str) -> list[dict]:
             .join(m.HotelGuest, m.HotelGuest.id == m.HotelFolio.guest_id)
             .join(m.HotelReservation, m.HotelReservation.id == m.HotelFolio.reservation_id)
             .outerjoin(m.HotelRoom, m.HotelRoom.id == m.HotelReservation.room_id)
-            .where(m.HotelFolio.tenant_id == tenant_id, m.HotelFolio.status == "open")
+            .where(
+                m.HotelFolio.tenant_id == tenant_id,
+                m.HotelFolio.status == "open",
+                m.HotelReservation.status == "checked_in",
+            )
             .order_by(m.HotelFolio.opened_at.desc())
         )
     ).all()
@@ -84,6 +88,7 @@ async def open_room_folios(db: AsyncSession, tenant_id: str) -> list[dict]:
 
 
 async def _next_number(db: AsyncSession, tenant_id: str) -> str:
+    await hotel_svc._lock_numbers(db, tenant_id)
     count = (
         await db.execute(select(func.count()).select_from(m.HotelShopSale).where(m.HotelShopSale.tenant_id == tenant_id))
     ).scalar_one()
@@ -170,8 +175,15 @@ async def create_sale(db: AsyncSession, tenant_id: str, payload, *, user_id: str
             raise HTTPException(status_code=404, detail="Guest folio not found")
         if folio.status != "open":
             raise HTTPException(status_code=409, detail="That guest has checked out")
+        stay = await db.get(m.HotelReservation, folio.reservation_id)
+        if stay is None or stay.status != "checked_in":
+            raise HTTPException(status_code=409, detail="That guest is not in the hotel")
     elif shift is None:
         raise HTTPException(status_code=409, detail="Open the front-desk shift before taking money")
+    if payload.store_id:
+        store = await db.get(m.Store, payload.store_id)
+        if store is None or store.tenant_id != tenant_id:
+            raise HTTPException(status_code=404, detail="Store not found")
 
     sale = m.HotelShopSale(
         tenant_id=tenant_id,
@@ -249,6 +261,8 @@ async def refund_sale(db: AsyncSession, tenant_id: str, sale_id: str, *, user_id
         raise HTTPException(status_code=404, detail="Sale not found")
     if sale.status == "refunded":
         return sale
+    if sale.payment_method == "cash" and await hotel_pms.current_shift(db, tenant_id=tenant_id) is None:
+        raise HTTPException(status_code=409, detail="Open the front-desk shift before giving cash back")
     if sale.payment_method == ROOM and sale.folio_charge_id:
         folio = await db.get(m.HotelFolio, sale.folio_id) if sale.folio_id else None
         if folio is not None and folio.status != "open":

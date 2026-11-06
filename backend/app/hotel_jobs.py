@@ -51,6 +51,7 @@ _CORRECTING_MONEY = (
     rf"POST /folios/{_ID}/payments/{_ID}/refund",
     rf"POST /shop/sales/{_ID}/refund",
     rf"POST /reservations/{_ID}/deposit",
+    rf"POST /reservations/{_ID}/close-bill",
     r"POST /night-audits",
 )
 
@@ -62,7 +63,11 @@ _WRITES: dict[str, tuple[str, ...]] = {
     "hotel_cashier": _TAKING_MONEY + _CORRECTING_MONEY,
 }
 
-_MONEY_PAGES = r"/(reports|folios|invoices|cashier|night-audits|shop|deposits)(/.*)?|/reservations/[^/]+/folio"
+_MONEY_PAGES = (
+    r"/(reports|folios|invoices|cashier|night-audits|shop|deposits)(/.*)?"
+    r"|/reservations/[^/]+/(folio|confirmation|print)"
+    r"|/guests(/.*)?"  # ID numbers, phones and bills: nothing a room job needs
+)
 _READS_REFUSED: dict[str, str] = {
     "hotel_housekeeping": _MONEY_PAGES,
     "hotel_maintenance": _MONEY_PAGES,
