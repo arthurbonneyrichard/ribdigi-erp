@@ -363,3 +363,49 @@ html[data-theme="dark"] body .main .hotel-rng-nav button.is-on[type="button"]:no
 [data-theme="dark"] .main .hattn li+li{border-top-color:#1F5A3A}
 [data-theme="dark"] .main .hotel-avail-quad .q[class] .k{color:#A9C4B3}
 [data-theme="dark"] .main .hotel-avail-quad .q[class] .n{color:#E8F2E4}
+
+/* Dashboard, second pass: a slim greeting, tinted room tiles, one quiet style below the fold. */
+.main .hdash-hero .dash{margin-bottom:12px !important}
+.main .hdash-hero .dash-hero{padding:14px 20px;min-height:0;border-radius:18px}
+.main .hdash-hero .dash-hero-top{display:none}
+.main .hdash-hero .greet-row{align-items:center;gap:12px}
+.main .hdash-hero .greet{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 8px;margin:0;font-size:24px;line-height:1.2}
+.main .hdash-hero .greet-hello,.main .hdash-hero .greet-name{font-size:24px;line-height:1.2}
+.main .hdash-hero .greet-sub{display:none}
+.main .hdash-hero .greet-date{margin:2px 0 0;font-size:13px}
+.main .hdash-hero .greet-clock{padding:6px 10px;transform:scale(.72);transform-origin:right center;margin:-14px 0}
+.main .hdash button.hboard-room:not(.menu-btn){position:relative;min-height:74px;padding:10px 12px;border:1px solid color-mix(in srgb,var(--hb,var(--line)) 28%,var(--line));border-left-width:1px;border-radius:14px;background:color-mix(in srgb,var(--hb,var(--line)) 9%,var(--white));transition:transform .15s,border-color .15s}
+.main .hdash button.hboard-room:not(.menu-btn):hover{transform:translateY(-2px);border-color:var(--hb,var(--brand));background:color-mix(in srgb,var(--hb,var(--line)) 14%,var(--white))}
+.main .hdash button.hboard-room:not(.menu-btn)::after{content:"";position:absolute;top:12px;right:12px;width:9px;height:9px;border-radius:50%;background:var(--hb,var(--line))}
+.main .hdash .hboard-grid{grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
+.main .hdash .hboard-floor h3{margin:0 0 8px;font-size:13px;font-weight:700;color:var(--muted)}
+.main .hdash .hboard-key{gap:6px}
+.main .hdash .hboard-key-item{padding:3px 10px;border:1px solid var(--line);border-radius:999px;font-size:12px}
+.main .hdash .hboard-key-item i{width:9px;height:9px;border:0;border-radius:50%}
+.main details.hday-more{border:0}
+.main details.hday-more>summary{padding:12px 18px;border:1px solid var(--line);border-radius:14px;background:var(--white);font-size:14px}
+.main details.hday-more[open]>summary{border-bottom:1px solid var(--line);margin-bottom:14px}
+.main details.hday-more>:not(summary){margin-left:0;margin-right:0}
+.main .hdash .hotel-occ-hero{background:var(--white)}
+.main .hdash .hotel-occ-hero-pct{color:var(--ink);font-size:34px}
+.main .hdash .hotel-avail-bar{height:12px;gap:2px;background:transparent;border-radius:6px;overflow:hidden}
+.main .hdash .hotel-avail-quad .k{text-transform:capitalize}
+.main .hdash .hotel-avail-quad .n{color:var(--ink)}
+.main .hdash .hotel-book-list li,.main .hdash .hotel-room-chip[class]{padding:10px 2px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;box-shadow:none}
+.main .hdash .hotel-book-list li:last-child,.main .hdash .hotel-room-chip[class]:last-child{border-bottom:0}
+@media (max-width:640px){
+  .main .hdash-hero .greet-clock{display:none}
+  .main .hdash .hboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+[data-theme="dark"] .main .hdash .is-occupied,[data-theme="dark"] .main .hdash .is-leaving{--hb:#6FD12F}
+[data-theme="dark"] .main .hdash .is-arriving{--hb:#C8E86A}
+[data-theme="dark"] .main .hdash .is-ready{--hb:#7FA892}
+[data-theme="dark"] .main .hdash button.hboard-room:not(.menu-btn){background:color-mix(in srgb,var(--hb,#1F5A3A) 10%,#06281C);border-color:color-mix(in srgb,var(--hb,#1F5A3A) 35%,#1F5A3A);color:#E8F2E4}
+[data-theme="dark"] .main .hdash button.hboard-room:not(.menu-btn):hover{background:color-mix(in srgb,var(--hb,#1F5A3A) 18%,#06281C)}
+[data-theme="dark"] .main .hdash .hboard-key-item{border-color:#1F5A3A}
+[data-theme="dark"] .main .hdash .hboard-floor h3{color:#A9C4B3}
+[data-theme="dark"] .main details.hday-more>summary{background:#06281C;border-color:#1F5A3A}
+[data-theme="dark"] .main .hdash .hotel-occ-hero{background:#06281C}
+[data-theme="dark"] .main .hdash .hotel-occ-hero-pct{color:#E8F2E4}
+[data-theme="dark"] .main .hdash .hotel-book-list li,[data-theme="dark"] .main .hdash .hotel-room-chip[class]{background:transparent;border-color:#1F5A3A}
+[data-theme="dark"] .main .hdash .hotel-area-chart path{fill:#1F5A3A;opacity:1}
