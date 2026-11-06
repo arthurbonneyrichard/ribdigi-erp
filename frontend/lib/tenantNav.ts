@@ -85,7 +85,6 @@ export const HOTEL_NAV_ITEMS: NavItem[] = [
   ['Events and Banquets', '/hotel?tab=events', 'hotel'],
   ['Notifications', '/notifications', 'notifications'],
   ['Hotel settings', '/hotel?tab=settings', 'hotel'],
-  ['Company profile', '/company', 'company'],
   ['Subscription billing', '/company/billing', 'company'],
   ['Integrations', '/integrations', 'company'],
   ['Security', '/security', 'security'],
@@ -167,7 +166,6 @@ export const HOTEL_NAV_GROUPS: NavGroup[] = [
     label: 'Settings',
     items: [
       ['Hotel settings', '/hotel?tab=settings', 'hotel'],
-      ['Company profile', '/company', 'company'],
       ['Subscription billing', '/company/billing', 'company'],
       ['Integrations', '/integrations', 'company'],
       ['Security', '/security', 'security'],

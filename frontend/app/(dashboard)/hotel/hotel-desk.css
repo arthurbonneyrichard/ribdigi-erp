@@ -166,6 +166,8 @@
 .main #guest-bill{scroll-margin-top:72px}
 .main a.hlink{color:var(--brand-dark);font-weight:700;text-decoration:underline}
 [data-theme="dark"] .main a.hlink{color:#C8E86A}
+/* Company details sit inside Hotel settings, under the same page title. */
+.main .hset-company .company-page>.page-head{display:none}
 
 [data-theme="dark"] .main{--hd-on:#4AB012;--hd-pick:#1F3A26}
 [data-theme="dark"] .main .hguide-tip,[data-theme="dark"] .main .hdesk-links small{color:#A3B5AA}
