@@ -591,6 +591,8 @@ def serialize_dispatch(row: m.FmcgDispatch, *, route_code: str | None = None) ->
         "notes": row.notes,
         "created_at": row.created_at.isoformat() if row.created_at else None,
         "closed_at": row.closed_at.isoformat() if row.closed_at else None,
+        "expected_cash": money_json(row.expected_cash) if row.expected_cash is not None else None,
+        "counted_cash": money_json(row.counted_cash) if row.counted_cash is not None else None,
     }
 
 
@@ -648,6 +650,9 @@ async def close_dispatch(db: AsyncSession, *, tenant_id: str, dispatch_id: str) 
         raise HTTPException(status_code=404, detail="Dispatch not found")
     if row.status == "closed":
         raise HTTPException(status_code=400, detail="Dispatch already closed")
+    from app import fmcg_orders
+
+    await fmcg_orders.unload(db, tenant_id, row.id)
     row.status = "closed"
     row.closed_at = datetime.utcnow()
     await db.flush()

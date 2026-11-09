@@ -29,7 +29,7 @@ def test_industry_allows_module_unknown_does_not_grant_verticals():
     assert industry_allows_module("hotel", "inventory") is True
     assert industry_allows_module("mart", "inventory") is True
     assert industry_allows_module("hotel", "inventory") is True
-    assert industry_allows_module("fmcg", "fmcg") is False
+    assert industry_allows_module("fmcg", "fmcg") is True
     assert industry_allows_module("hotel", "fmcg") is False
     assert has_permission("hotel_manager", "purchasing", "write")
     assert has_permission("hotel_manager", "inventory", "read")

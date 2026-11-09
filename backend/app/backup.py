@@ -10,6 +10,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
@@ -124,7 +125,175 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("restaurant_kitchen_tickets", m.RestaurantKitchenTicket),
     ("restaurant_bookings", m.RestaurantBooking),
     ("restaurant_booking_links", m.RestaurantBookingLink),
+    ("branches", m.Branch),
+    ("departments", m.Department),
+    ("customer_groups", m.CustomerGroup),
+    ("product_price_tiers", m.ProductPriceTier),
+    ("user_store_memberships", m.UserStoreMembership),
+    ("sales_quotations", m.SalesQuotation),
+    ("sales_quotation_items", m.SalesQuotationItem),
+    ("sales_orders", m.SalesOrder),
+    ("sales_order_items", m.SalesOrderItem),
+    ("stock_reservations", m.StockReservation),
+    ("sales_returns", m.SalesReturn),
+    ("sales_return_items", m.SalesReturnItem),
+    ("purchase_request_approval_actions", m.PurchaseRequestApprovalAction),
+    ("cash_transfers", m.CashTransfer),
+    ("gift_cards", m.GiftCard),
+    ("pos_cash_movements", m.PosCashMovement),
+    ("ai_report_templates", m.AiReportTemplate),
+    ("fmcg_routes", m.FmcgRoute),
+    ("fmcg_route_stops", m.FmcgRouteStop),
+    ("fmcg_customer_assignments", m.FmcgCustomerAssignment),
+    ("fmcg_dispatches", m.FmcgDispatch),
+    ("fmcg_trade_schemes", m.FmcgTradeScheme),
+    ("fmcg_orders", m.FmcgOrder),
+    ("fmcg_order_lines", m.FmcgOrderLine),
+    ("fmcg_payments", m.FmcgPayment),
+    ("fmcg_returns", m.FmcgReturn),
+    ("fmcg_return_lines", m.FmcgReturnLine),
+    ("hospital_patients", m.HospitalPatient),
+    ("hospital_encounters", m.HospitalEncounter),
+    ("ecommerce_storefronts", m.EcommerceStorefront),
+    ("ecommerce_domains", m.EcommerceDomain),
+    ("ecommerce_gateways", m.EcommerceGateway),
+    ("ecommerce_connectors", m.EcommerceConnector),
+    ("ecommerce_listings", m.EcommerceListing),
+    ("ecommerce_shoppers", m.EcommerceShopper),
+    ("ecommerce_orders", m.EcommerceOrder),
+    ("ecommerce_order_items", m.EcommerceOrderItem),
+    ("ecommerce_payment_events", m.EcommercePaymentEvent),
+    ("ecommerce_reservations", m.EcommerceReservation),
+    ("checkout_payment_notices", m.CheckoutPaymentNotice),
+    ("bakery_recipes", m.BakeryRecipe),
+    ("bakery_recipe_lines", m.BakeryRecipeLine),
+    ("bakery_batches", m.BakeryBatch),
+    ("bakery_waste", m.BakeryWaste),
+    ("bakery_till_shifts", m.BakeryTillShift),
+    ("bakery_orders", m.BakeryOrder),
+    ("bakery_order_lines", m.BakeryOrderLine),
+    ("bakery_sales", m.BakerySale),
+    ("bakery_sale_lines", m.BakerySaleLine),
+    ("bakery_payments", m.BakeryPayment),
+    ("bakery_stock_receipts", m.BakeryStockReceipt),
+    ("bakery_expenses", m.BakeryExpense),
+    ("gym_plans", m.GymPlan),
+    ("gym_members", m.GymMember),
+    ("gym_memberships", m.GymMembership),
+    ("gym_till_shifts", m.GymTillShift),
+    ("gym_payments", m.GymPayment),
+    ("gym_check_ins", m.GymCheckIn),
+    ("gym_classes", m.GymClass),
+    ("gym_class_bookings", m.GymClassBooking),
+    ("hrm_settings", m.HrmSettings),
+    ("hrm_employees", m.HrmEmployee),
+    ("hrm_leave_requests", m.HrmLeaveRequest),
+    ("hrm_attendance", m.HrmAttendance),
+    ("hrm_payroll_runs", m.HrmPayrollRun),
+    ("hrm_payslips", m.HrmPayslip),
 ]
+
+# Every company table is either backed up above or listed here with the reason it is not.
+# tests/test_backup_coverage.py fails on a table that is in neither, so none can be forgotten.
+_SIGN_IN = "Sign-in or secret material. Restoring it would revive old access."
+_PASSING = "Short-lived working data with no lasting business record."
+_PAIRING = "Device pairing. Hardware pairs again after a restore."
+_PLATFORM = "Belongs to RIBDIGI's own records, not the company's data."
+BACKUP_EXCLUDED: dict[str, str] = {
+    "users": "Restore runs as a signed-in user, and passwords are never in a backup. An old copy must not undo role or access changes.",
+    "auth_sessions": _SIGN_IN,
+    "auth_tokens": _SIGN_IN,
+    "two_factor_backup_codes": _SIGN_IN,
+    "webauthn_credentials": _SIGN_IN,
+    "webauthn_challenges": _SIGN_IN,
+    "api_keys": _SIGN_IN,
+    "pos_cashier_passcodes": _SIGN_IN,
+    "pos_operator_sessions": _SIGN_IN,
+    "pos_unlock_throttles": _SIGN_IN,
+    "webhook_endpoints": "The signing secret is never in a backup, so an endpoint is set up again with a new one.",
+    "webhook_deliveries": _PASSING,
+    "audit_logs": "Tamper-evident chain. A restore must not rewrite history, and the log has its own archive.",
+    "audit_cold_archives": "Index of the audit log's own archive.",
+    "backup_jobs": "History of backups, kept outside the data they restore.",
+    "backup_settings": "A restore must not change the schedule protecting the company now.",
+    "notifications": _PASSING,
+    "ai_queries": _PASSING,
+    "ai_security_alerts": _PASSING,
+    "ecommerce_carts": _PASSING,
+    "ecommerce_cart_items": _PASSING,
+    "ecommerce_sync_jobs": _PASSING,
+    "offline_grants": _PASSING,
+    "offline_stock_allocations": _PASSING,
+    "offline_sync_events": _PASSING,
+    "print_jobs": _PASSING,
+    "print_job_attempts": _PASSING,
+    "print_agents": _PAIRING,
+    "printers": _PAIRING,
+    "pos_devices": _PAIRING,
+    "support_tickets": _PLATFORM,
+    "support_ticket_messages": _PLATFORM,
+    "support_ticket_events": _PLATFORM,
+    "support_ticket_attachments": _PLATFORM,
+    "support_email_outbox": _PLATFORM,
+    "tenant_billing_accounts": _PLATFORM,
+    "tenant_billing_invoices": _PLATFORM,
+    "tenant_billing_attempts": _PLATFORM,
+    "tenant_billing_events": _PLATFORM,
+}
+
+
+# Each desk is its own product: a company's backup only ever reads its own desk's tables.
+_DESK_TABLES = {
+    "hotel_": "hotel",
+    "restaurant_": "restaurant",
+    "hospital_": "hospital",
+    "fmcg_": "fmcg",
+    "bakery_": "bakery",
+    "gym_": "gym",
+    "hrm_": "hrm",
+}
+
+
+def _desk_of(table: str) -> str | None:
+    return next((desk for prefix, desk in _DESK_TABLES.items() if table.startswith(prefix)), None)
+
+
+def _parents_first(specs: list[tuple[str, type]]) -> list[tuple[str, type]]:
+    """Order datasets so a row is restored after the rows it points at.
+
+    Keeps the listed order where it can. A true cycle is broken at the first table listed,
+    and the links it leaves pointing forward are filled in afterwards (see _late_columns).
+    """
+    by_table = {model.__table__.name: (name, model) for name, model in specs}
+    needs = {
+        table: {
+            fk.column.table.name
+            for fk in model.__table__.foreign_keys
+            if fk.column.table.name in by_table and fk.column.table.name != table
+        }
+        for table, (_name, model) in by_table.items()
+    }
+    placed: list[str] = []
+    waiting = [model.__table__.name for _name, model in specs]
+    while waiting:
+        ready = next((t for t in waiting if needs[t] <= set(placed)), waiting[0])
+        placed.append(ready)
+        waiting.remove(ready)
+    return [by_table[table] for table in placed]
+
+
+DATASET_SPECS = _parents_first(DATASET_SPECS)
+
+
+def _late_columns(model: type) -> list[str]:
+    """Links to a row that may not exist yet when this table restores: to itself, or to a later table."""
+    position = {spec.__table__.name: index for index, (_name, spec) in enumerate(DATASET_SPECS)}
+    own = position[model.__table__.name]
+    return [
+        fk.parent.name
+        for fk in model.__table__.foreign_keys
+        if position.get(fk.column.table.name, -1) >= own
+    ]
 
 
 def backup_root() -> Path:
@@ -210,7 +379,7 @@ def _is_secret_column(name: str) -> bool:
     return (
         "password" in key
         or "secret" in key
-        or key in {"token_hash", "api_key_hash", "refresh_token"}
+        or key in {"token_hash", "api_key_hash", "refresh_token", "session_token"}
     )
 
 
@@ -306,9 +475,18 @@ async def collect_tenant_payload(db: AsyncSession, tenant_id: str) -> tuple[dict
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
 
+    from app import packages as packages_svc
+
+    stored = getattr(tenant, "industry", None)
+    industry = packages_svc.canonicalize_industry(stored) or str(stored or "").strip().lower()
     datasets: dict[str, list] = {}
     counts: dict[str, int] = {}
     for name, model in DATASET_SPECS:
+        desk = _desk_of(model.__table__.name)
+        if desk is not None and desk != industry:
+            datasets[name] = []
+            counts[name] = 0
+            continue
         rows = (
             await db.execute(select(model).where(model.tenant_id == tenant_id))
         ).scalars().all()
@@ -582,20 +760,54 @@ async def validate_restore_payload(payload: dict, tenant_id: str) -> dict:
     }
 
 
+async def _clear_regenerated_account(
+    db: AsyncSession, tenant_id: str, pk: str, code: str | None, *, keep: set[str]
+) -> None:
+    """Opening Accounting on an empty company recreates the default accounts under new ids.
+
+    The restored account takes their place. If money was posted to one since, it is not ours to
+    remove, so the restore stops rather than leave two accounts with the same code.
+    """
+    rows = (
+        await db.execute(
+            select(m.Account).where(m.Account.tenant_id == tenant_id, m.Account.code == code, m.Account.id != pk)
+        )
+    ).scalars().all()
+    rows = [row for row in rows if row.id not in keep]
+    for row in rows:
+        used = (
+            await db.execute(select(m.JournalEntryLine.id).where(m.JournalEntryLine.account_id == row.id).limit(1))
+        ).first()
+        if used:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Account {code} has entries posted since this backup. Move them before restoring.",
+            )
+        await db.delete(row)
+    if rows:
+        await db.flush()
+
+
 async def apply_restore(db: AsyncSession, tenant_id: str, payload: dict) -> dict:
     report = await validate_restore_payload(payload, tenant_id)
     datasets = payload.get("datasets") or {}
     restored: dict[str, int] = {}
+    links_to_fill: list[tuple[type, str, dict[str, Any]]] = []
+    backed_up_accounts = {str(row.get("id")) for row in datasets.get("accounts") or []}
 
     for name, model in DATASET_SPECS:
         rows = datasets.get(name) or []
         count = 0
+        late = _late_columns(model)
         for raw in rows:
             data = {k: _parse_value(model, k, v) for k, v in dict(raw).items() if k in model.__table__.columns}
             data["tenant_id"] = tenant_id
             pk = data.get("id")
             if not pk:
                 continue
+            links = {k: data.pop(k) for k in late if data.get(k) is not None}
+            if links:
+                links_to_fill.append((model, pk, links))
             existing = await db.get(model, pk)
             if existing:
                 if existing.tenant_id != tenant_id:
@@ -606,10 +818,23 @@ async def apply_restore(db: AsyncSession, tenant_id: str, payload: dict) -> dict
                 for key, value in data.items():
                     setattr(existing, key, value)
             else:
+                if model is m.Account:
+                    await _clear_regenerated_account(db, tenant_id, pk, data.get("code"), keep=backed_up_accounts)
+                if model is m.EcommerceShopper:
+                    # The password is never in a backup. A lost shopper sets a new one with a reset.
+                    from app.security import hash_password
+
+                    data.setdefault("password_hash", hash_password(uuid4().hex))
                 db.add(model(**data))
             count += 1
         restored[name] = count
         await db.flush()
+
+    for model, pk, links in links_to_fill:
+        row = await db.get(model, pk)
+        for key, value in links.items():
+            setattr(row, key, value)
+    await db.flush()
 
     from app.storage import _put_bytes, content_type_for_key, validate_key
 
@@ -776,7 +1001,9 @@ async def restore_backup(
         details={"safety_backup_id": safety.id, "filename": job.filename},
     )
     try:
-        report = await apply_restore(db, tenant_id, payload)
+        # A savepoint, so a failed restore undoes itself and leaves the session able to report it.
+        async with db.begin_nested():
+            report = await apply_restore(db, tenant_id, payload)
         job.status = "completed"
         await db.flush()
         report["dry_run"] = False
@@ -801,7 +1028,8 @@ async def restore_backup(
             safety_payload = decrypt_archive(
                 safety_bytes, expected_file_checksum=safety.checksum_sha256
             )
-            await apply_restore(db, tenant_id, safety_payload)
+            async with db.begin_nested():
+                await apply_restore(db, tenant_id, safety_payload)
             recovered = True
         except Exception:
             recovered = False

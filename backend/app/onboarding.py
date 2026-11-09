@@ -140,10 +140,69 @@ FMCG_STEP_DEFS: list[dict[str, str]] = [
     },
     {
         "id": "first_sale",
-        "title": "Make first sale",
-        "description": "Post a sales invoice or complete a POS sale",
-        "href": "/sales",
+        "title": "Deliver your first order",
+        "description": "Book an order for an outlet and deliver it",
+        "href": "/fmcg?tab=orders",
     },
+]
+
+BAKERY_STEP_DEFS: list[dict[str, str]] = [
+    {
+        "id": "setup_company",
+        "title": "Setup company profile",
+        "description": "Add phone, address, website, email, or company logo",
+        "href": "/company",
+    },
+    {
+        "id": "add_products",
+        "title": "Add items and ingredients",
+        "description": "Add what you sell and what you bake with",
+        "href": "/bakery?tab=stock",
+    },
+    {
+        "id": "create_supplier",
+        "title": "Write a recipe",
+        "description": "Say what one batch takes and makes",
+        "href": "/bakery?tab=baking",
+    },
+    {
+        "id": "stock_ready",
+        "title": "Bake a batch",
+        "description": "Record a bake so the counter has stock",
+        "href": "/bakery?tab=baking",
+    },
+    {
+        "id": "first_sale",
+        "title": "Make first sale",
+        "description": "Sell something at the counter",
+        "href": "/bakery?tab=counter",
+    },
+]
+
+GYM_STEP_DEFS: list[dict[str, str]] = [
+    {
+        "id": "setup_company",
+        "title": "Setup company profile",
+        "description": "Add phone, address, website, email, or company logo",
+        "href": "/company",
+    },
+    {"id": "add_products", "title": "Add a plan", "description": "Set what membership costs and how long it lasts", "href": "/gym?tab=plans"},
+    {"id": "create_supplier", "title": "Add a member", "description": "Put in your first member", "href": "/gym?tab=members"},
+    {"id": "stock_ready", "title": "Sell a plan", "description": "Open the till and sell a membership", "href": "/gym?tab=members"},
+    {"id": "first_sale", "title": "First visit", "description": "Let a member in at the door", "href": "/gym?tab=door"},
+]
+
+HRM_STEP_DEFS: list[dict[str, str]] = [
+    {
+        "id": "setup_company",
+        "title": "Setup company profile",
+        "description": "Add phone, address, website, email, or company logo",
+        "href": "/company",
+    },
+    {"id": "add_products", "title": "Check your rates", "description": "Confirm leave days, SSNIT and PAYE bands", "href": "/hrm?tab=settings"},
+    {"id": "create_supplier", "title": "Add your staff", "description": "Put in your first employee", "href": "/hrm?tab=people"},
+    {"id": "stock_ready", "title": "Mark attendance", "description": "Record who came in", "href": "/hrm?tab=attendance"},
+    {"id": "first_sale", "title": "Run payroll", "description": "Draw up and approve a month", "href": "/hrm?tab=payroll"},
 ]
 
 VALID_STEP_IDS = frozenset(s["id"] for s in STEP_DEFS)
@@ -156,6 +215,12 @@ def step_defs_for_industry(industry: str | None) -> list[dict[str, str]]:
         return HOTEL_STEP_DEFS
     if ind == "restaurant":
         return RESTAURANT_STEP_DEFS
+    if ind == "bakery":
+        return BAKERY_STEP_DEFS
+    if ind == "gym":
+        return GYM_STEP_DEFS
+    if ind == "hrm":
+        return HRM_STEP_DEFS
     if ind == "fmcg":
         return FMCG_STEP_DEFS
     return STEP_DEFS
@@ -287,6 +352,42 @@ async def _auto_complete(db: AsyncSession, tenant_id: str, tenant: m.Tenant) -> 
             )
         ).scalar_one_or_none()
         flags["first_sale"] = bool(table_bill or pos_sale)
+    elif industry == "gym":
+        async def any_row(model) -> bool:
+            found = await db.execute(select(model.id).where(model.tenant_id == tenant_id).limit(1))
+            return found.scalar_one_or_none() is not None
+
+        flags["add_products"] = await any_row(m.GymPlan)
+        flags["create_supplier"] = await any_row(m.GymMember)
+        flags["stock_ready"] = await any_row(m.GymMembership)
+        flags["first_sale"] = await any_row(m.GymCheckIn)
+    elif industry == "hrm":
+        async def any_row(model) -> bool:
+            found = await db.execute(select(model.id).where(model.tenant_id == tenant_id).limit(1))
+            return found.scalar_one_or_none() is not None
+
+        approved = await db.execute(
+            select(m.HrmPayrollRun.id)
+            .where(m.HrmPayrollRun.tenant_id == tenant_id, m.HrmPayrollRun.status != "draft")
+            .limit(1)
+        )
+        flags["add_products"] = await any_row(m.HrmSettings)
+        flags["create_supplier"] = await any_row(m.HrmEmployee)
+        flags["stock_ready"] = await any_row(m.HrmAttendance)
+        flags["first_sale"] = approved.scalar_one_or_none() is not None
+    elif industry == "bakery":
+        recipe = (
+            await db.execute(select(m.BakeryRecipe.id).where(m.BakeryRecipe.tenant_id == tenant_id).limit(1))
+        ).scalar_one_or_none()
+        batch = (
+            await db.execute(select(m.BakeryBatch.id).where(m.BakeryBatch.tenant_id == tenant_id).limit(1))
+        ).scalar_one_or_none()
+        sale = (
+            await db.execute(select(m.BakerySale.id).where(m.BakerySale.tenant_id == tenant_id).limit(1))
+        ).scalar_one_or_none()
+        flags["create_supplier"] = bool(recipe)
+        flags["stock_ready"] = bool(batch)
+        flags["first_sale"] = bool(sale)
     elif industry == "fmcg":
         scheme = (
             await db.execute(
@@ -300,6 +401,10 @@ async def _auto_complete(db: AsyncSession, tenant_id: str, tenant: m.Tenant) -> 
         ).scalar_one_or_none()
         flags["create_supplier"] = bool(scheme)
         flags["stock_ready"] = bool(route)
+        delivered = await db.execute(
+            select(m.FmcgOrder.id).where(m.FmcgOrder.tenant_id == tenant_id, m.FmcgOrder.status == "delivered").limit(1)
+        )
+        flags["first_sale"] = delivered.scalar_one_or_none() is not None
 
     return flags
 

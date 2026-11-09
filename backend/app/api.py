@@ -242,6 +242,7 @@ from app.schemas import (
     PeriodReopenBody,
     CreditLimitOverrideBody,
     Login,
+    StaffLogin,
     NotificationPreferencesUpdate,
     PartyCreate,
     PartyUpdate,
@@ -394,6 +395,9 @@ from app import totp as totp_svc
 from app import platform_staff as platform_staff_svc
 from app import platform_reports as platform_reports_svc
 from app import user_accounts as user_accounts_svc
+from app import desk_routing
+from app.db import set_desk
+from app.desks import desk_for_industry
 from app import hotel as hotel_svc
 from app import hotel_pms as hotel_pms_svc
 from app import hotel_jobs as hotel_jobs_mod
@@ -445,6 +449,16 @@ api.include_router(hotel_shop_api_mod.router)
 from app import hotel_invoices_api as hotel_invoices_api_mod  # noqa: E402
 
 api.include_router(hotel_invoices_api_mod.router)
+from app import bakery_api as bakery_api_mod  # noqa: E402
+from app import fmcg_orders as fmcg_orders_svc  # noqa: E402
+from app import fmcg_orders_api as fmcg_orders_api_mod  # noqa: E402
+from app import gym_api as gym_api_mod  # noqa: E402
+from app import hrm_api as hrm_api_mod  # noqa: E402
+
+api.include_router(bakery_api_mod.router)
+api.include_router(gym_api_mod.router)
+api.include_router(hrm_api_mod.router)
+api.include_router(fmcg_orders_api_mod.router)
 from app import hotel_booking_api as hotel_booking_api_mod
 
 api.include_router(hotel_booking_api_mod.router)
@@ -518,6 +532,7 @@ async def _issue_email_verification(db: AsyncSession, user: m.User, tenant: m.Te
 
 
 async def tenant_pk(db: AsyncSession, tenant_ref: str) -> str:
+    await desk_routing.route_to_company(tenant_ref)
     tenant = (
         await db.execute(
             select(m.Tenant).where((m.Tenant.id == tenant_ref) | (m.Tenant.slug == tenant_ref))
@@ -830,10 +845,12 @@ async def create_tenant(
     existing = (
         await db.execute(select(m.Tenant).where(m.Tenant.slug == slug))
     ).scalar_one_or_none()
-    if existing:
+    if existing or await desk_routing.taken_on_any_desk(select(m.Tenant.id).where(m.Tenant.slug == slug)):
         raise HTTPException(status_code=409, detail="Tenant slug exists")
 
     industry = tenants_svc.normalize_industry(payload.industry)
+    # A new company is created in its own desk's database.
+    set_desk(desk_for_industry(industry))
     tenants_svc.assert_industry_selectable(industry)
     trial_end = tenants_svc.default_trial_ends_at()
     now = datetime.utcnow()
@@ -2293,6 +2310,48 @@ async def _login_industry(db: AsyncSession, tenant_id: str | None) -> str | None
     tenant = await db.get(m.Tenant, tenant_id) if tenant_id else None
     return packages_svc.canonicalize_industry(getattr(tenant, "industry", None)) if tenant else None
 
+ADMIN_SIGN_IN_ROLES = frozenset(
+    {"company_admin", "super_admin", "platform_owner", "platform_admin", "platform_support", "platform_finance"}
+)
+
+
+@api.post("/auth/staff-login")
+async def staff_login(payload: StaffLogin, request: Request, db: AsyncSession = Depends(get_db)):
+    """Staff sign in with their username or email and password. No company code: the account
+    is found across every company and desk, then signed in exactly like /auth/login."""
+    ident = payload.login
+    if "@" in ident:
+        stmt = select(m.User.tenant_id, m.User.email).where(func.lower(m.User.email) == ident)
+    else:
+        stmt = select(m.User.tenant_id, m.User.email).where(m.User.username == ident)
+    rows = await desk_routing.rows_on_every_desk(db, stmt)
+    if not rows:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    if len(rows) > 1:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "LOGIN_NOT_UNIQUE",
+                "message": "This email is used in more than one company. Sign in with your username, or ask your admin for one.",
+            },
+        )
+    tenant_id, email = rows[0]
+    return await login(
+        Login(email=email, password=payload.password, tenant_id=tenant_id, totp_code=payload.totp_code, portal="staff"),
+        request,
+        db,
+    )
+
+
+async def _username_taken(db: AsyncSession, username: str, *, except_user_id: str | None = None) -> bool:
+    stmt = select(m.User.id).where(m.User.username == username)
+    if except_user_id:
+        stmt = stmt.where(m.User.id != except_user_id)
+    if (await db.execute(stmt.limit(1))).first():
+        return True
+    return await desk_routing.taken_on_any_desk(stmt)
+
+
 @api.post("/auth/login")
 async def login(payload: Login, request: Request, db: AsyncSession = Depends(get_db)):
     tenant = await tenants_svc.resolve_tenant(db, payload.tenant_id)
@@ -2353,6 +2412,19 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
 
     user.failed_login_attempts = 0
     user.locked_until = None
+
+    # Two doors: Admin sign-in for owners and admins, User sign-in for the staff they create.
+    # Checked only after the password, so a wrong door never reveals whether an account exists.
+    if payload.portal == "admin" and user.role not in ADMIN_SIGN_IN_ROLES:
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "USE_USER_SIGN_IN", "message": "This account signs in on the User tab."},
+        )
+    if payload.portal == "staff" and user.role in ADMIN_SIGN_IN_ROLES:
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "USE_ADMIN_SIGN_IN", "message": "Owners and admins sign in on the Admin tab with the company code."},
+        )
 
     if not user.email_verified:
         try:
@@ -2882,6 +2954,7 @@ async def auth_2fa_disable(
 @api.post("/auth/refresh")
 async def refresh(payload: RefreshRequest, request: Request, db: AsyncSession = Depends(get_db)):
     token_hash = hash_token(payload.refresh_token)
+    await desk_routing.route_by(select(m.AuthSession.id).where(m.AuthSession.refresh_token_hash == token_hash))
     session = (
         await db.execute(select(m.AuthSession).where(m.AuthSession.refresh_token_hash == token_hash))
     ).scalar_one_or_none()
@@ -3139,6 +3212,7 @@ async def password_reset_request(payload: PasswordResetRequest, db: AsyncSession
 async def password_reset(payload: PasswordResetConfirm, db: AsyncSession = Depends(get_db)):
     validate_password_strength(payload.new_password)
     token_hash = hash_token(payload.token)
+    await desk_routing.route_by(select(m.AuthToken.id).where(m.AuthToken.token_hash == token_hash))
     row = (
         await db.execute(
             select(m.AuthToken).where(
@@ -3174,6 +3248,7 @@ async def password_reset(payload: PasswordResetConfirm, db: AsyncSession = Depen
 @api.post("/auth/verify-email")
 async def verify_email(payload: EmailVerifyConfirm, db: AsyncSession = Depends(get_db)):
     token_hash = hash_token(payload.token)
+    await desk_routing.route_by(select(m.AuthToken.id).where(m.AuthToken.token_hash == token_hash))
     row = (
         await db.execute(
             select(m.AuthToken).where(
@@ -4023,6 +4098,8 @@ async def add_user(
     ).scalar_one_or_none()
     if exists:
         raise HTTPException(status_code=409, detail="User email already exists in tenant")
+    if payload.username and await _username_taken(db, payload.username):
+        raise HTTPException(status_code=409, detail="That username is taken. Try another.")
     branch_id, department_id = await org_units_svc.assert_user_org_assignment(
         db,
         claims["tenant_id"],
@@ -4051,6 +4128,7 @@ async def add_user(
         # The signed-in admin chose this password and will hand it to the user.
         email_verified=True,
         is_active=True,
+        username=payload.username,
     )
     db.add(user)
     await db.flush()
@@ -4142,6 +4220,12 @@ async def update_user(
         # UserUpdate.phone ∈ E164PhoneValue — defense-in-depth → 400.
         user.phone = _optional_user_phone(payload.phone)
         changes["phone"] = user.phone
+
+    if payload.username is not None and payload.username != user.username:
+        if await _username_taken(db, payload.username, except_user_id=user.id):
+            raise HTTPException(status_code=409, detail="That username is taken. Try another.")
+        user.username = payload.username
+        changes["username"] = user.username
 
     if payload.role is not None:
         role_key, role_perms = await custom_roles_svc.resolve_role_assignment(
@@ -19535,6 +19619,7 @@ async def fmcg_schemes_create(
     claims=Depends(require_permission("fmcg", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    fmcg_orders_svc.job(claims, "correct")
     row = await fmcg_svc.create_scheme(
         db,
         tenant_id=claims["tenant_id"],
@@ -19571,6 +19656,7 @@ async def fmcg_schemes_set_active(
     claims=Depends(require_permission("fmcg", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    fmcg_orders_svc.job(claims, "correct")
     row = await fmcg_svc.set_scheme_active(
         db,
         tenant_id=claims["tenant_id"],
@@ -19628,6 +19714,7 @@ async def fmcg_routes_create(
     claims=Depends(require_permission("fmcg", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    fmcg_orders_svc.job(claims, "correct")
     row = await fmcg_svc.create_route(
         db,
         tenant_id=claims["tenant_id"],
@@ -19672,6 +19759,7 @@ async def fmcg_route_stops_create(
     claims=Depends(require_permission("fmcg", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    fmcg_orders_svc.job(claims, "correct")
     row, customer_name = await fmcg_svc.add_stop(
         db,
         tenant_id=claims["tenant_id"],
@@ -19705,6 +19793,7 @@ async def fmcg_stop_delivery_update(
     claims=Depends(require_permission("fmcg", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    fmcg_orders_svc.job(claims, "deliver")
     row, customer_name = await fmcg_svc.update_stop_delivery(
         db,
         tenant_id=claims["tenant_id"],
@@ -20107,6 +20196,7 @@ async def fmcg_dispatches_create(
     claims=Depends(require_permission("fmcg", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    fmcg_orders_svc.job(claims, "dispatch")
     row = await fmcg_svc.create_dispatch(
         db,
         tenant_id=claims["tenant_id"],
@@ -20135,6 +20225,7 @@ async def fmcg_dispatches_close(
     claims=Depends(require_permission("fmcg", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    fmcg_orders_svc.job(claims, "dispatch")
     row = await fmcg_svc.close_dispatch(
         db, tenant_id=claims["tenant_id"], dispatch_id=dispatch_id
     )
@@ -20172,6 +20263,7 @@ async def fmcg_assignments_upsert(
     claims=Depends(require_permission("fmcg", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    fmcg_orders_svc.job(claims, "outlets")
     row, cn, rc = await fmcg_svc.upsert_customer_assignment(
         db,
         tenant_id=claims["tenant_id"],

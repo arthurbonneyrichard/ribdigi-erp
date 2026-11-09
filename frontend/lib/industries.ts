@@ -1,11 +1,11 @@
 /** Tenant business types — keep aligned with backend VALID_INDUSTRIES. */
 
-export const INDUSTRIES = ['retail', 'hotel', 'restaurant'] as const;
+export const INDUSTRIES = ['retail', 'hotel', 'restaurant', 'fmcg', 'bakery', 'gym', 'hrm'] as const;
 
 export type IndustryKey = (typeof INDUSTRIES)[number];
 
 /** Customer industries a new company can choose. Platform software is not in this list. */
-export const PROVISION_INDUSTRIES = ['retail', 'hotel', 'restaurant'] as const;
+export const PROVISION_INDUSTRIES = ['retail', 'hotel', 'restaurant', 'fmcg', 'bakery', 'gym', 'hrm'] as const;
 
 export const INDUSTRY_LABELS: Record<string, string> = {
   retail: 'Retail',
@@ -21,6 +21,8 @@ export const INDUSTRY_LABELS: Record<string, string> = {
   general_trading: 'General Trading',
   manufacturing: 'Manufacturing',
   hospital: 'Hospital',
+  gym: 'Gym',
+  hrm: 'HRM',
 };
 
 /** Stored on older companies. Not offered when creating a company and not a sidebar item. */

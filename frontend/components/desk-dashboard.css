@@ -1,0 +1,122 @@
+/* Shared desk dashboard (bakery, FMCG, gym, HRM). Brand greens; everything under .deskdash.
+   Chart bars and trend lines: #006B2E on light, #4AB012 on dark, both checked for contrast
+   against the white card and the amber warning card. */
+
+.deskdash{
+  --dd-panel:#FFFFFF;--dd-ink:#10211B;--dd-muted:#4D5D56;--dd-line:#DFEBD3;--dd-mist:#F2F7EC;
+  --dd-bar:#006B2E;--dd-bar-on:#003D1F;--dd-grid:#E3EDD9;--dd-chip:#E8F4DD;--dd-chip-ink:#006B2E;
+  --dd-warn:#8A6414;--dd-warn-tint:#FBF1DC;--dd-info:#2F7A0C;--dd-info-tint:#EEF7E6;
+  --dd-shadow:0 1px 2px rgba(0,61,31,.05),0 10px 30px -18px rgba(0,61,31,.28);
+  --dd-shadow-hover:0 2px 4px rgba(0,61,31,.06),0 18px 40px -18px rgba(0,61,31,.38);
+  display:flex;flex-direction:column;gap:16px;color:var(--dd-ink)
+}
+[data-theme="dark"] .deskdash{
+  --dd-panel:#16241C;--dd-ink:#E8F2E4;--dd-muted:#A3B8AB;--dd-line:#2A3D31;--dd-mist:#0F1A14;
+  --dd-bar:#4AB012;--dd-bar-on:#C8E86A;--dd-grid:#22352A;--dd-chip:#1E3326;--dd-chip-ink:#A5E37E;
+  --dd-warn:#E7C36B;--dd-warn-tint:#33291A;--dd-info:#A5E37E;--dd-info-tint:#1A2C21;
+  --dd-shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -18px rgba(0,0,0,.6);
+  --dd-shadow-hover:0 2px 4px rgba(0,0,0,.35),0 18px 40px -18px rgba(0,0,0,.7)
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .deskdash{
+    --dd-panel:#16241C;--dd-ink:#E8F2E4;--dd-muted:#A3B8AB;--dd-line:#2A3D31;--dd-mist:#0F1A14;
+    --dd-bar:#4AB012;--dd-bar-on:#C8E86A;--dd-grid:#22352A;--dd-chip:#1E3326;--dd-chip-ink:#A5E37E;
+    --dd-warn:#E7C36B;--dd-warn-tint:#33291A;--dd-info:#A5E37E;--dd-info-tint:#1A2C21
+  }
+}
+.deskdash .dash{margin-bottom:0 !important}
+.deskdash h2{margin:0;font-size:17px;letter-spacing:-.01em;color:var(--dd-ink)}
+
+/* Shortcuts: one row of action cards */
+.deskdash .dd-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.deskdash .dd-actions a{display:flex;align-items:center;gap:12px;min-height:60px;padding:10px 14px;border-radius:16px;border:1px solid var(--dd-line);background:var(--dd-panel);color:var(--dd-ink);text-decoration:none;box-shadow:var(--dd-shadow);transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}
+.deskdash .dd-actions a:hover{transform:translateY(-1px);box-shadow:var(--dd-shadow-hover);border-color:var(--dd-bar)}
+.deskdash .dd-act-ico{display:grid;place-items:center;flex:0 0 38px;height:38px;border-radius:12px;background:var(--dd-chip);color:var(--dd-chip-ink)}
+.deskdash .dd-act-text{display:flex;flex-direction:column;line-height:1.2}
+.deskdash .dd-act-text b{font-size:15px}
+.deskdash .dd-act-text small{color:var(--dd-muted);font-weight:600;font-size:12px}
+.deskdash .dd-actions a.primary{background:linear-gradient(135deg,#006B2E,#0B8A3E);border-color:#006B2E;color:#fff}
+.deskdash .dd-actions a.primary .dd-act-ico{background:rgba(255,255,255,.16);color:#fff}
+.deskdash .dd-actions a.primary small{color:rgba(255,255,255,.85)}
+.deskdash .dd-actions a:focus-visible,.deskdash .dd-tile:focus-visible,.deskdash .dd-attn a:focus-visible{outline:3px solid var(--dd-bar);outline-offset:2px}
+
+/* Headline numbers */
+.deskdash .dd-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.deskdash .dd-tile{position:relative;display:flex;flex-direction:column;gap:8px;padding:16px 16px 14px 18px;border-radius:18px;background:var(--dd-panel);border:1px solid var(--dd-line);color:var(--dd-ink);text-decoration:none;min-height:124px;box-shadow:var(--dd-shadow);overflow:hidden;transition:transform .15s ease,box-shadow .15s ease}
+.deskdash a.dd-tile:hover{transform:translateY(-1px);box-shadow:var(--dd-shadow-hover)}
+.deskdash .dd-tile::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--dd-bar);opacity:.85}
+.deskdash .dd-tile-top{display:flex;align-items:center;gap:8px;padding-right:60px}
+.deskdash .dd-tile:not(:has(.dd-spark)) .dd-tile-top{padding-right:0}
+.deskdash .dd-tile-ico{display:grid;place-items:center;width:30px;height:30px;border-radius:10px;background:var(--dd-chip);color:var(--dd-chip-ink)}
+.deskdash .dd-tile-label{color:var(--dd-muted);font-weight:700;font-size:13px;letter-spacing:.01em}
+.deskdash .dd-tile b{font-size:28px;line-height:1.1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.deskdash .dd-tile b.long{font-size:clamp(18px,1.6vw,23px)}
+.deskdash .dd-tile-foot{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-top:auto}
+.deskdash .dd-tile small{color:var(--dd-muted);font-weight:600;font-size:12.5px}
+.deskdash .dd-change{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;background:var(--dd-mist);color:var(--dd-ink) !important;white-space:nowrap}
+.deskdash .dd-spark{position:absolute;top:20px;right:14px;width:56px;height:22px}
+.deskdash .dd-spark polyline{stroke:var(--dd-bar);stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round}
+.deskdash .dd-tile.warn{background:var(--dd-warn-tint);border-color:var(--dd-warn)}
+.deskdash .dd-tile.warn::before{background:var(--dd-warn)}
+.deskdash .dd-tile.warn .dd-tile-ico{background:var(--dd-warn);color:var(--dd-panel)}
+
+/* Cards */
+.deskdash .dd-grid2{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(290px,1fr);gap:16px;align-items:start}
+.deskdash .dd-box{background:var(--dd-panel);border:1px solid var(--dd-line);border-radius:20px;padding:18px;min-width:0;box-shadow:var(--dd-shadow)}
+.deskdash .dd-box-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.deskdash .dd-count{padding:3px 10px;border-radius:999px;background:var(--dd-warn-tint);color:var(--dd-ink);font-size:12px;font-weight:700}
+
+.deskdash .dd-chart{margin:0}
+.deskdash .dd-chart figcaption{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.deskdash .dd-chart-title{font-weight:800;font-size:16px;letter-spacing:-.01em}
+.deskdash .dd-chart-total{color:var(--dd-muted);font-weight:700;font-variant-numeric:tabular-nums}
+.deskdash .dd-plot{position:relative}
+.deskdash .dd-plot svg{display:block;overflow:visible}
+.deskdash .dd-grid{stroke:var(--dd-grid);stroke-width:1;stroke-dasharray:3 4}
+.deskdash .dd-axis{stroke:var(--dd-line);stroke-width:1}
+.deskdash .dd-bar{fill:var(--dd-bar)}
+.deskdash .dd-bar.on{fill:var(--dd-bar-on)}
+.deskdash .dd-hit{fill:transparent;cursor:default;outline:none}
+.deskdash .dd-tick{fill:var(--dd-muted);font-size:12px;font-weight:600}
+.deskdash .dd-tick.now{fill:var(--dd-ink);font-weight:800}
+.deskdash .dd-tip{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;gap:2px;padding:8px 12px;border-radius:12px;background:var(--dd-ink);color:var(--dd-panel);font-size:13px;white-space:nowrap;pointer-events:none;box-shadow:0 8px 20px rgba(0,26,14,.22)}
+.deskdash .dd-tip b{font-size:15px;font-variant-numeric:tabular-nums}
+.deskdash .dd-table{margin-top:10px}
+.deskdash .dd-table summary{cursor:pointer;color:var(--dd-muted);font-weight:700;font-size:13px}
+.deskdash .dd-table table{width:100%;border-collapse:collapse;margin-top:6px}
+.deskdash .dd-table td{padding:6px 4px;border-bottom:1px solid var(--dd-line);font-variant-numeric:tabular-nums}
+.deskdash .dd-table td:last-child{text-align:right}
+
+/* Needs you now */
+.deskdash .dd-attn{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.deskdash .dd-attn a{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;border:1px solid var(--dd-line);color:var(--dd-ink);text-decoration:none;font-weight:600;transition:border-color .15s ease,transform .15s ease}
+.deskdash .dd-attn a:hover{transform:translateX(2px);border-color:var(--dd-bar)}
+.deskdash .dd-attn li.warning a{background:var(--dd-warn-tint);border-color:var(--dd-warn)}
+.deskdash .dd-attn li.info a{background:var(--dd-info-tint)}
+.deskdash .dd-attn-mark{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;color:var(--dd-panel)}
+.deskdash .dd-attn li.warning .dd-attn-mark{background:var(--dd-warn)}
+.deskdash .dd-attn li.info .dd-attn-mark{background:var(--dd-info)}
+.deskdash .dd-attn-body{display:flex;flex-direction:column;gap:2px;line-height:1.3}
+.deskdash .dd-attn-word{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dd-muted);font-weight:800}
+.deskdash .dd-go{color:var(--dd-muted)}
+.deskdash .dd-clear{display:flex;align-items:center;gap:10px;margin:0;padding:14px;border-radius:14px;background:var(--dd-info-tint);font-weight:700}
+.deskdash .dd-clear-ico{display:grid;place-items:center;width:30px;height:30px;border-radius:10px;background:var(--dd-info);color:var(--dd-panel)}
+
+.deskdash .dd-list{display:flex;flex-direction:column}
+.deskdash .dd-row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--dd-line)}
+.deskdash .dd-row:last-child{border-bottom:0}
+.deskdash .dd-row small{color:var(--dd-muted)}
+.deskdash .dd-muted{color:var(--dd-muted)}
+
+@media (max-width:860px){.deskdash .dd-grid2{grid-template-columns:1fr}}
+@media (max-width:480px){
+  .deskdash .dd-tile b{font-size:22px}
+  .deskdash .dd-tile b.long{font-size:17px}
+  .deskdash .dd-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .deskdash .dd-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .deskdash .dd-spark{display:none}
+  .deskdash .dd-tile-top{padding-right:0}
+  .deskdash .dd-change{white-space:normal}
+}
+@media (prefers-reduced-motion:reduce){.deskdash *{transition:none !important}}
+@media (forced-colors:active){.deskdash .dd-bar{fill:CanvasText}.deskdash .dd-tile.warn,.deskdash .dd-attn li.warning a{border:2px solid CanvasText}}

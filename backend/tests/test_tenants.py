@@ -71,8 +71,8 @@ def test_grace_in_valid_statuses():
 
 
 def test_industries_cover_brd():
-    assert VALID_INDUSTRIES == frozenset({"retail", "hotel", "restaurant"})
-    for removed in ("pharmacy", "wholesale", "retail_wholesale", "fmcg", "hospital", "bakery", "mart"):
+    assert VALID_INDUSTRIES == frozenset({"retail", "hotel", "restaurant", "fmcg", "bakery", "gym", "hrm"})
+    for removed in ("pharmacy", "wholesale", "retail_wholesale", "hospital", "mart"):
         assert removed not in VALID_INDUSTRIES
 
 

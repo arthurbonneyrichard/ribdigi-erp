@@ -179,6 +179,9 @@ async def load_login_challenge(db: AsyncSession, token: str) -> tuple[dict, m.Au
     from app.security import hash_token
 
     data = decode_challenge_token(token)
+    from app.desk_routing import route_to_company
+
+    await route_to_company(data["tenant_id"])
     jti = (data.get("jti") or "").strip()
     if not jti:
         return data, None

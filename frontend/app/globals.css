@@ -8415,3 +8415,11 @@ input[type=file]::file-selector-button:hover{border-color:var(--brand)}
 [data-theme="dark"] .erp-modal h3,[data-theme="dark"] .erp-modal legend,[data-theme="dark"] .erp-modal label,[data-theme="dark"] .erp-modal label span,[data-theme="dark"] .erp-modal p,[data-theme="dark"] .erp-modal li{color:#E8F2E4}
 [data-theme="dark"] .erp-modal .muted{color:#A9C4B3}
 [data-theme="dark"] .money-fill .money-sign{background:#0B3D24;color:#E8F2E4;border-color:#1F5A3A}
+
+/* Sign-in: Admin or User */
+.login-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin:0 0 16px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(200,232,106,.22)}
+.login-tabs button{min-height:42px;border-radius:10px;border:1px solid transparent;background:transparent;color:#E8F2E4;font-weight:700;font-size:15px;cursor:pointer;box-shadow:none;transform:none;opacity:.9;transition:background .15s ease,opacity .15s ease}
+.login-tabs button.on{background:#4AB012;color:#fff;opacity:1;border-color:#4AB012}
+.login-tabs button:hover:not(.on){opacity:1;background:rgba(255,255,255,.08)}
+.login-tabs button:focus-visible{outline:3px solid #C8E86A;outline-offset:2px}
+.login-forgot-note{color:#C9DCC9 !important;font-size:13px;font-weight:600}

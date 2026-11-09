@@ -194,6 +194,9 @@ async def authenticate_api_key(db: AsyncSession, raw_key: str) -> m.ApiKey:
     if not raw.startswith(KEY_PREFIX_TOKEN) or len(raw) < 20:
         raise HTTPException(status_code=401, detail="Invalid API key")
     digest = hash_token(raw)
+    from app.desk_routing import route_by
+
+    await route_by(select(m.ApiKey.id).where(m.ApiKey.key_hash == digest))
     row = (
         await db.execute(select(m.ApiKey).where(m.ApiKey.key_hash == digest))
     ).scalar_one_or_none()

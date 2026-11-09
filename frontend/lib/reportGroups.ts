@@ -54,6 +54,9 @@ export function reportVisible(
   const industry = (opts.industry || '').trim().toLowerCase();
   const multiStore = opts.multiStore !== false;
   if (def.id === 'pharmacy_rx_activity' && industry !== 'pharmacy') return false;
+  // These desks sell on their own tables, so invoice and till reports would always read zero there.
+  if (['bakery', 'fmcg', 'gym', 'hrm'].includes(industry) && ['sales', 'customers', 'staff'].includes(def.group)) return false;
+  if (industry === 'hrm' && ['inventory', 'purchases'].includes(def.group)) return false;
   if (!multiStore && (def.id === 'stores' || def.tab === 'stores' || def.id === 'inventory_transfers')) {
     return false;
   }

@@ -109,17 +109,42 @@ _HOSPITAL_FEATURES: tuple[dict[str, str], ...] = (
     {"id": "hospital_home", "label": "Patients and visits", "href": "/hospital", "module": "hospital"},
 )
 
+_BAKERY_FEATURES: tuple[dict[str, str], ...] = (
+    {"id": "bakery_home", "label": "Today", "href": "/bakery", "module": "bakery"},
+    {"id": "bakery_counter", "label": "Counter", "href": "/bakery?tab=counter", "module": "bakery"},
+    {"id": "bakery_orders", "label": "Orders", "href": "/bakery?tab=orders", "module": "bakery"},
+    {"id": "bakery_baking", "label": "Baking", "href": "/bakery?tab=baking", "module": "bakery"},
+)
+
+_GYM_FEATURES: tuple[dict[str, str], ...] = (
+    {"id": "gym_home", "label": "Today", "href": "/gym", "module": "gym"},
+    {"id": "gym_door", "label": "Door", "href": "/gym?tab=door", "module": "gym"},
+    {"id": "gym_members", "label": "Members", "href": "/gym?tab=members", "module": "gym"},
+    {"id": "gym_classes", "label": "Classes", "href": "/gym?tab=classes", "module": "gym"},
+)
+
+_HRM_FEATURES: tuple[dict[str, str], ...] = (
+    {"id": "hrm_home", "label": "Today", "href": "/hrm", "module": "hrm"},
+    {"id": "hrm_people", "label": "People", "href": "/hrm?tab=people", "module": "hrm"},
+    {"id": "hrm_leave", "label": "Leave", "href": "/hrm?tab=leave", "module": "hrm"},
+    {"id": "hrm_payroll", "label": "Payroll", "href": "/hrm?tab=payroll", "module": "hrm"},
+)
+
 # Industries with a real operations dashboard. Stored types outside this set
-# (mart, bakery, distribution, general trading, manufacturing) and blank or
+# (mart, distribution, general trading, manufacturing) and blank or
 # unknown values stay unconfigured — they do not inherit the retail desk.
 CONFIGURED_DASHBOARD_INDUSTRIES: frozenset[str] = frozenset(
-    {"retail", "hotel", "restaurant", "pharmacy"}
+    {"retail", "hotel", "restaurant", "fmcg", "bakery", "gym", "hrm", "pharmacy"}
 )
 
 _FEATURES: dict[str, tuple[dict[str, str], ...]] = {
     "retail": _RETAIL_FEATURES,
     "hotel": _HOTEL_FEATURES,
     "restaurant": _RESTAURANT_FEATURES,
+    "fmcg": _FMCG_FEATURES,
+    "bakery": _BAKERY_FEATURES,
+    "gym": _GYM_FEATURES,
+    "hrm": _HRM_FEATURES,
     "pharmacy": _PHARMACY_FEATURES,
 }
 
@@ -156,6 +181,14 @@ def industry_home_path(industry: str | None) -> str:
         return "/hotel"
     if ind == "restaurant":
         return "/restaurant"
+    if ind == "fmcg":
+        return "/fmcg"
+    if ind == "bakery":
+        return "/bakery"
+    if ind == "gym":
+        return "/gym"
+    if ind == "hrm":
+        return "/hrm"
     return "/dashboard"
 
 
@@ -268,6 +301,12 @@ def industry_dashboard_payload(tenant: Any) -> dict[str, Any]:
         if industry != "restaurant" and (href == "/restaurant" or href.startswith("/restaurant?")):
             continue
         if industry != "fmcg" and (href == "/fmcg" or href.startswith("/fmcg?")):
+            continue
+        if industry != "bakery" and (href == "/bakery" or href.startswith("/bakery?")):
+            continue
+        if industry != "gym" and (href == "/gym" or href.startswith("/gym?")):
+            continue
+        if industry != "hrm" and (href == "/hrm" or href.startswith("/hrm?")):
             continue
         if industry != "hospital" and (href == "/hospital" or href.startswith("/hospital?")):
             continue

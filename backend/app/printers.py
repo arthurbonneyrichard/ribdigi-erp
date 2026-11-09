@@ -703,6 +703,9 @@ async def authenticate_agent(db: AsyncSession, raw_token: str) -> m.PrintAgent:
     token = (raw_token or "").strip()
     if not token.startswith(AGENT_TOKEN_PREFIX):
         raise HTTPException(status_code=401, detail="Invalid print agent token")
+    from app.desk_routing import route_by
+
+    await route_by(select(m.PrintAgent.id).where(m.PrintAgent.token_hash == hash_token(token)))
     agent = (
         await db.execute(
             select(m.PrintAgent).where(

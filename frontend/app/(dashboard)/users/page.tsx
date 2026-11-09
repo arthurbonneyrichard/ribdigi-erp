@@ -48,8 +48,12 @@ type UserRow = {
   store_ids?: string[];
   record_scope?: string | null;
 };
+const USERNAME_RE = /^[a-z0-9][a-z0-9._-]{2,39}$/;
+const USERNAME_HINT = 'Username: 3 to 40 letters or numbers, and . - _ (no spaces).';
+
 const emptyForm = {
   email: '',
+  username: '',
   full_name: '',
   password: '',
   role: 'cashier',
@@ -132,6 +136,9 @@ const TENANT_RBAC_MODULES = [
   'fmcg',
   'hospital',
   'restaurant',
+  'bakery',
+  'gym',
+  'hrm',
   'reports',
   'notifications',
   'users',
@@ -343,7 +350,7 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [editUser, setEditUser] = useState<UserRow | null>(null);
-  const [editForm, setEditForm] = useState({ full_name: '', phone: '', role: '', password: '' });
+  const [editForm, setEditForm] = useState({ full_name: '', username: '', phone: '', role: '', password: '' });
   const [storeAddOpen, setStoreAddOpen] = useState(false);
   const [canWrite, setCanWrite] = useState(false);
   const [canWriteStores, setCanWriteStores] = useState(false);
@@ -538,6 +545,12 @@ export default function Page() {
       setMessage('');
       return;
     }
+    const uname = form.username.trim().toLowerCase();
+    if (uname && !USERNAME_RE.test(uname)) {
+      setError(USERNAME_HINT);
+      setMessage('');
+      return;
+    }
     const trimmedPassword = form.password.trim();
     if (!trimmedPassword) {
       setError('User password is required.');
@@ -558,6 +571,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           email: form.email.trim(),
+          username: form.username.trim().toLowerCase() || null,
           full_name: fullName,
           password: trimmedPassword,
           role: form.role,
@@ -751,6 +765,7 @@ export default function Page() {
     setEditUser(row);
     setEditForm({
       full_name: row.full_name || '',
+      username: (row as UserRow & { username?: string | null }).username || '',
       phone: row.phone || '',
       role: row.role || '',
       password: '',
@@ -763,6 +778,13 @@ export default function Page() {
     const body: Record<string, unknown> = {};
     const name = editForm.full_name.trim();
     if (name && name !== (editUser.full_name || '')) body.full_name = name;
+    const uname = editForm.username.trim().toLowerCase();
+    if (uname && !USERNAME_RE.test(uname)) {
+      setError(USERNAME_HINT);
+      setMessage('');
+      return;
+    }
+    if (uname && uname !== ((editUser as UserRow & { username?: string | null }).username || '')) body.username = uname;
     const phone = compactPhone(editForm.phone);
     if (phone && !E164_RE.test(phone)) {
       setError(PHONE_HINT);
@@ -1044,6 +1066,14 @@ export default function Page() {
               aria-label="Edit user full name"
               required
             />
+            <input
+              value={editForm.username}
+              onChange={(e) => setEditForm({ ...editForm, username: e.target.value.replace(/\s/g, '').toLowerCase() })}
+              placeholder="Username to sign in (e.g. ama.owusu)"
+              aria-label="Edit user username"
+              autoCapitalize="none"
+              spellCheck={false}
+            />
             <input value={editUser.email} aria-label="Edit user email" readOnly />
             <input
               value={editForm.phone}
@@ -1090,6 +1120,17 @@ export default function Page() {
                 placeholder="Full name"
                 aria-label="User full name"
                 required
+              />
+            </label>
+            <label className="user-manage-field">
+              <span>Username (to sign in)</span>
+              <input
+                value={form.username}
+                onChange={(e) => setForm({ ...form, username: e.target.value.replace(/\s/g, '').toLowerCase() })}
+                placeholder="e.g. ama.owusu"
+                aria-label="User username"
+                autoCapitalize="none"
+                spellCheck={false}
               />
             </label>
             <label className="user-manage-field">
@@ -1481,7 +1522,14 @@ export default function Page() {
                   <span className="list-secondary" style={{ display: 'block', fontWeight: 600 }}>{r.email}</span>
                 ) : null}
               </td>
-              {restaurantOps ? null : <td className="user-manage-email">{r.email}</td>}
+              {restaurantOps ? null : (
+                <td className="user-manage-email">
+                  {r.email}
+                  {(r as UserRow & { username?: string | null }).username ? (
+                    <span className="list-secondary" style={{ display: 'block' }}>Signs in as {(r as UserRow & { username?: string | null }).username}</span>
+                  ) : null}
+                </td>
+              )}
               <td className={restaurantOps ? undefined : 'user-manage-role'} data-label={restaurantOps ? 'Role' : undefined}>
                 {canWrite ? (
                   <select

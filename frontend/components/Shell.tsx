@@ -41,6 +41,10 @@ import {
 import {
   ALWAYS_LIST_NAV_GROUP_IDS,
   CASHIER_NAV_MODULES,
+  BAKERY_NAV_ITEMS,
+  FMCG_NAV_ITEMS,
+  GYM_NAV_ITEMS,
+  HRM_NAV_ITEMS,
   RESTAURANT_NAV_ITEMS,
   filterNavForIndustry,
   groupedTenantNav,
@@ -111,6 +115,10 @@ const TENANT_ITEMS: NavItem[] = [
   ...HOTEL_NAV_ITEMS,
   ...HOTEL_INVENTORY_PROCUREMENT_CHILDREN,
   ...RESTAURANT_NAV_ITEMS,
+  ...BAKERY_NAV_ITEMS,
+  ...FMCG_NAV_ITEMS,
+  ...GYM_NAV_ITEMS,
+  ...HRM_NAV_ITEMS,
   ['Reports', '/reports', 'reports'],
   ['Notifications', '/notifications', 'notifications'],
   ['Audit', '/audit', 'audit'],
@@ -206,6 +214,10 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
     items: [
       ...HOTEL_NAV_ITEMS,
       ...RESTAURANT_NAV_ITEMS,
+      ...BAKERY_NAV_ITEMS,
+      ...FMCG_NAV_ITEMS,
+      ...GYM_NAV_ITEMS,
+      ...HRM_NAV_ITEMS,
     ],
   },
 ];
@@ -580,6 +592,39 @@ const NAV_GROUP_ICON: Record<string, string> = {
   'hotel-people': 'users',
   'hotel-reports': 'reports',
   'hotel-settings': 'company',
+  'bakery': 'dashboard',
+  'bakery-staff': 'users',
+  'bakery-notifications': 'notifications',
+  'bakery-help': 'support',
+  'bakery-settings': 'company',
+  'fmcg': 'dashboard',
+  'fmcg-staff': 'users',
+  'fmcg-notifications': 'notifications',
+  'fmcg-help': 'support',
+  'fmcg-settings': 'company',
+  'gym': 'dashboard',
+  'gym-staff': 'users',
+  'gym-notifications': 'notifications',
+  'gym-help': 'support',
+  'gym-settings': 'company',
+  'hrm': 'dashboard',
+  'hrm-staff': 'users',
+  'hrm-notifications': 'notifications',
+  'hrm-help': 'support',
+  'hrm-settings': 'company',
+  'bakery-selling': 'sales',
+  'bakery-kitchen': 'inventory',
+  'bakery-money': 'accounting',
+  'fmcg-selling': 'sales',
+  'fmcg-trade': 'fmcg',
+  'fmcg-stock': 'inventory',
+  'fmcg-buying': 'purchasing',
+  'fmcg-money': 'accounting',
+  'gym-desk': 'customers',
+  'gym-money': 'credit',
+  'hrm-people': 'users',
+  'hrm-pay': 'accounting',
+  'hrm-me': 'credit',
 };
 
 /** Items whose module icon would repeat a sibling's get their own picture. */
@@ -588,6 +633,39 @@ const NAV_ITEM_ICON: Record<string, string> = {
   '/gift-cards': 'gift',
   '/platform': 'dashboard',
   '/platform/billing': 'credit',
+  // Desk screens share one path, so they are matched on the full link.
+  '/bakery': 'dashboard',
+  '/bakery?tab=counter': 'pos',
+  '/bakery?tab=orders': 'sales',
+  '/bakery?tab=deliveries': 'fmcg',
+  '/bakery?tab=baking': 'inventory',
+  '/bakery?tab=waste': 'audit',
+  '/bakery?tab=stock': 'inventory',
+  '/bakery?tab=expenses': 'expenses',
+  '/bakery?tab=reports': 'reports',
+  '/fmcg': 'dashboard',
+  '/fmcg?tab=outlets': 'customers',
+  '/fmcg?tab=orders': 'sales',
+  '/fmcg?tab=deliveries': 'fmcg',
+  '/fmcg?tab=collections': 'credit',
+  '/fmcg?tab=routes': 'stores',
+  '/fmcg?tab=schemes': 'gift',
+  '/fmcg?tab=packs': 'inventory',
+  '/fmcg?tab=reports': 'reports',
+  '/gym': 'dashboard',
+  '/gym?tab=door': 'security',
+  '/gym?tab=members': 'customers',
+  '/gym?tab=classes': 'notifications',
+  '/gym?tab=plans': 'gift',
+  '/gym?tab=reports': 'reports',
+  '/hrm': 'dashboard',
+  '/hrm?tab=people': 'users',
+  '/hrm?tab=leave': 'notifications',
+  '/hrm?tab=attendance': 'audit',
+  '/hrm?tab=payroll': 'credit',
+  '/hrm?tab=reports': 'reports',
+  '/hrm?tab=settings': 'tax',
+  '/hrm?tab=me': 'customers',
 };
 
 function NavIcon({ name }: { name: string }) {
@@ -1830,7 +1908,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                   onTouchStart={() => warmDestination(h)}
                 >
                   <span className="nav-ico">
-                    <NavIcon name={NAV_ITEM_ICON[hrefParts(h).path] || module} />
+                    <NavIcon name={NAV_ITEM_ICON[h] || NAV_ITEM_ICON[hrefParts(h).path] || module} />
                   </span>
                   <span className="nav-label">{label}</span>
                 </Link>

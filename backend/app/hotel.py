@@ -4813,7 +4813,9 @@ async def _has_table(db: AsyncSession, table: str) -> bool:
 
 async def _hotel_booking_tenant(db: AsyncSession, *, tenant_id: str | None = None, slug: str | None = None) -> m.Tenant:
     from app import packages as packages_svc
+    from app.desk_routing import route_to_company
 
+    await route_to_company(tenant_id or (slug or "").strip().lower())
     stmt = select(m.Tenant)
     if tenant_id:
         stmt = stmt.where(m.Tenant.id == tenant_id)
@@ -4866,8 +4868,15 @@ async def save_hotel_booking_link(db: AsyncSession, tenant_id: str, *, hostname:
             )
         )
     ).scalar_one_or_none()
-    if taken is not None:
+    from app.desk_routing import taken_on_any_desk
+
+    other_hotel = select(m.HotelBookingLink.id).where(
+        m.HotelBookingLink.hostname == host, m.HotelBookingLink.tenant_id != tenant.id
+    )
+    if taken is not None or await taken_on_any_desk(other_hotel):
         raise HTTPException(status_code=409, detail="That website is already linked to another hotel")
+    if await taken_on_any_desk(select(m.RestaurantBookingLink.id).where(m.RestaurantBookingLink.hostname == host)):
+        raise HTTPException(status_code=409, detail="That website is already linked to a restaurant")
     if await _has_table(db, "restaurant_booking_links"):
         restaurant_taken = (
             await db.execute(select(m.RestaurantBookingLink).where(m.RestaurantBookingLink.hostname == host))
@@ -4904,6 +4913,9 @@ async def hotel_booking_page_for_host(db: AsyncSession, hostname: str) -> dict:
     host = (hostname or "").strip().lower().rstrip(".")
     if host.startswith("www."):
         host = host[4:]
+    from app.desk_routing import route_by
+
+    await route_by(select(m.HotelBookingLink.id).where(m.HotelBookingLink.hostname == host))
     if not await _has_table(db, "hotel_booking_links"):
         raise HTTPException(status_code=404, detail="Hotel booking is not open")
     row = (

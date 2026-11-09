@@ -31,6 +31,9 @@ PACKAGEABLE_MODULES: tuple[str, ...] = (
     "fmcg",
     "hospital",
     "restaurant",
+    "bakery",
+    "gym",
+    "hrm",
     "reports",
     "notifications",
     "audit",
@@ -64,6 +67,9 @@ _STARTER = (
     "fmcg",
     "hospital",
     "restaurant",
+    "bakery",
+    "gym",
+    "hrm",
 )
 
 _PROFESSIONAL = _STARTER + (
@@ -123,7 +129,7 @@ VALID_TERM_UNITS = frozenset({"months", "years"})
 # Industry-specific modules are packageable but only activate for matching business types.
 # Core modules (inventory, sales, POS, …) stay shared across industries.
 INDUSTRY_SPECIFIC_MODULES: frozenset[str] = frozenset(
-    {"hotel", "fmcg", "hospital", "restaurant", "ecommerce"}
+    {"hotel", "fmcg", "hospital", "restaurant", "bakery", "gym", "hrm", "ecommerce"}
 )
 
 # Business type → industry modules that may activate (in addition to shared core).
@@ -131,17 +137,23 @@ INDUSTRY_SPECIFIC_MODULES: frozenset[str] = frozenset(
 INDUSTRY_MODULE_ALLOWLIST: dict[str, frozenset[str]] = {
     "hotel": frozenset({"hotel"}),
     "restaurant": frozenset({"restaurant"}),
+    "fmcg": frozenset({"fmcg"}),
+    "bakery": frozenset({"bakery"}),
+    "gym": frozenset({"gym"}),
+    "hrm": frozenset({"hrm"}),
     "retail": frozenset({"ecommerce"}),
     "pharmacy": frozenset({"ecommerce"}),
 }
 
 # Implemented industry verticals (must match shipped UI + APIs). Unimplemented
 # verticals are never added to enabled_modules or the sidebar.
-IMPLEMENTED_INDUSTRY_MODULES: frozenset[str] = frozenset({"hotel", "restaurant", "ecommerce"})
+IMPLEMENTED_INDUSTRY_MODULES: frozenset[str] = frozenset({"hotel", "restaurant", "fmcg", "bakery", "gym", "hrm", "ecommerce"})
 
 # Pharmacy stays recognizable for companies that already use it. New companies
-# cannot choose it (VALID_INDUSTRIES / the create picker stay retail, hotel, restaurant).
-CANONICAL_INDUSTRIES: frozenset[str] = frozenset({"retail", "hotel", "restaurant", "pharmacy"})
+# cannot choose it (VALID_INDUSTRIES / the create picker do not list it).
+CANONICAL_INDUSTRIES: frozenset[str] = frozenset(
+    {"retail", "hotel", "restaurant", "fmcg", "bakery", "gym", "hrm", "pharmacy"}
+)
 
 # Safe aliases → canonical customer industries. Removed desks do not map onto retail.
 INDUSTRY_ALIASES: dict[str, str] = {

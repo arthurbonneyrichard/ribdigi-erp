@@ -1007,8 +1007,7 @@ async def test_fmcg_pack_conversion_and_expired_lot_block(client, db_session):
         json={"product_id": product["id"], "from_unit_id": carton.json()["data"]["id"], "quantity": 2},
         headers=admin,
     )
-    assert converted.status_code == 403, converted.text
-    assert converted.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
+    assert converted.status_code == 200, converted.text
     db_session.add(
         m.ProductBatch(
             tenant_id=seed["t1"].id,

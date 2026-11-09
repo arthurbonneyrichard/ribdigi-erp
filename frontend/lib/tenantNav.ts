@@ -292,13 +292,192 @@ export const RESTAURANT_NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-export const FMCG_NAV_ITEMS: NavItem[] = [
-  ['FMCG overview', '/fmcg', 'fmcg'],
-  ['Trade schemes', '/fmcg?tab=schemes', 'fmcg'],
-  ['Routes', '/fmcg?tab=routes', 'fmcg'],
-  ['Deliveries', '/fmcg?tab=deliveries', 'fmcg'],
-  ['Pack convert', '/fmcg?tab=packs', 'fmcg'],
+export const BAKERY_NAV_GROUPS: NavGroup[] = [
+  { id: 'bakery', label: '', items: [['Dashboard', '/bakery', 'bakery']] },
+  {
+    id: 'bakery-selling',
+    label: 'Selling',
+    items: [
+      ['Counter', '/bakery?tab=counter', 'bakery'],
+      ['Orders', '/bakery?tab=orders', 'bakery'],
+      ['Deliveries', '/bakery?tab=deliveries', 'bakery'],
+    ],
+  },
+  {
+    id: 'bakery-kitchen',
+    label: 'Kitchen',
+    items: [
+      ['Baking', '/bakery?tab=baking', 'bakery'],
+      ['Waste', '/bakery?tab=waste', 'bakery'],
+    ],
+  },
+  {
+    id: 'bakery-money',
+    label: 'Stock and money',
+    items: [
+      ['Stock', '/bakery?tab=stock', 'bakery'],
+      ['Expenses', '/bakery?tab=expenses', 'bakery'],
+      ['Reports', '/bakery?tab=reports', 'bakery'],
+    ],
+  },
+  { id: 'bakery-staff', label: '', items: [['Staff', '/users', 'users']] },
+  { id: 'bakery-notifications', label: '', items: [['Notifications', '/notifications', 'notifications']] },
+  { id: 'bakery-help', label: '', items: [['Help & Support', '/support', 'support']] },
+  {
+    id: 'bakery-settings',
+    label: 'Settings',
+    items: [
+      ['Company profile', '/company', 'company'],
+      ['Security', '/security', 'security'],
+      ['Printers', '/printers', 'printers'],
+      ['Backup', '/backup', 'backup'],
+      ['Audit', '/audit', 'audit'],
+    ],
+  },
 ];
+
+export const BAKERY_NAV_ITEMS: NavItem[] = BAKERY_NAV_GROUPS.flatMap((group) => group.items).filter(
+  ([, , module]) => module === 'bakery',
+);
+
+function deskTail(desk: string, extraSettings: NavItem[] = []): NavGroup[] {
+  return [
+    { id: `${desk}-notifications`, label: '', items: [['Notifications', '/notifications', 'notifications']] },
+    { id: `${desk}-help`, label: '', items: [['Help & Support', '/support', 'support']] },
+    {
+      id: `${desk}-settings`,
+      label: 'Settings',
+      items: [
+        ['Company profile', '/company', 'company'],
+        ['Security', '/security', 'security'],
+        ...extraSettings,
+        ['Backup', '/backup', 'backup'],
+        ['Audit', '/audit', 'audit'],
+      ],
+    },
+  ];
+}
+
+/** FMCG distributor: selling to outlets, trade, its own stock and buying. No shop menus. */
+export const FMCG_NAV_GROUPS: NavGroup[] = [
+  { id: 'fmcg', label: '', items: [['Dashboard', '/fmcg', 'fmcg']] },
+  {
+    id: 'fmcg-selling',
+    label: 'Selling',
+    items: [
+      ['Outlets', '/fmcg?tab=outlets', 'fmcg'],
+      ['Orders', '/fmcg?tab=orders', 'fmcg'],
+      ['Deliveries', '/fmcg?tab=deliveries', 'fmcg'],
+      ['Collections', '/fmcg?tab=collections', 'fmcg'],
+    ],
+  },
+  {
+    id: 'fmcg-trade',
+    label: 'Trade',
+    items: [
+      ['Routes', '/fmcg?tab=routes', 'fmcg'],
+      ['Trade schemes', '/fmcg?tab=schemes', 'fmcg'],
+      ['Pack convert', '/fmcg?tab=packs', 'fmcg'],
+    ],
+  },
+  {
+    id: 'fmcg-stock',
+    label: 'Stock',
+    items: [
+      ['Products', '/inventory?tab=products', 'inventory'],
+      ['Stock levels', '/inventory?tab=whstock', 'inventory'],
+      ['Adjust stock', '/inventory?tab=adjust', 'inventory'],
+      ['Stock count', '/inventory?tab=counts', 'inventory'],
+      ['Expiry and batches', '/inventory?tab=expiry', 'inventory'],
+    ],
+  },
+  {
+    id: 'fmcg-buying',
+    label: 'Buying',
+    items: [
+      ['Suppliers', '/purchasing?tab=suppliers', 'purchasing'],
+      ['Purchase orders', '/purchasing?tab=orders', 'purchasing'],
+      ['Receive goods', '/purchasing?tab=grn', 'purchasing'],
+      ['Supplier bills', '/purchasing?tab=invoices', 'purchasing'],
+      ['Pay suppliers', '/credit?kind=payable&panel=pay', 'credit'],
+    ],
+  },
+  {
+    id: 'fmcg-money',
+    label: 'Money',
+    items: [
+      ['Expenses', '/expenses', 'expenses'],
+      ['Reports', '/fmcg?tab=reports', 'fmcg'],
+    ],
+  },
+  { id: 'fmcg-staff', label: '', items: [['Staff', '/users', 'users']] },
+  ...deskTail('fmcg', [['Printers', '/printers', 'printers']]),
+];
+
+/** Gym: the door, members, classes and plans. */
+export const GYM_NAV_GROUPS: NavGroup[] = [
+  { id: 'gym', label: '', items: [['Dashboard', '/gym', 'gym']] },
+  {
+    id: 'gym-desk',
+    label: 'Front desk',
+    items: [
+      ['Door', '/gym?tab=door', 'gym'],
+      ['Members', '/gym?tab=members', 'gym'],
+      ['Classes', '/gym?tab=classes', 'gym'],
+    ],
+  },
+  {
+    id: 'gym-money',
+    label: 'Plans and money',
+    items: [
+      ['Plans', '/gym?tab=plans', 'gym'],
+      ['Reports', '/gym?tab=reports', 'gym'],
+    ],
+  },
+  { id: 'gym-staff', label: '', items: [['Staff', '/users', 'users']] },
+  ...deskTail('gym'),
+];
+
+/** HRM: people, time off, attendance and payroll. */
+export const HRM_NAV_GROUPS: NavGroup[] = [
+  { id: 'hrm', label: '', items: [['Dashboard', '/hrm', 'hrm']] },
+  {
+    id: 'hrm-people',
+    label: 'People',
+    items: [
+      ['Employees', '/hrm?tab=people', 'hrm'],
+      ['Leave', '/hrm?tab=leave', 'hrm'],
+      ['Attendance', '/hrm?tab=attendance', 'hrm'],
+    ],
+  },
+  {
+    id: 'hrm-pay',
+    label: 'Pay',
+    items: [
+      ['Payroll', '/hrm?tab=payroll', 'hrm'],
+      ['Reports', '/hrm?tab=reports', 'hrm'],
+      ['Pay rates', '/hrm?tab=settings', 'hrm'],
+    ],
+  },
+  { id: 'hrm-me', label: '', items: [['My pay and leave', '/hrm?tab=me', 'hrm']] },
+  { id: 'hrm-staff', label: '', items: [['Sign-in accounts', '/users', 'users']] },
+  ...deskTail('hrm'),
+];
+
+const deskItems = (groups: NavGroup[], module: string): NavItem[] =>
+  groups.flatMap((group) => group.items).filter(([, , mod]) => mod === module);
+
+export const FMCG_NAV_ITEMS: NavItem[] = deskItems(FMCG_NAV_GROUPS, 'fmcg');
+export const GYM_NAV_ITEMS: NavItem[] = deskItems(GYM_NAV_GROUPS, 'gym');
+export const HRM_NAV_ITEMS: NavItem[] = deskItems(HRM_NAV_GROUPS, 'hrm');
+
+/** Desks with a sidebar of their own: only their work and their account settings. */
+const DESK_NAV_GROUPS: Record<string, NavGroup[]> = {
+  bakery: BAKERY_NAV_GROUPS,
+  fmcg: FMCG_NAV_GROUPS,
+  gym: GYM_NAV_GROUPS,
+  hrm: HRM_NAV_GROUPS,
+};
 
 export const HOSPITAL_NAV_ITEMS: NavItem[] = [
   ['Patients and visits', '/hospital', 'hospital'],
@@ -377,6 +556,10 @@ export function industryNavHrefOk(href: string, industry: string | null | undefi
   const ind = normalizeIndustry(industry);
   if (path === '/hotel' || path.startsWith('/hotel/')) return ind === 'hotel';
   if (path === '/restaurant' || path.startsWith('/restaurant/')) return ind === 'restaurant';
+  if (path === '/bakery' || path.startsWith('/bakery/')) return ind === 'bakery';
+  if (path === '/fmcg' || path.startsWith('/fmcg/')) return ind === 'fmcg';
+  if (path === '/gym' || path.startsWith('/gym/')) return ind === 'gym';
+  if (path === '/hrm' || path.startsWith('/hrm/')) return ind === 'hrm';
   if (path === '/gift-cards') return ind === 'retail';
   if (path === '/ecommerce' || path.startsWith('/ecommerce/')) {
     return ind === 'retail' || ind === 'pharmacy';
@@ -394,6 +577,10 @@ export function industryNavHrefOk(href: string, industry: string | null | undefi
   }
   return true;
 }
+
+const BACK_OFFICE_MODULES = new Set(['inventory', 'purchasing', 'expenses', 'accounting', 'credit', 'tax', 'reports', 'stores']);
+
+const HRM_HIDDEN_MODULES = new Set(['inventory', 'purchasing', 'credit', 'tax', 'stores']);
 
 const SHARED_ACCOUNT_MODULES = new Set([
   'dashboard',
@@ -490,6 +677,11 @@ export function filterNavForIndustry(items: NavItem[], industry: string | null |
         SHARED_ACCOUNT_MODULES.has(module)
       );
     }
+    if (layout === 'fmcg' || layout === 'bakery' || layout === 'gym' || layout === 'hrm') {
+      // Their own desk plus the shared back office. Each company keeps it on its own database.
+      if (layout === 'hrm' && HRM_HIDDEN_MODULES.has(module)) return false;
+      return module === layout || BACK_OFFICE_MODULES.has(module) || SHARED_ACCOUNT_MODULES.has(module);
+    }
     return SHARED_ACCOUNT_MODULES.has(module);
   });
 }
@@ -572,6 +764,18 @@ export function groupedTenantNav(
             items: RESTAURANT_NAV_ITEMS.filter(([, href]) => hrefVisible(href)),
           };
         }
+        if (ind === 'bakery') {
+          return { id: 'industry', label: 'Bakery', items: BAKERY_NAV_ITEMS.filter(([, href]) => hrefVisible(href)) };
+        }
+        if (ind === 'gym') {
+          return { id: 'industry', label: 'Gym', items: GYM_NAV_ITEMS.filter(([, href]) => hrefVisible(href)) };
+        }
+        if (ind === 'hrm') {
+          return { id: 'industry', label: 'HRM', items: HRM_NAV_ITEMS.filter(([, href]) => hrefVisible(href)) };
+        }
+        if (ind === 'fmcg') {
+          return { id: 'industry', label: 'FMCG', items: FMCG_NAV_ITEMS.filter(([, href]) => hrefVisible(href)) };
+        }
         return { ...group, items: [] };
       }
       return {
@@ -591,6 +795,14 @@ export function groupedTenantNav(
             item[1] === '/dashboard' ? ([item[0], home, item[2]] as NavItem) : item,
           ),
         }));
+
+  if (ind && DESK_NAV_GROUPS[ind]) {
+    // Bakery, FMCG, gym and HRM see only their own work and account settings: no retail menus.
+    return DESK_NAV_GROUPS[ind].map((group) => ({
+      ...group,
+      items: group.items.filter(([, href]) => hrefVisible(href)),
+    })).filter((group) => group.items.length > 0);
+  }
 
   if (ind === 'restaurant') {
     return RESTAURANT_NAV_GROUPS.map((group) => ({
@@ -636,6 +848,27 @@ export const CASHIER_NAV_MODULES: string[] = ['sales', 'pos', 'restaurant', 'sup
 
 /** Gift cards share the POS module. Cashiers stay on the till; other roles keep the page. */
 /** Restaurant staff see only their job's screens (the server enforces the same jobs). */
+export const FMCG_ROLE_HREFS: Record<string, string[]> = {
+  fmcg_rep: ['/fmcg', '/fmcg?tab=outlets', '/fmcg?tab=orders', '/fmcg?tab=collections', '/notifications', '/security', '/support'],
+  fmcg_driver: ['/fmcg', '/fmcg?tab=orders', '/fmcg?tab=collections', '/fmcg?tab=deliveries', '/notifications', '/security', '/support'],
+};
+
+export const GYM_ROLE_HREFS: Record<string, string[]> = {
+  gym_frontdesk: ['/gym', '/gym?tab=door', '/gym?tab=members', '/gym?tab=classes', '/notifications', '/security', '/support'],
+  gym_trainer: ['/gym', '/gym?tab=door', '/gym?tab=classes', '/notifications', '/security', '/support'],
+};
+
+export const HRM_ROLE_HREFS: Record<string, string[]> = {
+  hrm_officer: ['/hrm', '/hrm?tab=people', '/hrm?tab=leave', '/hrm?tab=attendance', '/hrm?tab=me', '/notifications', '/security', '/support'],
+  hrm_employee: ['/hrm?tab=me', '/notifications', '/security', '/support'],
+};
+
+export const BAKERY_ROLE_HREFS: Record<string, string[]> = {
+  bakery_baker: ['/bakery', '/bakery?tab=baking', '/bakery?tab=waste', '/bakery?tab=orders', '/notifications', '/security', '/support'],
+  bakery_cashier: ['/bakery', '/bakery?tab=counter', '/bakery?tab=orders', '/bakery?tab=deliveries', '/bakery?tab=waste', '/notifications', '/security', '/support'],
+  bakery_driver: ['/bakery', '/bakery?tab=deliveries', '/bakery?tab=counter', '/notifications', '/security', '/support'],
+};
+
 export const RESTAURANT_ROLE_HREFS: Record<string, string[]> = {
   restaurant_waiter: ['/restaurant/till', '/restaurant/orders', '/restaurant?tab=tables', '/restaurant?tab=kitchen', '/restaurant/help', '/notifications', '/security'],
   restaurant_cashier: [
@@ -701,7 +934,7 @@ export const HOTEL_ROLE_HREFS: Record<string, string[]> = {
 };
 
 export function navItemVisibleForRole(role: string, href: string, menu = false): boolean {
-  const jobs = RESTAURANT_ROLE_HREFS[role] || HOTEL_ROLE_HREFS[role];
+  const jobs = RESTAURANT_ROLE_HREFS[role] || HOTEL_ROLE_HREFS[role] || BAKERY_ROLE_HREFS[role] || FMCG_ROLE_HREFS[role] || GYM_ROLE_HREFS[role] || HRM_ROLE_HREFS[role];
   if (jobs) {
     // A menu link must be on the list exactly. A page path (from the address bar) is allowed
     // when one of the role's links lives on it (the kitchen tab lives on /restaurant).
@@ -751,6 +984,9 @@ export const NAV_MODULE_BY_PATH: Record<string, string> = {
   '/hotel': 'hotel',
   '/fmcg': 'fmcg',
   '/restaurant': 'restaurant',
+  '/bakery': 'bakery',
+  '/gym': 'gym',
+  '/hrm': 'hrm',
   '/reports': 'reports',
   '/notifications': 'notifications',
   '/audit': 'audit',
@@ -815,7 +1051,9 @@ export function navAllowlistFromPermissions(
   for (const [mod, actions] of Object.entries(permissions)) {
     if (mod === RECORD_SCOPE_KEY || mod === '*') continue;
     if (!Array.isArray(actions)) continue;
-    if (actions.includes('*') || actions.includes('read') || actions.includes('write')) {
+    // Help & Support is granted as ticket actions (create, view_own…), not read/write.
+    const helpDesk = mod === 'support' && actions.length > 0;
+    if (helpDesk || actions.includes('*') || actions.includes('read') || actions.includes('write')) {
       out.push(mod);
     }
   }

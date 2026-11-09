@@ -365,7 +365,9 @@ async def add_domain(db: AsyncSession, *, tenant: m.Tenant, hostname: str) -> m.
     existing = (
         await db.execute(select(m.EcommerceDomain).where(m.EcommerceDomain.hostname == host))
     ).scalar_one_or_none()
-    if existing:
+    from app.desk_routing import taken_on_any_desk
+
+    if existing or await taken_on_any_desk(select(m.EcommerceDomain.id).where(m.EcommerceDomain.hostname == host)):
         if existing.tenant_id != tenant.id:
             raise HTTPException(status_code=409, detail="That domain is already used by another company")
         return existing
@@ -541,6 +543,11 @@ async def resolve_public_tenant(
     token = (preview_token or "").strip()
     if token:
         digest = preview_token_digest(token)
+        from app.desk_routing import route_by
+
+        await route_by(
+            select(m.EcommerceStorefront.id).where(m.EcommerceStorefront.preview_token.in_((token, digest)))
+        )
         storefront = (
             await db.execute(
                 select(m.EcommerceStorefront).where(
@@ -560,6 +567,9 @@ async def resolve_public_tenant(
             status_code=404,
             detail={"code": "STOREFRONT_HOST_UNKNOWN", "message": "This host is not a company storefront."},
         )
+    from app.desk_routing import route_by
+
+    await route_by(select(m.EcommerceDomain.id).where(m.EcommerceDomain.hostname == hostname))
     domain = (
         await db.execute(select(m.EcommerceDomain).where(m.EcommerceDomain.hostname == hostname))
     ).scalar_one_or_none()

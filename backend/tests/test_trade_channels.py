@@ -21,14 +21,14 @@ async def _super(ac, seed):
     )
 
 
-def test_customer_industries_are_retail_hotel_restaurant():
-    assert VALID_INDUSTRIES == frozenset({"retail", "hotel", "restaurant"})
+def test_customer_industries_are_the_seven_desks():
+    assert VALID_INDUSTRIES == frozenset({"retail", "hotel", "restaurant", "fmcg", "bakery", "gym", "hrm"})
     assert "retail_wholesale" not in VALID_INDUSTRIES
     assert canonicalize_industry("Retail + Wholesale") is None
     assert canonicalize_industry("hospitality") == "hotel"
     with pytest.raises(Exception):
         normalize_industry("RETAIL_WHOLESALE")
-    assert PROVISION_INDUSTRIES == ("retail", "hotel", "restaurant")
+    assert PROVISION_INDUSTRIES == ("retail", "hotel", "restaurant", "fmcg", "bakery", "gym", "hrm")
     assert default_sales_channel("retail", source="invoice") == "retail"
     assert default_sales_channel("retail", source="pos") == "retail"
 

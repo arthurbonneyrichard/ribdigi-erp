@@ -16,12 +16,16 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_fmcg_module_registered():
     assert "fmcg" in PACKAGEABLE_MODULES
     nav = (ROOT / "frontend/lib/tenantNav.ts").read_text(encoding="utf-8")
-    assert "['FMCG overview', '/fmcg', 'fmcg']" in nav
+    assert "['Dashboard', '/fmcg', 'fmcg']" in nav
     shell = (ROOT / "frontend/components/Shell.tsx").read_text(encoding="utf-8")
-    assert "FMCG_NAV_ITEMS" not in shell
+    assert "FMCG_NAV_ITEMS" in shell
     page = (ROOT / "frontend/app/(dashboard)/fmcg/page.tsx").read_text(encoding="utf-8")
     assert "/fmcg/schemes" in page
     assert "/fmcg/routes" in page
+
+
+def _fmcg_works(resp) -> None:
+    assert resp.status_code == 200, resp.text
 
 
 def _fmcg_disabled(resp) -> None:
@@ -43,30 +47,30 @@ async def test_fmcg_scheme_route_stop_lifecycle(client, seeded, db_session):
     )
     assert product.status_code == 200, product.text
 
-    _fmcg_disabled(
+    _fmcg_works(
         await ac.post(
             "/api/v1/fmcg/schemes",
             headers=admin,
             json={"code": f"SC{suffix}", "name": f"Scheme {suffix}", "scheme_type": "percent", "value": 10},
         )
     )
-    _fmcg_disabled(
+    _fmcg_works(
         await ac.post(
             "/api/v1/fmcg/schemes/preview",
             headers=admin,
             json={"line_qty": 10, "line_amount": 100},
         )
     )
-    _fmcg_disabled(
+    _fmcg_works(
         await ac.post(
             "/api/v1/fmcg/routes",
             headers=admin,
             json={"code": f"RT{suffix}", "name": f"Route {suffix}", "driver_name": "Driver A", "vehicle": "Van-1"},
         )
     )
-    _fmcg_disabled(await ac.get("/api/v1/fmcg/routes/performance", headers=admin))
-    _fmcg_disabled(await ac.get("/api/v1/fmcg/expiring?days=30", headers=admin))
-    _fmcg_disabled(await ac.get("/api/v1/fmcg/summary", headers=admin))
+    _fmcg_works(await ac.get("/api/v1/fmcg/routes/performance", headers=admin))
+    _fmcg_works(await ac.get("/api/v1/fmcg/expiring?days=30", headers=admin))
+    _fmcg_works(await ac.get("/api/v1/fmcg/summary", headers=admin))
 
     beta = await auth_headers(ac, email="cashier@beta.example.com", tenant_slug="beta")
     beta_schemes = await ac.get("/api/v1/fmcg/schemes", headers=beta)
@@ -91,8 +95,6 @@ async def test_fmcg_duplicate_scheme_code_blocked(client, seeded, db_session):
         "value": 5,
     }
     first = await ac.post("/api/v1/fmcg/schemes", headers=admin, json=payload)
-    _fmcg_disabled(first)
+    _fmcg_works(first)
     clash = await ac.post("/api/v1/fmcg/schemes", headers=admin, json=payload)
-    _fmcg_disabled(clash)
-    assert suffix.upper() not in first.text
-    assert suffix.upper() not in clash.text
+    assert clash.status_code == 409, clash.text

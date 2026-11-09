@@ -256,24 +256,20 @@ async def test_fmcg_cross_tenant_isolation_and_e2e(client, seeded, db_session):
         headers=alpha,
         json={"code": f"ISO{suffix}", "name": "Iso", "scheme_type": "percent", "value": 5},
     )
-    assert scheme.status_code == 403, scheme.text
-    assert scheme.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
+    assert scheme.status_code == 200, scheme.text
 
     route = await ac.post(
         "/api/v1/fmcg/routes",
         headers=alpha,
         json={"code": f"IR{suffix}", "name": f"Iso Route {suffix}"},
     )
-    assert route.status_code == 403, route.text
-    assert route.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
+    assert route.status_code == 200, route.text
 
     beta_schemes = await ac.get("/api/v1/fmcg/schemes", headers=beta)
-    assert beta_schemes.status_code == 403, beta_schemes.text
-    assert beta_schemes.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
+    assert beta_schemes.status_code == 200, beta_schemes.text
     assert suffix not in beta_schemes.text
     beta_routes = await ac.get("/api/v1/fmcg/routes", headers=beta)
-    assert beta_routes.status_code == 403, beta_routes.text
-    assert beta_routes.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
+    assert beta_routes.status_code == 200, beta_routes.text
     assert suffix not in beta_routes.text
 
     beta_patch = await ac.patch(
@@ -281,11 +277,9 @@ async def test_fmcg_cross_tenant_isolation_and_e2e(client, seeded, db_session):
         headers=beta,
         json={"is_active": False},
     )
-    assert beta_patch.status_code == 403, beta_patch.text
-    assert beta_patch.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
+    assert beta_patch.status_code == 404, beta_patch.text
     beta_stops = await ac.get(f"/api/v1/fmcg/routes/{foreign_id}/stops", headers=beta)
-    assert beta_stops.status_code == 403, beta_stops.text
-    assert beta_stops.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
+    assert beta_stops.status_code == 404, beta_stops.text
 
     customer = await ac.post(
         "/api/v1/customers",
@@ -298,8 +292,7 @@ async def test_fmcg_cross_tenant_isolation_and_e2e(client, seeded, db_session):
         headers=alpha,
         json={"customer_id": customer.json()["data"]["id"], "route_id": foreign_id, "salesperson_name": "Rep"},
     )
-    assert assign.status_code == 403, assign.text
-    assert assign.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
+    assert assign.status_code == 404, assign.text
 
     products = await ac.get("/api/v1/products", headers=alpha)
     assert products.status_code == 200, products.text
