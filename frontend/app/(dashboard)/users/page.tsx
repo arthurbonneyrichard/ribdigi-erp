@@ -400,6 +400,9 @@ export default function Page() {
     setRows(hidePlatform ? listed.filter((u) => !PLATFORM_USER_ROLES.has(u.role)) : listed);
     const catalog: RoleRow[] = rolesRes.data || [];
     setRoles(catalog);
+    // A bakery, FMCG, gym or HRM company has no shop "cashier": start the form on its first own job.
+    const offered = catalog.filter((r) => !PLATFORM_USER_ROLES.has(r.role) && r.role !== 'company_admin' && isRoleActive(r));
+    setForm((f) => (offered.some((r) => r.role === f.role) || !offered.length ? f : { ...f, role: offered[0].role }));
     setBranches(branchesRes.data || []);
     setDepartments(deptsRes.data || []);
     setStores((storesRes.data || []).filter((s: StoreRow) => s.is_active !== false));

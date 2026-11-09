@@ -474,6 +474,7 @@ BAKERY_ONLY_ROLES = frozenset({"bakery_manager", "bakery_cashier", "bakery_baker
 FMCG_ONLY_ROLES = frozenset({"fmcg_manager", "fmcg_rep", "fmcg_driver"})
 GYM_ONLY_ROLES = frozenset({"gym_manager", "gym_frontdesk", "gym_trainer"})
 HRM_ONLY_ROLES = frozenset({"hrm_manager", "hrm_officer", "hrm_employee"})
+DESK_ONLY_ROLES = {"bakery": BAKERY_ONLY_ROLES, "fmcg": FMCG_ONLY_ROLES, "gym": GYM_ONLY_ROLES, "hrm": HRM_ONLY_ROLES}
 
 # Frontend nav href → required module (read). Used for menu filtering.
 # Platform owner (super_admin) UI only surfaces /platform + a small ops set;
@@ -595,6 +596,10 @@ def system_role_visible_for_industry(role: str, industry: str | None) -> bool:
     from app.packages import canonicalize_industry
 
     ind = canonicalize_industry(industry)
+    # Bakery, FMCG, gym and HRM offer only their own jobs and the company admin: no shop jobs.
+    desk_jobs = DESK_ONLY_ROLES.get(ind or "")
+    if desk_jobs is not None:
+        return role == "company_admin" or role in desk_jobs
     if role in HOTEL_ONLY_ROLES:
         return ind == "hotel"
     if role in RESTAURANT_ONLY_ROLES:
