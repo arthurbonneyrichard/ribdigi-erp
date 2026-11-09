@@ -23,7 +23,7 @@ test('hotel home is /hotel and restaurant home is /restaurant', () => {
 });
 
 test('removed industries are not customer desks', () => {
-  for (const code of ['wholesale', 'retail_wholesale', 'fmcg', 'hospital', 'mart']) {
+  for (const code of ['wholesale', 'retail_wholesale', 'hospital', 'mart']) {
     assert.deepEqual(industryDashboardFeatures(code), []);
     assert.equal(industryDashboardSectionLabel(code), null);
     assert.equal(dashboardLayout(code), 'unconfigured');

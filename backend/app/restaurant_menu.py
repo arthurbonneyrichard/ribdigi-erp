@@ -449,6 +449,9 @@ async def item_dish(db: AsyncSession, tenant_id: str, item_id: str) -> m.Product
 
 
 async def _published_menu(db: AsyncSession, token: str) -> tuple[m.RestaurantMenuSettings, m.Tenant]:
+    from app.desk_routing import route_by
+
+    await route_by(select(m.RestaurantMenuSettings.id).where(m.RestaurantMenuSettings.public_token == token))
     row = (
         await db.execute(select(m.RestaurantMenuSettings).where(m.RestaurantMenuSettings.public_token == token))
     ).scalar_one_or_none()

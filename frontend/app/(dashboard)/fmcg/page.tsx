@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import FormModal from '../../../components/FormModal';
 import { useSearchParams } from 'next/navigation';
 import PageHeader from '../../../components/PageHeader';
+import FmcgSelling, { FmcgHead, FmcgToday, SELLING_TABS } from './FmcgSelling';
+import './fmcg-selling.css';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { moduleEnabledForTenant } from '../../../lib/industryModules';
@@ -134,7 +136,7 @@ export default function FmcgPage() {
       api('/fmcg/summary'),
       api('/fmcg/schemes'),
       api('/fmcg/routes?is_active=true'),
-      api('/customers'),
+      api('/fmcg/outlets'),
       api('/fmcg/expiring?days=30'),
       api('/fmcg/routes/performance'),
       api('/fmcg/dispatches'),
@@ -175,7 +177,10 @@ export default function FmcgPage() {
           );
           return;
         }
+        // The overview is the dashboard only; set-up data loads on the tabs that use it.
+        if (!tab || SELLING_TABS.includes(tab)) return;
         await refresh();
+        if (tab !== 'packs' && tab !== 'schemes') return;
         const [prod, unit] = await Promise.all([api('/products'), api('/catalog/units')]);
         if (!active) return;
         setProducts(Array.isArray(prod.data) ? prod.data : []);
@@ -188,7 +193,7 @@ export default function FmcgPage() {
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [tab]);
 
   async function createScheme(e: React.FormEvent) {
     e.preventDefault();
@@ -332,12 +337,15 @@ export default function FmcgPage() {
     );
   }
 
+  if (SELLING_TABS.includes(tab)) {
+    return <FmcgSelling tab={tab} />;
+  }
+
+  if (!tab) return <FmcgToday />;
+
   return (
-    <>
-      <PageHeader
-        title="FMCG management"
-        subtitle="Manage trade schemes, distribution routes, and near-expiry awareness for fast-moving goods."
-      />
+    <div className="fmcg-sell">
+      <FmcgHead tab={tab} />
       {error && (
         <p className="login-error" role="alert">
           {error}
@@ -1108,6 +1116,6 @@ export default function FmcgPage() {
         </div>
       )}
 
-    </>
+    </div>
   );
 }

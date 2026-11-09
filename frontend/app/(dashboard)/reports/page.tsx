@@ -741,7 +741,10 @@ export default function Page() {
     if (reportVisible(activeReport, { industry, multiStore })) return;
     const fallback =
       activeReport.group === 'inventory' ? findReport('inventory_low_stock') : findReport('summary');
-    if (fallback && fallback.id !== activeReport.id) selectReport(fallback);
+    const usable = fallback && reportVisible(fallback, { industry, multiStore })
+      ? fallback
+      : REPORT_GROUP_ORDER.flatMap((g) => reportsInGroup(g.id)).find((def) => reportVisible(def, { industry, multiStore }));
+    if (usable && usable.id !== activeReport.id) selectReport(usable);
   }, [industry, multiStore, activeReport.id]);
 
   function resetFilters() {
@@ -1029,6 +1032,7 @@ export default function Page() {
             const visibleDefs = reportsInGroup(group.id).filter((def) =>
               reportVisible(def, { industry, multiStore }),
             );
+            if (visibleDefs.length === 0) return null;
             const groupActive = activeReport.group === group.id;
             return (
             <div

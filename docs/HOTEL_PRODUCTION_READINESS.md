@@ -56,6 +56,17 @@ Every test below is in `tests/test_hotel_audit_2026_11.py`. 105 hotel tests pass
 | Settings | Free cancellation of 0 hours came back as 24; bad times and percents above 100 were accepted | Fixed |
 | Lists | Old debts could fall off Guest invoices behind newer paid ones | The list is taken from what is owed |
 
+## Company backups, 6 November 2026
+
+Backups covered 60 of 170 company tables and restore had only ever run over rows that still existed. Now every company table is either backed up or named in `backup.BACKUP_EXCLUDED` with its reason, and `tests/test_backup_coverage.py` fails on a new table that is neither.
+
+- **Added:** hotel, restaurant, sales orders, quotations, returns, branches, departments, customer groups, price tiers, cash transfers, gift cards, till cash movements, ecommerce orders and storefronts, FMCG and hospital records.
+- **Left out on purpose:** users and everything used to sign in, the audit log, device pairing, webhooks, short-lived working data, and RIBDIGI's own billing and support records.
+- **Restore order** is worked out from the links between tables, and links that point forward are filled in at the end.
+- **A failed restore** now undoes itself and reports the reason.
+- **After a restore from nothing:** staff logins are untouched. Ecommerce shoppers lost in the disaster reset their password, and webhooks, API keys, printers and till passcodes are set up again.
+- **Drill on Postgres:** a hotel (626 rows) and a restaurant (74 rows) were emptied and restored, with every table count and the trial balance matching. This has not been run on production: that drill is still the owner's to do.
+
 ## Made easy to use, feature by feature
 
 | Feature | What changed |

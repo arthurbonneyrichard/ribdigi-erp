@@ -918,45 +918,140 @@ async def tax_filing_pack(
                     "store_id": order.store_id,
                 }
             )
-    # Hotel shop sales paid at the till. A sale charged to a room reaches tax on the guest's invoice.
+    # Hotel shop sales paid at the till, for a hotel only: no other desk reads this table.
+    # A sale charged to a room reaches tax on the guest's invoice.
+    from app import packages as packages_svc
     from app.reports import apply_store_scope_or_unassigned as _scope_shop
 
-    shop_stmt = select(m.HotelShopSale).where(
-        m.HotelShopSale.tenant_id == tenant_id,
-        m.HotelShopSale.status == "completed",
-        m.HotelShopSale.payment_method != "room",
-    )
-    if from_date:
-        shop_stmt = shop_stmt.where(m.HotelShopSale.created_at >= from_date)
-    if to_date:
-        shop_stmt = shop_stmt.where(m.HotelShopSale.created_at <= to_date)
-    shop_stmt = _scope_shop(
-        shop_stmt,
-        m.HotelShopSale.store_id,
-        store_id,
-        list(store_ids) if store_ids is not None else None,
-    )
-    for sale in (await db.execute(shop_stmt)).scalars().all():
-        total = money_json(sale.total or 0)
-        tax = money_json(sale.tax or 0)
-        net = money_json(round(total - tax, 2))
-        output_invoices += tax
-        _bump_supply("standard", net)
-        output_schedule.append(
-            {
-                "schedule": "output_sales_invoices",
-                "document_type": "hotel_shop_sale",
-                "document_number": sale.sale_number,
-                "document_id": sale.id,
-                "document_date": sale.created_at,
-                "net_amount": net,
-                "tax_amount": tax,
-                "reverse_charge_tax": money_json(0),
-                "gross_amount": total,
-                "party_id": None,
-                "store_id": sale.store_id,
-            }
+    company = await db.get(m.Tenant, tenant_id)
+    if packages_svc.canonicalize_industry(getattr(company, "industry", None)) == "hotel":
+        shop_stmt = select(m.HotelShopSale).where(
+            m.HotelShopSale.tenant_id == tenant_id,
+            m.HotelShopSale.status == "completed",
+            m.HotelShopSale.payment_method != "room",
         )
+        if from_date:
+            shop_stmt = shop_stmt.where(m.HotelShopSale.created_at >= from_date)
+        if to_date:
+            shop_stmt = shop_stmt.where(m.HotelShopSale.created_at <= to_date)
+        shop_stmt = _scope_shop(
+            shop_stmt,
+            m.HotelShopSale.store_id,
+            store_id,
+            list(store_ids) if store_ids is not None else None,
+        )
+        for sale in (await db.execute(shop_stmt)).scalars().all():
+            total = money_json(sale.total or 0)
+            tax = money_json(sale.tax or 0)
+            net = money_json(round(total - tax, 2))
+            output_invoices += tax
+            _bump_supply("standard", net)
+            output_schedule.append(
+                {
+                    "schedule": "output_sales_invoices",
+                    "document_type": "hotel_shop_sale",
+                    "document_number": sale.sale_number,
+                    "document_id": sale.id,
+                    "document_date": sale.created_at,
+                    "net_amount": net,
+                    "tax_amount": tax,
+                    "reverse_charge_tax": money_json(0),
+                    "gross_amount": total,
+                    "party_id": None,
+                    "store_id": sale.store_id,
+                }
+            )
+    if packages_svc.canonicalize_industry(getattr(company, "industry", None)) == "bakery":
+        bakery_stmt = select(m.BakerySale).where(
+            m.BakerySale.tenant_id == tenant_id,
+            m.BakerySale.status == "completed",
+        )
+        if from_date:
+            bakery_stmt = bakery_stmt.where(m.BakerySale.created_at >= from_date)
+        if to_date:
+            bakery_stmt = bakery_stmt.where(m.BakerySale.created_at <= to_date)
+        for sale in (await db.execute(bakery_stmt)).scalars().all():
+            total = money_json(sale.total or 0)
+            tax = money_json(sale.tax or 0)
+            net = money_json(round(total - tax, 2))
+            output_invoices += tax
+            _bump_supply("standard", net)
+            output_schedule.append(
+                {
+                    "schedule": "output_sales_invoices",
+                    "document_type": "bakery_sale",
+                    "document_number": sale.sale_number,
+                    "document_id": sale.id,
+                    "document_date": sale.created_at,
+                    "net_amount": net,
+                    "tax_amount": tax,
+                    "reverse_charge_tax": money_json(0),
+                    "gross_amount": total,
+                    "party_id": None,
+                    "store_id": None,
+                }
+            )
+    if packages_svc.canonicalize_industry(getattr(company, "industry", None)) == "fmcg":
+        fmcg_stmt = select(m.FmcgOrder).where(m.FmcgOrder.tenant_id == tenant_id, m.FmcgOrder.status == "delivered")
+        if from_date:
+            fmcg_stmt = fmcg_stmt.where(m.FmcgOrder.delivered_at >= from_date)
+        if to_date:
+            fmcg_stmt = fmcg_stmt.where(m.FmcgOrder.delivered_at <= to_date)
+        fmcg_rows = [("fmcg_order", o, o.order_number, o.delivered_at, 1) for o in (await db.execute(fmcg_stmt)).scalars().all()]
+        back_stmt = select(m.FmcgReturn).where(m.FmcgReturn.tenant_id == tenant_id)
+        if from_date:
+            back_stmt = back_stmt.where(m.FmcgReturn.created_at >= from_date)
+        if to_date:
+            back_stmt = back_stmt.where(m.FmcgReturn.created_at <= to_date)
+        fmcg_rows += [("fmcg_return", r, r.return_number, r.created_at, -1) for r in (await db.execute(back_stmt)).scalars().all()]
+        for kind, doc, number, when, sign in fmcg_rows:
+            total = money_json(sign * float(doc.total or 0))
+            tax = money_json(sign * float(doc.tax or 0))
+            net = money_json(round(total - tax, 2))
+            output_invoices += tax
+            _bump_supply("standard", net)
+            output_schedule.append(
+                {
+                    "schedule": "output_sales_invoices",
+                    "document_type": kind,
+                    "document_number": number,
+                    "document_id": doc.id,
+                    "document_date": when,
+                    "net_amount": net,
+                    "tax_amount": tax,
+                    "reverse_charge_tax": money_json(0),
+                    "gross_amount": total,
+                    "party_id": doc.customer_id,
+                    "store_id": None,
+                }
+            )
+    if packages_svc.canonicalize_industry(getattr(company, "industry", None)) == "gym":
+        gym_stmt = select(m.GymMembership).where(m.GymMembership.tenant_id == tenant_id)
+        if from_date:
+            gym_stmt = gym_stmt.where(m.GymMembership.created_at >= from_date)
+        if to_date:
+            gym_stmt = gym_stmt.where(m.GymMembership.created_at <= to_date)
+        for sold in (await db.execute(gym_stmt)).scalars().all():
+            total = money_json(float(sold.total or 0) - float(sold.refunded or 0))
+            tax = money_json(float(sold.tax or 0) - float(sold.refund_tax or 0))
+            net = money_json(round(total - tax, 2))
+            output_invoices += tax
+            _bump_supply("standard", net)
+            output_schedule.append(
+                {
+                    "schedule": "output_sales_invoices",
+                    "document_type": "gym_membership",
+                    "document_number": sold.membership_number,
+                    "document_id": sold.id,
+                    "document_date": sold.created_at,
+                    "net_amount": net,
+                    "tax_amount": tax,
+                    "reverse_charge_tax": money_json(0),
+                    "gross_amount": total,
+                    "party_id": None,
+                    "store_id": None,
+                }
+            )
     taxable_outputs = standard_outputs
 
     # Prefer approved purchase invoices for input tax; fall back to POs.

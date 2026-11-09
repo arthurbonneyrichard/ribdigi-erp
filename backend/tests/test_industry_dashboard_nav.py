@@ -30,7 +30,15 @@ def test_industry_home_and_feature_catalog():
     assert industry_home_path("restaurant") == "/restaurant"
     assert industry_home_path("retail") == "/dashboard"
 
-    for removed in ("wholesale", "retail_wholesale", "fmcg", "hospital", "mart"):
+    assert industry_home_path("fmcg") == "/fmcg"
+    assert dashboard_layout("fmcg") == "fmcg"
+    assert shows_retail_operations("fmcg") is False
+    for code in ("bakery", "gym", "hrm"):
+        assert industry_home_path(code) == f"/{code}"
+        assert dashboard_layout(code) == code
+        assert shows_retail_operations(code) is False
+
+    for removed in ("wholesale", "retail_wholesale", "hospital", "mart"):
         assert industry_dashboard_features(removed) == []
         assert industry_home_path(removed) == "/dashboard"
         assert dashboard_layout(removed) == "unconfigured"
@@ -161,11 +169,11 @@ async def test_fmcg_dashboard_features_not_hotel(client, db_session):
     await set_tenant_industry(db_session, seed["t1"], "fmcg")
     admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
     data = (await ac.get("/api/v1/dashboard", headers=admin)).json()["data"]
-    assert data["industry"] is None
-    assert data["dashboard_layout"] == "unconfigured"
+    assert data["industry"] == "fmcg"
+    assert data["dashboard_layout"] == "fmcg"
     assert data["show_retail_operations"] is False
     hrefs = [row["href"] for row in data["industry_features"]]
-    assert "/fmcg" not in hrefs
+    assert "/fmcg" in hrefs
     assert all(not href.startswith("/hotel") for href in hrefs)
 
 
@@ -252,13 +260,13 @@ def test_dashboard_layout_does_not_treat_other_industries_as_retail():
     assert shows_retail_operations("retail") is True
     assert dashboard_layout("pharmacy") == "pharmacy"
     assert shows_retail_operations("pharmacy") is False
-    assert dashboard_layout("fmcg") == "unconfigured"
+    assert dashboard_layout("fmcg") == "fmcg"
     assert dashboard_layout("hospital") == "unconfigured"
     assert dashboard_layout("wholesale") == "unconfigured"
     assert dashboard_layout("retail_wholesale") == "unconfigured"
     assert shows_retail_operations("retail_wholesale") is False
     assert dashboard_layout("mart") == "unconfigured"
-    assert dashboard_layout("bakery") == "unconfigured"
+    assert dashboard_layout("bakery") == "bakery"
     assert dashboard_layout(None) == "unconfigured"
     assert dashboard_layout("not-an-industry") == "unconfigured"
     assert shows_retail_operations(None) is False
@@ -299,10 +307,10 @@ async def test_industry_desks_and_route_gates(client, db_session):
     await set_tenant_industry(db_session, seed["t1"], "fmcg")
     admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
     fmcg = (await ac.get("/api/v1/dashboard", headers=admin)).json()["data"]
-    assert fmcg["dashboard_layout"] == "unconfigured"
+    assert fmcg["dashboard_layout"] == "fmcg"
     assert fmcg["show_retail_operations"] is False
-    assert fmcg["fmcg_desk"] is None
-    assert "/fmcg" not in [row["href"] for row in fmcg["industry_features"]]
+    assert fmcg["fmcg_desk"] is not None
+    assert "/fmcg" in [row["href"] for row in fmcg["industry_features"]]
     denied_pos = await ac.get("/api/v1/pos/sessions", headers=admin)
     assert denied_pos.status_code == 403, denied_pos.text
     assert denied_pos.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
@@ -373,7 +381,7 @@ async def test_non_retail_never_gets_retail_operations_or_other_tenant_rows(clie
 
     admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
     fmcg = (await ac.get("/api/v1/dashboard", headers=admin)).json()["data"]
-    assert fmcg["dashboard_layout"] == "unconfigured"
+    assert fmcg["dashboard_layout"] == "fmcg"
     assert fmcg["show_retail_operations"] is False
     assert fmcg["products"] == 1
 

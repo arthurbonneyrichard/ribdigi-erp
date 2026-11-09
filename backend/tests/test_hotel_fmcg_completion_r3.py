@@ -126,8 +126,7 @@ async def test_fmcg_scheme_applies_on_sales_order_and_dispatch(client, seeded, d
             "product_id": product_id,
         },
     )
-    assert scheme.status_code == 403, scheme.text
-    assert scheme.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
+    assert scheme.status_code == 200, scheme.text
 
     customer = await ac.post(
         "/api/v1/customers",
@@ -148,32 +147,30 @@ async def test_fmcg_scheme_applies_on_sales_order_and_dispatch(client, seeded, d
     assert order.status_code == 200, order.text
     items = order.json()["data"].get("items") or []
     assert items
-    assert float(items[0].get("discount") or 0) == 0
+    assert float(items[0].get("discount") or 0) == 20
 
     route = await ac.post(
         "/api/v1/fmcg/routes",
         headers=admin,
         json={"code": f"D{suffix}", "name": f"Dispatch Route {suffix}"},
     )
-    assert route.status_code == 403, route.text
-    assert route.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
+    assert route.status_code == 200, route.text
+    route_id = route.json()["data"]["id"]
 
     assign = await ac.post(
         "/api/v1/fmcg/assignments",
         headers=admin,
         json={
             "customer_id": customer_id,
-            "route_id": str(uuid4()),
+            "route_id": route_id,
             "salesperson_name": "Rep One",
         },
     )
-    assert assign.status_code == 403, assign.text
-    assert assign.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
+    assert assign.status_code == 200, assign.text
 
     dispatch = await ac.post(
         "/api/v1/fmcg/dispatches",
         headers=admin,
         json={"route_id": str(uuid4())},
     )
-    assert dispatch.status_code == 403, dispatch.text
-    assert dispatch.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
+    assert dispatch.status_code == 404, dispatch.text

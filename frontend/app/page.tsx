@@ -37,6 +37,27 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [tenant, setTenant] = useState('');
+  // Two doors: Admin (company code, email, password) for owners and admins; User (username or
+  // email, password) for the staff they create. The last one used is remembered on this device.
+  const [mode, setMode] = useState<'admin' | 'user'>('admin');
+  const [loginName, setLoginName] = useState('');
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('ribdigi:signin-mode');
+      if (saved === 'user' || saved === 'admin') setMode(saved);
+    } catch {
+      /* private window: start on Admin */
+    }
+  }, []);
+  function pickMode(next: 'admin' | 'user') {
+    setMode(next);
+    setError('');
+    try {
+      localStorage.setItem('ribdigi:signin-mode', next);
+    } catch {
+      /* ignore */
+    }
+  }
   const [totpCode, setTotpCode] = useState('');
   const [challengeToken, setChallengeToken] = useState('');
   const [methods, setMethods] = useState<string[]>([]);
@@ -250,20 +271,34 @@ export default function Login() {
         setError('Password is required');
         return;
       }
-      const trimmedTenant = tenant.trim();
-      if (!trimmedTenant) {
-        setError('Login tenant is required');
-        return;
+      let r;
+      if (mode === 'user') {
+        const name = loginName.trim();
+        if (!name) {
+          setError('Enter your username or email');
+          return;
+        }
+        r = await api('/auth/staff-login', {
+          method: 'POST',
+          body: JSON.stringify({ login: name, password: trimmedPassword, totp_code: totpCode.trim() || null }),
+        });
+      } else {
+        const trimmedTenant = tenant.trim();
+        if (!trimmedTenant) {
+          setError('Login tenant is required');
+          return;
+        }
+        r = await api('/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({
+            email: email.trim(),
+            password: trimmedPassword,
+            tenant_id: trimmedTenant,
+            totp_code: totpCode.trim() || null,
+            portal: 'admin',
+          }),
+        });
       }
-      const r = await api('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({
-          email: email.trim(),
-          password: trimmedPassword,
-          tenant_id: trimmedTenant,
-          totp_code: totpCode.trim() || null,
-        }),
-      });
       if (r.data?.requires_2fa) {
         setNeeds2fa(true);
         setChallengeToken(r.data.challenge_token);
@@ -275,6 +310,11 @@ export default function Login() {
     } catch (err: any) {
       const detail = err.detail;
       const code = typeof detail === 'object' && detail ? detail.code : null;
+      if (err.status === 403 && (code === 'USE_USER_SIGN_IN' || code === 'USE_ADMIN_SIGN_IN')) {
+        pickMode(code === 'USE_USER_SIGN_IN' ? 'user' : 'admin');
+        setError(code === 'USE_USER_SIGN_IN' ? 'This is a staff account. Sign in here with your username or email.' : 'This is an owner or admin account. Sign in here with your company code.');
+        return;
+      }
       if (err.status === 403 && code === 'EMAIL_NOT_VERIFIED') {
         setNeedsEmailVerify(true);
         setVerifyMessage('');
@@ -338,10 +378,55 @@ export default function Login() {
         </div>
         <div className="login-main">
         <h1 className="login-heading">Sign in</h1>
-        <p className="login-lead">Open your company desk with your staff account.</p>
+        <p className="login-lead">
+          {mode === 'admin' ? 'Owners and admins: use your company code.' : 'Staff: use the username or email your admin gave you.'}
+        </p>
+
+        {!needs2fa ? (
+          <div className="login-tabs" role="tablist" aria-label="Who is signing in">
+            <button type="button" role="tab" aria-selected={mode === 'admin'} className={mode === 'admin' ? 'on' : ''} onClick={() => pickMode('admin')} disabled={busy}>
+              Admin
+            </button>
+            <button type="button" role="tab" aria-selected={mode === 'user'} className={mode === 'user' ? 'on' : ''} onClick={() => pickMode('user')} disabled={busy}>
+              User
+            </button>
+          </div>
+        ) : null}
 
         <form className="login-form" onSubmit={go}>
-          {!needs2fa && (
+          {!needs2fa && mode === 'user' && (
+            <>
+              <label className="login-field">
+                <span>Username or email</span>
+                <input
+                  aria-label="Login username or email"
+                  value={loginName}
+                  onChange={(e) => setLoginName(e.target.value)}
+                  placeholder="e.g. ama.owusu"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  required
+                  disabled={busy}
+                />
+              </label>
+              <label className="login-field">
+                <span>Password</span>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  aria-label="Login password"
+                  required
+                  disabled={busy}
+                />
+              </label>
+              <p className="login-forgot login-forgot-note">Forgot your password? Ask your admin to set a new one.</p>
+            </>
+          )}
+          {!needs2fa && mode === 'admin' && (
             <>
               <label className="login-field">
                 <span>Company code</span>

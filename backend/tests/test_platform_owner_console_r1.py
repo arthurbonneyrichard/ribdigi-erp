@@ -69,12 +69,12 @@ def test_platform_console_ui_keeps_working_controls():
 def test_hotel_and_fmcg_stay_on_industry_allowlists():
     assert packages_svc.industry_allows_module("hotel", "hotel")
     assert packages_svc.industry_allows_module("restaurant", "restaurant")
-    assert not packages_svc.industry_allows_module("fmcg", "fmcg")
+    assert packages_svc.industry_allows_module("fmcg", "fmcg")
     assert not packages_svc.industry_allows_module("retail", "hotel")
     assert not packages_svc.industry_allows_module("hotel", "fmcg")
     assert "hotel" in packages_svc.IMPLEMENTED_INDUSTRY_MODULES
     assert "restaurant" in packages_svc.IMPLEMENTED_INDUSTRY_MODULES
-    assert "fmcg" not in packages_svc.IMPLEMENTED_INDUSTRY_MODULES
+    assert "fmcg" in packages_svc.IMPLEMENTED_INDUSTRY_MODULES
 
 
 @pytest.mark.asyncio

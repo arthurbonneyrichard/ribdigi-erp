@@ -57,7 +57,7 @@ PosSalePaymentMethod = Annotated[
     BeforeValidator(coerce_payment_method_value),
 ]
 IndustryValue = Annotated[
-    Literal["retail", "hotel", "restaurant"],
+    Literal["retail", "hotel", "restaurant", "fmcg", "bakery", "gym", "hrm"],
     BeforeValidator(coerce_industry_value),
 ]
 TaxFilingPeriodValue = Annotated[
@@ -329,6 +329,9 @@ PackageableModuleValue = Annotated[
         "fmcg",
         "hospital",
         "restaurant",
+        "bakery",
+        "gym",
+        "hrm",
         "reports",
         "notifications",
         "audit",
@@ -405,6 +408,19 @@ SystemRoleValue = Annotated[
         "restaurant_cashier",
         "restaurant_waiter",
         "restaurant_kitchen",
+        "bakery_manager",
+        "bakery_cashier",
+        "bakery_baker",
+        "bakery_driver",
+        "fmcg_manager",
+        "fmcg_rep",
+        "fmcg_driver",
+        "gym_manager",
+        "gym_frontdesk",
+        "gym_trainer",
+        "hrm_manager",
+        "hrm_officer",
+        "hrm_employee",
     ],
     BeforeValidator(coerce_platform_role_value),
 ]
@@ -487,6 +503,30 @@ class ORMSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+def _lower_strip(value: object) -> object:
+    return value.strip().lower() if isinstance(value, str) else value
+
+
+# A staff username: 3–40 characters, letters, digits, dot, dash or underscore, starting with a
+# letter or digit. Stored lower case and unique across the whole system, so staff can sign in
+# without a company code.
+UsernameValue = Annotated[
+    str,
+    BeforeValidator(_lower_strip),
+    Field(min_length=3, max_length=40, pattern=r"^[a-z0-9][a-z0-9._-]{2,39}$"),
+]
+
+
+class StaffLogin(BaseModel):
+    """POST /auth/staff-login — staff sign in with a username or email, no company code."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    login: Annotated[str, BeforeValidator(_lower_strip), Field(min_length=3, max_length=255)]
+    password: LoginPasswordValue
+    totp_code: TwoFactorCodeValue | None = None
+
+
 class Login(BaseModel):
     """POST /auth/login — unknown keys → **422** (`extra=forbid`)."""
 
@@ -501,6 +541,9 @@ class Login(BaseModel):
     tenant_id: TenantRefValue
     # omit/`null` → no TOTP field; blank/`!!!`/`http://…` → **422** (was free `str`)
     totp_code: TwoFactorCodeValue | None = None
+    # "admin" from the Admin sign-in: only owners and admins get through. "staff" is set by
+    # /auth/staff-login. Omitted keeps the old behaviour for API clients.
+    portal: Literal["admin", "staff"] | None = None
 
 
 class TwoFactorConfirm(BaseModel):
@@ -1006,6 +1049,9 @@ class TenantMaxStoresOverrideUpdate(BaseModel):
 class UserCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    # Sign-in name for the User sign-in; omit/`null` → none (create) or no change (update).
+    username: UsernameValue | None = None
+
     email: EmailStr
     # Required display name ∈ UserFullNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; empty/whitespace/`!!!`/URL could persist).
@@ -1042,6 +1088,9 @@ class UserCreate(BaseModel):
 
 class UserUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+    # Sign-in name for the User sign-in; omit/`null` → none (create) or no change (update).
+    username: UsernameValue | None = None
 
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # empty/whitespace/`!!!`/URL could persist).
@@ -4439,13 +4488,16 @@ AuditModuleValue = Annotated[
         "audit",
         "auth",
         "backup",
+        "bakery",
         "billing",
         "company",
         "credit",
         "dashboard",
         "expenses",
         "fmcg",
+        "gym",
         "hotel",
+        "hrm",
         "inventory",
         "notifications",
         "onboarding",

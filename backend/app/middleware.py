@@ -55,6 +55,7 @@ STOREFRONT_PUBLIC_PREFIXES = (
 
 AUTH_PATH_PREFIXES = (
     "/api/v1/auth/login",
+    "/api/v1/auth/staff-login",
     "/api/v1/auth/refresh",
     "/api/v1/auth/2fa/verify",
     "/api/v1/auth/webauthn/login",

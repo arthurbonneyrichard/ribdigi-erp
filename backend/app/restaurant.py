@@ -4652,6 +4652,9 @@ def _parse_booked_for(value: str) -> datetime:
 
 
 async def _restaurant_tenant(db: AsyncSession, *, tenant_id: str | None = None, slug: str | None = None) -> m.Tenant:
+    from app.desk_routing import route_to_company
+
+    await route_to_company(tenant_id or (slug or "").strip().lower())
     stmt = select(m.Tenant)
     if tenant_id:
         stmt = stmt.where(m.Tenant.id == tenant_id)
@@ -4697,8 +4700,15 @@ async def save_booking_link(db: AsyncSession, tenant_id: str, *, hostname: str, 
             )
         )
     ).scalar_one_or_none()
-    if taken is not None:
+    from app.desk_routing import taken_on_any_desk
+
+    other_restaurant = select(m.RestaurantBookingLink.id).where(
+        m.RestaurantBookingLink.hostname == host, m.RestaurantBookingLink.tenant_id != tenant.id
+    )
+    if taken is not None or await taken_on_any_desk(other_restaurant):
         raise HTTPException(status_code=409, detail="That website is already linked to another restaurant")
+    if await taken_on_any_desk(select(m.HotelBookingLink.id).where(m.HotelBookingLink.hostname == host)):
+        raise HTTPException(status_code=409, detail="That website is already linked to a hotel")
     row = (
         await db.execute(select(m.RestaurantBookingLink).where(m.RestaurantBookingLink.tenant_id == tenant.id))
     ).scalar_one_or_none()
@@ -4728,6 +4738,9 @@ async def booking_page_for_host(db: AsyncSession, hostname: str) -> dict:
     host = (hostname or "").strip().lower().rstrip(".")
     if host.startswith("www."):
         host = host[4:]
+    from app.desk_routing import route_by
+
+    await route_by(select(m.RestaurantBookingLink.id).where(m.RestaurantBookingLink.hostname == host))
     row = (
         await db.execute(select(m.RestaurantBookingLink).where(m.RestaurantBookingLink.hostname == host))
     ).scalar_one_or_none()

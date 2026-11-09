@@ -8,6 +8,7 @@ from app.api import api
 from app.audit_middleware import AuditMutationMiddleware
 from app.config import settings
 from app.db import SessionLocal
+from app.desk_routing import DeskRoutingMiddleware
 from app.http_errors import register_exception_handlers
 from app.middleware import MetricsMiddleware, RateLimitMiddleware, SecurityHeadersMiddleware
 from app.request_logging import RequestLoggingMiddleware
@@ -92,6 +93,8 @@ cors_kwargs = {
 app.add_middleware(CORSMiddleware, **cors_kwargs)
 # Outer logging so latency includes rate-limit / audit middleware and X-Request-ID is always set.
 app.add_middleware(RequestLoggingMiddleware)
+# Added last so it runs first: everything inside must see the company's database.
+app.add_middleware(DeskRoutingMiddleware)
 
 app.include_router(api)
 register_exception_handlers(app)

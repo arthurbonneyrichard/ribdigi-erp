@@ -57,6 +57,9 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "fmcg": ["read", "write"],
         "hospital": ["read", "write"],
         "restaurant": ["read", "write"],
+        "bakery": ["read", "write"],
+        "gym": ["read", "write"],
+        "hrm": ["read", "write"],
         "reports": ["read"],
         "notifications": ["read", "write"],
         "users": ["read"],
@@ -77,6 +80,9 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "hotel": ["read", "write"],
         "fmcg": ["read", "write"],
         "restaurant": ["read", "write"],
+        "bakery": ["read", "write"],
+        "gym": ["read", "write"],
+        "hrm": ["read", "write"],
         "reports": ["read"],
         "notifications": ["read", "write"],
         "ai": ["read"],
@@ -90,6 +96,9 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "purchasing": ["read", "write"],
         "suppliers": ["read", "write"],
         "restaurant": ["read", "write"],
+        "bakery": ["read", "write"],
+        "gym": ["read", "write"],
+        "hrm": ["read", "write"],
         "reports": ["read"],
         "notifications": ["read", "write"],
         "ai": ["read"],
@@ -117,6 +126,9 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "inventory": ["read"],
         "pos": ["read", "write"],
         "restaurant": ["read", "write"],
+        "bakery": ["read", "write"],
+        "gym": ["read", "write"],
+        "hrm": ["read", "write"],
         "sales": ["read"],
         "credit": ["write"],
         "notifications": ["read", "write"],
@@ -150,6 +162,135 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
     },
     # Restaurant staff. Server-side jobs (who may pay, refund, change the menu) are enforced
     # per role in restaurant_api._restaurant_job_gate on top of these module grants.
+    # Gym staff. Each job is checked per role in gym.job on top of these module grants.
+    "gym_manager": {
+        "dashboard": ["read"],
+        "gym": ["read", "write"],
+        "inventory": ["read", "write"],
+        "purchasing": ["read", "write"],
+        "expenses": ["read", "write", "approve"],
+        "accounting": ["read", "write"],
+        "tax": ["read"],
+        "reports": ["read"],
+        "notifications": ["read", "write"],
+        "audit": ["read"],
+        "stores": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "gym_frontdesk": {
+        "gym": ["read", "write"],
+        "notifications": ["read", "write"],
+        "stores": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "gym_trainer": {
+        "gym": ["read", "write"],
+        "notifications": ["read"],
+        "stores": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    # HR staff. Each job is checked per role in hrm.job on top of these module grants.
+    "hrm_manager": {
+        "dashboard": ["read"],
+        "hrm": ["read", "write"],
+        "expenses": ["read", "write", "approve"],
+        "accounting": ["read", "write"],
+        "reports": ["read"],
+        "notifications": ["read", "write"],
+        "audit": ["read"],
+        "stores": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "hrm_officer": {
+        "hrm": ["read", "write"],
+        "notifications": ["read", "write"],
+        "stores": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "hrm_employee": {
+        "hrm": ["read", "write"],
+        "notifications": ["read"],
+        "stores": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    # FMCG staff. Each job is checked per role in fmcg_orders.job on top of these module grants.
+    "fmcg_manager": {
+        "dashboard": ["read"],
+        "fmcg": ["read", "write"],
+        "inventory": ["read", "write"],
+        "purchasing": ["read", "write"],
+        "expenses": ["read", "write", "approve"],
+        "credit": ["read", "write"],
+        "accounting": ["read", "write"],
+        "tax": ["read"],
+        "reports": ["read"],
+        "stores": ["read"],
+        "notifications": ["read", "write"],
+        "audit": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "fmcg_rep": {
+        "fmcg": ["read", "write"],
+        "inventory": ["read"],
+        "notifications": ["read", "write"],
+        "stores": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "fmcg_driver": {
+        "fmcg": ["read", "write"],
+        "notifications": ["read"],
+        "stores": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    # Bakery staff. Each job is checked per role in bakery_api on top of these module grants.
+    "bakery_manager": {
+        "dashboard": ["read"],
+        "bakery": ["read", "write"],
+        "inventory": ["read", "write"],
+        "purchasing": ["read", "write"],
+        "expenses": ["read", "write", "approve"],
+        "credit": ["read", "write"],
+        "accounting": ["read", "write"],
+        "tax": ["read"],
+        "reports": ["read"],
+        "stores": ["read"],
+        "notifications": ["read", "write"],
+        "audit": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "bakery_cashier": {
+        "bakery": ["read", "write"],
+        "inventory": ["read"],
+        "stores": ["read"],
+        "notifications": ["read", "write"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "bakery_driver": {
+        "bakery": ["read", "write"],
+        "stores": ["read"],
+        "notifications": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "bakery_baker": {
+        "bakery": ["read", "write"],
+        "inventory": ["read"],
+        "stores": ["read"],
+        "notifications": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
     "restaurant_manager": {
         "dashboard": ["read"],
         "restaurant": ["read", "write"],
@@ -253,6 +394,19 @@ ROLE_LABELS: dict[str, str] = {
     "restaurant_cashier": "Restaurant Cashier",
     "restaurant_waiter": "Waiter",
     "restaurant_kitchen": "Kitchen",
+    "bakery_manager": "Bakery Manager",
+    "bakery_cashier": "Bakery Cashier",
+    "bakery_baker": "Baker",
+    "bakery_driver": "Bakery Driver",
+    "fmcg_manager": "Distribution Manager",
+    "fmcg_rep": "Sales Rep",
+    "fmcg_driver": "Delivery Driver",
+    "gym_manager": "Gym Manager",
+    "gym_frontdesk": "Front Desk",
+    "gym_trainer": "Trainer",
+    "hrm_manager": "HR Manager",
+    "hrm_officer": "HR Officer",
+    "hrm_employee": "Employee",
 }
 
 PLATFORM_ROLES = frozenset(
@@ -316,6 +470,11 @@ RESTAURANT_ONLY_ROLES = frozenset(
     {"restaurant_manager", "restaurant_cashier", "restaurant_waiter", "restaurant_kitchen"}
 )
 
+BAKERY_ONLY_ROLES = frozenset({"bakery_manager", "bakery_cashier", "bakery_baker", "bakery_driver"})
+FMCG_ONLY_ROLES = frozenset({"fmcg_manager", "fmcg_rep", "fmcg_driver"})
+GYM_ONLY_ROLES = frozenset({"gym_manager", "gym_frontdesk", "gym_trainer"})
+HRM_ONLY_ROLES = frozenset({"hrm_manager", "hrm_officer", "hrm_employee"})
+
 # Frontend nav href → required module (read). Used for menu filtering.
 # Platform owner (super_admin) UI only surfaces /platform + a small ops set;
 # tenant roles use the business modules below (see frontend Shell ROLE_NAV_MODULES).
@@ -341,6 +500,9 @@ MENU_MODULE_BY_PATH: dict[str, str] = {
     "/billing": "accounting",
     "/fmcg": "fmcg",
     "/restaurant": "restaurant",
+    "/bakery": "bakery",
+    "/gym": "gym",
+    "/hrm": "hrm",
     "/reports": "reports",
     "/notifications": "notifications",
     "/audit": "audit",
@@ -377,6 +539,9 @@ SYSTEM_MODULES = frozenset(
         "fmcg",
         "hospital",
         "restaurant",
+        "bakery",
+        "gym",
+        "hrm",
         "reports",
         "notifications",
         "audit",
@@ -434,6 +599,14 @@ def system_role_visible_for_industry(role: str, industry: str | None) -> bool:
         return ind == "hotel"
     if role in RESTAURANT_ONLY_ROLES:
         return ind == "restaurant"
+    if role in BAKERY_ONLY_ROLES:
+        return ind == "bakery"
+    if role in FMCG_ONLY_ROLES:
+        return ind == "fmcg"
+    if role in GYM_ONLY_ROLES:
+        return ind == "gym"
+    if role in HRM_ONLY_ROLES:
+        return ind == "hrm"
     if role in RETAIL_ONLY_ROLES:
         return ind != "hotel"
     return True
@@ -489,6 +662,19 @@ ROLE_RECORD_SCOPE: dict[str, str] = {
     "restaurant_cashier": "all",
     "restaurant_waiter": "all",
     "restaurant_kitchen": "all",
+    "bakery_manager": "all",
+    "bakery_cashier": "all",
+    "bakery_baker": "all",
+    "bakery_driver": "all",
+    "fmcg_manager": "all",
+    "fmcg_rep": "all",
+    "fmcg_driver": "all",
+    "gym_manager": "all",
+    "gym_frontdesk": "all",
+    "gym_trainer": "all",
+    "hrm_manager": "all",
+    "hrm_officer": "all",
+    "hrm_employee": "own",
 }
 
 
@@ -581,6 +767,7 @@ def serialize_user(user) -> dict:
         "id": user.id,
         "tenant_id": user.tenant_id,
         "email": user.email,
+        "username": getattr(user, "username", None),
         "full_name": user.full_name,
         "phone": user.phone,
         "role": user.role,

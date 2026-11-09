@@ -6,6 +6,8 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     DEBUG: bool = False
     DATABASE_URL: str = "postgresql+asyncpg://ribdigi:ribdigi@postgres:5432/ribdigi_erp"
+    # JSON of desk name to database URL. A desk left out uses DATABASE_URL; empty means one database.
+    DESK_DATABASE_URLS: str = ""
     JWT_SECRET_KEY: str = "change-me"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15

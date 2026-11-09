@@ -94,7 +94,7 @@ export function softwareOwnerDashboardPath(
 }
 
 /** Industries with a dedicated operations dashboard. Pharmacy is legacy (no sidebar item). */
-export const CONFIGURED_DASHBOARD_INDUSTRIES = ['retail', 'hotel', 'restaurant', 'pharmacy'] as const;
+export const CONFIGURED_DASHBOARD_INDUSTRIES = ['retail', 'hotel', 'restaurant', 'fmcg', 'bakery', 'gym', 'hrm', 'pharmacy'] as const;
 
 export function dashboardLayout(industry?: string | null): string {
   if (isSoftwareOwnerIndustry(industry)) return 'platform';
@@ -118,6 +118,10 @@ export function industryHomePath(industry?: string | null): string {
   const ind = normalizeIndustry(industry);
   if (ind === 'hotel') return '/hotel';
   if (ind === 'restaurant') return '/restaurant';
+  if (ind === 'fmcg') return '/fmcg';
+  if (ind === 'bakery') return '/bakery';
+  if (ind === 'gym') return '/gym';
+  if (ind === 'hrm') return '/hrm';
   return '/dashboard';
 }
 

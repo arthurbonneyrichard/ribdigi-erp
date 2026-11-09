@@ -119,7 +119,13 @@ export function IndustryDashboardView({
           ? 'Wholesale'
           : layout === 'hospital'
             ? 'Hospital'
-            : 'Company dashboard';
+            : layout === 'bakery'
+              ? 'Bakery'
+              : layout === 'gym'
+                ? 'Gym'
+                : layout === 'hrm'
+                  ? 'HRM'
+                  : 'Company dashboard';
 
   if (layout === 'unconfigured') {
     return (
