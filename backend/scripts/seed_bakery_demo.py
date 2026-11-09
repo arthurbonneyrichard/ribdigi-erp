@@ -26,7 +26,9 @@ from app.db import SessionLocal
 from app.rbac import permissions_for_role
 from app.security import hash_password
 
-SLUG = "demo-bakery-rec"
+# DEMO_SLUG / DEMO_USER_SUFFIX make a fresh copy, e.g. for recording tutorials.
+SLUG = os.environ.get("DEMO_SLUG", "demo-bakery-rec")
+USER_SUFFIX = os.environ.get("DEMO_USER_SUFFIX", "gc")
 EMAIL = "owner@goldencrust.example.com"
 STAFF = [
     ("cashier@goldencrust.example.com", "Esi Boateng", "bakery_cashier"),
@@ -85,7 +87,7 @@ async def ensure_company() -> None:
                     tenant_id=tenant.id,
                     email=email,
                     # Staff sign in on the User tab with this name, e.g. cashier.gc.
-                    username=None if role == "company_admin" else f"{email.split('@')[0]}.gc",
+                    username=None if role == "company_admin" else f"{email.split('@')[0]}.{USER_SUFFIX}",
                     full_name=name,
                     password_hash=hash_password(PASSWORD),
                     role=role,
