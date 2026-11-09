@@ -2321,12 +2321,18 @@ async def staff_login(payload: StaffLogin, request: Request, db: AsyncSession = 
     is found across every company and desk, then signed in exactly like /auth/login."""
     ident = payload.login
     if "@" in ident:
-        stmt = select(m.User.tenant_id, m.User.email).where(func.lower(m.User.email) == ident)
+        stmt = select(m.User.tenant_id, m.User.email, m.User.role).where(func.lower(m.User.email) == ident)
     else:
-        stmt = select(m.User.tenant_id, m.User.email).where(m.User.username == ident)
+        stmt = select(m.User.tenant_id, m.User.email, m.User.role).where(m.User.username == ident)
     rows = await desk_routing.rows_on_every_desk(db, stmt)
     if not rows:
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    if len(rows) > 1 and all(row[2] in ADMIN_SIGN_IN_ROLES for row in rows):
+        # An owner of several companies: the Admin tab picks the company by its code.
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "USE_ADMIN_SIGN_IN", "message": "Owners and admins sign in on the Admin tab with the company code."},
+        )
     if len(rows) > 1:
         raise HTTPException(
             status_code=409,
@@ -2335,7 +2341,7 @@ async def staff_login(payload: StaffLogin, request: Request, db: AsyncSession = 
                 "message": "This email is used in more than one company. Sign in with your username, or ask your admin for one.",
             },
         )
-    tenant_id, email = rows[0]
+    tenant_id, email, _role = rows[0]
     return await login(
         Login(email=email, password=payload.password, tenant_id=tenant_id, totp_code=payload.totp_code, portal="staff"),
         request,

@@ -99,3 +99,13 @@ async def test_the_old_sign_in_still_works_for_api_clients(client, seeded):
     ac, _seed = client
     r = await ac.post("/api/v1/auth/login", json={"tenant_id": "alpha", "email": "cashier@alpha.example.com", "password": PW})
     assert r.status_code == 200, r.text
+
+
+@pytest.mark.asyncio
+async def test_an_owner_of_two_companies_is_sent_to_the_admin_tab(client, seeded, db_session):
+    ac, seed = client
+    email = f"owner-{uuid4().hex[:6]}@example.com"
+    await _staff_user(db_session, seed["t1"], email=email, role="company_admin")
+    await _staff_user(db_session, seed["t2"], email=email, role="company_admin")
+    r = await ac.post("/api/v1/auth/staff-login", json={"login": email, "password": PW})
+    assert r.status_code == 403 and r.json()["detail"]["code"] == "USE_ADMIN_SIGN_IN"
