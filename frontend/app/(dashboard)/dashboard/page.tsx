@@ -712,7 +712,7 @@ export default function Page() {
   return (
     <>
       <div className="dash">
-        <section className="dash-hero" data-period={tod.period} aria-label="Dashboard greeting">
+        <section className="dash-hero desk-greet" data-period={tod.period} aria-label="Dashboard greeting">
           <div className="sun" aria-hidden="true" />
           <div className="cloud" aria-hidden="true" />
           <div className="cloud c2" aria-hidden="true" />
@@ -732,7 +732,7 @@ export default function Page() {
           <div className="greet-row">
             <div className="greet-copy">
               <h1 className="greet">
-                <span className="greet-hello">{tod.greeting}</span>
+                <span className="greet-hello">{tod.greeting}{signedInName ? ',' : ''}</span>
                 {signedInName ? <span className="greet-name">{signedInName}</span> : null}
                 <span className="wave" aria-hidden="true">
                   <GreetMark period={tod.period} />
@@ -741,6 +741,7 @@ export default function Page() {
               <p className="greet-sub">{tod.sub}</p>
               <p className="greet-date">
                 {[
+                  now ? now.toLocaleDateString('en-GB', { weekday: 'long' }) : '',
                   dateLabel,
                   liveIndustry && liveIndustry !== 'retail' ? `${industryLabel(liveIndustry)} dashboard` : '',
                   sub?.status === 'trial' && sub?.trial_ends_at
@@ -752,7 +753,12 @@ export default function Page() {
                   Number(d.returns_count || 0) > 0 ? `${num(d.returns_count)} returns` : '',
                 ]
                   .filter(Boolean)
-                  .join(' · ')}
+                  .map((chip) => (
+                    <span className="greet-chip" key={chip}>
+                      {chip}
+                    </span>
+                  ))}
+                <span className="greet-chip is-desk">Dashboard</span>
               </p>
             </div>
             {timeLabel && clockFace ? (

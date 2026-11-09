@@ -84,6 +84,8 @@ async def ensure_company() -> None:
                 m.User(
                     tenant_id=tenant.id,
                     email=email,
+                    # Staff sign in on the User tab with this name, e.g. cashier.gc.
+                    username=None if role == "company_admin" else f"{email.split('@')[0]}.gc",
                     full_name=name,
                     password_hash=hash_password(PASSWORD),
                     role=role,

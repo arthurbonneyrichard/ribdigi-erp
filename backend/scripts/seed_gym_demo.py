@@ -66,6 +66,7 @@ async def ensure_company() -> None:
                 m.User(
                     tenant_id=tenant.id, email=email, full_name=name, password_hash=hash_password(PASSWORD),
                     role=role, email_verified=True, permissions=permissions_for_role(role),
+                    username=None if role == "company_admin" else f"{email.split('@')[0]}.ip",
                 )
             )
         await db.flush()

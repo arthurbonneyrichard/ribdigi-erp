@@ -8441,3 +8441,17 @@ input[type=file]::file-selector-button:hover{border-color:var(--brand)}
 .login-tabs button:hover:not(.on){opacity:1;background:rgba(255,255,255,.08)}
 .login-tabs button:focus-visible{outline:3px solid #C8E86A;outline-offset:2px}
 .login-forgot-note{color:#C9DCC9 !important;font-size:13px;font-weight:600}
+
+/* Title card on retail, hotel and restaurant screens: the same look as the desk headers. */
+.main .page-head-card{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:18px 20px;margin-bottom:16px;border-radius:20px;background:linear-gradient(120deg,#FFFFFF 55%,#E8F4DD);border:1px solid #DFEBD3;box-shadow:0 1px 2px rgba(0,61,31,.05),0 10px 30px -18px rgba(0,61,31,.28)}
+.main .page-head-card .page-head-ico{display:grid;place-items:center;width:52px;height:52px;flex:0 0 52px;border-radius:16px;background:linear-gradient(135deg,#006B2E,#0B8A3E);color:#fff}
+.main .page-head-card .page-head-text{flex:1 1 260px;min-width:0}
+.main .page-head-card h1{font-size:26px;letter-spacing:-.02em}
+.main .page-head-card .page-sub{color:#4D5D56}
+[data-theme="dark"] .main .page-head-card{background:linear-gradient(120deg,#16241C 55%,#1E3326);border-color:#2A3D31;box-shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -18px rgba(0,0,0,.6)}
+[data-theme="dark"] .main .page-head-card .page-head-ico{background:#1E3326;color:#A5E37E}
+[data-theme="dark"] .main .page-head-card .page-sub{color:#A3B8AB}
+/* The software owner console keeps its own plain headings. */
+.plat .page-head-card{padding:0;margin-bottom:0;border:0;border-radius:0;background:none;box-shadow:none}
+.plat .page-head-card .page-head-ico{display:none}
+@media(max-width:720px){.main .page-head-card{padding:14px}.main .page-head-card .page-head-ico{width:44px;height:44px;flex-basis:44px}.main .page-head-card h1{font-size:22px}}
