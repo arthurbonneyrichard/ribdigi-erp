@@ -51,7 +51,7 @@ INGREDIENTS = [
 ITEMS = [
     ("Sugar bread", 12, "Sugar bread", 20, [("Flour (kg)", 5), ("Sugar (kg)", 1), ("Yeast (kg)", 0.1), ("Butter (kg)", 0.4)]),
     ("Meat pie", 15, "Meat pie", 24, [("Flour (kg)", 3), ("Butter (kg)", 1.2), ("Eggs (each)", 6)]),
-    ("Chocolate cake", 180, "Chocolate cake", 2, [("Flour (kg)", 1), ("Sugar (kg)", 1), ("Butter (kg)", 0.5), ("Eggs (each)", 8), ("Milk (litre)", 0.5)]),
+    ("Butter bread", 20, "Butter bread", 20, [("Flour (kg)", 5), ("Sugar (kg)", 0.8), ("Butter (kg)", 0.6), ("Yeast (kg)", 0.1), ("Milk (litre)", 1)]),
     ("Doughnut", 6, "Doughnut", 30, [("Flour (kg)", 3), ("Sugar (kg)", 0.5), ("Yeast (kg)", 0.08), ("Milk (litre)", 1)]),
 ]
 
@@ -137,14 +137,14 @@ async def seed() -> None:
             )
             recipes[name] = (row["id"], item["id"])
 
-        for name, batches in (("Sugar bread", 2), ("Meat pie", 2), ("Doughnut", 2), ("Chocolate cake", 2)):
+        for name, batches in (("Sugar bread", 2), ("Meat pie", 2), ("Doughnut", 2), ("Butter bread", 2)):
             await post(c, h, "/bakery/batches", {"recipe_id": recipes[name][0], "batches": batches})
 
         await post(c, h, "/bakery/till/shift/open", {"opening_cash": 200})
         for method, lines in (
             ("cash", [("Sugar bread", 3), ("Doughnut", 4)]),
             ("mobile_money", [("Meat pie", 6)]),
-            ("card", [("Chocolate cake", 1)]),
+            ("card", [("Butter bread", 3)]),
             ("cash", [("Doughnut", 10), ("Meat pie", 2)]),
         ):
             await post(
@@ -153,7 +153,7 @@ async def seed() -> None:
             )
 
         for customer, phone, days, item, qty, note, deposit in (
-            ("Abena Owusu", "+233244123456", 2, "Chocolate cake", 1, "Happy birthday Ama", 90),
+            ("Abena Owusu", "+233244123456", 2, "Butter bread", 20, "Sliced", 90),
             ("Grace Adjei", "+233501234987", 1, "Meat pie", 40, "Office meeting", 200),
             ("Yaw Darko", "+233557001122", 0, "Sugar bread", 10, None, 0),
         ):
@@ -173,7 +173,7 @@ async def seed() -> None:
         drivers = (await c.get("/bakery/drivers", headers=h)).json()["data"]
         for customer, phone, address, item, qty in (
             ("Hope Academy canteen", "+233244998877", "Hope Academy, East Legon", "Meat pie", 30),
-            ("Mrs Adjoa Quaye", "+233208765432", "14 Palm Street, Dzorwulu", "Chocolate cake", 1),
+            ("Mrs Adjoa Quaye", "+233208765432", "14 Palm Street, Dzorwulu", "Butter bread", 10),
         ):
             await post(
                 c, h, "/bakery/orders",

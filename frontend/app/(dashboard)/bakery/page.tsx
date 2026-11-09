@@ -20,7 +20,7 @@ type Row = Record<string, any>;
 const SCREENS: Record<string, { title: string; sub: string; icon: string }> = {
   today: { title: 'Dashboard', sub: '', icon: 'home' },
   counter: { title: 'Counter', sub: 'Tap items to sell. Money goes into the open till.', icon: 'cart' },
-  orders: { title: 'Orders', sub: 'Cakes and bulk orders for a later day, picked up or delivered.', icon: 'calendar' },
+  orders: { title: 'Orders', sub: 'Bread and bulk orders for a later day, picked up or delivered.', icon: 'calendar' },
   deliveries: { title: 'Deliveries', sub: 'Orders going out by van, and the cash that comes back.', icon: 'truck' },
   baking: { title: 'Baking', sub: 'Recipes, what one batch costs, and what was baked.', icon: 'flame' },
   waste: { title: 'Waste', sub: 'What was thrown away and why. It comes off your profit.', icon: 'trash' },
@@ -509,7 +509,7 @@ function BakeryDesk() {
           desk="Bakery dashboard"
           actions={[
             ...(role === 'bakery_baker' ? [] : [{ label: 'Open the counter', href: '/bakery?tab=counter', primary: true, icon: 'cart', hint: 'Sell from the shelf' }]),
-            { label: 'Take an order', href: '/bakery?tab=orders', icon: 'calendar', hint: 'Cakes and bulk orders' },
+            { label: 'Take an order', href: '/bakery?tab=orders', icon: 'calendar', hint: 'Bread and bulk orders' },
             ...(role === 'bakery_cashier' ? [] : [{ label: 'Record a bake', href: '/bakery?tab=baking', primary: role === 'bakery_baker', icon: 'flame', hint: 'Fill the shelf' }]),
             ...(isManager ? [{ label: myBag ? 'You are driving' : 'Drive today', href: '/bakery?tab=deliveries', icon: 'truck', hint: myBag ? `Bag ${money(myBag.expected_cash)}` : 'Deliver and sell' }] : []),
             ...(isManager ? [{ label: 'Buy stock', href: '/bakery?tab=stock', icon: 'box', hint: 'Flour, sugar and more' }] : [{ label: 'Record waste', href: '/bakery?tab=waste', icon: 'trash', hint: 'Burnt or unsold' }]),
@@ -550,7 +550,7 @@ function BakeryDesk() {
         <div className="bk-grid2">
           <section className="bk-box" aria-label="Items">
             <div className="bk-row bk-spread">
-              <Head icon="cake" title="Items" />
+              <Head icon="bread" title="Items" />
               <input className="bk-find" placeholder="Find an item" value={find} onChange={(e) => setFind(e.target.value)} aria-label="Find an item" />
             </div>
             {items.length === 0 ? <p className="bk-muted">No items for sale yet. {isManager ? <Link href="/bakery?tab=stock">Add them under Stock.</Link> : 'Ask a manager to add them.'}</p> : null}
@@ -1009,7 +1009,7 @@ function BakeryDesk() {
             return (
               <section className="bk-box bk-scroll" key={kind} aria-label={title}>
                 <div className="bk-row bk-spread">
-                  <Head icon={kind === 'item' ? 'cake' : 'leaf'} title={title} />
+                  <Head icon={kind === 'item' ? 'bread' : 'leaf'} title={title} />
                   <span className="bk-muted">Worth {money(rows.reduce((t: number, r: Row) => t + Number(r.value || 0), 0))} at cost</span>
                 </div>
                 <table>
@@ -1151,7 +1151,7 @@ function BakeryDesk() {
             </section>
           </div>
           <section className="bk-box bk-scroll" aria-label="By item">
-            <Head icon="cake" title="Item by item" />
+            <Head icon="bread" title="Item by item" />
             <table>
               <thead><tr><th>Item</th><th>Sold</th><th>Sales before tax</th><th>Cost</th><th>Profit</th><th>Margin</th></tr></thead>
               <tbody>
