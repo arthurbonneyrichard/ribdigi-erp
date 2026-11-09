@@ -123,7 +123,7 @@ async def test_one_session_follows_the_company_it_was_sent_to(two_desks):
 
 @pytest.mark.asyncio
 async def test_a_signed_token_routes_the_request_and_a_forged_one_does_not(two_desks):
-    from jose import jwt
+    import jwt  # PyJWT, the same library as app.security
 
     hotel_id = await _add_company("hotel", "palm-court")
     seen: list[str | None] = []

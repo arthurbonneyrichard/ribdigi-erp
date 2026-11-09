@@ -109,7 +109,7 @@ class DeskRoutingMiddleware:
 
 
 def _tenant_from_token(scope) -> str | None:
-    from jose import JWTError, jwt
+    import jwt  # PyJWT, the same library as app.security
 
     headers = dict(scope.get("headers") or [])
     auth = headers.get(b"authorization", b"").decode("latin-1")
@@ -117,6 +117,6 @@ def _tenant_from_token(scope) -> str | None:
         return None
     try:
         data = jwt.decode(auth[7:].strip(), settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
-    except JWTError:
+    except jwt.PyJWTError:
         return None
     return data.get("tenant_id")
