@@ -187,9 +187,15 @@ function BakeryDesk() {
       };
       const want = new URLSearchParams(window.location.search).get('tab') || 'today';
       const drives = driver || !jobs;
-      if (drives) setDriverDay(await soft('/bakery/driver/today'));
-      if (!driver) setSummary(await soft('/bakery/summary'));
-      if (['counter', 'orders', 'waste', 'baking', 'today'].includes(want)) setItems((await soft('/bakery/items')) || []);
+      // Load only what this screen shows, all at once: the dashboard figures are not needed on Stock.
+      const [day, sum, itemRows] = await Promise.all([
+        drives && ['today', 'counter', 'deliveries'].includes(want) ? soft('/bakery/driver/today') : Promise.resolve(undefined),
+        !driver && want === 'today' ? soft('/bakery/summary') : Promise.resolve(undefined),
+        ['counter', 'orders', 'waste', 'baking', 'today'].includes(want) ? soft('/bakery/items') : Promise.resolve(undefined),
+      ]);
+      if (day !== undefined) setDriverDay(day);
+      if (sum !== undefined) setSummary(sum);
+      if (itemRows !== undefined) setItems(itemRows || []);
       if (want === 'orders' && may('orders')) {
         setOrders((await soft('/bakery/orders')) || []);
         if (!driver) setDrivers((await soft('/bakery/drivers')) || []);
