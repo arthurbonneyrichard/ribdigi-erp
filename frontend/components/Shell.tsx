@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { industryHomePath } from '../lib/industryDashboard';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import DeskIcon from './DeskIcon';
 import { POS_LOCK_NOW_EVENT, wasLeftLocked } from '../lib/posLock';
 import { api, clearSessionAndRedirect, idleTimeoutMs, isConfirmedAuthExpiry, tenantHeaderValue, getAccessToken, hydrateAuth } from '../lib/api';
 import { formatNoticeTime, notifyCategoryLabel } from '../lib/notifyText';
@@ -643,6 +644,31 @@ const NAV_ITEM_ICON: Record<string, string> = {
   '/gift-cards': 'gift',
   '/platform': 'dashboard',
   '/platform/billing': 'credit',
+  // Retail entries in the same group would repeat one picture, so each gets its own (d: = DeskIcon).
+  '/inventory?tab=products': 'd:box',
+  '/inventory?tab=categories': 'd:tag',
+  '/inventory?tab=whstock': 'd:chart',
+  '/inventory?tab=adjust': 'd:check',
+  '/inventory?tab=counts': 'd:calendarCheck',
+  '/inventory?tab=transfers': 'd:truck',
+  '/inventory?tab=movements': 'd:clock',
+  '/inventory?tab=lowstock': 'd:alert',
+  '/inventory?tab=expiry': 'd:calendar',
+  '/sales': 'd:receipt',
+  '/pos': 'd:cart',
+  '/purchasing?tab=suppliers': 'd:users',
+  '/purchasing?tab=orders': 'd:receipt',
+  '/purchasing?tab=grn': 'd:truck',
+  '/purchasing?tab=invoices': 'd:bag',
+  '/purchasing?tab=returns': 'd:arrow',
+  '/credit?kind=payable&panel=pay': 'd:cash',
+  '/credit?kind=payable': 'd:wallet',
+  '/purchasing?tab=history': 'd:clock',
+  '/expenses': 'd:wallet',
+  '/billing': 'd:alert',
+  '/credit?kind=receivable': 'd:cash',
+  '/stores#branches': 'd:map',
+  '/stores#stores': 'd:home',
   // Desk screens share one path, so they are matched on the full link.
   '/hotel': 'dashboard',
   '/hotel?tab=reservations': 'sales',
@@ -740,6 +766,11 @@ function NavIcon({ name }: { name: string }) {
       {ICONS[name] ?? ICONS.dashboard}
     </svg>
   );
+}
+
+/** Sidebar link picture: a Shell icon, or a DeskIcon when the name starts with "d:". */
+function ItemIcon({ name }: { name: string }) {
+  return name.startsWith('d:') ? <DeskIcon name={name.slice(2)} size={18} /> : <NavIcon name={name} />;
 }
 
 function NavGroupIcon({ groupId }: { groupId: string }) {
@@ -1964,7 +1995,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                   onTouchStart={() => warmDestination(h)}
                 >
                   <span className="nav-ico">
-                    <NavIcon name={NAV_ITEM_ICON[h] || NAV_ITEM_ICON[hrefParts(h).path] || module} />
+                    <ItemIcon name={NAV_ITEM_ICON[h] || NAV_ITEM_ICON[hrefParts(h).path] || module} />
                   </span>
                   <span className="nav-label">{label}</span>
                 </Link>
@@ -2037,7 +2068,17 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         }}
       />
       <div className="side-backdrop" onClick={() => setMenuOpen(false)} aria-hidden />
-      <main className="main">
+      <main
+        className="main"
+        // Retail screens (not the till, which has its own design) get the modern card look.
+        data-look={
+          pathname !== '/pos' &&
+          industry &&
+          !['hotel', 'restaurant', 'bakery', 'fmcg', 'gym', 'hrm', 'hospital'].includes(normalizeIndustry(industry) || '')
+            ? 'retail'
+            : undefined
+        }
+      >
         <div className="topbar">
           <div className="topbar-left">
             {pathname === '/pos' ? (

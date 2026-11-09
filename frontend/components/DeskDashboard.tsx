@@ -200,6 +200,24 @@ export function DeskTiles({ tiles }: { tiles: DeskTile[] }) {
   );
 }
 
+/** The row of shortcut cards: the jobs done every day. Also used on the retail dashboard. */
+export function DeskShortcuts({ actions }: { actions: DeskAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <nav className="dd-actions" aria-label="Shortcuts">
+      {actions.map((a) => (
+        <Link key={a.href + a.label} href={a.href} className={a.primary ? 'primary' : ''}>
+          <span className="dd-act-ico" aria-hidden="true"><DeskIcon name={a.icon || 'arrow'} size={20} /></span>
+          <span className="dd-act-text">
+            <b>{a.label}</b>
+            {a.hint ? <small>{a.hint}</small> : null}
+          </span>
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
 export default function DeskDashboard({
   desk,
   tiles,
@@ -220,19 +238,7 @@ export default function DeskDashboard({
   return (
     <div className="deskdash">
       <DashboardGreeting desk={desk} />
-      {actions?.length ? (
-        <nav className="dd-actions" aria-label="Shortcuts">
-          {actions.map((a) => (
-            <Link key={a.href + a.label} href={a.href} className={a.primary ? 'primary' : ''}>
-              <span className="dd-act-ico" aria-hidden="true"><DeskIcon name={a.icon || 'arrow'} size={20} /></span>
-              <span className="dd-act-text">
-                <b>{a.label}</b>
-                {a.hint ? <small>{a.hint}</small> : null}
-              </span>
-            </Link>
-          ))}
-        </nav>
-      ) : null}
+      {actions?.length ? <DeskShortcuts actions={actions} /> : null}
       <DeskTiles tiles={tiles} />
       <div className="dd-grid2">
         {trend ? <section className="dd-box"><TrendChart trend={trend} /></section> : null}

@@ -23,6 +23,7 @@ import EmptyState from '../../../components/EmptyState';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import { useStoreContext } from '../../../lib/storeContext';
 import OfflineProvisionalNotice from '../../../components/OfflineProvisionalNotice';
+import { DeskShortcuts } from '../../../components/DeskDashboard';
 
 type Subscription = {
   status?: string;
@@ -382,6 +383,7 @@ export default function Page() {
   const [industry, setIndustry] = useState<string | null>(null);
   const [industryRaw, setIndustryRaw] = useState<string | null>(null);
   const [accountRole, setAccountRole] = useState('');
+  const [perms, setPerms] = useState<Record<string, string[]>>({});
   const [meReady, setMeReady] = useState(false);
   const [topRank, setTopRank] = useState<'revenue' | 'quantity'>('revenue');
 
@@ -393,6 +395,7 @@ export default function Page() {
         const role = String(me.data?.role || '');
         const raw = String(me.data?.industry_raw || me.data?.industry || '').trim() || null;
         setAccountRole(role);
+        setPerms((me.data?.permissions as Record<string, string[]>) || {});
         setIndustryRaw(raw);
         const ind = normalizeIndustry(me.data?.industry);
         setIndustry(ind);
@@ -796,6 +799,24 @@ export default function Page() {
             </p>
           )}
         </section>
+        {(() => {
+          // Shortcuts to the daily jobs, only those this person may open.
+          const may = (mod: string) =>
+            Boolean(perms['*']?.includes('*') || (perms[mod] || []).some((a) => ['*', 'read', 'write'].includes(a)));
+          const shortcuts = [
+            { mod: 'pos', label: 'Open the till', href: '/pos', primary: true, icon: 'cart', hint: 'Sell at the counter' },
+            { mod: 'sales', label: 'New invoice', href: '/sales', icon: 'receipt', hint: 'Bill a customer' },
+            { mod: 'inventory', label: 'Add a product', href: '/inventory?tab=products', icon: 'box', hint: 'Price and stock' },
+            { mod: 'purchasing', label: 'Receive stock', href: '/purchasing?tab=grn', icon: 'truck', hint: 'From a supplier' },
+            { mod: 'expenses', label: 'Record an expense', href: '/expenses', icon: 'wallet', hint: 'Rent, fuel, bills' },
+            { mod: 'reports', label: 'Reports', href: '/reports', icon: 'chart', hint: 'How the shop did' },
+          ].filter((a) => may(a.mod));
+          return shortcuts.length ? (
+            <div className="deskdash dash-shortcuts">
+              <DeskShortcuts actions={shortcuts} />
+            </div>
+          ) : null;
+        })()}
         {dashStatus !== 'ready' ? (
           <section className="stat-grid dash-kpis" aria-label="Sales today, sales this month, gross profit, and money owed" aria-busy={dashStatus === 'loading'}>
             {[0, 1, 2, 3, 4].map((i) => (

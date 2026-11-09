@@ -8461,3 +8461,48 @@ input[type=file]::file-selector-button:hover{border-color:var(--brand)}
 .login-offline-till p{margin:0;line-height:1.45;color:#E8F2E4}
 .login-offline-till strong{color:#C8E86A}
 .login-offline-note{margin:0 0 14px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(200,232,106,.22);color:#E8F2E4}
+
+/* Retail screens: the modern card look of the desks (cards, tabs, tables, fields, figures).
+   Scoped to .main[data-look="retail"] (set in Shell), so hotel, restaurant, the desks and the till keep their own. */
+.main[data-look="retail"]{
+  --rm-panel:#FFFFFF;--rm-soft:#F7FAF3;--rm-tint:#E8F4DD;--rm-line:#DFEBD3;--rm-ink:#10211B;--rm-muted:#4D5D56;
+  --rm-shadow:0 1px 2px rgba(0,61,31,.05),0 10px 30px -18px rgba(0,61,31,.28);
+  --rm-ring:0 0 0 3px rgba(74,176,18,.28)
+}
+[data-theme="dark"] .main[data-look="retail"]{
+  --rm-panel:#16241C;--rm-soft:#132019;--rm-tint:#1E3326;--rm-line:#2A3D31;--rm-ink:#E8F2E4;--rm-muted:#A3B8AB;
+  --rm-shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -18px rgba(0,0,0,.6)
+}
+/* Cards and panels */
+.main[data-look="retail"] .card,.main[data-look="retail"] .cat-panel,.main[data-look="retail"] .dash .panel{border-radius:20px;border:1px solid var(--rm-line);background:var(--rm-panel);box-shadow:var(--rm-shadow)}
+.main[data-look="retail"] .card > h2,.main[data-look="retail"] .card > h3,.main[data-look="retail"] .cat-panel h2,.main[data-look="retail"] .cat-panel h3{letter-spacing:-.01em}
+/* Tabs: one rounded strip with the open tab in green */
+.main[data-look="retail"] [role="tablist"]:not(.login-tabs){display:flex;flex-wrap:wrap;gap:4px;width:fit-content;max-width:100%;padding:4px;border-radius:14px;background:var(--rm-panel);border:1px solid var(--rm-line);box-shadow:var(--rm-shadow)}
+.main[data-look="retail"] [role="tablist"]:not(.login-tabs) > [role="tab"]{min-height:38px;padding:0 14px;border:0;border-radius:10px;background:transparent;color:var(--rm-muted);font-weight:700;box-shadow:none;transform:none;transition:background .15s ease,color .15s ease}
+.main[data-look="retail"] [role="tablist"]:not(.login-tabs) > [role="tab"]:hover{background:var(--rm-tint);color:var(--rm-ink)}
+.main[data-look="retail"] [role="tablist"]:not(.login-tabs) > [role="tab"][aria-selected="true"]{background:linear-gradient(135deg,#006B2E,#0B8A3E);color:#fff}
+[data-theme="dark"] .main[data-look="retail"] [role="tablist"]:not(.login-tabs) > [role="tab"][aria-selected="true"]{background:#7BD14A;color:#0F1A14}
+/* Tables: soft header, quiet lines, rows that light up under the pointer */
+.main[data-look="retail"] table.table thead th{background:var(--rm-soft);color:var(--rm-muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--rm-line)}
+.main[data-look="retail"] table.table thead th:first-child{border-top-left-radius:12px}
+.main[data-look="retail"] table.table thead th:last-child{border-top-right-radius:12px}
+.main[data-look="retail"] table.table tbody td{border-bottom:1px solid var(--rm-line)}
+.main[data-look="retail"] table.table tbody tr{transition:background .12s ease}
+.main[data-look="retail"] table.table tbody tr:hover{background:var(--rm-soft)}
+.main[data-look="retail"] .col-num,.main[data-look="retail"] .kpi{font-variant-numeric:tabular-nums}
+/* Fields: soft fill, green ring on focus */
+.main[data-look="retail"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),.main[data-look="retail"] select,.main[data-look="retail"] textarea{border-radius:12px;border:1px solid var(--rm-line);background:var(--rm-soft);color:var(--rm-ink);transition:border-color .15s ease,box-shadow .15s ease,background .15s ease}
+.main[data-look="retail"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):focus,.main[data-look="retail"] select:focus,.main[data-look="retail"] textarea:focus{outline:none;border-color:#4AB012;box-shadow:var(--rm-ring);background:var(--rm-panel)}
+/* Figures */
+.main[data-look="retail"] .kpi{font-size:24px;font-weight:800;letter-spacing:-.02em;color:var(--rm-ink)}
+/* Dashboard: calm white figure cards with an icon chip, like the desks */
+.main[data-look="retail"] .dash-shortcuts{margin-bottom:16px}
+.main[data-look="retail"] .dash-shortcuts .dd-actions{grid-template-columns:repeat(auto-fit,minmax(165px,1fr))}
+.main[data-look="retail"] [role="tablist"]:not(.login-tabs){margin-bottom:12px}
+.main[data-look="retail"] .dash-kpis .stat{background:var(--rm-panel)!important;border:1px solid var(--rm-line)!important;border-radius:18px;box-shadow:var(--rm-shadow);color:var(--rm-ink)}
+.main[data-look="retail"] .dash-kpis .stat .rail{display:none}
+.main[data-look="retail"] .dash-kpis .stat .ico{background:var(--rm-tint)!important;color:#006B2E!important;border:0!important;border-radius:12px}
+[data-theme="dark"] .main[data-look="retail"] .dash-kpis .stat .ico{color:#A5E37E!important}
+.main[data-look="retail"] .dash-kpis .stat .label{color:var(--rm-muted)!important;font-weight:700}
+.main[data-look="retail"] .dash-kpis .stat .val{color:var(--rm-ink)!important;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.main[data-look="retail"] .dash-kpis .stat:hover{transform:translateY(-1px);border-color:#4AB012!important}
