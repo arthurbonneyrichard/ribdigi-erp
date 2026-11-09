@@ -67,6 +67,10 @@ export default function Login() {
   const [debugVerifyToken, setDebugVerifyToken] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  // Offline selling belongs to the User sign-in: with no internet, a till that a staff member
+  // prepared earlier is opened from the User tab, by the person it was prepared for.
+  const [offlineTill, setOfflineTill] = useState<{ name: string } | null>(null);
+  const [noInternet, setNoInternet] = useState(false);
   const router = useRouter();
 
   async function openPreparedTill(): Promise<boolean> {
@@ -84,12 +88,16 @@ export default function Login() {
         setError(decision.message);
         return false;
       }
-      const me = await offlineMod.getSnapshot<{ id?: string } | null>('me').catch(() => null);
+      const me = await offlineMod
+        .getSnapshot<{ id?: string; full_name?: string; username?: string | null; email?: string } | null>('me')
+        .catch(() => null);
       if (!me?.id || String(me.id) !== String(env?.user_id || '')) {
         setError('Online sign-in is required. Saved sales stay on this device.');
         return false;
       }
-      router.replace('/pos');
+      setMode('user');
+      setOfflineTill({ name: me.full_name || me.username || me.email || 'the staff member who prepared it' });
+      setError('');
       return true;
     } catch {
       setError(explainOfflineAccess(null).message);
@@ -105,7 +113,9 @@ export default function Login() {
         if (cancelled) return;
         const phase = await probeApi();
         if (cancelled) return;
+        setNoInternet(phase !== 'online');
         if (phase === 'online') {
+          setOfflineTill(null);
           setError((prev) => (prev === UNPREPARED_OFFLINE ? '' : prev));
           if (!getAccessTokenSync()) return;
           try {
@@ -129,6 +139,7 @@ export default function Login() {
       } catch {
         if (cancelled) return;
         const phase = await probeApi().catch(() => 'api_down' as const);
+        setNoInternet(phase !== 'online');
         if (phase !== 'online') setError(explainOfflineAccess(null).message);
       }
     }
@@ -391,6 +402,23 @@ export default function Login() {
               User
             </button>
           </div>
+        ) : null}
+
+        {!needs2fa && mode === 'user' && offlineTill ? (
+          <div className="login-offline-till" role="status" aria-label="Offline till">
+            <p>
+              <strong>No internet.</strong> This till is ready to keep selling for <strong>{offlineTill.name}</strong>. Sales are saved
+              here and upload when the internet is back.
+            </p>
+            <button type="button" className="login-primary" aria-label="Open the till offline" onClick={() => router.replace('/pos')}>
+              Open the till
+            </button>
+          </div>
+        ) : null}
+        {!needs2fa && mode === 'admin' && noInternet ? (
+          <p className="login-hint login-offline-note" role="status">
+            Admin sign-in needs internet. Staff on a till prepared for offline selling use the User tab.
+          </p>
         ) : null}
 
         <form className="login-form" onSubmit={go}>
