@@ -8452,8 +8452,8 @@ input[type=file]::file-selector-button:hover{border-color:var(--brand)}
 [data-theme="dark"] .main .page-head-card .page-head-ico{background:#1E3326;color:#A5E37E}
 [data-theme="dark"] .main .page-head-card .page-sub{color:#A3B8AB}
 /* The software owner console keeps its own plain headings. */
-.plat .page-head-card{padding:0;margin-bottom:0;border:0;border-radius:0;background:none;box-shadow:none}
-.plat .page-head-card .page-head-ico{display:none}
+.plat:not(.help) .page-head-card{padding:0;margin-bottom:0;border:0;border-radius:0;background:none;box-shadow:none}
+.plat:not(.help) .page-head-card .page-head-ico{display:none}
 @media(max-width:720px){.main .page-head-card{padding:14px}.main .page-head-card .page-head-ico{width:44px;height:44px;flex-basis:44px}.main .page-head-card h1{font-size:22px}}
 
 /* Sign-in with no internet: the prepared till opens from the User tab. */
@@ -8506,3 +8506,25 @@ input[type=file]::file-selector-button:hover{border-color:var(--brand)}
 .main[data-look="retail"] .dash-kpis .stat .label{color:var(--rm-muted)!important;font-weight:700}
 .main[data-look="retail"] .dash-kpis .stat .val{color:var(--rm-ink)!important;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .main[data-look="retail"] .dash-kpis .stat:hover{transform:translateY(-1px);border-color:#4AB012!important}
+
+/* Help & Support (every business type): modern topic cards, figure tiles and panels. */
+.help .plat-panel,.help .desk-ticket,.help .desk-queue{border-radius:20px;border:1px solid #DFEBD3;background:#FFFFFF;box-shadow:0 1px 2px rgba(0,61,31,.05),0 10px 30px -18px rgba(0,61,31,.28)}
+.help .help-topic{position:relative;display:flex;flex-direction:column;gap:6px;text-align:left;padding:18px;border-radius:18px;border:1px solid #DFEBD3;background:#FFFFFF;box-shadow:0 1px 2px rgba(0,61,31,.05),0 10px 30px -20px rgba(0,61,31,.28);transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;cursor:pointer}
+.help .help-topic:hover{transform:translateY(-2px);border-color:#4AB012;box-shadow:0 2px 4px rgba(0,61,31,.06),0 18px 40px -18px rgba(0,61,31,.38)}
+.help .help-topic:focus-visible{outline:3px solid #4AB012;outline-offset:2px}
+.help .help-topic-ico{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:#E8F4DD;color:#006B2E;margin-bottom:4px}
+.help .help-topic small{color:#006B2E;font-weight:800}
+.help .plat-stat{border-radius:18px;border:1px solid #DFEBD3;background:#FFFFFF;box-shadow:0 1px 2px rgba(0,61,31,.05),0 10px 30px -20px rgba(0,61,31,.28);transition:border-color .15s ease,transform .15s ease}
+.help .plat-stat:hover{transform:translateY(-1px);border-color:#4AB012}
+.help .plat-stat.is-on{border-color:#006B2E;box-shadow:0 0 0 3px rgba(74,176,18,.25)}
+.help input:not([type="checkbox"]):not([type="radio"]),.help select,.help textarea{border-radius:12px;border:1px solid #DFEBD3;background:#F7FAF3;transition:border-color .15s ease,box-shadow .15s ease,background .15s ease}
+.help input:not([type="checkbox"]):not([type="radio"]):focus,.help select:focus,.help textarea:focus{outline:none;border-color:#4AB012;box-shadow:0 0 0 3px rgba(74,176,18,.28);background:#FFFFFF}
+.help table thead th{background:#F7FAF3;color:#4D5D56;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+[data-theme="dark"] .help .plat-panel,[data-theme="dark"] .help .desk-ticket,[data-theme="dark"] .help .desk-queue,[data-theme="dark"] .help .help-topic,[data-theme="dark"] .help .plat-stat{background:#16241C;border-color:#2A3D31;box-shadow:none;color:#E8F2E4}
+[data-theme="dark"] .help .help-topic-ico{background:#1E3326;color:#A5E37E}
+[data-theme="dark"] .help .help-topic small{color:#A5E37E}
+[data-theme="dark"] .help input:not([type="checkbox"]):not([type="radio"]),[data-theme="dark"] .help select,[data-theme="dark"] .help textarea{background:#132019;border-color:#2A3D31;color:#E8F2E4}
+[data-theme="dark"] .help table thead th{background:#132019;color:#A3B8AB}
+[data-theme="dark"] .plat.help .plat-stats .plat-stat{background:#16241C!important;border:1px solid #2A3D31!important;color:#E8F2E4!important}
+[data-theme="dark"] .plat.help .plat-stats .plat-stat span{color:#A3B8AB!important}
+[data-theme="dark"] .plat.help .plat-stats .plat-stat.is-on{border-color:#7BD14A!important;box-shadow:0 0 0 3px rgba(123,209,74,.25)}

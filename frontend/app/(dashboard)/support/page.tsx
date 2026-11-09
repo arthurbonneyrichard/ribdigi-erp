@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import PageHeader from '../../../components/PageHeader';
+import DeskIcon from '../../../components/DeskIcon';
 import { api, apiFetch } from '../../../lib/api';
 import { formatWhen, type FormatPrefs } from '../../../lib/format';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
@@ -42,6 +43,18 @@ const PRIORITY_LABEL: Record<string, string> = {
 };
 
 const STATUS_ORDER = ['new', 'in_progress', 'waiting_for_tenant', 'resolved', 'closed'] as const;
+
+// A picture for each help topic card; anything else gets a question mark.
+const TOPIC_ICON: Record<string, string> = {
+  account_login: 'users',
+  pos_sales: 'cart',
+  inventory_stock: 'box',
+  purchases_suppliers: 'truck',
+  finance_reports: 'chart',
+  printing_barcode_receipt: 'print',
+  settings_configuration: 'home',
+  bug_other: 'alert',
+};
 
 const TOPIC_HELP: Record<string, string> = {
   account_login: 'Signing in, your password, and which screens your role can open.',
@@ -310,16 +323,13 @@ export default function HelpSupportPage() {
   return (
     <div className="plat desk help">
       <PageHeader
-        className="plat-hero"
-        kicker="Help"
-        kickerClassName="plat-kicker"
+        icon="phone"
         title="Help & Support"
         subtitle={
           deskIndustry === 'hotel'
             ? 'Hotel topics for reservations, front desk, folios, supplies, purchasing, and the rest of this hotel.'
             : 'Find a topic, open the guide, or send a ticket if you still need help.'
         }
-        subtitleClassName="plat-sub"
         actions={
           <button type="button" className="btn btn-primary" onClick={() => void openGuide()} disabled={guideBusy} aria-label="Open staff guide">
             {guideBusy ? 'Opening the guide…' : 'Open the guide'}
@@ -348,6 +358,7 @@ export default function HelpSupportPage() {
                   }, 50);
                 }}
               >
+                <span className="help-topic-ico" aria-hidden="true"><DeskIcon name={TOPIC_ICON[item.code] || 'search'} size={20} /></span>
                 <b>{item.label}</b>
                 <span>{item.help || TOPIC_HELP[item.code] || 'Covers this part of the product for your company.'}</span>
                 <small>Ask about this →</small>
