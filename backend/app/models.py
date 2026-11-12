@@ -2657,6 +2657,8 @@ class PlatformBillingPlan(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     code: Mapped[str] = mapped_column(String(40), unique=True, index=True)
     package_code: Mapped[str] = mapped_column(String(40), index=True)
+    # NULL = price for every industry; a value (hotel, restaurant, ...) = that industry's price.
+    industry: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(120))
     interval: Mapped[str] = mapped_column(String(16))
     amount: Mapped[float] = mapped_column(Numeric(14, 2))
@@ -2689,6 +2691,8 @@ class TenantBillingAccount(Base):
     price_override_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     price_override_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
     consent_interval: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    # VAT rate (percent) already inside consent_amount when consent was recorded.
+    consent_tax_rate: Mapped[float | None] = mapped_column(Numeric(6, 3), nullable=True)
     gateway_provider: Mapped[str | None] = mapped_column(String(32), nullable=True)
     gateway_customer_ref: Mapped[str | None] = mapped_column(String(120), nullable=True)
     gateway_authorization_ref: Mapped[str | None] = mapped_column(String(160), nullable=True)
@@ -2714,6 +2718,11 @@ class TenantBillingInvoice(Base):
     idempotency_key: Mapped[str] = mapped_column(String(160))
     amount: Mapped[float] = mapped_column(Numeric(14, 2))
     currency: Mapped[str] = mapped_column(String(3))
+    # Software-owner VAT on this invoice. amount = net_amount + tax_amount.
+    net_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    tax_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    tax_rate: Mapped[float | None] = mapped_column(Numeric(6, 3), nullable=True)
+    tax_label: Mapped[str | None] = mapped_column(String(40), nullable=True)
     status: Mapped[str] = mapped_column(String(16), default="open")
     period_start: Mapped[datetime] = mapped_column(DateTime)
     period_end: Mapped[datetime] = mapped_column(DateTime)
@@ -2770,6 +2779,22 @@ class TenantBillingEvent(Base):
     event_type: Mapped[str] = mapped_column(String(80))
     outcome: Mapped[str] = mapped_column(String(40))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PlatformBillingTax(Base):
+    """The software owner's VAT on subscription invoices (one row, id "default")."""
+
+    __tablename__ = "platform_billing_tax"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    rate: Mapped[float] = mapped_column(Numeric(6, 3), default=0)
+    label: Mapped[str] = mapped_column(String(40), default="VAT")
+    registration_number: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    # True: plan prices already include VAT. False: VAT is added on top.
+    prices_include_tax: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    updated_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class PlatformBillingGateway(Base):

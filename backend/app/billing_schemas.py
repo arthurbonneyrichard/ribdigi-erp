@@ -41,7 +41,9 @@ class BillingPlanWrite(BaseModel):
     interval: str = Field(min_length=4, max_length=16)
     amount: Decimal
     currency: str = Field(min_length=3, max_length=3)
-    trial_days: int = 14
+    # Blank/null = this price applies to every industry.
+    industry: str | None = Field(default=None, max_length=40)
+    trial_days: int = Field(default=14, ge=0, le=14)
     grace_days: int = 7
     is_active: bool = True
 
@@ -54,7 +56,8 @@ class BillingPlanPatch(BaseModel):
     amount: Decimal | None = None
     currency: str | None = None
     interval: str | None = None
-    trial_days: int | None = None
+    industry: str | None = Field(default=None, max_length=40)
+    trial_days: int | None = Field(default=None, ge=0, le=14)
     grace_days: int | None = None
     is_active: bool | None = None
 
@@ -67,6 +70,18 @@ class BillingAssignBody(BaseModel):
     next_renewal_at: str | None = None
     custom_amount: Decimal | None = None
     custom_currency: str | None = None
+
+
+class BillingTaxWrite(BaseModel):
+    """The software owner's VAT on subscription invoices."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool
+    rate: Decimal = Field(ge=0, le=100)
+    label: str = Field(default="VAT", min_length=1, max_length=40)
+    registration_number: str | None = Field(default=None, max_length=40)
+    prices_include_tax: bool = False
 
 
 class BillingGatewayWrite(BaseModel):

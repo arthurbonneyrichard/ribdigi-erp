@@ -25,6 +25,7 @@ from app.billing_schemas import (
     BillingPlanPatch,
     BillingPlanWrite,
     BillingSandboxAuthorizeBody,
+    BillingTaxWrite,
 )
 from app.config import settings
 from app.db import get_db
@@ -148,6 +149,33 @@ async def rotate_billing_gateway(
     body = await gateway_setup.rotate_gateway(db, payload, actor=claims, request=request)
     await db.commit()
     return env(body, "Credentials rotated. Test the connection again before enabling.")
+
+
+@router.get("/platform/billing/tax")
+async def get_billing_tax(
+    claims=Depends(require_platform_permission("platform", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """The software owner's VAT on subscription invoices."""
+    _owner(claims)
+    from app.api import env
+
+    return env(billing_svc.serialize_tax(await billing_svc.tax_settings(db)))
+
+
+@router.put("/platform/billing/tax")
+async def save_billing_tax(
+    payload: BillingTaxWrite,
+    claims=Depends(require_platform_permission("platform", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Save the owner's VAT. Agreed renewals keep their amount until the company confirms again."""
+    _owner(claims)
+    from app.api import env
+
+    row = await billing_svc.save_tax_settings(db, payload, actor=claims)
+    await db.commit()
+    return env(billing_svc.serialize_tax(row), "VAT settings saved")
 
 
 @router.get("/platform/billing/plans")
@@ -331,10 +359,11 @@ async def _tenant_admin(claims: dict, db: AsyncSession):
     return tenant
 
 
-def _tenant_account_body(account, plan) -> dict:
+def _tenant_account_body(account, plan, tax=None) -> dict:
     body = billing_svc.serialize_account(account, plan)
     if account and plan and body.get("plan"):
-        body["plan"] = billing_svc.serialize_assigned_plan(account, plan)
+        body["plan"] = billing_svc.serialize_assigned_plan(account, plan, tax)
+    body["tax"] = billing_svc.serialize_tax(tax)
     return body
 
 
@@ -350,13 +379,17 @@ async def my_billing_account(
     account = await billing_svc.get_account(db, tenant.id)
     plan = await billing_svc._load_plan(db, account.plan_id) if account else None
     await db.commit()
-    body = _tenant_account_body(account, plan) if account else billing_svc.account_view_without_profile(tenant)
+    tax = await billing_svc.tax_settings(db)
+    body = _tenant_account_body(account, plan, tax) if account else billing_svc.account_view_without_profile(tenant)
+    body["tax"] = billing_svc.serialize_tax(tax)
     body["trial_ends_at"] = tenant.trial_ends_at
+    body["trial_days"] = tenants_svc.TRIAL_DAYS
     body["tenant_status"] = tenant.status
     body["provider"] = await _visible_provider(db)
     body = billing_svc.apply_assigned_amount_to_account_body(body, account, tenant)
     if not isinstance(body.get("plan"), dict):
         body["plan"] = billing_svc.company_package_plan(tenant)
+    body["plan"] = billing_svc.with_tax(body["plan"], tax)
     if not body.get("next_renewal_at") and getattr(tenant, "subscription_ends_at", None):
         body["next_renewal_at"] = tenant.subscription_ends_at
     return env(body)
@@ -376,7 +409,8 @@ async def my_billing_plans(
     await db.commit()
     if account is None or plan is None:
         return env([])
-    return env([billing_svc.serialize_assigned_plan(account, plan)])
+    tax = await billing_svc.tax_settings(db)
+    return env([billing_svc.serialize_assigned_plan(account, plan, tax)])
 
 
 @router.post("/billing/consent")
@@ -392,8 +426,9 @@ async def billing_consent(
         db, tenant, plan_code=payload.plan_code, accept=payload.accept, user_id=claims["sub"]
     )
     plan = await billing_svc._load_plan(db, account.plan_id)
+    tax = await billing_svc.tax_settings(db)
     await db.commit()
-    return env(_tenant_account_body(account, plan), "Renewal consent recorded")
+    return env(_tenant_account_body(account, plan, tax), "Renewal consent recorded")
 
 
 @router.post("/billing/checkout")

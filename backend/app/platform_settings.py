@@ -14,6 +14,12 @@ def _bool(value: Any) -> bool:
     return bool(value)
 
 
+def _trial_days() -> int:
+    from app import tenants as tenants_svc
+
+    return int(tenants_svc.TRIAL_DAYS)
+
+
 def _int(value: Any, default: int = 0) -> int:
     try:
         return int(value)
@@ -39,7 +45,7 @@ async def build_platform_settings(db: AsyncSession) -> dict[str, Any]:
     row = await gateway_setup._row(db)
     ai_provider = (settings.AI_PROVIDER or "none").strip().lower() or "none"
     return {
-        "trial_days": _int(settings.TRIAL_DAYS),
+        "trial_days": _trial_days(),
         "grace_days": _int(settings.TRIAL_GRACE_DAYS),
         "billing_grace_days": _int(settings.BILLING_GRACE_DAYS),
         "billing_reminder_days": sorted(billing_svc.reminder_days(), reverse=True),

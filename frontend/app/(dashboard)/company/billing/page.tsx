@@ -15,6 +15,12 @@ type Plan = {
   currency: string;
   interval: string;
   code: string;
+  net_amount?: number | null;
+  tax_amount?: number | null;
+  total_amount?: number | null;
+  tax_rate?: number | null;
+  tax_label?: string | null;
+  prices_include_tax?: boolean;
 };
 
 type Account = {
@@ -38,6 +44,9 @@ type Invoice = {
   status?: string;
   description?: string;
   amount?: number;
+  net_amount?: number | null;
+  tax_amount?: number | null;
+  tax_label?: string | null;
   currency?: string;
   period_start?: string | null;
   period_end?: string | null;
@@ -216,8 +225,13 @@ export default function SubscriptionBillingPage() {
 
   const assigned = account?.plan?.name ? account.plan : null;
   const hasAmount = assigned != null && assigned.amount !== null && assigned.amount !== undefined && !Number.isNaN(Number(assigned.amount));
+  const taxed = hasAmount && Number(assigned?.tax_amount || 0) > 0;
+  const total = taxed ? Number(assigned?.total_amount) : Number(assigned?.amount);
+  const taxName = assigned?.tax_label || 'VAT';
   const price = hasAmount
-    ? `${moneyLine(assigned.amount, assigned.currency, prefs)} per ${periodWord(assigned.interval)}`
+    ? `${moneyLine(total, assigned.currency, prefs)} per ${periodWord(assigned.interval)}${
+        taxed ? ` including ${taxName}` : ''
+      }`
     : '';
   const canBill = Boolean(assigned?.code);
   const sandboxAvailable = account?.provider?.provider === 'mock' && account?.provider?.live_charges !== true;
@@ -326,7 +340,7 @@ export default function SubscriptionBillingPage() {
       value: showWhen(account?.paid_through, prefs),
       note:
         account?.trial_ends_at && statusKey === 'trial'
-          ? `Trial ends ${showWhen(account.trial_ends_at, prefs)}`
+          ? `14-day trial ends ${showWhen(account.trial_ends_at, prefs)}`
           : 'Access continues to this date',
     },
     {
@@ -374,13 +388,19 @@ export default function SubscriptionBillingPage() {
           <p className="billing-page-price">
             {hasAmount ? (
               <>
-                <MoneyRead amount={assigned.amount} currency={assigned.currency} prefs={prefs} />
+                <MoneyRead amount={total} currency={assigned.currency} prefs={prefs} />
                 <span className="billing-page-per"> / {periodWord(assigned.interval)}</span>
               </>
             ) : (
               <span className="billing-page-per">Amount not confirmed yet</span>
             )}
           </p>
+          {taxed && (
+            <p className="billing-page-fact-note" aria-label="VAT on this plan">
+              {moneyLine(assigned?.net_amount, assigned?.currency, prefs)} + {taxName}{' '}
+              {formatNumber(assigned?.tax_rate, prefs)}% ({moneyLine(assigned?.tax_amount, assigned?.currency, prefs)})
+            </p>
+          )}
           <div className="billing-page-hero-tags">
             <span className={`billing-page-status ${statusTone(statusKey)}`}>{companyStatusLabel(account)}</span>
             {assigned && <span className="billing-page-tag">{termWord(assigned.interval)}</span>}
@@ -535,6 +555,11 @@ export default function SubscriptionBillingPage() {
                       </td>
                       <td data-label="Amount">
                         <MoneyRead amount={row.amount} currency={row.currency} prefs={prefs} />
+                        {Number(row.tax_amount || 0) > 0 && (
+                          <span className="billing-page-fact-note">
+                            {' '}incl. {row.tax_label || 'VAT'} {formatNumber(row.tax_amount, prefs)}
+                          </span>
+                        )}
                       </td>
                       <td data-label="Status">
                         <span className={`billing-page-status ${statusTone(row.status)}`}>{labelStatus(row.status)}</span>

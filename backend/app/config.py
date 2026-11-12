@@ -141,6 +141,7 @@ class Settings(BaseSettings):
     POS_DRAWER_FALLBACK_MODE: str = "mock"  # none|mock|network|browser_bridge
     POS_DRAWER_DEFAULT_PORT: int = 9100
     POS_DRAWER_TIMEOUT_SECONDS: float = 3.0
+    # Ignored: the trial is fixed at 14 days (tenants.TRIAL_DAYS). Kept so old .env files still load.
     TRIAL_DAYS: int = 14
     TRIAL_GRACE_DAYS: int = 7
     # Ops monitoring (Prometheus text + structured request logs)

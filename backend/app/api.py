@@ -869,7 +869,7 @@ async def create_tenant(
             trial_notices={},
             package_code="trial",
             subscription_term_unit="months",
-            subscription_term_value=max(1, int(settings.TRIAL_DAYS) // 30 or 1),
+            subscription_term_value=1,
             subscription_starts_at=now,
             subscription_ends_at=trial_end,
             package_assigned_at=now,

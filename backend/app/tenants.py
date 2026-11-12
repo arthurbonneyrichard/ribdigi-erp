@@ -195,10 +195,40 @@ def _validate_separators(decimal_sep: str, thousand_sep: str) -> None:
         )
 
 
+# The free trial is a fixed 14 days from sign-up. It is not set from the
+# environment and the software owner cannot lengthen it or grant a second one.
+TRIAL_DAYS = 14
+
+
 def default_trial_ends_at(from_dt: datetime | None = None) -> datetime:
     base = from_dt or datetime.utcnow()
-    days = max(1, int(settings.TRIAL_DAYS))
-    return base + timedelta(days=days)
+    return base + timedelta(days=TRIAL_DAYS)
+
+
+def trial_window_end(tenant: m.Tenant) -> datetime:
+    """The latest moment this company's one trial may run to: sign-up + 14 days."""
+    started = getattr(tenant, "created_at", None) or datetime.utcnow()
+    return started + timedelta(days=TRIAL_DAYS)
+
+
+def require_trial_end_within_window(tenant: m.Tenant, ends: datetime) -> datetime:
+    """Refuse a trial end later than sign-up + 14 days (422 TRIAL_IS_14_DAYS)."""
+    latest = trial_window_end(tenant)
+    if ends.tzinfo is not None:
+        ends = ends.replace(tzinfo=None)
+    if ends > latest + timedelta(seconds=1):
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "TRIAL_IS_14_DAYS",
+                "message": (
+                    "The free trial is 14 days from sign-up and cannot be extended. "
+                    f"This company's trial can run to {latest.date().isoformat()} at the latest."
+                ),
+                "latest_trial_end": latest.isoformat(),
+            },
+        )
+    return ends
 
 
 def calendar_days_until(when: datetime | None, *, now: datetime | None = None) -> int | None:
@@ -298,7 +328,7 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         "grace_ends_at": tenant.grace_ends_at,
         "days_remaining": days_left,
         "read_only": is_read_only(tenant),
-        "trial_days": int(settings.TRIAL_DAYS),
+        "trial_days": TRIAL_DAYS,
         "grace_days": int(settings.TRIAL_GRACE_DAYS),
         "logo_url": tenant.logo_url,
         "has_logo": bool(tenant.logo_url),
@@ -420,6 +450,25 @@ async def assign_subscription(
     starts = start_at or now
     months = packages_svc.term_to_months(value, unit)
     ends = packages_svc.add_calendar_months(starts, months)
+    if code == "trial":
+        # Strict 14-day trial: the term never runs past sign-up + 14 days, the
+        # company stays on trial (never "active" for free), and a used trial
+        # cannot be handed out again.
+        ends = trial_window_end(tenant)
+        if ends <= now:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "TRIAL_ALREADY_USED",
+                    "message": "This company has used its 14-day trial. Assign a paid package.",
+                },
+            )
+        starts = getattr(tenant, "created_at", None) or starts
+        activate = False
+        tenant.trial_ends_at = ends
+        if tenant.status in {"grace", "active"}:
+            tenant.status = "trial"
+            tenant.grace_ends_at = None
 
     tenant.package_code = code
     tenant.subscription_term_unit = unit

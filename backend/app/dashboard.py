@@ -1108,7 +1108,7 @@ async def build_dashboard(
         "grace_ends_at": tenant.grace_ends_at if tenant else None,
         "days_remaining": days_remaining,
         "read_only": tenants_svc.is_read_only(tenant) if tenant else False,
-        "trial_days": int(settings.TRIAL_DAYS),
+        "trial_days": tenants_svc.TRIAL_DAYS,
     }
 
     return {

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 import secrets
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from decimal import Decimal
 
@@ -73,11 +74,223 @@ def money(value) -> Decimal:
 
 
 def billable_price(account, plan) -> tuple[Decimal, str]:
+    """The price as set for this company (before the owner's VAT is applied)."""
     override = getattr(account, "price_override_amount", None)
     if override is not None:
         currency = (getattr(account, "price_override_currency", None) or plan.currency or "GHS").upper()
         return money(override), currency
     return money(plan.amount), (plan.currency or "GHS").upper()
+
+
+# ---- Software owner's VAT ---------------------------------------------------------
+
+TAX_ROW_ID = "default"
+
+
+@dataclass(frozen=True)
+class Charge:
+    """What a company pays: net price, the owner's VAT, and the total charged."""
+
+    net: Decimal
+    tax: Decimal
+    gross: Decimal
+    currency: str
+    rate: Decimal
+    label: str
+    inclusive: bool
+
+
+async def tax_settings(db: AsyncSession) -> m.PlatformBillingTax | None:
+    return await db.get(m.PlatformBillingTax, TAX_ROW_ID)
+
+
+def tax_rate_of(tax) -> Decimal:
+    if tax is None or not bool(getattr(tax, "enabled", False)):
+        return Decimal("0")
+    return Decimal(str(getattr(tax, "rate", 0) or 0)).quantize(Decimal("0.001"))
+
+
+def split_tax(price: Decimal, currency: str, tax) -> Charge:
+    """Apply the owner's VAT to a price. Inclusive prices are split, exclusive ones get VAT on top."""
+    price = money(price)
+    rate = tax_rate_of(tax)
+    label = ((getattr(tax, "label", None) or "VAT").strip() or "VAT") if tax is not None else "VAT"
+    inclusive = bool(getattr(tax, "prices_include_tax", False)) if tax is not None else False
+    if rate <= 0:
+        return Charge(price, Decimal("0.00"), price, currency, Decimal("0"), label, inclusive)
+    if inclusive:
+        net = money(price / (Decimal("1") + rate / Decimal("100")))
+        return Charge(net, money(price - net), price, currency, rate, label, True)
+    vat = money(price * rate / Decimal("100"))
+    return Charge(price, vat, money(price + vat), currency, rate, label, False)
+
+
+def split_inclusive(gross: Decimal, currency: str, rate, label: str | None) -> Charge:
+    """Split a total that already holds VAT at a known rate (an agreed renewal amount)."""
+    gross = money(gross)
+    r = Decimal(str(rate or 0))
+    if r <= 0:
+        return Charge(gross, Decimal("0.00"), gross, currency, Decimal("0"), label or "VAT", True)
+    net = money(gross / (Decimal("1") + r / Decimal("100")))
+    return Charge(net, money(gross - net), gross, currency, r, label or "VAT", True)
+
+
+async def billable_charge(db: AsyncSession, account, plan) -> Charge:
+    price, currency = billable_price(account, plan)
+    return split_tax(price, currency, await tax_settings(db))
+
+
+def charge_json(charge: Charge) -> dict:
+    return {
+        "net_amount": money_json(charge.net),
+        "tax_amount": money_json(charge.tax),
+        "total_amount": money_json(charge.gross),
+        "tax_rate": money_json(charge.rate),
+        "tax_label": charge.label,
+        "prices_include_tax": charge.inclusive,
+    }
+
+
+def with_tax(plan_body: dict | None, tax) -> dict | None:
+    """Add the VAT lines to a plan as the company sees it (amount = the set price)."""
+    if not isinstance(plan_body, dict) or plan_body.get("amount") is None:
+        return plan_body
+    out = dict(plan_body)
+    out.update(
+        charge_json(split_tax(money(out["amount"]), (out.get("currency") or "GHS").upper(), tax))
+    )
+    return out
+
+
+def serialize_tax(tax) -> dict:
+    return {
+        "enabled": bool(getattr(tax, "enabled", False)) if tax is not None else False,
+        "rate": money_json(getattr(tax, "rate", 0) or 0) if tax is not None else 0.0,
+        "label": (getattr(tax, "label", None) or "VAT") if tax is not None else "VAT",
+        "registration_number": getattr(tax, "registration_number", None) if tax is not None else None,
+        "prices_include_tax": bool(getattr(tax, "prices_include_tax", False)) if tax is not None else False,
+        "updated_at": getattr(tax, "updated_at", None) if tax is not None else None,
+    }
+
+
+async def save_tax_settings(db: AsyncSession, payload, *, actor) -> m.PlatformBillingTax:
+    rate = Decimal(str(payload.rate)).quantize(Decimal("0.001"))
+    if rate < 0 or rate > 100:
+        raise HTTPException(status_code=422, detail="VAT rate must be between 0 and 100 percent")
+    if payload.enabled and rate <= 0:
+        raise HTTPException(status_code=422, detail="Enter a VAT rate above 0 before switching VAT on")
+    label = (payload.label or "VAT").strip() or "VAT"
+    reg = (payload.registration_number or "").strip() or None
+    if reg is not None and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 \-/]{1,39}", reg):
+        raise HTTPException(status_code=422, detail="VAT registration number may use letters, digits, spaces, - and /")
+    row = await tax_settings(db)
+    if row is None:
+        row = m.PlatformBillingTax(id=TAX_ROW_ID)
+        db.add(row)
+    before = serialize_tax(row) if row.updated_at else None
+    row.enabled = bool(payload.enabled)
+    row.rate = rate
+    row.label = label
+    row.registration_number = reg
+    row.prices_include_tax = bool(payload.prices_include_tax)
+    row.updated_by = actor.get("sub")
+    row.updated_at = _now()
+    await db.flush()
+    await _audit(
+        db,
+        tenant_id=actor["tenant_id"],
+        user_id=actor["sub"],
+        action="billing_tax_updated",
+        entity_id=row.id,
+        details={
+            "before": {k: str(v) for k, v in (before or {}).items() if k != "updated_at"},
+            "enabled": row.enabled,
+            "rate": str(rate),
+            "label": label,
+            "prices_include_tax": row.prices_include_tax,
+        },
+    )
+    return row
+
+
+# ---- Industry prices --------------------------------------------------------------
+
+# Starting monthly prices in GHS per industry: (starter, professional, enterprise).
+# Yearly = 10 x monthly. Retail and pharmacy use the general plans (199/499/999).
+# The migration 20261112_0161 holds the same table for existing catalogs.
+INDUSTRY_MONTHLY_PRICES: dict[str, tuple[str, str, str]] = {
+    "hotel": ("349.00", "799.00", "1499.00"),
+    "restaurant": ("249.00", "599.00", "1199.00"),
+    "fmcg": ("299.00", "699.00", "1399.00"),
+    "bakery": ("179.00", "449.00", "899.00"),
+    "gym": ("149.00", "349.00", "699.00"),
+    "hrm": ("149.00", "349.00", "699.00"),
+}
+
+
+def _industry_label(industry: str) -> str:
+    return {"fmcg": "FMCG", "hrm": "HRM"}.get(industry, industry.title())
+
+
+def industry_plan_seeds() -> list[tuple[str, str, str, str, str, str]]:
+    """(code, package_code, industry, name, interval, amount) for every industry plan."""
+    out = []
+    for industry, prices in INDUSTRY_MONTHLY_PRICES.items():
+        for package_code, monthly in zip(("starter", "professional", "enterprise"), prices):
+            for interval, amount in (("month", monthly), ("year", f"{Decimal(monthly) * 10:.2f}")):
+                word = "monthly" if interval == "month" else "yearly"
+                out.append(
+                    (
+                        f"{package_code}-{interval}-{industry}",
+                        package_code,
+                        industry,
+                        f"{package_code.title()} {word} ({_industry_label(industry)})",
+                        interval,
+                        amount,
+                    )
+                )
+    return out
+
+
+def plan_industry(value) -> str | None:
+    """Blank = every industry. Otherwise one of the product's industries (422 if unknown)."""
+    text = (value or "").strip().lower() if isinstance(value, str) else value
+    if not text:
+        return None
+    canon = packages_svc.canonicalize_industry(text)
+    if canon is None:
+        raise HTTPException(
+            status_code=422,
+            detail=f"industry must be blank (all industries) or one of: {', '.join(sorted(packages_svc.CANONICAL_INDUSTRIES))}",
+        )
+    return canon
+
+
+def tenant_industry(tenant) -> str | None:
+    return packages_svc.canonicalize_industry(getattr(tenant, "industry", None))
+
+
+def pick_industry_plan(rows: list, industry: str | None):
+    """This industry's own plan first, then the general one. Never another industry's price."""
+    own = [row for row in rows if industry and (getattr(row, "industry", None) or None) == industry]
+    if own:
+        return sorted(own, key=lambda row: row.code or "")[0]
+    general = [row for row in rows if not getattr(row, "industry", None)]
+    if general:
+        return sorted(general, key=lambda row: row.code or "")[0]
+    return None
+
+
+def require_plan_fits_industry(plan, tenant) -> None:
+    industry = getattr(plan, "industry", None)
+    if industry and industry != tenant_industry(tenant):
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "PLAN_INDUSTRY_MISMATCH",
+                "message": f"That price is for {_industry_label(industry)} companies. Choose a plan for this company's industry.",
+            },
+        )
 
 
 def _reject_card_text(value: str | None, label: str) -> str:
@@ -120,6 +333,7 @@ def serialize_plan(plan: m.PlatformBillingPlan) -> dict:
         "id": plan.id,
         "code": plan.code,
         "package_code": plan.package_code,
+        "industry": getattr(plan, "industry", None),
         "name": plan.name,
         "interval": plan.interval,
         "amount": money_json(plan.amount),
@@ -130,13 +344,13 @@ def serialize_plan(plan: m.PlatformBillingPlan) -> dict:
     }
 
 
-def serialize_assigned_plan(account, plan: m.PlatformBillingPlan) -> dict:
-    """Tenant view: the assigned plan at the amount this company is billed."""
+def serialize_assigned_plan(account, plan: m.PlatformBillingPlan, tax=None) -> dict:
+    """Tenant view: the assigned plan at the amount this company is billed, with the owner's VAT."""
     amount, currency = billable_price(account, plan)
     body = serialize_plan(plan)
     body["amount"] = money_json(amount)
     body["currency"] = currency
-    return body
+    return with_tax(body, tax)
 
 
 def invoice_description(plan_name: str | None) -> str:
@@ -153,6 +367,10 @@ def serialize_invoice(row: m.TenantBillingInvoice, plan_name: str | None = None)
         "idempotency_key": row.idempotency_key,
         "amount": money_json(row.amount),
         "currency": row.currency,
+        "net_amount": money_json(row.net_amount) if row.net_amount is not None else money_json(row.amount),
+        "tax_amount": money_json(row.tax_amount) if row.tax_amount is not None else 0.0,
+        "tax_rate": money_json(row.tax_rate) if row.tax_rate is not None else 0.0,
+        "tax_label": row.tax_label or "VAT",
         "status": row.status,
         "description": invoice_description(plan_name),
         "period_start": row.period_start,
@@ -270,17 +488,22 @@ async def ensure_default_plans(db: AsyncSession) -> None:
         ("professional-year", "professional", "Professional yearly", "year", "4990.00"),
         ("enterprise-year", "enterprise", "Enterprise yearly", "year", "9990.00"),
     )
-    for code, package_code, name, interval, amount in catalog:
+    from app import tenants as tenants_svc
+
+    rows = [(code, package_code, None, name, interval, amount) for code, package_code, name, interval, amount in catalog]
+    rows += industry_plan_seeds()
+    for code, package_code, industry, name, interval, amount in rows:
         db.add(
             m.PlatformBillingPlan(
                 id=uid(),
                 code=code,
                 package_code=package_code,
+                industry=industry,
                 name=name,
                 interval=interval,
                 amount=money(amount),
                 currency="GHS",
-                trial_days=int(settings.TRIAL_DAYS or 14),
+                trial_days=int(tenants_svc.TRIAL_DAYS),
                 grace_days=int(settings.BILLING_GRACE_DAYS or 7),
                 is_active=True,
             )
@@ -330,6 +553,18 @@ async def _load_plan(db: AsyncSession, plan_id: str | None) -> m.PlatformBilling
     return await db.get(m.PlatformBillingPlan, plan_id)
 
 
+def _check_trial_days(value) -> int:
+    from app import tenants as tenants_svc
+
+    days = int(value)
+    if days < 0 or days > tenants_svc.TRIAL_DAYS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"trial_days must be between 0 and {tenants_svc.TRIAL_DAYS}: the free trial is at most 14 days",
+        )
+    return days
+
+
 def _validate_plan_fields(payload) -> None:
     interval = (payload.interval or "").strip().lower()
     if interval not in {"month", "year"}:
@@ -343,8 +578,8 @@ def _validate_plan_fields(payload) -> None:
     currency = (payload.currency or "").strip().upper()
     if currency not in {"GHS", "USD"}:
         raise HTTPException(status_code=422, detail="currency must be GHS or USD")
-    if int(payload.trial_days) < 0 or int(payload.trial_days) > 365:
-        raise HTTPException(status_code=422, detail="trial_days must be between 0 and 365")
+    _check_trial_days(payload.trial_days)
+    plan_industry(getattr(payload, "industry", None))
     if int(payload.grace_days) < 1 or int(payload.grace_days) > 90:
         raise HTTPException(status_code=422, detail="grace_days must be between 1 and 90")
 
@@ -355,6 +590,7 @@ async def create_plan(db: AsyncSession, payload, *, actor) -> m.PlatformBillingP
         id=uid(),
         code=payload.code.strip().lower(),
         package_code=payload.package_code.strip().lower(),
+        industry=plan_industry(getattr(payload, "industry", None)),
         name=payload.name.strip(),
         interval=payload.interval.strip().lower(),
         amount=money(payload.amount),
@@ -409,7 +645,20 @@ async def update_plan(db: AsyncSession, plan_id: str, payload, *, actor) -> m.Pl
             raise HTTPException(status_code=422, detail="package_code must be a paid package")
         plan.package_code = package
     if "trial_days" in data and data["trial_days"] is not None:
-        plan.trial_days = int(data["trial_days"])
+        plan.trial_days = _check_trial_days(data["trial_days"])
+    if "industry" in data:
+        new_industry = plan_industry(data["industry"])
+        if new_industry != (plan.industry or None):
+            assigned = (
+                await db.execute(
+                    select(m.TenantBillingAccount.id).where(m.TenantBillingAccount.plan_id == plan.id).limit(1)
+                )
+            ).first()
+            if assigned is not None:
+                raise HTTPException(
+                    status_code=409, detail="This package is assigned to a company; its industry cannot change"
+                )
+        plan.industry = new_industry
     if "grace_days" in data and data["grace_days"] is not None:
         plan.grace_days = int(data["grace_days"])
     if "is_active" in data and data["is_active"] is not None:
@@ -464,11 +713,17 @@ def _parse_iso(value: str | None) -> datetime | None:
 
 
 async def assign_plan(db: AsyncSession, tenant: m.Tenant, payload, *, actor) -> m.TenantBillingAccount:
+    from app import tenants as tenants_svc
+
     plan = await _plan_by_code(db, payload.plan_code)
+    require_plan_fits_industry(plan, tenant)
+    trial_ends = _parse_iso(payload.trial_ends_at)
+    if trial_ends:
+        # Strict 14-day trial: never later than sign-up + 14 days (422 TRIAL_IS_14_DAYS).
+        trial_ends = tenants_svc.require_trial_end_within_window(tenant, trial_ends)
     account = await get_or_create_account(db, tenant)
     account.plan_id = plan.id
     account.gateway_provider = (await current_gateway(db)).provider
-    trial_ends = _parse_iso(payload.trial_ends_at)
     renewal = _parse_iso(payload.next_renewal_at)
     if trial_ends:
         tenant.trial_ends_at = trial_ends
@@ -530,14 +785,19 @@ async def record_consent(
     account.consent_at = now
     account.consent_user_id = user_id
     account.consent_plan_id = plan.id
-    price, price_currency = billable_price(account, plan)
+    charge = await billable_charge(db, account, plan)
+    price, price_currency = charge.gross, charge.currency
     account.consent_amount = price
     account.consent_currency = price_currency
+    account.consent_tax_rate = charge.rate
     account.consent_interval = plan.interval
     account.auto_renew = bool(account.gateway_authorization_ref)
     account.updated_at = now
     if not account.next_renewal_at:
-        account.next_renewal_at = tenant.trial_ends_at or (now + timedelta(days=int(plan.trial_days or 0)))
+        from app import tenants as tenants_svc
+
+        days = min(int(plan.trial_days or 0), tenants_svc.TRIAL_DAYS)
+        account.next_renewal_at = tenant.trial_ends_at or (now + timedelta(days=days))
     await db.flush()
     await _audit(
         db,
@@ -549,6 +809,9 @@ async def record_consent(
             "version": CONSENT_VERSION,
             "plan_id": plan.id,
             "amount": str(price),
+            "net_amount": str(charge.net),
+            "tax_amount": str(charge.tax),
+            "tax_rate": str(charge.rate),
             "currency": price_currency,
             "interval": plan.interval,
         },
@@ -587,14 +850,26 @@ async def start_checkout(db: AsyncSession, tenant: m.Tenant, *, plan_code: str, 
     plan = await require_assigned_plan(db, account, plan_code)
     if account.consent_plan_id != plan.id or not account.consent_at:
         raise HTTPException(status_code=422, detail="Record renewal consent before checkout")
+    charge = await billable_charge(db, account, plan)
+    if account.consent_amount is not None and (
+        money(account.consent_amount) != charge.gross
+        or (account.consent_currency or "").upper() != charge.currency
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "PRICE_CHANGED_RECONSENT",
+                "message": "The price or VAT changed since you agreed to it. Confirm the new amount before paying.",
+            },
+        )
     gateway = await current_gateway(db)
     email = await _tenant_email(db, tenant)
     # A fresh suffix each time: Paystack refuses a reference it has already seen.
     reference = f"checkout:{account.id}:{plan.id}:{secrets.token_hex(4)}"
     result = gateway.checkout(
         email=email,
-        amount_minor=minor_units(billable_price(account, plan)[0]),
-        currency=billable_price(account, plan)[1],
+        amount_minor=minor_units(charge.gross),
+        currency=charge.currency,
         tenant_id=tenant.id,
         reference=reference,
         callback_url=checkout_path(),
@@ -774,14 +1049,19 @@ async def _open_invoice(
     existing = await _invoice_by_key(db, key)
     if existing:
         return existing
+    charge = await billable_charge(db, account, plan)
     row = m.TenantBillingInvoice(
         id=uid(),
         tenant_id=account.tenant_id,
         account_id=account.id,
         plan_id=plan.id,
         idempotency_key=key,
-        amount=billable_price(account, plan)[0],
-        currency=billable_price(account, plan)[1],
+        amount=charge.gross,
+        currency=charge.currency,
+        net_amount=charge.net,
+        tax_amount=charge.tax,
+        tax_rate=charge.rate,
+        tax_label=charge.label,
         status="open",
         period_start=period_start,
         period_end=period_end,
@@ -1092,6 +1372,16 @@ async def collect_due(
             account.consent_amount if account.consent_amount is not None else plan.amount
         )
         invoice.currency = (account.consent_currency or plan.currency).upper()
+        # The agreed renewal amount already holds VAT at the rate in force at consent.
+        agreed = split_inclusive(
+            invoice.amount,
+            invoice.currency,
+            account.consent_tax_rate,
+            invoice.tax_label or "VAT",
+        )
+        invoice.net_amount = agreed.net
+        invoice.tax_amount = agreed.tax
+        invoice.tax_rate = agreed.rate
     if invoice.status == "paid":
         return "skipped"
     return await charge_invoice(
@@ -1468,7 +1758,8 @@ async def apply_webhook(db: AsyncSession, *, provider: str, event: dict) -> dict
             account, plan = found
             event_tenant_id = account.tenant_id
             status = str(data.get("status") or "").strip().lower()
-            price, price_currency = billable_price(account, plan)
+            charge = await billable_charge(db, account, plan)
+            price, price_currency = charge.gross, charge.currency
             auth = _reusable_authorization(data) if status in {"", "success"} else None
             if not _charge_identity_matches(
                 data,
@@ -1538,8 +1829,16 @@ async def manual_payment(db: AsyncSession, tenant: m.Tenant, payload, *, actor) 
     plan = await _load_plan(db, account.plan_id)
     if not plan:
         raise HTTPException(status_code=422, detail="Assign a billing plan before recording a payment")
-    if currency != plan.currency or amount != money(plan.amount):
-        raise HTTPException(status_code=422, detail="Amount and currency must match the assigned plan")
+    charge = await billable_charge(db, account, plan)
+    allowed = {money(plan.amount), charge.gross} if charge.tax == 0 else {charge.gross}
+    if currency not in {plan.currency, charge.currency} or amount not in allowed:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Amount and currency must match the assigned plan"
+                + (f" including {charge.label} ({charge.currency} {charge.gross})" if charge.tax else "")
+            ),
+        )
     now = _now()
     period_start = now
     period_end = add_interval(now, plan.interval)
@@ -1622,7 +1921,7 @@ async def reactivate_access(db: AsyncSession, tenant: m.Tenant, *, actor) -> dic
 
 
 async def plan_for_package(
-    db: AsyncSession, package_code: str, term_unit: str | None
+    db: AsyncSession, package_code: str, term_unit: str | None, industry: str | None = None
 ) -> m.PlatformBillingPlan | None:
     """Active catalog plan for a package and term. Does not create an invoice."""
     await ensure_default_plans(db)
@@ -1649,7 +1948,7 @@ async def plan_for_package(
         ).scalars().all()
     if not rows:
         return None
-    return sorted(rows, key=lambda row: row.code or "")[0]
+    return pick_industry_plan(list(rows), packages_svc.canonicalize_industry(industry))
 
 
 async def record_assigned_subscription_amount(
@@ -1681,6 +1980,7 @@ async def record_assigned_subscription_amount(
         chosen = (plan_code or "").strip().lower()
         if chosen:
             plan = await _plan_by_code(db, chosen)
+            require_plan_fits_industry(plan, tenant)
             expected = "year" if (term_unit or "") == "years" else "month"
             if (plan.package_code or "") != code or plan.interval != expected:
                 raise HTTPException(
@@ -1688,7 +1988,7 @@ async def record_assigned_subscription_amount(
                     detail="That package does not match the selected features and term",
                 )
         else:
-            plan = await plan_for_package(db, code, term_unit)
+            plan = await plan_for_package(db, code, term_unit, tenant_industry(tenant))
             if plan is None:
                 raise HTTPException(status_code=422, detail="No billing price is configured for that package")
         account.plan_id = plan.id
@@ -1734,7 +2034,9 @@ def apply_assigned_amount_to_account_body(body: dict, account, tenant) -> dict:
     return body
 
 
-def _catalog_price(plans: list, package_code: str, term_unit: str | None) -> tuple[float | None, str | None]:
+def _catalog_price(
+    plans: list, package_code: str, term_unit: str | None, industry: str | None = None
+) -> tuple[float | None, str | None]:
     """Active catalog price for a package. Trial has no price. Missing plans stay blank."""
     code = (package_code or "").strip().lower()
     if code == "trial":
@@ -1751,9 +2053,9 @@ def _catalog_price(plans: list, package_code: str, term_unit: str | None) -> tup
             for plan in plans
             if (plan.package_code or "") == code and bool(plan.is_active) and (plan.interval or "") == "month"
         ]
-    if not matches:
+    plan = pick_industry_plan(matches, packages_svc.canonicalize_industry(industry))
+    if plan is None:
         return None, None
-    plan = sorted(matches, key=lambda row: row.code or "")[0]
     return money_json(plan.amount), (plan.currency or "GHS").upper()
 
 
@@ -1790,7 +2092,7 @@ async def company_billing_roster(db: AsyncSession) -> list[dict]:
         usage = packages_svc.usage_snapshot(tenant)
         package_code = usage.get("package_code") or "trial"
         term_unit = usage.get("term_unit")
-        amount, currency = _catalog_price(list(plans), package_code, term_unit)
+        amount, currency = _catalog_price(list(plans), package_code, term_unit, tenant_industry(tenant))
         account = account_by_tenant.get(tenant.id)
         billed = plan_by_id.get(account.plan_id) if account and account.plan_id else None
         override = getattr(account, "price_override_amount", None) if account is not None else None
