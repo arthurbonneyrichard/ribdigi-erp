@@ -904,14 +904,23 @@ async def restaurant_send(
     return _env(restaurant_svc.serialize_order(row), "Sent to kitchen")
 
 
+class RestaurantCompleteBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    # A tip on top of the bill; held for staff, never sales.
+    tip: Annotated[float, Field(ge=0, le=100000, allow_inf_nan=False)] = 0
+
+
 @router.post("/orders/{order_id}/complete")
 async def restaurant_complete(
     order_id: str,
+    payload: RestaurantCompleteBody | None = None,
     claims=Depends(require_permission("restaurant", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     row = await restaurant_svc.complete_order(
-        db, claims["tenant_id"], order_id, user_id=claims.get("sub"), device_id=claims.get("pos_device_id")
+        db, claims["tenant_id"], order_id, user_id=claims.get("sub"), device_id=claims.get("pos_device_id"),
+        tip=payload.tip if payload else None,
     )
     await db.commit()
     return _env(restaurant_svc.serialize_order(row), "Order completed")

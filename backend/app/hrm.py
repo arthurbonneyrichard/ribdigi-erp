@@ -44,6 +44,7 @@ PAYROLL_ACCOUNTS = [
     ("2190", "SSNIT Payable", "liability"),
     ("2192", "Tier 2 Pension Payable", "liability"),
     ("2195", "Tier 3 Pension Payable", "liability"),
+    ("2187", "Tips Owed to Staff", "liability"),
     ("6200", "Salaries and Wages", "expense"),
     ("6210", "Employer SSNIT", "expense"),
 ]
@@ -873,7 +874,8 @@ def _work_out(slip: m.HrmPayslip, settings: m.HrmSettings, rates: engine.Statuto
                 # Approved overtime is a taxable earning without SSNIT, like a correction.
                 adjustment=engine.D(getattr(slip, "adjustment", 0))
                 + engine.D(getattr(slip, "overtime", 0))
-                + engine.D(getattr(slip, "commission", 0)),
+                + engine.D(getattr(slip, "commission", 0))
+                + engine.D(getattr(slip, "tips", 0)),
             ),
             rates,
         )
@@ -920,6 +922,7 @@ def _totals(run: m.HrmPayrollRun, slips: list[m.HrmPayslip]) -> None:
     run.tier2 = sum((engine.D(s.tier2) for s in slips), engine.ZERO)
     run.tier3 = sum((engine.D(s.tier3) for s in slips), engine.ZERO)
     run.loan_deductions = sum((engine.D(getattr(s, "loan_deduction", 0)) for s in slips), engine.ZERO)
+    run.tips = sum((engine.D(getattr(s, "tips", 0)) for s in slips), engine.ZERO)
 
 
 async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) -> m.HrmPayrollRun:
@@ -960,6 +963,9 @@ async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) 
         from app import hrm_commission
 
         commission = await hrm_commission.take(db, person.id, period, run.id)
+        from app import restaurant_tips
+
+        tips = await restaurant_tips.take(db, person.id, period, run.id)
         slip = m.HrmPayslip(
             tenant_id=tenant_id,
             run_id=run.id,
@@ -970,6 +976,7 @@ async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) 
             adjustment=correction,
             overtime=overtime,
             commission=commission,
+            tips=tips,
             bonus=0,
             other_deductions=0,
             tier3_percent=person.tier3_percent or 0,
@@ -1030,6 +1037,9 @@ async def delete_run(db: AsyncSession, tenant_id: str, run_id: str, *, user_id) 
     from app import hrm_commission
 
     await hrm_commission.release(db, run.id)
+    from app import restaurant_tips
+
+    await restaurant_tips.release(db, run.id)
     for slip in await _slips(db, run.id):
         await db.delete(slip)
     await db.delete(run)
@@ -1055,7 +1065,9 @@ async def approve_run(db: AsyncSession, tenant_id: str, run_id: str, *, user_id)
     run.journal_entry_id = await _post(
         db, tenant_id, user_id=user_id, description=description,
         lines=[
-            {"account_code": "6200", "debit": _money(run.gross), "credit": 0, "description": description},
+            # Tips were already set aside in 2187 when the guests paid; they are not a wage cost.
+            {"account_code": "6200", "debit": _money(engine.D(run.gross) - engine.D(run.tips)), "credit": 0, "description": description},
+            {"account_code": "2187", "debit": _money(run.tips), "credit": 0, "description": description},
             {"account_code": "6210", "debit": _money(run.ssnit_employer), "credit": 0, "description": description},
             {"account_code": "2170", "debit": 0, "credit": _money(run.net), "description": description},
             {"account_code": "2175", "debit": 0, "credit": other, "description": description},
@@ -1083,6 +1095,9 @@ async def approve_run(db: AsyncSession, tenant_id: str, run_id: str, *, user_id)
     from app import hrm_commission
 
     await hrm_commission.settle(db, run.id)
+    from app import restaurant_tips
+
+    await restaurant_tips.settle(db, run.id)
     run.status = "approved"
     run.approved_by = user_id
     run.approved_at = datetime.utcnow()
@@ -1166,6 +1181,7 @@ def _slip_dict(slip: m.HrmPayslip, employee: m.HrmEmployee | None) -> dict:
         "adjustment": _money(getattr(slip, "adjustment", 0)),
         "overtime": _money(getattr(slip, "overtime", 0)),
         "commission": _money(getattr(slip, "commission", 0)),
+        "tips": _money(getattr(slip, "tips", 0)),
         "rates_used": slip.rates_used,
         "note": slip.note,
     }

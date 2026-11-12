@@ -39,3 +39,13 @@ Restaurant front of house is its own desk, isolated from retail and hotel (`REST
 - The Orders board refreshes every 20 seconds; it is not push-live.
 - The website takes no online payment; guests pay on collection, on delivery or at the table. A pre-order with a booking is a note for the kitchen, rung on the till when the party sits.
 - Online booking needs the website or domain saved under Website and booking; the domain itself is pointed by the owner (no DNS change from the ERP).
+
+## Tips (`restaurant_tips.py`, `restaurant_tips_api.py`, screen `/restaurant/tips`)
+
+- The till's payment step has an optional **Tip**. It is booked separately from the sale: the money (cash, card or Mobile Money) is debited and **2187 Tips Owed to Staff** credited. It is never revenue or taxed as sales. Cash tips are in the drawer, so the shift's expected cash includes them (`cash_tips`, `tips` on the shift).
+- A refund gives back the bill, not the tip.
+- Offline sales take no tip (the tip box is hidden offline).
+- A manager (company admin or restaurant manager) shares out the unshared tips of a run of days: **to whoever served** (the waiter who opened the bill), **evenly** between chosen staff, or **by hours** each clocked in HR (needs their staff record with the same email). Rounding leftovers go a pesewa at a time to the biggest shares, so the shares add up exactly.
+- Someone who gets no share approves it (**403** `TIPS_SECOND_PERSON`). Then it is paid in **cash** (one payment clears 2187) or **on the payslip** of a chosen month (see `docs/HRM_DESK.md`).
+- A draft, or an approved share-out not yet paid or on a payroll, can be cancelled; its tips go back to be shared.
+- Every staff member sees their own shares under **Tips**.

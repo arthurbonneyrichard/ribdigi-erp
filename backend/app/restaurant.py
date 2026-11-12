@@ -3830,7 +3830,7 @@ async def _release_table_if_clear(db: AsyncSession, tenant_id: str, table_id: st
 
 
 async def complete_order(
-    db: AsyncSession, tenant_id: str, order_id: str, *, user_id: str | None, device_id: str | None = None
+    db: AsyncSession, tenant_id: str, order_id: str, *, user_id: str | None, device_id: str | None = None, tip=None
 ) -> m.RestaurantOrder:
     order = await _order(db, tenant_id, order_id, user_id=user_id)
     if order.status == "completed":
@@ -3842,6 +3842,10 @@ async def complete_order(
     await _refresh_order_totals(db, order)
     await _deduct_or_restore(db, tenant_id, order, user_id=user_id, sign=-1)
     order.journal_entry_id = await _post_sale_journal(db, tenant_id, order, user_id=user_id, reverse=False)
+    if tip:
+        from app import restaurant_tips
+
+        await restaurant_tips.record_tip(db, order, tip, user_id=user_id)
     order.status = "completed"
     order.completed_at = _now()
     order.completed_by = user_id
@@ -4049,6 +4053,7 @@ def serialize_order(row: m.RestaurantOrder) -> dict:
         "payment_method": row.payment_method,
         "subtotal": money_json(row.subtotal),
         "total_amount": money_json(row.total_amount),
+        "tip_amount": money_json(getattr(row, "tip_amount", 0) or 0),
         "store_id": row.store_id,
         "notes": kitchen,
         "delivery_address": address,

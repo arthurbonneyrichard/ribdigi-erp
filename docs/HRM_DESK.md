@@ -78,6 +78,10 @@ Reports → PAYE and SSNIT schedules (`GET /hrm/reports/paye|ssnit?period=`) lis
 
 Each staff record can carry a **Sales commission %**. Payroll → Sales commission shows each person's net sales for a month, matched by the email on their staff record to their sign-in: for FMCG, delivered (or closed) orders they booked, less tax and returns; for every other business type, the Sales by salesperson report (invoices they raised and till sales on their shift, less tax). Retail sales returns are not taken off, as on that report. An HR manager (not the person) approves the month; that month's payroll pays it as a taxable earning with no SSNIT. Changing someone's commission % needs pay rights.
 
+## Restaurant tips on the payslip (`restaurant_tips.py`)
+
+A restaurant tip share-out paid "on the payslip" adds each person's share to that month's payroll as **Tips**: a taxable earning with no SSNIT, like commission (an accountant should confirm this for Ghana). The tips were set aside in **2187 Tips Owed to Staff** when guests paid, so approving the payroll debits 2187 for them, not Salaries and Wages (6200). Throwing a draft payroll away puts the shares back; approving it marks them paid. See `docs/RESTAURANT_PRODUCTION_READINESS.md`.
+
 ## Loans and salary advances
 
 Payroll → Loans and advances (`/hrm?tab=loans`, `GET|POST /hrm/loans`, `POST /hrm/loans/{id}/decide|repay`); staff ask for their own under My pay and leave (`POST /hrm/me/loans`).

@@ -189,6 +189,7 @@ export const RESTAURANT_NAV_ITEMS: NavItem[] = [
   ['Bills', '/restaurant/bills', 'restaurant'],
   ['Guests', '/restaurant/guests', 'restaurant'],
   ['End of day', '/restaurant/day-close', 'restaurant'],
+  ['Tips', '/restaurant/tips', 'restaurant'],
   ['Pay suppliers', '/restaurant/payables', 'credit'],
   ['Restaurant till', '/restaurant/till', 'restaurant'],
   ['Ingredients', '/restaurant/ingredients', 'inventory'],
@@ -235,6 +236,7 @@ export const RESTAURANT_NAV_GROUPS: NavGroup[] = [
       ['Bills', '/restaurant/bills', 'restaurant'],
       ['Guests', '/restaurant/guests', 'restaurant'],
       ['End of day', '/restaurant/day-close', 'restaurant'],
+      ['Tips', '/restaurant/tips', 'restaurant'],
     ],
   },
   {
@@ -984,8 +986,8 @@ export const BAKERY_ROLE_HREFS: Record<string, string[]> = {
 };
 
 export const RESTAURANT_ROLE_HREFS: Record<string, string[]> = {
-  restaurant_waiter: ['/hrm?tab=me', '/restaurant/till', '/restaurant/orders', '/restaurant?tab=tables', '/restaurant?tab=kitchen', '/restaurant/help', '/notifications', '/security'],
-  restaurant_cashier: ['/hrm?tab=me', 
+  restaurant_waiter: ['/hrm?tab=me', '/restaurant/tips', '/restaurant/till', '/restaurant/orders', '/restaurant?tab=tables', '/restaurant?tab=kitchen', '/restaurant/help', '/notifications', '/security'],
+  restaurant_cashier: ['/hrm?tab=me', '/restaurant/tips',
     '/restaurant/till',
     '/restaurant/orders',
     '/restaurant/bills',
@@ -997,7 +999,7 @@ export const RESTAURANT_ROLE_HREFS: Record<string, string[]> = {
     '/notifications',
     '/security',
   ],
-  restaurant_kitchen: ['/hrm?tab=me', '/restaurant?tab=kitchen', '/restaurant?tab=waste', '/restaurant/ingredients?tab=menu', '/restaurant/help', '/notifications', '/security'],
+  restaurant_kitchen: ['/hrm?tab=me', '/restaurant/tips', '/restaurant?tab=kitchen', '/restaurant?tab=waste', '/restaurant/ingredients?tab=menu', '/restaurant/help', '/notifications', '/security'],
 };
 
 const HOTEL_STAFF_LINKS = ['/notifications', '/security', '/support'];

@@ -2979,6 +2979,10 @@ class RestaurantOrder(Base):
     completed_device_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     # Key the till gave a sale it rang while offline (NULL for live orders).
     offline_ref: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Tip the guest left on top of the bill. Owed to staff (2187), never sales.
+    tip_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    # The tip share-out that took this tip (NULL until shared).
+    tip_run_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
 
 
 class RestaurantOrderLine(Base):
@@ -3502,6 +3506,53 @@ class RestaurantTillShift(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     opened_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class RestaurantTipRun(Base):
+    """A share-out of the tips taken over some days: who gets what, approved, then paid."""
+
+    __tablename__ = "restaurant_tip_runs"
+    __table_args__ = (UniqueConstraint("tenant_id", "run_number", name="uq_restaurant_tip_run_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    run_number: Mapped[str] = mapped_column(String(40))
+    date_from: Mapped[date] = mapped_column(Date)
+    date_to: Mapped[date] = mapped_column(Date)
+    # by_server: each bill's tip to whoever served it; equal: split evenly; hours: by hours clocked.
+    method: Mapped[str] = mapped_column(String(20))
+    # cash: paid out of the cash account; payroll: added to that month's payslips.
+    pay_by: Mapped[str] = mapped_column(String(20), default="cash")
+    period: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tip_count: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(String(20), default="draft", index=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    paid_method: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    approved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class RestaurantTipShare(Base):
+    """One person's part of a tip share-out."""
+
+    __tablename__ = "restaurant_tip_shares"
+    __table_args__ = (UniqueConstraint("run_id", "user_id", name="uq_restaurant_tip_share_person"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("restaurant_tip_runs.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    employee_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    # Minutes worked (hours), tips served (by_server) or 1 (equal).
+    basis: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    payroll_run_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(20), default="pending")
 
 
 class RestaurantTillCashMove(Base):
@@ -4702,6 +4753,7 @@ class HrmPayrollRun(Base):
     tier2: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     tier3: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     loan_deductions: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    tips: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     statutory_rate_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     approved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
@@ -4748,6 +4800,8 @@ class HrmPayslip(Base):
     overtime: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     # Approved sales commission paid this month (taxable earnings, no SSNIT).
     commission: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    # Restaurant tips shared to this person and paid on this payroll (held in 2187, not a wage cost).
+    tips: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     # The rates this slip was worked out with, kept so it can be explained later.
     rates_used: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     note: Mapped[str | None] = mapped_column(String(255), nullable=True)

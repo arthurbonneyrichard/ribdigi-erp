@@ -725,6 +725,7 @@ const NAV_ITEM_ICON: Record<string, string> = {
   '/restaurant/bills': 'credit',
   '/restaurant/guests': 'customers',
   '/restaurant/day-close': 'reports',
+  '/restaurant/tips': 'd:wallet',
   '/restaurant/ingredients': 'inventory',
   '/restaurant/ingredients?tab=menu': 'gift',
   '/restaurant/menu': 'ecommerce',
