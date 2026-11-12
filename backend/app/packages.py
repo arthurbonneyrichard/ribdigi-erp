@@ -55,6 +55,7 @@ _STARTER = (
     "pos",
     "accounting",
     "expenses",
+    "reports",
     "notifications",
     "security",
     "users",
@@ -77,7 +78,6 @@ _PROFESSIONAL = _STARTER + (
     "credit",
     "tax",
     "stores",
-    "reports",
     "audit",
     "backup",
     "ai",
@@ -100,7 +100,7 @@ PACKAGES: dict[str, dict[str, Any]] = {
     "starter": {
         "code": "starter",
         "name": "Starter",
-        "description": "Single-store core: inventory, sales, POS, expenses, basic accounting",
+        "description": "Single-store core: inventory, sales, POS, expenses, basic accounting, reports",
         "modules": list(_STARTER),
         "max_companies": 1,
         "max_stores": 1,
@@ -108,7 +108,7 @@ PACKAGES: dict[str, dict[str, Any]] = {
     "professional": {
         "code": "professional",
         "name": "Professional",
-        "description": "Multi-store + purchasing, credit, tax, reports, AI",
+        "description": "Multi-store + purchasing, credit, tax, AI",
         "modules": list(_PROFESSIONAL),
         "max_companies": 1,
         "max_stores": 10,
