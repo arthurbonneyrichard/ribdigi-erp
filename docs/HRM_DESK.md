@@ -46,9 +46,27 @@ Payroll arithmetic is Decimal throughout (`backend/app/hrm_payroll.py`, no float
 
 **The figures are not checked against GRA or SSNIT by the system.** The desk does not file with GRA or SSNIT.
 
+## Loans and salary advances
+
+Payroll → Loans and advances (`/hrm?tab=loans`, `GET|POST /hrm/loans`, `POST /hrm/loans/{id}/decide|repay`); staff ask for their own under My pay and leave (`POST /hrm/me/loans`).
+
+- A **loan** is repaid by a fixed monthly amount; a **salary advance** is repaid in full from the next payroll.
+- It is decided by a payroll manager who is neither the borrower nor the person who asked. Turning it down needs a reason.
+- Approving pays it out once: debit 1150 Staff Loans and Advances, credit cash or bank.
+- Each payroll drawn up takes the monthly amount (capped at the balance, and never taking net pay below nil). Approving the payroll credits 1150 and lowers the balance; at nil the loan is settled. A loan can also be paid back in cash.
+- No interest is charged: the balance is the amount lent.
+
+## Public holidays
+
+Leave → Public holidays (`GET|POST|DELETE /hrm/holidays`). Leave and unpaid days skip these days. **Show Ghana's usual holidays** offers a starting list (fixed dates, Good Friday, Easter Monday, Farmers' Day) to tick and save. It is not authoritative: check it against the Public Holidays Act and government notices, enter a moved holiday on the day taken off, and add the two Eid holidays each year when announced.
+
+## Two people for payroll
+
+Pay rates → **Someone other than the person who drew up a payroll must approve it** (`two_person_payroll`, off by default for one-person offices). When on, approving your own run is refused (403 `PAYROLL_SECOND_PERSON`).
+
 ## Leave
 
-Days are working days, Monday to Friday. Public holidays are not known to the system. Annual leave cannot pass the allowance, counting requests still waiting. Leave cannot overlap. Turning leave down needs a reason. Nobody decides their own leave. Approved unpaid leave comes off that month's pay when the run is drawn up.
+Days are working days, Monday to Friday, less the public holidays entered for the company. Annual leave cannot pass the allowance, counting requests still waiting. Leave cannot overlap. Turning leave down needs a reason. Nobody decides their own leave. Approved unpaid leave comes off that month's pay when the run is drawn up.
 
 ## Staff jobs
 

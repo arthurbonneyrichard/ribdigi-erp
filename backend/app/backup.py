@@ -187,11 +187,14 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("gym_class_bookings", m.GymClassBooking),
     ("hrm_settings", m.HrmSettings),
     ("hrm_statutory_rates", m.HrmStatutoryRate),
+    ("hrm_holidays", m.HrmHoliday),
     ("hrm_employees", m.HrmEmployee),
     ("hrm_leave_requests", m.HrmLeaveRequest),
     ("hrm_attendance", m.HrmAttendance),
     ("hrm_payroll_runs", m.HrmPayrollRun),
     ("hrm_payslips", m.HrmPayslip),
+    ("hrm_loans", m.HrmLoan),
+    ("hrm_loan_repayments", m.HrmLoanRepayment),
 ]
 
 # Every company table is either backed up above or listed here with the reason it is not.

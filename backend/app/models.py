@@ -4056,6 +4056,68 @@ class HrmSettings(Base):
     ssnit_employee_percent: Mapped[float] = mapped_column(Numeric(6, 2), default=5.5)
     ssnit_employer_percent: Mapped[float] = mapped_column(Numeric(6, 2), default=13)
     paye_bands: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    # When on, the person who drew up a payroll cannot also approve it.
+    two_person_payroll: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+
+
+class HrmHoliday(Base):
+    """A public holiday. Leave and unpaid days do not count it as a working day."""
+
+    __tablename__ = "hrm_holidays"
+    __table_args__ = (UniqueConstraint("tenant_id", "day", name="uq_hrm_holiday_day"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    day: Mapped[date] = mapped_column(Date, index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmLoan(Base):
+    """A staff loan or salary advance: asked for, decided by someone else, paid out once,
+    then repaid from payroll (or in cash) until the balance is nil."""
+
+    __tablename__ = "hrm_loans"
+    __table_args__ = (UniqueConstraint("tenant_id", "loan_number", name="uq_hrm_loan_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    loan_number: Mapped[str] = mapped_column(String(40))
+    kind: Mapped[str] = mapped_column(String(16))  # loan | advance
+    principal: Mapped[float] = mapped_column(Numeric(14, 2))
+    monthly_deduction: Mapped[float] = mapped_column(Numeric(14, 2))
+    balance: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    first_period: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)
+    reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    decision_note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    requested_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    decided_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    paid_out_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    paid_out_method: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    settled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmLoanRepayment(Base):
+    __tablename__ = "hrm_loan_repayments"
+    __table_args__ = (UniqueConstraint("loan_id", "payslip_id", name="uq_hrm_loan_repayment_slip"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    loan_id: Mapped[str] = mapped_column(ForeignKey("hrm_loans.id"), index=True)
+    payslip_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    run_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    source: Mapped[str] = mapped_column(String(16))  # payroll | cash
+    method: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class HrmStatutoryRate(Base):
@@ -4160,6 +4222,7 @@ class HrmPayrollRun(Base):
     other_deductions: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tier2: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     tier3: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    loan_deductions: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     statutory_rate_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     approved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
@@ -4197,6 +4260,8 @@ class HrmPayslip(Base):
     tier2: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     tier3: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     tier3_relief: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    # Loan and advance repayments taken this month (booked on approval).
+    loan_deduction: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     # The rates this slip was worked out with, kept so it can be explained later.
     rates_used: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     note: Mapped[str | None] = mapped_column(String(255), nullable=True)

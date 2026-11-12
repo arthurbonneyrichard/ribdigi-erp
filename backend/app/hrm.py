@@ -37,6 +37,7 @@ DEFAULT_PAYE_BANDS = [
     {"width": None, "rate": 35},
 ]
 PAYROLL_ACCOUNTS = [
+    ("1150", "Staff Loans and Advances", "asset"),
     ("2170", "Salaries Payable", "liability"),
     ("2175", "Staff Deductions Held", "liability"),
     ("2180", "PAYE Payable", "liability"),
@@ -141,6 +142,7 @@ def serialize_settings(row: m.HrmSettings) -> dict:
         "ssnit_employee_percent": _money(row.ssnit_employee_percent),
         "ssnit_employer_percent": _money(row.ssnit_employer_percent),
         "paye_bands": row.paye_bands or list(DEFAULT_PAYE_BANDS),
+        "two_person_payroll": bool(getattr(row, "two_person_payroll", False)),
     }
 
 
@@ -432,11 +434,12 @@ async def employee_for_user(db: AsyncSession, tenant_id: str, user_id: str | Non
 # --- Leave -------------------------------------------------------------------------------
 
 
-def working_days(start: date, end: date) -> int:
+def working_days(start: date, end: date, holidays: set[date] | frozenset = frozenset()) -> int:
+    """Monday to Friday, less the company's public holidays."""
     days = 0
     day = start
     while day <= end:
-        if day.weekday() < 5:
+        if day.weekday() < 5 and day not in holidays:
             days += 1
         day += timedelta(days=1)
     return days
@@ -471,9 +474,12 @@ async def request_leave(db: AsyncSession, tenant_id: str, *, employee_id: str, p
         raise HTTPException(status_code=422, detail="The end date is before the start date")
     if payload.starts_on.year != payload.ends_on.year:
         raise HTTPException(status_code=422, detail="Split leave that runs across two years")
-    days = working_days(payload.starts_on, payload.ends_on)
+    from app import hrm_loans
+
+    off = await hrm_loans.holidays_between(db, tenant_id, payload.starts_on, payload.ends_on)
+    days = working_days(payload.starts_on, payload.ends_on, off)
     if days <= 0:
-        raise HTTPException(status_code=422, detail="Those dates are all weekend")
+        raise HTTPException(status_code=422, detail="Those dates are all weekend or public holidays")
     clash = (
         await db.execute(
             select(m.HrmLeaveRequest.id).where(
@@ -570,7 +576,10 @@ async def _unpaid_days(db: AsyncSession, tenant_id: str, employee_id: str, first
             )
         )
     ).scalars().all()
-    return sum(working_days(max(r.starts_on, first), min(r.ends_on, last)) for r in rows)
+    from app import hrm_loans
+
+    off = await hrm_loans.holidays_between(db, tenant_id, first, last)
+    return sum(working_days(max(r.starts_on, first), min(r.ends_on, last), off) for r in rows)
 
 
 # --- Attendance --------------------------------------------------------------------------
@@ -646,21 +655,35 @@ def _work_out(slip: m.HrmPayslip, settings: m.HrmSettings, rates: engine.Statuto
 
     All arithmetic is Decimal in hrm_payroll; the rates are the month's dated row."""
     rates = rates or _rates_from_settings(settings)
-    try:
-        out = engine.compute_payslip(
+
+    def compute(loan):
+        return engine.compute_payslip(
             engine.PayslipInput(
                 basic=engine.D(slip.basic),
                 allowances=engine.D(slip.allowances),
                 bonus=engine.D(slip.bonus),
-                other_deductions=engine.D(slip.other_deductions),
+                other_deductions=engine.D(slip.other_deductions) + loan,
                 unpaid_days=int(slip.unpaid_days or 0),
                 working_days=int(settings.working_days_per_month),
                 tier3_percent=engine.D(slip.tier3_percent),
             ),
             rates,
         )
+
+    loan = engine.D(getattr(slip, "loan_deduction", 0))
+    try:
+        out = compute(loan)
     except engine.PayrollError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        if loan <= 0:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        # A loan repayment never takes someone's pay below nil: take what the month allows.
+        try:
+            before = compute(engine.ZERO)
+        except engine.PayrollError as inner:
+            raise HTTPException(status_code=422, detail=str(inner)) from inner
+        loan = max(min(loan, before.net), engine.ZERO)
+        out = compute(loan)
+    slip.loan_deduction = loan
     slip.unpaid_deduction = out.unpaid_deduction
     slip.gross = out.gross
     slip.ssnit_employee = out.ssnit_employee
@@ -688,6 +711,7 @@ def _totals(run: m.HrmPayrollRun, slips: list[m.HrmPayslip]) -> None:
     run.other_deductions = _money(sum(float(s.other_deductions or 0) for s in slips))
     run.tier2 = sum((engine.D(s.tier2) for s in slips), engine.ZERO)
     run.tier3 = sum((engine.D(s.tier3) for s in slips), engine.ZERO)
+    run.loan_deductions = sum((engine.D(getattr(s, "loan_deduction", 0)) for s in slips), engine.ZERO)
 
 
 async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) -> m.HrmPayrollRun:
@@ -697,6 +721,8 @@ async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) 
     ).first()
     if clash:
         raise HTTPException(status_code=409, detail=f"Payroll for {period} already exists")
+    from app import hrm_loans
+
     settings = await get_settings(db, tenant_id)
     rates = await rates_for(db, tenant_id, first)
     people = [
@@ -726,6 +752,7 @@ async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) 
             bonus=0,
             other_deductions=0,
             tier3_percent=person.tier3_percent or 0,
+            loan_deduction=await hrm_loans.due_this_month(db, tenant_id, person.id, period),
             unpaid_days=await _unpaid_days(db, tenant_id, person.id, first, last),
         )
         _work_out(slip, settings, rates)
@@ -785,6 +812,12 @@ async def approve_run(db: AsyncSession, tenant_id: str, run_id: str, *, user_id)
     run = await _run(db, tenant_id, run_id, lock=True)
     if run.status != "draft":
         raise HTTPException(status_code=409, detail=f"This payroll is {run.status}")
+    settings = await get_settings(db, tenant_id)
+    if getattr(settings, "two_person_payroll", False) and user_id and run.created_by == user_id:
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "PAYROLL_SECOND_PERSON", "message": "Someone other than the person who drew up this payroll must approve it."},
+        )
     slips = await _slips(db, run.id)
     _totals(run, slips)
     description = f"Payroll {run.period}"
@@ -804,9 +837,13 @@ async def approve_run(db: AsyncSession, tenant_id: str, run_id: str, *, user_id)
             },
             {"account_code": "2192", "debit": 0, "credit": _money(run.tier2), "description": description},
             {"account_code": "2195", "debit": 0, "credit": _money(run.tier3), "description": description},
+            {"account_code": "1150", "debit": 0, "credit": _money(run.loan_deductions), "description": description},
         ],
         reference=run.run_number, source="hrm_payroll", source_id=run.id,
     )
+    from app import hrm_loans
+
+    await hrm_loans.apply_payroll_repayments(db, tenant_id, run, slips)
     run.status = "approved"
     run.approved_by = user_id
     run.approved_at = datetime.utcnow()
@@ -885,6 +922,7 @@ def _slip_dict(slip: m.HrmPayslip, employee: m.HrmEmployee | None) -> dict:
         "tier2": _money(slip.tier2),
         "tier3": _money(slip.tier3),
         "tier3_relief": _money(slip.tier3_relief),
+        "loan_deduction": _money(getattr(slip, "loan_deduction", 0)),
         "rates_used": slip.rates_used,
         "note": slip.note,
     }
@@ -910,6 +948,7 @@ async def present_run(db: AsyncSession, run: m.HrmPayrollRun, *, slips: bool = T
         "ssnit_due": _money(engine.D(run.ssnit_employee) + engine.D(run.ssnit_employer) - engine.D(run.tier2)),
         "tier2_paid": run.tier2_paid_at is not None,
         "tier3_paid": run.tier3_paid_at is not None,
+        "loan_deductions": _money(getattr(run, "loan_deductions", 0)),
         "statutory_rate_id": run.statutory_rate_id,
     }
     if slips:

@@ -458,6 +458,7 @@ export const HRM_NAV_GROUPS: NavGroup[] = [
     label: 'Pay',
     items: [
       ['Payroll', '/hrm?tab=payroll', 'hrm'],
+      ['Loans and advances', '/hrm?tab=loans', 'hrm'],
       ['Reports', '/hrm?tab=reports', 'hrm'],
       ['Pay rates', '/hrm?tab=settings', 'hrm'],
     ],
