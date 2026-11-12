@@ -33,8 +33,20 @@ An FMCG company gets its own sidebar (`FMCG_NAV_GROUPS` in `frontend/lib/tenantN
 | Role | Can do |
 | --- | --- |
 | Distribution Manager, company admin | everything |
-| Sales Rep | outlets, orders, collections |
+| Sales Rep | outlets, visits (own territory), orders, collections |
 | Delivery Driver | deliver, failed delivery, collections, returns |
+
+## Territories and outlet visits
+
+Tables `fmcg_territories`, `fmcg_territory_routes`, `fmcg_territory_reps`, `fmcg_visits` (migration `20261113_0170`); code in `app/fmcg_field.py` and `app/fmcg_field_api.py`; screens **Visits** and **Territories** (`/fmcg?tab=visits|territories`, `FmcgField.tsx`).
+
+- A territory is a set of routes plus the reps who work it. A route sits in one territory; saving it in another moves it. A rep's outlets are the outlets assigned to those routes (`GET /fmcg/my-outlets`); a rep cannot check in anywhere else (**403** `OUTSIDE_TERRITORY`). Managers see and visit every outlet.
+- The rep checks in (`POST /fmcg/visits/check-in`) and out (`POST /fmcg/visits/{id}/check-out`) from the phone. The browser's location and its accuracy are sent at both ends. One open visit per rep at a time.
+- A visit is never refused for distance. It is flagged instead: `far` (more than 300 m from the outlet), `rough_gps` (accuracy worse than 200 m), `no_gps` (location refused or unavailable), `outlet_unmapped`, and `order_not_booked` (outcome "order" but the rep booked no order for that outlet during the visit).
+- An outlet with no saved location takes it from the first check-in with accuracy 50 m or better (audited as `fmcg_outlet_located`). After that only a manager changes it.
+- Outcomes: order, no order (with a reason), shop closed, could not find it. "Order" links the order the rep booked for that outlet since check-in.
+- `GET /fmcg/coverage?day=` (managers): per rep visits, orders, strike rate, first in / last out, flagged visits; per route the stops planned for that weekday (`visit_day` blank means every day) and the ones missed. `GET /fmcg/territories/report?period=YYYY-MM`: outlets, outlets reached, visits and delivered sales per territory.
+- A tampered phone can fake its location. The stored accuracy, distance and times are what a manager has to judge by.
 
 ## Known limit
 

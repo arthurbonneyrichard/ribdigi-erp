@@ -2363,6 +2363,77 @@ class FmcgDispatch(Base):
     counted_cash: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
 
 
+class FmcgTerritory(Base):
+    """A sales area: a set of routes and the reps who work it."""
+
+    __tablename__ = "fmcg_territories"
+    __table_args__ = (UniqueConstraint("tenant_id", "code", name="uq_fmcg_territory_code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    code: Mapped[str] = mapped_column(String(40))
+    name: Mapped[str] = mapped_column(String(150))
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Visits each rep should make in a working day (0 = no target).
+    daily_visit_target: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class FmcgTerritoryRoute(Base):
+    __tablename__ = "fmcg_territory_routes"
+    # A route belongs to one territory.
+    __table_args__ = (UniqueConstraint("tenant_id", "route_id", name="uq_fmcg_territory_route"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    territory_id: Mapped[str] = mapped_column(ForeignKey("fmcg_territories.id"), index=True)
+    route_id: Mapped[str] = mapped_column(ForeignKey("fmcg_routes.id"), index=True)
+
+
+class FmcgTerritoryRep(Base):
+    __tablename__ = "fmcg_territory_reps"
+    __table_args__ = (UniqueConstraint("territory_id", "user_id", name="uq_fmcg_territory_rep"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    territory_id: Mapped[str] = mapped_column(ForeignKey("fmcg_territories.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+
+
+class FmcgVisit(Base):
+    """A rep's call at an outlet, with where their phone was at check-in and check-out."""
+
+    __tablename__ = "fmcg_visits"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    outlet_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    route_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    territory_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    checked_in_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    in_latitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
+    in_longitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
+    in_accuracy_m: Mapped[float | None] = mapped_column(Numeric(8, 1), nullable=True)
+    # Metres from the outlet's saved location at check-in (NULL when either is unknown).
+    distance_m: Mapped[float | None] = mapped_column(Numeric(10, 1), nullable=True)
+    checked_out_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    out_latitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
+    out_longitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
+    out_accuracy_m: Mapped[float | None] = mapped_column(Numeric(8, 1), nullable=True)
+    # order | no_order | closed | not_found
+    outcome: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    no_order_reason: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    order_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Why a manager should look: far, rough_gps, no_gps, outlet_unmapped.
+    flags: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    set_outlet_location: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    device: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class FmcgCustomerAssignment(Base):
     """Customer → route / salesperson assignment for FMCG distribution."""
 

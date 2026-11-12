@@ -23,6 +23,8 @@ export const FMCG_SCREENS: Record<string, { title: string; sub: string; icon: st
   schemes: { title: 'Trade schemes', sub: 'Deals for outlets: buy so many, get a discount or free goods.', icon: 'tag' },
   routes: { title: 'Routes', sub: 'Which outlets each van visits, and on which day.', icon: 'map' },
   deliveries: { title: 'Deliveries', sub: 'Trucks out, what they carried and the cash they brought back.', icon: 'truck' },
+  visits: { title: 'Outlet visits', sub: 'Check in at outlets with your phone, and see who was where.', icon: 'map' },
+  territories: { title: 'Territories', sub: 'Groups of routes, the reps who work them, and how much of each was reached.', icon: 'map' },
   packs: { title: 'Pack convert', sub: 'Break cartons into packs, or pack singles into cartons.', icon: 'box' },
 };
 

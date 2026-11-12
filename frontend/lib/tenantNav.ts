@@ -369,6 +369,7 @@ export const FMCG_NAV_GROUPS: NavGroup[] = [
     label: 'Selling',
     items: [
       ['Outlets', '/fmcg?tab=outlets', 'fmcg'],
+      ['Visits', '/fmcg?tab=visits', 'fmcg'],
       ['Orders', '/fmcg?tab=orders', 'fmcg'],
       ['Deliveries', '/fmcg?tab=deliveries', 'fmcg'],
       ['Collections', '/fmcg?tab=collections', 'fmcg'],
@@ -379,6 +380,7 @@ export const FMCG_NAV_GROUPS: NavGroup[] = [
     label: 'Trade',
     items: [
       ['Routes', '/fmcg?tab=routes', 'fmcg'],
+      ['Territories', '/fmcg?tab=territories', 'fmcg'],
       ['Trade schemes', '/fmcg?tab=schemes', 'fmcg'],
       ['Pack convert', '/fmcg?tab=packs', 'fmcg'],
     ],
@@ -957,7 +959,7 @@ export const CASHIER_NAV_MODULES: string[] = ['sales', 'pos', 'restaurant', 'sup
 /** Gift cards share the POS module. Cashiers stay on the till; other roles keep the page. */
 /** Restaurant staff see only their job's screens (the server enforces the same jobs). */
 export const FMCG_ROLE_HREFS: Record<string, string[]> = {
-  fmcg_rep: ['/hrm?tab=me', '/fmcg', '/fmcg?tab=outlets', '/fmcg?tab=orders', '/fmcg?tab=collections', '/notifications', '/security', '/support'],
+  fmcg_rep: ['/hrm?tab=me', '/fmcg', '/fmcg?tab=outlets', '/fmcg?tab=visits', '/fmcg?tab=orders', '/fmcg?tab=collections', '/notifications', '/security', '/support'],
   fmcg_driver: ['/hrm?tab=me', '/fmcg', '/fmcg?tab=orders', '/fmcg?tab=collections', '/fmcg?tab=deliveries', '/notifications', '/security', '/support'],
 };
 
