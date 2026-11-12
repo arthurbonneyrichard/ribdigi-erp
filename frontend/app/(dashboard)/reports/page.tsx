@@ -146,6 +146,25 @@ function fmtMoney(value: unknown): string {
   return formatMoney(n);
 }
 
+/** Line icons for the report groups (24px grid, drawn with currentColor). */
+const GROUP_ICON_PATHS: Record<string, string> = {
+  sales: 'M3 3v18h18M7 15l4-4 3 3 5-6',
+  inventory: 'M21 8 12 3 3 8v8l9 5 9-5V8ZM3 8l9 5 9-5M12 13v8',
+  purchases: 'M3 6h2l2.4 10.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L21 9H6.2M9 20.5h.01M17 20.5h.01',
+  finance: 'M4 7h16v12H4zM4 11h16M8 15h3M4 7l3-4h10l3 4',
+  customers: 'M16 19v-1.5A3.5 3.5 0 0 0 12.5 14h-5A3.5 3.5 0 0 0 4 17.5V19M10 10.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM20 19v-1.5a3.5 3.5 0 0 0-2.6-3.4M15.5 3.6a3.5 3.5 0 0 1 0 6.8',
+  staff: 'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM5 21v-1a7 7 0 0 1 14 0v1',
+  schedules: 'M4 6h16v13H4zM4 6l8 7 8-7',
+};
+
+function GroupIcon({ group }: { group: string }) {
+  return (
+    <svg className="rn-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d={GROUP_ICON_PATHS[group] || GROUP_ICON_PATHS.sales} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 function isoDateOrEmpty(value: string): string {
@@ -1051,7 +1070,9 @@ export default function Page() {
                   if (first) selectReport(first);
                 }}
               >
-                {reportGroupLabel(group.id, group.label, industry)}
+                <GroupIcon group={group.id} />
+                <span className="rn-cat-label">{reportGroupLabel(group.id, group.label, industry)}</span>
+                <span className="rn-count" aria-hidden="true">{visibleDefs.length}</span>
               </button>
               {visibleDefs.map((def) => {
                 const id = def.id;
@@ -1079,18 +1100,30 @@ export default function Page() {
           })}
         </nav>
         <div className="reports-main report-ui-main" data-group={activeReport.group}>
-          <p className="reports-crumb muted">
-            {reportGroupLabel(
-              activeReport.group,
-              REPORT_GROUP_ORDER.find((g) => g.id === activeReport.group)?.label || 'Reports',
-              industry,
-            )}{' '}
-            · {reportCopy(activeReport, industry).name}
-          </p>
-          <h2>{reportCopy(activeReport, industry).name}</h2>
-          <p className="muted">{reportCopy(activeReport, industry).description}</p>
+          <header className="report-head">
+            <span className="report-head-ico" aria-hidden="true">
+              <GroupIcon group={activeReport.group} />
+            </span>
+            <div className="report-head-text">
+              <p className="reports-crumb muted">
+                {reportGroupLabel(
+                  activeReport.group,
+                  REPORT_GROUP_ORDER.find((g) => g.id === activeReport.group)?.label || 'Reports',
+                  industry,
+                )}{' '}
+                · {reportCopy(activeReport, industry).name}
+              </p>
+              <h2>{reportCopy(activeReport, industry).name}</h2>
+              <p className="muted">{reportCopy(activeReport, industry).description}</p>
+            </div>
+            {generatedAt && !error ? (
+              <span className="report-generated" title="When these figures were worked out">
+                Generated {fmtDate(generatedAt)}
+              </span>
+            ) : null}
+          </header>
           {error && (
-            <p style={{ color: '#b91c1c' }} role="alert">
+            <p className="report-alert" style={{ color: '#b91c1c' }} role="alert">
               {error}{' '}
               <button
                 type="button"
@@ -1102,12 +1135,7 @@ export default function Page() {
               </button>
             </p>
           )}
-          {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
-          {generatedAt && !error ? (
-            <p className="muted" style={{ fontSize: 13 }}>
-              Generated {fmtDate(generatedAt)}
-            </p>
-          ) : null}
+          {message && <p className="report-note" style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
           {tab !== 'schedules' && (
             <div className="card reports-filters report-ui-filters" style={{ marginBottom: 16 }}>
@@ -1577,13 +1605,14 @@ export default function Page() {
               <div className="reports-actions">
                 <button
                   type="button"
+                  className="report-btn-primary"
                   onClick={() => load(tab, view)}
                   disabled={!!loadingTabs[tab]}
                   aria-label="Apply report filters"
                 >
                   {loadingTabs[tab] ? 'Generating…' : 'Generate'}
                 </button>
-                <button type="button" onClick={resetFilters} aria-label="Reset report filters">
+                <button type="button" className="report-btn-quiet" onClick={resetFilters} aria-label="Reset report filters">
                   Reset
                 </button>
                 {activeReport.exportType ? (
@@ -1690,6 +1719,7 @@ export default function Page() {
                 {activeReport.print ? (
                   <button
                     type="button"
+                    className="report-btn-print"
                     onClick={() => {
                       const sheet = document.querySelector('.report-ui-page .report-sheet');
                       if (!(sheet instanceof HTMLElement) || !printDocumentFromElement(sheet, activeReport.name || 'Report')) {
@@ -1727,7 +1757,8 @@ export default function Page() {
             <div className="muted">Month sales</div>
             <div className="kpi">{fmtMoney(data.month_sales?.total_revenue)}</div>
             {data.month_sales?.change_pct != null ? (
-              <p className="muted">
+              <p className={`muted report-change ${Number(data.month_sales.change_pct) >= 0 ? 'is-up' : 'is-down'}`}>
+                <span aria-hidden="true">{Number(data.month_sales.change_pct) >= 0 ? '▲' : '▼'}</span>{' '}
                 {Number(data.month_sales.change_pct) >= 0 ? '+' : ''}
                 {data.month_sales.change_pct}% on last month
               </p>
@@ -3140,7 +3171,7 @@ export default function Page() {
                   )}
                   {restaurantReports ? null : <td>{o.outstanding_qty}</td>}
                   <td data-label={restaurantReports ? 'Amount' : undefined}>
-                    {restaurantReports ? fmtMoney(o.total_amount) : o.total_amount}
+                    {fmtMoney(o.total_amount)}
                   </td>
                 </tr>
               ))}
@@ -3320,15 +3351,15 @@ export default function Page() {
           <div className="grid">
             <div className="card">
               <div className="muted">Inflows</div>
-              <div className="kpi">{restaurantReports ? fmtMoney(data.inflows) : data.inflows}</div>
+              <div className="kpi">{fmtMoney(data.inflows)}</div>
             </div>
             <div className="card">
               <div className="muted">Outflows</div>
-              <div className="kpi">{restaurantReports ? fmtMoney(data.outflows) : data.outflows}</div>
+              <div className="kpi">{fmtMoney(data.outflows)}</div>
             </div>
             <div className="card">
               <div className="muted">Net</div>
-              <div className="kpi">{restaurantReports ? fmtMoney(data.net) : data.net}</div>
+              <div className="kpi">{fmtMoney(data.net)}</div>
             </div>
           </div>
           <div className="grid" style={{ marginTop: 12 }}>
@@ -3387,8 +3418,8 @@ export default function Page() {
                   )}
                   {restaurantReports ? null : <td>{l.entry_number}</td>}
                   {restaurantReports ? null : <td>{l.activity || '—'}</td>}
-                  <td data-label={restaurantReports ? 'In' : undefined}>{restaurantReports ? fmtMoney(l.inflow) : l.inflow}</td>
-                  <td data-label={restaurantReports ? 'Out' : undefined}>{restaurantReports ? fmtMoney(l.outflow) : l.outflow}</td>
+                  <td data-label={restaurantReports ? 'In' : undefined}>{fmtMoney(l.inflow)}</td>
+                  <td data-label={restaurantReports ? 'Out' : undefined}>{fmtMoney(l.outflow)}</td>
                 </tr>
               ))}
               {restaurantReports && !(data.lines || []).length ? (
@@ -3423,23 +3454,23 @@ export default function Page() {
           <div className="grid">
             <div className="card">
               <div className="muted">Revenue</div>
-              <div className="kpi">{restaurantReports ? fmtMoney(data.revenue ?? data.income ?? 0) : (data.revenue ?? data.income ?? 0)}</div>
+              <div className="kpi">{fmtMoney(data.revenue ?? data.income ?? 0)}</div>
             </div>
             <div className="card">
               <div className="muted">{restaurantReports ? 'Ingredient cost' : 'COGS'}</div>
-              <div className="kpi">{restaurantReports ? fmtMoney(data.cogs ?? 0) : (data.cogs ?? 0)}</div>
+              <div className="kpi">{fmtMoney(data.cogs ?? 0)}</div>
             </div>
             <div className="card">
               <div className="muted">Gross profit</div>
-              <div className="kpi">{restaurantReports ? fmtMoney(data.gross_profit ?? 0) : (data.gross_profit ?? 0)}</div>
+              <div className="kpi">{fmtMoney(data.gross_profit ?? 0)}</div>
             </div>
             <div className="card">
               <div className="muted">{restaurantReports ? 'Running costs' : 'Operating expenses'}</div>
-              <div className="kpi">{restaurantReports ? fmtMoney(data.operating_expenses ?? 0) : (data.operating_expenses ?? 0)}</div>
+              <div className="kpi">{fmtMoney(data.operating_expenses ?? 0)}</div>
             </div>
             <div className="card">
               <div className="muted">Net profit</div>
-              <div className="kpi">{restaurantReports ? fmtMoney(data.net_profit ?? 0) : (data.net_profit ?? 0)}</div>
+              <div className="kpi">{fmtMoney(data.net_profit ?? 0)}</div>
             </div>
           </div>
           <div className={restaurantReports ? 'list-table-wrap rest-pnl' : 'list-table-wrap'}>
@@ -3477,7 +3508,7 @@ export default function Page() {
                   {restaurantReports ? null : <td>{a.name}</td>}
                   {restaurantReports ? null : <td>{a.account_type}</td>}
                   <td data-label={restaurantReports ? 'Amount' : undefined}>
-                    {restaurantReports ? fmtMoney(a.balance) : a.balance}
+                    {fmtMoney(a.balance)}
                   </td>
                 </tr>
               ))}
@@ -3622,13 +3653,13 @@ export default function Page() {
                     {restaurantReports ? null : <td>{l.entry_number}</td>}
                     {restaurantReports ? null : <td>{l.description || '—'}</td>}
                     <td data-label={restaurantReports ? 'Debit' : undefined}>
-                      {restaurantReports ? fmtMoney(l.debit) : l.debit}
+                      {fmtMoney(l.debit)}
                     </td>
                     <td data-label={restaurantReports ? 'Credit' : undefined}>
-                      {restaurantReports ? fmtMoney(l.credit) : l.credit}
+                      {fmtMoney(l.credit)}
                     </td>
                     <td data-label={restaurantReports ? 'Balance' : undefined}>
-                      {restaurantReports ? fmtMoney(l.balance) : l.balance}
+                      {fmtMoney(l.balance)}
                     </td>
                   </tr>
                 ))}
@@ -3663,7 +3694,7 @@ export default function Page() {
           <div className="grid">
             <div className="card">
               <div className="muted">Total assets</div>
-              <div className="kpi">{restaurantReports ? fmtMoney(data.total_assets) : data.total_assets}</div>
+              <div className="kpi">{fmtMoney(data.total_assets)}</div>
               {data.compare && (
                 <p className="muted">
                   {restaurantReports ? 'Change ' : 'Δ '}
@@ -3674,7 +3705,7 @@ export default function Page() {
             <div className="card">
               <div className="muted">{restaurantReports ? 'Owed and owner stake' : 'Liabilities + equity'}</div>
               <div className="kpi">
-                {restaurantReports ? fmtMoney(data.total_liabilities_and_equity) : data.total_liabilities_and_equity}
+                {fmtMoney(data.total_liabilities_and_equity)}
               </div>
               {data.compare && (
                 <p className="muted">
@@ -3750,7 +3781,7 @@ export default function Page() {
                       )}
                       {restaurantReports ? null : <td>{r.name}</td>}
                       <td data-label={restaurantReports ? 'Balance' : undefined}>
-                        {restaurantReports ? fmtMoney(r.balance) : r.balance}
+                        {fmtMoney(r.balance)}
                       </td>
                       {data.compare && (
                         restaurantReports ? (
