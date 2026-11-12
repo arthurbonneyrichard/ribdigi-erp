@@ -34,6 +34,23 @@ Both choices are audited as `pos_sale_handover`.
 | Switching off the browser timer | The server locks a stint after 150 seconds with no activity ping. |
 | Audit | `pos_locked`, `pos_unlocked`, `pos_unlock_failed`, `pos_unlock_denied`, `pos_cashier_switched`, `pos_sale_handover`, `pos_passcode_*`. |
 
+### Opened with a passcode: till and Sales only
+
+A passcode unlock marks the browser's sign-in session `auth_sessions.till_only`. That holds for everyone, a company admin's passcode included, and it survives a token refresh. While it is set:
+
+- The server refuses everything but the tills, Sales and what those screens read (`pos_lock.till_only_path_allowed`) with `403 TILL_ONLY`, with or without the operator header.
+- The menu shows only POS, Sales and the restaurant till; other pages send you back to the till. Alerts and the getting-started list are hidden.
+- **Sign in fully** (top bar) asks for the signed-in account's password (`POST /auth/full-sign-in`, 5 wrong tries lock it for 5 minutes). The passcode is not accepted. **Someone else** signs out so another person can sign in with their own account.
+- A till unlocked offline holds this tab at once and tells the server on reconnect (`POST /pos/lock/restrict`).
+
+Other browsers and devices signed in to the same account are not affected.
+
+### Kiosk mode
+
+**Kiosk** on the till's top bar (retail POS and restaurant till) goes full screen and hides the menu, store switcher, alerts and Log out. Every other page sends you back to the till, and a tap brings back full screen after Esc. The device remembers kiosk mode, so a refresh or restart returns to it.
+
+**Close kiosk** asks for the close code, `11223300` by default (`POS_KIOSK_EXIT_CODE`). The server checks it (`POST /pos/kiosk/close`, 5 wrong tries lock that till for 5 minutes, audited as `pos_kiosk_closed` / `pos_kiosk_close_failed`). Offline, a PBKDF2 check saved when kiosk mode started is used (`GET /pos/kiosk/verifier`); the code itself is never stored in the browser. After closing, the page tries to close the window. A browser started with `--kiosk` may refuse, and then the normal app shows; close the browser from there.
+
 ### Offline
 
 Only the last cashier on a till can unlock offline, using a PBKDF2 check saved on that device at their last online unlock. Switching cashier needs a connection. If no check is saved, an offline till does not auto-lock, because nobody could open it again and selling must not stop. Queued sales stay with the cashier who made them and sync when that cashier is at the till.

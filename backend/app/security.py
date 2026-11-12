@@ -219,6 +219,13 @@ async def current_claims(
         ).scalar_one_or_none()
         if session and session.revoked_at is not None:
             raise HTTPException(status_code=401, detail="Session revoked")
+        if session and getattr(session, "till_only", False):
+            # Opened at a till with a passcode: the till and Sales only, until a full sign-in.
+            from app import pos_lock as till_only_svc
+
+            data["till_only"] = True
+            if not till_only_svc.till_only_path_allowed(request.method, request.url.path):
+                raise till_only_svc.till_only_error()
 
     user = (
         await db.execute(

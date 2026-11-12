@@ -220,6 +220,9 @@ class AuthSession(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    # Set when a till on this browser is opened with a passcode. Until someone signs in fully with
+    # a password, the session reaches the till and Sales only (pos_lock.till_only_path_allowed).
+    till_only: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
 
 
 class AuthToken(Base):

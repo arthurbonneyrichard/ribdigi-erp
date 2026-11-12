@@ -21,6 +21,7 @@ import {
   POS_OPERATOR_HEADER,
   checkOfflinePasscode,
   clearLeftLocked,
+  clearTillOnlyPending,
   getOperatorToken,
   holdOperatorToken,
   offlineVerifierFor,
@@ -32,7 +33,9 @@ import {
   saveOfflineVerifier,
   setOperatorToken,
   setTillLockedFlag,
+  setTillOnlyLocal,
   takeParked,
+  tillOnlyPendingServer,
   takeWelcome,
   wasLeftLocked,
   type TillOperator,
@@ -416,6 +419,8 @@ export default function PosLockGate({ surface, children }: { surface: TillSurfac
 
   const onUnlocked = useCallback(
     (operator: TillOperator, result: { switched: boolean; offline?: boolean }) => {
+      // A passcode opens the till and Sales only. The rest waits for a full sign-in with a password.
+      setTillOnlyLocal(true, { pendingServer: Boolean(result.offline) });
       // What is on screen so far belongs to the last cashier, or on a first unlock to the login.
       const shownFor = phase === 'open' ? operatorRef.current : stateRef.current?.login_user_id;
       if (shownFor !== operator.id && !result.offline) {
@@ -437,6 +442,19 @@ export default function PosLockGate({ surface, children }: { surface: TillSurfac
     },
     [phase]
   );
+
+  // An offline unlock could not hold the session to the till on the server; do it on reconnect.
+  useEffect(() => {
+    const tell = () => {
+      if (!tillOnlyPendingServer() || (typeof navigator !== 'undefined' && navigator.onLine === false)) return;
+      void api('/pos/lock/restrict', { method: 'POST' })
+        .then(() => clearTillOnlyPending())
+        .catch(() => undefined);
+    };
+    tell();
+    window.addEventListener('online', tell);
+    return () => window.removeEventListener('online', tell);
+  }, []);
 
   if (phase === 'checking') {
     return <div className="plock plock-checking" aria-busy="true" />;

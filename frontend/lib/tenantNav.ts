@@ -435,7 +435,7 @@ export const GYM_NAV_GROUPS: NavGroup[] = [
     ],
   },
   { id: 'gym-staff', label: '', items: [['Staff', '/users', 'users']] },
-  ...deskTail('gym'),
+  ...deskTail('gym', [['Printers', '/printers', 'printers']]),
 ];
 
 /** HRM: people, time off, attendance and payroll. */
@@ -461,7 +461,7 @@ export const HRM_NAV_GROUPS: NavGroup[] = [
   },
   { id: 'hrm-me', label: '', items: [['My pay and leave', '/hrm?tab=me', 'hrm']] },
   { id: 'hrm-staff', label: '', items: [['Sign-in accounts', '/users', 'users']] },
-  ...deskTail('hrm'),
+  ...deskTail('hrm', [['Printers', '/printers', 'printers']]),
 ];
 
 const deskItems = (groups: NavGroup[], module: string): NavItem[] =>
@@ -680,7 +680,8 @@ export function filterNavForIndustry(items: NavItem[], industry: string | null |
     if (layout === 'fmcg' || layout === 'bakery' || layout === 'gym' || layout === 'hrm') {
       // Their own desk plus the shared back office. Each company keeps it on its own database.
       if (layout === 'hrm' && HRM_HIDDEN_MODULES.has(module)) return false;
-      return module === layout || BACK_OFFICE_MODULES.has(module) || SHARED_ACCOUNT_MODULES.has(module);
+      // Every desk prints (receipts, order slips, payslips), so Printers sits in each desk's Settings.
+      return module === layout || module === 'printers' || BACK_OFFICE_MODULES.has(module) || SHARED_ACCOUNT_MODULES.has(module);
     }
     return SHARED_ACCOUNT_MODULES.has(module);
   });

@@ -5,7 +5,27 @@ import { industryHomePath } from '../lib/industryDashboard';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import DeskIcon from './DeskIcon';
-import { POS_LOCK_NOW_EVENT, wasLeftLocked } from '../lib/posLock';
+import {
+  POS_LOCK_NOW_EVENT,
+  TILL_ONLY_EVENT,
+  isTillOnlyLocal,
+  isTillOnlyRoute,
+  setTillOnlyLocal,
+  tillOnlyPendingServer,
+  wasLeftLocked,
+} from '../lib/posLock';
+import {
+  KIOSK_EVENT,
+  checkKioskCodeOffline,
+  endKiosk,
+  enterFullScreen,
+  kioskCodeLength,
+  leaveFullScreen,
+  readKiosk,
+  saveKioskVerifier,
+  startKiosk,
+  type KioskState,
+} from '../lib/posKiosk';
 import { api, clearSessionAndRedirect, idleTimeoutMs, isConfirmedAuthExpiry, tenantHeaderValue, getAccessToken, hydrateAuth, rehydrateAuth } from '../lib/api';
 import { formatNoticeTime, notifyCategoryLabel } from '../lib/notifyText';
 import { industryAllowsModule, INDUSTRY_SPECIFIC_MODULES } from '../lib/industryModules';
@@ -63,6 +83,7 @@ import {
   type NavItem,
 } from '../lib/tenantNav';
 import { chromeLogoAlt, chromeLogoSrc, PLATFORM_SIDEBAR_LOGO } from '../lib/chromeBrand';
+import { backdropForImage, cachedBackdrop, rememberBackdrop, type Backdrop } from '../lib/logoBackdrop';
 import {
   cachedCompanyLogoUrl,
   loadCompanyLogo,
@@ -1041,6 +1062,15 @@ function PosLockTopButton() {
   );
 }
 
+/** Turns this till into a kiosk: full screen, no menu, closed only with the close code. */
+function KioskTopButton({ onStart }: { onStart: () => void }) {
+  return (
+    <button type="button" className="tpos-btn pos-top-drawer-btn" aria-label="Start kiosk mode" onClick={onStart}>
+      Kiosk
+    </button>
+  );
+}
+
 /** Opens the till's return panel: find a receipt, choose items, refund. */
 function PosReturnTopButton() {
   return (
@@ -1234,6 +1264,17 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [bellLoading, setBellLoading] = useState(false);
   const [bellBusy, setBellBusy] = useState(false);
   const [expandedNav, setExpandedNav] = useState<Set<string>>(() => new Set());
+  // A passcode opened a till on this browser: the till and Sales only, until a full sign-in.
+  const [tillOnly, setTillOnly] = useState(false);
+  const [fullSignInOpen, setFullSignInOpen] = useState(false);
+  const [fullSignInPassword, setFullSignInPassword] = useState('');
+  const [fullSignInError, setFullSignInError] = useState('');
+  const [fullSignInBusy, setFullSignInBusy] = useState(false);
+  const [kiosk, setKiosk] = useState<KioskState | null>(null);
+  const [kioskCloseOpen, setKioskCloseOpen] = useState(false);
+  const [kioskCode, setKioskCode] = useState('');
+  const [kioskError, setKioskError] = useState('');
+  const [kioskBusy, setKioskBusy] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const navSearch = searchParams?.toString() || '';
@@ -1279,6 +1320,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         id?: string;
         inactivity_timeout_minutes?: number;
         count_drawer_on_sign_out?: boolean;
+        till_only?: boolean;
       }) => {
         if (!active) return;
         setAuthGateError('');
@@ -1291,6 +1333,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         );
         setMultiStore(tenantIsMultiStore(data));
         setRole(data.role || '');
+        if (data.till_only) setTillOnlyLocal(true);
+        else if (typeof data.till_only === 'boolean' && !tillOnlyPendingServer()) setTillOnlyLocal(false);
         setCountDrawerOnSignOut(data.count_drawer_on_sign_out !== false);
         setFullName(data.full_name || '');
         setCompanyName(data.company_name || '');
@@ -1483,6 +1527,122 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     if (!authReady) return;
     void openShiftForSignedInUser();
   }, [authReady]);
+
+  // Till-only hold: follow the flag set by an unlock, a 403 TILL_ONLY or /me.
+  useEffect(() => {
+    const sync = () => setTillOnly(isTillOnlyLocal());
+    sync();
+    window.addEventListener(TILL_ONLY_EVENT, sync);
+    return () => window.removeEventListener(TILL_ONLY_EVENT, sync);
+  }, []);
+
+  // Kiosk mode lives on the device, so it comes back after a refresh or restart.
+  useEffect(() => {
+    const sync = () => setKiosk(readKiosk());
+    sync();
+    window.addEventListener(KIOSK_EVENT, sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener(KIOSK_EVENT, sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
+
+  // In kiosk mode any tap goes back to full screen if Esc took it out.
+  useEffect(() => {
+    if (!kiosk) return;
+    const back = () => {
+      if (!document.fullscreenElement) enterFullScreen();
+    };
+    window.addEventListener('pointerdown', back, true);
+    return () => window.removeEventListener('pointerdown', back, true);
+  }, [kiosk]);
+
+  function beginKiosk(home: string) {
+    // Full screen needs this click, so ask for it before anything waits.
+    enterFullScreen();
+    setMenuOpen(false);
+    setKiosk(startKiosk(home));
+    void api('/pos/kiosk/verifier')
+      .then((res) => saveKioskVerifier(res.data))
+      .catch(() => undefined);
+  }
+
+  async function confirmKioskClose() {
+    const code = kioskCode.trim();
+    if (!/^\d+$/.test(code)) {
+      setKioskError('Enter the close code.');
+      return;
+    }
+    setKioskBusy(true);
+    setKioskError('');
+    let closed = false;
+    try {
+      const offline = await import('../lib/posOffline');
+      await api('/pos/kiosk/close', {
+        method: 'POST',
+        body: JSON.stringify({
+          surface: (kiosk?.home || pathname || '').startsWith('/restaurant') ? 'restaurant' : 'retail',
+          device_id: offline.getOrCreateDeviceId(),
+          code,
+        }),
+      });
+      closed = true;
+    } catch (err) {
+      const status = (err as { status?: number })?.status;
+      if (status === undefined) {
+        const check = await checkKioskCodeOffline(code);
+        if (check.ok) closed = true;
+        else if (check.waitMs) setKioskError(`Too many wrong codes. Try again in ${Math.ceil(check.waitMs / 60000)} minutes.`);
+        else if (!check.known) setKioskError('This till is offline and cannot check the code. Reconnect to close kiosk mode.');
+        else setKioskError('That code is not right.');
+      } else if (status === 429) {
+        setKioskError('Too many wrong codes. Wait a few minutes and try again.');
+      } else {
+        setKioskError('That code is not right.');
+      }
+    } finally {
+      setKioskBusy(false);
+      setKioskCode('');
+    }
+    if (!closed) return;
+    endKiosk();
+    setKioskCloseOpen(false);
+    leaveFullScreen();
+    // A browser started as a kiosk app may let the page close itself; if not, the normal app shows.
+    try {
+      window.close();
+    } catch {
+      /* stays open */
+    }
+  }
+
+  async function confirmFullSignIn() {
+    if (!fullSignInPassword) {
+      setFullSignInError('Enter your password.');
+      return;
+    }
+    setFullSignInBusy(true);
+    setFullSignInError('');
+    try {
+      await api('/auth/full-sign-in', { method: 'POST', body: JSON.stringify({ password: fullSignInPassword }) });
+      setTillOnlyLocal(false);
+      invalidateMeCache();
+      setFullSignInOpen(false);
+    } catch (err) {
+      const status = (err as { status?: number })?.status;
+      setFullSignInError(
+        status === 429
+          ? 'Too many wrong passwords. Wait a few minutes and try again.'
+          : status === undefined
+            ? 'Signing in fully needs a connection.'
+            : 'That password is not right.'
+      );
+    } finally {
+      setFullSignInBusy(false);
+      setFullSignInPassword('');
+    }
+  }
 
   async function finishLogout() {
     try {
@@ -1866,17 +2026,23 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const visible = useMemo(() => {
     const items = navItemsForRole(role, permissions, enabledModules, industry, multiStore);
     if (PLATFORM_ROLES.has(role)) return items;
-    return filterNavForIndustry(items, industry);
-  }, [role, permissions, enabledModules, industry, multiStore]);
+    const forIndustry = filterNavForIndustry(items, industry);
+    // Opened with a passcode: only the till and Sales until a full sign-in.
+    return tillOnly ? forIndustry.filter(([, href]) => isTillOnlyRoute(href)) : forIndustry;
+  }, [role, permissions, enabledModules, industry, multiStore, tillOnly]);
+  const tillHome = normalizeIndustry(industry) === 'restaurant' ? '/restaurant/till' : '/pos';
   const navGroups = useMemo(
     () => groupedTenantNav(TENANT_NAV_GROUPS, visible, industry, multiStore),
     [visible, industry, multiStore]
   );
   const navRedirectTo = useMemo(() => {
     if (!authReady || !role || PLATFORM_ROLES.has(role)) return null;
+    const path = pathname || '';
+    if (kiosk) return path === kiosk.home ? null : kiosk.home;
+    if (tillOnly && !isTillOnlyRoute(path)) return tillHome;
     const allowed = navAllowlistForRole(role, permissions);
     return unauthorizedNavRedirect(pathname || '', role, allowed, industry);
-  }, [authReady, role, permissions, pathname, industry]);
+  }, [authReady, role, permissions, pathname, industry, kiosk, tillOnly, tillHome]);
   const industryPageBlock = useMemo(() => {
     if (!role || PLATFORM_ROLES.has(role)) return null;
     return industryFeatureBlock(pathname || '/', industry, enabledModules);
@@ -1922,11 +2088,26 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       return next;
     });
   }
-  const showAlerts = visible.some(([, href]) => href === '/notifications');
+  const showAlerts = !tillOnly && !kiosk && visible.some(([, href]) => href === '/notifications');
   // App chrome only: RIBDIGI ERP default, then this tenant's uploaded logo.
   // Receipts/invoices stay name-only until upload (not this slot).
   const sidebarLogoSrc = chromeLogoSrc(companyLogoUrl, PLATFORM_SIDEBAR_LOGO);
   const sidebarLogoAlt = chromeLogoAlt(Boolean(companyLogoUrl), companyName);
+  // The box behind the logo follows the logo's colours so it stands out (lib/logoBackdrop).
+  const backdropKey = companyLogoUrl
+    ? `${tenantHeaderValue(typeof window === 'undefined' ? null : localStorage.getItem('tenant')) || ''}:${logoVersion || ''}`
+    : `default:${sidebarLogoSrc}`;
+  const [logoBackdrop, setLogoBackdrop] = useState<Backdrop | null>(null);
+  useEffect(() => {
+    setLogoBackdrop(cachedBackdrop(backdropKey));
+  }, [backdropKey]);
+  const brandStyle = logoBackdrop
+    ? ({
+        background: logoBackdrop.background,
+        borderColor: logoBackdrop.border,
+        '--brand-name-color': logoBackdrop.text,
+      } as React.CSSProperties)
+    : undefined;
 
   // Warm visible route JS as soon as the sidebar is up, then likely desk APIs.
   useEffect(() => {
@@ -1976,14 +2157,14 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <StoreProvider enabled={Boolean(role) && !isPlatformOwner}>
-      <div className={`shell shell-secure${menuOpen ? ' nav-open' : ''}${navCompact ? ' nav-compact' : ''}${pathname === '/pos' ? ' is-pos' : ''}${pathname === '/restaurant/till' ? ' is-pos is-rtill' : ''}`}>
+      <div className={`shell shell-secure${menuOpen ? ' nav-open' : ''}${navCompact ? ' nav-compact' : ''}${pathname === '/pos' ? ' is-pos' : ''}${pathname === '/restaurant/till' ? ' is-pos is-rtill' : ''}${kiosk ? ' is-kiosk' : ''}${tillOnly ? ' is-till-only' : ''}`}>
       <aside
         id="app-sidebar"
         className="side"
         aria-hidden={drawerClosed}
         {...(drawerClosed ? { inert: true } : {})}
       >
-        <div className="brand" aria-label="Workspace brand">
+        <div className="brand" aria-label="Workspace brand" style={brandStyle}>
           <div className="brand-logo-slot">
             {logoPending && !companyLogoUrl ? null : (
               <img
@@ -1995,6 +2176,12 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                 decoding="async"
                 fetchPriority="high"
                 draggable={false}
+                onLoad={(e) => {
+                  const picked = backdropForImage(e.currentTarget);
+                  if (!picked) return;
+                  setLogoBackdrop(picked);
+                  rememberBackdrop(backdropKey, picked);
+                }}
               />
             )}
           </div>
@@ -2133,8 +2320,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                   <PosReturnTopButton />
                   <PosLockTopButton />
                   <PosDrawerTopControls />
+                  {kiosk ? null : <KioskTopButton onStart={() => beginKiosk('/pos')} />}
                 </div>
               </>
+            ) : pathname === '/restaurant/till' && !kiosk ? (
+              <div className="pos-top-tools">
+                <KioskTopButton onStart={() => beginKiosk('/restaurant/till')} />
+              </div>
             ) : null}
           </div>
           {!isPlatformOwner ? (
@@ -2144,7 +2336,39 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           ) : (
             <div className="topbar-context topbar-context-spacer" aria-hidden />
           )}
+          {kiosk ? (
+            <div className="topbar-right">
+              <button
+                type="button"
+                className="logout-btn kiosk-close-btn"
+                aria-label="Close kiosk mode"
+                title="Close kiosk mode"
+                onClick={() => {
+                  setKioskCode('');
+                  setKioskError('');
+                  setKioskCloseOpen(true);
+                }}
+              >
+                <span className="logout-label">Close kiosk</span>
+              </button>
+            </div>
+          ) : (
           <div className="topbar-right">
+            {tillOnly ? (
+              <button
+                type="button"
+                className="logout-btn till-full-btn"
+                aria-label="Sign in fully"
+                title="Opened with a passcode. Sign in with your password to use the rest of the system."
+                onClick={() => {
+                  setFullSignInPassword('');
+                  setFullSignInError('');
+                  setFullSignInOpen(true);
+                }}
+              >
+                <span className="logout-label">Sign in fully</span>
+              </button>
+            ) : null}
             <button
               type="button"
               className="theme-btn"
@@ -2235,6 +2459,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               <span className="logout-label">Log out</span>
             </button>
           </div>
+          )}
         </div>
         {!isPlatformOwner && industryValid === false && (
           <p className="login-error" role="alert">
@@ -2243,7 +2468,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             Shared modules such as finance and reports remain available.
           </p>
         )}
-        {(role === 'company_admin' || role === 'super_admin') && (
+        {(role === 'company_admin' || role === 'super_admin') && !tillOnly && !kiosk && (
           <div className="no-print">
             <OnboardingChecklist canManage />
           </div>
@@ -2277,6 +2502,124 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             Stay signed in
           </button>
         </div>
+      ) : null}
+      {fullSignInOpen ? (
+        <FormModal
+          title="Sign in fully"
+          onClose={() => {
+            if (!fullSignInBusy) setFullSignInOpen(false);
+          }}
+          busy={fullSignInBusy}
+          dirty={Boolean(fullSignInPassword)}
+          closeAriaLabel="Cancel full sign-in"
+          footer={
+            <>
+              <button
+                type="button"
+                className="list-btn-secondary"
+                disabled={fullSignInBusy}
+                onClick={() => {
+                  setFullSignInOpen(false);
+                  void logout();
+                }}
+                aria-label="Sign in as someone else"
+              >
+                Someone else
+              </button>
+              <button
+                type="button"
+                className="list-btn-primary"
+                disabled={fullSignInBusy}
+                onClick={() => void confirmFullSignIn()}
+                aria-label="Confirm full sign-in"
+              >
+                {fullSignInBusy ? 'Checking…' : 'Sign in'}
+              </button>
+            </>
+          }
+        >
+          <p className="muted">
+            This till was opened with a passcode, so only the till and Sales are open. Enter the password for{' '}
+            <strong>{fullName.trim() || 'this account'}</strong> to use the rest of the system. Someone else signs out
+            and signs in with their own account.
+          </p>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void confirmFullSignIn();
+            }}
+          >
+            <label>
+              Password
+              <input
+                type="password"
+                value={fullSignInPassword}
+                onChange={(e) => setFullSignInPassword(e.target.value)}
+                autoComplete="current-password"
+                autoFocus
+                maxLength={128}
+                aria-label="Full sign-in password"
+              />
+            </label>
+          </form>
+          {fullSignInError ? (
+            <p className="form-flash" role="alert">
+              {fullSignInError}
+            </p>
+          ) : null}
+        </FormModal>
+      ) : null}
+      {kioskCloseOpen ? (
+        <FormModal
+          title="Close kiosk mode"
+          onClose={() => {
+            if (!kioskBusy) setKioskCloseOpen(false);
+          }}
+          busy={kioskBusy}
+          dirty={Boolean(kioskCode)}
+          closeAriaLabel="Keep kiosk mode"
+          footer={
+            <button
+              type="button"
+              className="list-btn-primary"
+              disabled={kioskBusy}
+              onClick={() => void confirmKioskClose()}
+              aria-label="Confirm close kiosk mode"
+            >
+              {kioskBusy ? 'Checking…' : 'Close kiosk'}
+            </button>
+          }
+        >
+          <p className="muted">Enter the close code to leave kiosk mode.</p>
+          <form
+            className="kiosk-exit"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void confirmKioskClose();
+            }}
+          >
+            <label>
+              Close code
+              <input
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={kioskCode}
+                onChange={(e) => setKioskCode(e.target.value.replace(/\D/g, '').slice(0, 16))}
+                maxLength={16}
+                placeholder={'•'.repeat(kioskCodeLength())}
+                autoComplete="off"
+                autoFocus
+                aria-label="Kiosk close code"
+              />
+            </label>
+          </form>
+          {kioskError ? (
+            <p className="form-flash" role="alert">
+              {kioskError}
+            </p>
+          ) : null}
+        </FormModal>
       ) : null}
       {signOutShift ? (
         <FormModal

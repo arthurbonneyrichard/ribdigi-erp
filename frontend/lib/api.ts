@@ -8,7 +8,7 @@ import {
   rehydrateAuth,
   setAuthTokens,
 } from './authStorage';
-import { POS_OPERATOR_HEADER, notePosLockedResponse, tillOperatorToken } from './posLock';
+import { POS_OPERATOR_HEADER, notePosLockedResponse, noteTillOnlyResponse, tillOperatorToken } from './posLock';
 
 /** Browser calls the Next.js origin; Next rewrites /api/v1 to the backend (avoids CORS Failed to fetch). */
 export function apiRoot(): string {
@@ -420,6 +420,9 @@ async function apiOnce(path: string, opts: RequestInit, retryOn401: boolean, get
     throw attachApiError(body, 429, retryAfter, requestId, path);
   }
   if (!response.ok) {
+    if (response.status === 403 && body?.detail?.code === 'TILL_ONLY' && typeof window !== 'undefined') {
+      noteTillOnlyResponse();
+    }
     throw attachApiError(body, response.status, undefined, requestId, path);
   }
   if (typeof window !== 'undefined' && !isGetLike(opts) && !isPublicAuthPath(path)) {

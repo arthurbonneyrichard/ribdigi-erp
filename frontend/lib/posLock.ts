@@ -35,6 +35,52 @@ const OFFLINE_LOCK_MS = 5 * 60 * 1000;
 export const POS_LOCKED_EVENT = 'ribdigi:pos-locked';
 export const POS_LOCK_NOW_EVENT = 'ribdigi:pos-lock-now';
 export const POS_OPERATOR_HEADER = 'X-Pos-Operator';
+export const TILL_ONLY_EVENT = 'ribdigi:till-only';
+
+const TILL_ONLY_KEY = 'ribdigi:pos:till-only';
+const TILL_ONLY_PENDING_KEY = 'ribdigi:pos:till-only-pending';
+
+/** Screens a till-only session may open: the tills and Sales. */
+export const TILL_ONLY_ROUTES = ['/pos', '/sales', '/restaurant/till'] as const;
+
+export function isTillOnlyRoute(pathname: string): boolean {
+  const path = (pathname || '').split('?')[0].replace(/\/$/, '') || '/';
+  return TILL_ONLY_ROUTES.some((route) => path === route || path.startsWith(`${route}/`));
+}
+
+/**
+ * A passcode opened a till on this browser. Until someone signs in fully with a password,
+ * the menu shows only the till and Sales (the server refuses the rest with 403 TILL_ONLY).
+ */
+export function isTillOnlyLocal(): boolean {
+  return session()?.getItem(TILL_ONLY_KEY) === '1';
+}
+
+export function setTillOnlyLocal(value: boolean, { pendingServer = false } = {}): void {
+  const store = session();
+  if (value) {
+    store?.setItem(TILL_ONLY_KEY, '1');
+    if (pendingServer) store?.setItem(TILL_ONLY_PENDING_KEY, '1');
+  } else {
+    store?.removeItem(TILL_ONLY_KEY);
+    store?.removeItem(TILL_ONLY_PENDING_KEY);
+  }
+  if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') window.dispatchEvent(new Event(TILL_ONLY_EVENT));
+}
+
+/** An offline unlock could not tell the server; it does so on reconnect. */
+export function tillOnlyPendingServer(): boolean {
+  return session()?.getItem(TILL_ONLY_PENDING_KEY) === '1';
+}
+
+export function clearTillOnlyPending(): void {
+  session()?.removeItem(TILL_ONLY_PENDING_KEY);
+}
+
+/** The server answered 403 TILL_ONLY: show the till-only menu even if this tab did not know. */
+export function noteTillOnlyResponse(): void {
+  if (!isTillOnlyLocal()) setTillOnlyLocal(true);
+}
 
 /** Screens where the cashier at the till acts instead of the signed-in account. */
 export function isTillPath(pathname: string): boolean {

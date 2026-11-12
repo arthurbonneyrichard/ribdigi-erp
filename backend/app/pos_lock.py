@@ -87,6 +87,148 @@ def path_accepts_operator(path: str) -> bool:
     return path in OPERATOR_EXACT_PATHS or any(path.startswith(prefix) for prefix in OPERATOR_PATHS)
 
 
+# A session opened with a passcode reaches only the till and Sales until a full sign-in.
+# Writes are allowed on these prefixes; everything below is read-only for the till screens.
+_TILL_ONLY_WRITE_PREFIXES = (
+    f"{API}/pos/",
+    f"{API}/printers/",
+    f"{API}/customers",
+    f"{API}/sales/",
+    f"{API}/gift-cards",
+    f"{API}/pharmacy/prescriptions",
+    f"{API}/restaurant/orders",
+    f"{API}/restaurant/till/",
+)
+_TILL_ONLY_READ_PREFIXES = (
+    f"{API}/products",
+    f"{API}/catalog/units",
+    f"{API}/stores",
+    f"{API}/tax/rates",
+    f"{API}/restaurant/tables",
+    f"{API}/restaurant/modifiers",
+    f"{API}/restaurant/recipes",
+    f"{API}/restaurant/sold-out",
+)
+_TILL_ONLY_EXACT = (
+    f"{API}/me",
+    f"{API}/tenants/me",
+    f"{API}/tenants/me/logo",
+    f"{API}/auth/logout",
+    f"{API}/auth/full-sign-in",
+)
+
+
+def till_only_path_allowed(method: str, path: str) -> bool:
+    if path in _TILL_ONLY_EXACT:
+        return path.startswith(f"{API}/auth/") or method.upper() in {"GET", "HEAD", "OPTIONS"}
+    if any(path.startswith(prefix) for prefix in _TILL_ONLY_WRITE_PREFIXES):
+        return True
+    if method.upper() in {"GET", "HEAD", "OPTIONS"}:
+        return any(path.startswith(prefix) for prefix in _TILL_ONLY_READ_PREFIXES)
+    return False
+
+
+def till_only_error() -> HTTPException:
+    return HTTPException(
+        status_code=403,
+        detail={
+            "code": "TILL_ONLY",
+            "message": "This till was opened with a passcode. Sign in fully with your password to use the rest of the system.",
+        },
+    )
+
+
+async def restrict_session_to_till(db: AsyncSession, claims: dict) -> None:
+    """The browser session behind a passcode unlock is held to the till and Sales."""
+    jti = claims.get("jti")
+    if not jti:
+        return
+    await db.execute(
+        update(m.AuthSession)
+        .where(m.AuthSession.jti == jti, m.AuthSession.tenant_id == claims["tenant_id"])
+        .values(till_only=True)
+    )
+
+
+async def full_sign_in(db: AsyncSession, *, claims: dict, password: str) -> dict:
+    """Lift the till-only hold with the signed-in account's own password."""
+    tenant_id = claims["tenant_id"]
+    user_id = claims["sub"]
+    jti = claims.get("jti")
+    if not jti:
+        return {"till_only": False}
+    scope = f"full-sign-in:{jti[:16]}"
+    await assert_not_throttled(db, tenant_id, scope, user_id)
+    user = await db.get(m.User, user_id)
+    from app.security import verify_password
+
+    if user is None or not user.is_active or not verify_password(password, user.password_hash):
+        left = await _record_failure(db, tenant_id, scope, user_id)
+        await audit_svc.record_event(
+            db, tenant_id=tenant_id, user_id=user_id, module="auth", action="full_sign_in_failed",
+            entity="user", entity_id=user_id, details={"tries_left": left},
+        )
+        await db.commit()
+        if left <= 0:
+            raise _throttled_error(DEVICE_LOCK_SECONDS)
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "PASSWORD_INVALID", "message": "That password is not right.", "tries_left": left},
+        )
+    await _clear_failures(db, tenant_id, scope, user_id)
+    await db.execute(
+        update(m.AuthSession)
+        .where(m.AuthSession.jti == jti, m.AuthSession.tenant_id == tenant_id)
+        .values(till_only=False)
+    )
+    await audit_svc.record_event(
+        db, tenant_id=tenant_id, user_id=user_id, module="auth", action="full_sign_in",
+        entity="user", entity_id=user_id, details={"from": "till"},
+    )
+    await db.commit()
+    return {"till_only": False}
+
+
+# ---------- kiosk mode ----------
+
+KIOSK_CODE_LENGTH = 8
+KIOSK_VERIFIER_ROUNDS = 200_000
+
+
+def kiosk_code() -> str:
+    return str(settings.POS_KIOSK_EXIT_CODE or "").strip()
+
+
+def kiosk_offline_verifier() -> dict:
+    """Lets a till check the close code while offline without shipping the code itself."""
+    salt = secrets.token_bytes(16)
+    digest = hashlib.pbkdf2_hmac("sha256", kiosk_code().encode(), salt, KIOSK_VERIFIER_ROUNDS)
+    return {"salt": salt.hex(), "hash": digest.hex(), "rounds": KIOSK_VERIFIER_ROUNDS, "length": len(kiosk_code())}
+
+
+async def close_kiosk(db: AsyncSession, *, claims: dict, device_id: str, surface: str, code: str) -> dict:
+    tenant_id = claims["tenant_id"]
+    user_id = claims.get("login_user_id") or claims["sub"]
+    scope = f"kiosk:{device_id}"
+    await assert_not_throttled(db, tenant_id, scope, user_id)
+    expected = kiosk_code()
+    if not expected or not hmac.compare_digest(code.encode(), expected.encode()):
+        left = await _record_failure(db, tenant_id, scope, user_id)
+        await _audit(db, tenant_id, action="pos_kiosk_close_failed", user_id=user_id, device_id=device_id,
+                     surface=surface, details={"tries_left": left})
+        await db.commit()
+        if left <= 0:
+            raise _throttled_error(DEVICE_LOCK_SECONDS)
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "KIOSK_CODE_INVALID", "message": "That code is not right.", "tries_left": left},
+        )
+    await _clear_failures(db, tenant_id, scope, user_id)
+    await _audit(db, tenant_id, action="pos_kiosk_closed", user_id=user_id, device_id=device_id, surface=surface)
+    await db.commit()
+    return {"closed": True}
+
+
 def path_needs_unlocked_till(method: str, path: str) -> bool:
     if method.upper() in {"GET", "HEAD", "OPTIONS"}:
         return False
@@ -488,6 +630,7 @@ async def unlock_with_passcode(
         login_user_id=login_user_id, method="passcode",
     )
     row.last_used_at = _now()
+    await restrict_session_to_till(db, claims)
     await db.commit()
     return _unlock_result(session, operator, replaced)
 

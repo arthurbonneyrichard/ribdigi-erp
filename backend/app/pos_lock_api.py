@@ -128,6 +128,39 @@ async def pos_lock_handover(
     return _env(data, "Recorded")
 
 
+@router.post("/pos/lock/restrict")
+async def pos_lock_restrict(claims=Depends(current_claims), db: AsyncSession = Depends(get_db)):
+    """A till unlocked offline holds this session to the till and Sales once it reconnects."""
+    _reject_api_key(claims)
+    await lock_svc.restrict_session_to_till(db, claims)
+    await db.commit()
+    return _env({"till_only": True})
+
+
+class KioskCloseBody(TillBody):
+    code: Annotated[str, Field(min_length=4, max_length=16, pattern=r"^\d+$")]
+
+
+@router.get("/pos/kiosk/verifier")
+async def pos_kiosk_verifier(claims=Depends(current_claims)):
+    """Saved by the till so kiosk mode can still be closed while offline."""
+    _reject_api_key(claims)
+    return _env(lock_svc.kiosk_offline_verifier())
+
+
+@router.post("/pos/kiosk/close")
+async def pos_kiosk_close(
+    payload: KioskCloseBody,
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
+):
+    _reject_api_key(claims)
+    data = await lock_svc.close_kiosk(
+        db, claims=claims, device_id=payload.device_id, surface=payload.surface, code=payload.code
+    )
+    return _env(data, "Kiosk mode closed")
+
+
 @router.get("/users/pos-passcodes")
 async def pos_passcode_list(
     claims=Depends(require_permission("users", "read")),

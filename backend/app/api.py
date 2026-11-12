@@ -5,7 +5,7 @@ from pathlib import Path as FsPath
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, Query, Request, UploadFile
 from fastapi.responses import FileResponse, PlainTextResponse, Response
-from pydantic import EmailStr, TypeAdapter, ValidationError as PydanticValidationError
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, TypeAdapter, ValidationError as PydanticValidationError
 from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -674,6 +674,7 @@ async def create_session(
     user: m.User,
     request: Request | None = None,
     login_method: str | None = None,
+    till_only: bool = False,
 ) -> tuple[str, str]:
     refresh_raw, refresh_hash, refresh_exp = issue_refresh_token()
     jti = __import__("secrets").token_hex(16)
@@ -686,6 +687,7 @@ async def create_session(
         user_agent=(request.headers.get("user-agent") if request else None),
         ip_address=(client_ip_from_request(request) if request else None),
         expires_at=refresh_exp,
+        till_only=till_only,
     )
     db.add(session)
     await db.flush()
@@ -2993,7 +2995,10 @@ async def refresh(payload: RefreshRequest, request: Request, db: AsyncSession = 
         raise HTTPException(status_code=401, detail="Invalid session user")
 
     session.revoked_at = datetime.utcnow()
-    access, refresh_raw = await create_session(db, user=user, request=request)
+    # A till-only hold survives the token refresh; only a full sign-in lifts it.
+    access, refresh_raw = await create_session(
+        db, user=user, request=request, till_only=bool(getattr(session, "till_only", False))
+    )
     await db.commit()
     return env(
         {
@@ -3003,6 +3008,23 @@ async def refresh(payload: RefreshRequest, request: Request, db: AsyncSession = 
             "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         }
     )
+
+
+class FullSignInBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    password: str = Field(min_length=1, max_length=128)
+
+
+@api.post("/auth/full-sign-in")
+async def full_sign_in(payload: FullSignInBody, claims=Depends(current_claims), db: AsyncSession = Depends(get_db)):
+    """After a till was opened with a passcode, the account password brings back the whole system."""
+    if claims.get("auth_method") == "api_key":
+        raise HTTPException(status_code=403, detail="An API key has no till session.")
+    from app import pos_lock as pos_lock_svc
+
+    data = await pos_lock_svc.full_sign_in(db, claims=claims, password=payload.password)
+    return env(data, "Signed in fully")
 
 
 @api.post("/auth/logout")
@@ -3393,6 +3415,7 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             "store_ids": assigned,
             "store_scope": loc.get("store_scope"),
             "email_verified": user.email_verified,
+            "till_only": bool(claims.get("till_only")),
             "permissions": perms,
             "record_scope": record_scope_from_permissions(user.role, perms if isinstance(perms, dict) else None),
             "package_code": claims.get("package_code") or (getattr(tenant, "package_code", None) if tenant else "trial"),

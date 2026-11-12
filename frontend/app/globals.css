@@ -8529,6 +8529,25 @@ input[type=file]::file-selector-button:hover{border-color:var(--brand)}
 [data-theme="dark"] .plat.help .plat-stats .plat-stat span{color:#A3B8AB!important}
 [data-theme="dark"] .plat.help .plat-stats .plat-stat.is-on{border-color:#7BD14A!important;box-shadow:0 0 0 3px rgba(123,209,74,.25)}
 
+/* Kiosk mode: the till alone, full screen, no menu or way to other screens. */
+.shell.is-kiosk > .side,
+.shell.is-kiosk > .side-edge-toggle,
+.shell.is-kiosk > .side-backdrop,
+.shell.is-kiosk .topbar-context{display:none !important}
+.shell.is-kiosk.is-pos > .main,
+.shell.is-kiosk > .main{padding-left:max(10px,env(safe-area-inset-left,0px)) !important}
+.shell.is-kiosk .kiosk-close-btn{opacity:.75}
+.shell.is-kiosk .kiosk-close-btn:hover,.shell.is-kiosk .kiosk-close-btn:focus-visible{opacity:1}
+
+/* Opened with a passcode: only the till and Sales until a full sign-in. */
+.main .topbar-right .logout-btn.till-full-btn,
+[data-theme="dark"] .main .topbar-right .logout-btn.till-full-btn{background:var(--brand);color:#fff;border-color:var(--brand)}
+.main .topbar-right .logout-btn.till-full-btn:hover,.main .topbar-right .logout-btn.till-full-btn:focus-visible,
+[data-theme="dark"] .main .topbar-right .logout-btn.till-full-btn:hover{background:var(--brand-dark);border-color:var(--brand-dark);color:#fff}
+
+/* Sidebar logo box: colours picked from the logo (Shell + lib/logoBackdrop). */
+.side .brand .brand-name{color:var(--brand-name-color,var(--brand-light))}
+
 /* Date boxes everywhere: a clear calendar icon in brand green, and the whole box opens the calendar
    (app/layout.tsx calls showPicker on click). The browser's own glyph is faint on the soft field colours. */
 input[type="date"],input[type="datetime-local"],input[type="month"],input[type="week"]{cursor:pointer;min-height:40px}

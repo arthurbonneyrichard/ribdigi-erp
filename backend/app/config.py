@@ -78,6 +78,8 @@ class Settings(BaseSettings):
     # Keys the cashier passcode lookup. Empty derives it from JWT_SECRET_KEY, so rotating that
     # secret would mean reissuing every passcode. Set this once in production.
     POS_PASSCODE_PEPPER: str = ""
+    # Eight digits that close kiosk mode on a till (frontend asks, the server checks).
+    POS_KIOSK_EXIT_CODE: str = "11223300"
     TOTP_ENFORCED_ROLES: str = "company_admin,super_admin,platform_owner,platform_admin"
     # When false, login skips TOTP/passkey challenge and enrollment gates (password + tenant only).
     # Set true in production to require enrolled second factors at sign-in.
