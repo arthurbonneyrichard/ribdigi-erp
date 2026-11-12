@@ -665,6 +665,7 @@ const NAV_ITEM_ICON: Record<string, string> = {
   '/gift-cards': 'gift',
   '/platform': 'dashboard',
   '/platform/billing': 'credit',
+  '/company/billing': 'd:wallet',
   // Retail entries in the same group would repeat one picture, so each gets its own (d: = DeskIcon).
   '/inventory?tab=products': 'd:box',
   '/inventory?tab=categories': 'd:tag',
