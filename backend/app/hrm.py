@@ -53,16 +53,74 @@ _JOBS = {
     "hrm_officer": frozenset({"people", "leave", "attendance", "recruitment", "training", "contracts", "assets", "notices"}),
     "hrm_employee": frozenset({"self"}),
 }
+# A desk's manager looks after their staff's records, leave and time, but not pay.
+_DESK_MANAGER_AREAS = frozenset({"people", "leave", "attendance", "training", "contracts", "assets", "notices", "recruitment", "self"})
+for _role in ("store_manager", "restaurant_manager", "hotel_manager", "bakery_manager", "fmcg_manager", "gym_manager"):
+    _JOBS[_role] = _DESK_MANAGER_AREAS
 _WORDS = {
+    "store_manager": "Managers look after staff records, leave and time. Pay needs the company admin.",
+    "restaurant_manager": "Managers look after staff records, leave and time. Pay needs the company admin.",
+    "hotel_manager": "Managers look after staff records, leave and time. Pay needs the company admin.",
+    "bakery_manager": "Managers look after staff records, leave and time. Pay needs the company admin.",
+    "fmcg_manager": "Managers look after staff records, leave and time. Pay needs the company admin.",
+    "gym_manager": "Managers look after staff records, leave and time. Pay needs the company admin.",
     "hrm_officer": "HR officers look after staff records, leave, attendance, hiring, training, contracts and assets. Pay, reviews, claims and cases need a manager.",
     "hrm_employee": "You can see your own leave and payslips. Ask HR for the rest.",
 }
 
 
+# Who runs HR: the HRM desk's manager and each company's admin. HR officers get their list
+# (_JOBS). Everyone else with the hrm grant (a cashier, a waiter, a rep) sees only their own file.
+HR_FULL_ROLES = frozenset({"company_admin", "hrm_manager", "super_admin"})
+
+# The HR each industry gets (one engine, each company's rows on its own desk). "self" is always on.
+ALL_HR_AREAS = frozenset(
+    {"people", "leave", "attendance", "payroll", "recruitment", "reviews", "training",
+     "contracts", "cases", "assets", "claims", "notices", "self"}
+)
+HR_AREAS_BY_INDUSTRY: dict[str, frozenset[str]] = {
+    "hrm": ALL_HR_AREAS,
+    "fmcg": ALL_HR_AREAS,
+    "retail": frozenset({"people", "leave", "attendance", "payroll", "reviews", "claims", "notices", "self"}),
+    "pharmacy": frozenset({"people", "leave", "attendance", "payroll", "training", "contracts", "reviews", "notices", "self"}),
+    "restaurant": frozenset({"people", "leave", "attendance", "payroll", "reviews", "notices", "self"}),
+    "hotel": frozenset({"people", "leave", "attendance", "payroll", "training", "contracts", "reviews", "notices", "self"}),
+    "bakery": frozenset({"people", "leave", "attendance", "payroll", "notices", "self"}),
+    "gym": frozenset({"people", "leave", "attendance", "payroll", "training", "notices", "self"}),
+}
+
+
+def hr_areas_for(industry: str | None) -> frozenset[str]:
+    from app import packages as packages_svc
+
+    return HR_AREAS_BY_INDUSTRY.get(packages_svc.canonicalize_industry(industry) or "", frozenset({"self"}))
+
+
+def runs_hr(claims: dict) -> bool:
+    """HR manager or company admin. Platform support staff do not see salaries."""
+    return str(claims.get("role") or "") in HR_FULL_ROLES
+
+
+def sees_pay(claims: dict) -> bool:
+    return runs_hr(claims)
+
+
 def job(claims: dict, area: str) -> None:
     role = str(claims.get("role") or "")
-    if role in _JOBS and area not in _JOBS[role]:
-        raise HTTPException(status_code=403, detail={"code": "HRM_ROLE_JOB", "message": _WORDS[role]})
+    from app.rbac import is_platform_role
+
+    # Every request carries the company's industry; only internal calls leave it out.
+    if "industry" in claims and not is_platform_role(role) and area not in hr_areas_for(claims.get("industry")):
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "HRM_AREA_OFF", "message": "This part of HR is not part of your business type's HR."},
+        )
+    if runs_hr(claims):
+        return
+    allowed = _JOBS.get(role, frozenset({"self"}))
+    if area not in allowed:
+        message = _WORDS.get(role, "You can see your own file under My pay and leave. Ask HR for the rest.")
+        raise HTTPException(status_code=403, detail={"code": "HRM_ROLE_JOB", "message": message})
 
 
 def _money(value) -> float:

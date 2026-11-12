@@ -2,6 +2,24 @@
 
 HRM is its own industry on `hrm_*` tables: staff records, leave, attendance and payroll. It has no products, sales or till. Its menu has only HR work and account settings.
 
+## HR in every industry
+
+One HR engine serves every business type; each company's HR rows stay its own. `hrm.HR_AREAS_BY_INDUSTRY` (mirrored by `HR_AREAS_BY_INDUSTRY` in `frontend/lib/tenantNav.ts`) decides which parts each type gets; a route outside them answers 403 `HRM_AREA_OFF`.
+
+| Business type | HR it gets |
+| --- | --- |
+| HRM, FMCG | everything |
+| Retail | staff, leave, time, payroll (with loans), reviews, expense claims, notices |
+| Pharmacy | staff, leave, time, payroll, training (licences, mandatory courses), contracts, reviews, notices |
+| Restaurant | staff, leave, time, payroll, reviews, notices |
+| Hotel | staff, leave, time, payroll, training, contracts, reviews, notices |
+| Bakery | staff, leave, time, payroll, notices |
+| Gym | staff, leave, time, payroll, training, notices |
+
+Every type gets My pay and leave. Each desk's sidebar gains an **HR** group with its screens.
+
+**Who does what** (`hrm.job`): company admin and HR manager run all of HR and see pay. HR officers and each desk's manager (store, restaurant, hotel, bakery, FMCG, gym manager) look after staff records, leave, time, training, contracts, kit, notices and hiring up to interview, without pay. Everyone else (cashiers, waiters, reps, drivers, front desk) has only their own file. No wholesale business type exists yet, so there is no wholesale HR.
+
 ## Sidebar
 
 An HRM company gets its own sidebar (`HRM_NAV_GROUPS`): Dashboard; People (Employees, Leave, Attendance); Pay (Payroll, Reports, Pay rates); My pay and leave; Sign-in accounts (`/users`); Notifications; Help; Settings. No retail, expense or accounting menus and no in-page tab strip.

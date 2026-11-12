@@ -136,6 +136,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "staff_guide": ["read", "download"],
     },
     "hotel_manager": {
+        # Their own HR file under My pay and leave (hrm.job keeps it to that).
+        "hrm": ["read", "write"],
         "dashboard": ["read"],
         "hotel": ["read", "write"],
         "inventory": ["read", "write"],
@@ -154,6 +156,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "staff_guide": ["read", "download"],
     },
     "hotel_front_desk": {
+        # Their own HR file under My pay and leave (hrm.job keeps it to that).
+        "hrm": ["read", "write"],
         "hotel": ["read", "write"],
         "notifications": ["read", "write"],
         "security": ["read", "write"],
@@ -164,6 +168,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
     # per role in restaurant_api._restaurant_job_gate on top of these module grants.
     # Gym staff. Each job is checked per role in gym.job on top of these module grants.
     "gym_manager": {
+        # Their own HR file under My pay and leave (hrm.job keeps it to that).
+        "hrm": ["read", "write"],
         "dashboard": ["read"],
         "gym": ["read", "write"],
         "inventory": ["read", "write"],
@@ -179,6 +185,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "staff_guide": ["read", "download"],
     },
     "gym_frontdesk": {
+        # Their own HR file under My pay and leave (hrm.job keeps it to that).
+        "hrm": ["read", "write"],
         "gym": ["read", "write"],
         "notifications": ["read", "write"],
         "stores": ["read"],
@@ -186,6 +194,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "staff_guide": ["read", "download"],
     },
     "gym_trainer": {
+        # Their own HR file under My pay and leave (hrm.job keeps it to that).
+        "hrm": ["read", "write"],
         "gym": ["read", "write"],
         "notifications": ["read"],
         "stores": ["read"],
@@ -221,6 +231,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
     },
     # FMCG staff. Each job is checked per role in fmcg_orders.job on top of these module grants.
     "fmcg_manager": {
+        # Their own HR file under My pay and leave (hrm.job keeps it to that).
+        "hrm": ["read", "write"],
         "dashboard": ["read"],
         "fmcg": ["read", "write"],
         "inventory": ["read", "write"],
@@ -237,6 +249,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "staff_guide": ["read", "download"],
     },
     "fmcg_rep": {
+        # Their own HR file under My pay and leave (hrm.job keeps it to that).
+        "hrm": ["read", "write"],
         "fmcg": ["read", "write"],
         "inventory": ["read"],
         "notifications": ["read", "write"],
@@ -245,6 +259,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "staff_guide": ["read", "download"],
     },
     "fmcg_driver": {
+        # Their own HR file under My pay and leave (hrm.job keeps it to that).
+        "hrm": ["read", "write"],
         "fmcg": ["read", "write"],
         "notifications": ["read"],
         "stores": ["read"],
@@ -253,6 +269,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
     },
     # Bakery staff. Each job is checked per role in bakery_api on top of these module grants.
     "bakery_manager": {
+        # Their own HR file under My pay and leave (hrm.job keeps it to that).
+        "hrm": ["read", "write"],
         "dashboard": ["read"],
         "bakery": ["read", "write"],
         "inventory": ["read", "write"],
@@ -269,6 +287,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "staff_guide": ["read", "download"],
     },
     "bakery_cashier": {
+        # Their own HR file under My pay and leave (hrm.job keeps it to that).
+        "hrm": ["read", "write"],
         "bakery": ["read", "write"],
         "inventory": ["read"],
         "stores": ["read"],
@@ -277,6 +297,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "staff_guide": ["read", "download"],
     },
     "bakery_driver": {
+        # Their own HR file under My pay and leave (hrm.job keeps it to that).
+        "hrm": ["read", "write"],
         "bakery": ["read", "write"],
         "stores": ["read"],
         "notifications": ["read"],
@@ -284,6 +306,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "staff_guide": ["read", "download"],
     },
     "bakery_baker": {
+        # Their own HR file under My pay and leave (hrm.job keeps it to that).
+        "hrm": ["read", "write"],
         "bakery": ["read", "write"],
         "inventory": ["read"],
         "stores": ["read"],
@@ -292,6 +316,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "staff_guide": ["read", "download"],
     },
     "restaurant_manager": {
+        # Their own HR file under My pay and leave (hrm.job keeps it to that).
+        "hrm": ["read", "write"],
         "dashboard": ["read"],
         "restaurant": ["read", "write"],
         "inventory": ["read", "write"],
@@ -309,6 +335,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "staff_guide": ["read", "download"],
     },
     "restaurant_cashier": {
+        # Their own HR file under My pay and leave (hrm.job keeps it to that).
+        "hrm": ["read", "write"],
         "restaurant": ["read", "write"],
         "inventory": ["read"],
         "stores": ["read"],
@@ -317,6 +345,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "staff_guide": ["read", "download"],
     },
     "restaurant_waiter": {
+        # Their own HR file under My pay and leave (hrm.job keeps it to that).
+        "hrm": ["read", "write"],
         "restaurant": ["read", "write"],
         "inventory": ["read"],
         "stores": ["read"],
@@ -325,6 +355,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "staff_guide": ["read", "download"],
     },
     "restaurant_kitchen": {
+        # Their own HR file under My pay and leave (hrm.job keeps it to that).
+        "hrm": ["read", "write"],
         "restaurant": ["read", "write"],
         "inventory": ["read"],
         "stores": ["read"],
@@ -333,12 +365,16 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "staff_guide": ["read", "download"],
     },
     "hotel_reservations": {
+        # Their own HR file under My pay and leave (hrm.job keeps it to that).
+        "hrm": ["read", "write"],
         "hotel": ["read", "write"],
         "notifications": ["read", "write"],
         "security": ["read", "write"],
         "staff_guide": ["read", "download"],
     },
     "hotel_housekeeping": {
+        # Their own HR file under My pay and leave (hrm.job keeps it to that).
+        "hrm": ["read", "write"],
         "hotel": ["read", "write"],
         "inventory": ["read"],
         "notifications": ["read"],
@@ -346,6 +382,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "staff_guide": ["read", "download"],
     },
     "hotel_maintenance": {
+        # Their own HR file under My pay and leave (hrm.job keeps it to that).
+        "hrm": ["read", "write"],
         "hotel": ["read", "write"],
         "inventory": ["read"],
         "notifications": ["read"],
@@ -353,6 +391,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "staff_guide": ["read", "download"],
     },
     "hotel_cashier": {
+        # Their own HR file under My pay and leave (hrm.job keeps it to that).
+        "hrm": ["read", "write"],
         "hotel": ["read", "write"],
         "pos": ["read", "write"],
         "accounting": ["read"],
@@ -361,6 +401,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "staff_guide": ["read", "download"],
     },
     "hotel_auditor": {
+        # Their own HR file under My pay and leave (hrm.job keeps it to that).
+        "hrm": ["read", "write"],
         "hotel": ["read"],
         "reports": ["read"],
         "audit": ["read"],

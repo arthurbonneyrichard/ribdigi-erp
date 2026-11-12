@@ -10,6 +10,7 @@ import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'reac
 import { api } from '../../../lib/api';
 import { formatMoney } from '../../../lib/format';
 import { getMe } from '../../../lib/meCache';
+import { hrTabAllowed } from '../../../lib/tenantNav';
 import DeskDashboard from '../../../components/DeskDashboard';
 import DeskIcon from '../../../components/DeskIcon';
 import { MyMore, PEOPLE_WORK_SCREENS, PeopleWork } from './PeopleWork';
@@ -62,10 +63,20 @@ function Head({ title, icon, meta }: { title: string; icon?: string; meta?: Reac
     </div>
   );
 }
+const OFFICER_TABS = ['today', 'people', 'leave', 'attendance', 'shifts', 'clock', 'devices', 'hiring', 'training', 'contracts', 'kit', 'notices', 'me'];
+// Mirrors backend hrm.job: HR managers and company admins see everything; officers and each
+// desk's manager run people admin without pay; everyone else sees only their own file.
+const FULL_HR_ROLES = new Set(['company_admin', 'hrm_manager', 'super_admin']);
 const ROLE_TABS: Record<string, string[]> = {
-  hrm_officer: ['today', 'people', 'leave', 'attendance', 'shifts', 'clock', 'devices', 'hiring', 'training', 'contracts', 'kit', 'notices', 'me'],
-  hrm_employee: ['me'],
+  hrm_officer: OFFICER_TABS,
+  store_manager: OFFICER_TABS,
+  restaurant_manager: OFFICER_TABS,
+  hotel_manager: OFFICER_TABS,
+  bakery_manager: OFFICER_TABS,
+  fmcg_manager: OFFICER_TABS,
+  gym_manager: OFFICER_TABS,
 };
+const roleTabs = (role: string) => (FULL_HR_ROLES.has(role) ? null : ROLE_TABS[role] || ['me']);
 const LEAVE = [
   { id: 'annual', label: 'Annual' },
   { id: 'sick', label: 'Sick' },
@@ -156,10 +167,14 @@ const RATE_BLANK = {
 function HrmDesk() {
   const params = useSearchParams();
   const [role, setRole] = useState('');
-  const allowed = useMemo(() => TABS.filter((t) => !ROLE_TABS[role] || ROLE_TABS[role].includes(t.id)), [role]);
-  const wanted = params.get('tab') || (role === 'hrm_employee' ? 'me' : 'today');
+  const [industry, setIndustry] = useState('');
+  const allowed = useMemo(() => {
+    const mine = roleTabs(role);
+    return TABS.filter((t) => (!mine || mine.includes(t.id)) && (!industry || hrTabAllowed(t.id, industry)));
+  }, [role, industry]);
+  const wanted = params.get('tab') || (roleTabs(role)?.length === 1 ? 'me' : 'today');
   const tab = allowed.some((t) => t.id === wanted) ? wanted : allowed[0]?.id || 'today';
-  const seesPay = role !== 'hrm_officer' && role !== 'hrm_employee';
+  const seesPay = FULL_HR_ROLES.has(role);
 
   const [summary, setSummary] = useState<Row | null>(null);
   const [people, setPeople] = useState<Row[]>([]);
@@ -198,7 +213,12 @@ function HrmDesk() {
   const [dialog, setDialog] = useState<Row | null>(null);
 
   useEffect(() => {
-    getMe().then((u: Row | null) => setRole(String(u?.data?.role || 'unknown'))).catch(() => setRole('unknown'));
+    getMe()
+      .then((u: Row | null) => {
+        setIndustry(String(u?.data?.industry || u?.data?.tenant?.industry || ''));
+        setRole(String(u?.data?.role || 'unknown'));
+      })
+      .catch(() => setRole('unknown'));
   }, []);
 
   const load = useCallback(async () => {

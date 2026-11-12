@@ -219,7 +219,7 @@ async def vacancy_close(vacancy_id: UuidIdValue, claims=_w(), db: AsyncSession =
 async def candidates(vacancy_id: UuidIdValue, claims=_r(), db: AsyncSession = Depends(get_db)):
     svc.job(claims, "recruitment")
     rows = await people.list_candidates(db, claims["tenant_id"], vacancy_id)
-    sees_pay = svc._JOBS.get(str(claims.get("role") or "")) is None
+    sees_pay = svc.sees_pay(claims)
     out = [people.serialize_candidate(r) for r in rows]
     if not sees_pay:
         for row in out:

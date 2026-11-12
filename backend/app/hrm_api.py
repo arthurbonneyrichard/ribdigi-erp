@@ -34,7 +34,7 @@ def _env(data, message: str = "OK"):
 
 
 def _sees_pay(claims: dict) -> bool:
-    return str(claims.get("role") or "") not in ("hrm_officer", "hrm_employee")
+    return svc.sees_pay(claims)
 
 
 class EmployeeBody(BaseModel):
@@ -575,7 +575,7 @@ async def hrm_leave_decide(
     db: AsyncSession = Depends(get_db),
 ):
     # Staff who manage people decide their team's first step; everything else needs the leave job.
-    as_hr = str(claims.get("role") or "") != "hrm_employee"
+    as_hr = svc.runs_hr(claims) or str(claims.get("role") or "") in svc._JOBS and "leave" in svc._JOBS[str(claims.get("role"))]
     if as_hr:
         svc.job(claims, "leave")
     row = await svc.decide_leave(

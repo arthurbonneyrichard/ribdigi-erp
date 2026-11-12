@@ -135,14 +135,16 @@ INDUSTRY_SPECIFIC_MODULES: frozenset[str] = frozenset(
 # Business type → industry modules that may activate (in addition to shared core).
 # Industries omitted here get no industry-specific modules (retail/mart/pharmacy/…).
 INDUSTRY_MODULE_ALLOWLIST: dict[str, frozenset[str]] = {
-    "hotel": frozenset({"hotel"}),
-    "restaurant": frozenset({"restaurant"}),
-    "fmcg": frozenset({"fmcg"}),
-    "bakery": frozenset({"bakery"}),
-    "gym": frozenset({"gym"}),
+    # HR runs for every industry on the one HR engine; each company's rows stay its own and
+    # hrm.HR_AREAS_BY_INDUSTRY decides which parts of HR each business type gets.
+    "hotel": frozenset({"hotel", "hrm"}),
+    "restaurant": frozenset({"restaurant", "hrm"}),
+    "fmcg": frozenset({"fmcg", "hrm"}),
+    "bakery": frozenset({"bakery", "hrm"}),
+    "gym": frozenset({"gym", "hrm"}),
     "hrm": frozenset({"hrm"}),
-    "retail": frozenset({"ecommerce"}),
-    "pharmacy": frozenset({"ecommerce"}),
+    "retail": frozenset({"ecommerce", "hrm"}),
+    "pharmacy": frozenset({"ecommerce", "hrm"}),
 }
 
 # Implemented industry verticals (must match shipped UI + APIs). Unimplemented
