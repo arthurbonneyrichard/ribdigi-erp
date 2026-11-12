@@ -186,6 +186,7 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("gym_classes", m.GymClass),
     ("gym_class_bookings", m.GymClassBooking),
     ("hrm_settings", m.HrmSettings),
+    ("hrm_statutory_rates", m.HrmStatutoryRate),
     ("hrm_employees", m.HrmEmployee),
     ("hrm_leave_requests", m.HrmLeaveRequest),
     ("hrm_attendance", m.HrmAttendance),

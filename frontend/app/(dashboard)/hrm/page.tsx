@@ -99,13 +99,31 @@ function printSlip(slip: Row, period: string) {
   if (!page) return;
   const line = (label: string, value: unknown) => `<tr><td>${label}</td><td style="text-align:right">${money(value)}</td></tr>`;
   page.document.write(
-    `<html><body style="font-family:sans-serif"><h3>Payslip ${safe(period)}</h3><p>${safe(slip.employee_name)} · ${safe(slip.employee_number)}<br/>${safe(slip.job_title)}</p><table style="width:100%">${line('Basic', slip.basic)}${line('Allowances', slip.allowances)}${line('Bonus', slip.bonus)}${line('Unpaid days', -Number(slip.unpaid_deduction))}${line('Gross', slip.gross)}${line('SSNIT', -Number(slip.ssnit_employee))}${line('PAYE', -Number(slip.paye))}${line('Other deductions', -Number(slip.other_deductions))}</table><h3>Net pay ${money(slip.net)}</h3></body></html>`,
+    `<html><body style="font-family:sans-serif"><h3>Payslip ${safe(period)}</h3><p>${safe(slip.employee_name)} · ${safe(slip.employee_number)}<br/>${safe(slip.job_title)}</p><table style="width:100%">${line('Basic', slip.basic)}${line('Allowances', slip.allowances)}${line('Bonus', slip.bonus)}${line('Unpaid days', -Number(slip.unpaid_deduction))}${line('Gross', slip.gross)}${line('SSNIT', -Number(slip.ssnit_employee))}${Number(slip.tier3) > 0 ? line('Tier 3 pension', -Number(slip.tier3)) : ''}${line('PAYE', -Number(slip.paye))}${line('Other deductions', -Number(slip.other_deductions))}</table><h3>Net pay ${money(slip.net)}</h3></body></html>`,
   );
   page.document.close();
   page.print();
 }
 
-const BLANK = { full_name: '', phone: '', email: '', job_title: '', department: '', hired_on: '', basic_salary: '', allowances: '0', ssnit_number: '', tin: '', bank_name: '', bank_account: '' };
+const BLANK = { full_name: '', phone: '', email: '', job_title: '', department: '', hired_on: '', basic_salary: '', allowances: '0', ssnit_number: '', tin: '', bank_name: '', bank_account: '', ghana_card: '', mobile_money: '', tier3_percent: '0' };
+
+const GHANA_CARD = /^GHA-\d{9}-\d$/;
+
+function firstOfNextMonth(): string {
+  const d = new Date();
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)).toISOString().slice(0, 10);
+}
+
+const RATE_BLANK = {
+  effective_from: '',
+  employee_percent: '5.5',
+  employer_percent: '13',
+  tier2_percent: '0',
+  insurable_cap: '',
+  tier3_relief_percent: '16.5',
+  rounding: 'half_up',
+  source_note: '',
+};
 
 function HrmDesk() {
   const params = useSearchParams();
@@ -125,6 +143,9 @@ function HrmDesk() {
   const [openRun, setOpenRun] = useState('');
   const [report, setReport] = useState<Row | null>(null);
   const [settings, setSettings] = useState<Row | null>(null);
+  const [rates, setRates] = useState<Row[]>([]);
+  const [rateForm, setRateForm] = useState<Row>(RATE_BLANK);
+  const [rateBands, setRateBands] = useState<Row[]>([]);
   const [me, setMe] = useState<Row | null>(null);
   const [form, setForm] = useState(BLANK);
   const [leaveForm, setLeaveForm] = useState({ employee_id: '', leave_type: 'annual', starts_on: '', ends_on: '', reason: '' });
@@ -151,7 +172,24 @@ function HrmDesk() {
       if (tab === 'attendance') setMarks((await get(`/hrm/attendance?day=${day}`)) || []);
       if (tab === 'payroll') setRuns((await get('/hrm/payroll')) || []);
       if (tab === 'reports') setReport(await get('/hrm/reports'));
-      if (tab === 'settings') setSettings(await get('/hrm/settings'));
+      if (tab === 'settings') {
+        const [st, rt] = await Promise.all([get('/hrm/settings'), get('/hrm/statutory-rates')]);
+        setSettings(st);
+        setRates(rt || []);
+        // A new dated row starts from the newest rules on record.
+        const base = (rt && rt[0]) || st;
+        setRateBands((base?.paye_bands || []).map((b: Row) => ({ width: b.width == null ? null : String(b.width), rate: String(b.rate) })));
+        setRateForm({
+          ...RATE_BLANK,
+          effective_from: firstOfNextMonth(),
+          employee_percent: String(rt?.[0]?.employee_percent ?? st?.ssnit_employee_percent ?? '5.5'),
+          employer_percent: String(rt?.[0]?.employer_percent ?? st?.ssnit_employer_percent ?? '13'),
+          tier2_percent: String(rt?.[0]?.tier2_percent ?? '0'),
+          insurable_cap: rt?.[0]?.insurable_cap == null ? '' : String(rt[0].insurable_cap),
+          tier3_relief_percent: String(rt?.[0]?.tier3_relief_percent ?? '16.5'),
+          rounding: rt?.[0]?.rounding || 'half_up',
+        });
+      }
       if (tab === 'me') setMe(await get('/hrm/me'));
     } catch (err) {
       setError(problem(err));
@@ -196,6 +234,9 @@ function HrmDesk() {
         tin: blank(form.tin),
         bank_name: blank(form.bank_name),
         bank_account: blank(form.bank_account),
+        ghana_card: blank(form.ghana_card.toUpperCase()),
+        mobile_money: form.mobile_money.replace(/[\s-]/g, '') || null,
+        tier3_percent: Number(form.tier3_percent || 0),
       },
       'Employee added',
     );
@@ -237,7 +278,33 @@ function HrmDesk() {
         : true
     : false;
   const leaveReady = leaveForm.starts_on && leaveForm.ends_on;
-  const payWords: Record<string, string> = { staff: 'salaries', paye: 'PAYE to GRA', ssnit: 'SSNIT' };
+  const payWords: Record<string, string> = {
+    staff: 'salaries',
+    paye: 'PAYE to GRA',
+    ssnit: 'SSNIT (Tier 1)',
+    tier2: 'Tier 2 pension to the trustee',
+    tier3: 'Tier 3 pension',
+  };
+
+  async function addRates() {
+    const num = (v: unknown) => Number(String(v ?? '').trim());
+    const ok = await run(
+      '/hrm/statutory-rates',
+      {
+        effective_from: rateForm.effective_from,
+        employee_percent: num(rateForm.employee_percent),
+        employer_percent: num(rateForm.employer_percent),
+        tier2_percent: num(rateForm.tier2_percent || 0),
+        insurable_cap: String(rateForm.insurable_cap || '').trim() ? num(rateForm.insurable_cap) : null,
+        tier3_relief_percent: num(rateForm.tier3_relief_percent || 0),
+        rounding: rateForm.rounding,
+        source_note: String(rateForm.source_note || '').trim() || null,
+        paye_bands: rateBands.map((b) => ({ width: b.width == null ? null : num(b.width), rate: num(b.rate) })),
+      },
+      'Rates saved',
+    );
+    if (ok) setRateForm({ ...RATE_BLANK, effective_from: firstOfNextMonth() });
+  }
 
   const leaveFields = (
     <>
@@ -360,7 +427,22 @@ function HrmDesk() {
               <label><span>TIN</span><input value={form.tin} onChange={(e) => setForm({ ...form, tin: e.target.value })} aria-label="TIN" /></label>
               <label><span>Bank</span><input value={form.bank_name} onChange={(e) => setForm({ ...form, bank_name: e.target.value })} aria-label="Bank" /></label>
               <label><span>Account number</span><input value={form.bank_account} onChange={(e) => setForm({ ...form, bank_account: e.target.value })} aria-label="Account number" /></label>
-              <button type="button" className="hr-primary" disabled={busy || !form.full_name.trim() || !form.hired_on} onClick={() => void addPerson()}>Add employee</button>
+              <label>
+                <span>Ghana Card</span>
+                <input value={form.ghana_card} placeholder="GHA-000000000-0" onChange={(e) => setForm({ ...form, ghana_card: e.target.value })} aria-label="Ghana Card number" />
+              </label>
+              <label><span>Mobile Money</span><input value={form.mobile_money} placeholder="+233…" onChange={(e) => setForm({ ...form, mobile_money: e.target.value })} aria-label="Mobile Money number" /></label>
+              {seesPay ? (
+                <label><span>Tier 3 voluntary %</span><input type="number" min="0" max="100" step="0.5" value={form.tier3_percent} onChange={(e) => setForm({ ...form, tier3_percent: e.target.value })} aria-label="Tier 3 voluntary percent" /></label>
+              ) : null}
+              {form.ghana_card.trim() && !GHANA_CARD.test(form.ghana_card.trim().toUpperCase()) ? (
+                <p className="hr-muted" role="alert">A Ghana Card number looks like GHA-123456789-0.</p>
+              ) : null}
+              <button
+                type="button" className="hr-primary"
+                disabled={busy || !form.full_name.trim() || !form.hired_on || Boolean(form.ghana_card.trim() && !GHANA_CARD.test(form.ghana_card.trim().toUpperCase()))}
+                onClick={() => void addPerson()}
+              >Add employee</button>
             </div>
           </section>
           <section className="hr-box hr-scroll" aria-label="Staff">
@@ -481,7 +563,9 @@ function HrmDesk() {
                   ) : null}
                   {r.status === 'approved' && !r.staff_paid ? <button type="button" className="hr-primary" onClick={() => setDialog({ kind: 'pay', row: r, what: 'staff', method: 'bank_transfer', amount: r.net })}>Pay salaries</button> : null}
                   {r.status === 'approved' && !r.paye_paid ? <button type="button" onClick={() => setDialog({ kind: 'pay', row: r, what: 'paye', method: 'bank_transfer', amount: r.paye })}>Pay PAYE</button> : null}
-                  {r.status === 'approved' && !r.ssnit_paid ? <button type="button" onClick={() => setDialog({ kind: 'pay', row: r, what: 'ssnit', method: 'bank_transfer', amount: Number(r.ssnit_employee) + Number(r.ssnit_employer) })}>Pay SSNIT</button> : null}
+                  {r.status === 'approved' && !r.ssnit_paid ? <button type="button" onClick={() => setDialog({ kind: 'pay', row: r, what: 'ssnit', method: 'bank_transfer', amount: r.ssnit_due ?? Number(r.ssnit_employee) + Number(r.ssnit_employer) })}>Pay SSNIT</button> : null}
+                  {r.status === 'approved' && Number(r.tier2) > 0 && !r.tier2_paid ? <button type="button" onClick={() => setDialog({ kind: 'pay', row: r, what: 'tier2', method: 'bank_transfer', amount: r.tier2 })}>Pay Tier 2</button> : null}
+                  {r.status === 'approved' && Number(r.tier3) > 0 && !r.tier3_paid ? <button type="button" onClick={() => setDialog({ kind: 'pay', row: r, what: 'tier3', method: 'bank_transfer', amount: r.tier3 })}>Pay Tier 3</button> : null}
                 </div>
               </div>
               {openRun === r.id ? (
@@ -582,6 +666,86 @@ function HrmDesk() {
                 paye_bands: settings.paye_bands.map((b: Row) => ({ width: b.width == null ? null : Number(b.width), rate: Number(b.rate) })),
               }, 'Settings saved', 'PATCH')}
             >Save rates</button>
+          </div>
+        </section>
+      ) : null}
+
+      {tab === 'settings' && settings ? (
+        <section className="hr-box" aria-label="Dated payroll rates">
+          <Head title="Dated rates" />
+          <p className="hr-muted">
+            When the GRA bands or SSNIT rules change, add the new rules with the date they start. Each payroll month uses
+            the newest rules that start on or before its first day; the rates above are used only while no dated rules
+            exist. Rules an approved payroll used are locked. Check every figure with your accountant against the current
+            GRA and SSNIT tables: the system does not check them for you.
+          </p>
+          {rates.length ? (
+            <table aria-label="Dated rates on record">
+              <thead><tr><th>From</th><th>Staff %</th><th>Company %</th><th>Tier 2 %</th><th>SSNIT cap</th><th>Tier 3 relief %</th><th>Source</th><th /></tr></thead>
+              <tbody>
+                {rates.map((r) => (
+                  <tr key={r.id}>
+                    <td>{r.effective_from}</td>
+                    <td>{r.employee_percent}</td>
+                    <td>{r.employer_percent}</td>
+                    <td>{r.tier2_percent}</td>
+                    <td>{r.insurable_cap == null ? 'None' : money(r.insurable_cap)}</td>
+                    <td>{r.tier3_relief_percent}</td>
+                    <td>{r.source_note || '—'}</td>
+                    <td>
+                      {r.locked ? (
+                        <span className="hr-muted">Used by payroll</span>
+                      ) : (
+                        <button type="button" aria-label={`Remove rates from ${r.effective_from}`} disabled={busy} onClick={() => void run(`/hrm/statutory-rates/${r.id}`, null, 'Rates removed', 'DELETE')}>Remove</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="hr-muted">No dated rules yet.</p>
+          )}
+          <h2 style={{ marginTop: 14 }}>Add rules from a date</h2>
+          <div className="hr-form">
+            <label><span>Start on</span><input type="date" value={rateForm.effective_from} onChange={(e) => setRateForm({ ...rateForm, effective_from: e.target.value })} aria-label="Rates start on" /></label>
+            <label><span>Staff SSNIT %</span><input type="number" min="0" step="0.1" value={rateForm.employee_percent} onChange={(e) => setRateForm({ ...rateForm, employee_percent: e.target.value })} aria-label="Dated staff SSNIT percent" /></label>
+            <label><span>Company SSNIT %</span><input type="number" min="0" step="0.1" value={rateForm.employer_percent} onChange={(e) => setRateForm({ ...rateForm, employer_percent: e.target.value })} aria-label="Dated company SSNIT percent" /></label>
+            <label><span>Tier 2 % of insurable pay</span><input type="number" min="0" step="0.1" value={rateForm.tier2_percent} onChange={(e) => setRateForm({ ...rateForm, tier2_percent: e.target.value })} aria-label="Tier 2 percent" /></label>
+            <label><span>SSNIT cap a month (blank = none)</span><input type="number" min="0" value={rateForm.insurable_cap} onChange={(e) => setRateForm({ ...rateForm, insurable_cap: e.target.value })} aria-label="SSNIT maximum insurable earnings" /></label>
+            <label><span>Tier 3 tax relief %</span><input type="number" min="0" step="0.5" value={rateForm.tier3_relief_percent} onChange={(e) => setRateForm({ ...rateForm, tier3_relief_percent: e.target.value })} aria-label="Tier 3 tax relief percent" /></label>
+            <label>
+              <span>Rounding</span>
+              <select value={rateForm.rounding} onChange={(e) => setRateForm({ ...rateForm, rounding: e.target.value })} aria-label="Payroll rounding">
+                <option value="half_up">To the nearest pesewa</option>
+                <option value="down">Down to the pesewa</option>
+              </select>
+            </label>
+            <label><span>Where these come from</span><input value={rateForm.source_note} placeholder="GRA PAYE table, January 2027" onChange={(e) => setRateForm({ ...rateForm, source_note: e.target.value })} aria-label="Source of these rates" /></label>
+          </div>
+          <table aria-label="Dated PAYE bands">
+            <thead><tr><th>Band size</th><th>Rate %</th></tr></thead>
+            <tbody>
+              {rateBands.map((b, i) => (
+                <tr key={i}>
+                  <td>
+                    {b.width == null ? 'Everything above' : (
+                      <input type="number" min="0" value={b.width} aria-label={`Dated PAYE band ${i + 1} size`}
+                        onChange={(e) => setRateBands(rateBands.map((x, n) => (n === i ? { ...x, width: e.target.value } : x)))} />
+                    )}
+                  </td>
+                  <td>
+                    <input type="number" min="0" value={b.rate} aria-label={`Dated PAYE band ${i + 1} rate`}
+                      onChange={(e) => setRateBands(rateBands.map((x, n) => (n === i ? { ...x, rate: e.target.value } : x)))} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="hr-row" style={{ marginTop: 10 }}>
+            <button type="button" className="hr-primary" disabled={busy || !rateForm.effective_from || !rateBands.length} onClick={() => void addRates()}>
+              Save dated rates
+            </button>
           </div>
         </section>
       ) : null}

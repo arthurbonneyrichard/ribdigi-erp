@@ -4058,6 +4058,31 @@ class HrmSettings(Base):
     paye_bands: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
 
+class HrmStatutoryRate(Base):
+    """PAYE bands and SSNIT / pension rules from a date onwards. A payroll month uses the
+    newest row starting on or before the month's first day. Rows an approved payroll used
+    cannot be changed or removed; a new rule is a new row."""
+
+    __tablename__ = "hrm_statutory_rates"
+    __table_args__ = (UniqueConstraint("tenant_id", "effective_from", name="uq_hrm_statutory_from"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    effective_from: Mapped[date] = mapped_column(Date, index=True)
+    employee_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=5.5)
+    employer_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=13)
+    # Share of insurable pay that goes to the Tier 2 trustee (0 = all to SSNIT).
+    tier2_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=0)
+    # Monthly maximum insurable earnings for SSNIT; NULL = no cap.
+    insurable_cap: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    tier3_relief_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=16.5)
+    paye_bands: Mapped[list] = mapped_column(JSON)
+    rounding: Mapped[str] = mapped_column(String(16), default="half_up")
+    source_note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class HrmEmployee(Base):
     __tablename__ = "hrm_employees"
     __table_args__ = (UniqueConstraint("tenant_id", "employee_number", name="uq_hrm_employee_number"),)
@@ -4080,6 +4105,10 @@ class HrmEmployee(Base):
     tin: Mapped[str | None] = mapped_column(String(40), nullable=True)
     bank_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     bank_account: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    ghana_card: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    mobile_money: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Voluntary Tier 3 pension, percent of earned basic.
+    tier3_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -4129,12 +4158,17 @@ class HrmPayrollRun(Base):
     ssnit_employee: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     ssnit_employer: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     other_deductions: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tier2: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    tier3: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    statutory_rate_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     approved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     staff_paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     paye_paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     ssnit_paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    tier2_paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    tier3_paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -4158,6 +4192,13 @@ class HrmPayslip(Base):
     other_deductions: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     net: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     ssnit_employer: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tier3_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=0, server_default="0")
+    tier1: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    tier2: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    tier3: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    tier3_relief: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    # The rates this slip was worked out with, kept so it can be explained later.
+    rates_used: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     note: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
 

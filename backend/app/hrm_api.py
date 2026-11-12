@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query
@@ -20,6 +21,8 @@ Short = Annotated[str, Field(min_length=1, max_length=120)]
 Period = Annotated[str, Field(pattern=r"^20\d{2}-(0[1-9]|1[0-2])$")]
 PayMethod = Literal["bank_transfer", "cash", "mobile_money", "cheque"]
 LeaveType = Literal["annual", "sick", "maternity", "paternity", "compassionate", "unpaid"]
+GhanaCard = Annotated[str, Field(pattern=r"^GHA-\d{9}-\d$")]
+Percent = Annotated[Decimal, Field(ge=0, le=100, max_digits=7, decimal_places=3)]
 
 
 def _env(data, message: str = "OK"):
@@ -47,6 +50,9 @@ class EmployeeBody(BaseModel):
     tin: Annotated[str, Field(min_length=1, max_length=40)] | None = None
     bank_name: Short | None = None
     bank_account: Annotated[str, Field(min_length=1, max_length=64)] | None = None
+    ghana_card: GhanaCard | None = None
+    mobile_money: E164PhoneValue | None = None
+    tier3_percent: Percent = Decimal("0")
 
 
 class EmployeeUpdate(BaseModel):
@@ -62,6 +68,9 @@ class EmployeeUpdate(BaseModel):
     tin: Annotated[str, Field(min_length=1, max_length=40)] | None = None
     bank_name: Short | None = None
     bank_account: Annotated[str, Field(min_length=1, max_length=64)] | None = None
+    ghana_card: GhanaCard | None = None
+    mobile_money: E164PhoneValue | None = None
+    tier3_percent: Percent | None = None
 
 
 class LeftBody(BaseModel):
@@ -119,7 +128,7 @@ class SlipBody(BaseModel):
 class PayBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    what: Literal["staff", "paye", "ssnit"]
+    what: Literal["staff", "paye", "ssnit", "tier2", "tier3"]
     method: PayMethod
 
 
@@ -138,6 +147,55 @@ class SettingsBody(BaseModel):
     ssnit_employee_percent: Annotated[float, Field(ge=0, le=100, allow_inf_nan=False)] | None = None
     ssnit_employer_percent: Annotated[float, Field(ge=0, le=100, allow_inf_nan=False)] | None = None
     paye_bands: list[Band] | None = Field(default=None, min_length=1, max_length=20)
+
+
+class RateBand(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    width: Annotated[Decimal, Field(gt=0, max_digits=14, decimal_places=2)] | None = None
+    rate: Percent
+
+
+class StatutoryRateBody(BaseModel):
+    """PAYE bands and SSNIT / pension rules from a date onwards. Check them against GRA and SSNIT."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    effective_from: date
+    employee_percent: Percent
+    employer_percent: Percent
+    tier2_percent: Percent = Decimal("0")
+    insurable_cap: Annotated[Decimal, Field(gt=0, max_digits=14, decimal_places=2)] | None = None
+    tier3_relief_percent: Percent = Decimal("16.5")
+    paye_bands: list[RateBand] = Field(min_length=1, max_length=20)
+    rounding: Literal["half_up", "down"] = "half_up"
+    source_note: Annotated[str, Field(min_length=3, max_length=255)] | None = None
+
+
+@router.get("/statutory-rates")
+async def hrm_rates(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "payroll")
+    return _env(await svc.list_rates(db, claims["tenant_id"]))
+
+
+@router.post("/statutory-rates")
+async def hrm_rates_add(
+    payload: StatutoryRateBody, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)
+):
+    svc.job(claims, "payroll")
+    row = await svc.add_rate(db, claims["tenant_id"], payload, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(svc.serialize_rate(row), "Rates saved")
+
+
+@router.delete("/statutory-rates/{rate_id}")
+async def hrm_rates_delete(
+    rate_id: UuidIdValue, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)
+):
+    svc.job(claims, "payroll")
+    await svc.delete_rate(db, claims["tenant_id"], rate_id, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(None, "Rates removed")
 
 
 @router.get("/summary")

@@ -29,9 +29,22 @@ For each person:
 4. PAYE is taken on gross less staff SSNIT, band by band.
 5. Net is gross less SSNIT, PAYE and other deductions. Net below zero is refused.
 
-Approving books the cost: debit 6200 and 6210, credit 2170 (net), 2175 (other deductions held), 2180 (PAYE) and 2190 (SSNIT, both shares). An approved run cannot change. Salaries, PAYE and SSNIT are each paid once and clear their own liability. Other deductions stay in 2175 until the company deals with them by journal.
+Approving books the cost: debit 6200 and 6210, credit 2170 (net), 2175 (other deductions held), 2180 (PAYE), 2190 (SSNIT Tier 1, both shares), 2192 (Tier 2) and 2195 (Tier 3). An approved run cannot change. Salaries, PAYE and SSNIT are each paid once and clear their own liability. Other deductions stay in 2175 until the company deals with them by journal.
 
 A month can have only one run. Someone who left is paid for the month they left, and not after.
+
+## Dated rates, Tier 2 and Tier 3
+
+Payroll arithmetic is Decimal throughout (`backend/app/hrm_payroll.py`, no floats). The rates are data, not code:
+
+- **Dated rules** (`hrm_statutory_rates`, Settings → Dated rates, `GET|POST|DELETE /hrm/statutory-rates`): staff and company SSNIT %, Tier 2 % of insurable pay, a monthly SSNIT cap (maximum insurable earnings, blank for none), Tier 3 tax relief %, PAYE bands, rounding (nearest pesewa or down), and a note of where the figures came from. A month uses the newest row starting on or before its first day. With no dated rows, the older Settings rates are used exactly as before.
+- A row an approved payroll used is locked: it cannot be removed, and a new row cannot start inside or before an approved month. A change in the law is a new row from its start date.
+- **Tier 1 / Tier 2:** staff + company SSNIT together, on earned basic up to the cap. Tier 2 (its % of insurable pay) is booked to 2192 and paid to the trustee with **Pay Tier 2**; the rest is Tier 1 in 2190, paid with **Pay SSNIT**. Tier 2 % of 0 keeps everything in 2190.
+- **Tier 3:** voluntary, a % of earned basic set on each person. It comes off net pay, goes to 2195 and is paid with **Pay Tier 3**. It is relieved from PAYE up to the Tier 3 relief %.
+- PAYE is taken on gross less staff SSNIT less relieved Tier 3. Each payslip keeps the rates it used (`rates_used`).
+- Staff records also hold the Ghana Card (`GHA-123456789-0`) and Mobile Money number.
+
+**The figures are not checked against GRA or SSNIT by the system.** The desk does not file with GRA or SSNIT.
 
 ## Leave
 
