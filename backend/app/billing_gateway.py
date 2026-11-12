@@ -36,6 +36,22 @@ _BLOCKED_GATEWAY_HOSTS = frozenset({
 })
 PAYSTACK_INITIALIZE_URL = "https://api.paystack.co/transaction/initialize"
 PAYSTACK_CHARGE_URL = "https://api.paystack.co/transaction/charge_authorization"
+_PAYSTACK_REF_BAD = re.compile(r"[^A-Za-z0-9.=-]")
+
+
+def paystack_reference(reference: str) -> str:
+    """Paystack accepts only letters, digits, '-', '.' and '='. Our keys use ':'."""
+    return _PAYSTACK_REF_BAD.sub(".", (reference or "").replace(":", "."))
+
+
+def internal_reference(reference: str) -> str:
+    """Undo paystack_reference for our own key shapes (ids and dates never hold '.')."""
+    return (reference or "").strip().replace(".", ":")
+
+
+def _paystack_reason(body, fallback: str) -> str:
+    text = str(body.get("message") or "").strip() if isinstance(body, dict) else ""
+    return f"{fallback}: {text[:200]}" if text else fallback
 
 
 @dataclass
@@ -203,7 +219,7 @@ class PaystackGateway(BillingGateway):
             "email": email,
             "amount": int(amount_minor),
             "currency": currency,
-            "reference": reference,
+            "reference": paystack_reference(reference),
         }
         company = _company_metadata(tenant_id)
         if company:
@@ -253,7 +269,7 @@ class PaystackGateway(BillingGateway):
             "email": email,
             "amount": int(amount_minor),
             "currency": currency,
-            "reference": reference,
+            "reference": paystack_reference(reference),
             "callback_url": callback_url,
         }
         company = _company_metadata(tenant_id)
@@ -271,7 +287,7 @@ class PaystackGateway(BillingGateway):
             return CheckoutResult(False, None, reference, "paystack_unreachable")
         data = body.get("data") if isinstance(body, dict) else None
         if not isinstance(data, dict) or not data.get("authorization_url"):
-            return CheckoutResult(False, None, reference, "paystack_rejected")
+            return CheckoutResult(False, None, reference, _paystack_reason(body, "paystack_rejected"))
         return CheckoutResult(True, str(data["authorization_url"]), reference, "hosted_checkout")
 
 

@@ -8,6 +8,7 @@ consent and the gateway has returned a reusable authorization reference.
 from __future__ import annotations
 
 import re
+import secrets
 from datetime import datetime, timedelta
 from decimal import Decimal
 
@@ -24,6 +25,7 @@ from app.billing_gateway import (
     CONSENT_VERSION,
     LIVE_CHARGE_PROVIDERS,
     current_gateway,
+    internal_reference,
     get_gateway,
     minor_units,
 )
@@ -564,6 +566,20 @@ def _authorized(account: m.TenantBillingAccount) -> bool:
     )
 
 
+def _checkout_failure_text(provider: str, reason: str) -> str:
+    code, _, detail = (reason or "").partition(": ")
+    if provider == "unconfigured" or code.endswith("not_configured"):
+        return (
+            "The payment gateway is not configured or not switched on. In the owner console, open Billing gateway, "
+            "save the secret key, run Test connection, and turn it on."
+        )
+    if code.endswith("unreachable"):
+        return f"Could not reach {provider.title()}. Try again in a minute."
+    if detail:
+        return f"{provider.title()} refused the payment page: {detail}"
+    return f"{provider.title()} refused the payment page."
+
+
 async def start_checkout(db: AsyncSession, tenant: m.Tenant, *, plan_code: str, email: str) -> dict:
     account = await get_account(db, tenant.id)
     if account is None:
@@ -572,7 +588,8 @@ async def start_checkout(db: AsyncSession, tenant: m.Tenant, *, plan_code: str, 
     if account.consent_plan_id != plan.id or not account.consent_at:
         raise HTTPException(status_code=422, detail="Record renewal consent before checkout")
     gateway = await current_gateway(db)
-    reference = f"checkout:{account.id}:{plan.id}"
+    # A fresh suffix each time: Paystack refuses a reference it has already seen.
+    reference = f"checkout:{account.id}:{plan.id}:{secrets.token_hex(4)}"
     result = gateway.checkout(
         email=email,
         amount_minor=minor_units(billable_price(account, plan)[0]),
@@ -584,7 +601,7 @@ async def start_checkout(db: AsyncSession, tenant: m.Tenant, *, plan_code: str, 
     if not result.ok:
         raise HTTPException(
             status_code=503,
-            detail="The billing gateway is not configured for hosted checkout",
+            detail=_checkout_failure_text(gateway.provider, result.message),
         )
     account.gateway_provider = gateway.provider
     account.updated_at = _now()
@@ -1290,8 +1307,8 @@ def _charge_identity_matches(
 async def _checkout_account(
     db: AsyncSession, reference: str
 ) -> tuple[m.TenantBillingAccount, m.PlatformBillingPlan] | None:
-    parts = (reference or "").split(":")
-    if len(parts) != 3 or parts[0] != "checkout" or not parts[1] or not parts[2]:
+    parts = internal_reference(reference).split(":")
+    if len(parts) not in (3, 4) or parts[0] != "checkout" or not parts[1] or not parts[2]:
         return None
     account = await db.get(m.TenantBillingAccount, parts[1])
     if not account or account.plan_id != parts[2] or not account.consent_at:
@@ -1317,6 +1334,8 @@ async def apply_webhook(db: AsyncSession, *, provider: str, event: dict) -> dict
         return {"duplicate": True, "outcome": existing.outcome}
     reference = str(data.get("reference") or "").strip()
     invoice = await _invoice_by_key(db, reference) if reference else None
+    if invoice is None and reference and "." in reference:
+        invoice = await _invoice_by_key(db, internal_reference(reference))
     outcome = "ignored"
     event_tenant_id = invoice.tenant_id if invoice else None
     if invoice and event_type in {"charge.success", "charge.failed"}:

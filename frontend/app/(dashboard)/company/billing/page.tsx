@@ -262,8 +262,8 @@ export default function SubscriptionBillingPage() {
       }
       setMessage('The payment page is not available right now.');
     } catch (err: any) {
-      if (err?.status === 503 || /not configured/i.test(String(err?.message || ''))) {
-        setMessage('The payment page is not available right now.');
+      if (err?.status === 503) {
+        setError(err.message || 'The payment page is not available right now.');
         return;
       }
       setError(err.message || 'Checkout is not available');

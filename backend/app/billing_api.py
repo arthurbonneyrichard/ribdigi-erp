@@ -427,7 +427,12 @@ async def billing_checkout_return(
     body = _tenant_account_body(account, plan) if account else {}
     expected = f"checkout:{account.id}:{account.plan_id}" if account and account.plan_id else ""
     body["return_reference"] = reference
-    body["reference_matches_checkout"] = bool(expected) and reference.strip() == expected
+    from app.billing_gateway import internal_reference
+
+    returned = internal_reference(reference)
+    body["reference_matches_checkout"] = bool(expected) and (
+        returned == expected or returned.startswith(expected + ":")
+    )
     body["confirmed_by_redirect"] = False
     body["paid"] = False
     body["provider"] = await _visible_provider(db)
