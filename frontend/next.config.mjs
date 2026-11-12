@@ -17,6 +17,8 @@ const CSP =
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  // Do not advertise the framework (security audit O8, web side).
+  poweredByHeader: false,
   // The app never uses next/image. Keep the image optimizer off: its endpoint carries
   // unauthenticated RCE/DoS advisories on Next 14 (blocked again in proxy.ts).
   images: { unoptimized: true },
