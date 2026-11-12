@@ -48,8 +48,16 @@ export type SyncResult = {
   no_shift?: boolean;
 };
 
-const QUEUE_PREFIX = 'ribdigi.restaurant.offline.queue.v1:';
-const CACHE_PREFIX = 'ribdigi.restaurant.till.cache.v1:';
+/** Each desk keeps its own queue and cache: a bakery sale never sits in the restaurant's list. */
+export type OfflineDesk = 'restaurant' | 'bakery';
+
+function queuePrefix(desk: OfflineDesk): string {
+  return `ribdigi.${desk}.offline.queue.v1:`;
+}
+
+function cachePrefix(desk: OfflineDesk): string {
+  return `ribdigi.${desk}.till.cache.v1:`;
+}
 
 type Store = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
@@ -87,26 +95,36 @@ export function offlineLabel(ref: string): string {
   return `OFF-${ref.replace(/[^A-Za-z0-9]/g, '').slice(-4).toUpperCase()}`;
 }
 
-export function readQueue(store: Store | null = storage(), tenant = tenantKey()): OfflineSale[] {
+export function readQueue(store: Store | null = storage(), tenant = tenantKey(), desk: OfflineDesk = 'restaurant'): OfflineSale[] {
   if (!store) return [];
   try {
-    const rows = JSON.parse(store.getItem(QUEUE_PREFIX + tenant) || '[]');
+    const rows = JSON.parse(store.getItem(queuePrefix(desk) + tenant) || '[]');
     return Array.isArray(rows) ? (rows as OfflineSale[]) : [];
   } catch {
     return [];
   }
 }
 
-export function writeQueue(rows: OfflineSale[], store: Store | null = storage(), tenant = tenantKey()): void {
+export function writeQueue(
+  rows: OfflineSale[],
+  store: Store | null = storage(),
+  tenant = tenantKey(),
+  desk: OfflineDesk = 'restaurant',
+): void {
   if (!store) return;
-  if (!rows.length) store.removeItem(QUEUE_PREFIX + tenant);
-  else store.setItem(QUEUE_PREFIX + tenant, JSON.stringify(rows));
+  if (!rows.length) store.removeItem(queuePrefix(desk) + tenant);
+  else store.setItem(queuePrefix(desk) + tenant, JSON.stringify(rows));
 }
 
-export function enqueueSale(sale: OfflineSale, store: Store | null = storage(), tenant = tenantKey()): OfflineSale[] {
-  const rows = readQueue(store, tenant).filter((row) => row.offline_ref !== sale.offline_ref);
+export function enqueueSale(
+  sale: OfflineSale,
+  store: Store | null = storage(),
+  tenant = tenantKey(),
+  desk: OfflineDesk = 'restaurant',
+): OfflineSale[] {
+  const rows = readQueue(store, tenant, desk).filter((row) => row.offline_ref !== sale.offline_ref);
   rows.push(sale);
-  writeQueue(rows, store, tenant);
+  writeQueue(rows, store, tenant, desk);
   return rows;
 }
 
@@ -151,6 +169,11 @@ export function applySyncResults(rows: OfflineSale[], results: SyncResult[]): Of
       continue;
     }
     if (result.status === 'booked' || result.status === 'already_booked' || result.status === 'duplicate_in_batch') {
+      continue;
+    }
+    // The server is not ready for it yet (bakery: no till open). Keep it and send again later.
+    if (result.status === 'waiting') {
+      out.push(row);
       continue;
     }
     out.push({ ...row, refused_reason: result.reason || 'Refused by the server' });
@@ -198,19 +221,28 @@ export function offlineBill(
   return { subtotal, tax, service, total: round2(subtotal + service + tax) };
 }
 
-export function saveTillCache(data: Omit<TillCache, 'saved_at'>, store: Store | null = storage(), tenant = tenantKey()) {
+export function saveTillCache(
+  data: Omit<TillCache, 'saved_at'> | Record<string, unknown>,
+  store: Store | null = storage(),
+  tenant = tenantKey(),
+  desk: OfflineDesk = 'restaurant',
+) {
   if (!store) return;
   try {
-    store.setItem(CACHE_PREFIX + tenant, JSON.stringify({ ...data, saved_at: new Date().toISOString() }));
+    store.setItem(cachePrefix(desk) + tenant, JSON.stringify({ ...data, saved_at: new Date().toISOString() }));
   } catch {
     /* storage full: the till still works online */
   }
 }
 
-export function readTillCache(store: Store | null = storage(), tenant = tenantKey()): TillCache | null {
+export function readTillCache(
+  store: Store | null = storage(),
+  tenant = tenantKey(),
+  desk: OfflineDesk = 'restaurant',
+): TillCache | null {
   if (!store) return null;
   try {
-    const raw = store.getItem(CACHE_PREFIX + tenant);
+    const raw = store.getItem(cachePrefix(desk) + tenant);
     return raw ? (JSON.parse(raw) as TillCache) : null;
   } catch {
     return null;
@@ -227,4 +259,19 @@ export function tillDeviceId(store: Store | null = storage()): string | null {
     store.setItem(key, id);
   }
   return id;
+}
+
+/** Bakery sync body: counter sales are items and quantities only; the server prices them. */
+export function bakerySyncBody(rows: OfflineSale[], deviceId?: string | null) {
+  return {
+    ...(deviceId ? { device_id: deviceId } : {}),
+    sales: rows.map((row) => ({
+      offline_ref: row.offline_ref,
+      created_at: row.created_at,
+      payment_method: row.payment_method,
+      ...(row.customer_name ? { customer_name: row.customer_name } : {}),
+      charged_total: row.charged_total,
+      lines: row.lines.map((line) => ({ product_id: line.product_id, quantity: line.quantity })),
+    })),
+  };
 }

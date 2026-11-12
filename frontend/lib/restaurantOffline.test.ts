@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   applySyncResults,
+  bakerySyncBody,
   enqueueSale,
   isLinkDown,
   newOfflineRef,
@@ -89,4 +90,18 @@ test('offline bill adds dish tax, service and tax on service like the server', (
   });
   assert.deepEqual(bill, { subtotal: 150, tax: 23, service: 15, total: 188 });
   assert.equal(offlineBill([{ product_id: 'p1', amount: 40 }], null).total, 40);
+});
+
+test('bakery and restaurant queues never mix, and waiting sales stay to send again', () => {
+  const store = memory();
+  enqueueSale(sale('rest-0000001'), store, 't1', 'restaurant');
+  enqueueSale(sale('bake-0000001'), store, 't1', 'bakery');
+  assert.deepEqual(readQueue(store, 't1', 'restaurant').map((r) => r.offline_ref), ['rest-0000001']);
+  assert.deepEqual(readQueue(store, 't1', 'bakery').map((r) => r.offline_ref), ['bake-0000001']);
+  const kept = applySyncResults([sale('bake-0000001')], [{ offline_ref: 'bake-0000001', status: 'waiting', reason: 'Open the till' }]);
+  assert.equal(kept.length, 1);
+  assert.equal(kept[0].refused_reason, undefined);
+  const body = bakerySyncBody([sale('bake-0000001')]);
+  assert.deepEqual(Object.keys(body.sales[0].lines[0]).sort(), ['product_id', 'quantity']);
+  assert.equal('service_mode' in body.sales[0], false);
 });
