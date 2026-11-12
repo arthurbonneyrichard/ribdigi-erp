@@ -581,7 +581,11 @@ async def _annual_used(db: AsyncSession, tenant_id: str, employee_id: str, year:
             )
         )
     ).scalars().all()
-    return sum(int(r.days or 0) for r in rows if r.starts_on.year == year)
+    from app import hrm_leave_pay
+
+    taken = sum(int(r.days or 0) for r in rows if r.starts_on.year == year)
+    # Days paid out as money count as used.
+    return taken + await hrm_leave_pay.encashed_days(db, employee_id, year)
 
 
 def earned_days(annual: int, hired_on: date | None, year: int, *, accrual: str, upto: date | None = None) -> int:
@@ -915,7 +919,8 @@ def _work_out(slip: m.HrmPayslip, settings: m.HrmSettings, rates: engine.Statuto
                 # Commission and tips are taxable earnings without SSNIT, like a correction.
                 adjustment=engine.D(getattr(slip, "adjustment", 0))
                 + engine.D(getattr(slip, "commission", 0))
-                + engine.D(getattr(slip, "tips", 0)),
+                + engine.D(getattr(slip, "tips", 0))
+                + engine.D(getattr(slip, "leave_pay", 0)),
             ),
             rates,
         )
@@ -1008,6 +1013,9 @@ async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) 
         from app import restaurant_tips
 
         tips = await restaurant_tips.take(db, person.id, period, run.id)
+        from app import hrm_leave_pay
+
+        leave_pay = await hrm_leave_pay.take(db, person.id, period, run.id)
         slip = m.HrmPayslip(
             tenant_id=tenant_id,
             run_id=run.id,
@@ -1019,6 +1027,7 @@ async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) 
             overtime=overtime,
             commission=commission,
             tips=tips,
+            leave_pay=leave_pay,
             bonus=0,
             other_deductions=0,
             tier3_percent=person.tier3_percent or 0,
@@ -1082,6 +1091,9 @@ async def delete_run(db: AsyncSession, tenant_id: str, run_id: str, *, user_id) 
     from app import restaurant_tips
 
     await restaurant_tips.release(db, run.id)
+    from app import hrm_leave_pay
+
+    await hrm_leave_pay.release(db, run.id)
     for slip in await _slips(db, run.id):
         await db.delete(slip)
     await db.delete(run)
@@ -1150,6 +1162,9 @@ async def approve_run(db: AsyncSession, tenant_id: str, run_id: str, *, user_id)
     from app import restaurant_tips
 
     await restaurant_tips.settle(db, run.id)
+    from app import hrm_leave_pay
+
+    await hrm_leave_pay.settle(db, run.id)
     run.status = "approved"
     run.approved_by = user_id
     run.approved_at = datetime.utcnow()
@@ -1241,6 +1256,7 @@ def _slip_dict(slip: m.HrmPayslip, employee: m.HrmEmployee | None) -> dict:
         "overtime": _money(getattr(slip, "overtime", 0)),
         "commission": _money(getattr(slip, "commission", 0)),
         "tips": _money(getattr(slip, "tips", 0)),
+        "leave_pay": _money(getattr(slip, "leave_pay", 0)),
         "overtime_tax": _money(getattr(slip, "overtime_tax", 0)),
         "warnings": list(getattr(slip, "warnings", None) or []),
         "rates_used": slip.rates_used,

@@ -513,6 +513,53 @@ async def hrm_commission_approve(
     return _env({"amount": float(row.amount), "net_sales": float(row.net_sales), "period": row.period}, "Commission approved for that month's payroll")
 
 
+class LeaveEncashBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    employee_id: UuidIdValue
+    year: Annotated[int, Field(ge=2000, le=2100)]
+    days: Annotated[int, Field(ge=1, le=366)]
+    period: Annotated[str, Field(pattern=r"^20\d{2}-(0[1-9]|1[0-2])$")]
+    note: Annotated[str, Field(max_length=255)] | None = None
+
+
+@router.get("/employees/{employee_id}/leave-balance")
+async def hrm_leave_balance(
+    employee_id: UuidIdValue, year: Annotated[int | None, Query(ge=2000, le=2100)] = None,
+    claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db),
+):
+    svc.job(claims, "leave")
+    return _env(await svc.leave_balance(db, claims["tenant_id"], employee_id, year=year))
+
+
+@router.get("/leave-encashments")
+async def hrm_leave_encashments(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "payroll")
+    from app import hrm_leave_pay
+
+    return _env(await hrm_leave_pay.list_all(db, claims["tenant_id"]))
+
+
+@router.post("/leave-encashments")
+async def hrm_leave_encash(payload: LeaveEncashBody, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "payroll")
+    from app import hrm_leave_pay
+
+    row = await hrm_leave_pay.approve(db, claims["tenant_id"], payload, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(hrm_leave_pay.serialize(row, await db.get(svc.m.HrmEmployee, row.employee_id)), "Leave payout approved for that month's payroll")
+
+
+@router.post("/leave-encashments/{row_id}/cancel")
+async def hrm_leave_encash_cancel(row_id: UuidIdValue, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "payroll")
+    from app import hrm_leave_pay
+
+    row = await hrm_leave_pay.cancel(db, claims["tenant_id"], row_id, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(hrm_leave_pay.serialize(row, None), "Cancelled; the days are back")
+
+
 @router.get("/summary")
 async def hrm_summary(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
     svc.job(claims, "people")

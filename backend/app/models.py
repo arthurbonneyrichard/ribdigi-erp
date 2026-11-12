@@ -4639,6 +4639,27 @@ class HrmCommission(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class HrmLeaveEncashment(Base):
+    """Unused annual leave paid as money on a month's payroll; the days come off that year's leave."""
+
+    __tablename__ = "hrm_leave_encashments"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    year: Mapped[int] = mapped_column(Integer)
+    days: Mapped[int] = mapped_column(Integer)
+    day_rate: Mapped[float] = mapped_column(Numeric(14, 2))
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    period: Mapped[str] = mapped_column(String(7), index=True)
+    status: Mapped[str] = mapped_column(String(16), default="approved", index=True)  # approved | paid | cancelled
+    note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    run_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    approved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class HrmStatutoryRate(Base):
     """PAYE bands and SSNIT / pension rules from a date onwards. A payroll month uses the
     newest row starting on or before the month's first day. Rows an approved payroll used
@@ -4809,6 +4830,8 @@ class HrmPayslip(Base):
     commission: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     # Restaurant tips shared to this person and paid on this payroll (held in 2187, not a wage cost).
     tips: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    # Unused annual leave paid out this month (taxable earnings, no SSNIT).
+    leave_pay: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     # Tax on overtime under the junior-staff rule (already inside paye).
     overtime_tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     # Checks the slip failed, e.g. ["below_minimum_wage"].

@@ -64,6 +64,10 @@ Payroll arithmetic is Decimal throughout (`backend/app/hrm_payroll.py`, no float
 
 **The figures are not checked against GRA or SSNIT by the system.** The desk does not file with GRA or SSNIT.
 
+## Paying out unused leave (`hrm_leave_pay.py`)
+
+Payroll → **Pay out unused leave**: HR picks a person, leave year, number of days (no more than are left) and the payroll month. The amount is fixed then: basic ÷ working days × days. The days count as used straight away; the month's payroll pays it as **Unused leave paid**, taxable with no SSNIT (an accountant should confirm). It can be cancelled, giving the days back, until a payroll takes it. Nobody approves their own. `GET /hrm/employees/{id}/leave-balance` shows what is left.
+
 ## HR notices (`hrm_notify.py`)
 
 In-app notices of type **HR**, each addressed to one person (never company-wide) and without pay figures: a leave request goes to the person's manager (or HR when there is no manager with a sign-in), a manager's yes goes on to HR, and the decision goes to the person; claims, loans and clock corrections go to HR and their decisions to the person; approving a payroll tells each person their payslip is ready. Staff are matched to sign-ins by the email on their staff record.
