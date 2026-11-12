@@ -3,20 +3,20 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\"",
-    "build": "npm run clean && next build && node scripts/prepare-standalone.js",
+    "build": "npm run clean && next build --webpack && node scripts/prepare-standalone.js",
     "start": "node .next/standalone/server.js",
     "test:offline": "node scripts/test-offline.js"
   },
   "dependencies": {
-    "next": "14.2.35",
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "next": "16.4.6",
+    "react": "19.2.9",
+    "react-dom": "19.2.9"
   },
   "devDependencies": {
     "@types/node": "22.17.1",
-    "@types/react": "18.3.23",
+    "@types/react": "19.2.2",
     "fake-indexeddb": "^6.2.5",
     "typescript": "5.9.2"
   }

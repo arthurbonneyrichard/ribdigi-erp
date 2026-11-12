@@ -1956,7 +1956,7 @@ export default function RestaurantPage() {
   return (
     <main className="page">
       {restaurantDesk && tab === 'dashboard' ? (
-        <DashboardGreeting desk="Dashboard" />
+        <DashboardGreeting desk="Restaurant dashboard" />
       ) : restaurantDesk ? (
         <PageHeader
           title={(TAB_HEADINGS[tab] || TAB_HEADINGS.orders)[0]}

@@ -23,6 +23,7 @@ from app import models as m
 from app import schema_compat
 from app import desk_dashboard as dash
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
+from app import hrm_payroll as engine
 
 METHODS = frozenset({"bank_transfer", "cash", "mobile_money", "cheque"})
 LEAVE_TYPES = frozenset({"annual", "sick", "maternity", "paternity", "compassionate", "unpaid"})
@@ -36,20 +37,24 @@ DEFAULT_PAYE_BANDS = [
     {"width": None, "rate": 35},
 ]
 PAYROLL_ACCOUNTS = [
+    ("1150", "Staff Loans and Advances", "asset"),
     ("2170", "Salaries Payable", "liability"),
     ("2175", "Staff Deductions Held", "liability"),
     ("2180", "PAYE Payable", "liability"),
     ("2190", "SSNIT Payable", "liability"),
+    ("2192", "Tier 2 Pension Payable", "liability"),
+    ("2195", "Tier 3 Pension Payable", "liability"),
     ("6200", "Salaries and Wages", "expense"),
     ("6210", "Employer SSNIT", "expense"),
 ]
 
 _JOBS = {
-    "hrm_officer": frozenset({"people", "leave", "attendance"}),
+    # Officers run people admin; pay, reviews, claims and confidential cases need a manager.
+    "hrm_officer": frozenset({"people", "leave", "attendance", "recruitment", "training", "contracts", "assets", "notices"}),
     "hrm_employee": frozenset({"self"}),
 }
 _WORDS = {
-    "hrm_officer": "HR officers look after staff records, leave and attendance. Payroll needs a manager.",
+    "hrm_officer": "HR officers look after staff records, leave, attendance, hiring, training, contracts and assets. Pay, reviews, claims and cases need a manager.",
     "hrm_employee": "You can see your own leave and payslips. Ask HR for the rest.",
 }
 
@@ -138,6 +143,12 @@ def serialize_settings(row: m.HrmSettings) -> dict:
         "ssnit_employee_percent": _money(row.ssnit_employee_percent),
         "ssnit_employer_percent": _money(row.ssnit_employer_percent),
         "paye_bands": row.paye_bands or list(DEFAULT_PAYE_BANDS),
+        "two_person_payroll": bool(getattr(row, "two_person_payroll", False)),
+        "hours_per_day": money_json(getattr(row, "hours_per_day", 8) or 8),
+        "overtime_rate": money_json(getattr(row, "overtime_rate", 1.5) or 1.5),
+        "clock_needs_site": bool(getattr(row, "clock_needs_site", False)),
+        "leave_accrual": getattr(row, "leave_accrual", None) or "upfront",
+        "carry_over_days": int(getattr(row, "carry_over_days", 0) or 0),
     }
 
 
@@ -154,6 +165,149 @@ async def update_settings(db: AsyncSession, tenant_id: str, payload, *, user_id)
     await _audit(db, tenant_id, user_id, "hrm_settings_updated", "hrm_settings", row.id, {"fields": sorted(data)})
     await db.flush()
     return row
+
+
+# --- Statutory rates (effective-dated) -----------------------------------------------
+
+
+def _rates_from_row(row: m.HrmStatutoryRate) -> engine.StatutoryRates:
+    return engine.StatutoryRates(
+        employee_percent=engine.D(row.employee_percent),
+        employer_percent=engine.D(row.employer_percent),
+        paye_bands=list(row.paye_bands or []),
+        tier2_percent=engine.D(row.tier2_percent),
+        insurable_cap=engine.D(row.insurable_cap) if row.insurable_cap is not None else None,
+        tier3_relief_percent=engine.D(row.tier3_relief_percent),
+        rounding=row.rounding or "half_up",
+        rate_id=row.id,
+        effective_from=row.effective_from.isoformat() if row.effective_from else None,
+    )
+
+
+def _rates_from_settings(settings: m.HrmSettings) -> engine.StatutoryRates:
+    """A company with no dated rates keeps working from its settings, as before."""
+    return engine.StatutoryRates(
+        employee_percent=engine.D(settings.ssnit_employee_percent),
+        employer_percent=engine.D(settings.ssnit_employer_percent),
+        paye_bands=list(settings.paye_bands or DEFAULT_PAYE_BANDS),
+    )
+
+
+async def rates_for(db: AsyncSession, tenant_id: str, on: date) -> engine.StatutoryRates:
+    row = (
+        await db.execute(
+            select(m.HrmStatutoryRate)
+            .where(m.HrmStatutoryRate.tenant_id == tenant_id, m.HrmStatutoryRate.effective_from <= on)
+            .order_by(m.HrmStatutoryRate.effective_from.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    if row is not None:
+        return _rates_from_row(row)
+    return _rates_from_settings(await get_settings(db, tenant_id))
+
+
+async def _rate_in_use(db: AsyncSession, tenant_id: str, rate_id: str) -> bool:
+    used = (
+        await db.execute(
+            select(m.HrmPayrollRun.id).where(
+                m.HrmPayrollRun.tenant_id == tenant_id,
+                m.HrmPayrollRun.statutory_rate_id == rate_id,
+                m.HrmPayrollRun.status != "draft",
+            ).limit(1)
+        )
+    ).first()
+    return used is not None
+
+
+async def list_rates(db: AsyncSession, tenant_id: str) -> list[dict]:
+    rows = (
+        await db.execute(
+            select(m.HrmStatutoryRate)
+            .where(m.HrmStatutoryRate.tenant_id == tenant_id)
+            .order_by(m.HrmStatutoryRate.effective_from.desc())
+        )
+    ).scalars().all()
+    return [{**serialize_rate(row), "locked": await _rate_in_use(db, tenant_id, row.id)} for row in rows]
+
+
+def serialize_rate(row: m.HrmStatutoryRate) -> dict:
+    return {
+        "id": row.id,
+        "effective_from": row.effective_from.isoformat(),
+        "employee_percent": money_json(row.employee_percent),
+        "employer_percent": money_json(row.employer_percent),
+        "tier2_percent": money_json(row.tier2_percent),
+        "insurable_cap": money_json(row.insurable_cap) if row.insurable_cap is not None else None,
+        "tier3_relief_percent": money_json(row.tier3_relief_percent),
+        "paye_bands": row.paye_bands,
+        "rounding": row.rounding,
+        "source_note": row.source_note,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+    }
+
+
+async def add_rate(db: AsyncSession, tenant_id: str, payload, *, user_id) -> m.HrmStatutoryRate:
+    bands = [{"width": b.width, "rate": b.rate} for b in payload.paye_bands]
+    try:
+        engine.validate_bands(bands)
+    except engine.PayrollError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if engine.D(payload.tier2_percent) > engine.D(payload.employee_percent) + engine.D(payload.employer_percent):
+        raise HTTPException(status_code=422, detail="Tier 2 cannot be more than the staff and company shares together")
+    # An approved month must stay explainable: a new rule cannot start inside or before it.
+    last_locked = (
+        await db.execute(
+            select(m.HrmPayrollRun.period)
+            .where(m.HrmPayrollRun.tenant_id == tenant_id, m.HrmPayrollRun.status != "draft")
+            .order_by(m.HrmPayrollRun.period.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    if last_locked and payload.effective_from <= _month(last_locked)[1]:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Payroll is approved up to {last_locked}. New rates must start after that month.",
+        )
+    clash = (
+        await db.execute(
+            select(m.HrmStatutoryRate.id).where(
+                m.HrmStatutoryRate.tenant_id == tenant_id,
+                m.HrmStatutoryRate.effective_from == payload.effective_from,
+            )
+        )
+    ).first()
+    if clash:
+        raise HTTPException(status_code=409, detail="Rates already start on that date. Remove that row first.")
+    row = m.HrmStatutoryRate(
+        tenant_id=tenant_id,
+        effective_from=payload.effective_from,
+        employee_percent=payload.employee_percent,
+        employer_percent=payload.employer_percent,
+        tier2_percent=payload.tier2_percent,
+        insurable_cap=payload.insurable_cap,
+        tier3_relief_percent=payload.tier3_relief_percent,
+        paye_bands=[{"width": (str(b["width"]) if b["width"] is not None else None), "rate": str(b["rate"])} for b in bands],
+        rounding=payload.rounding,
+        source_note=optional_honest_narrative(payload.source_note, label="source", max_length=255),
+        created_by=user_id,
+    )
+    db.add(row)
+    await db.flush()
+    await _audit(db, tenant_id, user_id, "hrm_rates_added", "hrm_statutory_rate", row.id, serialize_rate(row))
+    return row
+
+
+async def delete_rate(db: AsyncSession, tenant_id: str, rate_id: str, *, user_id) -> None:
+    row = await db.get(m.HrmStatutoryRate, rate_id)
+    if row is None or row.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Rates not found")
+    if await _rate_in_use(db, tenant_id, row.id):
+        raise HTTPException(status_code=409, detail="An approved payroll used these rates, so they stay on record")
+    snapshot = serialize_rate(row)
+    await db.delete(row)
+    await _audit(db, tenant_id, user_id, "hrm_rates_removed", "hrm_statutory_rate", rate_id, snapshot)
+    await db.flush()
 
 
 def paye_on(taxable: float, bands: list[dict]) -> float:
@@ -184,6 +338,8 @@ def serialize_employee(row: m.HrmEmployee, *, pay: bool = True) -> dict:
         "hired_on": row.hired_on.isoformat() if row.hired_on else None,
         "left_on": row.left_on.isoformat() if row.left_on else None,
         "status": row.status,
+        "manager_id": getattr(row, "manager_id", None),
+        "biometric_id": getattr(row, "biometric_id", None),
     }
     if pay:
         data.update(
@@ -194,6 +350,9 @@ def serialize_employee(row: m.HrmEmployee, *, pay: bool = True) -> dict:
                 "tin": row.tin,
                 "bank_name": row.bank_name,
                 "bank_account": row.bank_account,
+                "ghana_card": row.ghana_card,
+                "mobile_money": row.mobile_money,
+                "tier3_percent": money_json(row.tier3_percent or 0),
             }
         )
     return data
@@ -230,6 +389,11 @@ async def create_employee(db: AsyncSession, tenant_id: str, payload, *, user_id)
         tin=payload.tin,
         bank_name=payload.bank_name,
         bank_account=payload.bank_account,
+        ghana_card=getattr(payload, "ghana_card", None),
+        mobile_money=getattr(payload, "mobile_money", None),
+        tier3_percent=getattr(payload, "tier3_percent", 0) or 0,
+        manager_id=await _check_manager(db, tenant_id, getattr(payload, "manager_id", None), None),
+        biometric_id=await _check_biometric(db, tenant_id, getattr(payload, "biometric_id", None), None),
     )
     db.add(row)
     await db.flush()
@@ -237,9 +401,46 @@ async def create_employee(db: AsyncSession, tenant_id: str, payload, *, user_id)
     return row
 
 
+async def _check_biometric(db: AsyncSession, tenant_id: str, pin: str | None, employee_id: str | None) -> str | None:
+    """One terminal ID per person in a company, or punches would land on the wrong file."""
+    pin = (pin or "").strip() or None
+    if pin is None:
+        return None
+    taken = (
+        await db.execute(
+            select(m.HrmEmployee.id).where(
+                m.HrmEmployee.tenant_id == tenant_id, m.HrmEmployee.biometric_id == pin, m.HrmEmployee.id != (employee_id or "")
+            )
+        )
+    ).first()
+    if taken:
+        raise HTTPException(status_code=409, detail="Someone else already has that terminal ID")
+    return pin
+
+
+async def _check_manager(db: AsyncSession, tenant_id: str, manager_id: str | None, employee_id: str | None) -> str | None:
+    if not manager_id:
+        return None
+    if manager_id == employee_id:
+        raise HTTPException(status_code=422, detail="Someone cannot report to themselves")
+    boss = await _employee(db, tenant_id, manager_id)
+    # Refuse a loop: the new manager must not report (directly or up the line) to this person.
+    seen, walk = set(), boss
+    while walk is not None and walk.manager_id and walk.id not in seen:
+        seen.add(walk.id)
+        if walk.manager_id == employee_id:
+            raise HTTPException(status_code=422, detail="That would make a reporting loop")
+        walk = await db.get(m.HrmEmployee, walk.manager_id)
+    return boss.id
+
+
 async def update_employee(db: AsyncSession, tenant_id: str, employee_id: str, payload, *, user_id) -> m.HrmEmployee:
     row = await _employee(db, tenant_id, employee_id)
     data = payload.model_dump(exclude_unset=True)
+    if "manager_id" in data:
+        data["manager_id"] = await _check_manager(db, tenant_id, data["manager_id"], row.id)
+    if "biometric_id" in data:
+        data["biometric_id"] = await _check_biometric(db, tenant_id, data["biometric_id"], row.id)
     before = {k: serialize_employee(row).get(k) for k in data}
     for key, value in data.items():
         setattr(row, key, value)
@@ -280,11 +481,12 @@ async def employee_for_user(db: AsyncSession, tenant_id: str, user_id: str | Non
 # --- Leave -------------------------------------------------------------------------------
 
 
-def working_days(start: date, end: date) -> int:
+def working_days(start: date, end: date, holidays: set[date] | frozenset = frozenset()) -> int:
+    """Monday to Friday, less the company's public holidays."""
     days = 0
     day = start
     while day <= end:
-        if day.weekday() < 5:
+        if day.weekday() < 5 and day not in holidays:
             days += 1
         day += timedelta(days=1)
     return days
@@ -304,11 +506,53 @@ async def _annual_used(db: AsyncSession, tenant_id: str, employee_id: str, year:
     return sum(int(r.days or 0) for r in rows if r.starts_on.year == year)
 
 
-async def leave_balance(db: AsyncSession, tenant_id: str, employee_id: str, *, year: int | None = None) -> dict:
+def earned_days(annual: int, hired_on: date | None, year: int, *, accrual: str, upto: date | None = None) -> int:
+    """Annual leave earned in a year. Upfront: the whole year, less months before someone
+    started. Monthly: a twelfth for each month started so far (up to `upto`). Whole days, rounded down."""
+    first_month = 1
+    if hired_on and hired_on.year == year:
+        first_month = hired_on.month
+    elif hired_on and hired_on.year > year:
+        return 0
+    last_month = 12
+    if accrual == "monthly":
+        when = upto or date.today()
+        if when.year < year:
+            return 0
+        last_month = 12 if when.year > year else when.month
+    months = max(last_month - first_month + 1, 0)
+    return (int(annual) * months) // 12
+
+
+async def _entitlement(db: AsyncSession, tenant_id: str, employee: m.HrmEmployee, year: int, *, upto: date | None = None) -> dict:
     settings = await get_settings(db, tenant_id)
+    accrual = getattr(settings, "leave_accrual", None) or "upfront"
+    annual = int(settings.annual_leave_days)
+    earned = earned_days(annual, employee.hired_on, year, accrual=accrual, upto=upto)
+    carried = 0
+    cap = int(getattr(settings, "carry_over_days", 0) or 0)
+    if cap > 0:
+        # Last year's own allowance less what was taken; carry-over does not stack year on year.
+        last_year = earned_days(annual, employee.hired_on, year - 1, accrual="upfront")
+        last_used = await _annual_used(db, tenant_id, employee.id, year - 1)
+        carried = min(cap, max(last_year - last_used, 0))
+    return {"earned": earned, "carried": carried, "entitled": earned + carried, "accrual": accrual}
+
+
+async def leave_balance(db: AsyncSession, tenant_id: str, employee_id: str, *, year: int | None = None) -> dict:
     year = year or date.today().year
+    employee = await _employee(db, tenant_id, employee_id)
+    ent = await _entitlement(db, tenant_id, employee, year)
     used = await _annual_used(db, tenant_id, employee_id, year)
-    return {"year": year, "entitled": int(settings.annual_leave_days), "used": used, "left": int(settings.annual_leave_days) - used}
+    return {
+        "year": year,
+        "entitled": ent["entitled"],
+        "earned": ent["earned"],
+        "carried": ent["carried"],
+        "accrual": ent["accrual"],
+        "used": used,
+        "left": ent["entitled"] - used,
+    }
 
 
 async def request_leave(db: AsyncSession, tenant_id: str, *, employee_id: str, payload, user_id) -> m.HrmLeaveRequest:
@@ -319,9 +563,12 @@ async def request_leave(db: AsyncSession, tenant_id: str, *, employee_id: str, p
         raise HTTPException(status_code=422, detail="The end date is before the start date")
     if payload.starts_on.year != payload.ends_on.year:
         raise HTTPException(status_code=422, detail="Split leave that runs across two years")
-    days = working_days(payload.starts_on, payload.ends_on)
+    from app import hrm_loans
+
+    off = await hrm_loans.holidays_between(db, tenant_id, payload.starts_on, payload.ends_on)
+    days = working_days(payload.starts_on, payload.ends_on, off)
     if days <= 0:
-        raise HTTPException(status_code=422, detail="Those dates are all weekend")
+        raise HTTPException(status_code=422, detail="Those dates are all weekend or public holidays")
     clash = (
         await db.execute(
             select(m.HrmLeaveRequest.id).where(
@@ -336,11 +583,11 @@ async def request_leave(db: AsyncSession, tenant_id: str, *, employee_id: str, p
     if clash:
         raise HTTPException(status_code=409, detail="There is already leave on those dates")
     if payload.leave_type == "annual":
-        settings = await get_settings(db, tenant_id)
+        ent = await _entitlement(db, tenant_id, employee, payload.starts_on.year, upto=payload.ends_on)
         used = await _annual_used(db, tenant_id, employee.id, payload.starts_on.year, states=("approved", "pending"))
-        if used + days > int(settings.annual_leave_days):
-            left = int(settings.annual_leave_days) - used
-            raise HTTPException(status_code=409, detail=f"Only {max(left, 0)} annual leave days left this year")
+        if used + days > ent["entitled"]:
+            left = ent["entitled"] - used
+            raise HTTPException(status_code=409, detail=f"Only {max(left, 0)} annual leave days left by then")
     row = m.HrmLeaveRequest(
         tenant_id=tenant_id,
         employee_id=employee.id,
@@ -349,6 +596,7 @@ async def request_leave(db: AsyncSession, tenant_id: str, *, employee_id: str, p
         ends_on=payload.ends_on,
         days=days,
         status="pending",
+        stage="manager" if employee.manager_id else "hr",
         reason=optional_honest_narrative(payload.reason, label="reason", max_length=500),
         created_by=user_id,
     )
@@ -357,7 +605,18 @@ async def request_leave(db: AsyncSession, tenant_id: str, *, employee_id: str, p
     return row
 
 
-async def decide_leave(db: AsyncSession, tenant_id: str, leave_id: str, *, approve: bool, note: str | None, user_id) -> m.HrmLeaveRequest:
+async def _user_employee(db: AsyncSession, tenant_id: str, user_id: str | None) -> m.HrmEmployee | None:
+    try:
+        return await employee_for_user(db, tenant_id, user_id)
+    except HTTPException:
+        return None
+
+
+async def decide_leave(
+    db: AsyncSession, tenant_id: str, leave_id: str, *, approve: bool, note: str | None, user_id, as_hr: bool = True
+) -> m.HrmLeaveRequest:
+    """Two steps when someone has a manager: the manager first, then HR. HR may decide at
+    either step (it is recorded). A manager who is not HR decides only their own team's first step."""
     row = (
         await db.execute(
             select(m.HrmLeaveRequest).where(m.HrmLeaveRequest.id == leave_id, m.HrmLeaveRequest.tenant_id == tenant_id).with_for_update()
@@ -373,13 +632,53 @@ async def decide_leave(db: AsyncSession, tenant_id: str, leave_id: str, *, appro
     decider = await db.get(m.User, user_id) if user_id else None
     if decider and employee.email and (decider.email or "").lower() == employee.email.lower():
         raise HTTPException(status_code=403, detail="Someone else must decide your own leave")
+    me = await _user_employee(db, tenant_id, user_id)
+    is_manager = bool(me and employee.manager_id and employee.manager_id == me.id)
+    stage = getattr(row, "stage", None) or "hr"
+    if stage == "manager" and is_manager and approve:
+        # The manager agrees; HR has the last word.
+        row.stage = "hr"
+        row.manager_decided_by = user_id
+        row.manager_decided_at = datetime.utcnow()
+        row.manager_note = optional_honest_narrative(note, label="note", max_length=255)
+        await _audit(db, tenant_id, user_id, "hrm_leave_manager_approved", "hrm_leave", row.id, {"days": row.days})
+        await db.flush()
+        return row
+    if not as_hr and not (stage == "manager" and is_manager):
+        raise HTTPException(status_code=403, detail="HR decides this request")
+    if stage == "manager" and is_manager:
+        row.manager_decided_by = user_id
+        row.manager_decided_at = datetime.utcnow()
+        row.manager_note = optional_honest_narrative(note, label="note", max_length=255)
     row.status = "approved" if approve else "rejected"
     row.decision_note = optional_honest_narrative(note, label="note", max_length=255)
     row.decided_by = user_id
     row.decided_at = datetime.utcnow()
-    await _audit(db, tenant_id, user_id, f"hrm_leave_{row.status}", "hrm_leave", row.id, {"days": row.days})
+    details = {"days": row.days, "stage": stage}
+    if stage == "manager" and not is_manager:
+        details["manager_step_skipped_by_hr"] = True
+    await _audit(db, tenant_id, user_id, f"hrm_leave_{row.status}", "hrm_leave", row.id, details)
     await db.flush()
     return row
+
+
+async def team_leave(db: AsyncSession, tenant_id: str, manager: m.HrmEmployee) -> list[m.HrmLeaveRequest]:
+    """Requests from the people who report to this manager, waiting for their decision."""
+    team = select(m.HrmEmployee.id).where(m.HrmEmployee.tenant_id == tenant_id, m.HrmEmployee.manager_id == manager.id)
+    return list(
+        (
+            await db.execute(
+                select(m.HrmLeaveRequest)
+                .where(
+                    m.HrmLeaveRequest.tenant_id == tenant_id,
+                    m.HrmLeaveRequest.employee_id.in_(team),
+                    m.HrmLeaveRequest.status == "pending",
+                    m.HrmLeaveRequest.stage == "manager",
+                )
+                .order_by(m.HrmLeaveRequest.starts_on)
+            )
+        ).scalars()
+    )
 
 
 async def present_leave(db: AsyncSession, row: m.HrmLeaveRequest) -> dict:
@@ -393,6 +692,8 @@ async def present_leave(db: AsyncSession, row: m.HrmLeaveRequest) -> dict:
         "ends_on": row.ends_on.isoformat(),
         "days": int(row.days),
         "status": row.status,
+        "stage": getattr(row, "stage", None) or "hr",
+        "manager_note": getattr(row, "manager_note", None),
         "reason": row.reason,
         "decision_note": row.decision_note,
     }
@@ -418,7 +719,10 @@ async def _unpaid_days(db: AsyncSession, tenant_id: str, employee_id: str, first
             )
         )
     ).scalars().all()
-    return sum(working_days(max(r.starts_on, first), min(r.ends_on, last)) for r in rows)
+    from app import hrm_loans
+
+    off = await hrm_loans.holidays_between(db, tenant_id, first, last)
+    return sum(working_days(max(r.starts_on, first), min(r.ends_on, last), off) for r in rows)
 
 
 # --- Attendance --------------------------------------------------------------------------
@@ -489,23 +793,55 @@ def _month(period: str) -> tuple[date, date]:
     return date(year, month, 1), date(year, month, calendar.monthrange(year, month)[1])
 
 
-def _work_out(slip: m.HrmPayslip, settings: m.HrmSettings) -> None:
-    """Basic and allowances less unpaid days, SSNIT on basic, PAYE on the rest."""
-    per_day = float(slip.basic or 0) / max(int(settings.working_days_per_month), 1)
-    slip.unpaid_deduction = _money(min(per_day * int(slip.unpaid_days or 0), float(slip.basic or 0)))
-    earned_basic = _money(float(slip.basic or 0) - float(slip.unpaid_deduction))
-    gross = _money(earned_basic + float(slip.allowances or 0) + float(slip.bonus or 0))
-    ssnit = _money(earned_basic * float(settings.ssnit_employee_percent) / 100)
-    taxable = _money(gross - ssnit)
-    paye = paye_on(taxable, settings.paye_bands or DEFAULT_PAYE_BANDS)
-    slip.gross = gross
-    slip.ssnit_employee = ssnit
-    slip.taxable = taxable
-    slip.paye = paye
-    slip.ssnit_employer = _money(earned_basic * float(settings.ssnit_employer_percent) / 100)
-    slip.net = _money(gross - ssnit - paye - float(slip.other_deductions or 0))
-    if slip.net < 0:
-        raise HTTPException(status_code=422, detail="Deductions are more than this person's pay")
+def _work_out(slip: m.HrmPayslip, settings: m.HrmSettings, rates: engine.StatutoryRates | None = None) -> None:
+    """Basic and allowances less unpaid days, SSNIT and pensions on basic, PAYE on the rest.
+
+    All arithmetic is Decimal in hrm_payroll; the rates are the month's dated row."""
+    rates = rates or _rates_from_settings(settings)
+
+    def compute(loan):
+        return engine.compute_payslip(
+            engine.PayslipInput(
+                basic=engine.D(slip.basic),
+                allowances=engine.D(slip.allowances),
+                bonus=engine.D(slip.bonus),
+                other_deductions=engine.D(slip.other_deductions) + loan,
+                unpaid_days=int(slip.unpaid_days or 0),
+                working_days=int(settings.working_days_per_month),
+                tier3_percent=engine.D(slip.tier3_percent),
+                arrears_basic=engine.D(getattr(slip, "arrears_basic", 0)),
+                # Approved overtime is a taxable earning without SSNIT, like a correction.
+                adjustment=engine.D(getattr(slip, "adjustment", 0)) + engine.D(getattr(slip, "overtime", 0)),
+            ),
+            rates,
+        )
+
+    loan = engine.D(getattr(slip, "loan_deduction", 0))
+    try:
+        out = compute(loan)
+    except engine.PayrollError as exc:
+        if loan <= 0:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        # A loan repayment never takes someone's pay below nil: take what the month allows.
+        try:
+            before = compute(engine.ZERO)
+        except engine.PayrollError as inner:
+            raise HTTPException(status_code=422, detail=str(inner)) from inner
+        loan = max(min(loan, before.net), engine.ZERO)
+        out = compute(loan)
+    slip.loan_deduction = loan
+    slip.unpaid_deduction = out.unpaid_deduction
+    slip.gross = out.gross
+    slip.ssnit_employee = out.ssnit_employee
+    slip.ssnit_employer = out.ssnit_employer
+    slip.taxable = out.taxable
+    slip.paye = out.paye
+    slip.tier1 = out.tier1
+    slip.tier2 = out.tier2
+    slip.tier3 = out.tier3
+    slip.tier3_relief = out.tier3_relief
+    slip.net = out.net
+    slip.rates_used = rates.snapshot()
 
 
 async def _slips(db: AsyncSession, run_id: str) -> list[m.HrmPayslip]:
@@ -519,6 +855,9 @@ def _totals(run: m.HrmPayrollRun, slips: list[m.HrmPayslip]) -> None:
     run.ssnit_employee = _money(sum(float(s.ssnit_employee or 0) for s in slips))
     run.ssnit_employer = _money(sum(float(s.ssnit_employer or 0) for s in slips))
     run.other_deductions = _money(sum(float(s.other_deductions or 0) for s in slips))
+    run.tier2 = sum((engine.D(s.tier2) for s in slips), engine.ZERO)
+    run.tier3 = sum((engine.D(s.tier3) for s in slips), engine.ZERO)
+    run.loan_deductions = sum((engine.D(getattr(s, "loan_deduction", 0)) for s in slips), engine.ZERO)
 
 
 async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) -> m.HrmPayrollRun:
@@ -528,7 +867,11 @@ async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) 
     ).first()
     if clash:
         raise HTTPException(status_code=409, detail=f"Payroll for {period} already exists")
+    from app import hrm_loans
+    from app import hrm_pay_changes
+
     settings = await get_settings(db, tenant_id)
+    rates = await rates_for(db, tenant_id, first)
     people = [
         p for p in await list_employees(db, tenant_id, show="all")
         if (not p.hired_on or p.hired_on <= last) and (p.status == "active" or (p.left_on and p.left_on >= first))
@@ -540,23 +883,34 @@ async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) 
         run_number=await _next_number(db, tenant_id, m.HrmPayrollRun, "PR"),
         period=period,
         status="draft",
+        statutory_rate_id=rates.rate_id,
         created_by=user_id,
     )
     db.add(run)
     await db.flush()
     slips = []
     for person in people:
+        basic, allowances = await hrm_pay_changes.salary_for(db, person, first)
+        arrears, correction = await hrm_pay_changes.take_pending(db, tenant_id, person.id, run.id)
+        from app import hrm_time
+
+        overtime = await hrm_time.take_overtime(db, person.id, period, run.id)
         slip = m.HrmPayslip(
             tenant_id=tenant_id,
             run_id=run.id,
             employee_id=person.id,
-            basic=_money(person.basic_salary),
-            allowances=_money(person.allowances),
+            basic=basic,
+            allowances=allowances,
+            arrears_basic=arrears,
+            adjustment=correction,
+            overtime=overtime,
             bonus=0,
             other_deductions=0,
+            tier3_percent=person.tier3_percent or 0,
+            loan_deduction=await hrm_loans.due_this_month(db, tenant_id, person.id, period),
             unpaid_days=await _unpaid_days(db, tenant_id, person.id, first, last),
         )
-        _work_out(slip, settings)
+        _work_out(slip, settings, rates)
         db.add(slip)
         slips.append(slip)
     _totals(run, slips)
@@ -583,13 +937,14 @@ async def update_slip(db: AsyncSession, tenant_id: str, slip_id: str, payload, *
     if run.status != "draft":
         raise HTTPException(status_code=409, detail="This payroll is approved and cannot change")
     settings = await get_settings(db, tenant_id)
+    rates = await rates_for(db, tenant_id, _month(run.period)[0])
     if payload.bonus is not None:
         slip.bonus = _money(payload.bonus)
     if payload.other_deductions is not None:
         slip.other_deductions = _money(payload.other_deductions)
     if payload.note is not None:
         slip.note = optional_honest_narrative(payload.note, label="note", max_length=255)
-    _work_out(slip, settings)
+    _work_out(slip, settings, rates)
     await db.flush()
     _totals(run, await _slips(db, run.id))
     await db.flush()
@@ -600,6 +955,12 @@ async def delete_run(db: AsyncSession, tenant_id: str, run_id: str, *, user_id) 
     run = await _run(db, tenant_id, run_id, lock=True)
     if run.status != "draft":
         raise HTTPException(status_code=409, detail="Only a draft payroll can be thrown away")
+    from app import hrm_pay_changes
+
+    await hrm_pay_changes.release_run(db, run.id)
+    from app import hrm_time
+
+    await hrm_time.release_overtime(db, run.id)
     for slip in await _slips(db, run.id):
         await db.delete(slip)
     await db.delete(run)
@@ -612,6 +973,12 @@ async def approve_run(db: AsyncSession, tenant_id: str, run_id: str, *, user_id)
     run = await _run(db, tenant_id, run_id, lock=True)
     if run.status != "draft":
         raise HTTPException(status_code=409, detail=f"This payroll is {run.status}")
+    settings = await get_settings(db, tenant_id)
+    if getattr(settings, "two_person_payroll", False) and user_id and run.created_by == user_id:
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "PAYROLL_SECOND_PERSON", "message": "Someone other than the person who drew up this payroll must approve it."},
+        )
     slips = await _slips(db, run.id)
     _totals(run, slips)
     description = f"Payroll {run.period}"
@@ -626,12 +993,24 @@ async def approve_run(db: AsyncSession, tenant_id: str, run_id: str, *, user_id)
             {"account_code": "2180", "debit": 0, "credit": _money(run.paye), "description": description},
             {
                 "account_code": "2190", "debit": 0,
-                "credit": _money(float(run.ssnit_employee) + float(run.ssnit_employer)),
+                "credit": _money(engine.D(run.ssnit_employee) + engine.D(run.ssnit_employer) - engine.D(run.tier2)),
                 "description": description,
             },
+            {"account_code": "2192", "debit": 0, "credit": _money(run.tier2), "description": description},
+            {"account_code": "2195", "debit": 0, "credit": _money(run.tier3), "description": description},
+            {"account_code": "1150", "debit": 0, "credit": _money(run.loan_deductions), "description": description},
         ],
         reference=run.run_number, source="hrm_payroll", source_id=run.id,
     )
+    from app import hrm_loans
+
+    await hrm_loans.apply_payroll_repayments(db, tenant_id, run, slips)
+    from app import hrm_pay_changes
+
+    await hrm_pay_changes.settle_run(db, run.id)
+    from app import hrm_time
+
+    await hrm_time.settle_overtime(db, run.id)
     run.status = "approved"
     run.approved_by = user_id
     run.approved_at = datetime.utcnow()
@@ -650,7 +1029,12 @@ async def pay(db: AsyncSession, tenant_id: str, run_id: str, *, what: str, metho
     plan = {
         "staff": ("staff_paid_at", "2170", _money(run.net), "Salaries"),
         "paye": ("paye_paid_at", "2180", _money(run.paye), "PAYE to GRA"),
-        "ssnit": ("ssnit_paid_at", "2190", _money(float(run.ssnit_employee) + float(run.ssnit_employer)), "SSNIT"),
+        "ssnit": (
+            "ssnit_paid_at", "2190",
+            _money(engine.D(run.ssnit_employee) + engine.D(run.ssnit_employer) - engine.D(run.tier2)), "SSNIT",
+        ),
+        "tier2": ("tier2_paid_at", "2192", _money(run.tier2), "Tier 2 pension"),
+        "tier3": ("tier3_paid_at", "2195", _money(run.tier3), "Tier 3 pension"),
     }[what]
     field, account, amount, label = plan
     if getattr(run, field) is not None:
@@ -667,7 +1051,14 @@ async def pay(db: AsyncSession, tenant_id: str, run_id: str, *, what: str, metho
             reference=run.run_number, source=f"hrm_pay_{what}", source_id=run.id,
         )
     setattr(run, field, datetime.utcnow())
-    if run.staff_paid_at and run.paye_paid_at and run.ssnit_paid_at:
+    settled = (
+        run.staff_paid_at
+        and run.paye_paid_at
+        and run.ssnit_paid_at
+        and (run.tier2_paid_at or engine.D(run.tier2) == 0)
+        and (run.tier3_paid_at or engine.D(run.tier3) == 0)
+    )
+    if settled:
         run.status = "paid"
     await _audit(db, tenant_id, user_id, f"hrm_paid_{what}", "hrm_payroll", run.id, {"amount": amount, "method": method})
     await db.flush()
@@ -694,6 +1085,15 @@ def _slip_dict(slip: m.HrmPayslip, employee: m.HrmEmployee | None) -> dict:
         "other_deductions": _money(slip.other_deductions),
         "net": _money(slip.net),
         "ssnit_employer": _money(slip.ssnit_employer),
+        "tier1": _money(slip.tier1),
+        "tier2": _money(slip.tier2),
+        "tier3": _money(slip.tier3),
+        "tier3_relief": _money(slip.tier3_relief),
+        "loan_deduction": _money(getattr(slip, "loan_deduction", 0)),
+        "arrears_basic": _money(getattr(slip, "arrears_basic", 0)),
+        "adjustment": _money(getattr(slip, "adjustment", 0)),
+        "overtime": _money(getattr(slip, "overtime", 0)),
+        "rates_used": slip.rates_used,
         "note": slip.note,
     }
 
@@ -713,6 +1113,13 @@ async def present_run(db: AsyncSession, run: m.HrmPayrollRun, *, slips: bool = T
         "staff_paid": run.staff_paid_at is not None,
         "paye_paid": run.paye_paid_at is not None,
         "ssnit_paid": run.ssnit_paid_at is not None,
+        "tier2": _money(run.tier2),
+        "tier3": _money(run.tier3),
+        "ssnit_due": _money(engine.D(run.ssnit_employee) + engine.D(run.ssnit_employer) - engine.D(run.tier2)),
+        "tier2_paid": run.tier2_paid_at is not None,
+        "tier3_paid": run.tier3_paid_at is not None,
+        "loan_deductions": _money(getattr(run, "loan_deductions", 0)),
+        "statutory_rate_id": run.statutory_rate_id,
     }
     if slips:
         rows = await _slips(db, run.id)
@@ -778,6 +1185,17 @@ async def summary(db: AsyncSession, tenant_id: str, *, money: bool = True) -> di
     if people and counts["not_marked"] and today.weekday() < 5:
         attention.append(dash.item("info", f"Attendance not marked for {dash.plural(counts['not_marked'], 'person', 'people')} today", "/hrm?tab=attendance"))
     data["attention"] = attention
+    # People work coming due (no money in these, so officers see them too).
+    from app import hrm_people
+
+    alerts = await hrm_people.contract_alerts(db, tenant_id)
+    if alerts["contracts_ending"]:
+        attention.append(dash.item("warning", f"{dash.plural(len(alerts['contracts_ending']), 'contract')} ending within 30 days", "/hrm?tab=contracts"))
+    if alerts["probation_due"]:
+        attention.append(dash.item("warning", f"{dash.plural(len(alerts['probation_due']), 'probation')} to confirm", "/hrm?tab=contracts"))
+    gaps = await hrm_people.training_gaps(db, tenant_id)
+    if gaps:
+        attention.append(dash.item("info", f"{dash.plural(len(gaps), 'mandatory course')} not done or lapsed", "/hrm?tab=training"))
     if money:
         runs = await list_runs(db, tenant_id)
         data["monthly_basic"] = _money(sum(float(p.basic_salary or 0) + float(p.allowances or 0) for p in people))
@@ -786,8 +1204,14 @@ async def summary(db: AsyncSession, tenant_id: str, *, money: bool = True) -> di
             {"period": r.period, "what": label}
             for r in runs
             if r.status == "approved"
-            for label, paid in (("Salaries", r.staff_paid_at), ("PAYE", r.paye_paid_at), ("SSNIT", r.ssnit_paid_at))
-            if paid is None
+            for label, paid, due in (
+                ("Salaries", r.staff_paid_at, True),
+                ("PAYE", r.paye_paid_at, True),
+                ("SSNIT", r.ssnit_paid_at, True),
+                ("Tier 2 pension", r.tier2_paid_at, engine.D(r.tier2) > 0),
+                ("Tier 3 pension", r.tier3_paid_at, engine.D(r.tier3) > 0),
+            )
+            if due and paid is None
         ]
         by_month = {r.period: float(r.gross or 0) + float(r.ssnit_employer or 0) for r in runs if r.status != "draft"}
         data["trend"] = dash.trend(
@@ -803,6 +1227,20 @@ async def summary(db: AsyncSession, tenant_id: str, *, money: bool = True) -> di
             attention.append(dash.item("info", f"Payroll for {this_month} not drawn up yet", "/hrm?tab=payroll"))
         if any(r.status == "draft" for r in runs):
             attention.append(dash.item("info", "A payroll draft is waiting for approval", "/hrm?tab=payroll"))
+        waiting_loans = (
+            await db.execute(
+                select(func.count()).select_from(m.HrmLoan).where(m.HrmLoan.tenant_id == tenant_id, m.HrmLoan.status == "pending")
+            )
+        ).scalar_one()
+        if waiting_loans:
+            attention.append(dash.item("warning", f"{dash.plural(int(waiting_loans), 'loan or advance request', 'loan or advance requests')} waiting", "/hrm?tab=loans"))
+        waiting_claims = (
+            await db.execute(
+                select(func.count()).select_from(m.HrmClaim).where(m.HrmClaim.tenant_id == tenant_id, m.HrmClaim.status == "pending")
+            )
+        ).scalar_one()
+        if waiting_claims:
+            attention.append(dash.item("warning", f"{dash.plural(int(waiting_claims), 'expense claim')} waiting", "/hrm?tab=claims"))
     return data
 
 

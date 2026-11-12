@@ -454,10 +454,14 @@ from app import fmcg_orders as fmcg_orders_svc  # noqa: E402
 from app import fmcg_orders_api as fmcg_orders_api_mod  # noqa: E402
 from app import gym_api as gym_api_mod  # noqa: E402
 from app import hrm_api as hrm_api_mod  # noqa: E402
+from app import hrm_people_api as hrm_people_api_mod  # noqa: E402
+from app import hrm_time_api as hrm_time_api_mod  # noqa: E402
 
 api.include_router(bakery_api_mod.router)
 api.include_router(gym_api_mod.router)
 api.include_router(hrm_api_mod.router)
+api.include_router(hrm_people_api_mod.router)
+api.include_router(hrm_time_api_mod.router)
 api.include_router(fmcg_orders_api_mod.router)
 from app import hotel_booking_api as hotel_booking_api_mod
 
@@ -872,7 +876,7 @@ async def create_tenant(
             trial_notices={},
             package_code="trial",
             subscription_term_unit="months",
-            subscription_term_value=max(1, int(settings.TRIAL_DAYS) // 30 or 1),
+            subscription_term_value=1,
             subscription_starts_at=now,
             subscription_ends_at=trial_end,
             package_assigned_at=now,
@@ -3427,6 +3431,8 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             "industry_raw": (str(raw_industry).strip() if raw_industry else None) or None,
             "industry_valid": live_industry is not None,
             "subscription": usage,
+            # Same trial / grace state the retail dashboard shows; every desk greeting reads it.
+            "subscription_status": tenants_svc.subscription_status(tenant),
             **store_ent_svc.ui_store_flags(tenant),
             "inactivity_timeout_minutes": int(
                 getattr(tenant, "inactivity_timeout_minutes", None) or 30

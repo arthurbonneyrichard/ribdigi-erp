@@ -454,10 +454,34 @@ export const HRM_NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    id: 'hrm-time',
+    label: 'Time',
+    items: [
+      ['Clock board', '/hrm?tab=clock', 'hrm'],
+      ['Shifts and roster', '/hrm?tab=shifts', 'hrm'],
+      ['Sites and terminals', '/hrm?tab=devices', 'hrm'],
+    ],
+  },
+  {
+    id: 'hrm-work',
+    label: 'People work',
+    items: [
+      ['Hiring', '/hrm?tab=hiring', 'hrm'],
+      ['Reviews', '/hrm?tab=reviews', 'hrm'],
+      ['Training', '/hrm?tab=training', 'hrm'],
+      ['Contracts', '/hrm?tab=contracts', 'hrm'],
+      ['Cases', '/hrm?tab=cases', 'hrm'],
+      ['Staff kit', '/hrm?tab=kit', 'hrm'],
+      ['Expense claims', '/hrm?tab=claims', 'hrm'],
+      ['Notices', '/hrm?tab=notices', 'hrm'],
+    ],
+  },
+  {
     id: 'hrm-pay',
     label: 'Pay',
     items: [
       ['Payroll', '/hrm?tab=payroll', 'hrm'],
+      ['Loans and advances', '/hrm?tab=loans', 'hrm'],
       ['Reports', '/hrm?tab=reports', 'hrm'],
       ['Pay rates', '/hrm?tab=settings', 'hrm'],
     ],
@@ -866,7 +890,11 @@ export const GYM_ROLE_HREFS: Record<string, string[]> = {
 };
 
 export const HRM_ROLE_HREFS: Record<string, string[]> = {
-  hrm_officer: ['/hrm', '/hrm?tab=people', '/hrm?tab=leave', '/hrm?tab=attendance', '/hrm?tab=me', '/notifications', '/security', '/support'],
+  hrm_officer: [
+    '/hrm', '/hrm?tab=people', '/hrm?tab=leave', '/hrm?tab=attendance', '/hrm?tab=clock', '/hrm?tab=shifts',
+    '/hrm?tab=devices', '/hrm?tab=hiring', '/hrm?tab=training',
+    '/hrm?tab=contracts', '/hrm?tab=kit', '/hrm?tab=notices', '/hrm?tab=me', '/notifications', '/security', '/support',
+  ],
   hrm_employee: ['/hrm?tab=me', '/notifications', '/security', '/support'],
 };
 

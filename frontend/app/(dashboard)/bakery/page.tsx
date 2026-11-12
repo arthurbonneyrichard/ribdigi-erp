@@ -8,8 +8,24 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../../lib/api';
+import {
+  applySyncResults,
+  bakerySyncBody,
+  enqueueSale,
+  isLinkDown,
+  newOfflineRef,
+  offlineLabel,
+  pendingSales,
+  readQueue,
+  readTillCache,
+  saveTillCache,
+  tillDeviceId,
+  writeQueue,
+  type OfflineSale,
+  type SyncResult,
+} from '../../../lib/restaurantOffline';
 import { formatMoney } from '../../../lib/format';
 import DeskDashboard, { DeskTiles, TrendChart, type DeskTile } from '../../../components/DeskDashboard';
 import DeskIcon from '../../../components/DeskIcon';
@@ -128,6 +144,11 @@ function BakeryDesk() {
   const canDrive = isDriver || isManager;
   const [myId, setMyId] = useState('');
   const [fromBag, setFromBag] = useState(false);
+  // Counter sales kept on this device while the internet is down (shop till only, not a van bag).
+  const [offline, setOffline] = useState(false);
+  const [queue, setQueue] = useState<OfflineSale[]>([]);
+  const [syncing, setSyncing] = useState(false);
+  const syncLock = useRef(false);
 
   const [summary, setSummary] = useState<Row | null>(null);
   const [driverDay, setDriverDay] = useState<Row | null>(null);
@@ -210,19 +231,99 @@ function BakeryDesk() {
         setIngredients((await soft('/bakery/ingredients')) || []);
       }
       if (want === 'counter' && may('counter') && !driver) {
-        setShift(await soft('/bakery/till/shift'));
+        const openShift = await soft('/bakery/till/shift');
+        setShift(openShift);
         setSales((await soft('/bakery/sales?limit=30')) || []);
+        if (itemRows) {
+          saveTillCache({ items: itemRows, shift: openShift, role: myRole, user_id: String(me?.data?.id || '') }, undefined, undefined, 'bakery');
+        }
       }
+      setOffline(false);
       if (want === 'waste' && may('waste')) setWaste((await soft('/bakery/waste')) || []);
       if (want === 'stock' && !jobs) setStock(await soft('/bakery/stock'));
       if (want === 'expenses' && !jobs) setExpenses(await soft('/bakery/expenses'));
       if (want === 'reports' && !jobs) setReport(await soft(`/bakery/reports/full?start_date=${range.start}&end_date=${range.end}`));
     } catch (err) {
-      setError(problem(err));
+      const cache = isLinkDown(err) ? (readTillCache(undefined, undefined, 'bakery') as Row | null) : null;
+      if (cache) {
+        setRole(String(cache.role || ''));
+        setMyId(String(cache.user_id || ''));
+        setItems((cache.items as Row[]) || []);
+        setShift((cache.shift as Row) || null);
+        setSales([]);
+        setOffline(true);
+      } else {
+        setError(problem(err));
+      }
     } finally {
       setLoading(false);
     }
   }, [range.start, range.end]);
+
+  /** Send counter sales kept on this device. Each books once; they wait if no till is open. */
+  const syncNow = useCallback(async () => {
+    if (syncLock.current) return;
+    const waiting = pendingSales(readQueue(undefined, undefined, 'bakery'));
+    setQueue(readQueue(undefined, undefined, 'bakery'));
+    if (!waiting.length) return;
+    syncLock.current = true;
+    setSyncing(true);
+    try {
+      const res = await api('/bakery/till/offline/sync', {
+        method: 'POST',
+        body: JSON.stringify(bakerySyncBody(waiting, tillDeviceId())),
+      });
+      const results: SyncResult[] = res?.data?.results || [];
+      const next = applySyncResults(readQueue(undefined, undefined, 'bakery'), results);
+      writeQueue(next, undefined, undefined, 'bakery');
+      setQueue(next);
+      const booked = results.filter((r) => r.status === 'booked' || r.status === 'already_booked').length;
+      const held = results.filter((r) => r.status === 'waiting').length;
+      const differ = results.filter((r) => r.status === 'booked' && Number(r.difference || 0) !== 0).length;
+      setOffline(false);
+      setNotice(
+        [
+          booked ? `${booked} offline sale(s) booked.` : '',
+          differ ? `${differ} booked at a different total than charged; check them.` : '',
+          held ? `${held} waiting: open the till to book them.` : '',
+        ].filter(Boolean).join(' '),
+      );
+      if (booked) await load();
+    } catch (err) {
+      if (isLinkDown(err)) setOffline(true);
+      else setError(problem(err));
+    } finally {
+      syncLock.current = false;
+      setSyncing(false);
+    }
+  }, [load]);
+
+  useEffect(() => {
+    setQueue(readQueue(undefined, undefined, 'bakery'));
+    const up = () => void syncNow();
+    const down = () => setOffline(true);
+    window.addEventListener('online', up);
+    window.addEventListener('offline', down);
+    const timer = window.setInterval(() => {
+      if (pendingSales(readQueue(undefined, undefined, 'bakery')).length && navigator.onLine !== false) void syncNow();
+    }, 60_000);
+    return () => {
+      window.removeEventListener('online', up);
+      window.removeEventListener('offline', down);
+      window.clearInterval(timer);
+    };
+  }, [syncNow]);
+
+  useEffect(() => {
+    if (!loading && !offline && pendingSales(readQueue(undefined, undefined, 'bakery')).length) void syncNow();
+  }, [loading, offline, syncNow, shift]);
+
+  function removeRefused(ref: string) {
+    if (!window.confirm('Remove this refused sale from the till? Write it down first: the money was taken.')) return;
+    const next = readQueue(undefined, undefined, 'bakery').filter((row) => row.offline_ref !== ref);
+    writeQueue(next, undefined, undefined, 'bakery');
+    setQueue(next);
+  }
 
   useEffect(() => {
     setError('');
@@ -264,7 +365,57 @@ function BakeryDesk() {
     });
   const shownItems = find.trim() ? items.filter((i) => i.name.toLowerCase().includes(find.trim().toLowerCase())) : items;
 
+  function chargeOffline() {
+    if (usingBag) {
+      setError('No connection: van sales need the connection to reach your cash bag. Sell from the shop till, or wait.');
+      return;
+    }
+    if (method === 'wallet') {
+      setError('Wallet needs a connection. Take cash, card or Mobile Money.');
+      return;
+    }
+    const ref = newOfflineRef();
+    const sale: OfflineSale = {
+      offline_ref: ref,
+      created_at: new Date().toISOString(),
+      service_mode: 'takeaway',
+      payment_method: method as OfflineSale['payment_method'],
+      store_id: null,
+      table_id: null,
+      shift_id: shift?.id || null,
+      customer_name: null,
+      delivery_address: null,
+      charged_total: Math.round(basketTotal * 100) / 100,
+      lines: basketLines.map((l) => ({
+        product_id: l.item.id,
+        quantity: l.qty,
+        modifier_ids: [],
+        name: l.item.name,
+        amount: Math.round(l.qty * pays(l.item) * 100) / 100,
+      })),
+    };
+    setQueue(enqueueSale(sale, undefined, undefined, 'bakery'));
+    setLastSale({
+      sale_number: offlineLabel(ref),
+      total: sale.charged_total,
+      tax: 0,
+      items: sale.lines.map((l) => ({ quantity: l.quantity, name: l.name, line_total: l.amount })),
+    });
+    setBasket({});
+    setGiven('');
+    setError('');
+    setNotice(
+      change != null && change > 0
+        ? `Offline sale ${offlineLabel(ref)} kept on this till. Give ${money(change)} change.`
+        : `Offline sale ${offlineLabel(ref)} kept on this till. It is booked when the connection returns.`,
+    );
+  }
+
   async function charge() {
+    if (offline) {
+      chargeOffline();
+      return;
+    }
     const sale = await run(
       '/bakery/sales',
       { payment_method: method, lines: basketLines.map((l) => ({ product_id: l.item.id, quantity: l.qty })), ...(usingBag && !isDriver ? { from_bag: true } : {}) },
@@ -482,6 +633,27 @@ function BakeryDesk() {
       ) : null}
       {error && !dialog ? <p className="bk-banner bad" role="alert">{error}</p> : null}
       {notice ? <p className="bk-banner" role="status">{notice}</p> : null}
+      {tab === 'counter' && (offline || queue.length) ? (
+        <div className="bk-banner bk-offline" role="status" aria-label="Offline selling">
+          <strong>{offline ? 'No connection: selling on this till. ' : 'Connection back. '}</strong>
+          {pendingSales(queue).length
+            ? `${pendingSales(queue).length} sale(s) kept on this till, not yet booked.`
+            : offline
+              ? 'Counter sales are kept on this till and booked when the connection returns.'
+              : 'Every offline sale is booked.'}
+          {pendingSales(queue).length && !offline ? (
+            <button type="button" aria-label="Send offline sales now" disabled={syncing} onClick={() => void syncNow()}>
+              {syncing ? 'Sending…' : 'Send now'}
+            </button>
+          ) : null}
+          {queue.filter((row) => row.refused_reason).map((row) => (
+            <span key={row.offline_ref} className="bk-offline-refused">
+              {offlineLabel(row.offline_ref)} · {money(row.charged_total)}: {row.refused_reason}{' '}
+              <button type="button" aria-label={`Remove refused sale ${offlineLabel(row.offline_ref)}`} onClick={() => removeRefused(row.offline_ref)}>Remove</button>
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       {tab === 'today' && isDriver && driverDay ? (
         <DeskDashboard
@@ -602,7 +774,7 @@ function BakeryDesk() {
                 <div className="bk-total"><span>To pay</span><span>{money(basketTotal)}</span></div>
                 <p className="bk-muted bk-small">Prices include tax.</p>
                 <div className="bk-methods" role="radiogroup" aria-label="Payment method">
-                  {METHODS.map((x) => (
+                  {METHODS.filter((x) => !offline || x.id !== 'wallet').map((x) => (
                     <button key={x.id} type="button" role="radio" aria-checked={method === x.id} className={method === x.id ? 'on' : ''} onClick={() => setMethod(x.id)}>{x.label}</button>
                   ))}
                 </div>
@@ -620,7 +792,11 @@ function BakeryDesk() {
                 {!usingBag ? (
                   <div className="bk-form bk-close">
                     <label><span>Cash counted at close</span><input type="number" min={0} step="0.01" value={counted} onChange={(e) => setCounted(e.target.value)} aria-label="Counted cash" /></label>
-                    <button type="button" disabled={busy || counted === ''} onClick={async () => { if (await run('/bakery/till/shift/close', { counted_cash: Number(counted) || 0 }, 'Till closed')) setCounted(''); }}>Close till</button>
+                    <button
+                      type="button" disabled={busy || counted === '' || offline || pendingSales(queue).length > 0}
+                      title={pendingSales(queue).length ? 'Offline sales are not booked yet. Send them before closing.' : undefined}
+                      onClick={async () => { if (await run('/bakery/till/shift/close', { counted_cash: Number(counted) || 0 }, 'Till closed')) setCounted(''); }}
+                    >Close till</button>
                   </div>
                 ) : <p className="bk-muted bk-small">Hand your bag in at the shop when you are back.</p>}
               </>

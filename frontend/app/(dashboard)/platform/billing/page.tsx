@@ -14,6 +14,9 @@ import PageHeader from '../../../../components/PageHeader';
 import { getMe } from '../../../../lib/meCache';
 import {
   canAssignSubscription,
+  industryLabel,
+  PRICE_INDUSTRIES,
+  taxSaveBody,
   packageCodeFromName,
   gatewaySaveBody,
   packageCreateBody,
@@ -49,6 +52,7 @@ type PackageRow = {
   id: string;
   code: string;
   package_code: string;
+  industry?: string | null;
   name: string;
   interval: string;
   amount: number;
@@ -88,6 +92,9 @@ type InvoiceRow = {
   id?: string;
   status?: string;
   amount?: number | null;
+  net_amount?: number | null;
+  tax_amount?: number | null;
+  tax_label?: string | null;
   currency?: string | null;
   description?: string | null;
   period_start?: string | null;
@@ -120,6 +127,13 @@ export default function PlatformBillingPage() {
   const [packageInterval, setPackageInterval] = useState('month');
   const [packageAmount, setPackageAmount] = useState('');
   const [packageCurrency, setPackageCurrency] = useState('GHS');
+  const [packageIndustry, setPackageIndustry] = useState('');
+  const [industryFilter, setIndustryFilter] = useState('all');
+  const [taxEnabled, setTaxEnabled] = useState(false);
+  const [taxRate, setTaxRate] = useState('');
+  const [taxLabel, setTaxLabel] = useState('VAT');
+  const [taxReg, setTaxReg] = useState('');
+  const [taxInclusive, setTaxInclusive] = useState(false);
   const [linkedPlan, setLinkedPlan] = useState('');
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -151,6 +165,51 @@ export default function PlatformBillingPage() {
   async function loadPackages() {
     const res = await api('/platform/billing/plans');
     setPackages((res?.data || []) as PackageRow[]);
+  }
+
+  async function loadTax() {
+    const res = await api('/platform/billing/tax');
+    const data = (res?.data || {}) as {
+      enabled?: boolean;
+      rate?: number;
+      label?: string;
+      registration_number?: string | null;
+      prices_include_tax?: boolean;
+    };
+    setTaxEnabled(Boolean(data.enabled));
+    setTaxRate(data.rate ? String(data.rate) : '');
+    setTaxLabel(data.label || 'VAT');
+    setTaxReg(data.registration_number || '');
+    setTaxInclusive(Boolean(data.prices_include_tax));
+  }
+
+  async function saveTax(event: FormEvent) {
+    event.preventDefault();
+    if (!canCreate) return;
+    const built = taxSaveBody({
+      enabled: taxEnabled,
+      rate: taxRate || '0',
+      label: taxLabel,
+      registrationNumber: taxReg,
+      pricesIncludeTax: taxInclusive,
+    });
+    if ('error' in built) {
+      setError(built.error);
+      setMessage('');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const saved = await api('/platform/billing/tax', { method: 'PUT', body: JSON.stringify(built.body) });
+      setMessage(saved?.message || 'VAT settings saved');
+      await loadTax();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not save VAT settings');
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function loadAttention() {
@@ -187,6 +246,12 @@ export default function PlatformBillingPage() {
           await loadPackages();
         } catch (err: unknown) {
           const detail = err instanceof Error ? err.message : 'Could not load packages';
+          if (!cancelled) setError(detail);
+        }
+        try {
+          await loadTax();
+        } catch (err: unknown) {
+          const detail = err instanceof Error ? err.message : 'Could not load VAT settings';
           if (!cancelled) setError(detail);
         }
         try {
@@ -435,6 +500,7 @@ export default function PlatformBillingPage() {
     setPackageInterval(item.interval === 'year' ? 'year' : 'month');
     setPackageAmount(formatNumber(item.amount, prefs));
     setPackageCurrency((item.currency || 'GHS').toUpperCase());
+    setPackageIndustry(item.industry || '');
     setPendingDelete('');
     setError('');
     setMessage('');
@@ -446,6 +512,7 @@ export default function PlatformBillingPage() {
     setPackageName('');
     setPackageSlug('');
     setPackageAmount('');
+    setPackageIndustry('');
   }
 
   async function removePackage(item: PackageRow) {
@@ -484,6 +551,7 @@ export default function PlatformBillingPage() {
       interval: packageInterval,
       amount: packageAmount,
       currency: packageCurrency,
+      industry: packageIndustry,
     };
     const built = editingId
       ? packageUpdateBody(draft, prefs)
@@ -592,6 +660,7 @@ export default function PlatformBillingPage() {
     tabs.push(
       { key: 'attention', label: 'Needs attention', count: attention.length, alert: attention.length > 0 },
       { key: 'packages', label: 'Packages', count: packages.length },
+      { key: 'vat', label: 'VAT' },
       { key: 'gateway', label: 'Payment gateway' },
     );
   }
@@ -707,6 +776,7 @@ export default function PlatformBillingPage() {
                       <tr>
                         <th>Status</th>
                         <th className="col-right">Amount</th>
+                        <th className="col-right plat-hide-sm">VAT</th>
                         <th className="plat-hide-sm">Description</th>
                         <th className="plat-hide-sm">Period</th>
                         <th>Paid</th>
@@ -725,6 +795,11 @@ export default function PlatformBillingPage() {
                               inv.currency,
                               formatNumber(inv.amount, prefs),
                             )}
+                          </td>
+                          <td className="col-right plat-hide-sm">
+                            {inv.tax_amount
+                              ? `${inv.tax_label || 'VAT'} ${formatNumber(inv.tax_amount, prefs)}`
+                              : '—'}
                           </td>
                           <td className="plat-hide-sm">{inv.description || '—'}</td>
                           <td className="plat-hide-sm">
@@ -855,6 +930,26 @@ export default function PlatformBillingPage() {
               Create package
             </button>
           </div>
+          <p className="plat-panel-sub">
+            Each industry can have its own price. A company gets its industry&apos;s price, or the
+            All industries price when its industry has none.
+            {taxEnabled ? ` Amounts are ${taxInclusive ? 'including' : 'before'} ${taxLabel || 'VAT'}.` : ''}
+          </p>
+          <label className="plat-field" style={{ display: 'grid', gap: 6, maxWidth: 260, marginBottom: 12 }}>
+            <span>Show prices for</span>
+            <select
+              aria-label="Filter packages by industry"
+              value={industryFilter}
+              onChange={(event) => setIndustryFilter(event.target.value)}
+            >
+              <option value="all">Every price</option>
+              {PRICE_INDUSTRIES.map((item) => (
+                <option key={item.value || 'general'} value={item.value || 'general'}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
           {packages.length === 0 ? (
             <EmptyState title="No packages yet." detail="Create a package to reuse a plan and price." />
           ) : (
@@ -863,6 +958,7 @@ export default function PlatformBillingPage() {
                 <thead>
                   <tr>
                     <th>Name</th>
+                    <th>Industry</th>
                     <th>Features</th>
                     <th>Period</th>
                     <th className="col-right">Amount</th>
@@ -870,12 +966,21 @@ export default function PlatformBillingPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {packages.map((item) => (
+                  {packages
+                    .filter((item) =>
+                      industryFilter === 'all'
+                        ? true
+                        : industryFilter === 'general'
+                          ? !item.industry
+                          : item.industry === industryFilter,
+                    )
+                    .map((item) => (
                     <tr key={item.id}>
                       <td>
                         <span className="plat-co">{item.name}</span>
                         {!item.is_active ? <span className="plat-small">Inactive</span> : null}
                       </td>
+                      <td>{industryLabel(item.industry)}</td>
                       <td>{plainLabel(item.package_code)}</td>
                       <td>{item.interval === 'year' ? 'Yearly' : 'Monthly'}</td>
                       <td className="col-right">
@@ -918,6 +1023,75 @@ export default function PlatformBillingPage() {
               </table>
             </div>
           )}
+        </div>
+      ) : null}
+
+      {activeTab === 'vat' ? (
+        <div className="plat-panel">
+          <div className="plat-panel-head">
+            <h2>VAT on subscriptions</h2>
+          </div>
+          <p className="plat-panel-sub">
+            The VAT you, the software owner, charge companies on their subscription. It shows on
+            each company&apos;s billing page and invoice. Check the rate with your tax office before
+            switching it on. A company that already agreed to renew is asked to confirm the new
+            total before its next payment.
+          </p>
+          <form className="plat-form" onSubmit={saveTax}>
+            <label className="plat-check">
+              <input
+                type="checkbox"
+                aria-label="Charge VAT on subscriptions"
+                checked={taxEnabled}
+                onChange={(event) => setTaxEnabled(event.target.checked)}
+              />
+              <span>Charge VAT on subscriptions</span>
+            </label>
+            <label>
+              <span>Rate (%)</span>
+              <input
+                aria-label="VAT rate percent"
+                inputMode="decimal"
+                value={taxRate}
+                placeholder="20"
+                onChange={(event) => setTaxRate(event.target.value)}
+              />
+            </label>
+            <label>
+              <span>Name on invoice</span>
+              <input
+                aria-label="VAT name on invoice"
+                value={taxLabel}
+                maxLength={40}
+                onChange={(event) => setTaxLabel(event.target.value)}
+              />
+            </label>
+            <label>
+              <span>Your VAT / TIN number</span>
+              <input
+                aria-label="Software owner VAT registration number"
+                value={taxReg}
+                maxLength={40}
+                onChange={(event) => setTaxReg(event.target.value)}
+              />
+            </label>
+            <label>
+              <span>Package prices</span>
+              <select
+                aria-label="Package prices include VAT"
+                value={taxInclusive ? 'inclusive' : 'exclusive'}
+                onChange={(event) => setTaxInclusive(event.target.value === 'inclusive')}
+              >
+                <option value="exclusive">VAT is added on top of the price</option>
+                <option value="inclusive">Prices already include VAT</option>
+              </select>
+            </label>
+            <div className="plat-form-actions">
+              <button aria-label="Save VAT settings" className="btn-primary" type="submit" disabled={busy}>
+                {busy ? 'Saving…' : 'Save VAT'}
+              </button>
+            </div>
+          </form>
         </div>
       ) : null}
 
@@ -1244,6 +1418,20 @@ export default function PlatformBillingPage() {
                 readOnly={Boolean(editingId)}
                 required
               />
+            </label>
+            <label>
+              <span>Industry</span>
+              <select
+                aria-label="Package industry"
+                value={packageIndustry}
+                onChange={(event) => setPackageIndustry(event.target.value)}
+              >
+                {PRICE_INDUSTRIES.map((item) => (
+                  <option key={item.value || 'general'} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
             </label>
             <label>
               <span>Features</span>

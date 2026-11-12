@@ -11,6 +11,25 @@ import { api } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
 import PosLockGate, { PosLockButton, useTillSale } from '../../../../components/PosLockGate';
 import { formatMoney } from '../../../../lib/format';
+import {
+  OFFLINE_METHODS,
+  applySyncResults,
+  enqueueSale,
+  isLinkDown,
+  newOfflineRef,
+  offlineBill,
+  offlineLabel,
+  pendingSales,
+  readQueue,
+  readTillCache,
+  saveTillCache,
+  syncBody,
+  tillDeviceId,
+  writeQueue,
+  type OfflineSale,
+  type PriceSheet,
+  type SyncResult,
+} from '../../../../lib/restaurantOffline';
 import './restaurant-till.css';
 
 type Row = Record<string, any>;
@@ -117,7 +136,19 @@ function RestaurantTill() {
   const [paying, setPaying] = useState<Row | null>(null);
   const [method, setMethod] = useState<Method>('cash');
   const [tendered, setTendered] = useState('');
-  const [done, setDone] = useState<{ number: string; total: number; change: number; method: Method } | null>(null);
+  const [done, setDone] = useState<{
+    number: string;
+    total: number;
+    change: number;
+    method: Method;
+    offline?: boolean;
+    dishes?: string[];
+  } | null>(null);
+  const [offline, setOffline] = useState(false);
+  const [queue, setQueue] = useState<OfflineSale[]>([]);
+  const [prices, setPrices] = useState<PriceSheet | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const syncLock = useRef(false);
   const [shift, setShift] = useState<Row | null>(null);
   const [shiftOpen, setShiftOpen] = useState(false);
   const [payAfterShift, setPayAfterShift] = useState(false);
@@ -149,8 +180,38 @@ function RestaurantTill() {
       setStores(storeRows);
       setStoreId((prev) => prev || shiftRes?.data?.store_id || storeRows[0]?.id || '');
       setShift(shiftRes?.data || null);
+      setOffline(false);
+      const priceRes = await api('/restaurant/till/offline/prices').catch(() => null);
+      const sheet = (priceRes?.data as PriceSheet) || null;
+      setPrices(sheet);
+      // Keep what the till needs to sell with no connection.
+      saveTillCache({
+        menu: products.filter((row) => isMenuItem(row, recipeMenu, recipeIngredient)),
+        sold_out: ((soldRes?.data?.items as Row[]) || []).map((r) => r.id),
+        groups: groupRes?.data || [],
+        tables: (tableRes?.data || []).filter((t: Row) => t.is_active !== false),
+        stores: storeRows,
+        shift: shiftRes?.data || null,
+        prices: sheet,
+      });
     } catch (err) {
-      setError(detail(err));
+      const cache = isLinkDown(err) ? readTillCache() : null;
+      if (cache) {
+        setMenu((cache.menu as Row[]) || []);
+        setSoldOut(new Set(cache.sold_out || []));
+        setGroups((cache.groups as Row[]) || []);
+        setTables((cache.tables as Row[]) || []);
+        setOrders([]);
+        const storeRows = (cache.stores as Row[]) || [];
+        setStores(storeRows);
+        const cachedShift = (cache.shift as Row) || null;
+        setStoreId((prev) => prev || cachedShift?.store_id || storeRows[0]?.id || '');
+        setShift(cachedShift);
+        setPrices(cache.prices || null);
+        setOffline(true);
+      } else {
+        setError(detail(err));
+      }
     } finally {
       setLoading(false);
     }
@@ -159,6 +220,74 @@ function RestaurantTill() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  /** Send sales kept on this till. Each one books once on the server. */
+  const syncNow = useCallback(async () => {
+    if (syncLock.current) return;
+    const waiting = pendingSales(readQueue());
+    setQueue(readQueue());
+    if (!waiting.length) return;
+    syncLock.current = true;
+    setSyncing(true);
+    try {
+      const res = await api('/restaurant/till/offline/sync', {
+        method: 'POST',
+        body: JSON.stringify(syncBody(waiting, tillDeviceId())),
+      });
+      const results: SyncResult[] = res?.data?.results || [];
+      const next = applySyncResults(readQueue(), results);
+      writeQueue(next);
+      setQueue(next);
+      const booked = results.filter((r) => r.status === 'booked' || r.status === 'already_booked').length;
+      const refused = results.filter((r) => r.status === 'refused').length;
+      const differ = results.filter((r) => r.status === 'booked' && Number(r.difference || 0) !== 0).length;
+      setOffline(false);
+      setNotice(
+        [
+          booked ? `${booked} offline sale(s) booked.` : '',
+          differ ? `${differ} booked at a different total than charged; a manager should check them.` : '',
+          refused ? `${refused} refused: see the list at the top.` : '',
+        ]
+          .filter(Boolean)
+          .join(' '),
+      );
+      await load();
+    } catch (err) {
+      if (isLinkDown(err)) setOffline(true);
+      // A locked till sends them after the next unlock; no need to shout every minute.
+      else if ((err as { status?: number })?.status !== 423) setError(detail(err));
+    } finally {
+      syncLock.current = false;
+      setSyncing(false);
+    }
+  }, [load]);
+
+  useEffect(() => {
+    setQueue(readQueue());
+    const goneOnline = () => void syncNow();
+    const goneOffline = () => setOffline(true);
+    window.addEventListener('online', goneOnline);
+    window.addEventListener('offline', goneOffline);
+    const timer = window.setInterval(() => {
+      if (pendingSales(readQueue()).length && navigator.onLine !== false) void syncNow();
+    }, 60_000);
+    return () => {
+      window.removeEventListener('online', goneOnline);
+      window.removeEventListener('offline', goneOffline);
+      window.clearInterval(timer);
+    };
+  }, [syncNow]);
+
+  useEffect(() => {
+    if (!loading && !offline && pendingSales(readQueue()).length) void syncNow();
+  }, [loading, offline, syncNow]);
+
+  function removeRefused(ref: string) {
+    if (!window.confirm('Remove this refused sale from the till? Write it down first: the money was taken.')) return;
+    const next = readQueue().filter((row) => row.offline_ref !== ref);
+    writeQueue(next);
+    setQueue(next);
+  }
 
   // The Orders and Bills screens open a bill here with ?order=<id> (and &pay=1 to take payment).
   useEffect(() => {
@@ -354,6 +483,10 @@ function RestaurantTill() {
   }
 
   async function sendToKitchen() {
+    if (offline) {
+      setError('No connection: the kitchen screen cannot get this order. Take payment now and tell the kitchen; the order goes to the server when the till reconnects.');
+      return;
+    }
     setBusy(true);
     setError('');
     setNotice('');
@@ -372,7 +505,46 @@ function RestaurantTill() {
   }
 
   /** Save what is on the ticket, then open the payment sheet. Money goes into a drawer, so a shift must be open. */
+  function startOfflinePayment() {
+    if (current) {
+      setError('This bill is kept on the server. Take its payment when the till reconnects, or start a new sale.');
+      return;
+    }
+    if (!shift || shift.status !== 'open') {
+      setError('No open shift on this till. A shift can only be opened online, so offline selling needs a shift opened before the connection dropped.');
+      return;
+    }
+    const problem = headerProblem();
+    if (problem) {
+      setError(problem);
+      return;
+    }
+    if (!draft.length) {
+      setError('Tap a dish to start the order.');
+      return;
+    }
+    const lines = draft.map((l) => ({ product_id: l.product_id, amount: lineAmount(l) }));
+    const bill = offlineBill(lines, prices);
+    const ref = newOfflineRef();
+    setError('');
+    setMethod('cash');
+    setTendered('');
+    setPaying({
+      offline: true,
+      offline_ref: ref,
+      order_number: offlineLabel(ref),
+      subtotal: bill.subtotal,
+      service_amount: bill.service,
+      tax_amount: bill.tax,
+      total_amount: bill.total,
+    });
+  }
+
   async function startPayment(shiftReady = Boolean(shift), bill: Row | null = null) {
+    if (offline && !bill) {
+      startOfflinePayment();
+      return;
+    }
     if (!shiftReady) {
       setPayAfterShift(true);
       setShiftOpen(true);
@@ -396,7 +568,12 @@ function RestaurantTill() {
       setTendered('');
       setPaying(fresh);
     } catch (err) {
-      setError(detail(err));
+      if (isLinkDown(err)) {
+        setOffline(true);
+        setError('The connection dropped. Tap Pay again to sell offline on this till.');
+      } else {
+        setError(detail(err));
+      }
     } finally {
       setBusy(false);
     }
@@ -408,6 +585,45 @@ function RestaurantTill() {
     const cash = Number(tendered || 0);
     if (method === 'cash' && tendered && cash < total) {
       setError('Cash received is less than the bill.');
+      return;
+    }
+    if (paying.offline) {
+      if (!(OFFLINE_METHODS as string[]).includes(method)) {
+        setError('Wallet needs a connection. Take cash, card or Mobile Money.');
+        return;
+      }
+      const sale: OfflineSale = {
+        offline_ref: String(paying.offline_ref),
+        created_at: new Date().toISOString(),
+        service_mode: mode,
+        payment_method: method as OfflineSale['payment_method'],
+        store_id: storeId || null,
+        table_id: mode === 'dine_in' ? tableId || null : null,
+        shift_id: shift?.id || null,
+        customer_name: guest.trim() || null,
+        delivery_address: mode === 'delivery' ? address.trim() || null : null,
+        charged_total: total,
+        lines: draft.map((l) => ({
+          product_id: l.product_id,
+          quantity: l.quantity,
+          modifier_ids: l.modifier_ids,
+          ...(l.note.trim() ? { note: l.note.trim() } : {}),
+          name: l.name,
+          amount: lineAmount(l),
+        })),
+      };
+      setQueue(enqueueSale(sale));
+      setDone({
+        number: String(paying.order_number),
+        total,
+        change: method === 'cash' && tendered ? Math.max(0, cash - total) : 0,
+        method,
+        offline: true,
+        dishes: draft.map((l) => `${l.quantity} × ${l.name}${l.note.trim() ? ` (${l.note.trim()})` : ''}`),
+      });
+      setPaying(null);
+      setError('');
+      resetTicket(mode);
       return;
     }
     setBusy(true);
@@ -487,6 +703,34 @@ function RestaurantTill() {
   return (
     <div className="rtill">
       {handover}
+      {offline || queue.length ? (
+        <div className={`rtill-offline${offline ? ' is-off' : ''}`} role="status" aria-label="Offline selling">
+          <strong>{offline ? 'No connection: selling on this till' : 'Connection back'}</strong>
+          <span>
+            {pendingSales(queue).length
+              ? `${pendingSales(queue).length} sale(s) kept on this till, not yet booked.`
+              : offline
+                ? 'New paid sales are kept on this till and booked when the connection returns.'
+                : 'Every offline sale is booked.'}
+          </span>
+          {pendingSales(queue).length && !offline ? (
+            <button type="button" aria-label="Send offline sales now" disabled={syncing} onClick={() => void syncNow()}>
+              {syncing ? 'Sending…' : 'Send now'}
+            </button>
+          ) : null}
+          {queue.filter((row) => row.refused_reason).map((row) => (
+            <div key={row.offline_ref} className="rtill-offline-refused">
+              <span>
+                {offlineLabel(row.offline_ref)} · {money(row.charged_total)} · {new Date(row.created_at).toLocaleString()}:{' '}
+                {row.refused_reason}
+              </span>
+              <button type="button" aria-label={`Remove refused sale ${offlineLabel(row.offline_ref)}`} onClick={() => removeRefused(row.offline_ref)}>
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : null}
       <header className="rtill-top">
         <div className="rtill-brand">
           <span className="rtill-mark" aria-hidden>
@@ -891,7 +1135,7 @@ function RestaurantTill() {
               </div>
             </dl>
             <div className="rtill-methods" role="radiogroup" aria-label="How the guest pays">
-              {METHODS.map((m) => (
+              {METHODS.filter((m) => !paying.offline || (OFFLINE_METHODS as string[]).includes(m.id)).map((m) => (
                 <button
                   key={m.id}
                   type="button"
@@ -932,6 +1176,11 @@ function RestaurantTill() {
             ) : (
               <p className="rtill-tax-note">Card, Mobile Money and wallet are recorded here. This till does not charge a card.</p>
             )}
+            {paying.offline ? (
+              <p className="rtill-tax-note">
+                Offline sale. It is kept on this till and booked at today&apos;s menu prices when the connection returns.
+              </p>
+            ) : null}
             {error ? (
               <div className="rtill-error" role="alert">
                 {error}
@@ -955,6 +1204,7 @@ function RestaurantTill() {
           shift={shift}
           storeId={storeId}
           explain={payAfterShift ? 'Open your shift first. The money for this bill goes into your drawer.' : ''}
+          pendingOffline={pendingSales(queue).length}
           onClose={() => {
             setShiftOpen(false);
             setPayAfterShift(false);
@@ -969,10 +1219,22 @@ function RestaurantTill() {
             <div className="rtill-done-tick" aria-hidden>
               ✓
             </div>
-            <h2>Bill {done.number} paid</h2>
+            <h2>
+              Bill {done.number} paid{done.offline ? ' (offline)' : ''}
+            </h2>
             <p>
               {money(done.total)} · {METHODS.find((m) => m.id === done.method)?.label}
             </p>
+            {done.offline && done.dishes?.length ? (
+              <div className="rtill-offline-kitchen">
+                <strong>Tell the kitchen, the screen did not get this order:</strong>
+                <ul>
+                  {done.dishes.map((d) => (
+                    <li key={d}>{d}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
             {done.change > 0 ? (
               <div className="rtill-change big">
                 Give change <strong>{money(done.change)}</strong>
@@ -1083,12 +1345,14 @@ function ShiftSheet({
   shift,
   storeId,
   explain,
+  pendingOffline = 0,
   onClose,
   onChange,
 }: {
   shift: Row | null;
   storeId: string;
   explain: string;
+  pendingOffline?: number;
   onClose: () => void;
   onChange: (next: Row | null) => void;
 }) {
@@ -1139,6 +1403,9 @@ function ShiftSheet({
 
   const closeShift = () =>
     run(async () => {
+      if (pendingOffline > 0) {
+        throw new Error(`${pendingOffline} offline sale(s) are not booked yet. Reconnect and send them before closing the shift.`);
+      }
       if (counted.trim() === '') throw new Error('Count the cash in the drawer first.');
       const res = await api(`/restaurant/till/shift/${shift!.id}/close`, {
         method: 'POST',

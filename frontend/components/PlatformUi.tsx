@@ -140,7 +140,7 @@ export function Drawer({
   closeLabel: string;
   onClose: () => void;
   busy?: boolean;
-  panelRef?: RefObject<HTMLDivElement>;
+  panelRef?: RefObject<HTMLDivElement | null>;
   tabs?: ReactNode;
   children: ReactNode;
 }) {

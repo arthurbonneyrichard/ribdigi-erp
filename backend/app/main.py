@@ -97,6 +97,10 @@ app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(DeskRoutingMiddleware)
 
 app.include_router(api)
+# ZKTeco terminals push punches to /iclock/* at the server root (no login; found by serial).
+from app.hrm_time_api import device_router as hrm_device_router  # noqa: E402
+
+app.include_router(hrm_device_router)
 register_exception_handlers(app)
 # Used by AuditMutationMiddleware (overridable in tests via app.state.session_factory).
 app.state.session_factory = SessionLocal

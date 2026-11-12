@@ -56,7 +56,53 @@ export type PackageCreateDraft = {
   interval: string;
   amount: string;
   currency: string;
+  /** Blank = the price applies to every industry. */
+  industry?: string;
 };
+
+/** Industries a package price can be set for. Blank means every industry. */
+export const PRICE_INDUSTRIES: { value: string; label: string }[] = [
+  { value: '', label: 'All industries' },
+  { value: 'retail', label: 'Retail' },
+  { value: 'hotel', label: 'Hotel' },
+  { value: 'restaurant', label: 'Restaurant' },
+  { value: 'fmcg', label: 'FMCG distribution' },
+  { value: 'bakery', label: 'Bakery' },
+  { value: 'gym', label: 'Gym' },
+  { value: 'hrm', label: 'HRM' },
+  { value: 'pharmacy', label: 'Pharmacy' },
+];
+
+export function industryLabel(value: string | null | undefined): string {
+  const key = (value || '').trim().toLowerCase();
+  return PRICE_INDUSTRIES.find((item) => item.value === key)?.label || 'All industries';
+}
+
+/** Owner VAT settings body. Rate is a percent (e.g. 20 for 20%). */
+export function taxSaveBody(draft: {
+  enabled: boolean;
+  rate: string;
+  label: string;
+  registrationNumber: string;
+  pricesIncludeTax: boolean;
+}): { body: Record<string, string | number | boolean | null> } | { error: string } {
+  const text = draft.rate.trim().replace(/%$/, '').trim();
+  if (!/^\d+(\.\d{1,3})?$/.test(text)) return { error: 'Enter the VAT rate as a percent, e.g. 20' };
+  const rate = Number(text);
+  if (!Number.isFinite(rate) || rate < 0 || rate > 100) return { error: 'VAT rate must be between 0 and 100' };
+  if (draft.enabled && rate <= 0) return { error: 'Enter a VAT rate above 0 before switching VAT on' };
+  const label = draft.label.trim() || 'VAT';
+  const reg = draft.registrationNumber.trim();
+  return {
+    body: {
+      enabled: draft.enabled,
+      rate,
+      label,
+      registration_number: reg || null,
+      prices_include_tax: draft.pricesIncludeTax,
+    },
+  };
+}
 
 export function packageCodeFromName(name: string): string {
   return name
@@ -85,34 +131,38 @@ export function packageCreateBody(
   if (currency !== 'GHS' && currency !== 'USD') return { error: 'Choose GHS or USD' };
   const parsed = subscriptionAmountToSend(draft.amount, packageCode, prefs);
   if ('error' in parsed) return parsed;
-  return {
-    body: {
-      code,
-      package_code: packageCode,
-      name,
-      interval,
-      amount: parsed.amount,
-      currency,
-      is_active: true,
-    },
+  const industry = (draft.industry || '').trim().toLowerCase();
+  if (industry && !PRICE_INDUSTRIES.some((item) => item.value === industry)) {
+    return { error: 'Choose an industry or All industries' };
+  }
+  const body: Record<string, string | number | boolean> = {
+    code,
+    package_code: packageCode,
+    name,
+    interval,
+    amount: parsed.amount,
+    currency,
+    is_active: true,
   };
+  if (industry) body.industry = industry;
+  return { body };
 }
 
 export function packageUpdateBody(
   draft: Omit<PackageCreateDraft, 'code'>,
   prefs?: FormatPrefs | null,
-): { body: Record<string, string | number> } | { error: string } {
+): { body: Record<string, string | number | null> } | { error: string } {
   const built = packageCreateBody({ ...draft, code: 'edit-ok' }, prefs);
   if ('error' in built) return built;
-  return {
-    body: {
-      name: String(built.body.name),
-      package_code: String(built.body.package_code),
-      interval: String(built.body.interval),
-      amount: Number(built.body.amount),
-      currency: String(built.body.currency),
-    },
+  const body: Record<string, string | number | null> = {
+    name: String(built.body.name),
+    package_code: String(built.body.package_code),
+    interval: String(built.body.interval),
+    amount: Number(built.body.amount),
+    currency: String(built.body.currency),
   };
+  if (draft.industry !== undefined) body.industry = built.body.industry ? String(built.body.industry) : null;
+  return { body };
 }
 
 export function gatewaySaveBody(draft: {

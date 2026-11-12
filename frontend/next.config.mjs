@@ -6,11 +6,21 @@ function apiProxyTarget() {
   return raw.replace(/\/$/, '');
 }
 
+// The analytics host follows NEXT_PUBLIC_UMAMI_SRC. blob: frames and media show attachment previews.
+const ANALYTICS_ORIGIN = new URL(process.env.NEXT_PUBLIC_UMAMI_SRC || 'https://analytics.ribdigihouse.com/script.js').origin;
+const CSP =
+  `default-src 'self'; script-src 'self' 'unsafe-inline' ${ANALYTICS_ORIGIN}; ` +
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; " +
+  "img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' https: wss:; frame-src 'self' https: blob:; " +
+  "worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https:";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  // Do not advertise the framework (security audit O8, web side).
+  poweredByHeader: false,
   // The app never uses next/image. Keep the image optimizer off: its endpoint carries
-  // unauthenticated RCE/DoS advisories on Next 14 (blocked again in middleware.ts).
+  // unauthenticated RCE/DoS advisories on Next 14 (blocked again in proxy.ts).
   images: { unoptimized: true },
   // Cloud/remote VMs often miss native FS events; poll so Fast Refresh sees edits.
   webpack: (config, { dev }) => {
@@ -30,15 +40,10 @@ const nextConfig = {
       { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
       { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
       { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=()' },
-      // Enforced: no plugins, no <base> hijack. The full policy runs report-only until every page is checked with it.
-      { key: 'Content-Security-Policy', value: "object-src 'none'; base-uri 'self'" },
-      {
-        key: 'Content-Security-Policy-Report-Only',
-        value:
-          "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-          "font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss:; " +
-          "frame-src 'self' https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https:",
-      },
+      // Dev needs eval for hot reload, so the full policy is only enforced on production builds.
+      process.env.NODE_ENV === 'production'
+        ? { key: 'Content-Security-Policy', value: CSP }
+        : { key: 'Content-Security-Policy-Report-Only', value: CSP },
     ];
     return [
       { source: '/:path*', headers: base },

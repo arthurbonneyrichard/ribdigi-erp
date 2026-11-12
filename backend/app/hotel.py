@@ -1445,8 +1445,10 @@ async def create_reservation(
         raise HTTPException(status_code=422, detail="discount_authorized_by is required when applying a discount")
     if disc:
         signer = await db.get(m.User, discount_authorized_by)
-        if signer is None or signer.tenant_id not in {tenant_id, None}:
-            raise HTTPException(status_code=422, detail="discount_authorized_by is not a user of this company")
+        # The signer must be an active user of this company: a user with no company or a
+        # deactivated account cannot sign for a discount.
+        if signer is None or signer.tenant_id != tenant_id or not bool(getattr(signer, "is_active", True)):
+            raise HTTPException(status_code=422, detail="discount_authorized_by is not an active user of this company")
         rate = money_json(rate * (1 - disc / 100.0))
     if notes is not None and not str(notes).strip():
         raise HTTPException(status_code=422, detail="Reservation notes cannot be blank")

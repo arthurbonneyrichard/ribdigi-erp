@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from decimal import Decimal
 import re
 from typing import Annotated, Literal
@@ -38,6 +39,7 @@ _RESTAURANT_ROLE_WRITES: dict[str, tuple[str, ...]] = {
     "restaurant_cashier": _WAITER_WRITES
     + (
         r"POST /orders/[^/]+/complete",
+        r"POST /till/offline/sync",
         r"POST /till/shift/open",
         r"POST /till/shift/[^/]+/(cash|close)",
         r"PUT /sold-out",
@@ -972,6 +974,76 @@ class TillShiftCloseBody(BaseModel):
 
     counted_cash: NonNegativeMoneyValue
     notes: Annotated[str, Field(max_length=500)] | None = None
+
+
+class OfflineSaleLineBody(BaseModel):
+    """One dish on a sale rung offline. The price is today's menu price, not the device's."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    product_id: UuidIdValue
+    quantity: PositiveQtyValue
+    modifier_ids: list[UuidIdValue] = Field(default_factory=list, max_length=20)
+    note: ItemNoteValue | None = None
+    unit_price: None = None
+
+
+class OfflineSaleBody(BaseModel):
+    """A paid till sale the device kept while the internet was down."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    offline_ref: Annotated[str, Field(pattern=r"^[A-Za-z0-9_-]{8,64}$")]
+    created_at: datetime
+    service_mode: Literal["takeaway", "dine_in", "delivery"] = "takeaway"
+    payment_method: Literal["cash", "card", "mobile_money", "wallet"] = "cash"
+    store_id: UuidIdValue | None = None
+    table_id: UuidIdValue | None = None
+    shift_id: UuidIdValue | None = None
+    customer_name: str | None = Field(default=None, max_length=180)
+    delivery_address: AddressValue | None = None
+    notes: str | None = Field(default=None, max_length=500)
+    charged_total: NonNegativeMoneyValue | None = None
+    lines: list[OfflineSaleLineBody] = Field(min_length=1, max_length=80)
+
+
+class OfflineSyncBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    device_id: Annotated[str, Field(pattern=r"^[A-Za-z0-9_-]{4,64}$")] | None = None
+    sales: list[OfflineSaleBody] = Field(min_length=1, max_length=100)
+
+
+@router.get("/till/offline/prices")
+async def restaurant_till_offline_prices(
+    claims=Depends(require_permission("restaurant", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Tax and service rates the till keeps so an offline bill totals like the server's."""
+    from app import restaurant_offline as offline_svc
+
+    return _env(await offline_svc.price_sheet(db, claims["tenant_id"]))
+
+
+@router.post("/till/offline/sync")
+async def restaurant_till_offline_sync(
+    payload: OfflineSyncBody,
+    claims=Depends(require_permission("restaurant", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Book till sales rung offline. Each offline_ref books once; a retry returns the booked order."""
+    from app import restaurant_offline as offline_svc
+
+    body = await offline_svc.sync_sales(
+        db,
+        claims["tenant_id"],
+        payload.sales,
+        user_id=claims.get("sub"),
+        device_id=payload.device_id or claims.get("pos_device_id"),
+    )
+    await db.commit()
+    booked = body["counts"].get("booked", 0)
+    return _env(body, f"{booked} offline sale(s) booked")
 
 
 @router.get("/till/shift")

@@ -2657,6 +2657,8 @@ class PlatformBillingPlan(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     code: Mapped[str] = mapped_column(String(40), unique=True, index=True)
     package_code: Mapped[str] = mapped_column(String(40), index=True)
+    # NULL = price for every industry; a value (hotel, restaurant, ...) = that industry's price.
+    industry: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(120))
     interval: Mapped[str] = mapped_column(String(16))
     amount: Mapped[float] = mapped_column(Numeric(14, 2))
@@ -2689,6 +2691,8 @@ class TenantBillingAccount(Base):
     price_override_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     price_override_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
     consent_interval: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    # VAT rate (percent) already inside consent_amount when consent was recorded.
+    consent_tax_rate: Mapped[float | None] = mapped_column(Numeric(6, 3), nullable=True)
     gateway_provider: Mapped[str | None] = mapped_column(String(32), nullable=True)
     gateway_customer_ref: Mapped[str | None] = mapped_column(String(120), nullable=True)
     gateway_authorization_ref: Mapped[str | None] = mapped_column(String(160), nullable=True)
@@ -2714,6 +2718,11 @@ class TenantBillingInvoice(Base):
     idempotency_key: Mapped[str] = mapped_column(String(160))
     amount: Mapped[float] = mapped_column(Numeric(14, 2))
     currency: Mapped[str] = mapped_column(String(3))
+    # Software-owner VAT on this invoice. amount = net_amount + tax_amount.
+    net_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    tax_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    tax_rate: Mapped[float | None] = mapped_column(Numeric(6, 3), nullable=True)
+    tax_label: Mapped[str | None] = mapped_column(String(40), nullable=True)
     status: Mapped[str] = mapped_column(String(16), default="open")
     period_start: Mapped[datetime] = mapped_column(DateTime)
     period_end: Mapped[datetime] = mapped_column(DateTime)
@@ -2770,6 +2779,22 @@ class TenantBillingEvent(Base):
     event_type: Mapped[str] = mapped_column(String(80))
     outcome: Mapped[str] = mapped_column(String(40))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PlatformBillingTax(Base):
+    """The software owner's VAT on subscription invoices (one row, id "default")."""
+
+    __tablename__ = "platform_billing_tax"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    rate: Mapped[float] = mapped_column(Numeric(6, 3), default=0)
+    label: Mapped[str] = mapped_column(String(40), default="VAT")
+    registration_number: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    # True: plan prices already include VAT. False: VAT is added on top.
+    prices_include_tax: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    updated_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class PlatformBillingGateway(Base):
@@ -2853,7 +2878,11 @@ class RestaurantRecipeLine(Base):
 
 class RestaurantOrder(Base):
     __tablename__ = "restaurant_orders"
-    __table_args__ = (UniqueConstraint("tenant_id", "order_number", name="uq_restaurant_order_number"),)
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "order_number", name="uq_restaurant_order_number"),
+        # A sale rung offline books once, however many times the till sends it.
+        UniqueConstraint("tenant_id", "offline_ref", name="uq_restaurant_order_offline_ref"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -2877,6 +2906,8 @@ class RestaurantOrder(Base):
     # Who took the money and on which till (the waiter who opened the bill stays in created_by).
     completed_by: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     completed_device_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Key the till gave a sale it rang while offline (NULL for live orders).
+    offline_ref: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 class RestaurantOrderLine(Base):
@@ -3722,7 +3753,11 @@ class BakerySale(Base):
     """A counter sale, or an order handed over. Never a retail transaction."""
 
     __tablename__ = "bakery_sales"
-    __table_args__ = (UniqueConstraint("tenant_id", "sale_number", name="uq_bakery_sale_number"),)
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "sale_number", name="uq_bakery_sale_number"),
+        # A sale rung offline books once, however many times the till sends it.
+        UniqueConstraint("tenant_id", "offline_ref", name="uq_bakery_sale_offline_ref"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -3739,6 +3774,8 @@ class BakerySale(Base):
     journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     refund_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
     refunded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Key the till gave a sale it rang while offline (NULL for live sales).
+    offline_ref: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
@@ -4019,6 +4056,471 @@ class HrmSettings(Base):
     ssnit_employee_percent: Mapped[float] = mapped_column(Numeric(6, 2), default=5.5)
     ssnit_employer_percent: Mapped[float] = mapped_column(Numeric(6, 2), default=13)
     paye_bands: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    # When on, the person who drew up a payroll cannot also approve it.
+    two_person_payroll: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    # upfront: the year's annual leave is there from January (less the months before someone started).
+    # monthly: it builds up a twelfth each month.
+    leave_accrual: Mapped[str] = mapped_column(String(16), default="upfront", server_default="upfront")
+    # Unused annual leave that may roll into the next year (0 = none).
+    carry_over_days: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    # Time and overtime. An hour of overtime pays basic / (working days x hours a day) x the rate.
+    hours_per_day: Mapped[float] = mapped_column(Numeric(5, 2), default=8, server_default="8")
+    overtime_rate: Mapped[float] = mapped_column(Numeric(5, 2), default=1.5, server_default="1.5")
+    # When on, a clock-in from a phone must be at a work site (GPS within its radius, or its QR code).
+    clock_needs_site: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+
+
+class HrmHoliday(Base):
+    """A public holiday. Leave and unpaid days do not count it as a working day."""
+
+    __tablename__ = "hrm_holidays"
+    __table_args__ = (UniqueConstraint("tenant_id", "day", name="uq_hrm_holiday_day"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    day: Mapped[date] = mapped_column(Date, index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmLoan(Base):
+    """A staff loan or salary advance: asked for, decided by someone else, paid out once,
+    then repaid from payroll (or in cash) until the balance is nil."""
+
+    __tablename__ = "hrm_loans"
+    __table_args__ = (UniqueConstraint("tenant_id", "loan_number", name="uq_hrm_loan_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    loan_number: Mapped[str] = mapped_column(String(40))
+    kind: Mapped[str] = mapped_column(String(16))  # loan | advance
+    principal: Mapped[float] = mapped_column(Numeric(14, 2))
+    monthly_deduction: Mapped[float] = mapped_column(Numeric(14, 2))
+    balance: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    first_period: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)
+    reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    decision_note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    requested_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    decided_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    paid_out_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    paid_out_method: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    settled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmLoanRepayment(Base):
+    __tablename__ = "hrm_loan_repayments"
+    __table_args__ = (UniqueConstraint("loan_id", "payslip_id", name="uq_hrm_loan_repayment_slip"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    loan_id: Mapped[str] = mapped_column(ForeignKey("hrm_loans.id"), index=True)
+    payslip_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    run_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    source: Mapped[str] = mapped_column(String(16))  # payroll | cash
+    method: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmSalaryChange(Base):
+    """A person's basic and allowances from a date. Payroll uses the row in force on the
+    month's first day; a change dated before an approved month raises back pay instead."""
+
+    __tablename__ = "hrm_salary_changes"
+    __table_args__ = (UniqueConstraint("employee_id", "effective_from", name="uq_hrm_salary_change_from"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    effective_from: Mapped[date] = mapped_column(Date, index=True)
+    basic_salary: Mapped[float] = mapped_column(Numeric(14, 2))
+    allowances: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    reason: Mapped[str] = mapped_column(String(255))
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmPayrollAdjustment(Base):
+    """A correction to pay already approved, paid in a later payroll. Approved runs never change.
+
+    kind arrears: back pay of basic (SSNIT and PAYE apply). kind correction: any other
+    earning put right, positive or negative (PAYE applies, no SSNIT)."""
+
+    __tablename__ = "hrm_payroll_adjustments"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(16))
+    for_period: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    reason: Mapped[str] = mapped_column(String(255))
+    # pending -> in_run (on a draft) -> applied (run approved); cancelled.
+    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)
+    run_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    salary_change_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmVacancy(Base):
+    """An open job. Candidates apply to it and move through the stages to hired."""
+
+    __tablename__ = "hrm_vacancies"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    title: Mapped[str] = mapped_column(String(120))
+    department: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    openings: Mapped[int] = mapped_column(Integer, default=1)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="open", index=True)
+    closes_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmCandidate(Base):
+    __tablename__ = "hrm_candidates"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    vacancy_id: Mapped[str] = mapped_column(ForeignKey("hrm_vacancies.id"), index=True)
+    full_name: Mapped[str] = mapped_column(String(180))
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    # applied -> screening -> interview -> offer -> hired; rejected or withdrawn at any point.
+    stage: Mapped[str] = mapped_column(String(16), default="applied", index=True)
+    interview_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    offered_basic: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    employee_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmReview(Base):
+    """A performance review: weighted goals scored 1-5, the person's own view, then the reviewer's."""
+
+    __tablename__ = "hrm_reviews"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    cycle: Mapped[str] = mapped_column(String(60))
+    goals: Mapped[list] = mapped_column(JSON)
+    # open -> self_done -> done
+    status: Mapped[str] = mapped_column(String(16), default="open", index=True)
+    self_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reviewer_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    overall: Mapped[float | None] = mapped_column(Numeric(4, 2), nullable=True)
+    reviewer_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmTraining(Base):
+    __tablename__ = "hrm_trainings"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    title: Mapped[str] = mapped_column(String(160))
+    provider: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    mandatory: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Months a completion stays valid; NULL = does not expire.
+    valid_months: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmTrainingRecord(Base):
+    __tablename__ = "hrm_training_records"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    training_id: Mapped[str] = mapped_column(ForeignKey("hrm_trainings.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    completed_on: Mapped[date] = mapped_column(Date)
+    expires_on: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
+    result: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    certificate_ref: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmContract(Base):
+    __tablename__ = "hrm_contracts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(16))  # permanent | fixed_term | casual | probation
+    starts_on: Mapped[date] = mapped_column(Date)
+    ends_on: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
+    probation_ends_on: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
+    confirmed_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    reference: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="active", index=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmCase(Base):
+    """A disciplinary case or a grievance. Confidential: only HR managers see them."""
+
+    __tablename__ = "hrm_cases"
+    __table_args__ = (UniqueConstraint("tenant_id", "case_number", name="uq_hrm_case_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    case_number: Mapped[str] = mapped_column(String(40))
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(16))  # disciplinary | grievance
+    subject: Mapped[str] = mapped_column(String(160))
+    details: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(16), default="open", index=True)
+    hearing_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # none | verbal_warning | written_warning | final_warning | suspension | dismissal | upheld | not_upheld
+    outcome: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    outcome_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    employee_response: Mapped[str | None] = mapped_column(Text, nullable=True)
+    raised_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    closed_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmAsset(Base):
+    """Company property held by a member of staff: laptop, phone, uniform, vehicle."""
+
+    __tablename__ = "hrm_assets"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    item: Mapped[str] = mapped_column(String(160))
+    kind: Mapped[str] = mapped_column(String(24), default="other")
+    serial: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    issued_on: Mapped[date] = mapped_column(Date)
+    condition_out: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    returned_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    condition_back: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmClaim(Base):
+    """Money a member of staff spent for the company, paid back once approved (not through payroll)."""
+
+    __tablename__ = "hrm_claims"
+    __table_args__ = (UniqueConstraint("tenant_id", "claim_number", name="uq_hrm_claim_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    claim_number: Mapped[str] = mapped_column(String(40))
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    spent_on: Mapped[date] = mapped_column(Date)
+    description: Mapped[str] = mapped_column(String(255))
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    receipt_ref: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)
+    decision_note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    requested_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    decided_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    paid_method: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmNotice(Base):
+    """An announcement or an HR policy staff can read under My pay and leave."""
+
+    __tablename__ = "hrm_notices"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(16))  # announcement | policy
+    title: Mapped[str] = mapped_column(String(160))
+    body: Mapped[str] = mapped_column(Text)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmShift(Base):
+    """A named working pattern: start and end (local time), unpaid break, grace before 'late'."""
+
+    __tablename__ = "hrm_shifts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(80))
+    starts_at: Mapped[str] = mapped_column(String(5))  # HH:MM
+    ends_at: Mapped[str] = mapped_column(String(5))  # HH:MM; earlier than start = ends next day
+    break_minutes: Mapped[int] = mapped_column(Integer, default=0)
+    grace_minutes: Mapped[int] = mapped_column(Integer, default=10)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmRoster(Base):
+    """Who works which shift on which day."""
+
+    __tablename__ = "hrm_roster"
+    __table_args__ = (UniqueConstraint("employee_id", "day", name="uq_hrm_roster_day"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    day: Mapped[date] = mapped_column(Date, index=True)
+    shift_id: Mapped[str] = mapped_column(ForeignKey("hrm_shifts.id"), index=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+
+
+class HrmSite(Base):
+    """A place staff clock in: a GPS point with a radius, and a QR code that changes every few minutes."""
+
+    __tablename__ = "hrm_sites"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    latitude: Mapped[float | None] = mapped_column(Numeric(9, 6), nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Numeric(9, 6), nullable=True)
+    radius_m: Mapped[int] = mapped_column(Integer, default=150)
+    # Stripped from backups; a restored site gets a fresh one (its QR codes simply change).
+    qr_secret: Mapped[str] = mapped_column(String(64), default=lambda: __import__("secrets").token_hex(24))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmClockEvent(Base):
+    """One clock-in or clock-out, kept as it happened. Corrections are new rows, never edits."""
+
+    __tablename__ = "hrm_clock_events"
+    # A punch read from a terminal or BioTime is stored once, however often it is sent.
+    __table_args__ = (UniqueConstraint("tenant_id", "external_ref", name="uq_hrm_clock_external"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(8))  # in | out
+    at: Mapped[datetime] = mapped_column(DateTime, index=True)  # UTC
+    # self (own phone) | qr | hr (entered by HR) | correction (approved request) | biometric
+    source: Mapped[str] = mapped_column(String(16))
+    external_ref: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    site_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    latitude: Mapped[float | None] = mapped_column(Numeric(9, 6), nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Numeric(9, 6), nullable=True)
+    accuracy_m: Mapped[float | None] = mapped_column(Numeric(8, 1), nullable=True)
+    distance_m: Mapped[float | None] = mapped_column(Numeric(10, 1), nullable=True)
+    device: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    voided: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmBiometricLink(Base):
+    """A ZKTeco link: a BioTime server the ERP reads punches from, or a terminal that pushes
+    punches here (ZKTeco push / ADMS protocol, found by its serial number)."""
+
+    __tablename__ = "hrm_biometric_links"
+    __table_args__ = (UniqueConstraint("device_serial", name="uq_hrm_biometric_serial"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(16))  # biotime | device
+    name: Mapped[str] = mapped_column(String(120))
+    base_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    username: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    password_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    device_serial: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    site_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_result: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmClockCorrection(Base):
+    """A member of staff asks for a missed or wrong clock time to be put right."""
+
+    __tablename__ = "hrm_clock_corrections"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    day: Mapped[date] = mapped_column(Date)
+    in_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)  # UTC
+    out_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)  # UTC
+    reason: Mapped[str] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)
+    decision_note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    requested_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    decided_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmOvertime(Base):
+    """A month's overtime for one person, approved by HR and paid on that month's payroll."""
+
+    __tablename__ = "hrm_overtime"
+    __table_args__ = (UniqueConstraint("employee_id", "period", name="uq_hrm_overtime_month"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    period: Mapped[str] = mapped_column(String(7), index=True)
+    minutes: Mapped[int] = mapped_column(Integer)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    hourly_rate: Mapped[float] = mapped_column(Numeric(14, 4))
+    rate: Mapped[float] = mapped_column(Numeric(5, 2))
+    status: Mapped[str] = mapped_column(String(16), default="approved", index=True)  # approved | paid
+    run_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    approved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmStatutoryRate(Base):
+    """PAYE bands and SSNIT / pension rules from a date onwards. A payroll month uses the
+    newest row starting on or before the month's first day. Rows an approved payroll used
+    cannot be changed or removed; a new rule is a new row."""
+
+    __tablename__ = "hrm_statutory_rates"
+    __table_args__ = (UniqueConstraint("tenant_id", "effective_from", name="uq_hrm_statutory_from"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    effective_from: Mapped[date] = mapped_column(Date, index=True)
+    employee_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=5.5)
+    employer_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=13)
+    # Share of insurable pay that goes to the Tier 2 trustee (0 = all to SSNIT).
+    tier2_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=0)
+    # Monthly maximum insurable earnings for SSNIT; NULL = no cap.
+    insurable_cap: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    tier3_relief_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=16.5)
+    paye_bands: Mapped[list] = mapped_column(JSON)
+    rounding: Mapped[str] = mapped_column(String(16), default="half_up")
+    source_note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class HrmEmployee(Base):
@@ -4043,6 +4545,14 @@ class HrmEmployee(Base):
     tin: Mapped[str | None] = mapped_column(String(40), nullable=True)
     bank_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     bank_account: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    ghana_card: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    mobile_money: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # The person's ID on the fingerprint / face terminal (ZKTeco "PIN" / BioTime "emp_code").
+    biometric_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    # Who this person reports to; that person decides their leave first.
+    manager_id: Mapped[str | None] = mapped_column(ForeignKey("hrm_employees.id"), nullable=True, index=True)
+    # Voluntary Tier 3 pension, percent of earned basic.
+    tier3_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -4057,6 +4567,11 @@ class HrmLeaveRequest(Base):
     ends_on: Mapped[date] = mapped_column(Date, index=True)
     days: Mapped[int] = mapped_column(Integer, default=0)
     status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
+    # manager: waiting for the person they report to; hr: waiting for HR.
+    stage: Mapped[str] = mapped_column(String(16), default="hr", server_default="hr")
+    manager_decided_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    manager_decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    manager_note: Mapped[str | None] = mapped_column(String(255), nullable=True)
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     decision_note: Mapped[str | None] = mapped_column(String(255), nullable=True)
     decided_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
@@ -4092,12 +4607,18 @@ class HrmPayrollRun(Base):
     ssnit_employee: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     ssnit_employer: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     other_deductions: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tier2: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    tier3: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    loan_deductions: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    statutory_rate_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     approved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     staff_paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     paye_paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     ssnit_paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    tier2_paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    tier3_paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -4121,6 +4642,20 @@ class HrmPayslip(Base):
     other_deductions: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     net: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     ssnit_employer: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tier3_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=0, server_default="0")
+    tier1: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    tier2: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    tier3: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    tier3_relief: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    # Loan and advance repayments taken this month (booked on approval).
+    loan_deduction: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    # Back pay of basic and other corrections carried in from approved months.
+    arrears_basic: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    adjustment: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    # Approved overtime paid this month (taxable earnings, no SSNIT).
+    overtime: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    # The rates this slip was worked out with, kept so it can be explained later.
+    rates_used: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     note: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
 

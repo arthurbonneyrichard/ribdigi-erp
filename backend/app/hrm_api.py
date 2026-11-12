@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query
@@ -10,6 +11,8 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import hrm as svc
+from app import hrm_loans as loans_svc
+from app import hrm_pay_changes as changes_svc
 from app.db import get_db
 from app.schemas import E164PhoneValue, NonNegativeMoneyValue, PartyNameValue, UuidIdValue
 from app.security import require_permission
@@ -20,6 +23,8 @@ Short = Annotated[str, Field(min_length=1, max_length=120)]
 Period = Annotated[str, Field(pattern=r"^20\d{2}-(0[1-9]|1[0-2])$")]
 PayMethod = Literal["bank_transfer", "cash", "mobile_money", "cheque"]
 LeaveType = Literal["annual", "sick", "maternity", "paternity", "compassionate", "unpaid"]
+GhanaCard = Annotated[str, Field(pattern=r"^GHA-\d{9}-\d$")]
+Percent = Annotated[Decimal, Field(ge=0, le=100, max_digits=7, decimal_places=3)]
 
 
 def _env(data, message: str = "OK"):
@@ -47,6 +52,11 @@ class EmployeeBody(BaseModel):
     tin: Annotated[str, Field(min_length=1, max_length=40)] | None = None
     bank_name: Short | None = None
     bank_account: Annotated[str, Field(min_length=1, max_length=64)] | None = None
+    ghana_card: GhanaCard | None = None
+    mobile_money: E164PhoneValue | None = None
+    tier3_percent: Percent = Decimal("0")
+    manager_id: UuidIdValue | None = None
+    biometric_id: Annotated[str, Field(min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$")] | None = None
 
 
 class EmployeeUpdate(BaseModel):
@@ -62,6 +72,11 @@ class EmployeeUpdate(BaseModel):
     tin: Annotated[str, Field(min_length=1, max_length=40)] | None = None
     bank_name: Short | None = None
     bank_account: Annotated[str, Field(min_length=1, max_length=64)] | None = None
+    ghana_card: GhanaCard | None = None
+    mobile_money: E164PhoneValue | None = None
+    tier3_percent: Percent | None = None
+    manager_id: UuidIdValue | None = None
+    biometric_id: Annotated[str, Field(min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$")] | None = None
 
 
 class LeftBody(BaseModel):
@@ -119,7 +134,7 @@ class SlipBody(BaseModel):
 class PayBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    what: Literal["staff", "paye", "ssnit"]
+    what: Literal["staff", "paye", "ssnit", "tier2", "tier3"]
     method: PayMethod
 
 
@@ -138,6 +153,324 @@ class SettingsBody(BaseModel):
     ssnit_employee_percent: Annotated[float, Field(ge=0, le=100, allow_inf_nan=False)] | None = None
     ssnit_employer_percent: Annotated[float, Field(ge=0, le=100, allow_inf_nan=False)] | None = None
     paye_bands: list[Band] | None = Field(default=None, min_length=1, max_length=20)
+    two_person_payroll: bool | None = None
+    leave_accrual: Literal["upfront", "monthly"] | None = None
+    hours_per_day: Annotated[Decimal, Field(gt=0, le=24, max_digits=5, decimal_places=2)] | None = None
+    overtime_rate: Annotated[Decimal, Field(ge=1, le=5, max_digits=5, decimal_places=2)] | None = None
+    clock_needs_site: bool | None = None
+    carry_over_days: Annotated[int, Field(ge=0, le=120)] | None = None
+
+
+class RateBand(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    width: Annotated[Decimal, Field(gt=0, max_digits=14, decimal_places=2)] | None = None
+    rate: Percent
+
+
+class StatutoryRateBody(BaseModel):
+    """PAYE bands and SSNIT / pension rules from a date onwards. Check them against GRA and SSNIT."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    effective_from: date
+    employee_percent: Percent
+    employer_percent: Percent
+    tier2_percent: Percent = Decimal("0")
+    insurable_cap: Annotated[Decimal, Field(gt=0, max_digits=14, decimal_places=2)] | None = None
+    tier3_relief_percent: Percent = Decimal("16.5")
+    paye_bands: list[RateBand] = Field(min_length=1, max_length=20)
+    rounding: Literal["half_up", "down"] = "half_up"
+    source_note: Annotated[str, Field(min_length=3, max_length=255)] | None = None
+
+
+@router.get("/statutory-rates")
+async def hrm_rates(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "payroll")
+    return _env(await svc.list_rates(db, claims["tenant_id"]))
+
+
+@router.post("/statutory-rates")
+async def hrm_rates_add(
+    payload: StatutoryRateBody, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)
+):
+    svc.job(claims, "payroll")
+    row = await svc.add_rate(db, claims["tenant_id"], payload, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(svc.serialize_rate(row), "Rates saved")
+
+
+@router.delete("/statutory-rates/{rate_id}")
+async def hrm_rates_delete(
+    rate_id: UuidIdValue, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)
+):
+    svc.job(claims, "payroll")
+    await svc.delete_rate(db, claims["tenant_id"], rate_id, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(None, "Rates removed")
+
+
+class HolidayItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    day: date
+    name: Annotated[str, Field(min_length=2, max_length=120)]
+
+
+class HolidaysBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    holidays: list[HolidayItem] = Field(min_length=1, max_length=40)
+
+
+Money = Annotated[Decimal, Field(gt=0, max_digits=14, decimal_places=2)]
+
+
+class LoanBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    employee_id: UuidIdValue
+    kind: Literal["loan", "advance"]
+    principal: Money
+    monthly_deduction: Money
+    first_period: Period | None = None
+    reason: Annotated[str, Field(min_length=3, max_length=500)] | None = None
+
+
+class MyLoanBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["loan", "advance"]
+    principal: Money
+    monthly_deduction: Money
+    reason: Annotated[str, Field(min_length=3, max_length=500)]
+
+
+class LoanDecideBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    approve: bool
+    method: PayMethod | None = None
+    note: Annotated[str, Field(min_length=1, max_length=255)] | None = None
+
+
+class LoanRepayBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    amount: Money
+    method: PayMethod
+
+
+@router.get("/holidays")
+async def hrm_holidays(
+    year: Annotated[int, Query(ge=2000, le=2100)] = date.today().year,
+    claims=Depends(require_permission("hrm", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    svc.job(claims, "leave")
+    return _env([loans_svc.serialize_holiday(r) for r in await loans_svc.list_holidays(db, claims["tenant_id"], year)])
+
+
+@router.get("/holidays/suggested")
+async def hrm_holidays_suggested(
+    year: Annotated[int, Query(ge=2000, le=2100)] = date.today().year,
+    claims=Depends(require_permission("hrm", "read")),
+):
+    """A starting list to check, not an official one. Nothing is saved."""
+    svc.job(claims, "leave")
+    return _env(loans_svc.suggested_ghana_holidays(year))
+
+
+@router.post("/holidays")
+async def hrm_holidays_add(
+    payload: HolidaysBody, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)
+):
+    svc.job(claims, "leave")
+    rows = await loans_svc.add_holidays(db, claims["tenant_id"], payload.holidays, user_id=claims.get("sub"))
+    await db.commit()
+    return _env([loans_svc.serialize_holiday(r) for r in rows], f"{len(rows)} holiday(s) saved")
+
+
+@router.delete("/holidays/{holiday_id}")
+async def hrm_holidays_delete(
+    holiday_id: UuidIdValue, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)
+):
+    svc.job(claims, "leave")
+    await loans_svc.delete_holiday(db, claims["tenant_id"], holiday_id, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(None, "Holiday removed")
+
+
+@router.get("/loans")
+async def hrm_loans(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "payroll")
+    return _env(await loans_svc.present_loans(db, await loans_svc.list_loans(db, claims["tenant_id"])))
+
+
+@router.post("/loans")
+async def hrm_loan_add(
+    payload: LoanBody, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)
+):
+    svc.job(claims, "payroll")
+    row = await loans_svc.request_loan(
+        db, claims["tenant_id"], employee_id=payload.employee_id, payload=payload, user_id=claims.get("sub")
+    )
+    await db.commit()
+    return _env(loans_svc.serialize_loan(row), "Request recorded")
+
+
+@router.post("/loans/{loan_id}/decide")
+async def hrm_loan_decide(
+    loan_id: UuidIdValue,
+    payload: LoanDecideBody,
+    claims=Depends(require_permission("hrm", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    svc.job(claims, "payroll")
+    row = await loans_svc.decide_loan(
+        db, claims["tenant_id"], loan_id, approve=payload.approve, method=payload.method,
+        note=payload.note, user_id=claims.get("sub"),
+    )
+    await db.commit()
+    return _env(loans_svc.serialize_loan(row), "Approved and paid out" if payload.approve else "Turned down")
+
+
+@router.post("/loans/{loan_id}/repay")
+async def hrm_loan_repay(
+    loan_id: UuidIdValue,
+    payload: LoanRepayBody,
+    claims=Depends(require_permission("hrm", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    svc.job(claims, "payroll")
+    row = await loans_svc.repay_cash(
+        db, claims["tenant_id"], loan_id, amount=payload.amount, method=payload.method, user_id=claims.get("sub")
+    )
+    await db.commit()
+    return _env(loans_svc.serialize_loan(row), "Repayment recorded")
+
+
+@router.post("/me/loans")
+async def hrm_my_loan(
+    payload: MyLoanBody, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)
+):
+    """Anyone with a staff record asks for their own loan or advance; payroll decides."""
+    employee = await svc.employee_for_user(db, claims["tenant_id"], claims.get("sub"))
+    row = await loans_svc.request_loan(
+        db, claims["tenant_id"], employee_id=employee.id, payload=payload, user_id=claims.get("sub")
+    )
+    await db.commit()
+    return _env(loans_svc.serialize_loan(row), "Request sent to payroll")
+
+
+class SalaryChangeBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    effective_from: date
+    basic_salary: NonNegativeMoneyValue
+    allowances: NonNegativeMoneyValue = 0
+    reason: Annotated[str, Field(min_length=3, max_length=255)]
+
+
+class AdjustmentBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    employee_id: UuidIdValue
+    kind: Literal["arrears", "correction"]
+    amount: Annotated[Decimal, Field(max_digits=14, decimal_places=2, ge=-1_000_000_000, le=1_000_000_000)]
+    for_period: Period | None = None
+    reason: Annotated[str, Field(min_length=3, max_length=255)]
+
+
+PeriodQuery = Annotated[str, Query(pattern=r"^20\d{2}-(0[1-9]|1[0-2])$")]
+
+
+@router.get("/employees/{employee_id}/salary")
+async def hrm_salary_history(
+    employee_id: UuidIdValue, claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)
+):
+    svc.job(claims, "payroll")
+    rows = await changes_svc.list_changes(db, claims["tenant_id"], employee_id)
+    return _env([changes_svc.serialize_change(r) for r in rows])
+
+
+@router.post("/employees/{employee_id}/salary")
+async def hrm_salary_change(
+    employee_id: UuidIdValue,
+    payload: SalaryChangeBody,
+    claims=Depends(require_permission("hrm", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    svc.job(claims, "payroll")
+    body = await changes_svc.add_change(db, claims["tenant_id"], employee_id, payload, user_id=claims.get("sub"))
+    await db.commit()
+    months = len({a["for_period"] for a in body["adjustments"]})
+    message = "Salary change saved" + (f"; back pay raised for {months} month(s)" if months else "")
+    return _env(body, message)
+
+
+@router.get("/adjustments")
+async def hrm_adjustments(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "payroll")
+    return _env(await changes_svc.list_adjustments(db, claims["tenant_id"]))
+
+
+@router.post("/adjustments")
+async def hrm_adjustment_add(
+    payload: AdjustmentBody, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)
+):
+    svc.job(claims, "payroll")
+    row = await changes_svc.add_adjustment(db, claims["tenant_id"], payload, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(changes_svc.serialize_adjustment(row), "Correction saved for the next payroll")
+
+
+@router.delete("/adjustments/{adjustment_id}")
+async def hrm_adjustment_cancel(
+    adjustment_id: UuidIdValue, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)
+):
+    svc.job(claims, "payroll")
+    await changes_svc.cancel_adjustment(db, claims["tenant_id"], adjustment_id, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(None, "Correction cancelled")
+
+
+@router.get("/reports/paye")
+async def hrm_paye_schedule(
+    period: PeriodQuery, claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)
+):
+    svc.job(claims, "payroll")
+    return _env(await changes_svc.paye_schedule(db, claims["tenant_id"], period))
+
+
+@router.get("/reports/ssnit")
+async def hrm_ssnit_schedule(
+    period: PeriodQuery, claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)
+):
+    svc.job(claims, "payroll")
+    return _env(await changes_svc.ssnit_schedule(db, claims["tenant_id"], period))
+
+
+@router.get("/reports/tax-statement")
+async def hrm_tax_statement(
+    employee_id: UuidIdValue,
+    year: Annotated[int, Query(ge=2000, le=2100)],
+    claims=Depends(require_permission("hrm", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    svc.job(claims, "payroll")
+    employee = await svc._employee(db, claims["tenant_id"], employee_id)
+    return _env(await changes_svc.tax_statement(db, claims["tenant_id"], employee, year))
+
+
+@router.get("/me/tax-statement")
+async def hrm_my_tax_statement(
+    year: Annotated[int, Query(ge=2000, le=2100)],
+    claims=Depends(require_permission("hrm", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    employee = await svc.employee_for_user(db, claims["tenant_id"], claims.get("sub"))
+    return _env(await changes_svc.tax_statement(db, claims["tenant_id"], employee, year))
 
 
 @router.get("/summary")
@@ -241,12 +574,25 @@ async def hrm_leave_decide(
     claims=Depends(require_permission("hrm", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    svc.job(claims, "leave")
+    # Staff who manage people decide their team's first step; everything else needs the leave job.
+    as_hr = str(claims.get("role") or "") != "hrm_employee"
+    if as_hr:
+        svc.job(claims, "leave")
     row = await svc.decide_leave(
-        db, claims["tenant_id"], leave_id, approve=payload.approve, note=payload.note, user_id=claims.get("sub")
+        db, claims["tenant_id"], leave_id, approve=payload.approve, note=payload.note,
+        user_id=claims.get("sub"), as_hr=as_hr,
     )
     await db.commit()
     return _env(await svc.present_leave(db, row), "Saved")
+
+
+@router.get("/team/leave")
+async def hrm_team_leave(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    """Leave from the people who report to me, waiting for my decision."""
+    me = await svc._user_employee(db, claims["tenant_id"], claims.get("sub"))
+    if me is None:
+        return _env([])
+    return _env([await svc.present_leave(db, r) for r in await svc.team_leave(db, claims["tenant_id"], me)])
 
 
 @router.get("/attendance")
@@ -341,6 +687,7 @@ async def hrm_me(claims=Depends(require_permission("hrm", "read")), db: AsyncSes
             "leave_balance": await svc.leave_balance(db, tenant_id, employee.id),
             "leave": [await svc.present_leave(db, r) for r in await svc.list_leave(db, tenant_id, employee_id=employee.id)],
             "payslips": await svc.my_slips(db, tenant_id, employee),
+            "loans": await loans_svc.present_loans(db, await loans_svc.list_loans(db, tenant_id, employee_id=employee.id)),
         }
     )
 

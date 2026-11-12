@@ -771,6 +771,18 @@ const NAV_ITEM_ICON: Record<string, string> = {
   '/hrm?tab=reports': 'reports',
   '/hrm?tab=settings': 'tax',
   '/hrm?tab=me': 'customers',
+  '/hrm?tab=loans': 'credit',
+  '/hrm?tab=clock': 'audit',
+  '/hrm?tab=shifts': 'notifications',
+  '/hrm?tab=devices': 'security',
+  '/hrm?tab=hiring': 'users',
+  '/hrm?tab=reviews': 'reports',
+  '/hrm?tab=training': 'company',
+  '/hrm?tab=contracts': 'audit',
+  '/hrm?tab=cases': 'security',
+  '/hrm?tab=kit': 'inventory',
+  '/hrm?tab=claims': 'expenses',
+  '/hrm?tab=notices': 'notifications',
 };
 
 function NavIcon({ name }: { name: string }) {

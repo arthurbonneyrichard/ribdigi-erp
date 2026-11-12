@@ -70,6 +70,7 @@ _LOCKED_WRITES = (
     re.compile(rf"^{API}/pos/sessions/open$"),
     re.compile(rf"^{API}/pos/sessions/[^/]+/(movements|opening-cash|drawer/open)$"),
     re.compile(rf"^{API}/restaurant/orders/[^/]+/complete$"),
+    re.compile(rf"^{API}/restaurant/till/offline/sync$"),
     re.compile(rf"^{API}/restaurant/till/shift/open$"),
     re.compile(rf"^{API}/restaurant/till/shift/[^/]+/cash$"),
 )
