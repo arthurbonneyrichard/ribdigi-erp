@@ -104,8 +104,7 @@ export default function DashboardGreeting({ desk, place }: { desk: string; place
         <div className="greet-row">
           <div className="greet-copy">
             <h1 className="greet">
-              <span className="greet-hello">{tod.greeting}{signedInName ? ',' : ''}</span>
-              {signedInName ? <span className="greet-name">{signedInName}</span> : null}
+              <span className="greet-hello">{tod.greeting}</span>
               <span className="wave" aria-hidden="true">
                 <GreetMark period={tod.period} />
               </span>
@@ -117,25 +116,28 @@ export default function DashboardGreeting({ desk, place }: { desk: string; place
               <span className="greet-chip is-desk">{desk}</span>
             </p>
           </div>
-          {timeLabel && clockFace ? (
-            <div className="greet-clock">
-              <span className="greet-clock-kicker" aria-hidden="true">Local time</span>
-              <time
-                className="greet-time"
-                dateTime={now ? now.toISOString() : undefined}
-                aria-label={`Dashboard greeting time, ${timeLabel}`}
-              >
-                <span className="greet-face" aria-hidden="true">
-                  <span className="greet-digit">{clockFace.hours}</span>
-                  <span className="greet-colon">:</span>
-                  <span className="greet-digit">{clockFace.minutes}</span>
-                </span>
-                {clockFace.meridiem ? (
-                  <span className="greet-meridiem" aria-hidden="true">{clockFace.meridiem}</span>
-                ) : null}
-              </time>
-            </div>
-          ) : null}
+          <div className="greet-side">
+            {signedInName ? <p className="greet-side-name">{signedInName}</p> : null}
+            {timeLabel && clockFace ? (
+              <div className="greet-clock">
+                <span className="greet-clock-kicker" aria-hidden="true">Local time</span>
+                <time
+                  className="greet-time"
+                  dateTime={now ? now.toISOString() : undefined}
+                  aria-label={`Dashboard greeting time, ${timeLabel}`}
+                >
+                  <span className="greet-face" aria-hidden="true">
+                    <span className="greet-digit">{clockFace.hours}</span>
+                    <span className="greet-colon">:</span>
+                    <span className="greet-digit">{clockFace.minutes}</span>
+                  </span>
+                  {clockFace.meridiem ? (
+                    <span className="greet-meridiem" aria-hidden="true">{clockFace.meridiem}</span>
+                  ) : null}
+                </time>
+              </div>
+            ) : null}
+          </div>
         </div>
       </section>
     </div>
