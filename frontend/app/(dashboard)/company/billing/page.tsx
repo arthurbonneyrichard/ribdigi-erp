@@ -44,7 +44,12 @@ type Invoice = {
 };
 
 const HONESTY =
-  'An invoice is marked paid only after the payment provider confirms the payment.';
+  "Pay now takes this period's payment and saves your card, so later periods renew on their own. An invoice is marked paid only after the payment provider confirms the payment.";
+
+function invoicesPaidAfterReturn(data: any): boolean {
+  const status = String(data?.billing_status || '').trim().toLowerCase();
+  return status === 'active' && Boolean(data?.paid_through) && new Date(data.paid_through).getTime() > Date.now();
+}
 
 const STATUS_LABELS: Record<string, string> = {
   trialing: 'Trial',
@@ -195,12 +200,12 @@ export default function SubscriptionBillingPage() {
         if (!ref) return;
         const returned = await api(`/billing/checkout/return?reference=${encodeURIComponent(ref)}`);
         await load();
-        const data = returned?.data;
-        if (data?.authorization_present) {
-          setMessage('Payment method saved. Returning from the payment page did not mark an invoice paid.');
+        const paidNow = invoicesPaidAfterReturn(returned?.data);
+        if (paidNow) {
+          setMessage('Payment received. Your plan is paid and will renew automatically with this card.');
         } else {
           setMessage(
-            'You returned from the payment page. The payment method stays unsaved until the provider confirms a reusable authorization. This invoice is not marked paid.'
+            'You returned from the payment page. The payment shows here as soon as the provider confirms it, usually within a minute. Refresh this page to check.'
           );
         }
         window.history.replaceState(null, '', window.location.pathname);
@@ -447,8 +452,8 @@ export default function SubscriptionBillingPage() {
             {`Payment gateway: ${billingGatewayLabel(account?.provider?.provider)}. ${HONESTY}`}
           </p>
           <div className="billing-page-pay-actions">
-            <button aria-label="Start hosted checkout" type="button" disabled={!account?.consent_at || !canBill} onClick={startCheckout}>
-              {account?.authorization_present ? 'Update payment method' : 'Add payment method'}
+            <button aria-label="Pay now" type="button" disabled={!account?.consent_at || !canBill} onClick={startCheckout}>
+              {account?.authorization_present ? 'Pay now with another card' : 'Pay now and turn on auto-renew'}
             </button>
             {sandboxAvailable && (
               <button

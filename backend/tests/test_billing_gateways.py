@@ -200,12 +200,13 @@ async def test_flutterwave_webhook_saves_method_only_when_signed_and_amount_matc
         _FLW_HOOK,
     )
     assert confirmed.status_code == 200, confirmed.text
-    assert confirmed.json()["data"]["outcome"] == "authorization_saved"
+    assert confirmed.json()["data"]["outcome"] == "paid"
     assert "tok_ok" not in confirmed.text
     saved_account = (await ac.get("/api/v1/billing/account", headers=headers)).json()["data"]
     assert saved_account["authorization_present"] is True
     invoices = (await ac.get("/api/v1/billing/invoices", headers=headers)).json()["data"]
-    assert all(row["status"] != "paid" for row in invoices)
+    # The checkout payment pays this period once; renewal starts after it.
+    assert [row["status"] for row in invoices].count("paid") == 1
 
 
 async def test_named_gateway_uses_a_public_address_and_a_signed_webhook(client, monkeypatch):
@@ -343,12 +344,27 @@ async def test_named_gateway_uses_a_public_address_and_a_signed_webhook(client, 
     }
     confirmed = await _post_event(confirmed_event, _sign(confirmed_event))
     assert confirmed.status_code == 200, confirmed.text
-    assert confirmed.json()["data"]["outcome"] == "authorization_saved"
+    assert confirmed.json()["data"]["outcome"] == "paid"
     assert "tok_ok" not in confirmed.text
     saved_account = (await ac.get("/api/v1/billing/account", headers=headers)).json()["data"]
     assert saved_account["authorization_present"] is True
     assert saved_account["provider"]["provider"] == "hubtel"
     assert saved_account["provider"]["live_charges"] is False
     invoices = (await ac.get("/api/v1/billing/invoices", headers=headers)).json()["data"]
-    assert all(row["status"] != "paid" for row in invoices)
+    # The checkout payment pays this period once; renewal starts after it.
+    assert [row["status"] for row in invoices].count("paid") == 1
 
+
+
+def test_paystack_references_round_trip_including_renewal_retries():
+    from app.billing_gateway import internal_reference, paystack_reference
+
+    for ref in (
+        "checkout:4f1c2a10-1111-2222-3333-444455556666:9a9a-bb:ab12cd34",
+        "renew:4f1c2a10-1111-2222-3333-444455556666:2026-12-01",
+        "renew:4f1c2a10-1111-2222-3333-444455556666:2026-12-01:a2",
+    ):
+        sent = paystack_reference(ref)
+        assert ":" not in sent
+        assert all(ch.isalnum() or ch in ".-=" for ch in sent)
+        assert internal_reference(sent) == ref

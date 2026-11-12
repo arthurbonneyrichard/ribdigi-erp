@@ -588,6 +588,7 @@ async def start_checkout(db: AsyncSession, tenant: m.Tenant, *, plan_code: str, 
     if account.consent_plan_id != plan.id or not account.consent_at:
         raise HTTPException(status_code=422, detail="Record renewal consent before checkout")
     gateway = await current_gateway(db)
+    email = await _tenant_email(db, tenant)
     # A fresh suffix each time: Paystack refuses a reference it has already seen.
     reference = f"checkout:{account.id}:{plan.id}:{secrets.token_hex(4)}"
     result = gateway.checkout(
@@ -959,7 +960,8 @@ async def charge_invoice(
         authorization_ref=account.gateway_authorization_ref or "",
         amount_minor=minor_units(money(invoice.amount)),
         currency=invoice.currency,
-        reference=invoice.idempotency_key,
+        # Paystack refuses a reference it has seen, so each retry gets its own.
+        reference=invoice.idempotency_key if number == 1 else f"{invoice.idempotency_key}:a{number}",
         email=email,
         tenant_id=tenant.id,
     )
@@ -1040,6 +1042,8 @@ async def _tenant_email(db: AsyncSession, tenant: m.Tenant) -> str:
                 m.User.role == "company_admin",
                 m.User.is_active == True,  # noqa: E712
             )
+            # Same address every time: Paystack only charges a saved card with the email that paid.
+            .order_by(m.User.created_at, m.User.id)
             .limit(1)
         )
     ).scalar_one_or_none()
@@ -1319,6 +1323,63 @@ async def _checkout_account(
     return account, plan
 
 
+async def _pay_checkout_period(
+    db: AsyncSession,
+    *,
+    account: m.TenantBillingAccount,
+    plan: m.PlatformBillingPlan,
+    key: str,
+    gateway_reference: str,
+    provider: str,
+) -> m.TenantBillingInvoice | None:
+    """Record a confirmed hosted-checkout payment as the paid invoice for one period."""
+    tenant = await db.get(m.Tenant, account.tenant_id)
+    if not tenant:
+        return None
+    existing = await _invoice_by_key(db, key)
+    if existing and existing.status == "paid":
+        return existing
+    now = _now()
+    start = now
+    if account.paid_through and account.paid_through > start:
+        start = account.paid_through
+    elif account.billing_status == "trialing" and tenant.trial_ends_at and tenant.trial_ends_at > start:
+        start = tenant.trial_ends_at
+    end = add_interval(start, account.consent_interval or plan.interval)
+    invoice = await _open_invoice(
+        db, account=account, plan=plan, key=key, period_start=start, period_end=end
+    )
+    account.gateway_provider = provider
+    await _mark_paid(
+        db,
+        tenant=tenant,
+        account=account,
+        plan=plan,
+        invoice=invoice,
+        gateway_reference=gateway_reference,
+    )
+    await _audit(
+        db,
+        tenant_id=tenant.id,
+        user_id=None,
+        action="billing_payment_succeeded",
+        entity_id=invoice.id,
+        details={
+            "gateway_reference": gateway_reference,
+            "amount": str(money(invoice.amount)),
+            "currency": invoice.currency,
+            "source": "checkout",
+        },
+    )
+    await _notify(
+        db,
+        tenant,
+        title="Subscription payment received",
+        message=f"{plan.name} is paid through {invoice.period_end.date().isoformat()}.",
+    )
+    return invoice
+
+
 async def apply_webhook(db: AsyncSession, *, provider: str, event: dict) -> dict:
     event_type = str(event.get("event") or "").strip().lower()
     data = event.get("data") if isinstance(event.get("data"), dict) else {}
@@ -1334,8 +1395,11 @@ async def apply_webhook(db: AsyncSession, *, provider: str, event: dict) -> dict
         return {"duplicate": True, "outcome": existing.outcome}
     reference = str(data.get("reference") or "").strip()
     invoice = await _invoice_by_key(db, reference) if reference else None
-    if invoice is None and reference and "." in reference:
-        invoice = await _invoice_by_key(db, internal_reference(reference))
+    if invoice is None and reference:
+        key = internal_reference(reference)
+        invoice = await _invoice_by_key(db, key)
+        if invoice is None and re.search(r":a\d+$", key):
+            invoice = await _invoice_by_key(db, re.sub(r":a\d+$", "", key))
     outcome = "ignored"
     event_tenant_id = invoice.tenant_id if invoice else None
     if invoice and event_type in {"charge.success", "charge.failed"}:
@@ -1364,18 +1428,20 @@ async def apply_webhook(db: AsyncSession, *, provider: str, event: dict) -> dict
                         invoice=invoice,
                         gateway_reference=str(data.get("gateway_reference") or reference),
                     )
-                    auth = _reusable_authorization(data)
-                    if not auth:
-                        flat = str(data.get("authorization_code") or "").strip()
-                        nested = data.get("authorization")
-                        if not isinstance(nested, dict) and flat and not CARD_RE.search(flat.replace(" ", "").replace("-", "")):
-                            auth = flat
-                    if auth:
-                        account.gateway_authorization_ref = auth
-                        account.auto_renew = bool(account.consent_at)
-                    customer = _customer_code(data)
-                    if customer:
-                        account.gateway_customer_ref = customer
+            account = await get_account(db, invoice.tenant_id)
+            if account:
+                auth = _reusable_authorization(data)
+                if not auth:
+                    flat = str(data.get("authorization_code") or "").strip()
+                    nested = data.get("authorization")
+                    if not isinstance(nested, dict) and flat and not CARD_RE.search(flat.replace(" ", "").replace("-", "")):
+                        auth = flat
+                if auth:
+                    account.gateway_authorization_ref = auth
+                    account.auto_renew = bool(account.consent_at)
+                customer = _customer_code(data)
+                if customer:
+                    account.gateway_customer_ref = customer
             outcome = "paid"
         else:
             tenant = await db.get(m.Tenant, invoice.tenant_id)
@@ -1411,24 +1477,36 @@ async def apply_webhook(db: AsyncSession, *, provider: str, event: dict) -> dict
                 expected_currency=price_currency,
             ):
                 outcome = "mismatch"
-            elif auth:
-                account.gateway_provider = provider
-                account.gateway_authorization_ref = auth
-                customer = _customer_code(data)
-                if customer:
-                    account.gateway_customer_ref = customer
-                if not account.cancel_at_period_end:
-                    account.auto_renew = True
-                account.updated_at = _now()
-                outcome = "authorization_saved"
-                await _audit(
+            elif status in {"", "success"}:
+                # The hosted checkout took the plan price, so it pays this period.
+                # Renewal then starts after it, so the customer is never charged twice.
+                event_invoice = await _pay_checkout_period(
                     db,
-                    tenant_id=account.tenant_id,
-                    user_id=None,
-                    action="billing_authorization_saved",
-                    entity_id=account.id,
-                    details={"provider": provider, "hint": _mask(auth), "source": "webhook"},
+                    account=account,
+                    plan=plan,
+                    key=internal_reference(reference),
+                    gateway_reference=str(data.get("gateway_reference") or reference),
+                    provider=provider,
                 )
+                invoice = event_invoice
+                outcome = "paid"
+                if auth:
+                    account.gateway_provider = provider
+                    account.gateway_authorization_ref = auth
+                    customer = _customer_code(data)
+                    if customer:
+                        account.gateway_customer_ref = customer
+                    if not account.cancel_at_period_end:
+                        account.auto_renew = True
+                    account.updated_at = _now()
+                    await _audit(
+                        db,
+                        tenant_id=account.tenant_id,
+                        user_id=None,
+                        action="billing_authorization_saved",
+                        entity_id=account.id,
+                        details={"provider": provider, "hint": _mask(auth), "source": "webhook"},
+                    )
     row = m.TenantBillingEvent(
         id=uid(),
         provider=provider,

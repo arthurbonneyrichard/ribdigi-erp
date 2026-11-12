@@ -663,9 +663,12 @@ async def test_checkout_return_saves_method_only_after_provider_confirmation(cli
             },
         },
     )
-    assert withheld.json()["data"]["outcome"] == "ignored"
+    # The checkout took the plan price, so it pays this period even without a reusable card.
+    assert withheld.json()["data"]["outcome"] == "paid"
     still = (await ac.get("/api/v1/billing/account", headers=headers)).json()["data"]
     assert still["authorization_present"] is False
+    assert still["billing_status"] == "active"
+    assert await _invoice_count(seed["t1"].id) == before + 1
     token = "AUTH_confirmed01"
     confirmed = await _post_mock_webhook(
         ac,
@@ -683,7 +686,7 @@ async def test_checkout_return_saves_method_only_after_provider_confirmation(cli
             },
         },
     )
-    assert confirmed.json()["data"]["outcome"] == "authorization_saved"
+    assert confirmed.json()["data"]["outcome"] == "paid"
     assert confirmed.json()["data"]["duplicate"] is False
     saved = await ac.get("/api/v1/billing/account", headers=headers)
     assert token not in saved.text
@@ -698,8 +701,10 @@ async def test_checkout_return_saves_method_only_after_provider_confirmation(cli
     assert returned_body["paid"] is False
     assert returned_body["authorization_present"] is True
     again = (await ac.get("/api/v1/billing/invoices", headers=headers)).json()["data"]
-    assert all(row["status"] != "paid" for row in again)
-    assert await _invoice_count(seed["t1"].id) == before
+    # One paid invoice for this period, not one per confirmation: no double charge.
+    assert [row["status"] for row in again].count("paid") == 1
+    assert await _invoice_count(seed["t1"].id) == before + 1
+    assert returned_body["next_renewal_at"] == returned_body["paid_through"]
 
     def _refuse_network(*_args, **_kwargs):
         raise AssertionError("unconfigured checkout must not call the provider")
