@@ -46,6 +46,16 @@ Payroll arithmetic is Decimal throughout (`backend/app/hrm_payroll.py`, no float
 
 **The figures are not checked against GRA or SSNIT by the system.** The desk does not file with GRA or SSNIT.
 
+## Salary changes and corrections
+
+- **Change salary** (People, `GET|POST /hrm/employees/{id}/salary`): new basic and allowances from a date, with a reason. Payroll uses the change in force on the month's first day (a mid-month change counts from the next month). The history stays.
+- An approved payroll is never edited. A change dated on or before an approved month raises **back pay** for each such month on the next payroll: the basic difference attracts SSNIT and PAYE, an allowance difference PAYE only.
+- **Corrections** (Payroll, `GET|POST|DELETE /hrm/adjustments`): any other mistake put right on the next payroll, plus or minus, with a reason. A thrown-away draft hands its corrections back; a correction already on a draft is cancelled by throwing the draft away.
+
+## PAYE and SSNIT schedules, yearly tax statement
+
+Reports → PAYE and SSNIT schedules (`GET /hrm/reports/paye|ssnit?period=`) list each person's figures from approved payslips with CSV downloads, and name anyone missing a TIN/Ghana Card or SSNIT number. **Print statement** (`GET /hrm/reports/tax-statement`) gives one person's year month by month; staff print their own from My pay and leave (`GET /hrm/me/tax-statement`). These are working papers for the company's own returns: nothing is filed with GRA or SSNIT.
+
 ## Loans and salary advances
 
 Payroll → Loans and advances (`/hrm?tab=loans`, `GET|POST /hrm/loans`, `POST /hrm/loans/{id}/decide|repay`); staff ask for their own under My pay and leave (`POST /hrm/me/loans`).

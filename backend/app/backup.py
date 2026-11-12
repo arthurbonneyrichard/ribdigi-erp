@@ -193,6 +193,8 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("hrm_attendance", m.HrmAttendance),
     ("hrm_payroll_runs", m.HrmPayrollRun),
     ("hrm_payslips", m.HrmPayslip),
+    ("hrm_salary_changes", m.HrmSalaryChange),
+    ("hrm_payroll_adjustments", m.HrmPayrollAdjustment),
     ("hrm_loans", m.HrmLoan),
     ("hrm_loan_repayments", m.HrmLoanRepayment),
 ]

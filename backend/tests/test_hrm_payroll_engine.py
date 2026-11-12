@@ -104,3 +104,15 @@ def test_bands_must_end_open():
     with pytest.raises(PayrollError):
         validate_bands([{"width": None, "rate": "0"}, {"width": None, "rate": "5"}])
     validate_bands(BANDS)
+
+
+def test_arrears_attract_ssnit_and_corrections_do_not():
+    # 1,000 basic + 200 back pay of basic: SSNIT on 1,200 (66). Correction +100 is taxable, no SSNIT.
+    out = compute_payslip(
+        PayslipInput(basic=Decimal("1000"), arrears_basic=Decimal("200"), adjustment=Decimal("100")), rates()
+    )
+    assert out.ssnit_employee == Decimal("66.00")
+    assert out.gross == Decimal("1300")
+    assert out.taxable == Decimal("1234.00")
+    with pytest.raises(PayrollError):
+        compute_payslip(PayslipInput(basic=Decimal("100"), adjustment=Decimal("-500")), rates())

@@ -75,6 +75,10 @@ class PayslipInput:
     unpaid_days: int = 0
     working_days: int = 22
     tier3_percent: Decimal = ZERO
+    # Back pay of basic salary for earlier months (attracts SSNIT and PAYE like basic).
+    arrears_basic: Decimal = ZERO
+    # A correction to earnings: positive pays more, negative recovers an overpayment. Taxable, no SSNIT.
+    adjustment: Decimal = ZERO
 
 
 @dataclass
@@ -140,8 +144,10 @@ def compute_payslip(item: PayslipInput, rates: StatutoryRates) -> PayslipResult:
     days = max(int(item.working_days or 0), 1)
     per_day = basic / Decimal(days)
     unpaid = min(_round(per_day * Decimal(int(item.unpaid_days or 0)), rates), basic)
-    earned = basic - unpaid
-    gross = earned + D(item.allowances) + D(item.bonus)
+    earned = basic - unpaid + D(item.arrears_basic)
+    gross = earned + D(item.allowances) + D(item.bonus) + D(item.adjustment)
+    if gross < 0:
+        raise PayrollError("A correction cannot take pay below nil this month")
 
     insurable = earned
     if rates.insurable_cap is not None and rates.insurable_cap >= 0:

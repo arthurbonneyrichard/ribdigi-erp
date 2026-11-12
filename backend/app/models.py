@@ -4125,6 +4125,47 @@ class HrmLoanRepayment(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class HrmSalaryChange(Base):
+    """A person's basic and allowances from a date. Payroll uses the row in force on the
+    month's first day; a change dated before an approved month raises back pay instead."""
+
+    __tablename__ = "hrm_salary_changes"
+    __table_args__ = (UniqueConstraint("employee_id", "effective_from", name="uq_hrm_salary_change_from"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    effective_from: Mapped[date] = mapped_column(Date, index=True)
+    basic_salary: Mapped[float] = mapped_column(Numeric(14, 2))
+    allowances: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    reason: Mapped[str] = mapped_column(String(255))
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmPayrollAdjustment(Base):
+    """A correction to pay already approved, paid in a later payroll. Approved runs never change.
+
+    kind arrears: back pay of basic (SSNIT and PAYE apply). kind correction: any other
+    earning put right, positive or negative (PAYE applies, no SSNIT)."""
+
+    __tablename__ = "hrm_payroll_adjustments"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(16))
+    for_period: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    reason: Mapped[str] = mapped_column(String(255))
+    # pending -> in_run (on a draft) -> applied (run approved); cancelled.
+    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)
+    run_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    salary_change_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class HrmStatutoryRate(Base):
     """PAYE bands and SSNIT / pension rules from a date onwards. A payroll month uses the
     newest row starting on or before the month's first day. Rows an approved payroll used
@@ -4274,6 +4315,9 @@ class HrmPayslip(Base):
     tier3_relief: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     # Loan and advance repayments taken this month (booked on approval).
     loan_deduction: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    # Back pay of basic and other corrections carried in from approved months.
+    arrears_basic: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    adjustment: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     # The rates this slip was worked out with, kept so it can be explained later.
     rates_used: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     note: Mapped[str | None] = mapped_column(String(255), nullable=True)

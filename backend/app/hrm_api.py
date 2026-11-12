@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import hrm as svc
 from app import hrm_loans as loans_svc
+from app import hrm_pay_changes as changes_svc
 from app.db import get_db
 from app.schemas import E164PhoneValue, NonNegativeMoneyValue, PartyNameValue, UuidIdValue
 from app.security import require_permission
@@ -355,6 +356,116 @@ async def hrm_my_loan(
     )
     await db.commit()
     return _env(loans_svc.serialize_loan(row), "Request sent to payroll")
+
+
+class SalaryChangeBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    effective_from: date
+    basic_salary: NonNegativeMoneyValue
+    allowances: NonNegativeMoneyValue = 0
+    reason: Annotated[str, Field(min_length=3, max_length=255)]
+
+
+class AdjustmentBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    employee_id: UuidIdValue
+    kind: Literal["arrears", "correction"]
+    amount: Annotated[Decimal, Field(max_digits=14, decimal_places=2, ge=-1_000_000_000, le=1_000_000_000)]
+    for_period: Period | None = None
+    reason: Annotated[str, Field(min_length=3, max_length=255)]
+
+
+PeriodQuery = Annotated[str, Query(pattern=r"^20\d{2}-(0[1-9]|1[0-2])$")]
+
+
+@router.get("/employees/{employee_id}/salary")
+async def hrm_salary_history(
+    employee_id: UuidIdValue, claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)
+):
+    svc.job(claims, "payroll")
+    rows = await changes_svc.list_changes(db, claims["tenant_id"], employee_id)
+    return _env([changes_svc.serialize_change(r) for r in rows])
+
+
+@router.post("/employees/{employee_id}/salary")
+async def hrm_salary_change(
+    employee_id: UuidIdValue,
+    payload: SalaryChangeBody,
+    claims=Depends(require_permission("hrm", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    svc.job(claims, "payroll")
+    body = await changes_svc.add_change(db, claims["tenant_id"], employee_id, payload, user_id=claims.get("sub"))
+    await db.commit()
+    months = len({a["for_period"] for a in body["adjustments"]})
+    message = "Salary change saved" + (f"; back pay raised for {months} month(s)" if months else "")
+    return _env(body, message)
+
+
+@router.get("/adjustments")
+async def hrm_adjustments(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "payroll")
+    return _env(await changes_svc.list_adjustments(db, claims["tenant_id"]))
+
+
+@router.post("/adjustments")
+async def hrm_adjustment_add(
+    payload: AdjustmentBody, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)
+):
+    svc.job(claims, "payroll")
+    row = await changes_svc.add_adjustment(db, claims["tenant_id"], payload, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(changes_svc.serialize_adjustment(row), "Correction saved for the next payroll")
+
+
+@router.delete("/adjustments/{adjustment_id}")
+async def hrm_adjustment_cancel(
+    adjustment_id: UuidIdValue, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)
+):
+    svc.job(claims, "payroll")
+    await changes_svc.cancel_adjustment(db, claims["tenant_id"], adjustment_id, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(None, "Correction cancelled")
+
+
+@router.get("/reports/paye")
+async def hrm_paye_schedule(
+    period: PeriodQuery, claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)
+):
+    svc.job(claims, "payroll")
+    return _env(await changes_svc.paye_schedule(db, claims["tenant_id"], period))
+
+
+@router.get("/reports/ssnit")
+async def hrm_ssnit_schedule(
+    period: PeriodQuery, claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)
+):
+    svc.job(claims, "payroll")
+    return _env(await changes_svc.ssnit_schedule(db, claims["tenant_id"], period))
+
+
+@router.get("/reports/tax-statement")
+async def hrm_tax_statement(
+    employee_id: UuidIdValue,
+    year: Annotated[int, Query(ge=2000, le=2100)],
+    claims=Depends(require_permission("hrm", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    svc.job(claims, "payroll")
+    employee = await svc._employee(db, claims["tenant_id"], employee_id)
+    return _env(await changes_svc.tax_statement(db, claims["tenant_id"], employee, year))
+
+
+@router.get("/me/tax-statement")
+async def hrm_my_tax_statement(
+    year: Annotated[int, Query(ge=2000, le=2100)],
+    claims=Depends(require_permission("hrm", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    employee = await svc.employee_for_user(db, claims["tenant_id"], claims.get("sub"))
+    return _env(await changes_svc.tax_statement(db, claims["tenant_id"], employee, year))
 
 
 @router.get("/summary")

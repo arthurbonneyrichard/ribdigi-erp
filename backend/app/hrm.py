@@ -784,6 +784,8 @@ def _work_out(slip: m.HrmPayslip, settings: m.HrmSettings, rates: engine.Statuto
                 unpaid_days=int(slip.unpaid_days or 0),
                 working_days=int(settings.working_days_per_month),
                 tier3_percent=engine.D(slip.tier3_percent),
+                arrears_basic=engine.D(getattr(slip, "arrears_basic", 0)),
+                adjustment=engine.D(getattr(slip, "adjustment", 0)),
             ),
             rates,
         )
@@ -840,6 +842,7 @@ async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) 
     if clash:
         raise HTTPException(status_code=409, detail=f"Payroll for {period} already exists")
     from app import hrm_loans
+    from app import hrm_pay_changes
 
     settings = await get_settings(db, tenant_id)
     rates = await rates_for(db, tenant_id, first)
@@ -861,12 +864,16 @@ async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) 
     await db.flush()
     slips = []
     for person in people:
+        basic, allowances = await hrm_pay_changes.salary_for(db, person, first)
+        arrears, correction = await hrm_pay_changes.take_pending(db, tenant_id, person.id, run.id)
         slip = m.HrmPayslip(
             tenant_id=tenant_id,
             run_id=run.id,
             employee_id=person.id,
-            basic=_money(person.basic_salary),
-            allowances=_money(person.allowances),
+            basic=basic,
+            allowances=allowances,
+            arrears_basic=arrears,
+            adjustment=correction,
             bonus=0,
             other_deductions=0,
             tier3_percent=person.tier3_percent or 0,
@@ -918,6 +925,9 @@ async def delete_run(db: AsyncSession, tenant_id: str, run_id: str, *, user_id) 
     run = await _run(db, tenant_id, run_id, lock=True)
     if run.status != "draft":
         raise HTTPException(status_code=409, detail="Only a draft payroll can be thrown away")
+    from app import hrm_pay_changes
+
+    await hrm_pay_changes.release_run(db, run.id)
     for slip in await _slips(db, run.id):
         await db.delete(slip)
     await db.delete(run)
@@ -962,6 +972,9 @@ async def approve_run(db: AsyncSession, tenant_id: str, run_id: str, *, user_id)
     from app import hrm_loans
 
     await hrm_loans.apply_payroll_repayments(db, tenant_id, run, slips)
+    from app import hrm_pay_changes
+
+    await hrm_pay_changes.settle_run(db, run.id)
     run.status = "approved"
     run.approved_by = user_id
     run.approved_at = datetime.utcnow()
@@ -1041,6 +1054,8 @@ def _slip_dict(slip: m.HrmPayslip, employee: m.HrmEmployee | None) -> dict:
         "tier3": _money(slip.tier3),
         "tier3_relief": _money(slip.tier3_relief),
         "loan_deduction": _money(getattr(slip, "loan_deduction", 0)),
+        "arrears_basic": _money(getattr(slip, "arrears_basic", 0)),
+        "adjustment": _money(getattr(slip, "adjustment", 0)),
         "rates_used": slip.rates_used,
         "note": slip.note,
     }

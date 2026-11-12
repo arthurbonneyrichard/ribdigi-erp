@@ -95,12 +95,35 @@ const iso = () => {
 };
 const thisMonth = () => iso().slice(0, 7);
 
+function downloadCsv(name: string, rows: (string | number | null | undefined)[][]) {
+  const text = rows.map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(new Blob([text], { type: 'text/csv' }));
+  link.download = name;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function printStatement(st: Row) {
+  const page = window.open('', '_blank', 'width=640,height=800');
+  if (!page) return;
+  const rows = (st.months || [])
+    .map((r: Row) => `<tr><td>${safe(r.period)}</td><td style="text-align:right">${money(r.gross)}</td><td style="text-align:right">${money(r.ssnit_employee)}</td><td style="text-align:right">${money(r.taxable)}</td><td style="text-align:right">${money(r.paye)}</td><td style="text-align:right">${money(r.net)}</td></tr>`)
+    .join('');
+  const t = st.totals || {};
+  page.document.write(
+    `<html><body style="font-family:sans-serif"><h3>Tax statement ${safe(st.year)}</h3><p>${safe(st.employee?.full_name)} · ${safe(st.employee?.employee_number)}<br/>TIN ${safe(st.employee?.tin || '—')} · Ghana Card ${safe(st.employee?.ghana_card || '—')} · SSNIT ${safe(st.employee?.ssnit_number || '—')}</p><table style="width:100%;border-collapse:collapse"><tr><th align="left">Month</th><th>Gross</th><th>SSNIT</th><th>Taxable</th><th>PAYE</th><th>Net</th></tr>${rows}<tr><th align="left">Total</th><th>${money(t.gross)}</th><th>${money(t.ssnit_employee)}</th><th>${money(t.taxable)}</th><th>${money(t.paye)}</th><th>${money(t.net)}</th></tr></table><p style="font-size:12px">${safe(st.note)}</p></body></html>`,
+  );
+  page.document.close();
+  page.print();
+}
+
 function printSlip(slip: Row, period: string) {
   const page = window.open('', '_blank', 'width=480,height=700');
   if (!page) return;
   const line = (label: string, value: unknown) => `<tr><td>${label}</td><td style="text-align:right">${money(value)}</td></tr>`;
   page.document.write(
-    `<html><body style="font-family:sans-serif"><h3>Payslip ${safe(period)}</h3><p>${safe(slip.employee_name)} · ${safe(slip.employee_number)}<br/>${safe(slip.job_title)}</p><table style="width:100%">${line('Basic', slip.basic)}${line('Allowances', slip.allowances)}${line('Bonus', slip.bonus)}${line('Unpaid days', -Number(slip.unpaid_deduction))}${line('Gross', slip.gross)}${line('SSNIT', -Number(slip.ssnit_employee))}${Number(slip.tier3) > 0 ? line('Tier 3 pension', -Number(slip.tier3)) : ''}${Number(slip.loan_deduction) > 0 ? line('Loan repayment', -Number(slip.loan_deduction)) : ''}${line('PAYE', -Number(slip.paye))}${line('Other deductions', -Number(slip.other_deductions))}</table><h3>Net pay ${money(slip.net)}</h3></body></html>`,
+    `<html><body style="font-family:sans-serif"><h3>Payslip ${safe(period)}</h3><p>${safe(slip.employee_name)} · ${safe(slip.employee_number)}<br/>${safe(slip.job_title)}</p><table style="width:100%">${line('Basic', slip.basic)}${line('Allowances', slip.allowances)}${line('Bonus', slip.bonus)}${Number(slip.arrears_basic) ? line('Back pay of basic', slip.arrears_basic) : ''}${Number(slip.adjustment) ? line('Correction', slip.adjustment) : ''}${line('Unpaid days', -Number(slip.unpaid_deduction))}${line('Gross', slip.gross)}${line('SSNIT', -Number(slip.ssnit_employee))}${Number(slip.tier3) > 0 ? line('Tier 3 pension', -Number(slip.tier3)) : ''}${Number(slip.loan_deduction) > 0 ? line('Loan repayment', -Number(slip.loan_deduction)) : ''}${line('PAYE', -Number(slip.paye))}${line('Other deductions', -Number(slip.other_deductions))}</table><h3>Net pay ${money(slip.net)}</h3></body></html>`,
   );
   page.document.close();
   page.print();
@@ -147,6 +170,13 @@ function HrmDesk() {
   const [rates, setRates] = useState<Row[]>([]);
   const [loans, setLoans] = useState<Row[]>([]);
   const [teamLeave, setTeamLeave] = useState<Row[]>([]);
+  const [adjustments, setAdjustments] = useState<Row[]>([]);
+  const [adjForm, setAdjForm] = useState({ employee_id: '', kind: 'correction', amount: '', for_period: '', reason: '' });
+  const [schedPeriod, setSchedPeriod] = useState(thisMonth());
+  const [paye, setPaye] = useState<Row | null>(null);
+  const [ssnit, setSsnit] = useState<Row | null>(null);
+  const [stmtYear, setStmtYear] = useState(new Date().getFullYear());
+  const [stmtPerson, setStmtPerson] = useState('');
   const [loanForm, setLoanForm] = useState({ employee_id: '', kind: 'loan', principal: '', monthly_deduction: '', first_period: '', reason: '' });
   const [myLoan, setMyLoan] = useState({ kind: 'advance', principal: '', monthly_deduction: '', reason: '' });
   const [holidays, setHolidays] = useState<Row[]>([]);
@@ -185,8 +215,17 @@ function HrmDesk() {
         setPeople(p || []);
       }
       if (tab === 'attendance') setMarks((await get(`/hrm/attendance?day=${day}`)) || []);
-      if (tab === 'payroll') setRuns((await get('/hrm/payroll')) || []);
-      if (tab === 'reports') setReport(await get('/hrm/reports'));
+      if (tab === 'payroll') {
+        const [r, adj, p] = await Promise.all([get('/hrm/payroll'), get('/hrm/adjustments'), get('/hrm/employees')]);
+        setRuns(r || []);
+        setAdjustments(adj || []);
+        setPeople(p || []);
+      }
+      if (tab === 'reports') {
+        const [rep, p] = await Promise.all([get('/hrm/reports'), get('/hrm/employees?show=all')]);
+        setReport(rep);
+        setPeople(p || []);
+      }
       if (tab === 'settings') {
         const [st, rt] = await Promise.all([get('/hrm/settings'), get('/hrm/statutory-rates')]);
         setSettings(st);
@@ -291,6 +330,13 @@ function HrmDesk() {
         dialog.approve ? 'Approved and paid out' : 'Turned down',
       );
     }
+    if (dialog.kind === 'salary') {
+      ok = await run(
+        `/hrm/employees/${dialog.row.id}/salary`,
+        { effective_from: dialog.effective_from, basic_salary: Number(dialog.basic), allowances: Number(dialog.allowances || 0), reason: dialog.reason.trim() },
+        'Salary change saved',
+      );
+    }
     if (dialog.kind === 'repay') ok = await run(`/hrm/loans/${dialog.row.id}/repay`, { amount: Number(dialog.amount), method: dialog.method }, 'Repayment recorded');
     if (dialog.kind === 'slip') {
       ok = await run(`/hrm/payslips/${dialog.row.id}`, { bonus: Number(dialog.bonus || 0), other_deductions: Number(dialog.other || 0) }, 'Payslip saved', 'PATCH');
@@ -303,7 +349,9 @@ function HrmDesk() {
       ? Boolean(dialog.left_on) && dialog.reason.trim().length >= 3
       : dialog.kind === 'reject' || (dialog.kind === 'loan' && !dialog.approve)
         ? dialog.note.trim().length > 0
-        : dialog.kind === 'repay'
+        : dialog.kind === 'salary'
+          ? Boolean(dialog.effective_from) && Number(dialog.basic) >= 0 && dialog.basic !== '' && dialog.reason.trim().length >= 3
+          : dialog.kind === 'repay'
           ? Number(dialog.amount) > 0 && Number(dialog.amount) <= Number(dialog.row.balance)
           : true
     : false;
@@ -390,6 +438,19 @@ function HrmDesk() {
                   </label>
                 ) : null}
                 <label><span>{dialog.approve ? 'Note (optional)' : 'Why'}</span><input value={dialog.note} onChange={(e) => setDialog({ ...dialog, note: e.target.value })} aria-label="Loan decision note" /></label>
+              </>
+            ) : null}
+            {dialog.kind === 'salary' ? (
+              <>
+                <h2>Change salary for {dialog.row.full_name}</h2>
+                <p className="hr-muted">
+                  Payroll uses the new pay from the first month that starts on or after this date. If the date is before a month
+                  already approved, the difference is paid as back pay on the next payroll; approved months are not changed.
+                </p>
+                <label><span>From</span><input type="date" value={dialog.effective_from} onChange={(e) => setDialog({ ...dialog, effective_from: e.target.value })} aria-label="Salary change from" /></label>
+                <label><span>Basic a month</span><input type="number" min="0" step="0.01" value={dialog.basic} onChange={(e) => setDialog({ ...dialog, basic: e.target.value })} aria-label="New basic salary" /></label>
+                <label><span>Allowances a month</span><input type="number" min="0" step="0.01" value={dialog.allowances} onChange={(e) => setDialog({ ...dialog, allowances: e.target.value })} aria-label="New allowances" /></label>
+                <label><span>Why</span><input value={dialog.reason} onChange={(e) => setDialog({ ...dialog, reason: e.target.value })} aria-label="Salary change reason" /></label>
               </>
             ) : null}
             {dialog.kind === 'repay' ? (
@@ -517,7 +578,12 @@ function HrmDesk() {
                     <td>{p.full_name}<br /><small className="hr-muted">{p.employee_number}</small></td>
                     <td>{p.job_title || '—'}</td><td>{p.department || '—'}</td><td>{p.hired_on}</td>
                     {seesPay ? <td className="hr-num">{money(p.basic_salary)}</td> : null}
-                    <td><button type="button" className="hr-danger" onClick={() => setDialog({ kind: 'left', row: p, left_on: iso(), reason: '' })}>Leaving</button></td>
+                    <td>
+                      <div className="hr-row">
+                        {seesPay ? <button type="button" onClick={() => setDialog({ kind: 'salary', row: p, effective_from: iso(), basic: String(p.basic_salary ?? ''), allowances: String(p.allowances ?? '0'), reason: '' })}>Change salary</button> : null}
+                        <button type="button" className="hr-danger" onClick={() => setDialog({ kind: 'left', row: p, left_on: iso(), reason: '' })}>Leaving</button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
                 {people.length === 0 ? <tr><td colSpan={6} className="hr-muted">No staff yet. Add the first person above.</td></tr> : null}
@@ -747,6 +813,54 @@ function HrmDesk() {
             </div>
             <p className="hr-muted">Check the SSNIT and PAYE rates under Settings against the current official tables before you approve.</p>
           </section>
+          <section className="hr-box hr-scroll" aria-label="Corrections to approved pay">
+            <Head title="Corrections for the next payroll" />
+            <p className="hr-muted">
+              An approved month never changes. Put a mistake right here, with a reason: it is paid (or taken back) on the next
+              payroll you draw up. Back pay of basic attracts SSNIT; other corrections attract PAYE only.
+            </p>
+            <div className="hr-form">
+              <label><span>Employee</span>
+                <select value={adjForm.employee_id} onChange={(e) => setAdjForm({ ...adjForm, employee_id: e.target.value })} aria-label="Correction employee">
+                  <option value="">Choose</option>
+                  {people.map((p) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
+                </select>
+              </label>
+              <label><span>Kind</span>
+                <select value={adjForm.kind} onChange={(e) => setAdjForm({ ...adjForm, kind: e.target.value })} aria-label="Correction kind">
+                  <option value="correction">Other earning put right</option>
+                  <option value="arrears">Back pay of basic</option>
+                </select>
+              </label>
+              <label><span>Amount (minus to take back)</span><input type="number" step="0.01" value={adjForm.amount} onChange={(e) => setAdjForm({ ...adjForm, amount: e.target.value })} aria-label="Correction amount" /></label>
+              <label><span>For month (optional)</span><input type="month" value={adjForm.for_period} onChange={(e) => setAdjForm({ ...adjForm, for_period: e.target.value })} aria-label="Correction for month" /></label>
+              <label><span>Why</span><input value={adjForm.reason} onChange={(e) => setAdjForm({ ...adjForm, reason: e.target.value })} aria-label="Correction reason" /></label>
+              <button
+                type="button" className="hr-primary"
+                disabled={busy || !adjForm.employee_id || !Number(adjForm.amount) || adjForm.reason.trim().length < 3}
+                onClick={async () => {
+                  const ok = await run('/hrm/adjustments', { employee_id: adjForm.employee_id, kind: adjForm.kind, amount: Number(adjForm.amount), for_period: adjForm.for_period || null, reason: adjForm.reason.trim() }, 'Correction saved');
+                  if (ok) setAdjForm({ employee_id: '', kind: 'correction', amount: '', for_period: '', reason: '' });
+                }}
+              >Save correction</button>
+            </div>
+            {adjustments.filter((a) => a.status !== 'cancelled').length ? (
+              <table>
+                <thead><tr><th>Who</th><th>What</th><th>Amount</th><th>Status</th><th /></tr></thead>
+                <tbody>
+                  {adjustments.filter((a) => a.status !== 'cancelled').map((a) => (
+                    <tr key={a.id}>
+                      <td>{a.employee_name}</td>
+                      <td>{a.reason}</td>
+                      <td className="hr-num">{money(a.amount)}</td>
+                      <td>{({ pending: 'Waiting for the next payroll', in_run: 'On a draft payroll', applied: 'Paid' } as Record<string, string>)[a.status] || a.status}</td>
+                      <td>{a.status === 'pending' ? <button type="button" className="hr-danger" aria-label={`Cancel correction for ${a.employee_name}`} onClick={() => void run(`/hrm/adjustments/${a.id}`, null, 'Correction cancelled', 'DELETE')}>Cancel</button> : null}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : null}
+          </section>
           {runs.map((r) => (
             <section className="hr-box hr-scroll" key={r.id} aria-label={`Payroll ${r.period}`}>
               <div className="hr-row" style={{ justifyContent: 'space-between' }}>
@@ -806,6 +920,60 @@ function HrmDesk() {
                 {report.payroll.length === 0 ? <tr><td colSpan={5} className="hr-muted">No approved payroll this year.</td></tr> : null}
               </tbody>
             </table>
+          </section>
+          <section className="hr-box hr-scroll" aria-label="PAYE and SSNIT schedules">
+            <Head title="PAYE and SSNIT schedules" />
+            <p className="hr-muted">Read from approved payslips: working papers for your own GRA and SSNIT returns. The system does not file them.</p>
+            <div className="hr-row">
+              <input type="month" value={schedPeriod} onChange={(e) => setSchedPeriod(e.target.value)} aria-label="Schedule month" style={{ maxWidth: 200 }} />
+              <button type="button" disabled={busy} onClick={async () => {
+                try {
+                  const [a, b] = await Promise.all([api(`/hrm/reports/paye?period=${schedPeriod}`), api(`/hrm/reports/ssnit?period=${schedPeriod}`)]);
+                  setPaye(a?.data || null);
+                  setSsnit(b?.data || null);
+                } catch (err) { setError(problem(err)); }
+              }}>Show schedules</button>
+            </div>
+            {paye ? (
+              <>
+                <h2 style={{ marginTop: 12 }}>PAYE {paye.period}</h2>
+                {paye.missing_tax_id?.length ? <p className="hr-banner bad">No TIN or Ghana Card: {paye.missing_tax_id.join(', ')}</p> : null}
+                <table>
+                  <thead><tr><th>Employee</th><th>TIN</th><th>Gross</th><th>Taxable</th><th>PAYE</th></tr></thead>
+                  <tbody>
+                    {paye.rows.map((r: Row) => <tr key={r.employee_number}><td>{r.full_name}</td><td>{r.tin || r.ghana_card || '—'}</td><td className="hr-num">{money(r.gross)}</td><td className="hr-num">{money(r.taxable)}</td><td className="hr-num">{money(r.paye)}</td></tr>)}
+                    <tr><th>Total</th><th /><th className="hr-num">{money(paye.totals.gross)}</th><th className="hr-num">{money(paye.totals.taxable)}</th><th className="hr-num">{money(paye.totals.paye)}</th></tr>
+                  </tbody>
+                </table>
+                <button type="button" onClick={() => downloadCsv(`paye-${paye.period}.csv`, [['Employee number', 'Name', 'TIN', 'Ghana Card', 'Gross', 'SSNIT', 'Tier 3 relief', 'Taxable', 'PAYE'], ...paye.rows.map((r: Row) => [r.employee_number, r.full_name, r.tin, r.ghana_card, r.gross, r.ssnit_employee, r.tier3_relief, r.taxable, r.paye])])}>Download PAYE CSV</button>
+              </>
+            ) : null}
+            {ssnit ? (
+              <>
+                <h2 style={{ marginTop: 12 }}>SSNIT {ssnit.period}</h2>
+                {ssnit.missing_ssnit_number?.length ? <p className="hr-banner bad">No SSNIT number: {ssnit.missing_ssnit_number.join(', ')}</p> : null}
+                <table>
+                  <thead><tr><th>Employee</th><th>SSNIT no.</th><th>Insurable</th><th>Staff</th><th>Company</th><th>Tier 1</th><th>Tier 2</th></tr></thead>
+                  <tbody>
+                    {ssnit.rows.map((r: Row) => <tr key={r.employee_number}><td>{r.full_name}</td><td>{r.ssnit_number || '—'}</td><td className="hr-num">{money(r.insurable)}</td><td className="hr-num">{money(r.employee_share)}</td><td className="hr-num">{money(r.employer_share)}</td><td className="hr-num">{money(r.tier1)}</td><td className="hr-num">{money(r.tier2)}</td></tr>)}
+                  </tbody>
+                </table>
+                <button type="button" onClick={() => downloadCsv(`ssnit-${ssnit.period}.csv`, [['Employee number', 'Name', 'SSNIT number', 'Ghana Card', 'Insurable', 'Staff share', 'Company share', 'Tier 1', 'Tier 2', 'Tier 3'], ...ssnit.rows.map((r: Row) => [r.employee_number, r.full_name, r.ssnit_number, r.ghana_card, r.insurable, r.employee_share, r.employer_share, r.tier1, r.tier2, r.tier3])])}>Download SSNIT CSV</button>
+              </>
+            ) : null}
+          </section>
+          <section className="hr-box" aria-label="Yearly tax statement">
+            <Head title="Yearly tax statement" />
+            <div className="hr-row">
+              <select value={stmtPerson} onChange={(e) => setStmtPerson(e.target.value)} aria-label="Tax statement employee">
+                <option value="">Choose a person</option>
+                {people.map((p) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
+              </select>
+              <input type="number" min="2000" max="2100" value={stmtYear} onChange={(e) => setStmtYear(Number(e.target.value))} aria-label="Tax statement year" style={{ maxWidth: 110 }} />
+              <button type="button" disabled={!stmtPerson} onClick={async () => {
+                try { printStatement((await api(`/hrm/reports/tax-statement?employee_id=${stmtPerson}&year=${stmtYear}`))?.data || {}); } catch (err) { setError(problem(err)); }
+              }}>Print statement</button>
+            </div>
           </section>
           <section className="hr-box" aria-label="By department">
             <Head title="By department" />
@@ -1047,6 +1215,15 @@ function HrmDesk() {
               <tbody>
                 {me.payslips.map((s: Row) => <tr key={s.id}><td>{s.period}</td><td className="hr-num">{money(s.net)}</td><td><button type="button" onClick={() => printSlip(s, s.period)}>Print</button></td></tr>)}
                 {me.payslips.length === 0 ? <tr><td className="hr-muted">No payslips yet.</td></tr> : null}
+                {me.payslips.length ? (
+                  <tr>
+                    <td colSpan={3}>
+                      <button type="button" onClick={async () => {
+                        try { printStatement((await api(`/hrm/me/tax-statement?year=${new Date().getFullYear()}`))?.data || {}); } catch (err) { setError(problem(err)); }
+                      }}>Print my tax statement for {new Date().getFullYear()}</button>
+                    </td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </section>

@@ -71,9 +71,9 @@ def test_single_head_linear_chain():
     # offline-grant head 20261003_0134 with the restaurant/billing head
     # 20261008_0135.
     assert len(heads) == 1, heads
-    # Head now 20261113_0165 (HRM leave steps), after 0164 HRM loans and holidays, 0160 till-only sessions,
+    # Head now 20261113_0166 (HRM salary changes), after 0165 HRM leave steps, 0164 HRM loans and holidays, 0160 till-only sessions,
     # 0161 billing industry prices + owner VAT, 0162 offline till references and 0163 HRM statutory rates.
-    assert heads == {"20261113_0165"}
+    assert heads == {"20261113_0166"}
     assert len(merges) == 1, merges
     _merge_name, merge_rev, merge_parents = merges[0]
     assert merge_rev == "20261008_0136"
