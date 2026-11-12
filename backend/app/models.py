@@ -4166,6 +4166,195 @@ class HrmPayrollAdjustment(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class HrmVacancy(Base):
+    """An open job. Candidates apply to it and move through the stages to hired."""
+
+    __tablename__ = "hrm_vacancies"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    title: Mapped[str] = mapped_column(String(120))
+    department: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    openings: Mapped[int] = mapped_column(Integer, default=1)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="open", index=True)
+    closes_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmCandidate(Base):
+    __tablename__ = "hrm_candidates"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    vacancy_id: Mapped[str] = mapped_column(ForeignKey("hrm_vacancies.id"), index=True)
+    full_name: Mapped[str] = mapped_column(String(180))
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    # applied -> screening -> interview -> offer -> hired; rejected or withdrawn at any point.
+    stage: Mapped[str] = mapped_column(String(16), default="applied", index=True)
+    interview_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    offered_basic: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    employee_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmReview(Base):
+    """A performance review: weighted goals scored 1-5, the person's own view, then the reviewer's."""
+
+    __tablename__ = "hrm_reviews"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    cycle: Mapped[str] = mapped_column(String(60))
+    goals: Mapped[list] = mapped_column(JSON)
+    # open -> self_done -> done
+    status: Mapped[str] = mapped_column(String(16), default="open", index=True)
+    self_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reviewer_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    overall: Mapped[float | None] = mapped_column(Numeric(4, 2), nullable=True)
+    reviewer_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmTraining(Base):
+    __tablename__ = "hrm_trainings"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    title: Mapped[str] = mapped_column(String(160))
+    provider: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    mandatory: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Months a completion stays valid; NULL = does not expire.
+    valid_months: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmTrainingRecord(Base):
+    __tablename__ = "hrm_training_records"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    training_id: Mapped[str] = mapped_column(ForeignKey("hrm_trainings.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    completed_on: Mapped[date] = mapped_column(Date)
+    expires_on: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
+    result: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    certificate_ref: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmContract(Base):
+    __tablename__ = "hrm_contracts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(16))  # permanent | fixed_term | casual | probation
+    starts_on: Mapped[date] = mapped_column(Date)
+    ends_on: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
+    probation_ends_on: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
+    confirmed_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    reference: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="active", index=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmCase(Base):
+    """A disciplinary case or a grievance. Confidential: only HR managers see them."""
+
+    __tablename__ = "hrm_cases"
+    __table_args__ = (UniqueConstraint("tenant_id", "case_number", name="uq_hrm_case_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    case_number: Mapped[str] = mapped_column(String(40))
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(16))  # disciplinary | grievance
+    subject: Mapped[str] = mapped_column(String(160))
+    details: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(16), default="open", index=True)
+    hearing_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # none | verbal_warning | written_warning | final_warning | suspension | dismissal | upheld | not_upheld
+    outcome: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    outcome_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    employee_response: Mapped[str | None] = mapped_column(Text, nullable=True)
+    raised_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    closed_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmAsset(Base):
+    """Company property held by a member of staff: laptop, phone, uniform, vehicle."""
+
+    __tablename__ = "hrm_assets"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    item: Mapped[str] = mapped_column(String(160))
+    kind: Mapped[str] = mapped_column(String(24), default="other")
+    serial: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    issued_on: Mapped[date] = mapped_column(Date)
+    condition_out: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    returned_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    condition_back: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmClaim(Base):
+    """Money a member of staff spent for the company, paid back once approved (not through payroll)."""
+
+    __tablename__ = "hrm_claims"
+    __table_args__ = (UniqueConstraint("tenant_id", "claim_number", name="uq_hrm_claim_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    claim_number: Mapped[str] = mapped_column(String(40))
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    spent_on: Mapped[date] = mapped_column(Date)
+    description: Mapped[str] = mapped_column(String(255))
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    receipt_ref: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)
+    decision_note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    requested_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    decided_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    paid_method: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmNotice(Base):
+    """An announcement or an HR policy staff can read under My pay and leave."""
+
+    __tablename__ = "hrm_notices"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(16))  # announcement | policy
+    title: Mapped[str] = mapped_column(String(160))
+    body: Mapped[str] = mapped_column(Text)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class HrmStatutoryRate(Base):
     """PAYE bands and SSNIT / pension rules from a date onwards. A payroll month uses the
     newest row starting on or before the month's first day. Rows an approved payroll used

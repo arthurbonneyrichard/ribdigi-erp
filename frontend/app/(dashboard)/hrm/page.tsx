@@ -12,6 +12,7 @@ import { formatMoney } from '../../../lib/format';
 import { getMe } from '../../../lib/meCache';
 import DeskDashboard from '../../../components/DeskDashboard';
 import DeskIcon from '../../../components/DeskIcon';
+import { MyMore, PEOPLE_WORK_SCREENS, PeopleWork } from './PeopleWork';
 import './hrm.css';
 
 type Row = Record<string, any>;
@@ -25,6 +26,7 @@ const SCREENS: Record<string, { title: string; sub: string; icon: string }> = {
   loans: { title: 'Loans and advances', sub: 'Lent to staff, paid back from payroll each month.', icon: 'wallet' },
   reports: { title: 'Reports', sub: 'Payroll by month and department, and leave taken.', icon: 'chart' },
   settings: { title: 'Pay rates', sub: 'PAYE bands, SSNIT and the other rates payroll uses.', icon: 'tag' },
+  ...PEOPLE_WORK_SCREENS,
   me: { title: 'My pay and leave', sub: 'Your payslips and your time off.', icon: 'wallet' },
 };
 const TABS = Object.keys(SCREENS).map((id) => ({ id }));
@@ -59,7 +61,7 @@ function Head({ title, icon, meta }: { title: string; icon?: string; meta?: Reac
   );
 }
 const ROLE_TABS: Record<string, string[]> = {
-  hrm_officer: ['today', 'people', 'leave', 'attendance', 'me'],
+  hrm_officer: ['today', 'people', 'leave', 'attendance', 'hiring', 'training', 'contracts', 'kit', 'notices', 'me'],
   hrm_employee: ['me'],
 };
 const LEAVE = [
@@ -492,6 +494,8 @@ function HrmDesk() {
       ) : null}
       {notice ? <div className="hr-banner" role="status">{notice}</div> : null}
       {error && !dialog ? <div className="hr-banner bad" role="alert">{error}</div> : null}
+
+      {PEOPLE_WORK_SCREENS[tab] ? <PeopleWork tab={tab} seesPay={seesPay} /> : null}
 
       {tab === 'today' && summary ? (
         <DeskDashboard
@@ -1227,6 +1231,7 @@ function HrmDesk() {
               </tbody>
             </table>
           </section>
+          <MyMore />
         </>
       ) : null}
     </div>

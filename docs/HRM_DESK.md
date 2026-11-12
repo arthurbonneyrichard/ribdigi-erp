@@ -74,6 +74,21 @@ Leave → Public holidays (`GET|POST|DELETE /hrm/holidays`). Leave and unpaid da
 
 Pay rates → **Someone other than the person who drew up a payroll must approve it** (`two_person_payroll`, off by default for one-person offices). When on, approving your own run is refused (403 `PAYROLL_SECOND_PERSON`).
 
+## People work (`hrm_people.py`, `hrm_people_api.py`, screen `PeopleWork.tsx`)
+
+| Area | What it does | Who |
+| --- | --- | --- |
+| Hiring | Jobs, candidates moved one stage at a time (applied → screening → interview → offer → hired, or not taken). An offer names the basic; **Hire** makes the staff record and an optional probation contract, and marks the job filled when its openings are taken. | Officers up to interview; offer and hire need an HR manager |
+| Reviews | Goals with weights adding to 100; the person scores themselves (My pay and leave), then a reviewer scores 1–5. The overall is the weighted average. Nobody finishes their own review. | HR manager |
+| Training | Courses (mandatory or not, valid for N months), who did what, due dates, and mandatory courses each person has not done or has let lapse. | Officers |
+| Contracts | Kind, dates, probation; contracts ending and probation due in the next 30 days; **Confirm** probation. Fixed-term needs an end date. | Officers |
+| Cases | Disciplinary cases and grievances (staff raise their own). Closed with a recorded outcome and note. Only HR managers see the details; staff see that a case exists and how it ended. | HR manager |
+| Staff kit | Items issued to staff and handed back, with condition. | Officers |
+| Expense claims | Staff claim money spent; someone other than the claimant approves, which pays it back (debit 6000, credit cash/bank). Not through payroll. | HR manager |
+| Notices | Announcements and HR policies staff read under My pay and leave, until taken down. | Officers |
+
+Not built: document uploads (contracts, CVs and receipts are recorded by reference only), e-signatures, interview panels and calendar invites, 360-degree feedback, training budgets.
+
 ## Leave
 
 Days are working days, Monday to Friday, less the public holidays entered for the company. Someone with **Reports to** set goes through two steps: their manager agrees or turns it down first (My pay and leave → Leave from my team, `GET /hrm/team/leave`), then HR decides. HR may decide at either step; skipping the manager is recorded in the audit. Nobody with no manager waits for one. Annual leave is earned **all at the start of the year** (less the months before someone started) or **a twelfth each month**; up to the **carry-over days** unused last year roll in (last year's own allowance only, not stacked). Annual leave cannot pass the allowance, counting requests still waiting. Leave cannot overlap. Turning leave down needs a reason. Nobody decides their own leave. Approved unpaid leave comes off that month's pay when the run is drawn up.

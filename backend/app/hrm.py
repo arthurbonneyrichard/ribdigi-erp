@@ -49,11 +49,12 @@ PAYROLL_ACCOUNTS = [
 ]
 
 _JOBS = {
-    "hrm_officer": frozenset({"people", "leave", "attendance"}),
+    # Officers run people admin; pay, reviews, claims and confidential cases need a manager.
+    "hrm_officer": frozenset({"people", "leave", "attendance", "recruitment", "training", "contracts", "assets", "notices"}),
     "hrm_employee": frozenset({"self"}),
 }
 _WORDS = {
-    "hrm_officer": "HR officers look after staff records, leave and attendance. Payroll needs a manager.",
+    "hrm_officer": "HR officers look after staff records, leave, attendance, hiring, training, contracts and assets. Pay, reviews, claims and cases need a manager.",
     "hrm_employee": "You can see your own leave and payslips. Ask HR for the rest.",
 }
 

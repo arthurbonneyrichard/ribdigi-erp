@@ -454,10 +454,12 @@ from app import fmcg_orders as fmcg_orders_svc  # noqa: E402
 from app import fmcg_orders_api as fmcg_orders_api_mod  # noqa: E402
 from app import gym_api as gym_api_mod  # noqa: E402
 from app import hrm_api as hrm_api_mod  # noqa: E402
+from app import hrm_people_api as hrm_people_api_mod  # noqa: E402
 
 api.include_router(bakery_api_mod.router)
 api.include_router(gym_api_mod.router)
 api.include_router(hrm_api_mod.router)
+api.include_router(hrm_people_api_mod.router)
 api.include_router(fmcg_orders_api_mod.router)
 from app import hotel_booking_api as hotel_booking_api_mod
 
