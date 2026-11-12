@@ -4,7 +4,7 @@ const VERSION = 'v9';
 const SHELL = `ribdigi-pos-shell-${VERSION}`;
 const STATIC = `ribdigi-pos-static-${VERSION}`;
 const KEEP = new Set([SHELL, STATIC]);
-const ASSETS = ['/', '/pos', '/manifest.webmanifest', '/icon.png', '/brand/logo-full.png'];
+const ASSETS = ['/', '/pos', '/restaurant/till', '/manifest.webmanifest', '/icon.png', '/brand/logo-full.png'];
 const MAX_STATIC_ENTRIES = 400;
 
 self.addEventListener('install', (event) => {
@@ -43,6 +43,7 @@ async function networkFirstPage(req, url) {
     return (
       (await cache.match(url.pathname)) ||
       (url.pathname.startsWith('/pos') ? await cache.match('/pos') : undefined) ||
+      (url.pathname.startsWith('/restaurant/till') ? await cache.match('/restaurant/till') : undefined) ||
       (await cache.match('/')) ||
       Response.error()
     );

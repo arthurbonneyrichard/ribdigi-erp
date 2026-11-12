@@ -6,7 +6,7 @@ bakers bake and record waste, cashiers run the counter, and money corrections ne
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -338,6 +338,52 @@ async def bakery_shift_close(
     body = await svc.present_shift(db, claims["tenant_id"], row)
     await db.commit()
     return _env(body, "Till closed")
+
+
+class OfflineSaleBody(BaseModel):
+    """A paid counter sale the till kept while the internet was down."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    offline_ref: Annotated[str, Field(pattern=r"^[A-Za-z0-9_-]{8,64}$")]
+    created_at: datetime
+    payment_method: Literal["cash", "card", "mobile_money", "wallet"] = "cash"
+    customer_name: PartyNameValue | None = None
+    charged_total: Annotated[float, Field(ge=0, le=1e12)] | None = None
+    lines: list[SaleLine] = Field(min_length=1, max_length=60)
+
+
+class OfflineSyncBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    device_id: Annotated[str, Field(pattern=r"^[A-Za-z0-9_-]{4,64}$")] | None = None
+    sales: list[OfflineSaleBody] = Field(min_length=1, max_length=100)
+
+
+@router.get("/till/offline/prices")
+async def bakery_offline_prices(claims=Depends(require_permission("bakery", "read")), db: AsyncSession = Depends(get_db)):
+    """Prices and tax rules the till keeps so an offline bill totals like the server's."""
+    _job(claims, "till")
+    from app import bakery_offline as offline_svc
+
+    return _env(await offline_svc.price_sheet(db, claims["tenant_id"]))
+
+
+@router.post("/till/offline/sync")
+async def bakery_offline_sync(
+    payload: OfflineSyncBody,
+    claims=Depends(require_permission("bakery", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Book counter sales rung offline. Each offline_ref books once."""
+    _job(claims, "till")
+    from app import bakery_offline as offline_svc
+
+    body = await offline_svc.sync_sales(
+        db, claims["tenant_id"], payload.sales, user_id=claims.get("sub"), device_id=payload.device_id
+    )
+    await db.commit()
+    return _env(body, f"{body['counts'].get('booked', 0)} offline sale(s) booked")
 
 
 @router.get("/sales")

@@ -2878,7 +2878,11 @@ class RestaurantRecipeLine(Base):
 
 class RestaurantOrder(Base):
     __tablename__ = "restaurant_orders"
-    __table_args__ = (UniqueConstraint("tenant_id", "order_number", name="uq_restaurant_order_number"),)
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "order_number", name="uq_restaurant_order_number"),
+        # A sale rung offline books once, however many times the till sends it.
+        UniqueConstraint("tenant_id", "offline_ref", name="uq_restaurant_order_offline_ref"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -2902,6 +2906,8 @@ class RestaurantOrder(Base):
     # Who took the money and on which till (the waiter who opened the bill stays in created_by).
     completed_by: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     completed_device_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Key the till gave a sale it rang while offline (NULL for live orders).
+    offline_ref: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 class RestaurantOrderLine(Base):
@@ -3747,7 +3753,11 @@ class BakerySale(Base):
     """A counter sale, or an order handed over. Never a retail transaction."""
 
     __tablename__ = "bakery_sales"
-    __table_args__ = (UniqueConstraint("tenant_id", "sale_number", name="uq_bakery_sale_number"),)
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "sale_number", name="uq_bakery_sale_number"),
+        # A sale rung offline books once, however many times the till sends it.
+        UniqueConstraint("tenant_id", "offline_ref", name="uq_bakery_sale_offline_ref"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -3764,6 +3774,8 @@ class BakerySale(Base):
     journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     refund_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
     refunded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Key the till gave a sale it rang while offline (NULL for live sales).
+    offline_ref: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 

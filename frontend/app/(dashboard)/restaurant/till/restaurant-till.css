@@ -314,3 +314,15 @@
   }
   .main .rtill button.rtill-jump strong{color:#C8E86A}
 }
+
+/* Offline selling: a calm strip, words first, never colour alone. */
+.rtill-offline{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:0 0 10px;padding:10px 14px;border:1px solid var(--line,#D4E5C4);border-left:4px solid var(--brand,#4AB012);border-radius:10px;background:var(--mist,#F2F7EC);color:var(--ink,#10211B);font-size:14px}
+.rtill-offline.is-off{border-left-color:#B7791F}
+.rtill-offline strong{font-weight:700}
+.rtill-offline button{min-height:36px;padding:0 14px;border-radius:8px;border:1px solid var(--line,#D4E5C4);background:#fff;color:inherit;font-weight:600;cursor:pointer}
+.rtill-offline-refused{flex-basis:100%;display:flex;justify-content:space-between;gap:10px;align-items:center;padding-top:6px;border-top:1px dashed var(--line,#D4E5C4)}
+.rtill-offline-kitchen{text-align:left;margin:10px 0;padding:10px 12px;border-radius:10px;background:var(--mist,#F2F7EC)}
+.rtill-offline-kitchen ul{margin:6px 0 0;padding-left:18px}
+[data-theme="dark"] .rtill-offline,[data-theme="dark"] .rtill-offline-kitchen{background:rgba(255,255,255,.05);color:inherit;border-color:rgba(255,255,255,.14)}
+[data-theme="dark"] .rtill-offline button{background:transparent;border-color:rgba(255,255,255,.2)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .rtill-offline,:root:not([data-theme="light"]) .rtill-offline-kitchen{background:rgba(255,255,255,.05);color:inherit;border-color:rgba(255,255,255,.14)}}
