@@ -283,6 +283,7 @@ export const RESTAURANT_NAV_GROUPS: NavGroup[] = [
     label: 'Settings',
     items: [
       ['Company profile', '/company', 'company'],
+      ['Subscription billing', '/company/billing', 'company'],
       ['Security', '/security', 'security'],
       ['Printers', '/printers', 'printers'],
       ['Backup', '/backup', 'backup'],
@@ -328,6 +329,7 @@ export const BAKERY_NAV_GROUPS: NavGroup[] = [
     label: 'Settings',
     items: [
       ['Company profile', '/company', 'company'],
+      ['Subscription billing', '/company/billing', 'company'],
       ['Security', '/security', 'security'],
       ['Printers', '/printers', 'printers'],
       ['Backup', '/backup', 'backup'],
@@ -349,6 +351,7 @@ function deskTail(desk: string, extraSettings: NavItem[] = []): NavGroup[] {
       label: 'Settings',
       items: [
         ['Company profile', '/company', 'company'],
+        ['Subscription billing', '/company/billing', 'company'],
         ['Security', '/security', 'security'],
         ...extraSettings,
         ['Backup', '/backup', 'backup'],
