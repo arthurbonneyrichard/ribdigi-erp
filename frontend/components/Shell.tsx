@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import DeskIcon from './DeskIcon';
 import { POS_LOCK_NOW_EVENT, wasLeftLocked } from '../lib/posLock';
-import { api, clearSessionAndRedirect, idleTimeoutMs, isConfirmedAuthExpiry, tenantHeaderValue, getAccessToken, hydrateAuth } from '../lib/api';
+import { api, clearSessionAndRedirect, idleTimeoutMs, isConfirmedAuthExpiry, tenantHeaderValue, getAccessToken, hydrateAuth, rehydrateAuth } from '../lib/api';
 import { formatNoticeTime, notifyCategoryLabel } from '../lib/notifyText';
 import { industryAllowsModule, INDUSTRY_SPECIFIC_MODULES } from '../lib/industryModules';
 import { industryLabel, normalizeIndustry } from '../lib/industries';
@@ -1361,6 +1361,50 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
       window.clearTimeout(timer);
+    };
+  }, []);
+
+  // After sign-out, Back/Forward can restore a dashboard page from the browser's page
+  // cache without running any code. Check the saved sign-in again whenever a page is
+  // shown that way (or another tab signs out) and go to the sign-in screen when it is gone.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let checking = false;
+    const recheck = async () => {
+      if (checking) return;
+      checking = true;
+      try {
+        await rehydrateAuth();
+        if (!(getAccessToken() || '').trim()) clearSessionAndRedirect();
+      } finally {
+        checking = false;
+      }
+    };
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        // Hide the restored page at once; show it again only once the sign-in checks out.
+        document.documentElement.style.visibility = 'hidden';
+        void recheck().finally(() => {
+          document.documentElement.style.visibility = '';
+        });
+      }
+    };
+    const onPopState = () => void recheck();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void recheck();
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === null || (e.key === 'tenant' && e.newValue === null)) void recheck();
+    };
+    window.addEventListener('pageshow', onPageShow);
+    window.addEventListener('popstate', onPopState);
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('pageshow', onPageShow);
+      window.removeEventListener('popstate', onPopState);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('storage', onStorage);
     };
   }, []);
 

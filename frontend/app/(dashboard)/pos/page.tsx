@@ -1758,15 +1758,21 @@ function PosTill() {
       return;
     }
     const receiptJobs = (jobs || []).filter((job) => job.purpose === 'customer_receipt');
-    if (!receiptJobs.length) return;
-    if (receiptJobs.some((job) => job.status === 'printed')) return;
+    // A network printer or print agent already has this receipt: do not print it twice.
+    if (
+      receiptJobs.some((job) =>
+        ['printed', 'queued', 'claimed', 'printing'].includes(String(job.status || ''))
+      )
+    ) {
+      return;
+    }
+    // Otherwise print in the browser straight after Pay, also when no receipt printer is set up.
     const browserJob = receiptJobs.find((job) => job.status === 'browser_pending' && job.id);
-    if (!browserJob?.id) return;
     try {
       const detail = await api(`/pos/sales/${saleId}/receipt?paper=${encodeURIComponent(paper)}`);
       const payload = detail.data || {};
       const opened = openReceiptPrintWindow(payload.html, payload.text || '');
-      if (!opened) return;
+      if (!opened || !browserJob?.id) return;
       await api(`/printers/jobs/${browserJob.id}/browser-ack`, {
         method: 'POST',
         body: JSON.stringify({ status: 'printed' }),

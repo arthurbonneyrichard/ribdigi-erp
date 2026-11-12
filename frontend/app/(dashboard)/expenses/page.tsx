@@ -2062,7 +2062,8 @@ export default function Page() {
               aria-label="Expense OCR reference"
             />
             <input
-              value={ocrDraft.expense_date}
+              type="date"
+              value={String(ocrDraft.expense_date || '').slice(0, 10)}
               onChange={(e) => setOcrDraft({ ...ocrDraft, expense_date: e.target.value })}
               placeholder="Date YYYY-MM-DD"
               aria-label="Expense OCR date"

@@ -1938,7 +1938,7 @@ export default function Page() {
               />
               <input
                 aria-label="Purchase request required date"
-                type="text"
+                type="date"
                 placeholder="YYYY-MM-DD"
                 title="Required by date (optional)"
                 value={prRequiredDate}
@@ -3250,8 +3250,8 @@ export default function Page() {
                               {receivable ? (
                                 <input
                                   aria-label="GRN manufacturing date"
-                                  style={{ width: 120 }}
-                                  type="text"
+                                  style={{ width: 150 }}
+                                  type="date"
                                   placeholder="YYYY-MM-DD"
                                   title="Manufacturing date (optional)"
                                   value={draft.mfg}
@@ -3270,8 +3270,8 @@ export default function Page() {
                               {receivable ? (
                                 <input
                                   aria-label="GRN expiry date"
-                                  style={{ width: 120 }}
-                                  type="text"
+                                  style={{ width: 150 }}
+                                  type="date"
                                   placeholder="YYYY-MM-DD"
                                   title="Expiry date (optional)"
                                   value={draft.expiry}
@@ -3536,7 +3536,7 @@ export default function Page() {
                   />
                   <input
                     aria-label="PO amend due date"
-                    type="text"
+                    type="date"
                     placeholder="YYYY-MM-DD"
                     title="Due date (optional; leave blank to keep the current date)"
                     value={amendDueDate}
@@ -4434,7 +4434,8 @@ export default function Page() {
                 />
                 <input
                   aria-label="Purchase invoice OCR date"
-                  value={ocrDraft.invoice_date}
+                  type="date"
+                  value={String(ocrDraft.invoice_date || '').slice(0, 10)}
                   onChange={(e) => setOcrDraft({ ...ocrDraft, invoice_date: e.target.value })}
                   placeholder="Invoice date YYYY-MM-DD"
                 />

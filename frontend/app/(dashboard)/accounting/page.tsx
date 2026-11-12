@@ -1232,6 +1232,7 @@ export default function Page() {
             </p>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <input
+                type="date"
                 value={closeThrough}
                 onChange={(e) => setCloseThrough(e.target.value)}
                 placeholder="Through date YYYY-MM-DD"
@@ -1281,6 +1282,7 @@ export default function Page() {
                 title="Optional reference"
               />
               <input
+                type="date"
                 value={entryDate}
                 onChange={(e) => setEntryDate(e.target.value)}
                 placeholder="Entry date YYYY-MM-DD (optional)"

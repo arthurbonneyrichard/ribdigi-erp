@@ -1204,7 +1204,7 @@ export default function PlatformBillingPage() {
               <span>Start date</span>
               <input
                 aria-label="Subscription start date"
-                type="text"
+                type="date"
                 placeholder="YYYY-MM-DD (blank = now)"
                 value={startAt}
                 onChange={(event) => setStartAt(event.target.value)}

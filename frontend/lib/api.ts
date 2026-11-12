@@ -5,6 +5,7 @@ import {
   getAccessTokenSync,
   getRefreshTokenSync,
   hydrateAuth,
+  rehydrateAuth,
   setAuthTokens,
 } from './authStorage';
 import { POS_OPERATOR_HEADER, notePosLockedResponse, tillOperatorToken } from './posLock';
@@ -328,7 +329,7 @@ function attachApiError(
   return err;
 }
 
-export { getAccessTokenSync as getAccessToken, setAuthTokens, hydrateAuth };
+export { getAccessTokenSync as getAccessToken, setAuthTokens, hydrateAuth, rehydrateAuth };
 
 /** Same-origin fetch with auth headers. Use for blobs/PDFs; JSON callers use `api()`. */
 export async function apiFetch(path: string, opts: RequestInit = {}, retryOn401 = true): Promise<Response> {

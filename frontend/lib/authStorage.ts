@@ -129,6 +129,13 @@ export async function hydrateAuth(): Promise<void> {
   return hydratePromise;
 }
 
+/** Read tokens again from storage (e.g. a page restored by the Back button after sign-out elsewhere). */
+export async function rehydrateAuth(): Promise<void> {
+  if (hydratePromise) await hydratePromise.catch(() => undefined);
+  hydrated = false;
+  await hydrateAuth();
+}
+
 export async function setAuthTokens(access: string, refresh?: string | null): Promise<void> {
   accessMem = access || null;
   if (refresh !== undefined) refreshMem = refresh || null;

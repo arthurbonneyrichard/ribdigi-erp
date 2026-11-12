@@ -41,6 +41,9 @@ const themeInit = `(function(){try{var uid=localStorage.getItem('ribdigi.theme.u
 
 const swInit = `(function(){try{if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(function(){})}}catch(e){}})();`;
 
+// Clicking anywhere in a date box opens the calendar, not only the small icon.
+const datePickerInit = `(function(){try{var T={date:1,'datetime-local':1,month:1,week:1};document.addEventListener('click',function(e){var el=e.target;if(!el||el.tagName!=='INPUT'||!T[el.type]||el.disabled||el.readOnly||typeof el.showPicker!=='function')return;try{el.showPicker()}catch(_){}},true)}catch(e){}})();`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -48,6 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preload" as="image" href="/brand/logo-full.png" fetchPriority="high" />
         <script dangerouslySetInnerHTML={{ __html: themeInit }} />
         <script dangerouslySetInnerHTML={{ __html: swInit }} />
+        <script dangerouslySetInnerHTML={{ __html: datePickerInit }} />
         <UmamiScript />
       </head>
       <body>{children}</body>

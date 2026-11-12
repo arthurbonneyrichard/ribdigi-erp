@@ -1327,7 +1327,7 @@ export default function PlatformTenantsPage() {
                     <span>Start date</span>
                     <input
                       aria-label="Subscription start date"
-                      type="text"
+                      type="date"
                       placeholder="YYYY-MM-DD (blank = now)"
                       title="Start date (optional; today if blank)"
                       value={subForm.start_at}
