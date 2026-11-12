@@ -138,7 +138,7 @@ function printSlip(slip: Row, period: string) {
   if (!page) return;
   const line = (label: string, value: unknown) => `<tr><td>${label}</td><td style="text-align:right">${money(value)}</td></tr>`;
   page.document.write(
-    `<html><body style="font-family:sans-serif"><h3>Payslip ${safe(period)}</h3><p>${safe(slip.employee_name)} · ${safe(slip.employee_number)}<br/>${safe(slip.job_title)}</p><table style="width:100%">${line('Basic', slip.basic)}${line('Allowances', slip.allowances)}${line('Bonus', slip.bonus)}${Number(slip.arrears_basic) ? line('Back pay of basic', slip.arrears_basic) : ''}${Number(slip.adjustment) ? line('Correction', slip.adjustment) : ''}${Number(slip.overtime) ? line('Overtime', slip.overtime) : ''}${Number(slip.commission) ? line('Commission', slip.commission) : ''}${Number(slip.tips) ? line('Tips', slip.tips) : ''}${line('Unpaid days', -Number(slip.unpaid_deduction))}${line('Gross', slip.gross)}${line('SSNIT', -Number(slip.ssnit_employee))}${Number(slip.tier3) > 0 ? line('Tier 3 pension', -Number(slip.tier3)) : ''}${Number(slip.loan_deduction) > 0 ? line('Loan repayment', -Number(slip.loan_deduction)) : ''}${line('PAYE', -Number(slip.paye))}${line('Other deductions', -Number(slip.other_deductions))}</table><h3>Net pay ${money(slip.net)}</h3></body></html>`,
+    `<html><body style="font-family:sans-serif"><h3>Payslip ${safe(period)}</h3><p>${safe(slip.employee_name)} · ${safe(slip.employee_number)}<br/>${safe(slip.job_title)}</p><table style="width:100%">${line('Basic', slip.basic)}${line('Allowances', slip.allowances)}${line('Bonus', slip.bonus)}${Number(slip.arrears_basic) ? line('Back pay of basic', slip.arrears_basic) : ''}${Number(slip.adjustment) ? line('Correction', slip.adjustment) : ''}${Number(slip.overtime) ? line('Overtime', slip.overtime) : ''}${Number(slip.commission) ? line('Commission', slip.commission) : ''}${Number(slip.tips) ? line('Tips', slip.tips) : ''}${line('Unpaid days', -Number(slip.unpaid_deduction))}${line('Gross', slip.gross)}${line('SSNIT', -Number(slip.ssnit_employee))}${Number(slip.tier3) > 0 ? line('Tier 3 pension', -Number(slip.tier3)) : ''}${Number(slip.loan_deduction) > 0 ? line('Loan repayment', -Number(slip.loan_deduction)) : ''}${line('PAYE', -Number(slip.paye))}${Number(slip.overtime_tax) ? line('of which overtime tax', -Number(slip.overtime_tax)) : ''}${line('Other deductions', -Number(slip.other_deductions))}</table><h3>Net pay ${money(slip.net)}</h3></body></html>`,
   );
   page.document.close();
   page.print();
@@ -161,6 +161,11 @@ const RATE_BLANK = {
   insurable_cap: '',
   tier3_relief_percent: '16.5',
   rounding: 'half_up',
+  overtime_junior_cap: '',
+  overtime_low_rate: '5',
+  overtime_high_rate: '10',
+  overtime_low_share_percent: '50',
+  minimum_daily_wage: '',
   source_note: '',
 };
 
@@ -267,6 +272,11 @@ function HrmDesk() {
           tier2_percent: String(rt?.[0]?.tier2_percent ?? '0'),
           insurable_cap: rt?.[0]?.insurable_cap == null ? '' : String(rt[0].insurable_cap),
           tier3_relief_percent: String(rt?.[0]?.tier3_relief_percent ?? '16.5'),
+          overtime_junior_cap: rt?.[0]?.overtime_junior_cap == null ? '' : String(rt[0].overtime_junior_cap),
+          overtime_low_rate: String(rt?.[0]?.overtime_low_rate ?? '5'),
+          overtime_high_rate: String(rt?.[0]?.overtime_high_rate ?? '10'),
+          overtime_low_share_percent: String(rt?.[0]?.overtime_low_share_percent ?? '50'),
+          minimum_daily_wage: rt?.[0]?.minimum_daily_wage == null ? '' : String(rt[0].minimum_daily_wage),
           rounding: rt?.[0]?.rounding || 'half_up',
         });
       }
@@ -404,6 +414,11 @@ function HrmDesk() {
         insurable_cap: String(rateForm.insurable_cap || '').trim() ? num(rateForm.insurable_cap) : null,
         tier3_relief_percent: num(rateForm.tier3_relief_percent || 0),
         rounding: rateForm.rounding,
+        overtime_junior_cap: String(rateForm.overtime_junior_cap || '').trim() ? num(rateForm.overtime_junior_cap) : null,
+        overtime_low_rate: num(rateForm.overtime_low_rate || 0),
+        overtime_high_rate: num(rateForm.overtime_high_rate || 0),
+        overtime_low_share_percent: num(rateForm.overtime_low_share_percent || 0),
+        minimum_daily_wage: String(rateForm.minimum_daily_wage || '').trim() ? num(rateForm.minimum_daily_wage) : null,
         source_note: String(rateForm.source_note || '').trim() || null,
         paye_bands: rateBands.map((b) => ({ width: b.width == null ? null : num(b.width), rate: num(b.rate) })),
       },
@@ -958,7 +973,11 @@ function HrmDesk() {
                   <tbody>
                     {r.slips.map((s: Row) => (
                       <tr key={s.id}>
-                        <td>{s.employee_name}{s.unpaid_days ? <><br /><small className="hr-muted">{s.unpaid_days} unpaid days</small></> : null}</td>
+                        <td>
+                          {s.employee_name}{s.unpaid_days ? <><br /><small className="hr-muted">{s.unpaid_days} unpaid days</small></> : null}
+                          {(s.warnings || []).includes('below_minimum_wage') ? <><br /><small className="hr-bad">Under the daily minimum wage. Raise the basic before approving.</small></> : null}
+                          {Number(s.overtime_tax) ? <><br /><small className="hr-muted">Overtime tax {money(s.overtime_tax)} (in PAYE)</small></> : null}
+                        </td>
                         <td className="hr-num">{money(s.gross)}</td><td className="hr-num">{money(s.ssnit_employee)}</td><td className="hr-num">{money(s.paye)}</td><td className="hr-num">{money(s.other_deductions)}</td><td className="hr-num">{money(s.net)}</td>
                         <td>
                           <div className="hr-row">
@@ -1175,6 +1194,11 @@ function HrmDesk() {
             <label><span>Tier 2 % of insurable pay</span><input type="number" min="0" step="0.1" value={rateForm.tier2_percent} onChange={(e) => setRateForm({ ...rateForm, tier2_percent: e.target.value })} aria-label="Tier 2 percent" /></label>
             <label><span>SSNIT cap a month (blank = none)</span><input type="number" min="0" value={rateForm.insurable_cap} onChange={(e) => setRateForm({ ...rateForm, insurable_cap: e.target.value })} aria-label="SSNIT maximum insurable earnings" /></label>
             <label><span>Tier 3 tax relief %</span><input type="number" min="0" step="0.5" value={rateForm.tier3_relief_percent} onChange={(e) => setRateForm({ ...rateForm, tier3_relief_percent: e.target.value })} aria-label="Tier 3 tax relief percent" /></label>
+            <label><span>Junior overtime: basic up to (a month, blank = off)</span><input type="number" min="0" value={rateForm.overtime_junior_cap} onChange={(e) => setRateForm({ ...rateForm, overtime_junior_cap: e.target.value })} aria-label="Junior overtime basic limit" /></label>
+            <label><span>Overtime tax % (first part)</span><input type="number" min="0" step="0.5" value={rateForm.overtime_low_rate} onChange={(e) => setRateForm({ ...rateForm, overtime_low_rate: e.target.value })} aria-label="Overtime tax low rate" /></label>
+            <label><span>First part: overtime up to % of basic</span><input type="number" min="0" step="1" value={rateForm.overtime_low_share_percent} onChange={(e) => setRateForm({ ...rateForm, overtime_low_share_percent: e.target.value })} aria-label="Overtime low part share" /></label>
+            <label><span>Overtime tax % (the rest)</span><input type="number" min="0" step="0.5" value={rateForm.overtime_high_rate} onChange={(e) => setRateForm({ ...rateForm, overtime_high_rate: e.target.value })} aria-label="Overtime tax high rate" /></label>
+            <label><span>Daily minimum wage (blank = no check)</span><input type="number" min="0" step="0.01" value={rateForm.minimum_daily_wage} onChange={(e) => setRateForm({ ...rateForm, minimum_daily_wage: e.target.value })} aria-label="Daily minimum wage" /></label>
             <label>
               <span>Rounding</span>
               <select value={rateForm.rounding} onChange={(e) => setRateForm({ ...rateForm, rounding: e.target.value })} aria-label="Payroll rounding">

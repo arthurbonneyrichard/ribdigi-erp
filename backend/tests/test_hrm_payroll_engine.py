@@ -116,3 +116,29 @@ def test_arrears_attract_ssnit_and_corrections_do_not():
     assert out.taxable == Decimal("1234.00")
     with pytest.raises(PayrollError):
         compute_payslip(PayslipInput(basic=Decimal("100"), adjustment=Decimal("-500")), rates())
+
+
+def test_junior_overtime_is_taxed_on_its_own():
+    # Basic 1,200 (under a 1,500 cap), overtime 800. Low part = 50% of 1,200 = 600 at 5% = 30;
+    # the other 200 at 10% = 20. Overtime tax 50, outside the PAYE bands.
+    junior = rates(overtime_junior_cap=Decimal("1500"))
+    out = compute_payslip(PayslipInput(basic=Decimal("1200"), overtime=Decimal("800")), junior)
+    assert out.overtime_tax == Decimal("50.00")
+    assert out.taxable == Decimal("1134.00")  # 1,200 - 66 SSNIT; overtime left out
+    plain = compute_payslip(PayslipInput(basic=Decimal("1200")), junior)
+    assert out.paye == plain.paye + Decimal("50.00")
+    assert out.gross == Decimal("2000")
+
+
+def test_overtime_is_ordinary_pay_without_the_rule_or_above_the_cap():
+    off = compute_payslip(PayslipInput(basic=Decimal("1200"), overtime=Decimal("800")), rates())
+    assert off.overtime_tax == 0 and off.taxable == Decimal("1934.00")
+    senior = compute_payslip(PayslipInput(basic=Decimal("3000"), overtime=Decimal("800")), rates(overtime_junior_cap=Decimal("1500")))
+    assert senior.overtime_tax == 0 and senior.taxable == Decimal("3635.00")
+
+
+def test_minimum_wage_flag():
+    floor = rates(minimum_daily_wage=Decimal("20"))
+    assert compute_payslip(PayslipInput(basic=Decimal("400"), working_days=22), floor).warnings == ["below_minimum_wage"]
+    assert compute_payslip(PayslipInput(basic=Decimal("440"), working_days=22), floor).warnings == []
+    assert compute_payslip(PayslipInput(basic=Decimal("400")), rates()).warnings == []

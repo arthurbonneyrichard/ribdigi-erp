@@ -60,6 +60,7 @@
 .main .hrm .hr-spread{justify-content:space-between;width:100%}
 .main .hrm .hr-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .main .hrm .hr-muted{color:var(--hr-muted)}
+.main .hrm .hr-bad{color:var(--hr-bad);font-weight:700}
 .main .hrm .hr-small{font-size:13px;margin:6px 0}
 .main .hrm .hr-big{font-size:26px;font-weight:800;margin:4px 0;letter-spacing:-.02em}
 .main .hrm .hr-span2{grid-column:span 2}

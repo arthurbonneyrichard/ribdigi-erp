@@ -183,6 +183,13 @@ class StatutoryRateBody(BaseModel):
     tier3_relief_percent: Percent = Decimal("16.5")
     paye_bands: list[RateBand] = Field(min_length=1, max_length=20)
     rounding: Literal["half_up", "down"] = "half_up"
+    # Junior-staff overtime tax (GRA): monthly earned-basic limit; omit to tax overtime as ordinary pay.
+    overtime_junior_cap: Annotated[Decimal, Field(gt=0, max_digits=14, decimal_places=2)] | None = None
+    overtime_low_rate: Percent = Decimal("5")
+    overtime_high_rate: Percent = Decimal("10")
+    overtime_low_share_percent: Percent = Decimal("50")
+    # National daily minimum wage; omit for no check.
+    minimum_daily_wage: Annotated[Decimal, Field(gt=0, max_digits=14, decimal_places=2)] | None = None
     source_note: Annotated[str, Field(min_length=3, max_length=255)] | None = None
 
 

@@ -64,6 +64,12 @@ Payroll arithmetic is Decimal throughout (`backend/app/hrm_payroll.py`, no float
 
 **The figures are not checked against GRA or SSNIT by the system.** The desk does not file with GRA or SSNIT.
 
+## Junior overtime tax and minimum wage
+
+Both live on the dated rates row and are off until entered (check the current GRA and National Tripartite Committee figures with an accountant):
+- **Junior overtime:** when "basic up to" is set, staff whose earned basic for the month is at or under it have their approved overtime taxed on its own, not through the PAYE bands: the first part (up to a % of basic, default 50%) at the low rate (default 5%), the rest at the high rate (default 10%). The overtime tax is included in PAYE for GRA and shown on the payslip.
+- **Minimum wage:** with a daily minimum wage set, a payslip whose basic ÷ working days is under it is flagged, and the payroll cannot be approved (**409** `BELOW_MINIMUM_WAGE`) until the basic is raised.
+
 ## Salary changes and corrections
 
 - **Change salary** (People, `GET|POST /hrm/employees/{id}/salary`): new basic and allowances from a date, with a reason. Payroll uses the change in force on the month's first day (a mid-month change counts from the next month). The history stays.

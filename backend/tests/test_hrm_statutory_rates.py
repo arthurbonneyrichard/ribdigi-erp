@@ -122,3 +122,17 @@ async def test_without_dated_rates_payroll_is_unchanged(client, db_session):
     assert slip["ssnit_employee"] == 165 and slip["tier2"] == 0 and slip["tier3"] == 0
     assert slip["rates_used"]["rate_id"] is None
     assert run["statutory_rate_id"] is None
+
+
+async def test_minimum_wage_blocks_approval_until_pay_is_fixed(client, db_session):
+    ac, seed = client
+    h = await _admin(ac, seed, db_session)
+    assert (await ac.post("/api/v1/hrm/statutory-rates", headers=h, json=_rate("2026-01-01", minimum_daily_wage=20, overtime_junior_cap=1500))).status_code == 200
+    low = await _person(ac, h, basic=300, allowances=0)
+    run = (await ac.post("/api/v1/hrm/payroll", headers=h, json={"period": "2026-02"})).json()["data"]
+    slip = next(s for s in run["slips"] if s["employee_id"] == low["id"])
+    assert slip["warnings"] == ["below_minimum_wage"]
+    blocked = await ac.post(f"/api/v1/hrm/payroll/{run['id']}/approve", headers=h)
+    assert blocked.status_code == 409 and blocked.json()["detail"]["code"] == "BELOW_MINIMUM_WAGE"
+    rates = (await ac.get("/api/v1/hrm/statutory-rates", headers=h)).json()["data"]
+    assert rates[0]["minimum_daily_wage"] == 20 and rates[0]["overtime_junior_cap"] == 1500

@@ -238,6 +238,13 @@ def _rates_from_row(row: m.HrmStatutoryRate) -> engine.StatutoryRates:
         insurable_cap=engine.D(row.insurable_cap) if row.insurable_cap is not None else None,
         tier3_relief_percent=engine.D(row.tier3_relief_percent),
         rounding=row.rounding or "half_up",
+        overtime_junior_cap=engine.D(row.overtime_junior_cap) if getattr(row, "overtime_junior_cap", None) is not None else None,
+        overtime_low_rate=engine.D(getattr(row, "overtime_low_rate", 5) if getattr(row, "overtime_low_rate", None) is not None else 5),
+        overtime_high_rate=engine.D(getattr(row, "overtime_high_rate", 10) if getattr(row, "overtime_high_rate", None) is not None else 10),
+        overtime_low_share_percent=engine.D(
+            getattr(row, "overtime_low_share_percent", 50) if getattr(row, "overtime_low_share_percent", None) is not None else 50
+        ),
+        minimum_daily_wage=engine.D(row.minimum_daily_wage) if getattr(row, "minimum_daily_wage", None) is not None else None,
         rate_id=row.id,
         effective_from=row.effective_from.isoformat() if row.effective_from else None,
     )
@@ -301,6 +308,11 @@ def serialize_rate(row: m.HrmStatutoryRate) -> dict:
         "tier3_relief_percent": money_json(row.tier3_relief_percent),
         "paye_bands": row.paye_bands,
         "rounding": row.rounding,
+        "overtime_junior_cap": money_json(row.overtime_junior_cap) if row.overtime_junior_cap is not None else None,
+        "overtime_low_rate": money_json(row.overtime_low_rate if row.overtime_low_rate is not None else 5),
+        "overtime_high_rate": money_json(row.overtime_high_rate if row.overtime_high_rate is not None else 10),
+        "overtime_low_share_percent": money_json(row.overtime_low_share_percent if row.overtime_low_share_percent is not None else 50),
+        "minimum_daily_wage": money_json(row.minimum_daily_wage) if row.minimum_daily_wage is not None else None,
         "source_note": row.source_note,
         "created_at": row.created_at.isoformat() if row.created_at else None,
     }
@@ -348,6 +360,11 @@ async def add_rate(db: AsyncSession, tenant_id: str, payload, *, user_id) -> m.H
         tier3_relief_percent=payload.tier3_relief_percent,
         paye_bands=[{"width": (str(b["width"]) if b["width"] is not None else None), "rate": str(b["rate"])} for b in bands],
         rounding=payload.rounding,
+        overtime_junior_cap=getattr(payload, "overtime_junior_cap", None),
+        overtime_low_rate=getattr(payload, "overtime_low_rate", 5),
+        overtime_high_rate=getattr(payload, "overtime_high_rate", 10),
+        overtime_low_share_percent=getattr(payload, "overtime_low_share_percent", 50),
+        minimum_daily_wage=getattr(payload, "minimum_daily_wage", None),
         source_note=optional_honest_narrative(payload.source_note, label="source", max_length=255),
         created_by=user_id,
     )
@@ -870,10 +887,11 @@ def _work_out(slip: m.HrmPayslip, settings: m.HrmSettings, rates: engine.Statuto
                 unpaid_days=int(slip.unpaid_days or 0),
                 working_days=int(settings.working_days_per_month),
                 tier3_percent=engine.D(slip.tier3_percent),
+                # Approved overtime: taxable, no SSNIT; junior staff may get the separate overtime tax.
+                overtime=engine.D(getattr(slip, "overtime", 0)),
                 arrears_basic=engine.D(getattr(slip, "arrears_basic", 0)),
-                # Approved overtime is a taxable earning without SSNIT, like a correction.
+                # Commission and tips are taxable earnings without SSNIT, like a correction.
                 adjustment=engine.D(getattr(slip, "adjustment", 0))
-                + engine.D(getattr(slip, "overtime", 0))
                 + engine.D(getattr(slip, "commission", 0))
                 + engine.D(getattr(slip, "tips", 0)),
             ),
@@ -905,6 +923,8 @@ def _work_out(slip: m.HrmPayslip, settings: m.HrmSettings, rates: engine.Statuto
     slip.tier3 = out.tier3
     slip.tier3_relief = out.tier3_relief
     slip.net = out.net
+    slip.overtime_tax = out.overtime_tax
+    slip.warnings = list(out.warnings) or None
     slip.rates_used = rates.snapshot()
 
 
@@ -1059,6 +1079,16 @@ async def approve_run(db: AsyncSession, tenant_id: str, run_id: str, *, user_id)
             detail={"code": "PAYROLL_SECOND_PERSON", "message": "Someone other than the person who drew up this payroll must approve it."},
         )
     slips = await _slips(db, run.id)
+    under = [s for s in slips if "below_minimum_wage" in (s.warnings or [])]
+    if under:
+        names = []
+        for s in under:
+            person = await db.get(m.HrmEmployee, s.employee_id)
+            names.append(person.full_name if person else s.employee_id)
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "BELOW_MINIMUM_WAGE", "message": "Pay is under the daily minimum wage for: " + ", ".join(names)},
+        )
     _totals(run, slips)
     description = f"Payroll {run.period}"
     other = _money(run.other_deductions)
@@ -1182,6 +1212,8 @@ def _slip_dict(slip: m.HrmPayslip, employee: m.HrmEmployee | None) -> dict:
         "overtime": _money(getattr(slip, "overtime", 0)),
         "commission": _money(getattr(slip, "commission", 0)),
         "tips": _money(getattr(slip, "tips", 0)),
+        "overtime_tax": _money(getattr(slip, "overtime_tax", 0)),
+        "warnings": list(getattr(slip, "warnings", None) or []),
         "rates_used": slip.rates_used,
         "note": slip.note,
     }

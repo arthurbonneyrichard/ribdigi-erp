@@ -4659,6 +4659,13 @@ class HrmStatutoryRate(Base):
     tier3_relief_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=16.5)
     paye_bands: Mapped[list] = mapped_column(JSON)
     rounding: Mapped[str] = mapped_column(String(16), default="half_up")
+    # Junior-staff overtime tax: on for staff whose earned basic is at or under this a month (NULL = off).
+    overtime_junior_cap: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    overtime_low_rate: Mapped[float] = mapped_column(Numeric(6, 3), default=5, server_default="5")
+    overtime_high_rate: Mapped[float] = mapped_column(Numeric(6, 3), default=10, server_default="10")
+    overtime_low_share_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=50, server_default="50")
+    # National daily minimum wage; a daily rate under it is flagged and blocks approval (NULL = no check).
+    minimum_daily_wage: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     source_note: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -4802,6 +4809,10 @@ class HrmPayslip(Base):
     commission: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     # Restaurant tips shared to this person and paid on this payroll (held in 2187, not a wage cost).
     tips: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    # Tax on overtime under the junior-staff rule (already inside paye).
+    overtime_tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    # Checks the slip failed, e.g. ["below_minimum_wage"].
+    warnings: Mapped[list | None] = mapped_column(JSON, nullable=True)
     # The rates this slip was worked out with, kept so it can be explained later.
     rates_used: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     note: Mapped[str | None] = mapped_column(String(255), nullable=True)
