@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import DeskIcon from '../../../../components/DeskIcon';
 import PageHeader from '../../../../components/PageHeader';
 import { api } from '../../../../lib/api';
 import { billingGatewayLabel } from '../../../../lib/billingStatus';
@@ -224,7 +225,6 @@ export default function SubscriptionBillingPage() {
     const status = String(row.status || '').trim().toLowerCase();
     return status === 'open' || status === 'pending' || status === 'failed' || status === 'past_due';
   });
-  const recordedInvoice = openInvoice || invoices[0];
 
   async function recordConsent() {
     setError('');
@@ -310,6 +310,39 @@ export default function SubscriptionBillingPage() {
     }
   }
 
+  const statusKey = companyStatusKey(account);
+  const agreed = Boolean(account?.consent_at);
+  const cardSaved = Boolean(account?.authorization_present);
+  const facts = [
+    {
+      icon: 'calendar',
+      label: 'Next renewal',
+      value: showWhen(account?.next_renewal_at, prefs),
+      note: account?.auto_renew ? 'Charged to your saved card' : 'Renewal is off',
+    },
+    {
+      icon: 'calendarCheck',
+      label: 'Paid through',
+      value: showWhen(account?.paid_through, prefs),
+      note:
+        account?.trial_ends_at && statusKey === 'trial'
+          ? `Trial ends ${showWhen(account.trial_ends_at, prefs)}`
+          : 'Access continues to this date',
+    },
+    {
+      icon: 'clock',
+      label: 'Automatic renewal',
+      value: account?.auto_renew ? 'On' : 'Off',
+      note: agreed ? `Agreed ${showWhen(account?.consent_at, prefs)}` : 'Not agreed yet',
+    },
+    {
+      icon: 'wallet',
+      label: 'Payment method',
+      value: cardSaved ? 'Card saved' : 'Not saved',
+      note: cardSaved && account?.authorization_hint ? `Ending ${account.authorization_hint}` : 'Saved when you pay',
+    },
+  ];
+
   return (
     <main className="page billing-page">
       <PageHeader
@@ -321,160 +354,219 @@ export default function SubscriptionBillingPage() {
             : 'This is your Ribdigi ERP plan. It is separate from payments you take from your own customers.'
         }
       />
-      {error && <p role="alert">{error}</p>}
-      {message && <p>{message}</p>}
-      <section className="card billing-page-card">
-        <h2>Your plan</h2>
-        <div className="billing-page-summary">
-          <div className="billing-page-stat">
-            <p className="billing-page-kicker">Plan</p>
-            <p className="billing-page-value">{assigned?.name || 'Not assigned'}</p>
-          </div>
-          <div className="billing-page-stat">
-            <p className="billing-page-kicker">Amount</p>
-            <p className="billing-page-value">
-              {hasAmount ? (
+      {error && (
+        <p className="billing-page-banner billing-page-banner-error" role="alert">
+          <DeskIcon name="alert" size={18} />
+          <span>{error}</span>
+        </p>
+      )}
+      {message && (
+        <p className="billing-page-banner billing-page-banner-ok" role="status">
+          <DeskIcon name="check" size={18} />
+          <span>{message}</span>
+        </p>
+      )}
+
+      <section className="billing-page-hero" aria-label="Your plan">
+        <div className="billing-page-hero-main">
+          <p className="billing-page-kicker">Your plan</p>
+          <h2 className="billing-page-plan-name">{assigned?.name || 'No plan assigned'}</h2>
+          <p className="billing-page-price">
+            {hasAmount ? (
+              <>
                 <MoneyRead amount={assigned.amount} currency={assigned.currency} prefs={prefs} />
-              ) : (
-                '—'
-              )}
-            </p>
-          </div>
-          <div className="billing-page-stat">
-            <p className="billing-page-kicker">Term</p>
-            <p className="billing-page-value">{assigned ? termWord(assigned.interval) : '—'}</p>
-          </div>
-          <div className="billing-page-stat">
-            <p className="billing-page-kicker">Status</p>
-            <p className="billing-page-value">
-              <span className={`billing-page-status ${statusTone(companyStatusKey(account))}`}>
-                {companyStatusLabel(account)}
-              </span>
-            </p>
+                <span className="billing-page-per"> / {periodWord(assigned.interval)}</span>
+              </>
+            ) : (
+              <span className="billing-page-per">Amount not confirmed yet</span>
+            )}
+          </p>
+          <div className="billing-page-hero-tags">
+            <span className={`billing-page-status ${statusTone(statusKey)}`}>{companyStatusLabel(account)}</span>
+            {assigned && <span className="billing-page-tag">{termWord(assigned.interval)}</span>}
           </div>
         </div>
-        <dl className="billing-facts billing-page-details">
-          <dt>Trial ends</dt>
-          <dd>{showWhen(account?.trial_ends_at, prefs)}</dd>
-          <dt>Next renewal</dt>
-          <dd>{showWhen(account?.next_renewal_at, prefs)}</dd>
-          <dt>Paid through</dt>
-          <dd>{showWhen(account?.paid_through, prefs)}</dd>
-          <dt>Automatic renewal</dt>
-          <dd>{account?.auto_renew ? 'On' : 'Off'}</dd>
-          <dt>Payment method</dt>
-          <dd>
-            {account?.authorization_present
-              ? `Saved${account.authorization_hint ? ` (${account.authorization_hint})` : ''}`
-              : 'Not saved'}
-          </dd>
-          <dt>Renewal agreement</dt>
-          <dd>{account?.consent_at ? `Agreed ${showWhen(account.consent_at, prefs)}` : 'Not agreed'}</dd>
-        </dl>
-        {account?.access_note && <p>{account.access_note}</p>}
-        {!canBill && (
-          <p role="status">
-            {!assigned
-              ? 'Ask Ribdigi House to assign a plan and amount for this company.'
-              : hasAmount
-                ? 'Ask Ribdigi House to finish assigning this renewal plan before you agree.'
-                : `${assigned.name} is this company's plan. Ask Ribdigi House to confirm the amount before you agree to renewal.`}
-          </p>
+        {(account?.access_note || !canBill) && (
+          <div className="billing-page-hero-side">
+            {account?.access_note && <p className="billing-page-hero-note">{account.access_note}</p>}
+            {!canBill && (
+              <p className="billing-page-hero-note" role="status">
+                {!assigned
+                  ? 'Ask Ribdigi House to assign a plan and amount for this company.'
+                  : hasAmount
+                    ? 'Ask Ribdigi House to finish assigning this renewal plan before you agree.'
+                    : `${assigned.name} is this company's plan. Ask Ribdigi House to confirm the amount before you agree to renewal.`}
+              </p>
+            )}
+          </div>
         )}
       </section>
-      <section className="card billing-page-card">
-        <h2>What is due</h2>
+
+      <div className="billing-page-facts" role="list" aria-label="Subscription details">
+        {facts.map((fact) => (
+          <div className="billing-page-fact" role="listitem" key={fact.label}>
+            <span className="billing-page-fact-ico">
+              <DeskIcon name={fact.icon} size={20} />
+            </span>
+            <div className="billing-page-fact-body">
+              <p className="billing-page-kicker">{fact.label}</p>
+              <p className="billing-page-value">{fact.value}</p>
+              <p className="billing-page-fact-note">{fact.note}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <section className="card billing-page-card" aria-label="Pay for your plan">
+        <h2>Pay for your plan</h2>
+        <p className="billing-page-plan-line" aria-label="Subscription plan">
+          {assigned
+            ? hasAmount
+              ? `${assigned.name} at ${price}.`
+              : `${assigned.name}. The amount is not confirmed yet.`
+            : 'Ask Ribdigi House to assign a plan and amount for this company.'}
+        </p>
+        <ol className="billing-page-steps">
+          <li className={`billing-page-step${agreed ? ' is-done' : ''}`}>
+            <span className="billing-page-step-num" aria-hidden="true">
+              {agreed ? <DeskIcon name="check" size={16} /> : '1'}
+            </span>
+            <div className="billing-page-step-body">
+              <h3>Agree to automatic renewal</h3>
+              <label className="billing-page-consent">
+                <input
+                  aria-label="Consent to automatic renewal"
+                  type="checkbox"
+                  checked={consent}
+                  onChange={(event) => setConsent(event.target.checked)}
+                />
+                <span>I agree to renew this plan automatically at the amount shown until I turn renewal off.</span>
+              </label>
+              <div className="billing-page-actions">
+                <button
+                  aria-label="Record renewal consent"
+                  className="btn-ok"
+                  type="button"
+                  disabled={!consent || !canBill}
+                  onClick={recordConsent}
+                >
+                  {agreed ? 'Agreed' : 'Agree to renewal'}
+                </button>
+              </div>
+            </div>
+          </li>
+          <li className={`billing-page-step${cardSaved ? ' is-done' : ''}${!agreed ? ' is-waiting' : ''}`}>
+            <span className="billing-page-step-num" aria-hidden="true">
+              {cardSaved ? <DeskIcon name="check" size={16} /> : '2'}
+            </span>
+            <div className="billing-page-step-body">
+              <h3>Pay now</h3>
+              <p className="billing-page-honesty">
+                {`Payment gateway: ${billingGatewayLabel(account?.provider?.provider)}. ${HONESTY}`}
+              </p>
+              <div className="billing-page-pay-actions">
+                <button
+                  aria-label="Pay now"
+                  className="btn-primary billing-page-pay-btn"
+                  type="button"
+                  disabled={!account?.consent_at || !canBill}
+                  onClick={startCheckout}
+                >
+                  <DeskIcon name="wallet" size={18} />
+                  <span>{cardSaved ? 'Pay now with another card' : 'Pay now and turn on auto-renew'}</span>
+                </button>
+                {sandboxAvailable && (
+                  <button
+                    aria-label="Save sandbox payment method"
+                    type="button"
+                    disabled={!account?.consent_at || !canBill}
+                    onClick={saveSandboxMethod}
+                  >
+                    Save sandbox payment method
+                  </button>
+                )}
+              </div>
+              {!agreed && <p className="billing-page-step-hint">Agree to renewal first, then pay.</p>}
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <section className="card billing-page-card" aria-label="Invoices">
+        <div className="billing-page-card-head">
+          <h2>Invoices</h2>
+          {invoices.length > 0 && (
+            <span className={`billing-page-status ${openInvoice ? 'billing-page-status-grace' : 'billing-page-status-active'}`}>
+              {openInvoice ? 'Payment waiting' : 'All paid'}
+            </span>
+          )}
+        </div>
         {!invoices.length ? (
-          <p className="muted" role="status">Invoices appear here after a renewal is recorded for this company.</p>
+          <div className="billing-page-empty" role="status">
+            <span className="billing-page-fact-ico">
+              <DeskIcon name="receipt" size={22} />
+            </span>
+            <p>Invoices appear here after your first payment or renewal.</p>
+          </div>
         ) : (
           <>
-        <p className="billing-page-lead muted">
-          {openInvoice
-            ? 'An open invoice stays unpaid until the provider confirms it.'
-            : 'Nothing is waiting to be paid. The newest row is the last amount recorded.'}
-        </p>
-        <div className="billing-page-scroll">
-          <table className="billing-page-invoices" aria-label="Subscription invoices">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Description</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Period ends</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoices.map((row) => (
-                <tr key={row.id}>
-                  <td data-label="Date">{showWhen(invoiceWhen(row), prefs)}</td>
-                  <td className="billing-page-desc" data-label="Description">{invoiceDescription(row, assigned?.name)}</td>
-                  <td data-label="Amount">
-                    <MoneyRead amount={row.amount} currency={row.currency} prefs={prefs} />
-                  </td>
-                  <td data-label="Status">
-                    <span className={`billing-page-status ${statusTone(row.status)}`}>{labelStatus(row.status)}</span>
-                  </td>
-                  <td data-label="Period ends">{showWhen(row.period_end, prefs)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            <p className="billing-page-lead">
+              {openInvoice
+                ? 'An open invoice stays unpaid until the provider confirms it.'
+                : 'Nothing is waiting to be paid. The newest row is the last amount recorded.'}
+            </p>
+            <div className="billing-page-scroll">
+              <table className="billing-page-invoices" aria-label="Subscription invoices">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Period ends</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoices.map((row) => (
+                    <tr key={row.id}>
+                      <td data-label="Date">{showWhen(invoiceWhen(row), prefs)}</td>
+                      <td className="billing-page-desc" data-label="Description">
+                        {invoiceDescription(row, assigned?.name)}
+                      </td>
+                      <td data-label="Amount">
+                        <MoneyRead amount={row.amount} currency={row.currency} prefs={prefs} />
+                      </td>
+                      <td data-label="Status">
+                        <span className={`billing-page-status ${statusTone(row.status)}`}>{labelStatus(row.status)}</span>
+                      </td>
+                      <td data-label="Period ends">{showWhen(row.period_end, prefs)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </>
         )}
       </section>
-      <section className="card billing-page-card">
-        <h2>Payment method</h2>
-        {assigned ? (
-          <p className="billing-page-plan-line" aria-label="Subscription plan">
-            {hasAmount ? `${assigned.name} at ${price}.` : `${assigned.name}. The amount is not confirmed yet.`}
+
+      <section className="billing-page-stop" aria-label="Turn off renewal">
+        <div className="billing-page-stop-text">
+          <h2>Turn off renewal</h2>
+          <p>
+            {account?.canceled_at
+              ? `Renewal was turned off on ${showWhen(account.canceled_at, prefs)}. Access continues through ${showWhen(account.paid_through, prefs)}.`
+              : 'Stop future charges. Access stays through the date already paid.'}
           </p>
-        ) : (
-          <p role="status">Ask Ribdigi House to assign a plan and amount for this company.</p>
-        )}
-        <label className="billing-page-consent">
-          <input
-            aria-label="Consent to automatic renewal"
-            type="checkbox"
-            checked={consent}
-            onChange={(event) => setConsent(event.target.checked)}
-          />
-          <span>I agree to renew this plan automatically at the amount shown until I turn renewal off.</span>
-        </label>
-        <div className="billing-page-actions">
-          <button aria-label="Record renewal consent" className="btn-ok" type="button" disabled={!consent || !canBill} onClick={recordConsent}>
-            Agree to renewal
-          </button>
         </div>
-        <div className="billing-page-pay">
-          <p className="billing-page-honesty" role="status">
-            {`Payment gateway: ${billingGatewayLabel(account?.provider?.provider)}. ${HONESTY}`}
-          </p>
-          <div className="billing-page-pay-actions">
-            <button aria-label="Pay now" type="button" disabled={!account?.consent_at || !canBill} onClick={startCheckout}>
-              {account?.authorization_present ? 'Pay now with another card' : 'Pay now and turn on auto-renew'}
-            </button>
-            {sandboxAvailable && (
-              <button
-                aria-label="Save sandbox payment method"
-                type="button"
-                disabled={!account?.consent_at || !canBill}
-                onClick={saveSandboxMethod}
-              >
-                Save sandbox payment method
-              </button>
-            )}
-          </div>
-        </div>
-        <div className="billing-page-stop">
-          {account?.canceled_at && (
-            <p>Renewal was turned off on {showWhen(account.canceled_at, prefs)}. Access continues through {showWhen(account.paid_through, prefs)}.</p>
-          )}
-          <button aria-label="Cancel automatic renewal" className="btn-danger" type="button" disabled={!account?.auto_renew} onClick={cancelRenewal}>
-            Turn off renewal
-          </button>
-        </div>
+        <button
+          aria-label="Cancel automatic renewal"
+          className="btn-danger"
+          type="button"
+          disabled={!account?.auto_renew}
+          onClick={cancelRenewal}
+        >
+          Turn off renewal
+        </button>
       </section>
     </main>
   );
