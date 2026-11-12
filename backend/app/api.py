@@ -466,6 +466,9 @@ api.include_router(hotel_booking_api_mod.public_router)
 from app import support_api as support_api_mod
 
 api.include_router(support_api_mod.router)
+from app import platform_email_api as platform_email_api_mod
+
+api.include_router(platform_email_api_mod.router)
 from app import ecommerce_api as ecommerce_api_mod
 
 api.include_router(ecommerce_api_mod.staff)

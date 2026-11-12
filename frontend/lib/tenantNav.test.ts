@@ -700,6 +700,8 @@ test('software owner sidebar keeps platform console items and role limits', () =
   assert.equal(admin.includes('/platform/support'), true);
   assert.equal(admin.includes('/jobs'), true);
   assert.equal(admin.includes('/platform/reports'), true);
+  assert.equal(admin.includes('/platform/email'), true);
+  assert.equal(owner.includes('/platform/email'), true);
 
   const support = platformNavItemsForRole('platform_support', {
     platform: ['read'],
@@ -715,6 +717,7 @@ test('software owner sidebar keeps platform console items and role limits', () =
   assert.equal(support.includes('/platform/reports'), true);
   assert.equal(support.includes('/jobs'), true);
   assert.equal(support.includes('/platform/billing'), true);
+  assert.equal(support.includes('/platform/email'), false);
 
   const finance = platformNavItemsForRole('platform_finance', {
     platform: ['read'],
@@ -728,6 +731,7 @@ test('software owner sidebar keeps platform console items and role limits', () =
   assert.equal(finance.includes('/platform/staff'), false);
   assert.equal(finance.includes('/platform/support'), false);
   assert.equal(finance.includes('/platform/billing'), true);
+  assert.equal(finance.includes('/platform/email'), false);
   assert.equal(finance.includes('/platform/reports'), true);
   assert.equal(finance.includes('/platform/tenants'), true);
   assert.equal(finance.includes('/jobs'), true);
