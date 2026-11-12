@@ -188,3 +188,15 @@ async def test_notices_reach_staff_until_taken_down(client, db_session):
     assert (await ac.post("/api/v1/hrm/notices", headers=staff, json={"kind": "policy", "title": "Mine", "body": "No"})).status_code == 403
     await ac.post(f"/api/v1/hrm/notices/{n['id']}/retire", headers=h)
     assert (await ac.get("/api/v1/hrm/me/more", headers=staff)).json()["data"]["notices"] == []
+
+
+async def test_dashboard_lists_people_work_coming_due(client, db_session):
+    ac, seed = client
+    h = await _admin(ac, seed, db_session)
+    p = await _person(ac, h)
+    soon = (date.today() + timedelta(days=5)).isoformat()
+    await ac.post("/api/v1/hrm/contracts", headers=h, json={"employee_id": p["id"], "kind": "fixed_term", "starts_on": "2026-01-01", "ends_on": soon})
+    await ac.post("/api/v1/hrm/trainings", headers=h, json={"title": "First aid", "mandatory": True})
+    summary = (await ac.get("/api/v1/hrm/summary", headers=h)).json()["data"]
+    words = " ".join(item.get("text") or item.get("label") or str(item) for item in summary["attention"])
+    assert "contract" in words and "mandatory course" in words

@@ -1149,6 +1149,17 @@ async def summary(db: AsyncSession, tenant_id: str, *, money: bool = True) -> di
     if people and counts["not_marked"] and today.weekday() < 5:
         attention.append(dash.item("info", f"Attendance not marked for {dash.plural(counts['not_marked'], 'person', 'people')} today", "/hrm?tab=attendance"))
     data["attention"] = attention
+    # People work coming due (no money in these, so officers see them too).
+    from app import hrm_people
+
+    alerts = await hrm_people.contract_alerts(db, tenant_id)
+    if alerts["contracts_ending"]:
+        attention.append(dash.item("warning", f"{dash.plural(len(alerts['contracts_ending']), 'contract')} ending within 30 days", "/hrm?tab=contracts"))
+    if alerts["probation_due"]:
+        attention.append(dash.item("warning", f"{dash.plural(len(alerts['probation_due']), 'probation')} to confirm", "/hrm?tab=contracts"))
+    gaps = await hrm_people.training_gaps(db, tenant_id)
+    if gaps:
+        attention.append(dash.item("info", f"{dash.plural(len(gaps), 'mandatory course')} not done or lapsed", "/hrm?tab=training"))
     if money:
         runs = await list_runs(db, tenant_id)
         data["monthly_basic"] = _money(sum(float(p.basic_salary or 0) + float(p.allowances or 0) for p in people))
@@ -1157,8 +1168,14 @@ async def summary(db: AsyncSession, tenant_id: str, *, money: bool = True) -> di
             {"period": r.period, "what": label}
             for r in runs
             if r.status == "approved"
-            for label, paid in (("Salaries", r.staff_paid_at), ("PAYE", r.paye_paid_at), ("SSNIT", r.ssnit_paid_at))
-            if paid is None
+            for label, paid, due in (
+                ("Salaries", r.staff_paid_at, True),
+                ("PAYE", r.paye_paid_at, True),
+                ("SSNIT", r.ssnit_paid_at, True),
+                ("Tier 2 pension", r.tier2_paid_at, engine.D(r.tier2) > 0),
+                ("Tier 3 pension", r.tier3_paid_at, engine.D(r.tier3) > 0),
+            )
+            if due and paid is None
         ]
         by_month = {r.period: float(r.gross or 0) + float(r.ssnit_employer or 0) for r in runs if r.status != "draft"}
         data["trend"] = dash.trend(
@@ -1174,6 +1191,20 @@ async def summary(db: AsyncSession, tenant_id: str, *, money: bool = True) -> di
             attention.append(dash.item("info", f"Payroll for {this_month} not drawn up yet", "/hrm?tab=payroll"))
         if any(r.status == "draft" for r in runs):
             attention.append(dash.item("info", "A payroll draft is waiting for approval", "/hrm?tab=payroll"))
+        waiting_loans = (
+            await db.execute(
+                select(func.count()).select_from(m.HrmLoan).where(m.HrmLoan.tenant_id == tenant_id, m.HrmLoan.status == "pending")
+            )
+        ).scalar_one()
+        if waiting_loans:
+            attention.append(dash.item("warning", f"{dash.plural(int(waiting_loans), 'loan or advance request', 'loan or advance requests')} waiting", "/hrm?tab=loans"))
+        waiting_claims = (
+            await db.execute(
+                select(func.count()).select_from(m.HrmClaim).where(m.HrmClaim.tenant_id == tenant_id, m.HrmClaim.status == "pending")
+            )
+        ).scalar_one()
+        if waiting_claims:
+            attention.append(dash.item("warning", f"{dash.plural(int(waiting_claims), 'expense claim')} waiting", "/hrm?tab=claims"))
     return data
 
 
