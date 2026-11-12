@@ -1,0 +1,484 @@
+/* Email center (software owner console). Uses the console tokens from platform-ui.css. */
+.plat.ec {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.ec-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.main .plat .ec-panel {
+  border-radius: 18px;
+}
+
+.ec-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+
+.ec-panel-head h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--p-ink);
+}
+
+.ec-ico {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 11px;
+  background: #e8f4dd;
+  color: #006b2e;
+}
+
+/* Audience chips */
+.ec-chips {
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.ec-chips legend {
+  margin: 0 0 6px;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--p-muted);
+}
+
+.ec-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.main .plat .ec-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--p-line);
+  background: var(--p-card);
+  color: var(--p-ink);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.main .plat .ec-chip:hover {
+  border-color: #4ab012;
+}
+
+.main .plat .ec-chip.is-on {
+  background: #006b2e;
+  border-color: #006b2e;
+  color: #ffffff;
+}
+
+.ec-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 4px 0 14px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--p-ink);
+}
+
+.ec-check input {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  flex: 0 0 auto;
+  accent-color: #4ab012;
+}
+
+/* Recipient count */
+.ec-count {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #003d1f 0%, #006b2e 100%);
+  color: #ffffff;
+}
+
+.ec-count strong {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ec-count span {
+  color: #d6eecb;
+  font-weight: 700;
+}
+
+.ec-count.is-bad {
+  background: #8f1d1d;
+}
+
+.ec-sample {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--p-line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.ec-sample li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--p-line);
+  font-size: 13px;
+}
+
+.ec-sample li:last-child {
+  border-bottom: 0;
+}
+
+.ec-sample-name {
+  font-weight: 700;
+  color: var(--p-ink);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ec-sample-mail {
+  color: var(--p-muted);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.ec-sample-more {
+  color: var(--p-muted);
+  font-style: italic;
+}
+
+/* Message */
+.ec-field {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 12px;
+  min-width: 0;
+}
+
+.ec-field > span {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--p-muted);
+}
+
+.main .plat .ec-field input,
+.main .plat .ec-field textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--p-line);
+  background: #f7faf3;
+  color: var(--p-ink);
+  font: inherit;
+  line-height: 1.5;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.main .plat .ec-field textarea {
+  resize: vertical;
+  min-height: 200px;
+}
+
+.main .plat .ec-field input:focus,
+.main .plat .ec-field textarea:focus {
+  outline: none;
+  border-color: #4ab012;
+  box-shadow: 0 0 0 3px rgba(74, 176, 18, 0.28);
+  background: var(--p-card);
+}
+
+.ec-note {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--p-muted);
+}
+
+.ec-note code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #e8f4dd;
+  color: #003d1f;
+  font-size: 12.5px;
+}
+
+.ec-note-bad {
+  margin-top: 10px;
+  color: #8f1d1d;
+  font-weight: 700;
+}
+
+.ec-test {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 12px;
+  margin: 0 0 14px;
+  border-radius: 14px;
+  border: 1px dashed var(--p-line);
+}
+
+.ec-test .ec-field {
+  flex: 1 1 auto;
+  margin: 0;
+}
+
+.ec-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.main .plat .ec-send {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-weight: 800;
+}
+
+/* History */
+.ec-history {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.ec-history > li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--p-line);
+}
+
+.ec-history-main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ec-history-main strong {
+  color: var(--p-ink);
+  overflow-wrap: anywhere;
+}
+
+.ec-history-meta {
+  font-size: 13px;
+  color: var(--p-muted);
+}
+
+.ec-history-state {
+  flex: 0 0 auto;
+}
+
+.ec-fail summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--p-accent);
+}
+
+.ec-fail ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--p-muted);
+}
+
+/* Messages */
+.ec-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.ec-banner svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.ec-banner-ok {
+  background: #e8f4dd;
+  border-color: #b9dca0;
+  color: #0f3d22;
+}
+
+.ec-banner-warn {
+  background: #fdf1cf;
+  border-color: #f0d68a;
+  color: #6b4100;
+}
+
+.ec-banner-bad {
+  background: #fde2e2;
+  border-color: #f2b8b8;
+  color: #7a1d1d;
+}
+
+/* Confirm */
+.ec-modal-back {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 26, 14, 0.45);
+}
+
+.ec-modal {
+  width: min(460px, 100%);
+  padding: 20px 22px;
+  border-radius: 18px;
+  background: var(--p-card);
+  color: var(--p-ink);
+  box-shadow: 0 30px 60px -20px rgba(0, 26, 14, 0.5);
+}
+
+.ec-modal h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.ec-modal p {
+  margin: 0 0 16px;
+  line-height: 1.5;
+  color: var(--p-muted);
+}
+
+.ec-modal p strong {
+  color: var(--p-ink);
+}
+
+.ec-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Dark */
+[data-theme="dark"] .ec-ico {
+  background: #1e3326;
+  color: #a5e37e;
+}
+
+[data-theme="dark"] .main .plat .ec-chip.is-on {
+  background: #4ab012;
+  border-color: #4ab012;
+  color: #001a0e;
+}
+
+[data-theme="dark"] .main .plat .ec-field input,
+[data-theme="dark"] .main .plat .ec-field textarea {
+  background: #132019;
+}
+
+[data-theme="dark"] .ec-note code {
+  background: #1e3326;
+  color: #c8e86a;
+}
+
+[data-theme="dark"] .ec-note-bad {
+  color: #fca5a5;
+}
+
+[data-theme="dark"] .ec-banner-ok {
+  background: #1a3d28;
+  border-color: #2f6b45;
+  color: #d6f5c3;
+}
+
+[data-theme="dark"] .ec-banner-warn {
+  background: #3d3208;
+  border-color: #6b5a14;
+  color: #fde68a;
+}
+
+[data-theme="dark"] .ec-banner-bad {
+  background: #3a1518;
+  border-color: #6b2a2f;
+  color: #fecaca;
+}
+
+@media (max-width: 900px) {
+  .ec-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .ec-test {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ec-test button,
+  .main .plat .ec-send,
+  .ec-modal-actions button {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .ec-history > li {
+    flex-direction: column;
+  }
+
+  .ec-sample li {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .ec-sample-mail {
+    text-align: left;
+  }
+}

@@ -33,6 +33,8 @@ const PATHS: Record<string, string> = {
   calendarCheck: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M9 15l2 2 4-4',
   tag: 'M3 12V3h9l9 9-9 9zM7 7v.01',
   leaf: 'M5 19C5 9 11 4 20 4c0 9-5 15-15 15zM5 19l8-8',
+  mail: 'M3 6h18v12H3zM3 7l9 6 9-6',
+  send: 'M21 3L10 14M21 3l-7 18-4-7-7-4z',
 }
 
 export default function DeskIcon({ name, size = 20 }: { name: string; size?: number }) {
