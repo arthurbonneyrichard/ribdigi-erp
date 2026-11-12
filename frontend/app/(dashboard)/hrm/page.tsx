@@ -106,7 +106,7 @@ function printSlip(slip: Row, period: string) {
   page.print();
 }
 
-const BLANK = { full_name: '', phone: '', email: '', job_title: '', department: '', hired_on: '', basic_salary: '', allowances: '0', ssnit_number: '', tin: '', bank_name: '', bank_account: '', ghana_card: '', mobile_money: '', tier3_percent: '0' };
+const BLANK = { full_name: '', phone: '', email: '', job_title: '', department: '', hired_on: '', basic_salary: '', allowances: '0', ssnit_number: '', tin: '', bank_name: '', bank_account: '', ghana_card: '', mobile_money: '', tier3_percent: '0', manager_id: '' };
 
 const GHANA_CARD = /^GHA-\d{9}-\d$/;
 
@@ -146,6 +146,7 @@ function HrmDesk() {
   const [settings, setSettings] = useState<Row | null>(null);
   const [rates, setRates] = useState<Row[]>([]);
   const [loans, setLoans] = useState<Row[]>([]);
+  const [teamLeave, setTeamLeave] = useState<Row[]>([]);
   const [loanForm, setLoanForm] = useState({ employee_id: '', kind: 'loan', principal: '', monthly_deduction: '', first_period: '', reason: '' });
   const [myLoan, setMyLoan] = useState({ kind: 'advance', principal: '', monthly_deduction: '', reason: '' });
   const [holidays, setHolidays] = useState<Row[]>([]);
@@ -204,7 +205,11 @@ function HrmDesk() {
           rounding: rt?.[0]?.rounding || 'half_up',
         });
       }
-      if (tab === 'me') setMe(await get('/hrm/me'));
+      if (tab === 'me') {
+        const [mine, team] = await Promise.all([get('/hrm/me'), get('/hrm/team/leave').catch(() => [])]);
+        setMe(mine);
+        setTeamLeave(team || []);
+      }
     } catch (err) {
       setError(problem(err));
     }
@@ -241,6 +246,7 @@ function HrmDesk() {
         email: blank(form.email),
         job_title: blank(form.job_title),
         department: blank(form.department),
+        manager_id: form.manager_id || null,
         hired_on: form.hired_on,
         basic_salary: Number(form.basic_salary || 0),
         allowances: Number(form.allowances || 0),
@@ -464,6 +470,12 @@ function HrmDesk() {
               <label><span>Full name</span><input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} aria-label="Employee name" /></label>
               <label><span>Job title</span><input value={form.job_title} onChange={(e) => setForm({ ...form, job_title: e.target.value })} aria-label="Job title" /></label>
               <label><span>Department</span><input value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} aria-label="Department" /></label>
+              <label><span>Reports to</span>
+                <select value={form.manager_id} onChange={(e) => setForm({ ...form, manager_id: e.target.value })} aria-label="Reports to">
+                  <option value="">Nobody (HR decides their leave)</option>
+                  {people.map((p) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
+                </select>
+              </label>
               <label><span>Started on</span><input type="date" value={form.hired_on} onChange={(e) => setForm({ ...form, hired_on: e.target.value })} aria-label="Started on" /></label>
               <label><span>Phone</span><input value={form.phone} placeholder="+233…" onChange={(e) => setForm({ ...form, phone: e.target.value })} aria-label="Employee phone" /></label>
               <label><span>Email (their login)</span><input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} aria-label="Employee email" /></label>
@@ -539,7 +551,11 @@ function HrmDesk() {
                   <tr key={l.id}>
                     <td>{l.employee_name}{l.reason ? <><br /><small className="hr-muted">{l.reason}</small></> : null}</td>
                     <td>{leaveWord(l.leave_type)}</td><td>{l.starts_on}</td><td>{l.ends_on}</td><td>{l.days}</td>
-                    <td>{l.status}{l.decision_note ? <><br /><small className="hr-muted">{l.decision_note}</small></> : null}</td>
+                    <td>
+                      {l.status === 'pending' ? (l.stage === 'manager' ? 'Waiting for their manager' : 'Waiting for HR') : l.status}
+                      {l.manager_note ? <><br /><small className="hr-muted">Manager: {l.manager_note}</small></> : null}
+                      {l.decision_note ? <><br /><small className="hr-muted">{l.decision_note}</small></> : null}
+                    </td>
                     <td>
                       {l.status === 'pending' ? (
                         <div className="hr-row">
@@ -809,6 +825,13 @@ function HrmDesk() {
           <p className="hr-muted">These start at Ghana&apos;s SSNIT rates and monthly PAYE bands. Check them with your accountant against the current GRA and SSNIT tables.</p>
           <div className="hr-form">
             <label><span>Annual leave days</span><input type="number" min="0" value={settings.annual_leave_days} onChange={(e) => setSettings({ ...settings, annual_leave_days: e.target.value })} aria-label="Annual leave days" /></label>
+            <label><span>Annual leave is earned</span>
+              <select value={settings.leave_accrual || 'upfront'} onChange={(e) => setSettings({ ...settings, leave_accrual: e.target.value })} aria-label="How annual leave is earned">
+                <option value="upfront">All at the start of the year</option>
+                <option value="monthly">A twelfth each month</option>
+              </select>
+            </label>
+            <label><span>Unused days that carry into next year</span><input type="number" min="0" value={settings.carry_over_days ?? 0} onChange={(e) => setSettings({ ...settings, carry_over_days: e.target.value })} aria-label="Carry-over days" /></label>
             <label><span>Working days a month</span><input type="number" min="1" value={settings.working_days_per_month} onChange={(e) => setSettings({ ...settings, working_days_per_month: e.target.value })} aria-label="Working days a month" /></label>
             <label><span>Staff SSNIT %</span><input type="number" min="0" value={settings.ssnit_employee_percent} onChange={(e) => setSettings({ ...settings, ssnit_employee_percent: e.target.value })} aria-label="Staff SSNIT percent" /></label>
             <label><span>Employer SSNIT %</span><input type="number" min="0" value={settings.ssnit_employer_percent} onChange={(e) => setSettings({ ...settings, ssnit_employer_percent: e.target.value })} aria-label="Employer SSNIT percent" /></label>
@@ -851,6 +874,8 @@ function HrmDesk() {
                 ssnit_employer_percent: Number(settings.ssnit_employer_percent),
                 paye_bands: settings.paye_bands.map((b: Row) => ({ width: b.width == null ? null : Number(b.width), rate: Number(b.rate) })),
                 two_person_payroll: Boolean(settings.two_person_payroll),
+                leave_accrual: settings.leave_accrual || 'upfront',
+                carry_over_days: Number(settings.carry_over_days || 0),
               }, 'Settings saved', 'PATCH')}
             >Save rates</button>
           </div>
@@ -941,8 +966,32 @@ function HrmDesk() {
         <>
           <div className="hr-tiles">
             <div className="hr-tile"><span>{me.employee.full_name}</span><b>{me.employee.job_title || me.employee.employee_number}</b></div>
-            <div className="hr-tile"><span>Annual leave left</span><b>{me.leave_balance.left}</b><small>of {me.leave_balance.entitled} in {me.leave_balance.year}</small></div>
+            <div className="hr-tile">
+              <span>Annual leave left</span><b>{me.leave_balance.left}</b>
+              <small>of {me.leave_balance.entitled} in {me.leave_balance.year}{me.leave_balance.carried ? ` (${me.leave_balance.carried} carried over)` : ''}</small>
+            </div>
           </div>
+          {teamLeave.length ? (
+            <section className="hr-box hr-scroll" aria-label="My team's leave">
+              <Head title="Leave from my team" />
+              <p className="hr-muted">You decide first; HR has the last word.</p>
+              <table>
+                <tbody>
+                  {teamLeave.map((l) => (
+                    <tr key={l.id}>
+                      <td>{l.employee_name}</td><td>{leaveWord(l.leave_type)}</td><td>{l.starts_on} to {l.ends_on}</td><td>{l.days} days</td>
+                      <td>
+                        <div className="hr-row">
+                          <button type="button" className="hr-primary" onClick={() => void run(`/hrm/leave/${l.id}/decide`, { approve: true }, 'Passed to HR')}>Agree</button>
+                          <button type="button" className="hr-danger" onClick={() => setDialog({ kind: 'reject', row: l, note: '' })}>Turn down</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          ) : null}
           <section className="hr-box" aria-label="Ask for leave">
             <Head title="Ask for leave" />
             <div className="hr-form">

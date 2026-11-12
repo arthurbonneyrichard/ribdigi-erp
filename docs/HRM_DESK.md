@@ -66,7 +66,7 @@ Pay rates → **Someone other than the person who drew up a payroll must approve
 
 ## Leave
 
-Days are working days, Monday to Friday, less the public holidays entered for the company. Annual leave cannot pass the allowance, counting requests still waiting. Leave cannot overlap. Turning leave down needs a reason. Nobody decides their own leave. Approved unpaid leave comes off that month's pay when the run is drawn up.
+Days are working days, Monday to Friday, less the public holidays entered for the company. Someone with **Reports to** set goes through two steps: their manager agrees or turns it down first (My pay and leave → Leave from my team, `GET /hrm/team/leave`), then HR decides. HR may decide at either step; skipping the manager is recorded in the audit. Nobody with no manager waits for one. Annual leave is earned **all at the start of the year** (less the months before someone started) or **a twelfth each month**; up to the **carry-over days** unused last year roll in (last year's own allowance only, not stacked). Annual leave cannot pass the allowance, counting requests still waiting. Leave cannot overlap. Turning leave down needs a reason. Nobody decides their own leave. Approved unpaid leave comes off that month's pay when the run is drawn up.
 
 ## Staff jobs
 

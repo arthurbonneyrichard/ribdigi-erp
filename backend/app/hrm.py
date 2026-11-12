@@ -143,6 +143,8 @@ def serialize_settings(row: m.HrmSettings) -> dict:
         "ssnit_employer_percent": _money(row.ssnit_employer_percent),
         "paye_bands": row.paye_bands or list(DEFAULT_PAYE_BANDS),
         "two_person_payroll": bool(getattr(row, "two_person_payroll", False)),
+        "leave_accrual": getattr(row, "leave_accrual", None) or "upfront",
+        "carry_over_days": int(getattr(row, "carry_over_days", 0) or 0),
     }
 
 
@@ -332,6 +334,7 @@ def serialize_employee(row: m.HrmEmployee, *, pay: bool = True) -> dict:
         "hired_on": row.hired_on.isoformat() if row.hired_on else None,
         "left_on": row.left_on.isoformat() if row.left_on else None,
         "status": row.status,
+        "manager_id": getattr(row, "manager_id", None),
     }
     if pay:
         data.update(
@@ -384,6 +387,7 @@ async def create_employee(db: AsyncSession, tenant_id: str, payload, *, user_id)
         ghana_card=getattr(payload, "ghana_card", None),
         mobile_money=getattr(payload, "mobile_money", None),
         tier3_percent=getattr(payload, "tier3_percent", 0) or 0,
+        manager_id=await _check_manager(db, tenant_id, getattr(payload, "manager_id", None), None),
     )
     db.add(row)
     await db.flush()
@@ -391,9 +395,27 @@ async def create_employee(db: AsyncSession, tenant_id: str, payload, *, user_id)
     return row
 
 
+async def _check_manager(db: AsyncSession, tenant_id: str, manager_id: str | None, employee_id: str | None) -> str | None:
+    if not manager_id:
+        return None
+    if manager_id == employee_id:
+        raise HTTPException(status_code=422, detail="Someone cannot report to themselves")
+    boss = await _employee(db, tenant_id, manager_id)
+    # Refuse a loop: the new manager must not report (directly or up the line) to this person.
+    seen, walk = set(), boss
+    while walk is not None and walk.manager_id and walk.id not in seen:
+        seen.add(walk.id)
+        if walk.manager_id == employee_id:
+            raise HTTPException(status_code=422, detail="That would make a reporting loop")
+        walk = await db.get(m.HrmEmployee, walk.manager_id)
+    return boss.id
+
+
 async def update_employee(db: AsyncSession, tenant_id: str, employee_id: str, payload, *, user_id) -> m.HrmEmployee:
     row = await _employee(db, tenant_id, employee_id)
     data = payload.model_dump(exclude_unset=True)
+    if "manager_id" in data:
+        data["manager_id"] = await _check_manager(db, tenant_id, data["manager_id"], row.id)
     before = {k: serialize_employee(row).get(k) for k in data}
     for key, value in data.items():
         setattr(row, key, value)
@@ -459,11 +481,53 @@ async def _annual_used(db: AsyncSession, tenant_id: str, employee_id: str, year:
     return sum(int(r.days or 0) for r in rows if r.starts_on.year == year)
 
 
-async def leave_balance(db: AsyncSession, tenant_id: str, employee_id: str, *, year: int | None = None) -> dict:
+def earned_days(annual: int, hired_on: date | None, year: int, *, accrual: str, upto: date | None = None) -> int:
+    """Annual leave earned in a year. Upfront: the whole year, less months before someone
+    started. Monthly: a twelfth for each month started so far (up to `upto`). Whole days, rounded down."""
+    first_month = 1
+    if hired_on and hired_on.year == year:
+        first_month = hired_on.month
+    elif hired_on and hired_on.year > year:
+        return 0
+    last_month = 12
+    if accrual == "monthly":
+        when = upto or date.today()
+        if when.year < year:
+            return 0
+        last_month = 12 if when.year > year else when.month
+    months = max(last_month - first_month + 1, 0)
+    return (int(annual) * months) // 12
+
+
+async def _entitlement(db: AsyncSession, tenant_id: str, employee: m.HrmEmployee, year: int, *, upto: date | None = None) -> dict:
     settings = await get_settings(db, tenant_id)
+    accrual = getattr(settings, "leave_accrual", None) or "upfront"
+    annual = int(settings.annual_leave_days)
+    earned = earned_days(annual, employee.hired_on, year, accrual=accrual, upto=upto)
+    carried = 0
+    cap = int(getattr(settings, "carry_over_days", 0) or 0)
+    if cap > 0:
+        # Last year's own allowance less what was taken; carry-over does not stack year on year.
+        last_year = earned_days(annual, employee.hired_on, year - 1, accrual="upfront")
+        last_used = await _annual_used(db, tenant_id, employee.id, year - 1)
+        carried = min(cap, max(last_year - last_used, 0))
+    return {"earned": earned, "carried": carried, "entitled": earned + carried, "accrual": accrual}
+
+
+async def leave_balance(db: AsyncSession, tenant_id: str, employee_id: str, *, year: int | None = None) -> dict:
     year = year or date.today().year
+    employee = await _employee(db, tenant_id, employee_id)
+    ent = await _entitlement(db, tenant_id, employee, year)
     used = await _annual_used(db, tenant_id, employee_id, year)
-    return {"year": year, "entitled": int(settings.annual_leave_days), "used": used, "left": int(settings.annual_leave_days) - used}
+    return {
+        "year": year,
+        "entitled": ent["entitled"],
+        "earned": ent["earned"],
+        "carried": ent["carried"],
+        "accrual": ent["accrual"],
+        "used": used,
+        "left": ent["entitled"] - used,
+    }
 
 
 async def request_leave(db: AsyncSession, tenant_id: str, *, employee_id: str, payload, user_id) -> m.HrmLeaveRequest:
@@ -494,11 +558,11 @@ async def request_leave(db: AsyncSession, tenant_id: str, *, employee_id: str, p
     if clash:
         raise HTTPException(status_code=409, detail="There is already leave on those dates")
     if payload.leave_type == "annual":
-        settings = await get_settings(db, tenant_id)
+        ent = await _entitlement(db, tenant_id, employee, payload.starts_on.year, upto=payload.ends_on)
         used = await _annual_used(db, tenant_id, employee.id, payload.starts_on.year, states=("approved", "pending"))
-        if used + days > int(settings.annual_leave_days):
-            left = int(settings.annual_leave_days) - used
-            raise HTTPException(status_code=409, detail=f"Only {max(left, 0)} annual leave days left this year")
+        if used + days > ent["entitled"]:
+            left = ent["entitled"] - used
+            raise HTTPException(status_code=409, detail=f"Only {max(left, 0)} annual leave days left by then")
     row = m.HrmLeaveRequest(
         tenant_id=tenant_id,
         employee_id=employee.id,
@@ -507,6 +571,7 @@ async def request_leave(db: AsyncSession, tenant_id: str, *, employee_id: str, p
         ends_on=payload.ends_on,
         days=days,
         status="pending",
+        stage="manager" if employee.manager_id else "hr",
         reason=optional_honest_narrative(payload.reason, label="reason", max_length=500),
         created_by=user_id,
     )
@@ -515,7 +580,18 @@ async def request_leave(db: AsyncSession, tenant_id: str, *, employee_id: str, p
     return row
 
 
-async def decide_leave(db: AsyncSession, tenant_id: str, leave_id: str, *, approve: bool, note: str | None, user_id) -> m.HrmLeaveRequest:
+async def _user_employee(db: AsyncSession, tenant_id: str, user_id: str | None) -> m.HrmEmployee | None:
+    try:
+        return await employee_for_user(db, tenant_id, user_id)
+    except HTTPException:
+        return None
+
+
+async def decide_leave(
+    db: AsyncSession, tenant_id: str, leave_id: str, *, approve: bool, note: str | None, user_id, as_hr: bool = True
+) -> m.HrmLeaveRequest:
+    """Two steps when someone has a manager: the manager first, then HR. HR may decide at
+    either step (it is recorded). A manager who is not HR decides only their own team's first step."""
     row = (
         await db.execute(
             select(m.HrmLeaveRequest).where(m.HrmLeaveRequest.id == leave_id, m.HrmLeaveRequest.tenant_id == tenant_id).with_for_update()
@@ -531,13 +607,53 @@ async def decide_leave(db: AsyncSession, tenant_id: str, leave_id: str, *, appro
     decider = await db.get(m.User, user_id) if user_id else None
     if decider and employee.email and (decider.email or "").lower() == employee.email.lower():
         raise HTTPException(status_code=403, detail="Someone else must decide your own leave")
+    me = await _user_employee(db, tenant_id, user_id)
+    is_manager = bool(me and employee.manager_id and employee.manager_id == me.id)
+    stage = getattr(row, "stage", None) or "hr"
+    if stage == "manager" and is_manager and approve:
+        # The manager agrees; HR has the last word.
+        row.stage = "hr"
+        row.manager_decided_by = user_id
+        row.manager_decided_at = datetime.utcnow()
+        row.manager_note = optional_honest_narrative(note, label="note", max_length=255)
+        await _audit(db, tenant_id, user_id, "hrm_leave_manager_approved", "hrm_leave", row.id, {"days": row.days})
+        await db.flush()
+        return row
+    if not as_hr and not (stage == "manager" and is_manager):
+        raise HTTPException(status_code=403, detail="HR decides this request")
+    if stage == "manager" and is_manager:
+        row.manager_decided_by = user_id
+        row.manager_decided_at = datetime.utcnow()
+        row.manager_note = optional_honest_narrative(note, label="note", max_length=255)
     row.status = "approved" if approve else "rejected"
     row.decision_note = optional_honest_narrative(note, label="note", max_length=255)
     row.decided_by = user_id
     row.decided_at = datetime.utcnow()
-    await _audit(db, tenant_id, user_id, f"hrm_leave_{row.status}", "hrm_leave", row.id, {"days": row.days})
+    details = {"days": row.days, "stage": stage}
+    if stage == "manager" and not is_manager:
+        details["manager_step_skipped_by_hr"] = True
+    await _audit(db, tenant_id, user_id, f"hrm_leave_{row.status}", "hrm_leave", row.id, details)
     await db.flush()
     return row
+
+
+async def team_leave(db: AsyncSession, tenant_id: str, manager: m.HrmEmployee) -> list[m.HrmLeaveRequest]:
+    """Requests from the people who report to this manager, waiting for their decision."""
+    team = select(m.HrmEmployee.id).where(m.HrmEmployee.tenant_id == tenant_id, m.HrmEmployee.manager_id == manager.id)
+    return list(
+        (
+            await db.execute(
+                select(m.HrmLeaveRequest)
+                .where(
+                    m.HrmLeaveRequest.tenant_id == tenant_id,
+                    m.HrmLeaveRequest.employee_id.in_(team),
+                    m.HrmLeaveRequest.status == "pending",
+                    m.HrmLeaveRequest.stage == "manager",
+                )
+                .order_by(m.HrmLeaveRequest.starts_on)
+            )
+        ).scalars()
+    )
 
 
 async def present_leave(db: AsyncSession, row: m.HrmLeaveRequest) -> dict:
@@ -551,6 +667,8 @@ async def present_leave(db: AsyncSession, row: m.HrmLeaveRequest) -> dict:
         "ends_on": row.ends_on.isoformat(),
         "days": int(row.days),
         "status": row.status,
+        "stage": getattr(row, "stage", None) or "hr",
+        "manager_note": getattr(row, "manager_note", None),
         "reason": row.reason,
         "decision_note": row.decision_note,
     }

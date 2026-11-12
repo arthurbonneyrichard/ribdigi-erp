@@ -4058,6 +4058,11 @@ class HrmSettings(Base):
     paye_bands: Mapped[list | None] = mapped_column(JSON, nullable=True)
     # When on, the person who drew up a payroll cannot also approve it.
     two_person_payroll: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    # upfront: the year's annual leave is there from January (less the months before someone started).
+    # monthly: it builds up a twelfth each month.
+    leave_accrual: Mapped[str] = mapped_column(String(16), default="upfront", server_default="upfront")
+    # Unused annual leave that may roll into the next year (0 = none).
+    carry_over_days: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
 
 class HrmHoliday(Base):
@@ -4169,6 +4174,8 @@ class HrmEmployee(Base):
     bank_account: Mapped[str | None] = mapped_column(String(64), nullable=True)
     ghana_card: Mapped[str | None] = mapped_column(String(20), nullable=True)
     mobile_money: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Who this person reports to; that person decides their leave first.
+    manager_id: Mapped[str | None] = mapped_column(ForeignKey("hrm_employees.id"), nullable=True, index=True)
     # Voluntary Tier 3 pension, percent of earned basic.
     tier3_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -4185,6 +4192,11 @@ class HrmLeaveRequest(Base):
     ends_on: Mapped[date] = mapped_column(Date, index=True)
     days: Mapped[int] = mapped_column(Integer, default=0)
     status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
+    # manager: waiting for the person they report to; hr: waiting for HR.
+    stage: Mapped[str] = mapped_column(String(16), default="hr", server_default="hr")
+    manager_decided_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    manager_decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    manager_note: Mapped[str | None] = mapped_column(String(255), nullable=True)
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     decision_note: Mapped[str | None] = mapped_column(String(255), nullable=True)
     decided_by: Mapped[str | None] = mapped_column(String(36), nullable=True)

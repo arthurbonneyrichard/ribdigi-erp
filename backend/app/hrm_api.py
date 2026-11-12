@@ -54,6 +54,7 @@ class EmployeeBody(BaseModel):
     ghana_card: GhanaCard | None = None
     mobile_money: E164PhoneValue | None = None
     tier3_percent: Percent = Decimal("0")
+    manager_id: UuidIdValue | None = None
 
 
 class EmployeeUpdate(BaseModel):
@@ -72,6 +73,7 @@ class EmployeeUpdate(BaseModel):
     ghana_card: GhanaCard | None = None
     mobile_money: E164PhoneValue | None = None
     tier3_percent: Percent | None = None
+    manager_id: UuidIdValue | None = None
 
 
 class LeftBody(BaseModel):
@@ -149,6 +151,8 @@ class SettingsBody(BaseModel):
     ssnit_employer_percent: Annotated[float, Field(ge=0, le=100, allow_inf_nan=False)] | None = None
     paye_bands: list[Band] | None = Field(default=None, min_length=1, max_length=20)
     two_person_payroll: bool | None = None
+    leave_accrual: Literal["upfront", "monthly"] | None = None
+    carry_over_days: Annotated[int, Field(ge=0, le=120)] | None = None
 
 
 class RateBand(BaseModel):
@@ -454,12 +458,25 @@ async def hrm_leave_decide(
     claims=Depends(require_permission("hrm", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    svc.job(claims, "leave")
+    # Staff who manage people decide their team's first step; everything else needs the leave job.
+    as_hr = str(claims.get("role") or "") != "hrm_employee"
+    if as_hr:
+        svc.job(claims, "leave")
     row = await svc.decide_leave(
-        db, claims["tenant_id"], leave_id, approve=payload.approve, note=payload.note, user_id=claims.get("sub")
+        db, claims["tenant_id"], leave_id, approve=payload.approve, note=payload.note,
+        user_id=claims.get("sub"), as_hr=as_hr,
     )
     await db.commit()
     return _env(await svc.present_leave(db, row), "Saved")
+
+
+@router.get("/team/leave")
+async def hrm_team_leave(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    """Leave from the people who report to me, waiting for my decision."""
+    me = await svc._user_employee(db, claims["tenant_id"], claims.get("sub"))
+    if me is None:
+        return _env([])
+    return _env([await svc.present_leave(db, r) for r in await svc.team_leave(db, claims["tenant_id"], me)])
 
 
 @router.get("/attendance")
