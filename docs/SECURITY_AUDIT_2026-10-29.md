@@ -44,6 +44,8 @@ Method: dependency scans (pip-audit, npm audit), static analysis (bandit), a rou
 
 5 Nov: O1 and O3 done on branch `next16-upgrade`: Next 16.4.5 and React 19, build still on webpack, `middleware.ts` renamed `proxy.ts`, and the full CSP enforced on production builds (it allows the analytics host and blob: previews). Checked by opening 54 pages on a production build with no errors or CSP violations.
 
+12 Nov: merged into `hotel-commercial-ready` and `main` on Next 16.4.6 and React 19.2.9 (`npm audit`: 0 vulnerabilities). The web app also stops sending `X-Powered-By`. Checked: full backend suite, `tsc`, production build, offline tests 38/38, and headless Chrome hydrating under the enforced CSP with no violations.
+
 Still open: O2 (owner sets `SECRETS_ENCRYPTION_KEY` and runs the script), O9 (external pentest, production restore drill).
 
 ## Verified in place
