@@ -13,6 +13,7 @@ import { getMe } from '../../../lib/meCache';
 import DeskDashboard from '../../../components/DeskDashboard';
 import DeskIcon from '../../../components/DeskIcon';
 import { MyMore, PEOPLE_WORK_SCREENS, PeopleWork } from './PeopleWork';
+import { MyClock, TIME_SCREENS, TimeWork } from './TimeWork';
 import './hrm.css';
 
 type Row = Record<string, any>;
@@ -26,6 +27,7 @@ const SCREENS: Record<string, { title: string; sub: string; icon: string }> = {
   loans: { title: 'Loans and advances', sub: 'Lent to staff, paid back from payroll each month.', icon: 'wallet' },
   reports: { title: 'Reports', sub: 'Payroll by month and department, and leave taken.', icon: 'chart' },
   settings: { title: 'Pay rates', sub: 'PAYE bands, SSNIT and the other rates payroll uses.', icon: 'tag' },
+  ...TIME_SCREENS,
   ...PEOPLE_WORK_SCREENS,
   me: { title: 'My pay and leave', sub: 'Your payslips and your time off.', icon: 'wallet' },
 };
@@ -61,7 +63,7 @@ function Head({ title, icon, meta }: { title: string; icon?: string; meta?: Reac
   );
 }
 const ROLE_TABS: Record<string, string[]> = {
-  hrm_officer: ['today', 'people', 'leave', 'attendance', 'hiring', 'training', 'contracts', 'kit', 'notices', 'me'],
+  hrm_officer: ['today', 'people', 'leave', 'attendance', 'shifts', 'clock', 'devices', 'hiring', 'training', 'contracts', 'kit', 'notices', 'me'],
   hrm_employee: ['me'],
 };
 const LEAVE = [
@@ -125,13 +127,13 @@ function printSlip(slip: Row, period: string) {
   if (!page) return;
   const line = (label: string, value: unknown) => `<tr><td>${label}</td><td style="text-align:right">${money(value)}</td></tr>`;
   page.document.write(
-    `<html><body style="font-family:sans-serif"><h3>Payslip ${safe(period)}</h3><p>${safe(slip.employee_name)} · ${safe(slip.employee_number)}<br/>${safe(slip.job_title)}</p><table style="width:100%">${line('Basic', slip.basic)}${line('Allowances', slip.allowances)}${line('Bonus', slip.bonus)}${Number(slip.arrears_basic) ? line('Back pay of basic', slip.arrears_basic) : ''}${Number(slip.adjustment) ? line('Correction', slip.adjustment) : ''}${line('Unpaid days', -Number(slip.unpaid_deduction))}${line('Gross', slip.gross)}${line('SSNIT', -Number(slip.ssnit_employee))}${Number(slip.tier3) > 0 ? line('Tier 3 pension', -Number(slip.tier3)) : ''}${Number(slip.loan_deduction) > 0 ? line('Loan repayment', -Number(slip.loan_deduction)) : ''}${line('PAYE', -Number(slip.paye))}${line('Other deductions', -Number(slip.other_deductions))}</table><h3>Net pay ${money(slip.net)}</h3></body></html>`,
+    `<html><body style="font-family:sans-serif"><h3>Payslip ${safe(period)}</h3><p>${safe(slip.employee_name)} · ${safe(slip.employee_number)}<br/>${safe(slip.job_title)}</p><table style="width:100%">${line('Basic', slip.basic)}${line('Allowances', slip.allowances)}${line('Bonus', slip.bonus)}${Number(slip.arrears_basic) ? line('Back pay of basic', slip.arrears_basic) : ''}${Number(slip.adjustment) ? line('Correction', slip.adjustment) : ''}${Number(slip.overtime) ? line('Overtime', slip.overtime) : ''}${line('Unpaid days', -Number(slip.unpaid_deduction))}${line('Gross', slip.gross)}${line('SSNIT', -Number(slip.ssnit_employee))}${Number(slip.tier3) > 0 ? line('Tier 3 pension', -Number(slip.tier3)) : ''}${Number(slip.loan_deduction) > 0 ? line('Loan repayment', -Number(slip.loan_deduction)) : ''}${line('PAYE', -Number(slip.paye))}${line('Other deductions', -Number(slip.other_deductions))}</table><h3>Net pay ${money(slip.net)}</h3></body></html>`,
   );
   page.document.close();
   page.print();
 }
 
-const BLANK = { full_name: '', phone: '', email: '', job_title: '', department: '', hired_on: '', basic_salary: '', allowances: '0', ssnit_number: '', tin: '', bank_name: '', bank_account: '', ghana_card: '', mobile_money: '', tier3_percent: '0', manager_id: '' };
+const BLANK = { full_name: '', phone: '', email: '', job_title: '', department: '', hired_on: '', basic_salary: '', allowances: '0', ssnit_number: '', tin: '', bank_name: '', bank_account: '', ghana_card: '', mobile_money: '', tier3_percent: '0', manager_id: '', biometric_id: '' };
 
 const GHANA_CARD = /^GHA-\d{9}-\d$/;
 
@@ -288,6 +290,7 @@ function HrmDesk() {
         job_title: blank(form.job_title),
         department: blank(form.department),
         manager_id: form.manager_id || null,
+        biometric_id: form.biometric_id.trim() || null,
         hired_on: form.hired_on,
         basic_salary: Number(form.basic_salary || 0),
         allowances: Number(form.allowances || 0),
@@ -496,6 +499,7 @@ function HrmDesk() {
       {error && !dialog ? <div className="hr-banner bad" role="alert">{error}</div> : null}
 
       {PEOPLE_WORK_SCREENS[tab] ? <PeopleWork tab={tab} seesPay={seesPay} /> : null}
+      {TIME_SCREENS[tab] ? <TimeWork tab={tab} seesPay={seesPay} /> : null}
 
       {tab === 'today' && summary ? (
         <DeskDashboard
@@ -558,6 +562,7 @@ function HrmDesk() {
                 <span>Ghana Card</span>
                 <input value={form.ghana_card} placeholder="GHA-000000000-0" onChange={(e) => setForm({ ...form, ghana_card: e.target.value })} aria-label="Ghana Card number" />
               </label>
+              <label><span>Terminal ID (fingerprint / face)</span><input value={form.biometric_id} onChange={(e) => setForm({ ...form, biometric_id: e.target.value })} aria-label="Terminal ID" /></label>
               <label><span>Mobile Money</span><input value={form.mobile_money} placeholder="+233…" onChange={(e) => setForm({ ...form, mobile_money: e.target.value })} aria-label="Mobile Money number" /></label>
               {seesPay ? (
                 <label><span>Tier 3 voluntary %</span><input type="number" min="0" max="100" step="0.5" value={form.tier3_percent} onChange={(e) => setForm({ ...form, tier3_percent: e.target.value })} aria-label="Tier 3 voluntary percent" /></label>
@@ -1003,6 +1008,12 @@ function HrmDesk() {
                 <option value="monthly">A twelfth each month</option>
               </select>
             </label>
+            <label><span>Working hours a day</span><input type="number" min="1" max="24" step="0.5" value={settings.hours_per_day ?? 8} onChange={(e) => setSettings({ ...settings, hours_per_day: e.target.value })} aria-label="Working hours a day" /></label>
+            <label><span>Overtime pay rate (x hourly)</span><input type="number" min="1" max="5" step="0.25" value={settings.overtime_rate ?? 1.5} onChange={(e) => setSettings({ ...settings, overtime_rate: e.target.value })} aria-label="Overtime rate" /></label>
+            <label className="hr-check">
+              <input type="checkbox" checked={Boolean(settings.clock_needs_site)} onChange={(e) => setSettings({ ...settings, clock_needs_site: e.target.checked })} aria-label="Clock-ins must be at a site" />
+              <span>Clock-ins from phones must be at a work site</span>
+            </label>
             <label><span>Unused days that carry into next year</span><input type="number" min="0" value={settings.carry_over_days ?? 0} onChange={(e) => setSettings({ ...settings, carry_over_days: e.target.value })} aria-label="Carry-over days" /></label>
             <label><span>Working days a month</span><input type="number" min="1" value={settings.working_days_per_month} onChange={(e) => setSettings({ ...settings, working_days_per_month: e.target.value })} aria-label="Working days a month" /></label>
             <label><span>Staff SSNIT %</span><input type="number" min="0" value={settings.ssnit_employee_percent} onChange={(e) => setSettings({ ...settings, ssnit_employee_percent: e.target.value })} aria-label="Staff SSNIT percent" /></label>
@@ -1048,6 +1059,9 @@ function HrmDesk() {
                 two_person_payroll: Boolean(settings.two_person_payroll),
                 leave_accrual: settings.leave_accrual || 'upfront',
                 carry_over_days: Number(settings.carry_over_days || 0),
+                hours_per_day: Number(settings.hours_per_day || 8),
+                overtime_rate: Number(settings.overtime_rate || 1.5),
+                clock_needs_site: Boolean(settings.clock_needs_site),
               }, 'Settings saved', 'PATCH')}
             >Save rates</button>
           </div>
@@ -1143,6 +1157,7 @@ function HrmDesk() {
               <small>of {me.leave_balance.entitled} in {me.leave_balance.year}{me.leave_balance.carried ? ` (${me.leave_balance.carried} carried over)` : ''}</small>
             </div>
           </div>
+          <MyClock />
           {teamLeave.length ? (
             <section className="hr-box hr-scroll" aria-label="My team's leave">
               <Head title="Leave from my team" />

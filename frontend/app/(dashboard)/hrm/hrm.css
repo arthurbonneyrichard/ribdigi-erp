@@ -182,3 +182,7 @@
 .main .hrm .hr-tile b{font-size:24px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .main .hrm .hr-tile small{color:var(--hr-muted);font-weight:600}
 .main .hrm .hr-tile.warn{background:var(--hr-gold-tint);border-color:var(--hr-gold)}
+.main .hrm .hr-qr{display:grid;justify-items:center;gap:8px;margin-top:14px;padding:16px;border:1px solid var(--hr-line,#D4E5C4);border-radius:12px;background:#fff;color:#10211B}
+.main .hrm .hr-qr img{width:220px;height:220px;image-rendering:pixelated}
+.main .hrm .hr-qr-code{font:700 28px/1 ui-monospace,monospace;letter-spacing:.2em}
+.main .hrm fieldset.hr-wide{display:flex;flex-wrap:wrap;gap:4px 14px;border:0;padding:0;margin:0}

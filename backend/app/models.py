@@ -4063,6 +4063,11 @@ class HrmSettings(Base):
     leave_accrual: Mapped[str] = mapped_column(String(16), default="upfront", server_default="upfront")
     # Unused annual leave that may roll into the next year (0 = none).
     carry_over_days: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    # Time and overtime. An hour of overtime pays basic / (working days x hours a day) x the rate.
+    hours_per_day: Mapped[float] = mapped_column(Numeric(5, 2), default=8, server_default="8")
+    overtime_rate: Mapped[float] = mapped_column(Numeric(5, 2), default=1.5, server_default="1.5")
+    # When on, a clock-in from a phone must be at a work site (GPS within its radius, or its QR code).
+    clock_needs_site: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
 
 
 class HrmHoliday(Base):
@@ -4355,6 +4360,144 @@ class HrmNotice(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class HrmShift(Base):
+    """A named working pattern: start and end (local time), unpaid break, grace before 'late'."""
+
+    __tablename__ = "hrm_shifts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(80))
+    starts_at: Mapped[str] = mapped_column(String(5))  # HH:MM
+    ends_at: Mapped[str] = mapped_column(String(5))  # HH:MM; earlier than start = ends next day
+    break_minutes: Mapped[int] = mapped_column(Integer, default=0)
+    grace_minutes: Mapped[int] = mapped_column(Integer, default=10)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmRoster(Base):
+    """Who works which shift on which day."""
+
+    __tablename__ = "hrm_roster"
+    __table_args__ = (UniqueConstraint("employee_id", "day", name="uq_hrm_roster_day"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    day: Mapped[date] = mapped_column(Date, index=True)
+    shift_id: Mapped[str] = mapped_column(ForeignKey("hrm_shifts.id"), index=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+
+
+class HrmSite(Base):
+    """A place staff clock in: a GPS point with a radius, and a QR code that changes every few minutes."""
+
+    __tablename__ = "hrm_sites"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    latitude: Mapped[float | None] = mapped_column(Numeric(9, 6), nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Numeric(9, 6), nullable=True)
+    radius_m: Mapped[int] = mapped_column(Integer, default=150)
+    # Stripped from backups; a restored site gets a fresh one (its QR codes simply change).
+    qr_secret: Mapped[str] = mapped_column(String(64), default=lambda: __import__("secrets").token_hex(24))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmClockEvent(Base):
+    """One clock-in or clock-out, kept as it happened. Corrections are new rows, never edits."""
+
+    __tablename__ = "hrm_clock_events"
+    # A punch read from a terminal or BioTime is stored once, however often it is sent.
+    __table_args__ = (UniqueConstraint("tenant_id", "external_ref", name="uq_hrm_clock_external"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(8))  # in | out
+    at: Mapped[datetime] = mapped_column(DateTime, index=True)  # UTC
+    # self (own phone) | qr | hr (entered by HR) | correction (approved request) | biometric
+    source: Mapped[str] = mapped_column(String(16))
+    external_ref: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    site_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    latitude: Mapped[float | None] = mapped_column(Numeric(9, 6), nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Numeric(9, 6), nullable=True)
+    accuracy_m: Mapped[float | None] = mapped_column(Numeric(8, 1), nullable=True)
+    distance_m: Mapped[float | None] = mapped_column(Numeric(10, 1), nullable=True)
+    device: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    voided: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmBiometricLink(Base):
+    """A ZKTeco link: a BioTime server the ERP reads punches from, or a terminal that pushes
+    punches here (ZKTeco push / ADMS protocol, found by its serial number)."""
+
+    __tablename__ = "hrm_biometric_links"
+    __table_args__ = (UniqueConstraint("device_serial", name="uq_hrm_biometric_serial"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(16))  # biotime | device
+    name: Mapped[str] = mapped_column(String(120))
+    base_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    username: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    password_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    device_serial: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    site_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_result: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmClockCorrection(Base):
+    """A member of staff asks for a missed or wrong clock time to be put right."""
+
+    __tablename__ = "hrm_clock_corrections"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    day: Mapped[date] = mapped_column(Date)
+    in_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)  # UTC
+    out_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)  # UTC
+    reason: Mapped[str] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)
+    decision_note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    requested_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    decided_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmOvertime(Base):
+    """A month's overtime for one person, approved by HR and paid on that month's payroll."""
+
+    __tablename__ = "hrm_overtime"
+    __table_args__ = (UniqueConstraint("employee_id", "period", name="uq_hrm_overtime_month"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    period: Mapped[str] = mapped_column(String(7), index=True)
+    minutes: Mapped[int] = mapped_column(Integer)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    hourly_rate: Mapped[float] = mapped_column(Numeric(14, 4))
+    rate: Mapped[float] = mapped_column(Numeric(5, 2))
+    status: Mapped[str] = mapped_column(String(16), default="approved", index=True)  # approved | paid
+    run_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    approved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class HrmStatutoryRate(Base):
     """PAYE bands and SSNIT / pension rules from a date onwards. A payroll month uses the
     newest row starting on or before the month's first day. Rows an approved payroll used
@@ -4404,6 +4547,8 @@ class HrmEmployee(Base):
     bank_account: Mapped[str | None] = mapped_column(String(64), nullable=True)
     ghana_card: Mapped[str | None] = mapped_column(String(20), nullable=True)
     mobile_money: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # The person's ID on the fingerprint / face terminal (ZKTeco "PIN" / BioTime "emp_code").
+    biometric_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
     # Who this person reports to; that person decides their leave first.
     manager_id: Mapped[str | None] = mapped_column(ForeignKey("hrm_employees.id"), nullable=True, index=True)
     # Voluntary Tier 3 pension, percent of earned basic.
@@ -4507,6 +4652,8 @@ class HrmPayslip(Base):
     # Back pay of basic and other corrections carried in from approved months.
     arrears_basic: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     adjustment: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    # Approved overtime paid this month (taxable earnings, no SSNIT).
+    overtime: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     # The rates this slip was worked out with, kept so it can be explained later.
     rates_used: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     note: Mapped[str | None] = mapped_column(String(255), nullable=True)

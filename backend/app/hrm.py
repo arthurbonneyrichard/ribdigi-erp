@@ -144,6 +144,9 @@ def serialize_settings(row: m.HrmSettings) -> dict:
         "ssnit_employer_percent": _money(row.ssnit_employer_percent),
         "paye_bands": row.paye_bands or list(DEFAULT_PAYE_BANDS),
         "two_person_payroll": bool(getattr(row, "two_person_payroll", False)),
+        "hours_per_day": money_json(getattr(row, "hours_per_day", 8) or 8),
+        "overtime_rate": money_json(getattr(row, "overtime_rate", 1.5) or 1.5),
+        "clock_needs_site": bool(getattr(row, "clock_needs_site", False)),
         "leave_accrual": getattr(row, "leave_accrual", None) or "upfront",
         "carry_over_days": int(getattr(row, "carry_over_days", 0) or 0),
     }
@@ -336,6 +339,7 @@ def serialize_employee(row: m.HrmEmployee, *, pay: bool = True) -> dict:
         "left_on": row.left_on.isoformat() if row.left_on else None,
         "status": row.status,
         "manager_id": getattr(row, "manager_id", None),
+        "biometric_id": getattr(row, "biometric_id", None),
     }
     if pay:
         data.update(
@@ -389,11 +393,29 @@ async def create_employee(db: AsyncSession, tenant_id: str, payload, *, user_id)
         mobile_money=getattr(payload, "mobile_money", None),
         tier3_percent=getattr(payload, "tier3_percent", 0) or 0,
         manager_id=await _check_manager(db, tenant_id, getattr(payload, "manager_id", None), None),
+        biometric_id=await _check_biometric(db, tenant_id, getattr(payload, "biometric_id", None), None),
     )
     db.add(row)
     await db.flush()
     await _audit(db, tenant_id, user_id, "hrm_employee_created", "hrm_employee", row.id, {"employee_number": row.employee_number})
     return row
+
+
+async def _check_biometric(db: AsyncSession, tenant_id: str, pin: str | None, employee_id: str | None) -> str | None:
+    """One terminal ID per person in a company, or punches would land on the wrong file."""
+    pin = (pin or "").strip() or None
+    if pin is None:
+        return None
+    taken = (
+        await db.execute(
+            select(m.HrmEmployee.id).where(
+                m.HrmEmployee.tenant_id == tenant_id, m.HrmEmployee.biometric_id == pin, m.HrmEmployee.id != (employee_id or "")
+            )
+        )
+    ).first()
+    if taken:
+        raise HTTPException(status_code=409, detail="Someone else already has that terminal ID")
+    return pin
 
 
 async def _check_manager(db: AsyncSession, tenant_id: str, manager_id: str | None, employee_id: str | None) -> str | None:
@@ -417,6 +439,8 @@ async def update_employee(db: AsyncSession, tenant_id: str, employee_id: str, pa
     data = payload.model_dump(exclude_unset=True)
     if "manager_id" in data:
         data["manager_id"] = await _check_manager(db, tenant_id, data["manager_id"], row.id)
+    if "biometric_id" in data:
+        data["biometric_id"] = await _check_biometric(db, tenant_id, data["biometric_id"], row.id)
     before = {k: serialize_employee(row).get(k) for k in data}
     for key, value in data.items():
         setattr(row, key, value)
@@ -786,7 +810,8 @@ def _work_out(slip: m.HrmPayslip, settings: m.HrmSettings, rates: engine.Statuto
                 working_days=int(settings.working_days_per_month),
                 tier3_percent=engine.D(slip.tier3_percent),
                 arrears_basic=engine.D(getattr(slip, "arrears_basic", 0)),
-                adjustment=engine.D(getattr(slip, "adjustment", 0)),
+                # Approved overtime is a taxable earning without SSNIT, like a correction.
+                adjustment=engine.D(getattr(slip, "adjustment", 0)) + engine.D(getattr(slip, "overtime", 0)),
             ),
             rates,
         )
@@ -867,6 +892,9 @@ async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) 
     for person in people:
         basic, allowances = await hrm_pay_changes.salary_for(db, person, first)
         arrears, correction = await hrm_pay_changes.take_pending(db, tenant_id, person.id, run.id)
+        from app import hrm_time
+
+        overtime = await hrm_time.take_overtime(db, person.id, period, run.id)
         slip = m.HrmPayslip(
             tenant_id=tenant_id,
             run_id=run.id,
@@ -875,6 +903,7 @@ async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) 
             allowances=allowances,
             arrears_basic=arrears,
             adjustment=correction,
+            overtime=overtime,
             bonus=0,
             other_deductions=0,
             tier3_percent=person.tier3_percent or 0,
@@ -929,6 +958,9 @@ async def delete_run(db: AsyncSession, tenant_id: str, run_id: str, *, user_id) 
     from app import hrm_pay_changes
 
     await hrm_pay_changes.release_run(db, run.id)
+    from app import hrm_time
+
+    await hrm_time.release_overtime(db, run.id)
     for slip in await _slips(db, run.id):
         await db.delete(slip)
     await db.delete(run)
@@ -976,6 +1008,9 @@ async def approve_run(db: AsyncSession, tenant_id: str, run_id: str, *, user_id)
     from app import hrm_pay_changes
 
     await hrm_pay_changes.settle_run(db, run.id)
+    from app import hrm_time
+
+    await hrm_time.settle_overtime(db, run.id)
     run.status = "approved"
     run.approved_by = user_id
     run.approved_at = datetime.utcnow()
@@ -1057,6 +1092,7 @@ def _slip_dict(slip: m.HrmPayslip, employee: m.HrmEmployee | None) -> dict:
         "loan_deduction": _money(getattr(slip, "loan_deduction", 0)),
         "arrears_basic": _money(getattr(slip, "arrears_basic", 0)),
         "adjustment": _money(getattr(slip, "adjustment", 0)),
+        "overtime": _money(getattr(slip, "overtime", 0)),
         "rates_used": slip.rates_used,
         "note": slip.note,
     }

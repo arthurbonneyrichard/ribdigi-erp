@@ -56,6 +56,7 @@ class EmployeeBody(BaseModel):
     mobile_money: E164PhoneValue | None = None
     tier3_percent: Percent = Decimal("0")
     manager_id: UuidIdValue | None = None
+    biometric_id: Annotated[str, Field(min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$")] | None = None
 
 
 class EmployeeUpdate(BaseModel):
@@ -75,6 +76,7 @@ class EmployeeUpdate(BaseModel):
     mobile_money: E164PhoneValue | None = None
     tier3_percent: Percent | None = None
     manager_id: UuidIdValue | None = None
+    biometric_id: Annotated[str, Field(min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$")] | None = None
 
 
 class LeftBody(BaseModel):
@@ -153,6 +155,9 @@ class SettingsBody(BaseModel):
     paye_bands: list[Band] | None = Field(default=None, min_length=1, max_length=20)
     two_person_payroll: bool | None = None
     leave_accrual: Literal["upfront", "monthly"] | None = None
+    hours_per_day: Annotated[Decimal, Field(gt=0, le=24, max_digits=5, decimal_places=2)] | None = None
+    overtime_rate: Annotated[Decimal, Field(ge=1, le=5, max_digits=5, decimal_places=2)] | None = None
+    clock_needs_site: bool | None = None
     carry_over_days: Annotated[int, Field(ge=0, le=120)] | None = None
 
 

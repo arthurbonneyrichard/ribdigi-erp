@@ -74,6 +74,22 @@ Leave → Public holidays (`GET|POST|DELETE /hrm/holidays`). Leave and unpaid da
 
 Pay rates → **Someone other than the person who drew up a payroll must approve it** (`two_person_payroll`, off by default for one-person offices). When on, approving your own run is refused (403 `PAYROLL_SECOND_PERSON`).
 
+## Time: shifts, clock, overtime (`hrm_time.py`, `hrm_time_api.py`, screen `TimeWork.tsx`)
+
+- **Shifts and roster:** named shifts (start, end; an end earlier than the start runs past midnight; unpaid break; minutes of grace before "late"). Put chosen people on a shift for chosen weekdays between two dates, up to three months at a time; "Day off" takes them off.
+- **Clocking:** staff clock in and out under My pay and leave. Their phone's location (and accuracy) is sent with each clock. **Sites** are GPS points with a radius and a QR code that changes every five minutes (drawn on the server; previous code still accepted for one window). With **Clock-ins from phones must be at a work site** on (Pay rates), a phone clock-in must be inside a site's radius with accuracy of 200 m or better, or carry the site's current code. GPS can be faked on a tampered phone; the code, the stored distance and accuracy are the checks available.
+- **Clock board:** per day, each person's shift, first in, last out, hours worked (less the shift's break), minutes late (only past the grace), left early, overtime (beyond the shift, or beyond the hours a day when not rostered), and Not in / On leave. HR can **enter times** for someone (with a reason); staff can ask to put a time right and someone else approves. Both replace the day's punches; the old ones stay, marked replaced.
+- **Overtime:** the month view totals each person's overtime. An HR manager approves up to what the clock shows; the next payroll for that month pays it (hourly = basic ÷ (working days × hours a day), × the overtime rate), taxed as a normal earning with no SSNIT. Ghana's concessionary overtime tax for junior staff is **not** applied: check with your accountant.
+
+## ZKTeco terminals and BioTime (`hrm_biometric.py`)
+
+Give each person their **terminal ID** (the PIN on the fingerprint or face terminal). Then either:
+
+- **BioTime (ERP reads it):** Sites and terminals → link the BioTime server's address, an API user and password (stored encrypted). **Sync now** signs in (`/jwt-api-token-auth/`, then `/api-token-auth/`) and reads `/iclock/api/transactions/` from the last sync. The BioTime server must be reachable from the ERP over the internet.
+- **Terminal push (ZKTeco ADMS / cloud server):** register the terminal's serial number, then set the terminal's cloud server address to the ERP. It calls `/iclock/cdata` and `/iclock/getrequest` at the server root. **Production needs a Dokploy domain rule `Path /iclock` → backend (port 8000)**; today only `/api` goes there. Some terminals can only send plain HTTP. The protocol has no password, so anyone who knows a registered serial could send punches: they are marked biometric for HR to check.
+
+Each punch is stored once. Punch state 0 / 3 / 4 is in, 1 / 2 / 5 is out, anything else alternates. **Built from ZKTeco's documented behaviour and tested only with simulated BioTime and terminal traffic: check the first days against a real terminal before paying from them.** Other biometric brands are not connected.
+
 ## People work (`hrm_people.py`, `hrm_people_api.py`, screen `PeopleWork.tsx`)
 
 | Area | What it does | Who |
@@ -87,7 +103,7 @@ Pay rates → **Someone other than the person who drew up a payroll must approve
 | Expense claims | Staff claim money spent; someone other than the claimant approves, which pays it back (debit 6000, credit cash/bank). Not through payroll. | HR manager |
 | Notices | Announcements and HR policies staff read under My pay and leave, until taken down. | Officers |
 
-Not built: document uploads (contracts, CVs and receipts are recorded by reference only), e-signatures, interview panels and calendar invites, 360-degree feedback, training budgets.
+Not built: Ghana overtime tax concession, other biometric brands, document uploads (contracts, CVs and receipts are recorded by reference only), e-signatures, interview panels and calendar invites, 360-degree feedback, training budgets.
 
 ## Leave
 

@@ -454,6 +454,15 @@ export const HRM_NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    id: 'hrm-time',
+    label: 'Time',
+    items: [
+      ['Clock board', '/hrm?tab=clock', 'hrm'],
+      ['Shifts and roster', '/hrm?tab=shifts', 'hrm'],
+      ['Sites and terminals', '/hrm?tab=devices', 'hrm'],
+    ],
+  },
+  {
     id: 'hrm-work',
     label: 'People work',
     items: [
@@ -882,7 +891,8 @@ export const GYM_ROLE_HREFS: Record<string, string[]> = {
 
 export const HRM_ROLE_HREFS: Record<string, string[]> = {
   hrm_officer: [
-    '/hrm', '/hrm?tab=people', '/hrm?tab=leave', '/hrm?tab=attendance', '/hrm?tab=hiring', '/hrm?tab=training',
+    '/hrm', '/hrm?tab=people', '/hrm?tab=leave', '/hrm?tab=attendance', '/hrm?tab=clock', '/hrm?tab=shifts',
+    '/hrm?tab=devices', '/hrm?tab=hiring', '/hrm?tab=training',
     '/hrm?tab=contracts', '/hrm?tab=kit', '/hrm?tab=notices', '/hrm?tab=me', '/notifications', '/security', '/support',
   ],
   hrm_employee: ['/hrm?tab=me', '/notifications', '/security', '/support'],
