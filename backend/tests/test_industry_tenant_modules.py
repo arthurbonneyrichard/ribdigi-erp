@@ -692,10 +692,15 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     greet = (root / "frontend/components/DashboardGreeting.tsx").read_text(encoding="utf-8")
     assert "Good morning" in greet and "Good afternoon" in greet and "Good evening" in greet
     assert "dash-hero" in greet
+    # One greeting for every industry, like retail: no signed-in name, retail's trial / grace pill.
+    assert "full_name" not in greet and "greet-side-name" not in greet
+    assert "subscription_status" in greet and "status-pill" in greet
+    retail = (root / "frontend/app/(dashboard)/dashboard/page.tsx").read_text(encoding="utf-8")
+    assert "<DashboardGreeting" in retail and "greet-side-name" not in retail
     hotel = (root / "frontend/app/(dashboard)/hotel/page.tsx").read_text(encoding="utf-8")
-    assert 'desk="Dashboard"' in hotel
+    assert 'desk="Hotel dashboard"' in hotel
     restaurant = (root / "frontend/app/(dashboard)/restaurant/page.tsx").read_text(encoding="utf-8")
-    assert 'desk="Dashboard"' in restaurant
+    assert 'desk="Restaurant dashboard"' in restaurant
     assert "restaurantDesk && tab === 'dashboard'" in restaurant
     assert "Kitchen and bar" in restaurant
     assert "Open a restaurant desk." in restaurant

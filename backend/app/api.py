@@ -3431,6 +3431,8 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             "industry_raw": (str(raw_industry).strip() if raw_industry else None) or None,
             "industry_valid": live_industry is not None,
             "subscription": usage,
+            # Same trial / grace state the retail dashboard shows; every desk greeting reads it.
+            "subscription_status": tenants_svc.subscription_status(tenant),
             **store_ent_svc.ui_store_flags(tenant),
             "inactivity_timeout_minutes": int(
                 getattr(tenant, "inactivity_timeout_minutes", None) or 30

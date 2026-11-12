@@ -242,6 +242,33 @@ def is_read_only(tenant: m.Tenant) -> bool:
     return tenant.status == "grace"
 
 
+def subscription_status(tenant: m.Tenant | None) -> dict:
+    """Trial / active / grace / suspended state shown in every dashboard greeting."""
+    if tenant is None:
+        return {
+            "status": None,
+            "trial_ends_at": None,
+            "grace_ends_at": None,
+            "days_remaining": None,
+            "read_only": False,
+            "trial_days": TRIAL_DAYS,
+        }
+    if tenant.status == "trial":
+        days_remaining = calendar_days_until(tenant.trial_ends_at)
+    elif tenant.status == "grace":
+        days_remaining = calendar_days_until(tenant.grace_ends_at)
+    else:
+        days_remaining = None
+    return {
+        "status": tenant.status,
+        "trial_ends_at": tenant.trial_ends_at,
+        "grace_ends_at": tenant.grace_ends_at,
+        "days_remaining": days_remaining,
+        "read_only": is_read_only(tenant),
+        "trial_days": TRIAL_DAYS,
+    }
+
+
 def _fiscal_year_label(tenant: m.Tenant) -> str:
     from app.accounting import fiscal_year_display_label
 

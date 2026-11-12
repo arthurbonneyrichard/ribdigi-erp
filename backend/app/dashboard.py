@@ -1015,13 +1015,6 @@ async def build_dashboard(
             )
         )
 
-    if tenant and tenant.status == "trial":
-        days_remaining = tenants_svc.calendar_days_until(tenant.trial_ends_at)
-    elif tenant and tenant.status == "grace":
-        days_remaining = tenants_svc.calendar_days_until(tenant.grace_ends_at)
-    else:
-        days_remaining = None
-
     industry_code = industry_payload.get("industry")
     fmcg_desk = None
     hospital_desk = None
@@ -1102,14 +1095,7 @@ async def build_dashboard(
                 )
             returns_count = int((await db.execute(ret_all)).scalar() or 0)
 
-    subscription = {
-        "status": tenant.status if tenant else None,
-        "trial_ends_at": tenant.trial_ends_at if tenant else None,
-        "grace_ends_at": tenant.grace_ends_at if tenant else None,
-        "days_remaining": days_remaining,
-        "read_only": tenants_svc.is_read_only(tenant) if tenant else False,
-        "trial_days": tenants_svc.TRIAL_DAYS,
-    }
+    subscription = tenants_svc.subscription_status(tenant)
 
     return {
         "scope": "store" if store_id or store_ids is not None else "tenant",
