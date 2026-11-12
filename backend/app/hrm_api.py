@@ -55,6 +55,7 @@ class EmployeeBody(BaseModel):
     ghana_card: GhanaCard | None = None
     mobile_money: E164PhoneValue | None = None
     tier3_percent: Percent = Decimal("0")
+    commission_percent: Percent = Decimal("0")
     manager_id: UuidIdValue | None = None
     biometric_id: Annotated[str, Field(min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$")] | None = None
 
@@ -75,6 +76,7 @@ class EmployeeUpdate(BaseModel):
     ghana_card: GhanaCard | None = None
     mobile_money: E164PhoneValue | None = None
     tier3_percent: Percent | None = None
+    commission_percent: Percent | None = None
     manager_id: UuidIdValue | None = None
     biometric_id: Annotated[str, Field(min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$")] | None = None
 
@@ -473,6 +475,37 @@ async def hrm_my_tax_statement(
     return _env(await changes_svc.tax_statement(db, claims["tenant_id"], employee, year))
 
 
+class CommissionBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    employee_id: UuidIdValue
+    period: Period
+
+
+@router.get("/commissions")
+async def hrm_commissions(
+    period: Annotated[str, Query(pattern=r"^20\d{2}-(0[1-9]|1[0-2])$")],
+    claims=Depends(require_permission("hrm", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    svc.job(claims, "payroll")
+    from app import hrm_commission
+
+    return _env(await hrm_commission.month(db, claims["tenant_id"], period))
+
+
+@router.post("/commissions")
+async def hrm_commission_approve(
+    payload: CommissionBody, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)
+):
+    svc.job(claims, "payroll")
+    from app import hrm_commission
+
+    row = await hrm_commission.approve(db, claims["tenant_id"], employee_id=payload.employee_id, period=payload.period, user_id=claims.get("sub"))
+    await db.commit()
+    return _env({"amount": float(row.amount), "net_sales": float(row.net_sales), "period": row.period}, "Commission approved for that month's payroll")
+
+
 @router.get("/summary")
 async def hrm_summary(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
     svc.job(claims, "people")
@@ -525,7 +558,7 @@ async def hrm_employee_update(
     claims=Depends(require_permission("hrm", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    svc.job(claims, "payroll" if {"basic_salary", "allowances"} & payload.model_fields_set else "people")
+    svc.job(claims, "payroll" if {"basic_salary", "allowances", "commission_percent", "tier3_percent"} & payload.model_fields_set else "people")
     row = await svc.update_employee(db, claims["tenant_id"], employee_id, payload, user_id=claims.get("sub"))
     await db.commit()
     return _env(svc.serialize_employee(row, pay=_sees_pay(claims)), "Saved")

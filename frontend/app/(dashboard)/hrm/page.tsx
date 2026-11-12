@@ -138,13 +138,13 @@ function printSlip(slip: Row, period: string) {
   if (!page) return;
   const line = (label: string, value: unknown) => `<tr><td>${label}</td><td style="text-align:right">${money(value)}</td></tr>`;
   page.document.write(
-    `<html><body style="font-family:sans-serif"><h3>Payslip ${safe(period)}</h3><p>${safe(slip.employee_name)} · ${safe(slip.employee_number)}<br/>${safe(slip.job_title)}</p><table style="width:100%">${line('Basic', slip.basic)}${line('Allowances', slip.allowances)}${line('Bonus', slip.bonus)}${Number(slip.arrears_basic) ? line('Back pay of basic', slip.arrears_basic) : ''}${Number(slip.adjustment) ? line('Correction', slip.adjustment) : ''}${Number(slip.overtime) ? line('Overtime', slip.overtime) : ''}${line('Unpaid days', -Number(slip.unpaid_deduction))}${line('Gross', slip.gross)}${line('SSNIT', -Number(slip.ssnit_employee))}${Number(slip.tier3) > 0 ? line('Tier 3 pension', -Number(slip.tier3)) : ''}${Number(slip.loan_deduction) > 0 ? line('Loan repayment', -Number(slip.loan_deduction)) : ''}${line('PAYE', -Number(slip.paye))}${line('Other deductions', -Number(slip.other_deductions))}</table><h3>Net pay ${money(slip.net)}</h3></body></html>`,
+    `<html><body style="font-family:sans-serif"><h3>Payslip ${safe(period)}</h3><p>${safe(slip.employee_name)} · ${safe(slip.employee_number)}<br/>${safe(slip.job_title)}</p><table style="width:100%">${line('Basic', slip.basic)}${line('Allowances', slip.allowances)}${line('Bonus', slip.bonus)}${Number(slip.arrears_basic) ? line('Back pay of basic', slip.arrears_basic) : ''}${Number(slip.adjustment) ? line('Correction', slip.adjustment) : ''}${Number(slip.overtime) ? line('Overtime', slip.overtime) : ''}${Number(slip.commission) ? line('Commission', slip.commission) : ''}${line('Unpaid days', -Number(slip.unpaid_deduction))}${line('Gross', slip.gross)}${line('SSNIT', -Number(slip.ssnit_employee))}${Number(slip.tier3) > 0 ? line('Tier 3 pension', -Number(slip.tier3)) : ''}${Number(slip.loan_deduction) > 0 ? line('Loan repayment', -Number(slip.loan_deduction)) : ''}${line('PAYE', -Number(slip.paye))}${line('Other deductions', -Number(slip.other_deductions))}</table><h3>Net pay ${money(slip.net)}</h3></body></html>`,
   );
   page.document.close();
   page.print();
 }
 
-const BLANK = { full_name: '', phone: '', email: '', job_title: '', department: '', hired_on: '', basic_salary: '', allowances: '0', ssnit_number: '', tin: '', bank_name: '', bank_account: '', ghana_card: '', mobile_money: '', tier3_percent: '0', manager_id: '', biometric_id: '' };
+const BLANK = { full_name: '', phone: '', email: '', job_title: '', department: '', hired_on: '', basic_salary: '', allowances: '0', ssnit_number: '', tin: '', bank_name: '', bank_account: '', ghana_card: '', mobile_money: '', tier3_percent: '0', manager_id: '', biometric_id: '', commission_percent: '0' };
 
 const GHANA_CARD = /^GHA-\d{9}-\d$/;
 
@@ -190,6 +190,8 @@ function HrmDesk() {
   const [loans, setLoans] = useState<Row[]>([]);
   const [teamLeave, setTeamLeave] = useState<Row[]>([]);
   const [adjustments, setAdjustments] = useState<Row[]>([]);
+  const [commPeriod, setCommPeriod] = useState(thisMonth());
+  const [commissions, setCommissions] = useState<Row[] | null>(null);
   const [adjForm, setAdjForm] = useState({ employee_id: '', kind: 'correction', amount: '', for_period: '', reason: '' });
   const [schedPeriod, setSchedPeriod] = useState(thisMonth());
   const [paye, setPaye] = useState<Row | null>(null);
@@ -311,6 +313,7 @@ function HrmDesk() {
         department: blank(form.department),
         manager_id: form.manager_id || null,
         biometric_id: form.biometric_id.trim() || null,
+        commission_percent: Number(form.commission_percent || 0),
         hired_on: form.hired_on,
         basic_salary: Number(form.basic_salary || 0),
         allowances: Number(form.allowances || 0),
@@ -585,6 +588,9 @@ function HrmDesk() {
               <label><span>Terminal ID (fingerprint / face)</span><input value={form.biometric_id} onChange={(e) => setForm({ ...form, biometric_id: e.target.value })} aria-label="Terminal ID" /></label>
               <label><span>Mobile Money</span><input value={form.mobile_money} placeholder="+233…" onChange={(e) => setForm({ ...form, mobile_money: e.target.value })} aria-label="Mobile Money number" /></label>
               {seesPay ? (
+                <label><span>Sales commission %</span><input type="number" min="0" max="100" step="0.25" value={form.commission_percent} onChange={(e) => setForm({ ...form, commission_percent: e.target.value })} aria-label="Sales commission percent" /></label>
+              ) : null}
+              {seesPay ? (
                 <label><span>Tier 3 voluntary %</span><input type="number" min="0" max="100" step="0.5" value={form.tier3_percent} onChange={(e) => setForm({ ...form, tier3_percent: e.target.value })} aria-label="Tier 3 voluntary percent" /></label>
               ) : null}
               {form.ghana_card.trim() && !GHANA_CARD.test(form.ghana_card.trim().toUpperCase()) ? (
@@ -841,6 +847,43 @@ function HrmDesk() {
               <button type="button" className="hr-primary" disabled={busy || !period} onClick={() => void run('/hrm/payroll', { period }, 'Payroll drawn up')}>Draw up payroll</button>
             </div>
             <p className="hr-muted">Check the SSNIT and PAYE rates under Settings against the current official tables before you approve.</p>
+          </section>
+          <section className="hr-box hr-scroll" aria-label="Sales commission">
+            <Head title="Sales commission" />
+            <p className="hr-muted">
+              Net sales come from the Sales by salesperson report (FMCG: delivered orders the person booked), matched by the email on the
+              staff record. Approve a month to pay it on that month&apos;s payroll: taxed as earnings, no SSNIT.
+            </p>
+            <div className="hr-row">
+              <input type="month" value={commPeriod} onChange={(e) => setCommPeriod(e.target.value)} aria-label="Commission month" style={{ maxWidth: 200 }} />
+              <button type="button" disabled={busy} onClick={async () => {
+                try { setCommissions((await api(`/hrm/commissions?period=${commPeriod}`))?.data || []); } catch (err) { setError(problem(err)); }
+              }}>Show commission</button>
+            </div>
+            {commissions ? (
+              <table>
+                <thead><tr><th>Who</th><th>Rate</th><th>Net sales</th><th>Commission</th><th>Approved</th><th /></tr></thead>
+                <tbody>
+                  {commissions.map((c) => (
+                    <tr key={c.employee_id}>
+                      <td>{c.employee_name}{c.linked_login ? null : <><br /><small className="hr-muted">No sign-in with this email</small></>}</td>
+                      <td>{c.percent}%</td><td className="hr-num">{money(c.net_sales)}</td><td className="hr-num">{money(c.commission)}</td>
+                      <td>{c.approved ? `${money(c.approved.amount)}${c.approved.status === 'paid' ? ' (paid)' : ''}` : '—'}</td>
+                      <td>
+                        {c.linked_login && c.approved?.status !== 'paid' ? (
+                          <button type="button" className="hr-primary" disabled={busy} onClick={async () => {
+                            if (await run('/hrm/commissions', { employee_id: c.employee_id, period: commPeriod }, 'Commission approved')) {
+                              setCommissions((await api(`/hrm/commissions?period=${commPeriod}`))?.data || []);
+                            }
+                          }}>Approve {money(c.commission)}</button>
+                        ) : null}
+                      </td>
+                    </tr>
+                  ))}
+                  {commissions.length === 0 ? <tr><td colSpan={6} className="hr-muted">Nobody has a commission percent.</td></tr> : null}
+                </tbody>
+              </table>
+            ) : null}
           </section>
           <section className="hr-box hr-scroll" aria-label="Corrections to approved pay">
             <Head title="Corrections for the next payroll" />

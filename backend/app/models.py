@@ -4498,6 +4498,25 @@ class HrmOvertime(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class HrmCommission(Base):
+    """A month's sales commission for one person, approved by HR and paid on that month's payroll."""
+
+    __tablename__ = "hrm_commissions"
+    __table_args__ = (UniqueConstraint("employee_id", "period", name="uq_hrm_commission_month"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    period: Mapped[str] = mapped_column(String(7), index=True)
+    net_sales: Mapped[float] = mapped_column(Numeric(14, 2))
+    percent: Mapped[float] = mapped_column(Numeric(6, 3))
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    status: Mapped[str] = mapped_column(String(16), default="approved", index=True)  # approved | paid
+    run_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    approved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class HrmStatutoryRate(Base):
     """PAYE bands and SSNIT / pension rules from a date onwards. A payroll month uses the
     newest row starting on or before the month's first day. Rows an approved payroll used
@@ -4553,6 +4572,8 @@ class HrmEmployee(Base):
     manager_id: Mapped[str | None] = mapped_column(ForeignKey("hrm_employees.id"), nullable=True, index=True)
     # Voluntary Tier 3 pension, percent of earned basic.
     tier3_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=0, server_default="0")
+    # Sales commission, percent of the person's net sales in a month (0 = none).
+    commission_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -4654,6 +4675,8 @@ class HrmPayslip(Base):
     adjustment: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     # Approved overtime paid this month (taxable earnings, no SSNIT).
     overtime: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    # Approved sales commission paid this month (taxable earnings, no SSNIT).
+    commission: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     # The rates this slip was worked out with, kept so it can be explained later.
     rates_used: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     note: Mapped[str | None] = mapped_column(String(255), nullable=True)

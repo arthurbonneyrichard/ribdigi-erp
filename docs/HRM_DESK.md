@@ -74,6 +74,10 @@ Payroll arithmetic is Decimal throughout (`backend/app/hrm_payroll.py`, no float
 
 Reports → PAYE and SSNIT schedules (`GET /hrm/reports/paye|ssnit?period=`) list each person's figures from approved payslips with CSV downloads, and name anyone missing a TIN/Ghana Card or SSNIT number. **Print statement** (`GET /hrm/reports/tax-statement`) gives one person's year month by month; staff print their own from My pay and leave (`GET /hrm/me/tax-statement`). These are working papers for the company's own returns: nothing is filed with GRA or SSNIT.
 
+## Sales commission (`hrm_commission.py`)
+
+Each staff record can carry a **Sales commission %**. Payroll → Sales commission shows each person's net sales for a month, matched by the email on their staff record to their sign-in: for FMCG, delivered (or closed) orders they booked, less tax and returns; for every other business type, the Sales by salesperson report (invoices they raised and till sales on their shift, less tax). Retail sales returns are not taken off, as on that report. An HR manager (not the person) approves the month; that month's payroll pays it as a taxable earning with no SSNIT. Changing someone's commission % needs pay rights.
+
 ## Loans and salary advances
 
 Payroll → Loans and advances (`/hrm?tab=loans`, `GET|POST /hrm/loans`, `POST /hrm/loans/{id}/decide|repay`); staff ask for their own under My pay and leave (`POST /hrm/me/loans`).

@@ -212,6 +212,7 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("hrm_biometric_links", m.HrmBiometricLink),
     ("hrm_clock_corrections", m.HrmClockCorrection),
     ("hrm_overtime", m.HrmOvertime),
+    ("hrm_commissions", m.HrmCommission),
     ("hrm_loans", m.HrmLoan),
     ("hrm_loan_repayments", m.HrmLoanRepayment),
 ]
