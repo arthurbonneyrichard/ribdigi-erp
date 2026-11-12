@@ -302,6 +302,7 @@ NotificationCategoryValue = Annotated[
         "platform_security",
         "staff_account",
         "admin_password_reset",
+        "hr",
     ],
     BeforeValidator(coerce_package_code_value),
 ]
@@ -7978,6 +7979,7 @@ class NotificationPreferencesMap(BaseModel):
     platform_security: NotificationChannelPrefs | None = None
     staff_account: NotificationChannelPrefs | None = None
     admin_password_reset: NotificationChannelPrefs | None = None
+    hr: NotificationChannelPrefs | None = None
 
 
 class NotificationPreferencesUpdate(BaseModel):

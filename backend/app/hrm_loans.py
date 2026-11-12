@@ -224,6 +224,12 @@ async def request_loan(db: AsyncSession, tenant_id: str, *, employee_id: str, pa
         db, tenant_id, user_id, "hrm_loan_requested", "hrm_loan", row.id,
         {"kind": row.kind, "principal": money_json(principal), "employee_id": employee.id},
     )
+    from app import hrm_notify
+
+    await hrm_notify.to_hr(
+        db, tenant_id, "Loan to decide", f"{employee.full_name} asks for a {row.kind} ({row.loan_number}).",
+        entity_type="hrm_loan", entity_id=row.id, skip_user=user_id,
+    )
     return row
 
 
@@ -251,6 +257,12 @@ async def decide_loan(
         row.decided_at = datetime.utcnow()
         await hrm._audit(db, tenant_id, user_id, "hrm_loan_rejected", "hrm_loan", row.id, {"note": row.decision_note})
         await db.flush()
+        from app import hrm_notify
+
+        await hrm_notify.to_person(
+            db, tenant_id, employee, "Loan decided", f"Your {row.kind} {row.loan_number} was turned down: {row.decision_note}",
+            entity_type="hrm_loan", entity_id=row.id,
+        )
         return row
     if method not in hrm.METHODS:
         raise HTTPException(status_code=422, detail="Choose how the money was paid out")
@@ -276,6 +288,12 @@ async def decide_loan(
         {"principal": money_json(amount), "method": method},
     )
     await db.flush()
+    from app import hrm_notify
+
+    await hrm_notify.to_person(
+        db, tenant_id, employee, "Loan decided", f"Your {row.kind} {row.loan_number} was approved and paid out.",
+        entity_type="hrm_loan", entity_id=row.id,
+    )
     return row
 
 

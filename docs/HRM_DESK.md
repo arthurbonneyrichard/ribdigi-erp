@@ -64,6 +64,10 @@ Payroll arithmetic is Decimal throughout (`backend/app/hrm_payroll.py`, no float
 
 **The figures are not checked against GRA or SSNIT by the system.** The desk does not file with GRA or SSNIT.
 
+## HR notices (`hrm_notify.py`)
+
+In-app notices of type **HR**, each addressed to one person (never company-wide) and without pay figures: a leave request goes to the person's manager (or HR when there is no manager with a sign-in), a manager's yes goes on to HR, and the decision goes to the person; claims, loans and clock corrections go to HR and their decisions to the person; approving a payroll tells each person their payslip is ready. Staff are matched to sign-ins by the email on their staff record.
+
 ## Junior overtime tax and minimum wage
 
 Both live on the dated rates row and are off until entered (check the current GRA and National Tripartite Committee figures with an accountant):

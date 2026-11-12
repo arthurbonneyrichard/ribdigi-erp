@@ -627,6 +627,12 @@ async def add_claim(db: AsyncSession, tenant_id: str, employee: m.HrmEmployee, p
     db.add(row)
     await db.flush()
     await _audit(db, tenant_id, user_id, "hrm_claim_made", "hrm_claim", row.id, {"amount": money_json(row.amount)})
+    from app import hrm_notify
+
+    await hrm_notify.to_hr(
+        db, tenant_id, "Claim to decide", f"{employee.full_name} made claim {row.claim_number}: {row.description}.",
+        entity_type="hrm_claim", entity_id=row.id, skip_user=user_id,
+    )
     return row
 
 
@@ -648,6 +654,7 @@ async def decide_claim(db: AsyncSession, tenant_id: str, claim_id: str, payload,
         row.status = "rejected"
         await _audit(db, tenant_id, user_id, "hrm_claim_rejected", "hrm_claim", row.id, {"note": row.decision_note})
         await db.flush()
+        await _claim_notice(db, tenant_id, row, f"Claim {row.claim_number} was turned down: {row.decision_note}")
         return row
     if payload.method not in hrm.METHODS:
         raise HTTPException(status_code=422, detail="Choose how it was paid back")
@@ -666,7 +673,16 @@ async def decide_claim(db: AsyncSession, tenant_id: str, claim_id: str, payload,
     row.paid_method = payload.method
     await _audit(db, tenant_id, user_id, "hrm_claim_paid", "hrm_claim", row.id, {"amount": amount, "method": payload.method})
     await db.flush()
+    await _claim_notice(db, tenant_id, row, f"Claim {row.claim_number} was approved and paid back.")
     return row
+
+
+async def _claim_notice(db, tenant_id, row, words: str) -> None:
+    from app import hrm_notify
+
+    await hrm_notify.to_person(
+        db, tenant_id, await db.get(m.HrmEmployee, row.employee_id), "Claim decided", words, entity_type="hrm_claim", entity_id=row.id
+    )
 
 
 # --- Notices and policies ------------------------------------------------------------------

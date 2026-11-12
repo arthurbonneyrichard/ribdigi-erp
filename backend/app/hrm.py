@@ -680,6 +680,13 @@ async def request_leave(db: AsyncSession, tenant_id: str, *, employee_id: str, p
     )
     db.add(row)
     await db.flush()
+    from app import hrm_notify
+
+    words = f"{employee.full_name} asks for {row.days} day(s) of {row.leave_type} leave from {row.starts_on.isoformat()}."
+    if row.stage != "manager" or not await hrm_notify.to_manager(
+        db, tenant_id, employee, "Leave to decide", words, entity_type="hrm_leave", entity_id=row.id, skip_user=user_id
+    ):
+        await hrm_notify.to_hr(db, tenant_id, "Leave to decide", words, entity_type="hrm_leave", entity_id=row.id, skip_user=user_id)
     return row
 
 
@@ -721,6 +728,13 @@ async def decide_leave(
         row.manager_note = optional_honest_narrative(note, label="note", max_length=255)
         await _audit(db, tenant_id, user_id, "hrm_leave_manager_approved", "hrm_leave", row.id, {"days": row.days})
         await db.flush()
+        from app import hrm_notify
+
+        await hrm_notify.to_hr(
+            db, tenant_id, "Leave to decide",
+            f"The manager agreed to {employee.full_name} taking {row.days} day(s) of leave from {row.starts_on.isoformat()}. HR has the last word.",
+            entity_type="hrm_leave", entity_id=row.id, skip_user=user_id,
+        )
         return row
     if not as_hr and not (stage == "manager" and is_manager):
         raise HTTPException(status_code=403, detail="HR decides this request")
@@ -737,6 +751,14 @@ async def decide_leave(
         details["manager_step_skipped_by_hr"] = True
     await _audit(db, tenant_id, user_id, f"hrm_leave_{row.status}", "hrm_leave", row.id, details)
     await db.flush()
+    from app import hrm_notify
+
+    await hrm_notify.to_person(
+        db, tenant_id, employee, "Leave approved" if approve else "Leave turned down",
+        f"Your {row.leave_type} leave from {row.starts_on.isoformat()} to {row.ends_on.isoformat()} was "
+        + ("approved." if approve else f"turned down: {row.decision_note}"),
+        entity_type="hrm_leave", entity_id=row.id, skip_user=user_id,
+    )
     return row
 
 
@@ -1133,6 +1155,13 @@ async def approve_run(db: AsyncSession, tenant_id: str, run_id: str, *, user_id)
     run.approved_at = datetime.utcnow()
     await _audit(db, tenant_id, user_id, "hrm_payroll_approved", "hrm_payroll", run.id, {"period": run.period, "net": _money(run.net)})
     await db.flush()
+    from app import hrm_notify
+
+    for slip in slips:
+        await hrm_notify.to_person(
+            db, tenant_id, await db.get(m.HrmEmployee, slip.employee_id), "Payslip ready",
+            f"Your payslip for {run.period} is ready under My HR.", entity_type="hrm_payslip", entity_id=slip.id,
+        )
     return run
 
 
