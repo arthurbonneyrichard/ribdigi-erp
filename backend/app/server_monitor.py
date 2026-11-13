@@ -494,8 +494,23 @@ async def _backup_stats(db: AsyncSession) -> dict[str, Any]:
                 .where(m.BackupSettings.enabled == True)  # noqa: E712
             )
         ).scalar() or 0
+        last_failure = (
+            await db.execute(
+                select(m.BackupJob.error_message, m.BackupJob.created_at)
+                .where(m.BackupJob.status == "failed")
+                .order_by(m.BackupJob.created_at.desc())
+                .limit(1)
+            )
+        ).first()
     except Exception as exc:
         return {"status": "unknown", "error": type(exc).__name__}
+    from app import backup as backup_svc
+
+    try:
+        backup_svc.ensure_backup_dir_writable()
+        writable = True
+    except Exception:  # noqa: BLE001
+        writable = False
     age_h = None
     if last_ok:
         age_h = round((datetime.utcnow() - last_ok).total_seconds() / 3600.0, 1)
@@ -504,6 +519,9 @@ async def _backup_stats(db: AsyncSession) -> dict[str, Any]:
         "age_hours": age_h,
         "failed_last_24h": int(failed),
         "companies_scheduled": int(scheduled),
+        "dir_writable": writable,
+        "last_error": (last_failure[0] or "")[:300] if last_failure else None,
+        "last_error_at": last_failure[1].replace(tzinfo=timezone.utc).isoformat() if last_failure and last_failure[1] else None,
     }
 
 
@@ -1142,6 +1160,13 @@ def backups_fix_text(backups: dict) -> str:
         parts.append("No company backup has ever finished.")
     else:
         parts.append(f"The last company backup finished {age:g} hours ago.")
+    if backups.get("dir_writable") is False:
+        parts.append(
+            f"The backup folder ({settings.BACKUP_DIR}) cannot be written to by the app. On the server run: "
+            "docker run --rm -v <project>_backup_data:/d alpine chown -R 10001:10001 /d (the app runs as user 10001)."
+        )
+    if backups.get("last_error"):
+        parts.append(f"Last error: {backups['last_error']}")
     if int(backups.get("failed_last_24h") or 0):
         parts.append(f"{backups['failed_last_24h']} backup(s) failed in the last day: check the backup folder ({settings.BACKUP_DIR}) is writable and has space.")
     if not int(backups.get("companies_scheduled") or 0):
@@ -1164,6 +1189,16 @@ def _placeholder(value: str) -> bool:
     return not v or v.startswith("REPLACE_ME") or v in {"CHANGEME", "CHANGE_ME", "SECRET", "TEST"}
 
 
+def _valid_fernet_key(value: str) -> bool:
+    from app.backup import _fernet_from_configured_key
+
+    try:
+        _fernet_from_configured_key(value, label="key")
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def key_problems() -> list[str]:
     """What is wrong with the three encryption keys: missing, placeholder, too short, or shared."""
     values = {name: (getattr(settings, name, "") or "").strip() for name in _KEY_NAMES}
@@ -1173,6 +1208,8 @@ def key_problems() -> list[str]:
             problems.append(f"{name} is not set")
         elif len(value) < 32:
             problems.append(f"{name} is shorter than 32 characters")
+        elif name != "SECRETS_ENCRYPTION_KEY" and not _valid_fernet_key(value):
+            problems.append(f"{name} is not a valid key (it must be a Fernet key or 64 hex characters)")
     real = [v for v in values.values() if not _placeholder(v)]
     if len(set(real)) < len(real):
         problems.append("two of the keys are the same value; each needs its own")

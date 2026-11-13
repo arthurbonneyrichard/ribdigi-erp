@@ -135,9 +135,18 @@ async def job_run_due_backups() -> dict:
     from app import backup as backup_svc
 
     async def work(db: AsyncSession, tenant_id: str) -> dict:
-        return await backup_svc.run_scheduled_backup_if_due(
+        outcome = await backup_svc.run_scheduled_backup_if_due(
             db, tenant_id=tenant_id, user_id=SYSTEM_USER_ID
         )
+        # The Celery result line truncates nested dicts, so say plainly what happened per company.
+        reason = outcome.get("reason")
+        if outcome.get("ran"):
+            logger.info("Backup created for tenant %s: %s", tenant_id, outcome.get("filename"))
+        elif reason in {"failed", "dir_not_writable"}:
+            logger.error("Backup failed for tenant %s (%s): %s", tenant_id, reason, outcome.get("error"))
+        else:
+            logger.info("Backup skipped for tenant %s: %s", tenant_id, reason)
+        return outcome
 
     return await _for_each_tenant(work)
 

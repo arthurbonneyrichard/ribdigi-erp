@@ -33,3 +33,16 @@ def test_backup_launch_check_says_why():
     assert "ever finished" in never and "No company has scheduled backups" in never and "run_due_backups" in never
     old = server_monitor.backups_fix_text({"age_hours": 50.0, "failed_last_24h": 2, "companies_scheduled": 3})
     assert "50 hours ago" in old and "2 backup(s) failed" in old and "No company" not in old
+
+
+def test_backup_check_shows_the_error_and_an_unwritable_folder():
+    text = server_monitor.backups_fix_text({
+        "age_hours": None, "failed_last_24h": 1, "companies_scheduled": 2,
+        "dir_writable": False, "last_error": "Backups are temporarily unavailable.",
+    })
+    assert "cannot be written" in text and "10001" in text and "Last error: Backups are temporarily unavailable." in text
+
+
+async def test_backup_stats_report_folder_and_last_error(db_session):
+    stats = await server_monitor._backup_stats(db_session)
+    assert stats["dir_writable"] is True and "last_error" in stats
