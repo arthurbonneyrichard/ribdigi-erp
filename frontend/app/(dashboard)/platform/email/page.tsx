@@ -131,7 +131,7 @@ function audienceWords(filters: HistoryRow['filters']) {
 /** The email's own HTML with the inline logo pointed at the copy this site serves. */
 function previewDoc(html: string) {
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
-  return html.split(PLATFORM_LOGO_CID).join(`${origin}/brand/ribdigi-house-logo.png`);
+  return html.split(PLATFORM_LOGO_CID).join(`${origin}/brand/ribdigi-house-email-logo.png`);
 }
 
 function companyMeta(row: Company) {
