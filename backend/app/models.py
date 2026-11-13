@@ -1445,7 +1445,8 @@ class BackupSettings(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), unique=True, index=True)
-    enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Daily backups are on unless the company admin turns them off.
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     frequency: Mapped[str] = mapped_column(String(20), default="daily")
     retention_count: Mapped[int] = mapped_column(Integer, default=30)
     hour_utc: Mapped[int] = mapped_column(Integer, default=2)

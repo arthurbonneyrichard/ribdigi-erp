@@ -1134,6 +1134,25 @@ def _item(key: str, area: str, label: str, ok: bool | None, fix: str, *, warn_on
 
 
 
+def backups_fix_text(backups: dict) -> str:
+    """Why no company backup finished recently, and what to do."""
+    age = backups.get("age_hours")
+    parts = []
+    if age is None:
+        parts.append("No company backup has ever finished.")
+    else:
+        parts.append(f"The last company backup finished {age:g} hours ago.")
+    if int(backups.get("failed_last_24h") or 0):
+        parts.append(f"{backups['failed_last_24h']} backup(s) failed in the last day: check the backup folder ({settings.BACKUP_DIR}) is writable and has space.")
+    if not int(backups.get("companies_scheduled") or 0):
+        parts.append("No company has scheduled backups turned on.")
+    parts.append(
+        "Daily backups are on by default; check celery_worker and celery_beat are running "
+        "(beat runs run_due_backups every hour), or run it now from Jobs > run_due_backups."
+    )
+    return " ".join(parts)
+
+
 # --- Launch checks: encryption keys and the metrics token ------------------------------------
 
 _KEY_NAMES = ("BACKUP_ENCRYPTION_KEY", "TOTP_ENCRYPTION_KEY", "SECRETS_ENCRYPTION_KEY")
@@ -1243,7 +1262,7 @@ async def launch_checks(db: AsyncSession, snap: dict[str, Any] | None = None) ->
               "Platform > Billing > Gateway: add live keys, test, then enable."),
         _item("backups", "Data", "A backup finished in the last day and a half",
               backups.get("age_hours") is not None and backups["age_hours"] <= settings.MONITOR_BACKUP_MAX_AGE_HOURS,
-              "Turn on scheduled backups (Backup page) and check the worker is running."),
+              backups_fix_text(backups)),
         _item("offsite", "Data", "Files and backups stored off the server",
               (settings.STORAGE_BACKEND or "local").lower() == "s3",
               "Set STORAGE_BACKEND=s3 (any S3/MinIO bucket) so a lost VPS does not lose uploads.", warn_only=True),

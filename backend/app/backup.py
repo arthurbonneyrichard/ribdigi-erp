@@ -473,9 +473,10 @@ async def get_or_create_settings(db: AsyncSession, tenant_id: str) -> m.BackupSe
     ).scalar_one_or_none()
     if row:
         return row
+    # On by default: every company gets a nightly backup unless its admin turns it off.
     row = m.BackupSettings(
         tenant_id=tenant_id,
-        enabled=False,
+        enabled=True,
         frequency="daily",
         retention_count=settings.BACKUP_RETENTION_COUNT,
         hour_utc=2,
