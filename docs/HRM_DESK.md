@@ -64,6 +64,10 @@ Payroll arithmetic is Decimal throughout (`backend/app/hrm_payroll.py`, no float
 
 **The figures are not checked against GRA or SSNIT by the system.** The desk does not file with GRA or SSNIT.
 
+## Ask HR (`hrm_assistant.py`, `POST /hrm/assistant`)
+
+A question box on My HR and the People tab. It recognises common questions by rules (no AI model) and answers from the same functions the screens use: staff ask about their leave left, payslips, manager (and who covers), documents to accept and claims; HR can also ask who is on leave today, leave waiting, headcount, contracts ending, people signals and this month's payroll. HR questions follow `hrm.job`, so staff get "That is for HR". Answers never contain pay amounts. Questions are logged like AI chat (hashed, redacted) and prompt-injection text is refused. AI chat with a language model stays off until a provider client is wired (see `docs/AI_SECURITY_MVP.md`).
+
 ## People signals (`hrm_insights.py`, `GET /hrm/insights`)
 
 Rule-based, no AI model, on the People tab: frequent short sick spells (Bradford factor spells² × days over 12 months, at or over 200), late on 5+ days last month, 20+ hours over shifts last month (only when the clock is used), from October half or more of the year's leave not taken, no finished review in 12 months after a year's service, and a company policy not accepted after 14 days. Each says why it shows; none carries a score or pay figures. The thresholds are conversation starters, not policy.

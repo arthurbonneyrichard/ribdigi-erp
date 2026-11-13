@@ -21,6 +21,7 @@ import Org from './Org';
 import Cover from './Cover';
 import PartPay from './PartPay';
 import Signals from './Signals';
+import AskHr from './AskHr';
 import './hrm.css';
 
 type Row = Record<string, any>;
@@ -656,6 +657,7 @@ function HrmDesk() {
               </tbody>
             </table>
           </section>
+          <AskHr examples={['Who is on leave today?', 'Leave waiting', 'Headcount', 'Contracts ending', 'Payroll this month']} />
           <Signals />
           <StaffFiles people={people} canConfidential={seesPay} />
           <Org canPlan={seesPay} />
@@ -1359,6 +1361,7 @@ function HrmDesk() {
               </tbody>
             </table>
           </section>
+          <AskHr examples={['How many leave days do I have?', 'Who approves my leave?', 'My payslip', 'Documents to accept', 'My claims']} />
           <MyDocuments />
           <Cover />
           <MyMore />

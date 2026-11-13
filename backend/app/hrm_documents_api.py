@@ -150,6 +150,24 @@ async def set_headcount(payload: HeadcountBody, claims=Depends(require_permissio
     return _env(await hrm_org.headcount(db, claims["tenant_id"]), "Headcount plan saved")
 
 
+class AskBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    question: Annotated[str, Field(min_length=2, max_length=500)]
+
+
+@router.post("/assistant")
+async def hr_assistant(payload: AskBody, claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    """Plain-language HR questions answered from the records by rules (no AI model)."""
+    from app import hrm_assistant
+    from app.honesty import require_honest_narrative
+
+    question = require_honest_narrative(payload.question, label="question", max_length=500)
+    out = await hrm_assistant.ask(db, claims, question)
+    await db.commit()
+    return _env(out)
+
+
 @router.get("/insights")
 async def hr_insights(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
     """People signals from plain rules (no AI model): absence, lateness, long hours, leave, reviews, policies."""
