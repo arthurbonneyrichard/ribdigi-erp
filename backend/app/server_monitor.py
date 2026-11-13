@@ -1133,6 +1133,65 @@ def _item(key: str, area: str, label: str, ok: bool | None, fix: str, *, warn_on
     return {"key": key, "area": area, "label": label, "status": status, "fix": "" if ok else fix}
 
 
+
+# --- Launch checks: encryption keys and the metrics token ------------------------------------
+
+_KEY_NAMES = ("BACKUP_ENCRYPTION_KEY", "TOTP_ENCRYPTION_KEY", "SECRETS_ENCRYPTION_KEY")
+KEY_COMMAND = 'python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"'
+
+
+def _placeholder(value: str) -> bool:
+    v = value.strip().upper()
+    return not v or v.startswith("REPLACE_ME") or v in {"CHANGEME", "CHANGE_ME", "SECRET", "TEST"}
+
+
+def key_problems() -> list[str]:
+    """What is wrong with the three encryption keys: missing, placeholder, too short, or shared."""
+    values = {name: (getattr(settings, name, "") or "").strip() for name in _KEY_NAMES}
+    problems = []
+    for name, value in values.items():
+        if _placeholder(value):
+            problems.append(f"{name} is not set")
+        elif len(value) < 32:
+            problems.append(f"{name} is shorter than 32 characters")
+    real = [v for v in values.values() if not _placeholder(v)]
+    if len(set(real)) < len(real):
+        problems.append("two of the keys are the same value; each needs its own")
+    jwt = (settings.JWT_SECRET_KEY or "").strip()
+    if jwt and jwt in real:
+        problems.append("a key equals JWT_SECRET_KEY; use a different value")
+    return problems
+
+
+def keys_fix_text() -> str:
+    problems = key_problems()
+    if not problems:
+        return "All three keys are set and different. Keep a copy offline: without them backups and saved secrets cannot be opened."
+    return (
+        "; ".join(problems).capitalize() + ". "
+        f"Make each key with: {KEY_COMMAND} and add it in Dokploy > Environment, then redeploy. "
+        "Data saved before still opens with the old key. Afterwards run scripts/reencrypt_secrets.py --apply "
+        "to move stored secrets onto the new keys. Keep copies offline."
+    )
+
+
+def metrics_problem() -> str | None:
+    """None when /metrics is safe: turned off, or behind a real token."""
+    if not settings.METRICS_ENABLED:
+        return None
+    token = (settings.METRICS_TOKEN or "").strip()
+    if _placeholder(token):
+        closed = settings.APP_ENV.lower() == "production"
+        return (
+            ("The metrics page is closed (production without a token), so Prometheus cannot read it. " if closed
+             else "The metrics page is open to anyone. ")
+            + 'Set METRICS_TOKEN to a long random value (python -c "import secrets; print(secrets.token_urlsafe(32))") '
+            "and give the same token to Prometheus as a bearer token, or set METRICS_ENABLED=false."
+        )
+    if len(token) < 24:
+        return "METRICS_TOKEN is shorter than 24 characters. Use a long random value (secrets.token_urlsafe(32))."
+    return None
+
 async def launch_checks(db: AsyncSession, snap: dict[str, Any] | None = None) -> dict[str, Any]:
     """Commercial launch checklist for the software owner (no secrets returned)."""
     from app import platform_settings as platform_settings_svc
@@ -1174,12 +1233,9 @@ async def launch_checks(db: AsyncSession, snap: dict[str, Any] | None = None) ->
               "Start celery_worker and celery_beat (emails, backups, renewals and alerts run there)."),
         _item("2fa", "Security", "Two-step sign-in enforced", bool(settings.LOGIN_2FA_ENABLED),
               "Set LOGIN_2FA_ENABLED=true."),
-        _item("keys", "Security", "Separate encryption keys set",
-              all((k or "").strip() for k in (settings.BACKUP_ENCRYPTION_KEY, settings.TOTP_ENCRYPTION_KEY,
-                                               settings.SECRETS_ENCRYPTION_KEY)),
-              "Set BACKUP_ENCRYPTION_KEY, TOTP_ENCRYPTION_KEY and SECRETS_ENCRYPTION_KEY (keep copies offline)."),
-        _item("metrics", "Security", "Metrics page protected by a token", bool((settings.METRICS_TOKEN or "").strip()),
-              "Set METRICS_TOKEN (or METRICS_ENABLED=false).", warn_only=True),
+        _item("keys", "Security", "Separate encryption keys set", not key_problems(), keys_fix_text(), warn_only=False),
+        _item("metrics", "Security", "Metrics page protected by a token", not metrics_problem(),
+              metrics_problem() or "Metrics are protected.", warn_only=True),
         _item("email", "Customers", "Platform email can send",
               bool(settings.EMAIL_ENABLED and (settings.SMTP_HOST or "").strip()),
               "Set SMTP_HOST, SMTP_FROM_EMAIL and credentials so sign-up, reset and invoice mail is delivered."),

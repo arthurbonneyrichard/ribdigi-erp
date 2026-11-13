@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from functools import lru_cache
+
 import base64
 import gzip
 import hashlib
@@ -12,7 +14,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from cryptography.fernet import Fernet, InvalidToken
+from cryptography.fernet import Fernet, InvalidToken, MultiFernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from fastapi import HTTPException
@@ -386,18 +388,26 @@ def _fernet_from_configured_key(raw: str, *, label: str) -> Fernet:
     )
 
 
-def _fernet() -> Fernet:
-    raw = (settings.BACKUP_ENCRYPTION_KEY or "").strip()
-    if raw:
-        return _fernet_from_configured_key(raw, label="BACKUP_ENCRYPTION_KEY")
+@lru_cache(maxsize=4)
+def _legacy_fernet(jwt_secret: str) -> Fernet:
+    """The key backups used when BACKUP_ENCRYPTION_KEY was not set: derived from JWT_SECRET_KEY."""
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
         salt=b"ribdigi-backup-v1",
         iterations=120_000,
     )
-    key = base64.urlsafe_b64encode(kdf.derive(settings.JWT_SECRET_KEY.encode("utf-8")))
-    return Fernet(key)
+    return Fernet(base64.urlsafe_b64encode(kdf.derive(jwt_secret.encode("utf-8"))))
+
+
+def _fernet() -> MultiFernet:
+    """New backups use BACKUP_ENCRYPTION_KEY; backups made before it was set still restore."""
+    keys: list[Fernet] = []
+    raw = (settings.BACKUP_ENCRYPTION_KEY or "").strip()
+    if raw:
+        keys.append(_fernet_from_configured_key(raw, label="BACKUP_ENCRYPTION_KEY"))
+    keys.append(_legacy_fernet(settings.JWT_SECRET_KEY))
+    return MultiFernet(keys)
 
 
 def _json_default(value: Any) -> Any:
