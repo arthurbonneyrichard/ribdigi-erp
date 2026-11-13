@@ -221,6 +221,7 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("hrm_documents", m.HrmDocument),
     ("hrm_document_acks", m.HrmDocumentAck),
     ("hrm_headcount_plans", m.HrmHeadcountPlan),
+    ("hrm_feedback", m.HrmFeedback),
     ("restaurant_tip_runs", m.RestaurantTipRun),
     ("restaurant_tip_shares", m.RestaurantTipShare),
     ("hrm_loans", m.HrmLoan),

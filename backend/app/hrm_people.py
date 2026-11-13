@@ -251,10 +251,14 @@ def _overall(goals: list[dict]) -> Decimal | None:
     return (total / weight).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
-async def serialize_review(db: AsyncSession, row: m.HrmReview) -> dict:
+async def serialize_review(db: AsyncSession, row: m.HrmReview, *, as_hr: bool = False) -> dict:
+    from app import hrm_feedback
+
+    goals = [{**g, "progress": hrm_feedback.progress_percent(g)} for g in (row.goals or [])]
     return {
         "id": row.id, "employee_id": row.employee_id, "employee_name": await _name(db, row.employee_id),
-        "cycle": row.cycle, "goals": row.goals, "status": row.status, "self_comment": row.self_comment,
+        "feedback": await hrm_feedback.summary(db, row.id, with_waiting=as_hr),
+        "cycle": row.cycle, "goals": goals, "status": row.status, "self_comment": row.self_comment,
         "reviewer_comment": row.reviewer_comment, "overall": money_json(row.overall) if row.overall is not None else None,
         "completed_at": _iso(row.completed_at), "created_at": _iso(row.created_at),
     }
@@ -269,7 +273,16 @@ async def list_reviews(db: AsyncSession, tenant_id: str, *, employee_id: str | N
 
 async def start_review(db: AsyncSession, tenant_id: str, payload, *, user_id) -> m.HrmReview:
     employee = await _person(db, tenant_id, payload.employee_id)
-    goals = [{"title": require_honest_narrative(g.title, label="goal", max_length=200), "weight": int(g.weight), "score": None, "self_score": None} for g in payload.goals]
+    goals = [
+        {
+            "title": require_honest_narrative(g.title, label="goal", max_length=200), "weight": int(g.weight), "score": None, "self_score": None,
+            # Optional measurable target (KPI); the actual is recorded during the review period.
+            "target": str(g.target) if getattr(g, "target", None) is not None else None,
+            "unit": optional_honest_narrative(getattr(g, "unit", None), label="unit", max_length=30),
+            "actual": None,
+        }
+        for g in payload.goals
+    ]
     if sum(g["weight"] for g in goals) != 100:
         raise HTTPException(status_code=422, detail="Goal weights must add up to 100")
     row = m.HrmReview(

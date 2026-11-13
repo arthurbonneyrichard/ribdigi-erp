@@ -4352,6 +4352,25 @@ class HrmReview(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class HrmFeedback(Base):
+    """360 feedback: one colleague's answer on someone's review. Shown without the colleague's name."""
+
+    __tablename__ = "hrm_feedback"
+    __table_args__ = (UniqueConstraint("review_id", "from_employee_id", name="uq_hrm_feedback_once"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    review_id: Mapped[str] = mapped_column(ForeignKey("hrm_reviews.id"), index=True)
+    from_employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    status: Mapped[str] = mapped_column(String(16), default="asked")  # asked | given
+    rating: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    strengths: Mapped[str | None] = mapped_column(Text, nullable=True)
+    improve: Mapped[str | None] = mapped_column(Text, nullable=True)
+    asked_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    given_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class HrmTraining(Base):
     __tablename__ = "hrm_trainings"
 

@@ -64,6 +64,12 @@ Payroll arithmetic is Decimal throughout (`backend/app/hrm_payroll.py`, no float
 
 **The figures are not checked against GRA or SSNIT by the system.** The desk does not file with GRA or SSNIT.
 
+## Goals with targets, and 360 feedback (`hrm_feedback.py`)
+
+A review goal can have a **target** and what it is counted in (KPI). While the review is open the person (My HR) or HR records the actual so far, and the screen shows progress against the target; scores remain the reviewer's call. HR can **ask colleagues** for 360 feedback (a 1–5 rating, what the person does well, what could be better). Each colleague answers once under My HR. Answers are shown without names to everyone, HR included, and only once at least two colleagues have answered (one answer would give its writer away). HR sees who still has to answer.
+
+The review, hiring, cases, kit, claims and clock-correction screens use inline fields instead of browser pop-up prompts.
+
 ## Org chart and headcount (`hrm_org.py`)
 
 People → **Who reports to whom** draws the tree from each staff record's "Reports to"; people who report to each other in a circle are listed so it can be fixed. **Headcount by department** shows planned (set by an HR manager or company admin), filled (active staff), being hired (open vacancy openings) and still to find.

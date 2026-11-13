@@ -82,6 +82,27 @@ class Goal(BaseModel):
     model_config = ConfigDict(extra="forbid")
     title: Short
     weight: Annotated[int, Field(ge=1, le=100)]
+    # Optional KPI: a number to reach and what it is counted in.
+    target: Annotated[Decimal, Field(max_digits=16, decimal_places=2)] | None = None
+    unit: Annotated[str, Field(min_length=1, max_length=30)] | None = None
+
+
+class ProgressBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    goal: Annotated[int, Field(ge=0, le=11)]
+    actual: Annotated[Decimal, Field(max_digits=16, decimal_places=2)]
+
+
+class AskFeedbackBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    employee_ids: list[UuidIdValue] = Field(min_length=1, max_length=20)
+
+
+class GiveFeedbackBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    rating: Annotated[int, Field(ge=1, le=5)]
+    strengths: Annotated[str, Field(max_length=2000)] | None = None
+    improve: Annotated[str, Field(max_length=2000)] | None = None
 
 
 class ReviewBody(BaseModel):
@@ -258,7 +279,7 @@ async def candidate_hire(candidate_id: UuidIdValue, payload: HireBody, claims=_w
 @router.get("/reviews")
 async def reviews(claims=_r(), db: AsyncSession = Depends(get_db)):
     svc.job(claims, "reviews")
-    return _env([await people.serialize_review(db, r) for r in await people.list_reviews(db, claims["tenant_id"])])
+    return _env([await people.serialize_review(db, r, as_hr=True) for r in await people.list_reviews(db, claims["tenant_id"])])
 
 
 @router.post("/reviews")
@@ -275,6 +296,57 @@ async def review_complete(review_id: UuidIdValue, payload: ScoreBody, claims=_w(
     row = await people.complete_review(db, claims["tenant_id"], review_id, payload, user_id=claims.get("sub"))
     await db.commit()
     return _env(await people.serialize_review(db, row), "Review finished")
+
+
+@router.post("/reviews/{review_id}/progress")
+async def review_progress(review_id: UuidIdValue, payload: ProgressBody, claims=_w(), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "reviews")
+    from app import hrm_feedback
+
+    row = await hrm_feedback.record_progress(db, claims["tenant_id"], review_id, index=payload.goal, actual=payload.actual, me=None, as_hr=True, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(await people.serialize_review(db, row, as_hr=True), "Progress saved")
+
+
+@router.post("/me/reviews/{review_id}/progress")
+async def my_review_progress(review_id: UuidIdValue, payload: ProgressBody, claims=_w(), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "self")
+    from app import hrm_feedback
+
+    me = await svc.employee_for_user(db, claims["tenant_id"], claims.get("sub"))
+    row = await hrm_feedback.record_progress(db, claims["tenant_id"], review_id, index=payload.goal, actual=payload.actual, me=me, as_hr=False, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(await people.serialize_review(db, row), "Progress saved")
+
+
+@router.post("/reviews/{review_id}/feedback")
+async def review_ask_feedback(review_id: UuidIdValue, payload: AskFeedbackBody, claims=_w(), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "reviews")
+    from app import hrm_feedback
+
+    added = await hrm_feedback.ask(db, claims["tenant_id"], review_id, payload.employee_ids, user_id=claims.get("sub"))
+    await db.commit()
+    return _env({"asked": added}, f"Asked {added} colleague(s)")
+
+
+@router.get("/me/feedback")
+async def my_feedback_requests(claims=_r(), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "self")
+    from app import hrm_feedback
+
+    me = await svc.employee_for_user(db, claims["tenant_id"], claims.get("sub"))
+    return _env(await hrm_feedback.my_requests(db, claims["tenant_id"], me))
+
+
+@router.post("/me/feedback/{feedback_id}")
+async def give_feedback(feedback_id: UuidIdValue, payload: GiveFeedbackBody, claims=_w(), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "self")
+    from app import hrm_feedback
+
+    me = await svc.employee_for_user(db, claims["tenant_id"], claims.get("sub"))
+    await hrm_feedback.give(db, claims["tenant_id"], feedback_id, me, payload, user_id=claims.get("sub"))
+    await db.commit()
+    return _env({"given": True}, "Thank you. Your feedback is shown without your name.")
 
 
 @router.post("/me/reviews/{review_id}/self")

@@ -66,6 +66,7 @@ export function TimeWork({ tab, seesPay }: { tab: string; seesPay: boolean }) {
   const [period, setPeriod] = useState(isoDay().slice(0, 7));
   const [f, setF] = useState<Row>({ weekdays: [0, 1, 2, 3, 4] });
   const [qr, setQr] = useState<Row | null>(null);
+  const [why, setWhy] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     const get = async (path: string) => (await api(path))?.data;
@@ -241,12 +242,10 @@ export function TimeWork({ tab, seesPay }: { tab: string; seesPay: boolean }) {
                     <td>
                       <div className="hr-row">
                         <button type="button" className="hr-primary" disabled={busy} onClick={() => void run(`/hrm/time/corrections/${c.id}/decide`, { approve: true }, 'Put right')}>Approve</button>
+                        <input placeholder="Reason to turn down" value={why[c.id] || ''} onChange={(e) => setWhy({ ...why, [c.id]: e.target.value })} aria-label={`Reason to turn down correction ${c.id}`} />
                         <button
-                          type="button" className="hr-danger" disabled={busy}
-                          onClick={() => {
-                            const why = window.prompt('Why is it turned down?');
-                            if (why && why.trim()) void run(`/hrm/time/corrections/${c.id}/decide`, { approve: false, note: why.trim() }, 'Turned down');
-                          }}
+                          type="button" className="hr-danger" disabled={busy || !(why[c.id] || '').trim()}
+                          onClick={() => void run(`/hrm/time/corrections/${c.id}/decide`, { approve: false, note: (why[c.id] || '').trim() }, 'Turned down')}
                         >Turn down</button>
                       </div>
                     </td>
