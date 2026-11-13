@@ -148,6 +148,20 @@ class Settings(BaseSettings):
     METRICS_ENABLED: bool = True
     # When set, GET /metrics needs `Authorization: Bearer <token>`. In production it is required (no token → 404).
     METRICS_TOKEN: str = ""
+    # Software owner server monitor (Platform > Server health). Alert when a reading
+    # crosses these; each alert repeats at most once per MONITOR_ALERT_COOLDOWN_MINUTES.
+    MONITOR_ENABLED: bool = True
+    MONITOR_CPU_ALERT_PCT: float = 90.0
+    MONITOR_MEMORY_ALERT_PCT: float = 90.0
+    MONITOR_DISK_ALERT_PCT: float = 85.0
+    MONITOR_DB_LATENCY_ALERT_MS: float = 500.0
+    MONITOR_P95_ALERT_MS: float = 2000.0
+    MONITOR_ERROR_RATE_ALERT_PCT: float = 5.0
+    MONITOR_BACKUP_MAX_AGE_HOURS: float = 36.0
+    MONITOR_CERT_ALERT_DAYS: int = 14
+    MONITOR_ALERT_COOLDOWN_MINUTES: int = 30
+    # Public address checked from the server (defaults to FRONTEND_URL).
+    MONITOR_PUBLIC_URL: str = ""
     REQUEST_LOG_ENABLED: bool = True
     LOG_LEVEL: str = "INFO"
     # AI Business Assistant (fail-closed until enabled + approved provider + key)

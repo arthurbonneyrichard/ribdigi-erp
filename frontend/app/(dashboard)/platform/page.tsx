@@ -388,6 +388,10 @@ export default function PlatformConsole() {
               <DeskIcon name="mail" size={16} />
               Email center
             </Link>
+            <Link href="/platform/monitor">
+              <DeskIcon name="chart" size={16} />
+              Server health
+            </Link>
             {canOpenDesk ? (
               <Link href="/platform/support">
                 <DeskIcon name="phone" size={16} />

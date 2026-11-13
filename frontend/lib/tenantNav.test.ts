@@ -689,7 +689,7 @@ test('software owner sidebar keeps platform console items and role limits', () =
   const ownerPerms = { '*': ['*'] };
   const owner = platformNavItemsForRole('platform_owner', ownerPerms).map(([, href]) => href);
   const legacy = platformNavItemsForRole('super_admin', ownerPerms).map(([, href]) => href);
-  for (const href of ['/platform/staff', '/platform/support', '/platform/tenants', '/jobs']) {
+  for (const href of ['/platform/staff', '/platform/support', '/platform/tenants', '/jobs', '/platform/monitor']) {
     assert.equal(owner.includes(href), true, href);
     assert.equal(legacy.includes(href), true, href);
   }

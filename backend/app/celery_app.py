@@ -129,6 +129,10 @@ celery.conf.update(
                 run_every=max(1, int(settings.CELERY_ECOMMERCE_INTERVAL_MINUTES)) * 60.0
             ),
         },
+        "sample-server-health": {
+            "task": "app.tasks.sample_server_health",
+            "schedule": schedule(run_every=60.0),
+        },
         "deliver-support-outbox": {
             "task": "app.tasks.deliver_support_outbox",
             "schedule": schedule(run_every=60.0),

@@ -485,6 +485,9 @@ api.include_router(support_api_mod.router)
 from app import platform_email_api as platform_email_api_mod
 
 api.include_router(platform_email_api_mod.router)
+from app import platform_monitor_api as platform_monitor_api_mod  # noqa: E402
+
+api.include_router(platform_monitor_api_mod.router)
 from app import ecommerce_api as ecommerce_api_mod
 
 api.include_router(ecommerce_api_mod.staff)
