@@ -83,6 +83,7 @@ HR_AREAS_BY_INDUSTRY: dict[str, frozenset[str]] = {
     "hrm": ALL_HR_AREAS,
     "fmcg": ALL_HR_AREAS,
     "retail": frozenset({"people", "leave", "attendance", "payroll", "reviews", "claims", "notices", "self"}),
+    "wholesale": frozenset({"people", "leave", "attendance", "payroll", "reviews", "claims", "notices", "self"}),
     "pharmacy": frozenset({"people", "leave", "attendance", "payroll", "training", "contracts", "reviews", "notices", "self"}),
     "restaurant": frozenset({"people", "leave", "attendance", "payroll", "reviews", "notices", "self"}),
     "hotel": frozenset({"people", "leave", "attendance", "payroll", "training", "contracts", "reviews", "notices", "self"}),

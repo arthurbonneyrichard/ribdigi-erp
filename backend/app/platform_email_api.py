@@ -18,7 +18,7 @@ from app.tenants import VALID_INDUSTRIES, VALID_STATUSES
 router = APIRouter(prefix="/platform/email", tags=["platform"])
 
 StatusValue = Literal["trial", "active", "grace", "suspended"]
-IndustryValue = Literal["retail", "hotel", "restaurant", "fmcg", "bakery", "gym", "hrm", "pharmacy", "mart"]
+IndustryValue = Literal["retail", "wholesale", "hotel", "restaurant", "fmcg", "bakery", "gym", "hrm", "pharmacy", "mart"]
 PackageValue = Literal["trial", "starter", "professional", "enterprise"]
 SubjectValue = Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=200)]
 BodyValue = Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=20000)]

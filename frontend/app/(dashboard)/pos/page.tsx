@@ -1036,7 +1036,7 @@ function PosTill() {
         const industryNow = normalizeIndustry(meRes.data?.industry) || '';
         const hotelCompany = industryNow === 'hotel';
         const restaurantCompany = industryNow === 'restaurant';
-        const tillIndustry = ['retail', 'retail_wholesale', 'pharmacy', 'restaurant', 'hotel'].includes(
+        const tillIndustry = ['retail', 'wholesale', 'retail_wholesale', 'pharmacy', 'restaurant', 'hotel'].includes(
           industryNow
         );
         if (!sess.data && !offlineBoot && !tillIndustry) {

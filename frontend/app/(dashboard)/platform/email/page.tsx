@@ -41,6 +41,7 @@ const STATUSES: Option[] = [
 
 const INDUSTRIES: Option[] = [
   { value: 'retail', label: 'Retail' },
+  { value: 'wholesale', label: 'Wholesale' },
   { value: 'hotel', label: 'Hotel' },
   { value: 'restaurant', label: 'Restaurant' },
   { value: 'bakery', label: 'Bakery' },

@@ -23,7 +23,7 @@ _SAFE_IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 VALID_STATUSES = frozenset({"trial", "active", "grace", "suspended"})
 # Platform owner workspace — never suspend/delete (lockout recovery).
 PROTECTED_TENANT_SLUGS = frozenset({"platform", "ribdigi-platform"})
-VALID_INDUSTRIES = frozenset({"retail", "hotel", "restaurant", "fmcg", "bakery", "gym", "hrm"})
+VALID_INDUSTRIES = frozenset({"retail", "wholesale", "hotel", "restaurant", "fmcg", "bakery", "gym", "hrm"})
 INDUSTRY_LABELS = {
     "retail": "Retail",
     "mart": "Mart",
@@ -42,7 +42,7 @@ INDUSTRY_LABELS = {
     "hrm": "HRM",
 }
 # Customer industries a new or edited company can choose. Platform software is not in this list.
-PROVISION_INDUSTRIES: tuple[str, ...] = ("retail", "hotel", "restaurant", "fmcg", "bakery", "gym", "hrm")
+PROVISION_INDUSTRIES: tuple[str, ...] = ("retail", "wholesale", "hotel", "restaurant", "fmcg", "bakery", "gym", "hrm")
 # Kept so older callers still import the name. Nothing is blocked.
 RETIRED_PROVISION_INDUSTRIES: frozenset[str] = frozenset()
 VALID_DATE_FORMATS = frozenset({"DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"})

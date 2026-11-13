@@ -85,7 +85,8 @@ test('sales reports stay industry-specific and single-store hides store lists', 
   const stores = findReport('stores');
   assert.ok(pos && quotes && stores);
   assert.equal(reportVisible(pos, { industry: 'hotel', multiStore: false }), true);
-  assert.equal(reportVisible(pos, { industry: 'wholesale', multiStore: true }), false);
+  assert.equal(reportVisible(pos, { industry: 'wholesale', multiStore: true }), true);
+  assert.equal(reportVisible(quotes, { industry: 'wholesale', multiStore: true }), true);
   assert.equal(reportVisible(pos, { industry: 'fmcg', multiStore: true }), false);
   assert.equal(reportVisible(quotes, { industry: 'retail', multiStore: true }), true);
   assert.equal(reportVisible(quotes, { industry: 'hotel', multiStore: true }), false);

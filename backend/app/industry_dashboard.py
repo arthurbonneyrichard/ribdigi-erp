@@ -163,6 +163,9 @@ def dashboard_layout(industry: str | None) -> str:
     if is_software_owner_industry(industry):
         return "platform"
     ind = canonicalize_industry(industry)
+    if ind == "wholesale":
+        # Wholesale runs on the retail desk (screens, dashboard, POS counter).
+        return "retail"
     if not ind or ind not in CONFIGURED_DASHBOARD_INDUSTRIES:
         return "unconfigured"
     return ind
@@ -193,7 +196,7 @@ def industry_home_path(industry: str | None) -> str:
 
 
 # Restaurant and hotel ring on their own tills (/restaurant/till/*, /hotel/shop/*), never the retail POS.
-POS_INDUSTRIES = frozenset({"retail", "pharmacy"})
+POS_INDUSTRIES = frozenset({"retail", "pharmacy", "wholesale"})
 
 
 # Industries that rang sales on the retail POS at some point. Restaurant and hotel moved to their

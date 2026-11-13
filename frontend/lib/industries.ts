@@ -1,11 +1,11 @@
 /** Tenant business types — keep aligned with backend VALID_INDUSTRIES. */
 
-export const INDUSTRIES = ['retail', 'hotel', 'restaurant', 'fmcg', 'bakery', 'gym', 'hrm'] as const;
+export const INDUSTRIES = ['retail', 'wholesale', 'hotel', 'restaurant', 'fmcg', 'bakery', 'gym', 'hrm'] as const;
 
 export type IndustryKey = (typeof INDUSTRIES)[number];
 
 /** Customer industries a new company can choose. Platform software is not in this list. */
-export const PROVISION_INDUSTRIES = ['retail', 'hotel', 'restaurant', 'fmcg', 'bakery', 'gym', 'hrm'] as const;
+export const PROVISION_INDUSTRIES = ['retail', 'wholesale', 'hotel', 'restaurant', 'fmcg', 'bakery', 'gym', 'hrm'] as const;
 
 export const INDUSTRY_LABELS: Record<string, string> = {
   retail: 'Retail',
@@ -45,6 +45,7 @@ export function normalizeIndustry(value?: string | null): string | null {
     resto: 'restaurant',
     food_service: 'restaurant',
     cafe: 'restaurant',
+    wholesaler: 'wholesale',
   };
   const mapped = aliases[raw] || raw;
   if ((INDUSTRIES as readonly string[]).includes(mapped)) return mapped;

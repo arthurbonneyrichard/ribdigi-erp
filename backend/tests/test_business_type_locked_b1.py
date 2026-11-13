@@ -91,8 +91,9 @@ async def test_hotel_fmcg_and_restaurant_are_selectable_for_new_companies(client
         ("hotel", "Hotel Co", "hotel-co", "admin@hotel-co.example.com"),
         ("restaurant", "Restaurant Co", "restaurant-co", "admin@restaurant-co.example.com"),
         ("retail", "Retail Co", "retail-co", "admin@retail-co.example.com"),
+        ("wholesale", "Wholesale Co", "wholesale-co", "admin@wholesale-co.example.com"),
     )
-    rejected = ("pharmacy", "wholesale", "retail_wholesale", "hospital")
+    rejected = ("pharmacy", "retail_wholesale", "hospital")
     for industry in rejected:
         blocked = await ac.post(
             "/api/v1/tenants",

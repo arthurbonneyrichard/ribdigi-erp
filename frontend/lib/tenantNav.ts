@@ -533,6 +533,7 @@ export const HR_AREAS_BY_INDUSTRY: Record<string, string[]> = {
   hrm: ALL_HR_AREAS,
   fmcg: ALL_HR_AREAS,
   retail: ['people', 'leave', 'attendance', 'payroll', 'reviews', 'claims', 'notices', 'self'],
+  wholesale: ['people', 'leave', 'attendance', 'payroll', 'reviews', 'claims', 'notices', 'self'],
   pharmacy: ['people', 'leave', 'attendance', 'payroll', 'training', 'contracts', 'reviews', 'notices', 'self'],
   restaurant: ['people', 'leave', 'attendance', 'payroll', 'reviews', 'notices', 'self'],
   hotel: ['people', 'leave', 'attendance', 'payroll', 'training', 'contracts', 'reviews', 'notices', 'self'],
@@ -661,13 +662,13 @@ export function industryNavHrefOk(href: string, industry: string | null | undefi
   // Restaurant rings on its own till (/restaurant/till); the retail POS stays off its menus.
   if (path === '/pos') {
     // Restaurant and hotel ring on their own tills (/restaurant/till, /hotel/shop).
-    return ind === 'retail';
+    return ind === 'retail' || ind === 'wholesale';
   }
   // A restaurant keeps its bills and guests on its own screens (/restaurant/bills, /restaurant/guests).
   // Restaurant and hotel keep bills and guests on their own screens
   // (/restaurant/bills, /restaurant/guests; /hotel/invoices, Guests and CRM).
   if (path === '/sales' || path === '/customers') {
-    return ind === 'retail' || ind === 'pharmacy';
+    return ind === 'retail' || ind === 'pharmacy' || ind === 'wholesale';
   }
   return true;
 }

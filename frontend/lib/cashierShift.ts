@@ -2,7 +2,7 @@ import { api } from './api';
 import { normalizeIndustry } from './industries';
 import { getMe } from './meCache';
 
-const POS_INDUSTRIES = new Set(['retail', 'retail_wholesale', 'pharmacy', 'restaurant', 'hotel']);
+const POS_INDUSTRIES = new Set(['retail', 'wholesale', 'retail_wholesale', 'pharmacy', 'restaurant', 'hotel']);
 /** Restaurant and hotel keep their own drawers; they never open a retail POS session. */
 type OwnTill = 'restaurant' | 'hotel' | null;
 const CASHIER_SIGN_OUT_ROLES = new Set(['cashier', 'hotel_cashier', 'restaurant_cashier']);

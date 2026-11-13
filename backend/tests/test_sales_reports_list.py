@@ -232,8 +232,7 @@ async def test_pos_and_quotation_reports_follow_industry(client, db_session):
     await set_tenant_industry(db_session, seed["t1"], "wholesale")
     wholesale = await _admin(ac)
     pos = await ac.get("/api/v1/reports/sales/pos", headers=wholesale)
-    assert pos.status_code == 403
-    assert pos.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"
+    assert pos.status_code == 200, pos.text  # wholesale has the POS counter (13 Nov 2026)
 
     await set_tenant_industry(db_session, seed["t1"], "fmcg")
     fmcg = await _admin(ac)

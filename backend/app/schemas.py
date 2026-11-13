@@ -57,7 +57,7 @@ PosSalePaymentMethod = Annotated[
     BeforeValidator(coerce_payment_method_value),
 ]
 IndustryValue = Annotated[
-    Literal["retail", "hotel", "restaurant", "fmcg", "bakery", "gym", "hrm"],
+    Literal["retail", "wholesale", "hotel", "restaurant", "fmcg", "bakery", "gym", "hrm"],
     BeforeValidator(coerce_industry_value),
 ]
 TaxFilingPeriodValue = Annotated[
