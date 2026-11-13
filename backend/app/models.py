@@ -4823,6 +4823,10 @@ class HrmEmployee(Base):
     pay_frequency: Mapped[str] = mapped_column(String(16), default="monthly", server_default="monthly")
     # Non-resident for tax (GRA: flat 25%, bonus and overtime 20%).
     non_resident: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    # Not in SSNIT (an expatriate whose home scheme SSNIT has accepted); no SSNIT deducted.
+    ssnit_exempt: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    # Senior staff: never get the junior overtime tax concession.
+    senior_staff: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -4944,6 +4948,10 @@ class HrmPayslip(Base):
     bonus_relief_left: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     # Taxed as a non-resident this month (copied from the staff record).
     non_resident: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    ssnit_exempt: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    senior_staff: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    # When this payslip was emailed to the person (None = not sent).
+    emailed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     # Checks the slip failed, e.g. ["below_minimum_wage"].
     warnings: Mapped[list | None] = mapped_column(JSON, nullable=True)
     # The rates this slip was worked out with, kept so it can be explained later.

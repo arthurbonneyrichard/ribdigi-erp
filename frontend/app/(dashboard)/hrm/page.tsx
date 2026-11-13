@@ -7,7 +7,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { api } from '../../../lib/api';
+import { api, apiFetch } from '../../../lib/api';
 import { formatMoney } from '../../../lib/format';
 import { getMe } from '../../../lib/meCache';
 import { hrTabAllowed } from '../../../lib/tenantNav';
@@ -176,6 +176,27 @@ function printPayNote(l: Row) {
   page.print();
 }
 
+/** Download a file from the API (payslip PDF, payment file). Returns the response headers. */
+async function saveFile(path: string, fallbackName: string): Promise<Headers> {
+  const res = await apiFetch(path);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const detail = (body as { detail?: unknown }).detail;
+    throw new Error(typeof detail === 'string' && detail ? detail : 'Download failed. Try again.');
+  }
+  const blob = await res.blob();
+  const match = (res.headers.get('Content-Disposition') || '').match(/filename="?([^"]+)"?/i);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = match?.[1] || fallbackName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return res.headers;
+}
+
 function printSlip(slip: Row, period: string) {
   const page = window.open('', '_blank', 'width=480,height=700');
   if (!page) return;
@@ -187,7 +208,7 @@ function printSlip(slip: Row, period: string) {
   page.print();
 }
 
-const BLANK = { full_name: '', phone: '', email: '', job_title: '', department: '', hired_on: '', basic_salary: '', allowances: '0', ssnit_number: '', tin: '', bank_name: '', bank_account: '', ghana_card: '', mobile_money: '', tier3_percent: '0', manager_id: '', biometric_id: '', commission_percent: '0', pay_frequency: 'monthly', non_resident: false };
+const BLANK = { full_name: '', phone: '', email: '', job_title: '', department: '', hired_on: '', basic_salary: '', allowances: '0', ssnit_number: '', tin: '', bank_name: '', bank_account: '', ghana_card: '', mobile_money: '', tier3_percent: '0', manager_id: '', biometric_id: '', commission_percent: '0', pay_frequency: 'monthly', non_resident: false, ssnit_exempt: false, senior_staff: false };
 
 const GHANA_CARD = /^GHA-\d{9}-\d$/;
 
@@ -369,6 +390,8 @@ function HrmDesk() {
         commission_percent: Number(form.commission_percent || 0),
         pay_frequency: form.pay_frequency || 'monthly',
         non_resident: Boolean(form.non_resident),
+        ssnit_exempt: Boolean(form.ssnit_exempt),
+        senior_staff: Boolean(form.senior_staff),
         hired_on: form.hired_on,
         basic_salary: Number(form.basic_salary || 0),
         allowances: Number(form.allowances || 0),
@@ -419,7 +442,9 @@ function HrmDesk() {
         body[f.key] = after;
       }
       if (seesPay && dialog.values.pay_frequency !== (dialog.row.pay_frequency || 'monthly')) body.pay_frequency = dialog.values.pay_frequency;
-      if (seesPay && Boolean(dialog.values.non_resident) !== Boolean(dialog.row.non_resident)) body.non_resident = Boolean(dialog.values.non_resident);
+      for (const k of ['non_resident', 'ssnit_exempt', 'senior_staff']) {
+        if (seesPay && Boolean(dialog.values[k]) !== Boolean(dialog.row[k])) body[k] = Boolean(dialog.values[k]);
+      }
       if ((dialog.values.manager_id || '') !== (dialog.row.manager_id || '')) body.manager_id = dialog.values.manager_id || null;
       ok = Object.keys(body).length ? await run(`/hrm/employees/${dialog.row.id}`, body, 'Staff record saved', 'PATCH') : true;
     }
@@ -585,6 +610,22 @@ function HrmDesk() {
                     </select>
                   </label>
                 ) : null}
+                {seesPay ? (
+                  <label><span>SSNIT</span>
+                    <select value={dialog.values.ssnit_exempt ? 'yes' : 'no'} onChange={(e) => setDialog({ ...dialog, values: { ...dialog.values, ssnit_exempt: e.target.value === 'yes' } })} aria-label="Edit SSNIT membership">
+                      <option value="no">Pays SSNIT</option>
+                      <option value="yes">Not in SSNIT (approved foreign scheme)</option>
+                    </select>
+                  </label>
+                ) : null}
+                {seesPay ? (
+                  <label><span>Grade</span>
+                    <select value={dialog.values.senior_staff ? 'yes' : 'no'} onChange={(e) => setDialog({ ...dialog, values: { ...dialog.values, senior_staff: e.target.value === 'yes' } })} aria-label="Edit staff grade">
+                      <option value="no">Junior staff</option>
+                      <option value="yes">Senior staff (no overtime tax concession)</option>
+                    </select>
+                  </label>
+                ) : null}
                 </div>
                 {seesPay ? null : <p className="hr-muted">Bank, Mobile Money, ID numbers and pay are changed by an HR manager.</p>}
                 <p className="hr-muted">To change pay, use Change salary: it keeps a dated history and pays any back pay.</p>
@@ -718,6 +759,18 @@ function HrmDesk() {
                     <option value="yes">Non-resident (flat 25%)</option>
                   </select>
                 </label>
+                <label><span>SSNIT</span>
+                  <select value={form.ssnit_exempt ? 'yes' : 'no'} onChange={(e) => setForm({ ...form, ssnit_exempt: e.target.value === 'yes' })} aria-label="SSNIT membership">
+                    <option value="no">Pays SSNIT</option>
+                    <option value="yes">Not in SSNIT (approved foreign scheme)</option>
+                  </select>
+                </label>
+                <label><span>Grade</span>
+                  <select value={form.senior_staff ? 'yes' : 'no'} onChange={(e) => setForm({ ...form, senior_staff: e.target.value === 'yes' })} aria-label="Staff grade">
+                    <option value="no">Junior staff</option>
+                    <option value="yes">Senior staff (no overtime tax concession)</option>
+                  </select>
+                </label>
                 <label><span>Paid</span>
                   <select value={form.pay_frequency || 'monthly'} onChange={(e) => setForm({ ...form, pay_frequency: e.target.value })} aria-label="Pay frequency">
                     <option value="monthly">Monthly</option>
@@ -757,7 +810,7 @@ function HrmDesk() {
                           type="button" aria-label={`Edit ${p.full_name}`}
                           onClick={() => setDialog({
                             kind: 'edit', row: p,
-                            values: { ...Object.fromEntries(EDIT_FIELDS.map((f) => [f.key, p[f.key] ?? ''])), manager_id: p.manager_id || '', pay_frequency: p.pay_frequency || 'monthly', non_resident: Boolean(p.non_resident) },
+                            values: { ...Object.fromEntries(EDIT_FIELDS.map((f) => [f.key, p[f.key] ?? ''])), manager_id: p.manager_id || '', pay_frequency: p.pay_frequency || 'monthly', non_resident: Boolean(p.non_resident), ssnit_exempt: Boolean(p.ssnit_exempt), senior_staff: Boolean(p.senior_staff) },
                           })}
                         >Edit</button>
                         <button type="button" className="hr-danger" onClick={() => setDialog({ kind: 'left', row: p, left_on: iso(), reason: '' })}>Leaving</button>
@@ -1098,6 +1151,30 @@ function HrmDesk() {
                       <button type="button" className="hr-danger" disabled={busy} onClick={() => void run(`/hrm/payroll/${r.id}`, null, 'Draft thrown away', 'DELETE')}>Throw away</button>
                     </>
                   ) : null}
+                  {r.status !== 'draft' ? (
+                    <button type="button" disabled={busy} aria-label={`Email payslips for ${r.period}`} onClick={async () => {
+                      setBusy(true); setError(''); setNotice('');
+                      try {
+                        const out = (await api(`/hrm/payroll/${r.id}/email-payslips`, { method: 'POST', body: JSON.stringify({}) }))?.data || {};
+                        const parts = [`${out.sent} payslip(s) emailed`];
+                        if (out.already_sent) parts.push(`${out.already_sent} already had theirs`);
+                        if (out.no_email?.length) parts.push(`no email on file: ${out.no_email.join(', ')}`);
+                        if (out.failed?.length) parts.push(`could not send: ${out.failed.join(', ')}`);
+                        setNotice(parts.join('. ') + '.');
+                        await load();
+                      } catch (err) { setError(problem(err)); } finally { setBusy(false); }
+                    }}>Email payslips</button>
+                  ) : null}
+                  {r.status !== 'draft' ? (['bank', 'mobile_money'] as const).map((method) => (
+                    <button key={method} type="button" disabled={busy} aria-label={`Download ${method === 'bank' ? 'bank' : 'Mobile Money'} salary file for ${r.period}`} onClick={async () => {
+                      setError(''); setNotice('');
+                      try {
+                        const h = await saveFile(`/hrm/payroll/${r.id}/payment-file?method=${method}`, `salaries_${r.period}_${method}.csv`);
+                        const left = Number(h.get('X-Left-Out') || 0);
+                        setNotice(`${h.get('X-Rows') || 0} people in the ${method === 'bank' ? 'bank' : 'Mobile Money'} file.${left ? ` ${left} left out: no ${method === 'bank' ? 'bank account' : 'Mobile Money number'} on their record.` : ''}`);
+                      } catch (err) { setError(problem(err)); }
+                    }}>{method === 'bank' ? 'Bank file' : 'Mobile Money file'}</button>
+                  )) : null}
                   {r.status === 'approved' && !r.staff_paid ? <button type="button" className="hr-primary" onClick={() => setDialog({ kind: 'pay', row: r, what: 'staff', method: 'bank_transfer', amount: r.net })}>Pay salaries</button> : null}
                   {r.status === 'approved' && !r.paye_paid ? <button type="button" onClick={() => setDialog({ kind: 'pay', row: r, what: 'paye', method: 'bank_transfer', amount: r.paye })}>Pay PAYE</button> : null}
                   {r.status === 'approved' && !r.ssnit_paid ? <button type="button" onClick={() => setDialog({ kind: 'pay', row: r, what: 'ssnit', method: 'bank_transfer', amount: r.ssnit_due ?? Number(r.ssnit_employee) + Number(r.ssnit_employer) })}>Pay SSNIT</button> : null}
@@ -1122,6 +1199,8 @@ function HrmDesk() {
                           <div className="hr-row">
                             {r.status === 'draft' ? <button type="button" onClick={() => setDialog({ kind: 'slip', row: s, bonus: String(s.bonus), other: String(s.other_deductions) })}>Change</button> : null}
                             <button type="button" onClick={() => printSlip(s, r.period)}>Print</button>
+                            {r.status !== 'draft' ? <button type="button" aria-label={`Payslip PDF for ${s.employee_name}`} onClick={() => void saveFile(`/hrm/payslips/${s.id}/pdf`, `payslip_${r.period}.pdf`).catch((err) => setError(problem(err)))}>PDF</button> : null}
+                            {s.emailed_at ? <small className="hr-muted">Emailed</small> : null}
                           </div>
                         </td>
                       </tr>
@@ -1169,13 +1248,13 @@ function HrmDesk() {
                 <h2 style={{ marginTop: 12 }}>PAYE {paye.period}</h2>
                 {paye.missing_tax_id?.length ? <p className="hr-banner bad">No TIN or Ghana Card: {paye.missing_tax_id.join(', ')}</p> : null}
                 <table>
-                  <thead><tr><th>Employee</th><th>TIN</th><th>Gross</th><th>Taxable</th><th>PAYE</th></tr></thead>
+                  <thead><tr><th>Employee</th><th>TIN</th><th>Basic</th><th>Allowances</th><th>Bonus (5%)</th><th>Excess bonus</th><th>Chargeable</th><th>Overtime</th><th>Overtime tax</th><th>PAYE</th></tr></thead>
                   <tbody>
-                    {paye.rows.map((r: Row) => <tr key={r.employee_number}><td>{r.full_name}</td><td>{r.tin || r.ghana_card || '—'}</td><td className="hr-num">{money(r.gross)}</td><td className="hr-num">{money(r.taxable)}</td><td className="hr-num">{money(r.paye)}</td></tr>)}
-                    <tr><th>Total</th><th /><th className="hr-num">{money(paye.totals.gross)}</th><th className="hr-num">{money(paye.totals.taxable)}</th><th className="hr-num">{money(paye.totals.paye)}</th></tr>
+                    {paye.rows.map((r: Row) => <tr key={r.employee_number}><td>{r.full_name}{r.residence === 'non-resident' ? <><br /><small className="hr-muted">Non-resident</small></> : null}</td><td>{r.tin || r.ghana_card || '—'}</td><td className="hr-num">{money(r.basic)}</td><td className="hr-num">{money(r.cash_allowances)}</td><td className="hr-num">{money(r.bonus)}</td><td className="hr-num">{money(r.excess_bonus)}</td><td className="hr-num">{money(r.taxable)}</td><td className="hr-num">{money(r.overtime)}</td><td className="hr-num">{money(r.overtime_tax)}</td><td className="hr-num">{money(r.paye)}</td></tr>)}
+                    <tr><th>Total</th><th /><th className="hr-num">{money(paye.totals.basic)}</th><th className="hr-num">{money(paye.totals.cash_allowances)}</th><th className="hr-num">{money(paye.totals.bonus)}</th><th className="hr-num">{money(paye.totals.excess_bonus)}</th><th className="hr-num">{money(paye.totals.taxable)}</th><th className="hr-num">{money(paye.totals.overtime)}</th><th className="hr-num">{money(paye.totals.overtime_tax)}</th><th className="hr-num">{money(paye.totals.paye)}</th></tr>
                   </tbody>
                 </table>
-                <button type="button" onClick={() => downloadCsv(`paye-${paye.period}.csv`, [['Employee number', 'Name', 'TIN', 'Ghana Card', 'Gross', 'SSNIT', 'Tier 3 relief', 'Taxable', 'PAYE'], ...paye.rows.map((r: Row) => [r.employee_number, r.full_name, r.tin, r.ghana_card, r.gross, r.ssnit_employee, r.tier3_relief, r.taxable, r.paye])])}>Download PAYE CSV</button>
+                <button type="button" onClick={() => downloadCsv(`paye-${paye.period}.csv`, [['Employee number', 'Name', 'TIN', 'Ghana Card', 'Residence', 'Basic salary', 'SSNIT (5.5%)', 'Tier 3 relief', 'Cash allowances', 'Bonus up to 15%', 'Final tax on bonus', 'Excess bonus', 'Total cash emolument', 'Chargeable income', 'Tax on chargeable income', 'Overtime', 'Overtime tax', 'Total tax to GRA'], ...paye.rows.map((r: Row) => [r.employee_number, r.full_name, r.tin, r.ghana_card, r.residence, r.basic, r.ssnit_employee, r.tier3_relief, r.cash_allowances, r.bonus, r.bonus_tax, r.excess_bonus, r.gross, r.taxable, r.tax_on_chargeable, r.overtime, r.overtime_tax, r.paye])])}>Download PAYE CSV</button>
               </>
             ) : null}
             {ssnit ? (
@@ -1463,7 +1542,7 @@ function HrmDesk() {
             <Head title="My payslips" />
             <table>
               <tbody>
-                {me.payslips.map((s: Row) => <tr key={s.id}><td>{s.period}</td><td className="hr-num">{money(s.net)}</td><td><button type="button" onClick={() => printSlip(s, s.period)}>Print</button></td></tr>)}
+                {me.payslips.map((s: Row) => <tr key={s.id}><td>{s.period}</td><td className="hr-num">{money(s.net)}</td><td><div className="hr-row"><button type="button" onClick={() => printSlip(s, s.period)}>Print</button><button type="button" aria-label={`Download payslip PDF ${s.period}`} onClick={() => void saveFile(`/hrm/payslips/${s.id}/pdf`, `payslip_${s.period}.pdf`).catch((err) => setError(problem(err)))}>PDF</button></div></td></tr>)}
                 {me.payslips.length === 0 ? <tr><td className="hr-muted">No payslips yet.</td></tr> : null}
                 {me.payslips.length ? (
                   <tr>

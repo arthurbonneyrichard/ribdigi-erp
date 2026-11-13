@@ -114,6 +114,10 @@ class PayslipInput:
     bonus_relief_left: Decimal | None = None
     # Non-resident for tax: flat rate on income, a separate rate on bonus and overtime.
     non_resident: bool = False
+    # Not in SSNIT (e.g. an expatriate covered by a home scheme SSNIT has accepted).
+    ssnit_exempt: bool = False
+    # Senior staff never get the junior overtime concession, whatever they earn.
+    senior_staff: bool = False
 
 
 @dataclass
@@ -191,9 +195,9 @@ def compute_payslip(item: PayslipInput, rates: StatutoryRates) -> PayslipResult:
     if gross < 0:
         raise PayrollError("A correction cannot take pay below nil this month")
 
-    insurable = earned
+    insurable = ZERO if item.ssnit_exempt else earned
     if rates.insurable_cap is not None and rates.insurable_cap >= 0:
-        insurable = min(earned, rates.insurable_cap)
+        insurable = min(insurable, rates.insurable_cap)
     ssnit_employee = _round(insurable * rates.employee_percent / HUNDRED, rates)
     ssnit_employer = _round(insurable * rates.employer_percent / HUNDRED, rates)
     combined = ssnit_employee + ssnit_employer
@@ -222,7 +226,10 @@ def compute_payslip(item: PayslipInput, rates: StatutoryRates) -> PayslipResult:
             tax += overtime_tax + bonus_tax
     else:
         # Junior test on this month's employment income other than overtime (GRA: GH¢18,000 a year).
-        junior = rates.overtime_junior_cap is not None and overtime > 0 and (gross - overtime) <= rates.overtime_junior_cap
+        junior = (
+            not item.senior_staff and rates.overtime_junior_cap is not None and overtime > 0
+            and (gross - overtime) <= rates.overtime_junior_cap
+        )
         if item.bonus_relief_left is not None and bonus > 0:
             bonus_low = min(bonus, max(D(item.bonus_relief_left), ZERO))
         taxable = gross - ssnit_employee - tier3_relief - (overtime if junior else ZERO) - bonus_low

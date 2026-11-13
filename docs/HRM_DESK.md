@@ -118,6 +118,14 @@ Both live on the dated rates row and are off until entered (check the current GR
 
 Reports → PAYE and SSNIT schedules (`GET /hrm/reports/paye|ssnit?period=`) list each person's figures from approved payslips with CSV downloads, and name anyone missing a TIN/Ghana Card or SSNIT number. **Print statement** (`GET /hrm/reports/tax-statement`) gives one person's year month by month; staff print their own from My pay and leave (`GET /hrm/me/tax-statement`). These are working papers for the company's own returns: nothing is filed with GRA or SSNIT.
 
+The PAYE schedule follows the order of GRA's monthly PAYE return: residence, basic salary (after unpaid days, plus back pay), SSNIT, Tier 3 relief, cash allowances (allowances, corrections, commission, tips, unused leave paid), bonus up to 15% and its final tax, excess bonus, total cash emolument, chargeable income, tax on chargeable income, overtime and overtime tax, total tax to GRA. Benefits in kind (accommodation, vehicle) are not tracked, so those GRA columns are left out.
+
+## Payslips out: PDF, email, payment file (`hrm_payslips.py`)
+
+- **PDF** (`GET /hrm/payslips/{id}/pdf`): company letterhead, earnings, deductions, net pay, notes on overtime / bonus tax, non-resident and SSNIT. The bank account or Mobile Money number shows only its last 4 digits. HR with payroll rights get any payslip; staff get only their own, and only once the payroll is approved (anything else is 404). Payroll → **PDF** per person; My pay and leave → **PDF**.
+- **Email payslips** (`POST /hrm/payroll/{id}/email-payslips`, approved runs only): one email per person to the email on their record with the PDF attached. The email itself carries no pay figures. People without an email are listed; each payslip is sent once (`emailed_at`), `{"resend": true}` sends again. Email turned off → 503. Audited as `hrm_payslips_emailed`.
+- **Salary payment file** (`GET /hrm/payroll/{id}/payment-file?method=bank|mobile_money`, approved runs only, HR payroll): CSV of net pay with reference `Salary YYYY-MM` for a bank bulk upload or a Mobile Money bulk payment. People with no account / number for that method are left out (counted in `X-Left-Out`, shown on screen). Text starting `= + - @` gets a leading `'` so spreadsheets do not run it. Check the column layout against your bank's template. Audited as `hrm_payment_file_made`.
+
 ## Sales commission (`hrm_commission.py`)
 
 Each staff record can carry a **Sales commission %**. Payroll → Sales commission shows each person's net sales for a month, matched by the email on their staff record to their sign-in: for FMCG, delivered (or closed) orders they booked, less tax and returns; for every other business type, the Sales by salesperson report (invoices they raised and till sales on their shift, less tax). Retail sales returns are not taken off, as on that report. An HR manager (not the person) approves the month; that month's payroll pays it as a taxable earning with no SSNIT. Changing someone's commission % needs pay rights.
@@ -220,18 +228,20 @@ What the payroll now does:
 | PAYE bands from 1 Sep 2026 (Act 1178) | monthly: 588 at 0%, 80 at 5%, 100 at 10%, 2,900 at 17.5%, 16,000 at 25%, 30,332 at 30%, over 50,000 at 35% | In **Suggested Ghana rates** (Settings → Dated rates). A payroll from 2026-09 still on the old bands (first 490) shows a warning. Not applied automatically. |
 | PAYE bands before Sep 2026 | first 490 at 0% … (2024 table) | Suggested row from 2025-01-01; still the fallback when no dated row exists. |
 | SSNIT | 5.5% staff + 13% company on basic; 13.5% Tier 1, 5% Tier 2; cap GHS 61,000 (2025), 69,000 (2026) | Suggested rows set Tier 2 = 5% and the caps. SSNIT stays on basic only (allowances, commission, tips, leave pay, overtime, bonus are not insurable). |
-| Bonus | 5% final tax on bonus up to 15% of annual basic in the year; excess added to income on the bands | **New.** Allowance = basic x 12 x 15%, less what earlier approved months this year used. Shown as "of which bonus tax". |
+| Bonus | 5% final tax on bonus up to 15% of annual basic in the year; excess added to income on the bands | Allowance = the year's basic from the dated salary history, month by month for the months employed, x 15%, less what earlier approved months this year used. Shown as "of which bonus tax". |
 | Overtime (junior staff) | 5% on overtime up to 50% of monthly basic, 10% above; only if qualifying employment income for the year is not more than GHS 18,000; final, not added to basic | Test is now this month's employment income other than overtime (cap 1,500 = 18,000 / 12), and the 50% is of monthly basic, not pay earned after unpaid days. |
 | Non-resident employee | flat 25% on income; 20% on bonus or overtime | **New** "Tax residence" on the staff record (HR managers only). |
+| SSNIT for covered expatriates | exempt when SSNIT accepts a home scheme | **SSNIT: Not in SSNIT** on the staff record: no staff or company SSNIT, no Tier 1/2. HR must hold SSNIT's approval. |
+| Senior staff | overtime concession is for junior staff | **Grade: Senior staff** on the staff record: overtime is always ordinary pay. |
 | Minimum wage | GHS 21.77 a day (2026); GHS 25.04 (2027, announced Nov 2026) | In the suggested rows; a payslip under it blocks approval. Minimum-wage income is tax free, which the 0% band (588 ≈ 21.77 x 27) covers. |
 | Commission, tips, unused leave paid | employment income | Taxed through PAYE with ordinary pay, no SSNIT. |
 
 For the accountant to confirm or decide:
 
-1. Annual basic for the bonus allowance is taken as this month's basic x 12; a mid-year salary change or a part year changes the true figure.
-2. "Junior staff" is decided only by the income test; there is no grade flag. Above the threshold overtime is taxed as ordinary pay (GRA's page also says such staff are "not entitled to overtime pay").
+1. Annual basic for the bonus allowance is now the year's dated basic month by month (a part year and mid-year rises count). A rise dated later in the year than the payroll month is not known yet, so the allowance can grow in later months: confirm that is how GRA reads it.
+2. "Junior staff" is the income test plus a **Senior staff** mark HR sets. Above the threshold overtime is taxed as ordinary pay (GRA's page also says such staff are "not entitled to overtime pay").
 3. Tier 3 tax relief is set at 16.5% of earned basic; not checked against the wording of Act 896.
-4. SSNIT for non-resident or expatriate staff (exemption when covered by a home scheme) is not handled: SSNIT is still deducted.
+4. **Not in SSNIT** removes SSNIT entirely; confirm whether any Tier 2 still applies to such staff.
 5. SSNIT's minimum contribution base (reported around GHS 587.80 a month) is not enforced for part-time pay below it.
 6. The 2027 SSNIT cap was not yet announced on 14 Nov 2026; the 2027 minimum wage comes from one news report.
 7. Tips paid through payroll are treated as employment income of the employer.

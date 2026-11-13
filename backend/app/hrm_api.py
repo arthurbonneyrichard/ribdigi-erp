@@ -6,13 +6,14 @@ from datetime import date
 from decimal import Decimal
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import hrm as svc
 from app import hrm_loans as loans_svc
 from app import hrm_pay_changes as changes_svc
+from app import hrm_payslips as payslips_svc
 from app.db import get_db
 from app.schemas import E164PhoneValue, NonNegativeMoneyValue, PartyNameValue, UuidIdValue
 from app.security import require_permission
@@ -58,6 +59,8 @@ class EmployeeBody(BaseModel):
     commission_percent: Percent = Decimal("0")
     pay_frequency: Literal["monthly", "weekly", "fortnightly"] = "monthly"
     non_resident: bool = False
+    ssnit_exempt: bool = False
+    senior_staff: bool = False
     manager_id: UuidIdValue | None = None
     biometric_id: Annotated[str, Field(min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$")] | None = None
 
@@ -81,6 +84,8 @@ class EmployeeUpdate(BaseModel):
     commission_percent: Percent | None = None
     pay_frequency: Literal["monthly", "weekly", "fortnightly"] | None = None
     non_resident: bool | None = None
+    ssnit_exempt: bool | None = None
+    senior_staff: bool | None = None
     manager_id: UuidIdValue | None = None
     biometric_id: Annotated[str, Field(min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$")] | None = None
 
@@ -615,17 +620,23 @@ async def hrm_employees(
 # Money number redirects someone's pay, so it needs the same rights as changing the salary.
 PAY_ONLY_FIELDS = frozenset({
     "basic_salary", "allowances", "commission_percent", "tier3_percent", "pay_frequency", "non_resident",
+    "ssnit_exempt", "senior_staff",
     "ssnit_number", "tin", "bank_name", "bank_account", "ghana_card", "mobile_money",
 })
 
 
 # When adding someone, an officer may take down their ID and contact numbers (a new record
 # pays nothing until an HR manager sets the salary); the pay amounts themselves need pay rights.
-CREATE_PAY_FIELDS = frozenset({"basic_salary", "allowances", "commission_percent", "tier3_percent", "pay_frequency", "non_resident"})
+CREATE_PAY_FIELDS = frozenset({
+    "basic_salary", "allowances", "commission_percent", "tier3_percent", "pay_frequency", "non_resident", "ssnit_exempt", "senior_staff",
+})
 
 
 def _touches_pay(payload) -> bool:
-    defaults = {"basic_salary": 0, "allowances": 0, "commission_percent": 0, "tier3_percent": 0, "pay_frequency": "monthly", "non_resident": False}
+    defaults = {
+        "basic_salary": 0, "allowances": 0, "commission_percent": 0, "tier3_percent": 0, "pay_frequency": "monthly",
+        "non_resident": False, "ssnit_exempt": False, "senior_staff": False,
+    }
     for name in CREATE_PAY_FIELDS & payload.model_fields_set:
         value = getattr(payload, name, None)
         if value is None or value == "" or (name in defaults and value == defaults[name]):
@@ -856,6 +867,58 @@ async def hrm_slip_update(
     row = await svc.update_slip(db, claims["tenant_id"], slip_id, payload, user_id=claims.get("sub"))
     await db.commit()
     return _env(svc._slip_dict(row, await db.get(svc.m.HrmEmployee, row.employee_id)), "Saved")
+
+
+@router.get("/payslips/{slip_id}/pdf")
+async def hrm_slip_pdf(slip_id: UuidIdValue, claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    """HR with payroll rights: any payslip. Staff: their own, once the payroll is approved."""
+    pdf, filename = await payslips_svc.pdf_for(db, claims["tenant_id"], slip_id, claims)
+    return Response(
+        content=pdf, media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"', "Cache-Control": "no-store"},
+    )
+
+
+class EmailSlipsBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    # Send again to people who already had theirs.
+    resend: bool = False
+
+
+@router.post("/payroll/{run_id}/email-payslips")
+async def hrm_payroll_email(
+    run_id: UuidIdValue,
+    payload: EmailSlipsBody | None = None,
+    claims=Depends(require_permission("hrm", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    svc.job(claims, "payroll")
+    out = await payslips_svc.email_run(db, claims["tenant_id"], run_id, resend=bool(payload and payload.resend), user_id=claims.get("sub"))
+    await db.commit()
+    return _env(out, f"{out['sent']} payslip(s) emailed")
+
+
+@router.get("/payroll/{run_id}/payment-file")
+async def hrm_payment_file(
+    run_id: UuidIdValue,
+    method: Annotated[Literal["bank", "mobile_money"], Query()] = "bank",
+    claims=Depends(require_permission("hrm", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Net pay as CSV for the bank's bulk upload or a Mobile Money bulk payment."""
+    svc.job(claims, "payroll")
+    text, info = await payslips_svc.payment_file(db, claims["tenant_id"], run_id, method, user_id=claims.get("sub"))
+    await db.commit()
+    run = await svc._run(db, claims["tenant_id"], run_id)
+    return Response(
+        content=text, media_type="text/csv",
+        headers={
+            "Content-Disposition": f'attachment; filename="salaries_{run.period}_{method}.csv"',
+            "Cache-Control": "no-store",
+            "X-Rows": str(info["count"]),
+            "X-Left-Out": str(len(info["left_out"])),
+        },
+    )
 
 
 @router.delete("/payroll/{run_id}")

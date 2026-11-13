@@ -500,6 +500,8 @@ def serialize_employee(row: m.HrmEmployee, *, pay: bool = True) -> dict:
                 "commission_percent": money_json(getattr(row, "commission_percent", 0) or 0),
                 "pay_frequency": getattr(row, "pay_frequency", None) or "monthly",
                 "non_resident": bool(getattr(row, "non_resident", False)),
+                "ssnit_exempt": bool(getattr(row, "ssnit_exempt", False)),
+                "senior_staff": bool(getattr(row, "senior_staff", False)),
             }
         )
     return data
@@ -541,6 +543,9 @@ async def create_employee(db: AsyncSession, tenant_id: str, payload, *, user_id)
         tier3_percent=getattr(payload, "tier3_percent", 0) or 0,
         commission_percent=getattr(payload, "commission_percent", 0) or 0,
         pay_frequency=getattr(payload, "pay_frequency", None) or "monthly",
+        non_resident=bool(getattr(payload, "non_resident", False)),
+        ssnit_exempt=bool(getattr(payload, "ssnit_exempt", False)),
+        senior_staff=bool(getattr(payload, "senior_staff", False)),
         manager_id=await _check_manager(db, tenant_id, getattr(payload, "manager_id", None), None),
         biometric_id=await _check_biometric(db, tenant_id, getattr(payload, "biometric_id", None), None),
     )
@@ -997,6 +1002,8 @@ def _work_out(slip: m.HrmPayslip, settings: m.HrmSettings, rates: engine.Statuto
                     engine.D(slip.bonus_relief_left) if getattr(slip, "bonus_relief_left", None) is not None else None
                 ),
                 non_resident=bool(getattr(slip, "non_resident", False)),
+                ssnit_exempt=bool(getattr(slip, "ssnit_exempt", False)),
+                senior_staff=bool(getattr(slip, "senior_staff", False)),
                 arrears_basic=engine.D(getattr(slip, "arrears_basic", 0)),
                 # Commission and tips are taxable earnings without SSNIT, like a correction.
                 adjustment=engine.D(getattr(slip, "adjustment", 0))
@@ -1056,9 +1063,28 @@ def _totals(run: m.HrmPayrollRun, slips: list[m.HrmPayslip]) -> None:
     run.tips = sum((engine.D(getattr(s, "tips", 0)) for s in slips), engine.ZERO)
 
 
-async def _bonus_relief_left(db: AsyncSession, employee_id: str, basic, period: str, rates) -> Decimal:
-    """GRA: bonus up to 15% of annual basic salary in the year is taxed at 5%. Annual basic is taken
-    as this month's basic x 12; what earlier approved payslips this year already used comes off."""
+async def _annual_basic(db: AsyncSession, person: m.HrmEmployee, year: int) -> Decimal:
+    """The year's basic salary from the dated salary history, month by month, for the months the
+    person is employed (a part year or a mid-year rise gives the true figure, not basic x 12)."""
+    from app import hrm_pay_changes
+
+    total = engine.ZERO
+    for month in range(1, 13):
+        first = date(year, month, 1)
+        last = date(year, month, calendar.monthrange(year, month)[1])
+        if person.hired_on and person.hired_on > last:
+            continue
+        if person.left_on and person.left_on < first:
+            continue
+        basic, _ = await hrm_pay_changes.salary_for(db, person, first)
+        total += engine.D(basic)
+    return total
+
+
+async def _bonus_relief_left(db: AsyncSession, person: m.HrmEmployee, period: str, rates) -> Decimal:
+    """GRA: bonus up to 15% of annual basic salary in the year is taxed at 5%. What earlier approved
+    payslips this year already used comes off."""
+    employee_id = person.id
     year = period[:4]
     used = (
         await db.execute(
@@ -1070,7 +1096,8 @@ async def _bonus_relief_left(db: AsyncSession, employee_id: str, basic, period: 
             )
         )
     ).scalar_one()
-    allowance = engine.D(basic) * 12 * engine.D(rates.bonus_cap_percent) / 100
+    annual = await _annual_basic(db, person, int(year))
+    allowance = annual * engine.D(rates.bonus_cap_percent) / 100
     return max((allowance - engine.D(used)).quantize(Decimal("0.01")), engine.ZERO)
 
 
@@ -1135,7 +1162,9 @@ async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) 
             leave_pay=leave_pay,
             part_paid=part_paid,
             non_resident=bool(getattr(person, "non_resident", False)),
-            bonus_relief_left=await _bonus_relief_left(db, person.id, basic, period, rates),
+            bonus_relief_left=await _bonus_relief_left(db, person, period, rates),
+            ssnit_exempt=bool(getattr(person, "ssnit_exempt", False)),
+            senior_staff=bool(getattr(person, "senior_staff", False)),
             bonus=0,
             other_deductions=0,
             tier3_percent=person.tier3_percent or 0,
@@ -1374,6 +1403,9 @@ def _slip_dict(slip: m.HrmPayslip, employee: m.HrmEmployee | None) -> dict:
         "bonus_tax": _money(getattr(slip, "bonus_tax", 0)),
         "bonus_concessional": _money(getattr(slip, "bonus_concessional", 0)),
         "non_resident": bool(getattr(slip, "non_resident", False)),
+        "ssnit_exempt": bool(getattr(slip, "ssnit_exempt", False)),
+        "senior_staff": bool(getattr(slip, "senior_staff", False)),
+        "emailed_at": slip.emailed_at.isoformat() if getattr(slip, "emailed_at", None) else None,
         "warnings": list(getattr(slip, "warnings", None) or []),
         "rates_used": slip.rates_used,
         "note": slip.note,

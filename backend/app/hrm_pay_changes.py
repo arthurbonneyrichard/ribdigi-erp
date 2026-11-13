@@ -289,18 +289,34 @@ async def paye_schedule(db: AsyncSession, tenant_id: str, period: str) -> dict:
                 "full_name": person.full_name,
                 "tin": person.tin,
                 "ghana_card": person.ghana_card,
-                "gross": money_json(slip.gross),
+                "residence": "non-resident" if getattr(slip, "non_resident", False) else "resident",
+                # Columns in the order of GRA's monthly PAYE return.
+                "basic": money_json(D(slip.basic) - D(slip.unpaid_deduction) + D(getattr(slip, "arrears_basic", 0))),
                 "ssnit_employee": money_json(slip.ssnit_employee),
                 "tier3_relief": money_json(slip.tier3_relief),
+                "cash_allowances": money_json(
+                    D(slip.allowances) + D(getattr(slip, "adjustment", 0)) + D(getattr(slip, "commission", 0))
+                    + D(getattr(slip, "tips", 0)) + D(getattr(slip, "leave_pay", 0))
+                ),
+                "bonus": money_json(getattr(slip, "bonus_concessional", 0)),
+                "bonus_tax": money_json(getattr(slip, "bonus_tax", 0)),
+                "excess_bonus": money_json(max(D(slip.bonus) - D(getattr(slip, "bonus_concessional", 0)), ZERO)),
+                "gross": money_json(slip.gross),
                 "taxable": money_json(slip.taxable),
+                "tax_on_chargeable": money_json(
+                    D(slip.paye) - D(getattr(slip, "bonus_tax", 0)) - D(getattr(slip, "overtime_tax", 0))
+                ),
+                "overtime": money_json(getattr(slip, "overtime", 0)),
+                "overtime_tax": money_json(getattr(slip, "overtime_tax", 0)),
                 "paye": money_json(slip.paye),
             }
         )
     missing = [r["full_name"] for r in rows if not r["tin"] and not r["ghana_card"]]
+    keys = ("basic", "cash_allowances", "bonus", "bonus_tax", "excess_bonus", "gross", "taxable", "tax_on_chargeable", "overtime", "overtime_tax", "paye")
     return {
         "period": period,
         "rows": rows,
-        "totals": {k: _sum(rows, k) for k in ("gross", "taxable", "paye")},
+        "totals": {k: _sum(rows, k) for k in keys},
         "missing_tax_id": missing,
     }
 
