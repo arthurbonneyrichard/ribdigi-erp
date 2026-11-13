@@ -1134,6 +1134,23 @@ async def evaluate_alerts(db: AsyncSession, snap: dict[str, Any]) -> list[dict[s
     return fired
 
 
+_LIVE_TTL_SECONDS = 15.0
+_live_cache: dict[str, Any] = {}
+
+
+async def live_snapshot(db: AsyncSession) -> dict[str, Any]:
+    """The page's reading: reuse one taken in the last 15 s instead of probing everything again
+    (a full reading pings Celery, samples CPU and checks the site: about a second)."""
+    latest = await latest_sample_at()
+    hit = _live_cache.get("snap")
+    # Reuse only while no newer reading has been stored (or the history cleared) since.
+    if hit and _now() - hit[0] < _LIVE_TTL_SECONDS and hit[2] == latest:
+        return hit[1]
+    snap = await record(db, source="api")
+    _live_cache["snap"] = (_now(), snap, await latest_sample_at())
+    return snap
+
+
 async def record(db: AsyncSession, *, source: str, force: bool = False) -> dict[str, Any]:
     """Take a reading, store it (unless one is fresh) and evaluate alerts."""
     snap = await collect_snapshot(db, source=source)

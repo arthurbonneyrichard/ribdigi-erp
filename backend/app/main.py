@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from starlette.middleware.gzip import GZipMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
@@ -65,6 +66,9 @@ app = FastAPI(
 )
 
 # Middleware order: last added runs first on request.
+# Innermost: gzip JSON and text bodies of 1 KB and up when the browser accepts it. Lists and
+# reports shrink 5-10x, which is most of their time on a 150-200 ms round-trip connection.
+app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=5)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(MetricsMiddleware)
 app.add_middleware(RateLimitMiddleware)
