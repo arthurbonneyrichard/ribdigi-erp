@@ -56,6 +56,7 @@ class EmployeeBody(BaseModel):
     mobile_money: E164PhoneValue | None = None
     tier3_percent: Percent = Decimal("0")
     commission_percent: Percent = Decimal("0")
+    pay_frequency: Literal["monthly", "weekly", "fortnightly"] = "monthly"
     manager_id: UuidIdValue | None = None
     biometric_id: Annotated[str, Field(min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$")] | None = None
 
@@ -77,6 +78,7 @@ class EmployeeUpdate(BaseModel):
     mobile_money: E164PhoneValue | None = None
     tier3_percent: Percent | None = None
     commission_percent: Percent | None = None
+    pay_frequency: Literal["monthly", "weekly", "fortnightly"] | None = None
     manager_id: UuidIdValue | None = None
     biometric_id: Annotated[str, Field(min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$")] | None = None
 
@@ -162,6 +164,7 @@ class SettingsBody(BaseModel):
     clock_needs_site: bool | None = None
     carry_over_days: Annotated[int, Field(ge=0, le=120)] | None = None
     escalate_after_days: Annotated[int, Field(ge=0, le=60)] | None = None
+    part_pay_percent: Annotated[Decimal, Field(ge=0, le=100, max_digits=5, decimal_places=2)] | None = None
 
 
 class RateBand(BaseModel):
@@ -672,6 +675,39 @@ async def hrm_leave_decide(
     )
     await db.commit()
     return _env(await svc.present_leave(db, row), "Saved")
+
+
+class PartPayLine(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    employee_id: UuidIdValue
+    amount: NonNegativeMoneyValue
+
+
+class PartPayBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    paid_on: date
+    method: Literal["cash", "bank_transfer", "mobile_money", "cheque"]
+    lines: list[PartPayLine] = Field(min_length=1, max_length=500)
+
+
+@router.get("/part-pay")
+async def hrm_part_pay_sheet(paid_on: date = Query(...), claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "payroll")
+    from app import hrm_part_pay
+
+    return _env(await hrm_part_pay.sheet(db, claims["tenant_id"], paid_on))
+
+
+@router.post("/part-pay")
+async def hrm_part_pay(payload: PartPayBody, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "payroll")
+    from app import hrm_part_pay
+
+    out = await hrm_part_pay.pay(db, claims["tenant_id"], payload, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(out, f"Paid {out['paid']} people")
 
 
 class CoverBody(BaseModel):

@@ -64,6 +64,10 @@ Payroll arithmetic is Decimal throughout (`backend/app/hrm_payroll.py`, no float
 
 **The figures are not checked against GRA or SSNIT by the system.** The desk does not file with GRA or SSNIT.
 
+## Weekly and fortnightly pay (`hrm_part_pay.py`, screen `PartPay.tsx`)
+
+Payroll stays monthly, because Ghana PAYE and SSNIT are worked out and filed by the month. A staff record can say **Paid: weekly** or **fortnightly**. Payroll → **Weekly and fortnightly pay** suggests the week's (basic × 12 ÷ 52) or fortnight's (× 12 ÷ 26) basic times the part-pay percent (HR settings, default 80%) and pays it as a part-payment: booked like an advance (debit 1150, credit cash, bank or Mobile Money). The month's payroll works out PAYE and SSNIT on the whole month and takes the part-payments back in full ("Paid during the month" on the payslip), never below nil; anything left stays as an advance for the next payroll. Part-payments close once that month's payroll is drawn up, and nobody pays themselves.
+
 ## Approval cover and escalation (`hrm_delegation.py`)
 
 A manager going away sets **cover** under My HR (HR can set it for anyone under Leave): a colleague and the dates. While it runs, that colleague decides the manager's team's leave at the manager step, gets the "Leave to decide" notices, and sees those requests under My team; ending it early hands back. A request still at the manager step after **escalate_after_days** working days (HR settings, default 3, 0 = off) is flagged to HR once by the daily job `scan_hr_escalations` (Celery beat 07:30; restart worker and beat after pulling). HR can already decide at either step.

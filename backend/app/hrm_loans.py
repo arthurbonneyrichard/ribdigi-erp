@@ -21,7 +21,7 @@ from app import accounting
 from app import models as m
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
-LOAN_KINDS = frozenset({"loan", "advance"})
+LOAN_KINDS = frozenset({"loan", "advance", "part_pay"})
 LOAN_ACCOUNT = "1150"
 ZERO = Decimal("0")
 

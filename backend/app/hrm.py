@@ -208,6 +208,7 @@ def serialize_settings(row: m.HrmSettings) -> dict:
         "clock_needs_site": bool(getattr(row, "clock_needs_site", False)),
         "leave_accrual": getattr(row, "leave_accrual", None) or "upfront",
         "carry_over_days": int(getattr(row, "carry_over_days", 0) or 0),
+        "part_pay_percent": money_json(getattr(row, "part_pay_percent", 80) if getattr(row, "part_pay_percent", None) is not None else 80),
         "escalate_after_days": int(getattr(row, "escalate_after_days", 3) if getattr(row, "escalate_after_days", None) is not None else 3),
     }
 
@@ -431,6 +432,7 @@ def serialize_employee(row: m.HrmEmployee, *, pay: bool = True) -> dict:
                 "mobile_money": row.mobile_money,
                 "tier3_percent": money_json(row.tier3_percent or 0),
                 "commission_percent": money_json(getattr(row, "commission_percent", 0) or 0),
+                "pay_frequency": getattr(row, "pay_frequency", None) or "monthly",
             }
         )
     return data
@@ -471,6 +473,7 @@ async def create_employee(db: AsyncSession, tenant_id: str, payload, *, user_id)
         mobile_money=getattr(payload, "mobile_money", None),
         tier3_percent=getattr(payload, "tier3_percent", 0) or 0,
         commission_percent=getattr(payload, "commission_percent", 0) or 0,
+        pay_frequency=getattr(payload, "pay_frequency", None) or "monthly",
         manager_id=await _check_manager(db, tenant_id, getattr(payload, "manager_id", None), None),
         biometric_id=await _check_biometric(db, tenant_id, getattr(payload, "biometric_id", None), None),
     )
@@ -1024,6 +1027,9 @@ async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) 
         from app import hrm_leave_pay
 
         leave_pay = await hrm_leave_pay.take(db, person.id, period, run.id)
+        from app import hrm_part_pay
+
+        part_paid = await hrm_part_pay.part_paid_this_month(db, person.id, period)
         slip = m.HrmPayslip(
             tenant_id=tenant_id,
             run_id=run.id,
@@ -1036,6 +1042,7 @@ async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) 
             commission=commission,
             tips=tips,
             leave_pay=leave_pay,
+            part_paid=part_paid,
             bonus=0,
             other_deductions=0,
             tier3_percent=person.tier3_percent or 0,
@@ -1265,6 +1272,8 @@ def _slip_dict(slip: m.HrmPayslip, employee: m.HrmEmployee | None) -> dict:
         "commission": _money(getattr(slip, "commission", 0)),
         "tips": _money(getattr(slip, "tips", 0)),
         "leave_pay": _money(getattr(slip, "leave_pay", 0)),
+        # Part-payments come off first; the rest of loan_deduction is loan / advance repayment.
+        "part_paid": _money(min(engine.D(getattr(slip, "part_paid", 0)), engine.D(getattr(slip, "loan_deduction", 0)))),
         "overtime_tax": _money(getattr(slip, "overtime_tax", 0)),
         "warnings": list(getattr(slip, "warnings", None) or []),
         "rates_used": slip.rates_used,

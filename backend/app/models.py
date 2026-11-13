@@ -4187,6 +4187,8 @@ class HrmSettings(Base):
     carry_over_days: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     # Leave still with a manager after this many working days is flagged to HR (0 = off).
     escalate_after_days: Mapped[int] = mapped_column(Integer, default=3, server_default="3")
+    # Weekly / fortnightly part-payments suggest this percent of the period's basic.
+    part_pay_percent: Mapped[float] = mapped_column(Numeric(6, 2), default=80, server_default="80")
     # Time and overtime. An hour of overtime pays basic / (working days x hours a day) x the rate.
     hours_per_day: Mapped[float] = mapped_column(Numeric(5, 2), default=8, server_default="8")
     overtime_rate: Mapped[float] = mapped_column(Numeric(5, 2), default=1.5, server_default="1.5")
@@ -4812,6 +4814,8 @@ class HrmEmployee(Base):
     tier3_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=0, server_default="0")
     # Sales commission, percent of the person's net sales in a month (0 = none).
     commission_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=0, server_default="0")
+    # monthly | weekly | fortnightly. Weekly and fortnightly staff get part-payments during the month.
+    pay_frequency: Mapped[str] = mapped_column(String(16), default="monthly", server_default="monthly")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -4922,6 +4926,8 @@ class HrmPayslip(Base):
     tips: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     # Unused annual leave paid out this month (taxable earnings, no SSNIT).
     leave_pay: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    # Weekly / fortnightly part-payments made during the month (taken back inside loan_deduction).
+    part_paid: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     # Tax on overtime under the junior-staff rule (already inside paye).
     overtime_tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     # Checks the slip failed, e.g. ["below_minimum_wage"].

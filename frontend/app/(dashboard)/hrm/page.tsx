@@ -19,6 +19,7 @@ import LeavePay from './LeavePay';
 import { MyDocuments, StaffFiles } from './Documents';
 import Org from './Org';
 import Cover from './Cover';
+import PartPay from './PartPay';
 import './hrm.css';
 
 type Row = Record<string, any>;
@@ -142,13 +143,13 @@ function printSlip(slip: Row, period: string) {
   if (!page) return;
   const line = (label: string, value: unknown) => `<tr><td>${label}</td><td style="text-align:right">${money(value)}</td></tr>`;
   page.document.write(
-    `<html><body style="font-family:sans-serif"><h3>Payslip ${safe(period)}</h3><p>${safe(slip.employee_name)} · ${safe(slip.employee_number)}<br/>${safe(slip.job_title)}</p><table style="width:100%">${line('Basic', slip.basic)}${line('Allowances', slip.allowances)}${line('Bonus', slip.bonus)}${Number(slip.arrears_basic) ? line('Back pay of basic', slip.arrears_basic) : ''}${Number(slip.adjustment) ? line('Correction', slip.adjustment) : ''}${Number(slip.overtime) ? line('Overtime', slip.overtime) : ''}${Number(slip.commission) ? line('Commission', slip.commission) : ''}${Number(slip.tips) ? line('Tips', slip.tips) : ''}${Number(slip.leave_pay) ? line('Unused leave paid', slip.leave_pay) : ''}${line('Unpaid days', -Number(slip.unpaid_deduction))}${line('Gross', slip.gross)}${line('SSNIT', -Number(slip.ssnit_employee))}${Number(slip.tier3) > 0 ? line('Tier 3 pension', -Number(slip.tier3)) : ''}${Number(slip.loan_deduction) > 0 ? line('Loan repayment', -Number(slip.loan_deduction)) : ''}${line('PAYE', -Number(slip.paye))}${Number(slip.overtime_tax) ? line('of which overtime tax', -Number(slip.overtime_tax)) : ''}${line('Other deductions', -Number(slip.other_deductions))}</table><h3>Net pay ${money(slip.net)}</h3></body></html>`,
+    `<html><body style="font-family:sans-serif"><h3>Payslip ${safe(period)}</h3><p>${safe(slip.employee_name)} · ${safe(slip.employee_number)}<br/>${safe(slip.job_title)}</p><table style="width:100%">${line('Basic', slip.basic)}${line('Allowances', slip.allowances)}${line('Bonus', slip.bonus)}${Number(slip.arrears_basic) ? line('Back pay of basic', slip.arrears_basic) : ''}${Number(slip.adjustment) ? line('Correction', slip.adjustment) : ''}${Number(slip.overtime) ? line('Overtime', slip.overtime) : ''}${Number(slip.commission) ? line('Commission', slip.commission) : ''}${Number(slip.tips) ? line('Tips', slip.tips) : ''}${Number(slip.leave_pay) ? line('Unused leave paid', slip.leave_pay) : ''}${line('Unpaid days', -Number(slip.unpaid_deduction))}${line('Gross', slip.gross)}${line('SSNIT', -Number(slip.ssnit_employee))}${Number(slip.tier3) > 0 ? line('Tier 3 pension', -Number(slip.tier3)) : ''}${Number(slip.part_paid) > 0 ? line('Paid during the month', -Number(slip.part_paid)) : ''}${Number(slip.loan_deduction) - Number(slip.part_paid || 0) > 0 ? line('Loan repayment', -(Number(slip.loan_deduction) - Number(slip.part_paid || 0))) : ''}${line('PAYE', -Number(slip.paye))}${Number(slip.overtime_tax) ? line('of which overtime tax', -Number(slip.overtime_tax)) : ''}${line('Other deductions', -Number(slip.other_deductions))}</table><h3>Net pay ${money(slip.net)}</h3></body></html>`,
   );
   page.document.close();
   page.print();
 }
 
-const BLANK = { full_name: '', phone: '', email: '', job_title: '', department: '', hired_on: '', basic_salary: '', allowances: '0', ssnit_number: '', tin: '', bank_name: '', bank_account: '', ghana_card: '', mobile_money: '', tier3_percent: '0', manager_id: '', biometric_id: '', commission_percent: '0' };
+const BLANK = { full_name: '', phone: '', email: '', job_title: '', department: '', hired_on: '', basic_salary: '', allowances: '0', ssnit_number: '', tin: '', bank_name: '', bank_account: '', ghana_card: '', mobile_money: '', tier3_percent: '0', manager_id: '', biometric_id: '', commission_percent: '0', pay_frequency: 'monthly' };
 
 const GHANA_CARD = /^GHA-\d{9}-\d$/;
 
@@ -328,6 +329,7 @@ function HrmDesk() {
         manager_id: form.manager_id || null,
         biometric_id: form.biometric_id.trim() || null,
         commission_percent: Number(form.commission_percent || 0),
+        pay_frequency: form.pay_frequency || 'monthly',
         hired_on: form.hired_on,
         basic_salary: Number(form.basic_salary || 0),
         allowances: Number(form.allowances || 0),
@@ -607,7 +609,16 @@ function HrmDesk() {
               <label><span>Terminal ID (fingerprint / face)</span><input value={form.biometric_id} onChange={(e) => setForm({ ...form, biometric_id: e.target.value })} aria-label="Terminal ID" /></label>
               <label><span>Mobile Money</span><input value={form.mobile_money} placeholder="+233…" onChange={(e) => setForm({ ...form, mobile_money: e.target.value })} aria-label="Mobile Money number" /></label>
               {seesPay ? (
+                <>
                 <label><span>Sales commission %</span><input type="number" min="0" max="100" step="0.25" value={form.commission_percent} onChange={(e) => setForm({ ...form, commission_percent: e.target.value })} aria-label="Sales commission percent" /></label>
+                <label><span>Paid</span>
+                  <select value={form.pay_frequency || 'monthly'} onChange={(e) => setForm({ ...form, pay_frequency: e.target.value })} aria-label="Pay frequency">
+                    <option value="monthly">Monthly</option>
+                    <option value="weekly">Weekly (part-payments)</option>
+                    <option value="fortnightly">Fortnightly (part-payments)</option>
+                  </select>
+                </label>
+                </>
               ) : null}
               {seesPay ? (
                 <label><span>Tier 3 voluntary %</span><input type="number" min="0" max="100" step="0.5" value={form.tier3_percent} onChange={(e) => setForm({ ...form, tier3_percent: e.target.value })} aria-label="Tier 3 voluntary percent" /></label>
@@ -804,7 +815,7 @@ function HrmDesk() {
                   <tr key={l.id}>
                     <td>{l.loan_number}</td>
                     <td>{l.employee_name}{l.reason ? <><br /><small className="hr-muted">{l.reason}</small></> : null}</td>
-                    <td>{l.kind === 'advance' ? 'Advance' : 'Loan'}</td>
+                    <td>{l.kind === 'part_pay' ? 'Part-payment' : l.kind === 'advance' ? 'Advance' : 'Loan'}</td>
                     <td className="hr-num">{money(l.principal)}</td>
                     <td className="hr-num">{money(l.monthly_deduction)}</td>
                     <td className="hr-num">{money(l.balance)}</td>
@@ -908,6 +919,7 @@ function HrmDesk() {
             ) : null}
           </section>
           <LeavePay people={people} />
+          <PartPay />
           <section className="hr-box hr-scroll" aria-label="Corrections to approved pay">
             <Head title="Corrections for the next payroll" />
             <p className="hr-muted">
@@ -1105,6 +1117,7 @@ function HrmDesk() {
               <span>Clock-ins from phones must be at a work site</span>
             </label>
             <label><span>Unused days that carry into next year</span><input type="number" min="0" value={settings.carry_over_days ?? 0} onChange={(e) => setSettings({ ...settings, carry_over_days: e.target.value })} aria-label="Carry-over days" /></label>
+            <label><span>Weekly / fortnightly part-pay, % of basic</span><input type="number" min="0" max="100" value={settings.part_pay_percent ?? 80} onChange={(e) => setSettings({ ...settings, part_pay_percent: e.target.value })} aria-label="Part-pay percent" /></label>
             <label><span>Tell HR when leave waits on a manager for (working days, 0 = never)</span><input type="number" min="0" max="60" value={settings.escalate_after_days ?? 3} onChange={(e) => setSettings({ ...settings, escalate_after_days: e.target.value })} aria-label="Escalate leave after days" /></label>
             <label><span>Working days a month</span><input type="number" min="1" value={settings.working_days_per_month} onChange={(e) => setSettings({ ...settings, working_days_per_month: e.target.value })} aria-label="Working days a month" /></label>
             <label><span>Staff SSNIT %</span><input type="number" min="0" value={settings.ssnit_employee_percent} onChange={(e) => setSettings({ ...settings, ssnit_employee_percent: e.target.value })} aria-label="Staff SSNIT percent" /></label>
@@ -1151,6 +1164,7 @@ function HrmDesk() {
                 leave_accrual: settings.leave_accrual || 'upfront',
                 carry_over_days: Number(settings.carry_over_days || 0),
                 escalate_after_days: Number(settings.escalate_after_days ?? 3),
+                part_pay_percent: Number(settings.part_pay_percent ?? 80),
                 hours_per_day: Number(settings.hours_per_day || 8),
                 overtime_rate: Number(settings.overtime_rate || 1.5),
                 clock_needs_site: Boolean(settings.clock_needs_site),
@@ -1319,7 +1333,7 @@ function HrmDesk() {
               <table aria-label="My loans">
                 <tbody>
                   {me.loans.map((l: Row) => (
-                    <tr key={l.id}><td>{l.kind === 'advance' ? 'Advance' : 'Loan'} {l.loan_number}</td><td className="hr-num">{money(l.principal)}</td><td>Still owed {money(l.balance)}</td><td>{l.status}</td></tr>
+                    <tr key={l.id}><td>{l.kind === 'part_pay' ? 'Part-payment' : l.kind === 'advance' ? 'Advance' : 'Loan'} {l.loan_number}</td><td className="hr-num">{money(l.principal)}</td><td>Still owed {money(l.balance)}</td><td>{l.status}</td></tr>
                   ))}
                 </tbody>
               </table>
