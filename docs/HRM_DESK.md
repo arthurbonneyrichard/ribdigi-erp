@@ -64,6 +64,10 @@ Payroll arithmetic is Decimal throughout (`backend/app/hrm_payroll.py`, no float
 
 **The figures are not checked against GRA or SSNIT by the system.** The desk does not file with GRA or SSNIT.
 
+## Org chart and headcount (`hrm_org.py`)
+
+People → **Who reports to whom** draws the tree from each staff record's "Reports to"; people who report to each other in a circle are listed so it can be fixed. **Headcount by department** shows planned (set by an HR manager or company admin), filled (active staff), being hired (open vacancy openings) and still to find.
+
 ## Documents and policies (`hrm_documents.py`, `hrm_documents_api.py`, screen `Documents.tsx`)
 
 HR (People) files PDFs or photos on a staff record (contract, ID copy, certificate, letter) or as a company policy for everyone. Files go to the tenant media store. "Staff must accept it" asks the person (or every member of staff, for a policy) to open it and type their full name as it is on their staff record; the name, time, sign-in and IP are kept, and **Who accepted** lists who has not. This is a record that they read it, not a qualified electronic signature. **Confidential** files (medical notes, disciplinary letters) are for HR managers only: the person and HR officers never see them. Files are archived, never edited. Staff see theirs under My HR → My documents.

@@ -17,6 +17,7 @@ import { MyMore, PEOPLE_WORK_SCREENS, PeopleWork } from './PeopleWork';
 import { MyClock, TIME_SCREENS, TimeWork } from './TimeWork';
 import LeavePay from './LeavePay';
 import { MyDocuments, StaffFiles } from './Documents';
+import Org from './Org';
 import './hrm.css';
 
 type Row = Record<string, any>;
@@ -643,6 +644,7 @@ function HrmDesk() {
             </table>
           </section>
           <StaffFiles people={people} canConfidential={seesPay} />
+          <Org canPlan={seesPay} />
         </>
       ) : null}
 

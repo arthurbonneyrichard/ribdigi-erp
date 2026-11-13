@@ -115,6 +115,41 @@ async def open_document(document_id: UuidIdValue, claims=Depends(require_permiss
     return storage_svc.media_response(row.storage_key, tenant_id=claims["tenant_id"])
 
 
+class HeadcountBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    department: Annotated[str, Field(min_length=1, max_length=120)]
+    planned: Annotated[int, Field(ge=0, le=100000)] | None = None
+
+
+@router.get("/org-chart")
+async def org_chart(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "people")
+    from app import hrm_org
+
+    return _env(await hrm_org.org_chart(db, claims["tenant_id"]))
+
+
+@router.get("/headcount")
+async def headcount(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "people")
+    from app import hrm_org
+
+    return _env(await hrm_org.headcount(db, claims["tenant_id"]))
+
+
+@router.put("/headcount")
+async def set_headcount(payload: HeadcountBody, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "people")
+    if not svc.runs_hr(claims):
+        raise HTTPException(status_code=403, detail="Headcount is planned by an HR manager or the company admin")
+    from app import hrm_org
+
+    await hrm_org.set_plan(db, claims["tenant_id"], department=payload.department, planned=payload.planned, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(await hrm_org.headcount(db, claims["tenant_id"]), "Headcount plan saved")
+
+
 @router.get("/me/documents")
 async def my_documents(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
     svc.job(claims, "self")

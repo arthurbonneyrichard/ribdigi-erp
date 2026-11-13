@@ -4697,6 +4697,19 @@ class HrmDocumentAck(Base):
     ip_address: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
+class HrmHeadcountPlan(Base):
+    """How many people a department should have (headcount plan)."""
+
+    __tablename__ = "hrm_headcount_plans"
+    __table_args__ = (UniqueConstraint("tenant_id", "department", name="uq_hrm_headcount_department"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    department: Mapped[str] = mapped_column(String(120))
+    planned: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class HrmStatutoryRate(Base):
     """PAYE bands and SSNIT / pension rules from a date onwards. A payroll month uses the
     newest row starting on or before the month's first day. Rows an approved payroll used
