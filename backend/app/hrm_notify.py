@@ -56,7 +56,13 @@ async def to_manager(db, tenant_id, employee, title, message, *, entity_type=Non
     """Tell the person's manager. False when there is no manager with a sign-in."""
     if not getattr(employee, "manager_id", None):
         return False
+    from app import hrm_delegation
+
     manager = await db.get(m.HrmEmployee, employee.manager_id)
+    cover = await hrm_delegation.active_for(db, employee.manager_id)
+    if cover is not None:
+        # The manager is away: their cover gets it.
+        manager = await db.get(m.HrmEmployee, cover.to_employee_id)
     uid = await _user_for(db, tenant_id, manager)
     if not uid:
         return False

@@ -208,6 +208,7 @@ def serialize_settings(row: m.HrmSettings) -> dict:
         "clock_needs_site": bool(getattr(row, "clock_needs_site", False)),
         "leave_accrual": getattr(row, "leave_accrual", None) or "upfront",
         "carry_over_days": int(getattr(row, "carry_over_days", 0) or 0),
+        "escalate_after_days": int(getattr(row, "escalate_after_days", 3) if getattr(row, "escalate_after_days", None) is not None else 3),
     }
 
 
@@ -722,7 +723,10 @@ async def decide_leave(
     if decider and employee.email and (decider.email or "").lower() == employee.email.lower():
         raise HTTPException(status_code=403, detail="Someone else must decide your own leave")
     me = await _user_employee(db, tenant_id, user_id)
-    is_manager = bool(me and employee.manager_id and employee.manager_id == me.id)
+    from app import hrm_delegation
+
+    # The manager, or the colleague covering for them today.
+    is_manager = await hrm_delegation.acts_for_manager(db, me, employee.manager_id)
     stage = getattr(row, "stage", None) or "hr"
     if stage == "manager" and is_manager and approve:
         # The manager agrees; HR has the last word.
@@ -768,7 +772,11 @@ async def decide_leave(
 
 async def team_leave(db: AsyncSession, tenant_id: str, manager: m.HrmEmployee) -> list[m.HrmLeaveRequest]:
     """Requests from the people who report to this manager, waiting for their decision."""
-    team = select(m.HrmEmployee.id).where(m.HrmEmployee.tenant_id == tenant_id, m.HrmEmployee.manager_id == manager.id)
+    from app import hrm_delegation
+
+    # Their own team, and the teams of managers they cover for today.
+    managers = [manager.id, *await hrm_delegation.covered_managers(db, manager.id)]
+    team = select(m.HrmEmployee.id).where(m.HrmEmployee.tenant_id == tenant_id, m.HrmEmployee.manager_id.in_(managers))
     return list(
         (
             await db.execute(

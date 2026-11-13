@@ -4302,6 +4302,7 @@ JobNameValue = Annotated[
         "send_weekly_ai_insight_digest",
         "expire_ecommerce_reservations",
         "sync_ecommerce_connectors",
+        "scan_hr_escalations",
     ],
     BeforeValidator(coerce_package_code_value),
 ]

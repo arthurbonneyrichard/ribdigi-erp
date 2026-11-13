@@ -12,6 +12,7 @@ const JOB_LABELS: Record<string, string> = {
   scan_payment_due: 'Payment due alerts',
   scan_quotation_expiry: 'Quotation expiry alerts',
   scan_recurring_expense_due: 'Recurring expense due alerts',
+  scan_hr_escalations: 'Leave waiting on managers (HR alerts)',
   generate_recurring_expenses: 'Generate recurring expenses',
   run_due_backups: 'Due backups',
   scan_trial_lifecycle: 'Trial lifecycle',

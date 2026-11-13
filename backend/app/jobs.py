@@ -314,6 +314,15 @@ async def job_sync_ecommerce_connectors() -> dict:
     return await _for_each_tenant(work)
 
 
+async def job_scan_hr_escalations() -> dict:
+    from app import hrm_delegation
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        return {"created": await hrm_delegation.scan_escalations(db, tenant_id)}
+
+    return await _for_each_tenant(work)
+
+
 JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "scan_low_stock": job_scan_low_stock,
     "scan_payment_due": job_scan_payment_due,
@@ -333,6 +342,7 @@ JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "process_subscription_renewals": job_process_subscription_renewals,
     "expire_ecommerce_reservations": job_expire_ecommerce_reservations,
     "sync_ecommerce_connectors": job_sync_ecommerce_connectors,
+    "scan_hr_escalations": job_scan_hr_escalations,
 }
 
 

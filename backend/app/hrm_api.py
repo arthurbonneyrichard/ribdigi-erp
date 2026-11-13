@@ -6,7 +6,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -161,6 +161,7 @@ class SettingsBody(BaseModel):
     overtime_rate: Annotated[Decimal, Field(ge=1, le=5, max_digits=5, decimal_places=2)] | None = None
     clock_needs_site: bool | None = None
     carry_over_days: Annotated[int, Field(ge=0, le=120)] | None = None
+    escalate_after_days: Annotated[int, Field(ge=0, le=60)] | None = None
 
 
 class RateBand(BaseModel):
@@ -671,6 +672,60 @@ async def hrm_leave_decide(
     )
     await db.commit()
     return _env(await svc.present_leave(db, row), "Saved")
+
+
+class CoverBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    from_employee_id: UuidIdValue | None = None
+    to_employee_id: UuidIdValue
+    starts_on: date
+    ends_on: date
+    reason: Annotated[str, Field(max_length=255)] | None = None
+
+
+def _hr_leave(claims) -> bool:
+    try:
+        svc.job(claims, "leave")
+        return True
+    except HTTPException:
+        return False
+
+
+@router.get("/cover")
+async def hrm_cover_list(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    from app import hrm_delegation
+
+    me = await svc._user_employee(db, claims["tenant_id"], claims.get("sub"))
+    return _env(await hrm_delegation.listing(db, claims["tenant_id"], me=me, as_hr=_hr_leave(claims)))
+
+
+@router.get("/cover/people")
+async def hrm_cover_people(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    """Names only, so a manager can pick who covers. No other staff details."""
+    if not _hr_leave(claims):
+        svc.job(claims, "self")
+    return _env([{"id": p.id, "name": p.full_name} for p in await svc.list_employees(db, claims["tenant_id"])])
+
+
+@router.post("/cover")
+async def hrm_cover_set(payload: CoverBody, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)):
+    from app import hrm_delegation
+
+    me = await svc._user_employee(db, claims["tenant_id"], claims.get("sub"))
+    row = await hrm_delegation.create(db, claims["tenant_id"], payload, me=me, as_hr=_hr_leave(claims), user_id=claims.get("sub"))
+    await db.commit()
+    return _env(await hrm_delegation.serialize(db, row), "Cover set")
+
+
+@router.post("/cover/{cover_id}/end")
+async def hrm_cover_end(cover_id: UuidIdValue, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)):
+    from app import hrm_delegation
+
+    me = await svc._user_employee(db, claims["tenant_id"], claims.get("sub"))
+    row = await hrm_delegation.end(db, claims["tenant_id"], cover_id, me=me, as_hr=_hr_leave(claims), user_id=claims.get("sub"))
+    await db.commit()
+    return _env(await hrm_delegation.serialize(db, row), "Cover ended")
 
 
 @router.get("/team/leave")

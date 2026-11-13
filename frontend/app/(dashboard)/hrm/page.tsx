@@ -18,6 +18,7 @@ import { MyClock, TIME_SCREENS, TimeWork } from './TimeWork';
 import LeavePay from './LeavePay';
 import { MyDocuments, StaffFiles } from './Documents';
 import Org from './Org';
+import Cover from './Cover';
 import './hrm.css';
 
 type Row = Record<string, any>;
@@ -650,6 +651,7 @@ function HrmDesk() {
 
       {tab === 'leave' ? (
         <>
+          <Cover asHr />
           <section className="hr-box" aria-label="Record leave">
             <Head title="Record leave" />
             <div className="hr-form">
@@ -1103,6 +1105,7 @@ function HrmDesk() {
               <span>Clock-ins from phones must be at a work site</span>
             </label>
             <label><span>Unused days that carry into next year</span><input type="number" min="0" value={settings.carry_over_days ?? 0} onChange={(e) => setSettings({ ...settings, carry_over_days: e.target.value })} aria-label="Carry-over days" /></label>
+            <label><span>Tell HR when leave waits on a manager for (working days, 0 = never)</span><input type="number" min="0" max="60" value={settings.escalate_after_days ?? 3} onChange={(e) => setSettings({ ...settings, escalate_after_days: e.target.value })} aria-label="Escalate leave after days" /></label>
             <label><span>Working days a month</span><input type="number" min="1" value={settings.working_days_per_month} onChange={(e) => setSettings({ ...settings, working_days_per_month: e.target.value })} aria-label="Working days a month" /></label>
             <label><span>Staff SSNIT %</span><input type="number" min="0" value={settings.ssnit_employee_percent} onChange={(e) => setSettings({ ...settings, ssnit_employee_percent: e.target.value })} aria-label="Staff SSNIT percent" /></label>
             <label><span>Employer SSNIT %</span><input type="number" min="0" value={settings.ssnit_employer_percent} onChange={(e) => setSettings({ ...settings, ssnit_employer_percent: e.target.value })} aria-label="Employer SSNIT percent" /></label>
@@ -1147,6 +1150,7 @@ function HrmDesk() {
                 two_person_payroll: Boolean(settings.two_person_payroll),
                 leave_accrual: settings.leave_accrual || 'upfront',
                 carry_over_days: Number(settings.carry_over_days || 0),
+                escalate_after_days: Number(settings.escalate_after_days ?? 3),
                 hours_per_day: Number(settings.hours_per_day || 8),
                 overtime_rate: Number(settings.overtime_rate || 1.5),
                 clock_needs_site: Boolean(settings.clock_needs_site),
@@ -1340,6 +1344,7 @@ function HrmDesk() {
             </table>
           </section>
           <MyDocuments />
+          <Cover />
           <MyMore />
         </>
       ) : null}

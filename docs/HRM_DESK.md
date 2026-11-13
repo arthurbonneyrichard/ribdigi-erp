@@ -64,6 +64,10 @@ Payroll arithmetic is Decimal throughout (`backend/app/hrm_payroll.py`, no float
 
 **The figures are not checked against GRA or SSNIT by the system.** The desk does not file with GRA or SSNIT.
 
+## Approval cover and escalation (`hrm_delegation.py`)
+
+A manager going away sets **cover** under My HR (HR can set it for anyone under Leave): a colleague and the dates. While it runs, that colleague decides the manager's team's leave at the manager step, gets the "Leave to decide" notices, and sees those requests under My team; ending it early hands back. A request still at the manager step after **escalate_after_days** working days (HR settings, default 3, 0 = off) is flagged to HR once by the daily job `scan_hr_escalations` (Celery beat 07:30; restart worker and beat after pulling). HR can already decide at either step.
+
 ## Goals with targets, and 360 feedback (`hrm_feedback.py`)
 
 A review goal can have a **target** and what it is counted in (KPI). While the review is open the person (My HR) or HR records the actual so far, and the screen shows progress against the target; scores remain the reviewer's call. HR can **ask colleagues** for 360 feedback (a 1–5 rating, what the person does well, what could be better). Each colleague answers once under My HR. Answers are shown without names to everyone, HR included, and only once at least two colleagues have answered (one answer would give its writer away). HR sees who still has to answer.

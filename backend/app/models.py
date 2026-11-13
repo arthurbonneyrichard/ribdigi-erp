@@ -4185,6 +4185,8 @@ class HrmSettings(Base):
     leave_accrual: Mapped[str] = mapped_column(String(16), default="upfront", server_default="upfront")
     # Unused annual leave that may roll into the next year (0 = none).
     carry_over_days: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    # Leave still with a manager after this many working days is flagged to HR (0 = off).
+    escalate_after_days: Mapped[int] = mapped_column(Integer, default=3, server_default="3")
     # Time and overtime. An hour of overtime pays basic / (working days x hours a day) x the rate.
     hours_per_day: Mapped[float] = mapped_column(Numeric(5, 2), default=8, server_default="8")
     overtime_rate: Mapped[float] = mapped_column(Numeric(5, 2), default=1.5, server_default="1.5")
@@ -4729,6 +4731,23 @@ class HrmHeadcountPlan(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class HrmDelegation(Base):
+    """Cover: while a manager is away, a colleague decides their team's leave at the manager step."""
+
+    __tablename__ = "hrm_delegations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    from_employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    to_employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    starts_on: Mapped[date] = mapped_column(Date)
+    ends_on: Mapped[date] = mapped_column(Date)
+    reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class HrmStatutoryRate(Base):
     """PAYE bands and SSNIT / pension rules from a date onwards. A payroll month uses the
     newest row starting on or before the month's first day. Rows an approved payroll used
@@ -4812,6 +4831,8 @@ class HrmLeaveRequest(Base):
     manager_decided_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     manager_decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     manager_note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # When HR was told this request has waited too long at the manager step.
+    escalated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     decision_note: Mapped[str | None] = mapped_column(String(255), nullable=True)
     decided_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
