@@ -826,7 +826,11 @@
 /* Top bar: menu | store | actions — wraps cleanly on phones */
 .topbar{
   display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 12px;
-  margin-bottom:12px;min-height:48px
+  margin-bottom:12px;min-height:48px;
+  /* Own layer above page cards so the Alerts / account dropdowns open on top of them
+     (the owner console's blurred top bar otherwise sat underneath later cards).
+     Below the mobile nav backdrop (40) and modals (90). */
+  position:relative;z-index:35
 }
 .topbar-left{display:flex;align-items:center;gap:8px;min-width:0;flex:0 0 auto}
 .topbar-context{display:flex;align-items:center;min-width:0;flex:1 1 160px;justify-content:flex-end}
