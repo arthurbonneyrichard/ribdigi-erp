@@ -140,6 +140,24 @@ function printStatement(st: Row) {
   page.print();
 }
 
+const METHOD_WORDS: Record<string, string> = { cash: 'Cash', mobile_money: 'Mobile Money', bank_transfer: 'Bank transfer', cheque: 'Cheque' };
+
+/** A note for one weekly / fortnightly part-payment. The month's payslip is the tax record. */
+function printPayNote(l: Row) {
+  const page = window.open('', '_blank', 'width=480,height=600');
+  if (!page) return;
+  const period = String(l.first_period || '');
+  page.document.write(
+    `<html><body style="font-family:sans-serif"><h3>Pay note</h3><p>${safe(l.employee_name)}<br/>${safe(l.reason || 'Part-payment of wages')}</p>`
+      + `<table style="width:100%"><tr><td>Paid on</td><td style="text-align:right">${safe(String(l.paid_out_at || '').slice(0, 10))}</td></tr>`
+      + `<tr><td>Paid by</td><td style="text-align:right">${safe(METHOD_WORDS[l.paid_out_method] || l.paid_out_method || '')}</td></tr>`
+      + `<tr><td><b>Amount</b></td><td style="text-align:right"><b>${money(l.principal)}</b></td></tr></table>`
+      + `<p style="font-size:12px">This is part of your pay for ${safe(period)}. PAYE and SSNIT are worked out on the whole month and shown on the ${safe(period)} payslip, which takes this amount back as &quot;Paid during the month&quot;. Reference ${safe(l.loan_number)}.</p></body></html>`,
+  );
+  page.document.close();
+  page.print();
+}
+
 function printSlip(slip: Row, period: string) {
   const page = window.open('', '_blank', 'width=480,height=700');
   if (!page) return;
@@ -830,6 +848,8 @@ function HrmDesk() {
                           <button type="button" className="hr-primary" onClick={() => setDialog({ kind: 'loan', row: l, approve: true, method: 'bank_transfer', note: '' })}>Approve and pay out</button>
                           <button type="button" className="hr-danger" onClick={() => setDialog({ kind: 'loan', row: l, approve: false, method: '', note: '' })}>Turn down</button>
                         </div>
+                      ) : l.kind === 'part_pay' ? (
+                        <button type="button" aria-label={`Print pay note ${l.loan_number}`} onClick={() => printPayNote(l)}>Pay note</button>
                       ) : l.status === 'active' ? (
                         <button type="button" onClick={() => setDialog({ kind: 'repay', row: l, amount: String(l.balance), method: 'cash' })}>Paid back in cash</button>
                       ) : null}
@@ -1337,7 +1357,7 @@ function HrmDesk() {
               <table aria-label="My loans">
                 <tbody>
                   {me.loans.map((l: Row) => (
-                    <tr key={l.id}><td>{l.kind === 'part_pay' ? 'Part-payment' : l.kind === 'advance' ? 'Advance' : 'Loan'} {l.loan_number}</td><td className="hr-num">{money(l.principal)}</td><td>Still owed {money(l.balance)}</td><td>{l.status}</td></tr>
+                    <tr key={l.id}><td>{l.kind === 'part_pay' ? 'Part-payment' : l.kind === 'advance' ? 'Advance' : 'Loan'} {l.loan_number}</td><td className="hr-num">{money(l.principal)}</td><td>{l.kind === 'part_pay' ? `Paid ${String(l.paid_out_at || '').slice(0, 10)}` : `Still owed ${money(l.balance)}`}</td><td>{l.kind === 'part_pay' ? <button type="button" aria-label={`Print my pay note ${l.loan_number}`} onClick={() => printPayNote(l)}>Pay note</button> : l.status}</td></tr>
                   ))}
                 </tbody>
               </table>

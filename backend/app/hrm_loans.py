@@ -163,6 +163,7 @@ def serialize_loan(row: m.HrmLoan, employee: m.HrmEmployee | None = None) -> dic
         "decision_note": row.decision_note,
         "decided_at": row.decided_at.isoformat() if row.decided_at else None,
         "paid_out_at": row.paid_out_at.isoformat() if row.paid_out_at else None,
+        "paid_out_method": row.paid_out_method,
         "settled_at": row.settled_at.isoformat() if row.settled_at else None,
         "created_at": row.created_at.isoformat() if row.created_at else None,
     }
