@@ -6,7 +6,7 @@
  * My pay and leave. The server checks who may do what and where a clock-in may come from.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../../lib/api';
 import { formatMoney } from '../../../lib/format';
 
@@ -61,7 +61,7 @@ function Banner({ error, notice }: { error: string; notice: string }) {
 
 export function TimeWork({ tab, seesPay }: { tab: string; seesPay: boolean }) {
   const [people, setPeople] = useState<Row[]>([]);
-  const [data, setData] = useState<Row | null>(null);
+  const [data, setDataRaw] = useState<Row | null>(null);
   const [day, setDay] = useState(isoDay());
   const [period, setPeriod] = useState(isoDay().slice(0, 7));
   const [f, setF] = useState<Row>({ weekdays: [0, 1, 2, 3, 4] });
@@ -69,9 +69,19 @@ export function TimeWork({ tab, seesPay }: { tab: string; seesPay: boolean }) {
   const [why, setWhy] = useState<Record<string, string>>({});
   const [checks, setChecks] = useState<Record<string, Row>>({});
 
+  // Data is tagged with the screen it was loaded for (see PeopleWork): moving between Time
+  // screens never renders one screen's data in another, and late answers are dropped.
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
+  const setData = (value: Row | null) => {
+    if (value === null) setDataRaw(null);
+    else if (tabRef.current === tab) setDataRaw({ ...value, __tab: tab });
+  };
+
   const load = useCallback(async () => {
     const get = async (path: string) => (await api(path))?.data;
-    setPeople((await get('/hrm/employees').catch(() => [])) || []);
+    const staff = (await get('/hrm/employees').catch(() => [])) || [];
+    if (tabRef.current === tab) setPeople(staff);
     if (tab === 'shifts') {
       const start = isoDay();
       const end = isoDay(new Date(Date.now() + 13 * 86400000));
@@ -108,7 +118,7 @@ export function TimeWork({ tab, seesPay }: { tab: string; seesPay: boolean }) {
 
   const set = (key: string, value: unknown) => setF((old) => ({ ...old, [key]: value }));
   const txt = (key: string) => String(f[key] ?? '');
-  if (!data) return <Banner error={error} notice={notice} />;
+  if (!data || data.__tab !== tab) return <Banner error={error} notice={notice} />;
 
   return (
     <>

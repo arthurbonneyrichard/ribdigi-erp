@@ -6,7 +6,7 @@
  * the HRM desk (hrm.css); the server decides who may do what (hrm.job).
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../../lib/api';
 import { formatMoney } from '../../../lib/format';
 
@@ -102,19 +102,27 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
   const [extra, setExtra] = useState<Row[]>([]);
   const [openVac, setOpenVac] = useState('');
   const [f, setF] = useState<Row>({});
+  // Which screen is showing now. Data is tagged with the screen it was loaded for, so a
+  // sidebar click from one screen to another never renders the old screen's data in the new
+  // one (that crashed Training after Hiring), and a late answer for a screen left behind is dropped.
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
 
   const load = useCallback(async () => {
     const get = async (path: string) => (await api(path))?.data;
+    const keep = (value: Row) => {
+      if (tabRef.current === tab) setData({ ...value, __tab: tab });
+    };
     const staff = (await get('/hrm/employees').catch(() => [])) || [];
-    setPeople(staff);
-    if (tab === 'hiring') setData({ vacancies: (await get('/hrm/vacancies')) || [] });
-    if (tab === 'reviews') setData({ reviews: (await get('/hrm/reviews')) || [] });
-    if (tab === 'training') setData(await get('/hrm/trainings'));
-    if (tab === 'contracts') setData(await get('/hrm/contracts'));
-    if (tab === 'cases') setData({ cases: (await get('/hrm/cases')) || [] });
-    if (tab === 'kit') setData({ assets: (await get('/hrm/assets')) || [] });
-    if (tab === 'claims') setData({ claims: (await get('/hrm/claims')) || [] });
-    if (tab === 'notices') setData({ notices: (await get('/hrm/notices')) || [] });
+    if (tabRef.current === tab) setPeople(staff);
+    if (tab === 'hiring') keep({ vacancies: (await get('/hrm/vacancies')) || [] });
+    if (tab === 'reviews') keep({ reviews: (await get('/hrm/reviews')) || [] });
+    if (tab === 'training') keep({ courses: [], records: [], gaps: [], ...((await get('/hrm/trainings')) || {}) });
+    if (tab === 'contracts') keep({ contracts: [], alerts: { contracts_ending: [], probation_due: [] }, ...((await get('/hrm/contracts')) || {}) });
+    if (tab === 'cases') keep({ cases: (await get('/hrm/cases')) || [] });
+    if (tab === 'kit') keep({ assets: (await get('/hrm/assets')) || [] });
+    if (tab === 'claims') keep({ claims: (await get('/hrm/claims')) || [] });
+    if (tab === 'notices') keep({ notices: (await get('/hrm/notices')) || [] });
   }, [tab]);
   const { busy, error, notice, run, setError } = useRunner(load);
 
@@ -132,7 +140,7 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
   const set = (key: string, value: unknown) => setF((old) => ({ ...old, [key]: value }));
   const txt = (key: string) => String(f[key] ?? '');
 
-  if (!data) return <Banner error={error} notice={notice} />;
+  if (!data || data.__tab !== tab) return <Banner error={error} notice={notice} />;
 
   return (
     <>
