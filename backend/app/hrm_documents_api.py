@@ -150,6 +150,15 @@ async def set_headcount(payload: HeadcountBody, claims=Depends(require_permissio
     return _env(await hrm_org.headcount(db, claims["tenant_id"]), "Headcount plan saved")
 
 
+@router.get("/insights")
+async def hr_insights(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    """People signals from plain rules (no AI model): absence, lateness, long hours, leave, reviews, policies."""
+    svc.job(claims, "people")
+    from app import hrm_insights
+
+    return _env(await hrm_insights.signals(db, claims["tenant_id"]))
+
+
 @router.get("/me/documents")
 async def my_documents(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
     svc.job(claims, "self")

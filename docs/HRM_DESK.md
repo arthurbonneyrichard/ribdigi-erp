@@ -64,6 +64,10 @@ Payroll arithmetic is Decimal throughout (`backend/app/hrm_payroll.py`, no float
 
 **The figures are not checked against GRA or SSNIT by the system.** The desk does not file with GRA or SSNIT.
 
+## People signals (`hrm_insights.py`, `GET /hrm/insights`)
+
+Rule-based, no AI model, on the People tab: frequent short sick spells (Bradford factor spells² × days over 12 months, at or over 200), late on 5+ days last month, 20+ hours over shifts last month (only when the clock is used), from October half or more of the year's leave not taken, no finished review in 12 months after a year's service, and a company policy not accepted after 14 days. Each says why it shows; none carries a score or pay figures. The thresholds are conversation starters, not policy.
+
 ## Weekly and fortnightly pay (`hrm_part_pay.py`, screen `PartPay.tsx`)
 
 Payroll stays monthly, because Ghana PAYE and SSNIT are worked out and filed by the month. A staff record can say **Paid: weekly** or **fortnightly**. Payroll → **Weekly and fortnightly pay** suggests the week's (basic × 12 ÷ 52) or fortnight's (× 12 ÷ 26) basic times the part-pay percent (HR settings, default 80%) and pays it as a part-payment: booked like an advance (debit 1150, credit cash, bank or Mobile Money). The month's payroll works out PAYE and SSNIT on the whole month and takes the part-payments back in full ("Paid during the month" on the payslip), never below nil; anything left stays as an advance for the next payroll. Part-payments close once that month's payroll is drawn up, and nobody pays themselves.

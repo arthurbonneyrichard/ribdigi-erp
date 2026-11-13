@@ -20,6 +20,7 @@ import { MyDocuments, StaffFiles } from './Documents';
 import Org from './Org';
 import Cover from './Cover';
 import PartPay from './PartPay';
+import Signals from './Signals';
 import './hrm.css';
 
 type Row = Record<string, any>;
@@ -655,6 +656,7 @@ function HrmDesk() {
               </tbody>
             </table>
           </section>
+          <Signals />
           <StaffFiles people={people} canConfidential={seesPay} />
           <Org canPlan={seesPay} />
         </>
