@@ -109,7 +109,7 @@ export function getOperatorToken(): string | null {
 
 /** The header value for a request made from a till screen, or null anywhere else. */
 export function tillOperatorToken(): string | null {
-  if (typeof window === 'undefined' || !isTillPath(window.location.pathname)) return null;
+  if (typeof window === 'undefined' || !isTillPath(window.location?.pathname || '')) return null;
   return getOperatorToken();
 }
 

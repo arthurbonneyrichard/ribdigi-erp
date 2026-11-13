@@ -185,10 +185,11 @@ test('cashier forbidden routes redirect to POS, not a blank page', () => {
   assert.equal(unauthorizedNavRedirect('/dashboard', 'cashier', CASHIER_NAV_MODULES), '/pos');
 });
 
-test('route guard does not lock tenant admins or hotel cashier POS', () => {
+test('route guard does not lock tenant admins; hotel cashiers stay on the hotel desk', () => {
   assert.equal(unauthorizedNavRedirect('/inventory', 'company_admin', '*'), null);
   assert.equal(unauthorizedNavRedirect('/users', 'company_admin', '*'), null);
-  assert.equal(unauthorizedNavRedirect('/pos', 'hotel_cashier', HOTEL_CASHIER_NAV_MODULES), null);
+  // Hotel cashiers take money at the hotel desk and its Shop till (/hotel/shop), not the retail till.
+  assert.equal(unauthorizedNavRedirect('/pos', 'hotel_cashier', HOTEL_CASHIER_NAV_MODULES), '/hotel');
   assert.equal(unauthorizedNavRedirect('/hotel', 'hotel_cashier', HOTEL_CASHIER_NAV_MODULES), null);
   assert.equal(
     unauthorizedNavRedirect('/inventory', 'hotel_cashier', HOTEL_CASHIER_NAV_MODULES),
@@ -317,7 +318,7 @@ test('mart grouped nav has no pharmacy or hotel industry group', () => {
   );
 });
 
-test('restaurant company admin keeps the sales ledger and multi-store branches', () => {
+test('restaurant company admin keeps its own bills, till and multi-store branches', () => {
   const items: NavItem[] = [
     ['Dashboard', '/dashboard', 'dashboard'],
     ['Sales', '/sales', 'sales'],
@@ -339,9 +340,7 @@ test('restaurant company admin keeps the sales ledger and multi-store branches',
   const kept = filterNavForIndustry(items, 'restaurant');
   const hrefs = kept.map(([, href]) => href);
   for (const href of [
-    '/sales',
-    '/customers',
-    '/pos',
+    '/restaurant/till',
     '/expenses',
     '/accounting',
     '/reports',
@@ -356,7 +355,11 @@ test('restaurant company admin keeps the sales ledger and multi-store branches',
   }
   assert.equal(hrefs.includes('/gift-cards'), false);
   assert.equal(hrefs.some((href) => href.startsWith('/hotel')), false);
-  assert.equal(industryNavHrefOk('/sales', 'restaurant'), true);
+  // Bills and guests live on the restaurant's own screens; the retail till and ledger are not shown.
+  for (const href of ['/sales', '/customers', '/pos']) {
+    assert.equal(hrefs.includes(href), false, href);
+  }
+  assert.equal(industryNavHrefOk('/sales', 'restaurant'), false);
   assert.equal(industryNavHrefOk('/gift-cards', 'restaurant'), false);
 
   const groups: NavGroup[] = [
@@ -377,7 +380,7 @@ test('restaurant company admin keeps the sales ledger and multi-store branches',
   assert.ok(service);
   assert.deepEqual(
     service.items.map(([, href]) => href),
-    ['/sales', '/customers', '/pos'],
+    ['/restaurant/till', '/restaurant/bills', '/restaurant/guests', '/restaurant/day-close', '/restaurant/tips'],
   );
   assert.equal(service.items.some(([label]) => label === 'POS'), false);
   const places = multi.find((g) => g.id === 'restaurant-places');
@@ -435,7 +438,8 @@ test('hotel company admin keeps account pages on the hotel list', () => {
   const hotelVisible: NavItem[] = [
     ...visible,
     ['Hotel Dashboard', '/hotel', 'hotel'],
-    ['Shop till', '/pos', 'pos'],
+    ['Guest invoices', '/hotel/invoices', 'hotel'],
+    ['Shop till', '/hotel/shop', 'hotel'],
     ['Company profile', '/company', 'company'],
     ['Staff and Permissions', '/users', 'users'],
     ['Hotel Reports', '/hotel?tab=reports', 'hotel'],
@@ -443,20 +447,22 @@ test('hotel company admin keeps account pages on the hotel list', () => {
   ];
   const out = groupedTenantNav(groups, hotelVisible, 'hotel', true);
   const labels = out.flatMap((g) => g.items.map(([label]) => label));
-  for (const label of ['Sales', 'Expenses', 'Accounting', 'Hotel Reports', 'Staff and Permissions', 'Company profile', 'Shop till']) {
+  for (const label of ['Guest invoices', 'Expenses', 'Accounting', 'Hotel Reports', 'Staff and Permissions', 'Company profile', 'Shop till']) {
     assert.equal(labels.filter((item) => item === label).length, 1, label);
   }
   assert.equal(labels.includes('Reports'), false);
   assert.equal(out.flatMap((g) => g.items).some(([, href]) => href === '/reports'), false);
   assert.equal(labels.includes('Pharmacy'), false);
   assert.equal(out.some((g) => ['finance', 'sales', 'reports', 'people', 'settings'].includes(g.id)), false);
-  assert.equal(industryNavHrefOk('/sales', 'hotel'), true);
-  assert.equal(industryNavHrefOk('/pos', 'hotel'), true);
+  // Hotel bills are guest invoices; the retail Sales ledger and till are not hotel screens.
+  assert.equal(labels.includes('Sales'), false);
+  assert.equal(industryNavHrefOk('/sales', 'hotel'), false);
+  assert.equal(industryNavHrefOk('/pos', 'hotel'), false);
   assert.equal(industryNavHrefOk('/gift-cards', 'hotel'), false);
   const salesMother = out.find((g) => g.id === 'hotel-sales');
   assert.ok(salesMother);
-  assert.equal(salesMother.label, 'Sales and POS');
-  assert.equal(salesMother.items.some(([label]) => label === 'Sales'), true);
+  assert.equal(salesMother.label, 'Guest billing and shop');
+  assert.equal(salesMother.items.some(([label]) => label === 'Guest invoices'), true);
   assert.equal(out.some((g) => g.id === 'hotel-rest'), false);
 });
 
@@ -492,10 +498,10 @@ test('hotel children sit under labeled mother dropdowns', () => {
     assert.equal(byId['hotel-ops'].items.some(([, h]) => h === href), true, href);
   }
   assert.equal(byId['hotel-ops'].items.some(([, href]) => href === '/hotel'), false);
-  assert.equal(byId['hotel-sales'].label, 'Sales and POS');
+  assert.equal(byId['hotel-sales'].label, 'Guest billing and shop');
   assert.deepEqual(
     byId['hotel-sales'].items.map(([, href]) => href),
-    ['/sales', '/customers', '/sales?tab=coupons', '/sales?tab=giftcards', '/pos'],
+    ['/hotel/invoices', '/hotel/shop'],
   );
   assert.equal(byId['hotel-finance'].label, 'Finance and Accounts');
   assert.equal(byId['hotel-finance'].items.some(([, href]) => href === '/hotel?tab=billing'), true);
@@ -554,7 +560,9 @@ test('restaurant sidebar is its own floor and hides hotel and retail labels', ()
   assert.equal(hrefs.includes('/restaurant?tab=tables'), true);
   assert.equal(hrefs.includes('/restaurant?tab=booking'), true);
   assert.equal(hrefs.includes('/restaurant?tab=kitchen'), true);
-  assert.equal(hrefs.includes('/pos'), true);
+  // The restaurant has its own till; the retail POS is not on its sidebar.
+  assert.equal(hrefs.includes('/restaurant/till'), true);
+  assert.equal(hrefs.includes('/pos'), false);
   assert.equal(labels.includes('Restaurant till'), true);
   assert.equal(labels.includes('POS'), false);
   assert.equal(labels.includes('Batches'), false);

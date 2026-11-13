@@ -142,7 +142,9 @@ def _platform_house_logo() -> tuple[int, int] | None:
 def _platform_house_logo_bytes() -> tuple[bytes, str, int, int] | None:
     jpg = _BRANDING_DIR / "ribdigi-house-email.jpg"
     png = _BRANDING_DIR / "ribdigi-house-logo.png"
-    path = jpg if jpg.is_file() else png if png.is_file() else None
+    # The PNG has a transparent ground; the JPEG is flattened onto dark green, where the
+    # dark "RIBDIGI" lettering disappears, so it is only a fallback.
+    path = png if png.is_file() else jpg if jpg.is_file() else None
     if path is None:
         return None
     try:
@@ -176,13 +178,22 @@ def render_branded_html(
     tenant: Any | None = None,
     title: str | None = None,
     allow_platform_logo: bool | None = None,
+    preheader: str | None = None,
+    style: dict | None = None,
 ) -> str:
-    """Wrap inner HTML in branded email chrome (logo, header, footer).
+    """Wrap inner HTML in branded email chrome.
+
+    Company mail uses the company letterhead layout with the company's own email design
+    (Company → Email design). Ribdigi House mail (no company, or the platform company) uses
+    the Ribdigi House layout with the owner's design (Email center → Design), so the two
+    never look alike. ``style`` overrides the stored design (the designer preview uses it).
+    ``preheader`` is the grey line inboxes show after the subject; it defaults to the title.
 
     Prefer the tenant company logo when configured. Tenant documents never fall
     back to the Ribdigi House mark — company name only. Platform noreply mail
     (verify/reset) may embed the House logo when ``allow_platform_logo`` is true.
     """
+    from app import email_design
     from app.logo_media import email_logo
     from app.print_branding import print_branding_settings
 
@@ -192,107 +203,356 @@ def render_branded_html(
     company_esc = html.escape(company)
     branding = print_branding_settings(tenant)
     header = str(branding.get("header_text") or "").strip()
-    footer = str(branding.get("footer_text") or "").strip()
+    print_footer = str(branding.get("footer_text") or "").strip()
     if allow_platform_logo is None:
         allow_platform_logo = tenant is None
+    platform_mail = (tenant is None and allow_platform_logo) or (
+        tenant is not None and email_design.is_platform_tenant(tenant)
+    )
+    st = (
+        email_design.normalize(style, platform=platform_mail)
+        if style is not None
+        else (email_design.platform_style() if tenant is None else email_design.stored_style(tenant))
+    )
+    if tenant is None and not platform_mail and style is None:
+        st = email_design.normalize(None, platform=False)
+    theme = email_design.THEMES[st["theme"]]
+    font = email_design.FONTS[st["font"]]
+    centred = st["logo_align"] == "center"
+    align = "center" if centred else "left"
+    footer = str(st.get("footer_text") or "").strip() or print_footer
+    signature = str(st.get("signature") or "").strip()
 
-    logo_html = ""
+    logo_img = ""
     used_platform_logo = False
     # Inline CID parts, not data: URIs — Gmail/Outlook strip data: images.
     logo = email_logo(tenant)
     if logo:
         _register_inline(logo.cid, str(tenant.id), logo.data, logo.subtype)
-        logo_html = (
+        logo_img = (
             f'<img class="ribdigi-email-logo" src="cid:{logo.cid}" '
             f'width="{logo.width}" height="{logo.height}" alt="{company_esc}" '
-            f'style="display:block;width:{logo.width}px;height:{logo.height}px;'
-            "max-width:240px;border:0;outline:none;background:#ffffff;padding:6px;"
-            'border-radius:8px;margin:0 auto 12px;" />'
+            f'style="display:{"inline-block" if centred else "block"};width:{logo.width}px;'
+            f'height:{logo.height}px;max-width:200px;border:0;outline:none;'
+            "background:#ffffff;padding:8px;border-radius:12px;\" />"
         )
     elif allow_platform_logo:
         platform = _platform_house_logo()
         if platform:
             width_px, height_px = platform
-            logo_html = (
+            logo_img = (
                 f'<img class="ribdigi-email-logo ribdigi-house-logo" src="cid:{PLATFORM_LOGO_CID}" '
                 f'width="{width_px}" height="{height_px}" alt="Ribdigi House" '
-                f'style="display:block;width:{width_px}px;height:{height_px}px;'
-                'max-width:220px;border:0;outline:none;margin:0 auto 8px;" />'
+                f'style="display:{"inline-block" if centred else "block"};width:{width_px}px;'
+                f'height:{height_px}px;max-width:150px;height:auto;border:0;outline:none;'
+                # On a coloured band the mark sits on a white tile (dark lettering).
+                + ("" if platform_mail else "background:#ffffff;padding:10px 14px;border-radius:12px;")
+                + '" />'
             )
             used_platform_logo = True
 
-    # Logo replaces the Ribdigi House / RIBDIGI ERP text brand mark.
-    show_company_text = not (used_platform_logo and _is_platform_brand_name(company))
-    company_html = (
-        f'<div class="ribdigi-email-company" style="font-size:18px;font-weight:700;'
-        f'letter-spacing:.02em;">{company_esc}</div>'
-        if show_company_text
+    body = _themed_body(body_html, theme=theme, font=font, button_shape=st["button_shape"])
+    signature_html = (
+        f'<p class="ribdigi-email-signature" style="margin:26px 0 0;font-weight:600;color:#10211b;">'
+        f"{html.escape(signature)}</p>"
+        if signature
         else ""
     )
+    title_html = (
+        '<h1 class="ribdigi-email-title" style="margin:0 0 18px;font-size:24px;line-height:1.25;'
+        f'font-weight:800;letter-spacing:-.015em;color:#10211b;">{html.escape(title)}</h1>'
+        if title
+        else ""
+    )
+    hidden_line = (preheader if preheader is not None else title) or ""
+    preheader_html = (
+        '<div class="ribdigi-email-preheader" style="display:none;max-height:0;overflow:hidden;'
+        'mso-hide:all;font-size:1px;line-height:1px;color:#ffffff;opacity:0;">'
+        f"{html.escape(hidden_line)}" + "&#847;&zwnj;&nbsp;" * 30 + "</div>"
+        if hidden_line
+        else ""
+    )
+    # Clients that read <style> get link colours, list spacing and phone sizing; the
+    # inline styles stand on their own for the ones that do not.
+    head_css = (
+        "body{margin:0;padding:0;-webkit-text-size-adjust:100%;}"
+        ".ribdigi-email-body p{margin:0 0 14px;}"
+        f".ribdigi-email-body a{{color:{theme['link']};font-weight:600;}}"
+        ".ribdigi-email-body a.ribdigi-btn{color:#ffffff;}"
+        ".ribdigi-email-body h2,.ribdigi-email-body h3{margin:22px 0 10px;color:#10211b;}"
+        ".ribdigi-email-body ul,.ribdigi-email-body ol{margin:0 0 14px;padding-left:22px;}"
+        ".ribdigi-email-body li{margin:0 0 6px;}"
+        "@media (max-width:620px){"
+        ".ribdigi-email-pad{padding-left:20px!important;padding-right:20px!important;}"
+        ".ribdigi-email-title{font-size:21px!important;}"
+        ".ribdigi-doc-table td,.ribdigi-doc-table th{padding:10px 8px!important;}"
+        ".ribdigi-email-mast td{display:block!important;width:100%!important;text-align:left!important;}"
+        "}"
+    )
+    head = (
+        "<!DOCTYPE html>"
+        '<html lang="en"><head><meta charset="utf-8"/>'
+        '<meta name="viewport" content="width=device-width, initial-scale=1"/>'
+        '<meta name="color-scheme" content="light"/><meta name="supported-color-schemes" content="light"/>'
+        f"<title>{html.escape(title or company)}</title>"
+        f"<style>{head_css}</style></head>"
+    )
+    common = dict(
+        head=head, preheader_html=preheader_html, theme=theme, font=font, align=align,
+        centred=centred, company_esc=company_esc, title_html=title_html, body=body,
+        signature_html=signature_html, footer=footer,
+    )
+    if platform_mail:
+        show_company = not _is_platform_brand_name(company)
+        return _platform_layout(
+            logo_img=logo_img, used_platform_logo=used_platform_logo, show_company=show_company,
+            tagline=str(st.get("tagline") or "").strip(), **common,
+        )
 
-    identity_html = ""
-    if tenant is not None:
+    # Logo replaces the Ribdigi House / RIBDIGI ERP text brand mark.
+    show_company_text = not (used_platform_logo and _is_platform_brand_name(company))
+    identity_lines: list[str] = []
+    if tenant is not None and st.get("show_details", True):
         from app.print_branding import company_identity_fields, company_letterhead_detail_lines
 
         ident = company_identity_fields(tenant)
         if company:
             ident["company_name"] = company
-        detail_lines = company_letterhead_detail_lines(ident)
-        if detail_lines:
-            identity_html = (
-                '<div class="ribdigi-email-identity" style="margin:8px 0 0;color:#e8f2df;'
-                'font-size:12px;line-height:1.45;">'
-                + "<br/>".join(html.escape(line) for line in detail_lines)
-                + "</div>"
-            )
+        identity_lines = company_letterhead_detail_lines(ident)
+    return _tenant_layout(
+        logo_img=logo_img, show_company_text=show_company_text, identity_lines=identity_lines,
+        header=header, header_style=st["header_style"], **common,
+    )
 
+
+_BTN_CELL = 'class="ribdigi-btn-cell" style="border-radius:12px;background:#2f7a0c;"'
+_BTN_LINK_RADIUS = 'class="ribdigi-btn" style="display:inline-block;padding:13px 26px;border-radius:12px;'
+
+
+def _themed_body(body_html: str, *, theme: dict, font: str, button_shape: str) -> str:
+    """Recolour buttons, totals and table heads in the inner HTML for the chosen design."""
+    from app import email_design
+    from app.print_branding import EMAIL_FONT
+
+    radius = email_design.BUTTON_RADIUS.get(button_shape, "12px")
+    out = body_html.replace(
+        _BTN_CELL, f'class="ribdigi-btn-cell" style="border-radius:{radius};background:{theme["button"]};"'
+    ).replace(
+        _BTN_LINK_RADIUS,
+        f'class="ribdigi-btn" style="display:inline-block;padding:13px 26px;border-radius:{radius};',
+    )
+    if theme["header"] != "#003d1f":
+        out = out.replace("color:#003d1f;font-size:18px", f"color:{theme['header']};font-size:18px")
+        out = out.replace("background:#f2f7ec;color:#46584e", f"background:{theme['tint']};color:#46584e")
+    if font != EMAIL_FONT:
+        out = out.replace(EMAIL_FONT, font)
+    return out
+
+
+def _tenant_layout(
+    *, head, preheader_html, theme, font, align, centred, company_esc, title_html, body,
+    signature_html, footer, logo_img, show_company_text, identity_lines, header, header_style,
+) -> str:
+    """Company letterhead: the company's colour band (or a light / minimal top) and details."""
+    solid = header_style == "solid"
+    minimal = header_style == "minimal"
+    name_colour = "#ffffff" if solid else ("#10211b" if minimal else theme["header"])
+    detail_colour = "#d8e6dd" if solid else "#5b6b62"
+    if solid:
+        head_td = (
+            f"padding:28px 36px 24px;background:{theme['header']};color:#ffffff;"
+            f"border-bottom:3px solid {theme['line']};"
+        )
+    elif minimal:
+        head_td = "padding:26px 36px 0;background:#ffffff;color:#10211b;"
+    else:
+        head_td = (
+            f"padding:26px 36px 22px;background:#ffffff;color:#10211b;border-top:6px solid {theme['header']};"
+            "border-bottom:1px solid #e3ebda;"
+        )
+    logo_html = (
+        f'<div style="margin:0 0 14px;text-align:{align};">{logo_img}</div>' if logo_img else ""
+    )
+    company_html = (
+        f'<div class="ribdigi-email-company" style="font-size:{17 if minimal else 20}px;font-weight:800;'
+        f'letter-spacing:-.01em;line-height:1.25;color:{name_colour};">{company_esc}</div>'
+        if show_company_text
+        else ""
+    )
+    identity_html = (
+        f'<div class="ribdigi-email-identity" style="margin:8px 0 0;color:{detail_colour};'
+        'font-size:12px;line-height:1.55;">'
+        + "<br/>".join(html.escape(line) for line in identity_lines)
+        + "</div>"
+        if identity_lines
+        else ""
+    )
+    pill_bg = "rgba(255,255,255,.14)" if solid else theme["tint"]
+    pill_ink = theme["badge"] if solid else theme["link"]
     header_html = (
-        f'<p class="ribdigi-email-header" style="margin:8px 0 0;color:#c8e86a;font-size:13px;">'
-        f"{html.escape(header)}</p>"
+        '<p class="ribdigi-email-header" style="margin:14px 0 0;">'
+        f'<span style="display:inline-block;padding:5px 12px;border-radius:999px;'
+        f'background:{pill_bg};color:{pill_ink};font-size:12px;font-weight:700;">'
+        f"{html.escape(header)}</span></p>"
         if header
         else ""
     )
+    divider = (
+        '<tr><td class="ribdigi-email-pad" style="padding:22px 36px 0;">'
+        '<div style="height:1px;background:#e3ebda;line-height:1px;font-size:0;">&nbsp;</div></td></tr>'
+        if minimal
+        else ""
+    )
     footer_html = (
-        f'<p class="ribdigi-email-footer" style="margin:0 0 8px;color:#4d5d56;font-size:12px;">'
+        '<p class="ribdigi-email-footer" style="margin:0 0 10px;color:#46584e;font-size:13px;'
+        f'line-height:1.5;">{html.escape(footer)}</p>'
+        if footer
+        else ""
+    )
+    return (
+        f"{head}"
+        f'<body style="margin:0;padding:0;background:{theme["page"]};">'
+        f"{preheader_html}"
+        '<table role="presentation" class="ribdigi-email-brand" width="100%" cellspacing="0" '
+        f'cellpadding="0" style="background:{theme["page"]};padding:32px 12px;">'
+        '<tr><td align="center">'
+        '<table role="presentation" width="600" cellspacing="0" cellpadding="0" '
+        'style="max-width:600px;width:100%;background:#ffffff;border-radius:18px;'
+        'overflow:hidden;border:1px solid #e3ebda;box-shadow:0 12px 32px -18px rgba(16,33,27,.35);">'
+        f'<tr><td class="ribdigi-email-pad" style="{head_td}text-align:{align};font-family:{font};">'
+        f"{logo_html}{company_html}{identity_html}{header_html}"
+        "</td></tr>"
+        f"{divider}"
+        '<tr><td class="ribdigi-email-pad ribdigi-email-body" style="padding:34px 36px 32px;'
+        f'font-family:{font};color:#24372d;font-size:15px;line-height:1.65;">'
+        f"{title_html}{body}{signature_html}"
+        "</td></tr>"
+        '<tr><td class="ribdigi-email-pad" style="padding:22px 36px 26px;background:#f6f9f2;'
+        f'border-top:1px solid #e3ebda;text-align:center;font-family:{font};">'
+        f"{footer_html}"
+        '<p style="margin:0;color:#7a8b81;font-size:12px;line-height:1.5;">'
+        f'Sent via Ribdigi House &middot; <span style="color:{theme["line"]};">&#9679;</span> RIBDIGI ERP</p>'
+        "</td></tr></table>"
+        '<p style="margin:16px 0 0;color:#8a9a90;font-size:11px;'
+        f'font-family:{font};">This message was sent to you by {company_esc}.</p>'
+        "</td></tr></table></body></html>"
+    )
+
+
+def _platform_layout(
+    *, head, preheader_html, theme, font, align, centred, company_esc, title_html, body,
+    signature_html, footer, logo_img, used_platform_logo, show_company, tagline,
+) -> str:
+    """Ribdigi House mail: gradient strip, white masthead, dark footer band."""
+    mark = logo_img or (
+        f'<span style="font-size:20px;font-weight:800;letter-spacing:.02em;color:{theme["header"]};">'
+        "Ribdigi House</span>"
+    )
+    company_html = (
+        f'<span class="ribdigi-email-company" style="display:inline-block;margin-top:{10 if centred else 0}px;'
+        f'padding:6px 12px;border-radius:999px;background:{theme["tint"]};color:{theme["link"]};'
+        f'font-size:12px;font-weight:700;">For {company_esc}</span>'
+        if show_company
+        else ""
+    )
+    tagline_html = (
+        f'<span style="display:block;margin-top:6px;color:#7a8b81;font-size:11px;font-weight:700;'
+        f'letter-spacing:.08em;text-transform:uppercase;">{html.escape(tagline)}</span>'
+        if tagline and not show_company
+        else ""
+    )
+    if centred:
+        mast = (
+            f'<tr><td class="ribdigi-email-pad" style="padding:30px 36px 26px;text-align:center;font-family:{font};">'
+            f"{mark}<br/>{company_html}{tagline_html}</td></tr>"
+        )
+    else:
+        mast = (
+            '<tr><td class="ribdigi-email-pad" style="padding:26px 36px 22px;">'
+            '<table role="presentation" class="ribdigi-email-mast" width="100%" cellspacing="0" cellpadding="0">'
+            f'<tr><td style="text-align:left;vertical-align:middle;font-family:{font};">{mark}</td>'
+            f'<td style="text-align:right;vertical-align:middle;font-family:{font};">'
+            f"{company_html}{tagline_html}</td></tr></table></td></tr>"
+        )
+    footer_extra = (
+        f'<p class="ribdigi-email-footer" style="margin:0 0 10px;color:#d8e6dd;font-size:13px;line-height:1.5;">'
         f"{html.escape(footer)}</p>"
         if footer
         else ""
     )
-    title_html = (
-        f'<h1 style="margin:0 0 16px;font-size:20px;line-height:1.3;color:#10211b;">'
-        f"{html.escape(title)}</h1>"
-        if title
-        else ""
+    return (
+        f"{head}"
+        '<body style="margin:0;padding:0;background:#f3f4f1;">'
+        f"{preheader_html}"
+        '<table role="presentation" class="ribdigi-email-brand ribdigi-email-house" width="100%" '
+        'cellspacing="0" cellpadding="0" style="background:#f3f4f1;padding:32px 12px;">'
+        '<tr><td align="center">'
+        '<table role="presentation" width="600" cellspacing="0" cellpadding="0" '
+        'style="max-width:600px;width:100%;background:#ffffff;border-radius:22px;overflow:hidden;'
+        'border:1px solid #e6e9e3;box-shadow:0 16px 40px -22px rgba(16,33,27,.4);">'
+        f'<tr><td style="height:6px;line-height:6px;font-size:0;background:{theme["line"]};'
+        f'background-image:linear-gradient(90deg,{theme["header"]},{theme["line"]});">&nbsp;</td></tr>'
+        f"{mast}"
+        '<tr><td class="ribdigi-email-pad" style="padding:0 36px;">'
+        '<div style="height:1px;background:#eceee9;line-height:1px;font-size:0;">&nbsp;</div></td></tr>'
+        '<tr><td class="ribdigi-email-pad ribdigi-email-body" style="padding:32px 36px 34px;'
+        f'font-family:{font};color:#24372d;font-size:15px;line-height:1.65;">'
+        f"{title_html}{body}{signature_html}"
+        "</td></tr>"
+        f'<tr><td class="ribdigi-email-pad" style="padding:26px 36px 28px;background:{theme["header"]};'
+        f'text-align:{align};font-family:{font};">'
+        '<p style="margin:0 0 4px;color:#ffffff;font-size:15px;font-weight:800;letter-spacing:.01em;">'
+        "Ribdigi House</p>"
+        f'<p style="margin:0 0 14px;color:{theme["badge"]};font-size:12px;">'
+        f'{html.escape(tagline) if tagline else "RIBDIGI ERP"}</p>'
+        f"{footer_extra}"
+        '<p style="margin:0;color:#b8c7be;font-size:12px;line-height:1.5;">'
+        "Sent via Ribdigi House &middot; RIBDIGI ERP</p>"
+        "</td></tr></table>"
+        "</td></tr></table></body></html>"
     )
 
+
+def email_button(href: str, label: str) -> str:
+    """A call-to-action button that survives Outlook (a padded table cell, not a styled link).
+
+    The colour and corner shape follow the email design when the body is wrapped."""
+    from app.print_branding import EMAIL_FONT
+
+    href_esc = html.escape(href, quote=True)
     return (
-        "<!DOCTYPE html>"
-        '<html lang="en"><head><meta charset="utf-8"/>'
-        '<meta name="viewport" content="width=device-width, initial-scale=1"/>'
-        f"<title>{html.escape(title or company)}</title></head>"
-        '<body style="margin:0;padding:0;background:#f2f7ec;">'
-        '<table role="presentation" class="ribdigi-email-brand" width="100%" cellspacing="0" '
-        'cellpadding="0" style="background:#f2f7ec;padding:24px 12px;">'
-        "<tr><td align=\"center\">"
-        '<table role="presentation" width="600" cellspacing="0" cellpadding="0" '
-        'style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;'
-        'overflow:hidden;border:1px solid #d4e5c4;">'
-        '<tr><td style="padding:20px 24px;background:#003d1f;color:#ffffff;text-align:center;'
-        'font-family:Arial,Helvetica,sans-serif;border-bottom:3px solid #4ab012;">'
-        f"{logo_html}"
-        f"{company_html}"
-        f"{identity_html}"
-        f"{header_html}"
-        "</td></tr>"
-        '<tr><td style="padding:24px;font-family:Arial,Helvetica,sans-serif;color:#10211b;'
-        'font-size:14px;line-height:1.55;">'
-        f"{title_html}{body_html}"
-        "</td></tr>"
-        '<tr><td style="padding:16px 24px;background:#f5f7ec;border-top:1px solid #d4e5c4;'
-        'text-align:center;font-family:Arial,Helvetica,sans-serif;">'
-        f"{footer_html}"
-        '<p style="margin:0;color:#4d5d56;font-size:11px;">Sent via Ribdigi House</p>'
-        "</td></tr></table></td></tr></table></body></html>"
+        '<table role="presentation" cellspacing="0" cellpadding="0" style="margin:8px 0 22px;">'
+        f"<tr><td {_BTN_CELL}>"
+        f'<a href="{href_esc}" {_BTN_LINK_RADIUS}'
+        f"font-family:{EMAIL_FONT};font-size:15px;font-weight:700;color:#ffffff;"
+        f'text-decoration:none;">{html.escape(label)}</a>'
+        "</td></tr></table>"
+    )
+
+
+def inline_preview(html_body: str) -> str:
+    """For an on-screen preview only: show attached (cid:) logos as embedded images."""
+    import base64
+
+    def _swap(match: re.Match) -> str:
+        cid = match.group(1)
+        with _inline_lock:
+            entry = _INLINE_IMAGES.get(cid)
+        if entry is None:
+            return match.group(0)
+        data_uri = f"data:image/{entry[2]};base64,{base64.b64encode(entry[1]).decode('ascii')}"
+        return match.group(0).replace(f"cid:{cid}", data_uri)
+
+    return _CID_SRC.sub(_swap, html_body or "")
+
+
+def _link_fallback(href: str) -> str:
+    """The raw link under a button, for clients that block buttons."""
+    href_esc = html.escape(href)
+    return (
+        '<p style="margin:0;color:#7a8b81;font-size:13px;line-height:1.5;">'
+        "Button not working? Paste this link into your browser:<br/>"
+        f'<a href="{href_esc}" style="color:#006b2e;word-break:break-all;">{href_esc}</a></p>'
     )
 
 
@@ -472,6 +732,9 @@ async def send_verification_email(
     *, to: str, token: str, company_name: str | None = None, tenant: Any | None = None
 ) -> EmailResult:
     try:
+        from app.email_design import refresh_platform_style
+
+        await refresh_platform_style()
         link = verification_link(token)
         company = company_name or getattr(tenant, "company_name", None) or "Ribdigi House"
         subject = f"Verify your {company} email"
@@ -484,9 +747,11 @@ async def send_verification_email(
         # Tenant company name still appears in the welcome line when present.
         brand_company = company if not _is_platform_brand_name(company) else "Ribdigi House"
         inner = (
-            f"<p>Welcome to <strong>{html.escape(company)}</strong>.</p>"
-            f'<p><a href="{html.escape(link)}">Verify your email</a></p>'
-            f"<p>Or paste: {html.escape(link)}</p>"
+            f"<p>Welcome to <strong>{html.escape(company)}</strong>. Confirm this is your email "
+            "address to finish setting up your account.</p>"
+            + email_button(link, "Verify your email")
+            + "<p>If you did not create an account, you can ignore this message.</p>"
+            + _link_fallback(link)
         )
         branded = render_branded_html(
             body_html=inner,
@@ -502,6 +767,9 @@ async def send_verification_email(
 
 
 async def send_password_reset_email(*, to: str, token: str, tenant: Any | None = None) -> EmailResult:
+    from app.email_design import refresh_platform_style
+
+    await refresh_platform_style()
     link = password_reset_link(token)
     company = getattr(tenant, "company_name", None) or "RIBDIGI ERP"
     subject = "Reset your RIBDIGI ERP password"
@@ -511,9 +779,10 @@ async def send_password_reset_email(*, to: str, token: str, tenant: Any | None =
         "If you did not request this, you can ignore this email.\n"
     )
     inner = (
-        "<p>A password reset was requested for your account.</p>"
-        f'<p><a href="{html.escape(link)}">Reset password</a></p>'
-        f"<p>Or paste: {html.escape(link)}</p>"
+        "<p>A password reset was requested for your account. The link works for one hour.</p>"
+        + email_button(link, "Reset password")
+        + "<p>If you did not ask for this, you can ignore this email; your password stays the same.</p>"
+        + _link_fallback(link)
     )
     branded = render_branded_html(
         body_html=inner,
@@ -528,6 +797,10 @@ async def send_password_reset_email(*, to: str, token: str, tenant: Any | None =
 async def send_notification_email(
     *, to: str, title: str, message: str, category: str, tenant: Any | None = None
 ) -> EmailResult:
+    if tenant is None:
+        from app.email_design import refresh_platform_style
+
+        await refresh_platform_style()
     subject = f"[RIBDIGI] {title}"
     text = f"{title}\n\n{message}\n\nCategory: {category}\n"
     company = getattr(tenant, "company_name", None) or "RIBDIGI ERP"
@@ -631,7 +904,8 @@ def _doc_totals_block(lines: list[str], *, total_line: str) -> str:
     body = "<br/>".join(lines)
     return (
         f'<div style="{DOC_TOTALS_STYLE}">{body}<br/>'
-        f'<strong style="color:#003d1f;font-size:15px;">{total_line}</strong></div>'
+        f'<strong style="display:inline-block;margin-top:6px;color:#003d1f;font-size:18px;'
+        f'font-weight:800;">{total_line}</strong></div>'
     )
 
 

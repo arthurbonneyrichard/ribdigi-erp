@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode, type RefObject } from 'react';
 import Link from 'next/link';
+import DeskIcon from './DeskIcon';
 
 /** Building blocks shared by the software owner console. Styled by platform-ui.css. */
 
@@ -60,6 +61,7 @@ export function Metric({
   note,
   href,
   tone,
+  icon,
   children,
 }: {
   label: string;
@@ -67,16 +69,25 @@ export function Metric({
   note?: ReactNode;
   href?: string;
   tone?: 'bad';
+  /** DeskIcon name shown in a small tile beside the label. */
+  icon?: string;
   children?: ReactNode;
 }) {
   const body = (
     <>
-      <span className="plat-metric-label">{label}</span>
+      <span className="plat-metric-head">
+        <span className="plat-metric-label">{label}</span>
+        {icon ? (
+          <span className="plat-metric-ico" aria-hidden="true">
+            <DeskIcon name={icon} size={17} />
+          </span>
+        ) : null}
+      </span>
       {children || <strong className="plat-metric-value">{value}</strong>}
       {note ? <span className="plat-metric-note">{note}</span> : null}
     </>
   );
-  const className = `plat-metric${tone ? ` is-${tone}` : ''}`;
+  const className = `plat-metric${tone ? ` is-${tone}` : ''}${icon ? ' has-ico' : ''}`;
   return href ? (
     <Link href={href} className={className}>
       {body}

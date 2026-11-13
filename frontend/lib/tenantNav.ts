@@ -711,7 +711,7 @@ export const PLATFORM_CONSOLE_MODULES = new Set([
 /** Existing platform destinations. Jobs uses platform:read; run stays owner-only on the page. */
 export const PLATFORM_NAV_ITEMS: NavItem[] = [
   ['Platform', '/platform', 'platform'],
-  ['Tenant', '/platform/tenants', 'platform_tenants'],
+  ['Tenants', '/platform/tenants', 'platform_tenants'],
   ['Billing', '/platform/billing', 'platform'],
   ['Staff', '/platform/staff', 'platform_staff'],
   ['Reports', '/platform/reports', 'platform_reports'],
