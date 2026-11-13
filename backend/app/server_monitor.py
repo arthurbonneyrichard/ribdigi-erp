@@ -739,8 +739,18 @@ async def collect_snapshot(db: AsyncSession, *, source: str = "api") -> dict[str
 # ------------------------------------------------------------ history store
 
 
+# Checks that mean the service is down for users. Backups, certificates, disk, CPU, slow replies and
+# the scheduler still raise alerts, but a stale backup is not downtime, so they do not lower uptime.
+_AVAILABILITY_CHECKS = ("database", "desk_db:", "redis", "workers", "web")
+
+
+def _is_availability_check(check_id: str) -> bool:
+    return any(check_id == k or (k.endswith(":") and check_id.startswith(k)) for k in _AVAILABILITY_CHECKS)
+
+
 def compact(snap: dict[str, Any]) -> dict[str, Any]:
     host = snap.get("host") or {}
+    critical = [c["key"] for c in snap.get("checks") or [] if c.get("status") == "critical"]
     disks = host.get("disks") or []
     perf = snap.get("performance") or {}
     return {
@@ -757,6 +767,8 @@ def compact(snap: dict[str, Any]) -> dict[str, Any]:
         "rpm": perf.get("requests_per_minute") if perf else None,
         "err": perf.get("error_rate_pct") if perf.get("requests") else None,
         "src": snap.get("source"),
+        "up": not any(_is_availability_check(cid) for cid in critical),
+        "bad": critical,
     }
 
 
@@ -856,10 +868,21 @@ def downsample(rows: list[dict[str, Any]], buckets: int, since_seconds: int) -> 
     return out
 
 
+def _row_is_up(row: dict[str, Any]) -> bool:
+    """Was the service up at this reading? (not: was every check green)."""
+    if "up" in row:
+        return bool(row["up"])
+    if "db" in row:
+        # Readings stored before 13 Nov 2026 kept only the overall status; a missing database
+        # reply is the one availability signal they carry.
+        return row["db"] is not None
+    return row.get("s") != "critical"
+
+
 def uptime_from(rows: list[dict[str, Any]]) -> dict[str, Any]:
     if not rows:
         return {"samples": 0, "healthy_pct": None, "web_up_pct": None}
-    healthy = sum(1 for r in rows if r.get("s") != "critical")
+    healthy = sum(1 for r in rows if _row_is_up(r))
     web_rows = [r for r in rows if "web" in r]
     web_up = sum(1 for r in web_rows if r.get("web") is not None)
     return {

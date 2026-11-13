@@ -581,9 +581,9 @@ export default function ServerMonitorPage() {
           </ul>
         </div>
         <div className="mon-hero-side">
-          <Ring value={day ?? 0} size={128} stroke={11} tone={day == null ? 'none' : day >= 99 ? 'ok' : day >= 95 ? 'warn' : 'bad'} label={`Healthy ${day ?? 'unknown'} percent of the last 24 hours`}>
+          <Ring value={day ?? 0} size={128} stroke={11} tone={day == null ? 'none' : day >= 99 ? 'ok' : day >= 95 ? 'warn' : 'bad'} label={`Up ${day ?? 'unknown'} percent of the last 24 hours`}>
             <strong>{day != null ? `${day}%` : '—'}</strong>
-            <span>24 h healthy</span>
+            <span>24 h uptime</span>
           </Ring>
           <div className="mon-hero-stats">
             <div>
@@ -843,7 +843,7 @@ export default function ServerMonitorPage() {
               <div>
                 <h2>Health timeline</h2>
                 <span className="mon-muted">
-                  Healthy {history?.uptime?.healthy_pct != null ? `${history.uptime.healthy_pct}%` : '—'} of {history?.uptime?.samples || 0} readings
+                  Up {history?.uptime?.healthy_pct != null ? `${history.uptime.healthy_pct}%` : '—'} of {history?.uptime?.samples || 0} readings
                 </span>
               </div>
               <div className="mon-seg is-small" role="group" aria-label="History range">
