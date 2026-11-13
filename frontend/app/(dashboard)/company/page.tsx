@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import PageHeader from '../../../components/PageHeader';
+import EmailDesigner from '../../../components/EmailDesigner';
 import { api, apiFetch, apiOptional } from '../../../lib/api';
 import { getMe, invalidateMeCache } from '../../../lib/meCache';
 import { formatDateTime, formatNumber, formatWhen, plainLabel, rememberFormatPrefs } from '../../../lib/format';
@@ -41,7 +42,7 @@ function mergeFields(current: any, data: any, keys: string[]) {
 type CompanyTab = 'business' | 'branding' | 'messages' | 'tax' | 'staff' | 'plan';
 const COMPANY_TABS: [CompanyTab, string][] = [
   ['business', 'Business details'],
-  ['branding', 'Logo and printing'],
+  ['branding', 'Logo, print and email'],
   ['messages', 'Email and SMS'],
   ['tax', 'Tax and year'],
   ['staff', 'Staff sign-in'],
@@ -1455,7 +1456,17 @@ export default function Page() {
           </div>
         </section>
       </div>
+      ) : null}
 
+      {tab === 'branding' ? (
+        <section className="card company-email-design" aria-labelledby="company-email-design-title">
+          <h2 id="company-email-design-title">Email design</h2>
+          <p className="muted">
+            Choose how the invoices, quotations, receipts and notices your company emails look. The preview
+            updates as you change things; nothing changes for customers until you save.
+          </p>
+          <EmailDesigner mode="company" baseUrl="/settings/email-design" readOnly={!!tenant.read_only} />
+        </section>
       ) : null}
 
       {tab === 'tax' ? (

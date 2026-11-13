@@ -6,13 +6,14 @@ from datetime import date
 from decimal import Decimal
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import hrm as svc
 from app import hrm_loans as loans_svc
 from app import hrm_pay_changes as changes_svc
+from app import hrm_payslips as payslips_svc
 from app.db import get_db
 from app.schemas import E164PhoneValue, NonNegativeMoneyValue, PartyNameValue, UuidIdValue
 from app.security import require_permission
@@ -34,7 +35,7 @@ def _env(data, message: str = "OK"):
 
 
 def _sees_pay(claims: dict) -> bool:
-    return str(claims.get("role") or "") not in ("hrm_officer", "hrm_employee")
+    return svc.sees_pay(claims)
 
 
 class EmployeeBody(BaseModel):
@@ -55,6 +56,11 @@ class EmployeeBody(BaseModel):
     ghana_card: GhanaCard | None = None
     mobile_money: E164PhoneValue | None = None
     tier3_percent: Percent = Decimal("0")
+    commission_percent: Percent = Decimal("0")
+    pay_frequency: Literal["monthly", "weekly", "fortnightly"] = "monthly"
+    non_resident: bool = False
+    ssnit_exempt: bool = False
+    senior_staff: bool = False
     manager_id: UuidIdValue | None = None
     biometric_id: Annotated[str, Field(min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$")] | None = None
 
@@ -75,6 +81,11 @@ class EmployeeUpdate(BaseModel):
     ghana_card: GhanaCard | None = None
     mobile_money: E164PhoneValue | None = None
     tier3_percent: Percent | None = None
+    commission_percent: Percent | None = None
+    pay_frequency: Literal["monthly", "weekly", "fortnightly"] | None = None
+    non_resident: bool | None = None
+    ssnit_exempt: bool | None = None
+    senior_staff: bool | None = None
     manager_id: UuidIdValue | None = None
     biometric_id: Annotated[str, Field(min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$")] | None = None
 
@@ -159,6 +170,8 @@ class SettingsBody(BaseModel):
     overtime_rate: Annotated[Decimal, Field(ge=1, le=5, max_digits=5, decimal_places=2)] | None = None
     clock_needs_site: bool | None = None
     carry_over_days: Annotated[int, Field(ge=0, le=120)] | None = None
+    escalate_after_days: Annotated[int, Field(ge=0, le=60)] | None = None
+    part_pay_percent: Annotated[Decimal, Field(ge=0, le=100, max_digits=5, decimal_places=2)] | None = None
 
 
 class RateBand(BaseModel):
@@ -181,7 +194,24 @@ class StatutoryRateBody(BaseModel):
     tier3_relief_percent: Percent = Decimal("16.5")
     paye_bands: list[RateBand] = Field(min_length=1, max_length=20)
     rounding: Literal["half_up", "down"] = "half_up"
+    # Junior-staff overtime tax (GRA): monthly earned-basic limit; omit to tax overtime as ordinary pay.
+    overtime_junior_cap: Annotated[Decimal, Field(gt=0, max_digits=14, decimal_places=2)] | None = None
+    overtime_low_rate: Percent = Decimal("5")
+    overtime_high_rate: Percent = Decimal("10")
+    overtime_low_share_percent: Percent = Decimal("50")
+    # National daily minimum wage; omit for no check.
+    minimum_daily_wage: Annotated[Decimal, Field(gt=0, max_digits=14, decimal_places=2)] | None = None
+    # GRA bonus rule: final rate on bonus up to a percent of annual basic.
+    bonus_rate: Percent = Decimal("5")
+    bonus_cap_percent: Percent = Decimal("15")
     source_note: Annotated[str, Field(min_length=3, max_length=255)] | None = None
+
+
+@router.get("/statutory-rates/suggested")
+async def hrm_rates_suggested(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    """Published Ghana figures to check and add as dated rows. Nothing is saved here."""
+    svc.job(claims, "payroll")
+    return _env(svc.suggested_rates("GH"))
 
 
 @router.get("/statutory-rates")
@@ -473,6 +503,84 @@ async def hrm_my_tax_statement(
     return _env(await changes_svc.tax_statement(db, claims["tenant_id"], employee, year))
 
 
+class CommissionBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    employee_id: UuidIdValue
+    period: Period
+
+
+@router.get("/commissions")
+async def hrm_commissions(
+    period: Annotated[str, Query(pattern=r"^20\d{2}-(0[1-9]|1[0-2])$")],
+    claims=Depends(require_permission("hrm", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    svc.job(claims, "payroll")
+    from app import hrm_commission
+
+    return _env(await hrm_commission.month(db, claims["tenant_id"], period))
+
+
+@router.post("/commissions")
+async def hrm_commission_approve(
+    payload: CommissionBody, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)
+):
+    svc.job(claims, "payroll")
+    from app import hrm_commission
+
+    row = await hrm_commission.approve(db, claims["tenant_id"], employee_id=payload.employee_id, period=payload.period, user_id=claims.get("sub"))
+    await db.commit()
+    return _env({"amount": float(row.amount), "net_sales": float(row.net_sales), "period": row.period}, "Commission approved for that month's payroll")
+
+
+class LeaveEncashBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    employee_id: UuidIdValue
+    year: Annotated[int, Field(ge=2000, le=2100)]
+    days: Annotated[int, Field(ge=1, le=366)]
+    period: Annotated[str, Field(pattern=r"^20\d{2}-(0[1-9]|1[0-2])$")]
+    note: Annotated[str, Field(max_length=255)] | None = None
+
+
+@router.get("/employees/{employee_id}/leave-balance")
+async def hrm_leave_balance(
+    employee_id: UuidIdValue, year: Annotated[int | None, Query(ge=2000, le=2100)] = None,
+    claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db),
+):
+    svc.job(claims, "leave")
+    return _env(await svc.leave_balance(db, claims["tenant_id"], employee_id, year=year))
+
+
+@router.get("/leave-encashments")
+async def hrm_leave_encashments(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "payroll")
+    from app import hrm_leave_pay
+
+    return _env(await hrm_leave_pay.list_all(db, claims["tenant_id"]))
+
+
+@router.post("/leave-encashments")
+async def hrm_leave_encash(payload: LeaveEncashBody, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "payroll")
+    from app import hrm_leave_pay
+
+    row = await hrm_leave_pay.approve(db, claims["tenant_id"], payload, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(hrm_leave_pay.serialize(row, await db.get(svc.m.HrmEmployee, row.employee_id)), "Leave payout approved for that month's payroll")
+
+
+@router.post("/leave-encashments/{row_id}/cancel")
+async def hrm_leave_encash_cancel(row_id: UuidIdValue, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "payroll")
+    from app import hrm_leave_pay
+
+    row = await hrm_leave_pay.cancel(db, claims["tenant_id"], row_id, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(hrm_leave_pay.serialize(row, None), "Cancelled; the days are back")
+
+
 @router.get("/summary")
 async def hrm_summary(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
     svc.job(claims, "people")
@@ -508,11 +616,40 @@ async def hrm_employees(
     return _env([svc.serialize_employee(r, pay=pay) for r in await svc.list_employees(db, claims["tenant_id"], show=show)])
 
 
+# Pay and identity fields only an HR manager (pay rights) may set: changing a bank or Mobile
+# Money number redirects someone's pay, so it needs the same rights as changing the salary.
+PAY_ONLY_FIELDS = frozenset({
+    "basic_salary", "allowances", "commission_percent", "tier3_percent", "pay_frequency", "non_resident",
+    "ssnit_exempt", "senior_staff",
+    "ssnit_number", "tin", "bank_name", "bank_account", "ghana_card", "mobile_money",
+})
+
+
+# When adding someone, an officer may take down their ID and contact numbers (a new record
+# pays nothing until an HR manager sets the salary); the pay amounts themselves need pay rights.
+CREATE_PAY_FIELDS = frozenset({
+    "basic_salary", "allowances", "commission_percent", "tier3_percent", "pay_frequency", "non_resident", "ssnit_exempt", "senior_staff",
+})
+
+
+def _touches_pay(payload) -> bool:
+    defaults = {
+        "basic_salary": 0, "allowances": 0, "commission_percent": 0, "tier3_percent": 0, "pay_frequency": "monthly",
+        "non_resident": False, "ssnit_exempt": False, "senior_staff": False,
+    }
+    for name in CREATE_PAY_FIELDS & payload.model_fields_set:
+        value = getattr(payload, name, None)
+        if value is None or value == "" or (name in defaults and value == defaults[name]):
+            continue
+        return True
+    return False
+
+
 @router.post("/employees")
 async def hrm_employee_create(
     payload: EmployeeBody, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)
 ):
-    svc.job(claims, "people")
+    svc.job(claims, "payroll" if _touches_pay(payload) else "people")
     row = await svc.create_employee(db, claims["tenant_id"], payload, user_id=claims.get("sub"))
     await db.commit()
     return _env(svc.serialize_employee(row, pay=_sees_pay(claims)), "Employee added")
@@ -525,7 +662,8 @@ async def hrm_employee_update(
     claims=Depends(require_permission("hrm", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    svc.job(claims, "payroll" if {"basic_salary", "allowances"} & payload.model_fields_set else "people")
+    # Any pay or identity field, even set to blank, needs pay rights.
+    svc.job(claims, "payroll" if PAY_ONLY_FIELDS & payload.model_fields_set else "people")
     row = await svc.update_employee(db, claims["tenant_id"], employee_id, payload, user_id=claims.get("sub"))
     await db.commit()
     return _env(svc.serialize_employee(row, pay=_sees_pay(claims)), "Saved")
@@ -575,7 +713,7 @@ async def hrm_leave_decide(
     db: AsyncSession = Depends(get_db),
 ):
     # Staff who manage people decide their team's first step; everything else needs the leave job.
-    as_hr = str(claims.get("role") or "") != "hrm_employee"
+    as_hr = svc.runs_hr(claims) or str(claims.get("role") or "") in svc._JOBS and "leave" in svc._JOBS[str(claims.get("role"))]
     if as_hr:
         svc.job(claims, "leave")
     row = await svc.decide_leave(
@@ -584,6 +722,93 @@ async def hrm_leave_decide(
     )
     await db.commit()
     return _env(await svc.present_leave(db, row), "Saved")
+
+
+class PartPayLine(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    employee_id: UuidIdValue
+    amount: NonNegativeMoneyValue
+
+
+class PartPayBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    paid_on: date
+    method: Literal["cash", "bank_transfer", "mobile_money", "cheque"]
+    lines: list[PartPayLine] = Field(min_length=1, max_length=500)
+
+
+@router.get("/part-pay")
+async def hrm_part_pay_sheet(paid_on: date = Query(...), claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "payroll")
+    from app import hrm_part_pay
+
+    return _env(await hrm_part_pay.sheet(db, claims["tenant_id"], paid_on))
+
+
+@router.post("/part-pay")
+async def hrm_part_pay(payload: PartPayBody, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "payroll")
+    from app import hrm_part_pay
+
+    out = await hrm_part_pay.pay(db, claims["tenant_id"], payload, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(out, f"Paid {out['paid']} people")
+
+
+class CoverBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    from_employee_id: UuidIdValue | None = None
+    to_employee_id: UuidIdValue
+    starts_on: date
+    ends_on: date
+    reason: Annotated[str, Field(max_length=255)] | None = None
+
+
+def _hr_leave(claims) -> bool:
+    try:
+        svc.job(claims, "leave")
+        return True
+    except HTTPException:
+        return False
+
+
+@router.get("/cover")
+async def hrm_cover_list(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    from app import hrm_delegation
+
+    me = await svc._user_employee(db, claims["tenant_id"], claims.get("sub"))
+    return _env(await hrm_delegation.listing(db, claims["tenant_id"], me=me, as_hr=_hr_leave(claims)))
+
+
+@router.get("/cover/people")
+async def hrm_cover_people(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    """Names only, so a manager can pick who covers. No other staff details."""
+    if not _hr_leave(claims):
+        svc.job(claims, "self")
+    return _env([{"id": p.id, "name": p.full_name} for p in await svc.list_employees(db, claims["tenant_id"])])
+
+
+@router.post("/cover")
+async def hrm_cover_set(payload: CoverBody, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)):
+    from app import hrm_delegation
+
+    me = await svc._user_employee(db, claims["tenant_id"], claims.get("sub"))
+    row = await hrm_delegation.create(db, claims["tenant_id"], payload, me=me, as_hr=_hr_leave(claims), user_id=claims.get("sub"))
+    await db.commit()
+    return _env(await hrm_delegation.serialize(db, row), "Cover set")
+
+
+@router.post("/cover/{cover_id}/end")
+async def hrm_cover_end(cover_id: UuidIdValue, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)):
+    from app import hrm_delegation
+
+    me = await svc._user_employee(db, claims["tenant_id"], claims.get("sub"))
+    row = await hrm_delegation.end(db, claims["tenant_id"], cover_id, me=me, as_hr=_hr_leave(claims), user_id=claims.get("sub"))
+    await db.commit()
+    return _env(await hrm_delegation.serialize(db, row), "Cover ended")
 
 
 @router.get("/team/leave")
@@ -641,7 +866,59 @@ async def hrm_slip_update(
     svc.job(claims, "payroll")
     row = await svc.update_slip(db, claims["tenant_id"], slip_id, payload, user_id=claims.get("sub"))
     await db.commit()
-    return _env({"id": row.id, "net": svc._money(row.net)}, "Saved")
+    return _env(svc._slip_dict(row, await db.get(svc.m.HrmEmployee, row.employee_id)), "Saved")
+
+
+@router.get("/payslips/{slip_id}/pdf")
+async def hrm_slip_pdf(slip_id: UuidIdValue, claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    """HR with payroll rights: any payslip. Staff: their own, once the payroll is approved."""
+    pdf, filename = await payslips_svc.pdf_for(db, claims["tenant_id"], slip_id, claims)
+    return Response(
+        content=pdf, media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"', "Cache-Control": "no-store"},
+    )
+
+
+class EmailSlipsBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    # Send again to people who already had theirs.
+    resend: bool = False
+
+
+@router.post("/payroll/{run_id}/email-payslips")
+async def hrm_payroll_email(
+    run_id: UuidIdValue,
+    payload: EmailSlipsBody | None = None,
+    claims=Depends(require_permission("hrm", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    svc.job(claims, "payroll")
+    out = await payslips_svc.email_run(db, claims["tenant_id"], run_id, resend=bool(payload and payload.resend), user_id=claims.get("sub"))
+    await db.commit()
+    return _env(out, f"{out['sent']} payslip(s) emailed")
+
+
+@router.get("/payroll/{run_id}/payment-file")
+async def hrm_payment_file(
+    run_id: UuidIdValue,
+    method: Annotated[Literal["bank", "mobile_money"], Query()] = "bank",
+    claims=Depends(require_permission("hrm", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Net pay as CSV for the bank's bulk upload or a Mobile Money bulk payment."""
+    svc.job(claims, "payroll")
+    text, info = await payslips_svc.payment_file(db, claims["tenant_id"], run_id, method, user_id=claims.get("sub"))
+    await db.commit()
+    run = await svc._run(db, claims["tenant_id"], run_id)
+    return Response(
+        content=text, media_type="text/csv",
+        headers={
+            "Content-Disposition": f'attachment; filename="salaries_{run.period}_{method}.csv"',
+            "Cache-Control": "no-store",
+            "X-Rows": str(info["count"]),
+            "X-Left-Out": str(len(info["left_out"])),
+        },
+    )
 
 
 @router.delete("/payroll/{run_id}")

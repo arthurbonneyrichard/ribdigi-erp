@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import DeskIcon from '../../../components/DeskIcon';
 import PageHeader from '../../../components/PageHeader';
 import PageSkeleton from '../../../components/PageSkeleton';
 import { MonthBars, Metric, QUIET_DAYS, Tag, daysLeft, isQuiet, timeAgo } from '../../../components/PlatformUi';
@@ -171,6 +172,13 @@ function IndustryBars({ rows }: { rows: { label: string; count: number }[] }) {
   );
 }
 
+function greeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
 export default function PlatformConsole() {
   const router = useRouter();
   const [tenants, setTenants] = useState<TenantRow[]>([]);
@@ -184,6 +192,7 @@ export default function PlatformConsole() {
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
   const [role, setRole] = useState('');
+  const [ownerName, setOwnerName] = useState('');
   const [permissions, setPermissions] = useState<Record<string, string[]> | null>(null);
 
   useEffect(() => {
@@ -197,6 +206,7 @@ export default function PlatformConsole() {
         return;
       }
       setRole(role);
+      setOwnerName(String(me.data?.full_name || '').trim().split(/\s+/)[0] || '');
       setPermissions(me.data?.permissions || {});
       const [tenantRes, activityRes, summaryRes, upcomingRes, healthRes, directoryRes] = await Promise.allSettled([
         getPrefetched('/tenants'),
@@ -358,12 +368,38 @@ export default function PlatformConsole() {
   return (
     <div className="plat">
       <PageHeader
-        className="plat-hero"
-        kicker="Software owner"
-        kickerClassName="plat-kicker"
-        title="Platform console"
+        className="plat-hero plat-welcome"
+        kicker={`Software owner · ${new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}`}
+        kickerClassName="plat-welcome-kicker"
+        title={`${greeting()}${ownerName ? `, ${ownerName}` : ''}`}
         subtitle="How every company on RIBDIGI is doing, and what needs you today."
-        subtitleClassName="plat-sub"
+        subtitleClassName="plat-welcome-sub"
+        actions={
+          <nav className="plat-welcome-links" aria-label="Quick links">
+            <Link href="/platform/tenants">
+              <DeskIcon name="home" size={16} />
+              Companies
+            </Link>
+            <Link href="/platform/billing">
+              <DeskIcon name="cash" size={16} />
+              Billing
+            </Link>
+            <Link href="/platform/email">
+              <DeskIcon name="mail" size={16} />
+              Email center
+            </Link>
+            <Link href="/platform/monitor">
+              <DeskIcon name="chart" size={16} />
+              Server health
+            </Link>
+            {canOpenDesk ? (
+              <Link href="/platform/support">
+                <DeskIcon name="phone" size={16} />
+                Support desk
+              </Link>
+            ) : null}
+          </nav>
+        }
       />
 
       {error && (
@@ -375,6 +411,7 @@ export default function PlatformConsole() {
       <div className="plat-metrics" aria-label="Platform counts">
         <Metric
           label="Companies"
+          icon="home"
           href="/platform/tenants"
           value={companyCount == null ? '—' : companyCount}
           note={
@@ -387,6 +424,7 @@ export default function PlatformConsole() {
         />
         <Metric
           label="Subscriptions"
+          icon="chart"
           href="/platform/reports"
           value={subscriptionCount == null ? '—' : subscriptionCount}
           note={
@@ -401,6 +439,7 @@ export default function PlatformConsole() {
         />
         <Metric
           label="Paid revenue (all time)"
+          icon="cash"
           href="/platform/billing"
           note={
             summary == null
@@ -423,6 +462,7 @@ export default function PlatformConsole() {
         </Metric>
         <Metric
           label="Open support tickets"
+          icon="phone"
           href={canOpenDesk ? '/platform/support' : undefined}
           value={openTickets == null ? '—' : openTickets}
           note={

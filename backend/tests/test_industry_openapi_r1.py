@@ -80,7 +80,7 @@ def test_industry_literal_schema():
             {
                 "company_name": "x",
                 "slug": "x",
-                "industry": "wholesale",
+                "industry": "retail_wholesale",
                 "admin_email": "x@example.com",
                 "admin_password": "SecurePass123!",
             }
@@ -105,9 +105,9 @@ def test_industry_ui_and_docs():
     assert "onChange={(e) => setTenant({ ...tenant, industry: e.target.value })}" not in company
     industries = (ROOT / "frontend/lib/industries.ts").read_text(encoding="utf-8")
     selectable = industries.split("export const INDUSTRY_LABELS", 1)[0]
-    for value in ("retail", "hotel", "restaurant", "fmcg", "bakery", "gym", "hrm"):
+    for value in ("retail", "wholesale", "hotel", "restaurant", "fmcg", "bakery", "gym", "hrm"):
         assert f"'{value}'" in selectable
-    for removed in ("pharmacy", "wholesale", "retail_wholesale", "hospital", "mart"):
+    for removed in ("pharmacy", "retail_wholesale", "hospital", "mart"):
         assert f"'{removed}'" not in selectable
     api = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "industry" in api

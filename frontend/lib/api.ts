@@ -258,6 +258,19 @@ export function formatApiError(body: unknown, status: number, path?: string): st
     return text;
   };
 
+  // Sign-in speaks plainly: a wrong password, an unknown workspace, a lock or a server fault
+  // each get their own sentence, never the session-expired or generic copy.
+  if (loginRequest) {
+    const loginBody = body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
+    const raw = typeof loginBody.detail === 'string' ? loginBody.detail.trim() : '';
+    if (status >= 500) return 'Sign-in could not be completed because the server failed. Try again shortly.';
+    if (status === 401 && (!raw || /^invalid credentials$/i.test(raw))) return 'The email or password is incorrect.';
+    if (status === 404 && (!raw || /tenant not found/i.test(raw))) {
+      return 'That workspace was not found. Check the tenant slug or ID.';
+    }
+    if (status === 423) return 'This account is temporarily locked. Try again later.';
+  }
+
   if (status === 429) {
     const payload = body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
     const msg = cleanMsg(payload.message);

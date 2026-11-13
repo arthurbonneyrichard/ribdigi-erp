@@ -133,6 +133,13 @@ def sync_ecommerce_connectors() -> dict:
     return jobs_svc.run_async(jobs_svc.job_sync_ecommerce_connectors())
 
 
+@celery.task(name="app.tasks.scan_hr_escalations")
+def scan_hr_escalations() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    return jobs_svc.run_async(jobs_svc.job_scan_hr_escalations())
+
+
 @celery.task(name="app.tasks.deliver_support_outbox")
 def deliver_support_outbox() -> dict:
     if not settings.CELERY_ENABLED:

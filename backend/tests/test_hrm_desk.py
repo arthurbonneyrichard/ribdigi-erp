@@ -261,7 +261,11 @@ async def test_other_desks_are_shut_both_ways(client, seeded, db_session):
     assert (await ac.get("/api/v1/pos/sessions", headers=h)).status_code == 403
     await set_tenant_industry(db_session, seed["t1"], "gym")
     h = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
-    assert (await ac.get("/api/v1/hrm/summary", headers=h)).status_code == 403
+    # Since 13 Nov every industry has HR on the one engine, but only its own HR areas:
+    # a gym keeps staff, leave, time and pay, and does not get hiring.
+    assert (await ac.get("/api/v1/hrm/summary", headers=h)).status_code == 200
+    hiring = await ac.get("/api/v1/hrm/vacancies", headers=h)
+    assert hiring.status_code == 403 and hiring.json()["detail"]["code"] == "HRM_AREA_OFF"
 
 
 @pytest.mark.asyncio

@@ -35,6 +35,7 @@ DEFAULT_PREFERENCES = {
     "server_health": {"dashboard": True, "email": True, "sms": False},
     "staff_account": {"dashboard": True, "email": False, "sms": False},
     "admin_password_reset": {"dashboard": True, "email": True, "sms": False},
+    "hr": {"dashboard": True, "email": False, "sms": False},
 }
 
 VALID_CATEGORIES = set(DEFAULT_PREFERENCES.keys())
@@ -44,6 +45,7 @@ VALID_CATEGORIES = set(DEFAULT_PREFERENCES.keys())
 OPERATIONAL_STORE_CATEGORIES = frozenset(
     {
         "low_stock",
+        "hr",
         "expense_approval",
         "shift_variance",
         "credit_limit",

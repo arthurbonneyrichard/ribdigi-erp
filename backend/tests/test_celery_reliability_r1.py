@@ -39,6 +39,7 @@ EXPECTED_HANDLERS = {
     "process_subscription_renewals",
     "expire_ecommerce_reservations",
     "sync_ecommerce_connectors",
+    "scan_hr_escalations",
     "sample_server_health",
 }
 

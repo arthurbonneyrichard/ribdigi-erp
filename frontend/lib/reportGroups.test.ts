@@ -24,11 +24,12 @@ test('groups cover sales inventory purchases finance customers staff and email s
   }
 });
 
-test('staff is sales by staff; email schedules is its own group', () => {
+test('staff holds cashier performance and sales by staff; email schedules is its own group', () => {
   const staff = reportsInGroup('staff');
-  assert.equal(staff.length, 1);
-  assert.equal(staff[0].id, 'salesperson');
-  assert.equal(staff[0].name, 'Sales by staff');
+  assert.deepEqual(staff.map((r) => r.id).sort(), ['cashiers', 'salesperson']);
+  const bySalesperson = staff.find((r) => r.id === 'salesperson');
+  assert.equal(bySalesperson?.name, 'Sales by staff');
+  assert.equal(staff.find((r) => r.id === 'cashiers')?.name, 'Cashier performance');
   const schedules = reportsInGroup('schedules');
   assert.equal(schedules.length, 1);
   assert.equal(schedules[0].tab, 'schedules');
@@ -85,7 +86,8 @@ test('sales reports stay industry-specific and single-store hides store lists', 
   const stores = findReport('stores');
   assert.ok(pos && quotes && stores);
   assert.equal(reportVisible(pos, { industry: 'hotel', multiStore: false }), true);
-  assert.equal(reportVisible(pos, { industry: 'wholesale', multiStore: true }), false);
+  assert.equal(reportVisible(pos, { industry: 'wholesale', multiStore: true }), true);
+  assert.equal(reportVisible(quotes, { industry: 'wholesale', multiStore: true }), true);
   assert.equal(reportVisible(pos, { industry: 'fmcg', multiStore: true }), false);
   assert.equal(reportVisible(quotes, { industry: 'retail', multiStore: true }), true);
   assert.equal(reportVisible(quotes, { industry: 'hotel', multiStore: true }), false);

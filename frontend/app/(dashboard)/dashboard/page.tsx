@@ -755,7 +755,7 @@ export default function Page() {
           </section>
         )}
 
-        {(layout === 'wholesale' || layout === 'retail_wholesale') && (
+        {(liveIndustry === 'wholesale' || layout === 'wholesale' || layout === 'retail_wholesale') && (
           <WholesaleDeskCards status={dashStatus} desk={d.wholesale_desk} />
         )}
 

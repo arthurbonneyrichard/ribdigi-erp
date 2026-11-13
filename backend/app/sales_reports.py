@@ -40,7 +40,7 @@ POS_NOTE = (
     "sale as on Detailed sales, and Sales summary counts it once."
 )
 VOID_TX_STATUSES = frozenset({"cancelled", "void", "voided", "draft"})
-QUOTATION_INDUSTRIES = frozenset({"retail"})
+QUOTATION_INDUSTRIES = frozenset({"retail", "wholesale"})
 COST_ROLES = frozenset(
     {
         "company_admin",

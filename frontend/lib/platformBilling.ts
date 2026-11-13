@@ -64,6 +64,7 @@ export type PackageCreateDraft = {
 export const PRICE_INDUSTRIES: { value: string; label: string }[] = [
   { value: '', label: 'All industries' },
   { value: 'retail', label: 'Retail' },
+  { value: 'wholesale', label: 'Wholesale' },
   { value: 'hotel', label: 'Hotel' },
   { value: 'restaurant', label: 'Restaurant' },
   { value: 'fmcg', label: 'FMCG distribution' },

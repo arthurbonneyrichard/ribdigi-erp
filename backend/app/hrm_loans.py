@@ -21,7 +21,7 @@ from app import accounting
 from app import models as m
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
-LOAN_KINDS = frozenset({"loan", "advance"})
+LOAN_KINDS = frozenset({"loan", "advance", "part_pay"})
 LOAN_ACCOUNT = "1150"
 ZERO = Decimal("0")
 
@@ -163,6 +163,7 @@ def serialize_loan(row: m.HrmLoan, employee: m.HrmEmployee | None = None) -> dic
         "decision_note": row.decision_note,
         "decided_at": row.decided_at.isoformat() if row.decided_at else None,
         "paid_out_at": row.paid_out_at.isoformat() if row.paid_out_at else None,
+        "paid_out_method": row.paid_out_method,
         "settled_at": row.settled_at.isoformat() if row.settled_at else None,
         "created_at": row.created_at.isoformat() if row.created_at else None,
     }
@@ -224,6 +225,12 @@ async def request_loan(db: AsyncSession, tenant_id: str, *, employee_id: str, pa
         db, tenant_id, user_id, "hrm_loan_requested", "hrm_loan", row.id,
         {"kind": row.kind, "principal": money_json(principal), "employee_id": employee.id},
     )
+    from app import hrm_notify
+
+    await hrm_notify.to_hr(
+        db, tenant_id, "Loan to decide", f"{employee.full_name} asks for a {row.kind} ({row.loan_number}).",
+        entity_type="hrm_loan", entity_id=row.id, skip_user=user_id,
+    )
     return row
 
 
@@ -251,6 +258,12 @@ async def decide_loan(
         row.decided_at = datetime.utcnow()
         await hrm._audit(db, tenant_id, user_id, "hrm_loan_rejected", "hrm_loan", row.id, {"note": row.decision_note})
         await db.flush()
+        from app import hrm_notify
+
+        await hrm_notify.to_person(
+            db, tenant_id, employee, "Loan decided", f"Your {row.kind} {row.loan_number} was turned down: {row.decision_note}",
+            entity_type="hrm_loan", entity_id=row.id,
+        )
         return row
     if method not in hrm.METHODS:
         raise HTTPException(status_code=422, detail="Choose how the money was paid out")
@@ -276,6 +289,12 @@ async def decide_loan(
         {"principal": money_json(amount), "method": method},
     )
     await db.flush()
+    from app import hrm_notify
+
+    await hrm_notify.to_person(
+        db, tenant_id, employee, "Loan decided", f"Your {row.kind} {row.loan_number} was approved and paid out.",
+        entity_type="hrm_loan", entity_id=row.id,
+    )
     return row
 
 

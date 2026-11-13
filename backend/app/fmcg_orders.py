@@ -33,11 +33,11 @@ REF_ORDER = "fmcg_order"
 REF_RETURN = "fmcg_return"
 
 _JOBS = {
-    "fmcg_rep": frozenset({"outlets", "orders", "collect"}),
+    "fmcg_rep": frozenset({"outlets", "orders", "collect", "visits"}),
     "fmcg_driver": frozenset({"deliver", "collect", "returns"}),
 }
 _WORDS = {
-    "fmcg_rep": "Sales reps look after outlets, orders and collections. Ask a manager for the rest.",
+    "fmcg_rep": "Sales reps look after outlets, visits, orders and collections. Ask a manager for the rest.",
     "fmcg_driver": "Drivers deliver, collect and take returns. Ask a manager for the rest.",
 }
 

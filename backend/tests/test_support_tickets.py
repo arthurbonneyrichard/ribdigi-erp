@@ -629,7 +629,8 @@ async def test_ticket_categories_follow_industry_desk(client):
     assert restaurant.get("purchases_suppliers") == "Supplier orders and market runs"
     pharmacy = await labels_for("pharmacy")
     assert pharmacy.get("pos_sales") == "POS and sales"
-    for removed in ("wholesale", "hospital"):
+    assert (await labels_for("wholesale")).get("pos_sales") == "Sales"
+    for removed in ("hospital",):
         hidden = await labels_for(removed)
         assert "pos_sales" not in hidden
         assert "account_login" in hidden

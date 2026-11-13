@@ -40,6 +40,7 @@ const OPERATIONAL_CATEGORIES = new Set([
   'batch_expiry',
   'recurring_expense_due',
   'transfer',
+  'hr',
 ]);
 
 const PLATFORM_CATEGORY_CHIPS: { id: string; label: string }[] = [
@@ -65,6 +66,7 @@ const CATEGORY_CHIPS: { id: string; label: string }[] = [
   { id: 'quotation_expiry', label: 'Quotations' },
   { id: 'batch_expiry', label: 'Expiry' },
   { id: 'recurring_expense_due', label: 'Recurring' },
+  { id: 'hr', label: 'HR' },
   { id: 'transfer', label: 'Transfers' },
   { id: 'system', label: 'System' },
   { id: 'security', label: 'Security' },

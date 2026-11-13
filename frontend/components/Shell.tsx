@@ -726,6 +726,7 @@ const NAV_ITEM_ICON: Record<string, string> = {
   '/restaurant/bills': 'credit',
   '/restaurant/guests': 'customers',
   '/restaurant/day-close': 'reports',
+  '/restaurant/tips': 'd:wallet',
   '/restaurant/ingredients': 'inventory',
   '/restaurant/ingredients?tab=menu': 'gift',
   '/restaurant/menu': 'ecommerce',
@@ -755,6 +756,8 @@ const NAV_ITEM_ICON: Record<string, string> = {
   '/fmcg?tab=deliveries': 'fmcg',
   '/fmcg?tab=collections': 'credit',
   '/fmcg?tab=routes': 'stores',
+  '/fmcg?tab=territories': 'stores',
+  '/fmcg?tab=visits': 'customers',
   '/fmcg?tab=schemes': 'gift',
   '/fmcg?tab=packs': 'inventory',
   '/fmcg?tab=reports': 'reports',
@@ -2172,7 +2175,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <StoreProvider enabled={Boolean(role) && !isPlatformOwner}>
-      <div className={`shell shell-secure${menuOpen ? ' nav-open' : ''}${navCompact ? ' nav-compact' : ''}${pathname === '/pos' ? ' is-pos' : ''}${pathname === '/restaurant/till' ? ' is-pos is-rtill' : ''}${kiosk ? ' is-kiosk' : ''}${tillOnly ? ' is-till-only' : ''}`}>
+      <div className={`shell shell-secure${menuOpen ? ' nav-open' : ''}${navCompact ? ' nav-compact' : ''}${pathname === '/pos' ? ' is-pos' : ''}${pathname === '/restaurant/till' ? ' is-pos is-rtill' : ''}${kiosk ? ' is-kiosk' : ''}${tillOnly ? ' is-till-only' : ''}${isPlatformOwner ? ' is-plat-console' : ''}`}>
       <aside
         id="app-sidebar"
         className="side"

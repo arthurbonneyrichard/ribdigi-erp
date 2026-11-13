@@ -6,7 +6,7 @@
  * the HRM desk (hrm.css); the server decides who may do what (hrm.job).
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../../lib/api';
 import { formatMoney } from '../../../lib/format';
 
@@ -102,19 +102,27 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
   const [extra, setExtra] = useState<Row[]>([]);
   const [openVac, setOpenVac] = useState('');
   const [f, setF] = useState<Row>({});
+  // Which screen is showing now. Data is tagged with the screen it was loaded for, so a
+  // sidebar click from one screen to another never renders the old screen's data in the new
+  // one (that crashed Training after Hiring), and a late answer for a screen left behind is dropped.
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
 
   const load = useCallback(async () => {
     const get = async (path: string) => (await api(path))?.data;
+    const keep = (value: Row) => {
+      if (tabRef.current === tab) setData({ ...value, __tab: tab });
+    };
     const staff = (await get('/hrm/employees').catch(() => [])) || [];
-    setPeople(staff);
-    if (tab === 'hiring') setData({ vacancies: (await get('/hrm/vacancies')) || [] });
-    if (tab === 'reviews') setData({ reviews: (await get('/hrm/reviews')) || [] });
-    if (tab === 'training') setData(await get('/hrm/trainings'));
-    if (tab === 'contracts') setData(await get('/hrm/contracts'));
-    if (tab === 'cases') setData({ cases: (await get('/hrm/cases')) || [] });
-    if (tab === 'kit') setData({ assets: (await get('/hrm/assets')) || [] });
-    if (tab === 'claims') setData({ claims: (await get('/hrm/claims')) || [] });
-    if (tab === 'notices') setData({ notices: (await get('/hrm/notices')) || [] });
+    if (tabRef.current === tab) setPeople(staff);
+    if (tab === 'hiring') keep({ vacancies: (await get('/hrm/vacancies')) || [] });
+    if (tab === 'reviews') keep({ reviews: (await get('/hrm/reviews')) || [] });
+    if (tab === 'training') keep({ courses: [], records: [], gaps: [], ...((await get('/hrm/trainings')) || {}) });
+    if (tab === 'contracts') keep({ contracts: [], alerts: { contracts_ending: [], probation_due: [] }, ...((await get('/hrm/contracts')) || {}) });
+    if (tab === 'cases') keep({ cases: (await get('/hrm/cases')) || [] });
+    if (tab === 'kit') keep({ assets: (await get('/hrm/assets')) || [] });
+    if (tab === 'claims') keep({ claims: (await get('/hrm/claims')) || [] });
+    if (tab === 'notices') keep({ notices: (await get('/hrm/notices')) || [] });
   }, [tab]);
   const { busy, error, notice, run, setError } = useRunner(load);
 
@@ -132,7 +140,7 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
   const set = (key: string, value: unknown) => setF((old) => ({ ...old, [key]: value }));
   const txt = (key: string) => String(f[key] ?? '');
 
-  if (!data) return <Banner error={error} notice={notice} />;
+  if (!data || data.__tab !== tab) return <Banner error={error} notice={notice} />;
 
   return (
     <>
@@ -202,14 +210,15 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
                       <td>{c.score ?? '—'}</td>
                       <td>
                         <div className="hr-row">
+                          {NEXT[c.stage] === 'offer' && seesPay ? (
+                            <input type="number" min="0" placeholder="Basic a month" style={{ maxWidth: 140 }} value={f[`pay_${c.id}`] || ''} onChange={(e) => set(`pay_${c.id}`, e.target.value)} aria-label={`Basic salary offered to ${c.full_name}`} />
+                          ) : null}
                           {NEXT[c.stage] && (NEXT[c.stage] !== 'offer' || seesPay) ? (
                             <button
-                              type="button" className="hr-primary" disabled={busy}
+                              type="button" className="hr-primary" disabled={busy || (NEXT[c.stage] === 'offer' && !(Number(f[`pay_${c.id}`]) > 0))}
                               onClick={() => {
                                 if (NEXT[c.stage] === 'offer') {
-                                  const pay = window.prompt('Basic salary offered a month');
-                                  if (!pay || !(Number(pay) >= 0)) return;
-                                  void run(`/hrm/candidates/${c.id}/move`, { stage: 'offer', offered_basic: Number(pay) }, 'Offer recorded');
+                                  void run(`/hrm/candidates/${c.id}/move`, { stage: 'offer', offered_basic: Number(f[`pay_${c.id}`]) }, 'Offer recorded');
                                 } else {
                                   void run(`/hrm/candidates/${c.id}/move`, { stage: NEXT[c.stage] }, 'Moved on');
                                 }
@@ -217,15 +226,14 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
                             >{NEXT[c.stage] === 'offer' ? 'Make offer' : `Move to ${STAGE_WORDS[NEXT[c.stage]].toLowerCase()}`}</button>
                           ) : null}
                           {c.stage === 'offer' && seesPay ? (
-                            <button
-                              type="button" className="hr-primary" disabled={busy}
-                              onClick={() => {
-                                const start = window.prompt('First day (YYYY-MM-DD)', today());
-                                if (!start) return;
-                                const prob = window.prompt('Probation months (0 for none)', '3');
-                                void run(`/hrm/candidates/${c.id}/hire`, { starts_on: start, probation_months: Number(prob || 0) }, 'Hired: their staff record is ready');
-                              }}
-                            >Hire</button>
+                            <>
+                              <input type="date" value={f[`start_${c.id}`] || today()} onChange={(e) => set(`start_${c.id}`, e.target.value)} aria-label={`First day for ${c.full_name}`} />
+                              <input type="number" min="0" max="12" style={{ maxWidth: 90 }} value={f[`prob_${c.id}`] ?? '3'} onChange={(e) => set(`prob_${c.id}`, e.target.value)} aria-label={`Probation months for ${c.full_name}`} title="Probation months (0 for none)" />
+                              <button
+                                type="button" className="hr-primary" disabled={busy}
+                                onClick={() => void run(`/hrm/candidates/${c.id}/hire`, { starts_on: f[`start_${c.id}`] || today(), probation_months: Number(f[`prob_${c.id}`] ?? 3) }, 'Hired: their staff record is ready')}
+                              >Hire</button>
+                            </>
                           ) : null}
                           {!['hired', 'rejected', 'withdrawn'].includes(c.stage) ? (
                             <button type="button" className="hr-danger" disabled={busy} onClick={() => void run(`/hrm/candidates/${c.id}/move`, { stage: 'rejected' }, 'Marked as not taken')}>Not taken</button>
@@ -254,12 +262,19 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
                 <React.Fragment key={i}>
                   <label><span>Goal {i + 1}</span><input value={txt(`g${i}`)} onChange={(e) => set(`g${i}`, e.target.value)} aria-label={`Goal ${i + 1}`} /></label>
                   <label><span>Weight %</span><input type="number" min="0" max="100" value={txt(`w${i}`)} onChange={(e) => set(`w${i}`, e.target.value)} aria-label={`Goal ${i + 1} weight`} /></label>
+                  <label><span>Target (optional)</span><input type="number" value={txt(`t${i}`)} onChange={(e) => set(`t${i}`, e.target.value)} aria-label={`Goal ${i + 1} target`} /></label>
+                  <label><span>Counted in</span><input value={txt(`u${i}`)} placeholder="GHS, sales, %" maxLength={30} onChange={(e) => set(`u${i}`, e.target.value)} aria-label={`Goal ${i + 1} unit`} /></label>
                 </React.Fragment>
               ))}
               <button
                 type="button" className="hr-primary" disabled={busy || !f.employee_id || txt('cycle').trim().length < 2}
                 onClick={async () => {
-                  const goals = [0, 1, 2, 3, 4, 5].filter((i) => txt(`g${i}`).trim()).map((i) => ({ title: txt(`g${i}`).trim(), weight: Number(f[`w${i}`] || 0) }));
+                  const goals = [0, 1, 2, 3, 4, 5].filter((i) => txt(`g${i}`).trim()).map((i) => ({
+                    title: txt(`g${i}`).trim(),
+                    weight: Number(f[`w${i}`] || 0),
+                    target: txt(`t${i}`).trim() ? Number(f[`t${i}`]) : null,
+                    unit: txt(`u${i}`).trim() || null,
+                  }));
                   if (await run('/hrm/reviews', { employee_id: f.employee_id, cycle: txt('cycle').trim(), goals }, 'Review started')) setF({});
                 }}
               >Start review</button>
@@ -273,21 +288,22 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
                 {data.reviews.map((r: Row) => (
                   <tr key={r.id}>
                     <td>{r.employee_name}</td><td>{r.cycle}</td>
-                    <td>{(r.goals || []).map((g: Row) => `${g.title} (${g.weight}%)${g.self_score ? ` self ${g.self_score}` : ''}${g.score ? ` · ${g.score}` : ''}`).join('; ')}</td>
+                    <td>
+                      {(r.goals || []).map((g: Row) => `${g.title} (${g.weight}%)${g.target != null ? ` target ${g.target}${g.unit ? ` ${g.unit}` : ''}${g.actual != null ? `, so far ${g.actual} (${g.progress ?? '—'}%)` : ''}` : ''}${g.self_score ? ` self ${g.self_score}` : ''}${g.score ? ` · ${g.score}` : ''}`).join('; ')}
+                      {r.feedback?.asked ? (
+                        <><br /><small className="hr-muted">
+                          360: {r.feedback.given} of {r.feedback.asked} answered{r.feedback.average != null ? `, average ${r.feedback.average}` : ''}
+                          {r.feedback.waiting_on?.length ? ` · waiting on ${r.feedback.waiting_on.join(', ')}` : ''}
+                        </small></>
+                      ) : null}
+                    </td>
                     <td>{({ open: 'Waiting for their view', self_done: 'Ready to score', done: 'Finished' } as Row)[r.status] || r.status}</td>
                     <td>{r.overall ?? '—'}</td>
                     <td>
                       {r.status !== 'done' ? (
-                        <button
-                          type="button" className="hr-primary" disabled={busy}
-                          onClick={() => {
-                            const answer = window.prompt(`Scores 1-5 for: ${(r.goals || []).map((g: Row) => g.title).join(', ')} (comma between)`);
-                            if (!answer) return;
-                            const scores = answer.split(',').map((x) => Number(x.trim()));
-                            const comment = window.prompt('Comment (optional)') || null;
-                            void run(`/hrm/reviews/${r.id}/complete`, { scores, comment }, 'Review finished');
-                          }}
-                        >Score</button>
+                        <button type="button" className="hr-primary" disabled={busy} aria-label={`Open review for ${r.employee_name}`} onClick={() => set('open_review', f.open_review === r.id ? '' : r.id)}>
+                          {f.open_review === r.id ? 'Close' : 'Score, track, ask'}
+                        </button>
                       ) : null}
                     </td>
                   </tr>
@@ -296,6 +312,53 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
               </tbody>
             </table>
           </section>
+          {data.reviews.filter((r: Row) => r.id === f.open_review).map((r: Row) => (
+            <section className="hr-box" aria-label={`Review of ${r.employee_name}`} key={r.id}>
+              <h2>{r.employee_name}: {r.cycle}</h2>
+              {r.self_comment ? <p className="hr-muted">Their view: {r.self_comment}</p> : null}
+              <div className="hr-form">
+                {(r.goals || []).map((g: Row, i: number) => (
+                  <React.Fragment key={i}>
+                    <label><span>{g.title} ({g.weight}%){g.self_score ? `, they said ${g.self_score}` : ''}</span>
+                      <select value={f[`s_${r.id}_${i}`] || ''} onChange={(e) => set(`s_${r.id}_${i}`, e.target.value)} aria-label={`Score for ${g.title}`}>
+                        <option value="">Score</option>{[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
+                      </select>
+                    </label>
+                    {g.target != null ? (
+                      <label><span>So far (target {g.target}{g.unit ? ` ${g.unit}` : ''})</span>
+                        <input type="number" value={txt(`a_${r.id}_${i}`) || (g.actual ?? '')} onChange={(e) => set(`a_${r.id}_${i}`, e.target.value)}
+                          onBlur={(e) => { if (e.target.value !== '' && e.target.value !== String(g.actual ?? '')) void run(`/hrm/reviews/${r.id}/progress`, { goal: i, actual: Number(e.target.value) }, 'Progress saved'); }}
+                          aria-label={`Progress on ${g.title}`} />
+                      </label>
+                    ) : null}
+                  </React.Fragment>
+                ))}
+                <label className="hr-wide"><span>Your comments</span><textarea value={txt(`c_${r.id}`)} onChange={(e) => set(`c_${r.id}`, e.target.value)} aria-label="Reviewer comments" /></label>
+                <button
+                  type="button" className="hr-primary"
+                  disabled={busy || (r.goals || []).some((_g: Row, i: number) => !f[`s_${r.id}_${i}`])}
+                  onClick={async () => {
+                    const scores = (r.goals || []).map((_g: Row, i: number) => Number(f[`s_${r.id}_${i}`]));
+                    if (await run(`/hrm/reviews/${r.id}/complete`, { scores, comment: txt(`c_${r.id}`).trim() || null }, 'Review finished')) set('open_review', '');
+                  }}
+                >Finish review</button>
+              </div>
+              <h3>360 feedback</h3>
+              <p className="hr-muted">Colleagues give a 1 to 5 rating and comments. Answers are shown without names, and only once two have answered.</p>
+              {r.feedback?.comments?.length ? (
+                <ul>{r.feedback.comments.map((c: Row, i: number) => <li key={i}>{c.rating}/5 · {[c.strengths && `Does well: ${c.strengths}`, c.improve && `Could be better: ${c.improve}`].filter(Boolean).join(' · ')}</li>)}</ul>
+              ) : null}
+              <div className="hr-row">
+                <select multiple value={(f[`ask_${r.id}`] as string[]) || []} onChange={(e) => set(`ask_${r.id}`, Array.from(e.target.selectedOptions).map((o) => o.value))} aria-label="Colleagues to ask" style={{ minHeight: 90 }}>
+                  {people.filter((p: Row) => p.id !== r.employee_id).map((p: Row) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
+                </select>
+                <button
+                  type="button" disabled={busy || !((f[`ask_${r.id}`] as string[]) || []).length}
+                  onClick={async () => { if (await run(`/hrm/reviews/${r.id}/feedback`, { employee_ids: f[`ask_${r.id}`] }, 'Colleagues asked')) set(`ask_${r.id}`, []); }}
+                >Ask for feedback</button>
+              </div>
+            </section>
+          ))}
         </>
       ) : null}
 
@@ -435,13 +498,10 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
                             <option value="">Outcome…</option>
                             {OUTCOMES[c.kind].map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
                           </select>
+                          <input placeholder="What was decided, and why" value={f[`on_${c.id}`] || ''} onChange={(e) => set(`on_${c.id}`, e.target.value)} aria-label={`Decision note for ${c.case_number}`} />
                           <button
-                            type="button" className="hr-primary" disabled={busy || !f[`o_${c.id}`]}
-                            onClick={() => {
-                              const note = window.prompt('What was decided, and why');
-                              if (!note || note.trim().length < 2) return;
-                              void run(`/hrm/cases/${c.id}`, { close: true, outcome: f[`o_${c.id}`], outcome_note: note.trim() }, 'Case closed', 'PATCH');
-                            }}
+                            type="button" className="hr-primary" disabled={busy || !f[`o_${c.id}`] || String(f[`on_${c.id}`] || '').trim().length < 2}
+                            onClick={() => void run(`/hrm/cases/${c.id}`, { close: true, outcome: f[`o_${c.id}`], outcome_note: String(f[`on_${c.id}`]).trim() }, 'Case closed', 'PATCH')}
                           >Close case</button>
                         </div>
                       ) : null}
@@ -490,14 +550,13 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
                     <td>{a.returned_on ? `${a.returned_on} (${a.condition_back})` : 'Still out'}</td>
                     <td>
                       {!a.returned_on ? (
-                        <button
-                          type="button" disabled={busy}
-                          onClick={() => {
-                            const cond = window.prompt('Condition on return', 'Good');
-                            if (!cond || cond.trim().length < 2) return;
-                            void run(`/hrm/assets/${a.id}/return`, { returned_on: today(), condition: cond.trim() }, 'Item handed back');
-                          }}
-                        >Handed back</button>
+                        <div className="hr-row">
+                          <input placeholder="Condition" style={{ maxWidth: 140 }} value={f[`cond_${a.id}`] ?? 'Good'} onChange={(e) => set(`cond_${a.id}`, e.target.value)} aria-label={`Condition of returned item ${a.id}`} />
+                          <button
+                            type="button" disabled={busy || String(f[`cond_${a.id}`] ?? 'Good').trim().length < 2}
+                            onClick={() => void run(`/hrm/assets/${a.id}/return`, { returned_on: today(), condition: String(f[`cond_${a.id}`] ?? 'Good').trim() }, 'Item handed back')}
+                          >Handed back</button>
+                        </div>
                       ) : null}
                     </td>
                   </tr>
@@ -530,13 +589,10 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
                           {PAY_METHODS.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
                         </select>
                         <button type="button" className="hr-primary" disabled={busy} onClick={() => void run(`/hrm/claims/${c.id}/decide`, { approve: true, method: f[`m_${c.id}`] || 'bank_transfer' }, 'Paid back')}>Approve and pay</button>
+                        <input placeholder="Reason to turn down" value={f[`why_${c.id}`] || ''} onChange={(e) => set(`why_${c.id}`, e.target.value)} aria-label={`Reason to turn down ${c.claim_number}`} />
                         <button
-                          type="button" className="hr-danger" disabled={busy}
-                          onClick={() => {
-                            const why = window.prompt('Why is it turned down?');
-                            if (!why || !why.trim()) return;
-                            void run(`/hrm/claims/${c.id}/decide`, { approve: false, note: why.trim() }, 'Turned down');
-                          }}
+                          type="button" className="hr-danger" disabled={busy || !String(f[`why_${c.id}`] || '').trim()}
+                          onClick={() => void run(`/hrm/claims/${c.id}/decide`, { approve: false, note: String(f[`why_${c.id}`]).trim() }, 'Turned down')}
                         >Turn down</button>
                       </div>
                     ) : null}
@@ -612,6 +668,17 @@ export function MyMore() {
         <section className="hr-box" aria-label={`My review ${r.cycle}`} key={r.id}>
           <h2>Your review: {r.cycle}</h2>
           <p className="hr-muted">Score yourself 1 to 5 on each goal. Your reviewer sees your view before scoring.</p>
+          {(r.goals || []).some((g: Row) => g.target != null) ? (
+            <div className="hr-form">
+              {(r.goals || []).map((g: Row, i: number) => (g.target != null ? (
+                <label key={`k${i}`}><span>{g.title}: so far (target {g.target}{g.unit ? ` ${g.unit}` : ''}){g.progress != null ? `, ${g.progress}%` : ''}</span>
+                  <input type="number" value={txt(`${r.id}_a${i}`) || (g.actual ?? '')} onChange={(e) => set(`${r.id}_a${i}`, e.target.value)}
+                    onBlur={(e) => { if (e.target.value !== '' && e.target.value !== String(g.actual ?? '')) void run(`/hrm/me/reviews/${r.id}/progress`, { goal: i, actual: Number(e.target.value) }, 'Progress saved'); }}
+                    aria-label={`My progress on ${g.title}`} />
+                </label>
+              ) : null))}
+            </div>
+          ) : null}
           <div className="hr-form">
             {(r.goals || []).map((g: Row, i: number) => (
               <label key={i}><span>{g.title} ({g.weight}%)</span>
@@ -629,6 +696,7 @@ export function MyMore() {
           </div>
         </section>
       ))}
+      <MyFeedbackAsks />
       <section className="hr-box" aria-label="Claim back money spent">
         <h2>Claim back money you spent</h2>
         <div className="hr-form">
@@ -670,6 +738,45 @@ export function MyMore() {
           {more.contracts.map((c: Row) => <div className="hr-line" key={c.id}><span>{c.kind.replace('_', ' ')} contract</span><span>{c.starts_on} to {c.ends_on || 'open-ended'}</span></div>)}
         </section>
       ) : null}
+    </>
+  );
+}
+
+
+/** Colleagues' reviews this person has been asked to give feedback on. */
+function MyFeedbackAsks() {
+  const [rows, setRows] = useState<Row[]>([]);
+  const [f, setF] = useState<Row>({});
+  const load = useCallback(async () => setRows((await api('/hrm/me/feedback'))?.data || []), []);
+  const { busy, error, notice, run, setError } = useRunner(load);
+  useEffect(() => {
+    load().catch((err) => setError(problem(err)));
+  }, [load, setError]);
+  const open = rows.filter((r) => r.open);
+  if (!open.length) return notice ? <Banner error={error} notice={notice} /> : null;
+  return (
+    <>
+      <Banner error={error} notice={notice} />
+      {open.map((r) => (
+        <section className="hr-box" aria-label={`Feedback on ${r.about}`} key={r.id}>
+          <h2>Feedback on {r.about} ({r.cycle})</h2>
+          <p className="hr-muted">Your answer is shown without your name, and only once a second colleague has answered. Their goals: {(r.goals || []).join(', ')}.</p>
+          <div className="hr-form">
+            <label><span>Overall, 1 to 5</span>
+              <select value={f[`${r.id}_r`] || ''} onChange={(e) => setF({ ...f, [`${r.id}_r`]: e.target.value })} aria-label={`Rating for ${r.about}`}>
+                <option value="">Choose</option>{[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </label>
+            <label className="hr-wide"><span>What they do well</span><textarea value={f[`${r.id}_s`] || ''} onChange={(e) => setF({ ...f, [`${r.id}_s`]: e.target.value })} aria-label={`What ${r.about} does well`} /></label>
+            <label className="hr-wide"><span>What could be better</span><textarea value={f[`${r.id}_i`] || ''} onChange={(e) => setF({ ...f, [`${r.id}_i`]: e.target.value })} aria-label={`What ${r.about} could do better`} /></label>
+            <button
+              type="button" className="hr-primary"
+              disabled={busy || !f[`${r.id}_r`] || !(String(f[`${r.id}_s`] || '').trim() || String(f[`${r.id}_i`] || '').trim())}
+              onClick={() => void run(`/hrm/me/feedback/${r.id}`, { rating: Number(f[`${r.id}_r`]), strengths: String(f[`${r.id}_s`] || '').trim() || null, improve: String(f[`${r.id}_i`] || '').trim() || null }, 'Thank you. Your feedback is shown without your name.')}
+            >Send feedback</button>
+          </div>
+        </section>
+      ))}
     </>
   );
 }

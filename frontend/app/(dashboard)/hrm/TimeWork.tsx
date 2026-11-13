@@ -6,7 +6,7 @@
  * My pay and leave. The server checks who may do what and where a clock-in may come from.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../../lib/api';
 import { formatMoney } from '../../../lib/format';
 
@@ -61,15 +61,27 @@ function Banner({ error, notice }: { error: string; notice: string }) {
 
 export function TimeWork({ tab, seesPay }: { tab: string; seesPay: boolean }) {
   const [people, setPeople] = useState<Row[]>([]);
-  const [data, setData] = useState<Row | null>(null);
+  const [data, setDataRaw] = useState<Row | null>(null);
   const [day, setDay] = useState(isoDay());
   const [period, setPeriod] = useState(isoDay().slice(0, 7));
   const [f, setF] = useState<Row>({ weekdays: [0, 1, 2, 3, 4] });
   const [qr, setQr] = useState<Row | null>(null);
+  const [why, setWhy] = useState<Record<string, string>>({});
+  const [checks, setChecks] = useState<Record<string, Row>>({});
+
+  // Data is tagged with the screen it was loaded for (see PeopleWork): moving between Time
+  // screens never renders one screen's data in another, and late answers are dropped.
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
+  const setData = (value: Row | null) => {
+    if (value === null) setDataRaw(null);
+    else if (tabRef.current === tab) setDataRaw({ ...value, __tab: tab });
+  };
 
   const load = useCallback(async () => {
     const get = async (path: string) => (await api(path))?.data;
-    setPeople((await get('/hrm/employees').catch(() => [])) || []);
+    const staff = (await get('/hrm/employees').catch(() => [])) || [];
+    if (tabRef.current === tab) setPeople(staff);
     if (tab === 'shifts') {
       const start = isoDay();
       const end = isoDay(new Date(Date.now() + 13 * 86400000));
@@ -106,7 +118,7 @@ export function TimeWork({ tab, seesPay }: { tab: string; seesPay: boolean }) {
 
   const set = (key: string, value: unknown) => setF((old) => ({ ...old, [key]: value }));
   const txt = (key: string) => String(f[key] ?? '');
-  if (!data) return <Banner error={error} notice={notice} />;
+  if (!data || data.__tab !== tab) return <Banner error={error} notice={notice} />;
 
   return (
     <>
@@ -241,12 +253,10 @@ export function TimeWork({ tab, seesPay }: { tab: string; seesPay: boolean }) {
                     <td>
                       <div className="hr-row">
                         <button type="button" className="hr-primary" disabled={busy} onClick={() => void run(`/hrm/time/corrections/${c.id}/decide`, { approve: true }, 'Put right')}>Approve</button>
+                        <input placeholder="Reason to turn down" value={why[c.id] || ''} onChange={(e) => setWhy({ ...why, [c.id]: e.target.value })} aria-label={`Reason to turn down correction ${c.id}`} />
                         <button
-                          type="button" className="hr-danger" disabled={busy}
-                          onClick={() => {
-                            const why = window.prompt('Why is it turned down?');
-                            if (why && why.trim()) void run(`/hrm/time/corrections/${c.id}/decide`, { approve: false, note: why.trim() }, 'Turned down');
-                          }}
+                          type="button" className="hr-danger" disabled={busy || !(why[c.id] || '').trim()}
+                          onClick={() => void run(`/hrm/time/corrections/${c.id}/decide`, { approve: false, note: (why[c.id] || '').trim() }, 'Turned down')}
                         >Turn down</button>
                       </div>
                     </td>
@@ -392,12 +402,42 @@ export function TimeWork({ tab, seesPay }: { tab: string; seesPay: boolean }) {
                     <td>{l.last_result || '—'}</td>
                     <td>
                       <div className="hr-row">
+                        <button
+                          type="button" disabled={busy} aria-label={`Check ${l.name}`}
+                          onClick={async () => {
+                            try {
+                              const res = await api(`/hrm/biometric/${l.id}/check`, { method: 'POST', body: '{}' });
+                              setChecks({ ...checks, [l.id]: res?.data || {} });
+                            } catch (err) {
+                              setChecks({ ...checks, [l.id]: { status: 'error', steps: [(err as Error)?.message || 'The check failed.'] } });
+                            }
+                          }}
+                        >Check</button>
                         {l.kind === 'biotime' && l.is_active ? <button type="button" className="hr-primary" disabled={busy} onClick={() => void run(`/hrm/biometric/${l.id}/sync`, null, 'Synced')}>Sync now</button> : null}
                         {l.is_active && seesPay ? <button type="button" className="hr-danger" disabled={busy} onClick={() => void run(`/hrm/biometric/${l.id}/off`, null, 'Switched off')}>Switch off</button> : null}
                       </div>
                     </td>
                   </tr>
                 ))}
+                {data.links.filter((l: Row) => checks[l.id]).map((l: Row) => {
+                  const c = checks[l.id];
+                  const words: Record<string, string> = {
+                    ok: 'Working', never: 'Has not called in yet', quiet: 'Gone quiet', off: 'Switched off', sign_in_refused: 'Sign-in refused',
+                    no_transactions: 'Cannot read punches', unreachable: 'Cannot reach the server', error: 'Check failed',
+                  };
+                  return (
+                    <tr key={`${l.id}-check`}>
+                      <td colSpan={5}>
+                        <b>{l.name}: {words[c.status] || c.status}</b>
+                        {c.punches_on_server != null ? ` · ${c.punches_on_server} punches on the BioTime server` : ''}
+                        {c.minutes_since_seen != null ? ` · last heard ${c.minutes_since_seen} min ago` : ''}
+                        {(c.steps || []).length ? <ul>{c.steps.map((s: string, i: number) => <li key={i}>{s}</li>)}</ul> : null}
+                        {(c.staff_without_terminal_id || []).length ? <p className="hr-muted">No terminal ID on their record: {c.staff_without_terminal_id.join(', ')}.</p> : null}
+                        {(c.unknown_pins || []).length ? <p className="hr-bad">Terminal IDs that punched but match nobody: {c.unknown_pins.map((u: Row) => `${u.pin} (${u.count})`).join(', ')}.</p> : null}
+                      </td>
+                    </tr>
+                  );
+                })}
                 {data.links.length === 0 ? <tr><td colSpan={5} className="hr-muted">No terminals linked.</td></tr> : null}
               </tbody>
             </table>

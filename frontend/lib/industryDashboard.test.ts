@@ -23,13 +23,17 @@ test('hotel home is /hotel and restaurant home is /restaurant', () => {
 });
 
 test('removed industries are not customer desks', () => {
-  for (const code of ['wholesale', 'retail_wholesale', 'hospital', 'mart']) {
+  for (const code of ['retail_wholesale', 'hospital', 'mart']) {
     assert.deepEqual(industryDashboardFeatures(code), []);
     assert.equal(industryDashboardSectionLabel(code), null);
     assert.equal(dashboardLayout(code), 'unconfigured');
     assert.equal(showsRetailOperations(code), false);
     assert.equal(industryHomePath(code), '/dashboard');
   }
+  // Wholesale is back (13 Nov 2026) on the retail desk.
+  assert.equal(dashboardLayout('wholesale'), 'retail');
+  assert.equal(showsRetailOperations('wholesale'), true);
+  assert.equal(industryHomePath('wholesale'), '/dashboard');
   assert.equal(dashboardLayout('pharmacy'), 'pharmacy');
   assert.equal(showsRetailOperations('pharmacy'), false);
   assert.equal(industryHomePath('pharmacy'), '/dashboard');

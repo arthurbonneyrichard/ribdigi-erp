@@ -99,6 +99,8 @@ export const CONFIGURED_DASHBOARD_INDUSTRIES = ['retail', 'hotel', 'restaurant',
 export function dashboardLayout(industry?: string | null): string {
   if (isSoftwareOwnerIndustry(industry)) return 'platform';
   const ind = normalizeIndustry(industry);
+  // Wholesale runs on the retail desk (screens, dashboard, POS counter) with wholesale prices.
+  if (ind === 'wholesale') return 'retail';
   if (!ind || !(CONFIGURED_DASHBOARD_INDUSTRIES as readonly string[]).includes(ind)) {
     return 'unconfigured';
   }

@@ -250,7 +250,7 @@ async def time_correction_decide(correction_id: UuidIdValue, payload: DecideBody
 async def time_month(period: Annotated[str, Query(pattern=r"^20\d{2}-(0[1-9]|1[0-2])$")], claims=_r(), db: AsyncSession = Depends(get_db)):
     svc.job(claims, "attendance")
     rows = await time_svc.month_summary(db, claims["tenant_id"], period)
-    if str(claims.get("role") or "") in ("hrm_officer",):
+    if not svc.sees_pay(claims):
         for row in rows:
             if row.get("overtime_approved"):
                 row["overtime_approved"].pop("amount", None)
@@ -296,6 +296,14 @@ async def link_sync(link_id: UuidIdValue, claims=_w(), db: AsyncSession = Depend
     body = await bio.sync_biotime(db, claims["tenant_id"], link_id, user_id=claims.get("sub"))
     await db.commit()
     return _env(body, body["result"])
+
+
+@router.post("/biometric/{link_id}/check")
+async def link_check(link_id: UuidIdValue, claims=_w(), db: AsyncSession = Depends(get_db)):
+    """Setup check: signs in / reads without storing punches; lists PIN mismatches."""
+    svc.job(claims, "attendance")
+    body = await bio.check(db, claims["tenant_id"], link_id)
+    return _env(body, body.get("status", ""))
 
 
 # --- Terminal push (no login: the terminal is found by its serial number) ------------------

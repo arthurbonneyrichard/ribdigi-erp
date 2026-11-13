@@ -5,6 +5,7 @@ import FormModal from '../../../components/FormModal';
 import { useSearchParams } from 'next/navigation';
 import PageHeader from '../../../components/PageHeader';
 import FmcgSelling, { FmcgHead, FmcgToday, SELLING_TABS } from './FmcgSelling';
+import FmcgField, { FIELD_TABS } from './FmcgField';
 import './fmcg-selling.css';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
@@ -178,7 +179,7 @@ export default function FmcgPage() {
           return;
         }
         // The overview is the dashboard only; set-up data loads on the tabs that use it.
-        if (!tab || SELLING_TABS.includes(tab)) return;
+        if (!tab || SELLING_TABS.includes(tab) || FIELD_TABS.includes(tab)) return;
         await refresh();
         if (tab !== 'packs' && tab !== 'schemes') return;
         const [prod, unit] = await Promise.all([api('/products'), api('/catalog/units')]);
@@ -339,6 +340,10 @@ export default function FmcgPage() {
 
   if (SELLING_TABS.includes(tab)) {
     return <FmcgSelling tab={tab} />;
+  }
+
+  if (FIELD_TABS.includes(tab)) {
+    return <FmcgField tab={tab} />;
   }
 
   if (!tab) return <FmcgToday />;

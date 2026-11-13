@@ -23,35 +23,43 @@ INK_RGB: tuple[float, float, float] = (0.063, 0.129, 0.106)
 POWERED_BY_RIBDIGI = "Powered by RIBDIGI ERP"
 
 # Shared HTML chrome for email / browser document tables (inline styles for clients).
+EMAIL_FONT = "'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif"
 DOC_TABLE_STYLE = (
-    "border-collapse:collapse;width:100%;margin:16px 0;"
-    "font-family:Arial,Helvetica,sans-serif;font-size:13px;"
+    "border-collapse:separate;border-spacing:0;width:100%;margin:20px 0 16px;"
+    f"font-family:{EMAIL_FONT};font-size:14px;border:1px solid #e3ebda;border-radius:12px;"
 )
 DOC_TH_STYLE = (
-    "background:#003d1f;color:#ffffff;text-align:left;padding:10px 12px;"
-    "font-weight:700;border:0;"
+    "background:#f2f7ec;color:#46584e;text-align:left;padding:11px 14px;"
+    "font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;"
+    "border-bottom:1px solid #e3ebda;"
 )
-DOC_TD_STYLE = "padding:9px 12px;border-bottom:1px solid #d4e5c4;color:#10211b;vertical-align:top;"
+DOC_TH_RIGHT = DOC_TH_STYLE + "text-align:right;"
+DOC_TD_STYLE = "padding:12px 14px;border-bottom:1px solid #eef3e9;color:#10211b;vertical-align:top;"
 DOC_TD_RIGHT = DOC_TD_STYLE + "text-align:right;white-space:nowrap;"
 DOC_TOTALS_STYLE = (
-    "margin:8px 0 0;padding:14px 16px;background:#f2f7ec;border:1px solid #d4e5c4;"
-    "border-radius:8px;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.55;"
+    "margin:0 0 4px;padding:16px 18px;background:#f6f9f2;border:1px solid #e3ebda;"
+    f"border-radius:12px;font-family:{EMAIL_FONT};font-size:14px;line-height:1.7;"
+    "color:#46584e;text-align:right;"
 )
 DOC_META_STYLE = (
-    "margin:0 0 12px;padding:12px 14px;background:#f5f7ec;border-left:3px solid #4ab012;"
-    "font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;color:#10211b;"
+    "margin:0 0 4px;padding:14px 16px;background:#f6f9f2;border:1px solid #e3ebda;"
+    f"border-radius:12px;font-family:{EMAIL_FONT};font-size:14px;line-height:1.6;color:#10211b;"
 )
 
 
 def document_table_html(*, headers: list[str], rows_html: str) -> str:
-    """Brand-styled line-item table for email / printable HTML bodies."""
+    """Brand-styled line-item table for email / printable HTML bodies.
+
+    The first column is the item; the rest are numbers, so their headings sit right like the cells."""
     import html as html_mod
 
     ths = "".join(
-        f'<th style="{DOC_TH_STYLE}">{html_mod.escape(h)}</th>' for h in headers
+        f'<th style="{DOC_TH_STYLE if i == 0 else DOC_TH_RIGHT}">{html_mod.escape(h)}</th>'
+        for i, h in enumerate(headers)
     )
     return (
-        f'<table role="presentation" cellspacing="0" cellpadding="0" style="{DOC_TABLE_STYLE}">'
+        f'<table role="presentation" class="ribdigi-doc-table" cellspacing="0" cellpadding="0" '
+        f'style="{DOC_TABLE_STYLE}">'
         f"<thead><tr>{ths}</tr></thead>"
         f"<tbody>{rows_html}</tbody></table>"
     )

@@ -2,6 +2,24 @@
 
 HRM is its own industry on `hrm_*` tables: staff records, leave, attendance and payroll. It has no products, sales or till. Its menu has only HR work and account settings.
 
+## HR in every industry
+
+One HR engine serves every business type; each company's HR rows stay its own. `hrm.HR_AREAS_BY_INDUSTRY` (mirrored by `HR_AREAS_BY_INDUSTRY` in `frontend/lib/tenantNav.ts`) decides which parts each type gets; a route outside them answers 403 `HRM_AREA_OFF`.
+
+| Business type | HR it gets |
+| --- | --- |
+| HRM, FMCG | everything |
+| Retail | staff, leave, time, payroll (with loans), reviews, expense claims, notices |
+| Pharmacy | staff, leave, time, payroll, training (licences, mandatory courses), contracts, reviews, notices |
+| Restaurant | staff, leave, time, payroll, reviews, notices |
+| Hotel | staff, leave, time, payroll, training, contracts, reviews, notices |
+| Bakery | staff, leave, time, payroll, notices |
+| Gym | staff, leave, time, payroll, training, notices |
+
+Every type gets My pay and leave. Each desk's sidebar gains an **HR** group with its screens.
+
+**Who does what** (`hrm.job`): company admin and HR manager run all of HR and see pay. HR officers and each desk's manager (store, restaurant, hotel, bakery, FMCG, gym manager) look after staff records, leave, time, training, contracts, kit, notices and hiring up to interview, without pay. Everyone else (cashiers, waiters, reps, drivers, front desk) has only their own file. No wholesale business type exists yet, so there is no wholesale HR.
+
 ## Sidebar
 
 An HRM company gets its own sidebar (`HRM_NAV_GROUPS`): Dashboard; People (Employees, Leave, Attendance); Pay (Payroll, Reports, Pay rates); My pay and leave; Sign-in accounts (`/users`); Notifications; Help; Settings. No retail, expense or accounting menus and no in-page tab strip.
@@ -46,6 +64,50 @@ Payroll arithmetic is Decimal throughout (`backend/app/hrm_payroll.py`, no float
 
 **The figures are not checked against GRA or SSNIT by the system.** The desk does not file with GRA or SSNIT.
 
+## Ask HR (`hrm_assistant.py`, `POST /hrm/assistant`)
+
+A question box on My HR and the People tab. It recognises common questions by rules (no AI model) and answers from the same functions the screens use: staff ask about their leave left, payslips, manager (and who covers), documents to accept and claims; HR can also ask who is on leave today, leave waiting, headcount, contracts ending, people signals and this month's payroll. HR questions follow `hrm.job`, so staff get "That is for HR". Answers never contain pay amounts. Questions are logged like AI chat (hashed, redacted) and prompt-injection text is refused. AI chat with a language model stays off until a provider client is wired (see `docs/AI_SECURITY_MVP.md`).
+
+## People signals (`hrm_insights.py`, `GET /hrm/insights`)
+
+Rule-based, no AI model, on the People tab: frequent short sick spells (Bradford factor spells² × days over 12 months, at or over 200), late on 5+ days last month, 20+ hours over shifts last month (only when the clock is used), from October half or more of the year's leave not taken, no finished review in 12 months after a year's service, and a company policy not accepted after 14 days. Each says why it shows; none carries a score or pay figures. The thresholds are conversation starters, not policy.
+
+## Weekly and fortnightly pay (`hrm_part_pay.py`, screen `PartPay.tsx`)
+
+Payroll stays monthly, because Ghana PAYE and SSNIT are worked out and filed by the month. A staff record can say **Paid: weekly** or **fortnightly**. Payroll → **Weekly and fortnightly pay** suggests the week's (basic × 12 ÷ 52) or fortnight's (× 12 ÷ 26) basic times the part-pay percent (HR settings, default 80%) and pays it as a part-payment: booked like an advance (debit 1150, credit cash, bank or Mobile Money). The month's payroll works out PAYE and SSNIT on the whole month and takes the part-payments back in full ("Paid during the month" on the payslip), never below nil; anything left stays as an advance for the next payroll. Part-payments close once that month's payroll is drawn up, and nobody pays themselves. Each part-payment prints a **pay note** (HR loans list and My HR) saying it is part of the month's pay; the month's payslip stays the tax record. A separate weekly payroll run is deliberately not built: weekly tax figures would not match the monthly GRA and SSNIT filings.
+
+## Approval cover and escalation (`hrm_delegation.py`)
+
+A manager going away sets **cover** under My HR (HR can set it for anyone under Leave): a colleague and the dates. While it runs, that colleague decides the manager's team's leave at the manager step, gets the "Leave to decide" notices, and sees those requests under My team; ending it early hands back. A request still at the manager step after **escalate_after_days** working days (HR settings, default 3, 0 = off) is flagged to HR once by the daily job `scan_hr_escalations` (Celery beat 07:30; restart worker and beat after pulling). HR can already decide at either step.
+
+## Goals with targets, and 360 feedback (`hrm_feedback.py`)
+
+A review goal can have a **target** and what it is counted in (KPI). While the review is open the person (My HR) or HR records the actual so far, and the screen shows progress against the target; scores remain the reviewer's call. HR can **ask colleagues** for 360 feedback (a 1–5 rating, what the person does well, what could be better). Each colleague answers once under My HR. Answers are shown without names to everyone, HR included, and only once at least two colleagues have answered (one answer would give its writer away). HR sees who still has to answer.
+
+The review, hiring, cases, kit, claims and clock-correction screens use inline fields instead of browser pop-up prompts.
+
+## Org chart and headcount (`hrm_org.py`)
+
+People → **Who reports to whom** draws the tree from each staff record's "Reports to"; people who report to each other in a circle are listed so it can be fixed. **Headcount by department** shows planned (set by an HR manager or company admin), filled (active staff), being hired (open vacancy openings) and still to find.
+
+## Documents and policies (`hrm_documents.py`, `hrm_documents_api.py`, screen `Documents.tsx`)
+
+HR (People) files PDFs or photos on a staff record (contract, ID copy, certificate, letter) or as a company policy for everyone. Files go to the tenant media store. "Staff must accept it" asks the person (or every member of staff, for a policy) to open it and type their full name as it is on their staff record; the name, time, sign-in and IP are kept, and **Who accepted** lists who has not. This is a record that they read it, not a qualified electronic signature. **Confidential** files (medical notes, disciplinary letters) are for HR managers only: the person and HR officers never see them. Files are archived, never edited. Staff see theirs under My HR → My documents.
+
+## Paying out unused leave (`hrm_leave_pay.py`)
+
+Payroll → **Pay out unused leave**: HR picks a person, leave year, number of days (no more than are left) and the payroll month. The amount is fixed then: basic ÷ working days × days. The days count as used straight away; the month's payroll pays it as **Unused leave paid**, taxable with no SSNIT (an accountant should confirm). It can be cancelled, giving the days back, until a payroll takes it. Nobody approves their own. `GET /hrm/employees/{id}/leave-balance` shows what is left.
+
+## HR notices (`hrm_notify.py`)
+
+In-app notices of type **HR**, each addressed to one person (never company-wide) and without pay figures: a leave request goes to the person's manager (or HR when there is no manager with a sign-in), a manager's yes goes on to HR, and the decision goes to the person; claims, loans and clock corrections go to HR and their decisions to the person; approving a payroll tells each person their payslip is ready. Staff are matched to sign-ins by the email on their staff record.
+
+## Junior overtime tax and minimum wage
+
+Both live on the dated rates row and are off until entered (check the current GRA and National Tripartite Committee figures with an accountant):
+- **Junior overtime:** when "basic up to" is set, staff whose earned basic for the month is at or under it have their approved overtime taxed on its own, not through the PAYE bands: the first part (up to a % of basic, default 50%) at the low rate (default 5%), the rest at the high rate (default 10%). The overtime tax is included in PAYE for GRA and shown on the payslip.
+- **Minimum wage:** with a daily minimum wage set, a payslip whose basic ÷ working days is under it is flagged, and the payroll cannot be approved (**409** `BELOW_MINIMUM_WAGE`) until the basic is raised.
+
 ## Salary changes and corrections
 
 - **Change salary** (People, `GET|POST /hrm/employees/{id}/salary`): new basic and allowances from a date, with a reason. Payroll uses the change in force on the month's first day (a mid-month change counts from the next month). The history stays.
@@ -55,6 +117,22 @@ Payroll arithmetic is Decimal throughout (`backend/app/hrm_payroll.py`, no float
 ## PAYE and SSNIT schedules, yearly tax statement
 
 Reports → PAYE and SSNIT schedules (`GET /hrm/reports/paye|ssnit?period=`) list each person's figures from approved payslips with CSV downloads, and name anyone missing a TIN/Ghana Card or SSNIT number. **Print statement** (`GET /hrm/reports/tax-statement`) gives one person's year month by month; staff print their own from My pay and leave (`GET /hrm/me/tax-statement`). These are working papers for the company's own returns: nothing is filed with GRA or SSNIT.
+
+The PAYE schedule follows the order of GRA's monthly PAYE return: residence, basic salary (after unpaid days, plus back pay), SSNIT, Tier 3 relief, cash allowances (allowances, corrections, commission, tips, unused leave paid), bonus up to 15% and its final tax, excess bonus, total cash emolument, chargeable income, tax on chargeable income, overtime and overtime tax, total tax to GRA. Benefits in kind (accommodation, vehicle) are not tracked, so those GRA columns are left out.
+
+## Payslips out: PDF, email, payment file (`hrm_payslips.py`)
+
+- **PDF** (`GET /hrm/payslips/{id}/pdf`): company letterhead, earnings, deductions, net pay, notes on overtime / bonus tax, non-resident and SSNIT. The bank account or Mobile Money number shows only its last 4 digits. HR with payroll rights get any payslip; staff get only their own, and only once the payroll is approved (anything else is 404). Payroll → **PDF** per person; My pay and leave → **PDF**.
+- **Email payslips** (`POST /hrm/payroll/{id}/email-payslips`, approved runs only): one email per person to the email on their record with the PDF attached. The email itself carries no pay figures. People without an email are listed; each payslip is sent once (`emailed_at`), `{"resend": true}` sends again. Email turned off → 503. Audited as `hrm_payslips_emailed`.
+- **Salary payment file** (`GET /hrm/payroll/{id}/payment-file?method=bank|mobile_money`, approved runs only, HR payroll): CSV of net pay with reference `Salary YYYY-MM` for a bank bulk upload or a Mobile Money bulk payment. People with no account / number for that method are left out (counted in `X-Left-Out`, shown on screen). Text starting `= + - @` gets a leading `'` so spreadsheets do not run it. Check the column layout against your bank's template. Audited as `hrm_payment_file_made`.
+
+## Sales commission (`hrm_commission.py`)
+
+Each staff record can carry a **Sales commission %**. Payroll → Sales commission shows each person's net sales for a month, matched by the email on their staff record to their sign-in: for FMCG, delivered (or closed) orders they booked, less tax and returns; for every other business type, the Sales by salesperson report (invoices they raised and till sales on their shift, less tax). Retail sales returns are not taken off, as on that report. An HR manager (not the person) approves the month; that month's payroll pays it as a taxable earning with no SSNIT. Changing someone's commission % needs pay rights.
+
+## Restaurant tips on the payslip (`restaurant_tips.py`)
+
+A restaurant tip share-out paid "on the payslip" adds each person's share to that month's payroll as **Tips**: a taxable earning with no SSNIT, like commission (an accountant should confirm this for Ghana). The tips were set aside in **2187 Tips Owed to Staff** when guests paid, so approving the payroll debits 2187 for them, not Salaries and Wages (6200). Throwing a draft payroll away puts the shares back; approving it marks them paid. See `docs/RESTAURANT_PRODUCTION_READINESS.md`.
 
 ## Loans and salary advances
 
@@ -82,6 +160,8 @@ Pay rates → **Someone other than the person who drew up a payroll must approve
 - **Overtime:** the month view totals each person's overtime. An HR manager approves up to what the clock shows; the next payroll for that month pays it (hourly = basic ÷ (working days × hours a day), × the overtime rate), taxed as a normal earning with no SSNIT. Ghana's concessionary overtime tax for junior staff is **not** applied: check with your accountant.
 
 ## ZKTeco terminals and BioTime (`hrm_biometric.py`)
+
+On-site setup and the **Check** button (signs in / reads without storing; lists staff without a terminal ID and PINs that punched but match nobody): see `docs/ZKTECO_SETUP.md`.
 
 Give each person their **terminal ID** (the PIN on the fingerprint or face terminal). Then either:
 
@@ -124,3 +204,44 @@ Staff only see a payslip once the run is approved.
 ## Demo
 
 `PYTHONPATH=. python scripts/seed_hrm_demo.py` creates `demo-hrm-rec` (Bright Path Services; owner, HR officer and employee logins). It refuses to run in production.
+
+## Commercial readiness check (13 Nov 2026)
+
+Done on the current code against Postgres 16 (not only the SQLite test database):
+
+- All migrations to `20261113_0179` apply on a fresh database, and the HR, restaurant-tip and FMCG field tables match the models (no drift).
+- The HR tests run on Postgres with `TEST_DATABASE_URL=postgresql+asyncpg://…/<throwaway db>` (opt-in in `tests/conftest.py`; the schema is rebuilt per test, so never point it at a real database). This caught **throwing away a draft payroll** failing on Postgres (payslips deleted after the run); fixed.
+- Every HR route was checked for its job / own-file guard. Fixed: an HR officer or desk manager could **change a colleague's bank, Mobile Money or ID numbers** (and so redirect their pay) without seeing them. Now any pay or identity field on an existing record needs pay rights; when adding someone an officer may take down ID and contact numbers, but not pay amounts (`PAY_ONLY_FIELDS` / `CREATE_PAY_FIELDS` in `hrm_api.py`, test `test_hrm_pay_field_guard.py`).
+- HR officers now have their own file ("self"): My documents and feedback requests were refused for them.
+- Screens were walked in a browser for an HR company (owner, HR officer, employee), an FMCG company and a restaurant: every HR screen, outlet visits, territories and tips loaded with no failed calls. Added the missing **Edit** for a staff record (contact, job, department, manager, terminal ID; pay and ID details for HR managers only; salary stays on Change salary). HR dialogs now scroll and keep Confirm in view on laptop screens.
+
+Still to do before relying on it: an accountant's check of the Ghana PAYE / SSNIT / overtime-tax / minimum-wage figures and of tips, commission and leave pay being taxed without SSNIT; a real ZKTeco terminal and BioTime server (`docs/ZKTECO_SETUP.md`).
+
+## Ghana statutory check (14 Nov 2026)
+
+Checked against GRA's PAYE page (https://gra.gov.gh/domestic-tax/tax-types/paye/), SSNIT's 2026 maximum insurable earnings notice and the National Tripartite Committee minimum wage. This is a published-source check, **not** a sign-off by a qualified accountant.
+
+What the payroll now does:
+
+| Item | Published rule | Payroll |
+| --- | --- | --- |
+| PAYE bands from 1 Sep 2026 (Act 1178) | monthly: 588 at 0%, 80 at 5%, 100 at 10%, 2,900 at 17.5%, 16,000 at 25%, 30,332 at 30%, over 50,000 at 35% | In **Suggested Ghana rates** (Settings → Dated rates). A payroll from 2026-09 still on the old bands (first 490) shows a warning. Not applied automatically. |
+| PAYE bands before Sep 2026 | first 490 at 0% … (2024 table) | Suggested row from 2025-01-01; still the fallback when no dated row exists. |
+| SSNIT | 5.5% staff + 13% company on basic; 13.5% Tier 1, 5% Tier 2; cap GHS 61,000 (2025), 69,000 (2026) | Suggested rows set Tier 2 = 5% and the caps. SSNIT stays on basic only (allowances, commission, tips, leave pay, overtime, bonus are not insurable). |
+| Bonus | 5% final tax on bonus up to 15% of annual basic in the year; excess added to income on the bands | Allowance = the year's basic from the dated salary history, month by month for the months employed, x 15%, less what earlier approved months this year used. Shown as "of which bonus tax". |
+| Overtime (junior staff) | 5% on overtime up to 50% of monthly basic, 10% above; only if qualifying employment income for the year is not more than GHS 18,000; final, not added to basic | Test is now this month's employment income other than overtime (cap 1,500 = 18,000 / 12), and the 50% is of monthly basic, not pay earned after unpaid days. |
+| Non-resident employee | flat 25% on income; 20% on bonus or overtime | **New** "Tax residence" on the staff record (HR managers only). |
+| SSNIT for covered expatriates | exempt when SSNIT accepts a home scheme | **SSNIT: Not in SSNIT** on the staff record: no staff or company SSNIT, no Tier 1/2. HR must hold SSNIT's approval. |
+| Senior staff | overtime concession is for junior staff | **Grade: Senior staff** on the staff record: overtime is always ordinary pay. |
+| Minimum wage | GHS 21.77 a day (2026); GHS 25.04 (2027, announced Nov 2026) | In the suggested rows; a payslip under it blocks approval. Minimum-wage income is tax free, which the 0% band (588 ≈ 21.77 x 27) covers. |
+| Commission, tips, unused leave paid | employment income | Taxed through PAYE with ordinary pay, no SSNIT. |
+
+For the accountant to confirm or decide:
+
+1. Annual basic for the bonus allowance is now the year's dated basic month by month (a part year and mid-year rises count). A rise dated later in the year than the payroll month is not known yet, so the allowance can grow in later months: confirm that is how GRA reads it.
+2. "Junior staff" is the income test plus a **Senior staff** mark HR sets. Above the threshold overtime is taxed as ordinary pay (GRA's page also says such staff are "not entitled to overtime pay").
+3. Tier 3 tax relief is set at 16.5% of earned basic; not checked against the wording of Act 896.
+4. **Not in SSNIT** removes SSNIT entirely; confirm whether any Tier 2 still applies to such staff.
+5. SSNIT's minimum contribution base (reported around GHS 587.80 a month) is not enforced for part-time pay below it.
+6. The 2027 SSNIT cap was not yet announced on 14 Nov 2026; the 2027 minimum wage comes from one news report.
+7. Tips paid through payroll are treated as employment income of the employer.

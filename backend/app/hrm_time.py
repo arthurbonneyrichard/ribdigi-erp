@@ -449,6 +449,12 @@ async def request_correction(db: AsyncSession, tenant_id: str, employee: m.HrmEm
     )
     db.add(row)
     await db.flush()
+    from app import hrm_notify
+
+    await hrm_notify.to_hr(
+        db, tenant_id, "Clock correction to decide", f"{employee.full_name} asks to correct their time on {payload.day.isoformat()}.",
+        entity_type="hrm_clock_correction", entity_id=row.id, skip_user=user_id,
+    )
     return row
 
 
@@ -496,6 +502,13 @@ async def decide_correction(db: AsyncSession, tenant_id: str, correction_id: str
         row.status = "approved"
     await _audit(db, tenant_id, user_id, f"hrm_clock_correction_{row.status}", "hrm_clock_correction", row.id, {"day": row.day.isoformat()})
     await db.flush()
+    from app import hrm_notify
+
+    await hrm_notify.to_person(
+        db, tenant_id, await db.get(m.HrmEmployee, row.employee_id), "Clock correction decided",
+        f"Your time correction for {row.day.isoformat()} was " + ("approved." if row.status == "approved" else f"turned down: {row.decision_note}"),
+        entity_type="hrm_clock_correction", entity_id=row.id,
+    )
     return row
 
 

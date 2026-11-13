@@ -7,13 +7,22 @@
 
 import { useSearchParams } from 'next/navigation';
 import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { api } from '../../../lib/api';
+import { api, apiFetch } from '../../../lib/api';
 import { formatMoney } from '../../../lib/format';
 import { getMe } from '../../../lib/meCache';
+import { hrTabAllowed } from '../../../lib/tenantNav';
 import DeskDashboard from '../../../components/DeskDashboard';
 import DeskIcon from '../../../components/DeskIcon';
 import { MyMore, PEOPLE_WORK_SCREENS, PeopleWork } from './PeopleWork';
 import { MyClock, TIME_SCREENS, TimeWork } from './TimeWork';
+import LeavePay from './LeavePay';
+import { MyDocuments, StaffFiles } from './Documents';
+import Org from './Org';
+import Cover from './Cover';
+import PartPay from './PartPay';
+import Signals from './Signals';
+import AskHr from './AskHr';
+import SuggestedRates from './SuggestedRates';
 import './hrm.css';
 
 type Row = Record<string, any>;
@@ -62,10 +71,20 @@ function Head({ title, icon, meta }: { title: string; icon?: string; meta?: Reac
     </div>
   );
 }
+const OFFICER_TABS = ['today', 'people', 'leave', 'attendance', 'shifts', 'clock', 'devices', 'hiring', 'training', 'contracts', 'kit', 'notices', 'me'];
+// Mirrors backend hrm.job: HR managers and company admins see everything; officers and each
+// desk's manager run people admin without pay; everyone else sees only their own file.
+const FULL_HR_ROLES = new Set(['company_admin', 'hrm_manager', 'super_admin']);
 const ROLE_TABS: Record<string, string[]> = {
-  hrm_officer: ['today', 'people', 'leave', 'attendance', 'shifts', 'clock', 'devices', 'hiring', 'training', 'contracts', 'kit', 'notices', 'me'],
-  hrm_employee: ['me'],
+  hrm_officer: OFFICER_TABS,
+  store_manager: OFFICER_TABS,
+  restaurant_manager: OFFICER_TABS,
+  hotel_manager: OFFICER_TABS,
+  bakery_manager: OFFICER_TABS,
+  fmcg_manager: OFFICER_TABS,
+  gym_manager: OFFICER_TABS,
 };
+const roleTabs = (role: string) => (FULL_HR_ROLES.has(role) ? null : ROLE_TABS[role] || ['me']);
 const LEAVE = [
   { id: 'annual', label: 'Annual' },
   { id: 'sick', label: 'Sick' },
@@ -122,18 +141,74 @@ function printStatement(st: Row) {
   page.print();
 }
 
-function printSlip(slip: Row, period: string) {
-  const page = window.open('', '_blank', 'width=480,height=700');
+const METHOD_WORDS: Record<string, string> = { cash: 'Cash', mobile_money: 'Mobile Money', bank_transfer: 'Bank transfer', cheque: 'Cheque' };
+
+/** A note for one weekly / fortnightly part-payment. The month's payslip is the tax record. */
+const EDIT_FIELDS: { key: string; label: string; pay?: boolean; kind?: string }[] = [
+  { key: 'full_name', label: 'Full name' },
+  { key: 'phone', label: 'Phone', kind: 'phone' },
+  { key: 'email', label: 'Email (their login)' },
+  { key: 'job_title', label: 'Job title' },
+  { key: 'department', label: 'Department' },
+  { key: 'biometric_id', label: 'Terminal ID (fingerprint / face)' },
+  { key: 'ghana_card', label: 'Ghana Card', pay: true },
+  { key: 'ssnit_number', label: 'SSNIT number', pay: true },
+  { key: 'tin', label: 'TIN', pay: true },
+  { key: 'bank_name', label: 'Bank', pay: true },
+  { key: 'bank_account', label: 'Bank account', pay: true },
+  { key: 'mobile_money', label: 'Mobile Money', pay: true, kind: 'phone' },
+  { key: 'commission_percent', label: 'Sales commission %', pay: true, kind: 'number' },
+  { key: 'tier3_percent', label: 'Tier 3 voluntary %', pay: true, kind: 'number' },
+];
+
+function printPayNote(l: Row) {
+  const page = window.open('', '_blank', 'width=480,height=600');
   if (!page) return;
-  const line = (label: string, value: unknown) => `<tr><td>${label}</td><td style="text-align:right">${money(value)}</td></tr>`;
+  const period = String(l.first_period || '');
   page.document.write(
-    `<html><body style="font-family:sans-serif"><h3>Payslip ${safe(period)}</h3><p>${safe(slip.employee_name)} · ${safe(slip.employee_number)}<br/>${safe(slip.job_title)}</p><table style="width:100%">${line('Basic', slip.basic)}${line('Allowances', slip.allowances)}${line('Bonus', slip.bonus)}${Number(slip.arrears_basic) ? line('Back pay of basic', slip.arrears_basic) : ''}${Number(slip.adjustment) ? line('Correction', slip.adjustment) : ''}${Number(slip.overtime) ? line('Overtime', slip.overtime) : ''}${line('Unpaid days', -Number(slip.unpaid_deduction))}${line('Gross', slip.gross)}${line('SSNIT', -Number(slip.ssnit_employee))}${Number(slip.tier3) > 0 ? line('Tier 3 pension', -Number(slip.tier3)) : ''}${Number(slip.loan_deduction) > 0 ? line('Loan repayment', -Number(slip.loan_deduction)) : ''}${line('PAYE', -Number(slip.paye))}${line('Other deductions', -Number(slip.other_deductions))}</table><h3>Net pay ${money(slip.net)}</h3></body></html>`,
+    `<html><body style="font-family:sans-serif"><h3>Pay note</h3><p>${safe(l.employee_name)}<br/>${safe(l.reason || 'Part-payment of wages')}</p>`
+      + `<table style="width:100%"><tr><td>Paid on</td><td style="text-align:right">${safe(String(l.paid_out_at || '').slice(0, 10))}</td></tr>`
+      + `<tr><td>Paid by</td><td style="text-align:right">${safe(METHOD_WORDS[l.paid_out_method] || l.paid_out_method || '')}</td></tr>`
+      + `<tr><td><b>Amount</b></td><td style="text-align:right"><b>${money(l.principal)}</b></td></tr></table>`
+      + `<p style="font-size:12px">This is part of your pay for ${safe(period)}. PAYE and SSNIT are worked out on the whole month and shown on the ${safe(period)} payslip, which takes this amount back as &quot;Paid during the month&quot;. Reference ${safe(l.loan_number)}.</p></body></html>`,
   );
   page.document.close();
   page.print();
 }
 
-const BLANK = { full_name: '', phone: '', email: '', job_title: '', department: '', hired_on: '', basic_salary: '', allowances: '0', ssnit_number: '', tin: '', bank_name: '', bank_account: '', ghana_card: '', mobile_money: '', tier3_percent: '0', manager_id: '', biometric_id: '' };
+/** Download a file from the API (payslip PDF, payment file). Returns the response headers. */
+async function saveFile(path: string, fallbackName: string): Promise<Headers> {
+  const res = await apiFetch(path);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const detail = (body as { detail?: unknown }).detail;
+    throw new Error(typeof detail === 'string' && detail ? detail : 'Download failed. Try again.');
+  }
+  const blob = await res.blob();
+  const match = (res.headers.get('Content-Disposition') || '').match(/filename="?([^"]+)"?/i);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = match?.[1] || fallbackName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return res.headers;
+}
+
+function printSlip(slip: Row, period: string) {
+  const page = window.open('', '_blank', 'width=480,height=700');
+  if (!page) return;
+  const line = (label: string, value: unknown) => `<tr><td>${label}</td><td style="text-align:right">${money(value)}</td></tr>`;
+  page.document.write(
+    `<html><body style="font-family:sans-serif"><h3>Payslip ${safe(period)}</h3><p>${safe(slip.employee_name)} · ${safe(slip.employee_number)}<br/>${safe(slip.job_title)}</p><table style="width:100%">${line('Basic', slip.basic)}${line('Allowances', slip.allowances)}${line('Bonus', slip.bonus)}${Number(slip.arrears_basic) ? line('Back pay of basic', slip.arrears_basic) : ''}${Number(slip.adjustment) ? line('Correction', slip.adjustment) : ''}${Number(slip.overtime) ? line('Overtime', slip.overtime) : ''}${Number(slip.commission) ? line('Commission', slip.commission) : ''}${Number(slip.tips) ? line('Tips', slip.tips) : ''}${Number(slip.leave_pay) ? line('Unused leave paid', slip.leave_pay) : ''}${line('Unpaid days', -Number(slip.unpaid_deduction))}${line('Gross', slip.gross)}${line('SSNIT', -Number(slip.ssnit_employee))}${Number(slip.tier3) > 0 ? line('Tier 3 pension', -Number(slip.tier3)) : ''}${Number(slip.part_paid) > 0 ? line('Paid during the month', -Number(slip.part_paid)) : ''}${Number(slip.loan_deduction) - Number(slip.part_paid || 0) > 0 ? line('Loan repayment', -(Number(slip.loan_deduction) - Number(slip.part_paid || 0))) : ''}${line('PAYE', -Number(slip.paye))}${Number(slip.overtime_tax) ? line('of which overtime tax', -Number(slip.overtime_tax)) : ''}${Number(slip.bonus_tax) ? line('of which bonus tax', -Number(slip.bonus_tax)) : ''}${slip.non_resident ? '<tr><td colspan="2"><small>Taxed as non-resident</small></td></tr>' : ''}${line('Other deductions', -Number(slip.other_deductions))}</table><h3>Net pay ${money(slip.net)}</h3></body></html>`,
+  );
+  page.document.close();
+  page.print();
+}
+
+const BLANK = { full_name: '', phone: '', email: '', job_title: '', department: '', hired_on: '', basic_salary: '', allowances: '0', ssnit_number: '', tin: '', bank_name: '', bank_account: '', ghana_card: '', mobile_money: '', tier3_percent: '0', manager_id: '', biometric_id: '', commission_percent: '0', pay_frequency: 'monthly', non_resident: false, ssnit_exempt: false, senior_staff: false };
 
 const GHANA_CARD = /^GHA-\d{9}-\d$/;
 
@@ -150,16 +225,25 @@ const RATE_BLANK = {
   insurable_cap: '',
   tier3_relief_percent: '16.5',
   rounding: 'half_up',
+  overtime_junior_cap: '',
+  overtime_low_rate: '5',
+  overtime_high_rate: '10',
+  overtime_low_share_percent: '50',
+  minimum_daily_wage: '',
   source_note: '',
 };
 
 function HrmDesk() {
   const params = useSearchParams();
   const [role, setRole] = useState('');
-  const allowed = useMemo(() => TABS.filter((t) => !ROLE_TABS[role] || ROLE_TABS[role].includes(t.id)), [role]);
-  const wanted = params.get('tab') || (role === 'hrm_employee' ? 'me' : 'today');
+  const [industry, setIndustry] = useState('');
+  const allowed = useMemo(() => {
+    const mine = roleTabs(role);
+    return TABS.filter((t) => (!mine || mine.includes(t.id)) && (!industry || hrTabAllowed(t.id, industry)));
+  }, [role, industry]);
+  const wanted = params.get('tab') || (roleTabs(role)?.length === 1 ? 'me' : 'today');
   const tab = allowed.some((t) => t.id === wanted) ? wanted : allowed[0]?.id || 'today';
-  const seesPay = role !== 'hrm_officer' && role !== 'hrm_employee';
+  const seesPay = FULL_HR_ROLES.has(role);
 
   const [summary, setSummary] = useState<Row | null>(null);
   const [people, setPeople] = useState<Row[]>([]);
@@ -175,6 +259,8 @@ function HrmDesk() {
   const [loans, setLoans] = useState<Row[]>([]);
   const [teamLeave, setTeamLeave] = useState<Row[]>([]);
   const [adjustments, setAdjustments] = useState<Row[]>([]);
+  const [commPeriod, setCommPeriod] = useState(thisMonth());
+  const [commissions, setCommissions] = useState<Row[] | null>(null);
   const [adjForm, setAdjForm] = useState({ employee_id: '', kind: 'correction', amount: '', for_period: '', reason: '' });
   const [schedPeriod, setSchedPeriod] = useState(thisMonth());
   const [paye, setPaye] = useState<Row | null>(null);
@@ -198,7 +284,12 @@ function HrmDesk() {
   const [dialog, setDialog] = useState<Row | null>(null);
 
   useEffect(() => {
-    getMe().then((u: Row | null) => setRole(String(u?.data?.role || 'unknown'))).catch(() => setRole('unknown'));
+    getMe()
+      .then((u: Row | null) => {
+        setIndustry(String(u?.data?.industry || u?.data?.tenant?.industry || ''));
+        setRole(String(u?.data?.role || 'unknown'));
+      })
+      .catch(() => setRole('unknown'));
   }, []);
 
   const load = useCallback(async () => {
@@ -245,6 +336,11 @@ function HrmDesk() {
           tier2_percent: String(rt?.[0]?.tier2_percent ?? '0'),
           insurable_cap: rt?.[0]?.insurable_cap == null ? '' : String(rt[0].insurable_cap),
           tier3_relief_percent: String(rt?.[0]?.tier3_relief_percent ?? '16.5'),
+          overtime_junior_cap: rt?.[0]?.overtime_junior_cap == null ? '' : String(rt[0].overtime_junior_cap),
+          overtime_low_rate: String(rt?.[0]?.overtime_low_rate ?? '5'),
+          overtime_high_rate: String(rt?.[0]?.overtime_high_rate ?? '10'),
+          overtime_low_share_percent: String(rt?.[0]?.overtime_low_share_percent ?? '50'),
+          minimum_daily_wage: rt?.[0]?.minimum_daily_wage == null ? '' : String(rt[0].minimum_daily_wage),
           rounding: rt?.[0]?.rounding || 'half_up',
         });
       }
@@ -291,6 +387,11 @@ function HrmDesk() {
         department: blank(form.department),
         manager_id: form.manager_id || null,
         biometric_id: form.biometric_id.trim() || null,
+        commission_percent: Number(form.commission_percent || 0),
+        pay_frequency: form.pay_frequency || 'monthly',
+        non_resident: Boolean(form.non_resident),
+        ssnit_exempt: Boolean(form.ssnit_exempt),
+        senior_staff: Boolean(form.senior_staff),
         hired_on: form.hired_on,
         basic_salary: Number(form.basic_salary || 0),
         allowances: Number(form.allowances || 0),
@@ -326,6 +427,27 @@ function HrmDesk() {
     if (!dialog) return;
     let ok: unknown = null;
     if (dialog.kind === 'left') ok = await run(`/hrm/employees/${dialog.row.id}/left`, { left_on: dialog.left_on, reason: dialog.reason.trim() }, 'Marked as left');
+    if (dialog.kind === 'edit') {
+      // Send only what changed, so nobody trips a check on a field they did not touch.
+      const body: Row = {};
+      for (const f of EDIT_FIELDS) {
+        if (f.pay && !seesPay) continue;
+        const before = dialog.row[f.key] ?? '';
+        let after: unknown = dialog.values[f.key] ?? '';
+        if (String(after) === String(before)) continue;
+        if (f.kind === 'number') after = Number(after || 0);
+        else if (f.kind === 'phone') after = String(after).replace(/[\s-]/g, '') || null;
+        else if (f.key === 'ghana_card') after = String(after).trim().toUpperCase() || null;
+        else after = String(after).trim() || null;
+        body[f.key] = after;
+      }
+      if (seesPay && dialog.values.pay_frequency !== (dialog.row.pay_frequency || 'monthly')) body.pay_frequency = dialog.values.pay_frequency;
+      for (const k of ['non_resident', 'ssnit_exempt', 'senior_staff']) {
+        if (seesPay && Boolean(dialog.values[k]) !== Boolean(dialog.row[k])) body[k] = Boolean(dialog.values[k]);
+      }
+      if ((dialog.values.manager_id || '') !== (dialog.row.manager_id || '')) body.manager_id = dialog.values.manager_id || null;
+      ok = Object.keys(body).length ? await run(`/hrm/employees/${dialog.row.id}`, body, 'Staff record saved', 'PATCH') : true;
+    }
     if (dialog.kind === 'reject') ok = await run(`/hrm/leave/${dialog.row.id}/decide`, { approve: false, note: dialog.note.trim() }, 'Leave turned down');
     if (dialog.kind === 'pay') ok = await run(`/hrm/payroll/${dialog.row.id}/pay`, { what: dialog.what, method: dialog.method }, 'Recorded as paid');
     if (dialog.kind === 'loan') {
@@ -350,7 +472,9 @@ function HrmDesk() {
   }
 
   const dialogReady = dialog
-    ? dialog.kind === 'left'
+    ? dialog.kind === 'edit'
+      ? String(dialog.values.full_name || '').trim().length > 1
+      : dialog.kind === 'left'
       ? Boolean(dialog.left_on) && dialog.reason.trim().length >= 3
       : dialog.kind === 'reject' || (dialog.kind === 'loan' && !dialog.approve)
         ? dialog.note.trim().length > 0
@@ -381,6 +505,11 @@ function HrmDesk() {
         insurable_cap: String(rateForm.insurable_cap || '').trim() ? num(rateForm.insurable_cap) : null,
         tier3_relief_percent: num(rateForm.tier3_relief_percent || 0),
         rounding: rateForm.rounding,
+        overtime_junior_cap: String(rateForm.overtime_junior_cap || '').trim() ? num(rateForm.overtime_junior_cap) : null,
+        overtime_low_rate: num(rateForm.overtime_low_rate || 0),
+        overtime_high_rate: num(rateForm.overtime_high_rate || 0),
+        overtime_low_share_percent: num(rateForm.overtime_low_share_percent || 0),
+        minimum_daily_wage: String(rateForm.minimum_daily_wage || '').trim() ? num(rateForm.minimum_daily_wage) : null,
         source_note: String(rateForm.source_note || '').trim() || null,
         paye_bands: rateBands.map((b) => ({ width: b.width == null ? null : num(b.width), rate: num(b.rate) })),
       },
@@ -406,7 +535,7 @@ function HrmDesk() {
     <div className="hrm">
       {dialog ? (
         <div className="hr-veil">
-          <div className="hr-dialog" role="dialog" aria-modal="true" aria-label="HR action">
+          <div className={`hr-dialog${dialog.kind === 'edit' ? ' wide' : ''}`} role="dialog" aria-modal="true" aria-label="HR action">
             {dialog.kind === 'left' ? (
               <>
                 <h2>{dialog.row.full_name} is leaving</h2>
@@ -443,6 +572,63 @@ function HrmDesk() {
                   </label>
                 ) : null}
                 <label><span>{dialog.approve ? 'Note (optional)' : 'Why'}</span><input value={dialog.note} onChange={(e) => setDialog({ ...dialog, note: e.target.value })} aria-label="Loan decision note" /></label>
+              </>
+            ) : null}
+            {dialog.kind === 'edit' ? (
+              <>
+                <h2>Edit {dialog.row.full_name}</h2>
+                <div className="hr-dialog-grid">
+                {EDIT_FIELDS.filter((f) => !f.pay || seesPay).map((f) => (
+                  <label key={f.key}><span>{f.label}</span>
+                    <input
+                      type={f.kind === 'number' ? 'number' : 'text'} value={dialog.values[f.key] ?? ''}
+                      onChange={(e) => setDialog({ ...dialog, values: { ...dialog.values, [f.key]: e.target.value } })}
+                      aria-label={`Edit ${f.label}`}
+                    />
+                  </label>
+                ))}
+                <label><span>Reports to</span>
+                  <select value={dialog.values.manager_id} onChange={(e) => setDialog({ ...dialog, values: { ...dialog.values, manager_id: e.target.value } })} aria-label="Edit reports to">
+                    <option value="">Nobody (HR decides their leave)</option>
+                    {people.filter((x) => x.id !== dialog.row.id).map((x) => <option key={x.id} value={x.id}>{x.full_name}</option>)}
+                  </select>
+                </label>
+                {seesPay ? (
+                  <label><span>Paid</span>
+                    <select value={dialog.values.pay_frequency} onChange={(e) => setDialog({ ...dialog, values: { ...dialog.values, pay_frequency: e.target.value } })} aria-label="Edit pay frequency">
+                      <option value="monthly">Monthly</option>
+                      <option value="weekly">Weekly (part-payments)</option>
+                      <option value="fortnightly">Fortnightly (part-payments)</option>
+                    </select>
+                  </label>
+                ) : null}
+                {seesPay ? (
+                  <label><span>Tax residence</span>
+                    <select value={dialog.values.non_resident ? 'yes' : 'no'} onChange={(e) => setDialog({ ...dialog, values: { ...dialog.values, non_resident: e.target.value === 'yes' } })} aria-label="Edit tax residence">
+                      <option value="no">Resident</option>
+                      <option value="yes">Non-resident (flat 25%)</option>
+                    </select>
+                  </label>
+                ) : null}
+                {seesPay ? (
+                  <label><span>SSNIT</span>
+                    <select value={dialog.values.ssnit_exempt ? 'yes' : 'no'} onChange={(e) => setDialog({ ...dialog, values: { ...dialog.values, ssnit_exempt: e.target.value === 'yes' } })} aria-label="Edit SSNIT membership">
+                      <option value="no">Pays SSNIT</option>
+                      <option value="yes">Not in SSNIT (approved foreign scheme)</option>
+                    </select>
+                  </label>
+                ) : null}
+                {seesPay ? (
+                  <label><span>Grade</span>
+                    <select value={dialog.values.senior_staff ? 'yes' : 'no'} onChange={(e) => setDialog({ ...dialog, values: { ...dialog.values, senior_staff: e.target.value === 'yes' } })} aria-label="Edit staff grade">
+                      <option value="no">Junior staff</option>
+                      <option value="yes">Senior staff (no overtime tax concession)</option>
+                    </select>
+                  </label>
+                ) : null}
+                </div>
+                {seesPay ? null : <p className="hr-muted">Bank, Mobile Money, ID numbers and pay are changed by an HR manager.</p>}
+                <p className="hr-muted">To change pay, use Change salary: it keeps a dated history and pays any back pay.</p>
               </>
             ) : null}
             {dialog.kind === 'salary' ? (
@@ -565,6 +751,36 @@ function HrmDesk() {
               <label><span>Terminal ID (fingerprint / face)</span><input value={form.biometric_id} onChange={(e) => setForm({ ...form, biometric_id: e.target.value })} aria-label="Terminal ID" /></label>
               <label><span>Mobile Money</span><input value={form.mobile_money} placeholder="+233…" onChange={(e) => setForm({ ...form, mobile_money: e.target.value })} aria-label="Mobile Money number" /></label>
               {seesPay ? (
+                <>
+                <label><span>Sales commission %</span><input type="number" min="0" max="100" step="0.25" value={form.commission_percent} onChange={(e) => setForm({ ...form, commission_percent: e.target.value })} aria-label="Sales commission percent" /></label>
+                <label><span>Tax residence</span>
+                  <select value={form.non_resident ? 'yes' : 'no'} onChange={(e) => setForm({ ...form, non_resident: e.target.value === 'yes' })} aria-label="Tax residence">
+                    <option value="no">Resident</option>
+                    <option value="yes">Non-resident (flat 25%)</option>
+                  </select>
+                </label>
+                <label><span>SSNIT</span>
+                  <select value={form.ssnit_exempt ? 'yes' : 'no'} onChange={(e) => setForm({ ...form, ssnit_exempt: e.target.value === 'yes' })} aria-label="SSNIT membership">
+                    <option value="no">Pays SSNIT</option>
+                    <option value="yes">Not in SSNIT (approved foreign scheme)</option>
+                  </select>
+                </label>
+                <label><span>Grade</span>
+                  <select value={form.senior_staff ? 'yes' : 'no'} onChange={(e) => setForm({ ...form, senior_staff: e.target.value === 'yes' })} aria-label="Staff grade">
+                    <option value="no">Junior staff</option>
+                    <option value="yes">Senior staff (no overtime tax concession)</option>
+                  </select>
+                </label>
+                <label><span>Paid</span>
+                  <select value={form.pay_frequency || 'monthly'} onChange={(e) => setForm({ ...form, pay_frequency: e.target.value })} aria-label="Pay frequency">
+                    <option value="monthly">Monthly</option>
+                    <option value="weekly">Weekly (part-payments)</option>
+                    <option value="fortnightly">Fortnightly (part-payments)</option>
+                  </select>
+                </label>
+                </>
+              ) : null}
+              {seesPay ? (
                 <label><span>Tier 3 voluntary %</span><input type="number" min="0" max="100" step="0.5" value={form.tier3_percent} onChange={(e) => setForm({ ...form, tier3_percent: e.target.value })} aria-label="Tier 3 voluntary percent" /></label>
               ) : null}
               {form.ghana_card.trim() && !GHANA_CARD.test(form.ghana_card.trim().toUpperCase()) ? (
@@ -590,6 +806,13 @@ function HrmDesk() {
                     <td>
                       <div className="hr-row">
                         {seesPay ? <button type="button" onClick={() => setDialog({ kind: 'salary', row: p, effective_from: iso(), basic: String(p.basic_salary ?? ''), allowances: String(p.allowances ?? '0'), reason: '' })}>Change salary</button> : null}
+                        <button
+                          type="button" aria-label={`Edit ${p.full_name}`}
+                          onClick={() => setDialog({
+                            kind: 'edit', row: p,
+                            values: { ...Object.fromEntries(EDIT_FIELDS.map((f) => [f.key, p[f.key] ?? ''])), manager_id: p.manager_id || '', pay_frequency: p.pay_frequency || 'monthly', non_resident: Boolean(p.non_resident), ssnit_exempt: Boolean(p.ssnit_exempt), senior_staff: Boolean(p.senior_staff) },
+                          })}
+                        >Edit</button>
                         <button type="button" className="hr-danger" onClick={() => setDialog({ kind: 'left', row: p, left_on: iso(), reason: '' })}>Leaving</button>
                       </div>
                     </td>
@@ -599,11 +822,16 @@ function HrmDesk() {
               </tbody>
             </table>
           </section>
+          <AskHr examples={['Who is on leave today?', 'Leave waiting', 'Headcount', 'Contracts ending', 'Payroll this month']} />
+          <Signals />
+          <StaffFiles people={people} canConfidential={seesPay} />
+          <Org canPlan={seesPay} />
         </>
       ) : null}
 
       {tab === 'leave' ? (
         <>
+          <Cover asHr />
           <section className="hr-box" aria-label="Record leave">
             <Head title="Record leave" />
             <div className="hr-form">
@@ -756,7 +984,7 @@ function HrmDesk() {
                   <tr key={l.id}>
                     <td>{l.loan_number}</td>
                     <td>{l.employee_name}{l.reason ? <><br /><small className="hr-muted">{l.reason}</small></> : null}</td>
-                    <td>{l.kind === 'advance' ? 'Advance' : 'Loan'}</td>
+                    <td>{l.kind === 'part_pay' ? 'Part-payment' : l.kind === 'advance' ? 'Advance' : 'Loan'}</td>
                     <td className="hr-num">{money(l.principal)}</td>
                     <td className="hr-num">{money(l.monthly_deduction)}</td>
                     <td className="hr-num">{money(l.balance)}</td>
@@ -767,6 +995,8 @@ function HrmDesk() {
                           <button type="button" className="hr-primary" onClick={() => setDialog({ kind: 'loan', row: l, approve: true, method: 'bank_transfer', note: '' })}>Approve and pay out</button>
                           <button type="button" className="hr-danger" onClick={() => setDialog({ kind: 'loan', row: l, approve: false, method: '', note: '' })}>Turn down</button>
                         </div>
+                      ) : l.kind === 'part_pay' ? (
+                        <button type="button" aria-label={`Print pay note ${l.loan_number}`} onClick={() => printPayNote(l)}>Pay note</button>
                       ) : l.status === 'active' ? (
                         <button type="button" onClick={() => setDialog({ kind: 'repay', row: l, amount: String(l.balance), method: 'cash' })}>Paid back in cash</button>
                       ) : null}
@@ -822,6 +1052,45 @@ function HrmDesk() {
             </div>
             <p className="hr-muted">Check the SSNIT and PAYE rates under Settings against the current official tables before you approve.</p>
           </section>
+          <section className="hr-box hr-scroll" aria-label="Sales commission">
+            <Head title="Sales commission" />
+            <p className="hr-muted">
+              Net sales come from the Sales by salesperson report (FMCG: delivered orders the person booked), matched by the email on the
+              staff record. Approve a month to pay it on that month&apos;s payroll: taxed as earnings, no SSNIT.
+            </p>
+            <div className="hr-row">
+              <input type="month" value={commPeriod} onChange={(e) => setCommPeriod(e.target.value)} aria-label="Commission month" style={{ maxWidth: 200 }} />
+              <button type="button" disabled={busy} onClick={async () => {
+                try { setCommissions((await api(`/hrm/commissions?period=${commPeriod}`))?.data || []); } catch (err) { setError(problem(err)); }
+              }}>Show commission</button>
+            </div>
+            {commissions ? (
+              <table>
+                <thead><tr><th>Who</th><th>Rate</th><th>Net sales</th><th>Commission</th><th>Approved</th><th /></tr></thead>
+                <tbody>
+                  {commissions.map((c) => (
+                    <tr key={c.employee_id}>
+                      <td>{c.employee_name}{c.linked_login ? null : <><br /><small className="hr-muted">No sign-in with this email</small></>}</td>
+                      <td>{c.percent}%</td><td className="hr-num">{money(c.net_sales)}</td><td className="hr-num">{money(c.commission)}</td>
+                      <td>{c.approved ? `${money(c.approved.amount)}${c.approved.status === 'paid' ? ' (paid)' : ''}` : '—'}</td>
+                      <td>
+                        {c.linked_login && c.approved?.status !== 'paid' ? (
+                          <button type="button" className="hr-primary" disabled={busy} onClick={async () => {
+                            if (await run('/hrm/commissions', { employee_id: c.employee_id, period: commPeriod }, 'Commission approved')) {
+                              setCommissions((await api(`/hrm/commissions?period=${commPeriod}`))?.data || []);
+                            }
+                          }}>Approve {money(c.commission)}</button>
+                        ) : null}
+                      </td>
+                    </tr>
+                  ))}
+                  {commissions.length === 0 ? <tr><td colSpan={6} className="hr-muted">Nobody has a commission percent.</td></tr> : null}
+                </tbody>
+              </table>
+            ) : null}
+          </section>
+          <LeavePay people={people} />
+          <PartPay />
           <section className="hr-box hr-scroll" aria-label="Corrections to approved pay">
             <Head title="Corrections for the next payroll" />
             <p className="hr-muted">
@@ -882,6 +1151,30 @@ function HrmDesk() {
                       <button type="button" className="hr-danger" disabled={busy} onClick={() => void run(`/hrm/payroll/${r.id}`, null, 'Draft thrown away', 'DELETE')}>Throw away</button>
                     </>
                   ) : null}
+                  {r.status !== 'draft' ? (
+                    <button type="button" disabled={busy} aria-label={`Email payslips for ${r.period}`} onClick={async () => {
+                      setBusy(true); setError(''); setNotice('');
+                      try {
+                        const out = (await api(`/hrm/payroll/${r.id}/email-payslips`, { method: 'POST', body: JSON.stringify({}) }))?.data || {};
+                        const parts = [`${out.sent} payslip(s) emailed`];
+                        if (out.already_sent) parts.push(`${out.already_sent} already had theirs`);
+                        if (out.no_email?.length) parts.push(`no email on file: ${out.no_email.join(', ')}`);
+                        if (out.failed?.length) parts.push(`could not send: ${out.failed.join(', ')}`);
+                        setNotice(parts.join('. ') + '.');
+                        await load();
+                      } catch (err) { setError(problem(err)); } finally { setBusy(false); }
+                    }}>Email payslips</button>
+                  ) : null}
+                  {r.status !== 'draft' ? (['bank', 'mobile_money'] as const).map((method) => (
+                    <button key={method} type="button" disabled={busy} aria-label={`Download ${method === 'bank' ? 'bank' : 'Mobile Money'} salary file for ${r.period}`} onClick={async () => {
+                      setError(''); setNotice('');
+                      try {
+                        const h = await saveFile(`/hrm/payroll/${r.id}/payment-file?method=${method}`, `salaries_${r.period}_${method}.csv`);
+                        const left = Number(h.get('X-Left-Out') || 0);
+                        setNotice(`${h.get('X-Rows') || 0} people in the ${method === 'bank' ? 'bank' : 'Mobile Money'} file.${left ? ` ${left} left out: no ${method === 'bank' ? 'bank account' : 'Mobile Money number'} on their record.` : ''}`);
+                      } catch (err) { setError(problem(err)); }
+                    }}>{method === 'bank' ? 'Bank file' : 'Mobile Money file'}</button>
+                  )) : null}
                   {r.status === 'approved' && !r.staff_paid ? <button type="button" className="hr-primary" onClick={() => setDialog({ kind: 'pay', row: r, what: 'staff', method: 'bank_transfer', amount: r.net })}>Pay salaries</button> : null}
                   {r.status === 'approved' && !r.paye_paid ? <button type="button" onClick={() => setDialog({ kind: 'pay', row: r, what: 'paye', method: 'bank_transfer', amount: r.paye })}>Pay PAYE</button> : null}
                   {r.status === 'approved' && !r.ssnit_paid ? <button type="button" onClick={() => setDialog({ kind: 'pay', row: r, what: 'ssnit', method: 'bank_transfer', amount: r.ssnit_due ?? Number(r.ssnit_employee) + Number(r.ssnit_employer) })}>Pay SSNIT</button> : null}
@@ -889,18 +1182,25 @@ function HrmDesk() {
                   {r.status === 'approved' && Number(r.tier3) > 0 && !r.tier3_paid ? <button type="button" onClick={() => setDialog({ kind: 'pay', row: r, what: 'tier3', method: 'bank_transfer', amount: r.tier3 })}>Pay Tier 3</button> : null}
                 </div>
               </div>
+              {(r.warnings || []).map((w: string) => <p key={w} className="hr-bad" role="alert">{w}</p>)}
               {openRun === r.id ? (
                 <table>
                   <thead><tr><th>Name</th><th>Gross</th><th>SSNIT</th><th>PAYE</th><th>Other</th><th>Net</th><th /></tr></thead>
                   <tbody>
                     {r.slips.map((s: Row) => (
                       <tr key={s.id}>
-                        <td>{s.employee_name}{s.unpaid_days ? <><br /><small className="hr-muted">{s.unpaid_days} unpaid days</small></> : null}</td>
+                        <td>
+                          {s.employee_name}{s.unpaid_days ? <><br /><small className="hr-muted">{s.unpaid_days} unpaid days</small></> : null}
+                          {(s.warnings || []).includes('below_minimum_wage') ? <><br /><small className="hr-bad">Under the daily minimum wage. Raise the basic before approving.</small></> : null}
+                          {Number(s.overtime_tax) ? <><br /><small className="hr-muted">Overtime tax {money(s.overtime_tax)} (in PAYE)</small></> : null}
+                        </td>
                         <td className="hr-num">{money(s.gross)}</td><td className="hr-num">{money(s.ssnit_employee)}</td><td className="hr-num">{money(s.paye)}</td><td className="hr-num">{money(s.other_deductions)}</td><td className="hr-num">{money(s.net)}</td>
                         <td>
                           <div className="hr-row">
                             {r.status === 'draft' ? <button type="button" onClick={() => setDialog({ kind: 'slip', row: s, bonus: String(s.bonus), other: String(s.other_deductions) })}>Change</button> : null}
                             <button type="button" onClick={() => printSlip(s, r.period)}>Print</button>
+                            {r.status !== 'draft' ? <button type="button" aria-label={`Payslip PDF for ${s.employee_name}`} onClick={() => void saveFile(`/hrm/payslips/${s.id}/pdf`, `payslip_${r.period}.pdf`).catch((err) => setError(problem(err)))}>PDF</button> : null}
+                            {s.emailed_at ? <small className="hr-muted">Emailed</small> : null}
                           </div>
                         </td>
                       </tr>
@@ -948,13 +1248,13 @@ function HrmDesk() {
                 <h2 style={{ marginTop: 12 }}>PAYE {paye.period}</h2>
                 {paye.missing_tax_id?.length ? <p className="hr-banner bad">No TIN or Ghana Card: {paye.missing_tax_id.join(', ')}</p> : null}
                 <table>
-                  <thead><tr><th>Employee</th><th>TIN</th><th>Gross</th><th>Taxable</th><th>PAYE</th></tr></thead>
+                  <thead><tr><th>Employee</th><th>TIN</th><th>Basic</th><th>Allowances</th><th>Bonus (5%)</th><th>Excess bonus</th><th>Chargeable</th><th>Overtime</th><th>Overtime tax</th><th>PAYE</th></tr></thead>
                   <tbody>
-                    {paye.rows.map((r: Row) => <tr key={r.employee_number}><td>{r.full_name}</td><td>{r.tin || r.ghana_card || '—'}</td><td className="hr-num">{money(r.gross)}</td><td className="hr-num">{money(r.taxable)}</td><td className="hr-num">{money(r.paye)}</td></tr>)}
-                    <tr><th>Total</th><th /><th className="hr-num">{money(paye.totals.gross)}</th><th className="hr-num">{money(paye.totals.taxable)}</th><th className="hr-num">{money(paye.totals.paye)}</th></tr>
+                    {paye.rows.map((r: Row) => <tr key={r.employee_number}><td>{r.full_name}{r.residence === 'non-resident' ? <><br /><small className="hr-muted">Non-resident</small></> : null}</td><td>{r.tin || r.ghana_card || '—'}</td><td className="hr-num">{money(r.basic)}</td><td className="hr-num">{money(r.cash_allowances)}</td><td className="hr-num">{money(r.bonus)}</td><td className="hr-num">{money(r.excess_bonus)}</td><td className="hr-num">{money(r.taxable)}</td><td className="hr-num">{money(r.overtime)}</td><td className="hr-num">{money(r.overtime_tax)}</td><td className="hr-num">{money(r.paye)}</td></tr>)}
+                    <tr><th>Total</th><th /><th className="hr-num">{money(paye.totals.basic)}</th><th className="hr-num">{money(paye.totals.cash_allowances)}</th><th className="hr-num">{money(paye.totals.bonus)}</th><th className="hr-num">{money(paye.totals.excess_bonus)}</th><th className="hr-num">{money(paye.totals.taxable)}</th><th className="hr-num">{money(paye.totals.overtime)}</th><th className="hr-num">{money(paye.totals.overtime_tax)}</th><th className="hr-num">{money(paye.totals.paye)}</th></tr>
                   </tbody>
                 </table>
-                <button type="button" onClick={() => downloadCsv(`paye-${paye.period}.csv`, [['Employee number', 'Name', 'TIN', 'Ghana Card', 'Gross', 'SSNIT', 'Tier 3 relief', 'Taxable', 'PAYE'], ...paye.rows.map((r: Row) => [r.employee_number, r.full_name, r.tin, r.ghana_card, r.gross, r.ssnit_employee, r.tier3_relief, r.taxable, r.paye])])}>Download PAYE CSV</button>
+                <button type="button" onClick={() => downloadCsv(`paye-${paye.period}.csv`, [['Employee number', 'Name', 'TIN', 'Ghana Card', 'Residence', 'Basic salary', 'SSNIT (5.5%)', 'Tier 3 relief', 'Cash allowances', 'Bonus up to 15%', 'Final tax on bonus', 'Excess bonus', 'Total cash emolument', 'Chargeable income', 'Tax on chargeable income', 'Overtime', 'Overtime tax', 'Total tax to GRA'], ...paye.rows.map((r: Row) => [r.employee_number, r.full_name, r.tin, r.ghana_card, r.residence, r.basic, r.ssnit_employee, r.tier3_relief, r.cash_allowances, r.bonus, r.bonus_tax, r.excess_bonus, r.gross, r.taxable, r.tax_on_chargeable, r.overtime, r.overtime_tax, r.paye])])}>Download PAYE CSV</button>
               </>
             ) : null}
             {ssnit ? (
@@ -1015,6 +1315,8 @@ function HrmDesk() {
               <span>Clock-ins from phones must be at a work site</span>
             </label>
             <label><span>Unused days that carry into next year</span><input type="number" min="0" value={settings.carry_over_days ?? 0} onChange={(e) => setSettings({ ...settings, carry_over_days: e.target.value })} aria-label="Carry-over days" /></label>
+            <label><span>Weekly / fortnightly part-pay, % of basic</span><input type="number" min="0" max="100" value={settings.part_pay_percent ?? 80} onChange={(e) => setSettings({ ...settings, part_pay_percent: e.target.value })} aria-label="Part-pay percent" /></label>
+            <label><span>Tell HR when leave waits on a manager for (working days, 0 = never)</span><input type="number" min="0" max="60" value={settings.escalate_after_days ?? 3} onChange={(e) => setSettings({ ...settings, escalate_after_days: e.target.value })} aria-label="Escalate leave after days" /></label>
             <label><span>Working days a month</span><input type="number" min="1" value={settings.working_days_per_month} onChange={(e) => setSettings({ ...settings, working_days_per_month: e.target.value })} aria-label="Working days a month" /></label>
             <label><span>Staff SSNIT %</span><input type="number" min="0" value={settings.ssnit_employee_percent} onChange={(e) => setSettings({ ...settings, ssnit_employee_percent: e.target.value })} aria-label="Staff SSNIT percent" /></label>
             <label><span>Employer SSNIT %</span><input type="number" min="0" value={settings.ssnit_employer_percent} onChange={(e) => setSettings({ ...settings, ssnit_employer_percent: e.target.value })} aria-label="Employer SSNIT percent" /></label>
@@ -1059,6 +1361,8 @@ function HrmDesk() {
                 two_person_payroll: Boolean(settings.two_person_payroll),
                 leave_accrual: settings.leave_accrual || 'upfront',
                 carry_over_days: Number(settings.carry_over_days || 0),
+                escalate_after_days: Number(settings.escalate_after_days ?? 3),
+                part_pay_percent: Number(settings.part_pay_percent ?? 80),
                 hours_per_day: Number(settings.hours_per_day || 8),
                 overtime_rate: Number(settings.overtime_rate || 1.5),
                 clock_needs_site: Boolean(settings.clock_needs_site),
@@ -1077,6 +1381,7 @@ function HrmDesk() {
             exist. Rules an approved payroll used are locked. Check every figure with your accountant against the current
             GRA and SSNIT tables: the system does not check them for you.
           </p>
+          <SuggestedRates have={rates.map((r) => String(r.effective_from))} onAdded={() => void load()} />
           {rates.length ? (
             <table aria-label="Dated rates on record">
               <thead><tr><th>From</th><th>Staff %</th><th>Company %</th><th>Tier 2 %</th><th>SSNIT cap</th><th>Tier 3 relief %</th><th>Source</th><th /></tr></thead>
@@ -1112,6 +1417,11 @@ function HrmDesk() {
             <label><span>Tier 2 % of insurable pay</span><input type="number" min="0" step="0.1" value={rateForm.tier2_percent} onChange={(e) => setRateForm({ ...rateForm, tier2_percent: e.target.value })} aria-label="Tier 2 percent" /></label>
             <label><span>SSNIT cap a month (blank = none)</span><input type="number" min="0" value={rateForm.insurable_cap} onChange={(e) => setRateForm({ ...rateForm, insurable_cap: e.target.value })} aria-label="SSNIT maximum insurable earnings" /></label>
             <label><span>Tier 3 tax relief %</span><input type="number" min="0" step="0.5" value={rateForm.tier3_relief_percent} onChange={(e) => setRateForm({ ...rateForm, tier3_relief_percent: e.target.value })} aria-label="Tier 3 tax relief percent" /></label>
+            <label><span>Junior overtime: employment income up to a month (GRA: GH₵18,000 a year = 1,500; blank = off)</span><input type="number" min="0" value={rateForm.overtime_junior_cap} onChange={(e) => setRateForm({ ...rateForm, overtime_junior_cap: e.target.value })} aria-label="Junior overtime basic limit" /></label>
+            <label><span>Overtime tax % (first part)</span><input type="number" min="0" step="0.5" value={rateForm.overtime_low_rate} onChange={(e) => setRateForm({ ...rateForm, overtime_low_rate: e.target.value })} aria-label="Overtime tax low rate" /></label>
+            <label><span>First part: overtime up to % of basic</span><input type="number" min="0" step="1" value={rateForm.overtime_low_share_percent} onChange={(e) => setRateForm({ ...rateForm, overtime_low_share_percent: e.target.value })} aria-label="Overtime low part share" /></label>
+            <label><span>Overtime tax % (the rest)</span><input type="number" min="0" step="0.5" value={rateForm.overtime_high_rate} onChange={(e) => setRateForm({ ...rateForm, overtime_high_rate: e.target.value })} aria-label="Overtime tax high rate" /></label>
+            <label><span>Daily minimum wage (blank = no check)</span><input type="number" min="0" step="0.01" value={rateForm.minimum_daily_wage} onChange={(e) => setRateForm({ ...rateForm, minimum_daily_wage: e.target.value })} aria-label="Daily minimum wage" /></label>
             <label>
               <span>Rounding</span>
               <select value={rateForm.rounding} onChange={(e) => setRateForm({ ...rateForm, rounding: e.target.value })} aria-label="Payroll rounding">
@@ -1222,7 +1532,7 @@ function HrmDesk() {
               <table aria-label="My loans">
                 <tbody>
                   {me.loans.map((l: Row) => (
-                    <tr key={l.id}><td>{l.kind === 'advance' ? 'Advance' : 'Loan'} {l.loan_number}</td><td className="hr-num">{money(l.principal)}</td><td>Still owed {money(l.balance)}</td><td>{l.status}</td></tr>
+                    <tr key={l.id}><td>{l.kind === 'part_pay' ? 'Part-payment' : l.kind === 'advance' ? 'Advance' : 'Loan'} {l.loan_number}</td><td className="hr-num">{money(l.principal)}</td><td>{l.kind === 'part_pay' ? `Paid ${String(l.paid_out_at || '').slice(0, 10)}` : `Still owed ${money(l.balance)}`}</td><td>{l.kind === 'part_pay' ? <button type="button" aria-label={`Print my pay note ${l.loan_number}`} onClick={() => printPayNote(l)}>Pay note</button> : l.status}</td></tr>
                   ))}
                 </tbody>
               </table>
@@ -1232,7 +1542,7 @@ function HrmDesk() {
             <Head title="My payslips" />
             <table>
               <tbody>
-                {me.payslips.map((s: Row) => <tr key={s.id}><td>{s.period}</td><td className="hr-num">{money(s.net)}</td><td><button type="button" onClick={() => printSlip(s, s.period)}>Print</button></td></tr>)}
+                {me.payslips.map((s: Row) => <tr key={s.id}><td>{s.period}</td><td className="hr-num">{money(s.net)}</td><td><div className="hr-row"><button type="button" onClick={() => printSlip(s, s.period)}>Print</button><button type="button" aria-label={`Download payslip PDF ${s.period}`} onClick={() => void saveFile(`/hrm/payslips/${s.id}/pdf`, `payslip_${s.period}.pdf`).catch((err) => setError(problem(err)))}>PDF</button></div></td></tr>)}
                 {me.payslips.length === 0 ? <tr><td className="hr-muted">No payslips yet.</td></tr> : null}
                 {me.payslips.length ? (
                   <tr>
@@ -1246,6 +1556,9 @@ function HrmDesk() {
               </tbody>
             </table>
           </section>
+          <AskHr examples={['How many leave days do I have?', 'Who approves my leave?', 'My payslip', 'Documents to accept', 'My claims']} />
+          <MyDocuments />
+          <Cover />
           <MyMore />
         </>
       ) : null}

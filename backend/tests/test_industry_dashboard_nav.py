@@ -38,7 +38,10 @@ def test_industry_home_and_feature_catalog():
         assert dashboard_layout(code) == code
         assert shows_retail_operations(code) is False
 
-    for removed in ("wholesale", "retail_wholesale", "hospital", "mart"):
+    # Wholesale is back (13 Nov 2026) on the retail desk.
+    assert dashboard_layout("wholesale") == "retail"
+    assert shows_retail_operations("wholesale") is True
+    for removed in ("retail_wholesale", "hospital", "mart"):
         assert industry_dashboard_features(removed) == []
         assert industry_home_path(removed) == "/dashboard"
         assert dashboard_layout(removed) == "unconfigured"
@@ -89,9 +92,9 @@ def test_payload_uses_tenant_industry_not_client():
 
     T.industry = "wholesale"
     wholesale = industry_dashboard_payload(T())
-    assert wholesale["industry"] is None
-    assert wholesale["industry_features"] == []
-    assert wholesale["show_retail_operations"] is False
+    assert wholesale["industry"] == "wholesale"
+    assert wholesale["dashboard_layout"] == "retail"
+    assert wholesale["show_retail_operations"] is True
 
 
 async def test_dashboard_industry_from_tenant_ignores_query(client, db_session):
@@ -262,7 +265,7 @@ def test_dashboard_layout_does_not_treat_other_industries_as_retail():
     assert shows_retail_operations("pharmacy") is False
     assert dashboard_layout("fmcg") == "fmcg"
     assert dashboard_layout("hospital") == "unconfigured"
-    assert dashboard_layout("wholesale") == "unconfigured"
+    assert dashboard_layout("wholesale") == "retail"
     assert dashboard_layout("retail_wholesale") == "unconfigured"
     assert shows_retail_operations("retail_wholesale") is False
     assert dashboard_layout("mart") == "unconfigured"
@@ -330,11 +333,11 @@ async def test_industry_desks_and_route_gates(client, db_session):
     await set_tenant_industry(db_session, seed["t1"], "wholesale")
     admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
     wholesale = (await ac.get("/api/v1/dashboard", headers=admin)).json()["data"]
-    assert wholesale["dashboard_layout"] == "unconfigured"
-    assert wholesale["show_retail_operations"] is False
-    assert wholesale["wholesale_desk"] is None
-    denied_wholesale_pos = await ac.get("/api/v1/pos/sessions", headers=admin)
-    assert denied_wholesale_pos.status_code == 403, denied_wholesale_pos.text
+    assert wholesale["dashboard_layout"] == "retail"
+    assert wholesale["show_retail_operations"] is True
+    assert wholesale["wholesale_desk"] is not None
+    wholesale_pos = await ac.get("/api/v1/pos/sessions", headers=admin)
+    assert wholesale_pos.status_code == 200, wholesale_pos.text
 
     await set_tenant_industry(db_session, seed["t1"], "not-an-industry")
     admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
@@ -364,12 +367,14 @@ async def test_non_retail_never_gets_retail_operations_or_other_tenant_rows(clie
 
     await set_tenant_industry(db_session, seed["t1"], "wholesale")
     switched = (await ac.get("/api/v1/dashboard", headers=admin)).json()["data"]
-    assert switched["industry"] is None
-    assert switched["dashboard_layout"] == "unconfigured"
-    assert switched["show_retail_operations"] is False
-    assert switched["industry_features"] == []
-    assert switched["products"] == 1
+    assert switched["industry"] == "wholesale"
+    assert switched["dashboard_layout"] == "retail"
+    assert switched["show_retail_operations"] is True
+    assert switched["products"] == 1  # still only this company's rows
 
+    await set_tenant_industry(db_session, seed["t1"], "retail_wholesale")
+    retired = (await ac.get("/api/v1/dashboard", headers=admin)).json()["data"]
+    assert retired["industry"] is None and retired["dashboard_layout"] == "unconfigured"
     pos = await ac.post("/api/v1/pos/sessions/open", headers=admin, json={"opening_cash": 0})
     assert pos.status_code == 403, pos.text
     assert pos.json()["detail"]["code"] == "INDUSTRY_MODULE_DISABLED"

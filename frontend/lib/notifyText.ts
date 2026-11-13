@@ -13,6 +13,7 @@ export const NOTIFY_CATEGORY_LABELS: Record<string, string> = {
   quotation_expiry: 'Quotation',
   batch_expiry: 'Expiry',
   recurring_expense_due: 'Recurring',
+  hr: 'HR',
   transfer: 'Transfer',
   system: 'System',
   security: 'Security',

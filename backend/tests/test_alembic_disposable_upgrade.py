@@ -303,7 +303,16 @@ def test_alembic_upgrade_head_on_disposable_database():
                 _refuse(current)
                 cur.execute("SELECT version_num FROM alembic_version")
                 versions = [row[0] for row in cur.fetchall()]
-                assert versions == ["20261022_0143"]
+                # The head the migration scripts declare (test_alembic_revision_graph.py pins
+                # it by name), so this check does not go stale with every new migration.
+                from alembic.config import Config
+                from alembic.script import ScriptDirectory
+
+                cfg = Config(os.path.join(backend, "alembic.ini"))
+                cfg.set_main_option("script_location", os.path.join(backend, "alembic"))
+                script_heads = ScriptDirectory.from_config(cfg).get_heads()
+                assert len(script_heads) == 1, script_heads
+                assert versions == script_heads
                 cur.execute(
                     "SELECT column_name FROM information_schema.columns "
                     "WHERE table_schema = 'public' AND table_name = 'auth_sessions'"

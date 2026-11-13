@@ -11,7 +11,10 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated, Literal
 import asyncio
+import html as _html_lib
 import logging
+
+from app.email_design import EmailDesignPreview, EmailDesignUpdate
 
 from app import models as m
 from app.db import get_db
@@ -463,6 +466,15 @@ api.include_router(hrm_api_mod.router)
 api.include_router(hrm_people_api_mod.router)
 api.include_router(hrm_time_api_mod.router)
 api.include_router(fmcg_orders_api_mod.router)
+from app import fmcg_field_api as fmcg_field_api_mod  # noqa: E402
+
+api.include_router(fmcg_field_api_mod.router)
+from app import restaurant_tips_api as restaurant_tips_api_mod  # noqa: E402
+
+api.include_router(restaurant_tips_api_mod.router)
+from app import hrm_documents_api as hrm_documents_api_mod  # noqa: E402
+
+api.include_router(hrm_documents_api_mod.router)
 from app import hotel_booking_api as hotel_booking_api_mod
 
 api.include_router(hotel_booking_api_mod.router)
@@ -2272,6 +2284,66 @@ async def settings_print_patch(
     )
     await db.commit()
     return env(data, "Print branding updated")
+
+
+@api.get("/settings/email-design")
+async def settings_email_design_get(
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """How this company's emails look (separate from Ribdigi House's own emails)."""
+    from app import email_design
+
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    return env(
+        {
+            "style": email_design.normalize(
+                (tenant.print_branding or {}).get(email_design.TENANT_KEY), platform=False
+            ),
+            "defaults": email_design.TENANT_DEFAULT,
+            "options": email_design.options(),
+            "layout": "company",
+            "has_logo": bool(getattr(tenant, "logo_url", None)),
+        }
+    )
+
+
+@api.patch("/settings/email-design")
+async def settings_email_design_put(
+    payload: EmailDesignUpdate,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import email_design
+
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    current = (tenant.print_branding or {}).get(email_design.TENANT_KEY) or {}
+    style = email_design.merged(current, payload.model_dump(exclude_unset=True), platform=False)
+    email_design.save(tenant, style, platform=False)
+    await db.commit()
+    return env({"style": style}, "Email design saved")
+
+
+@api.post("/settings/email-design/preview")
+async def settings_email_design_preview(
+    payload: EmailDesignPreview,
+    claims=Depends(require_roles("company_admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import email_design, emailer
+
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    data = payload.model_dump(exclude_unset=True)
+    sample = data.pop("sample", "document")
+    current = (tenant.print_branding or {}).get(email_design.TENANT_KEY) or {}
+    style = email_design.merged(current, data, platform=False)
+    company = (tenant.company_name or "Your company").strip()
+    title, inner = email_design.sample_body(sample, company=_html_lib.escape(company), currency=tenant.currency or "GHS")
+    html_body = emailer.render_branded_html(
+        body_html=inner, company_name=company, tenant=tenant, title=title,
+        allow_platform_logo=False, style=style,
+    )
+    return env({"html": emailer.inline_preview(html_body), "style": style})
 
 
 @api.post("/settings/sms/test")

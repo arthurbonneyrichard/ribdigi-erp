@@ -14,7 +14,7 @@ from app.config import settings
 DESKS: tuple[str, ...] = ("retail", "hotel", "restaurant", "bakery", "fmcg", "gym", "hrm")
 
 # Older business types with no desk of their own.
-_DESK_OF_INDUSTRY = {"pharmacy": "retail", "hospital": "retail"}
+_DESK_OF_INDUSTRY = {"pharmacy": "retail", "hospital": "retail", "wholesale": "retail"}
 
 
 def desk_for_industry(industry: str | None) -> str:

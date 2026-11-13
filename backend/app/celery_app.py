@@ -103,6 +103,10 @@ celery.conf.update(
                 run_every=max(1, int(settings.CELERY_AI_SECURITY_INTERVAL_MINUTES)) * 60.0
             ),
         },
+        "scan-hr-escalations": {
+            "task": "app.tasks.scan_hr_escalations",
+            "schedule": crontab(minute=30, hour=7),
+        },
         "send-weekly-ai-insight-digest": {
             "task": "app.tasks.send_weekly_ai_insight_digest",
             "schedule": crontab(minute=0, hour=7, day_of_week="monday"),

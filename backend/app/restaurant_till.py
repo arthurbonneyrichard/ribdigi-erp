@@ -101,12 +101,26 @@ async def shift_totals(db: AsyncSession, shift: m.RestaurantTillShift) -> dict:
         )
     ).all()
     move_totals = {kind: float(total or 0) for kind, total in moves}
+    # Tips stay in the drawer (cash) or come in with the card / Mobile Money payment; they are not sales.
+    tip_rows = (
+        await db.execute(
+            select(m.RestaurantOrder.payment_method, func.coalesce(func.sum(m.RestaurantOrder.tip_amount), 0))
+            .where(
+                m.RestaurantOrder.tenant_id == shift.tenant_id,
+                m.RestaurantOrder.till_shift_id == shift.id,
+                m.RestaurantOrder.status.in_(TAKEN_STATUSES),
+            )
+            .group_by(m.RestaurantOrder.payment_method)
+        )
+    ).all()
+    tips = {(method or "cash").strip().lower(): float(total or 0) for method, total in tip_rows}
+    cash_tips = _money(tips.get("cash", 0))
     cash_sales = by_method.get("cash", 0.0)
     cash_in = _money(move_totals.get("cash_in", 0))
     cash_out = _money(move_totals.get("cash_out", 0))
     refunds = _money(move_totals.get("refund", 0))
     total_sales = _money(sum(by_method.values()))
-    expected = _money(float(shift.opening_cash or 0) + cash_sales + cash_in - cash_out - refunds)
+    expected = _money(float(shift.opening_cash or 0) + cash_sales + cash_tips + cash_in - cash_out - refunds)
     return {
         "sale_count": sale_count,
         "total_sales": total_sales,
@@ -119,6 +133,8 @@ async def shift_totals(db: AsyncSession, shift: m.RestaurantTillShift) -> dict:
         "cash_in": cash_in,
         "cash_out": cash_out,
         "cash_refunds": refunds,
+        "tips": _money(sum(tips.values())),
+        "cash_tips": cash_tips,
         "expected_cash": expected,
     }
 

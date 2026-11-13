@@ -33,16 +33,30 @@ def _disable_rate_limit(monkeypatch):
 
 @pytest_asyncio.fixture
 async def db_engine():
-    from sqlalchemy.pool import StaticPool
+    import os
 
-    engine = create_async_engine(
-        "sqlite+aiosqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-        future=True,
-    )
-    async with engine.begin() as conn:
-        await conn.run_sync(m.Base.metadata.create_all)
+    from sqlalchemy.pool import NullPool, StaticPool
+
+    pg_url = os.environ.get("TEST_DATABASE_URL", "").strip()
+    if pg_url:
+        # Opt-in: run against a throwaway Postgres database (Postgres catches what SQLite cannot).
+        # The schema is rebuilt for every test, so never point this at a real database.
+        from sqlalchemy import text
+
+        engine = create_async_engine(pg_url, poolclass=NullPool, future=True)
+        async with engine.begin() as conn:
+            await conn.execute(text("DROP SCHEMA public CASCADE"))
+            await conn.execute(text("CREATE SCHEMA public"))
+            await conn.run_sync(m.Base.metadata.create_all)
+    else:
+        engine = create_async_engine(
+            "sqlite+aiosqlite://",
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+            future=True,
+        )
+        async with engine.begin() as conn:
+            await conn.run_sync(m.Base.metadata.create_all)
     from app.schema_compat import clear_column_cache
 
     clear_column_cache()

@@ -11,6 +11,7 @@ staff, GRA and SSNIT sits in its own liability until it is paid. Paying clears t
 from __future__ import annotations
 
 import calendar
+from decimal import Decimal
 from datetime import date, datetime, timedelta
 
 from fastapi import HTTPException
@@ -44,25 +45,86 @@ PAYROLL_ACCOUNTS = [
     ("2190", "SSNIT Payable", "liability"),
     ("2192", "Tier 2 Pension Payable", "liability"),
     ("2195", "Tier 3 Pension Payable", "liability"),
+    ("2187", "Tips Owed to Staff", "liability"),
     ("6200", "Salaries and Wages", "expense"),
     ("6210", "Employer SSNIT", "expense"),
 ]
 
 _JOBS = {
     # Officers run people admin; pay, reviews, claims and confidential cases need a manager.
-    "hrm_officer": frozenset({"people", "leave", "attendance", "recruitment", "training", "contracts", "assets", "notices"}),
+    # Officers are staff too: "self" lets them use their own file (documents, feedback, cover).
+    "hrm_officer": frozenset({"people", "leave", "attendance", "recruitment", "training", "contracts", "assets", "notices", "self"}),
     "hrm_employee": frozenset({"self"}),
 }
+# A desk's manager looks after their staff's records, leave and time, but not pay.
+_DESK_MANAGER_AREAS = frozenset({"people", "leave", "attendance", "training", "contracts", "assets", "notices", "recruitment", "self"})
+for _role in ("store_manager", "restaurant_manager", "hotel_manager", "bakery_manager", "fmcg_manager", "gym_manager"):
+    _JOBS[_role] = _DESK_MANAGER_AREAS
 _WORDS = {
+    "store_manager": "Managers look after staff records, leave and time. Pay needs the company admin.",
+    "restaurant_manager": "Managers look after staff records, leave and time. Pay needs the company admin.",
+    "hotel_manager": "Managers look after staff records, leave and time. Pay needs the company admin.",
+    "bakery_manager": "Managers look after staff records, leave and time. Pay needs the company admin.",
+    "fmcg_manager": "Managers look after staff records, leave and time. Pay needs the company admin.",
+    "gym_manager": "Managers look after staff records, leave and time. Pay needs the company admin.",
     "hrm_officer": "HR officers look after staff records, leave, attendance, hiring, training, contracts and assets. Pay, reviews, claims and cases need a manager.",
     "hrm_employee": "You can see your own leave and payslips. Ask HR for the rest.",
 }
 
 
+# Who runs HR: the HRM desk's manager and each company's admin. HR officers get their list
+# (_JOBS). Everyone else with the hrm grant (a cashier, a waiter, a rep) sees only their own file.
+HR_FULL_ROLES = frozenset({"company_admin", "hrm_manager", "super_admin"})
+
+# The HR each industry gets (one engine, each company's rows on its own desk). "self" is always on.
+ALL_HR_AREAS = frozenset(
+    {"people", "leave", "attendance", "payroll", "recruitment", "reviews", "training",
+     "contracts", "cases", "assets", "claims", "notices", "self"}
+)
+HR_AREAS_BY_INDUSTRY: dict[str, frozenset[str]] = {
+    "hrm": ALL_HR_AREAS,
+    "fmcg": ALL_HR_AREAS,
+    "retail": frozenset({"people", "leave", "attendance", "payroll", "reviews", "claims", "notices", "self"}),
+    "wholesale": frozenset({"people", "leave", "attendance", "payroll", "reviews", "claims", "notices", "self"}),
+    "pharmacy": frozenset({"people", "leave", "attendance", "payroll", "training", "contracts", "reviews", "notices", "self"}),
+    "restaurant": frozenset({"people", "leave", "attendance", "payroll", "reviews", "notices", "self"}),
+    "hotel": frozenset({"people", "leave", "attendance", "payroll", "training", "contracts", "reviews", "notices", "self"}),
+    "bakery": frozenset({"people", "leave", "attendance", "payroll", "notices", "self"}),
+    "gym": frozenset({"people", "leave", "attendance", "payroll", "training", "notices", "self"}),
+}
+
+
+def hr_areas_for(industry: str | None) -> frozenset[str]:
+    from app import packages as packages_svc
+
+    return HR_AREAS_BY_INDUSTRY.get(packages_svc.canonicalize_industry(industry) or "", frozenset({"self"}))
+
+
+def runs_hr(claims: dict) -> bool:
+    """HR manager or company admin. Platform support staff do not see salaries."""
+    return str(claims.get("role") or "") in HR_FULL_ROLES
+
+
+def sees_pay(claims: dict) -> bool:
+    return runs_hr(claims)
+
+
 def job(claims: dict, area: str) -> None:
     role = str(claims.get("role") or "")
-    if role in _JOBS and area not in _JOBS[role]:
-        raise HTTPException(status_code=403, detail={"code": "HRM_ROLE_JOB", "message": _WORDS[role]})
+    from app.rbac import is_platform_role
+
+    # Every request carries the company's industry; only internal calls leave it out.
+    if "industry" in claims and not is_platform_role(role) and area not in hr_areas_for(claims.get("industry")):
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "HRM_AREA_OFF", "message": "This part of HR is not part of your business type's HR."},
+        )
+    if runs_hr(claims):
+        return
+    allowed = _JOBS.get(role, frozenset({"self"}))
+    if area not in allowed:
+        message = _WORDS.get(role, "You can see your own file under My pay and leave. Ask HR for the rest.")
+        raise HTTPException(status_code=403, detail={"code": "HRM_ROLE_JOB", "message": message})
 
 
 def _money(value) -> float:
@@ -149,6 +211,8 @@ def serialize_settings(row: m.HrmSettings) -> dict:
         "clock_needs_site": bool(getattr(row, "clock_needs_site", False)),
         "leave_accrual": getattr(row, "leave_accrual", None) or "upfront",
         "carry_over_days": int(getattr(row, "carry_over_days", 0) or 0),
+        "part_pay_percent": money_json(getattr(row, "part_pay_percent", 80) if getattr(row, "part_pay_percent", None) is not None else 80),
+        "escalate_after_days": int(getattr(row, "escalate_after_days", 3) if getattr(row, "escalate_after_days", None) is not None else 3),
     }
 
 
@@ -179,6 +243,15 @@ def _rates_from_row(row: m.HrmStatutoryRate) -> engine.StatutoryRates:
         insurable_cap=engine.D(row.insurable_cap) if row.insurable_cap is not None else None,
         tier3_relief_percent=engine.D(row.tier3_relief_percent),
         rounding=row.rounding or "half_up",
+        overtime_junior_cap=engine.D(row.overtime_junior_cap) if getattr(row, "overtime_junior_cap", None) is not None else None,
+        overtime_low_rate=engine.D(getattr(row, "overtime_low_rate", 5) if getattr(row, "overtime_low_rate", None) is not None else 5),
+        overtime_high_rate=engine.D(getattr(row, "overtime_high_rate", 10) if getattr(row, "overtime_high_rate", None) is not None else 10),
+        overtime_low_share_percent=engine.D(
+            getattr(row, "overtime_low_share_percent", 50) if getattr(row, "overtime_low_share_percent", None) is not None else 50
+        ),
+        minimum_daily_wage=engine.D(row.minimum_daily_wage) if getattr(row, "minimum_daily_wage", None) is not None else None,
+        bonus_rate=engine.D(row.bonus_rate if getattr(row, "bonus_rate", None) is not None else 5),
+        bonus_cap_percent=engine.D(row.bonus_cap_percent if getattr(row, "bonus_cap_percent", None) is not None else 15),
         rate_id=row.id,
         effective_from=row.effective_from.isoformat() if row.effective_from else None,
     )
@@ -231,6 +304,63 @@ async def list_rates(db: AsyncSession, tenant_id: str) -> list[dict]:
     return [{**serialize_rate(row), "locked": await _rate_in_use(db, tenant_id, row.id)} for row in rows]
 
 
+# Ghana statutory figures as published, for HR to check and add as dated rows (never applied
+# on their own). Checked 14 Nov 2026 against GRA's PAYE page (bands for YA 2026, Act 1178,
+# effective 1 Sep 2026), SSNIT's 2026 maximum insurable earnings notice and the National
+# Tripartite Committee minimum wage. Still to be confirmed by the company's accountant.
+GRA_PAYE_URL = "https://gra.gov.gh/domestic-tax/tax-types/paye/"
+_BANDS_2024 = [
+    {"width": 490, "rate": 0}, {"width": 110, "rate": 5}, {"width": 130, "rate": 10}, {"width": 3166.67, "rate": 17.5},
+    {"width": 16000, "rate": 25}, {"width": 30520, "rate": 30}, {"width": None, "rate": 35},
+]
+_BANDS_SEP_2026 = [
+    {"width": 588, "rate": 0}, {"width": 80, "rate": 5}, {"width": 100, "rate": 10}, {"width": 2900, "rate": 17.5},
+    {"width": 16000, "rate": 25}, {"width": 30332, "rate": 30}, {"width": None, "rate": 35},
+]
+_GH_COMMON = {
+    "employee_percent": 5.5, "employer_percent": 13, "tier2_percent": 5, "tier3_relief_percent": 16.5,
+    "overtime_junior_cap": 1500, "overtime_low_rate": 5, "overtime_high_rate": 10, "overtime_low_share_percent": 50,
+    "bonus_rate": 5, "bonus_cap_percent": 15, "rounding": "half_up",
+}
+SUGGESTED_GHANA_RATES = [
+    {**_GH_COMMON, "effective_from": "2025-01-01", "paye_bands": _BANDS_2024, "insurable_cap": 61000, "minimum_daily_wage": 19.97,
+     "source_note": "GRA monthly bands before Act 1178; SSNIT cap 2025 GHS 61,000; NTC minimum wage 2025 GHS 19.97"},
+    {**_GH_COMMON, "effective_from": "2026-01-01", "paye_bands": _BANDS_2024, "insurable_cap": 69000, "minimum_daily_wage": 21.77,
+     "source_note": "SSNIT cap 2026 GHS 69,000 (from 1 Jan 2026); NTC minimum wage 2026 GHS 21.77"},
+    {**_GH_COMMON, "effective_from": "2026-09-01", "paye_bands": _BANDS_SEP_2026, "insurable_cap": 69000, "minimum_daily_wage": 21.77,
+     "source_note": "GRA PAYE bands YA 2026 (Act 1178) from 1 Sep 2026: first GHS 588 at 0%, top 35% over GHS 50,000"},
+    {**_GH_COMMON, "effective_from": "2027-01-01", "paye_bands": _BANDS_SEP_2026, "insurable_cap": 69000, "minimum_daily_wage": 25.04,
+     "source_note": "NTC minimum wage 2027 GHS 25.04 (announced Nov 2026; confirm). SSNIT 2027 cap not yet announced: check"},
+]
+
+
+def suggested_rates(country: str = "GH") -> dict:
+    if country != "GH":
+        return {"country": country, "rows": [], "note": "No suggested rates for this country."}
+    return {
+        "country": "GH",
+        "checked_on": "2026-11-14",
+        "sources": [
+            GRA_PAYE_URL,
+            "https://www.citinewsroom.com/2026/01/ssnit-raises-maximum-insurable-earnings-to-ghs-69000-for-2026/",
+            "https://cedirates.com/news/ghanas-2026-daily-minimum-wage-set-at-gh2177/",
+            "https://3news.com/news/tripartite-committee-announces-2-year-minimum-wage-deal-gh-25-04-for-2027-gh-28-79-for-2028",
+        ],
+        "note": "Published figures checked on 14 Nov 2026. Check them with your accountant before adding; each becomes a dated row.",
+        "rows": SUGGESTED_GHANA_RATES,
+    }
+
+
+def old_bands_warning(period: str, rates_used: dict | None) -> str | None:
+    """A month from September 2026 still worked out with the pre-Act-1178 bands."""
+    if not rates_used or period < "2026-09":
+        return None
+    bands = rates_used.get("paye_bands") or []
+    if bands and str(bands[0].get("width")) in {"490", "490.0", "490.00"}:
+        return "This month uses the PAYE bands from before 1 September 2026 (first GHS 490). GRA's bands from that date start at GHS 588: add the new dated rates."
+    return None
+
+
 def serialize_rate(row: m.HrmStatutoryRate) -> dict:
     return {
         "id": row.id,
@@ -242,6 +372,13 @@ def serialize_rate(row: m.HrmStatutoryRate) -> dict:
         "tier3_relief_percent": money_json(row.tier3_relief_percent),
         "paye_bands": row.paye_bands,
         "rounding": row.rounding,
+        "overtime_junior_cap": money_json(row.overtime_junior_cap) if row.overtime_junior_cap is not None else None,
+        "overtime_low_rate": money_json(row.overtime_low_rate if row.overtime_low_rate is not None else 5),
+        "overtime_high_rate": money_json(row.overtime_high_rate if row.overtime_high_rate is not None else 10),
+        "overtime_low_share_percent": money_json(row.overtime_low_share_percent if row.overtime_low_share_percent is not None else 50),
+        "minimum_daily_wage": money_json(row.minimum_daily_wage) if row.minimum_daily_wage is not None else None,
+        "bonus_rate": money_json(row.bonus_rate if row.bonus_rate is not None else 5),
+        "bonus_cap_percent": money_json(row.bonus_cap_percent if row.bonus_cap_percent is not None else 15),
         "source_note": row.source_note,
         "created_at": row.created_at.isoformat() if row.created_at else None,
     }
@@ -289,6 +426,13 @@ async def add_rate(db: AsyncSession, tenant_id: str, payload, *, user_id) -> m.H
         tier3_relief_percent=payload.tier3_relief_percent,
         paye_bands=[{"width": (str(b["width"]) if b["width"] is not None else None), "rate": str(b["rate"])} for b in bands],
         rounding=payload.rounding,
+        overtime_junior_cap=getattr(payload, "overtime_junior_cap", None),
+        overtime_low_rate=getattr(payload, "overtime_low_rate", 5),
+        overtime_high_rate=getattr(payload, "overtime_high_rate", 10),
+        overtime_low_share_percent=getattr(payload, "overtime_low_share_percent", 50),
+        minimum_daily_wage=getattr(payload, "minimum_daily_wage", None),
+        bonus_rate=getattr(payload, "bonus_rate", 5),
+        bonus_cap_percent=getattr(payload, "bonus_cap_percent", 15),
         source_note=optional_honest_narrative(payload.source_note, label="source", max_length=255),
         created_by=user_id,
     )
@@ -353,6 +497,11 @@ def serialize_employee(row: m.HrmEmployee, *, pay: bool = True) -> dict:
                 "ghana_card": row.ghana_card,
                 "mobile_money": row.mobile_money,
                 "tier3_percent": money_json(row.tier3_percent or 0),
+                "commission_percent": money_json(getattr(row, "commission_percent", 0) or 0),
+                "pay_frequency": getattr(row, "pay_frequency", None) or "monthly",
+                "non_resident": bool(getattr(row, "non_resident", False)),
+                "ssnit_exempt": bool(getattr(row, "ssnit_exempt", False)),
+                "senior_staff": bool(getattr(row, "senior_staff", False)),
             }
         )
     return data
@@ -392,6 +541,11 @@ async def create_employee(db: AsyncSession, tenant_id: str, payload, *, user_id)
         ghana_card=getattr(payload, "ghana_card", None),
         mobile_money=getattr(payload, "mobile_money", None),
         tier3_percent=getattr(payload, "tier3_percent", 0) or 0,
+        commission_percent=getattr(payload, "commission_percent", 0) or 0,
+        pay_frequency=getattr(payload, "pay_frequency", None) or "monthly",
+        non_resident=bool(getattr(payload, "non_resident", False)),
+        ssnit_exempt=bool(getattr(payload, "ssnit_exempt", False)),
+        senior_staff=bool(getattr(payload, "senior_staff", False)),
         manager_id=await _check_manager(db, tenant_id, getattr(payload, "manager_id", None), None),
         biometric_id=await _check_biometric(db, tenant_id, getattr(payload, "biometric_id", None), None),
     )
@@ -503,7 +657,11 @@ async def _annual_used(db: AsyncSession, tenant_id: str, employee_id: str, year:
             )
         )
     ).scalars().all()
-    return sum(int(r.days or 0) for r in rows if r.starts_on.year == year)
+    from app import hrm_leave_pay
+
+    taken = sum(int(r.days or 0) for r in rows if r.starts_on.year == year)
+    # Days paid out as money count as used.
+    return taken + await hrm_leave_pay.encashed_days(db, employee_id, year)
 
 
 def earned_days(annual: int, hired_on: date | None, year: int, *, accrual: str, upto: date | None = None) -> int:
@@ -602,6 +760,13 @@ async def request_leave(db: AsyncSession, tenant_id: str, *, employee_id: str, p
     )
     db.add(row)
     await db.flush()
+    from app import hrm_notify
+
+    words = f"{employee.full_name} asks for {row.days} day(s) of {row.leave_type} leave from {row.starts_on.isoformat()}."
+    if row.stage != "manager" or not await hrm_notify.to_manager(
+        db, tenant_id, employee, "Leave to decide", words, entity_type="hrm_leave", entity_id=row.id, skip_user=user_id
+    ):
+        await hrm_notify.to_hr(db, tenant_id, "Leave to decide", words, entity_type="hrm_leave", entity_id=row.id, skip_user=user_id)
     return row
 
 
@@ -633,7 +798,10 @@ async def decide_leave(
     if decider and employee.email and (decider.email or "").lower() == employee.email.lower():
         raise HTTPException(status_code=403, detail="Someone else must decide your own leave")
     me = await _user_employee(db, tenant_id, user_id)
-    is_manager = bool(me and employee.manager_id and employee.manager_id == me.id)
+    from app import hrm_delegation
+
+    # The manager, or the colleague covering for them today.
+    is_manager = await hrm_delegation.acts_for_manager(db, me, employee.manager_id)
     stage = getattr(row, "stage", None) or "hr"
     if stage == "manager" and is_manager and approve:
         # The manager agrees; HR has the last word.
@@ -643,6 +811,13 @@ async def decide_leave(
         row.manager_note = optional_honest_narrative(note, label="note", max_length=255)
         await _audit(db, tenant_id, user_id, "hrm_leave_manager_approved", "hrm_leave", row.id, {"days": row.days})
         await db.flush()
+        from app import hrm_notify
+
+        await hrm_notify.to_hr(
+            db, tenant_id, "Leave to decide",
+            f"The manager agreed to {employee.full_name} taking {row.days} day(s) of leave from {row.starts_on.isoformat()}. HR has the last word.",
+            entity_type="hrm_leave", entity_id=row.id, skip_user=user_id,
+        )
         return row
     if not as_hr and not (stage == "manager" and is_manager):
         raise HTTPException(status_code=403, detail="HR decides this request")
@@ -659,12 +834,24 @@ async def decide_leave(
         details["manager_step_skipped_by_hr"] = True
     await _audit(db, tenant_id, user_id, f"hrm_leave_{row.status}", "hrm_leave", row.id, details)
     await db.flush()
+    from app import hrm_notify
+
+    await hrm_notify.to_person(
+        db, tenant_id, employee, "Leave approved" if approve else "Leave turned down",
+        f"Your {row.leave_type} leave from {row.starts_on.isoformat()} to {row.ends_on.isoformat()} was "
+        + ("approved." if approve else f"turned down: {row.decision_note}"),
+        entity_type="hrm_leave", entity_id=row.id, skip_user=user_id,
+    )
     return row
 
 
 async def team_leave(db: AsyncSession, tenant_id: str, manager: m.HrmEmployee) -> list[m.HrmLeaveRequest]:
     """Requests from the people who report to this manager, waiting for their decision."""
-    team = select(m.HrmEmployee.id).where(m.HrmEmployee.tenant_id == tenant_id, m.HrmEmployee.manager_id == manager.id)
+    from app import hrm_delegation
+
+    # Their own team, and the teams of managers they cover for today.
+    managers = [manager.id, *await hrm_delegation.covered_managers(db, manager.id)]
+    team = select(m.HrmEmployee.id).where(m.HrmEmployee.tenant_id == tenant_id, m.HrmEmployee.manager_id.in_(managers))
     return list(
         (
             await db.execute(
@@ -809,9 +996,20 @@ def _work_out(slip: m.HrmPayslip, settings: m.HrmSettings, rates: engine.Statuto
                 unpaid_days=int(slip.unpaid_days or 0),
                 working_days=int(settings.working_days_per_month),
                 tier3_percent=engine.D(slip.tier3_percent),
+                # Approved overtime: taxable, no SSNIT; junior staff may get the separate overtime tax.
+                overtime=engine.D(getattr(slip, "overtime", 0)),
+                bonus_relief_left=(
+                    engine.D(slip.bonus_relief_left) if getattr(slip, "bonus_relief_left", None) is not None else None
+                ),
+                non_resident=bool(getattr(slip, "non_resident", False)),
+                ssnit_exempt=bool(getattr(slip, "ssnit_exempt", False)),
+                senior_staff=bool(getattr(slip, "senior_staff", False)),
                 arrears_basic=engine.D(getattr(slip, "arrears_basic", 0)),
-                # Approved overtime is a taxable earning without SSNIT, like a correction.
-                adjustment=engine.D(getattr(slip, "adjustment", 0)) + engine.D(getattr(slip, "overtime", 0)),
+                # Commission and tips are taxable earnings without SSNIT, like a correction.
+                adjustment=engine.D(getattr(slip, "adjustment", 0))
+                + engine.D(getattr(slip, "commission", 0))
+                + engine.D(getattr(slip, "tips", 0))
+                + engine.D(getattr(slip, "leave_pay", 0)),
             ),
             rates,
         )
@@ -841,6 +1039,10 @@ def _work_out(slip: m.HrmPayslip, settings: m.HrmSettings, rates: engine.Statuto
     slip.tier3 = out.tier3
     slip.tier3_relief = out.tier3_relief
     slip.net = out.net
+    slip.overtime_tax = out.overtime_tax
+    slip.bonus_tax = out.bonus_tax
+    slip.bonus_concessional = out.bonus_concessional
+    slip.warnings = list(out.warnings) or None
     slip.rates_used = rates.snapshot()
 
 
@@ -858,6 +1060,45 @@ def _totals(run: m.HrmPayrollRun, slips: list[m.HrmPayslip]) -> None:
     run.tier2 = sum((engine.D(s.tier2) for s in slips), engine.ZERO)
     run.tier3 = sum((engine.D(s.tier3) for s in slips), engine.ZERO)
     run.loan_deductions = sum((engine.D(getattr(s, "loan_deduction", 0)) for s in slips), engine.ZERO)
+    run.tips = sum((engine.D(getattr(s, "tips", 0)) for s in slips), engine.ZERO)
+
+
+async def _annual_basic(db: AsyncSession, person: m.HrmEmployee, year: int) -> Decimal:
+    """The year's basic salary from the dated salary history, month by month, for the months the
+    person is employed (a part year or a mid-year rise gives the true figure, not basic x 12)."""
+    from app import hrm_pay_changes
+
+    total = engine.ZERO
+    for month in range(1, 13):
+        first = date(year, month, 1)
+        last = date(year, month, calendar.monthrange(year, month)[1])
+        if person.hired_on and person.hired_on > last:
+            continue
+        if person.left_on and person.left_on < first:
+            continue
+        basic, _ = await hrm_pay_changes.salary_for(db, person, first)
+        total += engine.D(basic)
+    return total
+
+
+async def _bonus_relief_left(db: AsyncSession, person: m.HrmEmployee, period: str, rates) -> Decimal:
+    """GRA: bonus up to 15% of annual basic salary in the year is taxed at 5%. What earlier approved
+    payslips this year already used comes off."""
+    employee_id = person.id
+    year = period[:4]
+    used = (
+        await db.execute(
+            select(func.coalesce(func.sum(m.HrmPayslip.bonus_concessional), 0))
+            .join(m.HrmPayrollRun, m.HrmPayrollRun.id == m.HrmPayslip.run_id)
+            .where(
+                m.HrmPayslip.employee_id == employee_id, m.HrmPayrollRun.status != "draft",
+                m.HrmPayrollRun.period >= f"{year}-01", m.HrmPayrollRun.period < period,
+            )
+        )
+    ).scalar_one()
+    annual = await _annual_basic(db, person, int(year))
+    allowance = annual * engine.D(rates.bonus_cap_percent) / 100
+    return max((allowance - engine.D(used)).quantize(Decimal("0.01")), engine.ZERO)
 
 
 async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) -> m.HrmPayrollRun:
@@ -895,6 +1136,18 @@ async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) 
         from app import hrm_time
 
         overtime = await hrm_time.take_overtime(db, person.id, period, run.id)
+        from app import hrm_commission
+
+        commission = await hrm_commission.take(db, person.id, period, run.id)
+        from app import restaurant_tips
+
+        tips = await restaurant_tips.take(db, person.id, period, run.id)
+        from app import hrm_leave_pay
+
+        leave_pay = await hrm_leave_pay.take(db, person.id, period, run.id)
+        from app import hrm_part_pay
+
+        part_paid = await hrm_part_pay.part_paid_this_month(db, person.id, period)
         slip = m.HrmPayslip(
             tenant_id=tenant_id,
             run_id=run.id,
@@ -904,6 +1157,14 @@ async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) 
             arrears_basic=arrears,
             adjustment=correction,
             overtime=overtime,
+            commission=commission,
+            tips=tips,
+            leave_pay=leave_pay,
+            part_paid=part_paid,
+            non_resident=bool(getattr(person, "non_resident", False)),
+            bonus_relief_left=await _bonus_relief_left(db, person, period, rates),
+            ssnit_exempt=bool(getattr(person, "ssnit_exempt", False)),
+            senior_staff=bool(getattr(person, "senior_staff", False)),
             bonus=0,
             other_deductions=0,
             tier3_percent=person.tier3_percent or 0,
@@ -961,8 +1222,20 @@ async def delete_run(db: AsyncSession, tenant_id: str, run_id: str, *, user_id) 
     from app import hrm_time
 
     await hrm_time.release_overtime(db, run.id)
+    from app import hrm_commission
+
+    await hrm_commission.release(db, run.id)
+    from app import restaurant_tips
+
+    await restaurant_tips.release(db, run.id)
+    from app import hrm_leave_pay
+
+    await hrm_leave_pay.release(db, run.id)
     for slip in await _slips(db, run.id):
         await db.delete(slip)
+    # Payslips must be gone before the run: nothing tells the session their order, and
+    # Postgres refuses to drop a run its payslips still point to.
+    await db.flush()
     await db.delete(run)
     await _audit(db, tenant_id, user_id, "hrm_payroll_deleted", "hrm_payroll", run_id, {"period": run.period})
     await db.flush()
@@ -980,13 +1253,25 @@ async def approve_run(db: AsyncSession, tenant_id: str, run_id: str, *, user_id)
             detail={"code": "PAYROLL_SECOND_PERSON", "message": "Someone other than the person who drew up this payroll must approve it."},
         )
     slips = await _slips(db, run.id)
+    under = [s for s in slips if "below_minimum_wage" in (s.warnings or [])]
+    if under:
+        names = []
+        for s in under:
+            person = await db.get(m.HrmEmployee, s.employee_id)
+            names.append(person.full_name if person else s.employee_id)
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "BELOW_MINIMUM_WAGE", "message": "Pay is under the daily minimum wage for: " + ", ".join(names)},
+        )
     _totals(run, slips)
     description = f"Payroll {run.period}"
     other = _money(run.other_deductions)
     run.journal_entry_id = await _post(
         db, tenant_id, user_id=user_id, description=description,
         lines=[
-            {"account_code": "6200", "debit": _money(run.gross), "credit": 0, "description": description},
+            # Tips were already set aside in 2187 when the guests paid; they are not a wage cost.
+            {"account_code": "6200", "debit": _money(engine.D(run.gross) - engine.D(run.tips)), "credit": 0, "description": description},
+            {"account_code": "2187", "debit": _money(run.tips), "credit": 0, "description": description},
             {"account_code": "6210", "debit": _money(run.ssnit_employer), "credit": 0, "description": description},
             {"account_code": "2170", "debit": 0, "credit": _money(run.net), "description": description},
             {"account_code": "2175", "debit": 0, "credit": other, "description": description},
@@ -1011,11 +1296,27 @@ async def approve_run(db: AsyncSession, tenant_id: str, run_id: str, *, user_id)
     from app import hrm_time
 
     await hrm_time.settle_overtime(db, run.id)
+    from app import hrm_commission
+
+    await hrm_commission.settle(db, run.id)
+    from app import restaurant_tips
+
+    await restaurant_tips.settle(db, run.id)
+    from app import hrm_leave_pay
+
+    await hrm_leave_pay.settle(db, run.id)
     run.status = "approved"
     run.approved_by = user_id
     run.approved_at = datetime.utcnow()
     await _audit(db, tenant_id, user_id, "hrm_payroll_approved", "hrm_payroll", run.id, {"period": run.period, "net": _money(run.net)})
     await db.flush()
+    from app import hrm_notify
+
+    for slip in slips:
+        await hrm_notify.to_person(
+            db, tenant_id, await db.get(m.HrmEmployee, slip.employee_id), "Payslip ready",
+            f"Your payslip for {run.period} is ready under My HR.", entity_type="hrm_payslip", entity_id=slip.id,
+        )
     return run
 
 
@@ -1093,6 +1394,19 @@ def _slip_dict(slip: m.HrmPayslip, employee: m.HrmEmployee | None) -> dict:
         "arrears_basic": _money(getattr(slip, "arrears_basic", 0)),
         "adjustment": _money(getattr(slip, "adjustment", 0)),
         "overtime": _money(getattr(slip, "overtime", 0)),
+        "commission": _money(getattr(slip, "commission", 0)),
+        "tips": _money(getattr(slip, "tips", 0)),
+        "leave_pay": _money(getattr(slip, "leave_pay", 0)),
+        # Part-payments come off first; the rest of loan_deduction is loan / advance repayment.
+        "part_paid": _money(min(engine.D(getattr(slip, "part_paid", 0)), engine.D(getattr(slip, "loan_deduction", 0)))),
+        "overtime_tax": _money(getattr(slip, "overtime_tax", 0)),
+        "bonus_tax": _money(getattr(slip, "bonus_tax", 0)),
+        "bonus_concessional": _money(getattr(slip, "bonus_concessional", 0)),
+        "non_resident": bool(getattr(slip, "non_resident", False)),
+        "ssnit_exempt": bool(getattr(slip, "ssnit_exempt", False)),
+        "senior_staff": bool(getattr(slip, "senior_staff", False)),
+        "emailed_at": slip.emailed_at.isoformat() if getattr(slip, "emailed_at", None) else None,
+        "warnings": list(getattr(slip, "warnings", None) or []),
         "rates_used": slip.rates_used,
         "note": slip.note,
     }
@@ -1121,6 +1435,8 @@ async def present_run(db: AsyncSession, run: m.HrmPayrollRun, *, slips: bool = T
         "loan_deductions": _money(getattr(run, "loan_deductions", 0)),
         "statutory_rate_id": run.statutory_rate_id,
     }
+    first = (await db.execute(select(m.HrmPayslip.rates_used).where(m.HrmPayslip.run_id == run.id).limit(1))).scalar_one_or_none()
+    data["warnings"] = [w for w in [old_bands_warning(run.period, first)] if w]
     if slips:
         rows = await _slips(db, run.id)
         out = [_slip_dict(s, await db.get(m.HrmEmployee, s.employee_id)) for s in rows]

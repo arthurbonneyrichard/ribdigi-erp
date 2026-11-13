@@ -57,7 +57,7 @@ PosSalePaymentMethod = Annotated[
     BeforeValidator(coerce_payment_method_value),
 ]
 IndustryValue = Annotated[
-    Literal["retail", "hotel", "restaurant", "fmcg", "bakery", "gym", "hrm"],
+    Literal["retail", "wholesale", "hotel", "restaurant", "fmcg", "bakery", "gym", "hrm"],
     BeforeValidator(coerce_industry_value),
 ]
 TaxFilingPeriodValue = Annotated[
@@ -303,6 +303,7 @@ NotificationCategoryValue = Annotated[
         "server_health",
         "staff_account",
         "admin_password_reset",
+        "hr",
     ],
     BeforeValidator(coerce_package_code_value),
 ]
@@ -4302,6 +4303,8 @@ JobNameValue = Annotated[
         "send_weekly_ai_insight_digest",
         "expire_ecommerce_reservations",
         "sync_ecommerce_connectors",
+        "scan_hr_escalations",
+        "sample_server_health",
     ],
     BeforeValidator(coerce_package_code_value),
 ]
@@ -7980,6 +7983,7 @@ class NotificationPreferencesMap(BaseModel):
     server_health: NotificationChannelPrefs | None = None
     staff_account: NotificationChannelPrefs | None = None
     admin_password_reset: NotificationChannelPrefs | None = None
+    hr: NotificationChannelPrefs | None = None
 
 
 class NotificationPreferencesUpdate(BaseModel):

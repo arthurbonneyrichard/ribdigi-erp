@@ -192,3 +192,8 @@
 .main .fmcg-sell .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
 .main .fmcg-sell .kpi{font-size:26px;font-weight:800;letter-spacing:-.02em;margin:4px 0}
 .main .fmcg-sell .muted{color:var(--fs-muted)}
+
+.main .fmcg-sell .fs-flag{display:inline-block;margin:0 6px 4px 0;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;background:var(--fs-bad-tint);color:var(--fs-bad)}
+.main .fmcg-sell .fs-pick{display:flex;flex-wrap:wrap;gap:8px 18px;margin:14px 0 0;padding:12px;border:1px solid var(--fs-line);border-radius:12px}
+.main .fmcg-sell .fs-pick legend{font-weight:700;padding:0 6px}
+.main .fmcg-sell .fs-pick label{display:flex;align-items:center;gap:6px;min-height:36px}

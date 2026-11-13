@@ -189,6 +189,7 @@ export const RESTAURANT_NAV_ITEMS: NavItem[] = [
   ['Bills', '/restaurant/bills', 'restaurant'],
   ['Guests', '/restaurant/guests', 'restaurant'],
   ['End of day', '/restaurant/day-close', 'restaurant'],
+  ['Tips', '/restaurant/tips', 'restaurant'],
   ['Pay suppliers', '/restaurant/payables', 'credit'],
   ['Restaurant till', '/restaurant/till', 'restaurant'],
   ['Ingredients', '/restaurant/ingredients', 'inventory'],
@@ -235,6 +236,7 @@ export const RESTAURANT_NAV_GROUPS: NavGroup[] = [
       ['Bills', '/restaurant/bills', 'restaurant'],
       ['Guests', '/restaurant/guests', 'restaurant'],
       ['End of day', '/restaurant/day-close', 'restaurant'],
+      ['Tips', '/restaurant/tips', 'restaurant'],
     ],
   },
   {
@@ -369,6 +371,7 @@ export const FMCG_NAV_GROUPS: NavGroup[] = [
     label: 'Selling',
     items: [
       ['Outlets', '/fmcg?tab=outlets', 'fmcg'],
+      ['Visits', '/fmcg?tab=visits', 'fmcg'],
       ['Orders', '/fmcg?tab=orders', 'fmcg'],
       ['Deliveries', '/fmcg?tab=deliveries', 'fmcg'],
       ['Collections', '/fmcg?tab=collections', 'fmcg'],
@@ -379,6 +382,7 @@ export const FMCG_NAV_GROUPS: NavGroup[] = [
     label: 'Trade',
     items: [
       ['Routes', '/fmcg?tab=routes', 'fmcg'],
+      ['Territories', '/fmcg?tab=territories', 'fmcg'],
       ['Trade schemes', '/fmcg?tab=schemes', 'fmcg'],
       ['Pack convert', '/fmcg?tab=packs', 'fmcg'],
     ],
@@ -498,6 +502,67 @@ export const FMCG_NAV_ITEMS: NavItem[] = deskItems(FMCG_NAV_GROUPS, 'fmcg');
 export const GYM_NAV_ITEMS: NavItem[] = deskItems(GYM_NAV_GROUPS, 'gym');
 export const HRM_NAV_ITEMS: NavItem[] = deskItems(HRM_NAV_GROUPS, 'hrm');
 
+/** HRM screen (tab) -> HR area. Mirrors backend hrm.HR_AREAS_BY_INDUSTRY and hrm.job. */
+export const HR_TAB_AREA: Record<string, string> = {
+  today: 'people',
+  people: 'people',
+  leave: 'leave',
+  attendance: 'attendance',
+  clock: 'attendance',
+  shifts: 'attendance',
+  devices: 'attendance',
+  payroll: 'payroll',
+  loans: 'payroll',
+  reports: 'payroll',
+  settings: 'payroll',
+  hiring: 'recruitment',
+  reviews: 'reviews',
+  training: 'training',
+  contracts: 'contracts',
+  cases: 'cases',
+  kit: 'assets',
+  claims: 'claims',
+  notices: 'notices',
+  me: 'self',
+};
+
+const ALL_HR_AREAS = ['people', 'leave', 'attendance', 'payroll', 'recruitment', 'reviews', 'training', 'contracts', 'cases', 'assets', 'claims', 'notices', 'self'];
+
+/** The HR each business type gets, one engine for all (backend hrm.HR_AREAS_BY_INDUSTRY). */
+export const HR_AREAS_BY_INDUSTRY: Record<string, string[]> = {
+  hrm: ALL_HR_AREAS,
+  fmcg: ALL_HR_AREAS,
+  retail: ['people', 'leave', 'attendance', 'payroll', 'reviews', 'claims', 'notices', 'self'],
+  wholesale: ['people', 'leave', 'attendance', 'payroll', 'reviews', 'claims', 'notices', 'self'],
+  pharmacy: ['people', 'leave', 'attendance', 'payroll', 'training', 'contracts', 'reviews', 'notices', 'self'],
+  restaurant: ['people', 'leave', 'attendance', 'payroll', 'reviews', 'notices', 'self'],
+  hotel: ['people', 'leave', 'attendance', 'payroll', 'training', 'contracts', 'reviews', 'notices', 'self'],
+  bakery: ['people', 'leave', 'attendance', 'payroll', 'notices', 'self'],
+  gym: ['people', 'leave', 'attendance', 'payroll', 'training', 'notices', 'self'],
+};
+
+/** Whether an HRM screen is part of this business type's HR. */
+export function hrTabAllowed(tab: string | null | undefined, industry: string | null | undefined): boolean {
+  const area = HR_TAB_AREA[(tab || 'today').trim()] || '';
+  const areas = HR_AREAS_BY_INDUSTRY[normalizeIndustry(industry) || ''] || ['self'];
+  return Boolean(area) && areas.includes(area);
+}
+
+function hrTabOf(href: string): string {
+  const query = href.split('?')[1] || '';
+  return new URLSearchParams(query).get('tab') || 'today';
+}
+
+/** The HR group added to every other desk's sidebar: only that business type's HR screens. */
+export function hrNavGroupFor(industry: string | null | undefined): NavGroup | null {
+  const ind = normalizeIndustry(industry);
+  if (!ind || ind === 'hrm') return null;
+  const items = HRM_NAV_ITEMS.filter(([, href]) => hrTabAllowed(hrTabOf(href), ind)).map(
+    ([label, href, mod]) => [label === 'Dashboard' ? 'HR dashboard' : label, href, mod] as NavItem,
+  );
+  return items.length ? { id: 'hr', label: 'HR', items } : null;
+}
+
 /** Desks with a sidebar of their own: only their work and their account settings. */
 const DESK_NAV_GROUPS: Record<string, NavGroup[]> = {
   bakery: BAKERY_NAV_GROUPS,
@@ -586,7 +651,10 @@ export function industryNavHrefOk(href: string, industry: string | null | undefi
   if (path === '/bakery' || path.startsWith('/bakery/')) return ind === 'bakery';
   if (path === '/fmcg' || path.startsWith('/fmcg/')) return ind === 'fmcg';
   if (path === '/gym' || path.startsWith('/gym/')) return ind === 'gym';
-  if (path === '/hrm' || path.startsWith('/hrm/')) return ind === 'hrm';
+  if (path === '/hrm' || path.startsWith('/hrm/')) {
+    // One HR engine for every business type; each gets its own set of HR screens.
+    return ind === 'hrm' || hrTabAllowed(hrTabOf(href), ind);
+  }
   if (path === '/gift-cards') return ind === 'retail';
   if (path === '/ecommerce' || path.startsWith('/ecommerce/')) {
     return ind === 'retail' || ind === 'pharmacy';
@@ -594,13 +662,13 @@ export function industryNavHrefOk(href: string, industry: string | null | undefi
   // Restaurant rings on its own till (/restaurant/till); the retail POS stays off its menus.
   if (path === '/pos') {
     // Restaurant and hotel ring on their own tills (/restaurant/till, /hotel/shop).
-    return ind === 'retail';
+    return ind === 'retail' || ind === 'wholesale';
   }
   // A restaurant keeps its bills and guests on its own screens (/restaurant/bills, /restaurant/guests).
   // Restaurant and hotel keep bills and guests on their own screens
   // (/restaurant/bills, /restaurant/guests; /hotel/invoices, Guests and CRM).
   if (path === '/sales' || path === '/customers') {
-    return ind === 'retail' || ind === 'pharmacy';
+    return ind === 'retail' || ind === 'pharmacy' || ind === 'wholesale';
   }
   return true;
 }
@@ -643,7 +711,7 @@ export const PLATFORM_CONSOLE_MODULES = new Set([
 /** Existing platform destinations. Jobs uses platform:read; run stays owner-only on the page. */
 export const PLATFORM_NAV_ITEMS: NavItem[] = [
   ['Platform', '/platform', 'platform'],
-  ['Tenant', '/platform/tenants', 'platform_tenants'],
+  ['Tenants', '/platform/tenants', 'platform_tenants'],
   ['Billing', '/platform/billing', 'platform'],
   ['Staff', '/platform/staff', 'platform_staff'],
   ['Reports', '/platform/reports', 'platform_reports'],
@@ -828,22 +896,36 @@ export function groupedTenantNav(
           ),
         }));
 
+  const hrGroup = hrNavGroupFor(ind);
+  const withHr = (list: NavGroup[]): NavGroup[] => {
+    if (!hrGroup) return list;
+    const items = hrGroup.items.filter(([, href]) => hrefVisible(href));
+    if (!items.length) return list;
+    // HR sits just above the account / settings groups at the bottom.
+    const at = Math.max(list.length - 1, 0);
+    return [...list.slice(0, at), { ...hrGroup, items }, ...list.slice(at)];
+  };
+
   if (ind && DESK_NAV_GROUPS[ind]) {
     // Bakery, FMCG, gym and HRM see only their own work and account settings: no retail menus.
-    return DESK_NAV_GROUPS[ind].map((group) => ({
-      ...group,
-      items: group.items.filter(([, href]) => hrefVisible(href)),
-    })).filter((group) => group.items.length > 0);
+    return withHr(
+      DESK_NAV_GROUPS[ind].map((group) => ({
+        ...group,
+        items: group.items.filter(([, href]) => hrefVisible(href)),
+      })).filter((group) => group.items.length > 0),
+    );
   }
 
   if (ind === 'restaurant') {
-    return RESTAURANT_NAV_GROUPS.map((group) => ({
-      ...group,
-      items: group.items.filter(([, href]) => hrefVisible(href)),
-    })).filter((group) => group.items.length > 0);
+    return withHr(
+      RESTAURANT_NAV_GROUPS.map((group) => ({
+        ...group,
+        items: group.items.filter(([, href]) => hrefVisible(href)),
+      })).filter((group) => group.items.length > 0),
+    );
   }
 
-  if (ind !== 'hotel') return pointed;
+  if (ind !== 'hotel') return withHr(pointed);
 
   const hotelItems = HOTEL_NAV_ITEMS.filter(([, href, module]) => {
     if (module === 'hotel' && !industryAllowsModule(ind, 'hotel')) return false;
@@ -871,7 +953,7 @@ export function groupedTenantNav(
   }).filter((group) => group.items.length > 0);
   if (!hotelGroups.length) return mapped;
 
-  return [...hotelGroups, ...pointed];
+  return withHr([...hotelGroups, ...pointed]);
 }
 
 /** Cashier sidebar: Sales, POS (or the restaurant till at a restaurant), and Help & Support.
@@ -881,13 +963,13 @@ export const CASHIER_NAV_MODULES: string[] = ['sales', 'pos', 'restaurant', 'sup
 /** Gift cards share the POS module. Cashiers stay on the till; other roles keep the page. */
 /** Restaurant staff see only their job's screens (the server enforces the same jobs). */
 export const FMCG_ROLE_HREFS: Record<string, string[]> = {
-  fmcg_rep: ['/fmcg', '/fmcg?tab=outlets', '/fmcg?tab=orders', '/fmcg?tab=collections', '/notifications', '/security', '/support'],
-  fmcg_driver: ['/fmcg', '/fmcg?tab=orders', '/fmcg?tab=collections', '/fmcg?tab=deliveries', '/notifications', '/security', '/support'],
+  fmcg_rep: ['/hrm?tab=me', '/fmcg', '/fmcg?tab=outlets', '/fmcg?tab=visits', '/fmcg?tab=orders', '/fmcg?tab=collections', '/notifications', '/security', '/support'],
+  fmcg_driver: ['/hrm?tab=me', '/fmcg', '/fmcg?tab=orders', '/fmcg?tab=collections', '/fmcg?tab=deliveries', '/notifications', '/security', '/support'],
 };
 
 export const GYM_ROLE_HREFS: Record<string, string[]> = {
-  gym_frontdesk: ['/gym', '/gym?tab=door', '/gym?tab=members', '/gym?tab=classes', '/notifications', '/security', '/support'],
-  gym_trainer: ['/gym', '/gym?tab=door', '/gym?tab=classes', '/notifications', '/security', '/support'],
+  gym_frontdesk: ['/hrm?tab=me', '/gym', '/gym?tab=door', '/gym?tab=members', '/gym?tab=classes', '/notifications', '/security', '/support'],
+  gym_trainer: ['/hrm?tab=me', '/gym', '/gym?tab=door', '/gym?tab=classes', '/notifications', '/security', '/support'],
 };
 
 export const HRM_ROLE_HREFS: Record<string, string[]> = {
@@ -900,14 +982,14 @@ export const HRM_ROLE_HREFS: Record<string, string[]> = {
 };
 
 export const BAKERY_ROLE_HREFS: Record<string, string[]> = {
-  bakery_baker: ['/bakery', '/bakery?tab=baking', '/bakery?tab=waste', '/bakery?tab=orders', '/notifications', '/security', '/support'],
-  bakery_cashier: ['/bakery', '/bakery?tab=counter', '/bakery?tab=orders', '/bakery?tab=deliveries', '/bakery?tab=waste', '/notifications', '/security', '/support'],
-  bakery_driver: ['/bakery', '/bakery?tab=deliveries', '/bakery?tab=counter', '/notifications', '/security', '/support'],
+  bakery_baker: ['/hrm?tab=me', '/bakery', '/bakery?tab=baking', '/bakery?tab=waste', '/bakery?tab=orders', '/notifications', '/security', '/support'],
+  bakery_cashier: ['/hrm?tab=me', '/bakery', '/bakery?tab=counter', '/bakery?tab=orders', '/bakery?tab=deliveries', '/bakery?tab=waste', '/notifications', '/security', '/support'],
+  bakery_driver: ['/hrm?tab=me', '/bakery', '/bakery?tab=deliveries', '/bakery?tab=counter', '/notifications', '/security', '/support'],
 };
 
 export const RESTAURANT_ROLE_HREFS: Record<string, string[]> = {
-  restaurant_waiter: ['/restaurant/till', '/restaurant/orders', '/restaurant?tab=tables', '/restaurant?tab=kitchen', '/restaurant/help', '/notifications', '/security'],
-  restaurant_cashier: [
+  restaurant_waiter: ['/hrm?tab=me', '/restaurant/tips', '/restaurant/till', '/restaurant/orders', '/restaurant?tab=tables', '/restaurant?tab=kitchen', '/restaurant/help', '/notifications', '/security'],
+  restaurant_cashier: ['/hrm?tab=me', '/restaurant/tips',
     '/restaurant/till',
     '/restaurant/orders',
     '/restaurant/bills',
@@ -919,7 +1001,7 @@ export const RESTAURANT_ROLE_HREFS: Record<string, string[]> = {
     '/notifications',
     '/security',
   ],
-  restaurant_kitchen: ['/restaurant?tab=kitchen', '/restaurant?tab=waste', '/restaurant/ingredients?tab=menu', '/restaurant/help', '/notifications', '/security'],
+  restaurant_kitchen: ['/hrm?tab=me', '/restaurant/tips', '/restaurant?tab=kitchen', '/restaurant?tab=waste', '/restaurant/ingredients?tab=menu', '/restaurant/help', '/notifications', '/security'],
 };
 
 const HOTEL_STAFF_LINKS = ['/notifications', '/security', '/support'];
@@ -945,8 +1027,8 @@ const HOTEL_BILLING_HREFS = ['/hotel?tab=billing', '/hotel/invoices', '/hotel/sh
 export const HOTEL_ROLE_HREFS: Record<string, string[]> = {
   hotel_housekeeping: HOTEL_ROOM_CARE_HREFS,
   hotel_maintenance: HOTEL_ROOM_CARE_HREFS,
-  hotel_reservations: [...HOTEL_BOOKING_HREFS, '/hotel?tab=rooms', ...HOTEL_STAFF_LINKS],
-  hotel_front_desk: [
+  hotel_reservations: ['/hrm?tab=me', ...HOTEL_BOOKING_HREFS, '/hotel?tab=rooms', ...HOTEL_STAFF_LINKS],
+  hotel_front_desk: ['/hrm?tab=me', 
     ...HOTEL_BOOKING_HREFS,
     ...HOTEL_BILLING_HREFS,
     '/hotel?tab=rooms',
@@ -959,7 +1041,7 @@ export const HOTEL_ROLE_HREFS: Record<string, string[]> = {
     '/printers',
     ...HOTEL_STAFF_LINKS,
   ],
-  hotel_cashier: [
+  hotel_cashier: ['/hrm?tab=me', 
     '/hotel',
     '/hotel?tab=front-desk',
     '/hotel?tab=cashier#night-audit',

@@ -136,6 +136,8 @@ function RestaurantTill() {
   const [paying, setPaying] = useState<Row | null>(null);
   const [method, setMethod] = useState<Method>('cash');
   const [tendered, setTendered] = useState('');
+  // Tip on top of the bill: held for staff, never sales. Online only.
+  const [tip, setTip] = useState('');
   const [done, setDone] = useState<{
     number: string;
     total: number;
@@ -529,6 +531,7 @@ function RestaurantTill() {
     setError('');
     setMethod('cash');
     setTendered('');
+    setTip('');
     setPaying({
       offline: true,
       offline_ref: ref,
@@ -553,6 +556,7 @@ function RestaurantTill() {
     if (bill) {
       setMethod('cash');
       setTendered('');
+      setTip('');
       setPaying(bill);
       return;
     }
@@ -566,6 +570,7 @@ function RestaurantTill() {
       setDraft([]);
       setMethod('cash');
       setTendered('');
+      setTip('');
       setPaying(fresh);
     } catch (err) {
       if (isLinkDown(err)) {
@@ -581,10 +586,11 @@ function RestaurantTill() {
 
   async function takePayment() {
     if (!paying) return;
+    const tipAmount = paying.offline ? 0 : Math.max(0, Math.round(Number(tip || 0) * 100) / 100);
     const total = Number(paying.total_amount || 0);
     const cash = Number(tendered || 0);
-    if (method === 'cash' && tendered && cash < total) {
-      setError('Cash received is less than the bill.');
+    if (method === 'cash' && tendered && cash < total + tipAmount) {
+      setError(tipAmount ? 'Cash received is less than the bill and the tip.' : 'Cash received is less than the bill.');
       return;
     }
     if (paying.offline) {
@@ -633,14 +639,17 @@ function RestaurantTill() {
         method: 'PATCH',
         body: JSON.stringify({ payment_method: method }),
       });
-      await api(`/restaurant/orders/${paying.id}/complete`, { method: 'POST' });
+      await api(`/restaurant/orders/${paying.id}/complete`, {
+        method: 'POST',
+        body: JSON.stringify(tipAmount ? { tip: tipAmount } : {}),
+      });
       void api('/restaurant/till/shift')
         .then((res) => setShift(res?.data || null))
         .catch(() => undefined);
       setDone({
         number: paying.order_number,
         total,
-        change: method === 'cash' && tendered ? Math.max(0, cash - total) : 0,
+        change: method === 'cash' && tendered ? Math.max(0, cash - total - tipAmount) : 0,
         method,
       });
       setPaying(null);
@@ -1148,6 +1157,23 @@ function RestaurantTill() {
                 </button>
               ))}
             </div>
+            {!paying.offline ? (
+              <div className="rtill-cash">
+                <label>
+                  <span>Tip (optional)</span>
+                  <input
+                    aria-label="Tip"
+                    inputMode="decimal"
+                    value={tip}
+                    placeholder="0"
+                    onChange={(e) => setTip(e.target.value.replace(/[^0-9.]/g, ''))}
+                  />
+                </label>
+                {Number(tip || 0) > 0 ? (
+                  <p className="rtill-tax-note">The tip goes to staff, not into sales. Guest pays {money(Number(paying.total_amount || 0) + Number(tip || 0))}.</p>
+                ) : null}
+              </div>
+            ) : null}
             {method === 'cash' ? (
               <div className="rtill-cash">
                 <label>
@@ -1167,9 +1193,9 @@ function RestaurantTill() {
                     </button>
                   ))}
                 </div>
-                {tendered && Number(tendered) >= Number(paying.total_amount || 0) ? (
+                {tendered && Number(tendered) >= Number(paying.total_amount || 0) + Number(tip || 0) ? (
                   <div className="rtill-change">
-                    Change <strong>{money(Number(tendered) - Number(paying.total_amount || 0))}</strong>
+                    Change <strong>{money(Number(tendered) - Number(paying.total_amount || 0) - Number(tip || 0))}</strong>
                   </div>
                 ) : null}
               </div>
@@ -1193,7 +1219,7 @@ function RestaurantTill() {
               disabled={busy}
               onClick={() => void takePayment()}
             >
-              {busy ? 'Saving…' : `Paid ${money(paying.total_amount)}`}
+              {busy ? 'Saving…' : `Paid ${money(Number(paying.total_amount || 0) + (paying.offline ? 0 : Number(tip || 0)))}`}
             </button>
           </div>
         </div>

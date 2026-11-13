@@ -60,6 +60,8 @@
 .main .hrm .hr-spread{justify-content:space-between;width:100%}
 .main .hrm .hr-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .main .hrm .hr-muted{color:var(--hr-muted)}
+.main .hrm .hr-bad{color:var(--hr-bad);font-weight:700}
+.main .hrm .hr-ok{color:var(--hr-deep);font-weight:700}
 .main .hrm .hr-small{font-size:13px;margin:6px 0}
 .main .hrm .hr-big{font-size:26px;font-weight:800;margin:4px 0;letter-spacing:-.02em}
 .main .hrm .hr-span2{grid-column:span 2}
@@ -98,8 +100,11 @@
 .main .hrm .hr-banner{margin:0;padding:12px 16px;border-radius:14px;font-weight:700;background:var(--hr-tint);border:1px solid var(--hr-brand);color:var(--hr-ink)}
 .main .hrm .hr-banner.bad{background:var(--hr-bad-tint);border-color:var(--hr-bad);color:var(--hr-bad)}
 .main .hrm .hr-veil{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,26,14,.5);backdrop-filter:blur(3px)}
-.main .hrm .hr-dialog{width:min(460px,100%);display:flex;flex-direction:column;gap:14px;padding:24px;border-radius:22px;background:var(--hr-panel);border:1px solid var(--hr-line);box-shadow:0 30px 60px -20px rgba(0,26,14,.45)}
+.main .hrm .hr-dialog{width:min(460px,100%);max-height:calc(100vh - 32px);overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:14px;padding:24px;border-radius:22px;background:var(--hr-panel);border:1px solid var(--hr-line);box-shadow:0 30px 60px -20px rgba(0,26,14,.45)}
 .main .hrm .hr-dialog h2{font-size:20px}
+.main .hrm .hr-dialog.wide{width:min(720px,100%)}
+.main .hrm .hr-dialog .hr-dialog-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.main .hrm .hr-dialog > .hr-row:last-child{position:sticky;bottom:-24px;margin:0 -24px -24px;padding:14px 24px;background:var(--hr-panel);border-top:1px solid var(--hr-line)}
 .main .hrm .hr-dialog p{margin:0}
 .main .hrm .hr-line{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--hr-line)}
 .main .hrm .hr-line:last-child{border-bottom:0}
@@ -186,3 +191,7 @@
 .main .hrm .hr-qr img{width:220px;height:220px;image-rendering:pixelated}
 .main .hrm .hr-qr-code{font:700 28px/1 ui-monospace,monospace;letter-spacing:.2em}
 .main .hrm fieldset.hr-wide{display:flex;flex-wrap:wrap;gap:4px 14px;border:0;padding:0;margin:0}
+.main .hrm .hr-org,.main .hrm .hr-org ul{list-style:none;margin:0;padding-left:22px;border-left:2px solid var(--hr-tint)}
+.main .hrm .hr-org{padding-left:0;border-left:0}
+.main .hrm .hr-org li{margin:8px 0}
+.main .hrm .hr-org-card{display:inline-flex;flex-direction:column;gap:2px;padding:8px 12px;border:1px solid var(--hr-tint);border-radius:12px}

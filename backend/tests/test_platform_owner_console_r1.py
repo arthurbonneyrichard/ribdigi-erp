@@ -54,7 +54,7 @@ def test_platform_console_ui_keeps_working_controls():
     assert "Retail, Hotel, and Restaurant" in head
     for removed in ("fmcg", "hospital", "pharmacy", "wholesale"):
         assert removed not in head
-    assert "['Tenant', '/platform/tenants', 'platform_tenants']" in nav
+    assert "['Tenants', '/platform/tenants', 'platform_tenants']" in nav
     platform_nav = nav.split("export const PLATFORM_NAV_ITEMS", 1)[1].split("const PLATFORM_SUPPORT_NAV_ROLES", 1)[0]
     assert "['Users', '/users', 'users']" not in platform_nav
     assert "platformNavItemsForRole" in shell

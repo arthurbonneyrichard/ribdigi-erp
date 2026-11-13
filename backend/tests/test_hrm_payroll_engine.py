@@ -116,3 +116,60 @@ def test_arrears_attract_ssnit_and_corrections_do_not():
     assert out.taxable == Decimal("1234.00")
     with pytest.raises(PayrollError):
         compute_payslip(PayslipInput(basic=Decimal("100"), adjustment=Decimal("-500")), rates())
+
+
+def test_junior_overtime_is_taxed_on_its_own():
+    # Basic 1,200 (under a 1,500 cap), overtime 800. Low part = 50% of 1,200 = 600 at 5% = 30;
+    # the other 200 at 10% = 20. Overtime tax 50, outside the PAYE bands.
+    junior = rates(overtime_junior_cap=Decimal("1500"))
+    out = compute_payslip(PayslipInput(basic=Decimal("1200"), overtime=Decimal("800")), junior)
+    assert out.overtime_tax == Decimal("50.00")
+    assert out.taxable == Decimal("1134.00")  # 1,200 - 66 SSNIT; overtime left out
+    plain = compute_payslip(PayslipInput(basic=Decimal("1200")), junior)
+    assert out.paye == plain.paye + Decimal("50.00")
+    assert out.gross == Decimal("2000")
+
+
+def test_overtime_is_ordinary_pay_without_the_rule_or_above_the_cap():
+    off = compute_payslip(PayslipInput(basic=Decimal("1200"), overtime=Decimal("800")), rates())
+    assert off.overtime_tax == 0 and off.taxable == Decimal("1934.00")
+    senior = compute_payslip(PayslipInput(basic=Decimal("3000"), overtime=Decimal("800")), rates(overtime_junior_cap=Decimal("1500")))
+    assert senior.overtime_tax == 0 and senior.taxable == Decimal("3635.00")
+
+
+def test_minimum_wage_flag():
+    floor = rates(minimum_daily_wage=Decimal("20"))
+    assert compute_payslip(PayslipInput(basic=Decimal("400"), working_days=22), floor).warnings == ["below_minimum_wage"]
+    assert compute_payslip(PayslipInput(basic=Decimal("440"), working_days=22), floor).warnings == []
+    assert compute_payslip(PayslipInput(basic=Decimal("400")), rates()).warnings == []
+
+
+def test_bonus_within_15_percent_of_annual_basic_is_taxed_at_5():
+    # Basic 2,000: annual 24,000, 15% = 3,600 at 5% = 180; the other 1,400 joins pay on the bands.
+    out = compute_payslip(PayslipInput(basic=Decimal("2000"), bonus=Decimal("5000"), bonus_relief_left=Decimal("3600")), rates())
+    plain = compute_payslip(PayslipInput(basic=Decimal("2000"), allowances=Decimal("1400")), rates())
+    assert out.bonus_tax == Decimal("180.00") and out.bonus_concessional == Decimal("3600")
+    assert out.taxable == plain.taxable
+    assert out.paye == plain.paye + Decimal("180.00")
+    # Without the allowance (none left this year) the whole bonus goes on the bands.
+    none_left = compute_payslip(PayslipInput(basic=Decimal("2000"), bonus=Decimal("5000"), bonus_relief_left=Decimal("0")), rates())
+    assert none_left.bonus_tax == 0 and none_left.taxable == Decimal("6890.00")
+
+
+def test_non_resident_flat_rate_and_20_percent_on_bonus_and_overtime():
+    out = compute_payslip(
+        PayslipInput(basic=Decimal("10000"), bonus=Decimal("1000"), overtime=Decimal("500"), non_resident=True), rates()
+    )
+    # 25% of (10,000 - 550 SSNIT) = 2,362.50; 20% of 1,000 + 20% of 500 = 300.
+    assert out.paye == Decimal("2662.50") and out.bonus_tax == Decimal("200.00") and out.overtime_tax == Decimal("100.00")
+
+
+def test_september_2026_bands_match_gra():
+    from app.hrm import SUGGESTED_GHANA_RATES
+
+    sep = next(r for r in SUGGESTED_GHANA_RATES if r["effective_from"] == "2026-09-01")
+    widths = [b["width"] for b in sep["paye_bands"] if b["width"] is not None]
+    assert widths == [588, 80, 100, 2900, 16000, 30332] and sum(widths) == 50000
+    new = StatutoryRates(employee_percent=Decimal("5.5"), employer_percent=Decimal("13"), paye_bands=sep["paye_bands"])
+    # 1,000 taxable: 0 on 588, 5% of 80 = 4, 10% of 100 = 10, 17.5% of 232 = 40.60 -> 54.60.
+    assert compute_payslip(PayslipInput(basic=Decimal("0"), allowances=Decimal("1000")), new).paye == Decimal("54.60")
