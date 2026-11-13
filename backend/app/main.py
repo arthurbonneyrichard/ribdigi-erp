@@ -45,6 +45,12 @@ async def _lifespan(_app: FastAPI):
         logging.getLogger("ribdigi.security").warning(
             "BACKUP_ENCRYPTION_KEY, TOTP_ENCRYPTION_KEY and SECRETS_ENCRYPTION_KEY should all be set in production"
         )
+    if is_prod:
+        from app.server_monitor import key_problems
+
+        for problem in key_problems():
+            # A malformed BACKUP_ENCRYPTION_KEY stops every backup; say so at boot, not at 02:05.
+            logging.getLogger("ribdigi.security").error("Encryption key problem: %s", problem)
     await _align_hybrid_schema_on_startup()
     yield
 

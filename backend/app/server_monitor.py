@@ -1189,6 +1189,16 @@ def _placeholder(value: str) -> bool:
     return not v or v.startswith("REPLACE_ME") or v in {"CHANGEME", "CHANGE_ME", "SECRET", "TEST"}
 
 
+def _valid_fernet_key(value: str) -> bool:
+    from app.backup import _fernet_from_configured_key
+
+    try:
+        _fernet_from_configured_key(value, label="key")
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def key_problems() -> list[str]:
     """What is wrong with the three encryption keys: missing, placeholder, too short, or shared."""
     values = {name: (getattr(settings, name, "") or "").strip() for name in _KEY_NAMES}
@@ -1198,6 +1208,8 @@ def key_problems() -> list[str]:
             problems.append(f"{name} is not set")
         elif len(value) < 32:
             problems.append(f"{name} is shorter than 32 characters")
+        elif name != "SECRETS_ENCRYPTION_KEY" and not _valid_fernet_key(value):
+            problems.append(f"{name} is not a valid key (it must be a Fernet key or 64 hex characters)")
     real = [v for v in values.values() if not _placeholder(v)]
     if len(set(real)) < len(real):
         problems.append("two of the keys are the same value; each needs its own")

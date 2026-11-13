@@ -143,7 +143,8 @@ async def record_query(
     digest = prompt_sha256(message) if message else None
     row = m.AiQuery(
         tenant_id=tenant_id,
-        user_id=user_id,
+        # Scheduled jobs act as "system", which is not a users row (ai_queries.user_id has an FK).
+        user_id=None if user_id == "system" else user_id,
         endpoint=endpoint,
         status=status,
         prompt_sha256=digest,

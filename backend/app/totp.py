@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import logging
 import hashlib
 import io
 import secrets
@@ -100,7 +101,14 @@ def _fernet() -> MultiFernet:
         (settings.BACKUP_ENCRYPTION_KEY, "BACKUP_ENCRYPTION_KEY"),
     ):
         if (raw or "").strip():
-            keys.append(_fernet_from_configured_key(raw.strip(), label=label))
+            try:
+                keys.append(_fernet_from_configured_key(raw.strip(), label=label))
+            except HTTPException:
+                if label == "TOTP encryption key":
+                    raise
+                # A malformed BACKUP_ENCRYPTION_KEY (only a fallback here) must not lock everyone
+                # out of 2FA and stored secrets: skip it; Server health > Launch checks names it.
+                logging.getLogger("ribdigi.security").error("%s is not a valid key; it is ignored", label)
     keys.append(_legacy_fernet(settings.JWT_SECRET_KEY))
     return MultiFernet(keys)
 
