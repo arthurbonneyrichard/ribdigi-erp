@@ -11,6 +11,7 @@ staff, GRA and SSNIT sits in its own liability until it is paid. Paying clears t
 from __future__ import annotations
 
 import calendar
+from decimal import Decimal
 from datetime import date, datetime, timedelta
 
 from fastapi import HTTPException
@@ -249,6 +250,8 @@ def _rates_from_row(row: m.HrmStatutoryRate) -> engine.StatutoryRates:
             getattr(row, "overtime_low_share_percent", 50) if getattr(row, "overtime_low_share_percent", None) is not None else 50
         ),
         minimum_daily_wage=engine.D(row.minimum_daily_wage) if getattr(row, "minimum_daily_wage", None) is not None else None,
+        bonus_rate=engine.D(row.bonus_rate if getattr(row, "bonus_rate", None) is not None else 5),
+        bonus_cap_percent=engine.D(row.bonus_cap_percent if getattr(row, "bonus_cap_percent", None) is not None else 15),
         rate_id=row.id,
         effective_from=row.effective_from.isoformat() if row.effective_from else None,
     )
@@ -301,6 +304,63 @@ async def list_rates(db: AsyncSession, tenant_id: str) -> list[dict]:
     return [{**serialize_rate(row), "locked": await _rate_in_use(db, tenant_id, row.id)} for row in rows]
 
 
+# Ghana statutory figures as published, for HR to check and add as dated rows (never applied
+# on their own). Checked 14 Nov 2026 against GRA's PAYE page (bands for YA 2026, Act 1178,
+# effective 1 Sep 2026), SSNIT's 2026 maximum insurable earnings notice and the National
+# Tripartite Committee minimum wage. Still to be confirmed by the company's accountant.
+GRA_PAYE_URL = "https://gra.gov.gh/domestic-tax/tax-types/paye/"
+_BANDS_2024 = [
+    {"width": 490, "rate": 0}, {"width": 110, "rate": 5}, {"width": 130, "rate": 10}, {"width": 3166.67, "rate": 17.5},
+    {"width": 16000, "rate": 25}, {"width": 30520, "rate": 30}, {"width": None, "rate": 35},
+]
+_BANDS_SEP_2026 = [
+    {"width": 588, "rate": 0}, {"width": 80, "rate": 5}, {"width": 100, "rate": 10}, {"width": 2900, "rate": 17.5},
+    {"width": 16000, "rate": 25}, {"width": 30332, "rate": 30}, {"width": None, "rate": 35},
+]
+_GH_COMMON = {
+    "employee_percent": 5.5, "employer_percent": 13, "tier2_percent": 5, "tier3_relief_percent": 16.5,
+    "overtime_junior_cap": 1500, "overtime_low_rate": 5, "overtime_high_rate": 10, "overtime_low_share_percent": 50,
+    "bonus_rate": 5, "bonus_cap_percent": 15, "rounding": "half_up",
+}
+SUGGESTED_GHANA_RATES = [
+    {**_GH_COMMON, "effective_from": "2025-01-01", "paye_bands": _BANDS_2024, "insurable_cap": 61000, "minimum_daily_wage": 19.97,
+     "source_note": "GRA monthly bands before Act 1178; SSNIT cap 2025 GHS 61,000; NTC minimum wage 2025 GHS 19.97"},
+    {**_GH_COMMON, "effective_from": "2026-01-01", "paye_bands": _BANDS_2024, "insurable_cap": 69000, "minimum_daily_wage": 21.77,
+     "source_note": "SSNIT cap 2026 GHS 69,000 (from 1 Jan 2026); NTC minimum wage 2026 GHS 21.77"},
+    {**_GH_COMMON, "effective_from": "2026-09-01", "paye_bands": _BANDS_SEP_2026, "insurable_cap": 69000, "minimum_daily_wage": 21.77,
+     "source_note": "GRA PAYE bands YA 2026 (Act 1178) from 1 Sep 2026: first GHS 588 at 0%, top 35% over GHS 50,000"},
+    {**_GH_COMMON, "effective_from": "2027-01-01", "paye_bands": _BANDS_SEP_2026, "insurable_cap": 69000, "minimum_daily_wage": 25.04,
+     "source_note": "NTC minimum wage 2027 GHS 25.04 (announced Nov 2026; confirm). SSNIT 2027 cap not yet announced: check"},
+]
+
+
+def suggested_rates(country: str = "GH") -> dict:
+    if country != "GH":
+        return {"country": country, "rows": [], "note": "No suggested rates for this country."}
+    return {
+        "country": "GH",
+        "checked_on": "2026-11-14",
+        "sources": [
+            GRA_PAYE_URL,
+            "https://www.citinewsroom.com/2026/01/ssnit-raises-maximum-insurable-earnings-to-ghs-69000-for-2026/",
+            "https://cedirates.com/news/ghanas-2026-daily-minimum-wage-set-at-gh2177/",
+            "https://3news.com/news/tripartite-committee-announces-2-year-minimum-wage-deal-gh-25-04-for-2027-gh-28-79-for-2028",
+        ],
+        "note": "Published figures checked on 14 Nov 2026. Check them with your accountant before adding; each becomes a dated row.",
+        "rows": SUGGESTED_GHANA_RATES,
+    }
+
+
+def old_bands_warning(period: str, rates_used: dict | None) -> str | None:
+    """A month from September 2026 still worked out with the pre-Act-1178 bands."""
+    if not rates_used or period < "2026-09":
+        return None
+    bands = rates_used.get("paye_bands") or []
+    if bands and str(bands[0].get("width")) in {"490", "490.0", "490.00"}:
+        return "This month uses the PAYE bands from before 1 September 2026 (first GHS 490). GRA's bands from that date start at GHS 588: add the new dated rates."
+    return None
+
+
 def serialize_rate(row: m.HrmStatutoryRate) -> dict:
     return {
         "id": row.id,
@@ -317,6 +377,8 @@ def serialize_rate(row: m.HrmStatutoryRate) -> dict:
         "overtime_high_rate": money_json(row.overtime_high_rate if row.overtime_high_rate is not None else 10),
         "overtime_low_share_percent": money_json(row.overtime_low_share_percent if row.overtime_low_share_percent is not None else 50),
         "minimum_daily_wage": money_json(row.minimum_daily_wage) if row.minimum_daily_wage is not None else None,
+        "bonus_rate": money_json(row.bonus_rate if row.bonus_rate is not None else 5),
+        "bonus_cap_percent": money_json(row.bonus_cap_percent if row.bonus_cap_percent is not None else 15),
         "source_note": row.source_note,
         "created_at": row.created_at.isoformat() if row.created_at else None,
     }
@@ -369,6 +431,8 @@ async def add_rate(db: AsyncSession, tenant_id: str, payload, *, user_id) -> m.H
         overtime_high_rate=getattr(payload, "overtime_high_rate", 10),
         overtime_low_share_percent=getattr(payload, "overtime_low_share_percent", 50),
         minimum_daily_wage=getattr(payload, "minimum_daily_wage", None),
+        bonus_rate=getattr(payload, "bonus_rate", 5),
+        bonus_cap_percent=getattr(payload, "bonus_cap_percent", 15),
         source_note=optional_honest_narrative(payload.source_note, label="source", max_length=255),
         created_by=user_id,
     )
@@ -435,6 +499,7 @@ def serialize_employee(row: m.HrmEmployee, *, pay: bool = True) -> dict:
                 "tier3_percent": money_json(row.tier3_percent or 0),
                 "commission_percent": money_json(getattr(row, "commission_percent", 0) or 0),
                 "pay_frequency": getattr(row, "pay_frequency", None) or "monthly",
+                "non_resident": bool(getattr(row, "non_resident", False)),
             }
         )
     return data
@@ -928,6 +993,10 @@ def _work_out(slip: m.HrmPayslip, settings: m.HrmSettings, rates: engine.Statuto
                 tier3_percent=engine.D(slip.tier3_percent),
                 # Approved overtime: taxable, no SSNIT; junior staff may get the separate overtime tax.
                 overtime=engine.D(getattr(slip, "overtime", 0)),
+                bonus_relief_left=(
+                    engine.D(slip.bonus_relief_left) if getattr(slip, "bonus_relief_left", None) is not None else None
+                ),
+                non_resident=bool(getattr(slip, "non_resident", False)),
                 arrears_basic=engine.D(getattr(slip, "arrears_basic", 0)),
                 # Commission and tips are taxable earnings without SSNIT, like a correction.
                 adjustment=engine.D(getattr(slip, "adjustment", 0))
@@ -964,6 +1033,8 @@ def _work_out(slip: m.HrmPayslip, settings: m.HrmSettings, rates: engine.Statuto
     slip.tier3_relief = out.tier3_relief
     slip.net = out.net
     slip.overtime_tax = out.overtime_tax
+    slip.bonus_tax = out.bonus_tax
+    slip.bonus_concessional = out.bonus_concessional
     slip.warnings = list(out.warnings) or None
     slip.rates_used = rates.snapshot()
 
@@ -983,6 +1054,24 @@ def _totals(run: m.HrmPayrollRun, slips: list[m.HrmPayslip]) -> None:
     run.tier3 = sum((engine.D(s.tier3) for s in slips), engine.ZERO)
     run.loan_deductions = sum((engine.D(getattr(s, "loan_deduction", 0)) for s in slips), engine.ZERO)
     run.tips = sum((engine.D(getattr(s, "tips", 0)) for s in slips), engine.ZERO)
+
+
+async def _bonus_relief_left(db: AsyncSession, employee_id: str, basic, period: str, rates) -> Decimal:
+    """GRA: bonus up to 15% of annual basic salary in the year is taxed at 5%. Annual basic is taken
+    as this month's basic x 12; what earlier approved payslips this year already used comes off."""
+    year = period[:4]
+    used = (
+        await db.execute(
+            select(func.coalesce(func.sum(m.HrmPayslip.bonus_concessional), 0))
+            .join(m.HrmPayrollRun, m.HrmPayrollRun.id == m.HrmPayslip.run_id)
+            .where(
+                m.HrmPayslip.employee_id == employee_id, m.HrmPayrollRun.status != "draft",
+                m.HrmPayrollRun.period >= f"{year}-01", m.HrmPayrollRun.period < period,
+            )
+        )
+    ).scalar_one()
+    allowance = engine.D(basic) * 12 * engine.D(rates.bonus_cap_percent) / 100
+    return max((allowance - engine.D(used)).quantize(Decimal("0.01")), engine.ZERO)
 
 
 async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) -> m.HrmPayrollRun:
@@ -1045,6 +1134,8 @@ async def create_run(db: AsyncSession, tenant_id: str, *, period: str, user_id) 
             tips=tips,
             leave_pay=leave_pay,
             part_paid=part_paid,
+            non_resident=bool(getattr(person, "non_resident", False)),
+            bonus_relief_left=await _bonus_relief_left(db, person.id, basic, period, rates),
             bonus=0,
             other_deductions=0,
             tier3_percent=person.tier3_percent or 0,
@@ -1280,6 +1371,9 @@ def _slip_dict(slip: m.HrmPayslip, employee: m.HrmEmployee | None) -> dict:
         # Part-payments come off first; the rest of loan_deduction is loan / advance repayment.
         "part_paid": _money(min(engine.D(getattr(slip, "part_paid", 0)), engine.D(getattr(slip, "loan_deduction", 0)))),
         "overtime_tax": _money(getattr(slip, "overtime_tax", 0)),
+        "bonus_tax": _money(getattr(slip, "bonus_tax", 0)),
+        "bonus_concessional": _money(getattr(slip, "bonus_concessional", 0)),
+        "non_resident": bool(getattr(slip, "non_resident", False)),
         "warnings": list(getattr(slip, "warnings", None) or []),
         "rates_used": slip.rates_used,
         "note": slip.note,
@@ -1309,6 +1403,8 @@ async def present_run(db: AsyncSession, run: m.HrmPayrollRun, *, slips: bool = T
         "loan_deductions": _money(getattr(run, "loan_deductions", 0)),
         "statutory_rate_id": run.statutory_rate_id,
     }
+    first = (await db.execute(select(m.HrmPayslip.rates_used).where(m.HrmPayslip.run_id == run.id).limit(1))).scalar_one_or_none()
+    data["warnings"] = [w for w in [old_bands_warning(run.period, first)] if w]
     if slips:
         rows = await _slips(db, run.id)
         out = [_slip_dict(s, await db.get(m.HrmEmployee, s.employee_id)) for s in rows]

@@ -73,7 +73,7 @@ def test_single_head_linear_chain():
     assert len(heads) == 1, heads
     # Head now 20261113_0179 (ZKTeco unknown PINs), after 0178 HRM part-payments, 0177 HRM cover + escalation, 0176 HRM 360 feedback, 0175 HRM headcount, 0174 HRM documents, 0173 HRM leave encashment, 0172 HRM overtime tax + minimum wage, 0171 restaurant tips, 0170 FMCG territories, 0169 HRM commission, 0168 HRM time and ZKTeco, 0167 HRM people work, 0166 HRM salary changes, 0165 HRM leave steps, 0164 HRM loans and holidays, 0160 till-only sessions,
     # 0161 billing industry prices + owner VAT, 0162 offline till references and 0163 HRM statutory rates.
-    assert heads == {"20261113_0179"}
+    assert heads == {"20261114_0180"}
     assert len(merges) == 1, merges
     _merge_name, merge_rev, merge_parents = merges[0]
     assert merge_rev == "20261008_0136"

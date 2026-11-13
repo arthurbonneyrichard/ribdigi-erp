@@ -4779,6 +4779,9 @@ class HrmStatutoryRate(Base):
     overtime_low_share_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=50, server_default="50")
     # National daily minimum wage; a daily rate under it is flagged and blocks approval (NULL = no check).
     minimum_daily_wage: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    # Bonus: a final bonus_rate on bonus up to bonus_cap_percent of annual basic; the rest on the bands.
+    bonus_rate: Mapped[float] = mapped_column(Numeric(6, 3), default=5, server_default="5")
+    bonus_cap_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=15, server_default="15")
     source_note: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -4818,6 +4821,8 @@ class HrmEmployee(Base):
     commission_percent: Mapped[float] = mapped_column(Numeric(6, 3), default=0, server_default="0")
     # monthly | weekly | fortnightly. Weekly and fortnightly staff get part-payments during the month.
     pay_frequency: Mapped[str] = mapped_column(String(16), default="monthly", server_default="monthly")
+    # Non-resident for tax (GRA: flat 25%, bonus and overtime 20%).
+    non_resident: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -4932,6 +4937,13 @@ class HrmPayslip(Base):
     part_paid: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     # Tax on overtime under the junior-staff rule (already inside paye).
     overtime_tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    # Final 5% bonus tax (already inside paye), the bonus it covered, and the year's 15%
+    # allowance still unused when this payroll was drawn up.
+    bonus_tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    bonus_concessional: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    bonus_relief_left: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    # Taxed as a non-resident this month (copied from the staff record).
+    non_resident: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     # Checks the slip failed, e.g. ["below_minimum_wage"].
     warnings: Mapped[list | None] = mapped_column(JSON, nullable=True)
     # The rates this slip was worked out with, kept so it can be explained later.

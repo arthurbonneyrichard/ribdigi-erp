@@ -208,3 +208,30 @@ Done on the current code against Postgres 16 (not only the SQLite test database)
 - Screens were walked in a browser for an HR company (owner, HR officer, employee), an FMCG company and a restaurant: every HR screen, outlet visits, territories and tips loaded with no failed calls. Added the missing **Edit** for a staff record (contact, job, department, manager, terminal ID; pay and ID details for HR managers only; salary stays on Change salary). HR dialogs now scroll and keep Confirm in view on laptop screens.
 
 Still to do before relying on it: an accountant's check of the Ghana PAYE / SSNIT / overtime-tax / minimum-wage figures and of tips, commission and leave pay being taxed without SSNIT; a real ZKTeco terminal and BioTime server (`docs/ZKTECO_SETUP.md`).
+
+## Ghana statutory check (14 Nov 2026)
+
+Checked against GRA's PAYE page (https://gra.gov.gh/domestic-tax/tax-types/paye/), SSNIT's 2026 maximum insurable earnings notice and the National Tripartite Committee minimum wage. This is a published-source check, **not** a sign-off by a qualified accountant.
+
+What the payroll now does:
+
+| Item | Published rule | Payroll |
+| --- | --- | --- |
+| PAYE bands from 1 Sep 2026 (Act 1178) | monthly: 588 at 0%, 80 at 5%, 100 at 10%, 2,900 at 17.5%, 16,000 at 25%, 30,332 at 30%, over 50,000 at 35% | In **Suggested Ghana rates** (Settings → Dated rates). A payroll from 2026-09 still on the old bands (first 490) shows a warning. Not applied automatically. |
+| PAYE bands before Sep 2026 | first 490 at 0% … (2024 table) | Suggested row from 2025-01-01; still the fallback when no dated row exists. |
+| SSNIT | 5.5% staff + 13% company on basic; 13.5% Tier 1, 5% Tier 2; cap GHS 61,000 (2025), 69,000 (2026) | Suggested rows set Tier 2 = 5% and the caps. SSNIT stays on basic only (allowances, commission, tips, leave pay, overtime, bonus are not insurable). |
+| Bonus | 5% final tax on bonus up to 15% of annual basic in the year; excess added to income on the bands | **New.** Allowance = basic x 12 x 15%, less what earlier approved months this year used. Shown as "of which bonus tax". |
+| Overtime (junior staff) | 5% on overtime up to 50% of monthly basic, 10% above; only if qualifying employment income for the year is not more than GHS 18,000; final, not added to basic | Test is now this month's employment income other than overtime (cap 1,500 = 18,000 / 12), and the 50% is of monthly basic, not pay earned after unpaid days. |
+| Non-resident employee | flat 25% on income; 20% on bonus or overtime | **New** "Tax residence" on the staff record (HR managers only). |
+| Minimum wage | GHS 21.77 a day (2026); GHS 25.04 (2027, announced Nov 2026) | In the suggested rows; a payslip under it blocks approval. Minimum-wage income is tax free, which the 0% band (588 ≈ 21.77 x 27) covers. |
+| Commission, tips, unused leave paid | employment income | Taxed through PAYE with ordinary pay, no SSNIT. |
+
+For the accountant to confirm or decide:
+
+1. Annual basic for the bonus allowance is taken as this month's basic x 12; a mid-year salary change or a part year changes the true figure.
+2. "Junior staff" is decided only by the income test; there is no grade flag. Above the threshold overtime is taxed as ordinary pay (GRA's page also says such staff are "not entitled to overtime pay").
+3. Tier 3 tax relief is set at 16.5% of earned basic; not checked against the wording of Act 896.
+4. SSNIT for non-resident or expatriate staff (exemption when covered by a home scheme) is not handled: SSNIT is still deducted.
+5. SSNIT's minimum contribution base (reported around GHS 587.80 a month) is not enforced for part-time pay below it.
+6. The 2027 SSNIT cap was not yet announced on 14 Nov 2026; the 2027 minimum wage comes from one news report.
+7. Tips paid through payroll are treated as employment income of the employer.

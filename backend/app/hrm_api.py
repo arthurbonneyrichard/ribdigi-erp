@@ -57,6 +57,7 @@ class EmployeeBody(BaseModel):
     tier3_percent: Percent = Decimal("0")
     commission_percent: Percent = Decimal("0")
     pay_frequency: Literal["monthly", "weekly", "fortnightly"] = "monthly"
+    non_resident: bool = False
     manager_id: UuidIdValue | None = None
     biometric_id: Annotated[str, Field(min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$")] | None = None
 
@@ -79,6 +80,7 @@ class EmployeeUpdate(BaseModel):
     tier3_percent: Percent | None = None
     commission_percent: Percent | None = None
     pay_frequency: Literal["monthly", "weekly", "fortnightly"] | None = None
+    non_resident: bool | None = None
     manager_id: UuidIdValue | None = None
     biometric_id: Annotated[str, Field(min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$")] | None = None
 
@@ -194,7 +196,17 @@ class StatutoryRateBody(BaseModel):
     overtime_low_share_percent: Percent = Decimal("50")
     # National daily minimum wage; omit for no check.
     minimum_daily_wage: Annotated[Decimal, Field(gt=0, max_digits=14, decimal_places=2)] | None = None
+    # GRA bonus rule: final rate on bonus up to a percent of annual basic.
+    bonus_rate: Percent = Decimal("5")
+    bonus_cap_percent: Percent = Decimal("15")
     source_note: Annotated[str, Field(min_length=3, max_length=255)] | None = None
+
+
+@router.get("/statutory-rates/suggested")
+async def hrm_rates_suggested(claims=Depends(require_permission("hrm", "read")), db: AsyncSession = Depends(get_db)):
+    """Published Ghana figures to check and add as dated rows. Nothing is saved here."""
+    svc.job(claims, "payroll")
+    return _env(svc.suggested_rates("GH"))
 
 
 @router.get("/statutory-rates")
@@ -602,18 +614,18 @@ async def hrm_employees(
 # Pay and identity fields only an HR manager (pay rights) may set: changing a bank or Mobile
 # Money number redirects someone's pay, so it needs the same rights as changing the salary.
 PAY_ONLY_FIELDS = frozenset({
-    "basic_salary", "allowances", "commission_percent", "tier3_percent", "pay_frequency",
+    "basic_salary", "allowances", "commission_percent", "tier3_percent", "pay_frequency", "non_resident",
     "ssnit_number", "tin", "bank_name", "bank_account", "ghana_card", "mobile_money",
 })
 
 
 # When adding someone, an officer may take down their ID and contact numbers (a new record
 # pays nothing until an HR manager sets the salary); the pay amounts themselves need pay rights.
-CREATE_PAY_FIELDS = frozenset({"basic_salary", "allowances", "commission_percent", "tier3_percent", "pay_frequency"})
+CREATE_PAY_FIELDS = frozenset({"basic_salary", "allowances", "commission_percent", "tier3_percent", "pay_frequency", "non_resident"})
 
 
 def _touches_pay(payload) -> bool:
-    defaults = {"basic_salary": 0, "allowances": 0, "commission_percent": 0, "tier3_percent": 0, "pay_frequency": "monthly"}
+    defaults = {"basic_salary": 0, "allowances": 0, "commission_percent": 0, "tier3_percent": 0, "pay_frequency": "monthly", "non_resident": False}
     for name in CREATE_PAY_FIELDS & payload.model_fields_set:
         value = getattr(payload, name, None)
         if value is None or value == "" or (name in defaults and value == defaults[name]):
@@ -843,7 +855,7 @@ async def hrm_slip_update(
     svc.job(claims, "payroll")
     row = await svc.update_slip(db, claims["tenant_id"], slip_id, payload, user_id=claims.get("sub"))
     await db.commit()
-    return _env({"id": row.id, "net": svc._money(row.net)}, "Saved")
+    return _env(svc._slip_dict(row, await db.get(svc.m.HrmEmployee, row.employee_id)), "Saved")
 
 
 @router.delete("/payroll/{run_id}")

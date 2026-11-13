@@ -22,6 +22,7 @@ import Cover from './Cover';
 import PartPay from './PartPay';
 import Signals from './Signals';
 import AskHr from './AskHr';
+import SuggestedRates from './SuggestedRates';
 import './hrm.css';
 
 type Row = Record<string, any>;
@@ -180,13 +181,13 @@ function printSlip(slip: Row, period: string) {
   if (!page) return;
   const line = (label: string, value: unknown) => `<tr><td>${label}</td><td style="text-align:right">${money(value)}</td></tr>`;
   page.document.write(
-    `<html><body style="font-family:sans-serif"><h3>Payslip ${safe(period)}</h3><p>${safe(slip.employee_name)} · ${safe(slip.employee_number)}<br/>${safe(slip.job_title)}</p><table style="width:100%">${line('Basic', slip.basic)}${line('Allowances', slip.allowances)}${line('Bonus', slip.bonus)}${Number(slip.arrears_basic) ? line('Back pay of basic', slip.arrears_basic) : ''}${Number(slip.adjustment) ? line('Correction', slip.adjustment) : ''}${Number(slip.overtime) ? line('Overtime', slip.overtime) : ''}${Number(slip.commission) ? line('Commission', slip.commission) : ''}${Number(slip.tips) ? line('Tips', slip.tips) : ''}${Number(slip.leave_pay) ? line('Unused leave paid', slip.leave_pay) : ''}${line('Unpaid days', -Number(slip.unpaid_deduction))}${line('Gross', slip.gross)}${line('SSNIT', -Number(slip.ssnit_employee))}${Number(slip.tier3) > 0 ? line('Tier 3 pension', -Number(slip.tier3)) : ''}${Number(slip.part_paid) > 0 ? line('Paid during the month', -Number(slip.part_paid)) : ''}${Number(slip.loan_deduction) - Number(slip.part_paid || 0) > 0 ? line('Loan repayment', -(Number(slip.loan_deduction) - Number(slip.part_paid || 0))) : ''}${line('PAYE', -Number(slip.paye))}${Number(slip.overtime_tax) ? line('of which overtime tax', -Number(slip.overtime_tax)) : ''}${line('Other deductions', -Number(slip.other_deductions))}</table><h3>Net pay ${money(slip.net)}</h3></body></html>`,
+    `<html><body style="font-family:sans-serif"><h3>Payslip ${safe(period)}</h3><p>${safe(slip.employee_name)} · ${safe(slip.employee_number)}<br/>${safe(slip.job_title)}</p><table style="width:100%">${line('Basic', slip.basic)}${line('Allowances', slip.allowances)}${line('Bonus', slip.bonus)}${Number(slip.arrears_basic) ? line('Back pay of basic', slip.arrears_basic) : ''}${Number(slip.adjustment) ? line('Correction', slip.adjustment) : ''}${Number(slip.overtime) ? line('Overtime', slip.overtime) : ''}${Number(slip.commission) ? line('Commission', slip.commission) : ''}${Number(slip.tips) ? line('Tips', slip.tips) : ''}${Number(slip.leave_pay) ? line('Unused leave paid', slip.leave_pay) : ''}${line('Unpaid days', -Number(slip.unpaid_deduction))}${line('Gross', slip.gross)}${line('SSNIT', -Number(slip.ssnit_employee))}${Number(slip.tier3) > 0 ? line('Tier 3 pension', -Number(slip.tier3)) : ''}${Number(slip.part_paid) > 0 ? line('Paid during the month', -Number(slip.part_paid)) : ''}${Number(slip.loan_deduction) - Number(slip.part_paid || 0) > 0 ? line('Loan repayment', -(Number(slip.loan_deduction) - Number(slip.part_paid || 0))) : ''}${line('PAYE', -Number(slip.paye))}${Number(slip.overtime_tax) ? line('of which overtime tax', -Number(slip.overtime_tax)) : ''}${Number(slip.bonus_tax) ? line('of which bonus tax', -Number(slip.bonus_tax)) : ''}${slip.non_resident ? '<tr><td colspan="2"><small>Taxed as non-resident</small></td></tr>' : ''}${line('Other deductions', -Number(slip.other_deductions))}</table><h3>Net pay ${money(slip.net)}</h3></body></html>`,
   );
   page.document.close();
   page.print();
 }
 
-const BLANK = { full_name: '', phone: '', email: '', job_title: '', department: '', hired_on: '', basic_salary: '', allowances: '0', ssnit_number: '', tin: '', bank_name: '', bank_account: '', ghana_card: '', mobile_money: '', tier3_percent: '0', manager_id: '', biometric_id: '', commission_percent: '0', pay_frequency: 'monthly' };
+const BLANK = { full_name: '', phone: '', email: '', job_title: '', department: '', hired_on: '', basic_salary: '', allowances: '0', ssnit_number: '', tin: '', bank_name: '', bank_account: '', ghana_card: '', mobile_money: '', tier3_percent: '0', manager_id: '', biometric_id: '', commission_percent: '0', pay_frequency: 'monthly', non_resident: false };
 
 const GHANA_CARD = /^GHA-\d{9}-\d$/;
 
@@ -367,6 +368,7 @@ function HrmDesk() {
         biometric_id: form.biometric_id.trim() || null,
         commission_percent: Number(form.commission_percent || 0),
         pay_frequency: form.pay_frequency || 'monthly',
+        non_resident: Boolean(form.non_resident),
         hired_on: form.hired_on,
         basic_salary: Number(form.basic_salary || 0),
         allowances: Number(form.allowances || 0),
@@ -417,6 +419,7 @@ function HrmDesk() {
         body[f.key] = after;
       }
       if (seesPay && dialog.values.pay_frequency !== (dialog.row.pay_frequency || 'monthly')) body.pay_frequency = dialog.values.pay_frequency;
+      if (seesPay && Boolean(dialog.values.non_resident) !== Boolean(dialog.row.non_resident)) body.non_resident = Boolean(dialog.values.non_resident);
       if ((dialog.values.manager_id || '') !== (dialog.row.manager_id || '')) body.manager_id = dialog.values.manager_id || null;
       ok = Object.keys(body).length ? await run(`/hrm/employees/${dialog.row.id}`, body, 'Staff record saved', 'PATCH') : true;
     }
@@ -574,6 +577,14 @@ function HrmDesk() {
                     </select>
                   </label>
                 ) : null}
+                {seesPay ? (
+                  <label><span>Tax residence</span>
+                    <select value={dialog.values.non_resident ? 'yes' : 'no'} onChange={(e) => setDialog({ ...dialog, values: { ...dialog.values, non_resident: e.target.value === 'yes' } })} aria-label="Edit tax residence">
+                      <option value="no">Resident</option>
+                      <option value="yes">Non-resident (flat 25%)</option>
+                    </select>
+                  </label>
+                ) : null}
                 </div>
                 {seesPay ? null : <p className="hr-muted">Bank, Mobile Money, ID numbers and pay are changed by an HR manager.</p>}
                 <p className="hr-muted">To change pay, use Change salary: it keeps a dated history and pays any back pay.</p>
@@ -701,6 +712,12 @@ function HrmDesk() {
               {seesPay ? (
                 <>
                 <label><span>Sales commission %</span><input type="number" min="0" max="100" step="0.25" value={form.commission_percent} onChange={(e) => setForm({ ...form, commission_percent: e.target.value })} aria-label="Sales commission percent" /></label>
+                <label><span>Tax residence</span>
+                  <select value={form.non_resident ? 'yes' : 'no'} onChange={(e) => setForm({ ...form, non_resident: e.target.value === 'yes' })} aria-label="Tax residence">
+                    <option value="no">Resident</option>
+                    <option value="yes">Non-resident (flat 25%)</option>
+                  </select>
+                </label>
                 <label><span>Paid</span>
                   <select value={form.pay_frequency || 'monthly'} onChange={(e) => setForm({ ...form, pay_frequency: e.target.value })} aria-label="Pay frequency">
                     <option value="monthly">Monthly</option>
@@ -740,7 +757,7 @@ function HrmDesk() {
                           type="button" aria-label={`Edit ${p.full_name}`}
                           onClick={() => setDialog({
                             kind: 'edit', row: p,
-                            values: { ...Object.fromEntries(EDIT_FIELDS.map((f) => [f.key, p[f.key] ?? ''])), manager_id: p.manager_id || '', pay_frequency: p.pay_frequency || 'monthly' },
+                            values: { ...Object.fromEntries(EDIT_FIELDS.map((f) => [f.key, p[f.key] ?? ''])), manager_id: p.manager_id || '', pay_frequency: p.pay_frequency || 'monthly', non_resident: Boolean(p.non_resident) },
                           })}
                         >Edit</button>
                         <button type="button" className="hr-danger" onClick={() => setDialog({ kind: 'left', row: p, left_on: iso(), reason: '' })}>Leaving</button>
@@ -1088,6 +1105,7 @@ function HrmDesk() {
                   {r.status === 'approved' && Number(r.tier3) > 0 && !r.tier3_paid ? <button type="button" onClick={() => setDialog({ kind: 'pay', row: r, what: 'tier3', method: 'bank_transfer', amount: r.tier3 })}>Pay Tier 3</button> : null}
                 </div>
               </div>
+              {(r.warnings || []).map((w: string) => <p key={w} className="hr-bad" role="alert">{w}</p>)}
               {openRun === r.id ? (
                 <table>
                   <thead><tr><th>Name</th><th>Gross</th><th>SSNIT</th><th>PAYE</th><th>Other</th><th>Net</th><th /></tr></thead>
@@ -1284,6 +1302,7 @@ function HrmDesk() {
             exist. Rules an approved payroll used are locked. Check every figure with your accountant against the current
             GRA and SSNIT tables: the system does not check them for you.
           </p>
+          <SuggestedRates have={rates.map((r) => String(r.effective_from))} onAdded={() => void load()} />
           {rates.length ? (
             <table aria-label="Dated rates on record">
               <thead><tr><th>From</th><th>Staff %</th><th>Company %</th><th>Tier 2 %</th><th>SSNIT cap</th><th>Tier 3 relief %</th><th>Source</th><th /></tr></thead>
@@ -1319,7 +1338,7 @@ function HrmDesk() {
             <label><span>Tier 2 % of insurable pay</span><input type="number" min="0" step="0.1" value={rateForm.tier2_percent} onChange={(e) => setRateForm({ ...rateForm, tier2_percent: e.target.value })} aria-label="Tier 2 percent" /></label>
             <label><span>SSNIT cap a month (blank = none)</span><input type="number" min="0" value={rateForm.insurable_cap} onChange={(e) => setRateForm({ ...rateForm, insurable_cap: e.target.value })} aria-label="SSNIT maximum insurable earnings" /></label>
             <label><span>Tier 3 tax relief %</span><input type="number" min="0" step="0.5" value={rateForm.tier3_relief_percent} onChange={(e) => setRateForm({ ...rateForm, tier3_relief_percent: e.target.value })} aria-label="Tier 3 tax relief percent" /></label>
-            <label><span>Junior overtime: basic up to (a month, blank = off)</span><input type="number" min="0" value={rateForm.overtime_junior_cap} onChange={(e) => setRateForm({ ...rateForm, overtime_junior_cap: e.target.value })} aria-label="Junior overtime basic limit" /></label>
+            <label><span>Junior overtime: employment income up to a month (GRA: GH₵18,000 a year = 1,500; blank = off)</span><input type="number" min="0" value={rateForm.overtime_junior_cap} onChange={(e) => setRateForm({ ...rateForm, overtime_junior_cap: e.target.value })} aria-label="Junior overtime basic limit" /></label>
             <label><span>Overtime tax % (first part)</span><input type="number" min="0" step="0.5" value={rateForm.overtime_low_rate} onChange={(e) => setRateForm({ ...rateForm, overtime_low_rate: e.target.value })} aria-label="Overtime tax low rate" /></label>
             <label><span>First part: overtime up to % of basic</span><input type="number" min="0" step="1" value={rateForm.overtime_low_share_percent} onChange={(e) => setRateForm({ ...rateForm, overtime_low_share_percent: e.target.value })} aria-label="Overtime low part share" /></label>
             <label><span>Overtime tax % (the rest)</span><input type="number" min="0" step="0.5" value={rateForm.overtime_high_rate} onChange={(e) => setRateForm({ ...rateForm, overtime_high_rate: e.target.value })} aria-label="Overtime tax high rate" /></label>

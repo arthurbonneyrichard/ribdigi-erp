@@ -142,3 +142,34 @@ def test_minimum_wage_flag():
     assert compute_payslip(PayslipInput(basic=Decimal("400"), working_days=22), floor).warnings == ["below_minimum_wage"]
     assert compute_payslip(PayslipInput(basic=Decimal("440"), working_days=22), floor).warnings == []
     assert compute_payslip(PayslipInput(basic=Decimal("400")), rates()).warnings == []
+
+
+def test_bonus_within_15_percent_of_annual_basic_is_taxed_at_5():
+    # Basic 2,000: annual 24,000, 15% = 3,600 at 5% = 180; the other 1,400 joins pay on the bands.
+    out = compute_payslip(PayslipInput(basic=Decimal("2000"), bonus=Decimal("5000"), bonus_relief_left=Decimal("3600")), rates())
+    plain = compute_payslip(PayslipInput(basic=Decimal("2000"), allowances=Decimal("1400")), rates())
+    assert out.bonus_tax == Decimal("180.00") and out.bonus_concessional == Decimal("3600")
+    assert out.taxable == plain.taxable
+    assert out.paye == plain.paye + Decimal("180.00")
+    # Without the allowance (none left this year) the whole bonus goes on the bands.
+    none_left = compute_payslip(PayslipInput(basic=Decimal("2000"), bonus=Decimal("5000"), bonus_relief_left=Decimal("0")), rates())
+    assert none_left.bonus_tax == 0 and none_left.taxable == Decimal("6890.00")
+
+
+def test_non_resident_flat_rate_and_20_percent_on_bonus_and_overtime():
+    out = compute_payslip(
+        PayslipInput(basic=Decimal("10000"), bonus=Decimal("1000"), overtime=Decimal("500"), non_resident=True), rates()
+    )
+    # 25% of (10,000 - 550 SSNIT) = 2,362.50; 20% of 1,000 + 20% of 500 = 300.
+    assert out.paye == Decimal("2662.50") and out.bonus_tax == Decimal("200.00") and out.overtime_tax == Decimal("100.00")
+
+
+def test_september_2026_bands_match_gra():
+    from app.hrm import SUGGESTED_GHANA_RATES
+
+    sep = next(r for r in SUGGESTED_GHANA_RATES if r["effective_from"] == "2026-09-01")
+    widths = [b["width"] for b in sep["paye_bands"] if b["width"] is not None]
+    assert widths == [588, 80, 100, 2900, 16000, 30332] and sum(widths) == 50000
+    new = StatutoryRates(employee_percent=Decimal("5.5"), employer_percent=Decimal("13"), paye_bands=sep["paye_bands"])
+    # 1,000 taxable: 0 on 588, 5% of 80 = 4, 10% of 100 = 10, 17.5% of 232 = 40.60 -> 54.60.
+    assert compute_payslip(PayslipInput(basic=Decimal("0"), allowances=Decimal("1000")), new).paye == Decimal("54.60")
