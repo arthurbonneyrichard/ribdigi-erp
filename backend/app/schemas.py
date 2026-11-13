@@ -4304,6 +4304,7 @@ JobNameValue = Annotated[
         "expire_ecommerce_reservations",
         "sync_ecommerce_connectors",
         "scan_hr_escalations",
+        "sample_server_health",
     ],
     BeforeValidator(coerce_package_code_value),
 ]
