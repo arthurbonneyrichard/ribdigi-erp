@@ -4598,6 +4598,8 @@ class HrmBiometricLink(Base):
     last_synced_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     last_result: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Terminal PINs that punched but match no staff record: {pin: {"count": n, "last": iso}} (kept small).
+    unknown_pins: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

@@ -298,6 +298,14 @@ async def link_sync(link_id: UuidIdValue, claims=_w(), db: AsyncSession = Depend
     return _env(body, body["result"])
 
 
+@router.post("/biometric/{link_id}/check")
+async def link_check(link_id: UuidIdValue, claims=_w(), db: AsyncSession = Depends(get_db)):
+    """Setup check: signs in / reads without storing punches; lists PIN mismatches."""
+    svc.job(claims, "attendance")
+    body = await bio.check(db, claims["tenant_id"], link_id)
+    return _env(body, body.get("status", ""))
+
+
 # --- Terminal push (no login: the terminal is found by its serial number) ------------------
 
 

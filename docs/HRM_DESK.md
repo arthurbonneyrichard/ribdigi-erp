@@ -153,6 +153,8 @@ Pay rates → **Someone other than the person who drew up a payroll must approve
 
 ## ZKTeco terminals and BioTime (`hrm_biometric.py`)
 
+On-site setup and the **Check** button (signs in / reads without storing; lists staff without a terminal ID and PINs that punched but match nobody): see `docs/ZKTECO_SETUP.md`.
+
 Give each person their **terminal ID** (the PIN on the fingerprint or face terminal). Then either:
 
 - **BioTime (ERP reads it):** Sites and terminals → link the BioTime server's address, an API user and password (stored encrypted). **Sync now** signs in (`/jwt-api-token-auth/`, then `/api-token-auth/`) and reads `/iclock/api/transactions/` from the last sync. The BioTime server must be reachable from the ERP over the internet.

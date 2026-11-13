@@ -194,6 +194,93 @@ def _tally(counts: dict, outcome: str) -> None:
     counts[outcome] = counts.get(outcome, 0) + 1
 
 
+MAX_UNKNOWN = 50
+
+
+def note_unknown(link: m.HrmBiometricLink, pin: str) -> None:
+    """Remember a PIN that punched but matches nobody, so HR can link it to a staff record."""
+    pin = (pin or "").strip()[:32]
+    if not pin:
+        return
+    seen = dict(link.unknown_pins or {})
+    entry = dict(seen.get(pin) or {"count": 0})
+    entry["count"] = int(entry.get("count") or 0) + 1
+    entry["last"] = datetime.utcnow().isoformat() + "Z"
+    seen[pin] = entry
+    if len(seen) > MAX_UNKNOWN:
+        for old in sorted(seen, key=lambda k: seen[k].get("last") or "")[: len(seen) - MAX_UNKNOWN]:
+            seen.pop(old, None)
+    link.unknown_pins = seen
+
+
+async def check(db: AsyncSession, tenant_id: str, link_id: str, *, now: datetime | None = None) -> dict:
+    """A setup check for one link. Reads, never stores punches."""
+    from app import hrm
+
+    link = await db.get(m.HrmBiometricLink, link_id)
+    if link is None or link.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Link not found")
+    now = now or datetime.utcnow()
+    staff = await hrm.list_employees(db, tenant_id)
+    pins = {str(p.biometric_id).strip() for p in staff if p.biometric_id}
+    # A PIN noted as unknown that has since been put on a staff record is fine now.
+    unknown = {k: v for k, v in (link.unknown_pins or {}).items() if k not in pins}
+    out: dict = {
+        "kind": link.kind, "name": link.name, "active": bool(link.is_active),
+        "staff_without_terminal_id": sorted(p.full_name for p in staff if not p.biometric_id),
+        "unknown_pins": [{"pin": k, **v} for k, v in sorted(unknown.items())],
+        "steps": [],
+    }
+    steps = out["steps"]
+    if link.kind == "device":
+        if link.last_seen_at is None:
+            out["status"] = "never"
+            steps.append(
+                f"The terminal has not called in. On the terminal: Menu, Comm., Cloud Server (ADMS): server address = this ERP's "
+                f"web address, port 443 with HTTPS on (or 80), and check its serial number is exactly {link.device_serial}."
+            )
+            steps.append("The server must send /iclock to the ERP backend (in Dokploy: a Path /iclock rule to the backend service).")
+        else:
+            minutes = int((now - link.last_seen_at).total_seconds() // 60)
+            out["minutes_since_seen"] = minutes
+            out["status"] = "ok" if minutes <= 15 else "quiet"
+            if minutes > 15:
+                steps.append(f"Last heard from {minutes} minutes ago. Check the terminal is on, on the network, and its clock is right.")
+        out["last_result"] = link.last_result
+    else:
+        if not link.is_active:
+            out["status"] = "off"
+        else:
+            password = _decrypt(link.password_enc or "")
+            try:
+                async with httpx.AsyncClient(base_url=link.base_url, timeout=15, transport=transport) as client:
+                    auth = None
+                    for path, prefix in (("/jwt-api-token-auth/", "JWT"), ("/api-token-auth/", "Token")):
+                        r = await client.post(path, json={"username": link.username, "password": password})
+                        if r.status_code == 200 and r.json().get("token"):
+                            auth = f"{prefix} {r.json()['token']}"
+                            break
+                    if auth is None:
+                        out["status"] = "sign_in_refused"
+                        steps.append("BioTime refused the sign-in. Check the API user and password, and that the user may use the API.")
+                    else:
+                        r = await client.get("/iclock/api/transactions/", params={"page_size": 1, "page": 1}, headers={"Authorization": auth})
+                        if r.status_code != 200:
+                            out["status"] = "no_transactions"
+                            steps.append(f"Signed in, but reading punches answered {r.status_code}. Give the API user rights to transactions.")
+                        else:
+                            out["status"] = "ok"
+                            out["punches_on_server"] = int((r.json() or {}).get("count") or 0)
+            except httpx.HTTPError as exc:
+                out["status"] = "unreachable"
+                steps.append(f"Could not reach {link.base_url} ({type(exc).__name__}). The BioTime server must be reachable from the internet, usually over HTTPS.")
+    if out["staff_without_terminal_id"]:
+        steps.append("Put each person's terminal user ID (PIN) on their staff record, or their punches are not counted.")
+    if out["unknown_pins"]:
+        steps.append("Some terminal IDs punched but match no staff record; add them to the right staff records.")
+    return out
+
+
 async def sync_biotime(db: AsyncSession, tenant_id: str, link_id: str, *, user_id=None) -> dict:
     from app import hrm
 
@@ -231,6 +318,8 @@ async def sync_biotime(db: AsyncSession, tenant_id: str, link_id: str, *, user_i
                         at_utc=_local_to_utc(str(row.get("punch_time")), zone),
                         state=row.get("punch_state"), ref=f"bt:{link.id}:{row.get('id')}", site_id=link.site_id,
                     )
+                    if outcome == "unknown_pin":
+                        note_unknown(link, str(row.get("emp_code") or ""))
                     _tally(counts, outcome)
                 if not body.get("next"):
                     break
@@ -305,6 +394,8 @@ async def push_attlog(db: AsyncSession, link: m.HrmBiometricLink, body: str) -> 
             db, link.tenant_id, pin=parts[0], at_utc=at_utc, state=state,
             ref=f"zk:{link.device_serial}:{parts[0]}:{parts[1].strip()}", site_id=link.site_id,
         )
+        if outcome == "unknown_pin":
+            note_unknown(link, parts[0])
         _tally(counts, outcome)
     link.last_result = ", ".join(f"{v} {k.replace('_', ' ')}" for k, v in sorted(counts.items())) or "Nothing new"
     await db.flush()
