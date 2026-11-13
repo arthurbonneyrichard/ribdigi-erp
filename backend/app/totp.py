@@ -10,7 +10,9 @@ from datetime import datetime, timedelta, timezone
 
 import pyotp
 import qrcode
-from cryptography.fernet import Fernet, InvalidToken
+from functools import lru_cache
+
+from cryptography.fernet import Fernet, InvalidToken, MultiFernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from fastapi import HTTPException
@@ -73,18 +75,34 @@ def _fernet_from_configured_key(raw: str, *, label: str) -> Fernet:
     )
 
 
-def _fernet() -> Fernet:
-    raw = (settings.TOTP_ENCRYPTION_KEY or settings.BACKUP_ENCRYPTION_KEY or "").strip()
-    if raw:
-        return _fernet_from_configured_key(raw, label="TOTP encryption key")
+@lru_cache(maxsize=4)
+def _legacy_fernet(jwt_secret: str) -> Fernet:
+    """The key used when no encryption key was set: derived from JWT_SECRET_KEY."""
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
         salt=b"ribdigi-totp-v1",
         iterations=120_000,
     )
-    key = base64.urlsafe_b64encode(kdf.derive(settings.JWT_SECRET_KEY.encode("utf-8")))
-    return Fernet(key)
+    return Fernet(base64.urlsafe_b64encode(kdf.derive(jwt_secret.encode("utf-8"))))
+
+
+def _fernet() -> MultiFernet:
+    """2FA secrets and stored SMTP / SMS / webhook / bank-feed secrets.
+
+    New values use TOTP_ENCRYPTION_KEY (else BACKUP_ENCRYPTION_KEY, else the JWT-derived key).
+    Values saved earlier under any of those still open, so setting a key in production does
+    not lock anyone out; scripts/reencrypt_secrets.py rewrites them under the new key.
+    """
+    keys: list[Fernet] = []
+    for raw, label in (
+        (settings.TOTP_ENCRYPTION_KEY, "TOTP encryption key"),
+        (settings.BACKUP_ENCRYPTION_KEY, "BACKUP_ENCRYPTION_KEY"),
+    ):
+        if (raw or "").strip():
+            keys.append(_fernet_from_configured_key(raw.strip(), label=label))
+    keys.append(_legacy_fernet(settings.JWT_SECRET_KEY))
+    return MultiFernet(keys)
 
 
 def encrypt_secret(secret: str) -> str:

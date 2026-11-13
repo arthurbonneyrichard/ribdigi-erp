@@ -967,29 +967,86 @@ async def _notify(db: AsyncSession, title: str, message: str) -> bool:
         title=title,
         message=message,
         entity_type="server",
+        # The plain-language alert email is sent by _email_staff, once per check-up.
+        send_email=False,
     )
     return note is not None
 
 
+async def alert_recipients(db: AsyncSession) -> list[str]:
+    """Emails of active platform staff who keep server-health email switched on."""
+    from app import notifications as notifications_svc
+    from app.rbac import PLATFORM_ROLES
+
+    tenant_id = await platform_tenant_id(db)
+    if not tenant_id:
+        return []
+    out: set[str] = set()
+    for user in await notifications_svc.users_for_roles(db, tenant_id, sorted(PLATFORM_ROLES)):
+        if user.email and await notifications_svc.channel_enabled(
+            db, tenant_id=tenant_id, user_id=user.id, category="server_health", channel="email"
+        ):
+            out.add(user.email)
+    return sorted(out)
+
+
+async def _email_staff(db: AsyncSession, built: tuple[str, str, str]) -> int:
+    """Send one branded alert email to each platform staff member. Returns how many went."""
+    from app import emailer
+
+    subject, text, inner = built
+    try:
+        from app.email_design import refresh_platform_style
+
+        await refresh_platform_style()
+    except Exception:
+        pass
+    html_body = emailer.render_branded_html(
+        body_html=inner, tenant=None, title=subject, preheader=text.split("\n", 1)[0]
+    )
+    sent = 0
+    for to in await alert_recipients(db):
+        try:
+            await emailer.send_email(to=to, subject=subject, text_body=text, html_body=html_body)
+            sent += 1
+        except Exception:
+            logger.exception("server alert email failed")
+    return sent
+
+
 async def evaluate_alerts(db: AsyncSession, snap: dict[str, Any]) -> list[dict[str, Any]]:
-    """Raise alerts for critical checks and recovery notes for cleared ones."""
+    """Raise alerts for critical checks and resolved notes for cleared ones.
+
+    All changes in one check-up go out as one problems email and one resolved
+    email, so a bad minute never floods the inbox.
+    """
+    from app import server_alert_email as mail
+
     fired: list[dict[str, Any]] = []
+    new_problems: list[dict[str, Any]] = []
+    resolved: list[dict[str, Any]] = []
     active = await active_alerts()
     current = {c["key"]: c for c in snap.get("checks") or []}
     host = (snap.get("host") or {}).get("hostname") or "server"
     for key, check in current.items():
         if check["status"] != "critical":
             continue
+        since = (active.get(key) or {}).get("since") or snap.get("at")
         if key not in active:
-            await _set_active(key, {"since": snap.get("at"), "label": check["label"]})
+            await _set_active(key, {"since": since, "label": check["label"]})
         if not await _cooldown_ok(key):
             continue
-        title = f"Server alert: {check['label']}"
-        message = f"{check['label']} on {host} is {check['value']}. {check['detail']}".strip()
+        info = mail.help_for(key)
         event = {"at": snap.get("at"), "kind": "alert", "key": key, "label": check["label"],
-                 "value": check["value"], "detail": check["detail"]}
+                 "value": check["value"], "detail": check["detail"], "since": since}
         await _push_event(event)
-        await _notify(db, title, message)
+        await _notify(
+            db,
+            f"Action needed: {check['label']} is {check['value']}",
+            f"{check['label']} on {host} is {check['value']} (alert limit {mail.limit_for(key)}). "
+            f"{info['means']} First step: {info['do'][0]}",
+        )
+        new_problems.append(event)
         fired.append(event)
     for key, info in active.items():
         check = current.get(key)
@@ -1001,10 +1058,16 @@ async def evaluate_alerts(db: AsyncSession, snap: dict[str, Any]) -> list[dict[s
         await _set_active(key, None)
         label = info.get("label") or key
         event = {"at": snap.get("at"), "kind": "recovered", "key": key, "label": label,
-                 "value": check["value"] if check else "ok", "detail": f"Since {info.get('since')}"}
+                 "value": check["value"] if check else "ok", "detail": f"Since {info.get('since')}",
+                 "since": info.get("since")}
         await _push_event(event)
-        await _notify(db, f"Server recovered: {label}", f"{label} is back to normal on {host}.")
+        await _notify(db, f"Resolved: {label} is back to normal", f"{label} is back to normal on {host}. Nothing more to do.")
+        resolved.append(event)
         fired.append(event)
+    if new_problems:
+        await _email_staff(db, mail.build_alert_email(new_problems, host))
+    if resolved:
+        await _email_staff(db, mail.build_recovered_email(resolved, host))
     return fired
 
 
@@ -1027,16 +1090,20 @@ async def record(db: AsyncSession, *, source: str, force: bool = False) -> dict[
 
 
 async def send_test_alert(db: AsyncSession, *, by: str) -> dict[str, Any]:
+    from app import server_alert_email as mail
+
     event = {"at": _iso(_now()), "kind": "test", "key": "test", "label": "Test alert",
              "value": "sent", "detail": f"Sent by {by}"}
     await _push_event(event)
     ok = await _notify(
         db,
-        "Server alert test",
-        "This is a test of Ribdigi server alerts. If you can read this, alerts reach you.",
+        "Test: server alerts are working",
+        "This is a test from Server health. Nothing is wrong. Real alerts say what is wrong, "
+        "the reading against its limit, and what to do.",
     )
+    emailed = await _email_staff(db, mail.build_test_email(by, socket.gethostname()))
     await db.commit()
-    return {"delivered": ok, "event": event}
+    return {"delivered": ok, "emailed": emailed, "event": event}
 
 
 def thresholds() -> dict[str, Any]:
@@ -1065,6 +1132,65 @@ def _item(key: str, area: str, label: str, ok: bool | None, fix: str, *, warn_on
         status = "warn" if warn_only else "fail"
     return {"key": key, "area": area, "label": label, "status": status, "fix": "" if ok else fix}
 
+
+
+# --- Launch checks: encryption keys and the metrics token ------------------------------------
+
+_KEY_NAMES = ("BACKUP_ENCRYPTION_KEY", "TOTP_ENCRYPTION_KEY", "SECRETS_ENCRYPTION_KEY")
+KEY_COMMAND = 'python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"'
+
+
+def _placeholder(value: str) -> bool:
+    v = value.strip().upper()
+    return not v or v.startswith("REPLACE_ME") or v in {"CHANGEME", "CHANGE_ME", "SECRET", "TEST"}
+
+
+def key_problems() -> list[str]:
+    """What is wrong with the three encryption keys: missing, placeholder, too short, or shared."""
+    values = {name: (getattr(settings, name, "") or "").strip() for name in _KEY_NAMES}
+    problems = []
+    for name, value in values.items():
+        if _placeholder(value):
+            problems.append(f"{name} is not set")
+        elif len(value) < 32:
+            problems.append(f"{name} is shorter than 32 characters")
+    real = [v for v in values.values() if not _placeholder(v)]
+    if len(set(real)) < len(real):
+        problems.append("two of the keys are the same value; each needs its own")
+    jwt = (settings.JWT_SECRET_KEY or "").strip()
+    if jwt and jwt in real:
+        problems.append("a key equals JWT_SECRET_KEY; use a different value")
+    return problems
+
+
+def keys_fix_text() -> str:
+    problems = key_problems()
+    if not problems:
+        return "All three keys are set and different. Keep a copy offline: without them backups and saved secrets cannot be opened."
+    return (
+        "; ".join(problems).capitalize() + ". "
+        f"Make each key with: {KEY_COMMAND} and add it in Dokploy > Environment, then redeploy. "
+        "Data saved before still opens with the old key. Afterwards run scripts/reencrypt_secrets.py --apply "
+        "to move stored secrets onto the new keys. Keep copies offline."
+    )
+
+
+def metrics_problem() -> str | None:
+    """None when /metrics is safe: turned off, or behind a real token."""
+    if not settings.METRICS_ENABLED:
+        return None
+    token = (settings.METRICS_TOKEN or "").strip()
+    if _placeholder(token):
+        closed = settings.APP_ENV.lower() == "production"
+        return (
+            ("The metrics page is closed (production without a token), so Prometheus cannot read it. " if closed
+             else "The metrics page is open to anyone. ")
+            + 'Set METRICS_TOKEN to a long random value (python -c "import secrets; print(secrets.token_urlsafe(32))") '
+            "and give the same token to Prometheus as a bearer token, or set METRICS_ENABLED=false."
+        )
+    if len(token) < 24:
+        return "METRICS_TOKEN is shorter than 24 characters. Use a long random value (secrets.token_urlsafe(32))."
+    return None
 
 async def launch_checks(db: AsyncSession, snap: dict[str, Any] | None = None) -> dict[str, Any]:
     """Commercial launch checklist for the software owner (no secrets returned)."""
@@ -1107,12 +1233,9 @@ async def launch_checks(db: AsyncSession, snap: dict[str, Any] | None = None) ->
               "Start celery_worker and celery_beat (emails, backups, renewals and alerts run there)."),
         _item("2fa", "Security", "Two-step sign-in enforced", bool(settings.LOGIN_2FA_ENABLED),
               "Set LOGIN_2FA_ENABLED=true."),
-        _item("keys", "Security", "Separate encryption keys set",
-              all((k or "").strip() for k in (settings.BACKUP_ENCRYPTION_KEY, settings.TOTP_ENCRYPTION_KEY,
-                                               settings.SECRETS_ENCRYPTION_KEY)),
-              "Set BACKUP_ENCRYPTION_KEY, TOTP_ENCRYPTION_KEY and SECRETS_ENCRYPTION_KEY (keep copies offline)."),
-        _item("metrics", "Security", "Metrics page protected by a token", bool((settings.METRICS_TOKEN or "").strip()),
-              "Set METRICS_TOKEN (or METRICS_ENABLED=false).", warn_only=True),
+        _item("keys", "Security", "Separate encryption keys set", not key_problems(), keys_fix_text(), warn_only=False),
+        _item("metrics", "Security", "Metrics page protected by a token", not metrics_problem(),
+              metrics_problem() or "Metrics are protected.", warn_only=True),
         _item("email", "Customers", "Platform email can send",
               bool(settings.EMAIL_ENABLED and (settings.SMTP_HOST or "").strip()),
               "Set SMTP_HOST, SMTP_FROM_EMAIL and credentials so sign-up, reset and invoice mail is delivered."),

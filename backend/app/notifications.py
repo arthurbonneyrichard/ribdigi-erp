@@ -211,6 +211,7 @@ async def create_notification(
     exclude_user_ids: set[str] | list[str] | None = None,
     entity_type: str | None = None,
     entity_id: str | None = None,
+    send_email: bool = True,
 ) -> m.Notification | None:
     category = category if category in VALID_CATEGORIES else "system"
     if user_id and not await channel_enabled(
@@ -290,7 +291,7 @@ async def create_notification(
             return out
 
         tenant = await db.get(m.Tenant, tenant_id)
-        for admin in await _recipients_for_channel("email"):
+        for admin in (await _recipients_for_channel("email")) if send_email else []:
             if admin.email:
                 await emailer.send_notification_email(
                     to=admin.email,
@@ -329,6 +330,7 @@ async def notify_platform_event(
     category: str = "platform",
     entity_type: str | None = None,
     entity_id: str | None = None,
+    send_email: bool = True,
 ) -> m.Notification | None:
     """In-app note for Platform Owner staff. Failures must not roll back the action."""
     cat = category if category in PLATFORM_AUDIENCE_CATEGORIES else "platform"
@@ -344,6 +346,7 @@ async def notify_platform_event(
             entity_type=entity_type,
             entity_id=entity_id,
             roles=sorted(PLATFORM_ROLES),
+            send_email=send_email,
         )
     except Exception:
         logger.exception("platform notification failed category=%s", cat)

@@ -54,7 +54,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: datePickerInit }} />
         <UmamiScript />
       </head>
-      <body>{children}</body>
+      {/* Browser extensions (Grammarly, password managers) add attributes to <body> before
+          React loads; this only stops React warning about those attributes, not about children. */}
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }

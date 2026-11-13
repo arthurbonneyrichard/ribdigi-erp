@@ -78,9 +78,16 @@ async def monitor_test_alert(
     db: AsyncSession = Depends(get_db),
     claims: dict = Depends(require_platform_permission("platform", "read")),
 ):
+    from app import models as m
+
     _owner_or_admin(claims)
-    result = await svc.send_test_alert(db, by=str(claims.get("email") or claims.get("sub") or "owner"))
-    return env(result, "Test alert sent" if result["delivered"] else "No platform workspace to notify")
+    user = await db.get(m.User, str(claims.get("sub") or ""))
+    by = (getattr(user, "full_name", None) or getattr(user, "email", None) or "A platform admin").strip()
+    result = await svc.send_test_alert(db, by=by)
+    if not result["delivered"]:
+        return env(result, "No platform workspace to notify")
+    n = result.get("emailed", 0)
+    return env(result, f"Test alert sent: in-app note plus {n} email{'s' if n != 1 else ''} to platform staff")
 
 
 @router.get("/launch-checks")
