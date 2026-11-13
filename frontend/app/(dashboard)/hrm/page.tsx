@@ -16,6 +16,7 @@ import DeskIcon from '../../../components/DeskIcon';
 import { MyMore, PEOPLE_WORK_SCREENS, PeopleWork } from './PeopleWork';
 import { MyClock, TIME_SCREENS, TimeWork } from './TimeWork';
 import LeavePay from './LeavePay';
+import { MyDocuments, StaffFiles } from './Documents';
 import './hrm.css';
 
 type Row = Record<string, any>;
@@ -641,6 +642,7 @@ function HrmDesk() {
               </tbody>
             </table>
           </section>
+          <StaffFiles people={people} canConfidential={seesPay} />
         </>
       ) : null}
 
@@ -1335,6 +1337,7 @@ function HrmDesk() {
               </tbody>
             </table>
           </section>
+          <MyDocuments />
           <MyMore />
         </>
       ) : null}

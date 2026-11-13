@@ -469,6 +469,9 @@ api.include_router(fmcg_field_api_mod.router)
 from app import restaurant_tips_api as restaurant_tips_api_mod  # noqa: E402
 
 api.include_router(restaurant_tips_api_mod.router)
+from app import hrm_documents_api as hrm_documents_api_mod  # noqa: E402
+
+api.include_router(hrm_documents_api_mod.router)
 from app import hotel_booking_api as hotel_booking_api_mod
 
 api.include_router(hotel_booking_api_mod.router)

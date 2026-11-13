@@ -4660,6 +4660,43 @@ class HrmLeaveEncashment(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class HrmDocument(Base):
+    """A file on one person's staff record, or (employee_id NULL) a company policy for everyone."""
+
+    __tablename__ = "hrm_documents"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str | None] = mapped_column(ForeignKey("hrm_employees.id"), nullable=True, index=True)
+    title: Mapped[str] = mapped_column(String(200))
+    kind: Mapped[str] = mapped_column(String(20), default="other")
+    storage_key: Mapped[str] = mapped_column(String(500))
+    content_type: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    size: Mapped[int] = mapped_column(Integer, default=0)
+    filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    needs_ack: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    confidential: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    uploaded_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmDocumentAck(Base):
+    """A person read and accepted a document, confirmed by typing their full name."""
+
+    __tablename__ = "hrm_document_acks"
+    __table_args__ = (UniqueConstraint("document_id", "employee_id", name="uq_hrm_document_ack"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    document_id: Mapped[str] = mapped_column(ForeignKey("hrm_documents.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    typed_name: Mapped[str] = mapped_column(String(150))
+    acknowledged_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    ip_address: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+
 class HrmStatutoryRate(Base):
     """PAYE bands and SSNIT / pension rules from a date onwards. A payroll month uses the
     newest row starting on or before the month's first day. Rows an approved payroll used

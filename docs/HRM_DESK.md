@@ -64,6 +64,10 @@ Payroll arithmetic is Decimal throughout (`backend/app/hrm_payroll.py`, no float
 
 **The figures are not checked against GRA or SSNIT by the system.** The desk does not file with GRA or SSNIT.
 
+## Documents and policies (`hrm_documents.py`, `hrm_documents_api.py`, screen `Documents.tsx`)
+
+HR (People) files PDFs or photos on a staff record (contract, ID copy, certificate, letter) or as a company policy for everyone. Files go to the tenant media store. "Staff must accept it" asks the person (or every member of staff, for a policy) to open it and type their full name as it is on their staff record; the name, time, sign-in and IP are kept, and **Who accepted** lists who has not. This is a record that they read it, not a qualified electronic signature. **Confidential** files (medical notes, disciplinary letters) are for HR managers only: the person and HR officers never see them. Files are archived, never edited. Staff see theirs under My HR → My documents.
+
 ## Paying out unused leave (`hrm_leave_pay.py`)
 
 Payroll → **Pay out unused leave**: HR picks a person, leave year, number of days (no more than are left) and the payroll month. The amount is fixed then: basic ÷ working days × days. The days count as used straight away; the month's payroll pays it as **Unused leave paid**, taxable with no SSNIT (an accountant should confirm). It can be cancelled, giving the days back, until a payroll takes it. Nobody approves their own. `GET /hrm/employees/{id}/leave-balance` shows what is left.
