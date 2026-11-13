@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from app import server_monitor as svc
 
 
@@ -29,3 +31,32 @@ def test_uptime_uses_availability_and_reads_old_rows():
         {"t": now - 20, "s": "critical", "db": None},   # old reading: no database reply
     ]
     assert svc.uptime_from(rows)["healthy_pct"] == 50.0
+
+
+def test_backup_check_clears_once_the_latest_backup_succeeds():
+    base = {"companies_scheduled": 2, "age_hours": 0.5, "failed_last_24h": 6}
+    recovered = {c["key"]: c for c in svc.build_checks({"backups": {**base, "companies_failing": 0}})}["backups"]
+    assert recovered["status"] == "ok", recovered
+    failing = {c["key"]: c for c in svc.build_checks({"backups": {**base, "companies_failing": 1}})}["backups"]
+    assert failing["status"] == "warn" and "1 company" in failing["detail"], failing
+    text = svc.backups_fix_text({**base, "companies_failing": 0, "last_error": "Invalid key"})
+    assert "since succeeded" in text and "Earlier error (since fixed): Invalid key" in text
+
+
+@pytest.mark.asyncio
+async def test_backup_stats_counts_companies_whose_latest_backup_failed(db_session, client):
+    from datetime import datetime, timedelta
+
+    from app import models as m
+
+    _ac, seed = client
+    t1, t2 = seed["t1"].id, seed["t2"].id
+    now = datetime.utcnow()
+    for tenant, status, ago in ((t1, "failed", 3), (t1, "completed", 1), (t2, "completed", 3), (t2, "failed", 1)):
+        db_session.add(m.BackupJob(
+            tenant_id=tenant, status=status, filename="f", storage_path="", size_bytes=0,
+            checksum_sha256="", encrypted=True, record_counts={}, created_at=now - timedelta(hours=ago),
+        ))
+    await db_session.commit()
+    stats = await svc._backup_stats(db_session)
+    assert stats["companies_failing"] == 1 and stats["failed_last_24h"] == 2, stats
