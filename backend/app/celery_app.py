@@ -7,6 +7,24 @@ from celery.schedules import crontab, schedule
 
 from app.config import settings
 
+
+def on_the_clock(every_minutes: int, *, minute: int = 0):
+    """Run every N minutes at fixed clock times.
+
+    A plain `schedule(run_every=...)` counts from when celery_beat started, and beat restarts on
+    every deploy (its schedule file is in /tmp). With a few deploys a day an hourly job such as
+    run_due_backups never reached its first run. Clock times survive restarts: hourly jobs run at
+    `minute` past every hour, longer ones every few hours on the hour, shorter ones every N minutes.
+    """
+    n = max(1, int(every_minutes))
+    if n < 60 and 60 % n == 0:
+        return crontab(minute=f"{minute % n}-59/{n}")
+    if n % 60 == 0 and 1440 % n == 0:
+        hours = n // 60
+        return crontab(minute=minute, hour="0" if hours == 24 else f"*/{hours}")
+    return schedule(run_every=n * 60.0)  # an interval that does not fit the clock
+
+
 celery = Celery(
     "ribdigi",
     broker=settings.celery_broker_url,
@@ -29,67 +47,51 @@ celery.conf.update(
     beat_schedule={
         "scan-low-stock": {
             "task": "app.tasks.scan_low_stock",
-            "schedule": schedule(run_every=max(1, int(settings.CELERY_LOW_STOCK_INTERVAL_MINUTES)) * 60.0),
+            "schedule": on_the_clock(settings.CELERY_LOW_STOCK_INTERVAL_MINUTES, minute=7),
         },
         "scan-payment-due": {
             "task": "app.tasks.scan_payment_due",
-            "schedule": schedule(
-                run_every=max(1, int(settings.CELERY_PAYMENT_DUE_INTERVAL_MINUTES)) * 60.0
-            ),
+            "schedule": on_the_clock(settings.CELERY_PAYMENT_DUE_INTERVAL_MINUTES, minute=14),
         },
         "scan-quotation-expiry": {
             "task": "app.tasks.scan_quotation_expiry",
-            "schedule": schedule(
-                run_every=max(1, int(settings.CELERY_QUOTATION_EXPIRY_INTERVAL_MINUTES)) * 60.0
-            ),
+            "schedule": on_the_clock(settings.CELERY_QUOTATION_EXPIRY_INTERVAL_MINUTES, minute=21),
         },
         "scan-batch-expiry": {
             "task": "app.tasks.scan_batch_expiry",
-            "schedule": schedule(
-                run_every=max(1, int(settings.CELERY_BATCH_EXPIRY_INTERVAL_MINUTES)) * 60.0
-            ),
+            "schedule": on_the_clock(settings.CELERY_BATCH_EXPIRY_INTERVAL_MINUTES, minute=28),
         },
         "scan-recurring-expense-due": {
             "task": "app.tasks.scan_recurring_expense_due",
-            "schedule": schedule(
-                run_every=max(1, int(settings.CELERY_RECURRING_NOTIFY_INTERVAL_MINUTES)) * 60.0
-            ),
+            "schedule": on_the_clock(settings.CELERY_RECURRING_NOTIFY_INTERVAL_MINUTES, minute=35),
         },
         "generate-recurring-expenses": {
             "task": "app.tasks.generate_recurring_expenses",
-            "schedule": schedule(
-                run_every=max(1, int(settings.CELERY_RECURRING_INTERVAL_MINUTES)) * 60.0
-            ),
+            "schedule": on_the_clock(settings.CELERY_RECURRING_INTERVAL_MINUTES, minute=42),
         },
         "run-due-backups": {
             "task": "app.tasks.run_due_backups",
-            "schedule": schedule(run_every=max(1, int(settings.CELERY_BACKUP_INTERVAL_MINUTES)) * 60.0),
+            "schedule": on_the_clock(settings.CELERY_BACKUP_INTERVAL_MINUTES, minute=5),
         },
         "scan-trial-lifecycle": {
             "task": "app.tasks.scan_trial_lifecycle",
-            "schedule": schedule(run_every=max(1, int(settings.CELERY_TRIAL_INTERVAL_MINUTES)) * 60.0),
+            "schedule": on_the_clock(settings.CELERY_TRIAL_INTERVAL_MINUTES, minute=49),
         },
         "run-due-report-emails": {
             "task": "app.tasks.run_due_report_emails",
-            "schedule": schedule(
-                run_every=max(1, int(settings.CELERY_REPORT_EMAIL_INTERVAL_MINUTES)) * 60.0
-            ),
+            "schedule": on_the_clock(settings.CELERY_REPORT_EMAIL_INTERVAL_MINUTES, minute=56),
         },
         "refresh-fx-rates": {
             "task": "app.tasks.refresh_fx_rates",
-            "schedule": schedule(run_every=max(1, int(settings.CELERY_FX_INTERVAL_MINUTES)) * 60.0),
+            "schedule": on_the_clock(settings.CELERY_FX_INTERVAL_MINUTES, minute=3),
         },
         "sync-bank-feeds": {
             "task": "app.tasks.sync_bank_feeds",
-            "schedule": schedule(
-                run_every=max(1, int(settings.CELERY_BANK_FEED_INTERVAL_MINUTES)) * 60.0
-            ),
+            "schedule": on_the_clock(settings.CELERY_BANK_FEED_INTERVAL_MINUTES, minute=10),
         },
         "archive-cold-audit-logs": {
             "task": "app.tasks.archive_cold_audit_logs",
-            "schedule": schedule(
-                run_every=max(1, int(settings.CELERY_AUDIT_ARCHIVE_INTERVAL_MINUTES)) * 60.0
-            ),
+            "schedule": on_the_clock(settings.CELERY_AUDIT_ARCHIVE_INTERVAL_MINUTES, minute=17),
         },
         "retry-due-webhooks": {
             "task": "app.tasks.retry_due_webhooks",
@@ -99,9 +101,7 @@ celery.conf.update(
         },
         "scan-ai-security-alerts": {
             "task": "app.tasks.scan_ai_security_alerts",
-            "schedule": schedule(
-                run_every=max(1, int(settings.CELERY_AI_SECURITY_INTERVAL_MINUTES)) * 60.0
-            ),
+            "schedule": on_the_clock(settings.CELERY_AI_SECURITY_INTERVAL_MINUTES, minute=24),
         },
         "scan-hr-escalations": {
             "task": "app.tasks.scan_hr_escalations",
@@ -113,21 +113,15 @@ celery.conf.update(
         },
         "process-subscription-renewals": {
             "task": "app.tasks.process_subscription_renewals",
-            "schedule": schedule(
-                run_every=max(1, int(settings.CELERY_BILLING_INTERVAL_MINUTES)) * 60.0
-            ),
+            "schedule": on_the_clock(settings.CELERY_BILLING_INTERVAL_MINUTES, minute=31),
         },
         "expire-ecommerce-reservations": {
             "task": "app.tasks.expire_ecommerce_reservations",
-            "schedule": schedule(
-                run_every=max(1, int(settings.CELERY_ECOMMERCE_INTERVAL_MINUTES)) * 60.0
-            ),
+            "schedule": on_the_clock(settings.CELERY_ECOMMERCE_INTERVAL_MINUTES, minute=38),
         },
         "sync-ecommerce-connectors": {
             "task": "app.tasks.sync_ecommerce_connectors",
-            "schedule": schedule(
-                run_every=max(1, int(settings.CELERY_ECOMMERCE_INTERVAL_MINUTES)) * 60.0
-            ),
+            "schedule": on_the_clock(settings.CELERY_ECOMMERCE_INTERVAL_MINUTES, minute=45),
         },
         "sample-server-health": {
             "task": "app.tasks.sample_server_health",
