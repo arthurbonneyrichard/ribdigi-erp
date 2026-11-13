@@ -51,7 +51,8 @@ PAYROLL_ACCOUNTS = [
 
 _JOBS = {
     # Officers run people admin; pay, reviews, claims and confidential cases need a manager.
-    "hrm_officer": frozenset({"people", "leave", "attendance", "recruitment", "training", "contracts", "assets", "notices"}),
+    # Officers are staff too: "self" lets them use their own file (documents, feedback, cover).
+    "hrm_officer": frozenset({"people", "leave", "attendance", "recruitment", "training", "contracts", "assets", "notices", "self"}),
     "hrm_employee": frozenset({"self"}),
 }
 # A desk's manager looks after their staff's records, leave and time, but not pay.
@@ -1112,6 +1113,9 @@ async def delete_run(db: AsyncSession, tenant_id: str, run_id: str, *, user_id) 
     await hrm_leave_pay.release(db, run.id)
     for slip in await _slips(db, run.id):
         await db.delete(slip)
+    # Payslips must be gone before the run: nothing tells the session their order, and
+    # Postgres refuses to drop a run its payslips still point to.
+    await db.flush()
     await db.delete(run)
     await _audit(db, tenant_id, user_id, "hrm_payroll_deleted", "hrm_payroll", run_id, {"period": run.period})
     await db.flush()

@@ -599,11 +599,34 @@ async def hrm_employees(
     return _env([svc.serialize_employee(r, pay=pay) for r in await svc.list_employees(db, claims["tenant_id"], show=show)])
 
 
+# Pay and identity fields only an HR manager (pay rights) may set: changing a bank or Mobile
+# Money number redirects someone's pay, so it needs the same rights as changing the salary.
+PAY_ONLY_FIELDS = frozenset({
+    "basic_salary", "allowances", "commission_percent", "tier3_percent", "pay_frequency",
+    "ssnit_number", "tin", "bank_name", "bank_account", "ghana_card", "mobile_money",
+})
+
+
+# When adding someone, an officer may take down their ID and contact numbers (a new record
+# pays nothing until an HR manager sets the salary); the pay amounts themselves need pay rights.
+CREATE_PAY_FIELDS = frozenset({"basic_salary", "allowances", "commission_percent", "tier3_percent", "pay_frequency"})
+
+
+def _touches_pay(payload) -> bool:
+    defaults = {"basic_salary": 0, "allowances": 0, "commission_percent": 0, "tier3_percent": 0, "pay_frequency": "monthly"}
+    for name in CREATE_PAY_FIELDS & payload.model_fields_set:
+        value = getattr(payload, name, None)
+        if value is None or value == "" or (name in defaults and value == defaults[name]):
+            continue
+        return True
+    return False
+
+
 @router.post("/employees")
 async def hrm_employee_create(
     payload: EmployeeBody, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)
 ):
-    svc.job(claims, "people")
+    svc.job(claims, "payroll" if _touches_pay(payload) else "people")
     row = await svc.create_employee(db, claims["tenant_id"], payload, user_id=claims.get("sub"))
     await db.commit()
     return _env(svc.serialize_employee(row, pay=_sees_pay(claims)), "Employee added")
@@ -616,7 +639,8 @@ async def hrm_employee_update(
     claims=Depends(require_permission("hrm", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    svc.job(claims, "payroll" if {"basic_salary", "allowances", "commission_percent", "tier3_percent"} & payload.model_fields_set else "people")
+    # Any pay or identity field, even set to blank, needs pay rights.
+    svc.job(claims, "payroll" if PAY_ONLY_FIELDS & payload.model_fields_set else "people")
     row = await svc.update_employee(db, claims["tenant_id"], employee_id, payload, user_id=claims.get("sub"))
     await db.commit()
     return _env(svc.serialize_employee(row, pay=_sees_pay(claims)), "Saved")

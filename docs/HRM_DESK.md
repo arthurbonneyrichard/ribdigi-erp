@@ -196,3 +196,15 @@ Staff only see a payslip once the run is approved.
 ## Demo
 
 `PYTHONPATH=. python scripts/seed_hrm_demo.py` creates `demo-hrm-rec` (Bright Path Services; owner, HR officer and employee logins). It refuses to run in production.
+
+## Commercial readiness check (13 Nov 2026)
+
+Done on the current code against Postgres 16 (not only the SQLite test database):
+
+- All migrations to `20261113_0179` apply on a fresh database, and the HR, restaurant-tip and FMCG field tables match the models (no drift).
+- The HR tests run on Postgres with `TEST_DATABASE_URL=postgresql+asyncpg://…/<throwaway db>` (opt-in in `tests/conftest.py`; the schema is rebuilt per test, so never point it at a real database). This caught **throwing away a draft payroll** failing on Postgres (payslips deleted after the run); fixed.
+- Every HR route was checked for its job / own-file guard. Fixed: an HR officer or desk manager could **change a colleague's bank, Mobile Money or ID numbers** (and so redirect their pay) without seeing them. Now any pay or identity field on an existing record needs pay rights; when adding someone an officer may take down ID and contact numbers, but not pay amounts (`PAY_ONLY_FIELDS` / `CREATE_PAY_FIELDS` in `hrm_api.py`, test `test_hrm_pay_field_guard.py`).
+- HR officers now have their own file ("self"): My documents and feedback requests were refused for them.
+- Screens were walked in a browser for an HR company (owner, HR officer, employee), an FMCG company and a restaurant: every HR screen, outlet visits, territories and tips loaded with no failed calls. Added the missing **Edit** for a staff record (contact, job, department, manager, terminal ID; pay and ID details for HR managers only; salary stays on Change salary). HR dialogs now scroll and keep Confirm in view on laptop screens.
+
+Still to do before relying on it: an accountant's check of the Ghana PAYE / SSNIT / overtime-tax / minimum-wage figures and of tips, commission and leave pay being taxed without SSNIT; a real ZKTeco terminal and BioTime server (`docs/ZKTECO_SETUP.md`).

@@ -143,6 +143,23 @@ function printStatement(st: Row) {
 const METHOD_WORDS: Record<string, string> = { cash: 'Cash', mobile_money: 'Mobile Money', bank_transfer: 'Bank transfer', cheque: 'Cheque' };
 
 /** A note for one weekly / fortnightly part-payment. The month's payslip is the tax record. */
+const EDIT_FIELDS: { key: string; label: string; pay?: boolean; kind?: string }[] = [
+  { key: 'full_name', label: 'Full name' },
+  { key: 'phone', label: 'Phone', kind: 'phone' },
+  { key: 'email', label: 'Email (their login)' },
+  { key: 'job_title', label: 'Job title' },
+  { key: 'department', label: 'Department' },
+  { key: 'biometric_id', label: 'Terminal ID (fingerprint / face)' },
+  { key: 'ghana_card', label: 'Ghana Card', pay: true },
+  { key: 'ssnit_number', label: 'SSNIT number', pay: true },
+  { key: 'tin', label: 'TIN', pay: true },
+  { key: 'bank_name', label: 'Bank', pay: true },
+  { key: 'bank_account', label: 'Bank account', pay: true },
+  { key: 'mobile_money', label: 'Mobile Money', pay: true, kind: 'phone' },
+  { key: 'commission_percent', label: 'Sales commission %', pay: true, kind: 'number' },
+  { key: 'tier3_percent', label: 'Tier 3 voluntary %', pay: true, kind: 'number' },
+];
+
 function printPayNote(l: Row) {
   const page = window.open('', '_blank', 'width=480,height=600');
   if (!page) return;
@@ -385,6 +402,24 @@ function HrmDesk() {
     if (!dialog) return;
     let ok: unknown = null;
     if (dialog.kind === 'left') ok = await run(`/hrm/employees/${dialog.row.id}/left`, { left_on: dialog.left_on, reason: dialog.reason.trim() }, 'Marked as left');
+    if (dialog.kind === 'edit') {
+      // Send only what changed, so nobody trips a check on a field they did not touch.
+      const body: Row = {};
+      for (const f of EDIT_FIELDS) {
+        if (f.pay && !seesPay) continue;
+        const before = dialog.row[f.key] ?? '';
+        let after: unknown = dialog.values[f.key] ?? '';
+        if (String(after) === String(before)) continue;
+        if (f.kind === 'number') after = Number(after || 0);
+        else if (f.kind === 'phone') after = String(after).replace(/[\s-]/g, '') || null;
+        else if (f.key === 'ghana_card') after = String(after).trim().toUpperCase() || null;
+        else after = String(after).trim() || null;
+        body[f.key] = after;
+      }
+      if (seesPay && dialog.values.pay_frequency !== (dialog.row.pay_frequency || 'monthly')) body.pay_frequency = dialog.values.pay_frequency;
+      if ((dialog.values.manager_id || '') !== (dialog.row.manager_id || '')) body.manager_id = dialog.values.manager_id || null;
+      ok = Object.keys(body).length ? await run(`/hrm/employees/${dialog.row.id}`, body, 'Staff record saved', 'PATCH') : true;
+    }
     if (dialog.kind === 'reject') ok = await run(`/hrm/leave/${dialog.row.id}/decide`, { approve: false, note: dialog.note.trim() }, 'Leave turned down');
     if (dialog.kind === 'pay') ok = await run(`/hrm/payroll/${dialog.row.id}/pay`, { what: dialog.what, method: dialog.method }, 'Recorded as paid');
     if (dialog.kind === 'loan') {
@@ -409,7 +444,9 @@ function HrmDesk() {
   }
 
   const dialogReady = dialog
-    ? dialog.kind === 'left'
+    ? dialog.kind === 'edit'
+      ? String(dialog.values.full_name || '').trim().length > 1
+      : dialog.kind === 'left'
       ? Boolean(dialog.left_on) && dialog.reason.trim().length >= 3
       : dialog.kind === 'reject' || (dialog.kind === 'loan' && !dialog.approve)
         ? dialog.note.trim().length > 0
@@ -470,7 +507,7 @@ function HrmDesk() {
     <div className="hrm">
       {dialog ? (
         <div className="hr-veil">
-          <div className="hr-dialog" role="dialog" aria-modal="true" aria-label="HR action">
+          <div className={`hr-dialog${dialog.kind === 'edit' ? ' wide' : ''}`} role="dialog" aria-modal="true" aria-label="HR action">
             {dialog.kind === 'left' ? (
               <>
                 <h2>{dialog.row.full_name} is leaving</h2>
@@ -507,6 +544,39 @@ function HrmDesk() {
                   </label>
                 ) : null}
                 <label><span>{dialog.approve ? 'Note (optional)' : 'Why'}</span><input value={dialog.note} onChange={(e) => setDialog({ ...dialog, note: e.target.value })} aria-label="Loan decision note" /></label>
+              </>
+            ) : null}
+            {dialog.kind === 'edit' ? (
+              <>
+                <h2>Edit {dialog.row.full_name}</h2>
+                <div className="hr-dialog-grid">
+                {EDIT_FIELDS.filter((f) => !f.pay || seesPay).map((f) => (
+                  <label key={f.key}><span>{f.label}</span>
+                    <input
+                      type={f.kind === 'number' ? 'number' : 'text'} value={dialog.values[f.key] ?? ''}
+                      onChange={(e) => setDialog({ ...dialog, values: { ...dialog.values, [f.key]: e.target.value } })}
+                      aria-label={`Edit ${f.label}`}
+                    />
+                  </label>
+                ))}
+                <label><span>Reports to</span>
+                  <select value={dialog.values.manager_id} onChange={(e) => setDialog({ ...dialog, values: { ...dialog.values, manager_id: e.target.value } })} aria-label="Edit reports to">
+                    <option value="">Nobody (HR decides their leave)</option>
+                    {people.filter((x) => x.id !== dialog.row.id).map((x) => <option key={x.id} value={x.id}>{x.full_name}</option>)}
+                  </select>
+                </label>
+                {seesPay ? (
+                  <label><span>Paid</span>
+                    <select value={dialog.values.pay_frequency} onChange={(e) => setDialog({ ...dialog, values: { ...dialog.values, pay_frequency: e.target.value } })} aria-label="Edit pay frequency">
+                      <option value="monthly">Monthly</option>
+                      <option value="weekly">Weekly (part-payments)</option>
+                      <option value="fortnightly">Fortnightly (part-payments)</option>
+                    </select>
+                  </label>
+                ) : null}
+                </div>
+                {seesPay ? null : <p className="hr-muted">Bank, Mobile Money, ID numbers and pay are changed by an HR manager.</p>}
+                <p className="hr-muted">To change pay, use Change salary: it keeps a dated history and pays any back pay.</p>
               </>
             ) : null}
             {dialog.kind === 'salary' ? (
@@ -666,6 +736,13 @@ function HrmDesk() {
                     <td>
                       <div className="hr-row">
                         {seesPay ? <button type="button" onClick={() => setDialog({ kind: 'salary', row: p, effective_from: iso(), basic: String(p.basic_salary ?? ''), allowances: String(p.allowances ?? '0'), reason: '' })}>Change salary</button> : null}
+                        <button
+                          type="button" aria-label={`Edit ${p.full_name}`}
+                          onClick={() => setDialog({
+                            kind: 'edit', row: p,
+                            values: { ...Object.fromEntries(EDIT_FIELDS.map((f) => [f.key, p[f.key] ?? ''])), manager_id: p.manager_id || '', pay_frequency: p.pay_frequency || 'monthly' },
+                          })}
+                        >Edit</button>
                         <button type="button" className="hr-danger" onClick={() => setDialog({ kind: 'left', row: p, left_on: iso(), reason: '' })}>Leaving</button>
                       </div>
                     </td>
