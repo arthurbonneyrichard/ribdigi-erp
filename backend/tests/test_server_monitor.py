@@ -127,3 +127,83 @@ def test_downsample_keeps_worst_status():
     assert points[0]["s"] == "critical" and points[0]["cpu"] == 20
     up = svc.uptime_from(rows)
     assert up["healthy_pct"] == 50.0
+
+
+@pytest.fixture
+def _dev_email(monkeypatch):
+    from app import emailer
+
+    emailer.clear_dev_outbox()
+    for mod in ("app.email_settings.settings", "app.emailer.settings"):
+        monkeypatch.setattr(f"{mod}.EMAIL_ENABLED", True)
+        monkeypatch.setattr(f"{mod}.SMTP_HOST", "")
+        monkeypatch.setattr(f"{mod}.SMTP_FROM_EMAIL", "noreply@localhost")
+    yield emailer
+    emailer.clear_dev_outbox()
+
+
+async def _platform_admin_headers(ac, seed):
+    from app import db as db_mod
+    from app.security import hash_password
+
+    async with db_mod.SessionLocal() as db:
+        db.add(
+            m.User(
+                tenant_id=seed["t1"].id,
+                email="padmin@alpha.example.com",
+                full_name="Pat Admin",
+                role="platform_admin",
+                password_hash=hash_password("SecurePass123!"),
+                is_active=True,
+                email_verified=True,
+            )
+        )
+        await db.commit()
+    return await auth_headers(ac, email="padmin@alpha.example.com", tenant_slug="alpha")
+
+
+@pytest.mark.asyncio
+async def test_platform_admin_has_full_server_health(client, _dev_email):
+    ac, seed = client
+    admin = await _platform_admin_headers(ac, seed)
+    for path in ("", "/history?range=24h", "/alerts", "/launch-checks"):
+        res = await ac.get(f"/api/v1/platform/monitor{path}", headers=admin)
+        assert res.status_code == 200, (path, res.text)
+    sent = await ac.post("/api/v1/platform/monitor/test-alert", headers=admin)
+    assert sent.status_code == 200, sent.text
+    assert sent.json()["data"]["emailed"] >= 1
+    mail = _dev_email.get_dev_outbox()[-1]
+    assert mail["subject"].startswith("Test: Ribdigi server alerts reach you")
+    assert "Pat Admin sent this test" in mail["html_body"]
+
+
+@pytest.mark.asyncio
+async def test_alert_email_is_plain_and_bundled(client, monkeypatch, _dev_email):
+    ac, seed = client
+    owner = await platform_owner_headers(ac, seed)
+    monkeypatch.setattr("app.server_monitor.settings.MONITOR_CPU_ALERT_PCT", 0.0)
+    monkeypatch.setattr("app.server_monitor.settings.MONITOR_MEMORY_ALERT_PCT", 0.0)
+    # Only the two forced problems: no Redis or worker checks in this test.
+    monkeypatch.setattr("app.server_monitor.settings.REDIS_URL", "")
+    monkeypatch.setattr("app.server_monitor.settings.CELERY_ENABLED", False)
+
+    await ac.get("/api/v1/platform/monitor", headers=owner)
+    alerts = [e for e in _dev_email.get_dev_outbox() if e["subject"].startswith("Action needed")]
+    assert len(alerts) == 1, "two problems in one check-up make one email"
+    mail = alerts[0]
+    assert "2 server problems" in mail["subject"]
+    for phrase in ("Reading now", "Alert limit", "What this means", "What to do", "Open Server health", "Processor", "Memory"):
+        assert phrase in mail["html_body"], phrase
+    assert "What to do:" in mail["text_body"]
+    assert "turn off email" in mail["text_body"]
+
+    _dev_email.clear_dev_outbox()
+    monkeypatch.setattr("app.server_monitor.settings.MONITOR_CPU_ALERT_PCT", 1000.0)
+    monkeypatch.setattr("app.server_monitor.settings.MONITOR_MEMORY_ALERT_PCT", 1000.0)
+    svc._mem_samples.clear()
+    await ac.get("/api/v1/platform/monitor", headers=owner)
+    resolved = [e for e in _dev_email.get_dev_outbox() if e["subject"].startswith("Resolved")]
+    assert len(resolved) == 1
+    assert "Back to normal" in resolved[0]["html_body"]
+    # The generic one-line notification email is no longer sent for server health.
+    assert not [e for e in _dev_email.get_dev_outbox() if e["subject"].startswith("[RIBDIGI]")]

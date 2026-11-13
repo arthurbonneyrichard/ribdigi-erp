@@ -967,29 +967,86 @@ async def _notify(db: AsyncSession, title: str, message: str) -> bool:
         title=title,
         message=message,
         entity_type="server",
+        # The plain-language alert email is sent by _email_staff, once per check-up.
+        send_email=False,
     )
     return note is not None
 
 
+async def alert_recipients(db: AsyncSession) -> list[str]:
+    """Emails of active platform staff who keep server-health email switched on."""
+    from app import notifications as notifications_svc
+    from app.rbac import PLATFORM_ROLES
+
+    tenant_id = await platform_tenant_id(db)
+    if not tenant_id:
+        return []
+    out: set[str] = set()
+    for user in await notifications_svc.users_for_roles(db, tenant_id, sorted(PLATFORM_ROLES)):
+        if user.email and await notifications_svc.channel_enabled(
+            db, tenant_id=tenant_id, user_id=user.id, category="server_health", channel="email"
+        ):
+            out.add(user.email)
+    return sorted(out)
+
+
+async def _email_staff(db: AsyncSession, built: tuple[str, str, str]) -> int:
+    """Send one branded alert email to each platform staff member. Returns how many went."""
+    from app import emailer
+
+    subject, text, inner = built
+    try:
+        from app.email_design import refresh_platform_style
+
+        await refresh_platform_style()
+    except Exception:
+        pass
+    html_body = emailer.render_branded_html(
+        body_html=inner, tenant=None, title=subject, preheader=text.split("\n", 1)[0]
+    )
+    sent = 0
+    for to in await alert_recipients(db):
+        try:
+            await emailer.send_email(to=to, subject=subject, text_body=text, html_body=html_body)
+            sent += 1
+        except Exception:
+            logger.exception("server alert email failed")
+    return sent
+
+
 async def evaluate_alerts(db: AsyncSession, snap: dict[str, Any]) -> list[dict[str, Any]]:
-    """Raise alerts for critical checks and recovery notes for cleared ones."""
+    """Raise alerts for critical checks and resolved notes for cleared ones.
+
+    All changes in one check-up go out as one problems email and one resolved
+    email, so a bad minute never floods the inbox.
+    """
+    from app import server_alert_email as mail
+
     fired: list[dict[str, Any]] = []
+    new_problems: list[dict[str, Any]] = []
+    resolved: list[dict[str, Any]] = []
     active = await active_alerts()
     current = {c["key"]: c for c in snap.get("checks") or []}
     host = (snap.get("host") or {}).get("hostname") or "server"
     for key, check in current.items():
         if check["status"] != "critical":
             continue
+        since = (active.get(key) or {}).get("since") or snap.get("at")
         if key not in active:
-            await _set_active(key, {"since": snap.get("at"), "label": check["label"]})
+            await _set_active(key, {"since": since, "label": check["label"]})
         if not await _cooldown_ok(key):
             continue
-        title = f"Server alert: {check['label']}"
-        message = f"{check['label']} on {host} is {check['value']}. {check['detail']}".strip()
+        info = mail.help_for(key)
         event = {"at": snap.get("at"), "kind": "alert", "key": key, "label": check["label"],
-                 "value": check["value"], "detail": check["detail"]}
+                 "value": check["value"], "detail": check["detail"], "since": since}
         await _push_event(event)
-        await _notify(db, title, message)
+        await _notify(
+            db,
+            f"Action needed: {check['label']} is {check['value']}",
+            f"{check['label']} on {host} is {check['value']} (alert limit {mail.limit_for(key)}). "
+            f"{info['means']} First step: {info['do'][0]}",
+        )
+        new_problems.append(event)
         fired.append(event)
     for key, info in active.items():
         check = current.get(key)
@@ -1001,10 +1058,16 @@ async def evaluate_alerts(db: AsyncSession, snap: dict[str, Any]) -> list[dict[s
         await _set_active(key, None)
         label = info.get("label") or key
         event = {"at": snap.get("at"), "kind": "recovered", "key": key, "label": label,
-                 "value": check["value"] if check else "ok", "detail": f"Since {info.get('since')}"}
+                 "value": check["value"] if check else "ok", "detail": f"Since {info.get('since')}",
+                 "since": info.get("since")}
         await _push_event(event)
-        await _notify(db, f"Server recovered: {label}", f"{label} is back to normal on {host}.")
+        await _notify(db, f"Resolved: {label} is back to normal", f"{label} is back to normal on {host}. Nothing more to do.")
+        resolved.append(event)
         fired.append(event)
+    if new_problems:
+        await _email_staff(db, mail.build_alert_email(new_problems, host))
+    if resolved:
+        await _email_staff(db, mail.build_recovered_email(resolved, host))
     return fired
 
 
@@ -1027,16 +1090,20 @@ async def record(db: AsyncSession, *, source: str, force: bool = False) -> dict[
 
 
 async def send_test_alert(db: AsyncSession, *, by: str) -> dict[str, Any]:
+    from app import server_alert_email as mail
+
     event = {"at": _iso(_now()), "kind": "test", "key": "test", "label": "Test alert",
              "value": "sent", "detail": f"Sent by {by}"}
     await _push_event(event)
     ok = await _notify(
         db,
-        "Server alert test",
-        "This is a test of Ribdigi server alerts. If you can read this, alerts reach you.",
+        "Test: server alerts are working",
+        "This is a test from Server health. Nothing is wrong. Real alerts say what is wrong, "
+        "the reading against its limit, and what to do.",
     )
+    emailed = await _email_staff(db, mail.build_test_email(by, socket.gethostname()))
     await db.commit()
-    return {"delivered": ok, "event": event}
+    return {"delivered": ok, "emailed": emailed, "event": event}
 
 
 def thresholds() -> dict[str, Any]:
