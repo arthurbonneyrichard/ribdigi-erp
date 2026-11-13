@@ -314,7 +314,22 @@ async def job_sync_ecommerce_connectors() -> dict:
     return await _for_each_tenant(work)
 
 
+async def job_sample_server_health() -> dict:
+    """One server reading a minute for the owner's monitor (history + alerts)."""
+    from app import server_monitor
+
+    async with SessionLocal() as db:
+        try:
+            snap = await server_monitor.record(db, source="worker")
+            return {"ok": True, "status": snap.get("status")}
+        except Exception:  # noqa: BLE001
+            logger.exception("Server health sample failed")
+            await db.rollback()
+            return {"ok": False, "error": "job_failed"}
+
+
 JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
+    "sample_server_health": job_sample_server_health,
     "scan_low_stock": job_scan_low_stock,
     "scan_payment_due": job_scan_payment_due,
     "scan_quotation_expiry": job_scan_quotation_expiry,

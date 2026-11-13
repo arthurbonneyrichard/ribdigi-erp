@@ -32,6 +32,7 @@ DEFAULT_PREFERENCES = {
     "platform": {"dashboard": True, "email": False, "sms": False},
     "provisioning": {"dashboard": True, "email": True, "sms": False},
     "platform_security": {"dashboard": True, "email": True, "sms": False},
+    "server_health": {"dashboard": True, "email": True, "sms": False},
     "staff_account": {"dashboard": True, "email": False, "sms": False},
     "admin_password_reset": {"dashboard": True, "email": True, "sms": False},
 }

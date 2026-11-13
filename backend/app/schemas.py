@@ -300,6 +300,7 @@ NotificationCategoryValue = Annotated[
         "platform",
         "provisioning",
         "platform_security",
+        "server_health",
         "staff_account",
         "admin_password_reset",
     ],
@@ -7976,6 +7977,7 @@ class NotificationPreferencesMap(BaseModel):
     platform: NotificationChannelPrefs | None = None
     provisioning: NotificationChannelPrefs | None = None
     platform_security: NotificationChannelPrefs | None = None
+    server_health: NotificationChannelPrefs | None = None
     staff_account: NotificationChannelPrefs | None = None
     admin_password_reset: NotificationChannelPrefs | None = None
 

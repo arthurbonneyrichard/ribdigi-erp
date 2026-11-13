@@ -147,3 +147,10 @@ def run_named_job(name: str) -> dict:
     if not settings.CELERY_ENABLED:
         return {"skipped": True, "reason": "CELERY_ENABLED=false"}
     return jobs_svc.run_async(jobs_svc.run_job(name))
+
+
+@celery.task(name="app.tasks.sample_server_health")
+def sample_server_health() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    return jobs_svc.run_async(jobs_svc.job_sample_server_health())

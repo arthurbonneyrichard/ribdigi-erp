@@ -649,6 +649,7 @@ export const PLATFORM_NAV_ITEMS: NavItem[] = [
   ['Reports', '/platform/reports', 'platform_reports'],
   ['Settings', '/platform/settings', 'platform'],
   ['Jobs', '/jobs', 'jobs'],
+  ['Server health', '/platform/monitor', 'platform'],
   ['Notifications', '/notifications', 'notifications'],
   ['Audit', '/audit', 'audit'],
   ['Security', '/security', 'security'],

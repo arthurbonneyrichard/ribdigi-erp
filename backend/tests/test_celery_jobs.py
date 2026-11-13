@@ -22,6 +22,7 @@ EXPECTED_HANDLERS = {
     "process_subscription_renewals",
     "expire_ecommerce_reservations",
     "sync_ecommerce_connectors",
+    "sample_server_health",
 }
 
 EXPECTED_BEAT = {

@@ -27,5 +27,6 @@ boto3==1.35.36
 pypdf==6.21.4
 Pillow==13.0.0
 python-barcode==0.15.1
+psutil==7.0.0
 pytesseract==0.3.13
 webauthn==2.2.0

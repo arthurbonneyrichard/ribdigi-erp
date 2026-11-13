@@ -48,6 +48,7 @@ const PLATFORM_CATEGORY_CHIPS: { id: string; label: string }[] = [
   { id: 'platform_security', label: 'Platform security' },
   { id: 'staff_account', label: 'Staff accounts' },
   { id: 'admin_password_reset', label: 'Password resets' },
+  { id: 'server_health', label: 'Server health' },
   { id: 'platform', label: 'Platform actions' },
   { id: 'security', label: 'Security' },
 ];

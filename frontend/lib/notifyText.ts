@@ -21,6 +21,7 @@ export const NOTIFY_CATEGORY_LABELS: Record<string, string> = {
   platform_security: 'Platform security',
   staff_account: 'Staff account',
   admin_password_reset: 'Password reset',
+  server_health: 'Server health',
   platform: 'Platform',
 };
 
