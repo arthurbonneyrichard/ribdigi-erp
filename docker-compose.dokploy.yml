@@ -94,6 +94,44 @@ services:
         max-size: "10m"
         max-file: "5"
 
+  # Answers requests no real domain matches (bare IP, unknown Host) with a plain
+  # 404, so Traefik's own "404 page not found" page is not shown (security
+  # control 09). Priority 1 is the lowest: every Dokploy domain router outranks
+  # it. Its own container and service name, so it cannot confuse the routers
+  # Dokploy writes for frontend/backend.
+  nohost:
+    image: node:20-alpine
+    restart: unless-stopped
+    user: "10001:10001"
+    read_only: true
+    command:
+      - node
+      - -e
+      - >-
+        require('http').createServer((q,s)=>{s.writeHead(404,{'Content-Type':'text/plain; charset=utf-8','Content-Length':'9','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});s.end('Not Found');}).listen(8080,'0.0.0.0')
+    expose:
+      - "8080"
+    networks:
+      - dokploy-network
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      - traefik.http.services.ribdigi-nohost.loadbalancer.server.port=8080
+      - traefik.http.routers.ribdigi-nohost-web.rule=PathPrefix(`/`)
+      - traefik.http.routers.ribdigi-nohost-web.entrypoints=web
+      - traefik.http.routers.ribdigi-nohost-web.priority=1
+      - traefik.http.routers.ribdigi-nohost-web.service=ribdigi-nohost
+      - traefik.http.routers.ribdigi-nohost-websecure.rule=PathPrefix(`/`)
+      - traefik.http.routers.ribdigi-nohost-websecure.entrypoints=websecure
+      - traefik.http.routers.ribdigi-nohost-websecure.priority=1
+      - traefik.http.routers.ribdigi-nohost-websecure.tls=true
+      - traefik.http.routers.ribdigi-nohost-websecure.service=ribdigi-nohost
+    logging:
+      driver: json-file
+      options:
+        max-size: "1m"
+        max-file: "2"
+
   backend:
     image: ribdigi-backend:eb5720b74b52
     pull_policy: build
