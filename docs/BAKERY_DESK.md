@@ -4,7 +4,7 @@ A bakery is its own industry. Its sales, orders, recipes, batches, waste and til
 
 ## Sidebar
 
-A bakery company gets its own sidebar (`BAKERY_NAV_GROUPS` in `frontend/lib/tenantNav.ts`): Dashboard; Selling (Counter, Orders, Deliveries); Kitchen (Baking, Waste); Stock and money (Stock, Expenses, Reports); Staff; Notifications; Help; Settings. No retail Inventory, Purchases, Finance or Reports menus, and no in-page tab strip: the sidebar is the only menu.
+A bakery company gets its own sidebar (`BAKERY_NAV_GROUPS` in `frontend/lib/tenantNav.ts`): Dashboard; Selling (Counter, Orders, Deliveries, Trade customers); Kitchen (Baking, Waste); Stock and money (Stock, Expenses, Reports); Staff; Notifications; Help; Settings. No retail Inventory, Purchases, Finance or Reports menus, and no in-page tab strip: the sidebar is the only menu.
 
 ## Screens (`/bakery`)
 
@@ -24,10 +24,45 @@ Ingredients and items for sale are ordinary products under Inventory. An item wi
 
 - Every movement of money is a row in `bakery_payments`, so the drawer is one sum.
 - A bake moves value from ingredients to finished goods at recipe cost.
-- A deposit is owed to the customer until collection: debit money, credit 1100. Collection recognises the revenue. Do not book it a second time.
-- Cancelling with a deposit asks whether to give it back or keep it as income.
+- A deposit is owed to the customer until collection: debit money, credit **2168 Customer Deposits (Bakery Orders)**, a liability. Collection recognises the revenue. Do not book it a second time. Deposits taken before 15 Nov 2026 sit in 1100; `bakery_orders.deposit_account` NULL means 1100 and collection or cancelling clears that account.
+- Cancelling with a deposit asks whether to give it back or keep it. A kept deposit is booked to **4400 Other Income** (it pays for no goods). Whether VAT is due on a kept deposit is for the company's accountant.
 - Waste posts to the books at cost.
-- Tax report: completed bakery sales count as output tax, for bakery companies only.
+- Buying stock in: the unit cost is before VAT; VAT on the supplier's bill goes to **1300 Input Tax** and on the VAT return. Stock is valued without it.
+- Expenses go to their own accounts: rent 6010, wages 6200, light and water 6030, gas 6040, transport 6050, repairs 6060, packaging 6070, marketing 6080, other 6000. VAT inside an expense goes to 1300; reports show the cost before VAT.
+- Till close and driver hand-in: the gap between counted and expected cash is booked to **6900 Cash Over and Short** against 1000, so the cash account matches the drawer.
+- Stock count (`POST /bakery/stock/count`, manager): each counted item is set to what is there; the value gained or lost goes to **5100 Stock Count Differences** against 1200.
+- Tax report: bakery sales count on their own day as output tax; a refund is a credit on the day it happened, so a filed month never changes. Bakery stock receipts and expenses with VAT are input tax. Bakery companies only.
+
+## Counter extras
+
+- **Discounts:** `discount_percent` per line comes off the price before tax, with a `discount_reason`. Cashiers and drivers up to 10% (`STAFF_MAX_DISCOUNT`), managers and owners any amount (403 `DISCOUNT_TOO_BIG`). Not offline.
+- **Two ways to pay:** `payments` (2–4 parts). One part may leave its amount out and takes the rest; otherwise the parts must equal the bill (422 `SPLIT_NOT_EQUAL`). The sale's `payment_method` is `split`. Not offline.
+- **Refunds:** whole sale or chosen lines and quantities (`bakery_refunds` + `bakery_refund_lines`); status `part_refunded` until everything is back, then `refunded`. A collected order is refunded the same way. A split sale needs the refund `method`; a cash refund cannot be more than the drawer should hold.
+
+## Shelf life, day-old and labels
+
+Item details (`PUT /bakery/items/{id}/details`, manager; Stock → Item details), stored in `bakery_item_settings`:
+
+- **Shelf life:** each bake gets `best_before` = baked day (company timezone) + shelf life. `GET /bakery/shelf` assigns today's stock to the newest bakes (oldest sell first) and marks each bake fresh, day-old, last day or past its date. Past-date stock is left out of "what to bake" and flagged on the dashboard.
+- **Day-old price:** `day_old_discount_pct`. A counter line with `day_old: true` takes it, for as much day-old stock as there is, and any cashier may use it (a manager set the price). Reason is "Day-old".
+- **Allergens:** the 14 declarable allergens (`bakery_items.ALLERGENS`). A label shows the item's own allergens plus those of every recipe ingredient. Ingredients are listed largest first by weight; ingredients that carry an allergen are in bold. `GET /bakery/items/{id}/label?batch_id=&copies=` prints labels with best before, batch, net weight, storage note and price.
+
+## Units and shelf level
+
+- An ingredient has a stock unit (kg, g, l, ml, each) and may have a purchase unit (`purchase_unit`, `units_per_purchase`, e.g. a 50 kg bag). Buying with `in_purchase_units` turns bags into kg and the bag price into a kg cost. Recipe lines may be written in another unit of the same kind (`unit: "g"` for a kg ingredient) and are stored in the stock unit. Cost prices keep 2 decimals, so keep flour in kg, not g.
+- `par_level` is how many to have on the shelf each day. What to bake = open orders due by tomorrow + today's trade standing orders not yet made + shelf level − in-date stock.
+
+## Tills
+
+Several tills can be open at once, each with a name (`till_name`, default "Counter"); one person runs one till. A request uses the till in header `X-Bakery-Till` (the shift id; the screen keeps it per device in `lib/bakeryTill.ts`), else the till the signed-in person opened, else the only one open; otherwise 409 `TILL_CHOOSE`. `GET /bakery/tills` lists the open ones. The choice is set per request in `bakery_api._till_context` (context variables `CHOSEN_TILL`, `TILL_USER`).
+
+## Trade customers (`/bakery?tab=trade`)
+
+`bakery_trade.py`. Customers (`bakery_customers`) have a credit limit (0 = none), a trade discount off the shop price, and days to pay. Standing orders say how many of an item on which weekdays. **Make today's deliveries** (`POST /bakery/trade/run`) makes one invoice per customer per day from standing orders; an invoice takes stock and books Dr 1100 / Cr 4000, 2100 with cost of goods. Over the credit limit → 409 `CREDIT_LIMIT` unless a manager sends `override_limit`. A payment clears the oldest invoices first (cash goes into the till). A void (unpaid only) reverses the books on the day of the void, and the goods come back only if `restock`. Statements show opening balance, lines, closing balance and what is owed by age. Trade invoices count in the bakery report (`trade_revenue`) and on the VAT return by invoice day; voids by void day. Cashiers make deliveries and take payments; customer setup, voids and credit overrides need a manager.
+
+## Suppliers
+
+`bakery_suppliers`. Buying on credit needs a supplier (a typed name is found or added). What you owe = credit purchases with VAT − payments. `POST /bakery/suppliers/{id}/payments` books Dr 2000 / Cr money; cash can come from the till.
 
 ## Drivers
 

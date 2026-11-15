@@ -11,6 +11,7 @@ order is collected or the deposit is kept.
 
 from __future__ import annotations
 
+import contextvars
 from datetime import date, datetime, time, timedelta
 
 from fastapi import HTTPException
@@ -26,16 +27,120 @@ from app import desk_dashboard as dash
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 TILL_METHODS = frozenset({"cash", "card", "mobile_money", "wallet"})
+# A bakery may run more than one till. Each request says which one (header X-Bakery-Till, the
+# shift id), or uses the till the signed-in person opened, or the only one open. Set per request
+# by bakery_api; reset at the start of every request so nothing leaks between requests.
+CHOSEN_TILL: contextvars.ContextVar[str | None] = contextvars.ContextVar("bakery_till", default=None)
+TILL_USER: contextvars.ContextVar[str | None] = contextvars.ContextVar("bakery_till_user", default=None)
+DEFAULT_TILL = "Counter"
 WASTE_REASONS = frozenset({"unsold", "burnt", "damaged", "expired", "other"})
 ORDER_OPEN = ("booked", "ready")
 REF_BATCH = "bakery_batch"
 REF_SALE = "bakery_sale"
 REF_WASTE = "bakery_waste"
 REF_ORDER = "bakery_order"
+REF_REFUND = "bakery_refund"
+REF_COUNT = "bakery_stock_count"
+
+# A deposit is money held for the customer until the order is handed over: a liability.
+DEPOSIT_ACCOUNT = "2168"
+OLD_DEPOSIT_ACCOUNT = "1100"  # where deposits went before 15 Nov 2026
+CASH_OVER_SHORT = "6900"
+COUNT_DIFFERENCES = "5100"
+INPUT_TAX = "1300"
+BAKERY_ACCOUNTS = [
+    ("2168", "Customer Deposits (Bakery Orders)", "liability"),
+    ("5100", "Stock Count Differences", "expense"),
+    ("6010", "Rent", "expense"),
+    ("6030", "Light and Water", "expense"),
+    ("6040", "Gas and Fuel", "expense"),
+    ("6050", "Transport", "expense"),
+    ("6060", "Repairs and Maintenance", "expense"),
+    ("6070", "Packaging", "expense"),
+    ("6080", "Marketing", "expense"),
+    ("6200", "Salaries and Wages", "expense"),
+    ("6900", "Cash Over and Short", "expense"),
+]
+EXPENSE_ACCOUNTS = {
+    "rent": "6010",
+    "wages": "6200",
+    "utilities": "6030",
+    "gas": "6040",
+    "transport": "6050",
+    "repairs": "6060",
+    "packaging": "6070",
+    "marketing": "6080",
+    "other": "6000",
+}
+# Sales that happened. A refund is its own row on the day of the refund, so a refunded sale
+# still counts on the day it was made.
+SOLD = ("completed", "part_refunded", "refunded")
+# Cashiers and drivers may take this much off a line; managers and owners any amount.
+STAFF_MAX_DISCOUNT = 10.0
+DISCOUNT_ANY_ROLES = frozenset({"bakery_manager", "company_admin", "super_admin"})
 
 
 def _now() -> datetime:
     return datetime.utcnow()
+
+
+async def _zone(db: AsyncSession, tenant_id: str):
+    from app import hotel as hotel_svc
+
+    return await hotel_svc.hotel_zone(db, tenant_id)
+
+
+async def bakery_today(db: AsyncSession, tenant_id: str) -> date:
+    """Today in the company's timezone (Company → Timezone), not the server's."""
+    return datetime.now(await _zone(db, tenant_id)).date()
+
+
+async def _bounds(db: AsyncSession, tenant_id: str, start: date, end: date) -> tuple[datetime, datetime]:
+    """Local midnight at the start and after the end, as the UTC times rows are stored in."""
+    from datetime import timezone
+
+    zone = await _zone(db, tenant_id)
+
+    def utc(day: date) -> datetime:
+        return datetime.combine(day, time.min, tzinfo=zone).astimezone(timezone.utc).replace(tzinfo=None)
+
+    return utc(start), utc(end + timedelta(days=1))
+
+
+async def _localiser(db: AsyncSession, tenant_id: str):
+    from datetime import timezone
+
+    zone = await _zone(db, tenant_id)
+    return lambda when: when.replace(tzinfo=timezone.utc).astimezone(zone).replace(tzinfo=None)
+
+
+async def _ensure_accounts(db: AsyncSession, tenant_id: str) -> None:
+    from app import schema_compat
+
+    await accounting.ensure_default_accounts(db, tenant_id)
+    existing = await schema_compat.existing_codes(db, "accounts", tenant_id)
+    for code, name, account_type in BAKERY_ACCOUNTS:
+        if code in existing:
+            continue
+        await schema_compat.insert_matching_row(
+            db,
+            "accounts",
+            {
+                "tenant_id": tenant_id,
+                "code": code,
+                "name": name,
+                "account_type": account_type,
+                "balance": 0,
+                "opening_balance": 0,
+                "is_cash_account": False,
+                "is_bank_account": False,
+                "is_system": True,
+                "is_active": True,
+                "parent_id": None,
+                "company_id": None,
+            },
+        )
+    await db.flush()
 
 
 def _money(value) -> float:
@@ -61,7 +166,7 @@ async def _product(db: AsyncSession, tenant_id: str, product_id: str) -> m.Produ
 
 
 async def _post(db, tenant_id: str, *, user_id, description: str, lines: list[dict], reference: str, source: str, source_id: str):
-    await accounting.ensure_default_accounts(db, tenant_id)
+    await _ensure_accounts(db, tenant_id)
     if not lines:
         return None
     entry = await accounting.post_journal_entry(
@@ -99,6 +204,8 @@ async def _audit(db, tenant_id: str, user_id, action: str, entity: str, entity_i
 
 async def list_items(db: AsyncSession, tenant_id: str) -> list[dict]:
     """What the counter sells: active products with a selling price."""
+    from app import bakery_items as items_svc
+
     rows = (
         await db.execute(
             select(m.Product)
@@ -106,12 +213,17 @@ async def list_items(db: AsyncSession, tenant_id: str) -> list[dict]:
             .order_by(m.Product.name.asc())
         )
     ).scalars().all()
+    today = await bakery_today(db, tenant_id)
+    shelf = await items_svc.shelf(db, tenant_id, today=today, local=await _localiser(db, tenant_id))
+    settings = await items_svc.settings_map(db, tenant_id, [r.id for r in rows])
     out = []
     for row in rows:
         # What the customer actually pays for one, tax included, so the counter shows the
         # same total the sale will charge.
         spec = await tax_svc.resolve_product_tax(db, tenant_id, row)
         _net, _tax, gross = tax_svc.compute_line_total(1, _money(row.selling_price), spec.rate_pct, spec.pricing_mode)
+        conf = settings.get(row.id)
+        mine = [s for s in shelf if s["product_id"] == row.id]
         out.append(
             {
                 "id": row.id,
@@ -120,6 +232,10 @@ async def list_items(db: AsyncSession, tenant_id: str) -> list[dict]:
                 "price_to_pay": _money(gross),
                 "category": (row.category or "Bakery").strip() or "Bakery",
                 "stock_qty": _qty(row.stock_qty),
+                "day_old_qty": _qty(sum(s["quantity"] for s in mine if s["state"] in ("day_old", "last_day"))),
+                "expired_qty": _qty(sum(s["quantity"] for s in mine if s["state"] == "expired")),
+                "day_old_discount_pct": money_json(conf.day_old_discount_pct) if conf and conf.day_old_discount_pct else None,
+                "allergens": list(conf.allergens or []) if conf else [],
             }
         )
     return out
@@ -149,10 +265,14 @@ async def _recipe_lines(db: AsyncSession, recipe_id: str) -> list[m.BakeryRecipe
 
 
 async def present_recipe(db: AsyncSession, recipe: m.BakeryRecipe) -> dict:
+    from app import bakery_items as items_svc
+
     product = await db.get(m.Product, recipe.product_id)
     lines = []
     batch_cost = 0.0
-    for line in await _recipe_lines(db, recipe.id):
+    recipe_lines = await _recipe_lines(db, recipe.id)
+    settings = await items_svc.settings_map(db, recipe.tenant_id, [x.ingredient_id for x in recipe_lines])
+    for line in recipe_lines:
         item = await db.get(m.Product, line.ingredient_id)
         cost = _money(float(line.quantity) * float(item.cost_price or 0)) if item else 0.0
         batch_cost += cost
@@ -161,6 +281,7 @@ async def present_recipe(db: AsyncSession, recipe: m.BakeryRecipe) -> dict:
                 "ingredient_id": line.ingredient_id,
                 "name": item.name if item else "Unknown",
                 "quantity": _qty(line.quantity),
+                "unit": items_svc.stock_unit(settings.get(line.ingredient_id)),
                 "cost": cost,
                 "in_stock": _qty(item.stock_qty) if item else 0,
             }
@@ -212,6 +333,10 @@ async def save_recipe(
     notes: str | None,
     recipe_id: str | None = None,
 ) -> m.BakeryRecipe:
+    """A line may be written in any unit of the ingredient's kind (250 g of a kilo ingredient);
+    it is stored in the ingredient's stock unit, so a bake takes the right amount out."""
+    from app import bakery_items as items_svc
+
     await _product(db, tenant_id, product_id)
     clean_name = require_honest_narrative(name, label="recipe name", max_length=150)
     if float(yield_qty) <= 0:
@@ -219,6 +344,8 @@ async def save_recipe(
     if not lines:
         raise HTTPException(status_code=422, detail="Add at least one ingredient")
     seen: set[str] = set()
+    settings = await items_svc.settings_map(db, tenant_id, [str(x["ingredient_id"]) for x in lines])
+    stored: list[tuple[str, float]] = []
     for line in lines:
         ingredient = str(line["ingredient_id"])
         if ingredient == product_id:
@@ -229,6 +356,11 @@ async def save_recipe(
         await _product(db, tenant_id, ingredient)
         if float(line["quantity"]) <= 0:
             raise HTTPException(status_code=422, detail="Ingredient amounts must be above zero")
+        unit = items_svc.stock_unit(settings.get(ingredient))
+        quantity = items_svc.convert(float(line["quantity"]), line.get("unit") or unit, unit)
+        if _qty(quantity) <= 0:
+            raise HTTPException(status_code=422, detail="That amount is too small to keep. Use a smaller stock unit.")
+        stored.append((ingredient, quantity))
     taken = (
         await db.execute(
             select(m.BakeryRecipe).where(
@@ -254,13 +386,13 @@ async def save_recipe(
     row.yield_qty = _qty(yield_qty)
     row.notes = optional_honest_narrative(notes, label="notes", max_length=500)
     row.updated_at = _now()
-    for line in lines:
+    for ingredient, quantity in stored:
         db.add(
             m.BakeryRecipeLine(
                 tenant_id=tenant_id,
                 recipe_id=row.id,
-                ingredient_id=str(line["ingredient_id"]),
-                quantity=_qty(line["quantity"]),
+                ingredient_id=ingredient,
+                quantity=_qty(quantity),
             )
         )
     await db.flush()
@@ -279,7 +411,10 @@ async def bake(
     user_id: str | None,
     notes: str | None = None,
 ) -> m.BakeryBatch:
-    """Bake: ingredients leave stock, finished goods arrive, and the item's cost follows the flour."""
+    """Bake: ingredients leave stock, finished goods arrive, and the item's cost follows the flour.
+    With a shelf life set, the bake gets its best-before date."""
+    from app import bakery_items as items_svc
+
     if float(batches) <= 0:
         raise HTTPException(status_code=422, detail="Bake at least part of a batch")
     recipe = await _recipe(db, tenant_id, recipe_id)
@@ -304,6 +439,8 @@ async def bake(
             detail={"code": "INGREDIENT_SHORT", "message": f"Not enough to bake this: {names}", "short": short},
         )
     made = _qty(float(recipe.yield_qty) * float(batches))
+    conf = await items_svc.settings_for(db, tenant_id, recipe.product_id)
+    today = await bakery_today(db, tenant_id)
     row = m.BakeryBatch(
         tenant_id=tenant_id,
         batch_number=await _next_number(db, tenant_id, m.BakeryBatch, "BK"),
@@ -314,6 +451,7 @@ async def bake(
         total_cost=_money(total_cost),
         unit_cost=_money(total_cost / made) if made else 0,
         notes=optional_honest_narrative(notes, label="notes", max_length=500),
+        best_before=today + timedelta(days=int(conf.shelf_life_days)) if conf and conf.shelf_life_days else None,
         created_by=user_id,
     )
     db.add(row)
@@ -367,6 +505,7 @@ def serialize_batch(row: m.BakeryBatch, product_name: str | None = None) -> dict
         "unit_cost": _money(row.unit_cost),
         "total_cost": _money(row.total_cost),
         "notes": row.notes,
+        "best_before": row.best_before.isoformat() if row.best_before else None,
         "created_at": row.created_at.isoformat() if row.created_at else None,
     }
 
@@ -471,19 +610,35 @@ async def list_waste(db: AsyncSession, tenant_id: str, *, limit: int = 100) -> l
 # --- Till shift --------------------------------------------------------------------------
 
 
-async def current_shift(db: AsyncSession, tenant_id: str) -> m.BakeryTillShift | None:
-    """The counter till. A driver's cash bag is never the till."""
-    return (
-        await db.execute(
-            select(m.BakeryTillShift)
-            .where(
-                m.BakeryTillShift.tenant_id == tenant_id,
-                m.BakeryTillShift.status == "open",
-                m.BakeryTillShift.kind == "till",
+async def open_tills(db: AsyncSession, tenant_id: str) -> list[m.BakeryTillShift]:
+    return list(
+        (
+            await db.execute(
+                select(m.BakeryTillShift)
+                .where(
+                    m.BakeryTillShift.tenant_id == tenant_id,
+                    m.BakeryTillShift.status == "open",
+                    m.BakeryTillShift.kind == "till",
+                )
+                .order_by(m.BakeryTillShift.opened_at.asc())
             )
-            .order_by(m.BakeryTillShift.opened_at.desc())
-        )
-    ).scalars().first()
+        ).scalars()
+    )
+
+
+async def current_shift(db: AsyncSession, tenant_id: str) -> m.BakeryTillShift | None:
+    """The counter till this request is using. A driver's cash bag is never the till."""
+    tills = await open_tills(db, tenant_id)
+    if not tills:
+        return None
+    chosen = CHOSEN_TILL.get()
+    if chosen:
+        return next((t for t in tills if t.id == chosen), None)
+    user = TILL_USER.get()
+    mine = [t for t in tills if user and t.opened_by == user]
+    if mine:
+        return mine[-1]
+    return tills[0] if len(tills) == 1 else None
 
 
 async def driver_bag(db: AsyncSession, tenant_id: str, driver_id: str | None) -> m.BakeryTillShift | None:
@@ -510,6 +665,14 @@ async def _need_shift(db: AsyncSession, tenant_id: str, driver_id: str | None = 
         return bag
     shift = await current_shift(db, tenant_id)
     if shift is None:
+        tills = await open_tills(db, tenant_id)
+        if CHOSEN_TILL.get() and tills:
+            raise HTTPException(status_code=409, detail={"code": "TILL_CLOSED", "message": "That till is closed. Choose an open till."})
+        if len(tills) > 1:
+            raise HTTPException(
+                status_code=409,
+                detail={"code": "TILL_CHOOSE", "message": "More than one till is open. Choose which till you are using."},
+            )
         raise HTTPException(status_code=409, detail="Open the till before taking money")
     return shift
 
@@ -538,9 +701,12 @@ async def present_shift(db: AsyncSession, tenant_id: str, shift: m.BakeryTillShi
         )
     ).all()
     counted = _money(shift.counted_cash) if shift.counted_cash is not None else None
+    opener = await db.get(m.User, shift.opened_by) if shift.opened_by else None
     return {
         "id": shift.id,
         "status": shift.status,
+        "till_name": shift.till_name or (DEFAULT_TILL if shift.kind == "till" else None),
+        "opened_by_name": opener.full_name if opener else None,
         "opened_at": shift.opened_at.isoformat() if shift.opened_at else None,
         "closed_at": shift.closed_at.isoformat() if shift.closed_at else None,
         "opening_cash": _money(shift.opening_cash),
@@ -553,14 +719,49 @@ async def present_shift(db: AsyncSession, tenant_id: str, shift: m.BakeryTillShi
     }
 
 
-async def open_shift(db: AsyncSession, tenant_id: str, *, opening_cash: float, user_id: str | None) -> m.BakeryTillShift:
+async def open_shift(
+    db: AsyncSession, tenant_id: str, *, opening_cash: float, user_id: str | None, till_name: str | None = None
+) -> m.BakeryTillShift:
+    """Open a till. Several can be open at once (front counter, second counter, another shop),
+    each with its own name and drawer; one person runs one till at a time."""
     await db.execute(select(m.Tenant.id).where(m.Tenant.id == tenant_id).with_for_update(key_share=True))
-    if await current_shift(db, tenant_id):
-        raise HTTPException(status_code=409, detail="The till is already open")
-    row = m.BakeryTillShift(tenant_id=tenant_id, opened_by=user_id, opening_cash=_money(opening_cash), status="open")
+    name = optional_honest_narrative(till_name, label="till name", max_length=60) or DEFAULT_TILL
+    for till in await open_tills(db, tenant_id):
+        if (till.till_name or DEFAULT_TILL).lower() == name.lower():
+            raise HTTPException(status_code=409, detail="The till is already open" if name == DEFAULT_TILL else f"{name} is already open")
+        if user_id and till.opened_by == user_id:
+            raise HTTPException(status_code=409, detail=f"You already have {till.till_name or DEFAULT_TILL} open. Close it first.")
+    row = m.BakeryTillShift(
+        tenant_id=tenant_id, opened_by=user_id, opening_cash=_money(opening_cash), status="open", till_name=name
+    )
     db.add(row)
     await db.flush()
     return row
+
+
+async def _book_over_short(db, tenant_id: str, shift: m.BakeryTillShift, *, expected: float, user_id, label: str) -> float:
+    """Cash counted against cash expected: the gap goes to Cash Over and Short, so the cash
+    account matches the money really in the drawer or bag."""
+    gap = _money(float(shift.counted_cash or 0) - float(expected or 0))
+    if abs(gap) < 0.005:
+        return 0.0
+    cash = _money_account("cash")
+    description = f"{label}: cash {'over' if gap > 0 else 'short'} {abs(gap):.2f}"
+    if gap > 0:
+        lines = [
+            {"account_code": cash, "debit": gap, "credit": 0, "description": description},
+            {"account_code": CASH_OVER_SHORT, "debit": 0, "credit": gap, "description": description},
+        ]
+    else:
+        lines = [
+            {"account_code": CASH_OVER_SHORT, "debit": -gap, "credit": 0, "description": description},
+            {"account_code": cash, "debit": 0, "credit": -gap, "description": description},
+        ]
+    shift.variance_journal_id = await _post(
+        db, tenant_id, user_id=user_id, description=description[:255], lines=lines,
+        reference=label[:100], source="bakery_cash_count", source_id=shift.id,
+    )
+    return gap
 
 
 async def close_shift(
@@ -569,11 +770,17 @@ async def close_shift(
     row = await current_shift(db, tenant_id)
     if row is None:
         raise HTTPException(status_code=404, detail="The till is not open")
+    expected = _money(float(row.opening_cash or 0) + await drawer_cash(db, tenant_id, row))
     row.counted_cash = _money(counted_cash)
     row.closed_by = user_id
     row.closed_at = _now()
     row.notes = optional_honest_narrative(notes, label="notes", max_length=500)
     row.status = "closed"
+    gap = await _book_over_short(db, tenant_id, row, expected=expected, user_id=user_id, label="Till count")
+    await _audit(
+        db, tenant_id, user_id, "bakery_till_closed", "bakery_till_shift", row.id,
+        {"expected": expected, "counted": row.counted_cash, "over_short": gap},
+    )
     await db.flush()
     return row
 
@@ -619,25 +826,59 @@ def _method(value: str | None) -> str:
 # --- Pricing -----------------------------------------------------------------------------
 
 
-async def _priced_lines(db: AsyncSession, tenant_id: str, lines) -> tuple[list[dict], float, float, float]:
-    """Price from the catalogue, never from the request. Returns lines, net, tax and gross."""
+async def _priced_lines(
+    db: AsyncSession, tenant_id: str, lines, *, max_discount: float | None = 100.0
+) -> tuple[list[dict], float, float, float]:
+    """Price from the catalogue, never from the request. Returns lines, net, tax and gross.
+
+    A line may carry a discount percent; it comes off the price before tax is worked out, so the
+    tax charged is tax on what the customer really paid. A day-old line takes the item's day-old
+    percent (set by a manager), for as much day-old stock as there is, whoever is selling."""
+    from app import bakery_items as items_svc
+
     if not lines:
         raise HTTPException(status_code=422, detail="Add at least one item")
     out: list[dict] = []
     net_total = tax_total = gross_total = 0.0
+    day_old_used: dict[str, float] = {}
     for line in lines:
         product = await _product(db, tenant_id, line.product_id)
         qty = _qty(line.quantity)
         if qty <= 0:
             raise HTTPException(status_code=422, detail="Quantity must be above zero")
         price = _money(product.selling_price)
+        pct = float(getattr(line, "discount_percent", None) or 0)
+        day_old = bool(getattr(line, "day_old", False))
+        if day_old:
+            conf = await items_svc.settings_for(db, tenant_id, product.id)
+            if not conf or not conf.day_old_discount_pct:
+                raise HTTPException(status_code=422, detail=f"{product.name} has no day-old price. A manager sets it under Stock.")
+            have = await items_svc.day_old_on_hand(
+                db, tenant_id, product.id, today=await bakery_today(db, tenant_id), local=await _localiser(db, tenant_id)
+            )
+            used = day_old_used.get(product.id, 0.0) + qty
+            if used > have + 0.0005:
+                raise HTTPException(status_code=409, detail=f"Only {have:g} day-old {product.name} on the shelf")
+            day_old_used[product.id] = used
+            pct = float(conf.day_old_discount_pct)
+        if pct < 0 or pct > 100:
+            raise HTTPException(status_code=422, detail="A discount is between 0 and 100 percent")
+        if not day_old and max_discount is not None and pct > max_discount + 1e-9:
+            raise HTTPException(
+                status_code=403,
+                detail={"code": "DISCOUNT_TOO_BIG", "message": f"You can take off up to {max_discount:g}%. Ask a manager for more."},
+            )
         spec = await tax_svc.resolve_product_tax(db, tenant_id, product)
-        net, tax, gross = tax_svc.compute_line_total(qty, price, spec.rate_pct, spec.pricing_mode)
+        _, _, full_gross = tax_svc.compute_line_total(qty, price, spec.rate_pct, spec.pricing_mode)
+        charged = _money(price * (1 - pct / 100)) if pct else price
+        net, tax, gross = tax_svc.compute_line_total(qty, charged, spec.rate_pct, spec.pricing_mode)
         out.append(
             {
                 "product": product,
                 "quantity": qty,
                 "unit_price": price,
+                "discount": _money(float(full_gross) - float(gross)) if pct else 0.0,
+                "day_old": day_old,
                 "tax": _money(tax),
                 "line_total": _money(gross),
                 "note": optional_honest_narrative(getattr(line, "note", None), label="note", max_length=255),
@@ -680,8 +921,10 @@ async def _take_stock(db, tenant_id: str, lines: list[dict], *, user_id, referen
 
 
 async def _write_sale(
-    db, tenant_id: str, *, lines, net, tax, gross, method, shift, user_id, customer_name=None, order_id=None
+    db, tenant_id: str, *, lines, net, tax, gross, method, shift, user_id, customer_name=None, order_id=None,
+    discount_reason=None,
 ) -> m.BakerySale:
+    discount = _money(sum(float(line.get("discount") or 0) for line in lines))
     sale = m.BakerySale(
         tenant_id=tenant_id,
         sale_number=await _next_number(db, tenant_id, m.BakerySale, "BS"),
@@ -693,6 +936,9 @@ async def _write_sale(
         subtotal=net,
         tax=tax,
         total=gross,
+        discount=discount,
+        discount_reason=discount_reason if discount > 0 else None,
+        refunded_total=0,
         created_by=user_id,
     )
     db.add(sale)
@@ -709,6 +955,8 @@ async def _write_sale(
                 tax=line["tax"],
                 line_total=line["line_total"],
                 unit_cost=_money(line["product"].cost_price),
+                discount=_money(line.get("discount") or 0),
+                refunded_qty=0,
             )
         )
     await db.flush()
@@ -718,24 +966,76 @@ async def _write_sale(
 # --- Counter sales -----------------------------------------------------------------------
 
 
+def _split(payments, gross: float) -> list[tuple[str, float]]:
+    """A bill paid more than one way. One part may leave its amount out and takes the rest
+    ("10 in cash, the rest on Mobile Money"); otherwise the parts must add up to the bill."""
+    parts: dict[str, float] = {}
+    rest_method: str | None = None
+    for part in payments:
+        method = _method(part.method)
+        if part.amount is None:
+            if rest_method is not None:
+                raise HTTPException(status_code=422, detail="Only one part can take the rest of the bill")
+            rest_method = method
+            continue
+        amount = _money(part.amount)
+        if amount <= 0:
+            raise HTTPException(status_code=422, detail="Each part of the payment must be above zero")
+        parts[method] = _money(parts.get(method, 0) + amount)
+    if rest_method is not None:
+        rest = _money(gross - sum(parts.values()))
+        if rest <= 0:
+            raise HTTPException(
+                status_code=422,
+                detail={"code": "SPLIT_NOT_EQUAL", "message": f"The other parts already cover the {gross:.2f} bill"},
+            )
+        parts[rest_method] = _money(parts.get(rest_method, 0) + rest)
+    if len(parts) < 2:
+        raise HTTPException(status_code=422, detail="A split payment needs two or more ways to pay")
+    paid = _money(sum(parts.values()))
+    if abs(paid - gross) > 0.009:
+        raise HTTPException(
+            status_code=422,
+            detail={"code": "SPLIT_NOT_EQUAL", "message": f"The parts add up to {paid:.2f}; the bill is {gross:.2f}"},
+        )
+    return list(parts.items())
+
+
 async def create_sale(
-    db: AsyncSession, tenant_id: str, payload, *, user_id: str | None, driver_id: str | None = None
+    db: AsyncSession,
+    tenant_id: str,
+    payload,
+    *,
+    user_id: str | None,
+    driver_id: str | None = None,
+    role: str | None = None,
 ) -> m.BakerySale:
     """A sale at the counter, or by a driver on the road into their cash bag."""
-    method = _method(payload.payment_method)
+    payments = getattr(payload, "payments", None) or None
+    method = "split" if payments else _method(payload.payment_method)
     shift = await _need_shift(db, tenant_id, driver_id)
-    lines, net, tax, gross = await _priced_lines(db, tenant_id, payload.lines)
+    max_discount = None if (role or "") in DISCOUNT_ANY_ROLES else STAFF_MAX_DISCOUNT
+    lines, net, tax, gross = await _priced_lines(db, tenant_id, payload.lines, max_discount=max_discount)
+    discounted = any(float(line["discount"] or 0) > 0 for line in lines)
+    reason = None
+    if discounted:
+        typed = getattr(payload, "discount_reason", None)
+        if not (typed or "").strip() and all(line["day_old"] for line in lines if float(line["discount"] or 0) > 0):
+            typed = "Day-old"
+        reason = require_honest_narrative(typed, label="discount reason", max_length=255)
+    parts = _split(payments, gross) if payments else [(method, gross)]
     sale = await _write_sale(
         db, tenant_id, lines=lines, net=net, tax=tax, gross=gross, method=method, shift=shift, user_id=user_id,
-        customer_name=payload.customer_name,
+        customer_name=payload.customer_name, discount_reason=reason,
     )
     cost = await _take_stock(db, tenant_id, lines, user_id=user_id, reference=sale.id, number=sale.sale_number)
     sale.cost_of_goods = cost
     description = f"Bakery sale {sale.sale_number}"
     journal = [
-        {"account_code": _money_account(method), "debit": gross, "credit": 0, "description": description},
-        {"account_code": "4000", "debit": 0, "credit": _money(gross - tax), "description": description},
+        {"account_code": _money_account(part_method), "debit": amount, "credit": 0, "description": description}
+        for part_method, amount in parts
     ]
+    journal.append({"account_code": "4000", "debit": 0, "credit": _money(gross - tax), "description": description})
     if tax > 0:
         journal.append({"account_code": "2100", "debit": 0, "credit": tax, "description": description})
     accounting.append_cogs_lines(journal, cost)
@@ -743,19 +1043,49 @@ async def create_sale(
         db, tenant_id, user_id=user_id, description=description, lines=journal,
         reference=sale.sale_number, source=REF_SALE, source_id=sale.id,
     )
-    await _pay(db, tenant_id, shift=shift, kind="sale", method=method, amount=gross, user_id=user_id, sale_id=sale.id)
-    await _audit(
-        db, tenant_id, user_id, "bakery_sale", "bakery_sale", sale.id,
-        {"sale_number": sale.sale_number, "total": gross, "payment_method": method},
-    )
+    for part_method, amount in parts:
+        await _pay(db, tenant_id, shift=shift, kind="sale", method=part_method, amount=amount, user_id=user_id, sale_id=sale.id)
+    details = {"sale_number": sale.sale_number, "total": gross, "payment_method": method}
+    if payments:
+        details["payments"] = {k: v for k, v in parts}
+    if discounted:
+        details.update({"discount": _money(sale.discount), "discount_reason": reason})
+    await _audit(db, tenant_id, user_id, "bakery_sale", "bakery_sale", sale.id, details)
     await db.flush()
     return sale
 
 
+async def _refunded_by_line(db, sale_id: str) -> dict[str, tuple[float, float, float]]:
+    """What has gone back already on each sale line: quantity, tax and money."""
+    rows = (
+        await db.execute(
+            select(
+                m.BakeryRefundLine.sale_line_id,
+                func.coalesce(func.sum(m.BakeryRefundLine.quantity), 0),
+                func.coalesce(func.sum(m.BakeryRefundLine.tax), 0),
+                func.coalesce(func.sum(m.BakeryRefundLine.line_total), 0),
+            )
+            .join(m.BakeryRefund, m.BakeryRefund.id == m.BakeryRefundLine.refund_id)
+            .where(m.BakeryRefund.sale_id == sale_id)
+            .group_by(m.BakeryRefundLine.sale_line_id)
+        )
+    ).all()
+    return {lid: (float(q or 0), float(t or 0), float(g or 0)) for lid, q, t, g in rows if lid}
+
+
 async def refund_sale(
-    db: AsyncSession, tenant_id: str, sale_id: str, *, reason: str, restock: bool, user_id: str | None
+    db: AsyncSession,
+    tenant_id: str,
+    sale_id: str,
+    *,
+    reason: str,
+    restock: bool,
+    user_id: str | None,
+    lines: list | None = None,
+    method: str | None = None,
 ) -> m.BakerySale:
-    """Give the money back. Food that left the counter is not resold unless staff say it can be."""
+    """Give money back on the whole sale or some of it. Food that left the counter is not
+    resold unless staff say it can be. A collected order is refunded the same way."""
     row = (
         await db.execute(select(m.BakerySale).where(m.BakerySale.id == sale_id).with_for_update())
     ).scalar_one_or_none()
@@ -763,47 +1093,120 @@ async def refund_sale(
         raise HTTPException(status_code=404, detail="Sale not found")
     if row.status == "refunded":
         raise HTTPException(status_code=409, detail="This sale has already been refunded")
-    if row.order_id:
-        raise HTTPException(status_code=409, detail="This was a collected order. Refund it from the order.")
     why = require_honest_narrative(reason, label="refund reason", max_length=255)
+    if row.payment_method == "split":
+        if not method:
+            raise HTTPException(status_code=422, detail="This sale was paid more than one way. Choose how to give the money back.")
+        pay_back = _method(method)
+    else:
+        pay_back = _method(method) if method else row.payment_method
+    sale_lines = (
+        await db.execute(select(m.BakerySaleLine).where(m.BakerySaleLine.sale_id == row.id))
+    ).scalars().all()
+    by_id = {line.id: line for line in sale_lines}
+    done = await _refunded_by_line(db, row.id)
+    wanted: dict[str, float] = {}
+    if lines:
+        for part in lines:
+            line_id = str(part.sale_line_id)
+            if line_id not in by_id:
+                raise HTTPException(status_code=404, detail="That item is not on this sale")
+            wanted[line_id] = _qty(wanted.get(line_id, 0) + float(part.quantity))
+    else:
+        for line in sale_lines:
+            left = _qty(float(line.quantity) - done.get(line.id, (0, 0, 0))[0])
+            if left > 0:
+                wanted[line.id] = left
+    if not wanted:
+        raise HTTPException(status_code=409, detail="Nothing is left to refund on this sale")
+    out_lines: list[dict] = []
+    for line_id, qty in wanted.items():
+        line = by_id[line_id]
+        back_qty, back_tax, back_total = done.get(line_id, (0.0, 0.0, 0.0))
+        left = _qty(float(line.quantity) - back_qty)
+        if qty <= 0 or qty > left + 0.0005:
+            raise HTTPException(status_code=409, detail=f"Only {left:g} {line.name} can still be refunded")
+        if abs(qty - left) < 0.0005:
+            # The last of the line takes what is left, so rounding never leaves a cent behind.
+            tax = _money(float(line.tax or 0) - back_tax)
+            total = _money(float(line.line_total or 0) - back_total)
+        else:
+            share = qty / float(line.quantity)
+            tax = _money(float(line.tax or 0) * share)
+            total = _money(float(line.line_total or 0) * share)
+        cost = _money(qty * float(line.unit_cost or 0)) if restock else 0.0
+        out_lines.append({"line": line, "quantity": qty, "tax": tax, "total": total, "cost": cost})
+    total = _money(sum(x["total"] for x in out_lines))
+    tax = _money(sum(x["tax"] for x in out_lines))
+    cost_back = _money(sum(x["cost"] for x in out_lines))
     shift = await _need_shift(db, tenant_id)
-    gross, tax = _money(row.total), _money(row.tax)
-    description = f"Bakery refund {row.sale_number}"
-    journal = [
-        {"account_code": "4000", "debit": _money(gross - tax), "credit": 0, "description": description},
-        {"account_code": _money_account(row.payment_method), "debit": 0, "credit": gross, "description": description},
-    ]
+    if pay_back == "cash":
+        in_drawer = _money(float(shift.opening_cash or 0) + await drawer_cash(db, tenant_id, shift))
+        if total > in_drawer + 0.004:
+            raise HTTPException(status_code=409, detail=f"The drawer should only hold {in_drawer:.2f}. Refund another way.")
+    refund = m.BakeryRefund(
+        tenant_id=tenant_id,
+        refund_number=await _next_number(db, tenant_id, m.BakeryRefund, "RF"),
+        sale_id=row.id,
+        shift_id=shift.id,
+        method=pay_back,
+        subtotal=_money(total - tax),
+        tax=tax,
+        total=total,
+        cost_back=cost_back,
+        restock=bool(restock),
+        reason=why,
+        created_by=user_id,
+    )
+    db.add(refund)
+    await db.flush()
+    description = f"Bakery refund {refund.refund_number} on {row.sale_number}"
+    journal = [{"account_code": "4000", "debit": _money(total - tax), "credit": 0, "description": description}]
     if tax > 0:
-        journal.insert(1, {"account_code": "2100", "debit": tax, "credit": 0, "description": description})
-    if restock:
-        accounting.append_cogs_lines(journal, _money(row.cost_of_goods), reverse=True)
-        lines = (await db.execute(select(m.BakerySaleLine).where(m.BakerySaleLine.sale_id == row.id))).scalars().all()
-        for line in lines:
+        journal.append({"account_code": "2100", "debit": tax, "credit": 0, "description": description})
+    journal.append({"account_code": _money_account(pay_back), "debit": 0, "credit": total, "description": description})
+    accounting.append_cogs_lines(journal, cost_back, reverse=True)
+    for x in out_lines:
+        line = x["line"]
+        db.add(
+            m.BakeryRefundLine(
+                tenant_id=tenant_id, refund_id=refund.id, sale_line_id=line.id, product_id=line.product_id,
+                name=line.name, quantity=x["quantity"], tax=x["tax"], line_total=x["total"],
+            )
+        )
+        line.refunded_qty = _qty(float(line.refunded_qty or 0) + x["quantity"])
+        if restock:
             await inventory.apply_stock_change(
                 db,
                 tenant_id=tenant_id,
                 product_id=line.product_id,
-                quantity_delta=float(line.quantity),
+                quantity_delta=float(x["quantity"]),
                 movement_type="stock_in",
                 user_id=user_id,
-                reference_type=REF_SALE,
-                reference_id=row.id,
-                notes=f"Bakery refund {row.sale_number}",
+                reference_type=REF_REFUND,
+                reference_id=refund.id,
+                notes=f"Bakery refund {refund.refund_number}",
             )
-    await _post(
-        db, tenant_id, user_id=user_id, description=description, lines=journal,
-        reference=row.sale_number, source="bakery_refund", source_id=row.id,
+    refund.journal_entry_id = await _post(
+        db, tenant_id, user_id=user_id, description=description[:255], lines=journal,
+        reference=refund.refund_number, source=REF_REFUND, source_id=refund.id,
     )
     await _pay(
-        db, tenant_id, shift=shift, kind="refund", method=row.payment_method, amount=-gross, user_id=user_id,
-        sale_id=row.id,
+        db, tenant_id, shift=shift, kind="refund", method=pay_back, amount=-total, user_id=user_id, sale_id=row.id,
     )
-    row.status = "refunded"
+    row.refunded_total = _money(float(row.refunded_total or 0) + total)
+    everything_back = all(
+        float(line.refunded_qty or 0) >= float(line.quantity or 0) - 0.0005 for line in sale_lines
+    )
+    row.status = "refunded" if everything_back else "part_refunded"
     row.refunded_at = _now()
     row.refund_reason = why
     await _audit(
         db, tenant_id, user_id, "bakery_refund", "bakery_sale", row.id,
-        {"sale_number": row.sale_number, "total": gross, "reason": why, "restocked": bool(restock)},
+        {
+            "sale_number": row.sale_number, "refund_number": refund.refund_number, "total": total,
+            "reason": why, "restocked": bool(restock), "method": pay_back, "whole_sale": everything_back,
+        },
     )
     await db.flush()
     return row
@@ -811,24 +1214,38 @@ async def refund_sale(
 
 async def present_sale(db: AsyncSession, sale: m.BakerySale) -> dict:
     lines = (await db.execute(select(m.BakerySaleLine).where(m.BakerySaleLine.sale_id == sale.id))).scalars().all()
+    paid = (
+        await db.execute(
+            select(m.BakeryPayment.method, func.coalesce(func.sum(m.BakeryPayment.amount), 0))
+            .where(m.BakeryPayment.sale_id == sale.id, m.BakeryPayment.amount > 0)
+            .group_by(m.BakeryPayment.method)
+        )
+    ).all() if sale.payment_method == "split" else []
     return {
         "id": sale.id,
         "sale_number": sale.sale_number,
         "status": sale.status,
         "payment_method": sale.payment_method,
+        "payments": [{"method": k, "amount": _money(v)} for k, v in paid],
         "customer_name": sale.customer_name,
         "order_id": sale.order_id,
         "subtotal": _money(sale.subtotal),
         "tax": _money(sale.tax),
         "total": _money(sale.total),
+        "discount": _money(sale.discount),
+        "discount_reason": sale.discount_reason,
+        "refunded_total": _money(sale.refunded_total),
         "refund_reason": sale.refund_reason,
         "created_at": sale.created_at.isoformat() if sale.created_at else None,
         "items": [
             {
+                "id": line.id,
                 "name": line.name,
                 "quantity": _qty(line.quantity),
                 "unit_price": _money(line.unit_price),
+                "discount": _money(line.discount),
                 "line_total": _money(line.line_total),
+                "refunded_qty": _qty(line.refunded_qty),
             }
             for line in lines
         ],
@@ -862,7 +1279,7 @@ async def _order(db: AsyncSession, tenant_id: str, order_id: str, *, lock: bool 
 
 
 async def create_order(db: AsyncSession, tenant_id: str, payload, *, user_id: str | None) -> m.BakeryOrder:
-    if payload.due_date < date.today():
+    if payload.due_date < await bakery_today(db, tenant_id):
         raise HTTPException(status_code=422, detail="Collection cannot be in the past")
     lines, net, tax, gross = await _priced_lines(db, tenant_id, payload.lines)
     delivery = bool(getattr(payload, "delivery", False))
@@ -887,6 +1304,7 @@ async def create_order(db: AsyncSession, tenant_id: str, payload, *, user_id: st
         total=gross,
         deposit=deposit,
         deposit_method=method,
+        deposit_account=DEPOSIT_ACCOUNT if deposit > 0 else None,
         notes=optional_honest_narrative(payload.notes, label="notes", max_length=500),
         created_by=user_id,
         delivery=delivery,
@@ -916,7 +1334,7 @@ async def create_order(db: AsyncSession, tenant_id: str, payload, *, user_id: st
             db, tenant_id, user_id=user_id, description=description,
             lines=[
                 {"account_code": _money_account(method), "debit": deposit, "credit": 0, "description": description},
-                {"account_code": "1100", "debit": 0, "credit": deposit, "description": description},
+                {"account_code": DEPOSIT_ACCOUNT, "debit": 0, "credit": deposit, "description": description},
             ],
             reference=row.order_number, source=REF_ORDER, source_id=row.id,
         )
@@ -937,6 +1355,11 @@ async def mark_ready(db: AsyncSession, tenant_id: str, order_id: str) -> m.Baker
     row.updated_at = _now()
     await db.flush()
     return row
+
+
+def _deposit_account(row: m.BakeryOrder) -> str:
+    """The account this order's deposit sits in: 2168, or 1100 for deposits taken before."""
+    return row.deposit_account or OLD_DEPOSIT_ACCOUNT
 
 
 async def collect_order(
@@ -987,7 +1410,7 @@ async def collect_order(
     if balance > 0:
         journal.append({"account_code": _money_account(method), "debit": balance, "credit": 0, "description": description})
     if deposit > 0:
-        journal.append({"account_code": "1100", "debit": deposit, "credit": 0, "description": description})
+        journal.append({"account_code": _deposit_account(row), "debit": deposit, "credit": 0, "description": description})
     journal.append({"account_code": "4000", "debit": 0, "credit": _money(gross - tax), "description": description})
     if tax > 0:
         journal.append({"account_code": "2100", "debit": 0, "credit": tax, "description": description})
@@ -1022,6 +1445,7 @@ async def cancel_order(
         raise HTTPException(status_code=409, detail=f"This order is {row.status}")
     why = require_honest_narrative(reason, label="reason", max_length=255)
     deposit = _money(row.deposit)
+    held_in = _deposit_account(row)
     if deposit > 0:
         action = (deposit_action or "").strip().lower()
         if action not in {"refund", "keep"}:
@@ -1033,7 +1457,7 @@ async def cancel_order(
             await _post(
                 db, tenant_id, user_id=user_id, description=description,
                 lines=[
-                    {"account_code": "1100", "debit": deposit, "credit": 0, "description": description},
+                    {"account_code": held_in, "debit": deposit, "credit": 0, "description": description},
                     {"account_code": _money_account(method), "debit": 0, "credit": deposit, "description": description},
                 ],
                 reference=row.order_number, source="bakery_order_cancelled", source_id=row.id,
@@ -1043,11 +1467,13 @@ async def cancel_order(
                 order_id=row.id,
             )
         else:
+            # A kept deposit pays for no goods: it is compensation for the cancelled order, booked
+            # as other income. Whether VAT is due on it is a question for the company's accountant.
             await _post(
                 db, tenant_id, user_id=user_id, description=description,
                 lines=[
-                    {"account_code": "1100", "debit": deposit, "credit": 0, "description": description},
-                    {"account_code": "4000", "debit": 0, "credit": deposit, "description": description},
+                    {"account_code": held_in, "debit": deposit, "credit": 0, "description": description},
+                    {"account_code": "4400", "debit": 0, "credit": deposit, "description": description},
                 ],
                 reference=row.order_number, source="bakery_order_cancelled", source_id=row.id,
             )
@@ -1112,44 +1538,93 @@ async def list_orders(db: AsyncSession, tenant_id: str, *, show: str = "open") -
 
 
 async def to_bake(db: AsyncSession, tenant_id: str, *, until: date) -> list[dict]:
-    """What open orders need by a date, against what is on the shelf."""
+    """What to bake: open orders due by a date, today's trade standing orders, and each item's
+    shelf level (what should be on the shelf for walk-in customers), less what is on the shelf
+    and still in date."""
+    from app import bakery_items as items_svc
+    from app import bakery_trade as trade_svc
+
     rows = (
         await db.execute(
-            select(m.BakeryOrderLine.product_id, m.BakeryOrderLine.name, func.sum(m.BakeryOrderLine.quantity))
+            select(m.BakeryOrderLine.product_id, func.sum(m.BakeryOrderLine.quantity))
             .join(m.BakeryOrder, m.BakeryOrder.id == m.BakeryOrderLine.order_id)
             .where(
                 m.BakeryOrder.tenant_id == tenant_id,
                 m.BakeryOrder.status.in_(ORDER_OPEN),
                 m.BakeryOrder.due_date <= until,
             )
-            .group_by(m.BakeryOrderLine.product_id, m.BakeryOrderLine.name)
+            .group_by(m.BakeryOrderLine.product_id)
         )
     ).all()
+    ordered = {pid: float(q or 0) for pid, q in rows}
+    today = await bakery_today(db, tenant_id)
+    standing = await trade_svc.due_today(db, tenant_id, day=today)
+    settings = await items_svc.settings_map(db, tenant_id)
+    par = {pid: float(s.par_level) for pid, s in settings.items() if s.par_level}
+    shelf = await items_svc.shelf(db, tenant_id, today=today, local=await _localiser(db, tenant_id))
+    expired: dict[str, float] = {}
+    for s in shelf:
+        if s["state"] == "expired":
+            expired[s["product_id"]] = expired.get(s["product_id"], 0.0) + s["quantity"]
     out = []
-    for product_id, name, ordered in rows:
-        product = await db.get(m.Product, product_id)
-        on_hand = _qty(product.stock_qty) if product else 0
-        needed = _qty(float(ordered) - on_hand)
-        out.append({"product_id": product_id, "name": name, "ordered": _qty(ordered), "on_hand": on_hand, "to_bake": max(0.0, needed)})
+    for pid in set(ordered) | set(standing) | set(par):
+        product = await db.get(m.Product, pid)
+        if product is None or not product.is_active:
+            continue
+        on_hand = _qty(float(product.stock_qty or 0) - expired.get(pid, 0.0))
+        need = ordered.get(pid, 0.0) + standing.get(pid, 0.0) + par.get(pid, 0.0)
+        out.append(
+            {
+                "product_id": pid,
+                "name": product.name,
+                "ordered": _qty(ordered.get(pid, 0.0)),
+                "trade": _qty(standing.get(pid, 0.0)),
+                "shelf_level": _qty(par.get(pid, 0.0)),
+                "on_hand": on_hand,
+                "to_bake": max(0.0, _qty(need - on_hand)),
+            }
+        )
     return sorted(out, key=lambda row: row["to_bake"], reverse=True)
 
 
+async def _refunds_between(db, tenant_id: str, begin: datetime, finish: datetime) -> list[m.BakeryRefund]:
+    return list(
+        (
+            await db.execute(
+                select(m.BakeryRefund).where(
+                    m.BakeryRefund.tenant_id == tenant_id,
+                    m.BakeryRefund.created_at >= begin,
+                    m.BakeryRefund.created_at < finish,
+                )
+            )
+        ).scalars().all()
+    )
+
+
 async def period_numbers(db: AsyncSession, tenant_id: str, *, start: date, end: date) -> dict:
-    begin = datetime.combine(start, time.min)
-    finish = datetime.combine(end, time.min) + timedelta(days=1)
+    begin, finish = await _bounds(db, tenant_id, start, end)
     sales = (
         await db.execute(
             select(m.BakerySale).where(
                 m.BakerySale.tenant_id == tenant_id,
-                m.BakerySale.status == "completed",
+                m.BakerySale.status.in_(SOLD),
                 m.BakerySale.created_at >= begin,
                 m.BakerySale.created_at < finish,
             )
         )
     ).scalars().all()
-    revenue = _money(sum(float(s.total or 0) - float(s.tax or 0) for s in sales))
-    tax = _money(sum(float(s.tax or 0) for s in sales))
-    cost_of_sales = _money(sum(float(s.cost_of_goods or 0) for s in sales))
+    refunds = await _refunds_between(db, tenant_id, begin, finish)
+    refund_net = sum(float(r.total or 0) - float(r.tax or 0) for r in refunds)
+    refund_tax = sum(float(r.tax or 0) for r in refunds)
+    from app import bakery_trade as trade_svc
+
+    trade = await trade_svc.trade_numbers(db, tenant_id, begin=begin, finish=finish, start=start, end=end)
+    counter_revenue = _money(sum(float(s.total or 0) - float(s.tax or 0) for s in sales) - refund_net)
+    revenue = _money(counter_revenue + trade["revenue"])
+    tax = _money(sum(float(s.tax or 0) for s in sales) - refund_tax + trade["tax"])
+    cost_of_sales = _money(
+        sum(float(s.cost_of_goods or 0) for s in sales) - sum(float(r.cost_back or 0) for r in refunds) + trade["cost"]
+    )
     waste_rows = (
         await db.execute(
             select(m.BakeryWaste).where(
@@ -1179,13 +1654,26 @@ async def period_numbers(db: AsyncSession, tenant_id: str, *, start: date, end: 
             .join(m.BakerySale, m.BakerySale.id == m.BakerySaleLine.sale_id)
             .where(
                 m.BakerySale.tenant_id == tenant_id,
-                m.BakerySale.status == "completed",
+                m.BakerySale.status.in_(SOLD),
                 m.BakerySale.created_at >= begin,
                 m.BakerySale.created_at < finish,
             )
             .group_by(m.BakerySaleLine.name)
         )
     ).all()
+    sellers: dict[str, list[float]] = {name: [float(qty or 0), float(total or 0)] for name, qty, total in sold}
+    if refunds:
+        back = (
+            await db.execute(
+                select(m.BakeryRefundLine.name, func.sum(m.BakeryRefundLine.quantity), func.sum(m.BakeryRefundLine.line_total))
+                .where(m.BakeryRefundLine.refund_id.in_([r.id for r in refunds]))
+                .group_by(m.BakeryRefundLine.name)
+            )
+        ).all()
+        for name, qty, total in back:
+            row = sellers.setdefault(name, [0.0, 0.0])
+            row[0] -= float(qty or 0)
+            row[1] -= float(total or 0)
     paid = (
         await db.execute(
             select(m.BakeryPayment.method, func.coalesce(func.sum(m.BakeryPayment.amount), 0))
@@ -1202,8 +1690,14 @@ async def period_numbers(db: AsyncSession, tenant_id: str, *, start: date, end: 
         "start_date": start.isoformat(),
         "end_date": end.isoformat(),
         "revenue": revenue,
+        "counter_revenue": counter_revenue,
+        "trade_revenue": trade["revenue"],
+        "trade_invoices": trade["count"],
         "tax": tax,
         "sale_count": len(sales),
+        "discounts": _money(sum(float(s.discount or 0) for s in sales)),
+        "refund_count": len(refunds),
+        "refund_total": _money(sum(float(r.total or 0) for r in refunds)),
         "cost_of_sales": cost_of_sales,
         "waste_cost": waste_cost,
         "waste_by_reason": by_reason,
@@ -1213,7 +1707,7 @@ async def period_numbers(db: AsyncSession, tenant_id: str, *, start: date, end: 
         "baked_batches": len(batches),
         "baked_cost": baked_cost,
         "best_sellers": sorted(
-            ({"name": name, "quantity": _qty(qty), "total": _money(total)} for name, qty, total in sold),
+            ({"name": name, "quantity": _qty(v[0]), "total": _money(v[1])} for name, v in sellers.items() if v[0] > 0.0005),
             key=lambda row: row["total"],
             reverse=True,
         )[:15],
@@ -1222,7 +1716,7 @@ async def period_numbers(db: AsyncSession, tenant_id: str, *, start: date, end: 
 
 
 async def summary(db: AsyncSession, tenant_id: str, *, money: bool = True) -> dict:
-    today = date.today()
+    today = await bakery_today(db, tenant_id)
     numbers = await period_numbers(db, tenant_id, start=today, end=today)
     open_orders = await list_orders(db, tenant_id, show="open")
     due_today = [o for o in open_orders if o.due_date <= today]
@@ -1237,9 +1731,31 @@ async def summary(db: AsyncSession, tenant_id: str, *, money: bool = True) -> di
         "baked_batches_today": numbers["baked_batches"],
     }
     short = [r for r in body["to_bake"] if float(r.get("to_bake") or 0) > 0]
+    from app import bakery_items as items_svc
+    from app import bakery_trade as trade_svc
+
+    tills = await open_tills(db, tenant_id)
+    body["tills_open"] = len(tills)
+    body["till_open"] = bool(tills)
+    shelf = await items_svc.shelf(db, tenant_id, today=today, local=await _localiser(db, tenant_id))
+    expired = [s for s in shelf if s["state"] == "expired"]
+    last_day = [s for s in shelf if s["state"] == "last_day"]
+    body["shelf"] = {
+        "expired": _qty(sum(s["quantity"] for s in expired)),
+        "last_day": _qty(sum(s["quantity"] for s in last_day)),
+        "day_old": _qty(sum(s["quantity"] for s in shelf if s["state"] == "day_old")),
+    }
     attention = []
-    if shift is None:
+    if not tills:
         attention.append(dash.item("warning", "The till is closed. Open it before the first sale.", "/bakery?tab=counter"))
+    if expired:
+        names = ", ".join(sorted({s["name"] for s in expired}))[:120]
+        attention.append(dash.item("warning", f"Past its date, take off the shelf: {names}", "/bakery?tab=waste"))
+    if last_day:
+        names = ", ".join(sorted({s["name"] for s in last_day}))[:120]
+        attention.append(dash.item("info", f"Last day to sell: {names}", "/bakery?tab=counter"))
+    if await trade_svc.due_today(db, tenant_id, day=today):
+        attention.append(dash.item("info", "Trade deliveries for today are not made yet", "/bakery?tab=trade"))
     if body["orders_overdue"]:
         attention.append(dash.item("warning", f"{dash.plural(body['orders_overdue'], 'order')} past the collection day", "/bakery?tab=orders"))
     if short:
@@ -1249,11 +1765,12 @@ async def summary(db: AsyncSession, tenant_id: str, *, money: bool = True) -> di
     body["attention"] = attention
     if money:
         first, begin, finish = dash.window()
+        local = await _localiser(db, tenant_id)
         rows = (
             await db.execute(
                 select(m.BakerySale.created_at, m.BakerySale.total, m.BakerySale.tax).where(
                     m.BakerySale.tenant_id == tenant_id,
-                    m.BakerySale.status == "completed",
+                    m.BakerySale.status.in_(SOLD),
                     m.BakerySale.created_at >= begin,
                     m.BakerySale.created_at <= finish,
                 )
@@ -1261,7 +1778,11 @@ async def summary(db: AsyncSession, tenant_id: str, *, money: bool = True) -> di
         ).all()
         points: dict[date, float] = {}
         for when, total, tax in rows:
-            points[when.date()] = points.get(when.date(), 0.0) + float(total or 0) - float(tax or 0)
+            day = local(when).date()
+            points[day] = points.get(day, 0.0) + float(total or 0) - float(tax or 0)
+        for refund in await _refunds_between(db, tenant_id, begin, finish + timedelta(seconds=1)):
+            day = local(refund.created_at).date()
+            points[day] = points.get(day, 0.0) - (float(refund.total or 0) - float(refund.tax or 0))
         body["trend"] = dash.trend("Sales before tax, last 14 days", "money", dash.daily(points, first=first))
         body["sales_yesterday"] = _money(points.get(today - timedelta(days=1), 0.0))
         body.update(
@@ -1364,7 +1885,14 @@ async def save_stock_item(db: AsyncSession, tenant_id: str, payload, *, user_id,
 
 
 async def receive_stock(db: AsyncSession, tenant_id: str, payload, *, user_id) -> m.BakeryStockReceipt:
-    """Bought in: stock goes up, the average cost moves, and the books show how it was paid."""
+    """Bought in: stock goes up at the price before VAT, the VAT on the bill is claimable input
+    tax, and the books show how it was paid. Bought on credit, it is owed to a supplier.
+
+    With `in_purchase_units`, quantity and cost are per purchase unit (a 50 kg bag) and turn into
+    the stock unit (kg) here."""
+    from app import bakery_items as items_svc
+    from app import bakery_trade as trade_svc
+
     paid_with = str(payload.paid_with or "").strip().lower()
     if paid_with not in PAID_WITH:
         raise HTTPException(status_code=422, detail="Choose how it was paid")
@@ -1375,8 +1903,29 @@ async def receive_stock(db: AsyncSession, tenant_id: str, payload, *, user_id) -
     ).scalar_one_or_none()
     if product is None:
         raise HTTPException(status_code=404, detail="Item not found")
-    qty, cost = _qty(payload.quantity), _money(payload.unit_cost)
-    total = _money(qty * cost)
+    supplier = None
+    if getattr(payload, "supplier_id", None):
+        supplier = await trade_svc._supplier(db, tenant_id, str(payload.supplier_id))
+    elif (payload.supplier or "").strip():
+        supplier = await trade_svc.supplier_by_name(db, tenant_id, payload.supplier)
+    if paid_with == "credit" and supplier is None:
+        raise HTTPException(status_code=422, detail="Say which supplier you owe")
+    entered_qty, entered_cost = float(payload.quantity), float(payload.unit_cost)
+    if getattr(payload, "in_purchase_units", False):
+        conf = await items_svc.settings_for(db, tenant_id, product.id)
+        if not conf or not conf.units_per_purchase:
+            raise HTTPException(status_code=422, detail="Set how this item is bought (e.g. a 50 kg bag) under Stock first")
+        per = float(conf.units_per_purchase)
+        bill = entered_qty * entered_cost
+        entered_qty = entered_qty * per
+        entered_cost = bill / entered_qty if entered_qty else 0.0
+        total = _money(bill)
+    else:
+        total = _money(entered_qty * entered_cost)
+    qty, cost = _qty(entered_qty), _money(entered_cost)
+    vat = _money(getattr(payload, "tax", None) or 0)
+    if vat < 0 or vat > total + 0.004:
+        raise HTTPException(status_code=422, detail="The VAT cannot be more than the goods cost")
     on_hand = max(float(product.stock_qty or 0), 0.0)
     held = on_hand * float(product.cost_price or 0)
     product.cost_price = _money((held + total) / (on_hand + qty)) if (on_hand + qty) else cost
@@ -1397,23 +1946,29 @@ async def receive_stock(db: AsyncSession, tenant_id: str, payload, *, user_id) -
         quantity=qty,
         unit_cost=cost,
         total=total,
+        tax=vat,
         paid_with=paid_with,
-        supplier=optional_honest_narrative(payload.supplier, label="supplier", max_length=180),
+        supplier=supplier.name if supplier else None,
+        supplier_id=supplier.id if supplier else None,
+        bill_number=optional_honest_narrative(getattr(payload, "bill_number", None), label="bill number", max_length=60),
         created_by=user_id,
     )
     db.add(row)
     await db.flush()
     description = f"Bought {qty:g} {product.name}"
     credit = "2000" if paid_with == "credit" else _money_account(paid_with)
+    lines = [{"account_code": "1200", "debit": total, "credit": 0, "description": description}]
+    if vat > 0:
+        lines.append({"account_code": INPUT_TAX, "debit": vat, "credit": 0, "description": f"{description} (VAT)"})
+    lines.append({"account_code": credit, "debit": 0, "credit": _money(total + vat), "description": description})
     row.journal_entry_id = await _post(
-        db, tenant_id, user_id=user_id, description=description,
-        lines=[
-            {"account_code": "1200", "debit": total, "credit": 0, "description": description},
-            {"account_code": credit, "debit": 0, "credit": total, "description": description},
-        ],
+        db, tenant_id, user_id=user_id, description=description, lines=lines,
         reference=row.receipt_number, source="bakery_receipt", source_id=row.id,
     )
-    await _audit(db, tenant_id, user_id, "bakery_stock_received", "bakery_receipt", row.id, {"total": total, "paid_with": paid_with})
+    await _audit(
+        db, tenant_id, user_id, "bakery_stock_received", "bakery_receipt", row.id,
+        {"total": total, "tax": vat, "paid_with": paid_with, "supplier": row.supplier},
+    )
     await db.flush()
     return row
 
@@ -1436,6 +1991,8 @@ async def list_receipts(db: AsyncSession, tenant_id: str, *, limit: int = 50) ->
             "quantity": _qty(r.quantity),
             "unit_cost": _money(r.unit_cost),
             "total": _money(r.total),
+            "tax": _money(r.tax),
+            "paid": _money(float(r.total or 0) + float(r.tax or 0)),
             "paid_with": r.paid_with,
             "supplier": r.supplier,
             "created_at": r.created_at.isoformat() if r.created_at else None,
@@ -1447,13 +2004,133 @@ async def list_receipts(db: AsyncSession, tenant_id: str, *, limit: int = 50) ->
 # --- Expenses ----------------------------------------------------------------------------
 
 
+async def count_stock(db: AsyncSession, tenant_id: str, payload, *, user_id) -> m.BakeryStockCount:
+    """A stocktake. Each counted item is set to what is really there; the value gained or lost
+    goes to Stock Count Differences, so the books follow the shelf."""
+    if not payload.lines:
+        raise HTTPException(status_code=422, detail="Count at least one item")
+    seen: set[str] = set()
+    row = m.BakeryStockCount(
+        tenant_id=tenant_id,
+        count_number=await _next_number(db, tenant_id, m.BakeryStockCount, "SC"),
+        notes=optional_honest_narrative(getattr(payload, "notes", None), label="notes", max_length=500),
+        created_by=user_id,
+    )
+    db.add(row)
+    await db.flush()
+    change = 0.0
+    changed = 0
+    for line in payload.lines:
+        pid = str(line.product_id)
+        if pid in seen:
+            raise HTTPException(status_code=422, detail="An item is counted twice")
+        seen.add(pid)
+        product = (
+            await db.execute(
+                select(m.Product).where(m.Product.id == pid, m.Product.tenant_id == tenant_id).with_for_update()
+            )
+        ).scalar_one_or_none()
+        if product is None:
+            raise HTTPException(status_code=404, detail="Item not found")
+        expected = _qty(product.stock_qty)
+        counted = _qty(line.counted_qty)
+        if counted < 0:
+            raise HTTPException(status_code=422, detail="A count cannot be below zero")
+        diff = _qty(counted - expected)
+        unit = _money(product.cost_price)
+        value = _money(diff * unit)
+        db.add(
+            m.BakeryStockCountLine(
+                tenant_id=tenant_id, count_id=row.id, product_id=product.id, name=product.name,
+                expected_qty=expected, counted_qty=counted, unit_cost=unit, value_change=value,
+            )
+        )
+        if abs(diff) >= 0.0005:
+            changed += 1
+            await inventory.apply_stock_change(
+                db,
+                tenant_id=tenant_id,
+                product_id=product.id,
+                quantity_delta=diff,
+                movement_type="adjustment",
+                user_id=user_id,
+                reference_type=REF_COUNT,
+                reference_id=row.id,
+                notes=f"Stock count {row.count_number}",
+                allow_negative=True,
+            )
+            change += value
+    row.value_change = _money(change)
+    if abs(row.value_change) >= 0.005:
+        amount = abs(row.value_change)
+        description = f"Stock count {row.count_number}"
+        if row.value_change < 0:
+            lines = [
+                {"account_code": COUNT_DIFFERENCES, "debit": amount, "credit": 0, "description": description},
+                {"account_code": "1200", "debit": 0, "credit": amount, "description": description},
+            ]
+        else:
+            lines = [
+                {"account_code": "1200", "debit": amount, "credit": 0, "description": description},
+                {"account_code": COUNT_DIFFERENCES, "debit": 0, "credit": amount, "description": description},
+            ]
+        row.journal_entry_id = await _post(
+            db, tenant_id, user_id=user_id, description=description, lines=lines,
+            reference=row.count_number, source=REF_COUNT, source_id=row.id,
+        )
+    await _audit(
+        db, tenant_id, user_id, "bakery_stock_counted", "bakery_stock_count", row.id,
+        {"count_number": row.count_number, "items": len(seen), "changed": changed, "value_change": row.value_change},
+    )
+    await db.flush()
+    return row
+
+
+async def list_counts(db: AsyncSession, tenant_id: str, *, limit: int = 20) -> list[dict]:
+    rows = (
+        await db.execute(
+            select(m.BakeryStockCount)
+            .where(m.BakeryStockCount.tenant_id == tenant_id)
+            .order_by(m.BakeryStockCount.created_at.desc())
+            .limit(limit)
+        )
+    ).scalars().all()
+    out = []
+    for row in rows:
+        lines = (
+            await db.execute(select(m.BakeryStockCountLine).where(m.BakeryStockCountLine.count_id == row.id))
+        ).scalars().all()
+        out.append(
+            {
+                "id": row.id,
+                "count_number": row.count_number,
+                "notes": row.notes,
+                "value_change": _money(row.value_change),
+                "created_at": row.created_at.isoformat() if row.created_at else None,
+                "lines": [
+                    {
+                        "name": line.name,
+                        "expected_qty": _qty(line.expected_qty),
+                        "counted_qty": _qty(line.counted_qty),
+                        "difference": _qty(float(line.counted_qty) - float(line.expected_qty)),
+                        "value_change": _money(line.value_change),
+                    }
+                    for line in lines
+                ],
+            }
+        )
+    return out
+
+
 async def record_expense(db: AsyncSession, tenant_id: str, payload, *, user_id) -> m.BakeryExpense:
+    """An expense goes to its own account (rent to Rent, wages to Salaries and Wages...). VAT on
+    the bill, when there is any, is claimable input tax and stays out of the cost."""
     if payload.category not in EXPENSE_KINDS:
         raise HTTPException(status_code=422, detail="Choose what it was for")
     paid_with = str(payload.paid_with or "").strip().lower()
     if paid_with not in PAID_WITH - {"credit"}:
         raise HTTPException(status_code=422, detail="Choose how it was paid")
-    if payload.spent_on > date.today():
+    if payload.spent_on > await bakery_today(db, tenant_id):
         raise HTTPException(status_code=422, detail="That day has not happened yet")
     shift = None
     if payload.from_till:
@@ -1461,12 +2138,16 @@ async def record_expense(db: AsyncSession, tenant_id: str, payload, *, user_id) 
             raise HTTPException(status_code=422, detail="Only cash can come out of the till")
         shift = await _need_shift(db, tenant_id)
     amount = _money(payload.amount)
+    vat = _money(getattr(payload, "tax", None) or 0)
+    if vat < 0 or vat >= amount:
+        raise HTTPException(status_code=422, detail="The VAT must be less than the amount paid")
     row = m.BakeryExpense(
         tenant_id=tenant_id,
         expense_number=await _next_number(db, tenant_id, m.BakeryExpense, "BX"),
         category=payload.category,
         description=require_honest_narrative(payload.description, label="description", max_length=255),
         amount=amount,
+        tax=vat,
         paid_with=paid_with,
         spent_on=payload.spent_on,
         shift_id=shift.id if shift else None,
@@ -1475,17 +2156,27 @@ async def record_expense(db: AsyncSession, tenant_id: str, payload, *, user_id) 
     db.add(row)
     await db.flush()
     description = f"{EXPENSE_KINDS[row.category]}: {row.description}"
+    lines = [
+        {
+            "account_code": EXPENSE_ACCOUNTS.get(row.category, "6000"),
+            "debit": _money(amount - vat),
+            "credit": 0,
+            "description": description,
+        }
+    ]
+    if vat > 0:
+        lines.append({"account_code": INPUT_TAX, "debit": vat, "credit": 0, "description": f"{description} (VAT)"})
+    lines.append({"account_code": _money_account(paid_with), "debit": 0, "credit": amount, "description": description})
     row.journal_entry_id = await _post(
-        db, tenant_id, user_id=user_id, description=description,
-        lines=[
-            {"account_code": "6000", "debit": amount, "credit": 0, "description": description},
-            {"account_code": _money_account(paid_with), "debit": 0, "credit": amount, "description": description},
-        ],
+        db, tenant_id, user_id=user_id, description=description, lines=lines,
         reference=row.expense_number, source="bakery_expense", source_id=row.id,
     )
     if shift is not None:
         await _pay(db, tenant_id, shift=shift, kind="expense", method="cash", amount=-amount, user_id=user_id)
-    await _audit(db, tenant_id, user_id, "bakery_expense", "bakery_expense", row.id, {"amount": amount, "category": row.category})
+    await _audit(
+        db, tenant_id, user_id, "bakery_expense", "bakery_expense", row.id,
+        {"amount": amount, "tax": vat, "category": row.category},
+    )
     await db.flush()
     return row
 
@@ -1498,6 +2189,8 @@ def serialize_expense(row: m.BakeryExpense) -> dict:
         "category_label": EXPENSE_KINDS.get(row.category, row.category),
         "description": row.description,
         "amount": _money(row.amount),
+        "tax": _money(row.tax),
+        "cost": _money(float(row.amount or 0) - float(row.tax or 0)),
         "paid_with": row.paid_with,
         "from_till": row.shift_id is not None,
         "spent_on": row.spent_on.isoformat(),
@@ -1529,7 +2222,12 @@ async def full_report(db: AsyncSession, tenant_id: str, *, start: date, end: dat
     base = await period_numbers(db, tenant_id, start=start, end=end)
     span = (end - start).days + 1
     before = await period_numbers(db, tenant_id, start=start - timedelta(days=span), end=start - timedelta(days=1))
-    begin, finish = datetime.combine(start, time.min), datetime.combine(end, time.min) + timedelta(days=1)
+    begin, finish = await _bounds(db, tenant_id, start, end)
+    local = await _localiser(db, tenant_id)
+
+    def cost_of(e: m.BakeryExpense) -> float:
+        # What the bakery really spent: VAT on the bill is claimed back, so it is not a cost.
+        return float(e.amount or 0) - float(e.tax or 0)
 
     async def expenses_between(first: date, last: date) -> list[m.BakeryExpense]:
         return list(
@@ -1546,11 +2244,11 @@ async def full_report(db: AsyncSession, tenant_id: str, *, start: date, end: dat
 
     spent = await expenses_between(start, end)
     spent_before = await expenses_between(start - timedelta(days=span), start - timedelta(days=1))
-    expenses = _money(sum(float(e.amount or 0) for e in spent))
+    expenses = _money(sum(cost_of(e) for e in spent))
     by_kind: dict[str, float] = {}
     for e in spent:
         label = EXPENSE_KINDS.get(e.category, e.category)
-        by_kind[label] = by_kind.get(label, 0) + float(e.amount or 0)
+        by_kind[label] = by_kind.get(label, 0) + cost_of(e)
 
     sales = (
         await db.execute(
@@ -1561,16 +2259,20 @@ async def full_report(db: AsyncSession, tenant_id: str, *, start: date, end: dat
             )
         )
     ).scalars().all()
-    done = [s for s in sales if s.status == "completed"]
-    refunded = [s for s in sales if s.status == "refunded"]
+    done = [s for s in sales if s.status in SOLD]
+    refunds = await _refunds_between(db, tenant_id, begin, finish)
     daily: dict[date, float] = {}
     hours: dict[int, dict] = {}
     for s in done:
         net = float(s.total or 0) - float(s.tax or 0)
-        daily[s.created_at.date()] = daily.get(s.created_at.date(), 0) + net
-        slot = hours.setdefault(s.created_at.hour, {"hour": s.created_at.hour, "sales": 0, "total": 0.0})
+        when = local(s.created_at)
+        daily[when.date()] = daily.get(when.date(), 0) + net
+        slot = hours.setdefault(when.hour, {"hour": when.hour, "sales": 0, "total": 0.0})
         slot["sales"] += 1
         slot["total"] += net
+    for r in refunds:
+        when = local(r.created_at)
+        daily[when.date()] = daily.get(when.date(), 0) - (float(r.total or 0) - float(r.tax or 0))
 
     items: dict[str, dict] = {}
     if done:
@@ -1588,6 +2290,22 @@ async def full_report(db: AsyncSession, tenant_id: str, *, start: date, end: dat
             row["quantity"] += qty
             row["sales"] += float(line.line_total or 0) - float(line.tax or 0)
             row["cost"] += qty * unit_cost
+    if refunds:
+        back = (
+            await db.execute(
+                select(m.BakeryRefundLine, m.BakeryRefund.restock, m.BakerySaleLine.unit_cost)
+                .join(m.BakeryRefund, m.BakeryRefund.id == m.BakeryRefundLine.refund_id)
+                .outerjoin(m.BakerySaleLine, m.BakerySaleLine.id == m.BakeryRefundLine.sale_line_id)
+                .where(m.BakeryRefundLine.refund_id.in_([r.id for r in refunds]))
+            )
+        ).all()
+        for line, restocked, unit_cost in back:
+            row = items.setdefault(line.name, {"name": line.name, "quantity": 0.0, "sales": 0.0, "cost": 0.0})
+            qty = float(line.quantity or 0)
+            row["quantity"] -= qty
+            row["sales"] -= float(line.line_total or 0) - float(line.tax or 0)
+            if restocked:
+                row["cost"] -= qty * float(unit_cost or 0)
     by_item = []
     for row in items.values():
         profit = row["sales"] - row["cost"]
@@ -1645,7 +2363,7 @@ async def full_report(db: AsyncSession, tenant_id: str, *, start: date, end: dat
     shift_rows = [await present_shift(db, tenant_id, s) for s in shifts]
     bought = (
         await db.execute(
-            select(func.coalesce(func.sum(m.BakeryStockReceipt.total), 0)).where(
+            select(func.coalesce(func.sum(m.BakeryStockReceipt.total), 0)).where(  # before VAT
                 m.BakeryStockReceipt.tenant_id == tenant_id,
                 m.BakeryStockReceipt.created_at >= begin,
                 m.BakeryStockReceipt.created_at < finish,
@@ -1663,13 +2381,13 @@ async def full_report(db: AsyncSession, tenant_id: str, *, start: date, end: dat
         "net_profit": net_profit,
         "net_margin_percent": _money(net_profit / base["revenue"] * 100) if base["revenue"] > 0 else 0,
         "average_sale": _money(base["revenue"] / base["sale_count"]) if base["sale_count"] else 0,
-        "refunds": {"count": len(refunded), "total": _money(sum(float(s.total or 0) for s in refunded))},
+        "refunds": {"count": len(refunds), "total": _money(sum(float(r.total or 0) for r in refunds))},
         "previous": {
             "start_date": (start - timedelta(days=span)).isoformat(),
             "end_date": (start - timedelta(days=1)).isoformat(),
             "revenue": before["revenue"],
             "gross_profit": before["gross_profit"],
-            "net_profit": _money(before["gross_profit"] - sum(float(e.amount or 0) for e in spent_before)),
+            "net_profit": _money(before["gross_profit"] - sum(cost_of(e) for e in spent_before)),
             "sale_count": before["sale_count"],
             "waste_cost": before["waste_cost"],
         },
@@ -1820,7 +2538,7 @@ async def open_bag(db: AsyncSession, tenant_id: str, *, driver_id: str, opening_
 async def hand_in(
     db: AsyncSession, tenant_id: str, bag_id: str, *, counted_cash: float, user_id, role: str = ""
 ) -> dict:
-    """Back at the shop: the cash is counted by someone else, and any gap is kept on record.
+    """Back at the shop: the cash is counted by someone else, and any gap is booked.
     A manager or owner who drove may count their own bag; the record says so."""
     bag = (
         await db.execute(
@@ -1848,10 +2566,12 @@ async def hand_in(
     ).scalar_one()
     if out:
         raise HTTPException(status_code=409, detail=f"The driver still has {out} delivery on the road. Deliver it or mark it failed first.")
+    expected = _money(float(bag.opening_cash or 0) + await drawer_cash(db, tenant_id, bag))
     bag.counted_cash = _money(counted_cash)
     bag.status = "closed"
     bag.closed_at = _now()
     bag.closed_by = user_id
+    await _book_over_short(db, tenant_id, bag, expected=expected, user_id=user_id, label="Driver cash bag")
     data = await present_shift(db, tenant_id, bag)
     await _audit(
         db, tenant_id, user_id, "bakery_cash_handed_in", "bakery_till_shift", bag.id,
@@ -1869,8 +2589,8 @@ async def hand_in(
 async def driver_today(db: AsyncSession, tenant_id: str, *, driver_id: str) -> dict:
     bag = await driver_bag(db, tenant_id, driver_id)
     mine = await list_deliveries(db, tenant_id, driver_id=driver_id)
-    today = date.today()
-    begin = datetime.combine(today, time.min)
+    today = await bakery_today(db, tenant_id)
+    begin, _ = await _bounds(db, tenant_id, today, today)
     delivered = (
         await db.execute(
             select(func.count()).select_from(m.BakeryOrder).where(
@@ -1887,7 +2607,7 @@ async def driver_today(db: AsyncSession, tenant_id: str, *, driver_id: str) -> d
                 m.BakerySale.tenant_id == tenant_id,
                 m.BakerySale.created_by == driver_id,
                 m.BakerySale.order_id.is_(None),
-                m.BakerySale.status == "completed",
+                m.BakerySale.status.in_(SOLD),
                 m.BakerySale.created_at >= begin,
             )
         )

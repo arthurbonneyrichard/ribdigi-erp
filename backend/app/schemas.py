@@ -1566,6 +1566,8 @@ class ProductCreate(BaseModel):
     # BR-12.1 / BR-5.1 — schema Literal; omit → standard; blank/invalid → 422
     tax_supply_class: Literal["standard", "zero_rated", "exempt"] = "standard"
     tracks_batches: bool = False
+    # Each unit has its own serial number, entered when it comes in and when it is sold.
+    tracks_serials: bool = False
     # Pharmacy catalog: omit/`null` → no dosage text; blank/URL/garbage → **422**
     dosage_instructions: ProductDescriptionValue | None = None
     rx_only: bool = False
@@ -1631,6 +1633,7 @@ class ProductUpdate(BaseModel):
     # BR-12.1 — omit = no change; blank/invalid → 422 (no silent standard)
     tax_supply_class: Literal["standard", "zero_rated", "exempt"] | None = None
     tracks_batches: bool | None = None
+    tracks_serials: bool | None = None
     dosage_instructions: ProductDescriptionValue | None = None
     rx_only: bool | None = None
     min_order_qty: NonNegativeQtyValue | None = None
@@ -2015,6 +2018,8 @@ class LineItem(BaseModel):
     """POS / legacy sale line — unknown keys → **422** (`extra=forbid`)."""
 
     model_config = ConfigDict(extra="forbid")
+    # Serial-tracked products: the serial of each unit sold.
+    serials: list[Annotated[str, Field(min_length=1, max_length=80)]] | None = Field(default=None, max_length=200)
 
     # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach catalog lookup). Existence remains
@@ -2144,6 +2149,8 @@ class StockMove(BaseModel):
     """
 
     model_config = ConfigDict(extra="forbid")
+    # Serial-tracked products: one serial per unit received.
+    serials: list[Annotated[str, Field(min_length=1, max_length=80)]] | None = Field(default=None, max_length=1000)
 
     # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach catalog lookup). Existence remains
@@ -4305,6 +4312,8 @@ JobNameValue = Annotated[
         "sync_ecommerce_connectors",
         "scan_hr_escalations",
         "sample_server_health",
+        "hotel_daily_close",
+        "sync_hotel_channels",
     ],
     BeforeValidator(coerce_package_code_value),
 ]
@@ -9741,6 +9750,31 @@ class HotelReservationCreate(BaseModel):
     rate_plan_id: UuidIdValue | None = None
     discount_percent: NonNegativeMoneyValue = 0
     discount_authorized_by: UuidIdValue | None = None
+    bill_to_party_id: UuidIdValue | None = None
+
+
+class HotelBillToBody(BaseModel):
+    """City ledger: the company customer that pays the stay; null sends the bill back to the guest."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    party_id: UuidIdValue | None = None
+
+
+class HotelChannelFeedCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    room_id: UuidIdValue
+    channel: Literal["booking_com", "expedia", "airbnb", "other"] = "other"
+    import_url: WebhookUrlValue | None = None
+
+
+class HotelChannelFeedUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    import_url: WebhookUrlValue | None = None
+    clear_import_url: bool = False
+    is_active: bool | None = None
 
 
 class HotelExtendStay(BaseModel):
@@ -10213,6 +10247,8 @@ class PosTillReturnItem(BaseModel):
     quantity: PositiveQtyValue
     # true → back on the shelf; false → damaged / not fit to sell (not restocked)
     restock: bool = True
+    # Serial-tracked goods: the serial of each unit coming back.
+    serials: list[Annotated[str, Field(min_length=1, max_length=80)]] | None = Field(default=None, max_length=200)
 
 
 class PosTillReturnCreate(BaseModel):

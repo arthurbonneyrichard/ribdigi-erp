@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../../lib/api';
+import { bakeryApi, chooseTill, chosenTill, openPrintable } from '../../../lib/bakeryTill';
 import {
   applySyncResults,
   bakerySyncBody,
@@ -29,6 +30,8 @@ import {
 import { formatMoney } from '../../../lib/format';
 import DeskDashboard, { DeskTiles, TrendChart, type DeskTile } from '../../../components/DeskDashboard';
 import DeskIcon from '../../../components/DeskIcon';
+import TradeDesk from './TradeDesk';
+import { ItemDetailsPanel, ShelfPanel, SuppliersPanel, useSuppliers } from './StockExtras';
 import './bakery.css';
 
 type Row = Record<string, any>;
@@ -38,6 +41,7 @@ const SCREENS: Record<string, { title: string; sub: string; icon: string }> = {
   counter: { title: 'Counter', sub: 'Tap items to sell. Money goes into the open till.', icon: 'cart' },
   orders: { title: 'Orders', sub: 'Bread and bulk orders for a later day, picked up or delivered.', icon: 'calendar' },
   deliveries: { title: 'Deliveries', sub: 'Orders going out by van, and the cash that comes back.', icon: 'truck' },
+  trade: { title: 'Trade customers', sub: 'Shops, hotels and schools on account: standing orders, invoices, payments, statements.', icon: 'receipt' },
   baking: { title: 'Baking', sub: 'Recipes, what one batch costs, and what was baked.', icon: 'flame' },
   waste: { title: 'Waste', sub: 'What was thrown away and why. It comes off your profit.', icon: 'trash' },
   stock: { title: 'Stock', sub: 'Items for sale, ingredients, and what you buy in.', icon: 'box' },
@@ -56,7 +60,7 @@ function Head({ icon, title, meta }: { icon: string; title: string; meta?: React
 }
 const ROLE_SCREENS: Record<string, string[]> = {
   bakery_baker: ['today', 'baking', 'waste', 'orders'],
-  bakery_cashier: ['today', 'counter', 'orders', 'deliveries', 'waste'],
+  bakery_cashier: ['today', 'counter', 'orders', 'deliveries', 'trade', 'waste'],
   bakery_driver: ['today', 'deliveries', 'counter'],
 };
 const METHODS = [
@@ -103,7 +107,7 @@ function printReceipt(sale: Row) {
   const page = window.open('', '_blank', 'width=360,height=600');
   if (!page) return;
   page.document.write(
-    `<html><body style="font-family:monospace"><h3>${safe(sale.sale_number)}</h3><table style="width:100%">${rows}</table><hr/><p>Tax ${money(sale.tax)}</p><h3>Total ${money(sale.total)}</h3></body></html>`,
+    `<html><body style="font-family:monospace"><h3>${safe(sale.sale_number)}</h3><table style="width:100%">${rows}</table><hr/>${Number(sale.discount) > 0 ? `<p>Discount ${money(sale.discount)}</p>` : ''}<p>Tax ${money(sale.tax)}</p><h3>Total ${money(sale.total)}</h3></body></html>`,
   );
   page.document.close();
   page.print();
@@ -125,7 +129,7 @@ function compare(now: number, before: number): DeskTile['before'] {
 
 type Dialog =
   | { kind: 'cancel'; row: Row; reason: string; choice: string }
-  | { kind: 'refund'; row: Row; reason: string; choice: string }
+  | { kind: 'refund'; row: Row; reason: string; choice: string; qty: Record<string, string>; method: string }
   | { kind: 'collect'; row: Row; method: string }
   | { kind: 'failed'; row: Row; reason: string }
   | { kind: 'handin'; row: Row; counted: string }
@@ -172,12 +176,22 @@ function BakeryDesk() {
 
   const [basket, setBasket] = useState<Record<string, number>>({});
   const [method, setMethod] = useState('cash');
+  const [discounts, setDiscounts] = useState<Record<string, string>>({});
+  const [dayOld, setDayOld] = useState<Record<string, boolean>>({});
+  const [tillName, setTillName] = useState('');
+  const [openTills, setOpenTills] = useState<Row[]>([]);
+  const [discountReason, setDiscountReason] = useState('');
+  const [splitOn, setSplitOn] = useState(false);
+  const [split, setSplit] = useState({ first: 'cash', amount: '', second: 'mobile_money' });
+  const [counts, setCounts] = useState<Record<string, string>>({});
+  const [countNotes, setCountNotes] = useState('');
+  const [countList, setCountList] = useState<Row[]>([]);
   const [given, setGiven] = useState('');
   const [find, setFind] = useState('');
   const [lastSale, setLastSale] = useState<Row | null>(null);
   const [floatCash, setFloatCash] = useState('');
   const [counted, setCounted] = useState('');
-  const [recipeForm, setRecipeForm] = useState({ product_id: '', name: '', yield_qty: '1', ingredient_id: '', quantity: '' });
+  const [recipeForm, setRecipeForm] = useState({ product_id: '', name: '', yield_qty: '1', ingredient_id: '', quantity: '', unit: '' });
   const [recipeLines, setRecipeLines] = useState<Row[]>([]);
   const [bakeQty, setBakeQty] = useState<Record<string, string>>({});
   const [wasteForm, setWasteForm] = useState({ product_id: '', quantity: '', reason: 'unsold' });
@@ -186,9 +200,10 @@ function BakeryDesk() {
   const [orderLines, setOrderLines] = useState<{ product_id: string; quantity: string; note: string }[]>([{ product_id: '', quantity: '1', note: '' }]);
   const [orderFilter, setOrderFilter] = useState('all');
   const [stockForm, setStockForm] = useState({ name: '', kind: 'item', price: '', reorder_level: '' });
-  const [buyForm, setBuyForm] = useState({ product_id: '', quantity: '', unit_cost: '', paid_with: 'cash', supplier: '' });
-  const [expenseForm, setExpenseForm] = useState({ category: 'rent', description: '', amount: '', paid_with: 'cash', spent_on: iso(0), from_till: false });
+  const [buyForm, setBuyForm] = useState({ product_id: '', quantity: '', unit_cost: '', tax: '', paid_with: 'cash', supplier: '', bill_number: '', bags: false });
+  const [expenseForm, setExpenseForm] = useState({ category: 'rent', description: '', amount: '', tax: '', paid_with: 'cash', spent_on: iso(0), from_till: false });
   const [range, setRange] = useState({ start: iso(-6), end: iso(0) });
+  const suppliers = useSuppliers();
 
   const load = useCallback(async () => {
     try {
@@ -201,7 +216,7 @@ function BakeryDesk() {
       const driver = myRole === 'bakery_driver';
       const soft = async (path: string) => {
         try {
-          return (await api(path))?.data;
+          return (await bakeryApi(path))?.data;
         } catch {
           return null;
         }
@@ -212,7 +227,7 @@ function BakeryDesk() {
       const [day, sum, itemRows] = await Promise.all([
         drives && ['today', 'counter', 'deliveries'].includes(want) ? soft('/bakery/driver/today') : Promise.resolve(undefined),
         !driver && want === 'today' ? soft('/bakery/summary') : Promise.resolve(undefined),
-        ['counter', 'orders', 'waste', 'baking', 'today'].includes(want) ? soft('/bakery/items') : Promise.resolve(undefined),
+        ['counter', 'orders', 'waste', 'baking', 'today', 'trade'].includes(want) ? soft('/bakery/items') : Promise.resolve(undefined),
       ]);
       if (day !== undefined) setDriverDay(day);
       if (sum !== undefined) setSummary(sum);
@@ -231,6 +246,11 @@ function BakeryDesk() {
         setIngredients((await soft('/bakery/ingredients')) || []);
       }
       if (want === 'counter' && may('counter') && !driver) {
+        const tillsNow: Row[] = (await soft('/bakery/tills')) || [];
+        setOpenTills(tillsNow);
+        // Forget a till this device chose once it is closed.
+        const picked = chosenTill();
+        if (picked && !tillsNow.some((t) => t.id === picked)) chooseTill(null);
         const openShift = await soft('/bakery/till/shift');
         setShift(openShift);
         setSales((await soft('/bakery/sales?limit=30')) || []);
@@ -240,7 +260,10 @@ function BakeryDesk() {
       }
       setOffline(false);
       if (want === 'waste' && may('waste')) setWaste((await soft('/bakery/waste')) || []);
-      if (want === 'stock' && !jobs) setStock(await soft('/bakery/stock'));
+      if (want === 'stock' && !jobs) {
+        setStock(await soft('/bakery/stock'));
+        setCountList((await soft('/bakery/stock/counts')) || []);
+      }
       if (want === 'expenses' && !jobs) setExpenses(await soft('/bakery/expenses'));
       if (want === 'reports' && !jobs) setReport(await soft(`/bakery/reports/full?start_date=${range.start}&end_date=${range.end}`));
     } catch (err) {
@@ -269,7 +292,7 @@ function BakeryDesk() {
     syncLock.current = true;
     setSyncing(true);
     try {
-      const res = await api('/bakery/till/offline/sync', {
+      const res = await bakeryApi('/bakery/till/offline/sync', {
         method: 'POST',
         body: JSON.stringify(bakerySyncBody(waiting, tillDeviceId())),
       });
@@ -336,7 +359,7 @@ function BakeryDesk() {
     setError('');
     setNotice('');
     try {
-      const res = await api(path, { method: method_, body: body ? JSON.stringify(body) : undefined });
+      const res = await bakeryApi(path, { method: method_, body: body ? JSON.stringify(body) : undefined });
       setNotice(done);
       await load();
       return res?.data ?? true;
@@ -353,9 +376,24 @@ function BakeryDesk() {
   const till = usingBag ? myBag : shift;
   const basketLines = items.filter((i) => basket[i.id]).map((i) => ({ item: i, qty: basket[i.id] }));
   const pays = (item: Row) => Number(item.price_to_pay ?? item.price ?? 0);
+  // Cashiers may take up to 10% off a line; managers and owners any amount (the server checks too).
+  const maxDiscount = isManager ? 100 : 10;
+  const pct = (id: string) => {
+    if (dayOld[id]) return Number(items.find((i) => i.id === id)?.day_old_discount_pct || 0);
+    return Math.min(100, Math.max(0, Number(discounts[id] || 0)));
+  };
   // Rounded per line, the same way the sale is worked out, so the screen and the charge agree.
-  const basketTotal = basketLines.reduce((sum, l) => sum + Math.round(l.qty * pays(l.item) * 100) / 100, 0);
-  const change = method === 'cash' && Number(given) > 0 ? Number(given) - basketTotal : null;
+  const lineAmount = (l: { item: Row; qty: number }) => Math.round(l.qty * pays(l.item) * (1 - pct(l.item.id) / 100) * 100) / 100;
+  const basketTotal = basketLines.reduce((sum, l) => sum + lineAmount(l), 0);
+  const hasDiscount = basketLines.some((l) => pct(l.item.id) > 0);
+  // Day-old prices are set by a manager, so any cashier may use them and no reason is asked for.
+  const needsReason = basketLines.some((l) => !dayOld[l.item.id] && pct(l.item.id) > 0);
+  const discountTooBig = basketLines.some((l) => !dayOld[l.item.id] && pct(l.item.id) > maxDiscount);
+  const splitFirst = Number(split.amount) || 0;
+  const splitRest = Math.round((basketTotal - splitFirst) * 100) / 100;
+  const splitReady = !splitOn || (splitFirst > 0 && splitRest > 0 && split.first !== split.second);
+  const cashPart = splitOn ? (split.first === 'cash' ? splitFirst : split.second === 'cash' ? splitRest : 0) : basketTotal;
+  const change = (splitOn ? split.first === 'cash' || split.second === 'cash' : method === 'cash') && Number(given) > 0 ? Number(given) - cashPart : null;
   const setQty = (id: string, qty: number) =>
     setBasket((b) => {
       const next = { ...b };
@@ -372,6 +410,10 @@ function BakeryDesk() {
     }
     if (method === 'wallet') {
       setError('Wallet needs a connection. Take cash, card or Mobile Money.');
+      return;
+    }
+    if (hasDiscount || splitOn) {
+      setError('Discounts and split payments need a connection. Take the full price one way, or wait.');
       return;
     }
     const ref = newOfflineRef();
@@ -418,13 +460,28 @@ function BakeryDesk() {
     }
     const sale = await run(
       '/bakery/sales',
-      { payment_method: method, lines: basketLines.map((l) => ({ product_id: l.item.id, quantity: l.qty })), ...(usingBag && !isDriver ? { from_bag: true } : {}) },
+      {
+        payment_method: splitOn ? 'cash' : method,
+        lines: basketLines.map((l) => ({
+          product_id: l.item.id,
+          quantity: l.qty,
+          ...(dayOld[l.item.id] ? { day_old: true } : pct(l.item.id) > 0 ? { discount_percent: pct(l.item.id) } : {}),
+        })),
+        ...(needsReason ? { discount_reason: discountReason.trim() } : {}),
+        ...(splitOn ? { payments: [{ method: split.first, amount: splitFirst }, { method: split.second }] } : {}),
+        ...(usingBag && !isDriver ? { from_bag: true } : {}),
+      },
       change != null && change > 0 ? `Sale complete. Give ${money(change)} change.` : 'Sale complete',
     );
     if (sale) {
       setLastSale(sale as Row);
       setBasket({});
       setGiven('');
+      setDiscounts({});
+      setDayOld({});
+      setDiscountReason('');
+      setSplitOn(false);
+      setSplit({ ...split, amount: '' });
     }
   }
 
@@ -435,12 +492,12 @@ function BakeryDesk() {
         product_id: recipeForm.product_id,
         name: recipeForm.name.trim(),
         yield_qty: Number(recipeForm.yield_qty),
-        lines: recipeLines.map((l) => ({ ingredient_id: l.ingredient_id, quantity: l.quantity })),
+        lines: recipeLines.map((l) => ({ ingredient_id: l.ingredient_id, quantity: l.quantity, ...(l.unit ? { unit: l.unit } : {}) })),
       },
       'Recipe saved',
     );
     if (ok) {
-      setRecipeForm({ product_id: '', name: '', yield_qty: '1', ingredient_id: '', quantity: '' });
+      setRecipeForm({ product_id: '', name: '', yield_qty: '1', ingredient_id: '', quantity: '', unit: '' });
       setRecipeLines([]);
     }
   }
@@ -480,7 +537,24 @@ function BakeryDesk() {
     if (dialog.kind === 'cancel') {
       ok = await run(`/bakery/orders/${dialog.row.id}/cancel`, { reason: dialog.reason.trim(), deposit_action: Number(dialog.row.deposit) > 0 ? dialog.choice : null }, 'Order cancelled');
     }
-    if (dialog.kind === 'refund') ok = await run(`/bakery/sales/${dialog.row.id}/refund`, { reason: dialog.reason.trim(), restock: dialog.choice === 'restock' }, 'Sale refunded');
+    if (dialog.kind === 'refund') {
+      const items: Row[] = dialog.row.items || [];
+      const left = (i: Row) => Math.max(0, Number(i.quantity) - Number(i.refunded_qty || 0));
+      const picked = items
+        .map((i) => ({ sale_line_id: i.id, quantity: Math.min(left(i), Number(dialog.qty[i.id] || 0)) }))
+        .filter((x) => x.quantity > 0);
+      const everything = items.every((i) => left(i) === 0 || Number(dialog.qty[i.id] || 0) >= left(i));
+      ok = await run(
+        `/bakery/sales/${dialog.row.id}/refund`,
+        {
+          reason: dialog.reason.trim(),
+          restock: dialog.choice === 'restock',
+          ...(everything ? {} : { lines: picked }),
+          ...(dialog.method ? { method: dialog.method } : {}),
+        },
+        everything ? 'Sale refunded' : 'Part of the sale refunded',
+      );
+    }
     if (dialog.kind === 'collect') {
       ok = await run(`/bakery/orders/${dialog.row.id}/collect`, { payment_method: Number(dialog.row.balance) > 0 ? dialog.method : null }, dialog.row.delivery ? 'Delivered and paid' : 'Order handed over');
     }
@@ -511,7 +585,11 @@ function BakeryDesk() {
 
   const dialogReady = !dialog
     ? false
-    : dialog.kind === 'cancel' || dialog.kind === 'refund' || dialog.kind === 'failed'
+    : dialog.kind === 'refund'
+      ? dialog.reason.trim().length >= 3
+        && Object.values(dialog.qty).some((q) => Number(q) > 0)
+        && (dialog.row.payment_method !== 'split' || Boolean(dialog.method))
+    : dialog.kind === 'cancel' || dialog.kind === 'failed'
       ? dialog.reason.trim().length >= 3
       : dialog.kind === 'handin'
         ? dialog.counted !== ''
@@ -555,6 +633,37 @@ function BakeryDesk() {
                   <option value="keep">Keep it as income</option>
                 </select>
               </label>
+            ) : null}
+            {dialog.kind === 'refund' ? (
+              <>
+                <table aria-label="What to refund">
+                  <thead><tr><th>Item</th><th>Sold</th><th>Refund</th></tr></thead>
+                  <tbody>
+                    {(dialog.row.items || []).map((i: Row) => {
+                      const left = Math.max(0, Number(i.quantity) - Number(i.refunded_qty || 0));
+                      return (
+                        <tr key={i.id}>
+                          <td>{i.name}</td>
+                          <td>{i.quantity}{Number(i.refunded_qty) > 0 ? <div className="bk-muted">{i.refunded_qty} back already</div> : null}</td>
+                          <td>
+                            <input
+                              type="number" min="0" max={left} step="1" disabled={left === 0}
+                              value={dialog.qty[i.id] ?? ''} aria-label={`How many ${i.name} to refund`}
+                              onChange={(e) => setDialog({ ...dialog, qty: { ...dialog.qty, [i.id]: e.target.value } })}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                <label><span>Give the money back by</span>
+                  <select value={dialog.method} onChange={(e) => setDialog({ ...dialog, method: e.target.value })} aria-label="Refund paid by">
+                    {dialog.row.payment_method === 'split' ? <option value="">Choose</option> : <option value="">The way they paid ({label(METHODS, dialog.row.payment_method)})</option>}
+                    {METHODS.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+                  </select>
+                </label>
+              </>
             ) : null}
             {dialog.kind === 'refund' ? (
               <label><span>The items</span>
@@ -706,10 +815,10 @@ function BakeryDesk() {
               <p className="bk-muted">The shelf covers every order due by tomorrow.</p>
             ) : (
               <table>
-                <thead><tr><th>Item</th><th>Ordered</th><th>On the shelf</th><th>To bake</th></tr></thead>
+                <thead><tr><th>Item</th><th>Needed</th><th>On the shelf</th><th>To bake</th></tr></thead>
                 <tbody>
                   {summary.to_bake.filter((r: Row) => Number(r.to_bake) > 0).map((r: Row) => (
-                    <tr key={r.product_id}><td>{r.name}</td><td>{r.ordered}</td><td>{r.on_hand}</td><td><b>{r.to_bake}</b></td></tr>
+                    <tr key={r.product_id}><td>{r.name}<div className="bk-muted">{[Number(r.ordered) ? `${r.ordered} ordered` : '', Number(r.trade) ? `${r.trade} trade` : '', Number(r.shelf_level) ? `shelf ${r.shelf_level}` : ''].filter(Boolean).join(' · ')}</div></td><td>{Number(r.ordered) + Number(r.trade || 0) + Number(r.shelf_level || 0)}</td><td>{r.on_hand}</td><td><b>{r.to_bake}</b></td></tr>
                   ))}
                 </tbody>
               </table>
@@ -734,7 +843,7 @@ function BakeryDesk() {
                     {basket[item.id] ? <span className="bk-count">{basket[item.id]}</span> : null}
                     <span>{item.name}</span>
                     <b>{money(pays(item))}</b>
-                    <small>{out ? 'None left' : `${item.stock_qty} left`}</small>
+                    <small>{out ? 'None left' : `${item.stock_qty} left`}{Number(item.day_old_qty) > 0 ? ` · ${item.day_old_qty} day-old` : ''}{Number(item.expired_qty) > 0 ? ` · ${item.expired_qty} past date` : ''}</small>
                   </button>
                 );
               })}
@@ -751,14 +860,43 @@ function BakeryDesk() {
               <>
                 <Head icon={usingBag || isDriver ? 'bag' : 'cash'} title={isDriver ? 'Start your cash bag' : 'Open the till'} />
                 <p className="bk-muted">{isDriver ? 'Count the change you are taking out. Your sales and deliveries go into this bag.' : 'Count the cash in the drawer before the first sale.'}</p>
+                {!isDriver && openTills.length ? (
+                  <label><span>Use a till already open</span>
+                    <select value="" onChange={(e) => { if (e.target.value) { chooseTill(e.target.value); void load(); } }} aria-label="Use an open till">
+                      <option value="">Choose</option>
+                      {openTills.map((t) => <option key={t.id} value={t.id}>{t.till_name}{t.opened_by_name ? ` (${t.opened_by_name})` : ''}</option>)}
+                    </select>
+                  </label>
+                ) : null}
+                {!isDriver ? (
+                  <label><span>Till name</span><input value={tillName} placeholder="Counter" onChange={(e) => setTillName(e.target.value)} aria-label="Till name" /></label>
+                ) : null}
                 <label><span>Cash to start with</span><input type="number" min={0} step="0.01" value={floatCash} onChange={(e) => setFloatCash(e.target.value)} aria-label="Opening cash" /></label>
-                <button type="button" className="bk-primary bk-wide" disabled={busy} onClick={() => run(isDriver ? '/bakery/driver/bag' : '/bakery/till/shift/open', { opening_cash: Number(floatCash) || 0 }, isDriver ? 'Cash bag started' : 'Till open')}>
+                <button type="button" className="bk-primary bk-wide" disabled={busy} onClick={async () => {
+                  const res = (await run(
+                    isDriver ? '/bakery/driver/bag' : '/bakery/till/shift/open',
+                    { opening_cash: Number(floatCash) || 0, ...(!isDriver && tillName.trim() ? { till_name: tillName.trim() } : {}) },
+                    isDriver ? 'Cash bag started' : 'Till open',
+                  )) as Row | null;
+                  if (res && !isDriver && res.id) {
+                    chooseTill(res.id);
+                    setTillName('');
+                    await load();
+                  }
+                }}>
                   {isDriver ? 'Start cash bag' : 'Open till'}
                 </button>
               </>
             ) : (
               <>
-                <Head icon="cart" title="Basket" />
+                <Head icon="cart" title="Basket" meta={!usingBag && till?.till_name ? till.till_name : undefined} />
+                {!usingBag && openTills.length > 1 ? (
+                  <label><span>Till</span>
+                    <select value={till?.id || ''} onChange={(e) => { chooseTill(e.target.value || null); void load(); }} aria-label="Switch till">
+                      {openTills.map((t) => <option key={t.id} value={t.id}>{t.till_name}{t.opened_by_name ? ` (${t.opened_by_name})` : ''}</option>)}
+                    </select>
+                  </label>
+                ) : null}
                 {basketLines.length === 0 ? <p className="bk-muted">Tap an item to add it.</p> : null}
                 {basketLines.map(({ item, qty }) => (
                   <div className="bk-line" key={item.id}>
@@ -767,22 +905,64 @@ function BakeryDesk() {
                       <button type="button" aria-label={`One less ${item.name}`} onClick={() => setQty(item.id, qty - 1)}>−</button>
                       <b>{qty}</b>
                       <button type="button" aria-label={`One more ${item.name}`} onClick={() => setQty(item.id, qty + 1)}>+</button>
-                      <span className="bk-amount">{money(qty * pays(item))}</span>
+                      {!offline && Number(item.day_old_qty) > 0 && item.day_old_discount_pct ? (
+                        <button
+                          type="button" className={dayOld[item.id] ? 'on' : ''} aria-pressed={Boolean(dayOld[item.id])}
+                          title={`${item.day_old_qty} day-old on the shelf, ${item.day_old_discount_pct}% off`}
+                          onClick={() => setDayOld({ ...dayOld, [item.id]: !dayOld[item.id] })}
+                        >Day-old</button>
+                      ) : null}
+                      {!offline && !dayOld[item.id] ? (
+                        <input
+                          className="bk-disc" type="number" min="0" max={maxDiscount} step="1" placeholder="% off"
+                          value={discounts[item.id] ?? ''} aria-label={`Percent off ${item.name}`}
+                          onChange={(e) => setDiscounts({ ...discounts, [item.id]: e.target.value })}
+                        />
+                      ) : null}
+                      <span className="bk-amount">{money(lineAmount({ item, qty }))}</span>
                     </span>
                   </div>
                 ))}
+                {needsReason ? (
+                  <label><span>Why the discount</span>
+                    <input value={discountReason} placeholder="e.g. Day-old bread" onChange={(e) => setDiscountReason(e.target.value)} aria-label="Discount reason" />
+                  </label>
+                ) : null}
+                {discountTooBig ? <p className="bk-banner bad">You can take off up to {maxDiscount}%. Ask a manager for more.</p> : null}
                 <div className="bk-total"><span>To pay</span><span>{money(basketTotal)}</span></div>
                 <p className="bk-muted bk-small">Prices include tax.</p>
                 <div className="bk-methods" role="radiogroup" aria-label="Payment method">
                   {METHODS.filter((x) => !offline || x.id !== 'wallet').map((x) => (
-                    <button key={x.id} type="button" role="radio" aria-checked={method === x.id} className={method === x.id ? 'on' : ''} onClick={() => setMethod(x.id)}>{x.label}</button>
+                    <button key={x.id} type="button" role="radio" aria-checked={!splitOn && method === x.id} className={!splitOn && method === x.id ? 'on' : ''} onClick={() => { setSplitOn(false); setMethod(x.id); }}>{x.label}</button>
                   ))}
+                  {!offline ? (
+                    <button type="button" role="radio" aria-checked={splitOn} className={splitOn ? 'on' : ''} onClick={() => setSplitOn(true)}>Two ways</button>
+                  ) : null}
                 </div>
-                {method === 'cash' ? (
+                {splitOn ? (
+                  <div className="bk-form bk-split" aria-label="Split payment">
+                    <label><span>First</span>
+                      <select value={split.first} onChange={(e) => setSplit({ ...split, first: e.target.value })} aria-label="First way to pay">
+                        {METHODS.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+                      </select>
+                    </label>
+                    <label><span>Amount</span>
+                      <input type="number" min="0" step="0.01" value={split.amount} onChange={(e) => setSplit({ ...split, amount: e.target.value })} aria-label="Amount paid the first way" />
+                    </label>
+                    <label><span>The rest by</span>
+                      <select value={split.second} onChange={(e) => setSplit({ ...split, second: e.target.value })} aria-label="Second way to pay">
+                        {METHODS.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+                      </select>
+                    </label>
+                    <div className="bk-sumline"><span>The rest</span><b>{money(Math.max(0, splitRest))}</b></div>
+                    {split.first === split.second ? <p className="bk-banner bad">Choose two different ways to pay.</p> : null}
+                  </div>
+                ) : null}
+                {(splitOn ? split.first === 'cash' || split.second === 'cash' : method === 'cash') ? (
                   <label><span>Cash given</span><input type="number" min="0" step="0.01" value={given} onChange={(e) => setGiven(e.target.value)} aria-label="Cash given" /></label>
                 ) : null}
                 {change != null ? <p className={change < 0 ? 'bk-banner bad' : 'bk-change'}>{change < 0 ? `${money(-change)} more needed` : `Change ${money(change)}`}</p> : null}
-                <button type="button" className="bk-primary bk-wide bk-charge" disabled={busy || basketLines.length === 0 || (change != null && change < 0)} onClick={() => void charge()}>
+                <button type="button" className="bk-primary bk-wide bk-charge" disabled={busy || basketLines.length === 0 || (change != null && change < 0) || discountTooBig || (needsReason && discountReason.trim().length < 3) || !splitReady} onClick={() => void charge()}>
                   Charge {money(basketTotal)}
                 </button>
                 {lastSale ? <button type="button" className="bk-wide" onClick={() => printReceipt(lastSale)}>Print receipt {lastSale.sale_number}</button> : null}
@@ -795,7 +975,7 @@ function BakeryDesk() {
                     <button
                       type="button" disabled={busy || counted === '' || offline || pendingSales(queue).length > 0}
                       title={pendingSales(queue).length ? 'Offline sales are not booked yet. Send them before closing.' : undefined}
-                      onClick={async () => { if (await run('/bakery/till/shift/close', { counted_cash: Number(counted) || 0 }, 'Till closed')) setCounted(''); }}
+                      onClick={async () => { if (await run('/bakery/till/shift/close', { counted_cash: Number(counted) || 0 }, 'Till closed')) { setCounted(''); chooseTill(null); await load(); } }}
                     >Close till</button>
                   </div>
                 ) : <p className="bk-muted bk-small">Hand your bag in at the shop when you are back.</p>}
@@ -811,8 +991,18 @@ function BakeryDesk() {
                   {sales.map((s) => (
                     <tr key={s.id}>
                       <td>{s.sale_number}</td><td>{label(METHODS, s.payment_method)}</td><td className="bk-num">{money(s.total)}</td>
-                      <td><span className={`bk-pill ${s.status === 'refunded' ? 'bad' : 'ok'}`}>{s.status === 'refunded' ? 'Refunded' : 'Paid'}</span></td>
-                      <td>{isManager && s.status === 'completed' && !s.order_id ? <button type="button" className="bk-danger" disabled={busy} onClick={() => setDialog({ kind: 'refund', row: s, reason: '', choice: 'restock' })}>Refund</button> : null}</td>
+                      <td><span className={`bk-pill ${s.status === 'completed' ? 'ok' : 'bad'}`}>{s.status === 'refunded' ? 'Refunded' : s.status === 'part_refunded' ? `Part refunded (${money(s.refunded_total)})` : 'Paid'}</span></td>
+                      <td>
+                        {isManager && (s.status === 'completed' || s.status === 'part_refunded') ? (
+                          <button
+                            type="button" className="bk-danger" disabled={busy}
+                            onClick={() => setDialog({
+                              kind: 'refund', row: s, reason: '', choice: s.order_id ? 'discard' : 'restock', method: '',
+                              qty: Object.fromEntries((s.items || []).map((i: Row) => [i.id, String(Math.max(0, Number(i.quantity) - Number(i.refunded_qty || 0)))])),
+                            })}
+                          >Refund</button>
+                        ) : null}
+                      </td>
                     </tr>
                   ))}
                   {sales.length === 0 ? <tr><td colSpan={5} className="bk-muted">No sales yet.</td></tr> : null}
@@ -1011,6 +1201,8 @@ function BakeryDesk() {
         </>
       )}
 
+      {tab === 'trade' && <TradeDesk items={items} isManager={isManager} />}
+
       {tab === 'baking' && (
         <>
           <section className="bk-box bk-scroll" aria-label="Recipes">
@@ -1020,7 +1212,7 @@ function BakeryDesk() {
               <tbody>
                 {recipes.map((r) => (
                   <tr key={r.id}>
-                    <td>{r.name}<div className="bk-muted">{(r.lines || []).map((l: Row) => `${l.quantity} ${l.name}`).join(', ')}</div></td>
+                    <td>{r.name}<div className="bk-muted">{(r.lines || []).map((l: Row) => `${l.quantity}${l.unit && l.unit !== 'each' ? ` ${l.unit}` : ''} ${l.name}`).join(', ')}</div></td>
                     <td>{r.yield_qty}</td><td className="bk-num">{money(r.unit_cost)}</td><td className="bk-num">{money(r.selling_price)}</td>
                     <td>{r.margin_percent === null ? '—' : <span className={`bk-pill ${Number(r.margin_percent) < 30 ? 'bad' : 'ok'}`}>{r.margin_percent}%</span>}</td>
                     <td className="bk-row">
@@ -1054,15 +1246,21 @@ function BakeryDesk() {
                 </select>
               </label>
               <label><span>Amount</span><input type="number" min={0} step="0.001" value={recipeForm.quantity} onChange={(e) => setRecipeForm((f) => ({ ...f, quantity: e.target.value }))} aria-label="Ingredient amount" /></label>
+              <label><span>In</span>
+                <select value={recipeForm.unit} onChange={(e) => setRecipeForm((f) => ({ ...f, unit: e.target.value }))} aria-label="Ingredient amount unit">
+                  <option value="">Its stock unit</option>
+                  {['kg', 'g', 'l', 'ml', 'each'].map((u) => <option key={u} value={u}>{u}</option>)}
+                </select>
+              </label>
               <button type="button" disabled={!recipeForm.ingredient_id || !(Number(recipeForm.quantity) > 0)} onClick={() => {
                 const found = ingredients.find((i) => i.id === recipeForm.ingredient_id);
-                setRecipeLines((l) => [...l.filter((x) => x.ingredient_id !== recipeForm.ingredient_id), { ingredient_id: recipeForm.ingredient_id, quantity: Number(recipeForm.quantity), name: found?.name }]);
-                setRecipeForm((f) => ({ ...f, ingredient_id: '', quantity: '' }));
+                setRecipeLines((l) => [...l.filter((x) => x.ingredient_id !== recipeForm.ingredient_id), { ingredient_id: recipeForm.ingredient_id, quantity: Number(recipeForm.quantity), unit: recipeForm.unit || null, name: found?.name }]);
+                setRecipeForm((f) => ({ ...f, ingredient_id: '', quantity: '', unit: '' }));
               }}>Add ingredient</button>
             </div>
             {recipeLines.map((l) => (
               <div className="bk-line" key={l.ingredient_id}>
-                <span>{l.quantity} {l.name}</span>
+                <span>{l.quantity}{l.unit ? ` ${l.unit}` : ''} {l.name}</span>
                 <button type="button" aria-label={`Remove ${l.name}`} onClick={() => setRecipeLines((x) => x.filter((y) => y.ingredient_id !== l.ingredient_id))}>Remove</button>
               </div>
             ))}
@@ -1071,10 +1269,15 @@ function BakeryDesk() {
           <section className="bk-box bk-scroll" aria-label="Baked">
             <Head icon="clock" title="Recently baked" />
             <table>
-              <thead><tr><th>Batch</th><th>Item</th><th>Made</th><th>Cost each</th></tr></thead>
+              <thead><tr><th>Batch</th><th>Item</th><th>Made</th><th>Cost each</th><th>Best before</th><th /></tr></thead>
               <tbody>
-                {batches.map((b) => <tr key={b.id}><td>{b.batch_number}</td><td>{b.product_name}</td><td>{b.made_qty}</td><td className="bk-num">{money(b.unit_cost)}</td></tr>)}
-                {batches.length === 0 ? <tr><td colSpan={4} className="bk-muted">Nothing baked yet.</td></tr> : null}
+                {batches.map((b) => (
+                  <tr key={b.id}>
+                    <td>{b.batch_number}</td><td>{b.product_name}</td><td>{b.made_qty}</td><td className="bk-num">{money(b.unit_cost)}</td><td>{b.best_before || '—'}</td>
+                    <td><button type="button" onClick={() => void openPrintable(`/bakery/items/${b.product_id}/label?batch_id=${b.id}&copies=${Math.min(60, Math.max(1, Math.round(Number(b.made_qty) || 1)))}`)} aria-label={`Labels for ${b.batch_number}`}>Labels</button></td>
+                  </tr>
+                ))}
+                {batches.length === 0 ? <tr><td colSpan={6} className="bk-muted">Nothing baked yet.</td></tr> : null}
               </tbody>
             </table>
           </section>
@@ -1130,23 +1333,31 @@ function BakeryDesk() {
                   </select>
                 </label>
                 <label><span>How many</span><input type="number" min="0" step="0.001" value={buyForm.quantity} onChange={(e) => setBuyForm({ ...buyForm, quantity: e.target.value })} aria-label="How many bought" /></label>
-                <label><span>Cost each</span><input type="number" min="0" step="0.01" value={buyForm.unit_cost} onChange={(e) => setBuyForm({ ...buyForm, unit_cost: e.target.value })} aria-label="Cost each" /></label>
+                <label><span>Cost each, before VAT</span><input type="number" min="0" step="0.01" value={buyForm.unit_cost} onChange={(e) => setBuyForm({ ...buyForm, unit_cost: e.target.value })} aria-label="Cost each" /></label>
+                <label><span>VAT on the bill</span><input type="number" min="0" step="0.01" value={buyForm.tax} placeholder="0" onChange={(e) => setBuyForm({ ...buyForm, tax: e.target.value })} aria-label="VAT on the bill" /></label>
                 <label><span>Paid with</span>
                   <select value={buyForm.paid_with} onChange={(e) => setBuyForm({ ...buyForm, paid_with: e.target.value })} aria-label="Paid with">
                     {PAID_WITH.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
                     <option value="credit">Not paid yet (owe the supplier)</option>
                   </select>
                 </label>
-                <label><span>Supplier</span><input value={buyForm.supplier} onChange={(e) => setBuyForm({ ...buyForm, supplier: e.target.value })} aria-label="Supplier" /></label>
-                <div className="bk-sumline"><span>Total</span><b>{money(Number(buyForm.quantity || 0) * Number(buyForm.unit_cost || 0))}</b></div>
+                <label><span>Supplier{buyForm.paid_with === 'credit' ? ' (needed)' : ''}</span>
+                  <input list="bk-suppliers" value={buyForm.supplier} onChange={(e) => setBuyForm({ ...buyForm, supplier: e.target.value })} aria-label="Supplier" />
+                  <datalist id="bk-suppliers">{suppliers.map((x) => <option key={x.id} value={x.name} />)}</datalist>
+                </label>
+                <label><span>Their bill number</span><input value={buyForm.bill_number} onChange={(e) => setBuyForm({ ...buyForm, bill_number: e.target.value })} aria-label="Supplier bill number" /></label>
+                <label className="bk-check"><input type="checkbox" checked={buyForm.bags} onChange={(e) => setBuyForm({ ...buyForm, bags: e.target.checked })} /> <span>How many and cost are per bag (purchase unit)</span></label>
+                <div className="bk-sumline"><span>Total to pay</span><b>{money(Number(buyForm.quantity || 0) * Number(buyForm.unit_cost || 0) + Number(buyForm.tax || 0))}</b></div>
                 <button
-                  type="button" className="bk-primary" disabled={busy || !buyForm.product_id || !(Number(buyForm.quantity) > 0)}
+                  type="button" className="bk-primary" disabled={busy || !buyForm.product_id || !(Number(buyForm.quantity) > 0) || (buyForm.paid_with === 'credit' && !buyForm.supplier.trim())}
                   onClick={async () => {
                     const ok = await run('/bakery/stock/receive', {
                       product_id: buyForm.product_id, quantity: Number(buyForm.quantity), unit_cost: Number(buyForm.unit_cost || 0),
                       paid_with: buyForm.paid_with, supplier: buyForm.supplier.trim() || null,
+                      bill_number: buyForm.bill_number.trim() || null, in_purchase_units: buyForm.bags,
+                      ...(Number(buyForm.tax) > 0 ? { tax: Number(buyForm.tax) } : {}),
                     }, 'Stock received');
-                    if (ok) setBuyForm({ product_id: '', quantity: '', unit_cost: '', paid_with: buyForm.paid_with, supplier: '' });
+                    if (ok) setBuyForm({ product_id: '', quantity: '', unit_cost: '', tax: '', paid_with: buyForm.paid_with, supplier: '', bill_number: '', bags: false });
                   }}
                 >Receive stock</button>
               </div>
@@ -1210,18 +1421,75 @@ function BakeryDesk() {
               </section>
             );
           })}
+          <ShelfPanel />
+          <ItemDetailsPanel stockItems={stock.items} onSaved={() => void load()} />
+          <SuppliersPanel />
+          <section className="bk-box bk-scroll" aria-label="Count stock">
+            <div className="bk-row bk-spread">
+              <Head icon="box" title="Count stock" />
+              <span className="bk-muted">Enter what is really there. Leave an item blank to skip it.</span>
+            </div>
+            <table>
+              <thead><tr><th>Name</th><th>The books say</th><th>Counted</th><th>Difference</th></tr></thead>
+              <tbody>
+                {stock.items.filter((s: Row) => s.is_active).map((r: Row) => {
+                  const typed = counts[r.id];
+                  const diff = typed === undefined || typed === '' ? null : Math.round((Number(typed) - Number(r.stock_qty)) * 1000) / 1000;
+                  return (
+                    <tr key={r.id}>
+                      <td>{r.name}</td><td>{r.stock_qty}</td>
+                      <td><input type="number" min="0" step="0.001" value={typed ?? ''} onChange={(e) => setCounts({ ...counts, [r.id]: e.target.value })} aria-label={`Counted ${r.name}`} /></td>
+                      <td className="bk-num">{diff == null ? '—' : diff === 0 ? 'Matches' : `${diff > 0 ? '+' : ''}${diff} (${money(diff * Number(r.cost_price || 0))})`}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <div className="bk-row">
+              <input value={countNotes} placeholder="Notes, e.g. Month end" onChange={(e) => setCountNotes(e.target.value)} aria-label="Stock count notes" />
+              <button
+                type="button" className="bk-primary" disabled={busy || !Object.values(counts).some((v) => v !== '')}
+                onClick={async () => {
+                  const lines = Object.entries(counts).filter(([, v]) => v !== '').map(([product_id, v]) => ({ product_id, counted_qty: Number(v) }));
+                  const res = (await run('/bakery/stock/count', { lines, notes: countNotes.trim() || null }, 'Stock count saved')) as Row | null;
+                  if (res) {
+                    setCounts({});
+                    setCountNotes('');
+                    const value = Number(res.value_change);
+                    setNotice(value === 0 ? `Stock count ${res.count_number} saved. Everything matched.` : `Stock count ${res.count_number} saved. Stock ${value < 0 ? 'lost' : 'found'}: ${money(Math.abs(value))} at cost.`);
+                  }
+                }}
+              >Save count</button>
+            </div>
+            {countList.length ? (
+              <>
+                <h3 className="bk-small">Past counts</h3>
+                <table>
+                  <thead><tr><th>Date</th><th>Count</th><th>Items</th><th>Gained or lost</th><th>Notes</th></tr></thead>
+                  <tbody>
+                    {countList.map((c: Row) => (
+                      <tr key={c.id}>
+                        <td>{String(c.created_at || '').slice(0, 10)}</td><td>{c.count_number}</td><td>{c.lines.length}</td>
+                        <td className="bk-num">{money(c.value_change)}</td><td>{c.notes || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            ) : null}
+          </section>
           <section className="bk-box bk-scroll" aria-label="Bought in">
             <Head icon="receipt" title="Recently bought" />
             <table>
-              <thead><tr><th>Date</th><th>What</th><th>How many</th><th>Total</th><th>Paid with</th><th>Supplier</th></tr></thead>
+              <thead><tr><th>Date</th><th>What</th><th>How many</th><th>Goods</th><th>VAT</th><th>Paid with</th><th>Supplier</th></tr></thead>
               <tbody>
                 {stock.receipts.map((r: Row) => (
                   <tr key={r.id}>
-                    <td>{String(r.created_at || '').slice(0, 10)}</td><td>{r.name}</td><td>{r.quantity}</td><td className="bk-num">{money(r.total)}</td>
+                    <td>{String(r.created_at || '').slice(0, 10)}</td><td>{r.name}</td><td>{r.quantity}</td><td className="bk-num">{money(r.total)}</td><td className="bk-num">{money(r.tax)}</td>
                     <td>{r.paid_with === 'credit' ? <span className="bk-pill bad">Owed</span> : label(PAID_WITH, r.paid_with)}</td><td>{r.supplier || '—'}</td>
                   </tr>
                 ))}
-                {stock.receipts.length === 0 ? <tr><td colSpan={6} className="bk-muted">Nothing bought in yet.</td></tr> : null}
+                {stock.receipts.length === 0 ? <tr><td colSpan={7} className="bk-muted">Nothing bought in yet.</td></tr> : null}
               </tbody>
             </table>
           </section>
@@ -1239,7 +1507,8 @@ function BakeryDesk() {
                 </select>
               </label>
               <label className="bk-span2"><span>Details</span><input value={expenseForm.description} placeholder="e.g. November rent" onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })} aria-label="Details" /></label>
-              <label><span>Amount</span><input type="number" min="0" step="0.01" value={expenseForm.amount} onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })} aria-label="Amount" /></label>
+              <label><span>Amount paid</span><input type="number" min="0" step="0.01" value={expenseForm.amount} onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })} aria-label="Amount" /></label>
+              <label><span>VAT inside it</span><input type="number" min="0" step="0.01" value={expenseForm.tax} placeholder="0" onChange={(e) => setExpenseForm({ ...expenseForm, tax: e.target.value })} aria-label="VAT inside the amount" /></label>
               <label><span>Paid with</span>
                 <select value={expenseForm.paid_with} onChange={(e) => setExpenseForm({ ...expenseForm, paid_with: e.target.value, from_till: e.target.value === 'cash' && expenseForm.from_till })} aria-label="Expense paid with">
                   {PAID_WITH.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
@@ -1255,8 +1524,9 @@ function BakeryDesk() {
                   const ok = await run('/bakery/expenses', {
                     category: expenseForm.category, description: expenseForm.description.trim(), amount: Number(expenseForm.amount),
                     paid_with: expenseForm.paid_with, spent_on: expenseForm.spent_on, from_till: expenseForm.from_till,
+                    ...(Number(expenseForm.tax) > 0 ? { tax: Number(expenseForm.tax) } : {}),
                   }, 'Expense recorded');
-                  if (ok) setExpenseForm({ ...expenseForm, description: '', amount: '', from_till: false });
+                  if (ok) setExpenseForm({ ...expenseForm, description: '', amount: '', tax: '', from_till: false });
                 }}
               >Record expense</button>
             </div>
@@ -1264,15 +1534,15 @@ function BakeryDesk() {
           <section className="bk-box bk-scroll" aria-label="Expenses">
             <div className="bk-row bk-spread">
               <Head icon="wallet" title="Expenses" />
-              <span className="bk-muted">This month {money(expenses.rows.filter((r: Row) => r.spent_on.slice(0, 7) === iso(0).slice(0, 7)).reduce((t: number, r: Row) => t + Number(r.amount), 0))}</span>
+              <span className="bk-muted">This month {money(expenses.rows.filter((r: Row) => r.spent_on.slice(0, 7) === iso(0).slice(0, 7)).reduce((t: number, r: Row) => t + Number(r.cost ?? r.amount), 0))} before VAT</span>
             </div>
             <table>
-              <thead><tr><th>Date</th><th>What for</th><th>Details</th><th>Paid with</th><th>Amount</th></tr></thead>
+              <thead><tr><th>Date</th><th>What for</th><th>Details</th><th>Paid with</th><th>Amount</th><th>VAT</th></tr></thead>
               <tbody>
                 {expenses.rows.map((r: Row) => (
-                  <tr key={r.id}><td>{r.spent_on}</td><td>{r.category_label}</td><td>{r.description}</td><td>{label(PAID_WITH, r.paid_with)}{r.from_till ? ' · from till' : ''}</td><td className="bk-num">{money(r.amount)}</td></tr>
+                  <tr key={r.id}><td>{r.spent_on}</td><td>{r.category_label}</td><td>{r.description}</td><td>{label(PAID_WITH, r.paid_with)}{r.from_till ? ' · from till' : ''}</td><td className="bk-num">{money(r.amount)}</td><td className="bk-num">{Number(r.tax) > 0 ? money(r.tax) : '—'}</td></tr>
                 ))}
-                {expenses.rows.length === 0 ? <tr><td colSpan={5} className="bk-muted">No expenses yet.</td></tr> : null}
+                {expenses.rows.length === 0 ? <tr><td colSpan={6} className="bk-muted">No expenses yet.</td></tr> : null}
               </tbody>
             </table>
           </section>

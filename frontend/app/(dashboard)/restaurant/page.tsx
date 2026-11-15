@@ -11,6 +11,7 @@ import { getMe } from '../../../lib/meCache';
 import { moduleEnabledForTenant } from '../../../lib/industryModules';
 import { whereWords as deskWhere } from '../../../lib/restaurantDesk';
 import KitchenPrintTool from './KitchenPrintTool';
+import RestaurantHappyHours from '../../../components/RestaurantHappyHours';
 import './restaurant-desk.css';
 
 type Row = Record<string, any>;
@@ -417,12 +418,33 @@ export default function RestaurantPage() {
 
   useEffect(() => {
     if (!restaurantDesk) return undefined;
+    // Ask every few seconds whether any open bill or dish changed, and refresh only then,
+    // so the kitchen and floor see a new order within seconds. A full refresh each minute stays.
+    let last = '';
+    const check = async () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      try {
+        const res = await api('/restaurant/orders/version');
+        const version = String(res?.data?.version || '');
+        if (version && version !== last) {
+          if (last) void refresh();
+          last = version;
+        }
+      } catch {
+        /* the next check catches up */
+      }
+    };
+    void check();
+    const quick = window.setInterval(() => void check(), 4000);
     const timer = window.setInterval(() => {
       // A hidden browser tab does not need fresh lists.
       if (typeof document !== 'undefined' && document.hidden) return;
       void refresh();
-    }, 15000);
-    return () => window.clearInterval(timer);
+    }, 60000);
+    return () => {
+      window.clearInterval(quick);
+      window.clearInterval(timer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurantDesk, tab]);
 
@@ -2922,6 +2944,7 @@ export default function RestaurantPage() {
             <button type="submit" aria-label="Save restaurant service charge">Save service charge</button>
           </form>
           </details>
+          <RestaurantHappyHours dishes={menuItems.map((row) => ({ id: String(row.id), name: String(row.name || '') }))} />
           <details className="rd-panel rd-domain">
             <summary>
               <strong>Extras</strong>

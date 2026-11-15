@@ -961,10 +961,13 @@ async def tax_filing_pack(
                     "store_id": sale.store_id,
                 }
             )
-    if packages_svc.canonicalize_industry(getattr(company, "industry", None)) == "bakery":
+    is_bakery = packages_svc.canonicalize_industry(getattr(company, "industry", None)) == "bakery"
+    if is_bakery:
+        # A sale counts on its own day, refunded or not; a refund is a credit on the day it happened,
+        # so a return filed for one month never changes a month already filed.
         bakery_stmt = select(m.BakerySale).where(
             m.BakerySale.tenant_id == tenant_id,
-            m.BakerySale.status == "completed",
+            m.BakerySale.status.in_(("completed", "part_refunded", "refunded")),
         )
         if from_date:
             bakery_stmt = bakery_stmt.where(m.BakerySale.created_at >= from_date)
@@ -983,6 +986,69 @@ async def tax_filing_pack(
                     "document_number": sale.sale_number,
                     "document_id": sale.id,
                     "document_date": sale.created_at,
+                    "net_amount": net,
+                    "tax_amount": tax,
+                    "reverse_charge_tax": money_json(0),
+                    "gross_amount": total,
+                    "party_id": None,
+                    "store_id": None,
+                }
+            )
+        # Trade invoices count on their invoice day; a void is a credit on the day of the void.
+        invoice_rows = []
+        inv_stmt = select(m.BakeryInvoice).where(m.BakeryInvoice.tenant_id == tenant_id)
+        if from_date:
+            inv_stmt = inv_stmt.where(m.BakeryInvoice.invoice_date >= (from_date.date() if isinstance(from_date, datetime) else from_date))
+        if to_date:
+            inv_stmt = inv_stmt.where(m.BakeryInvoice.invoice_date <= (to_date.date() if isinstance(to_date, datetime) else to_date))
+        for inv in (await db.execute(inv_stmt)).scalars().all():
+            invoice_rows.append(("bakery_invoice", inv, inv.invoice_number, datetime.combine(inv.invoice_date, datetime.min.time()), 1))
+        void_stmt = select(m.BakeryInvoice).where(m.BakeryInvoice.tenant_id == tenant_id, m.BakeryInvoice.status == "void")
+        if from_date:
+            void_stmt = void_stmt.where(m.BakeryInvoice.voided_at >= from_date)
+        if to_date:
+            void_stmt = void_stmt.where(m.BakeryInvoice.voided_at <= to_date)
+        for inv in (await db.execute(void_stmt)).scalars().all():
+            invoice_rows.append(("bakery_invoice_void", inv, inv.invoice_number, inv.voided_at, -1))
+        for kind, inv, number, when, sign in invoice_rows:
+            total = money_json(sign * float(inv.total or 0))
+            tax = money_json(sign * float(inv.tax or 0))
+            net = money_json(round(total - tax, 2))
+            output_invoices += tax
+            _bump_supply("standard", net)
+            output_schedule.append(
+                {
+                    "schedule": "output_sales_invoices",
+                    "document_type": kind,
+                    "document_number": number,
+                    "document_id": inv.id,
+                    "document_date": when,
+                    "net_amount": net,
+                    "tax_amount": tax,
+                    "reverse_charge_tax": money_json(0),
+                    "gross_amount": total,
+                    "party_id": None,
+                    "store_id": None,
+                }
+            )
+        refund_stmt = select(m.BakeryRefund).where(m.BakeryRefund.tenant_id == tenant_id)
+        if from_date:
+            refund_stmt = refund_stmt.where(m.BakeryRefund.created_at >= from_date)
+        if to_date:
+            refund_stmt = refund_stmt.where(m.BakeryRefund.created_at <= to_date)
+        for refund in (await db.execute(refund_stmt)).scalars().all():
+            total = money_json(-float(refund.total or 0))
+            tax = money_json(-float(refund.tax or 0))
+            net = money_json(round(total - tax, 2))
+            output_invoices += tax
+            _bump_supply("standard", net)
+            output_schedule.append(
+                {
+                    "schedule": "output_sales_invoices",
+                    "document_type": "bakery_refund",
+                    "document_number": refund.refund_number,
+                    "document_id": refund.id,
+                    "document_date": refund.created_at,
                     "net_amount": net,
                     "tax_amount": tax,
                     "reverse_charge_tax": money_json(0),
@@ -1147,6 +1213,64 @@ async def tax_filing_pack(
                     "tax_amount": money_json(round(tax, 2)),
                     "gross_amount": money_json(round(money_json(po.total_amount or 0), 2)),
                     "party_id": po.supplier_id,
+                }
+            )
+
+    if is_bakery:
+        # VAT on what the bakery bought (ingredients, items) and on its bills (gas, repairs...).
+        receipt_stmt = select(m.BakeryStockReceipt).where(
+            m.BakeryStockReceipt.tenant_id == tenant_id, m.BakeryStockReceipt.tax > 0
+        )
+        if from_date:
+            receipt_stmt = receipt_stmt.where(m.BakeryStockReceipt.created_at >= from_date)
+        if to_date:
+            receipt_stmt = receipt_stmt.where(m.BakeryStockReceipt.created_at <= to_date)
+        for r in (await db.execute(receipt_stmt)).scalars().all():
+            tax = money_json(r.tax or 0)
+            net = money_json(r.total or 0)
+            input_tax += tax
+            taxable_inputs += net
+            input_schedule.append(
+                {
+                    "schedule": "input_purchase_invoices",
+                    "document_type": "bakery_receipt",
+                    "document_number": r.receipt_number,
+                    "document_id": r.id,
+                    "document_date": r.created_at,
+                    "supplier_invoice_number": None,
+                    "net_amount": money_json(round(net, 2)),
+                    "tax_amount": money_json(round(tax, 2)),
+                    "reverse_charge_tax": money_json(0),
+                    "is_reverse_charge": False,
+                    "gross_amount": money_json(round(net + tax, 2)),
+                    "party_id": None,
+                }
+            )
+        expense_stmt = select(m.BakeryExpense).where(m.BakeryExpense.tenant_id == tenant_id, m.BakeryExpense.tax > 0)
+        if from_date:
+            expense_stmt = expense_stmt.where(m.BakeryExpense.spent_on >= (from_date.date() if isinstance(from_date, datetime) else from_date))
+        if to_date:
+            expense_stmt = expense_stmt.where(m.BakeryExpense.spent_on <= (to_date.date() if isinstance(to_date, datetime) else to_date))
+        for e in (await db.execute(expense_stmt)).scalars().all():
+            tax = money_json(e.tax or 0)
+            gross = money_json(e.amount or 0)
+            net = money_json(round(gross - tax, 2))
+            input_tax += tax
+            taxable_inputs += net
+            input_schedule.append(
+                {
+                    "schedule": "input_purchase_invoices",
+                    "document_type": "bakery_expense",
+                    "document_number": e.expense_number,
+                    "document_id": e.id,
+                    "document_date": datetime.combine(e.spent_on, datetime.min.time()),
+                    "supplier_invoice_number": None,
+                    "net_amount": net,
+                    "tax_amount": money_json(round(tax, 2)),
+                    "reverse_charge_tax": money_json(0),
+                    "is_reverse_charge": False,
+                    "gross_amount": gross,
+                    "party_id": None,
                 }
             )
 

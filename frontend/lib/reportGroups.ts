@@ -44,8 +44,8 @@ export type ReportDef = {
   audience?: ReportAudience;
 };
 
-export const POS_REPORT_INDUSTRIES = ['retail', 'restaurant', 'hotel'] as const;
-export const QUOTATION_REPORT_INDUSTRIES = ['retail'] as const;
+export const POS_REPORT_INDUSTRIES = ['retail', 'wholesale', 'restaurant', 'hotel'] as const;
+export const QUOTATION_REPORT_INDUSTRIES = ['retail', 'wholesale'] as const;
 
 export function reportVisible(
   def: ReportDef,

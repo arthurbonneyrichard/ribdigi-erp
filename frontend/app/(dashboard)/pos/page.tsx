@@ -1,5 +1,7 @@
 'use client';
 
+import TillMomoPrompt from '../../../components/TillMomoPrompt';
+import PosHoldLayaway from '../../../components/PosHoldLayaway';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, apiFetch, isAbortError } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
@@ -152,6 +154,7 @@ type Product = {
   category_id?: string | null;
   has_image?: boolean;
   rx_only?: boolean;
+  tracks_serials?: boolean;
   nearest_expiry_date?: string | null;
   tax_rate_pct?: number;
   tax_pricing_mode?: string;
@@ -186,6 +189,8 @@ function canWriteCredit(me: { permissions?: Record<string, string[]> | null } | 
 
 type CartItem = Product & {
   quantity: number;
+  /** Serial-tracked goods: the serial of each unit, typed or scanned at the till. */
+  serials?: string[];
 };
 
 type OpenPrescription = {
@@ -436,6 +441,7 @@ function PosTill() {
   const [rows, setRows] = useState<Product[]>([]);
   const [categoryFilter, setCategoryFilter] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [momoRef, setMomoRef] = useState('');
   const [session, setSession] = useState<Session | null>(null);
   const [shifts, setShifts] = useState<any[]>([]);
   const [shiftManageFilter, setShiftManageFilter] = useState<'all' | 'open' | 'closed'>('all');
@@ -1701,6 +1707,7 @@ function PosTill() {
   function clearCart() {
     setSaleStartedBy(null);
     setCart([]);
+    setMomoRef('');
     setCartDiscount('');
     setCouponCode('');
     setCashTender('');
@@ -1824,6 +1831,11 @@ function PosTill() {
       setError('Select an approved prescription before selling Rx-only products');
       return;
     }
+    const missingSerial = cart.find((c) => c.tracks_serials && (c.serials || []).filter((x) => x.trim()).length !== c.quantity);
+    if (missingSerial) {
+      setError(`${missingSerial.name} needs a serial number for each unit (${missingSerial.quantity}). Type or scan them under the item.`);
+      return;
+    }
     const items = cart.map((c) => ({
       product_id: c.product_id || c.id,
       variant_id: c.variant_id || null,
@@ -1831,6 +1843,7 @@ function PosTill() {
       discount: 0,
       discount_type: 'fixed',
       discount_percent: 0,
+      ...(c.tracks_serials ? { serials: (c.serials || []).map((x) => x.trim()).filter(Boolean) } : {}),
     }));
     const body: Record<string, unknown> = {
       // trim so Complete sale (UuidIdValue session_id / party_id) does not 422
@@ -1882,6 +1895,10 @@ function PosTill() {
       } else {
         body.payment_method = 'credit';
       }
+    } else if (paymentMethod === 'mobile_money' && momoRef) {
+      payments = [{ payment_method: 'mobile_money', amount: cartTotal, reference: momoRef }];
+      body.payments = payments;
+      body.payment_method = 'split';
     } else {
       body.payment_method = paymentMethod;
     }
@@ -3235,12 +3252,58 @@ function PosTill() {
                     >
                       ×
                     </button>
+                    {c.tracks_serials ? (
+                      <div className="tpos-cart-serials" style={{ gridColumn: '1 / -1', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {Array.from({ length: Math.max(1, Math.min(50, Math.round(c.quantity))) }, (_, i) => (
+                          <input
+                            key={i}
+                            aria-label={`Serial number ${i + 1} for ${c.name}`}
+                            placeholder={`Serial ${i + 1}`}
+                            value={(c.serials || [])[i] || ''}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setCart((rows) =>
+                                rows.map((row) => {
+                                  if (row.id !== c.id) return row;
+                                  const next = [...(row.serials || [])];
+                                  next[i] = value;
+                                  return { ...row, serials: next };
+                                }),
+                              );
+                            }}
+                            style={{ flex: '1 1 140px', minHeight: 36 }}
+                          />
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 );
               })}
             </div>
             </div>
 
+            {!restaurantTill ? (
+              <PosHoldLayaway
+                storeId={session?.store_id || storeId || null}
+                cart={cart.map((c) => ({ product_id: c.product_id || c.id, quantity: c.quantity, unit_price: Number(c.selling_price || 0), name: c.name }))}
+                customerName={customerName}
+                customerId={customerId}
+                online={online}
+                formatMoney={money}
+                onHeld={() => clearCart()}
+                onResume={async (lines) => {
+                  // Today's product details (price, tax, stock) from the catalogue, the quantities from the held cart.
+                  const rows = await Promise.all(
+                    lines.map(async (l) => {
+                      const res = await api(`/products/${l.product_id}`).catch(() => null);
+                      const product = (res?.data || {}) as Product;
+                      return { ...product, id: String(l.product_id), product_id: String(l.product_id), name: String(product.name || l.name || 'Item'), quantity: Number(l.quantity || 1) } as CartItem;
+                    }),
+                  );
+                  setCart(rows);
+                }}
+              />
+            ) : null}
             <div className="tpos-cart-dock pos-ui-pay">
               <div className="tpos-cart-lines">
                 {splitTender ? (
@@ -3356,9 +3419,13 @@ function PosTill() {
                   </label>
                 ) : null}
                 {!payAsReprint && !splitTender && paymentMethod === 'mobile_money' ? (
-                  <p className="tpos-split-hint">
-                    The till does not charge a phone. Confirm the MoMo payment first.
-                  </p>
+                  online && cartTotal > 0 ? (
+                    <div className="tpos-split-hint">
+                      <TillMomoPrompt key={`${cartTotal}`} base="/pos" amount={cartTotal} onPaid={(ref) => setMomoRef(ref)} formatMoney={money} />
+                    </div>
+                  ) : (
+                    <p className="tpos-split-hint">Offline, the till does not charge a phone. Confirm the MoMo payment first.</p>
+                  )
                 ) : null}
                 {!payAsReprint && !splitTender && paymentMethod === 'card' ? (
                   <p className="tpos-split-hint">

@@ -702,6 +702,7 @@ const NAV_ITEM_ICON: Record<string, string> = {
   '/hotel?tab=front-desk#guest-requests': 'notifications',
   '/hotel?tab=rooms': 'stores',
   '/hotel?tab=rooms#rate-plans': 'gift',
+  '/hotel/channels': 'ecommerce',
   '/hotel?tab=housekeeping': 'inventory',
   '/hotel?tab=housekeeping#lost-found': 'audit',
   '/hotel?tab=maintenance': 'security',
@@ -745,6 +746,7 @@ const NAV_ITEM_ICON: Record<string, string> = {
   '/bakery?tab=counter': 'pos',
   '/bakery?tab=orders': 'sales',
   '/bakery?tab=deliveries': 'fmcg',
+  '/bakery?tab=trade': 'customers',
   '/bakery?tab=baking': 'inventory',
   '/bakery?tab=waste': 'audit',
   '/bakery?tab=stock': 'inventory',
@@ -1339,6 +1341,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         inactivity_timeout_minutes?: number;
         count_drawer_on_sign_out?: boolean;
         till_only?: boolean;
+        job_role?: string;
       }) => {
         if (!active) return;
         setAuthGateError('');
@@ -1350,7 +1353,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           typeof data.industry_valid === 'boolean' ? data.industry_valid : Boolean(normalizeIndustry(data.industry))
         );
         setMultiStore(tenantIsMultiStore(data));
-        setRole(data.role || '');
+        setRole(data.job_role || data.role || '');
         if (data.till_only) setTillOnlyLocal(true);
         else if (typeof data.till_only === 'boolean' && !tillOnlyPendingServer()) setTillOnlyLocal(false);
         setCountDrawerOnSignOut(data.count_drawer_on_sign_out !== false);
@@ -1820,7 +1823,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             : Boolean(normalizeIndustry(meRes.data?.industry))
         );
         setMultiStore(tenantIsMultiStore(meRes.data));
-        setRole(meRes.data?.role || '');
+        setRole(meRes.data?.job_role || meRes.data?.role || '');
         setCountDrawerOnSignOut(meRes.data?.count_drawer_on_sign_out !== false);
         setFullName(meRes.data?.full_name || '');
         setCompanyName(meRes.data?.company_name || '');
@@ -2022,7 +2025,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               : Boolean(normalizeIndustry(meRes.data?.industry))
           );
           setMultiStore(tenantIsMultiStore(meRes.data));
-          setRole(meRes.data?.role || '');
+          setRole(meRes.data?.job_role || meRes.data?.role || '');
           setCountDrawerOnSignOut(meRes.data?.count_drawer_on_sign_out !== false);
           setCompanyName(meRes.data?.company_name || '');
           applyLogoVersion(meRes.data);

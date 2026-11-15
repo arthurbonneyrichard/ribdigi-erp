@@ -332,6 +332,60 @@ async def job_scan_hr_escalations() -> dict:
     return await _for_each_tenant(work)
 
 
+async def _for_each_hotel(work) -> dict:
+    """Run `work(db, tenant_id)` for every active hotel, on the main database and each desk's own."""
+    from app.db import on_desk
+    from app.desks import desk_urls, separate_databases
+
+    places = [None, *desk_urls()] if separate_databases() else [None]
+    results: list[dict] = []
+    for desk in places:
+        with on_desk(desk):
+            async with SessionLocal() as db:
+                tenant_ids = (
+                    await db.execute(
+                        select(m.Tenant.id).where(
+                            m.Tenant.status.in_(list(ACTIVE_TENANT_STATUSES)),
+                            m.Tenant.suspended_at.is_(None),
+                            m.Tenant.industry == "hotel",
+                        )
+                    )
+                ).scalars().all()
+                for tenant_id in tenant_ids:
+                    try:
+                        outcome = await work(db, tenant_id)
+                        await db.commit()
+                        results.append({"tenant_id": tenant_id, "ok": True, "result": outcome})
+                    except Exception:  # noqa: BLE001 — one hotel failing must not stop the rest
+                        logger.exception("Hotel job failed for tenant %s", tenant_id)
+                        await db.rollback()
+                        results.append({"tenant_id": tenant_id, "ok": False, "error": "job_failed"})
+    return {"tenants": len(results), "results": results}
+
+
+async def job_sync_hotel_channels() -> dict:
+    """Read each linked booking site's calendar (iCal) so its bookings close the room here."""
+    from app import hotel_channels
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        return await hotel_channels.sync_all(db, tenant_id=tenant_id)
+
+    return await _for_each_hotel(work)
+
+
+async def job_hotel_daily_close() -> dict:
+    """Each morning: earn last night's room revenue on every open hotel bill, and free expired online holds."""
+    from app import hotel as hotel_svc
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        return {
+            "room_revenue": await hotel_svc.recognise_open_stays(db, tenant_id=tenant_id),
+            "online_holds_expired": await hotel_svc.expire_online_holds(db, tenant_id=tenant_id),
+        }
+
+    return await _for_each_hotel(work)
+
+
 async def job_sample_server_health() -> dict:
     """One server reading a minute for the owner's monitor (history + alerts)."""
     from app import server_monitor
@@ -367,6 +421,8 @@ JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "expire_ecommerce_reservations": job_expire_ecommerce_reservations,
     "sync_ecommerce_connectors": job_sync_ecommerce_connectors,
     "scan_hr_escalations": job_scan_hr_escalations,
+    "hotel_daily_close": job_hotel_daily_close,
+    "sync_hotel_channels": job_sync_hotel_channels,
 }
 
 

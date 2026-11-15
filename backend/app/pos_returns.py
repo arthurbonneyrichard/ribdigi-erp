@@ -99,6 +99,23 @@ async def returnable_lines(db: AsyncSession, tenant_id: str, sale: m.Transaction
                 "tax_rate": money_json(item.get("tax_rate") or 0),
             }
         )
+    # Serial-tracked lines: the serials this receipt sold that are still out with the customer.
+    sold = (
+        await db.execute(
+            select(m.ProductSerial.product_id, m.ProductSerial.serial).where(
+                m.ProductSerial.tenant_id == tenant_id,
+                m.ProductSerial.sold_ref == (sale.reference or ""),
+                m.ProductSerial.status == "sold",
+            )
+        )
+    ).all()
+    by_product: dict[str, list[str]] = {}
+    for product_id, serial in sold:
+        by_product.setdefault(product_id, []).append(serial)
+    for line in lines:
+        serials = by_product.get(line["product_id"])
+        line["tracks_serials"] = bool(serials)
+        line["serials"] = sorted(serials or [])
     return lines
 
 
@@ -192,6 +209,7 @@ async def create_till_return(
                 "tax_rate": line["tax_rate"],
                 "line_total": line_total,
                 "condition": "sellable" if sellable else "discard",
+                "serials": list(item.get("serials") or []),
             }
         )
     subtotal = money_json(round(subtotal, 2))
@@ -239,6 +257,21 @@ async def create_till_return(
         created_by=user_id,
         posted_at=datetime.utcnow(),
     )
+    from app import pos_extras as pos_extras_svc
+
+    for p in prepared:
+        product = await db.get(m.Product, p["product_id"])
+        if product is not None and getattr(product, "tracks_serials", False):
+            await pos_extras_svc.return_serials(
+                db,
+                tenant_id=tenant_id,
+                product=product,
+                serials=p["serials"],
+                quantity=p["quantity"],
+                sale_ref=sale.reference or "",
+                return_ref=ret.return_number,
+                back_in_stock=p["condition"] == "sellable",
+            )
     ret.credit_note_number = await next_credit_note_number(db, tenant_id)
     db.add(ret)
     await db.flush()
@@ -247,7 +280,7 @@ async def create_till_return(
             m.SalesReturnItem(
                 tenant_id=tenant_id,
                 sales_return_id=ret.id,
-                **{k: v for k, v in line.items() if k != "unit_id"},
+                **{k: v for k, v in line.items() if k not in {"unit_id", "serials"}},
             )
         )
     await db.flush()

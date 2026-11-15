@@ -7,6 +7,7 @@ import PageHeader from '../../../components/PageHeader';
 import CustomerGroupsWindow from '../../../components/CustomerGroupsWindow';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import { api } from '../../../lib/api';
+import { openDocumentPrint } from '../../../lib/documentPrint';
 import { createPaintGet, peekPrefetch } from '../../../lib/prefetchCache';
 import { currencySign, formatDate, formatMoney } from '../../../lib/format';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
@@ -51,6 +52,26 @@ function canWriteCredit(me: { permissions?: Record<string, string[]> | null } | 
   if (star.includes('*') || star.includes('write')) return true;
   const credit = perms.credit || [];
   return credit.includes('write') || credit.includes('*') || credit.includes('approve');
+}
+
+/** Statement lines carry charge and payment, not a running total: add it, oldest first. */
+function withRunningBalance(lines: any[]): Array<{ line: any; after: number }> {
+  let running = 0;
+  return (lines || []).map((line) => {
+    running += Number(line.debit ?? line.amount_debit ?? 0) - Number(line.credit ?? line.amount_credit ?? 0);
+    running = Math.round(running * 100) / 100;
+    return { line, after: running };
+  });
+}
+
+/** Sum of open invoices whose due date has passed. */
+function overdueTotal(credit: any): number {
+  const today = new Date().toISOString().slice(0, 10);
+  const total = (credit?.credit_sales || []).reduce((sum: number, inv: any) => {
+    const due = inv?.due_date ? String(inv.due_date).slice(0, 10) : '';
+    return due && due < today ? sum + Number(inv.amount_base ?? inv.amount ?? 0) : sum;
+  }, 0);
+  return Math.round(total * 100) / 100;
 }
 
 function money(n: number) {
@@ -122,6 +143,14 @@ export default function Page() {
   const [arHistory, setArHistory] = useState<any>(null);
   const [accountId, setAccountId] = useState('');
   const [accountName, setAccountName] = useState('');
+  const [accountMode, setAccountMode] = useState<'pay' | 'history'>('pay');
+  const [accountError, setAccountError] = useState('');
+  const [payInvoiceId, setPayInvoiceId] = useState('');
+  const [payReference, setPayReference] = useState('');
+  const [payChequeNumber, setPayChequeNumber] = useState('');
+  const [lastPayment, setLastPayment] = useState<{ id: string; number: string } | null>(null);
+  const [histFrom, setHistFrom] = useState('');
+  const [histTo, setHistTo] = useState('');
   const [accountBusy, setAccountBusy] = useState(false);
   const [creditInfo, setCreditInfo] = useState<any>(null);
   const [history, setHistory] = useState<any>(null);
@@ -317,28 +346,67 @@ export default function Page() {
     }
   }
 
-  async function openAccount(c: Customer) {
+  async function loadHistory(id: string, from = histFrom, to = histTo) {
+    const qs = new URLSearchParams();
+    if (from.trim()) qs.set('from_date', from.trim());
+    if (to.trim()) qs.set('to_date', to.trim());
+    const tail = qs.toString() ? `?${qs.toString()}` : '';
+    const histRes = await api(`/customers/${id}/history${tail}`);
+    setHistory(histRes.data || { payments: [], purchases: [], returns: [] });
+  }
+
+  async function openAccount(c: Customer, mode: 'pay' | 'history' = 'pay') {
+    setArCustomer(null);
     setAccountId(c.id);
     setAccountName(c.name);
+    setAccountMode(mode);
     setAccountBusy(true);
+    setAccountError('');
     setCreditInfo(null);
     setHistory(null);
     setPayAmount('');
+    setPayMethod('cash');
+    setPayInvoiceId('');
+    setPayReference('');
+    setPayChequeNumber('');
+    setLastPayment(null);
+    setHistFrom('');
+    setHistTo('');
     setPayDateNote(new Date().toISOString().slice(0, 10));
-    setError('');
     try {
-      const [creditRes, histRes] = await Promise.all([
+      const [creditRes] = await Promise.all([
         api(`/customers/${c.id}/credit`).catch(() => ({ data: null })),
-        api(`/customers/${c.id}/history`).catch(() => ({ data: null })),
+        loadHistory(c.id, '', '').catch((err: any) => {
+          setAccountError(err.message || 'Could not load history');
+        }),
       ]);
-      setCreditInfo(creditRes.data || {
-        outstanding_balance: c.balance || 0,
-        credit_limit: c.credit_limit || 0,
-        credit_sales: [],
-      });
-      setHistory(histRes.data || { payments: [], purchases: [] });
+      setCreditInfo(
+        creditRes.data || {
+          outstanding_balance: c.balance || 0,
+          credit_limit: c.credit_limit || 0,
+          credit_sales: [],
+        }
+      );
     } catch (err: any) {
-      setError(err.message || 'Could not load account');
+      setAccountError(err.message || 'Could not load account');
+    } finally {
+      setAccountBusy(false);
+    }
+  }
+
+  function closeAccount() {
+    if (payBusy) return;
+    setAccountId('');
+  }
+
+  async function applyHistoryFilter() {
+    if (!accountId) return;
+    setAccountError('');
+    setAccountBusy(true);
+    try {
+      await loadHistory(accountId);
+    } catch (err: any) {
+      setAccountError(err.message || 'Could not load history');
     } finally {
       setAccountBusy(false);
     }
@@ -346,34 +414,80 @@ export default function Page() {
 
   async function recordRepayment() {
     if (!accountId || payBusy) return;
-    const amount = Number(payAmount);
-    if (!(amount > 0)) {
-      setError('Enter an amount greater than zero');
+    const amount = Math.round(Number(payAmount) * 100) / 100;
+    if (!Number.isFinite(amount) || !(amount > 0)) {
+      setAccountError('Enter an amount greater than zero');
       return;
     }
+    const owed = Number(creditInfo?.outstanding_balance || 0);
+    const invoice = (creditInfo?.credit_sales || []).find((inv: any) => inv.invoice_id === payInvoiceId);
+    if (invoice && amount - Number(invoice.amount || 0) > 0.009) {
+      setAccountError(`That is more than ${invoice.invoice_number} still owes (${money(invoice.amount)})`);
+      return;
+    }
+    if (!invoice) {
+      const openSales = creditInfo?.credit_sales || [];
+      // With open invoices the payment is spread over them and cannot be more than they owe.
+      const cap = openSales.length
+        ? openSales.reduce((sum: number, inv: any) => sum + Number(inv.amount || 0), 0)
+        : owed;
+      if (!(cap > 0)) {
+        setAccountError(`${accountName} owes nothing right now`);
+        return;
+      }
+      if (amount - cap > 0.009) {
+        setAccountError(`That is more than ${accountName} owes (${money(cap)})`);
+        return;
+      }
+    }
     setPayBusy(true);
-    setError('');
+    setAccountError('');
     try {
-      const notes = payDateNote.trim() ? `Received ${payDateNote.trim()}` : null;
-      await api(`/customers/${accountId}/payments`, {
+      const today = new Date().toISOString().slice(0, 10);
+      const day = payDateNote.trim();
+      const notes = day && day !== today ? `Received ${day}` : null;
+      const res = await api(`/customers/${accountId}/payments`, {
         method: 'POST',
         body: JSON.stringify({
           customer_id: accountId,
           amount,
           payment_method: payMethod,
+          sales_invoice_id: invoice ? invoice.invoice_id : null,
+          reference: payReference.trim() || null,
+          cheque_number: payMethod === 'cheque' ? payChequeNumber.trim() || null : null,
           notes,
         }),
       });
-      setMessage('Payment recorded against customer balance');
+      const number = String(res?.data?.payment_number || '');
+      setLastPayment(res?.data?.id ? { id: String(res.data.id), number } : null);
+      setMessage(`Payment ${number ? `${number} ` : ''}of ${money(amount)} recorded for ${accountName}`);
       setPayAmount('');
-      const current = customers.find((row) => row.id === accountId);
-      if (current) await openAccount(current);
+      setPayInvoiceId('');
+      setPayReference('');
+      setPayChequeNumber('');
+      const [creditRes] = await Promise.all([
+        api(`/customers/${accountId}/credit`).catch(() => ({ data: null })),
+        loadHistory(accountId).catch(() => undefined),
+      ]);
+      if (creditRes.data) setCreditInfo(creditRes.data);
       await refresh();
     } catch (err: any) {
-      setError(err.message || 'Payment failed');
+      setAccountError(err.message || 'Payment failed');
     } finally {
       setPayBusy(false);
     }
+  }
+
+  function printPaymentReceipt(id: string) {
+    openDocumentPrint(`/sales/payments/${id}/print?format=pdf`).catch((err: any) =>
+      setAccountError(err.message || 'Could not open the receipt')
+    );
+  }
+
+  function printStatement(id: string) {
+    openDocumentPrint(`/credit/customers/${id}/statement/print?format=html`).catch((err: any) =>
+      setAccountError(err.message || 'Could not open the statement')
+    );
   }
 
   const showCodeCol = customers.some((c) => Boolean(c.code));
@@ -546,17 +660,27 @@ export default function Page() {
                       items={
                         [
                           { key: 'edit', label: 'Edit', ariaLabel: `Edit ${c.name}`, onClick: () => openEdit(c) },
+                          ...(canPay
+                            ? [
+                                {
+                                  key: 'pay',
+                                  label: 'Record payment',
+                                  ariaLabel: `Record payment for ${c.name}`,
+                                  onClick: () => openAccount(c, 'pay'),
+                                },
+                              ]
+                            : []),
+                          {
+                            key: 'history',
+                            label: 'History',
+                            ariaLabel: `History for ${c.name}`,
+                            onClick: () => openAccount(c, 'history'),
+                          },
                           {
                             key: 'ar',
                             label: restaurantOps ? 'Unpaid bills' : 'Unpaid invoices',
                             ariaLabel: `AR for ${c.name}`,
                             onClick: () => openAr(c),
-                          },
-                          {
-                            key: 'account',
-                            label: 'Statement',
-                            ariaLabel: `Account for ${c.name}`,
-                            onClick: () => openAccount(c),
                           },
                           {
                             key: 'active',
@@ -611,120 +735,361 @@ export default function Page() {
       ) : null}
 
       {accountId ? (
-        <div className="card" style={{ marginTop: 16 }} aria-label="Customer account">
-          <div className="list-page-head page-head">
-            <div>
-              <h2 style={{ margin: 0 }}>Account · {accountName}</h2>
-              <p className="muted" style={{ margin: '4px 0 0' }}>
-                Outstanding balance and payments on the AR ledger ({restaurantOps ? 'bills' : 'invoices'} + customer payments).
-              </p>
-            </div>
-            <button type="button" onClick={() => setAccountId('')} aria-label="Close customer account">
-              Close
-            </button>
-          </div>
-          {accountBusy ? <p className="muted">Loading account…</p> : null}
-          {creditInfo ? (
-            <p>
-              Outstanding <strong>{money(Number(creditInfo.outstanding_balance || 0))}</strong>
-              {Number(creditInfo.credit_limit || 0) > 0
-                ? ` · limit ${money(Number(creditInfo.credit_limit))}`
-                : ' · no credit limit'}
-              {creditInfo.open_invoice_count
-                ? ` · ${creditInfo.open_invoice_count} open invoice(s)`
-                : ''}
-            </p>
-          ) : null}
-          {canPay ? (
-            <div className="list-toolbar" style={{ flexWrap: 'wrap' }}>
-              <AmountField
-                inline
-                type="number"
-                min={0}
-                step="0.01"
-                value={payAmount}
-                onChange={(e) => setPayAmount(e.target.value)}
-                placeholder="Amount"
-                aria-label="Repayment amount"
-              />
-              <select
-                value={payMethod}
-                onChange={(e) => setPayMethod(e.target.value)}
-                aria-label="Repayment method"
+        <FormModal
+          title={`${accountMode === 'pay' ? 'Record payment' : 'History'} · ${accountName}`}
+          busy={payBusy}
+          dirty={accountMode === 'pay' && Boolean(payAmount.trim() || payReference.trim())}
+          onClose={closeAccount}
+        >
+          <div className="stack" aria-label="Customer account">
+            <div className="list-toolbar" role="tablist" aria-label="Customer account view">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={accountMode === 'pay'}
+                className={accountMode === 'pay' ? 'list-btn-primary' : 'list-btn-secondary'}
+                onClick={() => setAccountMode('pay')}
+                aria-label="Show record payment"
               >
-                <option value="cash">Cash</option>
-                <option value="card">Card</option>
-                <option value="bank_transfer">Bank transfer</option>
-                <option value="cheque">Cheque</option>
-              </select>
-              <input
-                type="date"
-                value={payDateNote}
-                onChange={(e) => setPayDateNote(e.target.value)}
-                aria-label="Repayment date"
-              />
-              <button type="button" onClick={recordRepayment} disabled={payBusy}>
-                {payBusy ? 'Recording…' : 'Record payment'}
+                Record payment
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={accountMode === 'history'}
+                className={accountMode === 'history' ? 'list-btn-primary' : 'list-btn-secondary'}
+                onClick={() => setAccountMode('history')}
+                aria-label="Show customer history"
+              >
+                History
+              </button>
+              <button
+                type="button"
+                className="list-btn-secondary"
+                onClick={() => printStatement(accountId)}
+                aria-label="Print customer statement"
+              >
+                Print statement
               </button>
             </div>
-          ) : (
-            <p className="muted">Recording repayments needs credit write permission.</p>
-          )}
-          {(creditInfo?.credit_sales || []).length > 0 ? (
-            <div className="list-table-wrap">
-              <table className="table cat-table">
-                <thead>
-                  <tr>
-                    <th>Open invoice</th>
-                    <th>Status</th>
-                    <th>Total</th>
-                    <th>Paid</th>
-                    <th>Due</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {creditInfo.credit_sales.map((inv: any) => (
-                    <tr key={inv.invoice_id}>
-                      <td>{inv.invoice_number}</td>
-                      <td>{inv.status}</td>
-                      <td>{money(Number(inv.total_amount || 0))}</td>
-                      <td>{money(Number(inv.paid_amount || 0))}</td>
-                      <td>{money(Number(inv.amount || 0))}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : null}
-          {(history?.payments || []).length > 0 ? (
-            <div className="list-table-wrap" style={{ marginTop: 12 }}>
-              <table className="table cat-table">
-                <thead>
-                  <tr>
-                    <th>Payment</th>
-                    <th>Date</th>
-                    <th>Method</th>
-                    <th>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.payments.map((p: any) => (
-                    <tr key={p.id}>
-                      <td>{p.payment_number}</td>
-                      <td>
-                        {p.created_at ? String(p.created_at).replace('T', ' ').slice(0, 16) : '—'}
-                      </td>
-                      <td>{String(p.payment_method || '').replace(/_/g, ' ')}</td>
-                      <td>{money(Number(p.amount || 0))}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : !accountBusy ? (
-            <p className="muted">No payment history yet.</p>
-          ) : null}
-        </div>
+            {accountBusy ? <p className="muted">Loading account…</p> : null}
+            {accountError ? (
+              <p className="list-toast err" role="alert">
+                {accountError}
+              </p>
+            ) : null}
+            {creditInfo ? (
+              <p>
+                Owes you <strong>{money(creditInfo.outstanding_balance)}</strong>
+                {Number(creditInfo.credit_limit || 0) > 0
+                  ? ` · credit limit ${money(creditInfo.credit_limit)}`
+                  : ' · no credit limit'}
+                {creditInfo.open_invoice_count
+                  ? ` · ${creditInfo.open_invoice_count} open ${restaurantOps ? 'bill' : 'invoice'}${creditInfo.open_invoice_count === 1 ? '' : 's'}`
+                  : ''}
+                {creditInfo.is_over_limit ? ' · over limit' : ''}
+              </p>
+            ) : null}
+
+            {accountMode === 'pay' ? (
+              canPay ? (
+                <>
+                  {lastPayment ? (
+                    <p className="list-toast ok" role="status">
+                      Payment {lastPayment.number} saved.{' '}
+                      <button
+                        type="button"
+                        className="list-btn-secondary"
+                        onClick={() => printPaymentReceipt(lastPayment.id)}
+                        aria-label="Print payment receipt"
+                      >
+                        Print receipt
+                      </button>
+                    </p>
+                  ) : null}
+                  <div className="erp-form-grid">
+                    <label className="field">
+                      <span>Amount</span>
+                      <AmountField
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={payAmount}
+                        onChange={(e) => setPayAmount(e.target.value)}
+                        placeholder="Amount"
+                        aria-label="Repayment amount"
+                      />
+                    </label>
+                    <label className="field">
+                      <span>Pay towards</span>
+                      <select
+                        value={payInvoiceId}
+                        onChange={(e) => {
+                          const id = e.target.value;
+                          setPayInvoiceId(id);
+                          const inv = (creditInfo?.credit_sales || []).find((x: any) => x.invoice_id === id);
+                          if (inv) setPayAmount(String(Number(inv.amount || 0)));
+                        }}
+                        aria-label="Repayment applies to"
+                      >
+                        <option value="">Oldest {restaurantOps ? 'bills' : 'invoices'} first</option>
+                        {(creditInfo?.credit_sales || []).map((inv: any) => (
+                          <option key={inv.invoice_id} value={inv.invoice_id}>
+                            {inv.invoice_number} · owes {money(inv.amount)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="field">
+                      <span>Method</span>
+                      <select
+                        value={payMethod}
+                        onChange={(e) => setPayMethod(e.target.value)}
+                        aria-label="Repayment method"
+                      >
+                        <option value="cash">Cash</option>
+                        <option value="card">Card</option>
+                        <option value="bank_transfer">Bank transfer</option>
+                        <option value="cheque">Cheque</option>
+                      </select>
+                    </label>
+                    {payMethod === 'cheque' ? (
+                      <label className="field">
+                        <span>Cheque number</span>
+                        <input
+                          value={payChequeNumber}
+                          onChange={(e) => setPayChequeNumber(e.target.value)}
+                          placeholder="Optional"
+                          aria-label="Repayment cheque number"
+                        />
+                      </label>
+                    ) : null}
+                    <label className="field">
+                      <span>Reference</span>
+                      <input
+                        value={payReference}
+                        onChange={(e) => setPayReference(e.target.value)}
+                        placeholder="Optional, e.g. transfer or MoMo ID"
+                        aria-label="Repayment reference"
+                      />
+                    </label>
+                    <label className="field">
+                      <span>Date received</span>
+                      <input
+                        type="date"
+                        value={payDateNote}
+                        onChange={(e) => setPayDateNote(e.target.value)}
+                        aria-label="Repayment date"
+                      />
+                    </label>
+                  </div>
+                  <div className="list-toolbar">
+                    {Number(creditInfo?.outstanding_balance || 0) > 0 ? (
+                      <button
+                        type="button"
+                        className="list-btn-secondary"
+                        onClick={() => {
+                          setPayInvoiceId('');
+                          const openSales = creditInfo?.credit_sales || [];
+                          const full = openSales.length
+                            ? openSales.reduce((sum: number, inv: any) => sum + Number(inv.amount || 0), 0)
+                            : Number(creditInfo.outstanding_balance || 0);
+                          setPayAmount(String(Math.round(full * 100) / 100));
+                        }}
+                        aria-label="Fill full balance"
+                      >
+                        Full balance
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="list-btn-primary btn-ok"
+                      onClick={recordRepayment}
+                      disabled={payBusy || accountBusy}
+                      aria-label="Record customer payment"
+                    >
+                      {payBusy ? 'Recording…' : 'Record payment'}
+                    </button>
+                  </div>
+                  {(creditInfo?.credit_sales || []).length > 0 ? (
+                    <div className="list-table-wrap">
+                      <table className="table cat-table">
+                        <thead>
+                          <tr>
+                            <th>Open {restaurantOps ? 'bill' : 'invoice'}</th>
+                            <th>Due date</th>
+                            <th className="col-num">Total</th>
+                            <th className="col-num">Paid</th>
+                            <th className="col-num">Still owed</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {creditInfo.credit_sales.map((inv: any) => (
+                            <tr key={inv.invoice_id}>
+                              <td>{inv.invoice_number}</td>
+                              <td>{inv.due_date ? formatDate(inv.due_date, formatPrefs) : '—'}</td>
+                              <td className="col-num">{money(inv.total_amount)}</td>
+                              <td className="col-num">{money(inv.paid_amount)}</td>
+                              <td className="col-num">{money(inv.amount)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : creditInfo && !accountBusy ? (
+                    <p className="muted">No open {restaurantOps ? 'bills' : 'invoices'}. Payments go against the balance owed from till credit sales.</p>
+                  ) : null}
+                </>
+              ) : (
+                <p className="muted">Recording payments needs credit write permission.</p>
+              )
+            ) : (
+              <>
+                <div className="list-toolbar" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                  <label className="field">
+                    <span>From</span>
+                    <input
+                      type="date"
+                      value={histFrom}
+                      onChange={(e) => setHistFrom(e.target.value)}
+                      aria-label="Customer history from date"
+                    />
+                  </label>
+                  <label className="field">
+                    <span>To</span>
+                    <input
+                      type="date"
+                      value={histTo}
+                      onChange={(e) => setHistTo(e.target.value)}
+                      aria-label="Customer history to date"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="list-btn-secondary"
+                    onClick={applyHistoryFilter}
+                    disabled={accountBusy}
+                    aria-label="Apply customer history dates"
+                  >
+                    Show
+                  </button>
+                </div>
+                {history?.summary ? (
+                  <p className="muted">
+                    {history.summary.purchase_count ?? (history.purchases || []).length} sales · bought{' '}
+                    {money(history.summary.purchase_total)} · paid {money(history.summary.payment_total)}
+                    {Number(history.summary.return_total || 0) > 0 ? ` · returned ${money(history.summary.return_total)}` : ''}
+                  </p>
+                ) : null}
+                <h3 style={{ margin: '8px 0 0', fontSize: 15 }}>Sales</h3>
+                {(history?.purchases || []).length > 0 ? (
+                  <div className="list-table-wrap">
+                    <table className="table cat-table">
+                      <thead>
+                        <tr>
+                          <th>Sale</th>
+                          <th>Date</th>
+                          <th>Status</th>
+                          <th className="col-num">Total</th>
+                          <th className="col-num">Paid</th>
+                          <th className="col-num">Still owed</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {history.purchases.map((row: any) => (
+                          <tr key={`${row.type}-${row.id}`}>
+                            <td>
+                              {row.reference || '—'}
+                              <span className="list-secondary" style={{ display: 'block' }}>
+                                {row.type === 'pos' ? 'Till sale' : restaurantOps ? 'Bill' : 'Invoice'}
+                              </span>
+                            </td>
+                            <td>{row.posted_at || row.created_at ? formatDate(row.posted_at || row.created_at, formatPrefs) : '—'}</td>
+                            <td>{String(row.status || '').replace(/_/g, ' ') || '—'}</td>
+                            <td className="col-num">{money(row.total_amount)}</td>
+                            <td className="col-num">{money(row.paid_amount)}</td>
+                            <td className="col-num">{moneyOrBlank(row.balance_due) || '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : !accountBusy ? (
+                  <p className="muted">No sales in this period.</p>
+                ) : null}
+                <h3 style={{ margin: '8px 0 0', fontSize: 15 }}>Payments</h3>
+                {(history?.payments || []).length > 0 ? (
+                  <div className="list-table-wrap">
+                    <table className="table cat-table">
+                      <thead>
+                        <tr>
+                          <th>Payment</th>
+                          <th>Date</th>
+                          <th>Method</th>
+                          <th>Reference</th>
+                          <th className="col-num">Amount</th>
+                          <th className="col-actions">Receipt</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {history.payments.map((p: any) => (
+                          <tr key={p.id}>
+                            <td>{p.payment_number}</td>
+                            <td>{p.created_at ? formatDate(p.created_at, formatPrefs) : '—'}</td>
+                            <td>{String(p.payment_method || '').replace(/_/g, ' ')}</td>
+                            <td>{p.reference || '—'}</td>
+                            <td className="col-num">{money(p.amount)}</td>
+                            <td className="col-actions">
+                              <button
+                                type="button"
+                                className="list-btn-secondary"
+                                onClick={() => printPaymentReceipt(p.id)}
+                                aria-label={`Print receipt ${p.payment_number}`}
+                              >
+                                Print
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : !accountBusy ? (
+                  <p className="muted">No payments in this period.</p>
+                ) : null}
+                {(history?.returns || []).length > 0 ? (
+                  <>
+                    <h3 style={{ margin: '8px 0 0', fontSize: 15 }}>Returns</h3>
+                    <div className="list-table-wrap">
+                      <table className="table cat-table">
+                        <thead>
+                          <tr>
+                            <th>Return</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Reason</th>
+                            <th className="col-num">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {history.returns.map((r: any) => (
+                            <tr key={r.id}>
+                              <td>{r.return_number || r.credit_note_number || '—'}</td>
+                              <td>{r.posted_at || r.created_at ? formatDate(r.posted_at || r.created_at, formatPrefs) : '—'}</td>
+                              <td>{String(r.status || '').replace(/_/g, ' ')}</td>
+                              <td>{String(r.reason || '').replace(/_/g, ' ') || '—'}</td>
+                              <td className="col-num">{money(r.total_amount)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : null}
+              </>
+            )}
+          </div>
+        </FormModal>
       ) : null}
 
       {groupsOpen ? (
@@ -930,15 +1295,41 @@ export default function Page() {
             ) : null}
             {arCredit ? (
               <p>
-                Owes you <strong>{money(arCredit.balance ?? arCustomer.balance ?? 0)}</strong>
+                Owes you <strong>{money(arCredit.outstanding_balance ?? arCustomer.balance ?? 0)}</strong>
                 {arCredit.credit_limit != null && Number(arCredit.credit_limit) > 0
                   ? ` · credit limit ${money(arCredit.credit_limit)}`
                   : ''}
-                {arCredit.overdue_amount != null && Number(arCredit.overdue_amount) > 0
-                  ? ` · overdue ${money(arCredit.overdue_amount)}`
-                  : ''}
+                {overdueTotal(arCredit) > 0 ? ` · overdue ${money(overdueTotal(arCredit))}` : ''}
               </p>
             ) : null}
+            <div className="list-toolbar">
+              {canPay ? (
+                <button
+                  type="button"
+                  className="list-btn-primary"
+                  onClick={() => openAccount(arCustomer, 'pay')}
+                  aria-label={`Record payment for ${arCustomer.name} from unpaid list`}
+                >
+                  Record payment
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="list-btn-secondary"
+                onClick={() => openAccount(arCustomer, 'history')}
+                aria-label={`History for ${arCustomer.name} from unpaid list`}
+              >
+                History
+              </button>
+              <button
+                type="button"
+                className="list-btn-secondary"
+                onClick={() => printStatement(arCustomer.id)}
+                aria-label={`Print statement for ${arCustomer.name}`}
+              >
+                Print statement
+              </button>
+            </div>
             {arStatement?.lines?.length ? (
               <table className="table">
                 <thead>
@@ -951,13 +1342,13 @@ export default function Page() {
                   </tr>
                 </thead>
                 <tbody>
-                  {arStatement.lines.map((line: any, idx: number) => (
-                    <tr key={line.id || idx}>
+                  {withRunningBalance(arStatement.lines).map(({ line, after }, idx: number) => (
+                    <tr key={line.id || `${line.reference}-${idx}`}>
                       <td>{line.date ? formatDate(line.date, formatPrefs) : '—'}</td>
                       <td>{line.document_number || line.reference || line.description || line.type || '—'}</td>
                       <td className="col-num">{moneyOrBlank(line.debit ?? line.amount_debit)}</td>
                       <td className="col-num">{moneyOrBlank(line.credit ?? line.amount_credit)}</td>
-                      <td className="col-num">{moneyOrBlank(line.balance)}</td>
+                      <td className="col-num">{money(after)}</td>
                     </tr>
                   ))}
                 </tbody>

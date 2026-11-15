@@ -49,3 +49,12 @@ Restaurant front of house is its own desk, isolated from retail and hotel (`REST
 - Someone who gets no share approves it (**403** `TIPS_SECOND_PERSON`). Then it is paid in **cash** (one payment clears 2187) or **on the payslip** of a chosen month (see `docs/HRM_DESK.md`).
 - A draft, or an approved share-out not yet paid or on a payroll, can be cancelled; its tips go back to be shared.
 - Every staff member sees their own shares under **Tips**.
+
+## Added 15 Nov 2026
+
+- One bill paid more than one way (cash + card + Mobile Money), booked tender by tender; the drawer counts only the cash part.
+- Split a bill by dish or seat onto a new bill for the same table.
+- Happy hours: a percentage off chosen dishes (or the whole menu) on chosen days and times.
+- The Orders board and kitchen see changes within about 4 seconds (they check for changes and reload only then).
+- Mobile Money prompts through the restaurant's own Paystack account; a prompt pays one bill only.
+- Still recorded, not charged: card payments (taken on the bank's card machine). Delivery apps (Glovo, Bolt Food) are not linked.

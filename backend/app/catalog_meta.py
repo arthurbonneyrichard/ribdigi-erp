@@ -316,6 +316,7 @@ def serialize_product(row: m.Product) -> dict:
         "tax_supply_class": getattr(row, "tax_supply_class", None)
         or ("exempt" if row.tax_exempt else "standard"),
         "tracks_batches": bool(row.tracks_batches),
+        "tracks_serials": bool(getattr(row, "tracks_serials", False)),
         "dosage_instructions": getattr(row, "dosage_instructions", None),
         "rx_only": bool(getattr(row, "rx_only", False)),
         "min_order_qty": money_json(getattr(row, "min_order_qty", 0) or 0),

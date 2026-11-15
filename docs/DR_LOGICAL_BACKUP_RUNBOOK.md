@@ -63,6 +63,10 @@ The tests create a store, a warehouse linked to that store, a POS sale, a record
 Offline POS stays the only offline surface. This drill does not make the rest of the ERP available offline.
 
 
+## Postgres restore drill (2026-11-15) — done locally, production script ready
+
+The 2026-10-05 block below is closed. A throwaway Postgres 16 container on a private Docker network took a restore of the local `ribdigi_erp`. All 255 tables were identical by row count and content hash, the books balanced, migrations ran 0182 → 0186 and back, and the API served on the copy. The per-company `.ribbak` drill passed on Postgres (54 of 54). Details and times: [RESTORE_DRILL_2026-11-15.md](RESTORE_DRILL_2026-11-15.md). The production run uses `ops/dr/production_restore_drill.sh` (owner, on the production host; read-only on production).
+
 ## Isolated Postgres restore (2026-10-05) — blocked
 
 Checked 2026-10-05. Postgres is listening on 127.0.0.1:5432. That listener is Docker container `ribdigi-erp-postgres-1`. The only application database is `ribdigi_erp` (plus `postgres`, `template0`, and `template1`). There is no disposable database. `/data/backups` inside `ribdigi-erp-backend-1` is empty. No `.ribbak` archive was found in the production tree. This session did not create a backup, did not restore, and did not read or change rows in `ribdigi_erp`.

@@ -452,6 +452,18 @@ api.include_router(hotel_shop_api_mod.router)
 from app import hotel_invoices_api as hotel_invoices_api_mod  # noqa: E402
 
 api.include_router(hotel_invoices_api_mod.router)
+from app import hotel_channels_api as hotel_channels_api_mod  # noqa: E402
+
+api.include_router(hotel_channels_api_mod.router)
+api.include_router(hotel_channels_api_mod.public_router)
+from app import till_payments_api as till_payments_api_mod  # noqa: E402
+
+for _till_router in till_payments_api_mod.ROUTERS:
+    api.include_router(_till_router)
+from app import pos_extras_api as pos_extras_api_mod  # noqa: E402
+
+api.include_router(pos_extras_api_mod.router)
+api.include_router(pos_extras_api_mod.serial_router)
 from app import bakery_api as bakery_api_mod  # noqa: E402
 from app import fmcg_orders as fmcg_orders_svc  # noqa: E402
 from app import fmcg_orders_api as fmcg_orders_api_mod  # noqa: E402
@@ -3483,6 +3495,10 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
         db, tenant_id=claims["tenant_id"], user_id=user.id, claims={}
     )
     assigned = loc.get("store_ids")
+    from app import hotel_jobs as _hotel_jobs
+
+    # A custom role copied from a hotel staff role gets that role's menus and home screen.
+    job_role = await _hotel_jobs.job_role(db, claims["tenant_id"], user.role)
     return env(
         {
             "id": user.id,
@@ -3490,6 +3506,7 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             "full_name": user.full_name,
             "phone": user.phone,
             "role": user.role,
+            "job_role": job_role or user.role,
             "tenant_id": user.tenant_id,
             "branch_id": getattr(user, "branch_id", None),
             "department_id": getattr(user, "department_id", None),
@@ -4940,6 +4957,7 @@ async def patch_product(
         "tax_supply_class",
         "tax_exempt",
         "tracks_batches",
+        "tracks_serials",
         "dosage_instructions",
         "rx_only",
         "min_order_qty",
@@ -5032,6 +5050,8 @@ async def patch_product(
             sync_product_tax_flags(product, tax_exempt=bool(value))
         elif key == "tracks_batches" and value is not None:
             product.tracks_batches = bool(value)
+        elif key == "tracks_serials" and value is not None:
+            product.tracks_serials = bool(value)
         elif key == "dosage_instructions":
             from app.honesty import optional_honest_narrative
 
@@ -5992,6 +6012,26 @@ async def stock_in(
         reference_type=payload.reference_type,
         reference_id=payload.reference_id,
     )
+    product = await db.get(m.Product, payload.product_id)
+    if product is not None and getattr(product, "tracks_serials", False):
+        from app import pos_extras as pos_extras_svc
+
+        units = money_json(payload.quantity)
+        serials = pos_extras_svc.clean_serials(payload.serials or [])
+        if abs(units - round(units)) > 1e-9 or len(serials) != int(round(units)):
+            raise HTTPException(
+                status_code=422,
+                detail={"code": "SERIALS_REQUIRED", "message": f"{product.name} needs one serial number for each unit received."},
+            )
+        await pos_extras_svc.receive_serials(
+            db,
+            tenant_id=claims["tenant_id"],
+            product=product,
+            serials=serials,
+            warehouse_id=payload.warehouse_id,
+            ref=payload.reference_id or "stock_in",
+        )
+        result = {**(result or {}), "serials": serials}
     await db.commit()
     return env(result, "Stock in recorded")
 
@@ -11205,6 +11245,32 @@ async def _pos_sale_impl_body(payload: PosSaleCreate, claims: dict, db: AsyncSes
         status=payload.status,
         payload=body["payload"],
     )
+    from app import pos_extras as pos_extras_svc
+    from app import till_payments as till_payments_svc
+
+    # Serial-tracked goods leave stock unit by unit, by serial number.
+    for item in payload.items:
+        sold = await db.get(m.Product, item.product_id)
+        if sold is not None and getattr(sold, "tracks_serials", False):
+            await pos_extras_svc.sell_serials(
+                db,
+                tenant_id=claims["tenant_id"],
+                product=sold,
+                serials=list(item.serials or []),
+                quantity=money_json(item.quantity),
+                sale_ref=ref,
+            )
+
+    # A Mobile Money prompt pays one sale only, and only once it is approved.
+    for tender in payments:
+        if str(tender.get("reference") or "").startswith("till_"):
+            await till_payments_svc.claim(
+                db,
+                tenant_id=claims["tenant_id"],
+                reference=str(tender["reference"]),
+                amount=money_json(tender.get("amount") or 0),
+                used_ref=ref,
+            )
     db.add(tx)
     try:
         await db.flush()
@@ -18486,6 +18552,7 @@ async def hotel_reservations_create(
             rate_plan_id=payload.rate_plan_id,
             discount_percent=money_json(payload.discount_percent or 0),
             discount_authorized_by=payload.discount_authorized_by,
+            bill_to_party_id=payload.bill_to_party_id,
         )
         await audit_svc.record_event(
             db,
@@ -18568,15 +18635,33 @@ async def hotel_reservation_update(
 @api.post("/hotel/reservations/{reservation_id}/check-in")
 async def hotel_reservation_check_in(
     reservation_id: UuidIdValue,
+    allow_dirty: bool = Query(False, description="Manager override: check in although the room is not clean"),
     claims=Depends(require_permission("hotel", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    if allow_dirty and str(claims.get("role") or "") not in hotel_svc.DIRTY_OVERRIDE_ROLES:
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "ROOM_NOT_CLEAN", "message": "Only a manager can check a guest into a room that is not clean."},
+        )
     row, room, guest, folio = await hotel_svc.check_in(
         db,
         tenant_id=claims["tenant_id"],
         reservation_id=reservation_id,
         created_by=claims["sub"],
+        allow_dirty=allow_dirty,
     )
+    if allow_dirty:
+        await audit_svc.record_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            module="hotel",
+            action="checked_in_room_not_clean",
+            entity="hotel_reservation",
+            entity_id=row.id,
+            details={"reservation_number": row.reservation_number, "room": room.code},
+        )
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
