@@ -21,10 +21,10 @@
 .plock .plock-keys button:hover:not(:disabled){background:#E6F3DA}
 .plock .plock-keys button:active:not(:disabled){background:var(--brand-light,#C8E86A)}
 .plock .plock-keys .plock-key-soft{font-size:15px;font-weight:500;color:var(--muted,#4D5D56);background:#fff}
-.plock .plock-unlock{display:block;box-shadow:none;width:100%;min-height:50px;padding:10px 14px;border:0;border-radius:12px;background:var(--brand,#4AB012);color:#fff;
+.plock .plock-unlock{display:block;box-shadow:none;width:100%;min-height:50px;padding:10px 14px;border:0;border-radius:12px;background:var(--brand,#4AB012);color:#10211B;
   font-size:17px;font-weight:700;cursor:pointer}
 .plock .plock-unlock:hover:not(:disabled){background:var(--brand-dark,#2F7A0C)}
-.plock .plock-unlock:disabled{background:var(--brand,#4AB012);color:#fff;opacity:.45;cursor:default}
+.plock .plock-unlock:disabled{background:var(--brand,#4AB012);color:#10211B;opacity:.45;cursor:default}
 .plock .plock-unlock small{display:block;margin-top:3px;font-size:12.5px;font-weight:400;opacity:.92}
 .plock .plock-unlock-soft{background:#fff;color:var(--forest,#003D1F);border:1px solid var(--line,#D4E5C4)}
 .plock .plock-unlock-soft:hover:not(:disabled){background:var(--mist,#F5FAF0)}

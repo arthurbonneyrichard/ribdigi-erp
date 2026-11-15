@@ -25,7 +25,7 @@
 .main .bakery button:active:not(:disabled){transform:scale(.98)}
 .main .bakery button:focus-visible,.main .bakery a:focus-visible{outline:none;box-shadow:var(--bk-ring)}
 .main .bakery button:disabled{opacity:.45;cursor:not-allowed}
-.main .bakery button.bk-primary{background:linear-gradient(135deg,#006B2E,#0B8A3E);border-color:#006B2E;color:#fff}
+.main .bakery button.bk-primary{background:linear-gradient(135deg,#006B2E,#0A813B);border-color:#006B2E;color:#fff}
 [data-theme="dark"] .main .bakery button.bk-primary{background:#7BD14A;border-color:#7BD14A;color:#0F1A14}
 .main .bakery button.bk-danger{color:var(--bk-bad);border-color:var(--bk-bad-tint);background:transparent}
 .main .bakery button.bk-danger:hover:not(:disabled){background:var(--bk-bad-tint);border-color:var(--bk-bad)}
@@ -36,7 +36,7 @@
 
 /* Screen header */
 .main .bakery .bk-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:18px 20px;border-radius:20px;background:linear-gradient(120deg,var(--bk-panel) 55%,var(--bk-tint));border:1px solid var(--bk-line);box-shadow:var(--bk-shadow)}
-.main .bakery .bk-head-ico{display:grid;place-items:center;width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#006B2E,#0B8A3E);color:#fff;flex:0 0 52px}
+.main .bakery .bk-head-ico{display:grid;place-items:center;width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#006B2E,#0A813B);color:#fff;flex:0 0 52px}
 [data-theme="dark"] .main .bakery .bk-head-ico{background:#1E3326;color:#A5E37E}
 .main .bakery .bk-head-text{flex:1 1 260px;min-width:0}
 .main .bakery .bk-head p{margin:4px 0 0;color:var(--bk-muted)}
@@ -144,7 +144,7 @@
 .main .bakery .bk-bagnum{display:flex;align-items:center;gap:12px}
 .main .bakery .bk-bagnum > div{display:flex;flex-direction:column}
 .main .bakery .bk-bagbar b{font-size:28px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.main .bakery .bk-linkbtn{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:12px;background:linear-gradient(135deg,#006B2E,#0B8A3E);color:#fff;font-weight:700;text-decoration:none}
+.main .bakery .bk-linkbtn{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:12px;background:linear-gradient(135deg,#006B2E,#0A813B);color:#fff;font-weight:700;text-decoration:none}
 [data-theme="dark"] .main .bakery .bk-linkbtn{background:#7BD14A;color:#0F1A14}
 
 /* Report */

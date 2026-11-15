@@ -232,7 +232,7 @@
 .main .table td button.notify-ui-switch.is-on:hover {
   background: var(--brand, #4ab012);
   border-color: var(--brand-dark, #2f7a0c);
-  color: #fff;
+  color: #10211B;
 }
 
 .main .table td button.notify-ui-switch.is-on .notify-ui-knob,
@@ -248,6 +248,7 @@
 
 [data-theme="dark"] .main .notify-ui-seg > button.is-on {
   background: var(--brand, #4ab012);
+  color: #10211B;
 }
 
 [data-theme="dark"] .notify-ui-cat {

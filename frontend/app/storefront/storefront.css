@@ -127,7 +127,7 @@
 .sf-actions{display:flex;gap:var(--space-2);flex-wrap:wrap;align-items:center}
 .sf-actions button,.sf-form button,.sf-btn{
   background:var(--brand);
-  color:var(--white);
+  color:#10211B;
   border:0;
   border-radius:var(--radius);
   padding:10px 14px;
@@ -139,7 +139,7 @@
   align-items:center;
   justify-content:center;
 }
-.sf-actions button:hover,.sf-form button:hover,.sf-btn:hover{background:var(--brand-dark)}
+.sf-actions button:hover,.sf-form button:hover,.sf-btn:hover{background:var(--brand-dark);color:#fff}
 .sf-actions button:disabled,.sf-form button:disabled{opacity:.5;cursor:not-allowed}
 .sf-btn-ghost{
   background:transparent;

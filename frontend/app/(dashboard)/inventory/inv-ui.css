@@ -33,7 +33,7 @@
 
 .inv-ui-nav-row button[disabled] {
   background: var(--brand, #4ab012);
-  color: #fff;
+  color: #10211B;
   border-color: var(--brand, #4ab012);
 }
 

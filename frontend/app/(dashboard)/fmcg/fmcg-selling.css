@@ -24,7 +24,7 @@
 .main .fmcg-sell button:active:not(:disabled){transform:scale(.98)}
 .main .fmcg-sell button:focus-visible,.main .fmcg-sell a:focus-visible{outline:none;box-shadow:var(--fs-ring)}
 .main .fmcg-sell button:disabled{opacity:.45;cursor:not-allowed}
-.main .fmcg-sell button.fs-primary{background:linear-gradient(135deg,#006B2E,#0B8A3E);border-color:#006B2E;color:#fff}
+.main .fmcg-sell button.fs-primary{background:linear-gradient(135deg,#006B2E,#0A813B);border-color:#006B2E;color:#fff}
 [data-theme="dark"] .main .fmcg-sell button.fs-primary{background:#7BD14A;border-color:#7BD14A;color:#0F1A14}
 .main .fmcg-sell button.fs-danger{color:var(--fs-bad);border-color:var(--fs-bad-tint);background:transparent}
 .main .fmcg-sell button.fs-danger:hover:not(:disabled){background:var(--fs-bad-tint);border-color:var(--fs-bad)}
@@ -35,7 +35,7 @@
 
 /* Screen header */
 .main .fmcg-sell .fs-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:18px 20px;border-radius:20px;background:linear-gradient(120deg,var(--fs-panel) 55%,var(--fs-tint));border:1px solid var(--fs-line);box-shadow:var(--fs-shadow)}
-.main .fmcg-sell .fs-head-ico{display:grid;place-items:center;width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#006B2E,#0B8A3E);color:#fff;flex:0 0 52px}
+.main .fmcg-sell .fs-head-ico{display:grid;place-items:center;width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#006B2E,#0A813B);color:#fff;flex:0 0 52px}
 [data-theme="dark"] .main .fmcg-sell .fs-head-ico{background:#1E3326;color:#A5E37E}
 .main .fmcg-sell .fs-head-text{flex:1 1 260px;min-width:0}
 .main .fmcg-sell .fs-head p{margin:4px 0 0;color:var(--fs-muted)}
@@ -143,7 +143,7 @@
 .main .fmcg-sell .fs-bagnum{display:flex;align-items:center;gap:12px}
 .main .fmcg-sell .fs-bagnum > div{display:flex;flex-direction:column}
 .main .fmcg-sell .fs-bagbar b{font-size:28px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.main .fmcg-sell .fs-linkbtn{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:12px;background:linear-gradient(135deg,#006B2E,#0B8A3E);color:#fff;font-weight:700;text-decoration:none}
+.main .fmcg-sell .fs-linkbtn{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:12px;background:linear-gradient(135deg,#006B2E,#0A813B);color:#fff;font-weight:700;text-decoration:none}
 [data-theme="dark"] .main .fmcg-sell .fs-linkbtn{background:#7BD14A;color:#0F1A14}
 
 /* Report */

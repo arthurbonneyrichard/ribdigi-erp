@@ -145,19 +145,24 @@ def test_launch_ui_source_fixes():
     assert 'aria-label="Close ticket"' in support
     login = (ROOT / "frontend/app/page.tsx").read_text(encoding="utf-8")
     assert "LoginLegalLinks" in login
-    terms = (ROOT / "frontend/app/legal/terms/page.tsx").read_text(encoding="utf-8")
-    privacy = (ROOT / "frontend/app/legal/privacy/page.tsx").read_text(encoding="utf-8")
+    # Policy text moved to lib/legalDefaults.ts (15 Nov 2026); the owner can publish edits in the console.
+    legal = (ROOT / "frontend/lib/legalDefaults.ts").read_text(encoding="utf-8")
+    terms = legal.split('"terms": {', 1)[1].split('"refunds": {', 1)[0]
+    privacy = legal.split('"privacy": {', 1)[1].split('"terms": {', 1)[0]
+    assert "LegalPage slug=\"terms\"" in (ROOT / "frontend/app/legal/terms/page.tsx").read_text(encoding="utf-8")
     assert "Terms of Service" in terms
     assert "Privacy Policy" in privacy
     assert "Weija Old Barrier, Accra, Ghana" in terms
     assert "Weija Old Barrier, Accra, Ghana" in privacy
-    assert "Effective 22 October 2026" in terms
-    assert "Fees, renewal, and refunds" in terms
+    assert "Effective 15 November 2026" in terms
+    assert "## Plans, free trial and fees" in terms
+    assert "## Renewal and payment" in terms
     assert "Liability" in terms
-    assert "Termination and data export" in terms
+    assert "## Suspension and ending the agreement" in terms
+    assert "## Exporting your data" in terms
     assert "laws of Ghana" in terms
     assert "Data Protection Act, 2012 (Act 843)" in privacy
-    assert "Retention" in privacy
+    assert "## How long we keep it" in privacy
     journal = (ROOT / "frontend/lib/posOfflineJournal.ts").read_text(encoding="utf-8")
     assert "return null;" in journal
     assert "8765" in journal
