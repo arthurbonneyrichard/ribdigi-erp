@@ -60,6 +60,8 @@ OPERATOR_PATHS = (
     f"{API}/pharmacy/prescriptions",
     f"{API}/restaurant/orders",
     f"{API}/restaurant/till/",
+    f"{API}/hotel/momo",
+    f"{API}/bakery/till/momo",
 )
 OPERATOR_EXACT_PATHS = (f"{API}/me",)
 

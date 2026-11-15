@@ -80,7 +80,9 @@ async def test_paid_stay_lands_in_revenue_tax_and_cash(client, seeded, db_sessio
 
     mid = await _balances(ac, h)
     assert _moved(before, mid, "1100") == 1000
-    assert _moved(before, mid, "4000") == -800
+    # Tonight has not passed yet: the room waits in unearned revenue until it does.
+    assert _moved(before, mid, "4000") == 0
+    assert _moved(before, mid, "2165") == -800
     assert _moved(before, mid, "2100") == -200
 
     await _pay(ac, h, folio_id, 1000)
@@ -302,7 +304,9 @@ async def test_leaving_early_takes_unused_nights_off_the_bill_and_the_books(clie
 
     folio = (await ac.get(f"/api/v1/hotel/folios/{folio_id}", headers=h)).json()["data"]
     assert folio["charges_total"] == 100  # one night stayed, three taken off
-    assert _moved(before, await _balances(ac, h), "4000") == -100
+    books = await _balances(ac, h)
+    assert _moved(before, books, "4000") == 0  # tonight is earned at the night audit or check-out
+    assert _moved(before, books, "2165") == -100
 
     again = await ac.post(f"/api/v1/hotel/reservations/{res_id}/leave-early", headers=h, json={})
     assert again.status_code == 400

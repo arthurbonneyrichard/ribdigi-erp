@@ -760,7 +760,7 @@ export default function Page() {
         )}
 
         <section className="info-grid dash-charts" aria-label="Daily sales, revenue trend, and monthly sales">
-          <div className="panel">
+          <div className="panel" data-tone="sales">
             <h3>
               <PanelIcon name="daily" />
               Daily sales (7d)
@@ -777,7 +777,7 @@ export default function Page() {
             )}
           </div>
 
-          <div className="panel">
+          <div className="panel" data-tone="sales">
             <h3>
               <PanelIcon name="profit" />
               Revenue trend (30d)
@@ -792,7 +792,7 @@ export default function Page() {
             )}
           </div>
 
-          <div className="panel">
+          <div className="panel" data-tone="sales">
             <h3>
               <PanelIcon name="cashflow" />
               Monthly sales (12 mo)
@@ -809,7 +809,7 @@ export default function Page() {
         </section>
 
         <section className="dash-pair" aria-label="Inventory health, business mix, cash flow, and money owed">
-          <div className="panel">
+          <div className="panel" data-tone="stock">
             <h3>
               <PanelIcon name="health" />
               Inventory health
@@ -871,7 +871,7 @@ export default function Page() {
             </div>
           </div>
 
-          <div className="panel">
+          <div className="panel" data-tone="people">
             <h3>
               <PanelIcon name="mix" />
               Business mix
@@ -926,7 +926,7 @@ export default function Page() {
             </div>
           </div>
 
-          <div className="panel">
+          <div className="panel" data-tone="money">
             <h3>
               <PanelIcon name="cashflow" />
               Cash flow
@@ -956,7 +956,7 @@ export default function Page() {
             )}
           </div>
 
-          <div className="panel">
+          <div className="panel" data-tone="money">
             <h3>
               <PanelIcon name="owed" />
               Money owed
@@ -968,12 +968,12 @@ export default function Page() {
               <EmptyState title="No open receivables or payables." />
             ) : (
               <div className="dash-owed">
-                <Link className="dash-owed-card" href="/credit" aria-label={`Receivables ${moneyNum(receivables)}`}>
+                <Link className="dash-owed-card" data-tone="in" href="/credit" aria-label={`Receivables ${moneyNum(receivables)}`}>
                   <span className="label">Receivables</span>
                   <span className="val">{moneyNum(receivables)}</span>
                   <span className="hint">{num(d.ar_open_parties)} customers still owe</span>
                 </Link>
-                <Link className="dash-owed-card" href="/credit" aria-label={`Payables ${moneyNum(payables)}`}>
+                <Link className="dash-owed-card" data-tone="out" href="/credit" aria-label={`Payables ${moneyNum(payables)}`}>
                   <span className="label">Payables</span>
                   <span className="val">{moneyNum(payables)}</span>
                   <span className="hint">{num(d.ap_open_parties)} suppliers still owed</span>
@@ -984,7 +984,7 @@ export default function Page() {
         </section>
 
         <div className="dash-tables">
-        <section className="panel dash-table-panel">
+        <section className="panel dash-table-panel" data-tone="stock">
           <h3>
             <PanelIcon name="recent" />
             Top products (30d)
@@ -1039,7 +1039,7 @@ export default function Page() {
           )}
         </section>
 
-        <section className="panel dash-table-panel">
+        <section className="panel dash-table-panel" data-tone="sales">
           <h3>
             <PanelIcon name="recent" />
             Recent sales

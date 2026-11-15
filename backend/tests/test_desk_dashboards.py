@@ -40,9 +40,16 @@ async def test_bakery_dashboard_counts_sales_by_day_and_warns_about_the_till(cli
                 subtotal=total, tax=0, total=total, created_at=datetime.utcnow() - timedelta(days=days_ago),
             )
         )
+    refunded = m.BakerySale(
+        tenant_id=tenant_id, sale_number="BS-R", payment_method="cash", status="refunded",
+        subtotal=999, tax=0, total=999, refunded_total=999, created_at=datetime.utcnow(),
+    )
+    db_session.add(refunded)
+    await db_session.flush()
+    # A refund is its own row on the day it happened; the same day nets the sale out.
     db_session.add(
-        m.BakerySale(
-            tenant_id=tenant_id, sale_number="BS-R", payment_method="cash", status="refunded",
+        m.BakeryRefund(
+            tenant_id=tenant_id, refund_number="RF-T", sale_id=refunded.id, method="cash",
             subtotal=999, tax=0, total=999, created_at=datetime.utcnow(),
         )
     )

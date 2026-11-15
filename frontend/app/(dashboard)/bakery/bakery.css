@@ -180,3 +180,10 @@
 .bk-offline{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;border-left:4px solid #B7791F}
 .bk-offline button{min-height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--line,#D4E5C4);background:transparent;color:inherit;font-weight:600;cursor:pointer}
 .bk-offline-refused{flex-basis:100%;padding-top:6px;border-top:1px dashed var(--line,#D4E5C4)}
+.main .bakery .bk-disc{width:64px;min-height:32px;padding:2px 6px;text-align:right}
+.main .bakery .bk-split{grid-template-columns:1fr 1fr;margin:6px 0}
+.main .bakery .bk-days{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center}
+.main .bakery .bk-allergens{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:4px 12px;border:1px solid var(--bk-line);border-radius:12px;padding:8px 12px;margin:10px 0}
+.main .bakery .bk-allergens legend{font-weight:700;padding:0 6px}
+.main .bakery .bk-trade tr.on td{background:var(--bk-soft)}
+.main .bakery .bk-qty button.on{background:#006B2E;color:#fff}

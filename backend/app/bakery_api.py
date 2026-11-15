@@ -9,7 +9,8 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,11 +19,23 @@ from app.db import get_db
 from app.schemas import E164PhoneValue, IsoDateQueryValue, NonNegativeMoneyValue, PartyNameValue, UuidIdValue
 from app.security import require_permission
 
-router = APIRouter(prefix="/bakery", tags=["bakery"])
+
+
+async def _till_context(
+    x_bakery_till: Annotated[UuidIdValue | None, Header(alias="X-Bakery-Till")] = None,
+    claims=Depends(require_permission("bakery", "read")),
+):
+    """Which till this request uses, and who is asking. Set fresh on every request."""
+    svc.CHOSEN_TILL.set(str(x_bakery_till) if x_bakery_till else None)
+    svc.TILL_USER.set(claims.get("sub"))
+
+
+router = APIRouter(prefix="/bakery", tags=["bakery"], dependencies=[Depends(_till_context)])
 
 _JOBS = {
-    "bakery_baker": frozenset({"bake", "waste"}),
-    "bakery_cashier": frozenset({"till", "orders", "waste"}),
+    "bakery_baker": frozenset({"bake", "waste", "labels"}),
+    # Cashiers also make the day's trade deliveries and take trade payments.
+    "bakery_cashier": frozenset({"till", "orders", "waste", "trade", "labels"}),
     "bakery_driver": frozenset({"deliver", "sell"}),
 }
 _WORDS = {
@@ -66,6 +79,8 @@ class RecipeLine(BaseModel):
 
     ingredient_id: UuidIdValue
     quantity: Qty
+    # The unit the amount is written in (250 g of a kilo ingredient). Leave out for the stock unit.
+    unit: Literal["kg", "g", "l", "ml", "each"] | None = None
 
 
 class RecipeBody(BaseModel):
@@ -99,6 +114,8 @@ class ShiftOpen(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     opening_cash: NonNegativeMoneyValue = 0
+    # Which counter: "Front counter", "Second counter", "Market stall". Leave out for "Counter".
+    till_name: Annotated[str, Field(min_length=1, max_length=60)] | None = None
 
 
 class ShiftClose(BaseModel):
@@ -108,21 +125,47 @@ class ShiftClose(BaseModel):
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
 
 
+Percent = Annotated[float, Field(ge=0, le=100, allow_inf_nan=False)]
+TillMethod = Literal["cash", "card", "mobile_money", "wallet"]
+
+
 class SaleLine(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     product_id: UuidIdValue
     quantity: Qty
+    # Taken off this line's price before tax. Cashiers up to 10%, managers any amount.
+    discount_percent: Percent | None = None
+    # Sold at the item's day-old price, for bread baked before today.
+    day_old: bool = False
+
+
+class SalePart(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    method: TillMethod
+    # Leave out on one part to put the rest of the bill there.
+    amount: Annotated[float, Field(gt=0, le=1e12, allow_inf_nan=False)] | None = None
 
 
 class SaleBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    payment_method: Literal["cash", "card", "mobile_money", "wallet"] = "cash"
+    payment_method: TillMethod = "cash"
     customer_name: PartyNameValue | None = None
     lines: list[SaleLine] = Field(min_length=1, max_length=60)
+    # Paid more than one way (cash and Mobile Money...). The parts must add up to the bill.
+    payments: list[SalePart] | None = Field(default=None, min_length=2, max_length=4)
+    discount_reason: Annotated[str, Field(min_length=3, max_length=255)] | None = None
     # A manager who is out driving sells from the van into their own cash bag.
     from_bag: bool = False
+
+
+class RefundLine(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    sale_line_id: UuidIdValue
+    quantity: Qty
 
 
 class RefundBody(BaseModel):
@@ -130,6 +173,10 @@ class RefundBody(BaseModel):
 
     reason: Annotated[str, Field(min_length=3, max_length=255)]
     restock: bool = False
+    # Leave out to refund everything not yet refunded.
+    lines: list[RefundLine] | None = Field(default=None, min_length=1, max_length=60)
+    # How the money goes back. Needed when the sale was paid more than one way.
+    method: TillMethod | None = None
 
 
 class OrderLine(BaseModel):
@@ -310,6 +357,13 @@ async def bakery_shift(claims=Depends(require_permission("bakery", "read")), db:
     return _env(await svc.present_shift(db, claims["tenant_id"], row) if row else None)
 
 
+@router.get("/tills")
+async def bakery_open_tills(claims=Depends(require_permission("bakery", "read")), db: AsyncSession = Depends(get_db)):
+    """Every till open now, so a cashier can choose theirs."""
+    _job(claims, "till")
+    return _env([await svc.present_shift(db, claims["tenant_id"], row) for row in await svc.open_tills(db, claims["tenant_id"])])
+
+
 @router.get("/till/shifts")
 async def bakery_shifts(claims=Depends(require_permission("bakery", "read")), db: AsyncSession = Depends(get_db)):
     _job(claims, "till")
@@ -322,7 +376,9 @@ async def bakery_shift_open(
     payload: ShiftOpen, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)
 ):
     _job(claims, "till")
-    row = await svc.open_shift(db, claims["tenant_id"], opening_cash=payload.opening_cash, user_id=claims.get("sub"))
+    row = await svc.open_shift(
+        db, claims["tenant_id"], opening_cash=payload.opening_cash, user_id=claims.get("sub"), till_name=payload.till_name
+    )
     await db.commit()
     return _env(await svc.present_shift(db, claims["tenant_id"], row), "Till open")
 
@@ -351,6 +407,7 @@ class OfflineSaleBody(BaseModel):
     customer_name: PartyNameValue | None = None
     charged_total: Annotated[float, Field(ge=0, le=1e12)] | None = None
     lines: list[SaleLine] = Field(min_length=1, max_length=60)
+    discount_reason: Annotated[str, Field(min_length=3, max_length=255)] | None = None
 
 
 class OfflineSyncBody(BaseModel):
@@ -380,7 +437,8 @@ async def bakery_offline_sync(
     from app import bakery_offline as offline_svc
 
     body = await offline_svc.sync_sales(
-        db, claims["tenant_id"], payload.sales, user_id=claims.get("sub"), device_id=payload.device_id
+        db, claims["tenant_id"], payload.sales, user_id=claims.get("sub"), device_id=payload.device_id,
+        role=str(claims.get("role") or ""),
     )
     await db.commit()
     return _env(body, f"{body['counts'].get('booked', 0)} offline sale(s) booked")
@@ -405,7 +463,10 @@ async def bakery_sell(
         raise HTTPException(status_code=403, detail="Only someone who drives sells from a cash bag")
     bag_owner = _driver_id(claims) or (claims.get("sub") if payload.from_bag else None)
     _job(claims, "sell" if bag_owner else "till")
-    row = await svc.create_sale(db, claims["tenant_id"], payload, user_id=claims.get("sub"), driver_id=bag_owner)
+    row = await svc.create_sale(
+        db, claims["tenant_id"], payload, user_id=claims.get("sub"), driver_id=bag_owner,
+        role=str(claims.get("role") or ""),
+    )
     await db.commit()
     return _env(await svc.present_sale(db, row), "Sale complete")
 
@@ -419,7 +480,8 @@ async def bakery_refund(
 ):
     _job(claims, "correct")
     row = await svc.refund_sale(
-        db, claims["tenant_id"], sale_id, reason=payload.reason, restock=payload.restock, user_id=claims.get("sub")
+        db, claims["tenant_id"], sale_id, reason=payload.reason, restock=payload.restock, user_id=claims.get("sub"),
+        lines=payload.lines, method=payload.method,
     )
     await db.commit()
     return _env(await svc.present_sale(db, row), "Sale refunded")
@@ -621,6 +683,26 @@ class ReceiveBody(BaseModel):
     unit_cost: NonNegativeMoneyValue
     paid_with: Literal["cash", "card", "mobile_money", "bank_transfer", "credit"]
     supplier: Annotated[str, Field(min_length=1, max_length=180)] | None = None
+    supplier_id: UuidIdValue | None = None
+    bill_number: Annotated[str, Field(min_length=1, max_length=60)] | None = None
+    # Quantity and cost are per purchase unit (a 50 kg bag), turned into the stock unit.
+    in_purchase_units: bool = False
+    # VAT on the supplier's bill, on top of quantity x unit cost. Claimable input tax.
+    tax: NonNegativeMoneyValue | None = None
+
+
+class CountLine(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    product_id: UuidIdValue
+    counted_qty: Annotated[float, Field(ge=0, le=10000000, allow_inf_nan=False)]
+
+
+class CountBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    lines: list[CountLine] = Field(min_length=1, max_length=500)
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
 
 
 class ExpenseBody(BaseModel):
@@ -632,6 +714,8 @@ class ExpenseBody(BaseModel):
     paid_with: Literal["cash", "card", "mobile_money", "bank_transfer"]
     spent_on: date
     from_till: bool = False
+    # VAT inside the amount paid, when the bill shows it. Claimable input tax.
+    tax: NonNegativeMoneyValue | None = None
 
 
 @router.get("/stock")
@@ -677,6 +761,25 @@ async def bakery_stock_receive(
     return _env({"id": row.id, "receipt_number": row.receipt_number, "total": svc._money(row.total)}, "Stock received")
 
 
+@router.get("/stock/counts")
+async def bakery_stock_counts(claims=Depends(require_permission("bakery", "read")), db: AsyncSession = Depends(get_db)):
+    _job(claims, "correct")
+    return _env(await svc.list_counts(db, claims["tenant_id"]))
+
+
+@router.post("/stock/count")
+async def bakery_stock_count(
+    payload: CountBody, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)
+):
+    _job(claims, "correct")
+    row = await svc.count_stock(db, claims["tenant_id"], payload, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(
+        {"id": row.id, "count_number": row.count_number, "value_change": svc._money(row.value_change)},
+        "Stock count saved",
+    )
+
+
 @router.get("/expenses")
 async def bakery_expenses(claims=Depends(require_permission("bakery", "read")), db: AsyncSession = Depends(get_db)):
     _job(claims, "correct")
@@ -706,7 +809,7 @@ async def bakery_full_report(
     db: AsyncSession = Depends(get_db),
 ):
     _job(claims, "correct")
-    end = end_date or date.today()
+    end = end_date or await svc.bakery_today(db, claims["tenant_id"])
     start = start_date or end - timedelta(days=6)
     return _env(await svc.full_report(db, claims["tenant_id"], start=start, end=end))
 
@@ -719,8 +822,377 @@ async def bakery_reports(
     db: AsyncSession = Depends(get_db),
 ):
     _job(claims, "correct")
-    end = date.fromisoformat(str(end_date)[:10]) if end_date else date.today()
+    end = date.fromisoformat(str(end_date)[:10]) if end_date else await svc.bakery_today(db, claims["tenant_id"])
     start = date.fromisoformat(str(start_date)[:10]) if start_date else end - timedelta(days=6)
     if end < start:
         raise HTTPException(status_code=422, detail="The end date is before the start date")
     return _env(await svc.period_numbers(db, claims["tenant_id"], start=start, end=end))
+
+
+# --- Item details: shelf life, day-old price, allergens, labels, units, shelf level ----------
+
+
+class ItemDetails(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    shelf_life_days: Annotated[int, Field(ge=1, le=365)] | None = None
+    day_old_discount_pct: Annotated[float, Field(gt=0, le=90, allow_inf_nan=False)] | None = None
+    allergens: list[Annotated[str, Field(min_length=2, max_length=20)]] | None = Field(default=None, max_length=14)
+    ingredients_text: Annotated[str, Field(min_length=2, max_length=2000)] | None = None
+    net_weight: Annotated[str, Field(min_length=1, max_length=40)] | None = None
+    storage_note: Annotated[str, Field(min_length=2, max_length=200)] | None = None
+    stock_unit: Literal["kg", "g", "l", "ml", "each"] | None = None
+    purchase_unit: Annotated[str, Field(min_length=1, max_length=30)] | None = None
+    units_per_purchase: Annotated[float, Field(gt=0, le=1000000, allow_inf_nan=False)] | None = None
+    par_level: Annotated[float, Field(ge=0, le=100000, allow_inf_nan=False)] | None = None
+
+
+@router.get("/allergens")
+async def bakery_allergens(claims=Depends(require_permission("bakery", "read"))):
+    from app import bakery_items as items_svc
+
+    return _env([{"id": k, "label": v} for k, v in items_svc.ALLERGENS.items()])
+
+
+@router.get("/items/{product_id}/details")
+async def bakery_item_details(product_id: UuidIdValue, claims=Depends(require_permission("bakery", "read")), db: AsyncSession = Depends(get_db)):
+    from app import bakery_items as items_svc
+
+    product = await svc._product(db, claims["tenant_id"], product_id)
+    body = items_svc.present(await items_svc.settings_for(db, claims["tenant_id"], product.id))
+    body["label"] = await items_svc.label_facts(db, claims["tenant_id"], product)
+    return _env(body)
+
+
+@router.put("/items/{product_id}/details")
+async def bakery_item_details_save(
+    product_id: UuidIdValue,
+    payload: ItemDetails,
+    claims=Depends(require_permission("bakery", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import bakery_items as items_svc
+
+    _job(claims, "correct")
+    row = await items_svc.save(db, claims["tenant_id"], product_id, payload, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(items_svc.present(row), "Saved")
+
+
+@router.get("/shelf")
+async def bakery_shelf(claims=Depends(require_permission("bakery", "read")), db: AsyncSession = Depends(get_db)):
+    """What is on the shelf by bake: fresh, day-old, last day or past its date."""
+    from app import bakery_items as items_svc
+
+    tenant = claims["tenant_id"]
+    return _env(await items_svc.shelf(db, tenant, today=await svc.bakery_today(db, tenant), local=await svc._localiser(db, tenant)))
+
+
+@router.get("/items/{product_id}/label", response_class=HTMLResponse)
+async def bakery_label(
+    product_id: UuidIdValue,
+    batch_id: UuidIdValue | None = None,
+    copies: Annotated[int, Query(ge=1, le=60)] = 1,
+    claims=Depends(require_permission("bakery", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """A printable label: ingredients largest first with allergen ingredients in bold, the
+    allergen list, best before, batch, weight and price."""
+    from app import bakery_items as items_svc
+
+    _job(claims, "labels")
+    tenant = claims["tenant_id"]
+    page = await items_svc.label_html(
+        db, tenant, product_id, batch_id=batch_id, copies=copies, today=await svc.bakery_today(db, tenant)
+    )
+    return HTMLResponse(page)
+
+
+# --- Trade customers ---------------------------------------------------------------------
+
+
+class CustomerBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: PartyNameValue | None = None
+    phone: E164PhoneValue | None = None
+    address: Annotated[str, Field(min_length=2, max_length=500)] | None = None
+    credit_limit: NonNegativeMoneyValue | None = None
+    trade_discount_pct: Annotated[float, Field(ge=0, le=60, allow_inf_nan=False)] | None = None
+    terms_days: Annotated[int, Field(ge=0, le=120)] | None = None
+    is_active: bool | None = None
+
+
+class StandingBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    product_id: UuidIdValue
+    quantity: Qty
+    days: Annotated[str, Field(pattern=r"^[01]{7}$")] = "1111111"
+
+
+class InvoiceLine(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    product_id: UuidIdValue
+    quantity: Qty
+
+
+class InvoiceBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    customer_id: UuidIdValue
+    lines: list[InvoiceLine] = Field(min_length=1, max_length=60)
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+    # A manager may let one invoice go past the customer's credit limit.
+    override_limit: bool = False
+
+
+class VoidBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reason: Annotated[str, Field(min_length=3, max_length=255)]
+    restock: bool = False
+
+
+class MoneyIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    amount: Annotated[float, Field(gt=0, le=1e12, allow_inf_nan=False)]
+    method: Literal["cash", "card", "mobile_money", "bank_transfer"]
+    reference: Annotated[str, Field(min_length=1, max_length=100)] | None = None
+    # Supplier payments only: cash taken out of the open till.
+    from_till: bool = False
+
+
+async def _today(db, claims) -> date:
+    return await svc.bakery_today(db, claims["tenant_id"])
+
+
+@router.get("/trade/customers")
+async def trade_customers(claims=Depends(require_permission("bakery", "read")), db: AsyncSession = Depends(get_db)):
+    from app import bakery_trade as trade
+
+    _job(claims, "trade")
+    return _env(await trade.list_customers(db, claims["tenant_id"], today=await _today(db, claims)))
+
+
+@router.post("/trade/customers")
+async def trade_customer_create(payload: CustomerBody, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)):
+    from app import bakery_trade as trade
+
+    _job(claims, "correct")
+    row = await trade.save_customer(db, claims["tenant_id"], payload)
+    await db.commit()
+    return _env(await trade.present_customer(db, claims["tenant_id"], row, today=await _today(db, claims)), "Customer added")
+
+
+@router.patch("/trade/customers/{customer_id}")
+async def trade_customer_update(
+    customer_id: UuidIdValue, payload: CustomerBody, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)
+):
+    from app import bakery_trade as trade
+
+    _job(claims, "correct")
+    row = await trade.save_customer(db, claims["tenant_id"], payload, customer_id=customer_id)
+    await db.commit()
+    return _env(await trade.present_customer(db, claims["tenant_id"], row, today=await _today(db, claims)), "Saved")
+
+
+@router.put("/trade/customers/{customer_id}/standing")
+async def trade_standing_save(
+    customer_id: UuidIdValue, payload: StandingBody, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)
+):
+    from app import bakery_trade as trade
+
+    _job(claims, "correct")
+    await trade.save_standing(db, claims["tenant_id"], customer_id, payload)
+    await db.commit()
+    row = await trade._customer(db, claims["tenant_id"], customer_id)
+    return _env(await trade.present_customer(db, claims["tenant_id"], row, today=await _today(db, claims)), "Standing order saved")
+
+
+@router.delete("/trade/standing/{standing_id}")
+async def trade_standing_stop(standing_id: UuidIdValue, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)):
+    from app import bakery_trade as trade
+
+    _job(claims, "correct")
+    await trade.stop_standing(db, claims["tenant_id"], standing_id)
+    await db.commit()
+    return _env(True, "Standing order stopped")
+
+
+@router.post("/trade/run")
+async def trade_run(claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)):
+    """Make today's trade deliveries from standing orders."""
+    from app import bakery_trade as trade
+
+    _job(claims, "trade")
+    body = await trade.run_standing(
+        db, claims["tenant_id"], day=await _today(db, claims), user_id=claims.get("sub"), role=str(claims.get("role") or "")
+    )
+    await db.commit()
+    return _env(body, f"{len(body['made'])} delivery invoice(s) made")
+
+
+@router.get("/trade/invoices")
+async def trade_invoices(
+    customer_id: UuidIdValue | None = None,
+    claims=Depends(require_permission("bakery", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import bakery_trade as trade
+
+    _job(claims, "trade")
+    return _env(await trade.list_invoices(db, claims["tenant_id"], today=await _today(db, claims), customer_id=customer_id))
+
+
+@router.post("/trade/invoices")
+async def trade_invoice_create(payload: InvoiceBody, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)):
+    from app import bakery_trade as trade
+
+    _job(claims, "trade")
+    row = await trade.create_invoice(
+        db, claims["tenant_id"], payload.customer_id, payload.lines, user_id=claims.get("sub"),
+        role=str(claims.get("role") or ""), notes=payload.notes, override_limit=payload.override_limit,
+    )
+    await db.commit()
+    return _env(await trade.present_invoice(db, row, today=await _today(db, claims)), "Invoice made")
+
+
+@router.post("/trade/invoices/{invoice_id}/void")
+async def trade_invoice_void(
+    invoice_id: UuidIdValue, payload: VoidBody, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)
+):
+    from app import bakery_trade as trade
+
+    _job(claims, "correct")
+    row = await trade.void_invoice(db, claims["tenant_id"], invoice_id, reason=payload.reason, restock=payload.restock, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(await trade.present_invoice(db, row, today=await _today(db, claims)), "Invoice voided")
+
+
+@router.get("/trade/invoices/{invoice_id}/print", response_class=HTMLResponse)
+async def trade_invoice_print(invoice_id: UuidIdValue, claims=Depends(require_permission("bakery", "read")), db: AsyncSession = Depends(get_db)):
+    import html as h
+
+    from app import bakery_trade as trade
+    from app import models as m
+
+    _job(claims, "trade")
+    row = await db.get(m.BakeryInvoice, invoice_id)
+    if row is None or row.tenant_id != claims["tenant_id"]:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    customer = await db.get(m.BakeryCustomer, row.customer_id)
+    company = await db.get(m.Tenant, claims["tenant_id"])
+    inv = await trade.present_invoice(db, row, today=await _today(db, claims), customer_name=customer.name if customer else None)
+    lines = "".join(
+        f"<tr><td>{h.escape(i['name'])}</td><td style='text-align:right'>{i['quantity']:g}</td>"
+        f"<td style='text-align:right'>{i['unit_price']:.2f}</td><td style='text-align:right'>{i['tax']:.2f}</td>"
+        f"<td style='text-align:right'>{i['line_total']:.2f}</td></tr>"
+        for i in inv["items"]
+    )
+    page = (
+        "<!doctype html><html><head><meta charset='utf-8'><title>Invoice</title><style>"
+        "body{font-family:Arial,sans-serif;max-width:720px;margin:24px auto;color:#10211B}table{width:100%;border-collapse:collapse}"
+        "th,td{padding:6px;border-bottom:1px solid #D4E5C4}th{text-align:left;background:#F2F7EC}.r{text-align:right}</style></head><body>"
+        f"<h2>{h.escape(getattr(company, 'company_name', '') or '')}</h2>"
+        f"<p>{h.escape(getattr(company, 'address', '') or '')}<br/>TIN {h.escape(getattr(company, 'tax_registration_number', '') or '-')}</p>"
+        f"<h3>Invoice {h.escape(inv['invoice_number'])}{' (VOID)' if inv['status'] == 'void' else ''}</h3>"
+        f"<p>To: <b>{h.escape(inv['customer_name'] or '')}</b><br/>{h.escape((customer.address if customer else '') or '')}</p>"
+        f"<p>Date {inv['invoice_date']} · Pay by {inv['due_date']}</p>"
+        "<table><thead><tr><th>Item</th><th class='r'>Qty</th><th class='r'>Price</th><th class='r'>VAT</th><th class='r'>Amount</th></tr></thead>"
+        f"<tbody>{lines}</tbody></table>"
+        f"<p class='r'>Before VAT {inv['subtotal']:.2f}<br/>VAT {inv['tax']:.2f}<br/><b>Total {inv['total']:.2f}</b><br/>"
+        f"Paid {inv['paid']:.2f}<br/><b>To pay {inv['balance']:.2f}</b></p>"
+        "<script>window.onload=()=>window.print()</script></body></html>"
+    )
+    return HTMLResponse(page)
+
+
+@router.post("/trade/customers/{customer_id}/payments")
+async def trade_payment(
+    customer_id: UuidIdValue, payload: MoneyIn, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)
+):
+    from app import bakery_trade as trade
+
+    _job(claims, "trade")
+    row = await trade.record_payment(db, claims["tenant_id"], customer_id, payload, user_id=claims.get("sub"))
+    await db.commit()
+    return _env({"id": row.id, "payment_number": row.payment_number, "amount": svc._money(row.amount)}, "Payment recorded")
+
+
+@router.get("/trade/customers/{customer_id}/statement")
+async def trade_statement(
+    customer_id: UuidIdValue,
+    start_date: date | None = None,
+    end_date: date | None = None,
+    claims=Depends(require_permission("bakery", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import bakery_trade as trade
+
+    _job(claims, "trade")
+    today = await _today(db, claims)
+    end = end_date or today
+    start = start_date or end.replace(day=1)
+    if end < start:
+        raise HTTPException(status_code=422, detail="The end date is before the start date")
+    return _env(await trade.statement(db, claims["tenant_id"], customer_id, start=start, end=end, today=today))
+
+
+# --- Suppliers ---------------------------------------------------------------------------
+
+
+class SupplierBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: PartyNameValue | None = None
+    phone: E164PhoneValue | None = None
+    terms_days: Annotated[int, Field(ge=0, le=120)] | None = None
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+    is_active: bool | None = None
+
+
+@router.get("/suppliers")
+async def bakery_suppliers(claims=Depends(require_permission("bakery", "read")), db: AsyncSession = Depends(get_db)):
+    from app import bakery_trade as trade
+
+    _job(claims, "correct")
+    return _env(await trade.list_suppliers(db, claims["tenant_id"]))
+
+
+@router.post("/suppliers")
+async def bakery_supplier_create(payload: SupplierBody, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)):
+    from app import bakery_trade as trade
+
+    _job(claims, "correct")
+    if not payload.name:
+        raise HTTPException(status_code=422, detail="Enter the supplier's name")
+    row = await trade.save_supplier(db, claims["tenant_id"], payload)
+    await db.commit()
+    return _env({"id": row.id, "name": row.name}, "Supplier saved")
+
+
+@router.patch("/suppliers/{supplier_id}")
+async def bakery_supplier_update(
+    supplier_id: UuidIdValue, payload: SupplierBody, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)
+):
+    from app import bakery_trade as trade
+
+    _job(claims, "correct")
+    row = await trade.save_supplier(db, claims["tenant_id"], payload, supplier_id=supplier_id)
+    await db.commit()
+    return _env({"id": row.id, "name": row.name}, "Saved")
+
+
+@router.post("/suppliers/{supplier_id}/payments")
+async def bakery_supplier_pay(
+    supplier_id: UuidIdValue, payload: MoneyIn, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)
+):
+    from app import bakery_trade as trade
+
+    _job(claims, "correct")
+    row = await trade.pay_supplier(db, claims["tenant_id"], supplier_id, payload, user_id=claims.get("sub"))
+    await db.commit()
+    return _env({"id": row.id, "payment_number": row.payment_number, "amount": svc._money(row.amount)}, "Supplier paid")

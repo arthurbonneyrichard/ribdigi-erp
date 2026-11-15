@@ -76,9 +76,31 @@ export default function RestaurantOrdersPage() {
 
   useEffect(() => {
     void load();
-    // The kitchen moves on its own, so the board refreshes itself.
-    const timer = window.setInterval(() => void load(), 20000);
-    return () => window.clearInterval(timer);
+    // The kitchen moves on its own. Every few seconds ask whether anything changed (a few bytes),
+    // and reload the board only when it did. A full reload each minute keeps the clocks honest.
+    let last = '';
+    let stopped = false;
+    const check = async () => {
+      if (stopped || document.hidden) return;
+      try {
+        const res = await api('/restaurant/orders/version');
+        const version = String(res?.data?.version || '');
+        if (version && version !== last) {
+          if (last) await load();
+          last = version;
+        }
+      } catch {
+        /* a missed check is fine: the next one catches up */
+      }
+    };
+    void check();
+    const quick = window.setInterval(() => void check(), 4000);
+    const full = window.setInterval(() => void load(), 60000);
+    return () => {
+      stopped = true;
+      window.clearInterval(quick);
+      window.clearInterval(full);
+    };
   }, [load]);
 
   const live = useMemo(() => {

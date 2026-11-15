@@ -88,8 +88,26 @@ async def shift_totals(db: AsyncSession, shift: m.RestaurantTillShift) -> dict:
     sale_count = 0
     for method, count, total in rows:
         key = (method or "cash").strip().lower()
-        by_method[key] = _money(by_method.get(key, 0) + float(total or 0))
         sale_count += int(count or 0)
+        if key == "split":
+            continue  # counted tender by tender below
+        by_method[key] = _money(by_method.get(key, 0) + float(total or 0))
+    split_rows = (
+        await db.execute(
+            select(m.RestaurantOrderPayment.method, func.coalesce(func.sum(m.RestaurantOrderPayment.amount), 0))
+            .join(m.RestaurantOrder, m.RestaurantOrder.id == m.RestaurantOrderPayment.order_id)
+            .where(
+                m.RestaurantOrder.tenant_id == shift.tenant_id,
+                m.RestaurantOrder.till_shift_id == shift.id,
+                m.RestaurantOrder.status.in_(TAKEN_STATUSES),
+                m.RestaurantOrder.payment_method == "split",
+            )
+            .group_by(m.RestaurantOrderPayment.method)
+        )
+    ).all()
+    for method, total in split_rows:
+        key = (method or "cash").strip().lower()
+        by_method[key] = _money(by_method.get(key, 0) + float(total or 0))
     moves = (
         await db.execute(
             select(m.RestaurantTillCashMove.movement_type, func.coalesce(func.sum(m.RestaurantTillCashMove.amount), 0))
@@ -349,7 +367,10 @@ async def stamp_paid_order(db: AsyncSession, order: m.RestaurantOrder, *, user_i
 
 async def record_cash_refund(db: AsyncSession, order: m.RestaurantOrder, *, user_id: str | None) -> None:
     """A cash refund leaves a drawer: the refunder's open shift, else the open shift that took the money."""
-    if (order.payment_method or "").strip().lower() != "cash":
+    from app.restaurant import order_tenders
+
+    cash = _money(sum(part for method, part in await order_tenders(db, order) if (method or "").lower() == "cash"))
+    if cash <= 0:
         return
     shift = await open_shift_for_user(db, order.tenant_id, user_id)
     if shift is None and order.till_shift_id:
@@ -365,7 +386,7 @@ async def record_cash_refund(db: AsyncSession, order: m.RestaurantOrder, *, user
             store_id=shift.store_id,
             user_id=user_id or shift.user_id,
             movement_type="refund",
-            amount=_money(order.total_amount),
+            amount=cash,
             reason=f"Refund {order.order_number}"[:200],
             created_at=_now(),
         )

@@ -538,7 +538,9 @@ async def run_night_audit(
     snapshot: dict,
     business_date: date | None = None,
 ) -> m.HotelNightAudit:
-    day = business_date or date.today()
+    from app.hotel import hotel_today
+
+    day = business_date or await hotel_today(db, tenant_id)
     existing = (
         await db.execute(
             select(m.HotelNightAudit).where(
@@ -549,6 +551,11 @@ async def run_night_audit(
     ).scalar_one_or_none()
     if existing:
         raise HTTPException(status_code=409, detail="Night audit already posted for this business date")
+    from app.hotel import recognise_open_stays
+
+    # Tonight is earned: move each open bill's passed nights from unearned into sales.
+    earned = await recognise_open_stays(db, tenant_id=tenant_id, through=day, user_id=user_id)
+    snapshot = {**(snapshot or {}), "room_revenue_earned": earned}
     row = m.HotelNightAudit(
         tenant_id=tenant_id,
         business_date=day,
@@ -645,6 +652,9 @@ async def create_event(
     )
     db.add(row)
     await _flush_pms(db)
+    from app.hotel import book_event_deposit
+
+    await book_event_deposit(db, tenant_id=tenant_id, event=row, user_id=created_by)
     return row
 
 

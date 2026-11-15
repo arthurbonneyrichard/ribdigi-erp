@@ -26,11 +26,13 @@ def _due(invoice: m.SalesInvoice) -> float:
 
 async def list_invoices(db: AsyncSession, tenant_id: str, *, show: str = "owed") -> dict:
     stmt = (
-        select(m.HotelFolio, m.SalesInvoice, m.HotelGuest, m.HotelReservation, m.HotelRoom)
+        select(m.HotelFolio, m.SalesInvoice, m.HotelGuest, m.HotelReservation, m.HotelRoom, m.Party.name)
         .join(m.SalesInvoice, m.SalesInvoice.id == m.HotelFolio.sales_invoice_id)
         .join(m.HotelGuest, m.HotelGuest.id == m.HotelFolio.guest_id)
         .join(m.HotelReservation, m.HotelReservation.id == m.HotelFolio.reservation_id)
         .outerjoin(m.HotelRoom, m.HotelRoom.id == m.HotelReservation.room_id)
+        # City ledger: a stay billed to a company shows that company.
+        .outerjoin(m.Party, m.Party.id == m.HotelReservation.bill_to_party_id)
         .where(m.HotelFolio.tenant_id == tenant_id, m.SalesInvoice.tenant_id == tenant_id)
         .order_by(m.SalesInvoice.created_at.desc())
     )
@@ -39,7 +41,7 @@ async def list_invoices(db: AsyncSession, tenant_id: str, *, show: str = "owed")
         stmt = stmt.where(m.SalesInvoice.total_amount - m.SalesInvoice.paid_amount > 0.004)
     rows = (await db.execute(stmt.limit(300))).all()
     items = []
-    for folio, invoice, guest, reservation, room in rows:
+    for folio, invoice, guest, reservation, room, bill_to in rows:
         due = _due(invoice)
         if invoice.status == "cancelled" or (show == "owed" and due <= 0.004):
             continue
@@ -59,7 +61,8 @@ async def list_invoices(db: AsyncSession, tenant_id: str, *, show: str = "owed")
                 "room": (room.code if room else None),
                 "guest_id": guest.id,
                 "guest_name": guest.full_name,
-                "company_name": guest.company_name,
+                "company_name": bill_to or guest.company_name,
+                "billed_to_company": bool(bill_to),
                 "phone": guest.phone,
                 "email": guest.email,
             }

@@ -38,3 +38,11 @@ Feature audit Status rows: **64 / 64 complete** (API/source proof).
 ## Security items still open (not blockers for retail sales)
 
 From `SECURITY_AUDIT_2026-10-29.md`: O1 Next 16 upgrade (own tested release), O2 dedicated encryption key with re-encryption migration, O3 switch the full CSP from report-only to enforcing, O9 pentest and production restore drill.
+
+## Added 15 Nov 2026
+
+- Hold a sale and pick it up later on any till of the store.
+- Layaway: goods set aside, paid in parts (money held as customer deposits), sale booked when paid in full; cancel puts goods back and refunds less an optional fee.
+- Serial numbers for phones and appliances: received and sold by serial, searchable for warranty.
+- Mobile Money prompts through the shop's own Paystack account; a prompt pays one sale only.
+- Limits: card payments stay on the bank's card machine; offline sales of serial-numbered goods need the serials typed in.

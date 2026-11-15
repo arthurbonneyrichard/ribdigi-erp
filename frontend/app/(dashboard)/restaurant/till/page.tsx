@@ -11,6 +11,7 @@ import { api } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
 import PosLockGate, { PosLockButton, useTillSale } from '../../../../components/PosLockGate';
 import { formatMoney } from '../../../../lib/format';
+import TillMomoPrompt from '../../../../components/TillMomoPrompt';
 import {
   OFFLINE_METHODS,
   applySyncResults,
@@ -136,6 +137,10 @@ function RestaurantTill() {
   const [paying, setPaying] = useState<Row | null>(null);
   const [method, setMethod] = useState<Method>('cash');
   const [tendered, setTendered] = useState('');
+  // Paid more than one way: each part is a method and an amount (and a MoMo prompt reference).
+  const [parts, setParts] = useState<{ method: Method; amount: string; reference?: string }[] | null>(null);
+  const [momoRef, setMomoRef] = useState('');
+  const [splitPick, setSplitPick] = useState<Set<string> | null>(null);
   // Tip on top of the bill: held for staff, never sales. Online only.
   const [tip, setTip] = useState('');
   const [done, setDone] = useState<{
@@ -584,8 +589,69 @@ function RestaurantTill() {
     }
   }
 
+  useEffect(() => {
+    setParts(null);
+    setMomoRef('');
+    setSplitPick(null);
+  }, [paying?.id, paying?.offline_ref]);
+
+  const partsTotal = (parts || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
+  async function splitBill() {
+    if (!paying || !splitPick || splitPick.size === 0) return;
+    setBusy(true);
+    setError('');
+    try {
+      const res = await api(`/restaurant/orders/${paying.id}/split`, {
+        method: 'POST',
+        body: JSON.stringify({ line_ids: Array.from(splitPick) }),
+      });
+      const first = (await refreshOrder(paying.id)) || res?.data?.order;
+      setNotice(`Bill split. ${res?.data?.new_order?.order_number || 'The new bill'} waits on the same table for its own payment.`);
+      setSplitPick(null);
+      setPaying(first || null);
+      await load();
+    } catch (err) {
+      setError(detail(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function takePayment() {
     if (!paying) return;
+    if (parts && !paying.offline) {
+      const total = Number(paying.total_amount || 0);
+      if (Math.abs(partsTotal - total) > 0.009) {
+        setError(`The parts add up to ${money(partsTotal)} but the bill is ${money(total)}.`);
+        return;
+      }
+      const tipAmount = Math.max(0, Math.round(Number(tip || 0) * 100) / 100);
+      setBusy(true);
+      setError('');
+      try {
+        await api(`/restaurant/orders/${paying.id}/complete`, {
+          method: 'POST',
+          body: JSON.stringify({
+            ...(tipAmount ? { tip: tipAmount } : {}),
+            payments: parts.map((p) => ({ method: p.method, amount: Number(p.amount), ...(p.reference ? { reference: p.reference } : {}) })),
+          }),
+        });
+        void api('/restaurant/till/shift')
+          .then((res) => setShift(res?.data || null))
+          .catch(() => undefined);
+        setDone({ number: paying.order_number, total, change: 0, method: parts[0].method });
+        setPaying(null);
+        setNotice('');
+        resetTicket(mode);
+        await load();
+      } catch (err) {
+        setError(detail(err));
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
     const tipAmount = paying.offline ? 0 : Math.max(0, Math.round(Number(tip || 0) * 100) / 100);
     const total = Number(paying.total_amount || 0);
     const cash = Number(tendered || 0);
@@ -641,7 +707,10 @@ function RestaurantTill() {
       });
       await api(`/restaurant/orders/${paying.id}/complete`, {
         method: 'POST',
-        body: JSON.stringify(tipAmount ? { tip: tipAmount } : {}),
+        body: JSON.stringify({
+          ...(tipAmount ? { tip: tipAmount } : {}),
+          ...(method === 'mobile_money' && momoRef ? { payments: [{ method, amount: total, reference: momoRef }] } : {}),
+        }),
       });
       void api('/restaurant/till/shift')
         .then((res) => setShift(res?.data || null))
@@ -1143,6 +1212,119 @@ function RestaurantTill() {
                 <dd>{money(paying.total_amount)}</dd>
               </div>
             </dl>
+            {!paying.offline && Array.isArray(paying.items) && paying.items.length > 1 ? (
+              <div className="rtill-cash">
+                {splitPick ? (
+                  <>
+                    <span>Tick the dishes for the second bill (by guest or seat)</span>
+                    {paying.items.map((it: Row) => (
+                      <label key={it.id} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <input
+                          type="checkbox"
+                          aria-label={`Move ${it.name} to the new bill`}
+                          checked={splitPick.has(it.id)}
+                          onChange={(e) => {
+                            const next = new Set(splitPick);
+                            if (e.target.checked) next.add(it.id);
+                            else next.delete(it.id);
+                            setSplitPick(next);
+                          }}
+                        />
+                        <span>
+                          {it.quantity} × {it.name}
+                          {it.seat ? ` · seat ${it.seat}` : ''} · {money(it.line_total)}
+                        </span>
+                      </label>
+                    ))}
+                    <div className="rtill-quick">
+                      <button type="button" onClick={() => setSplitPick(null)}>Cancel</button>
+                      <button
+                        type="button"
+                        aria-label="Move ticked dishes to a new bill"
+                        disabled={busy || splitPick.size === 0 || splitPick.size >= paying.items.length}
+                        onClick={() => void splitBill()}
+                      >
+                        Make new bill
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <button type="button" className="rtill-link" aria-label="Split this bill" onClick={() => setSplitPick(new Set())}>
+                    Split the bill (by dish or seat)
+                  </button>
+                )}
+              </div>
+            ) : null}
+            {!paying.offline ? (
+              <div className="rtill-cash">
+                {parts ? (
+                  <>
+                    <span>Paid more than one way</span>
+                    {parts.map((p, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <select
+                          aria-label={`Part ${i + 1} method`}
+                          value={p.method}
+                          onChange={(e) => setParts(parts.map((x, j) => (j === i ? { ...x, method: e.target.value as Method, reference: undefined } : x)))}
+                        >
+                          {METHODS.map((mm) => (
+                            <option key={mm.id} value={mm.id}>{mm.label}</option>
+                          ))}
+                        </select>
+                        <input
+                          aria-label={`Part ${i + 1} amount`}
+                          inputMode="decimal"
+                          value={p.amount}
+                          onChange={(e) => setParts(parts.map((x, j) => (j === i ? { ...x, amount: e.target.value.replace(/[^0-9.]/g, ''), reference: undefined } : x)))}
+                        />
+                        {parts.length > 2 ? (
+                          <button type="button" aria-label={`Remove part ${i + 1}`} onClick={() => setParts(parts.filter((_, j) => j !== i))}>Remove</button>
+                        ) : null}
+                        {p.method === 'mobile_money' && Number(p.amount) > 0 && !p.reference ? (
+                          <TillMomoPrompt
+                            base="/restaurant/till"
+                            amount={Number(p.amount)}
+                            formatMoney={money}
+                            onPaid={(ref) => setParts(parts.map((x, j) => (j === i ? { ...x, reference: ref } : x)))}
+                          />
+                        ) : null}
+                      </div>
+                    ))}
+                    <p className="rtill-tax-note">
+                      Parts add up to {money(partsTotal)} of {money(paying.total_amount)}
+                      {Math.abs(partsTotal - Number(paying.total_amount || 0)) > 0.009
+                        ? ` (${money(Number(paying.total_amount || 0) - partsTotal)} left)`
+                        : ' ✓'}
+                    </p>
+                    <div className="rtill-quick">
+                      {parts.length < 6 ? (
+                        <button type="button" onClick={() => setParts([...parts, { method: 'cash', amount: String(Math.max(0, Math.round((Number(paying.total_amount || 0) - partsTotal) * 100) / 100)) }])}>
+                          Add a part
+                        </button>
+                      ) : null}
+                      <button type="button" onClick={() => setParts(null)}>Pay one way</button>
+                    </div>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="rtill-link"
+                    aria-label="Pay this bill more than one way"
+                    onClick={() => {
+                      const total = Number(paying.total_amount || 0);
+                      const half = Math.round((total / 2) * 100) / 100;
+                      setParts([
+                        { method: 'cash', amount: String(half) },
+                        { method: 'card', amount: String(Math.round((total - half) * 100) / 100) },
+                      ]);
+                    }}
+                  >
+                    Pay more than one way (split payment)
+                  </button>
+                )}
+              </div>
+            ) : null}
+            {!parts ? (
             <div className="rtill-methods" role="radiogroup" aria-label="How the guest pays">
               {METHODS.filter((m) => !paying.offline || (OFFLINE_METHODS as string[]).includes(m.id)).map((m) => (
                 <button
@@ -1157,6 +1339,7 @@ function RestaurantTill() {
                 </button>
               ))}
             </div>
+            ) : null}
             {!paying.offline ? (
               <div className="rtill-cash">
                 <label>
@@ -1174,7 +1357,7 @@ function RestaurantTill() {
                 ) : null}
               </div>
             ) : null}
-            {method === 'cash' ? (
+            {parts ? null : method === 'cash' ? (
               <div className="rtill-cash">
                 <label>
                   <span>Cash received</span>
@@ -1199,8 +1382,17 @@ function RestaurantTill() {
                   </div>
                 ) : null}
               </div>
+            ) : method === 'mobile_money' && !paying.offline ? (
+              <div className="rtill-cash">
+                <TillMomoPrompt
+                  base="/restaurant/till"
+                  amount={Number(paying.total_amount || 0)}
+                  formatMoney={money}
+                  onPaid={(ref) => setMomoRef(ref)}
+                />
+              </div>
             ) : (
-              <p className="rtill-tax-note">Card, Mobile Money and wallet are recorded here. This till does not charge a card.</p>
+              <p className="rtill-tax-note">Card and wallet are recorded here. Take card payments on the card machine.</p>
             )}
             {paying.offline ? (
               <p className="rtill-tax-note">

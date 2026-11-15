@@ -299,7 +299,8 @@ async def test_a_deposit_is_held_for_the_customer_until_collection(client, seede
     assert order["balance"] == 30
     mid = await _balances(ac, h)
     assert _moved(before, mid, "1000") == 20
-    assert _moved(before, mid, "1100") == -20
+    assert _moved(before, mid, "2168") == -20  # held for the customer: a liability
+    assert _moved(before, mid, "1100") == 0
     assert _moved(before, mid, "4000") == 0  # not revenue yet
     assert await _stock(db_session, loaf) == 10  # not taken yet
 
@@ -308,7 +309,7 @@ async def test_a_deposit_is_held_for_the_customer_until_collection(client, seede
     assert r.json()["data"]["status"] == "collected"
     after = await _balances(ac, h)
     assert _moved(before, after, "1000") == 50
-    assert _moved(before, after, "1100") == 0
+    assert _moved(before, after, "2168") == 0
     assert _moved(before, after, "4000") == -50
     assert _moved(before, after, "5000") == 5
     assert await _stock(db_session, loaf) == 5
@@ -365,7 +366,7 @@ async def test_a_cancelled_order_refunds_or_keeps_the_deposit(client, seeded, db
     assert r.status_code == 200, r.text
     mid = await _balances(ac, h)
     assert _moved(before, mid, "1000") == 0
-    assert _moved(before, mid, "1100") == 0
+    assert _moved(before, mid, "2168") == 0
     assert (await _shift(ac, h))["cash_taken"] == 0
 
     two = await _order(ac, h, loaf, deposit=30)
@@ -376,8 +377,10 @@ async def test_a_cancelled_order_refunds_or_keeps_the_deposit(client, seeded, db
     assert r.status_code == 200, r.text
     after = await _balances(ac, h)
     assert _moved(before, after, "1000") == 30
-    assert _moved(before, after, "4000") == -30
-    assert _moved(before, after, "1100") == 0
+    # A kept deposit pays for no goods: other income, not sales.
+    assert _moved(before, after, "4400") == -30
+    assert _moved(before, after, "4000") == 0
+    assert _moved(before, after, "2168") == 0
 
 
 @pytest.mark.asyncio

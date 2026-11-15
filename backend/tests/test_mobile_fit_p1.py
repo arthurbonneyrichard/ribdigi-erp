@@ -21,7 +21,8 @@ def test_phone_layout_uses_full_width_and_stacks_desk_chrome():
         ".shell:not(.is-pos) > .main{padding-left:calc(52px + env(safe-area-inset-left, 0px))}"
         in css
     )
-    phone = css.split("@media (max-width:720px){")[-1]
+    # Phone rules live in several max-width:720px blocks; read them all, not only the last one.
+    phone = "".join(css.split("@media (max-width:720px){")[1:])
     assert ".mobile-side-nav{display:none !important}" in phone
     assert "padding-left:max(14px,env(safe-area-inset-left,0px))" in phone
     assert "padding-right:max(14px,env(safe-area-inset-right,0px))" in phone

@@ -61,6 +61,7 @@ export const HOTEL_NAV_ITEMS: NavItem[] = [
   ['Guest requests', '/hotel?tab=front-desk#guest-requests', 'hotel'],
   ['Rooms and Rates', '/hotel?tab=rooms', 'hotel'],
   ['Rate plans', '/hotel?tab=rooms#rate-plans', 'hotel'],
+  ['Booking sites', '/hotel/channels', 'hotel'],
   ['Housekeeping', '/hotel?tab=housekeeping', 'hotel'],
   ['Lost and found', '/hotel?tab=housekeeping#lost-found', 'hotel'],
   ['Maintenance', '/hotel?tab=maintenance', 'hotel'],
@@ -109,6 +110,7 @@ export const HOTEL_NAV_GROUPS: NavGroup[] = [
       ['Guest requests', '/hotel?tab=front-desk#guest-requests', 'hotel'],
       ['Rooms and Rates', '/hotel?tab=rooms', 'hotel'],
       ['Rate plans', '/hotel?tab=rooms#rate-plans', 'hotel'],
+      ['Booking sites', '/hotel/channels', 'hotel'],
       ['Housekeeping', '/hotel?tab=housekeeping', 'hotel'],
       ['Lost and found', '/hotel?tab=housekeeping#lost-found', 'hotel'],
       ['Maintenance', '/hotel?tab=maintenance', 'hotel'],
@@ -304,6 +306,7 @@ export const BAKERY_NAV_GROUPS: NavGroup[] = [
       ['Counter', '/bakery?tab=counter', 'bakery'],
       ['Orders', '/bakery?tab=orders', 'bakery'],
       ['Deliveries', '/bakery?tab=deliveries', 'bakery'],
+      ['Trade customers', '/bakery?tab=trade', 'bakery'],
     ],
   },
   {
@@ -983,7 +986,7 @@ export const HRM_ROLE_HREFS: Record<string, string[]> = {
 
 export const BAKERY_ROLE_HREFS: Record<string, string[]> = {
   bakery_baker: ['/hrm?tab=me', '/bakery', '/bakery?tab=baking', '/bakery?tab=waste', '/bakery?tab=orders', '/notifications', '/security', '/support'],
-  bakery_cashier: ['/hrm?tab=me', '/bakery', '/bakery?tab=counter', '/bakery?tab=orders', '/bakery?tab=deliveries', '/bakery?tab=waste', '/notifications', '/security', '/support'],
+  bakery_cashier: ['/hrm?tab=me', '/bakery', '/bakery?tab=counter', '/bakery?tab=orders', '/bakery?tab=deliveries', '/bakery?tab=trade', '/bakery?tab=waste', '/notifications', '/security', '/support'],
   bakery_driver: ['/hrm?tab=me', '/bakery', '/bakery?tab=deliveries', '/bakery?tab=counter', '/notifications', '/security', '/support'],
 };
 
