@@ -98,7 +98,33 @@ def _missing_related_detail(raw: str, path: str = ""):
     return "Could not save because a required related record is missing."
 
 
+_VALIDATION_KEYS = ("type", "loc", "msg")
+
+
+def safe_validation_detail(errors) -> list[dict]:
+    """422 detail without the echoed `input`, `ctx` or docs `url` (security control 09).
+
+    The submitted value (which can be a password) and parser internals are not
+    sent back; field location, error type and message stay for the client.
+    """
+    out: list[dict] = []
+    for err in errors or []:
+        if not isinstance(err, dict):
+            continue
+        item = {k: err[k] for k in _VALIDATION_KEYS if k in err}
+        if "loc" in item:
+            item["loc"] = [p if isinstance(p, (str, int)) else str(p) for p in item["loc"]]
+        if "msg" in item:
+            item["msg"] = str(item["msg"])
+        out.append(item)
+    return out
+
+
 def register_exception_handlers(app: FastAPI) -> None:
+    @app.exception_handler(RequestValidationError)
+    async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+        return JSONResponse(status_code=422, content={"detail": safe_validation_detail(exc.errors())})
+
     @app.exception_handler(IntegrityError)
     async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSONResponse:
         logger.exception(
