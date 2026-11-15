@@ -55,7 +55,9 @@ def _result(ref: str, status: str, *, sale: m.BakerySale | None = None, **extra)
     return body
 
 
-async def _book_one(db: AsyncSession, tenant_id: str, sale, *, user_id: str | None, device_id: str | None) -> dict:
+async def _book_one(
+    db: AsyncSession, tenant_id: str, sale, *, user_id: str | None, device_id: str | None, role: str | None = None
+) -> dict:
     ref = sale.offline_ref
     existing = await _booked(db, tenant_id, ref)
     if existing is not None:
@@ -72,7 +74,7 @@ async def _book_one(db: AsyncSession, tenant_id: str, sale, *, user_id: str | No
         return _result(ref, "waiting", reason="Open the till to book the sales kept on this device.")
     try:
         async with db.begin_nested():
-            row = await bakery_svc.create_sale(db, tenant_id, sale, user_id=user_id)
+            row = await bakery_svc.create_sale(db, tenant_id, sale, user_id=user_id, role=role)
             row.offline_ref = ref
             row.created_at = rung_at
             await db.flush()
@@ -107,7 +109,9 @@ async def _book_one(db: AsyncSession, tenant_id: str, sale, *, user_id: str | No
     )
 
 
-async def sync_sales(db: AsyncSession, tenant_id: str, sales: list, *, user_id: str | None, device_id: str | None) -> dict:
+async def sync_sales(
+    db: AsyncSession, tenant_id: str, sales: list, *, user_id: str | None, device_id: str | None, role: str | None = None
+) -> dict:
     if len(sales) > MAX_SALES_PER_SYNC:
         raise HTTPException(status_code=422, detail=f"Send at most {MAX_SALES_PER_SYNC} sales at a time")
     seen: set[str] = set()
@@ -117,7 +121,7 @@ async def sync_sales(db: AsyncSession, tenant_id: str, sales: list, *, user_id: 
             results.append(_result(sale.offline_ref, "duplicate_in_batch"))
             continue
         seen.add(sale.offline_ref)
-        results.append(await _book_one(db, tenant_id, sale, user_id=user_id, device_id=device_id))
+        results.append(await _book_one(db, tenant_id, sale, user_id=user_id, device_id=device_id, role=role))
     counts: dict[str, int] = {}
     for row in results:
         counts[row["status"]] = counts.get(row["status"], 0) + 1

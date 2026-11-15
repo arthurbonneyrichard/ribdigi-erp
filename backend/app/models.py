@@ -3816,8 +3816,33 @@ class BakeryBatch(Base):
     unit_cost: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     total_cost: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Baked day + the item's shelf life. NULL when the item has no shelf life set.
+    best_before: Mapped[date | None] = mapped_column(Date, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class BakeryItemSettings(Base):
+    """What a bakery knows about an item beyond price and stock: shelf life, day-old price,
+    allergens and label text, the unit it is bought in, and how many to keep on the shelf."""
+
+    __tablename__ = "bakery_item_settings"
+    __table_args__ = (UniqueConstraint("tenant_id", "product_id", name="uq_bakery_item_settings_product"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"))
+    shelf_life_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    day_old_discount_pct: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
+    allergens: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    ingredients_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    net_weight: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    storage_note: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    stock_unit: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    purchase_unit: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    units_per_purchase: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)
+    par_level: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class BakeryWaste(Base):
@@ -3844,6 +3869,8 @@ class BakeryTillShift(Base):
     status: Mapped[str] = mapped_column(String(20), default="open", index=True)
     # "till" for the counter; "driver" for the cash a driver carries on the road.
     kind: Mapped[str] = mapped_column(String(20), default="till", server_default="till", index=True)
+    # Which counter: a bakery may run more than one till at once.
+    till_name: Mapped[str | None] = mapped_column(String(60), nullable=True)
     opening_cash: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     counted_cash: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     opened_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
@@ -3851,6 +3878,8 @@ class BakeryTillShift(Base):
     opened_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # The journal that booked cash over or short at the count.
+    variance_journal_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
 
 
 class BakeryOrder(Base):
@@ -3872,6 +3901,8 @@ class BakeryOrder(Base):
     deposit: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     deposit_method: Mapped[str | None] = mapped_column(String(20), nullable=True)
     deposit_journal_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    # Where the deposit was booked: 2168 now, NULL for deposits booked to 1100 before.
+    deposit_account: Mapped[str | None] = mapped_column(String(10), nullable=True)
     deposit_outcome: Mapped[str | None] = mapped_column(String(20), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     cancel_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -3924,6 +3955,9 @@ class BakerySale(Base):
     tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     cost_of_goods: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    discount: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    discount_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    refunded_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     refund_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
     refunded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
@@ -3946,6 +3980,75 @@ class BakerySaleLine(Base):
     tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     unit_cost: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    discount: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    refunded_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0, server_default="0")
+
+
+class BakeryRefund(Base):
+    """Money given back on a sale, whole or part, dated the day it happened."""
+
+    __tablename__ = "bakery_refunds"
+    __table_args__ = (UniqueConstraint("tenant_id", "refund_number", name="uq_bakery_refund_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    refund_number: Mapped[str] = mapped_column(String(40))
+    sale_id: Mapped[str] = mapped_column(ForeignKey("bakery_sales.id"), index=True)
+    shift_id: Mapped[str | None] = mapped_column(ForeignKey("bakery_till_shifts.id"), nullable=True)
+    method: Mapped[str] = mapped_column(String(20))
+    subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    cost_back: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    restock: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class BakeryRefundLine(Base):
+    __tablename__ = "bakery_refund_lines"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    refund_id: Mapped[str] = mapped_column(ForeignKey("bakery_refunds.id"), index=True)
+    sale_line_id: Mapped[str | None] = mapped_column(ForeignKey("bakery_sale_lines.id"), nullable=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"))
+    name: Mapped[str] = mapped_column(String(200))
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+
+
+class BakeryStockCount(Base):
+    """A stocktake: what the shelf really holds, and the value gained or lost."""
+
+    __tablename__ = "bakery_stock_counts"
+    __table_args__ = (UniqueConstraint("tenant_id", "count_number", name="uq_bakery_count_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    count_number: Mapped[str] = mapped_column(String(40))
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    value_change: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class BakeryStockCountLine(Base):
+    __tablename__ = "bakery_stock_count_lines"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    count_id: Mapped[str] = mapped_column(ForeignKey("bakery_stock_counts.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"))
+    name: Mapped[str] = mapped_column(String(200))
+    expected_qty: Mapped[float] = mapped_column(Numeric(14, 3))
+    counted_qty: Mapped[float] = mapped_column(Numeric(14, 3))
+    unit_cost: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    value_change: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
 
 
 class BakeryPayment(Base):
@@ -5003,8 +5106,135 @@ class BakeryStockReceipt(Base):
     quantity: Mapped[float] = mapped_column(Numeric(14, 3))
     unit_cost: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    # Input VAT on the supplier's bill, claimable on the VAT return.
+    tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     paid_with: Mapped[str] = mapped_column(String(20))
     supplier: Mapped[str | None] = mapped_column(String(180), nullable=True)
+    supplier_id: Mapped[str | None] = mapped_column(ForeignKey("bakery_suppliers.id"), nullable=True)
+    bill_number: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class BakerySupplier(Base):
+    __tablename__ = "bakery_suppliers"
+    __table_args__ = (UniqueConstraint("tenant_id", "name", name="uq_bakery_supplier_name"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(180))
+    phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    terms_days: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class BakerySupplierPayment(Base):
+    __tablename__ = "bakery_supplier_payments"
+    __table_args__ = (UniqueConstraint("tenant_id", "payment_number", name="uq_bakery_supplier_payment_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    payment_number: Mapped[str] = mapped_column(String(40))
+    supplier_id: Mapped[str] = mapped_column(ForeignKey("bakery_suppliers.id"), index=True)
+    shift_id: Mapped[str | None] = mapped_column(ForeignKey("bakery_till_shifts.id"), nullable=True)
+    method: Mapped[str] = mapped_column(String(20))
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    reference: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class BakeryCustomer(Base):
+    """A trade customer: a shop, hotel or school the bakery supplies on account."""
+
+    __tablename__ = "bakery_customers"
+    __table_args__ = (UniqueConstraint("tenant_id", "name", name="uq_bakery_customer_name"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(180))
+    phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    credit_limit: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    # Trade price: this much off the shop price on every invoice line.
+    trade_discount_pct: Mapped[float] = mapped_column(Numeric(5, 2), default=0, server_default="0")
+    terms_days: Mapped[int] = mapped_column(Integer, default=7, server_default="7")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class BakeryStandingOrder(Base):
+    """The same delivery on set days: 40 loaves to the corner shop every weekday."""
+
+    __tablename__ = "bakery_standing_orders"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    customer_id: Mapped[str] = mapped_column(ForeignKey("bakery_customers.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"))
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    days: Mapped[str] = mapped_column(String(7), default="1111111", server_default="1111111")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class BakeryInvoice(Base):
+    __tablename__ = "bakery_invoices"
+    __table_args__ = (UniqueConstraint("tenant_id", "invoice_number", name="uq_bakery_invoice_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    invoice_number: Mapped[str] = mapped_column(String(40))
+    customer_id: Mapped[str] = mapped_column(ForeignKey("bakery_customers.id"), index=True)
+    invoice_date: Mapped[date] = mapped_column(Date, index=True)
+    due_date: Mapped[date] = mapped_column(Date)
+    status: Mapped[str] = mapped_column(String(20), default="open", server_default="open")
+    from_standing: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    paid: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    cost_of_goods: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    void_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    voided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    void_restocked: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class BakeryInvoiceLine(Base):
+    __tablename__ = "bakery_invoice_lines"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    invoice_id: Mapped[str] = mapped_column(ForeignKey("bakery_invoices.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"))
+    name: Mapped[str] = mapped_column(String(200))
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    unit_cost: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+
+
+class BakeryCustomerPayment(Base):
+    __tablename__ = "bakery_customer_payments"
+    __table_args__ = (UniqueConstraint("tenant_id", "payment_number", name="uq_bakery_customer_payment_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    payment_number: Mapped[str] = mapped_column(String(40))
+    customer_id: Mapped[str] = mapped_column(ForeignKey("bakery_customers.id"), index=True)
+    shift_id: Mapped[str | None] = mapped_column(ForeignKey("bakery_till_shifts.id"), nullable=True)
+    method: Mapped[str] = mapped_column(String(20))
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    reference: Mapped[str | None] = mapped_column(String(100), nullable=True)
     journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
@@ -5022,6 +5252,8 @@ class BakeryExpense(Base):
     category: Mapped[str] = mapped_column(String(20))
     description: Mapped[str] = mapped_column(String(255))
     amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    # Input VAT inside the amount, claimable on the VAT return.
+    tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     paid_with: Mapped[str] = mapped_column(String(20))
     spent_on: Mapped[date] = mapped_column(Date, index=True)
     shift_id: Mapped[str | None] = mapped_column(ForeignKey("bakery_till_shifts.id"), nullable=True, index=True)
