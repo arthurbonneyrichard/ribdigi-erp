@@ -67,6 +67,13 @@ async def test_one_bill_paid_with_cash_and_card(client, seeded, db_session):
     assert shift["card_sales"] == round(total - 20, 2)
     assert shift["expected_cash"] == 20  # only the cash part sits in the drawer
 
+    again = await ac.post(
+        f"{R}/orders/{order['id']}/complete", headers=h,
+        json={"payments": [{"method": "cash", "amount": 20}, {"method": "card", "amount": total - 20}]},
+    )
+    assert again.status_code == 409  # already paid: new parts are refused, not ignored
+    assert (await ac.post(f"{R}/orders/{order['id']}/complete", headers=h, json={})).status_code == 200  # a repeat tap is fine
+
     refund = await ac.post(f"{R}/orders/{order['id']}/refund", headers=h, json={})
     assert refund.status_code == 200, refund.text
     shift = (await ac.get(f"{R}/till/shift", headers=h)).json()["data"]

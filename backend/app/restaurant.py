@@ -3972,6 +3972,9 @@ async def complete_order(
 ) -> m.RestaurantOrder:
     order = await _order(db, tenant_id, order_id, user_id=user_id)
     if order.status == "completed":
+        if payments:
+            # A repeat tap is fine; new payment parts for a paid bill would be money with nowhere to go.
+            raise HTTPException(status_code=409, detail="This bill is already paid")
         return order
     if order.status in {"cancelled", "voided", "refunded"}:
         raise HTTPException(status_code=409, detail="Order cannot be completed")
