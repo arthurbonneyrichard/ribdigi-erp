@@ -5410,3 +5410,28 @@ class DataDeletionRequest(Base):
     decision_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class LegalDocumentVersion(Base):
+    """One saved version of a public legal page (privacy, terms, refunds, cookies), main database.
+
+    Every save is a new row, so the history of what the page said and who changed it is kept.
+    The public page shows the newest published version; with none, the built-in text is shown.
+    """
+
+    __tablename__ = "legal_document_versions"
+    __table_args__ = (UniqueConstraint("slug", "version", name="uq_legal_document_versions_slug_version"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    slug: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    title: Mapped[str] = mapped_column(String(120), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    effective_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    # draft: saved but not shown. published: the public page shows the newest one.
+    status: Mapped[str] = mapped_column(String(12), nullable=False, default="draft")
+    note: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
