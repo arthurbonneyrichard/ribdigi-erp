@@ -11,7 +11,7 @@ export default function LegalDoc({
   children: ReactNode;
 }) {
   return (
-    <div className="login-stage">
+    <div className="login-stage legal-stage">
       <div className="login legal-doc">
         <LoginBrandLogo />
         <h1 className="login-heading">{title}</h1>
