@@ -6,10 +6,19 @@ function apiProxyTarget() {
   return raw.replace(/\/$/, '');
 }
 
-// The analytics host follows NEXT_PUBLIC_UMAMI_SRC. blob: frames and media show attachment previews.
-const ANALYTICS_ORIGIN = new URL(process.env.NEXT_PUBLIC_UMAMI_SRC || 'https://analytics.ribdigihouse.com/script.js').origin;
+// Analytics is optional: its host joins script-src only when NEXT_PUBLIC_UMAMI_SRC is set.
+// blob: frames and media show attachment previews.
+function analyticsOrigin() {
+  const src = (process.env.NEXT_PUBLIC_UMAMI_SRC || '').trim();
+  if (!src || !(process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID || '').trim()) return '';
+  try {
+    return ` ${new URL(src).origin}`;
+  } catch {
+    return '';
+  }
+}
 const CSP =
-  `default-src 'self'; script-src 'self' 'unsafe-inline' ${ANALYTICS_ORIGIN}; ` +
+  `default-src 'self'; script-src 'self' 'unsafe-inline'${analyticsOrigin()}; ` +
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; " +
   "img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' https: wss:; frame-src 'self' https: blob:; " +
   "worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https:";
