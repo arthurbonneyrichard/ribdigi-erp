@@ -2,7 +2,7 @@
 
 **Date:** 5 November 2026 UTC.
 
-**Verdict: Ready for a supervised first hotel once this work passes CI and is promoted to `production`. Not yet ready to sell widely.** The money and staff-access blockers below are fixed and tested. What remains is real-world use, the known limits listed here, and the same two owner actions as retail and restaurant (external penetration test, production restore drill).
+**Verdict (15 Nov 2026): Ready to sell to independent hotels once this work passes CI and is promoted to `production`, with the limits below.** Added 15 Nov: nightly room revenue, VAT on discounts, clean-room check-in (manager override), hotel's own timezone, online holds expire after 48 hours, booking-site calendars (iCal), city ledger (bill a stay to a company), guest registration card, custom roles keep their hotel job, event deposits booked when taken. Earlier verdict: ready for a supervised first hotel. The money and staff-access blockers below are fixed and tested. What remains is real-world use, the known limits listed here, and the same two owner actions as retail and restaurant (external penetration test, production restore drill).
 
 Hotel is its own desk, isolated from retail and restaurant. The back office (accounting, tax, purchasing, supplies) is the shared engine, kept per company by `tenant_id`.
 
@@ -113,22 +113,19 @@ Each tab has its own title. Reservation rows show one main action, with the rest
 
 ## Known limits to tell customers
 
+- Room charges wait in **2165 Unearned Room Revenue** and move into sales one night at a time: at the night audit, by the 02:15 daily job, and the rest at check-out. **Leaving early** takes the unused nights off the bill and the books and frees the room.
+- Booking sites link per room over iCal (**Booking sites** in the menu). iCal carries dates only, so a site's booking arrives as "Booking.com guest" at the room's rate; staff add the name and the price the site took. Sites read our calendar on their own schedule (often every 1–3 hours), so a room sold here and there in that gap can double-book; the desk raises an alert when it does. This is a calendar link, not a full channel manager with rates and inventory pushed live.
+- Event deposits count as cash received when taken, always as cash.
+- No key-card system link yet.
 - Card, Mobile Money and bank tenders are recorded, not charged through a gateway.
-- The whole stay is counted as revenue at check-in, not night by night. **Leaving early** on a reservation takes the unused nights off the bill and the books and frees the room.
 - A deposit reaches the books when it is taken. On a cancelled or no-show stay it waits under **Deposits to settle** until a cashier or manager gives it back or keeps it, or until a no-show fee takes it. Deposits taken before this release reach the books at check-in as before.
-- An event deposit reaches the books only when it lands on a guest's open bill.
 - Hotel Reports show room revenue as charged, so with tax inside the rate it includes tax. Accounting and the tax report split it correctly.
-- Custom roles copied from a hotel role follow their own permissions, not the job lists.
 - Stays closed before this release are not in the books. Open bills catch up on their next payment or at checkout.
 - The rate model holds one nightly figure, so a blended rate can round by a pesewa over a long stay.
 - There are no hotel tutorial videos yet.
 - Money owed lists open bills as they stand today, not for the dates chosen. Guests who already left are on Guest invoices. Rooms that sold nothing in the period are not listed.
 - **Edit stay** does not reprice by itself. The price per night stays as shown until staff change it, and the window says so.
-- The server still allows a check-in into a dirty room. The desk warns; it does not block.
 - Checking in before the arrival date keeps the booked dates and bill. For extra nights, use Edit stay first.
-- A discount line reduces revenue, not tax, so VAT on a discounted stay stays at the full amount until an accountant adjusts it. That can only overstate tax.
 - A closed bill cannot be changed. A mistake found after check-out needs an accountant's journal.
-- The hotel's "today" is the server's date, which is UTC. That is right for Ghana. A hotel in another timezone rolls over at the wrong local hour.
 - Weekend rate applies to Saturday and Sunday nights.
 - A repair dated ahead closes the room for bookings straight away, but the room's status changes only when someone next touches it. The dashboard and check-in already treat it as closed on the day.
-- An online request holds its room until staff confirm or cancel it. There is no automatic expiry.

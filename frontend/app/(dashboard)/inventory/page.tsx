@@ -539,6 +539,7 @@ export default function Page() {
   const [editPrice, setEditPrice] = useState('0');
   const [editMoq, setEditMoq] = useState('0');
   const [editCost, setEditCost] = useState('0');
+  const [editSerials, setEditSerials] = useState(false);
   const [editBarcode, setEditBarcode] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editDosage, setEditDosage] = useState('');
@@ -621,6 +622,7 @@ export default function Page() {
   const [stockWarehouseId, setStockWarehouseId] = useState('');
   const [stockVariantId, setStockVariantId] = useState('');
   const [stockNotes, setStockNotes] = useState('');
+  const [stockSerials, setStockSerials] = useState('');
   const [stockRefType, setStockRefType] = useState('');
   const [stockRefId, setStockRefId] = useState('');
   const [openingQty, setOpeningQty] = useState('10');
@@ -1349,6 +1351,7 @@ export default function Page() {
         setEditPrice(String(p.selling_price ?? 0));
         setEditMoq(String(p.min_order_qty ?? 0));
         setEditCost(String(p.cost_price ?? 0));
+        setEditSerials(Boolean(p.tracks_serials));
         setEditBarcode(String(p.barcode || ''));
         setEditDescription(String(p.description || ''));
         setEditDosage(String(p.dosage_instructions || ''));
@@ -1380,6 +1383,7 @@ export default function Page() {
           selling_price: Number(editPrice) || 0,
           min_order_qty: wholesaleOps ? Number(editMoq) || 0 : undefined,
           cost_price: Number(editCost) || 0,
+          tracks_serials: editSerials,
           barcode: editBarcode.trim() || null,
           description: editDescription.trim() || null,
           dosage_instructions: pharmacyOps ? editDosage.trim() || null : undefined,
@@ -2786,8 +2790,10 @@ export default function Page() {
           expiry_date: expiryDate.trim() || null,
           reference_type: stockRefType.trim() || null,
           reference_id: stockRefId.trim() || null,
+          ...(stockSerials.trim() ? { serials: stockSerials.split(/[\n,]+/).map((x) => x.trim()).filter(Boolean) } : {}),
         }),
       });
+      setStockSerials('');
       if (r.data?.stock_qty == null && !r.data?.id) {
         setFormFlash({ err: hotelOps ? 'Server did not confirm received supplies' : restaurantOps ? 'Server did not confirm received ingredients' : 'Server did not confirm received stock' });
         return;
@@ -4608,6 +4614,14 @@ export default function Page() {
                     <label className="muted">Cost price</label>
                     <AmountField value={editCost} onChange={(e) => setEditCost(e.target.value)} aria-label="Edit product cost price" />
                     </div>
+                    {!hotelOps && !restaurantOps ? (
+                      <div className="field">
+                        <label className="muted" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          <input type="checkbox" checked={editSerials} onChange={(e) => setEditSerials(e.target.checked)} aria-label="Edit product tracks serial numbers" />
+                          Each unit has a serial number (phones, appliances)
+                        </label>
+                      </div>
+                    ) : null}
                     <div className="field">
                     <label className="muted">{hotelOps ? 'Price' : 'Selling price'}</label>
                     <AmountField value={editPrice} onChange={(e) => setEditPrice(e.target.value)} aria-label="Edit product selling price" />
@@ -6031,6 +6045,15 @@ export default function Page() {
                   placeholder="Notes (optional)"
                   aria-label="Stock-in notes"
                 />
+                {products.find((p) => p.id === selectedId)?.tracks_serials ? (
+                  <textarea
+                    value={stockSerials}
+                    onChange={(e) => setStockSerials(e.target.value)}
+                    placeholder="Serial numbers, one per line (one for each unit)"
+                    aria-label="Stock-in serial numbers"
+                    rows={4}
+                  />
+                ) : null}
                 <details className="purchase-bill-more">
                   <summary>More options: link to a document</summary>
                   <div className="purchase-bill-more-body">

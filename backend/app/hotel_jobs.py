@@ -4,13 +4,16 @@ The `hotel` module grant lets a role onto the desk. These lists decide what it m
 there, so a housekeeper cannot take a payment and a front-desk clerk cannot change
 hotel settings. Refunds, voids and settings stay with the cashier or manager as listed.
 Roles not listed here (hotel_manager, company admins) are decided by their module grant.
+A custom role copied from a hotel role does that role's job (`job_role`).
 """
 
 from __future__ import annotations
 
 import re
+import time
 
 from fastapi import HTTPException
+from sqlalchemy import select
 
 _ID = r"[^/]+"
 
@@ -33,6 +36,8 @@ _BOOKING = (
     r"POST /guest-requests",
     rf"POST /guest-requests/{_ID}/complete",
     rf"POST /reservations/{_ID}/confirmation/send",
+    rf"POST /reservations/{_ID}/bill-to",
+    r"POST /companies",
     r"POST /events",
     rf"POST /events/{_ID}/(confirm|cancel)",
 )
@@ -45,6 +50,8 @@ _TAKING_MONEY = (
     rf"POST /invoices/{_ID}/payments",
     r"POST /shop/sales",
     r"POST /cashier/shift/(open|close)",
+    r"POST /momo",
+    r"POST /momo/[^/]+/otp",
 )
 _CORRECTING_MONEY = (
     rf"POST /folios/{_ID}/charges/{_ID}/void",
@@ -64,14 +71,14 @@ _WRITES: dict[str, tuple[str, ...]] = {
 }
 
 _MONEY_PAGES = (
-    r"/(reports|folios|invoices|cashier|night-audits|shop|deposits)(/.*)?"
-    r"|/reservations/[^/]+/(folio|confirmation|print)"
+    r"/(reports|folios|invoices|cashier|night-audits|shop|deposits|city-ledger|channels|companies|momo)(/.*)?"
+    r"|/reservations/[^/]+/(folio|confirmation|print|registration-card)"
     r"|/guests(/.*)?"  # ID numbers, phones and bills: nothing a room job needs
 )
 _READS_REFUSED: dict[str, str] = {
     "hotel_housekeeping": _MONEY_PAGES,
     "hotel_maintenance": _MONEY_PAGES,
-    "hotel_reservations": r"/reports(/.*)?|/cashier(/.*)?|/night-audits",
+    "hotel_reservations": r"/reports(/.*)?|/cashier(/.*)?|/night-audits|/city-ledger",
     "hotel_front_desk": r"/reports(/.*)?",
 }
 
@@ -99,3 +106,29 @@ def enforce(role: str | None, method: str, url_path: str) -> None:
     elif any(re.fullmatch(rule, f"{method} {path}") for rule in _WRITES[key]):
         return
     raise HTTPException(status_code=403, detail={"code": "HOTEL_ROLE_JOB", "message": _WORDS[key]})
+
+
+_BASE_CACHE: dict[tuple[str, str], tuple[float, str | None]] = {}
+
+
+async def job_role(db, tenant_id: str | None, role: str | None) -> str | None:
+    """The hotel job a role does. A custom role inherits the job of the hotel role it was copied from."""
+    key = str(role or "")
+    if not key or key in _WRITES or not tenant_id:
+        return key or None
+    from app import models as m
+    from app.rbac import VALID_ROLES
+
+    if key in VALID_ROLES:
+        return key
+    hit = _BASE_CACHE.get((tenant_id, key))
+    now = time.monotonic()
+    if hit is None or now - hit[0] > 60:
+        base = (
+            await db.execute(
+                select(m.CustomRole.base_role).where(m.CustomRole.tenant_id == tenant_id, m.CustomRole.key == key)
+            )
+        ).scalar_one_or_none()
+        hit = (now, base)
+        _BASE_CACHE[(tenant_id, key)] = hit
+    return hit[1] if hit[1] in _WRITES else key

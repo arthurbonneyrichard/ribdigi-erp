@@ -40,6 +40,8 @@ EXPECTED_HANDLERS = {
     "expire_ecommerce_reservations",
     "sync_ecommerce_connectors",
     "scan_hr_escalations",
+    "hotel_daily_close",
+    "sync_hotel_channels",
     "sample_server_health",
 }
 

@@ -107,6 +107,14 @@ celery.conf.update(
             "task": "app.tasks.scan_hr_escalations",
             "schedule": crontab(minute=30, hour=7),
         },
+        "sync-hotel-channels": {
+            "task": "app.tasks.sync_hotel_channels",
+            "schedule": crontab(minute="*/30"),
+        },
+        "hotel-daily-close": {
+            "task": "app.tasks.hotel_daily_close",
+            "schedule": crontab(minute=15, hour=2),
+        },
         "send-weekly-ai-insight-digest": {
             "task": "app.tasks.send_weekly_ai_insight_digest",
             "schedule": crontab(minute=0, hour=7, day_of_week="monday"),

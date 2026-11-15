@@ -14,6 +14,9 @@ type ReturnLine = {
   returned_quantity: number;
   returnable_quantity: number;
   unit_refund: number;
+  /** Serial-tracked: the serials this receipt sold that are still with the customer. */
+  tracks_serials?: boolean;
+  serials?: string[];
 };
 
 type Receipt = {
@@ -80,6 +83,7 @@ export function TillReturnPanel({
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [qty, setQty] = useState<Record<string, number>>({});
   const [shelf, setShelf] = useState<Record<string, boolean>>({});
+  const [picked, setPicked] = useState<Record<string, string[]>>({});
   const [reason, setReason] = useState('');
   const [refund, setRefund] = useState('cash');
   const [busy, setBusy] = useState(false);
@@ -179,6 +183,7 @@ export function TillReturnPanel({
             variant_id: line.variant_id,
             quantity: qty[lineKey(line)],
             restock: shelf[lineKey(line)] !== false,
+            ...(line.tracks_serials ? { serials: picked[lineKey(line)] || [] } : {}),
           })),
           reason,
           refund_method: refund,
@@ -308,6 +313,27 @@ export function TillReturnPanel({
                       />
                       Back on shelf
                     </label>
+                    {line.tracks_serials && n > 0 ? (
+                      <div className="pos-return-serials" role="group" aria-label={`Serials coming back for ${line.name || 'item'}`}>
+                        <small>Tick the {n} serial{n === 1 ? '' : 's'} coming back</small>
+                        {(line.serials || []).map((serial) => (
+                          <label key={serial} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                            <input
+                              type="checkbox"
+                              checked={(picked[key] || []).includes(serial)}
+                              onChange={(e) =>
+                                setPicked((prev) => {
+                                  const now = prev[key] || [];
+                                  return { ...prev, [key]: e.target.checked ? [...now, serial] : now.filter((x) => x !== serial) };
+                                })
+                              }
+                              aria-label={`Serial ${serial} coming back`}
+                            />
+                            {serial}
+                          </label>
+                        ))}
+                      </div>
+                    ) : null}
                   </li>
                 );
               })}

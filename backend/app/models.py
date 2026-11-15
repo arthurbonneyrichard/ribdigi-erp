@@ -372,6 +372,8 @@ class Product(Base):
     # standard | zero_rated | exempt (tax_exempt kept in sync with exempt)
     tax_supply_class: Mapped[str] = mapped_column(String(20), default="standard")
     tracks_batches: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Each unit has its own serial number (phones, appliances): received and sold one by one.
+    tracks_serials: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     # Pharmacy catalog extras (unused by mart/retail/hotel UI).
     dosage_instructions: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -2032,6 +2034,11 @@ class HotelReservation(Base):
     rate_plan_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     discount_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0, server_default="0")
     discount_authorized_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    # City ledger: the company that pays this stay. Its invoice goes to that customer, not the guest.
+    bill_to_party_id: Mapped[str | None] = mapped_column(ForeignKey("parties.id"), nullable=True, index=True)
+    # A stay that came in from a booking site's calendar (iCal), and its event id there.
+    channel_feed_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    channel_uid: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -2057,6 +2064,29 @@ class HotelFolio(Base):
     closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HotelChannelFeed(Base):
+    """One room's calendar link with a booking site (Booking.com, Expedia, Airbnb) over iCal.
+
+    We publish our bookings at `export_token` so the site closes those dates, and read the
+    site's calendar at `import_url` so its bookings close the room here.
+    """
+
+    __tablename__ = "hotel_channel_feeds"
+    __table_args__ = (UniqueConstraint("export_token", name="uq_hotel_channel_feeds_export_token"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    room_id: Mapped[str] = mapped_column(ForeignKey("hotel_rooms.id"), index=True)
+    channel: Mapped[str] = mapped_column(String(30), default="other")
+    import_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    export_token: Mapped[str] = mapped_column(String(64))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_status: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class HotelFolioCharge(Base):
@@ -4998,3 +5028,115 @@ class BakeryExpense(Base):
     journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class RestaurantOrderPayment(Base):
+    """One tender on a restaurant bill paid more than one way (cash + card + Mobile Money)."""
+
+    __tablename__ = "restaurant_order_payments"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    order_id: Mapped[str] = mapped_column(ForeignKey("restaurant_orders.id"), index=True)
+    method: Mapped[str] = mapped_column(String(32), default="cash")
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    reference: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PosHeldSale(Base):
+    """A cart parked at the till (customer stepped away) to finish later."""
+
+    __tablename__ = "pos_held_sales"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    store_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    label: Mapped[str] = mapped_column(String(120))
+    cart: Mapped[dict] = mapped_column(JSON, default=dict)
+    item_count: Mapped[int] = mapped_column(Integer, default=0)
+    total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PosLayaway(Base):
+    """Goods set aside for a customer who pays in parts and collects when paid in full."""
+
+    __tablename__ = "pos_layaways"
+    __table_args__ = (UniqueConstraint("tenant_id", "layaway_number", name="uq_pos_layaway_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    layaway_number: Mapped[str] = mapped_column(String(40))
+    store_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    warehouse_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    customer_id: Mapped[str | None] = mapped_column(ForeignKey("parties.id"), nullable=True, index=True)
+    customer_name: Mapped[str] = mapped_column(String(180))
+    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    items: Mapped[list] = mapped_column(JSON, default=list)
+    subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    paid: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    status: Mapped[str] = mapped_column(String(20), default="open", index=True)
+    due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class PosLayawayPayment(Base):
+    __tablename__ = "pos_layaway_payments"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    layaway_id: Mapped[str] = mapped_column(ForeignKey("pos_layaways.id"), index=True)
+    method: Mapped[str] = mapped_column(String(32), default="cash")
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    reference: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class ProductSerial(Base):
+    """One serial-numbered unit: in stock, sold (on which sale), or back from a return."""
+
+    __tablename__ = "product_serials"
+    __table_args__ = (UniqueConstraint("tenant_id", "product_id", "serial", name="uq_product_serial"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    serial: Mapped[str] = mapped_column(String(80), index=True)
+    status: Mapped[str] = mapped_column(String(20), default="in_stock", index=True)
+    warehouse_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    received_ref: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    sold_ref: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    sold_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class TillPaymentIntent(Base):
+    """A Mobile Money prompt sent through the company's own Paystack account from a till."""
+
+    __tablename__ = "till_payment_intents"
+    __table_args__ = (UniqueConstraint("reference", name="uq_till_payment_reference"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    reference: Mapped[str] = mapped_column(String(64))
+    desk: Mapped[str] = mapped_column(String(20), default="retail")
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    currency: Mapped[str] = mapped_column(String(3), default="GHS")
+    phone_hint: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    provider: Mapped[str] = mapped_column(String(10), default="mtn")
+    status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
+    message: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    used_ref: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

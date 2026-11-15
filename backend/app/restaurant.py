@@ -2620,6 +2620,118 @@ async def create_order(db: AsyncSession, tenant_id: str, payload, *, user_id: st
     return order
 
 
+HAPPY_KEY = "restaurant_happy_hours"
+_DAY_NAMES = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+
+
+def _clock(value) -> str:
+    text = str(value or "").strip()
+    if not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", text):
+        raise HTTPException(status_code=422, detail="Times are 24-hour, like 17:00")
+    return text
+
+
+def clean_happy_hours(rules: list) -> list[dict]:
+    """Price rules: a percentage off chosen dishes (or everything) on chosen days between two times."""
+    out: list[dict] = []
+    if len(rules or []) > 20:
+        raise HTTPException(status_code=422, detail="Up to 20 happy hours")
+    for raw in rules or []:
+        raw = raw if isinstance(raw, dict) else raw.model_dump()
+        name = " ".join(str(raw.get("name") or "").split())[:60]
+        if not name:
+            raise HTTPException(status_code=422, detail="Give each happy hour a name")
+        try:
+            percent = float(raw.get("percent") or 0)
+        except (TypeError, ValueError):
+            percent = 0
+        if not 1 <= percent <= 90:
+            raise HTTPException(status_code=422, detail="Take off between 1% and 90%")
+        days = [d for d in (str(x).lower()[:3] for x in raw.get("days") or []) if d in _DAY_NAMES]
+        if not days:
+            raise HTTPException(status_code=422, detail="Pick at least one day")
+        start, end = _clock(raw.get("start")), _clock(raw.get("end"))
+        if start == end:
+            raise HTTPException(status_code=422, detail="Start and end cannot be the same time")
+        products = [str(x) for x in (raw.get("product_ids") or [])][:300]
+        out.append(
+            {
+                "name": name,
+                "percent": round(percent, 2),
+                "days": sorted(set(days), key=_DAY_NAMES.index),
+                "start": start,
+                "end": end,
+                "product_ids": products,
+                "active": bool(raw.get("active", True)),
+            }
+        )
+    return out
+
+
+def _stored_happy_hours(tenant: m.Tenant | None) -> list[dict]:
+    raw = tenant.document_numbering if tenant is not None and isinstance(tenant.document_numbering, dict) else {}
+    rules = raw.get(HAPPY_KEY)
+    return [r for r in rules if isinstance(r, dict)] if isinstance(rules, list) else []
+
+
+def _local_now(tenant: m.Tenant | None) -> datetime:
+    from zoneinfo import ZoneInfo
+
+    try:
+        zone = ZoneInfo((getattr(tenant, "timezone", None) or "Africa/Accra"))
+    except Exception:  # noqa: BLE001
+        zone = ZoneInfo("Africa/Accra")
+    return datetime.now(zone)
+
+
+def _rule_running(rule: dict, now: datetime) -> bool:
+    """A rule that crosses midnight (22:00 to 02:00) belongs to the day it starts."""
+    if not rule.get("active", True):
+        return False
+    clock = now.strftime("%H:%M")
+    today = _DAY_NAMES[now.weekday()]
+    yesterday = _DAY_NAMES[(now.weekday() - 1) % 7]
+    start, end = rule.get("start", "00:00"), rule.get("end", "00:00")
+    days = rule.get("days", [])
+    if start < end:
+        return today in days and start <= clock < end
+    return (today in days and clock >= start) or (yesterday in days and clock < end)
+
+
+def happy_hour_for(tenant: m.Tenant | None, product_id: str, when: datetime | None = None) -> dict | None:
+    """The biggest happy-hour discount running now for this dish, if any."""
+    now = when or _local_now(tenant)
+    best = None
+    for rule in _stored_happy_hours(tenant):
+        if rule.get("product_ids") and product_id not in set(rule["product_ids"]):
+            continue
+        if _rule_running(rule, now) and (best is None or float(rule.get("percent") or 0) > float(best.get("percent") or 0)):
+            best = rule
+    return best
+
+
+async def list_happy_hours(db: AsyncSession, tenant_id: str) -> dict:
+    tenant = await db.get(m.Tenant, tenant_id)
+    rules = _stored_happy_hours(tenant)
+    now = _local_now(tenant)
+    return {
+        "rules": rules,
+        "running_now": [r["name"] for r in rules if _rule_running(r, now)],
+        "local_time": now.strftime("%a %H:%M"),
+    }
+
+
+async def save_happy_hours(db: AsyncSession, tenant_id: str, rules: list) -> dict:
+    tenant = await db.get(m.Tenant, tenant_id)
+    if tenant is None:
+        raise HTTPException(status_code=404, detail="Company not found")
+    data = dict(tenant.document_numbering) if isinstance(tenant.document_numbering, dict) else {}
+    data[HAPPY_KEY] = clean_happy_hours(rules)
+    tenant.document_numbering = data
+    await db.flush()
+    return await list_happy_hours(db, tenant_id)
+
+
 async def _add_order_line(db: AsyncSession, tenant_id: str, order: m.RestaurantOrder, line) -> m.RestaurantOrderLine:
     product = await _product(db, tenant_id, line.product_id)
     await _require_sellable_menu_item(db, tenant_id, product)
@@ -2630,6 +2742,11 @@ async def _add_order_line(db: AsyncSession, tenant_id: str, order: m.RestaurantO
     if qty <= 0:
         raise HTTPException(status_code=422, detail="Line quantity must be greater than zero")
     price = money_json(line.unit_price if line.unit_price is not None else product.selling_price or 0)
+    if line.unit_price is None:
+        rule = happy_hour_for(tenant, product.id)
+        if rule:
+            # The price is fixed when the dish goes on the bill, so the bill does not change at the end of happy hour.
+            price = money_json(round(price * (1 - float(rule["percent"]) / 100), 2))
     extra = 0.0
     station = (product.prep_station or "kitchen") if (product.prep_station or "") in {"kitchen", "bar"} else "kitchen"
     line_id = uid()
@@ -3758,29 +3875,43 @@ async def _order_stock_lines(db: AsyncSession, tenant_id: str, order: m.Restaura
     return stock_lines
 
 
+async def order_tenders(db: AsyncSession, order: m.RestaurantOrder) -> list[tuple[str, float]]:
+    """How the bill was paid: each tender of a split bill, or the one method for the whole bill."""
+    if (order.payment_method or "") == "split":
+        rows = (
+            await db.execute(
+                select(m.RestaurantOrderPayment.method, m.RestaurantOrderPayment.amount)
+                .where(
+                    m.RestaurantOrderPayment.tenant_id == order.tenant_id,
+                    m.RestaurantOrderPayment.order_id == order.id,
+                )
+                .order_by(m.RestaurantOrderPayment.created_at)
+            )
+        ).all()
+        if rows:
+            return [(r[0], money_json(r[1] or 0)) for r in rows]
+    return [(order.payment_method or "cash", money_json(order.total_amount))]
+
+
 async def _post_sale_journal(db, tenant_id, order, *, user_id, reverse: bool) -> str | None:
     amount = money_json(order.total_amount)
     if amount <= 0:
         return order.journal_entry_id
     await accounting.ensure_default_accounts(db, tenant_id)
-    debit_code, _label = accounting.pos_debit_account_for_payment_method(order.payment_method)
     _service, tax = bill_parts(money_json(order.subtotal), amount, await service_percent(db, tenant_id))
     revenue_amount = money_json(round(amount - tax, 2))
     description = f"Restaurant refund {order.order_number}" if reverse else f"Restaurant sale {order.order_number}"
+    tender_lines = []
+    for method, part in await order_tenders(db, order):
+        if part <= 0:
+            continue
+        code, _label = accounting.pos_debit_account_for_payment_method(method)
+        tender_lines.append({"account_code": code, "debit": part, "credit": 0, "description": description})
+    lines = [*tender_lines, {"account_code": "4000", "debit": 0, "credit": revenue_amount, "description": description}]
+    if tax > 0:
+        lines.append({"account_code": "2100", "debit": 0, "credit": tax, "description": description})
     if reverse:
-        lines = [
-            {"account_code": "4000", "debit": revenue_amount, "credit": 0, "description": description},
-            {"account_code": debit_code, "debit": 0, "credit": amount, "description": description},
-        ]
-        if tax > 0:
-            lines.insert(1, {"account_code": "2100", "debit": tax, "credit": 0, "description": description})
-    else:
-        lines = [
-            {"account_code": debit_code, "debit": amount, "credit": 0, "description": description},
-            {"account_code": "4000", "debit": 0, "credit": revenue_amount, "description": description},
-        ]
-        if tax > 0:
-            lines.append({"account_code": "2100", "debit": 0, "credit": tax, "description": description})
+        lines = [{**x, "debit": x["credit"], "credit": x["debit"]} for x in lines]
     cogs = await accounting.compute_standard_cogs(
         db, tenant_id=tenant_id, lines=await _order_stock_lines(db, tenant_id, order)
     )
@@ -3830,7 +3961,14 @@ async def _release_table_if_clear(db: AsyncSession, tenant_id: str, table_id: st
 
 
 async def complete_order(
-    db: AsyncSession, tenant_id: str, order_id: str, *, user_id: str | None, device_id: str | None = None, tip=None
+    db: AsyncSession,
+    tenant_id: str,
+    order_id: str,
+    *,
+    user_id: str | None,
+    device_id: str | None = None,
+    tip=None,
+    payments: list | None = None,
 ) -> m.RestaurantOrder:
     order = await _order(db, tenant_id, order_id, user_id=user_id)
     if order.status == "completed":
@@ -3840,6 +3978,8 @@ async def complete_order(
     if (order.payment_method or "").strip().lower() == "credit":
         raise HTTPException(status_code=409, detail=BILL_CREDIT_DETAIL)
     await _refresh_order_totals(db, order)
+    if payments:
+        await _record_split_tenders(db, order, payments)
     await _deduct_or_restore(db, tenant_id, order, user_id=user_id, sign=-1)
     order.journal_entry_id = await _post_sale_journal(db, tenant_id, order, user_id=user_id, reverse=False)
     if tip:
@@ -3866,6 +4006,102 @@ async def complete_order(
         details={"total": money_json(order.total_amount), "payment_method": order.payment_method},
     )
     return order
+
+
+async def _record_split_tenders(db: AsyncSession, order: m.RestaurantOrder, payments: list) -> None:
+    """One bill paid more than one way. The parts must add up to the bill exactly."""
+    from app import till_payments
+
+    parts: list[tuple[str, float, str | None]] = []
+    for item in payments:
+        method = str(getattr(item, "method", None) or (item.get("method") if isinstance(item, dict) else "") or "").strip().lower()
+        amount = money_json(getattr(item, "amount", None) if not isinstance(item, dict) else item.get("amount"))
+        reference = getattr(item, "reference", None) if not isinstance(item, dict) else item.get("reference")
+        if method not in PAYMENT_METHODS:
+            raise HTTPException(status_code=422, detail="Each part needs cash, card, wallet or Mobile Money")
+        if amount <= 0:
+            raise HTTPException(status_code=422, detail="Each part needs an amount above zero")
+        parts.append((method, amount, (str(reference).strip()[:100] or None) if reference else None))
+    if len(parts) == 1:
+        order.payment_method = parts[0][0]
+        if parts[0][2]:
+            await till_payments.claim(db, tenant_id=order.tenant_id, reference=parts[0][2], amount=parts[0][1], used_ref=order.order_number)
+        return
+    paid = money_json(round(sum(p[1] for p in parts), 2))
+    total = money_json(order.total_amount)
+    if abs(paid - total) > 0.009:
+        raise HTTPException(
+            status_code=422,
+            detail=f"The parts add up to {paid:.2f} but the bill is {total:.2f}. Change an amount so they match.",
+        )
+    await db.execute(
+        m.RestaurantOrderPayment.__table__.delete().where(m.RestaurantOrderPayment.order_id == order.id)
+    )
+    for method, amount, reference in parts:
+        if reference:
+            await till_payments.claim(db, tenant_id=order.tenant_id, reference=reference, amount=amount, used_ref=order.order_number)
+        db.add(
+            m.RestaurantOrderPayment(
+                tenant_id=order.tenant_id, order_id=order.id, method=method, amount=amount, reference=reference
+            )
+        )
+    order.payment_method = "split"
+    await db.flush()
+
+
+async def split_order(
+    db: AsyncSession, tenant_id: str, order_id: str, *, line_ids: list[str], user_id: str | None
+) -> tuple[m.RestaurantOrder, m.RestaurantOrder]:
+    """Move some dishes (by item, or by seat) onto a new bill for the same table, to be paid apart."""
+    order = await _order(db, tenant_id, order_id, user_id=user_id)
+    if order.status not in OPEN_STATUSES:
+        raise HTTPException(status_code=409, detail="Only an open bill can be split")
+    lines = list(
+        (await db.execute(select(m.RestaurantOrderLine).where(m.RestaurantOrderLine.order_id == order.id))).scalars()
+    )
+    wanted = {str(x) for x in line_ids}
+    moving = [ln for ln in lines if ln.id in wanted]
+    if not moving or len(moving) != len(wanted):
+        raise HTTPException(status_code=422, detail="Pick dishes from this bill to move")
+    if len(moving) == len(lines):
+        raise HTTPException(status_code=422, detail="Leave at least one dish on the first bill")
+    new = m.RestaurantOrder(
+        tenant_id=tenant_id,
+        store_id=order.store_id,
+        order_number=await _next_number(db, tenant_id),
+        service_mode=order.service_mode,
+        table_id=order.table_id,
+        customer_name=order.customer_name,
+        status=order.status,
+        payment_method=order.payment_method if order.payment_method != "split" else "cash",
+        notes=order.notes,
+        created_by=order.created_by,
+        created_at=order.created_at,
+    )
+    db.add(new)
+    await db.flush()
+    for ln in moving:
+        ln.order_id = new.id
+    stations = {ln.station for ln in moving}
+    tickets = (
+        await db.execute(select(m.RestaurantKitchenTicket).where(m.RestaurantKitchenTicket.order_id == order.id))
+    ).scalars().all()
+    for ticket in tickets:
+        if ticket.station in stations:
+            db.add(
+                m.RestaurantKitchenTicket(
+                    tenant_id=tenant_id, order_id=new.id, station=ticket.station, status=ticket.status, created_at=ticket.created_at
+                )
+            )
+    await db.flush()
+    await _refresh_order_totals(db, order)
+    await _refresh_order_totals(db, new)
+    await audit_svc.record_event(
+        db, tenant_id=tenant_id, user_id=user_id, module="restaurant",
+        action="restaurant_order_split", entity="restaurant_order", entity_id=order.id,
+        details={"new_order": new.order_number, "lines": len(moving)},
+    )
+    return order, new
 
 
 async def cancel_order(db: AsyncSession, tenant_id: str, order_id: str, *, user_id: str | None, void: bool) -> m.RestaurantOrder:
@@ -3929,6 +4165,44 @@ async def _server_names(db: AsyncSession, tenant_id: str, user_ids: set[str]) ->
         if name:
             names[user.id] = name
     return names
+
+
+async def orders_version(db: AsyncSession, tenant_id: str, user_id: str | None = None) -> str:
+    """A short fingerprint of the live board: it changes when any open bill, dish or status changes.
+
+    Screens ask for this every few seconds and only reload the full board when it moves.
+    """
+    import hashlib
+
+    allowed = await _allowed_stores(db, tenant_id, user_id)
+    stmt = select(
+        m.RestaurantOrder.id, m.RestaurantOrder.status, m.RestaurantOrder.total_amount, m.RestaurantOrder.table_id
+    ).where(m.RestaurantOrder.tenant_id == tenant_id, m.RestaurantOrder.status.in_(tuple(OPEN_STATUSES)))
+    if allowed is not None:
+        stmt = stmt.where(_store_clause(m.RestaurantOrder.store_id, allowed))
+    orders = sorted((await db.execute(stmt)).all())
+    lines = []
+    ids = [o[0] for o in orders]
+    if ids:
+        lines = sorted(
+            (
+                await db.execute(
+                    select(
+                        m.RestaurantOrderLine.id, m.RestaurantOrderLine.order_id,
+                        m.RestaurantOrderLine.quantity, m.RestaurantOrderLine.prep_status,
+                    ).where(m.RestaurantOrderLine.order_id.in_(ids))
+                )
+            ).all()
+        )
+    finished = (
+        await db.execute(
+            select(func.count(), func.max(m.RestaurantOrder.completed_at)).where(
+                m.RestaurantOrder.tenant_id == tenant_id, m.RestaurantOrder.status.not_in(tuple(OPEN_STATUSES))
+            )
+        )
+    ).first()
+    text = repr((orders, lines, tuple(finished or ())))
+    return hashlib.sha1(text.encode("utf-8")).hexdigest()[:16]
 
 
 async def list_orders(db: AsyncSession, tenant_id: str, user_id: str | None = None) -> list[m.RestaurantOrder]:

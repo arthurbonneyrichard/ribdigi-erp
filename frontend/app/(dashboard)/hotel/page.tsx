@@ -21,6 +21,7 @@ import { AmountField } from '../../../components/AmountField';
 import { formatDate, formatDateTime, formatMoney } from '../../../lib/format';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import { printDocumentHtml } from '../../../lib/documentPrint';
+import TillMomoPrompt from '../../../components/TillMomoPrompt';
 
 type Room = {
   id: string;
@@ -53,6 +54,7 @@ type Guest = {
 };
 
 type Reservation = {
+  bill_to_party_id?: string | null;
   id: string;
   reservation_number: string;
   room_id: string;
@@ -111,7 +113,7 @@ type Folio = {
 };
 
 type HotelDialog =
-  | { kind: 'extend' | 'move' | 'duplicate' | 'edit' | 'arrival'; stay: Reservation }
+  | { kind: 'extend' | 'move' | 'duplicate' | 'edit' | 'arrival' | 'billto'; stay: Reservation }
   | { kind: 'balance'; stayId: string; name: string; balance: number }
   | { kind: 'care'; roomId: string; roomCode: string; closed: boolean }
   | { kind: 'void'; chargeId: string; label: string }
@@ -580,6 +582,7 @@ export default function HotelPage() {
   const [dlg, setDlg] = useState<Record<string, string>>({});
   const [dlgAmenities, setDlgAmenities] = useState<Record<string, boolean>>({});
   const [dlgRooms, setDlgRooms] = useState<Room[] | null>(null);
+  const [companies, setCompanies] = useState<{ id: string; name: string }[] | null>(null);
   const [dlgError, setDlgError] = useState('');
   const [availReady, setAvailReady] = useState(false);
   const [quote, setQuote] = useState<StayQuote | null>(null);
@@ -979,7 +982,8 @@ export default function HotelPage() {
         if (!active) return;
         setModuleAllowed(ok);
         setStaffId(typeof me.data?.id === 'string' ? me.data.id : '');
-        const role = String(me.data?.role || '');
+        // A custom role copied from a hotel role does that role's job (menus, home, buttons).
+        const role = String(me.data?.job_role || me.data?.role || '');
         setMyRole(role);
         if (ok && !navItemVisibleForRole(role, rawTab ? `/hotel?tab=${rawTab}` : '/hotel', true)) {
           router.replace(roleHomePath(role, 'hotel'));
@@ -1149,7 +1153,18 @@ export default function HotelPage() {
     setDlgError('');
     setDlgRooms(null);
     let fields: Record<string, string> = {};
-    if (next.kind === 'extend') {
+    if (next.kind === 'billto') {
+      fields = { party_id: next.stay.bill_to_party_id || '' };
+      void (async () => {
+        try {
+          const rows = await api('/hotel/companies');
+          setCompanies((rows.data || []) as { id: string; name: string }[]);
+        } catch (err: unknown) {
+          setCompanies([]);
+          setDlgError(hotelErr(err, 'Could not load company accounts.'));
+        }
+      })();
+    } else if (next.kind === 'extend') {
       fields = { date: shiftIso(String(next.stay.check_out_date).slice(0, 10), 1) };
     } else if (next.kind === 'duplicate') {
       fields = { date: String(next.stay.check_out_date).slice(0, 10) };
@@ -1498,15 +1513,23 @@ export default function HotelPage() {
     }
   }
 
-  /** Early arrivals and rooms still waiting to be cleaned are allowed, but only after a clear warning. */
+  /** Early arrivals get a warning. A room still waiting to be cleaned needs a manager to check in anyway. */
   function checkInStay(r: Reservation) {
     const when = String(r.check_in_date).slice(0, 10);
     const room = rooms.find((x) => x.id === r.room_id);
     const warnings: string[] = [];
+    const notClean = room?.status === 'dirty' || room?.housekeeping_status === 'dirty';
+    const canOverride = ['hotel_manager', 'company_admin', 'super_admin'].includes(myRole);
+    if (notClean && !canOverride) {
+      setMessage('');
+      setError(`Room ${r.room_code || ''} still needs cleaning. Mark it clean in Housekeeping, move the guest to a clean room, or ask a manager to check them in.`);
+      return;
+    }
     if (when > localIso()) warnings.push(`This stay starts on ${stayWhen(when, formatPrefs)}. Its dates and bill stay as booked, so if the guest is paying for the extra nights, press Cancel and use Edit stay first.`);
-    if (room?.status === 'dirty' || room?.housekeeping_status === 'dirty') warnings.push(`Room ${r.room_code || ''} still needs cleaning.`);
+    if (notClean) warnings.push(`Room ${r.room_code || ''} still needs cleaning.`);
     if (warnings.length && !window.confirm(`${warnings.join(' ')} Check the guest in anyway?`)) return;
-    void act(`/hotel/reservations/${r.id}/check-in`, `${r.guest_name || r.reservation_number} is checked in.`);
+    const query = notClean ? '?allow_dirty=true' : '';
+    void act(`/hotel/reservations/${r.id}/check-in${query}`, `${r.guest_name || r.reservation_number} is checked in.`);
   }
 
   async function checkOutStay(reservationId: string, name: string) {
@@ -1564,6 +1587,19 @@ export default function HotelPage() {
       setMessage('Confirmation slip sent to print');
     } catch (err: unknown) {
       setError(hotelErr(err, 'Could not load confirmation slip'));
+    }
+  }
+
+  async function printRegistrationCard(reservationId: string) {
+    try {
+      const page = await api(`/hotel/reservations/${reservationId}/registration-card`);
+      if (page?.data?.html && printDocumentHtml(page.data.html)) {
+        setMessage('Registration card sent to print');
+        return;
+      }
+      setError('Could not open the registration card for printing.');
+    } catch (err: unknown) {
+      setError(hotelErr(err, 'Could not load the registration card'));
     }
   }
 
@@ -3597,6 +3633,20 @@ export default function HotelPage() {
                         ariaLabel: `Print confirmation ${r.reservation_number}`,
                         onClick: () => void printStaySlip(r.id, r.reservation_number),
                       },
+                      {
+                        key: 'regcard',
+                        label: 'Print registration card',
+                        disabled: busy,
+                        ariaLabel: `Print registration card ${r.reservation_number}`,
+                        onClick: () => void printRegistrationCard(r.id),
+                      },
+                      ['tentative', 'booked', 'checked_in', 'waitlisted'].includes(r.status) && {
+                        key: 'billto',
+                        label: r.bill_to_party_id ? 'Change who pays' : 'Bill to a company',
+                        disabled: busy,
+                        ariaLabel: `Bill ${r.reservation_number} to a company`,
+                        onClick: () => openDialog({ kind: 'billto', stay: r }),
+                      },
                       r.can_cancel && {
                         key: 'mail',
                         label: 'Email confirmation',
@@ -3739,6 +3789,18 @@ export default function HotelPage() {
                 </div>
               </form>
               {payForm.method === 'credit' ? <p className="hint">Credit takes no money. The amount stays owed on Guest invoices after check-out.</p> : null}
+              {payForm.method === 'momo' && Number(payForm.amount) > 0 && !payForm.reference.startsWith('till_') ? (
+                <TillMomoPrompt
+                  key={payForm.amount}
+                  base="/hotel"
+                  amount={Number(payForm.amount)}
+                  formatMoney={money}
+                  onPaid={(ref) => {
+                    setPayForm((f) => ({ ...f, reference: ref }));
+                    setMessage('Mobile Money approved. Press Record payment to put it on the bill.');
+                  }}
+                />
+              ) : null}
             </section>
           )}
           <div className="list-table-wrap">
@@ -5470,6 +5532,65 @@ export default function HotelPage() {
           }
         >
           <p>{dialog.closed ? 'It cannot be sold until the fault is marked fixed.' : 'It cannot take a guest today until it is marked clean. You can still book it for a later date.'}</p>
+        </FormModal>
+      )}
+
+      {dialog?.kind === 'billto' && (
+        <FormModal
+          title={`Who pays for ${dialog.stay.reservation_number}`}
+          onClose={() => setDialog(null)}
+          busy={busy}
+          footer={
+            <button
+              type="button"
+              className="btn-ok"
+              disabled={busy || companies === null}
+              onClick={() =>
+                dialogSave(
+                  `/hotel/reservations/${dialog.stay.id}/bill-to`,
+                  { party_id: dlg.party_id || null },
+                  dlg.party_id ? 'The bill goes to the company at check-out' : 'The guest pays this bill',
+                )
+              }
+            >
+              Save
+            </button>
+          }
+        >
+          {dlgError ? <p className="hotel-banner warn" role="alert">{dlgError}</p> : null}
+          <p className="muted">
+            A company account (city ledger) gets the invoice at check-out and pays it later. What companies owe shows on Guest invoices.
+          </p>
+          <label>
+            <span>Bill to</span>
+            <select aria-label="Bill stay to company" value={dlg.party_id || ''} onChange={(e) => setDlg((d) => ({ ...d, party_id: e.target.value }))}>
+              <option value="">The guest pays</option>
+              {(companies || []).map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Or add a company</span>
+            <input aria-label="New company account name" placeholder="Company name" value={dlg.new_company || ''} onChange={(e) => setDlg((d) => ({ ...d, new_company: e.target.value }))} />
+          </label>
+          <button
+            type="button"
+            disabled={busy || !(dlg.new_company || '').trim()}
+            aria-label="Add company account"
+            onClick={async () => {
+              try {
+                const made = await api('/hotel/companies', { method: 'POST', body: JSON.stringify({ name: (dlg.new_company || '').trim() }) });
+                const row = made.data as { id: string; name: string };
+                setCompanies((list) => [...(list || []).filter((c) => c.id !== row.id), row].sort((a, b) => a.name.localeCompare(b.name)));
+                setDlg((d) => ({ ...d, party_id: row.id, new_company: '' }));
+              } catch (err: unknown) {
+                setDlgError(hotelErr(err, 'Could not add that company.'));
+              }
+            }}
+          >
+            Add company
+          </button>
         </FormModal>
       )}
 

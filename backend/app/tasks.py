@@ -161,3 +161,17 @@ def sample_server_health() -> dict:
     if not settings.CELERY_ENABLED:
         return {"skipped": True, "reason": "CELERY_ENABLED=false"}
     return jobs_svc.run_async(jobs_svc.job_sample_server_health())
+
+
+@celery.task(name="app.tasks.hotel_daily_close")
+def hotel_daily_close() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    return jobs_svc.run_async(jobs_svc.job_hotel_daily_close())
+
+
+@celery.task(name="app.tasks.sync_hotel_channels")
+def sync_hotel_channels() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    return jobs_svc.run_async(jobs_svc.job_sync_hotel_channels())

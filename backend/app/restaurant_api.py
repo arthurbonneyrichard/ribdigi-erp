@@ -11,6 +11,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, BeforeValidator, ConfigDict, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import audit as audit_svc
 from app import restaurant as restaurant_svc
 from app import restaurant_report as report_svc
 from app import restaurant_till as till_svc
@@ -27,7 +28,7 @@ _WAITER_WRITES = (
     r"POST /tables/[^/]+/(hold|release)",
     r"POST /orders",
     r"PATCH /orders/[^/]+",
-    r"POST /orders/[^/]+/(send|cancel)",
+    r"POST /orders/[^/]+/(send|cancel|split)",
     r"POST /bookings",
     r"PATCH /bookings/[^/]+",
     r"POST /bookings/[^/]+/(seat|finish|cancel)",
@@ -40,6 +41,7 @@ _RESTAURANT_ROLE_WRITES: dict[str, tuple[str, ...]] = {
     + (
         r"POST /orders/[^/]+/complete",
         r"POST /till/offline/sync",
+        r"POST /till/momo(/[^/]+/otp)?",
         r"POST /till/shift/open",
         r"POST /till/shift/[^/]+/(cash|close)",
         r"PUT /sold-out",
@@ -904,11 +906,28 @@ async def restaurant_send(
     return _env(restaurant_svc.serialize_order(row), "Sent to kitchen")
 
 
+class RestaurantTenderBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    method: Literal["cash", "card", "wallet", "mobile_money"]
+    amount: PositiveMoneyValue
+    # A Mobile Money prompt's reference (from /restaurant/till/momo), checked as paid before it counts.
+    reference: Annotated[str, Field(min_length=4, max_length=100)] | None = None
+
+
 class RestaurantCompleteBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     # A tip on top of the bill; held for staff, never sales.
     tip: Annotated[float, Field(ge=0, le=100000, allow_inf_nan=False)] = 0
+    # Paid more than one way: the parts must add up to the bill.
+    payments: list[RestaurantTenderBody] | None = Field(default=None, max_length=6)
+
+
+class RestaurantSplitBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    line_ids: list[UuidIdValue] = Field(min_length=1, max_length=200)
 
 
 @router.post("/orders/{order_id}/complete")
@@ -921,9 +940,77 @@ async def restaurant_complete(
     row = await restaurant_svc.complete_order(
         db, claims["tenant_id"], order_id, user_id=claims.get("sub"), device_id=claims.get("pos_device_id"),
         tip=payload.tip if payload else None,
+        payments=payload.payments if payload else None,
     )
     await db.commit()
     return _env(restaurant_svc.serialize_order(row), "Order completed")
+
+
+class HappyHourRule(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: Annotated[str, Field(min_length=1, max_length=60)]
+    percent: Annotated[float, Field(ge=1, le=90, allow_inf_nan=False)]
+    days: list[Literal["mon", "tue", "wed", "thu", "fri", "sat", "sun"]] = Field(min_length=1, max_length=7)
+    start: Annotated[str, Field(pattern=r"^([01]\d|2[0-3]):[0-5]\d$")]
+    end: Annotated[str, Field(pattern=r"^([01]\d|2[0-3]):[0-5]\d$")]
+    product_ids: list[UuidIdValue] = Field(default_factory=list, max_length=300)
+    active: bool = True
+
+
+class HappyHoursBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    rules: list[HappyHourRule] = Field(default_factory=list, max_length=20)
+
+
+@router.get("/orders/version")
+async def restaurant_orders_version(
+    claims=Depends(require_permission("restaurant", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return _env({"version": await restaurant_svc.orders_version(db, claims["tenant_id"], claims.get("sub"))})
+
+
+@router.get("/happy-hours")
+async def restaurant_happy_hours(
+    claims=Depends(require_permission("restaurant", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return _env(await restaurant_svc.list_happy_hours(db, claims["tenant_id"]))
+
+
+@router.put("/happy-hours")
+async def restaurant_happy_hours_save(
+    payload: HappyHoursBody,
+    claims=Depends(require_permission("restaurant", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    body = await restaurant_svc.save_happy_hours(db, claims["tenant_id"], [r.model_dump() for r in payload.rules])
+    await audit_svc.record_event(
+        db, tenant_id=claims["tenant_id"], user_id=claims.get("sub"), module="restaurant",
+        action="restaurant_happy_hours_saved", entity="tenant", entity_id=claims["tenant_id"],
+        details={"rules": len(payload.rules)},
+    )
+    await db.commit()
+    return _env(body, "Happy hours saved")
+
+
+@router.post("/orders/{order_id}/split")
+async def restaurant_split(
+    order_id: str,
+    payload: RestaurantSplitBody,
+    claims=Depends(require_permission("restaurant", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    first, second = await restaurant_svc.split_order(
+        db, claims["tenant_id"], order_id, line_ids=list(payload.line_ids), user_id=claims.get("sub")
+    )
+    await db.commit()
+    return _env(
+        {"order": restaurant_svc.serialize_order(first), "new_order": restaurant_svc.serialize_order(second)},
+        f"Bill split: {second.order_number} is the new bill",
+    )
 
 
 @router.post("/orders/{order_id}/cancel")
