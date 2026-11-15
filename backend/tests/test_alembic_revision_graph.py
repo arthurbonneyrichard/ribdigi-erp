@@ -76,7 +76,7 @@ def test_single_head_linear_chain():
     # Then 0185 bakery books and counter (deposits as a liability, input VAT, over/short, discounts, split pay,
     # part refunds, stock counts), 0186 bakery shelf life, labels, units, trade customers, suppliers, tills,
     # 0183 hotel city ledger and booking-site calendars, and 0184 split tender, layaways, serials, MoMo prompts.
-    assert heads == {"20261115_0184"}
+    assert heads == {"20261115_0187"}
     assert any(rev == "20261115_0185" and down == "20261114_0182" for _n, rev, down in rows)
     assert any(rev == "20261115_0186" and down == "20261115_0185" for _n, rev, down in rows)
     assert any(rev == "20261115_0183" and down == "20261115_0186" for _n, rev, down in rows)

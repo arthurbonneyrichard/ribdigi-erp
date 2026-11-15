@@ -9,6 +9,7 @@ import PageSkeleton from '../../../components/PageSkeleton';
 
 import { closeShiftForSignOut } from '../../../lib/cashierShift';
 import './security-ui.css';
+import PrivacyDataCard from '../../../components/PrivacyDataCard';
 import { formatWhen } from '../../../lib/format';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 
@@ -585,6 +586,7 @@ export default function Page() {
           </div>
         </details>
       )}
+      <PrivacyDataCard />
     </div>
   );
 }

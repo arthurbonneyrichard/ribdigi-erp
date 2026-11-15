@@ -726,6 +726,7 @@ export const PLATFORM_NAV_ITEMS: NavItem[] = [
   ['Security', '/security', 'security'],
   ['Support Desk', '/platform/support', 'support'],
   ['Email center', '/platform/email', 'platform'],
+  ['Privacy requests', '/platform/privacy', 'platform'],
 ];
 
 const PLATFORM_OWNER_NAV_ROLES = new Set(['super_admin', 'platform_owner']);
@@ -748,6 +749,8 @@ export function platformNavItemsForRole(
     if (href === '/platform/settings') return PLATFORM_OWNER_NAV_ROLES.has(role);
     // Bulk email speaks for Ribdigi House: owner and platform admins only (API also enforces this).
     if (href === '/platform/email') return PLATFORM_OWNER_NAV_ROLES.has(role) || role === 'platform_admin';
+    // Deletion requests: the same people who can decide them (API also enforces this).
+    if (href === '/platform/privacy') return PLATFORM_OWNER_NAV_ROLES.has(role) || role === 'platform_admin';
     if (module === 'support') return PLATFORM_SUPPORT_NAV_ROLES.has(role);
     if (module === 'platform' || module === 'platform_tenants' || module === 'jobs') return true;
     if (allowed === '*') return true;

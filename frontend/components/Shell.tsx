@@ -93,6 +93,7 @@ import {
 } from '../lib/companyLogo';
 import OnboardingChecklist from './OnboardingChecklist';
 import StoreSwitcher from './StoreSwitcher';
+import LoginLegalLinks from './LoginLegalLinks';
 
 /** Tenant ERP navigation (business workspace).
  * Hotel/FMCG nav items are packageable but only appear when `/me.enabled_modules`
@@ -666,6 +667,7 @@ const NAV_ITEM_ICON: Record<string, string> = {
   '/platform': 'dashboard',
   '/platform/billing': 'credit',
   '/platform/email': 'd:mail',
+  '/platform/privacy': 'security',
   '/platform/monitor': 'd:chart',
   '/company/billing': 'd:wallet',
   // Retail entries in the same group would repeat one picture, so each gets its own (d: = DeskIcon).
@@ -2508,6 +2510,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             </div>
           ) : (
             children
+          )}
+          {pathname === '/pos' || pathname === '/restaurant/till' || kiosk || tillOnly ? null : (
+            <LoginLegalLinks className="app-legal" />
           )}
         </div>
       </main>

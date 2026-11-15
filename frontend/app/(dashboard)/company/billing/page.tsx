@@ -462,6 +462,13 @@ export default function SubscriptionBillingPage() {
                 />
                 <span>I agree to renew this plan automatically at the amount shown until I turn renewal off.</span>
               </label>
+              <p className="billing-page-legal">
+                Renewal, cancellation and refunds follow the{' '}
+                <a href="/legal/terms" target="_blank" rel="noopener">Terms of Service</a> and the{' '}
+                <a href="/legal/refunds" target="_blank" rel="noopener">Refund Policy</a>. Turning renewal off
+                keeps access until the date already paid. Ribdigi House adds no fee on top of the amount shown; your bank or
+                Mobile Money provider may apply its own charges.
+              </p>
               <div className="billing-page-actions">
                 <button
                   aria-label="Record renewal consent"

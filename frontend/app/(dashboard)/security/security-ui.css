@@ -111,3 +111,15 @@
     min-height: 44px;
   }
 }
+
+/* Privacy and your data */
+.privacy-card h3{margin:16px 0 6px;font-size:15px}
+.privacy-row{display:flex;gap:8px;align-items:flex-start;font-weight:600;margin:4px 0}
+.privacy-row input{margin-top:3px;width:18px;height:18px;flex:0 0 auto;accent-color:var(--deep-green)}
+.privacy-form{display:grid;gap:10px;max-width:560px}
+.privacy-form fieldset{margin:0;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius)}
+.privacy-form legend{padding:0 4px;font-weight:700}
+.privacy-form label:not(.privacy-row){display:grid;gap:4px;font-weight:600}
+.privacy-warn{margin:0;padding:10px 12px;border-radius:var(--radius);background:var(--warn-bg);color:#5c3a00;font-size:13px}
+.privacy-table{margin-top:16px}
+.privacy-table caption{text-align:left;font-weight:700;padding:4px 0}
