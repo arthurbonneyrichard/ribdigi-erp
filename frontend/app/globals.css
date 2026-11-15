@@ -1282,7 +1282,22 @@
 .app-legal a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .billing-page-legal{margin:8px 0 0;font-size:13px;color:var(--muted)}
 .billing-page-legal a{color:var(--deep-green);text-decoration:underline}
-.legal-doc{max-width:44rem;text-align:left}
+.legal-doc{text-align:left}
+/* Legal pages read as a wide document on desktop, not the narrow sign-in card. */
+.legal-stage{align-items:flex-start}
+.legal-stage .login.legal-doc{margin:0 auto}
+@media(min-width:721px){
+  .login.legal-doc{width:min(1080px,100%);max-width:100%;padding:40px 56px 28px}
+  .legal-doc .login-brand{text-align:left}
+  .legal-doc .login-logo{margin:0}
+  .legal-doc .login-heading{font-size:30px;margin:12px 0 4px}
+  .legal-doc-body{font-size:15.5px;line-height:1.65;gap:14px}
+  .legal-doc-body h2{font-size:18px;margin-top:14px}
+  .legal-doc-body h3{font-size:16px}
+}
+@media(min-width:1200px){
+  .login.legal-doc{width:min(1160px,100%);padding:48px 72px 32px}
+}
 .legal-doc .login-heading{text-align:left}
 .legal-doc-body{display:grid;gap:12px;margin:16px 0;color:var(--sand);font-size:14px;line-height:1.55;font-weight:500}
 .legal-doc-body p{margin:0}
@@ -9688,11 +9703,11 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{background-color:rgb
 /* Buttons: flat and modern, no 3D ledge */
 .login-stage .login-primary{
   background:linear-gradient(180deg,#55BC1B 0%,#43A311 100%);border:1px solid #3A930E;border-bottom:1px solid #357F0E;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 10px 24px -10px rgba(74,176,18,.7);transform:none
+  box-shadow:none;transform:none
 }
 .login-stage .login-primary:hover{
   background:linear-gradient(180deg,#2F7A0C 0%,#286A0A 100%);border-color:#286A0A;border-bottom:1px solid #286A0A;transform:none;color:#fff;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.24),0 14px 28px -10px rgba(74,176,18,.75)
+  box-shadow:none
 }
 .login-stage .login-primary:active,.login-stage .login-secondary:active{transform:scale(.985);box-shadow:inset 0 2px 4px rgba(0,0,0,.3)}
 .login-stage .login-secondary{
