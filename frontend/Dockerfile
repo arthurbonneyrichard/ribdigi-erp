@@ -50,6 +50,8 @@ RUN addgroup --system --gid 10001 nodejs \
     && adduser --system --uid 10001 nextjs
 
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+# Starts server.js with framework-identifying headers removed (security control 09).
+COPY --from=builder --chown=nextjs:nodejs /app/serve.cjs ./serve.cjs
 
 USER nextjs
 EXPOSE 3000
@@ -57,4 +59,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://127.0.0.1:3000/',(r)=>{process.exit(r.statusCode&&r.statusCode<500?0:1)}).on('error',()=>process.exit(1))"
 
-CMD ["node", "server.js"]
+CMD ["node", "serve.cjs"]
