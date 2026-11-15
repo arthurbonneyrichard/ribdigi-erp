@@ -35,7 +35,7 @@
 .deskdash .dd-act-text{display:flex;flex-direction:column;line-height:1.2}
 .deskdash .dd-act-text b{font-size:15px}
 .deskdash .dd-act-text small{color:var(--dd-muted);font-weight:600;font-size:12px}
-.deskdash .dd-actions a.primary{background:linear-gradient(135deg,#006B2E,#0B8A3E);border-color:#006B2E;color:#fff}
+.deskdash .dd-actions a.primary{background:linear-gradient(135deg,#006B2E,#0A813B);border-color:#006B2E;color:#fff}
 .deskdash .dd-actions a.primary .dd-act-ico{background:rgba(255,255,255,.16);color:#fff}
 .deskdash .dd-actions a.primary small{color:rgba(255,255,255,.85)}
 .deskdash .dd-actions a:focus-visible,.deskdash .dd-tile:focus-visible,.deskdash .dd-attn a:focus-visible{outline:3px solid var(--dd-bar);outline-offset:2px}

@@ -24,7 +24,7 @@
 .main .hrm button:active:not(:disabled){transform:scale(.98)}
 .main .hrm button:focus-visible,.main .hrm a:focus-visible{outline:none;box-shadow:var(--hr-ring)}
 .main .hrm button:disabled{opacity:.45;cursor:not-allowed}
-.main .hrm button.hr-primary{background:linear-gradient(135deg,#006B2E,#0B8A3E);border-color:#006B2E;color:#fff}
+.main .hrm button.hr-primary{background:linear-gradient(135deg,#006B2E,#0A813B);border-color:#006B2E;color:#fff}
 [data-theme="dark"] .main .hrm button.hr-primary{background:#7BD14A;border-color:#7BD14A;color:#0F1A14}
 .main .hrm button.hr-danger{color:var(--hr-bad);border-color:var(--hr-bad-tint);background:transparent}
 .main .hrm button.hr-danger:hover:not(:disabled){background:var(--hr-bad-tint);border-color:var(--hr-bad)}
@@ -35,7 +35,7 @@
 
 /* Screen header */
 .main .hrm .hr-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:18px 20px;border-radius:20px;background:linear-gradient(120deg,var(--hr-panel) 55%,var(--hr-tint));border:1px solid var(--hr-line);box-shadow:var(--hr-shadow)}
-.main .hrm .hr-head-ico{display:grid;place-items:center;width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#006B2E,#0B8A3E);color:#fff;flex:0 0 52px}
+.main .hrm .hr-head-ico{display:grid;place-items:center;width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#006B2E,#0A813B);color:#fff;flex:0 0 52px}
 [data-theme="dark"] .main .hrm .hr-head-ico{background:#1E3326;color:#A5E37E}
 .main .hrm .hr-head-text{flex:1 1 260px;min-width:0}
 .main .hrm .hr-head p{margin:4px 0 0;color:var(--hr-muted)}
@@ -148,7 +148,7 @@
 .main .hrm .hr-bagnum{display:flex;align-items:center;gap:12px}
 .main .hrm .hr-bagnum > div{display:flex;flex-direction:column}
 .main .hrm .hr-bagbar b{font-size:28px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.main .hrm .hr-linkbtn{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:12px;background:linear-gradient(135deg,#006B2E,#0B8A3E);color:#fff;font-weight:700;text-decoration:none}
+.main .hrm .hr-linkbtn{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:12px;background:linear-gradient(135deg,#006B2E,#0A813B);color:#fff;font-weight:700;text-decoration:none}
 [data-theme="dark"] .main .hrm .hr-linkbtn{background:#7BD14A;color:#0F1A14}
 
 /* Report */

@@ -316,8 +316,7 @@
 
 .main .ed.ed button.ed-btn-primary:hover:not(:disabled) {
   background: #006b2e;
-  border-color: #006b2e;
-}
+  border-color: #006b2e;color:#fff}
 
 .main .ed.ed button:disabled {
   opacity: 0.5;
