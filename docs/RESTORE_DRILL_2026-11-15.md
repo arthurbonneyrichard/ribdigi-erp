@@ -6,6 +6,8 @@
 - The app started on it and served requests.
 - The per-company backup and restore passed on real Postgres (54 of 54).
 
+**Off-site copy on production: in place.** A nightly Dokploy backup sends `pg_dump` of `ribdigi_erp` to an S3-compatible bucket off the server (prefix `ribdigi-erp/`). The first run checked (15 Nov 2026, 00:00 UTC) uploaded a 2.4 MB file, so the dump holds data and is not empty. Setup and checks: `ops/vps/DOKPLOY_FIRST_TIME.md`, "Off-site database backups".
+
 **Not yet done: the same drill on production.** That needs the owner to run `ops/dr/production_restore_drill.sh` on the production host. It is read-only on production: it restores into a throwaway container and removes it afterwards.
 
 ## 1. Whole-database drill (local stack, real data)
