@@ -727,6 +727,7 @@ export const PLATFORM_NAV_ITEMS: NavItem[] = [
   ['Support Desk', '/platform/support', 'support'],
   ['Email center', '/platform/email', 'platform'],
   ['Privacy requests', '/platform/privacy', 'platform'],
+  ['Legal documents', '/platform/legal', 'platform'],
 ];
 
 const PLATFORM_OWNER_NAV_ROLES = new Set(['super_admin', 'platform_owner']);
@@ -751,6 +752,8 @@ export function platformNavItemsForRole(
     if (href === '/platform/email') return PLATFORM_OWNER_NAV_ROLES.has(role) || role === 'platform_admin';
     // Deletion requests: the same people who can decide them (API also enforces this).
     if (href === '/platform/privacy') return PLATFORM_OWNER_NAV_ROLES.has(role) || role === 'platform_admin';
+    // Public policy pages are edited by the same people (API also enforces this).
+    if (href === '/platform/legal') return PLATFORM_OWNER_NAV_ROLES.has(role) || role === 'platform_admin';
     if (module === 'support') return PLATFORM_SUPPORT_NAV_ROLES.has(role);
     if (module === 'platform' || module === 'platform_tenants' || module === 'jobs') return true;
     if (allowed === '*') return true;
