@@ -71,6 +71,7 @@ def test_every_uvicorn_launch_hides_server_header():
         ROOT / "backend" / "Dockerfile",
         ROOT / "docker-compose.dokploy.yml",
         ROOT / "docker-compose.prod.yml",
+        ROOT / "docker-compose.yml",
         ROOT / "helm" / "ribdigi" / "values.yaml",
         ROOT / "k8s" / "backend.yaml",
     ]
@@ -90,3 +91,14 @@ def test_frontend_starts_through_header_filter():
     assert "x-nextjs-cache" in serve and "TRACE" in serve
     config = (ROOT / "frontend" / "next.config.mjs").read_text(encoding="utf-8")
     assert "poweredByHeader: false" in config
+
+
+def test_unmatched_hosts_get_plain_404_not_traefik_page():
+    compose = (ROOT / "docker-compose.dokploy.yml").read_text(encoding="utf-8")
+    block = compose.split("\n  nohost:", 1)[1].split("\n  backend:", 1)[0]
+    assert "s.end('Not Found')" in block
+    for router in ("ribdigi-nohost-web", "ribdigi-nohost-websecure"):
+        assert f"traefik.http.routers.{router}.priority=1" in block
+        assert f"traefik.http.routers.{router}.service=ribdigi-nohost" in block
+    # Never published on the host; Traefik reaches it on the Dokploy network only.
+    assert "ports:" not in block
