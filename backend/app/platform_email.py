@@ -139,8 +139,27 @@ def summarize(recipients: list[Recipient]) -> dict:
     }
 
 
-def render(subject: str, body: str, company_name: str, style: dict | None = None) -> tuple[str, str, str]:
-    """Subject, text and branded HTML with {company_name} filled in."""
+KINDS = ("marketing", "service")
+SERVICE_FOOTER = (
+    "This is a service notice about your company's Ribdigi ERP account. "
+    "It goes to every company admin and is not marketing."
+)
+MARKETING_FOOTER = "You are receiving this because your company uses Ribdigi ERP."
+
+
+def render(
+    subject: str,
+    body: str,
+    company_name: str,
+    style: dict | None = None,
+    *,
+    kind: str = "marketing",
+    unsubscribe_url: str | None = None,
+) -> tuple[str, str, str]:
+    """Subject, text and branded HTML with {company_name} filled in.
+
+    Marketing mail ends with an unsubscribe link; a service notice says what it is instead.
+    """
     name = company_name or "your company"
     subject_out = subject.replace(_PLACEHOLDER, name)
     text = body.replace(_PLACEHOLDER, name)
@@ -148,16 +167,22 @@ def render(subject: str, body: str, company_name: str, style: dict | None = None
     inner = "".join(
         f"<p>{html.escape(p).replace(chr(10), '<br>')}</p>" for p in paragraphs
     )
-    inner += (
-        '<p style="color:#4D5D56;font-size:12px;margin-top:24px">'
-        "You are receiving this because your company uses Ribdigi ERP.</p>"
-    )
+    if kind == "service":
+        inner += f'<p style="color:#4D5D56;font-size:12px;margin-top:24px">{html.escape(SERVICE_FOOTER)}</p>'
+        footer = "\n\n" + SERVICE_FOOTER
+    else:
+        link = unsubscribe_url or "#unsubscribe"
+        inner += (
+            '<p style="color:#4D5D56;font-size:12px;margin-top:24px">'
+            f"{html.escape(MARKETING_FOOTER)} "
+            f'<a href="{html.escape(link, quote=True)}" style="color:#006B2E">Unsubscribe from these emails</a>.</p>'
+        )
+        footer = f"\n\n{MARKETING_FOOTER}\nUnsubscribe: {link}"
     html_body = emailer.render_branded_html(
         body_html=inner, company_name="Ribdigi House", tenant=None, title=subject_out,
         allow_platform_logo=True,
         style=style,
     )
-    footer = "\n\nYou are receiving this because your company uses Ribdigi ERP."
     return subject_out, text + footer, html_body
 
 
@@ -178,12 +203,22 @@ def require_mail_ready() -> None:
         )
 
 
-async def send_one(email: str, subject: str, body: str, company_name: str) -> tuple[bool, str | None]:
+async def send_one(
+    email: str, subject: str, body: str, company_name: str, kind: str = "marketing"
+) -> tuple[bool, str | None]:
+    from app import privacy
     from app.email_design import refresh_platform_style
 
     await refresh_platform_style()
-    subject_out, text, html_body = render(subject, body, company_name)
-    result = await emailer.send_email(to=email, subject=subject_out, text_body=text, html_body=html_body)
+    headers = None
+    unsubscribe = None
+    if kind != "service":
+        unsubscribe = privacy.unsubscribe_page_url(email)
+        headers = privacy.list_unsubscribe_headers(email)
+    subject_out, text, html_body = render(subject, body, company_name, kind=kind, unsubscribe_url=unsubscribe)
+    result = await emailer.send_email(
+        to=email, subject=subject_out, text_body=text, html_body=html_body, extra_headers=headers
+    )
     return bool(result.sent), (result.error or result.mode if not result.sent else None)
 
 
@@ -212,7 +247,26 @@ async def record_start(db, *, actor: dict, subject: str, body: str, filters: dic
     return send_id
 
 
-async def deliver(*, send_id: str, actor: dict, subject: str, body: str, recipients: list[Recipient]) -> None:
+async def without_unsubscribed(db, recipients: list[Recipient]) -> tuple[list[Recipient], int]:
+    """Drop people who turned Ribdigi House marketing email off (main database list)."""
+    from app import privacy
+    from app.db import SessionLocal, on_desk
+    from app.desks import separate_databases
+
+    emails = [r.email for r in recipients]
+    if separate_databases():
+        with on_desk(None):
+            async with SessionLocal() as main:
+                held = await privacy.suppressed_among(main, emails)
+    else:
+        held = await privacy.suppressed_among(db, emails)
+    kept = [r for r in recipients if r.email not in held]
+    return kept, len(recipients) - len(kept)
+
+
+async def deliver(
+    *, send_id: str, actor: dict, subject: str, body: str, recipients: list[Recipient], kind: str = "marketing"
+) -> None:
     """Background job: send to everyone, then write the outcome to the audit log."""
     from app.db import SessionLocal
 
@@ -224,7 +278,10 @@ async def deliver(*, send_id: str, actor: dict, subject: str, body: str, recipie
         nonlocal sent
         async with gate:
             try:
-                ok, reason = await send_one(r.email, subject, body, r.company_name)
+                if kind == "marketing":  # the default; keeps the original call shape
+                    ok, reason = await send_one(r.email, subject, body, r.company_name)
+                else:
+                    ok, reason = await send_one(r.email, subject, body, r.company_name, kind)
             except Exception as exc:  # one bad address must not stop the rest
                 logger.exception("bulk email to %s failed", r.email)
                 ok, reason = False, str(exc)[:200]
@@ -292,6 +349,7 @@ def _row(started, done: dict | None) -> dict:
         "body": d.get("body") or d.get("body_preview"),
         "body_complete": "body" in d,
         "filters": d.get("filters") or {},
+        "kind": (d.get("filters") or {}).get("kind") or "marketing",
         "recipient_count": d.get("recipient_count", 0),
         "company_count": d.get("company_count", 0),
         "sent_by": d.get("sent_by"),

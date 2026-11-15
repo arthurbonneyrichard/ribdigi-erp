@@ -272,6 +272,7 @@ BACKUP_EXCLUDED: dict[str, str] = {
     "audit_logs": "Tamper-evident chain. A restore must not rewrite history, and the log has its own archive.",
     "audit_cold_archives": "Index of the audit log's own archive.",
     "backup_jobs": "History of backups, kept outside the data they restore.",
+    "data_deletion_requests": "Privacy requests reviewed by Ribdigi House. A restore must not revive or undo a deletion decision.",
     "backup_settings": "A restore must not change the schedule protecting the company now.",
     "notifications": _PASSING,
     "ai_queries": _PASSING,

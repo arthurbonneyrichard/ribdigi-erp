@@ -41,9 +41,15 @@ class AudienceBody(BaseModel):
     include_company_email: bool = False
 
 
+KindValue = Literal["marketing", "service"]
+
+
 class MessageBody(AudienceBody):
     subject: SubjectValue
     body: BodyValue
+    # marketing: news and offers; skips anyone who unsubscribed and carries an unsubscribe link.
+    # service: a notice about the account itself (billing, security, outages); reaches every admin.
+    kind: KindValue = "marketing"
 
 
 class SendBody(MessageBody):
@@ -56,6 +62,7 @@ class RenderBody(BaseModel):
     subject: SubjectValue
     body: BodyValue
     company_name: Annotated[str, StringConstraints(strip_whitespace=True, max_length=200)] | None = None
+    kind: KindValue = "marketing"
 
 
 class RetryBody(BaseModel):
@@ -70,6 +77,11 @@ class TestBody(BaseModel):
     subject: SubjectValue
     body: BodyValue
     to: EmailStr | None = None
+    kind: KindValue = "marketing"
+
+
+class PreviewBody(AudienceBody):
+    kind: KindValue = "marketing"
 
 
 def env(data=None, message: str = "Operation completed successfully"):
@@ -101,8 +113,9 @@ def _actor(request: Request, claims: dict, email: str | None) -> dict:
     }
 
 
-async def _recipients(db, body: AudienceBody, claims: dict):
-    return await svc.audience(
+async def _recipients(db, body: AudienceBody, claims: dict, kind: str = "marketing"):
+    """Everyone the filters match, minus anyone who unsubscribed when the mail is marketing."""
+    people = await svc.audience(
         db,
         statuses=list(body.statuses),
         industries=list(body.industries),
@@ -111,6 +124,9 @@ async def _recipients(db, body: AudienceBody, claims: dict):
         exclude_tenant_id=claims.get("tenant_id"),
         tenant_ids=list(body.tenant_ids),
     )
+    if kind == "service":
+        return people, 0
+    return await svc.without_unsubscribed(db, people)
 
 
 def _filters(body: AudienceBody) -> dict:
@@ -120,6 +136,7 @@ def _filters(body: AudienceBody) -> dict:
         "packages": list(body.packages),
         "tenant_ids": list(body.tenant_ids),
         "include_company_email": body.include_company_email,
+        "kind": getattr(body, "kind", "marketing"),
     }
 
 
@@ -161,18 +178,25 @@ async def email_center_render(
     from app.email_design import refresh_platform_style
 
     await refresh_platform_style()
-    subject, text, html_body = svc.render(payload.subject, payload.body, payload.company_name or "Example Company")
+    subject, text, html_body = svc.render(
+        payload.subject,
+        payload.body,
+        payload.company_name or "Example Company",
+        kind=payload.kind,
+        unsubscribe_url="https://example.com/unsubscribe" if payload.kind == "marketing" else None,
+    )
     return env({"subject": subject, "text": text, "html": emailer.inline_preview(html_body)})
 
 
 @router.post("/preview")
 async def email_center_preview(
-    payload: AudienceBody,
+    payload: PreviewBody,
     claims=Depends(require_platform_permission("platform", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     _sender(claims)
-    return env(svc.summarize(await _recipients(db, payload, claims)))
+    people, unsubscribed = await _recipients(db, payload, claims, payload.kind)
+    return env({**svc.summarize(people), "unsubscribed_skipped": unsubscribed})
 
 
 @router.post("/test")
@@ -186,7 +210,7 @@ async def email_center_test(
     to = str(payload.to or await _my_email(db, claims) or "").strip()
     if not to:
         raise HTTPException(status_code=422, detail="Enter an address for the test email")
-    ok, reason = await svc.send_one(to, f"[Test] {payload.subject}", payload.body, "Example Company")
+    ok, reason = await svc.send_one(to, f"[Test] {payload.subject}", payload.body, "Example Company", payload.kind)
     if not ok:
         raise HTTPException(status_code=502, detail=f"The test email was not sent: {reason or 'unknown reason'}")
     return env({"to": to}, f"Test email sent to {to}")
@@ -204,9 +228,11 @@ async def email_center_send(
     if not payload.confirm:
         raise HTTPException(status_code=422, detail="Confirm the send before it goes out")
     svc.require_mail_ready()
-    recipients = await _recipients(db, payload, claims)
-    summary = svc.summarize(recipients)
+    recipients, unsubscribed = await _recipients(db, payload, claims, payload.kind)
+    summary = {**svc.summarize(recipients), "unsubscribed_skipped": unsubscribed}
     if not recipients:
+        if unsubscribed:
+            raise HTTPException(status_code=422, detail="Everyone these filters match has unsubscribed from marketing email")
         raise HTTPException(status_code=422, detail="No companies match these filters")
     if summary["too_many"]:
         raise HTTPException(
@@ -219,7 +245,13 @@ async def email_center_send(
     )
     await db.commit()
     background.add_task(
-        svc.deliver, send_id=send_id, actor=actor, subject=payload.subject, body=payload.body, recipients=recipients
+        svc.deliver,
+        send_id=send_id,
+        actor=actor,
+        subject=payload.subject,
+        body=payload.body,
+        recipients=recipients,
+        kind=payload.kind,
     )
     return env(
         {"id": send_id, **summary},
@@ -274,7 +306,11 @@ async def email_center_retry(
             status_code=409,
             detail="This send is older than full-message history, so only its opening lines were kept. Write it again instead.",
         )
+    kind = send.get("kind") or "marketing"
     recipients = svc.retry_recipients(send)
+    if kind != "service":
+        # Someone may have unsubscribed since the first send.
+        recipients, _skipped = await svc.without_unsubscribed(db, recipients)
     if not recipients:
         raise HTTPException(status_code=409, detail="Everyone got that email; there is nobody to send it to again")
     svc.require_mail_ready()
@@ -291,7 +327,9 @@ async def email_center_retry(
         summary=summary,
     )
     await db.commit()
-    background.add_task(svc.deliver, send_id=new_id, actor=actor, subject=subject, body=body, recipients=recipients)
+    background.add_task(
+        svc.deliver, send_id=new_id, actor=actor, subject=subject, body=body, recipients=recipients, kind=kind
+    )
     return env(
         {"id": new_id, **summary},
         f"Sending again to {summary['recipient_count']} {'person' if summary['recipient_count'] == 1 else 'people'}",

@@ -19,7 +19,7 @@ function analyticsOrigin() {
 }
 const CSP =
   `default-src 'self'; script-src 'self' 'unsafe-inline'${analyticsOrigin()}; ` +
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; " +
+  "style-src 'self' 'unsafe-inline'; font-src 'self' data:; " +
   "img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' https: wss:; frame-src 'self' https: blob:; " +
   "worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https:";
 

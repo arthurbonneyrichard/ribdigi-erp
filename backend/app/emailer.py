@@ -614,6 +614,7 @@ def build_message(
     attachments: list[dict[str, Any]] | None = None,
     cfg: SmtpConfig | None = None,
     inline_images: list[tuple[str, bytes, str]] | None = None,
+    extra_headers: dict[str, str] | None = None,
 ) -> EmailMessage:
     recipients = [to] if isinstance(to, str) else list(to)
     if not recipients:
@@ -625,6 +626,11 @@ def build_message(
     from_email = (c.from_email or "noreply@localhost").strip()
     msg["From"] = f"{from_name} <{from_email}>"
     msg["To"] = ", ".join(recipients)
+    for name, value in (extra_headers or {}).items():
+        # Header injection guard: one line per header, never a new header from a value.
+        if any(ch in (name + value) for ch in ("\r", "\n")):
+            raise ValueError("Email header values must be a single line")
+        msg[name] = value
     msg.set_content(text_body)
     if html_body:
         msg.add_alternative(html_body, subtype="html")
@@ -679,6 +685,7 @@ async def send_email(
     attachments: list[dict[str, Any]] | None = None,
     tenant: Any | None = None,
     cfg: SmtpConfig | None = None,
+    extra_headers: dict[str, str] | None = None,
 ) -> EmailResult:
     recipients = [to] if isinstance(to, str) else [r for r in to if r]
     c = cfg or resolve_smtp_config(tenant)
@@ -695,6 +702,7 @@ async def send_email(
         attachments=attachments,
         cfg=c,
         inline_images=inline_images,
+        extra_headers=extra_headers,
     )
     attachment_meta = [
         {
@@ -712,6 +720,7 @@ async def send_email(
         "subject": subject,
         "text_body": text_body,
         "html_body": html_body,
+        "headers": dict(extra_headers or {}),
         "attachments": attachment_meta,
         "inline_images": [
             {"cid": cid, "content_type": f"image/{subtype}", "size_bytes": len(data)}
