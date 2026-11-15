@@ -113,7 +113,7 @@
 }
 .main[data-look="retail"] .report-ui-page .report-head-ico {
   display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; flex: 0 0 46px;
-  border-radius: 14px; background: linear-gradient(135deg, #006B2E, #0B8A3E); color: #fff;
+  border-radius: 14px; background: linear-gradient(135deg, #006B2E, #0A813B); color: #fff;
 }
 .main[data-look="retail"] .report-ui-page .report-head-ico .rn-ico { width: 22px; height: 22px; }
 .main[data-look="retail"] .report-ui-page .report-head .reports-crumb {
@@ -144,7 +144,7 @@
 }
 .main[data-look="retail"] .report-ui-page .reports-actions button:not(.menu-btn):hover { background: var(--rm-tint); border-color: #4AB012; }
 .main[data-look="retail"] .report-ui-page .reports-actions button.report-btn-primary:not(.menu-btn) {
-  padding: 0 20px; border: 0; color: #fff; background: linear-gradient(135deg, #006B2E, #0B8A3E);
+  padding: 0 20px; border: 0; color: #fff; background: linear-gradient(135deg, #006B2E, #0A813B);
   box-shadow: 0 6px 16px -8px rgba(0, 107, 46, .7);
 }
 .main[data-look="retail"] .report-ui-page .reports-actions button.report-btn-primary:not(.menu-btn):hover { background: linear-gradient(135deg, #00592A, #006B2E); }

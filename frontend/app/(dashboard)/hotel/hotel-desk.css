@@ -97,7 +97,7 @@
 .main .hguide-what{margin:0 0 8px;padding-right:104px;min-height:30px;font-weight:700;color:var(--ink)}
 .main .hguide-steps{margin:0;padding:0;list-style:none;counter-reset:hg;display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
 .main .hguide-steps li{counter-increment:hg;position:relative;padding:8px 10px 8px 38px;border-radius:10px;background:var(--white);font-size:14px;line-height:1.35;color:var(--ink)}
-.main .hguide-steps li::before{content:counter(hg);position:absolute;left:10px;top:8px;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--brand);color:#fff;font-size:12px;font-weight:800}
+.main .hguide-steps li::before{content:counter(hg);position:absolute;left:10px;top:8px;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--brand);color:#10211B;font-size:12px;font-weight:800}
 .main .hguide-tip{margin:8px 0 0;font-size:14px;color:var(--muted)}
 
 /* One screen at a time inside a feature. */
@@ -200,10 +200,10 @@
 }
 
 /* Dark mode: the chosen view, room and menu item must stand out from the panels above. */
-[data-theme="dark"] .main button.hview[aria-pressed="true"]:not(.menu-btn){background:#4AB012;border-color:#4AB012;color:#fff}
+[data-theme="dark"] .main button.hview[aria-pressed="true"]:not(.menu-btn){background:#4AB012;border-color:#4AB012;color:#10211B}
 [data-theme="dark"] .main button.hroom-pick[aria-pressed="true"]:not(.menu-btn),[data-theme="dark"] .main .hmenu button[aria-pressed="true"]:not(.menu-btn){background:#1F3A26;border-color:#4AB012}
 @media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]) .main button.hview[aria-pressed="true"]:not(.menu-btn){background:#4AB012;border-color:#4AB012;color:#fff}
+  :root:not([data-theme="light"]) .main button.hview[aria-pressed="true"]:not(.menu-btn){background:#4AB012;border-color:#4AB012;color:#10211B}
   :root:not([data-theme="light"]) .main button.hroom-pick[aria-pressed="true"]:not(.menu-btn),:root:not([data-theme="light"]) .main .hmenu button[aria-pressed="true"]:not(.menu-btn){background:#1F3A26;border-color:#4AB012}
 }
 

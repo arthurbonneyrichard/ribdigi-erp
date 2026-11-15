@@ -98,7 +98,7 @@
 .main .plat button.list-btn-primary:not(.menu-btn):hover,
 .main .plat button.plat-cta:not(.menu-btn):hover{background:var(--deep-green);border-color:var(--deep-green);color:#fff}
 .main .plat button.list-btn-primary:not(.menu-btn){background:var(--brand-dark)!important}
-.main .plat button.list-btn-primary:not(.menu-btn):hover{background:var(--deep-green)!important}
+.main .plat button.list-btn-primary:not(.menu-btn):hover{background:var(--deep-green)!important;color:#fff!important}
 .main .plat button.btn-ok:not(.menu-btn),
 .main .plat .table td button.btn-ok:not(.menu-btn){background:var(--st-ok-bg);border-color:transparent;color:var(--st-ok-ink)}
 .main .plat button.btn-ok:not(.menu-btn):hover,
@@ -217,7 +217,7 @@ a.plat-metric:hover{border-color:var(--brand)}
 .plat-month{position:relative;flex:1 1 0;height:100%;display:flex;align-items:flex-end;justify-content:center;min-width:0}
 .plat-month span{display:block;width:min(100%,22px);background:var(--brand-dark);border-radius:4px 4px 0 0}
 [data-theme="dark"] .plat-month span{background:var(--brand)}
-.plat-month:hover span{background:var(--deep-green)}
+.plat-month:hover span{background:var(--deep-green);color:#fff}
 [data-theme="dark"] .plat-month:hover span{background:var(--brand-light)}
 .plat-month:hover::after{
   content:attr(data-tip);position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);z-index:5;padding:4px 8px;
