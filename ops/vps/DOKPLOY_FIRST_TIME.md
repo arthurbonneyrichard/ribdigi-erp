@@ -276,7 +276,17 @@ Do **not** leave `ALLOW_PLATFORM_OWNER_BOOTSTRAP=true` in Dokploy env.
 | View logs | Compose → Logs |
 | Restart | Compose → Redeploy / Restart |
 | Migrations | Handled by `migrate` service on deploy; or exec `python -m alembic upgrade head` in backend |
-| Backup Postgres | SSH + `./ops/vps/backup-postgres.sh` (adjust compose file name / project) or Dokploy Volume Backups on `postgres_data` |
+| Backup Postgres (on-server, ad hoc) | SSH + `./ops/vps/backup-postgres.sh` (adjust compose file name / project) or Dokploy Volume Backups on `postgres_data` |
+| Off-site Postgres backup (in place since 15 Nov 2026) | See **Off-site database backups** below |
+
+### Off-site database backups
+
+The app's own per-company backups (`.ribbak`, daily 02:00 UTC) sit in the `backup_data` volume on the same server, so they are lost with the server. The whole database also goes off the server every night through Dokploy:
+
+1. **Settings → S3 Destinations**: one S3-compatible bucket used only for these backups, with a key that can list, write and delete in that bucket only. Turn on object lock or versioning if the provider has it.
+2. **ribdigi-erp → Backups**: PostgreSQL, service `postgres`, database `ribdigi_erp`, user `ribdigi`, prefix `ribdigi-erp/`, keep the latest 30. One row per database (`psql -U ribdigi -l` lists them). Keep a single row per database so it is not copied twice a night.
+3. **Check the file, not only the log.** Dokploy pipes `pg_dump` into the upload, so a failed dump still uploads a near-empty file and reports success. In the bucket, the newest file under `ribdigi-erp/` should be MBs, not under 1 KB. The first checked run (15 Nov 2026, 00:00 UTC) was 2.4 MB.
+4. **Never test with Dokploy's Restore on `ribdigi_erp`**: it writes over the live database. Test with `ops/dr/production_restore_drill.sh` (restores into a throwaway container; see `docs/RESTORE_DRILL_2026-11-15.md`). Use Dokploy's Restore only for real loss, with the newest good file.
 
 ---
 
