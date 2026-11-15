@@ -9703,6 +9703,20 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{background-color:rgb
 /* Messages: glass with a coloured edge */
 .login-stage .login-error{background:rgba(69,10,10,.62);border-color:rgba(248,113,113,.45);box-shadow:inset 3px 0 0 #F87171}
 .login-stage .login-success{background:rgba(6,53,28,.62);border-color:rgba(123,209,74,.45);box-shadow:inset 3px 0 0 #7BD14A}
+/* Sign-in page is flat: no drop shadows, glows or inner shadows (15 Nov). The typing ring
+   (input:focus, more specific) and the coloured edge on messages stay. */
+.login-stage .login,
+.login-stage .login input,
+.login-stage .login-tabs,
+.login-stage .login-tabs button,
+.login-stage .login-tabs button.on,
+.login-stage .login-primary,
+.login-stage .login-primary:hover,
+.login-stage .login-primary:active,
+.login-stage .login-secondary,
+.login-stage .login-secondary:hover,
+.login-stage .login-secondary:active,
+.login-stage .login-ghost{box-shadow:none}
 @media (prefers-reduced-transparency:reduce){
   .login-stage .login{background:#001D0F;-webkit-backdrop-filter:none;backdrop-filter:none}
 }
