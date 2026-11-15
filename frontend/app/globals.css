@@ -806,6 +806,59 @@
   background:inherit;border-color:inherit;color:inherit;text-decoration:none
 }
 
+/* ---------- Modern controls ----------
+   Replaces the old raised 3D buttons (dark ledge underneath, press-down on click) and the plain
+   white fields with a flat, modern finish: hairline border, soft shadow, green edge on hover,
+   a clear green focus ring, a gentle press. Written at the same strength as the old rules and
+   placed right after them, so every screen's own button and field styles further down still win.
+   The till and kiosk keep their own controls. */
+:where(.shell:not(.is-pos):not(.is-kiosk)) > .main button:not(.menu-btn){
+  border:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:10px;
+  background:rgba(255,255,255,.86);color:var(--ink);font-weight:600;
+  box-shadow:0 1px 2px rgba(16,33,27,.06),inset 0 1px 0 rgba(255,255,255,.9);
+  transform:none;transition:background .15s ease,border-color .15s ease,box-shadow .15s ease,transform .1s ease
+}
+:where(.shell:not(.is-pos):not(.is-kiosk)) > .main button:not(.menu-btn):hover{
+  background:#FFFFFF;border-color:rgba(74,176,18,.55);border-bottom:1px solid rgba(74,176,18,.55);
+  transform:none;box-shadow:0 2px 8px -2px rgba(16,33,27,.12),inset 0 1px 0 #fff
+}
+:where(.shell:not(.is-pos):not(.is-kiosk)) > .main button:not(.menu-btn):active{transform:scale(.98);border-bottom:1px solid rgba(74,176,18,.55);box-shadow:inset 0 1px 2px rgba(16,33,27,.12)}
+:where(.shell:not(.is-pos):not(.is-kiosk)) > .main button:not(.menu-btn):focus-visible{outline:2px solid #4AB012;outline-offset:2px}
+:where(.shell:not(.is-pos):not(.is-kiosk)) > .main button:not(.menu-btn):disabled,:where(.shell:not(.is-pos):not(.is-kiosk)) > .main button:not(.menu-btn):disabled:hover,:where(.shell:not(.is-pos):not(.is-kiosk)) > .main button:not(.menu-btn):disabled:active{
+  opacity:.5;transform:none;box-shadow:none;border-color:var(--line)
+}
+/* Main green button */
+:where(.shell:not(.is-pos):not(.is-kiosk)) > .main button.btn-primary:not(.menu-btn){
+  background:linear-gradient(180deg,#55BC1B 0%,#43A311 100%);border:1px solid #3A930E;border-bottom:1px solid #357F0E;color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 4px 12px -4px rgba(47,122,12,.55)
+}
+:where(.shell:not(.is-pos):not(.is-kiosk)) > .main button.btn-primary:not(.menu-btn):hover{
+  background:linear-gradient(180deg,#4AB012 0%,#348A0D 100%);border-color:#2F7A0C;border-bottom:1px solid #2F7A0C;color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.24),0 8px 18px -6px rgba(47,122,12,.6)
+}
+:where(.shell:not(.is-pos):not(.is-kiosk)) > .main button.btn-primary:not(.menu-btn):active{transform:scale(.98);box-shadow:inset 0 2px 4px rgba(0,40,15,.3)}
+/* Approve / accept and cancel / reject */
+:where(.shell:not(.is-pos):not(.is-kiosk)) > .main button.btn-ok:not(.menu-btn){
+  background:rgba(234,248,216,.9);border:1px solid rgba(74,176,18,.35);border-bottom:1px solid rgba(74,176,18,.35);color:#1F5E0A;
+  box-shadow:0 1px 2px rgba(16,33,27,.05)
+}
+:where(.shell:not(.is-pos):not(.is-kiosk)) > .main button.btn-ok:not(.menu-btn):hover{background:#DDF2C4;border-color:#4AB012;border-bottom:1px solid #4AB012;color:#14460A;box-shadow:0 2px 8px -2px rgba(47,122,12,.25)}
+:where(.shell:not(.is-pos):not(.is-kiosk)) > .main button.btn-danger:not(.menu-btn){background:rgba(254,242,242,.92);border:1px solid #fecaca;color:#b91c1c;box-shadow:0 1px 2px rgba(16,33,27,.05)}
+:where(.shell:not(.is-pos):not(.is-kiosk)) > .main button.btn-danger:not(.menu-btn):hover{background:#fee2e2;border-color:#f87171;color:#7f1d1d;box-shadow:0 2px 8px -2px rgba(185,28,28,.22)}
+
+/* Fields: soft white, rounder, a firmer edge on hover, green ring when typing */
+:where(.shell:not(.is-pos):not(.is-kiosk)) > .main input,:where(.shell:not(.is-pos):not(.is-kiosk)) > .main select,:where(.shell:not(.is-pos):not(.is-kiosk)) > .main textarea{
+  background-color:rgba(255,255,255,.86);border:1px solid var(--line);border-radius:12px;
+  transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease
+}
+:where(.shell:not(.is-pos):not(.is-kiosk)) > .main input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="color"]),:where(.shell:not(.is-pos):not(.is-kiosk)) > .main select:not([multiple]):not([size]){min-height:40px}
+:where(.shell:not(.is-pos):not(.is-kiosk)) > .main input:hover:not(:focus):not(:disabled),:where(.shell:not(.is-pos):not(.is-kiosk)) > .main select:hover:not(:focus):not(:disabled),:where(.shell:not(.is-pos):not(.is-kiosk)) > .main textarea:hover:not(:focus):not(:disabled){border-color:#B9D3A3}
+:where(.shell:not(.is-pos):not(.is-kiosk)) > .main input:focus,:where(.shell:not(.is-pos):not(.is-kiosk)) > .main select:focus,:where(.shell:not(.is-pos):not(.is-kiosk)) > .main textarea:focus{outline:none;background-color:#fff;border-color:#4AB012;box-shadow:0 0 0 3px rgba(74,176,18,.20)}
+:where(.shell:not(.is-pos):not(.is-kiosk)) > .main input::placeholder,:where(.shell:not(.is-pos):not(.is-kiosk)) > .main textarea::placeholder{color:#7A8E83}
+:where(.shell:not(.is-pos):not(.is-kiosk)) > .main input:disabled,:where(.shell:not(.is-pos):not(.is-kiosk)) > .main select:disabled,:where(.shell:not(.is-pos):not(.is-kiosk)) > .main textarea:disabled{background-color:rgba(242,247,236,.7);color:var(--muted);cursor:not-allowed}
+:where(.shell:not(.is-pos):not(.is-kiosk)) > .main input[type="checkbox"],:where(.shell:not(.is-pos):not(.is-kiosk)) > .main input[type="radio"]{accent-color:#4AB012;width:16px;height:16px;min-height:0;cursor:pointer}
+:where(.shell:not(.is-pos):not(.is-kiosk)) > .main label{font-size:12.5px;font-weight:600;color:var(--muted);letter-spacing:.01em}
+
 /* Modern table */
 .table{width:100%;border-collapse:separate;border-spacing:0;background:var(--white);border-radius:14px;overflow:hidden;box-shadow:0 2px 12px #10211B0d;border:1px solid var(--line)}
 .table th{background:var(--sand);color:#2F463A;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:12px 14px;text-align:left;border-bottom:1px solid var(--line)}
@@ -934,6 +987,18 @@
 [data-theme="dark"] .main input[type=file]{background:var(--forest-deep)}
 [data-theme="dark"] .main button:not(.menu-btn){background:var(--forest);border-color:#ffffff66;border-bottom:0;color:var(--white)}
 [data-theme="dark"] .main button:not(.menu-btn):hover{background:#0a3d30;border-color:#ffffff88;border-bottom:0}
+
+/* Modern controls, dark mode */
+[data-theme="dark"] :where(.shell:not(.is-pos):not(.is-kiosk)) > .main button:not(.menu-btn){background:rgba(255,255,255,.06);border:1px solid rgba(200,232,106,.18);border-bottom:1px solid rgba(200,232,106,.18);color:#F2F8EE;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+[data-theme="dark"] :where(.shell:not(.is-pos):not(.is-kiosk)) > .main button:not(.menu-btn):hover{background:rgba(255,255,255,.10);border-color:rgba(200,232,106,.42);border-bottom:1px solid rgba(200,232,106,.42)}
+[data-theme="dark"] :where(.shell:not(.is-pos):not(.is-kiosk)) > .main button.btn-ok:not(.menu-btn){background:rgba(74,176,18,.14);border-color:rgba(74,176,18,.38);color:#C8E86A}
+[data-theme="dark"] :where(.shell:not(.is-pos):not(.is-kiosk)) > .main button.btn-ok:not(.menu-btn):hover{background:rgba(74,176,18,.24);border-color:#7BD14A;color:#E2F5C4}
+[data-theme="dark"] :where(.shell:not(.is-pos):not(.is-kiosk)) > .main button.btn-danger:not(.menu-btn){background:rgba(185,28,28,.16);border-color:rgba(248,113,113,.38);color:#FCA5A5}
+[data-theme="dark"] :where(.shell:not(.is-pos):not(.is-kiosk)) > .main button.btn-danger:not(.menu-btn):hover{background:rgba(185,28,28,.26);border-color:#F87171;color:#FECACA}
+[data-theme="dark"] :where(.shell:not(.is-pos):not(.is-kiosk)) > .main input,[data-theme="dark"] :where(.shell:not(.is-pos):not(.is-kiosk)) > .main select,[data-theme="dark"] :where(.shell:not(.is-pos):not(.is-kiosk)) > .main textarea{background-color:rgba(5,22,14,.55);border-color:rgba(200,232,106,.16);color:#F2F8EE}
+[data-theme="dark"] :where(.shell:not(.is-pos):not(.is-kiosk)) > .main input:hover:not(:focus):not(:disabled),[data-theme="dark"] :where(.shell:not(.is-pos):not(.is-kiosk)) > .main select:hover:not(:focus):not(:disabled),[data-theme="dark"] :where(.shell:not(.is-pos):not(.is-kiosk)) > .main textarea:hover:not(:focus):not(:disabled){border-color:rgba(200,232,106,.32)}
+[data-theme="dark"] :where(.shell:not(.is-pos):not(.is-kiosk)) > .main input:focus,[data-theme="dark"] :where(.shell:not(.is-pos):not(.is-kiosk)) > .main select:focus,[data-theme="dark"] :where(.shell:not(.is-pos):not(.is-kiosk)) > .main textarea:focus{background-color:rgba(5,22,14,.75);border-color:#7BD14A;box-shadow:0 0 0 3px rgba(123,209,74,.22)}
+[data-theme="dark"] :where(.shell:not(.is-pos):not(.is-kiosk)) > .main input::placeholder,[data-theme="dark"] :where(.shell:not(.is-pos):not(.is-kiosk)) > .main textarea::placeholder{color:#9DB4A6;opacity:1}
 [data-theme="dark"] .main button.hotel-rng-cell:not(.menu-btn),
 [data-theme="dark"] .main button.hotel-rng-cell:not(.menu-btn):hover,
 [data-theme="dark"] .main button.hotel-rng-cell:not(.menu-btn):disabled{
@@ -8574,4 +8639,1129 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{background-color:rgb
 .greet-side .greet-clock{margin:0}
 @media(max-width:720px){
   .greet-side{align-items:flex-start;margin-left:0}
+}
+
+/* ---------- Glass look ----------
+   A light frosted-glass finish over the existing design: soft brand-green light behind the
+   work area, see-through cards and panels with a blur, a thin bright edge and a top sheen.
+   Left out: the till (.is-pos, kiosk) so old till hardware stays fast.
+   Turned off for people who ask the system for less transparency. */
+:root{
+  --glass-bg:rgba(255,255,255,.62);
+  --glass-bg-strong:rgba(255,255,255,.78);
+  --glass-edge:rgba(255,255,255,.75);
+  --glass-line:rgba(0,61,31,.10);
+  --glass-blur:blur(16px) saturate(165%);
+  --glass-shadow:0 1px 1px rgba(0,61,31,.04),0 12px 32px -16px rgba(0,61,31,.30),inset 0 1px 0 var(--glass-edge);
+  --glass-sheen:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0) 42%);
+  --glass-wash:
+    radial-gradient(640px 420px at 8% -6%,rgba(200,232,106,.38),transparent 62%),
+    radial-gradient(720px 520px at 104% 18%,rgba(74,176,18,.20),transparent 60%),
+    radial-gradient(680px 520px at 40% 112%,rgba(0,107,46,.14),transparent 62%),
+    var(--mist);
+}
+[data-theme="dark"]{
+  --glass-bg:rgba(22,36,28,.58);
+  --glass-bg-strong:rgba(22,36,28,.80);
+  --glass-edge:rgba(200,232,106,.10);
+  --glass-line:rgba(200,232,106,.14);
+  --glass-shadow:0 1px 1px rgba(0,0,0,.25),0 14px 34px -16px rgba(0,0,0,.65),inset 0 1px 0 var(--glass-edge);
+  --glass-sheen:linear-gradient(180deg,rgba(200,232,106,.07),rgba(200,232,106,0) 40%);
+  --glass-wash:
+    radial-gradient(640px 420px at 8% -6%,rgba(74,176,18,.22),transparent 62%),
+    radial-gradient(720px 520px at 104% 18%,rgba(0,107,46,.26),transparent 60%),
+    radial-gradient(680px 520px at 40% 112%,rgba(200,232,106,.08),transparent 62%),
+    var(--forest-deep);
+}
+
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  @media all{
+    /* Soft light behind the work area. .main scrolls, its background stays put, so cards slide over it. */
+    .shell:not(.is-pos):not(.is-kiosk) > .main,
+    [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main{background:var(--glass-wash)}
+
+    /* Cards, panels and figure tiles. The blur sits on a ::before layer, not the card itself,
+       so dialogs with position:fixed inside a card are not trapped by the card. */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .card,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .panel,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .page-head-card,
+    .shell:not(.is-pos):not(.is-kiosk) > .main[data-look="retail"] .dash-kpis .stat,
+    .shell:not(.is-pos):not(.is-kiosk) > .main[data-look="retail"] [role="tablist"]:not(.login-tabs),
+    [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .card,
+    [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .panel,
+    [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .page-head-card,
+    [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main[data-look="retail"] .dash-kpis .stat,
+    [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main[data-look="retail"] [role="tablist"]:not(.login-tabs){
+      position:relative;isolation:isolate;
+      background:transparent!important;
+      border:1px solid var(--glass-line)!important;
+      box-shadow:var(--glass-shadow)
+    }
+    .shell:not(.is-pos):not(.is-kiosk) > .main .card::before,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .panel::before,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .page-head-card::before,
+    .shell:not(.is-pos):not(.is-kiosk) > .main[data-look="retail"] .dash-kpis .stat::before,
+    .shell:not(.is-pos):not(.is-kiosk) > .main[data-look="retail"] [role="tablist"]:not(.login-tabs)::before{
+      content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;
+      background:var(--glass-sheen),var(--glass-bg);
+      -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)
+    }
+    /* Cards inside cards stay plain so the blur does not stack */
+    .shell:not(.is-pos) > .main .card .card::before,
+    .shell:not(.is-pos) > .main .card .panel::before,
+    .shell:not(.is-pos) > .main .panel .card::before{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(255,255,255,.35)}
+    [data-theme="dark"] .shell:not(.is-pos) > .main .card .card::before,
+    [data-theme="dark"] .shell:not(.is-pos) > .main .card .panel::before,
+    [data-theme="dark"] .shell:not(.is-pos) > .main .panel .card::before{background:rgba(255,255,255,.03)}
+    .shell:not(.is-pos) > .main .card .card,
+    .shell:not(.is-pos) > .main .card .panel,
+    .shell:not(.is-pos) > .main .panel .card{box-shadow:none}
+    /* Tables sit on the glass instead of painting a white slab over it */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .card .table,
+    [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .card .table{background:transparent}
+
+    /* Top bar chips and the alerts panel */
+    .shell:not(.is-pos) > .main .userchip,
+    .shell:not(.is-pos) > .main .bell,
+    .shell:not(.is-pos) > .main .store-switcher-select{
+      background:var(--glass-bg-strong);
+      -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
+      border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-edge)
+    }
+    .bell-panel{
+      background:var(--glass-sheen),var(--glass-bg-strong)!important;
+      -webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);
+      border:1px solid var(--glass-line)!important;box-shadow:var(--glass-shadow),0 24px 48px -20px rgba(0,26,14,.45)!important
+    }
+
+    /* Sidebar: deep forest glass with a faint green glow and a light edge */
+    .shell:not(.is-kiosk) > .side{
+      background:
+        radial-gradient(260px 220px at 0% 0%,rgba(74,176,18,.22),transparent 70%),
+        radial-gradient(240px 260px at 100% 100%,rgba(200,232,106,.10),transparent 70%),
+        linear-gradient(180deg,#00472A 0%,var(--forest) 45%,#002A15 100%);
+      border-right:1px solid rgba(200,232,106,.14);
+      box-shadow:inset -1px 0 0 rgba(255,255,255,.04)
+    }
+    .side .nav a:hover{background:rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+    .side .nav a.active{
+      background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.05));
+      -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+      box-shadow:inset 3px 0 0 var(--brand),inset 0 1px 0 rgba(255,255,255,.12),0 6px 16px -8px rgba(0,0,0,.5)
+    }
+  }
+}
+
+/* ---------- Glass look, feature by feature ----------
+   Same frosted finish as the cards above, carried into each desk and console.
+   The blur is a ::after layer behind each surface (isolation keeps it behind the content),
+   so dialogs and veils inside a panel still cover the whole screen. Warning, due, waiting,
+   failed and selected tiles keep their own colour. */
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  @media all{
+    /* Desk dashboards (bakery, FMCG, gym, HRM home) */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-box:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-actions a:not(.primary):not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on){
+      position:relative;isolation:isolate;background:transparent!important;
+      border-color:var(--glass-line)!important;box-shadow:var(--glass-shadow)!important
+    }
+    .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-box:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-actions a:not(.primary):not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after{
+      content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;
+      background:var(--glass-sheen),var(--glass-bg);
+      -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)
+    }
+    /* Bakery */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .bakery .bk-box:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .bakery .bk-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on){
+      position:relative;isolation:isolate;background:transparent!important;
+      border-color:var(--glass-line)!important;box-shadow:var(--glass-shadow)!important
+    }
+    .shell:not(.is-pos):not(.is-kiosk) > .main .bakery .bk-box:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .bakery .bk-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after{
+      content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;
+      background:var(--glass-sheen),var(--glass-bg);
+      -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)
+    }
+    /* Gym */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .gym .gm-box:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .gym .gm-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .gym .gm-tile:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on){
+      position:relative;isolation:isolate;background:transparent!important;
+      border-color:var(--glass-line)!important;box-shadow:var(--glass-shadow)!important
+    }
+    .shell:not(.is-pos):not(.is-kiosk) > .main .gym .gm-box:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .gym .gm-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .gym .gm-tile:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after{
+      content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;
+      background:var(--glass-sheen),var(--glass-bg);
+      -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)
+    }
+    /* HRM */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .hrm .hr-box:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .hrm .hr-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .hrm .hr-tile:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on){
+      position:relative;isolation:isolate;background:transparent!important;
+      border-color:var(--glass-line)!important;box-shadow:var(--glass-shadow)!important
+    }
+    .shell:not(.is-pos):not(.is-kiosk) > .main .hrm .hr-box:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .hrm .hr-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .hrm .hr-tile:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after{
+      content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;
+      background:var(--glass-sheen),var(--glass-bg);
+      -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)
+    }
+    /* FMCG */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .fmcg-sell .fs-box:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .fmcg-sell .fs-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .fmcg-sell .fs-tile:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on){
+      position:relative;isolation:isolate;background:transparent!important;
+      border-color:var(--glass-line)!important;box-shadow:var(--glass-shadow)!important
+    }
+    .shell:not(.is-pos):not(.is-kiosk) > .main .fmcg-sell .fs-box:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .fmcg-sell .fs-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .fmcg-sell .fs-tile:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after{
+      content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;
+      background:var(--glass-sheen),var(--glass-bg);
+      -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)
+    }
+    /* Hotel */
+    .shell:not(.is-pos):not(.is-kiosk) > .main button.hdesk-tile:not(.menu-btn):not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .hbill-tile:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .hchart:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .hdash .panel:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main button.hdash-tile:not(.menu-btn):not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .hdash-money>div:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on){
+      position:relative;isolation:isolate;background:transparent!important;
+      border-color:var(--glass-line)!important;box-shadow:var(--glass-shadow)!important
+    }
+    .shell:not(.is-pos):not(.is-kiosk) > .main button.hdesk-tile:not(.menu-btn):not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .hbill-tile:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .hchart:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .hdash .panel:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main button.hdash-tile:not(.menu-btn):not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .hdash-money>div:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after{
+      content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;
+      background:var(--glass-sheen),var(--glass-bg);
+      -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)
+    }
+    /* Restaurant */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-kpi:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-panel:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-list:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-tabs:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-table-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-booking-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-ticket:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-recipe-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk button.rd-staff-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk button.rd-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on){
+      position:relative;isolation:isolate;background:transparent!important;
+      border-color:var(--glass-line)!important;box-shadow:var(--glass-shadow)!important
+    }
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-kpi:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-panel:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-list:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-tabs:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-table-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-booking-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-ticket:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-recipe-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk button.rd-staff-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk button.rd-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after{
+      content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;
+      background:var(--glass-sheen),var(--glass-bg);
+      -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)
+    }
+    /* Software owner console */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .plat .plat-metric:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .plat button.plat-stat:not(.menu-btn):not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .plat .plat-panel:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .plat .plat-tabs:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .plat .plat-filters:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on){
+      position:relative;isolation:isolate;background:transparent!important;
+      border-color:var(--glass-line)!important;box-shadow:var(--glass-shadow)!important
+    }
+    .shell:not(.is-pos):not(.is-kiosk) > .main .plat .plat-metric:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .plat button.plat-stat:not(.menu-btn):not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .plat .plat-panel:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .plat .plat-tabs:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .plat .plat-filters:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after{
+      content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;
+      background:var(--glass-sheen),var(--glass-bg);
+      -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)
+    }
+    /* Clickable tiles lift a little and pick up a green edge under the pointer */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile:hover,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-actions a:not(.primary):hover,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .gym .gm-tile:hover,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .hrm .hr-tile:hover,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .fmcg-sell .fs-tile:hover,
+    .shell:not(.is-pos):not(.is-kiosk) > .main button.hdesk-tile:not(.menu-btn):hover,
+    .shell:not(.is-pos):not(.is-kiosk) > .main button.hdash-tile:not(.menu-btn):hover,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk button.rd-card:hover,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk button.rd-staff-card:hover,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .plat button.plat-stat:not(.menu-btn):hover{border-color:rgba(74,176,18,.55)!important;transform:translateY(-1px)}
+    @media (prefers-reduced-motion:reduce){
+      .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile:hover,
+      .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-actions a:not(.primary):hover,
+      .shell:not(.is-pos):not(.is-kiosk) > .main .gym .gm-tile:hover,
+      .shell:not(.is-pos):not(.is-kiosk) > .main .hrm .hr-tile:hover,
+      .shell:not(.is-pos):not(.is-kiosk) > .main .fmcg-sell .fs-tile:hover,
+      .shell:not(.is-pos):not(.is-kiosk) > .main button.hdesk-tile:not(.menu-btn):hover,
+      .shell:not(.is-pos):not(.is-kiosk) > .main button.hdash-tile:not(.menu-btn):hover,
+      .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk button.rd-card:hover,
+      .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk button.rd-staff-card:hover,
+      .shell:not(.is-pos):not(.is-kiosk) > .main .plat button.plat-stat:not(.menu-btn):hover{transform:none}
+    }
+
+    /* Desk backgrounds (bakery, gym, HRM, FMCG, restaurant) let the soft light through */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .bakery{background:color-mix(in srgb,var(--bk-bg) 45%,transparent)!important}
+    .shell:not(.is-pos):not(.is-kiosk) > .main .gym{background:color-mix(in srgb,var(--gm-bg) 45%,transparent)!important}
+    .shell:not(.is-pos):not(.is-kiosk) > .main .hrm{background:color-mix(in srgb,var(--hr-bg) 45%,transparent)!important}
+    .shell:not(.is-pos):not(.is-kiosk) > .main .fmcg-sell{background:color-mix(in srgb,var(--fs-bg) 45%,transparent)!important}
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk{background:color-mix(in srgb,var(--rd-bg) 45%,transparent)!important}
+
+    /* Dialogs and side drawers: thicker frosted glass, the screen behind softly blurred */
+    .erp-modal,.inv-drawer,.drawer,.plat-drawer,
+    .main .bakery .bk-dialog,.main .gym .gm-dialog,.main .hrm .hr-dialog,.main .fmcg-sell .fs-dialog,
+    [data-theme="dark"] .erp-modal,[data-theme="dark"] .inv-drawer,[data-theme="dark"] .drawer,[data-theme="dark"] .plat-drawer{
+      background:var(--glass-sheen),var(--glass-bg-strong)!important;
+      -webkit-backdrop-filter:blur(24px) saturate(170%);backdrop-filter:blur(24px) saturate(170%);
+      border:1px solid var(--glass-line);
+      box-shadow:inset 0 1px 0 var(--glass-edge),0 30px 70px -24px rgba(0,26,14,.55)!important
+    }
+    .erp-modal-back,.inv-drawer-back,.plat-drawer-back{
+      background:rgba(0,40,22,.42)!important;
+      -webkit-backdrop-filter:blur(6px) saturate(120%);backdrop-filter:blur(6px) saturate(120%)
+    }
+    /* Menus that pop open in the owner console */
+    .plat-menu-pop,.main .plat .erp-row-menu-pop{
+      background:var(--glass-sheen),var(--glass-bg-strong)!important;
+      -webkit-backdrop-filter:blur(20px) saturate(170%);backdrop-filter:blur(20px) saturate(170%);
+      border-color:var(--glass-line)!important
+    }
+
+    /* Retail screens: fields, table heads and row hover use see-through fills so they sit on the glass */
+    .shell:not(.is-pos):not(.is-kiosk) > .main[data-look="retail"]{--rm-soft:rgba(255,255,255,.52)}
+    [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main[data-look="retail"]{--rm-soft:rgba(19,32,25,.55)}
+
+    /* Greeting banners: a bright glass edge along the top */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash-hero{box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 14px 34px -18px rgba(0,61,31,.45)}
+    [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash-hero{box-shadow:inset 0 1px 0 rgba(200,232,106,.14),0 14px 32px #00000055}
+  }
+}
+
+/* Main green buttons everywhere: a soft glossy top, like light on glass. Colour stays the same. */
+.btn-primary,.main .btn-primary{
+  background-image:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0) 55%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 6px 16px -8px rgba(0,61,31,.55)
+}
+
+/* ---------- Glass look on every dashboard ----------
+   Retail (also wholesale and hospital), the greeting banner, the four desk home pages, hotel,
+   restaurant, the owner console, Server health and the online shop.
+   White figure cards become frosted glass. Coloured figure cards (sales, buying, expenses,
+   net, profit, hotel occupancy, restaurant headline, warning tiles) keep their colour and get a
+   glass shine on top, under the text. Same ::after layer as above, so nothing traps a dialog. */
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  @media all{
+    /* Frosted: white cards on the dashboards */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .stat:not(.s-sales):not(.s-buy):not(.s-exp):not(.s-net):not(.s-profit),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash-owed-card,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash-chart,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash-pair .health .pill,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-attn li:not(.warning):not(.info) a,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .hbill-box,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk a.rd-action,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .plat .mon-card,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .plat .mon-check,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .ecom-desk .ecom-media-card,
+    [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .stat:not(.s-sales):not(.s-buy):not(.s-exp):not(.s-net):not(.s-profit){
+      position:relative;isolation:isolate;background:transparent!important;
+      border-color:var(--glass-line)!important;box-shadow:var(--glass-shadow)!important
+    }
+    .shell:not(.is-pos):not(.is-kiosk) > .main .stat:not(.s-sales):not(.s-buy):not(.s-exp):not(.s-net):not(.s-profit)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash-owed-card::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash-chart::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash-pair .health .pill::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-attn li:not(.warning):not(.info) a::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .hbill-box::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk a.rd-action::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .plat .mon-card::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .plat .mon-check::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .ecom-desk .ecom-media-card::after{
+      content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;
+      background:var(--glass-sheen),var(--glass-bg);
+      -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)
+    }
+    /* The figures inside the frosted retail tiles keep their tinted icon chip */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .stat .rail{opacity:.85}
+
+    /* Shine: coloured figure cards keep their colour, with light across the top like glass */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .stat.s-sales,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .stat.s-buy,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .stat.s-exp,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .stat.s-net,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .stat.s-profit,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .hdash-occ,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-kpi.hero,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-actions a.primary,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile.warn{
+      position:relative;isolation:isolate;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(0,26,14,.06),0 12px 28px -14px rgba(0,61,31,.40)
+    }
+    .shell:not(.is-pos):not(.is-kiosk) > .main .stat.s-sales::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .stat.s-buy::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .stat.s-exp::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .stat.s-net::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .stat.s-profit::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .hdash-occ::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-kpi.hero::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-actions a.primary::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile.warn::after{
+      content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;
+      background:
+        linear-gradient(180deg,rgba(255,255,255,.38) 0%,rgba(255,255,255,.08) 38%,rgba(255,255,255,0) 60%),
+        radial-gradient(120% 80% at 100% 0%,rgba(255,255,255,.22),transparent 55%)
+    }
+    [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .stat.s-sales::after,[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .stat.s-buy::after,
+    [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .stat.s-exp::after,[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .stat.s-net::after,
+    [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .stat.s-profit::after,[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .hdash-occ::after,
+    [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-kpi.hero::after,[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-actions a.primary::after,
+    [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile.warn::after{
+      background:linear-gradient(180deg,rgba(255,255,255,.12) 0%,rgba(255,255,255,0) 50%)
+    }
+
+    /* Greeting banner (every dashboard): the clock and the chips become frosted glass on the banner */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash-hero .greet-clock{
+      background:rgba(255,255,255,.55)!important;border:1px solid rgba(255,255,255,.7)!important;
+      -webkit-backdrop-filter:blur(14px) saturate(160%);backdrop-filter:blur(14px) saturate(160%);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 10px 24px -12px rgba(0,26,14,.45)!important
+    }
+    .shell:not(.is-pos):not(.is-kiosk) > .main .desk-greet .greet-clock,[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash-hero .greet-clock{
+      background:rgba(255,255,255,.12)!important;border-color:rgba(255,255,255,.24)!important;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 10px 24px -12px rgba(0,0,0,.5)!important
+    }
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash-hero .greet-chip{
+      -webkit-backdrop-filter:blur(10px) saturate(150%);backdrop-filter:blur(10px) saturate(150%);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.25)
+    }
+
+    /* Owner console home: the quick links on the welcome banner are glass buttons */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .plat .plat-welcome-links a{
+      background:rgba(255,255,255,.12)!important;border:1px solid rgba(255,255,255,.26)!important;
+      -webkit-backdrop-filter:blur(12px) saturate(150%);backdrop-filter:blur(12px) saturate(150%);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.22)
+    }
+    .shell:not(.is-pos):not(.is-kiosk) > .main .plat .plat-welcome-links a:hover{background:rgba(255,255,255,.22)!important;border-color:rgba(200,232,106,.6)!important}
+    .shell:not(.is-pos):not(.is-kiosk) > .main .plat .plat-hero.plat-welcome{box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 18px 40px -20px rgba(0,26,14,.6)}
+    /* Server health: the live badge on the banner */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .plat .mon-live{-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+
+    /* Tables on dashboards sit on the glass */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash-tables .table,.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-table,.shell:not(.is-pos):not(.is-kiosk) > .main .cperf-table,
+    [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash-tables .table{background:transparent!important}
+  }
+}
+/* Retail dashboard figure tiles already have their glass layer (::before, first glass block); no second one. */
+.main[data-look="retail"] .dash-kpis .stat::after{content:none}
+
+/* ---------- Dashboard cards: modern, with a little glass ----------
+   The figure cards at the top of the retail dashboard (also wholesale, pharmacy, hospital):
+   frosted body, a thin top line and a soft corner glow in the card's own colour, a gradient
+   icon chip, larger figures, a lift on hover. Each card keeps its colour through --kpi.
+   Panels under them get rounder corners and an icon chip in the heading.
+   The desk home pages (bakery, FMCG, gym, HRM) get the same icon chip and hover glow. */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat{--kpi:#4AB012;--kpi-2:#C8E86A}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat.s-sales{--kpi:#4AB012;--kpi-2:#A8DC5A}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat.s-buy{--kpi:#006B2E;--kpi-2:#4AB012}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat.s-profit{--kpi:#2F7A0C;--kpi-2:#7BC63A}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat.s-net{--kpi:#16867A;--kpi-2:#5FC0B2}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat.s-exp{--kpi:#A87A22;--kpi-2:#D9B460}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  @media all{
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat,[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat{
+      position:relative;isolation:isolate;overflow:hidden;
+      display:flex;flex-direction:column;gap:2px;
+      padding:18px 18px 16px;border-radius:22px!important;
+      background:transparent!important;
+      border:1px solid var(--glass-line)!important;
+      box-shadow:var(--glass-shadow)!important;
+      transition:transform .18s cubic-bezier(.22,1,.36,1),box-shadow .18s ease,border-color .18s ease
+    }
+    /* Frosted body */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat::before,[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat::before{
+      content:""!important;position:absolute;inset:0;z-index:-2;border-radius:inherit;pointer-events:none;
+      background:var(--glass-sheen),var(--glass-bg)!important;
+      -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)
+    }
+    /* Top line and corner glow in the card's colour */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat::after,[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat::after{
+      content:""!important;position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;
+      background:
+        linear-gradient(90deg,var(--kpi),var(--kpi-2) 60%,transparent) top left/100% 3px no-repeat,
+        radial-gradient(180px 140px at 100% 0%,color-mix(in srgb,var(--kpi) 22%,transparent),transparent 70%)!important
+    }
+    [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat::after{
+      background:
+        linear-gradient(90deg,var(--kpi-2),var(--kpi) 60%,transparent) top left/100% 3px no-repeat,
+        radial-gradient(180px 140px at 100% 0%,color-mix(in srgb,var(--kpi-2) 20%,transparent),transparent 70%)!important
+    }
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat .rail{display:none!important}
+  }
+}
+/* Icon chip: gradient in the card's colour, white icon, a light top edge */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat .ico,[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat .ico{
+  display:grid!important;place-items:center;width:44px;height:44px;margin:0 0 12px;
+  border-radius:14px!important;border:0!important;color:#fff!important;
+  background:linear-gradient(135deg,var(--kpi),var(--kpi-2))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 8px 18px -8px color-mix(in srgb,var(--kpi) 70%,transparent)
+}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat .ico svg{width:22px;height:22px}
+/* Words and figure */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat .stat-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat .label{font-size:12px!important;font-weight:700!important;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)!important}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat .val{font-size:30px!important;font-weight:800;line-height:1.08;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--ink)!important;margin-top:4px}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat .hint{font-size:12px;color:var(--muted)!important;margin-top:6px}
+[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat .label,[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat .hint{color:#A3B8AB!important}
+[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat .val{color:#F2F8EE!important}
+/* Up / down chip: small frosted pill */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat .dash-delta{border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-edge)}
+/* Hover and keyboard focus */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat:hover{
+  transform:translateY(-3px);border-color:color-mix(in srgb,var(--kpi) 55%,transparent)!important;
+  box-shadow:inset 0 1px 0 var(--glass-edge),0 22px 40px -18px color-mix(in srgb,var(--kpi) 55%,transparent)!important
+}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat:focus-visible{outline:3px solid color-mix(in srgb,var(--kpi) 60%,transparent);outline-offset:3px}
+@media (prefers-reduced-motion:reduce){ .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat,.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat:hover{transition:none;transform:none} }
+@media (max-width:720px){
+  .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat{padding:14px;border-radius:18px!important}
+  .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat .ico{width:38px;height:38px;margin-bottom:8px}
+  .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat .val{font-size:24px!important}
+}
+
+/* Other figure cards on the dashboard (pharmacy, shortcuts, wholesale): same rounder, lifting card */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .stat-grid:not(.dash-kpis) .stat{border-radius:18px!important;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .stat-grid:not(.dash-kpis) .stat:hover{transform:translateY(-2px);border-color:rgba(74,176,18,.55)!important}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .stat-grid:not(.dash-kpis) .stat .val{letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+
+/* Dashboard panels (charts, stock, customers, money owed): rounder, with an icon chip in the heading */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel{border-radius:22px!important}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel h3{gap:10px;letter-spacing:-.01em}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel h3 .panel-ico{
+  box-sizing:content-box;width:18px;height:18px;padding:8px;border-radius:12px;color:#006B2E;
+  background:linear-gradient(135deg,rgba(74,176,18,.20),rgba(200,232,106,.28));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6)
+}
+[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel h3 .panel-ico{color:#A5E37E;background:rgba(74,176,18,.16);box-shadow:inset 0 1px 0 rgba(200,232,106,.12)}
+
+/* Desk home pages (bakery, FMCG, gym, HRM): gradient icon chips and a green glow on hover */
+.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile:not(.warn) .dd-tile-ico,.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-actions a:not(.primary) .dd-act-ico{
+  background:linear-gradient(135deg,#006B2E,#4AB012);color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 6px 14px -6px rgba(0,107,46,.6)
+}
+.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile{border-radius:22px}
+.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile:not(.warn):not(#_):hover{box-shadow:inset 0 1px 0 var(--glass-edge),0 22px 40px -18px rgba(74,176,18,.5)!important}
+
+/* ---------- Dashboard boxes: a little glass and a standout colour each ----------
+   The boxes under the figure cards (daily sales, trend, monthly, stock health, business mix,
+   cash flow, money owed, top products, recent sales) each carry data-tone in dashboard/page.tsx.
+   The box stays frosted glass (its ::before layer); ::after adds a thin top line and a soft
+   corner glow in that colour, and the heading icon sits in a chip of the same colour. */
+/* Four calm colours, one per topic: sales green, stock teal, customers and suppliers blue, money violet. */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash [data-tone="sales"]{--tone:#3A9A1E;--tone-2:#86C95A}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash [data-tone="stock"]{--tone:#16867A;--tone-2:#5FC0B2}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash [data-tone="people"]{--tone:#3A72C0;--tone-2:#86AEE4}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash [data-tone="money"]{--tone:#6E58C2;--tone-2:#A898E6}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash [data-tone="in"]{--tone:#3A9A1E;--tone-2:#86C95A}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash [data-tone="out"]{--tone:#6E58C2;--tone-2:#A898E6}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  @media all{
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]{position:relative;isolation:isolate;overflow:hidden;transition:transform .18s cubic-bezier(.22,1,.36,1),box-shadow .18s ease,border-color .18s ease}
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]::after{
+      content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;
+      background:
+        linear-gradient(90deg,var(--tone),var(--tone-2) 55%,transparent) top left/100% 3px no-repeat,
+        radial-gradient(320px 220px at 100% 0%,color-mix(in srgb,var(--tone) 17%,transparent),transparent 70%),
+        linear-gradient(180deg,color-mix(in srgb,var(--tone-2) 11%,transparent) 0%,transparent 160px),
+        radial-gradient(240px 180px at 0% 100%,color-mix(in srgb,var(--tone-2) 12%,transparent),transparent 70%)
+    }
+    [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]::after{
+      background:
+        linear-gradient(90deg,var(--tone-2),var(--tone) 55%,transparent) top left/100% 3px no-repeat,
+        radial-gradient(320px 220px at 100% 0%,color-mix(in srgb,var(--tone-2) 18%,transparent),transparent 70%),
+        linear-gradient(180deg,color-mix(in srgb,var(--tone) 14%,transparent) 0%,transparent 160px)
+    }
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:hover{
+      transform:translateY(-2px);border-color:color-mix(in srgb,var(--tone) 45%,transparent)!important;
+      box-shadow:inset 0 1px 0 var(--glass-edge),0 24px 44px -22px color-mix(in srgb,var(--tone) 50%,transparent)!important
+    }
+    /* Money owed: frosted cards with their own colour (receivables teal, payables coral) */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-owed-card[data-tone]{position:relative;isolation:isolate;overflow:hidden;border-radius:16px!important;display:flex;flex-direction:column;gap:2px;transition:transform .18s ease,border-color .18s ease}
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-owed-card[data-tone]::after{z-index:-2}
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-owed-card[data-tone]::before{
+      content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;
+      background:
+        linear-gradient(180deg,var(--tone),var(--tone-2)) left top/4px 100% no-repeat,
+        linear-gradient(135deg,color-mix(in srgb,var(--tone) 14%,transparent),transparent 70%)
+    }
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-owed-card[data-tone]:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--tone) 50%,transparent)!important}
+    /* Stock health: frosted pills, each with its own colour edge (in stock, low, out, expiring) */
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash .health .nums .pill{padding:8px 12px;border-radius:14px;transition:transform .15s ease}
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash .health .nums .pill:nth-child(1){box-shadow:inset 3px 0 0 #4AB012,var(--glass-shadow)!important}
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash .health .nums .pill:nth-child(2){box-shadow:inset 3px 0 0 #f59e0b,var(--glass-shadow)!important}
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash .health .nums .pill:nth-child(3){box-shadow:inset 3px 0 0 #ef4444,var(--glass-shadow)!important}
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash .health .nums .pill:nth-child(4){box-shadow:inset 3px 0 0 #fb923c,var(--glass-shadow)!important}
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash .health .nums a.pill:hover{transform:translateX(2px)}
+  }
+}
+/* Heading icon chip in the box's colour, white icon */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone] h3 .panel-ico,[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone] h3 .panel-ico{
+  color:#fff;background:linear-gradient(135deg,var(--tone),var(--tone-2));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 8px 16px -8px color-mix(in srgb,var(--tone) 70%,transparent)
+}
+/* Money owed figures take their colour */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-owed-card[data-tone="in"] .val{color:#2B7316}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-owed-card[data-tone="out"] .val{color:#5A45AE}
+[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-owed-card[data-tone="in"] .val{color:#A6DB82}
+[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-owed-card[data-tone="out"] .val{color:#C3B6F2}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-owed-card .val{font-size:22px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){
+  .shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone],.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:hover,.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-owed-card[data-tone]:hover,.shell:not(.is-pos):not(.is-kiosk) > .main .dash .health .nums a.pill:hover{transform:none;transition:none}
+}
+
+
+/* ---------- Dashboards, round 2: charts, tables, shortcut cards, loading, desk and hotel tiles ----------
+   Tiles in a row take turns through six colours (green, blue, violet, teal, coral, cyan).
+   Amber is kept for warnings only, so a normal tile is never mistaken for one.
+   Restaurant keeps the brand greens on purpose. */
+
+/* Retail dashboard: charts take their box's colour */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone] .dash-chart-svg rect{fill:var(--tone);transition:opacity .15s ease}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone] .dash-chart-svg rect:hover{opacity:.8}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone] .dash-chart-svg polyline{stroke:var(--tone)}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone] .dash-chart-svg polygon{fill:var(--tone);fill-opacity:.16}
+[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone] .dash-chart-svg rect{fill:var(--tone-2)}
+[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone] .dash-chart-svg polyline{stroke:var(--tone-2)}
+[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone] .dash-chart-svg polygon{fill:var(--tone-2)}
+
+/* Top products: Revenue / Quantity switch as a glass strip, the chosen one in the box's colour */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone] .dash-rank{display:inline-flex;gap:4px;padding:4px;border-radius:14px;background:var(--glass-bg-strong);border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-edge)}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone] .dash-rank button{border:0!important;border-radius:10px!important;background:transparent!important;font-weight:700}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone] .dash-rank button.is-on,[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone] .dash-rank button.is-on{
+  background:linear-gradient(135deg,var(--tone),var(--tone-2))!important;color:#fff!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 6px 14px -8px color-mix(in srgb,var(--tone) 70%,transparent)
+}
+
+/* Top products and Recent sales tables: tinted heading row, rows light up in the box's colour */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone] .table thead th{background:color-mix(in srgb,var(--tone) 9%,transparent)!important;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone] .table thead th:first-child{border-top-left-radius:12px}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone] .table thead th:last-child{border-top-right-radius:12px}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone] .table tbody tr{transition:background .12s ease}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone] .table tbody tr:hover{background:color-mix(in srgb,var(--tone) 8%,transparent)}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone] .table td{border-bottom-color:var(--glass-line)}
+
+/* Shortcut and pharmacy cards: each takes a colour in turn, with a top line and corner glow */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .stat-grid:not(.dash-kpis) .stat:nth-child(4n+1){--tone:#3A9A1E;--tone-2:#86C95A}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .stat-grid:not(.dash-kpis) .stat:nth-child(4n+2){--tone:#16867A;--tone-2:#5FC0B2}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .stat-grid:not(.dash-kpis) .stat:nth-child(4n+3){--tone:#3A72C0;--tone-2:#86AEE4}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .stat-grid:not(.dash-kpis) .stat:nth-child(4n+4){--tone:#6E58C2;--tone-2:#A898E6}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  @media all{
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash .stat-grid:not(.dash-kpis) .stat::after{z-index:-2}
+    .shell:not(.is-pos):not(.is-kiosk) > .main .dash .stat-grid:not(.dash-kpis) .stat::before{
+      content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;
+      background:
+        linear-gradient(90deg,var(--tone),var(--tone-2) 60%,transparent) top left/100% 3px no-repeat,
+        radial-gradient(160px 120px at 100% 0%,color-mix(in srgb,var(--tone) 16%,transparent),transparent 70%)
+    }
+  }
+}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .stat-grid:not(.dash-kpis) .stat:not(#_):hover{border-color:color-mix(in srgb,var(--tone) 55%,transparent)!important}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .stat-grid:not(.dash-kpis) .stat .val{color:color-mix(in srgb,var(--tone) 70%,var(--ink))}
+[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .stat-grid:not(.dash-kpis) .stat .val{color:color-mix(in srgb,var(--tone-2) 55%,#F2F8EE)}
+
+/* Loading cards: a soft glass shimmer instead of a still "…" */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-skel .val,.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-skel .label{
+  color:transparent!important;border-radius:8px;width:70%;
+  background:linear-gradient(90deg,rgba(0,61,31,.06) 0%,rgba(255,255,255,.7) 50%,rgba(0,61,31,.06) 100%) 0 0/200% 100%;
+  animation:glass-shimmer 1.4s ease-in-out infinite
+}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-skel .label{width:50%}
+[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-skel .val,[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-skel .label{
+  background:linear-gradient(90deg,rgba(255,255,255,.04) 0%,rgba(200,232,106,.14) 50%,rgba(255,255,255,.04) 100%) 0 0/200% 100%
+}
+@keyframes glass-shimmer{from{background-position:100% 0}to{background-position:-100% 0}}
+@media (prefers-reduced-motion:reduce){ .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-skel .val,.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-skel .label{animation:none} }
+
+/* Bakery, FMCG, gym, HRM home pages: tiles and shortcuts take colours in turn (warnings stay amber) */
+.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile:not(.warn):nth-child(4n+1){--tone:#3A9A1E;--tone-2:#86C95A}
+.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile:not(.warn):nth-child(4n+2){--tone:#16867A;--tone-2:#5FC0B2}
+.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile:not(.warn):nth-child(4n+3){--tone:#3A72C0;--tone-2:#86AEE4}
+.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile:not(.warn):nth-child(4n+4){--tone:#6E58C2;--tone-2:#A898E6}
+.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-actions a:not(.primary):nth-child(4n+1){--tone:#3A9A1E;--tone-2:#86C95A}
+.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-actions a:not(.primary):nth-child(4n+2){--tone:#16867A;--tone-2:#5FC0B2}
+.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-actions a:not(.primary):nth-child(4n+3){--tone:#3A72C0;--tone-2:#86AEE4}
+.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-actions a:not(.primary):nth-child(4n+4){--tone:#6E58C2;--tone-2:#A898E6}
+.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile:not(.warn){--dd-bar:var(--tone)}
+.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile:not(.warn) .dd-tile-ico,.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-actions a:not(.primary) .dd-act-ico{
+  background:linear-gradient(135deg,var(--tone),var(--tone-2))!important;color:#fff!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 6px 14px -6px color-mix(in srgb,var(--tone) 70%,transparent)!important
+}
+.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile:not(.warn):not(#_):hover,.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-actions a:not(.primary):not(#_):hover{
+  border-color:color-mix(in srgb,var(--tone) 55%,transparent)!important;
+  box-shadow:inset 0 1px 0 var(--glass-edge),0 22px 40px -18px color-mix(in srgb,var(--tone) 45%,transparent)!important
+}
+/* The chart box (sales green) and the "Needs you now" box (blue) get a coloured top line and glow */
+.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-grid2 > .dd-box:first-child{--tone:#3A9A1E;--tone-2:#86C95A}
+.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-grid2 > .dd-box[aria-label="Needs you now"]{--tone:#3A72C0;--tone-2:#86AEE4}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-grid2 > .dd-box::after{z-index:-2}
+  .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-grid2 > .dd-box::before{
+    content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;
+    background:
+      linear-gradient(90deg,var(--tone),var(--tone-2) 55%,transparent) top left/100% 3px no-repeat,
+      radial-gradient(300px 200px at 100% 0%,color-mix(in srgb,var(--tone) 15%,transparent),transparent 70%),
+      linear-gradient(180deg,color-mix(in srgb,var(--tone-2) 9%,transparent) 0%,transparent 150px)
+  }
+}
+
+/* Hotel dashboard: front-desk tiles take the four calm colours in turn, icon in a matching chip */
+.shell:not(.is-pos):not(.is-kiosk) > .main .hdash-tiles > button.hdash-tile:not(.menu-btn):nth-child(4n+1){--tone:#3A9A1E;--tone-2:#86C95A}
+.shell:not(.is-pos):not(.is-kiosk) > .main .hdash-tiles > button.hdash-tile:not(.menu-btn):nth-child(4n+2){--tone:#16867A;--tone-2:#5FC0B2}
+.shell:not(.is-pos):not(.is-kiosk) > .main .hdash-tiles > button.hdash-tile:not(.menu-btn):nth-child(4n+3){--tone:#3A72C0;--tone-2:#86AEE4}
+.shell:not(.is-pos):not(.is-kiosk) > .main .hdash-tiles > button.hdash-tile:not(.menu-btn):nth-child(4n+4){--tone:#6E58C2;--tone-2:#A898E6}
+.shell:not(.is-pos):not(.is-kiosk) > .main .hdash-tiles > button.hdash-tile:not(.menu-btn):not(#_){box-shadow:inset 0 3px 0 var(--tone),var(--glass-shadow)!important}
+.shell:not(.is-pos):not(.is-kiosk) > .main .hdash-tiles > button.hdash-tile:not(.menu-btn) .hdash-icon{
+  background:linear-gradient(135deg,var(--tone),var(--tone-2))!important;color:#fff!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 6px 14px -6px color-mix(in srgb,var(--tone) 70%,transparent)!important
+}
+.shell:not(.is-pos):not(.is-kiosk) > .main .hdash-tiles > button.hdash-tile:not(.menu-btn):not(#_):hover{
+  border-color:color-mix(in srgb,var(--tone) 55%,transparent)!important;
+  box-shadow:inset 0 3px 0 var(--tone),0 22px 40px -18px color-mix(in srgb,var(--tone) 45%,transparent)!important
+}
+
+/* ---------- Dashboard polish: one professional finish ----------
+   Last layer, so it settles everything above into one system:
+   one font (Plus Jakarta Sans, already loaded), one corner size (16px), one spacing step (16px),
+   quiet shadows, tinted icon chips instead of loud gradients, a 2px colour line and a faint glow.
+   Only things you can click lift on hover; information boxes stay still. */
+:root{
+  --pro-radius:16px;
+  --pro-shadow:0 1px 2px rgba(16,33,27,.05),0 6px 20px -10px rgba(16,33,27,.18);
+  --pro-shadow-hover:0 2px 4px rgba(16,33,27,.06),0 14px 30px -14px rgba(16,33,27,.26);
+  --glass-wash:
+    radial-gradient(640px 420px at 8% -6%,rgba(200,232,106,.24),transparent 62%),
+    radial-gradient(720px 520px at 104% 18%,rgba(74,176,18,.12),transparent 60%),
+    radial-gradient(680px 520px at 40% 112%,rgba(0,107,46,.08),transparent 62%),
+    var(--mist);
+}
+[data-theme="dark"]{
+  --pro-shadow:0 1px 2px rgba(0,0,0,.30),0 8px 22px -12px rgba(0,0,0,.60);
+  --pro-shadow-hover:0 2px 4px rgba(0,0,0,.35),0 16px 32px -14px rgba(0,0,0,.70);
+  --glass-wash:
+    radial-gradient(640px 420px at 8% -6%,rgba(74,176,18,.14),transparent 62%),
+    radial-gradient(720px 520px at 104% 18%,rgba(0,107,46,.18),transparent 60%),
+    var(--forest-deep);
+}
+
+/* Type and spacing */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash,.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash,.shell:not(.is-pos):not(.is-kiosk) > .main .hdash{font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+@media (min-width:900px){
+  .shell:not(.is-pos):not(.is-kiosk) > .main .dash{gap:20px}
+  .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis,.shell:not(.is-pos):not(.is-kiosk) > .main .dash .info-grid,.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-pair{gap:16px}
+}
+
+/* Top figure cards */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat:not(#_){border-radius:var(--pro-radius)!important;padding:20px 20px 18px;box-shadow:inset 0 1px 0 var(--glass-edge),var(--pro-shadow)!important}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat:not(#_)::after{
+    background:
+      linear-gradient(90deg,var(--kpi),color-mix(in srgb,var(--kpi-2) 60%,transparent) 55%,transparent) top left/100% 2px no-repeat,
+      radial-gradient(220px 140px at 100% 0%,color-mix(in srgb,var(--kpi) 10%,transparent),transparent 70%)!important
+  }
+  [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat:not(#_)::after{
+    background:
+      linear-gradient(90deg,var(--kpi-2),transparent 70%) top left/100% 2px no-repeat,
+      radial-gradient(220px 140px at 100% 0%,color-mix(in srgb,var(--kpi-2) 9%,transparent),transparent 70%)!important
+  }
+}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat:not(#_) .ico{
+  width:40px;height:40px;margin:0 0 14px;border-radius:12px!important;
+  background:color-mix(in srgb,var(--kpi) 13%,transparent)!important;color:var(--kpi)!important;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--kpi) 18%,transparent)!important
+}
+[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat:not(#_) .ico{background:color-mix(in srgb,var(--kpi-2) 16%,transparent)!important;color:var(--kpi-2)!important;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--kpi-2) 22%,transparent)!important}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat:not(#_) .ico svg{width:20px;height:20px}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat:not(#_) .label{font-size:12px!important;font-weight:600!important;letter-spacing:.04em;line-height:1.3}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat:not(#_) .val{font-size:28px!important;font-weight:700;letter-spacing:-.02em;line-height:1.15;margin-top:6px}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat:not(#_) .hint{font-size:12.5px;line-height:1.4;margin-top:6px}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat:not(#_) .dash-delta{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat:not(#_):hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--kpi) 30%,var(--glass-line))!important;box-shadow:inset 0 1px 0 var(--glass-edge),var(--pro-shadow-hover)!important}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat:not(#_):focus-visible{outline:2px solid var(--kpi);outline-offset:2px}
+@media (max-width:720px){
+  .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat:not(#_){padding:16px}
+  .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat:not(#_) .val{font-size:23px!important}
+  .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat:not(#_) .ico{width:36px;height:36px;margin-bottom:10px}
+}
+
+/* Information boxes: still, calm, clear heading */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:not(#_){border-radius:var(--pro-radius)!important;padding:20px;box-shadow:inset 0 1px 0 var(--glass-edge),var(--pro-shadow)!important}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:not(#_):hover{transform:none;border-color:var(--glass-line)!important;box-shadow:inset 0 1px 0 var(--glass-edge),var(--pro-shadow)!important}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:not(#_)::after{
+    background:
+      linear-gradient(90deg,var(--tone),color-mix(in srgb,var(--tone-2) 50%,transparent) 45%,transparent 80%) top left/100% 2px no-repeat,
+      radial-gradient(300px 180px at 100% 0%,color-mix(in srgb,var(--tone) 9%,transparent),transparent 70%),
+      linear-gradient(180deg,color-mix(in srgb,var(--tone-2) 6%,transparent) 0%,transparent 140px)
+  }
+  [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:not(#_)::after{
+    background:
+      linear-gradient(90deg,var(--tone-2),transparent 70%) top left/100% 2px no-repeat,
+      radial-gradient(300px 180px at 100% 0%,color-mix(in srgb,var(--tone-2) 9%,transparent),transparent 70%)
+  }
+}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:not(#_) h3{font-size:15px;font-weight:700;letter-spacing:-.01em;margin:0 0 4px;gap:10px}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:not(#_) h3 .panel-ico{
+  width:16px;height:16px;padding:8px;border-radius:10px;
+  color:var(--tone)!important;background:color-mix(in srgb,var(--tone) 12%,transparent)!important;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tone) 16%,transparent)!important
+}
+[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:not(#_) h3 .panel-ico{color:var(--tone-2)!important;background:color-mix(in srgb,var(--tone-2) 15%,transparent)!important;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tone-2) 20%,transparent)!important}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:not(#_) > .hint{font-size:12.5px;color:var(--muted);margin:0 0 14px}
+[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:not(#_) > .hint{color:#A3B8AB}
+
+/* Charts: lighter guide line, quiet axis words */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:not(#_) .dash-chart-svg line{stroke:var(--glass-line)}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:not(#_) .dash-chart-svg .vbar-label{font-size:11px;fill:var(--muted)}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:not(#_) .dash-chart-svg .vbar-val{font-size:10.5px;font-weight:700;fill:var(--muted)}
+[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:not(#_) .dash-chart-svg .vbar-label,[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:not(#_) .dash-chart-svg .vbar-val{fill:#A3B8AB}
+
+/* Tables: quiet heading row, even rows, digits that line up */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:not(#_) .table thead th{background:color-mix(in srgb,var(--tone) 6%,transparent)!important;font-size:11.5px;font-weight:700;letter-spacing:.05em;padding:10px 12px}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:not(#_) .table td{font-size:13.5px;padding:11px 12px;font-variant-numeric:tabular-nums}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:not(#_) .table tbody tr:last-child td{border-bottom:0}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:not(#_) .table tbody tr:hover{background:color-mix(in srgb,var(--tone) 5%,transparent)}
+
+/* Revenue / Quantity switch: the chosen option tinted, not filled */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:not(#_) .dash-rank button{font-size:12.5px;padding:6px 12px;min-height:0}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:not(#_) .dash-rank button.is-on{
+  background:var(--white)!important;color:var(--tone)!important;
+  box-shadow:0 1px 2px rgba(16,33,27,.08),inset 0 0 0 1px color-mix(in srgb,var(--tone) 25%,transparent)!important
+}
+[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .dash .panel[data-tone]:not(#_) .dash-rank button.is-on{background:rgba(255,255,255,.08)!important;color:var(--tone-2)!important}
+
+/* Money owed and stock pills: tidy sizes */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-owed-card[data-tone]:not(#_){border-radius:12px!important;padding:12px 14px}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-owed-card[data-tone]:not(#_) .val{font-size:20px;font-weight:700}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .health .nums .pill:not(#_){border-radius:10px}
+
+/* Shortcut and pharmacy cards: clickable, so a small lift */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .stat-grid:not(.dash-kpis) .stat:not(#_){border-radius:var(--pro-radius)!important;box-shadow:inset 0 1px 0 var(--glass-edge),var(--pro-shadow)!important}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .stat-grid:not(.dash-kpis) .stat:not(#_):hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--tone) 30%,var(--glass-line))!important;box-shadow:inset 0 1px 0 var(--glass-edge),var(--pro-shadow-hover)!important}
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .stat-grid:not(.dash-kpis) .stat:not(#_) .val{font-weight:700}
+
+/* Desk and hotel dashboards: the same tinted icon chips, radius and hover */
+.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile:not(.warn):not(#_) .dd-tile-ico,.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-actions a:not(.primary):not(#_) .dd-act-ico,
+.shell:not(.is-pos):not(.is-kiosk) > .main .hdash-tiles > button.hdash-tile:not(.menu-btn):not(#_) .hdash-icon{
+  background:color-mix(in srgb,var(--tone) 13%,transparent)!important;color:var(--tone)!important;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tone) 18%,transparent)!important
+}
+[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile:not(.warn):not(#_) .dd-tile-ico,[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-actions a:not(.primary):not(#_) .dd-act-ico,
+[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .hdash-tiles > button.hdash-tile:not(.menu-btn):not(#_) .hdash-icon{
+  background:color-mix(in srgb,var(--tone-2) 16%,transparent)!important;color:var(--tone-2)!important
+}
+.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile:not(#_),.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-box:not(#_){border-radius:var(--pro-radius)}
+.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile:not(.warn):not(#_):hover,.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-actions a:not(.primary):not(#_):hover{
+  transform:translateY(-1px);
+  border-color:color-mix(in srgb,var(--tone) 30%,var(--glass-line))!important;
+  box-shadow:inset 0 1px 0 var(--glass-edge),var(--pro-shadow-hover)!important
+}
+.shell:not(.is-pos):not(.is-kiosk) > .main .hdash-tiles > button.hdash-tile:not(.menu-btn):not(#_){box-shadow:inset 0 2px 0 var(--tone),var(--pro-shadow)!important}
+.shell:not(.is-pos):not(.is-kiosk) > .main .hdash-tiles > button.hdash-tile:not(.menu-btn):not(#_):hover{
+  transform:translateY(-1px);border-color:color-mix(in srgb,var(--tone) 30%,var(--glass-line))!important;
+  box-shadow:inset 0 2px 0 var(--tone),var(--pro-shadow-hover)!important
+}
+@media (prefers-reduced-motion:reduce){
+  .shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat:not(#_):hover,.shell:not(.is-pos):not(.is-kiosk) > .main .dash .stat-grid:not(.dash-kpis) .stat:not(#_):hover,.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-tile:not(#_):hover,.shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-actions a:not(#_):hover,.shell:not(.is-pos):not(.is-kiosk) > .main .hdash-tiles > button.hdash-tile:not(#_):hover{transform:none}
+}
+
+/* ---------- List screens: glass tables, toolbars, tabs, pager and row menus ----------
+   Products and every other list built from the shared list-* / cat-* pieces
+   (inventory, sales, purchasing, customers, expenses, accounting, credit, tax, users,
+   departments, gift cards, online shop, reports, hotel lists).
+   Table wrappers scroll sideways, so the blur sits on the wrapper itself (a layer behind it
+   would slide away when scrolling). Nothing inside a table is a fixed popup: the row menu is
+   absolute and attachment previews render outside the tables. */
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  /* Table: frosted panel, quiet edge */
+  .shell:not(.is-pos):not(.is-kiosk) > .main :is(.list-table-wrap,.cat-table-wrap):not(#_),[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main :is(.list-table-wrap,.cat-table-wrap):not(#_){
+    background:var(--glass-sheen),var(--glass-bg)!important;
+    -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-line)!important;border-radius:var(--pro-radius,16px)!important;
+    box-shadow:inset 0 1px 0 var(--glass-edge),var(--pro-shadow)!important
+  }
+  /* Heading row: frosted so it still reads when it sticks over rows */
+  .shell:not(.is-pos):not(.is-kiosk) > .main :is(.list-table-wrap,.cat-table-wrap):not(#_) .table th,[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main :is(.list-table-wrap,.cat-table-wrap):not(#_) .table th{
+    background:rgba(242,247,236,.82)!important;
+    -webkit-backdrop-filter:blur(12px) saturate(150%);backdrop-filter:blur(12px) saturate(150%);
+    color:var(--muted)!important;border-bottom:1px solid var(--glass-line)!important;
+    font-size:11.5px;font-weight:700;letter-spacing:.05em
+  }
+  [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main :is(.list-table-wrap,.cat-table-wrap):not(#_) .table th{background:rgba(10,32,22,.82)!important;color:#A3B8AB!important}
+  /* Rows sit on the glass; the row under the pointer lights up green */
+  .shell:not(.is-pos):not(.is-kiosk) > .main :is(.list-table-wrap,.cat-table-wrap):not(#_) .table td,[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main :is(.list-table-wrap,.cat-table-wrap):not(#_) .table td{background:transparent!important;border-bottom:1px solid var(--glass-line)!important}
+  .shell:not(.is-pos):not(.is-kiosk) > .main :is(.list-table-wrap,.cat-table-wrap):not(#_) .table tbody tr:hover td{background:rgba(74,176,18,.07)!important}
+  [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main :is(.list-table-wrap,.cat-table-wrap):not(#_) .table tbody tr:hover td{background:rgba(200,232,106,.06)!important}
+  .shell:not(.is-pos):not(.is-kiosk) > .main :is(.list-table-wrap,.cat-table-wrap):not(#_) .table tbody tr:last-child td{border-bottom:0!important}
+  .shell:not(.is-pos):not(.is-kiosk) > .main :is(.list-table-wrap,.cat-table-wrap):not(#_) .table td.col-num,.shell:not(.is-pos):not(.is-kiosk) > .main :is(.list-table-wrap,.cat-table-wrap):not(#_) .table th.col-num{font-variant-numeric:tabular-nums}
+
+  /* Search and filter bar: a glass strip */
+  .shell:not(.is-pos):not(.is-kiosk) > .main :is(.list-toolbar,.cat-toolbar):not(#_),[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main :is(.list-toolbar,.cat-toolbar):not(#_){
+    padding:10px;border-radius:14px;
+    background:var(--glass-sheen),var(--glass-bg)!important;
+    -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-edge),0 1px 2px rgba(16,33,27,.04)
+  }
+  .shell:not(.is-pos):not(.is-kiosk) > .main :is(.list-toolbar,.cat-toolbar):not(#_) :is(input:not([type="checkbox"]):not([type="radio"]),select){
+    background:rgba(255,255,255,.72)!important;border:1px solid var(--glass-line)!important;border-radius:10px!important;
+    transition:border-color .15s ease,box-shadow .15s ease,background .15s ease
+  }
+  [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main :is(.list-toolbar,.cat-toolbar):not(#_) :is(input:not([type="checkbox"]):not([type="radio"]),select){background:rgba(255,255,255,.06)!important;color:#E8F2E4}
+  .shell:not(.is-pos):not(.is-kiosk) > .main :is(.list-toolbar,.cat-toolbar):not(#_) :is(input,select):focus{outline:none;border-color:#4AB012!important;box-shadow:0 0 0 3px rgba(74,176,18,.22)!important;background:rgba(255,255,255,.95)!important}
+  [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main :is(.list-toolbar,.cat-toolbar):not(#_) :is(input,select):focus{background:rgba(255,255,255,.10)!important}
+
+  /* Screen tabs (sales, purchasing, inventory): a glass strip, the open tab in green */
+  .shell:not(.is-pos):not(.is-kiosk) > .main .sales-toolbar:has(.sales-tab):not(#_){
+    padding:4px;border-radius:14px;width:fit-content;max-width:100%;
+    background:var(--glass-bg-strong);border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-edge);
+    -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)
+  }
+  .shell:not(.is-pos):not(.is-kiosk) > .main .sales-toolbar .sales-tab:not(#_){border-color:transparent!important;background:transparent!important;border-radius:10px!important;font-weight:700}
+  .shell:not(.is-pos):not(.is-kiosk) > .main .sales-toolbar .sales-tab:not(#_):hover{background:rgba(74,176,18,.08)!important}
+  .shell:not(.is-pos):not(.is-kiosk) > .main .sales-toolbar .sales-tab.is-on:not(#_),.shell:not(.is-pos):not(.is-kiosk) > .main .sales-toolbar .sales-tab[aria-pressed="true"]:not(#_),.shell:not(.is-pos):not(.is-kiosk) > .main .sales-toolbar .sales-tab[aria-selected="true"]:not(#_){
+    background:#FFFFFF!important;color:#006B2E!important;opacity:1;
+    box-shadow:0 1px 2px rgba(16,33,27,.08),inset 0 0 0 1px rgba(74,176,18,.30)!important
+  }
+  [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .sales-toolbar .sales-tab.is-on:not(#_),[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .sales-toolbar .sales-tab[aria-pressed="true"]:not(#_){background:rgba(255,255,255,.10)!important;color:#C8E86A!important}
+
+  /* Row "More" menu and catalog menus: frosted pop-up */
+  .shell:not(.is-pos):not(.is-kiosk) > .main :is(.erp-row-menu-pop,.cat-menu-pop):not(#_){
+    background:var(--glass-sheen),var(--glass-bg-strong)!important;
+    -webkit-backdrop-filter:blur(20px) saturate(170%);backdrop-filter:blur(20px) saturate(170%);
+    border:1px solid var(--glass-line)!important;border-radius:12px;
+    box-shadow:inset 0 1px 0 var(--glass-edge),0 18px 40px -16px rgba(0,26,14,.45)!important
+  }
+  .shell:not(.is-pos):not(.is-kiosk) > .main :is(.erp-row-menu-pop,.cat-menu-pop) button:hover{background:rgba(74,176,18,.10)!important}
+
+  /* Notices after saving: glass with a coloured edge */
+  .shell:not(.is-pos):not(.is-kiosk) > .main .list-toast:not(#_){
+    -webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);
+    border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-edge),var(--pro-shadow)
+  }
+  .shell:not(.is-pos):not(.is-kiosk) > .main .list-toast.ok:not(#_){background:rgba(234,248,216,.80)!important;box-shadow:inset 3px 0 0 #4AB012,var(--pro-shadow)}
+  .shell:not(.is-pos):not(.is-kiosk) > .main .list-toast.err:not(#_){background:rgba(254,242,242,.85)!important;box-shadow:inset 3px 0 0 #b91c1c,var(--pro-shadow)}
+
+  /* Pager: glass buttons */
+  .shell:not(.is-pos):not(.is-kiosk) > .main .list-pager-nav button:not(#_),.shell:not(.is-pos):not(.is-kiosk) > .main .list-pager-size select:not(#_){
+    background:var(--glass-bg-strong)!important;border:1px solid var(--glass-line)!important;border-radius:10px!important;
+    box-shadow:inset 0 1px 0 var(--glass-edge)
+  }
+  .shell:not(.is-pos):not(.is-kiosk) > .main .list-pager-nav button:not(#_):hover:not(:disabled){border-color:rgba(74,176,18,.55)!important}
+
+  /* Empty lists: a soft glass note instead of bare text */
+  .shell:not(.is-pos):not(.is-kiosk) > .main :is(.cat-empty,.list-empty):not(#_){
+    border-radius:14px;border:1px dashed color-mix(in srgb,#4AB012 35%,transparent);
+    background:rgba(255,255,255,.35)
+  }
+  [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main :is(.cat-empty,.list-empty):not(#_){background:rgba(255,255,255,.03)}
+
+  /* "More options" fold-outs on list screens */
+  .shell:not(.is-pos):not(.is-kiosk) > .main .sales-more > summary:not(#_){
+    background:var(--glass-bg-strong)!important;border:1px solid var(--glass-line)!important;border-radius:10px;
+    box-shadow:inset 0 1px 0 var(--glass-edge)
+  }
+}
+
+/* Status chips in tables: a fine ring so they look crisp on glass */
+.shell:not(.is-pos):not(.is-kiosk) > .main .table :is(.xfer-status,.badge,.status-pill){box-shadow:inset 0 0 0 1px rgba(16,33,27,.06)}
+/* Main "Add" buttons on list screens: same glossy top as the other green buttons */
+.shell:not(.is-pos):not(.is-kiosk) > .main .list-btn-primary{
+  background-image:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0) 55%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 6px 16px -8px rgba(0,61,31,.55)
+}
+
+/* ---------- Older boxes brought up to date ----------
+   Settings boxes, "More" fold-outs and plain tables inside cards still had the older flat look. */
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .shell:not(.is-pos):not(.is-kiosk) > .main :is(.inv-ui-settings,.sales-ui-settings,.inv-ui-more,.cat-advanced,.purchase-bill-more):not(#_){
+    border:1px solid var(--glass-line)!important;border-radius:14px!important;
+    background:var(--glass-sheen),var(--glass-bg)!important;
+    -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
+    box-shadow:inset 0 1px 0 var(--glass-edge),0 1px 2px rgba(16,33,27,.04)
+  }
+}
+.shell:not(.is-pos):not(.is-kiosk) > .main :is(.inv-ui-settings,.sales-ui-settings,.inv-ui-more,.cat-advanced,.purchase-bill-more) > summary{cursor:pointer;font-weight:700;border-radius:10px}
+.shell:not(.is-pos):not(.is-kiosk) > .main :is(.inv-ui-settings,.sales-ui-settings,.inv-ui-more,.cat-advanced,.purchase-bill-more) > summary:hover{color:#006B2E}
+.shell:not(.is-pos):not(.is-kiosk) > .main :is(.inv-ui-settings,.sales-ui-settings,.inv-ui-more,.cat-advanced,.purchase-bill-more) > summary:focus-visible{outline:2px solid #4AB012;outline-offset:2px}
+/* Plain tables inside cards (not the list tables): quiet frosted heading, rows on the glass */
+.shell:not(.is-pos):not(.is-kiosk) > .main .card > .table:not(#_),.shell:not(.is-pos):not(.is-kiosk) > .main .card > div > .table:not(#_){background:transparent;border-color:var(--glass-line);box-shadow:none}
+.shell:not(.is-pos):not(.is-kiosk) > .main .card > .table:not(#_) th,.shell:not(.is-pos):not(.is-kiosk) > .main .card > div > .table:not(#_) th{background:rgba(242,247,236,.75);color:var(--muted);border-bottom-color:var(--glass-line)}
+[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .card > .table:not(#_) th,[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .card > div > .table:not(#_) th{background:rgba(10,32,22,.75);color:#A3B8AB}
+.shell:not(.is-pos):not(.is-kiosk) > .main .card > .table:not(#_) td,.shell:not(.is-pos):not(.is-kiosk) > .main .card > div > .table:not(#_) td{border-bottom-color:var(--glass-line)}
+.shell:not(.is-pos):not(.is-kiosk) > .main .card > .table:not(#_) tbody tr:hover,.shell:not(.is-pos):not(.is-kiosk) > .main .card > div > .table:not(#_) tbody tr:hover{background:rgba(74,176,18,.06)}
+/* Screen section tabs on inventory (the open one is shown as a disabled button) */
+.shell:not(.is-pos):not(.is-kiosk) > .main .inv-ui-nav-row button:not(.menu-btn):disabled:not(#_){
+  opacity:1;cursor:default;background:linear-gradient(180deg,#55BC1B,#43A311)!important;color:#fff!important;border-color:#3A930E!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 4px 12px -4px rgba(47,122,12,.5)!important
+}
+
+/* Audit, Backup and Notifications tables: the same glass as the other list tables */
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .shell:not(.is-pos):not(.is-kiosk) > .main :is(.audit-ui-scroll,.backup-ui-scroll,.notify-ui-scroll):not(#_){
+    background:var(--glass-sheen),var(--glass-bg)!important;
+    -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-line)!important;border-radius:16px!important;
+    box-shadow:inset 0 1px 0 var(--glass-edge),var(--pro-shadow)!important
+  }
+  .shell:not(.is-pos):not(.is-kiosk) > .main :is(.audit-ui-scroll,.backup-ui-scroll,.notify-ui-scroll):not(#_) .table{background:transparent!important;border:0;box-shadow:none}
+  .shell:not(.is-pos):not(.is-kiosk) > .main :is(.audit-ui-scroll,.backup-ui-scroll,.notify-ui-scroll):not(#_) .table th{background:rgba(242,247,236,.85)!important;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--glass-line)!important}
+  [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main :is(.audit-ui-scroll,.backup-ui-scroll,.notify-ui-scroll):not(#_) .table th{background:rgba(10,32,22,.85)!important}
+  .shell:not(.is-pos):not(.is-kiosk) > .main :is(.audit-ui-scroll,.backup-ui-scroll,.notify-ui-scroll):not(#_) .table td{background:transparent!important;border-bottom-color:var(--glass-line)!important}
+  .shell:not(.is-pos):not(.is-kiosk) > .main :is(.audit-ui-scroll,.backup-ui-scroll,.notify-ui-scroll):not(#_) .table tbody tr:hover td{background:rgba(74,176,18,.07)!important}
+}
+
+/* ---------- Sign-in pages: glass card ----------
+   Sign in, Forgot password, Reset password and Verify email share this card.
+   It was a 94% solid dark box with raised 3D buttons; now it is frosted dark-green glass over the
+   green stage, with a light edge, flat modern buttons and see-through fields.
+   Text stays white on dark green, so contrast is unchanged. */
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .login-stage .login{
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,0) 38%),
+      rgba(0,29,15,.66);
+    -webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);
+    border:1px solid rgba(200,232,106,.20);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 30px 70px -20px rgba(0,0,0,.65)
+  }
+  @media(min-width:900px){
+    .login-stage .login-split .login-aside{
+      background:
+        radial-gradient(320px 260px at 0% 0%,rgba(74,176,18,.22),transparent 70%),
+        linear-gradient(180deg,rgba(10,61,48,.55) 0%,rgba(0,61,31,.40) 100%);
+      border-right:1px solid rgba(200,232,106,.14)
+    }
+  }
+}
+/* Fields: see-through dark glass, lime ring when typing */
+.login-stage .login input{
+  background:rgba(0,20,10,.55);border:1px solid rgba(200,232,106,.18);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.25)
+}
+.login-stage .login input:hover:not(:focus){border-color:rgba(200,232,106,.34)}
+.login-stage .login input:focus{background:rgba(0,40,20,.70);border-color:#7BD14A;box-shadow:0 0 0 3px rgba(123,209,74,.25)}
+.login-stage .login-field>span{font-size:12.5px;letter-spacing:.01em}
+/* Buttons: flat and modern, no 3D ledge */
+.login-stage .login-primary{
+  background:linear-gradient(180deg,#55BC1B 0%,#43A311 100%);border:1px solid #3A930E;border-bottom:1px solid #357F0E;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 10px 24px -10px rgba(74,176,18,.7);transform:none
+}
+.login-stage .login-primary:hover{
+  background:linear-gradient(180deg,#4AB012 0%,#348A0D 100%);border-color:#2F7A0C;border-bottom:1px solid #2F7A0C;transform:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.24),0 14px 28px -10px rgba(74,176,18,.75)
+}
+.login-stage .login-primary:active,.login-stage .login-secondary:active{transform:scale(.985);box-shadow:inset 0 2px 4px rgba(0,0,0,.3)}
+.login-stage .login-secondary{
+  background:rgba(255,255,255,.06);border:1px solid rgba(200,232,106,.24);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08);transform:none
+}
+.login-stage .login-secondary:hover{background:rgba(255,255,255,.11);border-color:rgba(200,232,106,.5);transform:none}
+.login-stage :is(.login-primary,.login-secondary,.login-ghost):focus-visible{outline:2px solid #C8E86A;outline-offset:2px}
+/* Admin / User tabs: a glass strip */
+.login-stage .login-tabs{background:rgba(255,255,255,.05);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.login-stage .login-tabs button.on{background:linear-gradient(180deg,#55BC1B,#43A311);border-color:#3A930E;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 6px 14px -8px rgba(74,176,18,.7)}
+/* Messages: glass with a coloured edge */
+.login-stage .login-error{background:rgba(69,10,10,.62);border-color:rgba(248,113,113,.45);box-shadow:inset 3px 0 0 #F87171}
+.login-stage .login-success{background:rgba(6,53,28,.62);border-color:rgba(123,209,74,.45);box-shadow:inset 3px 0 0 #7BD14A}
+@media (prefers-reduced-transparency:reduce){
+  .login-stage .login{background:#001D0F;-webkit-backdrop-filter:none;backdrop-filter:none}
+}
+
+/* ---------- The remaining screens brought up to date ----------
+   Company page tabs, Billing, the owner console's tables and filters, the inner screens of the
+   bakery / gym / HRM / FMCG desks, and the hotel's view switch, room picks, links and fold-outs. */
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+
+  /* Company page: tabs as a glass strip, the open tab a white chip in green */
+  .shell:not(.is-pos):not(.is-kiosk) > .main .company-tabs:not(#_){
+    background:var(--glass-bg-strong)!important;border:1px solid var(--glass-line);
+    box-shadow:inset 0 1px 0 var(--glass-edge),0 1px 2px rgba(16,33,27,.05)!important;-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)
+  }
+  .shell:not(.is-pos):not(.is-kiosk) > .main .company-tabs button:not(.menu-btn):not(#_){background:transparent;border:0;box-shadow:none}
+  .shell:not(.is-pos):not(.is-kiosk) > .main .company-tabs button:not(.menu-btn):not(#_):hover{background:rgba(74,176,18,.08)}
+  .shell:not(.is-pos):not(.is-kiosk) > .main .company-tabs button.on:not(.menu-btn):not(#_){
+    background:#fff;color:#006B2E;box-shadow:0 1px 2px rgba(16,33,27,.08),inset 0 0 0 1px rgba(74,176,18,.30)
+  }
+  [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .company-tabs button.on:not(.menu-btn):not(#_){background:rgba(255,255,255,.10);color:#C8E86A}
+
+  /* Billing: plan card, figure tiles and tables become glass (the card colour is only used as a background) */
+  .shell:not(.is-pos):not(.is-kiosk) > .main .billing-page:not(#_){--bp-card:rgba(255,255,255,.62);--bp-soft:rgba(255,255,255,.45)}
+  [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .billing-page:not(#_){--bp-card:rgba(22,36,28,.58);--bp-soft:rgba(19,32,25,.5)}
+  .shell:not(.is-pos):not(.is-kiosk) > .main .billing-page .billing-page-card:not(#_){-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);box-shadow:inset 0 1px 0 var(--glass-edge),var(--pro-shadow)}
+
+  /* Owner console: tables sit on the glass panels, quiet frosted heading row */
+  .shell:not(.is-pos):not(.is-kiosk) > .main .plat .table:not(#_){background:transparent;border:0;box-shadow:none}
+  .shell:not(.is-pos):not(.is-kiosk) > .main .plat .table:not(#_) th{background:rgba(242,247,236,.80);color:var(--muted);border-bottom:1px solid var(--glass-line)}
+  [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .plat .table:not(#_) th{background:rgba(10,32,22,.80);color:#A3B8AB}
+  .shell:not(.is-pos):not(.is-kiosk) > .main .plat .table:not(#_) td{border-bottom-color:var(--glass-line)}
+  .shell:not(.is-pos):not(.is-kiosk) > .main .plat .table:not(#_) tbody tr:hover{background:rgba(74,176,18,.06)}
+  /* Owner console: search, pickers and filter chips */
+  .shell:not(.is-pos):not(.is-kiosk) > .main .plat .plat-search input:not(#_),.shell:not(.is-pos):not(.is-kiosk) > .main .plat .plat-select:not(#_){
+    background:rgba(255,255,255,.80);border-color:var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-edge)
+  }
+  [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .plat .plat-search input:not(#_),[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .plat .plat-select:not(#_){background:rgba(255,255,255,.06);color:#F2F8EE}
+  .shell:not(.is-pos):not(.is-kiosk) > .main .plat .plat-search input:not(#_):focus,.shell:not(.is-pos):not(.is-kiosk) > .main .plat .plat-select:not(#_):focus{outline:none;border-color:#4AB012;box-shadow:0 0 0 3px rgba(74,176,18,.20)}
+  .shell:not(.is-pos):not(.is-kiosk) > .main .plat button.plat-chip.active:not(.menu-btn):not(#_){background:#fff;color:#006B2E;box-shadow:0 1px 2px rgba(16,33,27,.08),inset 0 0 0 1px rgba(74,176,18,.30)}
+  [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .plat button.plat-chip.active:not(.menu-btn):not(#_){background:rgba(255,255,255,.10);color:#C8E86A}
+
+  /* Bakery, gym, HRM, FMCG inner screens: plain buttons become see-through glass.
+     Written at the strength of the desks' coloured buttons (bk-primary and the rest), which load later
+     in each desk's own file and so keep their colour. */
+  :where(.shell:not(.is-pos):not(.is-kiosk)) > .main :is(.bakery,.gym,.hrm,.fmcg-sell) button:not(.menu-btn){
+    background:color-mix(in srgb,#fff 70%,transparent);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(16,33,27,.06);
+    transition:background .15s ease,border-color .15s ease,box-shadow .15s ease,transform .1s ease
+  }
+  :where(.shell:not(.is-pos):not(.is-kiosk)) > .main :is(.bakery,.gym,.hrm,.fmcg-sell) button:not(.menu-btn):hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 4px 12px -6px rgba(16,33,27,.18)}
+  :where([data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk)) > .main :is(.bakery,.gym,.hrm,.fmcg-sell) button:not(.menu-btn){background:rgba(255,255,255,.06);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+
+  /* Hotel inner screens: view switch, room picks, quick links, guide button and fold-outs */
+  .shell:not(.is-pos):not(.is-kiosk) > .main button.hview:not(.menu-btn):not([aria-pressed="true"]):not(#_),
+  .shell:not(.is-pos):not(.is-kiosk) > .main button.hguide-toggle:not(.menu-btn):not(#_),
+  .shell:not(.is-pos):not(.is-kiosk) > .main button.hroom-pick:not(.menu-btn):not([aria-pressed="true"]):not(#_),
+  .shell:not(.is-pos):not(.is-kiosk) > .main .hdesk-links a:not(#_),
+  .shell:not(.is-pos):not(.is-kiosk) > .main details.hmore:not(#_){
+    background:var(--glass-sheen),var(--glass-bg-strong);border-color:var(--glass-line);
+    box-shadow:inset 0 1px 0 var(--glass-edge),0 1px 2px rgba(16,33,27,.05)
+  }
+  [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main button.hview:not(.menu-btn):not([aria-pressed="true"]):not(#_),
+  [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main button.hguide-toggle:not(.menu-btn):not(#_),
+  [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main button.hroom-pick:not(.menu-btn):not([aria-pressed="true"]):not(#_),
+  [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .hdesk-links a:not(#_),
+  [data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main details.hmore:not(#_){background:var(--glass-sheen),var(--glass-bg);border-color:var(--glass-line);color:#E8F2E4}
+  .shell:not(.is-pos):not(.is-kiosk) > .main button.hview:not(.menu-btn):not(#_):hover,.shell:not(.is-pos):not(.is-kiosk) > .main button.hroom-pick:not(.menu-btn):not(#_):hover,.shell:not(.is-pos):not(.is-kiosk) > .main .hdesk-links a:not(#_):hover{border-color:rgba(74,176,18,.55)}
+  .shell:not(.is-pos):not(.is-kiosk) > .main button.hview[aria-pressed="true"]:not(.menu-btn):not(#_){box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 6px 14px -8px rgba(0,61,31,.55)}
+  .shell:not(.is-pos):not(.is-kiosk) > .main details.hmore:not(#_){border-radius:14px}
+}
+
+/* Less transparency asked for by the system: glass becomes solid, no blur. */
+@media (prefers-reduced-transparency:reduce){
+  :root{--glass-bg:#FFFFFF;--glass-bg-strong:#FFFFFF;--glass-sheen:linear-gradient(transparent,transparent)}
+  [data-theme="dark"]{--glass-bg:#16241C;--glass-bg-strong:#16241C}
+  .main *,.main *::before,.main *::after,.side,.side *,.bell-panel,.erp-modal,.inv-drawer,.drawer,.plat-drawer,
+  .erp-modal-back,.inv-drawer-back,.plat-drawer-back{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 }

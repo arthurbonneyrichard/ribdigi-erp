@@ -819,7 +819,10 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "held: 'Held'" in restaurant
     assert "is-held" in (root / "frontend/app/globals.css").read_text(encoding="utf-8")
     assert "Choose a table first." in restaurant
-    assert "15000" in restaurant
+    # Boards ask every 4 s whether anything changed, with a full refresh each minute.
+    assert "'/restaurant/orders/version'" in restaurant
+    assert "void check(), 4000)" in restaurant
+    assert "}, 60000);" in restaurant
     assert "linesToSave" in restaurant
     assert "Add at least one menu item" in restaurant
     orders_desk = restaurant.split("tab === 'orders'", 1)[1].split("tab === 'kitchen'", 1)[0]
