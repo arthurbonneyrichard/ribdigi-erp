@@ -1,4 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+/* Plus Jakarta Sans (SIL Open Font License 1.1, public/fonts/PlusJakartaSans-OFL.txt), served from
+   this site so no visitor's address is sent to a font service. One variable file per subset, 500-800. */
+@font-face{font-family:"Plus Jakarta Sans";font-style:normal;font-weight:500 800;font-display:swap;src:url(/fonts/plus-jakarta-sans-latin-ext.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Plus Jakarta Sans";font-style:normal;font-weight:500 800;font-display:swap;src:url(/fonts/plus-jakarta-sans-latin.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 /* Ribdigi brand palette */
 :root{
   /* Logo greens: lime highlight → mid grass → deep forest */
@@ -1270,11 +1273,24 @@
 }
 .login-legal a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .login-legal a:hover{color:var(--brand)}
+.login-legal,.app-legal{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px}
+.legal-link-btn{background:none;border:0;padding:0;margin:0;font:inherit;color:inherit;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.legal-link-btn:hover{color:var(--brand)}
+.legal-link-btn:focus-visible,.login-legal a:focus-visible,.app-legal a:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:2px}
+/* Policy links at the foot of the signed-in work area: #4A6756 on #F5FAF0 is 5.9:1. */
+.app-legal{margin:24px 0 8px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;font-weight:600;color:var(--muted)}
+.app-legal a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.billing-page-legal{margin:8px 0 0;font-size:13px;color:var(--muted)}
+.billing-page-legal a{color:var(--deep-green);text-decoration:underline}
 .legal-doc{max-width:44rem;text-align:left}
 .legal-doc .login-heading{text-align:left}
 .legal-doc-body{display:grid;gap:12px;margin:16px 0;color:var(--sand);font-size:14px;line-height:1.55;font-weight:500}
 .legal-doc-body p{margin:0}
 .legal-doc-body h2{margin:8px 0 0;color:var(--sand);font-size:15px;font-weight:700}
+.legal-doc-body h3{margin:4px 0 0;color:var(--sand);font-size:14px;font-weight:700}
+.legal-doc-body ul{margin:0;padding-left:20px;display:grid;gap:6px}
+.legal-doc-body a{color:#C8E86A;text-decoration:underline;text-underline-offset:2px}
+.legal-doc-body strong{color:var(--sand)}
 
 @media(min-width:721px) and (max-width:899px){
   .login{width:min(520px,100%);padding:28px 24px 20px;margin:auto}
@@ -9769,3 +9785,11 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{background-color:rgb
   .main *,.main *::before,.main *::after,.side,.side *,.bell-panel,.erp-modal,.inv-drawer,.drawer,.plat-drawer,
   .erp-modal-back,.inv-drawer-back,.plat-drawer-back{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 }
+
+/* WCAG 2.2 non-text contrast (1.4.11), light theme: brand green #4AB012 on white is only 2.8:1, too faint
+   for a focus indicator. Deep green #006B2E (a brand colour) is 6.7:1 on white and 5.9:1+ on mist, with a
+   white band inside it so the ring also shows on the dark cards in the work area. Signed-in work area only:
+   the sign-in card, sidebar and cookie banner are dark and keep their lime rings. Dark theme is unchanged. */
+:root:not([data-theme="dark"]) .main :focus-visible{outline:2px solid #006B2E!important;outline-offset:2px!important;box-shadow:0 0 0 4px #FFFFFF!important}
+:root:not([data-theme="dark"]) .main :is(input,select,textarea):focus{border-color:#006B2E!important;box-shadow:0 0 0 3px rgba(0,107,46,.28)!important}
+:root:not([data-theme="dark"]) .main input:is([type="checkbox"],[type="radio"]):focus{box-shadow:none!important}

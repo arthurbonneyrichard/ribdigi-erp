@@ -14,6 +14,8 @@ const tests = [
   'lib/posLock.test.ts',
   'lib/posOffline.test.ts',
   'lib/posOfflineQueue.test.ts',
+  'lib/consent.test.ts',
+  'lib/legalText.test.ts',
 ];
 
 try {

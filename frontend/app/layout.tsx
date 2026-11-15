@@ -1,4 +1,5 @@
 import UmamiScript from '../components/UmamiScript';
+import CookieConsent from '../components/CookieConsent';
 import './globals.css';
 
 export const viewport = {
@@ -56,7 +57,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       {/* Browser extensions (Grammarly, password managers) add attributes to <body> before
           React loads; this only stops React warning about those attributes, not about children. */}
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        {children}
+        <CookieConsent />
+      </body>
     </html>
   );
 }

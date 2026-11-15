@@ -5372,3 +5372,66 @@ class TillPaymentIntent(Base):
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class EmailSuppression(Base):
+    """An address that asked to stop Ribdigi House marketing email (platform-wide, main database).
+
+    Service notices about an account still go out; only mail marked marketing is held back.
+    """
+
+    __tablename__ = "email_suppressions"
+    __table_args__ = (UniqueConstraint("email", "scope", name="uq_email_suppressions_email_scope"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    scope: Mapped[str] = mapped_column(String(20), nullable=False, default="marketing")
+    source: Mapped[str] = mapped_column(String(30), nullable=False, default="link")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class DataDeletionRequest(Base):
+    """A request to delete one person's account or a whole company, reviewed by Ribdigi House."""
+
+    __tablename__ = "data_deletion_requests"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False, index=True)
+    # my_account: the requester's own sign-in and personal details. company: the whole company.
+    scope: Mapped[str] = mapped_column(String(20), nullable=False)
+    requested_by: Mapped[str] = mapped_column(String(36), nullable=False)
+    requester_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    requester_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # pending -> approved -> completed, or pending -> rejected / cancelled.
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", index=True)
+    decided_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    decision_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class LegalDocumentVersion(Base):
+    """One saved version of a public legal page (privacy, terms, refunds, cookies), main database.
+
+    Every save is a new row, so the history of what the page said and who changed it is kept.
+    The public page shows the newest published version; with none, the built-in text is shown.
+    """
+
+    __tablename__ = "legal_document_versions"
+    __table_args__ = (UniqueConstraint("slug", "version", name="uq_legal_document_versions_slug_version"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    slug: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    title: Mapped[str] = mapped_column(String(120), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    effective_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    # draft: saved but not shown. published: the public page shows the newest one.
+    status: Mapped[str] = mapped_column(String(12), nullable=False, default="draft")
+    note: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

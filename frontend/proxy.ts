@@ -7,7 +7,7 @@ const ERP_HOSTS = new Set(
     .filter(Boolean),
 );
 
-const PASS_PREFIXES = ['/_next', '/api', '/brand', '/favicon', '/icon', '/apple-icon', '/manifest', '/sw.js'];
+const PASS_PREFIXES = ['/_next', '/api', '/brand', '/fonts', '/favicon', '/icon', '/apple-icon', '/manifest', '/sw.js'];
 
 function hostnameOf(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-host');

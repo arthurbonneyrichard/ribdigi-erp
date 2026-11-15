@@ -14,6 +14,7 @@ type Preview = {
   sample: { email: string; company_name: string }[];
   too_many: boolean;
   max_recipients: number;
+  unsubscribed_skipped?: number;
 };
 
 type HistoryRow = {
@@ -30,6 +31,7 @@ type HistoryRow = {
     tenant_ids?: string[];
     include_company_email?: boolean;
     retry_of?: string;
+    kind?: string;
   };
   recipient_count: number;
   company_count: number;
@@ -298,6 +300,9 @@ export default function EmailCenterPage() {
   const [packages, setPackages] = useState<string[]>([]);
   const [tenantIds, setTenantIds] = useState<string[]>([]);
   const [includeCompanyEmail, setIncludeCompanyEmail] = useState(false);
+  // marketing: news and offers, skips anyone who unsubscribed and carries an unsubscribe link.
+  // service: a genuine notice about the account (billing, security, outages); reaches every admin.
+  const [kind, setKind] = useState<'marketing' | 'service'>('marketing');
   const [companies, setCompanies] = useState<Company[]>([]);
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
@@ -322,8 +327,8 @@ export default function EmailCenterPage() {
   const lastField = useRef<Field>('body');
 
   const audience = useMemo(
-    () => ({ statuses, industries, packages, tenant_ids: tenantIds, include_company_email: includeCompanyEmail }),
-    [statuses, industries, packages, tenantIds, includeCompanyEmail],
+    () => ({ statuses, industries, packages, tenant_ids: tenantIds, include_company_email: includeCompanyEmail, kind }),
+    [statuses, industries, packages, tenantIds, includeCompanyEmail, kind],
   );
 
   const loadHistory = useCallback(async () => {
@@ -385,7 +390,7 @@ export default function EmailCenterPage() {
     const timer = window.setTimeout(() => {
       api('/platform/email/render', {
         method: 'POST',
-        body: JSON.stringify({ subject: subject.trim(), body: body.trim(), company_name: sampleName || null }),
+        body: JSON.stringify({ subject: subject.trim(), body: body.trim(), company_name: sampleName || null, kind }),
       })
         .then((res) => live && setRendered(res?.data || null))
         .catch((err) => live && setError(err.message || 'Could not show the email'))
@@ -466,7 +471,7 @@ export default function EmailCenterPage() {
     try {
       const res = await api('/platform/email/test', {
         method: 'POST',
-        body: JSON.stringify({ subject: subject.trim(), body: body.trim(), to: testTo.trim() || null }),
+        body: JSON.stringify({ subject: subject.trim(), body: body.trim(), to: testTo.trim() || null, kind }),
       });
       setMessage(res?.message || 'Test email sent.');
     } catch (err: any) {
@@ -522,6 +527,7 @@ export default function EmailCenterPage() {
       setPackages(f.packages || []);
       setTenantIds((f.tenant_ids || []).filter((id) => companies.some((c) => c.id === id)));
       setIncludeCompanyEmail(Boolean(f.include_company_email));
+      setKind(f.kind === 'service' ? 'service' : 'marketing');
     }
     setOpened(null);
     setTab('write');
@@ -689,6 +695,31 @@ export default function EmailCenterPage() {
                   : `${plural(count, 'person', 'people')} at ${plural(preview?.company_count || 0, 'company', 'companies')}`}
                 <span className="ec-to-sub">{audienceWords(audience)}</span>
               </button>
+            </div>
+            <div className="ec-line">
+              <label className="ec-line-k" htmlFor="ec-kind">
+                Type
+              </label>
+              <span className="ec-line-v">
+                <select
+                  id="ec-kind"
+                  aria-label="Email type"
+                  value={kind}
+                  onChange={(event) => setKind(event.target.value === 'service' ? 'service' : 'marketing')}
+                >
+                  <option value="marketing">News and offers (has an unsubscribe link)</option>
+                  <option value="service">Service notice about the account (billing, security, outages)</option>
+                </select>
+                {kind === 'marketing' && (preview?.unsubscribed_skipped || 0) > 0 ? (
+                  <span className="ec-line-sub">
+                    {' '}
+                    {plural(preview?.unsubscribed_skipped || 0, 'person has', 'people have')} unsubscribed and will not get it
+                  </span>
+                ) : null}
+                {kind === 'service' ? (
+                  <span className="ec-line-sub"> Only for real account matters. News sent as a notice breaks the unsubscribe promise.</span>
+                ) : null}
+              </span>
             </div>
             <div className="ec-line ec-line-subject">
               <label className="ec-line-k" htmlFor="ec-subject">
