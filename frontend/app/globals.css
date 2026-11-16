@@ -9010,7 +9010,7 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{background-color:rgb
     .shell:not(.is-pos):not(.is-kiosk) > .main .dash-pair .health .pill,
     .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-attn li:not(.warning):not(.info) a,
     .shell:not(.is-pos):not(.is-kiosk) > .main .hbill-box,
-    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk a.rd-action,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk a.rd-action:not(.primary),
     .shell:not(.is-pos):not(.is-kiosk) > .main .plat .mon-card,
     .shell:not(.is-pos):not(.is-kiosk) > .main .plat .mon-check,
     .shell:not(.is-pos):not(.is-kiosk) > .main .ecom-desk .ecom-media-card,
@@ -9024,7 +9024,7 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{background-color:rgb
     .shell:not(.is-pos):not(.is-kiosk) > .main .dash-pair .health .pill::after,
     .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-attn li:not(.warning):not(.info) a::after,
     .shell:not(.is-pos):not(.is-kiosk) > .main .hbill-box::after,
-    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk a.rd-action::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk a.rd-action:not(.primary)::after,
     .shell:not(.is-pos):not(.is-kiosk) > .main .plat .mon-card::after,
     .shell:not(.is-pos):not(.is-kiosk) > .main .plat .mon-check::after,
     .shell:not(.is-pos):not(.is-kiosk) > .main .ecom-desk .ecom-media-card::after{
