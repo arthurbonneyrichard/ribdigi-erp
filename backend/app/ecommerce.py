@@ -1631,9 +1631,18 @@ async def register_shopper(
     return row
 
 
+SHOPPER_LOGIN_FAILURE = (
+    "Invalid storefront email or password. If you have made several unsuccessful attempts, please try again later."
+)
+
+
 async def login_shopper(
-    db: AsyncSession, *, tenant: m.Tenant, email: str, password: str
+    db: AsyncSession, *, tenant: m.Tenant, email: str, password: str, request=None
 ) -> m.EcommerceShopper:
+    """Same lockout ladder as staff sign-in (app/auth_guard.py); one answer for unknown, wrong or locked."""
+    import asyncio
+
+    from app import auth_guard
     from app.security import verify_password
 
     assert_ecommerce_entitled(tenant)
@@ -1646,8 +1655,21 @@ async def login_shopper(
             )
         )
     ).scalar_one_or_none()
-    if row is None or not verify_password(password, row.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid storefront email or password")
+    failure = HTTPException(status_code=401, detail=SHOPPER_LOGIN_FAILURE)
+    if row is None:
+        await auth_guard.burn_password_check(password)
+        await auth_guard.register_unknown(request, reason="unknown_shopper", tenant_id=tenant.id, ip_bucket="shop_login_fail")
+        raise failure
+    if auth_guard.is_locked(row):
+        await auth_guard.burn_password_check(password)
+        await auth_guard.register_blocked_locked(db, row, request=request, ip_bucket="shop_login_fail")
+        raise failure
+    if not await asyncio.to_thread(verify_password, password, row.password_hash):
+        await auth_guard.register_failure(
+            db, row, request=request, reason="shopper_password", ip_bucket="shop_login_fail"
+        )
+        raise failure
+    auth_guard.register_success(row)
     row.session_token = new_secret_token(24)
     row.session_expires_at = datetime.utcnow() + timedelta(hours=SHOPPER_HOURS)
     row.updated_at = datetime.utcnow()

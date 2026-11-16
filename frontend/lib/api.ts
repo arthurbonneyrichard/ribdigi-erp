@@ -224,7 +224,9 @@ async function refreshSession(): Promise<boolean> {
 /** Safe user-facing API error. Never include tokens, passwords, SQL, or stack traces. */
 export function formatApiError(body: unknown, status: number, path?: string): string {
   const hotelRequest = typeof path === 'string' && path.includes('/hotel/');
-  const loginRequest = typeof path === 'string' && (path === '/auth/login' || path.startsWith('/auth/login?'));
+  const loginRequest =
+    typeof path === 'string' &&
+    (path === '/auth/login' || path.startsWith('/auth/login?') || path === '/auth/staff-login' || path.startsWith('/auth/staff-login?'));
   const fallbackByStatus = (code: number): string => {
     if (code === 401) return 'Your session expired. Please sign in again.';
     if (code === 403) return 'You do not have permission to do that.';
@@ -265,6 +267,8 @@ export function formatApiError(body: unknown, status: number, path?: string): st
     const raw = typeof loginBody.detail === 'string' ? loginBody.detail.trim() : '';
     if (status >= 500) return 'Sign-in could not be completed because the server failed. Try again shortly.';
     if (status === 401 && (!raw || /^invalid credentials$/i.test(raw))) return 'The email or password is incorrect.';
+    // One answer for a wrong password, an unknown account and a locked one (no account enumeration).
+    if (status === 401 && /^invalid username or password\b/i.test(raw)) return raw;
     if (status === 404 && (!raw || /tenant not found/i.test(raw))) {
       return 'That workspace was not found. Check the tenant slug or ID.';
     }
@@ -275,6 +279,10 @@ export function formatApiError(body: unknown, status: number, path?: string): st
     const payload = body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
     const msg = cleanMsg(payload.message);
     if (msg) return msg;
+    // Sign-in limits send { detail: { code, message } } ("Too many attempts from this network…").
+    const limitDetail = payload.detail && typeof payload.detail === 'object' ? (payload.detail as Record<string, unknown>) : null;
+    const limitMsg = limitDetail ? cleanMsg(limitDetail.message) : '';
+    if (limitMsg) return limitMsg;
     return fallbackByStatus(429);
   }
 

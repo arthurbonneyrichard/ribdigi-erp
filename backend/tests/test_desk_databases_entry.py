@@ -103,7 +103,12 @@ async def test_an_unknown_company_is_simply_not_found(desks_app):
     r = await ac.post(
         "/api/v1/auth/login", json={"tenant_id": "nobody-here", "email": "a@example.com", "password": PASSWORD}
     )
-    assert r.status_code == 404, r.text
+    # Looked for on every desk and not found: the same answer as a wrong password, so company
+    # codes cannot be probed.
+    from app.auth_guard import GENERIC_LOGIN_FAILURE
+
+    assert r.status_code == 401, r.text
+    assert r.json()["detail"] == GENERIC_LOGIN_FAILURE
 
 
 @pytest.mark.asyncio

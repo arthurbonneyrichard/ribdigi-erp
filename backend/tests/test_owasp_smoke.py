@@ -41,8 +41,10 @@ async def test_login_lockout_after_failed_attempts(client, db_session):
                 "tenant_id": "alpha",
             },
         )
-        assert r.status_code in {401, 423}
+        assert r.status_code == 401
 
+    # Locked now: even the right password is refused, with the same answer as a wrong one
+    # (no 423, so a caller cannot tell a locked account from a wrong password or an unknown one).
     locked = await ac.post(
         "/api/v1/auth/login",
         json={
@@ -51,7 +53,8 @@ async def test_login_lockout_after_failed_attempts(client, db_session):
             "tenant_id": "alpha",
         },
     )
-    assert locked.status_code == 423
+    assert locked.status_code == 401
+    assert locked.json()["detail"] == r.json()["detail"]
 
 
 @pytest.mark.asyncio

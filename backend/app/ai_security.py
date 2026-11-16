@@ -197,17 +197,20 @@ async def _detect_account_locked(
     ).scalars().all()
     out: list[tuple[m.AiSecurityAlert, bool]] = []
     day = now.strftime("%Y%m%d")
+    from app.auth_guard import iso_utc
+
     for user in users:
         fp = _fingerprint(KIND_ACCOUNT_LOCKED, tenant_id, user.id, day)
+        until = iso_utc(user.locked_until)  # timezone-aware column; one "Z" form everywhere
         alert, created = await _upsert_alert(
             db,
             tenant_id=tenant_id,
             kind=KIND_ACCOUNT_LOCKED,
             risk_score=85,
             fingerprint=fp,
-            title=f"Account locked until {user.locked_until.isoformat()}Z",
+            title=f"Account locked until {until}",
             user_id=user.id,
-            evidence={"locked_until": user.locked_until.isoformat()},
+            evidence={"locked_until": until},
         )
         out.append((alert, created))
     return out

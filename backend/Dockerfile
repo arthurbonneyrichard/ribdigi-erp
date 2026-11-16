@@ -89,6 +89,8 @@ ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
   CMD curl -fsS http://127.0.0.1:8000/api/v1/health || exit 1
 
-# Production default: multi-worker uvicorn (override UVICORN_WORKERS in compose/env)
+# Production default: multi-worker uvicorn (override UVICORN_WORKERS in compose/env).
+# Forwarded headers are trusted only from the Docker networks the proxies sit on (Traefik, the
+# Next.js /api proxy); narrow FORWARDED_ALLOW_IPS to the real network on the server.
 ENV UVICORN_WORKERS=2
-CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${UVICORN_WORKERS:-2} --proxy-headers --forwarded-allow-ips='*' --no-server-header --log-level $(echo \"${LOG_LEVEL:-info}\" | tr '[:upper:]' '[:lower:]')"]
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${UVICORN_WORKERS:-2} --proxy-headers --forwarded-allow-ips=\"${FORWARDED_ALLOW_IPS:-172.16.0.0/12,10.0.0.0/8,127.0.0.1}\" --no-server-header --log-level $(echo \"${LOG_LEVEL:-info}\" | tr '[:upper:]' '[:lower:]')"]

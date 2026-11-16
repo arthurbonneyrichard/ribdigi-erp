@@ -163,9 +163,19 @@ async def full_sign_in(db: AsyncSession, *, claims: dict, password: str) -> dict
     scope = f"full-sign-in:{jti[:16]}"
     await assert_not_throttled(db, tenant_id, scope, user_id)
     user = await db.get(m.User, user_id)
+    from app import auth_guard
     from app.security import verify_password
 
+    if user is not None and auth_guard.is_locked(user):
+        # The account is locked from too many wrong passwords anywhere: no password check here either.
+        await auth_guard.register_blocked_locked(db, user, request=None)
+        raise _throttled_error(int((user.locked_until - auth_guard.utcnow()).total_seconds()) + 1)
     if user is None or not user.is_active or not verify_password(password, user.password_hash):
+        if user is not None:
+            # Same account counter as the sign-in page, so the till cannot be used to keep guessing.
+            await auth_guard.register_failure(
+                db, user, request=None, reason="full_sign_in"
+            )
         left = await _record_failure(db, tenant_id, scope, user_id)
         await audit_svc.record_event(
             db, tenant_id=tenant_id, user_id=user_id, module="auth", action="full_sign_in_failed",
