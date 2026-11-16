@@ -1,4 +1,4 @@
-"""Ribdigi House emails carry the wide House logo and the telephone and WhatsApp lines."""
+"""Ribdigi House emails carry the stacked House logo (small) and the telephone and WhatsApp lines."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ def test_house_email_has_logo_and_contact_lines():
     assert 'href="https://wa.me/233530537307"' in out and "+233 53 053 7307" in out
 
 
-def test_house_logo_is_the_wide_mark():
+def test_house_logo_is_the_small_stacked_mark():
+    # The stacked mark (blocks over the name) at half its old 111x72 size.
     _data, _kind, width, height = emailer._platform_house_logo_bytes()
-    assert width == 220 and width / height > 3
+    assert height == 36 and 50 <= width <= 60
