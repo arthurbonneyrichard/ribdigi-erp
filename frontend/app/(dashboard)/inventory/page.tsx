@@ -711,6 +711,8 @@ export default function Page() {
   const [whLowOnly, setWhLowOnly] = useState(false);
   const [lowStockPayload, setLowStockPayload] = useState<any>(null);
   const [lowStockBusy, setLowStockBusy] = useState(false);
+  // Set only when a load really failed, so the page shows Loading (not an error) before the first fetch.
+  const [lowStockFailed, setLowStockFailed] = useState(false);
   const [lowStockSearch, setLowStockSearch] = useState('');
   const [receiveDrawerOpen, setReceiveDrawerOpen] = useState(false);
   const [reorderDrawerOpen, setReorderDrawerOpen] = useState(false);
@@ -1075,6 +1077,7 @@ export default function Page() {
 
   async function loadLowStock() {
     setLowStockBusy(true);
+    setLowStockFailed(false);
     setError('');
     try {
       const params = new URLSearchParams();
@@ -1085,6 +1088,7 @@ export default function Page() {
     } catch (err: any) {
       setError(err.message);
       setLowStockPayload(null);
+      setLowStockFailed(true);
     } finally {
       setLowStockBusy(false);
     }
@@ -7373,7 +7377,7 @@ export default function Page() {
               aria-label="Search low stock"
             />
           </div>
-          {lowStockBusy ? (
+          {lowStockBusy || (!lowStockPayload && !lowStockFailed) ? (
             <p className="muted">Loading…</p>
           ) : !lowStockPayload ? (
             <EmptyState
