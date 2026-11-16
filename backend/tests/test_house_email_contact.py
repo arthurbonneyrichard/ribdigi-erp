@@ -13,6 +13,6 @@ def test_house_email_has_logo_and_contact_lines():
 
 
 def test_house_logo_is_the_small_stacked_mark():
-    # The stacked mark (blocks over the name) at half its old 111x72 size.
+    # The stacked mark (blocks over the name), about 72x47 px.
     _data, _kind, width, height = emailer._platform_house_logo_bytes()
-    assert height == 36 and 50 <= width <= 60
+    assert height == 47 and 68 <= width <= 76

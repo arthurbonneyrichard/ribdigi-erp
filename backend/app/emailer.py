@@ -152,9 +152,9 @@ def _platform_house_logo_bytes() -> tuple[bytes, str, int, int] | None:
 
         with Image.open(path) as src:
             img = src.convert("RGBA") if src.mode in {"RGBA", "LA", "P"} else src.convert("RGB")
-        # Stacked House mark, kept small in the header (36px tall, about 55px wide);
+        # Stacked House mark, kept small in the header (47px tall, about 72px wide);
         # bitmap at 2x for HiDPI clients.
-        max_w, max_h = 220, 36
+        max_w, max_h = 220, 47
         img.thumbnail((max_w * 2, max_h * 2), Image.LANCZOS)
         buf = io.BytesIO()
         if path.suffix.lower() in {".jpg", ".jpeg"}:
