@@ -13,14 +13,59 @@ from app.config import settings
 from app.rate_limit import rate_limiter
 
 
+_TRUSTED_NETS_CACHE: tuple[str, tuple] = ("", ())
+
+
+def _trusted_proxy_nets() -> tuple:
+    """TRUSTED_PROXY_IPS parsed once per value: single addresses and CIDR ranges (Docker networks)."""
+    global _TRUSTED_NETS_CACHE
+    raw = settings.TRUSTED_PROXY_IPS or ""
+    if _TRUSTED_NETS_CACHE[0] == raw:
+        return _TRUSTED_NETS_CACHE[1]
+    nets = []
+    for part in raw.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            nets.append(ipaddress.ip_network(part, strict=False))
+        except ValueError:
+            continue
+    _TRUSTED_NETS_CACHE = (raw, tuple(nets))
+    return _TRUSTED_NETS_CACHE[1]
+
+
+def _is_trusted_proxy(hop: str, nets: tuple) -> bool:
+    try:
+        addr = ipaddress.ip_address(hop)
+    except ValueError:
+        return False
+    return any(addr in net for net in nets)
+
+
 def client_ip_from_request(request: Request) -> str:
-    """Rate-limit IP: rightmost XFF hop, or the trusted-proxy walk when configured."""
+    """Rate-limit IP: rightmost XFF hop, or the trusted-proxy walk when configured.
+
+    Proxies append to X-Forwarded-For, so only the right-hand end is written by our own proxies;
+    anything to the left came from the caller and is never used while a nearer hop exists.
+    """
     peer = request.client.host if request.client else ""
     hops = [part.strip() for part in (request.headers.get("x-forwarded-for") or "").split(",") if part.strip()]
-    trusted = settings.trusted_proxy_ips
-    if trusted:
+    nets = _trusted_proxy_nets()
+    # X-Forwarded-For is only believed when the connection itself came from a proxy. A caller that
+    # reached us directly (a public peer, or with TRUSTED_PROXY_IPS set any peer not listed) is
+    # judged by its own address, whatever header it sends. Behind uvicorn's proxy-header handling
+    # (FORWARDED_ALLOW_IPS = the Docker network) the peer is already the real visitor here.
+    if peer and not (nets and _is_trusted_proxy(peer, nets)):
+        try:
+            peer_addr = ipaddress.ip_address(peer)
+        except ValueError:
+            peer_addr = None
+        if peer_addr is not None and (nets or peer_addr.is_global):
+            return peer
+    if nets:
         for hop in reversed(hops):
-            if hop not in trusted:
+            if not _is_trusted_proxy(hop, nets):
                 return hop
         return peer or (hops[-1] if hops else "unknown")
     if hops:
@@ -109,6 +154,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return client_ip_from_request(request)
 
     def _tenant_scope(self, request: Request) -> str:
+        if any(request.url.path.startswith(p) for p in AUTH_PATH_PREFIXES):
+            # The header is caller-controlled: on sign-in routes a new value per request would open
+            # a fresh bucket each time, so every auth request from one IP shares one bucket.
+            return "anon"
         raw = (request.headers.get("x-tenant-id") or "").strip()
         return raw or "anon"
 

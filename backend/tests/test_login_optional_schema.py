@@ -10,6 +10,7 @@ import pytest
 from sqlalchemy import text
 
 from app import schema_compat
+from app.auth_guard import GENERIC_LOGIN_FAILURE
 
 
 @pytest.mark.asyncio
@@ -31,10 +32,11 @@ async def test_login_survives_missing_audit_webhook_and_passkey_tables(client, d
             "totp_code": None,
         },
     )
-    assert missing_tenant.status_code == 404, missing_tenant.text
-    assert missing_tenant.json()["detail"] == "Tenant not found"
+    # An unknown company code answers like a wrong password (company codes cannot be probed).
+    assert missing_tenant.status_code == 401, missing_tenant.text
+    assert missing_tenant.json()["detail"] == GENERIC_LOGIN_FAILURE
     assert "traceback" not in missing_tenant.text.lower()
-    assert "password" not in missing_tenant.text.lower()
+    assert "securepass123" not in missing_tenant.text.lower()  # the password itself is never echoed
 
     wrong_password = await ac.post(
         "/api/v1/auth/login",
@@ -46,7 +48,7 @@ async def test_login_survives_missing_audit_webhook_and_passkey_tables(client, d
         },
     )
     assert wrong_password.status_code == 401, wrong_password.text
-    assert wrong_password.json()["detail"] == "Invalid credentials"
+    assert wrong_password.json()["detail"] == GENERIC_LOGIN_FAILURE
     assert "SecurePass123" not in wrong_password.text
     assert "traceback" not in wrong_password.text.lower()
 
@@ -97,7 +99,7 @@ async def test_missing_auth_sessions_stays_a_hard_500(client, db_engine):
         },
     )
     assert still_wrong.status_code == 401, still_wrong.text
-    assert still_wrong.json()["detail"] == "Invalid credentials"
+    assert still_wrong.json()["detail"] == GENERIC_LOGIN_FAILURE
 
     failed = await ac.post(
         "/api/v1/auth/login",

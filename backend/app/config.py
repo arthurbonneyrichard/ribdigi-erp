@@ -41,6 +41,30 @@ class Settings(BaseSettings):
     RATE_LIMIT_BACKEND: str = "auto"  # auto | redis | memory
     RATE_LIMIT_REQUIRE_REDIS: bool = False
     RATE_LIMIT_REDIS_PREFIX: str = "ribdigi:ratelimit"
+    # Sign-in protection (app/auth_guard.py). Per-IP buckets on each kind of auth request, on top of
+    # the coarse RATE_LIMIT_AUTH_PER_MINUTE bucket. Counted per client IP (IPv6 per /64), never per
+    # account or tenant header, so changing the username or X-Tenant-ID does not open a new bucket.
+    # Failed sign-in tries per IP per window (checked before the password), and all sign-in requests
+    # per IP per window (higher, so a shop sharing one IP can still sign everyone in).
+    AUTH_IP_LOGIN_LIMIT: int = 5
+    AUTH_IP_LOGIN_REQUEST_LIMIT: int = 30
+    AUTH_IP_LOGIN_WINDOW_SECONDS: int = 60
+    AUTH_IP_RESET_LIMIT: int = 3
+    AUTH_IP_RESET_WINDOW_SECONDS: int = 900
+    AUTH_IP_OTP_REQUEST_LIMIT: int = 3
+    AUTH_IP_OTP_REQUEST_WINDOW_SECONDS: int = 600
+    AUTH_IP_OTP_VERIFY_LIMIT: int = 5
+    AUTH_IP_OTP_VERIFY_WINDOW_SECONDS: int = 600
+    AUTH_IP_REGISTER_LIMIT: int = 5
+    AUTH_IP_REGISTER_WINDOW_SECONDS: int = 3600
+    # true = refuse auth requests (503) while Redis is down instead of counting per worker in memory.
+    AUTH_RATE_LIMIT_FAIL_CLOSED: bool = False
+    # Account lockout (stored on the user row in Postgres, so it holds across IPs, workers and Redis outages).
+    AUTH_LOCKOUT_THRESHOLD: int = 5
+    # Minutes for the 1st, 2nd, 3rd... lockout in a row; the last value repeats. Never permanent.
+    AUTH_LOCKOUT_MINUTES: str = "15,30,60,120"
+    # A lockout this long after the previous one starts the ladder again at the first step.
+    AUTH_LOCKOUT_LADDER_RESET_HOURS: int = 24
     # Auto-log successful POST/PUT/PATCH/DELETE under /api/v1 (BR-17.1 catch-all).
     AUDIT_HTTP_MIDDLEWARE_ENABLED: bool = True
     # BR-17.2 — minimum retention (years); cold archive after N hot days (rows kept, not purged).
@@ -194,6 +218,18 @@ class Settings(BaseSettings):
     @property
     def trusted_proxy_ips(self) -> frozenset[str]:
         return frozenset(x.strip() for x in self.TRUSTED_PROXY_IPS.split(",") if x.strip())
+
+    @property
+    def auth_lockout_minutes(self) -> list[int]:
+        steps: list[int] = []
+        for part in (self.AUTH_LOCKOUT_MINUTES or "").split(","):
+            try:
+                value = int(part.strip())
+            except ValueError:
+                continue
+            if value > 0:
+                steps.append(value)
+        return steps or [15, 30, 60, 120]
 
     @property
     def celery_broker_url(self) -> str:

@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from sqlalchemy import (
     Boolean,
@@ -16,6 +16,7 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.types import TypeDecorator
 
 
 class Base(DeclarativeBase):
@@ -24,6 +25,32 @@ class Base(DeclarativeBase):
 
 def uid() -> str:
     return str(uuid.uuid4())
+
+
+class UTCDateTime(TypeDecorator):
+    """Timezone-aware UTC timestamp: ``timestamptz`` on Postgres, always an aware UTC datetime in Python.
+
+    Accepts naive values as UTC (the rest of the schema stores naive UTC), so callers cannot mix
+    the two by accident. SQLite has no zone type: it stores the UTC wall time and reads it back aware.
+    """
+
+    impl = DateTime(timezone=True)
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        value = value.astimezone(timezone.utc)
+        return value if dialect.name == "postgresql" else value.replace(tzinfo=None)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
 
 
 class Tenant(Base):
@@ -161,8 +188,13 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     permissions: Mapped[dict] = mapped_column(JSON, default=dict)
+    # Sign-in lockout (app/auth_guard.py). Times are timezone-aware UTC. failed_login_attempts counts wrong tries in a
+    # row; lockout_count is the step on the lockout ladder (15, 30, 60, 120 min), reset by a good sign-in.
     failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0)
-    locked_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    locked_until: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True, index=True)
+    locked_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
+    last_failed_login_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
+    lockout_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     totp_secret_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
     totp_pending_secret_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
     totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -3266,6 +3298,12 @@ class EcommerceShopper(Base):
     party_id: Mapped[str | None] = mapped_column(ForeignKey("parties.id"), nullable=True)
     session_token: Mapped[str | None] = mapped_column(String(80), unique=True, nullable=True, index=True)
     session_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Storefront sign-in lockout, same ladder as staff (app/auth_guard.py).
+    failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    locked_until: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
+    locked_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
+    last_failed_login_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
+    lockout_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

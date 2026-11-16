@@ -9,6 +9,7 @@ import pyotp
 import pytest
 from sqlalchemy import select
 
+from app.auth_guard import GENERIC_LOGIN_FAILURE
 from app import models as m
 from tests.conftest import auth_headers, platform_owner_headers
 
@@ -276,7 +277,9 @@ async def test_delete_leaves_the_other_tenant(client, seeded):
             "tenant_id": drop,
         },
     )
-    assert gone.status_code == 404, gone.text
+    # A deleted company answers like a wrong password (company codes cannot be probed).
+    assert gone.status_code == 401, gone.text
+    assert gone.json()["detail"] == GENERIC_LOGIN_FAILURE
 
 
 @pytest.mark.asyncio
@@ -351,4 +354,6 @@ async def test_owner_can_delete_tenant_with_org_records(client, seeded):
         "/api/v1/auth/login",
         json={"email": email, "password": "SecurePass123!", "tenant_id": slug},
     )
-    assert gone.status_code == 404, gone.text
+    # A deleted company answers like a wrong password (company codes cannot be probed).
+    assert gone.status_code == 401, gone.text
+    assert gone.json()["detail"] == GENERIC_LOGIN_FAILURE
