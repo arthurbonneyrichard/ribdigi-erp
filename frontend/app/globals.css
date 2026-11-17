@@ -1207,6 +1207,16 @@
   transition:border-color .15s,box-shadow .15s,background .15s;
 }
 .login input::placeholder{color:#7fa892;opacity:1}
+/* Show/hide password: eye button inside the field, right side */
+.login-pass{position:relative;display:block}
+.login .login-pass input{padding-right:52px}
+.login-pass-toggle{position:absolute;top:50%;right:6px;transform:translateY(-50%);width:40px;height:40px;
+  display:flex;align-items:center;justify-content:center;padding:0;margin:0;border:0;border-radius:10px;
+  background:transparent;color:#9ec9ad;cursor:pointer;transition:color .15s,background .15s}
+.login-pass-toggle:hover{color:var(--white);background:rgba(255,255,255,.08)}
+.login-pass-toggle:focus-visible{outline:none;color:var(--white);box-shadow:0 0 0 3px var(--focus-ring)}
+.login-pass-toggle[aria-pressed="true"]{color:var(--brand)}
+.login-pass-toggle:disabled{opacity:.5;cursor:default}
 .login input:focus{
   outline:none;border-color:var(--brand);background:var(--forest);
   box-shadow:0 0 0 3px var(--focus-ring);

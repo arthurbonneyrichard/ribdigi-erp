@@ -36,6 +36,7 @@ function base64urlToBuffer(value: string): ArrayBuffer {
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [tenant, setTenant] = useState('');
   // Two doors: Admin (company code, email, password) for owners and admins; User (username or
   // email, password) for the staff they create. The last one used is remembered on this device.
@@ -440,16 +441,43 @@ export default function Login() {
               </label>
               <label className="login-field">
                 <span>Password</span>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
-                  aria-label="Login password"
-                  required
-                  disabled={busy}
-                />
+                <span className="login-pass">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                    aria-label="Login password"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    required
+                    disabled={busy}
+                  />
+                  <button
+                    type="button"
+                    className="login-pass-toggle"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-pressed={showPassword}
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                    onClick={() => setShowPassword((v) => !v)}
+                    disabled={busy}
+                  >
+                    {showPassword ? (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M3 3l18 18" />
+                        <path d="M10.6 5.1A10.5 10.5 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1" />
+                        <path d="M6.6 6.6C3.8 8.4 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6" />
+                        <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+                      </svg>
+                    ) : (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                </span>
               </label>
               <p className="login-forgot login-forgot-note">Forgot your password? Ask your admin to set a new one.</p>
             </>
@@ -483,16 +511,43 @@ export default function Login() {
               </label>
               <label className="login-field">
                 <span>Password</span>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
-                  aria-label="Login password"
-                  required
-                  disabled={busy}
-                />
+                <span className="login-pass">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                    aria-label="Login password"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    required
+                    disabled={busy}
+                  />
+                  <button
+                    type="button"
+                    className="login-pass-toggle"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-pressed={showPassword}
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                    onClick={() => setShowPassword((v) => !v)}
+                    disabled={busy}
+                  >
+                    {showPassword ? (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M3 3l18 18" />
+                        <path d="M10.6 5.1A10.5 10.5 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1" />
+                        <path d="M6.6 6.6C3.8 8.4 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6" />
+                        <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+                      </svg>
+                    ) : (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                </span>
               </label>
               <p className="login-forgot">
                 <Link
