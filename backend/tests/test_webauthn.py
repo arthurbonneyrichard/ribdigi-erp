@@ -176,3 +176,14 @@ async def test_register_options_platform_requires_device_biometric(client, monke
     sel = opt.json()["data"]["authenticatorSelection"]
     assert sel["authenticatorAttachment"] == "platform"
     assert sel["userVerification"] == "required"
+
+
+def test_rp_id_falls_back_to_public_site_host(monkeypatch):
+    from app import webauthn_svc
+
+    monkeypatch.setattr("app.webauthn_svc.settings.WEBAUTHN_RP_ID", "localhost")
+    monkeypatch.setattr("app.webauthn_svc.settings.WEBAUTHN_ORIGIN", "")
+    monkeypatch.setattr("app.webauthn_svc.settings.FRONTEND_URL", "https://erp.example.com")
+    assert webauthn_svc.rp_id() == "erp.example.com"
+    monkeypatch.setattr("app.webauthn_svc.settings.WEBAUTHN_RP_ID", "example.com")
+    assert webauthn_svc.rp_id() == "example.com"
