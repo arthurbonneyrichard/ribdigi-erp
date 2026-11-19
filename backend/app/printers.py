@@ -872,6 +872,20 @@ async def _deliver_network_job(db: AsyncSession, printer: m.Printer, job: m.Prin
     printer.last_seen_at = now
     printer.updated_at = now
     await _record_attempt(db, job, status="printed", detail="sent to printer")
+    await _restaurant_ticket_printed(db, job)
+
+
+async def _restaurant_ticket_printed(db: AsyncSession, job: m.PrintJob) -> None:
+    """A kitchen or bar ticket reached paper. In Printer only mode that starts the dish. Never blocks printing."""
+    if job.source_type != "restaurant_order":
+        return
+    from app import restaurant as restaurant_svc
+
+    try:
+        async with db.begin_nested():
+            await restaurant_svc.printed_ticket_starts_cooking(db, job)
+    except Exception:  # noqa: BLE001 - the ticket printed; board state is best effort
+        logger.warning("restaurant ticket progress failed for job %s", job.id, exc_info=True)
 
 
 async def enqueue_job(
@@ -1297,6 +1311,8 @@ async def complete_job(
             printer.status = "error"
             printer.last_error = detail
     await _record_attempt(db, job, status=wanted, detail=detail, actor_id=actor_id)
+    if wanted == "printed":
+        await _restaurant_ticket_printed(db, job)
     await db.flush()
     return job
 
