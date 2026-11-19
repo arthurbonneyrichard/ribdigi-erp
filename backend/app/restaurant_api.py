@@ -996,6 +996,36 @@ async def restaurant_happy_hours_save(
     return _env(body, "Happy hours saved")
 
 
+class TicketDeliveryBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    mode: Literal["screen", "printer", "both"]
+
+
+@router.get("/ticket-delivery")
+async def restaurant_ticket_delivery(
+    claims=Depends(require_permission("restaurant", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return _env(await restaurant_svc.ticket_delivery(db, claims["tenant_id"]))
+
+
+@router.put("/ticket-delivery")
+async def restaurant_ticket_delivery_save(
+    payload: TicketDeliveryBody,
+    claims=Depends(require_permission("restaurant", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    body = await restaurant_svc.save_ticket_delivery(db, claims["tenant_id"], payload.mode)
+    await audit_svc.record_event(
+        db, tenant_id=claims["tenant_id"], user_id=claims.get("sub"), module="restaurant",
+        action="restaurant_ticket_delivery_saved", entity="tenant", entity_id=claims["tenant_id"],
+        details={"mode": payload.mode},
+    )
+    await db.commit()
+    return _env(body, "Kitchen and bar delivery saved")
+
+
 @router.post("/orders/{order_id}/split")
 async def restaurant_split(
     order_id: str,

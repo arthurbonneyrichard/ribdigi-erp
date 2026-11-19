@@ -12,6 +12,7 @@ import { moduleEnabledForTenant } from '../../../lib/industryModules';
 import { whereWords as deskWhere } from '../../../lib/restaurantDesk';
 import KitchenPrintTool from './KitchenPrintTool';
 import RestaurantHappyHours from '../../../components/RestaurantHappyHours';
+import RestaurantTicketDelivery from '../../../components/RestaurantTicketDelivery';
 import './restaurant-desk.css';
 
 type Row = Record<string, any>;
@@ -290,6 +291,14 @@ export default function RestaurantPage() {
   const [floorDraft, setFloorDraft] = useState<Record<string, { x: number; y: number }>>({});
   const [kitchenSound, setKitchenSound] = useState<{ on: boolean }>({ on: false });
   const [clock, setClock] = useState<{ open: Row[]; mine_open: boolean }>({ open: [], mine_open: false });
+  // Set by the admin under Orders → Kitchen and bar orders. Printer only hides the kitchen board.
+  const [ticketMode, setTicketMode] = useState<'both' | 'screen' | 'printer'>('both');
+  useEffect(() => {
+    if (tab !== 'kitchen') return;
+    api('/restaurant/ticket-delivery')
+      .then((res) => setTicketMode((res?.data?.mode || 'both') as 'both' | 'screen' | 'printer'))
+      .catch(() => undefined);
+  }, [tab]);
   const [soldOut, setSoldOut] = useState<Row[]>([]);
   const [soldOutId, setSoldOutId] = useState('');
   const floorMapRef = useRef<HTMLDivElement | null>(null);
@@ -2944,6 +2953,7 @@ export default function RestaurantPage() {
             <button type="submit" aria-label="Save restaurant service charge">Save service charge</button>
           </form>
           </details>
+          <RestaurantTicketDelivery />
           <RestaurantHappyHours dishes={menuItems.map((row) => ({ id: String(row.id), name: String(row.name || '') }))} />
           <details className="rd-panel rd-domain">
             <summary>
@@ -4313,10 +4323,17 @@ export default function RestaurantPage() {
               <li key={row.id}>{row.name} · {formatDateTime(row.in_at)}</li>
             ))}
           </ul>
-          <div className="rd-kds">
-            {stationQueue('kitchen', 'Kitchen', 'No tickets in the kitchen.', 'Kitchen queue')}
-            {stationQueue('bar', 'Bar', 'No tickets at the bar.', 'Bar queue')}
-          </div>
+          {ticketMode === 'printer' ? (
+            <p className="muted" aria-label="Printer only notice">
+              Orders go to the printer only. Set Print tickets here above on a tablet or PC with a printer plugged in.
+              Your manager can switch to screen under Orders → Kitchen and bar orders.
+            </p>
+          ) : (
+            <div className="rd-kds">
+              {stationQueue('kitchen', 'Kitchen', 'No tickets in the kitchen.', 'Kitchen queue')}
+              {stationQueue('bar', 'Bar', 'No tickets at the bar.', 'Bar queue')}
+            </div>
+          )}
         </section>
       )}
       {restaurantDesk && tab === 'recipes' && (

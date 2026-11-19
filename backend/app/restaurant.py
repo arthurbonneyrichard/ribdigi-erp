@@ -2732,6 +2732,53 @@ async def save_happy_hours(db: AsyncSession, tenant_id: str, rules: list) -> dic
     return await list_happy_hours(db, tenant_id)
 
 
+TICKET_DELIVERY_KEY = "restaurant_ticket_delivery"
+TICKET_DELIVERY_MODES = ("both", "screen", "printer")
+
+
+def stored_ticket_delivery(tenant: m.Tenant | None) -> str:
+    """How kitchen and bar get an order: on the screen, on a printer, or both (the default)."""
+    raw = tenant.document_numbering if tenant is not None and isinstance(tenant.document_numbering, dict) else {}
+    value = raw.get(TICKET_DELIVERY_KEY)
+    return value if value in TICKET_DELIVERY_MODES else "both"
+
+
+async def _prep_printer_count(db: AsyncSession, tenant_id: str) -> int:
+    rows = (
+        await db.execute(
+            select(m.Printer).where(m.Printer.tenant_id == tenant_id, m.Printer.is_enabled.is_(True))
+        )
+    ).scalars()
+    return sum(1 for p in rows if {"kitchen", "bar"} & set(p.purposes or []))
+
+
+async def ticket_delivery(db: AsyncSession, tenant_id: str) -> dict:
+    tenant = await db.get(m.Tenant, tenant_id)
+    return {
+        "mode": stored_ticket_delivery(tenant),
+        "printers": await _prep_printer_count(db, tenant_id),
+    }
+
+
+async def save_ticket_delivery(db: AsyncSession, tenant_id: str, mode: str) -> dict:
+    tenant = await db.get(m.Tenant, tenant_id)
+    if tenant is None:
+        raise HTTPException(status_code=404, detail="Company not found")
+    if mode not in TICKET_DELIVERY_MODES:
+        raise HTTPException(status_code=422, detail="Choose screen, printer or both")
+    # Printer only with no printer would send orders nowhere. "Both" is the old default and stays allowed.
+    if mode == "printer" and not await _prep_printer_count(db, tenant_id):
+        raise HTTPException(
+            status_code=409,
+            detail="Add a Kitchen or Bar printer under Printers first, or orders would go nowhere.",
+        )
+    data = dict(tenant.document_numbering) if isinstance(tenant.document_numbering, dict) else {}
+    data[TICKET_DELIVERY_KEY] = mode
+    tenant.document_numbering = data
+    await db.flush()
+    return await ticket_delivery(db, tenant_id)
+
+
 async def _add_order_line(db: AsyncSession, tenant_id: str, order: m.RestaurantOrder, line) -> m.RestaurantOrderLine:
     product = await _product(db, tenant_id, line.product_id)
     await _require_sellable_menu_item(db, tenant_id, product)
@@ -3610,6 +3657,8 @@ async def _print_new_lines(db: AsyncSession, tenant_id: str, order: m.Restaurant
     """Kitchen and bar tickets for dishes not printed yet. A printer problem never stops the order."""
     from app import printers as printers_svc
 
+    if stored_ticket_delivery(await db.get(m.Tenant, tenant_id)) == "screen":
+        return  # The owner chose screens only; the kitchen board still gets the order.
     try:
         async with db.begin_nested():
             await printers_svc.enqueue_restaurant_prep_prints(db, tenant_id=tenant_id, order=order, user_id=user_id)
