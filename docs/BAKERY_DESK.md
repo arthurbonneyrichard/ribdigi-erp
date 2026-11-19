@@ -39,6 +39,13 @@ Ingredients and items for sale are ordinary products under Inventory. An item wi
 - **Two ways to pay:** `payments` (2–4 parts). One part may leave its amount out and takes the rest; otherwise the parts must equal the bill (422 `SPLIT_NOT_EQUAL`). The sale's `payment_method` is `split`. Not offline.
 - **Refunds:** whole sale or chosen lines and quantities (`bakery_refunds` + `bakery_refund_lines`); status `part_refunded` until everything is back, then `refunded`. A collected order is refunded the same way. A split sale needs the refund `method`; a cash refund cannot be more than the drawer should hold.
 
+## Order slip, ready text and production sheet
+
+- **Order slip** (`GET /bakery/orders/{id}/print`, Orders → Print slip): company details, customer, collection or delivery, each line with its writing/note, total, deposit paid and what to pay on collection. Not for bakers (cashier, manager, owner).
+- **Ready text:** `POST /bakery/orders/{id}/ready` texts the customer (when the order has a phone) through the company's SMS settings: "your order is ready", with the balance to pay. It is best effort: the order is marked ready either way and the response carries `customer_texted {sent, reason}`, which the screen shows ("Customer not texted: SMS is not set up"). Set SMS up under Company → SMS; with none it runs in the console in development and is skipped in production.
+- **Production sheet** (`GET /bakery/production-sheet/print`, Today → Print production sheet): what to bake (orders, trade, shelf level, on hand) and the orders due today and tomorrow with their writing. No prices, so bakers may print it.
+- Tests: `test_bakery_slips_and_texts.py`.
+
 ## Shelf life, day-old and labels
 
 Item details (`PUT /bakery/items/{id}/details`, manager; Stock → Item details), stored in `bakery_item_settings`:

@@ -33,9 +33,9 @@ async def _till_context(
 router = APIRouter(prefix="/bakery", tags=["bakery"], dependencies=[Depends(_till_context)])
 
 _JOBS = {
-    "bakery_baker": frozenset({"bake", "waste", "labels"}),
+    "bakery_baker": frozenset({"bake", "waste", "labels", "sheet"}),
     # Cashiers also make the day's trade deliveries and take trade payments.
-    "bakery_cashier": frozenset({"till", "orders", "waste", "trade", "labels"}),
+    "bakery_cashier": frozenset({"till", "orders", "waste", "trade", "labels", "sheet"}),
     "bakery_driver": frozenset({"deliver", "sell"}),
 }
 _WORDS = {
@@ -525,7 +525,125 @@ async def bakery_order_ready(
         _job(claims, "orders")
     row = await svc.mark_ready(db, claims["tenant_id"], order_id)
     await db.commit()
-    return _env(await svc.present_order(db, row), "Order ready")
+    data = await svc.present_order(db, row)
+    # Tell the customer, best effort: a failed text never undoes the bake.
+    data["customer_texted"] = await _text_customer_ready(db, claims["tenant_id"], row)
+    return _env(data, "Order ready")
+
+
+async def _text_customer_ready(db, tenant_id: str, row) -> dict:
+    from app import models as m
+    from app import sms
+
+    if not row.phone:
+        return {"sent": False, "reason": "No phone number on this order"}
+    try:
+        company = await db.get(m.Tenant, tenant_id)
+        balance = max(0.0, float(row.total or 0) - float(row.deposit or 0))
+        owe = f" Balance to pay: {balance:.2f}." if balance > 0 else " It is fully paid."
+        how = "It will be with you soon." if row.delivery else "Please come and collect it."
+        body = (
+            f"Hi {row.customer_name}, your order {row.order_number} at "
+            f"{getattr(company, 'company_name', '') or 'our bakery'} is ready. {how}{owe}"
+        )
+        res = await sms.send_sms(to=row.phone, body=body, tenant=company)
+        reason = res.error or ("SMS is not set up" if res.mode == "disabled" else None)
+        return {"sent": bool(res.sent), "reason": reason}
+    except Exception:
+        return {"sent": False, "reason": "Could not send the text"}
+
+
+_PRINT_CSS = (
+    "body{font-family:Arial,sans-serif;max-width:720px;margin:24px auto;color:#10211B}"
+    "table{width:100%;border-collapse:collapse}th,td{padding:6px;border-bottom:1px solid #D4E5C4;text-align:left}"
+    "th{background:#F2F7EC}.r{text-align:right}"
+)
+
+
+@router.get("/orders/{order_id}/print", response_class=HTMLResponse)
+async def bakery_order_print(order_id: UuidIdValue, claims=Depends(require_permission("bakery", "read")), db: AsyncSession = Depends(get_db)):
+    """The slip the customer takes away: what was ordered, when to collect, deposit and balance."""
+    import html as h
+
+    from app import models as m
+
+    _job(claims, "orders")
+    row = await db.get(m.BakeryOrder, order_id)
+    if row is None or row.tenant_id != claims["tenant_id"]:
+        raise HTTPException(status_code=404, detail="Order not found")
+    company = await db.get(m.Tenant, claims["tenant_id"])
+    o = await svc.present_order(db, row)
+    lines = "".join(
+        f"<tr><td>{h.escape(i['name'])}{('<br/><i>' + h.escape(i['note']) + '</i>') if i.get('note') else ''}</td>"
+        f"<td class='r'>{i['quantity']:g}</td><td class='r'>{i['line_total']:.2f}</td></tr>"
+        for i in o["items"]
+    )
+    where = f"Delivery to: {h.escape(o['address'] or '')}" if o["delivery"] else "Collect from the shop"
+    cancelled = " (CANCELLED)" if o["status"] == "cancelled" else ""
+    note = f"<p>Note: {h.escape(o['notes'])}</p>" if o.get("notes") else ""
+    page = (
+        f"<!doctype html><html><head><meta charset='utf-8'><title>Order {h.escape(o['order_number'])}</title><style>{_PRINT_CSS}</style></head><body>"
+        f"<h2>{h.escape(getattr(company, 'company_name', '') or '')}</h2>"
+        f"<p>{h.escape(getattr(company, 'address', '') or '')}<br/>Tel {h.escape(getattr(company, 'phone', '') or '-')}</p>"
+        f"<h3>Order {h.escape(o['order_number'])}{cancelled}</h3>"
+        f"<p>For: <b>{h.escape(o['customer_name'] or '')}</b> {h.escape(o['phone'] or '')}<br/>Needed on <b>{o['due_date']}</b> · {where}</p>"
+        "<table><thead><tr><th>Item</th><th class='r'>Qty</th><th class='r'>Amount</th></tr></thead>"
+        f"<tbody>{lines}</tbody></table>"
+        f"<p class='r'><b>Total {o['total']:.2f}</b><br/>Deposit paid {o['deposit']:.2f}<br/><b>To pay on collection {o['balance']:.2f}</b></p>"
+        f"{note}<p><small>Please bring this slip when you collect.</small></p>"
+        "<script>window.onload=()=>window.print()</script></body></html>"
+    )
+    return HTMLResponse(page)
+
+
+@router.get("/production-sheet/print", response_class=HTMLResponse)
+async def bakery_production_sheet(claims=Depends(require_permission("bakery", "read")), db: AsyncSession = Depends(get_db)):
+    """The baker's list for today and tomorrow: what to bake, and the orders behind it. No money."""
+    import html as h
+
+    from sqlalchemy import select
+
+    from app import models as m
+
+    _job(claims, "sheet")
+    tid = claims["tenant_id"]
+    today = await svc.bakery_today(db, tid)
+    company = await db.get(m.Tenant, tid)
+    todo = [r for r in await svc.to_bake(db, tid, until=today + timedelta(days=1)) if float(r["to_bake"]) > 0]
+    orders = (
+        await db.execute(
+            select(m.BakeryOrder)
+            .where(
+                m.BakeryOrder.tenant_id == tid,
+                m.BakeryOrder.status.in_(svc.ORDER_OPEN),
+                m.BakeryOrder.due_date <= today + timedelta(days=1),
+            )
+            .order_by(m.BakeryOrder.due_date, m.BakeryOrder.order_number)
+        )
+    ).scalars().all()
+    bake_rows = "".join(
+        f"<tr><td>{h.escape(r['name'])}</td><td class='r'>{r['ordered']:g}</td><td class='r'>{r['trade']:g}</td>"
+        f"<td class='r'>{r['shelf_level']:g}</td><td class='r'>{r['on_hand']:g}</td><td class='r'><b>{r['to_bake']:g}</b></td></tr>"
+        for r in todo
+    ) or "<tr><td colspan='6'>Nothing to bake.</td></tr>"
+    order_rows = ""
+    for o in orders:
+        for i in (await svc.present_order(db, o))["items"]:
+            order_rows += (
+                f"<tr><td>{o.due_date}</td><td>{h.escape(o.order_number)} {h.escape(o.customer_name)}</td>"
+                f"<td>{h.escape(i['name'])}</td><td class='r'>{i['quantity']:g}</td><td>{h.escape(i.get('note') or '')}</td></tr>"
+            )
+    order_rows = order_rows or "<tr><td colspan='5'>No orders due.</td></tr>"
+    page = (
+        f"<!doctype html><html><head><meta charset='utf-8'><title>Production sheet</title><style>{_PRINT_CSS}</style></head><body>"
+        f"<h2>{h.escape(getattr(company, 'company_name', '') or '')} · Production sheet {today}</h2>"
+        "<h3>To bake</h3><table><thead><tr><th>Item</th><th class='r'>Orders</th><th class='r'>Trade</th><th class='r'>Shelf level</th>"
+        f"<th class='r'>On hand</th><th class='r'>Bake</th></tr></thead><tbody>{bake_rows}</tbody></table>"
+        "<h3>Orders due today and tomorrow</h3><table><thead><tr><th>Due</th><th>Order</th><th>Item</th><th class='r'>Qty</th><th>Writing / note</th></tr></thead>"
+        f"<tbody>{order_rows}</tbody></table>"
+        "<script>window.onload=()=>window.print()</script></body></html>"
+    )
+    return HTMLResponse(page)
 
 
 @router.post("/orders/{order_id}/collect")
