@@ -17,7 +17,15 @@ CHALLENGE_TTL_MINUTES = 5
 
 
 def rp_id() -> str:
-    return (settings.WEBAUTHN_RP_ID or "localhost").strip() or "localhost"
+    """Relying-party id. A server that never set WEBAUTHN_RP_ID would stay on "localhost", which no
+    browser accepts for a real site, so fall back to the host of the public site address."""
+    configured = (settings.WEBAUTHN_RP_ID or "").strip()
+    if configured and configured != "localhost":
+        return configured
+    from urllib.parse import urlparse
+
+    host = (urlparse(expected_origin()).hostname or "").strip()
+    return host or configured or "localhost"
 
 
 def rp_name() -> str:
