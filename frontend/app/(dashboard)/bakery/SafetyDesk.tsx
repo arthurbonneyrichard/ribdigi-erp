@@ -66,7 +66,7 @@ export default function SafetyDesk({ isManager }: { isManager: boolean }) {
         <div className="bk-row bk-spread">
           <b>Today</b>
           <span className="bk-muted">
-            {bad > 0 ? <span className="bk-pill bad">{bad} outside the safe range</span> : null} {due > 0 ? `${due} readings still to take` : 'All readings taken'}
+            {bad > 0 ? <span className="bk-pill bad">{bad} outside the safe range</span> : null} {due > 0 ? `${due} reading${due === 1 ? '' : 's'} still to take` : 'All readings taken'}
           </span>
         </div>
         <div className="bk-row">
@@ -144,7 +144,7 @@ export default function SafetyDesk({ isManager }: { isManager: boolean }) {
               <article key={c.kind} className="bk-box">
                 <div className="bk-row bk-spread"><b>{LABEL[c.kind] || c.kind}</b>{c.done_today ? <span className="bk-pill ok">Done today</span> : <span className="bk-pill">Not done</span>}</div>
                 {c.items.map((text: string, i: number) => (
-                  <label key={i} className="bk-row">
+                  <label key={i} className="bk-check">
                     <input type="checkbox" checked={chosen.includes(i)} aria-label={`${LABEL[c.kind]}: ${text}`} onChange={(e) => setTicks({ ...ticks, [c.kind]: e.target.checked ? [...chosen, i] : chosen.filter((x) => x !== i) })} />
                     <span>{text}</span>
                   </label>

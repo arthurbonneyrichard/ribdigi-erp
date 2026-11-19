@@ -126,7 +126,7 @@ export default function RegularsDesk({ isManager }: { isManager: boolean }) {
               {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
             </select>
             <input type="number" min={1} max={31} placeholder="Day" aria-label="Birthday day" value={edit.day} onChange={(e) => setEdit({ ...edit, day: e.target.value })} style={{ width: 80 }} />
-            <label className="bk-row"><input type="checkbox" checked={edit.texts_ok} onChange={(e) => setEdit({ ...edit, texts_ok: e.target.checked })} aria-label="Agreed to receive texts" /><span>They agreed to receive texts</span></label>
+            <label className="bk-check"><input type="checkbox" checked={edit.texts_ok} onChange={(e) => setEdit({ ...edit, texts_ok: e.target.checked })} aria-label="Agreed to receive texts" /><span>They agreed to receive texts</span></label>
             <button type="button" className="bk-primary" disabled={busy} onClick={() => void save()} aria-label="Save regular customer">Save</button>
             <button type="button" onClick={() => setEdit(null)} aria-label="Cancel editing regular customer">Cancel</button>
           </div>

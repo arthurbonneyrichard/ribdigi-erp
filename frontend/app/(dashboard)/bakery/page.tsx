@@ -1127,7 +1127,7 @@ function BakeryDesk() {
               ))}
               <p><button type="button" onClick={() => setOrderLines([...orderLines, { product_id: '', quantity: '1', note: '' }])}>Add another item</button></p>
               <div className="bk-form">
-                <label className="bk-row"><input type="checkbox" checked={orderForm.quote} onChange={(e) => setOrderForm((f) => ({ ...f, quote: e.target.checked }))} aria-label="Save as a quote" /><span>Just a quote for now (no deposit, nothing is baked until confirmed)</span></label>
+                <label className="bk-check"><input type="checkbox" checked={orderForm.quote} onChange={(e) => setOrderForm((f) => ({ ...f, quote: e.target.checked }))} aria-label="Save as a quote" /><span>Just a quote for now (no deposit, nothing is baked until confirmed)</span></label>
                 <label><span>Deposit now</span><input type="number" min={0} step="0.01" disabled={orderForm.quote} value={orderForm.deposit} onChange={(e) => setOrderForm((f) => ({ ...f, deposit: e.target.value }))} aria-label="Order deposit" /></label>
                 <label><span>Deposit paid by</span>
                   <select value={orderForm.deposit_method} disabled={Number(orderForm.deposit) <= 0} onChange={(e) => setOrderForm((f) => ({ ...f, deposit_method: e.target.value }))} aria-label="Deposit method">
