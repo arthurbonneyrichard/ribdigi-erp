@@ -1297,18 +1297,21 @@ async def create_order(db: AsyncSession, tenant_id: str, payload, *, user_id: st
     if delivery and not address:
         raise HTTPException(status_code=422, detail="Add the delivery address")
     driver = await _driver(db, tenant_id, payload.driver_id) if getattr(payload, "driver_id", None) else None
+    quote = bool(getattr(payload, "quote", False))
     deposit = _money(payload.deposit or 0)
+    if quote and deposit > 0:
+        raise HTTPException(status_code=422, detail="A quote takes no deposit. Confirm it first.")
     if deposit > gross + 0.004:
         raise HTTPException(status_code=422, detail=f"The deposit is more than the {gross:.2f} order")
     method = _method(payload.deposit_method) if deposit > 0 else None
     shift = await _need_shift(db, tenant_id) if deposit > 0 else None
     row = m.BakeryOrder(
         tenant_id=tenant_id,
-        order_number=await _next_number(db, tenant_id, m.BakeryOrder, "BO"),
+        order_number=await _next_number(db, tenant_id, m.BakeryOrder, "BQ" if quote else "BO"),
         customer_name=require_honest_narrative(payload.customer_name, label="customer name", max_length=180),
         phone=payload.phone,
         due_date=payload.due_date,
-        status="booked",
+        status="quote" if quote else "booked",
         subtotal=net,
         tax=tax,
         total=gross,
@@ -1353,6 +1356,44 @@ async def create_order(db: AsyncSession, tenant_id: str, payload, *, user_id: st
         db, tenant_id, user_id, "bakery_order_created", "bakery_order", row.id,
         {"order_number": row.order_number, "total": gross, "deposit": deposit},
     )
+    await db.flush()
+    return row
+
+
+async def confirm_quote(
+    db: AsyncSession, tenant_id: str, order_id: str, *, deposit: float, method: str | None, user_id: str | None
+) -> m.BakeryOrder:
+    """The customer said yes: the quote becomes a booked order with a real order number, and an
+    optional first deposit is taken the same way as any part-payment."""
+    row = await _order(db, tenant_id, order_id, lock=True)
+    if row.status != "quote":
+        raise HTTPException(status_code=409, detail=f"This is {row.status}, not a quote")
+    if row.due_date < await bakery_today(db, tenant_id):
+        raise HTTPException(status_code=422, detail="The collection day has passed. Make a new quote.")
+    pay = _money(deposit or 0)
+    if pay > _money(row.total) + 0.004:
+        raise HTTPException(status_code=422, detail=f"The deposit is more than the {_money(row.total):.2f} order")
+    if pay > 0:
+        await _need_shift(db, tenant_id)  # fail before anything changes
+    row.order_number = await _next_number(db, tenant_id, m.BakeryOrder, "BO")
+    row.status = "booked"
+    row.updated_at = _now()
+    await db.flush()
+    if pay > 0:
+        await add_deposit(db, tenant_id, row.id, amount=pay, method=method, user_id=user_id)
+    await _audit(db, tenant_id, user_id, "bakery_quote_confirmed", "bakery_order", row.id, {"order_number": row.order_number})
+    await db.flush()
+    return row
+
+
+async def decline_quote(db: AsyncSession, tenant_id: str, order_id: str, *, reason: str, user_id: str | None) -> m.BakeryOrder:
+    row = await _order(db, tenant_id, order_id, lock=True)
+    if row.status != "quote":
+        raise HTTPException(status_code=409, detail=f"This is {row.status}, not a quote")
+    row.status = "declined"
+    row.cancel_reason = require_honest_narrative(reason, label="reason", max_length=255)
+    row.updated_at = _now()
+    await _audit(db, tenant_id, user_id, "bakery_quote_declined", "bakery_order", row.id, {"order_number": row.order_number})
     await db.flush()
     return row
 
@@ -1593,6 +1634,8 @@ async def list_orders(db: AsyncSession, tenant_id: str, *, show: str = "open") -
     stmt = select(m.BakeryOrder).where(m.BakeryOrder.tenant_id == tenant_id)
     if show == "open":
         stmt = stmt.where(m.BakeryOrder.status.in_(ORDER_OPEN)).order_by(m.BakeryOrder.due_date.asc())
+    elif show == "quotes":
+        stmt = stmt.where(m.BakeryOrder.status == "quote").order_by(m.BakeryOrder.due_date.asc())
     else:
         stmt = stmt.order_by(m.BakeryOrder.created_at.desc()).limit(200)
     return list((await db.execute(stmt)).scalars())

@@ -99,3 +99,45 @@ async def test_part_payments_and_refund_by_method(client, seeded, db_session):
     refunds = {p.method: float(p.amount) for p in rows if p.kind == "deposit_refund"}
     assert refunds == {"cash": -200.0, "mobile_money": -300.0}
     assert sum(float(p.amount) for p in rows) == 0  # money in and money out cancel
+
+
+@pytest.mark.asyncio
+async def test_quote_confirm_and_decline(client, seeded, db_session):
+    from tests.test_bakery_desk import _open_till
+
+    ac, seed = client
+    h = await _owner(ac, seed, db_session)
+    cake = await _product(db_session, seed, "Party cake", price=300)
+    due = (date.today() + timedelta(days=5)).isoformat()
+    body = {"customer_name": "Yaw Darko", "due_date": due, "lines": [{"product_id": cake.id, "quantity": 2}], "quote": True}
+
+    bad = await ac.post("/api/v1/bakery/orders", headers=h, json={**body, "deposit": 50, "deposit_method": "cash"})
+    assert bad.status_code == 422
+
+    q = await ac.post("/api/v1/bakery/orders", headers=h, json=body)
+    assert q.status_code == 200, q.text
+    quote = q.json()["data"]
+    assert quote["status"] == "quote" and quote["order_number"].startswith("BQ-") and quote["deposit"] == 0
+
+    # A quote is not an open order, so nothing is planned for it, but it lists under quotes.
+    assert quote["id"] not in [o["id"] for o in (await ac.get("/api/v1/bakery/orders", headers=h)).json()["data"]]
+    assert quote["id"] in [o["id"] for o in (await ac.get("/api/v1/bakery/orders?show=quotes", headers=h)).json()["data"]]
+    slip = await ac.get(f"/api/v1/bakery/orders/{quote['id']}/print", headers=h)
+    assert "Quote" in slip.text and "QUOTE" in slip.text
+    assert (await ac.post(f"/api/v1/bakery/orders/{quote['id']}/ready", headers=h, json={})).status_code == 409
+
+    # A deposit needs an open till; a refused confirm leaves it a quote.
+    no_till = await ac.post(f"/api/v1/bakery/orders/{quote['id']}/confirm-quote", headers=h, json={"deposit": 100})
+    assert no_till.status_code == 409
+    await _open_till(ac, h)
+    ok = await ac.post(f"/api/v1/bakery/orders/{quote['id']}/confirm-quote", headers=h, json={"deposit": 100, "method": "cash"})
+    assert ok.status_code == 200, ok.text
+    order = ok.json()["data"]
+    assert order["status"] == "booked" and order["order_number"].startswith("BO-") and order["deposit"] == 100
+    assert order["id"] in [o["id"] for o in (await ac.get("/api/v1/bakery/orders", headers=h)).json()["data"]]
+    assert (await ac.post(f"/api/v1/bakery/orders/{quote['id']}/confirm-quote", headers=h, json={})).status_code == 409
+
+    q2 = (await ac.post("/api/v1/bakery/orders", headers=h, json=body)).json()["data"]
+    no = await ac.post(f"/api/v1/bakery/orders/{q2['id']}/decline-quote", headers=h, json={"reason": "Went with another baker"})
+    assert no.status_code == 200 and no.json()["data"]["status"] == "declined"
+    assert (await ac.post(f"/api/v1/bakery/orders/{q2['id']}/confirm-quote", headers=h, json={})).status_code == 409

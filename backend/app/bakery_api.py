@@ -211,6 +211,8 @@ class OrderBody(BaseModel):
     delivery: bool = False
     address: Annotated[str, Field(min_length=1, max_length=500)] | None = None
     driver_id: UuidIdValue | None = None
+    # A price for the customer to think about: no deposit, no stock or baking planned until confirmed.
+    quote: bool = False
 
 
 class DriverBody(BaseModel):
@@ -500,7 +502,7 @@ async def bakery_refund(
 
 @router.get("/orders")
 async def bakery_orders(
-    show: Annotated[Literal["open", "all"], Query()] = "open",
+    show: Annotated[Literal["open", "all", "quotes"], Query()] = "open",
     claims=Depends(require_permission("bakery", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -526,6 +528,39 @@ async def bakery_order_create(
     row = await svc.create_order(db, claims["tenant_id"], payload, user_id=claims.get("sub"))
     await db.commit()
     return _env(await svc.present_order(db, row), "Order taken")
+
+
+class ConfirmQuoteBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    deposit: NonNegativeMoneyValue = 0
+    method: TillMethod = "cash"
+
+
+class DeclineQuoteBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reason: Annotated[str, Field(min_length=3, max_length=255)]
+
+
+@router.post("/orders/{order_id}/confirm-quote")
+async def bakery_quote_confirm(
+    order_id: UuidIdValue, payload: ConfirmQuoteBody, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)
+):
+    _job(claims, "orders")
+    row = await svc.confirm_quote(db, claims["tenant_id"], order_id, deposit=payload.deposit, method=payload.method, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(await svc.present_order(db, row), "Quote confirmed as an order")
+
+
+@router.post("/orders/{order_id}/decline-quote")
+async def bakery_quote_decline(
+    order_id: UuidIdValue, payload: DeclineQuoteBody, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)
+):
+    _job(claims, "orders")
+    row = await svc.decline_quote(db, claims["tenant_id"], order_id, reason=payload.reason, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(await svc.present_order(db, row), "Quote declined")
 
 
 class PartPaymentBody(BaseModel):
@@ -607,13 +642,13 @@ async def bakery_order_print(order_id: UuidIdValue, claims=Depends(require_permi
         for i in o["items"]
     )
     where = f"Delivery to: {h.escape(o['address'] or '')}" if o["delivery"] else "Collect from the shop"
-    cancelled = " (CANCELLED)" if o["status"] == "cancelled" else ""
+    cancelled = {"cancelled": " (CANCELLED)", "quote": " (QUOTE, not yet an order)", "declined": " (DECLINED)"}.get(o["status"], "")
     note = f"<p>Note: {h.escape(o['notes'])}</p>" if o.get("notes") else ""
     page = (
         f"<!doctype html><html><head><meta charset='utf-8'><title>Order {h.escape(o['order_number'])}</title><style>{_PRINT_CSS}</style></head><body>"
         f"<h2>{h.escape(getattr(company, 'company_name', '') or '')}</h2>"
         f"<p>{h.escape(getattr(company, 'address', '') or '')}<br/>Tel {h.escape(getattr(company, 'phone', '') or '-')}</p>"
-        f"<h3>Order {h.escape(o['order_number'])}{cancelled}</h3>"
+        f"<h3>{'Quote' if o['status'] == 'quote' else 'Order'} {h.escape(o['order_number'])}{cancelled}</h3>"
         f"<p>For: <b>{h.escape(o['customer_name'] or '')}</b> {h.escape(o['phone'] or '')}<br/>Needed on <b>{o['due_date']}</b> · {where}</p>"
         "<table><thead><tr><th>Item</th><th class='r'>Qty</th><th class='r'>Amount</th></tr></thead>"
         f"<tbody>{lines}</tbody></table>"

@@ -55,6 +55,13 @@ Ingredients and items for sale are ordinary products under Inventory. An item wi
 - `POST /bakery/regulars/birthday-texts` (manager) texts today's birthdays **only if `texts_ok`**, once per year each (`last_text_year`), through the company's SMS settings. It reports `sent`, `already_texted` and `failed` with reasons; with no SMS set up nothing is marked as texted.
 - Never text anyone who has not agreed. Tests: `test_bakery_regulars.py`.
 
+## Quotes
+
+An order taken with `quote: true` (Orders → "Just a quote for now") is a quote: status `quote`, number `BQ-…`, no deposit (422), not in `ORDER_OPEN`, so nothing is planned, baked or delivered for it. `GET /bakery/orders?show=quotes` lists them (Orders → Quotes); the slip prints as "Quote".
+
+- `POST /bakery/orders/{id}/confirm-quote` `{deposit, method}` makes it a booked order with a real `BO-…` number. An optional deposit goes through `add_deposit`, so it needs an open till; a refused confirm leaves it a quote. A past collection day is refused (422).
+- `POST /bakery/orders/{id}/decline-quote` `{reason}` sets status `declined`. Anything that is not a quote is 409. Test: `test_bakery_regulars.py::test_quote_confirm_and_decline`.
+
 ## Part-payments on big orders
 
 `POST /bakery/orders/{id}/part-payment` `{amount, method}` (Orders → Take payment) takes another instalment on an open order, for wedding and event cakes paid in stages. It needs an open till, cannot exceed what is still owed (422), and books Dr money / Cr the order's deposit account (2168; 1100 for old orders) exactly like the first deposit, so collection still turns the whole deposit into revenue once. A cancelled or collected order refuses it (409).
