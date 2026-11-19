@@ -827,7 +827,7 @@ def _method(value: str | None) -> str:
 
 
 async def _priced_lines(
-    db: AsyncSession, tenant_id: str, lines, *, max_discount: float | None = 100.0
+    db: AsyncSession, tenant_id: str, lines, *, max_discount: float | None = 100.0, enforce_options: bool = False
 ) -> tuple[list[dict], float, float, float]:
     """Price from the catalogue, never from the request. Returns lines, net, tax and gross.
 
@@ -847,6 +847,13 @@ async def _priced_lines(
         if qty <= 0:
             raise HTTPException(status_code=422, detail="Quantity must be above zero")
         price = _money(product.selling_price)
+        picked = getattr(line, "options", None)
+        opt_note = None
+        if picked or enforce_options:
+            extra, opt_note = items_svc.apply_options(
+                await items_svc.settings_for(db, tenant_id, product.id), picked, product_name=product.name, enforce=enforce_options
+            )
+            price = _money(price + extra)
         pct = float(getattr(line, "discount_percent", None) or 0)
         day_old = bool(getattr(line, "day_old", False))
         if day_old:
@@ -881,7 +888,10 @@ async def _priced_lines(
                 "day_old": day_old,
                 "tax": _money(tax),
                 "line_total": _money(gross),
-                "note": optional_honest_narrative(getattr(line, "note", None), label="note", max_length=255),
+                "note": (
+                    "; ".join(x for x in (opt_note, optional_honest_narrative(getattr(line, "note", None), label="note", max_length=255)) if x)[:255]
+                    or None
+                ),
             }
         )
         net_total += float(net)
@@ -1281,7 +1291,7 @@ async def _order(db: AsyncSession, tenant_id: str, order_id: str, *, lock: bool 
 async def create_order(db: AsyncSession, tenant_id: str, payload, *, user_id: str | None) -> m.BakeryOrder:
     if payload.due_date < await bakery_today(db, tenant_id):
         raise HTTPException(status_code=422, detail="Collection cannot be in the past")
-    lines, net, tax, gross = await _priced_lines(db, tenant_id, payload.lines)
+    lines, net, tax, gross = await _priced_lines(db, tenant_id, payload.lines, enforce_options=True)
     delivery = bool(getattr(payload, "delivery", False))
     address = optional_honest_narrative(getattr(payload, "address", None), label="address", max_length=500)
     if delivery and not address:
@@ -1437,6 +1447,59 @@ async def collect_order(
     return row
 
 
+async def _deposit_parts(db: AsyncSession, tenant_id: str, row: m.BakeryOrder) -> list[tuple[str, float]]:
+    """What was paid on this order's deposit, by method. Falls back to one part for old orders."""
+    rows = (await db.execute(
+        select(m.BakeryPayment.method, func.sum(m.BakeryPayment.amount)).where(
+            m.BakeryPayment.tenant_id == tenant_id, m.BakeryPayment.order_id == row.id, m.BakeryPayment.kind == "deposit",
+        ).group_by(m.BakeryPayment.method)
+    )).all()
+    parts = [(meth, _money(amt)) for meth, amt in rows if _money(amt) > 0]
+    total = _money(row.deposit)
+    if not parts or abs(sum(a for _, a in parts) - total) > 0.009:
+        return [(row.deposit_method or "cash", total)]
+    return parts
+
+
+async def add_deposit(
+    db: AsyncSession, tenant_id: str, order_id: str, *, amount: float, method: str | None, user_id: str | None
+) -> m.BakeryOrder:
+    """Take another part-payment on a big order (a wedding cake paid in instalments). It joins
+    the same liability as the first deposit and turns into revenue on collection."""
+    row = await _order(db, tenant_id, order_id, lock=True)
+    if row.status not in ORDER_OPEN:
+        raise HTTPException(status_code=409, detail=f"This order is {row.status}")
+    pay = _money(amount)
+    if pay <= 0:
+        raise HTTPException(status_code=422, detail="Enter the amount paid")
+    owed = _money(float(row.total or 0) - float(row.deposit or 0))
+    if pay > owed + 0.004:
+        raise HTTPException(status_code=422, detail=f"Only {owed:.2f} is still owed on this order")
+    how = _method(method)
+    shift = await _need_shift(db, tenant_id)
+    account = row.deposit_account if float(row.deposit or 0) > 0 else DEPOSIT_ACCOUNT
+    description = f"Bakery order {row.order_number} part-payment"
+    entry = await _post(
+        db, tenant_id, user_id=user_id, description=description,
+        lines=[
+            {"account_code": _money_account(how), "debit": pay, "credit": 0, "description": description},
+            {"account_code": account or OLD_DEPOSIT_ACCOUNT, "debit": 0, "credit": pay, "description": description},
+        ],
+        reference=row.order_number, source=REF_ORDER, source_id=row.id,
+    )
+    await _pay(db, tenant_id, shift=shift, kind="deposit", method=how, amount=pay, user_id=user_id, order_id=row.id)
+    if float(row.deposit or 0) <= 0:
+        row.deposit_method, row.deposit_account, row.deposit_journal_id = how, DEPOSIT_ACCOUNT, entry
+    row.deposit = _money(float(row.deposit or 0) + pay)
+    row.updated_at = _now()
+    await _audit(
+        db, tenant_id, user_id, "bakery_order_part_payment", "bakery_order", row.id,
+        {"order_number": row.order_number, "amount": pay, "method": how, "paid_so_far": _money(row.deposit)},
+    )
+    await db.flush()
+    return row
+
+
 async def cancel_order(
     db: AsyncSession, tenant_id: str, order_id: str, *, deposit_action: str | None, reason: str, user_id: str | None
 ) -> m.BakeryOrder:
@@ -1453,19 +1516,20 @@ async def cancel_order(
         description = f"Bakery order {row.order_number} cancelled, deposit {action}"
         if action == "refund":
             shift = await _need_shift(db, tenant_id)
-            method = row.deposit_method or "cash"
+            # Instalments may have come in by different methods: give each back the way it came.
+            parts = await _deposit_parts(db, tenant_id, row)
+            journal = [{"account_code": held_in, "debit": deposit, "credit": 0, "description": description}]
+            for method, amount in parts:
+                journal.append({"account_code": _money_account(method), "debit": 0, "credit": amount, "description": description})
             await _post(
-                db, tenant_id, user_id=user_id, description=description,
-                lines=[
-                    {"account_code": held_in, "debit": deposit, "credit": 0, "description": description},
-                    {"account_code": _money_account(method), "debit": 0, "credit": deposit, "description": description},
-                ],
+                db, tenant_id, user_id=user_id, description=description, lines=journal,
                 reference=row.order_number, source="bakery_order_cancelled", source_id=row.id,
             )
-            await _pay(
-                db, tenant_id, shift=shift, kind="deposit_refund", method=method, amount=-deposit, user_id=user_id,
-                order_id=row.id,
-            )
+            for method, amount in parts:
+                await _pay(
+                    db, tenant_id, shift=shift, kind="deposit_refund", method=method, amount=-amount, user_id=user_id,
+                    order_id=row.id,
+                )
         else:
             # A kept deposit pays for no goods: it is compensation for the cancelled order, booked
             # as other income. Whether VAT is due on it is a question for the company's accountant.
@@ -1746,6 +1810,13 @@ async def summary(db: AsyncSession, tenant_id: str, *, money: bool = True) -> di
         "day_old": _qty(sum(s["quantity"] for s in shelf if s["state"] == "day_old")),
     }
     attention = []
+    from app import bakery_safety as safety_svc
+
+    safe = await safety_svc.summary(db, tenant_id)
+    if safe["bad_readings_today"]:
+        attention.append(dash.item("warning", f"{dash.plural(safe['bad_readings_today'], 'temperature reading')} outside the safe range today", "/bakery?tab=safety"))
+    if safe["points"] and safe["readings_still_due"]:
+        attention.append(dash.item("info", f"{dash.plural(safe['readings_still_due'], 'temperature reading')} still to take", "/bakery?tab=safety"))
     if not tills:
         attention.append(dash.item("warning", "The till is closed. Open it before the first sale.", "/bakery?tab=counter"))
     if expired:

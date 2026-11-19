@@ -3880,6 +3880,8 @@ class BakeryItemSettings(Base):
     purchase_unit: Mapped[str | None] = mapped_column(String(30), nullable=True)
     units_per_purchase: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)
     par_level: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)
+    # Choices a customer makes when ordering (size, flavour, filling): [{name, required, choices:[{label, extra}]}].
+    options: Mapped[list | None] = mapped_column(JSON, nullable=True)
     updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
@@ -5297,6 +5299,73 @@ class BakeryExpense(Base):
     shift_id: Mapped[str | None] = mapped_column(ForeignKey("bakery_till_shifts.id"), nullable=True, index=True)
     journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class BakeryRegular(Base):
+    """What the bakery knows about a regular, found by phone number: birthday and whether they
+    agreed to texts. Order counts and spend come from the orders themselves."""
+
+    __tablename__ = "bakery_regulars"
+    __table_args__ = (UniqueConstraint("tenant_id", "phone", name="uq_bakery_regular_phone"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    phone: Mapped[str] = mapped_column(String(40))
+    name: Mapped[str | None] = mapped_column(String(180), nullable=True)
+    birth_month: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    birth_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    texts_ok: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    last_text_year: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class BakerySafetyPoint(Base):
+    """A fridge, freezer, oven or display whose temperature is checked and written down."""
+
+    __tablename__ = "bakery_safety_points"
+    __table_args__ = (UniqueConstraint("tenant_id", "name", name="uq_bakery_safety_point_name"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(100))
+    kind: Mapped[str] = mapped_column(String(20), default="fridge")
+    min_c: Mapped[float] = mapped_column(Numeric(6, 1))
+    max_c: Mapped[float] = mapped_column(Numeric(6, 1))
+    checks_per_day: Mapped[int] = mapped_column(Integer, default=2, server_default="2")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class BakerySafetyReading(Base):
+    """One temperature reading. A reading outside the point's range must say what was done."""
+
+    __tablename__ = "bakery_safety_readings"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    point_id: Mapped[str] = mapped_column(ForeignKey("bakery_safety_points.id"), index=True)
+    reading_c: Mapped[float] = mapped_column(Numeric(6, 1))
+    in_range: Mapped[bool] = mapped_column(Boolean, default=True)
+    action_taken: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    recorded_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class BakerySafetyCheck(Base):
+    """A signed opening, closing, cleaning or delivery checklist for one day."""
+
+    __tablename__ = "bakery_safety_checks"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(20), index=True)
+    check_date: Mapped[date] = mapped_column(Date, index=True)
+    items: Mapped[list] = mapped_column(JSON)
+    all_done: Mapped[bool] = mapped_column(Boolean, default=False)
+    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    signed_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 

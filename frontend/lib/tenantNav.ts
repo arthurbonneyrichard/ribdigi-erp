@@ -307,6 +307,7 @@ export const BAKERY_NAV_GROUPS: NavGroup[] = [
       ['Orders', '/bakery?tab=orders', 'bakery'],
       ['Deliveries', '/bakery?tab=deliveries', 'bakery'],
       ['Trade customers', '/bakery?tab=trade', 'bakery'],
+      ['Regulars', '/bakery?tab=regulars', 'bakery'],
     ],
   },
   {
@@ -315,6 +316,7 @@ export const BAKERY_NAV_GROUPS: NavGroup[] = [
     items: [
       ['Baking', '/bakery?tab=baking', 'bakery'],
       ['Waste', '/bakery?tab=waste', 'bakery'],
+      ['Food safety', '/bakery?tab=safety', 'bakery'],
     ],
   },
   {
@@ -991,8 +993,8 @@ export const HRM_ROLE_HREFS: Record<string, string[]> = {
 };
 
 export const BAKERY_ROLE_HREFS: Record<string, string[]> = {
-  bakery_baker: ['/hrm?tab=me', '/bakery', '/bakery?tab=baking', '/bakery?tab=waste', '/bakery?tab=orders', '/notifications', '/security', '/support'],
-  bakery_cashier: ['/hrm?tab=me', '/bakery', '/bakery?tab=counter', '/bakery?tab=orders', '/bakery?tab=deliveries', '/bakery?tab=trade', '/bakery?tab=waste', '/notifications', '/security', '/support'],
+  bakery_baker: ['/hrm?tab=me', '/bakery', '/bakery?tab=baking', '/bakery?tab=waste', '/bakery?tab=safety', '/bakery?tab=orders', '/notifications', '/security', '/support'],
+  bakery_cashier: ['/hrm?tab=me', '/bakery', '/bakery?tab=counter', '/bakery?tab=orders', '/bakery?tab=deliveries', '/bakery?tab=trade', '/bakery?tab=regulars', '/bakery?tab=waste', '/bakery?tab=safety', '/notifications', '/security', '/support'],
   bakery_driver: ['/hrm?tab=me', '/bakery', '/bakery?tab=deliveries', '/bakery?tab=counter', '/notifications', '/security', '/support'],
 };
 

@@ -191,6 +191,11 @@ async def seed() -> None:
             c, h, "/bakery/stock/receive",
             {"product_id": ingredient["Flour (kg)"], "quantity": 50, "unit_cost": 9.5, "paid_with": "credit", "supplier": "Golden Mills"},
         )
+        fridge = await post(c, h, "/bakery/safety/points", {"name": "Walk-in fridge", "kind": "fridge"})
+        oven = await post(c, h, "/bakery/safety/points", {"name": "Deck oven", "kind": "oven"})
+        await post(c, h, "/bakery/safety/readings", {"point_id": fridge["id"], "reading_c": 3.8})
+        await post(c, h, "/bakery/safety/readings", {"point_id": oven["id"], "reading_c": 230})
+        await post(c, h, "/bakery/safety/checks", {"kind": "opening", "done": [0, 1, 2, 3, 4, 5]})
         print("seeded", SLUG)
 
 
