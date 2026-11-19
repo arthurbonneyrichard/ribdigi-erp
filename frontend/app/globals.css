@@ -1203,6 +1203,16 @@
   transition:border-color .15s,box-shadow .15s,background .15s;
 }
 .login input::placeholder{color:#7fa892;opacity:1}
+/* Show/hide password: eye button inside the field, right side */
+.login-pass{position:relative;display:block}
+.login .login-pass input{padding-right:52px}
+.login-pass-toggle{position:absolute;top:50%;right:6px;transform:translateY(-50%);width:40px;height:40px;
+  display:flex;align-items:center;justify-content:center;padding:0;margin:0;border:0;border-radius:10px;
+  background:transparent;color:#9ec9ad;cursor:pointer;transition:color .15s,background .15s}
+.login-pass-toggle:hover{color:var(--white);background:rgba(255,255,255,.08)}
+.login-pass-toggle:focus-visible{outline:none;color:var(--white);box-shadow:0 0 0 3px var(--focus-ring)}
+.login-pass-toggle[aria-pressed="true"]{color:var(--brand)}
+.login-pass-toggle:disabled{opacity:.5;cursor:default}
 .login input:focus{
   outline:none;border-color:var(--brand);background:var(--forest);
   box-shadow:0 0 0 3px var(--focus-ring);
@@ -1278,7 +1288,22 @@
 .app-legal a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .billing-page-legal{margin:8px 0 0;font-size:13px;color:var(--muted)}
 .billing-page-legal a{color:var(--deep-green);text-decoration:underline}
-.legal-doc{max-width:44rem;text-align:left}
+.legal-doc{text-align:left}
+/* Legal pages read as a wide document on desktop, not the narrow sign-in card. */
+.legal-stage{align-items:flex-start}
+.legal-stage .login.legal-doc{margin:0 auto}
+@media(min-width:721px){
+  .login.legal-doc{width:min(1080px,100%);max-width:100%;padding:40px 56px 28px}
+  .legal-doc .login-brand{text-align:left}
+  .legal-doc .login-logo{margin:0}
+  .legal-doc .login-heading{font-size:30px;margin:12px 0 4px}
+  .legal-doc-body{font-size:15.5px;line-height:1.65;gap:14px}
+  .legal-doc-body h2{font-size:18px;margin-top:14px}
+  .legal-doc-body h3{font-size:16px}
+}
+@media(min-width:1200px){
+  .login.legal-doc{width:min(1160px,100%);padding:48px 72px 32px}
+}
 .legal-doc .login-heading{text-align:left}
 .legal-doc-body{display:grid;gap:12px;margin:16px 0;color:var(--sand);font-size:14px;line-height:1.55;font-weight:500}
 .legal-doc-body p{margin:0}
@@ -8991,7 +9016,7 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{background-color:rgb
     .shell:not(.is-pos):not(.is-kiosk) > .main .dash-pair .health .pill,
     .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-attn li:not(.warning):not(.info) a,
     .shell:not(.is-pos):not(.is-kiosk) > .main .hbill-box,
-    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk a.rd-action,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk a.rd-action:not(.primary),
     .shell:not(.is-pos):not(.is-kiosk) > .main .plat .mon-card,
     .shell:not(.is-pos):not(.is-kiosk) > .main .plat .mon-check,
     .shell:not(.is-pos):not(.is-kiosk) > .main .ecom-desk .ecom-media-card,
@@ -9005,7 +9030,7 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{background-color:rgb
     .shell:not(.is-pos):not(.is-kiosk) > .main .dash-pair .health .pill::after,
     .shell:not(.is-pos):not(.is-kiosk) > .main .deskdash .dd-attn li:not(.warning):not(.info) a::after,
     .shell:not(.is-pos):not(.is-kiosk) > .main .hbill-box::after,
-    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk a.rd-action::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk a.rd-action:not(.primary)::after,
     .shell:not(.is-pos):not(.is-kiosk) > .main .plat .mon-card::after,
     .shell:not(.is-pos):not(.is-kiosk) > .main .plat .mon-check::after,
     .shell:not(.is-pos):not(.is-kiosk) > .main .ecom-desk .ecom-media-card::after{
@@ -9803,3 +9828,32 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{background-color:rgb
 :root:not([data-theme="dark"]) .main :focus-visible{outline:2px solid #006B2E!important;outline-offset:2px!important;box-shadow:0 0 0 4px #FFFFFF!important}
 :root:not([data-theme="dark"]) .main :is(input,select,textarea):focus{border-color:#006B2E!important;box-shadow:0 0 0 3px rgba(0,107,46,.28)!important}
 :root:not([data-theme="dark"]) .main input:is([type="checkbox"],[type="radio"]):focus{box-shadow:none!important}
+
+/* 15 Nov 2026, owner's request: white where white belongs (light theme only; dark mode unchanged).
+   Cards, panels, figure tiles, tab bars, dialogs, side drawers, pop-up menus and form fields are solid
+   white instead of see-through glass over a green wash, and the page behind them is a plain, very light
+   tint so the white cards still stand out. Same values the "less transparency" setting already used. */
+:root:not([data-theme="dark"]){
+  --glass-bg:#FFFFFF;
+  --glass-bg-strong:#FFFFFF;
+  --glass-sheen:linear-gradient(transparent,transparent);
+  --glass-wash:#F5F7F4;
+}
+:root:not([data-theme="dark"]) .shell:not(.is-pos):not(.is-kiosk) > .main[data-look="retail"]{--rm-soft:#FFFFFF}
+:root:not([data-theme="dark"]) .shell:not(.is-pos):not(.is-kiosk) > .main :is(.cat-empty,.list-empty):not(#_){background:#FFFFFF}
+
+/* 15 Nov 2026: dashboard figure tiles cut money short ("GHC 430…") at laptop widths, because the figure
+   was fixed at 30px in a ~170px tile. Each tile is a size container, so scale the figure to the tile:
+   30px when there is room, down to 16px in narrow tiles, and never cut it off. */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat .val:not(#_){
+  font-size:clamp(16px,12.5cqi,30px)!important;white-space:nowrap;text-overflow:clip;margin-top:auto!important
+}
+/* ...and let the label wrap onto two lines instead of "GROSS PROFIT, 7 DA…". */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat .label:not(#_){white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25}
+
+/* Admin sign-in: biometric button sits to the right of Sign in */
+.login-submit-row{display:flex;gap:10px;align-items:stretch}
+.login-submit-row .login-primary{flex:1 1 auto;width:auto}
+.login-bio{flex:0 0 52px;display:inline-flex;align-items:center;justify-content:center;border-radius:12px;border:1px solid rgba(200,232,106,.45);background:rgba(255,255,255,.08);color:#C8E86A;cursor:pointer;min-height:44px}
+.login-bio:hover:not(:disabled){background:rgba(255,255,255,.14);border-color:rgba(200,232,106,.8)}
+.login-bio:disabled{opacity:.6;cursor:not-allowed}

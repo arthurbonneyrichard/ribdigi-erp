@@ -36,6 +36,7 @@ function base64urlToBuffer(value: string): ArrayBuffer {
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [tenant, setTenant] = useState('');
   // Two doors: Admin (company code, email, password) for owners and admins; User (username or
   // email, password) for the staff they create. The last one used is remembered on this device.
@@ -246,6 +247,69 @@ export default function Login() {
     }
   }
 
+  async function passwordlessSignIn(kind: 'passkey' | 'biometric') {
+    setError('');
+    const phase = await probeApi();
+    if (phase !== 'online') {
+      await openPreparedTill();
+      return;
+    }
+    const trimmedTenant = tenant.trim();
+    const trimmedEmail = email.trim();
+    if (!trimmedTenant || !trimmedEmail) {
+      setError('Enter your company code and email first');
+      return;
+    }
+    setBusy(true);
+    try {
+      if (!window.PublicKeyCredential) {
+        throw new Error('This browser does not support passkeys');
+      }
+      const start = await api('/auth/webauthn/passwordless/start', {
+        method: 'POST',
+        body: JSON.stringify({ tenant_id: trimmedTenant, email: trimmedEmail }),
+      });
+      const token = String(start.data.challenge_token || '');
+      const publicKey: any = { ...start.data.options };
+      publicKey.challenge = base64urlToBuffer(publicKey.challenge);
+      if (Array.isArray(publicKey.allowCredentials)) {
+        publicKey.allowCredentials = publicKey.allowCredentials.map((c: any) => ({
+          ...c,
+          id: base64urlToBuffer(c.id),
+        }));
+      }
+      publicKey.hints = kind === 'biometric' ? ['client-device'] : ['security-key', 'hybrid'];
+      const cred = (await navigator.credentials.get({ publicKey })) as PublicKeyCredential | null;
+      if (!cred) throw new Error('Cancelled');
+      const assertion = cred.response as AuthenticatorAssertionResponse;
+      const credential = {
+        id: cred.id,
+        rawId: bufferToBase64url(cred.rawId),
+        type: cred.type,
+        response: {
+          clientDataJSON: bufferToBase64url(assertion.clientDataJSON),
+          authenticatorData: bufferToBase64url(assertion.authenticatorData),
+          signature: bufferToBase64url(assertion.signature),
+          userHandle: assertion.userHandle ? bufferToBase64url(assertion.userHandle) : null,
+        },
+        clientExtensionResults: cred.getClientExtensionResults?.() || {},
+      };
+      const r = await api('/auth/webauthn/login/verify', {
+        method: 'POST',
+        body: JSON.stringify({ challenge_token: token, credential }),
+      });
+      await finishLogin(r.data);
+    } catch (err: any) {
+      if (err?.name === 'NotAllowedError') {
+        setError('Cancelled. Try again, or sign in with your password.');
+      } else {
+        setError(err.message || 'Could not sign in with a passkey. Use your password instead.');
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function go(e: React.FormEvent) {
     e.preventDefault();
     setError('');
@@ -440,16 +504,43 @@ export default function Login() {
               </label>
               <label className="login-field">
                 <span>Password</span>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
-                  aria-label="Login password"
-                  required
-                  disabled={busy}
-                />
+                <span className="login-pass">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                    aria-label="Login password"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    required
+                    disabled={busy}
+                  />
+                  <button
+                    type="button"
+                    className="login-pass-toggle"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-pressed={showPassword}
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                    onClick={() => setShowPassword((v) => !v)}
+                    disabled={busy}
+                  >
+                    {showPassword ? (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M3 3l18 18" />
+                        <path d="M10.6 5.1A10.5 10.5 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1" />
+                        <path d="M6.6 6.6C3.8 8.4 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6" />
+                        <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+                      </svg>
+                    ) : (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                </span>
               </label>
               <p className="login-forgot login-forgot-note">Forgot your password? Ask your admin to set a new one.</p>
             </>
@@ -483,16 +574,43 @@ export default function Login() {
               </label>
               <label className="login-field">
                 <span>Password</span>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
-                  aria-label="Login password"
-                  required
-                  disabled={busy}
-                />
+                <span className="login-pass">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                    aria-label="Login password"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    required
+                    disabled={busy}
+                  />
+                  <button
+                    type="button"
+                    className="login-pass-toggle"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-pressed={showPassword}
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                    onClick={() => setShowPassword((v) => !v)}
+                    disabled={busy}
+                  >
+                    {showPassword ? (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M3 3l18 18" />
+                        <path d="M10.6 5.1A10.5 10.5 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1" />
+                        <path d="M6.6 6.6C3.8 8.4 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6" />
+                        <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+                      </svg>
+                    ) : (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                </span>
               </label>
               <p className="login-forgot">
                 <Link
@@ -533,15 +651,47 @@ export default function Login() {
 
           {showPasskey && <p className="login-hint">Or continue with a registered passkey.</p>}
 
-          <button className="login-primary" type="submit" aria-label="Sign in" disabled={busy} aria-busy={busy}>
-            {busy
-              ? 'Signing in…'
-              : needs2fa
-                ? methods.includes('totp')
-                  ? 'Verify & continue'
-                  : 'Continue'
-                : 'Sign in'}
-          </button>
+          <div className={!needs2fa && mode === 'admin' ? 'login-submit-row' : undefined}>
+            <button className="login-primary" type="submit" aria-label="Sign in" disabled={busy} aria-busy={busy}>
+              {busy
+                ? 'Signing in…'
+                : needs2fa
+                  ? methods.includes('totp')
+                    ? 'Verify & continue'
+                    : 'Continue'
+                  : 'Sign in'}
+            </button>
+            {!needs2fa && mode === 'admin' && (
+              <button
+                className="login-bio"
+                type="button"
+                onClick={() => passwordlessSignIn('biometric')}
+                aria-label="Sign in with biometric"
+                title="Sign in with fingerprint, face or device lock"
+                disabled={busy}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 11v3a6 6 0 0 1-1 3.3" />
+                  <path d="M8.5 14a3.5 3.5 0 0 1 7 0c0 2.2-.5 4.3-1.5 6" />
+                  <path d="M5 14a7 7 0 0 1 14 0c0 1.4-.1 2.7-.4 4" />
+                  <path d="M3.5 9.5A9.5 9.5 0 0 1 12 4a9.5 9.5 0 0 1 8.5 5.5" />
+                  <path d="M5 18.5c.3-1 .5-2.3.5-3.5" />
+                </svg>
+              </button>
+            )}
+          </div>
+
+          {!needs2fa && mode === 'admin' && (
+            <button
+              className="login-secondary"
+              type="button"
+              onClick={() => passwordlessSignIn('passkey')}
+              aria-label="Sign in with passkey"
+              disabled={busy}
+            >
+              Sign in with a passkey
+            </button>
+          )}
 
           {showPasskey && (
             <button

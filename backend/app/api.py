@@ -360,6 +360,7 @@ from app.schemas import (
     ChangePasswordRequest,
     TwoFactorVerify,
     WebAuthnLoginOptions,
+    WebAuthnPasswordlessStart,
     WebAuthnLoginVerify,
     WebAuthnRegisterVerify,
     UserCreate,
@@ -2879,9 +2880,61 @@ async def webauthn_login_options(payload: WebAuthnLoginOptions, db: AsyncSession
     user = await db.get(m.User, claims["sub"])
     if not user or not user.is_active or user.tenant_id != claims["tenant_id"]:
         raise HTTPException(status_code=401, detail="Invalid 2FA challenge user")
-    options = await webauthn.authentication_options(db, user)
+    options = await webauthn.authentication_options(
+        db, user, require_uv=bool(claims.get("pwless"))
+    )
     await db.commit()
     return env(options)
+
+
+@api.post("/auth/webauthn/passwordless/start", dependencies=[Depends(auth_guard.ip_limit("login"))])
+async def webauthn_passwordless_start(
+    payload: WebAuthnPasswordlessStart, request: Request, db: AsyncSession = Depends(get_db)
+):
+    """Admin sign-in with a passkey or the device's biometric, no password.
+
+    Only owners/admins with a registered passkey get a challenge; every other case answers with the
+    same generic failure as a wrong password. The assertion (with user verification) is checked by
+    /auth/webauthn/login/verify, so this token alone grants nothing.
+    """
+    from app import webauthn_svc as webauthn
+
+    generic = auth_guard.reject_generic
+    try:
+        tenant = await tenants_svc.resolve_tenant(db, payload.tenant_id)
+    except HTTPException as exc:
+        if exc.status_code != 404:
+            raise
+        await auth_guard.register_unknown(request, reason="unknown_company")
+        raise generic() from None
+    user = (
+        await db.execute(
+            select(m.User).where(m.User.tenant_id == tenant.id, m.User.email == payload.email)
+        )
+    ).scalar_one_or_none()
+    if user is None:
+        await auth_guard.register_unknown(request, reason="unknown_account", tenant_id=tenant.id)
+        raise generic()
+    if auth_guard.is_locked(user):
+        await auth_guard.register_blocked_locked(db, user, request=request)
+        raise generic()
+    if (
+        not user.is_active
+        or not user.email_verified
+        or user.role not in ADMIN_SIGN_IN_ROLES
+        or not await webauthn.user_has_webauthn(db, user.id)
+    ):
+        await auth_guard.register_unknown(request, reason="passkey_unavailable", tenant_id=tenant.id)
+        raise generic()
+    tenant = await tenants_svc.ensure_trial_state(db, tenant)
+    tenants_svc.assert_tenant_active_for_login(tenant)
+    token = totp_svc.create_challenge_token(
+        user_id=user.id, tenant_id=tenant.id, role=user.role, passwordless=True
+    )
+    await totp_svc.load_login_challenge(db, token)
+    options = await webauthn.authentication_options(db, user, require_uv=True)
+    await db.commit()
+    return env({"challenge_token": token, "options": options})
 
 
 @api.post("/auth/webauthn/login/verify", dependencies=[Depends(auth_guard.ip_limit("otp_verify"))])
@@ -2898,7 +2951,10 @@ async def webauthn_login_verify(
         await auth_guard.register_blocked_locked(db, user, request=request)
         raise HTTPException(status_code=401, detail="Passkey sign-in failed")
     await webauthn.verify_authentication(
-        db, user, credential=payload.credential.model_dump(mode="json")
+        db,
+        user,
+        credential=payload.credential.model_dump(mode="json"),
+        require_uv=bool(claims.get("pwless")),
     )
     totp_svc.consume_login_challenge(challenge_row)
     auth_guard.register_success(user)

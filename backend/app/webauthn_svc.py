@@ -232,7 +232,7 @@ async def verify_registration(
 
 
 async def authentication_options(
-    db: AsyncSession, user: m.User
+    db: AsyncSession, user: m.User, *, require_uv: bool = False
 ) -> dict:
     from webauthn import generate_authentication_options, options_to_json
     from webauthn.helpers import base64url_to_bytes, bytes_to_base64url
@@ -257,7 +257,9 @@ async def authentication_options(
     options = generate_authentication_options(
         rp_id=rp_id(),
         allow_credentials=allow,
-        user_verification=UserVerificationRequirement.PREFERRED,
+        user_verification=(
+            UserVerificationRequirement.REQUIRED if require_uv else UserVerificationRequirement.PREFERRED
+        ),
     )
     await _store_challenge(
         db,
@@ -274,6 +276,7 @@ async def verify_authentication(
     user: m.User,
     *,
     credential: dict,
+    require_uv: bool = False,
 ) -> m.WebAuthnCredential:
     from webauthn import verify_authentication_response
     from webauthn.helpers import base64url_to_bytes, bytes_to_base64url
@@ -303,6 +306,7 @@ async def verify_authentication(
             expected_origin=expected_origin(),
             credential_public_key=base64url_to_bytes(row.public_key),
             credential_current_sign_count=int(row.sign_count or 0),
+            require_user_verification=require_uv,
         )
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=401, detail=f"Passkey authentication failed: {exc}") from exc
