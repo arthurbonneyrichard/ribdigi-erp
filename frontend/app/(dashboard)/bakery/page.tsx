@@ -811,6 +811,7 @@ function BakeryDesk() {
         >
           <section className="bk-box" aria-label="To bake">
             <Head icon="flame" title="To bake for orders due by tomorrow" />
+            <button type="button" onClick={() => void openPrintable('/bakery/production-sheet/print')} aria-label="Print production sheet">Print production sheet</button>
             {(summary.to_bake || []).filter((r: Row) => Number(r.to_bake) > 0).length === 0 ? (
               <p className="bk-muted">The shelf covers every order due by tomorrow.</p>
             ) : (
@@ -1094,7 +1095,12 @@ function BakeryDesk() {
                       {o.delivery ? <div className="bk-muted">{DELIVERY_WORDS[o.delivery_status] || 'Delivery'}{o.driver_name ? ` · ${o.driver_name}` : ''}</div> : null}
                     </td>
                     <td className="bk-row">
-                      {o.status === 'booked' ? <button type="button" disabled={busy} onClick={() => run(`/bakery/orders/${o.id}/ready`, {}, 'Order ready')}>Ready</button> : null}
+                      {o.status === 'booked' ? <button type="button" disabled={busy} onClick={async () => {
+                        const d = await run(`/bakery/orders/${o.id}/ready`, {}, 'Order ready');
+                        const t = d && typeof d === 'object' ? (d as Row).customer_texted : null;
+                        if (t) setNotice(t.sent ? 'Order ready. The customer has been texted.' : `Order ready. Customer not texted: ${t.reason || 'no reason given'}.`);
+                      }}>Ready</button> : null}
+                      {role !== 'bakery_baker' ? <button type="button" onClick={() => void openPrintable(`/bakery/orders/${o.id}/print`)} aria-label={`Print order slip ${o.order_number}`}>Print slip</button> : null}
                       {role !== 'bakery_baker' && !o.delivery ? <button type="button" className="bk-primary" disabled={busy} onClick={() => setDialog({ kind: 'collect', row: o, method: 'cash' })}>Hand over</button> : null}
                       {isManager ? <button type="button" className="bk-danger" disabled={busy} onClick={() => setDialog({ kind: 'cancel', row: o, reason: '', choice: 'refund' })}>Cancel</button> : null}
                     </td>
