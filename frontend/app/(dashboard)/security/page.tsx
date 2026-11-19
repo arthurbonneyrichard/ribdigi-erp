@@ -113,6 +113,7 @@ export default function Page() {
   const [status, setStatus] = useState<any>(null);
   const [passkeys, setPasskeys] = useState<any[]>([]);
   const passkeyBusy = useRef(false);
+  const [bioOn, setBioOn] = useState(false);
   const [sessions, setSessions] = useState<AuthSessionRow[]>([]);
   const [setup, setSetup] = useState<any>(null);
   const [code, setCode] = useState('');
@@ -224,6 +225,27 @@ export default function Page() {
       setError(err.message);
     }
   }
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const saved = JSON.parse(localStorage.getItem('ribdigi:biometric') || 'null');
+        if (!saved?.email || !passkeys.length) {
+          if (!cancelled) setBioOn(false);
+          return;
+        }
+        const me = await api('/me');
+        const same = String(me.data?.email || '').trim().toLowerCase() === String(saved.email).trim().toLowerCase();
+        if (!cancelled) setBioOn(same);
+      } catch {
+        if (!cancelled) setBioOn(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [passkeys]);
 
   async function rememberBiometricDevice() {
     try {
@@ -558,8 +580,14 @@ export default function Page() {
           <button type="button" onClick={() => registerPasskey(false)} aria-label="Add passkey">
             Add passkey
           </button>
-          <button type="button" onClick={() => registerPasskey(true)} aria-label="Enable fingerprint or face sign-in on this device">
-            Enable fingerprint / face on this device
+          <button
+            type="button"
+            className={bioOn ? 'bio-enable is-on' : 'bio-enable is-off'}
+            onClick={() => registerPasskey(true)}
+            aria-label={bioOn ? 'Fingerprint sign-in is enabled on this device' : 'Enable fingerprint or face sign-in on this device'}
+            aria-pressed={bioOn}
+          >
+            {bioOn ? '✓ Fingerprint / face enabled on this device' : 'Enable fingerprint / face on this device'}
           </button>
         </div>
         <ul className="security-ui-list">
