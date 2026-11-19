@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import FormModal from '../../../components/FormModal';
 import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
+import RestaurantTicketDelivery from '../../../components/RestaurantTicketDelivery';
 import { openReceiptPrintWindow } from '../../../lib/posReceiptPrint';
 import { industryLabel, normalizeIndustry } from '../../../lib/industries';
 import { getMe } from '../../../lib/meCache';
@@ -488,6 +489,13 @@ export default function PrinterSettingsPage() {
           </span>
         </label>
       </div>
+      {restaurantPrint ? (
+        <div className="card">
+          <section className="rdesk" aria-label="Kitchen and bar orders setting">
+            <RestaurantTicketDelivery />
+          </section>
+        </div>
+      ) : null}
       <div className="card">
         <div className="list-page-head page-head">
           <div>

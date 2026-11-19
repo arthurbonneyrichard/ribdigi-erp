@@ -291,7 +291,7 @@ export default function RestaurantPage() {
   const [floorDraft, setFloorDraft] = useState<Record<string, { x: number; y: number }>>({});
   const [kitchenSound, setKitchenSound] = useState<{ on: boolean }>({ on: false });
   const [clock, setClock] = useState<{ open: Row[]; mine_open: boolean }>({ open: [], mine_open: false });
-  // Set by the admin under Orders → Kitchen and bar orders. Printer only hides the kitchen board.
+  // Set by the admin under Settings → Printers → Kitchen and bar orders. Printer only hides the kitchen board.
   const [ticketMode, setTicketMode] = useState<'both' | 'screen' | 'printer'>('both');
   useEffect(() => {
     if (tab !== 'kitchen') return;
@@ -4326,7 +4326,7 @@ export default function RestaurantPage() {
           {ticketMode === 'printer' ? (
             <p className="muted" aria-label="Printer only notice">
               Orders go to the printer only. Set Print tickets here above on a tablet or PC with a printer plugged in.
-              Your manager can switch to screen under Orders → Kitchen and bar orders.
+              Your manager can switch to screen under Settings → Printers → Kitchen and bar orders.
             </p>
           ) : (
             <div className="rd-kds">
