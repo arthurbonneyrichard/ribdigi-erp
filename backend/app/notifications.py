@@ -505,7 +505,8 @@ async def notify_low_stock_if_needed(
     reorder = money_json(product.reorder_level)
     if stock > reorder:
         return None
-    # Avoid duplicate unread low-stock alerts for same product
+    # Avoid duplicate unread low-stock alerts for same product. Duplicates can already exist (scans, older
+    # rows), so take the first instead of insisting on one: a stock move must never fail over an alert.
     existing = (
         await db.execute(
             select(m.Notification).where(
@@ -515,7 +516,7 @@ async def notify_low_stock_if_needed(
                 m.Notification.status == "unread",
             )
         )
-    ).scalar_one_or_none()
+    ).scalars().first()
     if existing:
         return None
     note = await create_notification(
@@ -571,7 +572,7 @@ async def notify_warehouse_low_stock_if_needed(
                 m.Notification.status == "unread",
             )
         )
-    ).scalar_one_or_none()
+    ).scalars().first()
     if existing:
         return None
     wh = (
@@ -680,7 +681,7 @@ async def scan_payment_due(db: AsyncSession, tenant_id: str, within_days: int = 
                     m.Notification.status == "unread",
                 )
             )
-        ).scalar_one_or_none()
+        ).scalars().first()
         if existing:
             continue
         await create_notification(
@@ -720,7 +721,7 @@ async def scan_payment_due(db: AsyncSession, tenant_id: str, within_days: int = 
                     m.Notification.status == "unread",
                 )
             )
-        ).scalar_one_or_none()
+        ).scalars().first()
         if existing:
             continue
         await create_notification(
@@ -776,7 +777,7 @@ async def scan_quotation_expiry(db: AsyncSession, tenant_id: str, within_days: i
                     m.Notification.status == "unread",
                 )
             )
-        ).scalar_one_or_none()
+        ).scalars().first()
         if existing:
             continue
         until_label = until.date().isoformat() if until else "unknown"
@@ -830,7 +831,7 @@ async def scan_recurring_expense_due(db: AsyncSession, tenant_id: str, within_da
                     m.Notification.status == "unread",
                 )
             )
-        ).scalar_one_or_none()
+        ).scalars().first()
         if existing:
             continue
         when = row.next_run_at
@@ -890,7 +891,7 @@ async def scan_batch_expiry(db: AsyncSession, tenant_id: str, within_days: int =
                     m.Notification.status == "unread",
                 )
             )
-        ).scalar_one_or_none()
+        ).scalars().first()
         if existing:
             continue
         product = products.get(batch.product_id)

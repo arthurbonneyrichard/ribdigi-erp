@@ -162,3 +162,17 @@ async def test_login_options_requires_registered_passkey(client):
         json={"challenge_token": token},
     )
     assert r.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_register_options_platform_requires_device_biometric(client, monkeypatch):
+    monkeypatch.setattr("app.webauthn_svc.settings.WEBAUTHN_RP_ID", "localhost")
+    ac, _seeded = client
+    headers = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
+    opt = await ac.post(
+        "/api/v1/auth/webauthn/register/options?platform=true", headers=headers, json={}
+    )
+    assert opt.status_code == 200, opt.text
+    sel = opt.json()["data"]["authenticatorSelection"]
+    assert sel["authenticatorAttachment"] == "platform"
+    assert sel["userVerification"] == "required"

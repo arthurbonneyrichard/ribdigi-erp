@@ -2797,12 +2797,14 @@ async def auth_2fa_status(claims=Depends(current_claims), db: AsyncSession = Dep
 
 @api.post("/auth/webauthn/register/options")
 async def webauthn_register_options(
-    claims=Depends(current_claims), db: AsyncSession = Depends(get_db)
+    platform: bool = False,
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
 ):
     from app import webauthn_svc as webauthn
 
     user = await db.get(m.User, claims["sub"])
-    options = await webauthn.registration_options(db, user)
+    options = await webauthn.registration_options(db, user, platform=platform)
     await db.commit()
     return env(options)
 

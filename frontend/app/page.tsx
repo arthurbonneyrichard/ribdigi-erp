@@ -247,7 +247,7 @@ export default function Login() {
     }
   }
 
-  async function passwordlessSignIn(kind: 'passkey' | 'biometric') {
+  async function passwordlessSignIn(kind: 'biometric') {
     setError('');
     const phase = await probeApi();
     if (phase !== 'online') {
@@ -278,7 +278,7 @@ export default function Login() {
           id: base64urlToBuffer(c.id),
         }));
       }
-      publicKey.hints = kind === 'biometric' ? ['client-device'] : ['security-key', 'hybrid'];
+      publicKey.hints = kind === 'biometric' ? ['client-device'] : [];
       const cred = (await navigator.credentials.get({ publicKey })) as PublicKeyCredential | null;
       if (!cred) throw new Error('Cancelled');
       const assertion = cred.response as AuthenticatorAssertionResponse;
@@ -300,7 +300,11 @@ export default function Login() {
       });
       await finishLogin(r.data);
     } catch (err: any) {
-      if (err?.name === 'NotAllowedError') {
+      if (err?.status === 401 || err?.status === 404) {
+        setError(
+          'Fingerprint sign-in is not set up for this account yet (or the company code or email is wrong). Sign in with your password, then open Security and choose "Enable fingerprint / face on this device".'
+        );
+      } else if (err?.name === 'NotAllowedError') {
         setError('Cancelled. Try again, or sign in with your password.');
       } else {
         setError(err.message || 'Could not sign in with a passkey. Use your password instead.');
@@ -681,17 +685,6 @@ export default function Login() {
             )}
           </div>
 
-          {!needs2fa && mode === 'admin' && (
-            <button
-              className="login-secondary"
-              type="button"
-              onClick={() => passwordlessSignIn('passkey')}
-              aria-label="Sign in with passkey"
-              disabled={busy}
-            >
-              Sign in with a passkey
-            </button>
-          )}
 
           {showPasskey && (
             <button
