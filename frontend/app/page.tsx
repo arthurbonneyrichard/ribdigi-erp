@@ -254,10 +254,24 @@ export default function Login() {
       await openPreparedTill();
       return;
     }
-    const trimmedTenant = tenant.trim();
-    const trimmedEmail = email.trim();
+    let trimmedTenant = tenant.trim();
+    let trimmedEmail = email.trim();
     if (!trimmedTenant || !trimmedEmail) {
-      setError('Enter your company code and email first');
+      // This device remembers who enabled fingerprint, so the button works with empty fields.
+      try {
+        const saved = JSON.parse(localStorage.getItem('ribdigi:biometric') || 'null');
+        if (saved?.tenant && saved?.email) {
+          trimmedTenant = trimmedTenant || String(saved.tenant);
+          trimmedEmail = trimmedEmail || String(saved.email);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    if (!trimmedTenant || !trimmedEmail) {
+      setError(
+        'Fingerprint is not turned on for this device yet. Type your company code and email and sign in with your password once, then open Security and choose "Enable fingerprint / face on this device". After that this button works by itself.'
+      );
       return;
     }
     setBusy(true);

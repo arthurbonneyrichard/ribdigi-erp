@@ -223,6 +223,17 @@ export default function Page() {
     }
   }
 
+  async function rememberBiometricDevice() {
+    try {
+      const me = await api('/me');
+      const em = String(me.data?.email || '').trim();
+      const tid = String(me.data?.tenant_id || '').trim();
+      if (em && tid) localStorage.setItem('ribdigi:biometric', JSON.stringify({ email: em, tenant: tid }));
+    } catch {
+      /* optional */
+    }
+  }
+
   async function registerPasskey(platform = false) {
     setError('');
     setMessage('');
@@ -241,9 +252,15 @@ export default function Page() {
           name: passkeyName.trim() ? passkeyName.trim() : platform ? 'This device (biometric)' : null,
         }),
       });
+      if (platform) await rememberBiometricDevice();
       setMessage(platform ? 'Fingerprint / face sign-in is on for this device' : 'Passkey registered');
       await refresh({ force: true });
     } catch (err: any) {
+      if (platform && /already registered/i.test(String(err?.message || ''))) {
+        await rememberBiometricDevice();
+        setMessage('Fingerprint / face sign-in is already on for this device. Sign out and tap the fingerprint button on the sign-in page.');
+        return;
+      }
       setError(err.message || 'Passkey registration failed');
     }
   }
