@@ -362,6 +362,7 @@ export default function Page() {
     <div className="security-ui">
       <PageHeader
         title="Security"
+        className="security-head"
         subtitle="Protect your account: two-step sign-in, the devices signed in as you, your password and passkeys."
       />
       {error && <p className="security-ui-alert" role="alert">{error}</p>}
@@ -566,9 +567,9 @@ export default function Page() {
         </div>
       </div>
 
-      <div className="card">
+      <div className="card passkey-card">
         <h2>Passkeys</h2>
-        <p className="muted security-ui-note">Use a fingerprint, face, or security key. To sign in with the fingerprint button on the sign-in page, choose Enable fingerprint / face on this device while signed in here (your device must have a fingerprint, face or PIN set up). A blank name is saved as Passkey.</p>
+        <p className="muted security-ui-note">Sign in with your fingerprint, face or a security key. Choose the amber button while signed in here to turn on fingerprint for this device. A blank name is saved as Passkey.</p>
         <div className="security-ui-inline">
           <input
             aria-label="Passkey name"
@@ -577,8 +578,14 @@ export default function Page() {
             placeholder="Passkey name"
             title="Optional label"
           />
-          <button type="button" onClick={() => registerPasskey(false)} aria-label="Add passkey">
-            Add passkey
+          <button
+            type="button"
+            className={passkeys.length ? 'bio-enable is-on' : 'bio-enable is-off'}
+            onClick={() => registerPasskey(false)}
+            aria-label="Add passkey"
+            title={passkeys.length ? 'You have a passkey. Add another if you like.' : 'No passkey yet'}
+          >
+            {passkeys.length ? `✓ Passkey added (${passkeys.length}) · Add another` : 'Add passkey'}
           </button>
           <button
             type="button"
