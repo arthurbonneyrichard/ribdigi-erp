@@ -100,3 +100,39 @@ async def test_kitchen_screen_print_queue(client, db_session):
     done = await ac.post(f"/api/v1/restaurant/print-queue/{queue[0]['id']}/printed", headers=kitchen, json={"status": "printed"})
     assert done.status_code == 200, done.text
     assert (await ac.get("/api/v1/restaurant/print-queue?station=kitchen", headers=admin)).json()["data"] == []
+
+
+async def test_admin_chooses_screen_printer_or_both(client, db_session):
+    ac, seed = client
+    await set_tenant_industry(db_session, seed["t1"], "restaurant")
+    admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    rice = await _product(ac, admin, "Choice jollof", "kitchen")
+
+    assert (await ac.get("/api/v1/restaurant/ticket-delivery", headers=admin)).json()["data"] == {"mode": "both", "printers": 0}
+    # Printer only with no printer would send orders nowhere.
+    refused = await ac.put("/api/v1/restaurant/ticket-delivery", headers=admin, json={"mode": "printer"})
+    assert refused.status_code == 409
+    assert (await ac.put("/api/v1/restaurant/ticket-delivery", headers=admin, json={"mode": "bogus"})).status_code == 422
+
+    kitchen = await _printer(ac, admin, "Choice kitchen printer", "kitchen")
+
+    async def send_and_count() -> int:
+        order = await ac.post(
+            "/api/v1/restaurant/orders",
+            headers=admin,
+            json={"service_mode": "takeaway", "payment_method": "cash", "customer_name": "Yaw", "lines": [{"product_id": rice, "quantity": "1"}]},
+        )
+        oid = order.json()["data"]["id"]
+        assert (await ac.post(f"/api/v1/restaurant/orders/{oid}/send", headers=admin)).status_code == 200
+        return len((await ac.get(f"/api/v1/printers/jobs?source_id={oid}", headers=admin)).json()["data"])
+
+    # Screen only: the kitchen board still gets the order, nothing prints.
+    assert (await ac.put("/api/v1/restaurant/ticket-delivery", headers=admin, json={"mode": "screen"})).status_code == 200
+    assert await send_and_count() == 0
+    assert len((await ac.get("/api/v1/restaurant/kitchen", headers=admin)).json()["data"]) >= 1
+
+    for mode in ("printer", "both"):
+        saved = await ac.put("/api/v1/restaurant/ticket-delivery", headers=admin, json={"mode": mode})
+        assert saved.status_code == 200 and saved.json()["data"] == {"mode": mode, "printers": 1}, saved.text
+        assert await send_and_count() == 1
+    assert kitchen["id"]
