@@ -683,6 +683,15 @@ class WebAuthnLoginOptions(BaseModel):
     challenge_token: ChallengeTokenValue
 
 
+class WebAuthnPasswordlessStart(BaseModel):
+    """POST /auth/webauthn/passwordless/start — admin passkey / biometric sign-in, no password."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    email: EmailStr
+    tenant_id: TenantRefValue
+
+
 class WebAuthnLoginVerify(BaseModel):
     """POST /auth/webauthn/login/verify — challenge + assertion credential.
 

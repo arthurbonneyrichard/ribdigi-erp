@@ -163,6 +163,15 @@ def render_prometheus() -> str:
             f'ribdigi_http_request_duration_seconds_count{{path_group="{_escape(group)}"}} {count}'
         )
 
+    from app import auth_guard
+
+    lines.append("# HELP ribdigi_auth_security_events_total Sign-in protection events (failures, lockouts, IP limits).")
+    lines.append("# TYPE ribdigi_auth_security_events_total counter")
+    for (event, label), count in sorted(auth_guard.counters_snapshot().items()):
+        lines.append(
+            f'ribdigi_auth_security_events_total{{event="{_escape(event)}",kind="{_escape(label)}"}} {count}'
+        )
+
     lines.append("")
     return "\n".join(lines)
 

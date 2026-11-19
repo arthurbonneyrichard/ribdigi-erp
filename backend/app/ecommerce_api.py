@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import auth_guard
 from app import audit as audit_svc
 from app import ecommerce as ecom
 from app import ecommerce_connectors as connectors_svc
@@ -190,6 +191,56 @@ async def staff_update_storefront(
     row = await ecom.update_storefront(db, tenant=tenant, payload=payload.model_dump(exclude_unset=True))
     await db.commit()
     return env(ecom.serialize_storefront(row, tenant))
+
+
+@staff.get("/shoppers/sign-in-security")
+async def staff_shopper_sign_in_security(
+    db: AsyncSession = Depends(get_db),
+    claims: dict = Depends(require_permission("ecommerce", "write")),
+):
+    """Storefront shoppers of this company that are locked or have recent wrong sign-in tries."""
+    from sqlalchemy import select
+
+    tenant = await _staff_tenant(db, claims)
+    rows = (
+        await db.execute(
+            select(m.EcommerceShopper).where(
+                m.EcommerceShopper.tenant_id == tenant.id,
+                (m.EcommerceShopper.locked_until.is_not(None)) | (m.EcommerceShopper.failed_login_attempts > 0),
+            )
+        )
+    ).scalars().all()
+    out = [
+        {"shopper_id": r.id, "email": r.email, "name": r.name, **auth_guard.lock_state(r)}
+        for r in rows
+    ]
+    return env([row for row in out if row["locked"] or row["failed_login_attempts"] > 0])
+
+
+@staff.post("/shoppers/{shopper_id}/unlock")
+async def staff_shopper_unlock(
+    shopper_id: UuidIdValue,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    claims: dict = Depends(require_permission("ecommerce", "write")),
+):
+    """Lift a storefront shopper's sign-in lockout early. Own company only (404 otherwise)."""
+    from sqlalchemy import select
+
+    tenant = await _staff_tenant(db, claims)
+    shopper = (
+        await db.execute(
+            select(m.EcommerceShopper).where(
+                m.EcommerceShopper.id == shopper_id, m.EcommerceShopper.tenant_id == tenant.id
+            )
+        )
+    ).scalar_one_or_none()
+    if shopper is None:
+        raise HTTPException(status_code=404, detail="Shopper not found")
+    state = await auth_guard.unlock_account(
+        db, shopper, actor_id=claims["sub"], actor_tenant_id=claims["tenant_id"], request=request
+    )
+    return env({"shopper_id": shopper.id, "email": shopper.email, **state}, "Shopper unlocked")
 
 
 @staff.post("/media/{kind}")
@@ -804,7 +855,7 @@ async def public_checkout(
     return env({**ecom.serialize_order(order, items), "payment": pay})
 
 
-@storefront.post("/account/register")
+@storefront.post("/account/register", dependencies=[Depends(auth_guard.ip_limit("register"))])
 async def public_register_shopper(
     payload: ShopperRegister,
     request: Request,
@@ -823,7 +874,7 @@ async def public_register_shopper(
     return env(ecom.serialize_shopper(row), "Storefront account created. This is not an ERP staff login.")
 
 
-@storefront.post("/account/login")
+@storefront.post("/account/login", dependencies=[Depends(auth_guard.ip_limit("shop_login"))])
 async def public_login_shopper(
     payload: ShopperLogin,
     request: Request,
@@ -835,7 +886,9 @@ async def public_login_shopper(
     tenant, _storefront, _domain = await ecom.resolve_public_tenant(
         db, host=host, forwarded_host=x_forwarded_host, preview_token=_public_preview(request, preview_token), peer_ip=request.client.host if request.client else None
     )
-    row = await ecom.login_shopper(db, tenant=tenant, email=str(payload.email), password=payload.password)
+    row = await ecom.login_shopper(
+        db, tenant=tenant, email=str(payload.email), password=payload.password, request=request
+    )
     await db.commit()
     return env(ecom.serialize_shopper(row))
 

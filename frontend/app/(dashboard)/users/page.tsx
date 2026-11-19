@@ -5,6 +5,7 @@ import CashierPresencePanel from '../../../components/CashierPresencePanel';
 import FormModal from '../../../components/FormModal';
 import PageHeader from '../../../components/PageHeader';
 import CashierPasscodes from '../../../components/CashierPasscodes';
+import SignInSecurity from '../../../components/SignInSecurity';
 import { api, apiFetch } from '../../../lib/api';
 import { normalizeIndustry } from '../../../lib/industries';
 import { industryAllowsModule } from '../../../lib/industryModules';
@@ -1724,6 +1725,10 @@ export default function Page() {
       </section>
 
       {permChecked ? <CashierPasscodes canManage={canWrite} /> : null}
+
+      {permChecked && canWrite ? (
+        <SignInSecurity names={Object.fromEntries(rows.map((r) => [r.id, r.full_name || r.email]))} />
+      ) : null}
 
       {permChecked && (
         <CashierPresencePanel

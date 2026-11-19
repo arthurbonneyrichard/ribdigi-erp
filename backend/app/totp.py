@@ -174,7 +174,9 @@ def verify_totp(secret: str, code: str) -> bool:
     return pyotp.TOTP(secret).verify(cleaned, valid_window=1)
 
 
-def create_challenge_token(*, user_id: str, tenant_id: str, role: str) -> str:
+def create_challenge_token(
+    *, user_id: str, tenant_id: str, role: str, passwordless: bool = False
+) -> str:
     now = datetime.now(timezone.utc)
     payload = {
         "sub": user_id,
@@ -185,6 +187,8 @@ def create_challenge_token(*, user_id: str, tenant_id: str, role: str) -> str:
         "iat": int(now.timestamp()),
         "exp": now + timedelta(minutes=CHALLENGE_TTL_MINUTES),
     }
+    if passwordless:
+        payload["pwless"] = True
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 

@@ -50,6 +50,17 @@ test('sign-in errors stay distinct from connection and session copy', async () =
     formatApiError({ detail: 'Account temporarily locked' }, 423, '/auth/login'),
     'This account is temporarily locked. Try again later.',
   );
+  const generic = 'Invalid username or password. If you have made several unsuccessful attempts, please try again later.';
+  assert.equal(formatApiError({ detail: generic }, 401, '/auth/login'), generic);
+  assert.equal(formatApiError({ detail: generic }, 401, '/auth/staff-login'), generic);
+  assert.equal(
+    formatApiError(
+      { detail: { code: 'RATE_LIMIT_EXCEEDED', message: 'Too many attempts from this network. Try again in 1 minute.' } },
+      429,
+      '/auth/login',
+    ),
+    'Too many attempts from this network. Try again in 1 minute.',
+  );
   assert.equal(formatApiError({}, 404), 'Not found.');
   const offline = unreachableApiMessage();
   assert.match(offline, /server did not respond/i);

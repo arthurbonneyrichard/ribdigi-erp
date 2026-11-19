@@ -62,6 +62,7 @@ from app import report_schedules as report_schedules_svc
 from app import notifications as notifications_svc
 from app import audit as audit_svc
 from app.middleware import client_ip_from_request
+from app import auth_guard
 from app import backup as backup_svc
 from app import tenants as tenants_svc
 from app import packages as packages_svc
@@ -359,6 +360,7 @@ from app.schemas import (
     ChangePasswordRequest,
     TwoFactorVerify,
     WebAuthnLoginOptions,
+    WebAuthnPasswordlessStart,
     WebAuthnLoginVerify,
     WebAuthnRegisterVerify,
     UserCreate,
@@ -581,6 +583,16 @@ async def tenant_pk(db: AsyncSession, tenant_ref: str) -> str:
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
     return tenant.id
+
+
+async def _tenant_pk_or_none(db: AsyncSession, tenant_ref: str) -> str | None:
+    """tenant_pk for public auth routes: an unknown company is None, never a telling 404."""
+    try:
+        return await tenant_pk(db, tenant_ref)
+    except HTTPException as exc:
+        if exc.status_code == 404:
+            return None
+        raise
 
 
 async def _seed_step(step: str, factory, db: AsyncSession) -> None:
@@ -2417,18 +2429,32 @@ ADMIN_SIGN_IN_ROLES = frozenset(
 )
 
 
-@api.post("/auth/staff-login")
+@api.post("/auth/staff-login", dependencies=[Depends(auth_guard.ip_limit("login"))])
 async def staff_login(payload: StaffLogin, request: Request, db: AsyncSession = Depends(get_db)):
     """Staff sign in with their username or email and password. No company code: the account
     is found across every company and desk, then signed in exactly like /auth/login."""
     ident = payload.login
+    cols = (m.User.tenant_id, m.User.email, m.User.role, m.User.password_hash)
     if "@" in ident:
-        stmt = select(m.User.tenant_id, m.User.email, m.User.role).where(func.lower(m.User.email) == ident)
+        stmt = select(*cols).where(func.lower(m.User.email) == ident)
     else:
-        stmt = select(m.User.tenant_id, m.User.email, m.User.role).where(m.User.username == ident)
+        stmt = select(*cols).where(m.User.username == ident)
     rows = await desk_routing.rows_on_every_desk(db, stmt)
     if not rows:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        await auth_guard.burn_password_check(payload.password)
+        await auth_guard.register_unknown(request, reason="unknown_account")
+        raise auth_guard.reject_generic()
+    if len(rows) > 1:
+        # The which-company replies below would show the email exists, so they need its password first.
+        matches = [
+            row for row in rows
+            if await asyncio.to_thread(verify_password, payload.password, row[3])
+        ]
+        if not matches:
+            await auth_guard.register_unknown(request, reason="password_shared_email")
+            raise auth_guard.reject_generic()
+        if len(matches) == 1:
+            rows = matches
     if len(rows) > 1 and all(row[2] in ADMIN_SIGN_IN_ROLES for row in rows):
         # An owner of several companies: the Admin tab picks the company by its code.
         raise HTTPException(
@@ -2443,8 +2469,8 @@ async def staff_login(payload: StaffLogin, request: Request, db: AsyncSession = 
                 "message": "This email is used in more than one company. Sign in with your username, or ask your admin for one.",
             },
         )
-    tenant_id, email, _role = rows[0]
-    return await login(
+    tenant_id, email, _role, _hash = rows[0]
+    return await _password_login(
         Login(email=email, password=payload.password, tenant_id=tenant_id, totp_code=payload.totp_code, portal="staff"),
         request,
         db,
@@ -2460,11 +2486,25 @@ async def _username_taken(db: AsyncSession, username: str, *, except_user_id: st
     return await desk_routing.taken_on_any_desk(stmt)
 
 
-@api.post("/auth/login")
+@api.post("/auth/login", dependencies=[Depends(auth_guard.ip_limit("login"))])
 async def login(payload: Login, request: Request, db: AsyncSession = Depends(get_db)):
-    tenant = await tenants_svc.resolve_tenant(db, payload.tenant_id)
-    tenant = await tenants_svc.ensure_trial_state(db, tenant)
-    tenants_svc.assert_tenant_active_for_login(tenant)
+    return await _password_login(payload, request, db)
+
+
+async def _password_login(payload: Login, request: Request, db: AsyncSession):
+    """Shared by /auth/login and /auth/staff-login (each route counts its own IP bucket once).
+
+    An unknown company code answers exactly like a wrong password, and a suspended company is only
+    named to someone who has just given a correct password, so company codes cannot be probed.
+    """
+    try:
+        tenant = await tenants_svc.resolve_tenant(db, payload.tenant_id)
+    except HTTPException as exc:
+        if exc.status_code != 404:
+            raise
+        await auth_guard.burn_password_check(payload.password)
+        await auth_guard.register_unknown(request, reason="unknown_company")
+        raise auth_guard.reject_generic() from None
     tenant_id = tenant.id
     user = (
         await db.execute(
@@ -2475,51 +2515,29 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
         )
     ).scalar_one_or_none()
 
-    if user and user.locked_until and user.locked_until > datetime.utcnow():
-        raise HTTPException(status_code=423, detail="Account temporarily locked")
+    # Unknown account, locked account and wrong password give the same answer in about the same
+    # time. The lock is checked first so a locked account never has its password tested.
+    if user is None:
+        await auth_guard.burn_password_check(payload.password)
+        await auth_guard.register_unknown(request, reason="unknown_account", tenant_id=tenant_id)
+        raise auth_guard.reject_generic()
+    if auth_guard.is_locked(user):
+        await auth_guard.burn_password_check(payload.password)
+        await auth_guard.register_blocked_locked(db, user, request=request)
+        raise auth_guard.reject_generic()
 
-    password_ok = False
-    if user and user.is_active:
-        password_ok = await asyncio.to_thread(
-            verify_password, payload.password, user.password_hash
+    password_ok = await asyncio.to_thread(verify_password, payload.password, user.password_hash)
+    if not user.is_active or not password_ok:
+        await auth_guard.register_failure(
+            db, user, request=request, reason="password" if user.is_active else "inactive"
         )
-    if not user or not user.is_active or not password_ok:
-        if user:
-            user.failed_login_attempts = int(user.failed_login_attempts or 0) + 1
-            if user.failed_login_attempts >= 5:
-                user.locked_until = datetime.utcnow() + timedelta(minutes=30)
-                user.failed_login_attempts = 0
-            try:
-                await db.flush()
-            except SQLAlchemyError:
-                await db.rollback()
-                logger.exception("login failed-attempt update skipped")
-            else:
-                await _optional_login_step(
-                    db,
-                    "login_failed audit",
-                    lambda: audit_svc.record_event(
-                        db,
-                        tenant_id=tenant_id,
-                        user_id=user.id,
-                        module="auth",
-                        action="login_failed",
-                        entity="user",
-                        entity_id=user.id,
-                        details={"email": payload.email},
-                        ip_address=client_ip_from_request(request),
-                        user_agent=request.headers.get("user-agent"),
-                    ),
-                )
-                try:
-                    await db.commit()
-                except SQLAlchemyError:
-                    await db.rollback()
-                    logger.exception("login failed-attempt commit skipped")
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise auth_guard.reject_generic()
+    # Counters are cleared only when a session is issued (below, or after the second factor), so a
+    # caller who knows the password cannot reset them between second-factor guesses.
 
-    user.failed_login_attempts = 0
-    user.locked_until = None
+    # Company state (trial ended, suspended) only after a correct password: see the docstring.
+    tenant = await tenants_svc.ensure_trial_state(db, tenant)
+    tenants_svc.assert_tenant_active_for_login(tenant)
 
     # Two doors: Admin sign-in for owners and admins, User sign-in for the staff they create.
     # Checked only after the password, so a wrong door never reveals whether an account exists.
@@ -2591,34 +2609,9 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
         if payload.totp_code and user.totp_enabled:
             ok = await totp_svc.verify_user_second_factor(db, user, payload.totp_code)
             if not ok:
-                user.failed_login_attempts = int(user.failed_login_attempts or 0) + 1
-                try:
-                    await db.flush()
-                except SQLAlchemyError:
-                    await db.rollback()
-                    logger.exception("login 2fa-failed update skipped")
-                else:
-                    await _optional_login_step(
-                        db,
-                        "2fa_failed audit",
-                        lambda: audit_svc.record_event(
-                            db,
-                            tenant_id=tenant_id,
-                            user_id=user.id,
-                            module="auth",
-                            action="2fa_failed",
-                            entity="user",
-                            entity_id=user.id,
-                            details={"email": user.email},
-                            ip_address=client_ip_from_request(request),
-                            user_agent=request.headers.get("user-agent"),
-                        ),
-                    )
-                    try:
-                        await db.commit()
-                    except SQLAlchemyError:
-                        await db.rollback()
-                        logger.exception("login 2fa-failed commit skipped")
+                await auth_guard.register_failure(
+                    db, user, request=request, reason="second_factor", action="2fa_failed"
+                )
                 raise HTTPException(status_code=401, detail="Invalid 2FA code")
         elif not payload.totp_code:
             challenge = totp_svc.create_challenge_token(
@@ -2673,6 +2666,7 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
                 detail="TOTP is not enabled; use a passkey to complete login",
             )
 
+    auth_guard.register_success(user)
     access, refresh = await create_session(
         db,
         user=user,
@@ -2718,39 +2712,27 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
     )
 
 
-@api.post("/auth/2fa/verify")
+@api.post("/auth/2fa/verify", dependencies=[Depends(auth_guard.ip_limit("otp_verify"))])
 async def auth_2fa_verify(payload: TwoFactorVerify, request: Request, db: AsyncSession = Depends(get_db)):
     claims, challenge_row = await totp_svc.load_login_challenge(db, payload.challenge_token)
     user = await db.get(m.User, claims["sub"])
     if not user or not user.is_active or user.tenant_id != claims["tenant_id"]:
         raise HTTPException(status_code=401, detail="Invalid 2FA challenge user")
+    if auth_guard.is_locked(user):
+        # Locked while the challenge was open (e.g. by guesses here): same answer as a wrong code.
+        await auth_guard.register_blocked_locked(db, user, request=request)
+        raise HTTPException(status_code=401, detail="Invalid 2FA code")
     if not user.totp_enabled:
         raise HTTPException(status_code=400, detail="2FA is not enabled for this user")
     ok = await totp_svc.verify_user_second_factor(db, user, payload.code)
     if not ok:
-        await _optional_login_step(
-            db,
-            "2fa_failed audit",
-            lambda: audit_svc.record_event(
-                db,
-                tenant_id=user.tenant_id,
-                user_id=user.id,
-                module="auth",
-                action="2fa_failed",
-                entity="user",
-                entity_id=user.id,
-                ip_address=client_ip_from_request(request),
-                user_agent=request.headers.get("user-agent"),
-            ),
+        await auth_guard.register_failure(
+            db, user, request=request, reason="second_factor", action="2fa_failed"
         )
-        try:
-            await db.commit()
-        except SQLAlchemyError:
-            await db.rollback()
-            logger.exception("2fa verify failed-attempt commit skipped")
         raise HTTPException(status_code=401, detail="Invalid 2FA code")
 
     totp_svc.consume_login_challenge(challenge_row)
+    auth_guard.register_success(user)
     access, refresh = await create_session(
         db, user=user, request=request, login_method="totp"
     )
@@ -2890,7 +2872,7 @@ async def webauthn_delete_credential(
     return env({"id": credential_id}, "Passkey removed")
 
 
-@api.post("/auth/webauthn/login/options")
+@api.post("/auth/webauthn/login/options", dependencies=[Depends(auth_guard.ip_limit("login"))])
 async def webauthn_login_options(payload: WebAuthnLoginOptions, db: AsyncSession = Depends(get_db)):
     from app import webauthn_svc as webauthn
 
@@ -2898,12 +2880,64 @@ async def webauthn_login_options(payload: WebAuthnLoginOptions, db: AsyncSession
     user = await db.get(m.User, claims["sub"])
     if not user or not user.is_active or user.tenant_id != claims["tenant_id"]:
         raise HTTPException(status_code=401, detail="Invalid 2FA challenge user")
-    options = await webauthn.authentication_options(db, user)
+    options = await webauthn.authentication_options(
+        db, user, require_uv=bool(claims.get("pwless"))
+    )
     await db.commit()
     return env(options)
 
 
-@api.post("/auth/webauthn/login/verify")
+@api.post("/auth/webauthn/passwordless/start", dependencies=[Depends(auth_guard.ip_limit("login"))])
+async def webauthn_passwordless_start(
+    payload: WebAuthnPasswordlessStart, request: Request, db: AsyncSession = Depends(get_db)
+):
+    """Admin sign-in with a passkey or the device's biometric, no password.
+
+    Only owners/admins with a registered passkey get a challenge; every other case answers with the
+    same generic failure as a wrong password. The assertion (with user verification) is checked by
+    /auth/webauthn/login/verify, so this token alone grants nothing.
+    """
+    from app import webauthn_svc as webauthn
+
+    generic = auth_guard.reject_generic
+    try:
+        tenant = await tenants_svc.resolve_tenant(db, payload.tenant_id)
+    except HTTPException as exc:
+        if exc.status_code != 404:
+            raise
+        await auth_guard.register_unknown(request, reason="unknown_company")
+        raise generic() from None
+    user = (
+        await db.execute(
+            select(m.User).where(m.User.tenant_id == tenant.id, m.User.email == payload.email)
+        )
+    ).scalar_one_or_none()
+    if user is None:
+        await auth_guard.register_unknown(request, reason="unknown_account", tenant_id=tenant.id)
+        raise generic()
+    if auth_guard.is_locked(user):
+        await auth_guard.register_blocked_locked(db, user, request=request)
+        raise generic()
+    if (
+        not user.is_active
+        or not user.email_verified
+        or user.role not in ADMIN_SIGN_IN_ROLES
+        or not await webauthn.user_has_webauthn(db, user.id)
+    ):
+        await auth_guard.register_unknown(request, reason="passkey_unavailable", tenant_id=tenant.id)
+        raise generic()
+    tenant = await tenants_svc.ensure_trial_state(db, tenant)
+    tenants_svc.assert_tenant_active_for_login(tenant)
+    token = totp_svc.create_challenge_token(
+        user_id=user.id, tenant_id=tenant.id, role=user.role, passwordless=True
+    )
+    await totp_svc.load_login_challenge(db, token)
+    options = await webauthn.authentication_options(db, user, require_uv=True)
+    await db.commit()
+    return env({"challenge_token": token, "options": options})
+
+
+@api.post("/auth/webauthn/login/verify", dependencies=[Depends(auth_guard.ip_limit("otp_verify"))])
 async def webauthn_login_verify(
     payload: WebAuthnLoginVerify, request: Request, db: AsyncSession = Depends(get_db)
 ):
@@ -2913,10 +2947,17 @@ async def webauthn_login_verify(
     user = await db.get(m.User, claims["sub"])
     if not user or not user.is_active or user.tenant_id != claims["tenant_id"]:
         raise HTTPException(status_code=401, detail="Invalid 2FA challenge user")
+    if auth_guard.is_locked(user):
+        await auth_guard.register_blocked_locked(db, user, request=request)
+        raise HTTPException(status_code=401, detail="Passkey sign-in failed")
     await webauthn.verify_authentication(
-        db, user, credential=payload.credential.model_dump(mode="json")
+        db,
+        user,
+        credential=payload.credential.model_dump(mode="json"),
+        require_uv=bool(claims.get("pwless")),
     )
     totp_svc.consume_login_challenge(challenge_row)
+    auth_guard.register_success(user)
     access, refresh = await create_session(
         db, user=user, request=request, login_method="webauthn"
     )
@@ -3116,7 +3157,7 @@ class FullSignInBody(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 
-@api.post("/auth/full-sign-in")
+@api.post("/auth/full-sign-in", dependencies=[Depends(auth_guard.ip_limit("login"))])
 async def full_sign_in(payload: FullSignInBody, claims=Depends(current_claims), db: AsyncSession = Depends(get_db)):
     """After a till was opened with a passcode, the account password brings back the whole system."""
     if claims.get("auth_method") == "api_key":
@@ -3287,16 +3328,41 @@ async def revoke_other_sessions(claims=Depends(current_claims), db: AsyncSession
     return env({"revoked": revoked}, f"Signed out {revoked} other session(s).")
 
 
-@api.post("/auth/password-reset-request")
-async def password_reset_request(payload: PasswordResetRequest, db: AsyncSession = Depends(get_db)):
-    tenant_id = await tenant_pk(db, payload.tenant_id)
+@api.post("/auth/password-reset-request", dependencies=[Depends(auth_guard.ip_limit("password_reset"))])
+async def password_reset_request(
+    payload: PasswordResetRequest, request: Request, db: AsyncSession = Depends(get_db)
+):
+    tenant_id = await _tenant_pk_or_none(db, payload.tenant_id)
+    if tenant_id is None:
+        # Same reply as a real company, so company codes cannot be probed here.
+        auth_guard.security_event("auth_password_reset_requested", request=request, known_account=False)
+        return env({"requested": True}, "If the account exists, a reset token was issued")
     user = (
         await db.execute(
             select(m.User).where(m.User.tenant_id == tenant_id, m.User.email == payload.email)
         )
     ).scalar_one_or_none()
     data: dict = {"requested": True}
+    auth_guard.security_event(
+        "auth_password_reset_requested", request=request, tenant_id=tenant_id,
+        user_id=user.id if user else None, known_account=bool(user),
+    )
     if user:
+        await _optional_login_step(
+            db,
+            "password_reset_requested audit",
+            lambda: audit_svc.record_event(
+                db,
+                tenant_id=tenant_id,
+                user_id=user.id,
+                module="auth",
+                action="password_reset_requested",
+                entity="user",
+                entity_id=user.id,
+                ip_address=client_ip_from_request(request),
+                user_agent=request.headers.get("user-agent"),
+            ),
+        )
         prior = (
             await db.execute(
                 select(m.AuthToken).where(
@@ -3326,18 +3392,22 @@ async def password_reset_request(payload: PasswordResetRequest, db: AsyncSession
         email_result = await emailer.send_password_reset_email(
             to=user.email, token=raw, tenant=tenant
         )
-        data["email"] = {
-            "sent": email_result.sent,
-            "mode": email_result.mode,
-            "error": email_result.error,
-        }
         if settings.DEBUG or settings.APP_ENV.lower() != "production":
+            # Development aids only: in production the reply is identical whether or not the
+            # account exists (the delivery result would otherwise show that it does).
+            data["email"] = {
+                "sent": email_result.sent,
+                "mode": email_result.mode,
+                "error": email_result.error,
+            }
             data["reset_token"] = raw
+        elif not email_result.sent:
+            logger.warning("password reset email not sent: %s", email_result.error)
     return env(data, "If the account exists, a reset token was issued")
 
 
-@api.post("/auth/password-reset")
-async def password_reset(payload: PasswordResetConfirm, db: AsyncSession = Depends(get_db)):
+@api.post("/auth/password-reset", dependencies=[Depends(auth_guard.ip_limit("otp_verify"))])
+async def password_reset(payload: PasswordResetConfirm, request: Request, db: AsyncSession = Depends(get_db)):
     validate_password_strength(payload.new_password)
     token_hash = hash_token(payload.token)
     await desk_routing.route_by(select(m.AuthToken.id).where(m.AuthToken.token_hash == token_hash))
@@ -3350,6 +3420,7 @@ async def password_reset(payload: PasswordResetConfirm, db: AsyncSession = Depen
         )
     ).scalar_one_or_none()
     if not row or row.used_at is not None or row.expires_at < datetime.utcnow():
+        auth_guard.security_event("auth_password_reset_token_rejected", request=request)
         raise HTTPException(status_code=400, detail="Invalid or expired reset token")
 
     user = await db.get(m.User, row.user_id)
@@ -3357,6 +3428,23 @@ async def password_reset(payload: PasswordResetConfirm, db: AsyncSession = Depen
         raise HTTPException(status_code=400, detail="Invalid reset token")
     user.password_hash = hash_password(payload.new_password)
     row.used_at = datetime.utcnow()
+    # The emailed link proves the owner: lift any lockout so they can sign in with the new password.
+    auth_guard.clear_after_password_reset(user)
+    await _optional_login_step(
+        db,
+        "password_reset_completed audit",
+        lambda: audit_svc.record_event(
+            db,
+            tenant_id=user.tenant_id,
+            user_id=user.id,
+            module="auth",
+            action="password_reset_completed",
+            entity="user",
+            entity_id=user.id,
+            ip_address=client_ip_from_request(request),
+            user_agent=request.headers.get("user-agent"),
+        ),
+    )
 
     sessions = (
         await db.execute(
@@ -3373,7 +3461,7 @@ async def password_reset(payload: PasswordResetConfirm, db: AsyncSession = Depen
     return env({"reset": True})
 
 
-@api.post("/auth/verify-email")
+@api.post("/auth/verify-email", dependencies=[Depends(auth_guard.ip_limit("otp_verify"))])
 async def verify_email(payload: EmailVerifyConfirm, db: AsyncSession = Depends(get_db)):
     token_hash = hash_token(payload.token)
     await desk_routing.route_by(select(m.AuthToken.id).where(m.AuthToken.token_hash == token_hash))
@@ -3396,12 +3484,14 @@ async def verify_email(payload: EmailVerifyConfirm, db: AsyncSession = Depends(g
     return env({"verified": True, "email": user.email}, "Email verified")
 
 
-@api.post("/auth/resend-verification")
+@api.post("/auth/resend-verification", dependencies=[Depends(auth_guard.ip_limit("otp_request"))])
 async def resend_verification(
     payload: ResendVerificationRequest, db: AsyncSession = Depends(get_db)
 ):
-    """Neutral resend — does not reveal whether the account exists or is verified."""
-    tenant_id = await tenant_pk(db, payload.tenant_id)
+    """Neutral resend — does not reveal whether the company or account exists or is verified."""
+    tenant_id = await _tenant_pk_or_none(db, payload.tenant_id)
+    if tenant_id is None:
+        return env({"requested": True}, "If the account exists and needs verification, a link was sent")
     user = (
         await db.execute(
             select(m.User).where(m.User.tenant_id == tenant_id, m.User.email == payload.email)
@@ -3442,13 +3532,16 @@ async def resend_verification(
             company_name=tenant.company_name if tenant else None,
             tenant=tenant,
         )
-        data["email"] = {
-            "sent": email_result.sent,
-            "mode": email_result.mode,
-            "error": email_result.error,
-        }
         if settings.DEBUG or settings.APP_ENV.lower() != "production":
+            # Development aids only; production replies the same for every account.
+            data["email"] = {
+                "sent": email_result.sent,
+                "mode": email_result.mode,
+                "error": email_result.error,
+            }
             data["verification_token"] = raw
+        elif not email_result.sent:
+            logger.warning("verification email not sent: %s", email_result.error)
     return env(data, "If the account exists and needs verification, a link was sent")
 
 
@@ -4049,6 +4142,138 @@ async def users_cashier_presence(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
     )
     return env(await list_cashier_presence(db, claims["tenant_id"], store_ids=allowed))
+
+
+class AccountUnlockBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    note: str | None = Field(default=None, max_length=200)
+
+
+def _sign_in_security_row(user: m.User) -> dict:
+    return {
+        "user_id": user.id,
+        "email": user.email,
+        "full_name": user.full_name,
+        "role": user.role,
+        **auth_guard.lock_state(user),
+    }
+
+
+@api.get("/users/security/locked")
+async def users_sign_in_security(
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """This company's accounts that are locked or have recent wrong sign-in tries (admins only)."""
+    rows = (
+        await db.execute(
+            select(m.User).where(
+                m.User.tenant_id == claims["tenant_id"],
+                (m.User.locked_until.is_not(None)) | (m.User.failed_login_attempts > 0),
+            )
+        )
+    ).scalars().all()
+    hide_platform = not is_platform_role(claims.get("role"))
+    out = [
+        _sign_in_security_row(u)
+        for u in rows
+        if not (hide_platform and is_platform_role(u.role))
+    ]
+    out = [row for row in out if row["locked"] or row["failed_login_attempts"] > 0]
+    return env(out)
+
+
+@api.get("/users/security/events")
+async def users_sign_in_events(
+    user_id: Annotated[UuidIdValue | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Recent sign-in security events (failures, lockouts, unlocks, resets) for this company."""
+    if user_id:
+        await _get_tenant_user(db, claims["tenant_id"], user_id, actor_role=claims.get("role"))
+    events = await auth_guard.recent_auth_events(
+        db, tenant_id=claims["tenant_id"], user_id=user_id, limit=limit
+    )
+    return env(events)
+
+
+@api.get("/users/{user_id}/security")
+async def user_sign_in_security(
+    user_id: UuidIdValue,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    user = await _get_tenant_user(db, claims["tenant_id"], user_id, actor_role=claims.get("role"))
+    events = await auth_guard.recent_auth_events(db, tenant_id=claims["tenant_id"], user_id=user.id, limit=20)
+    return env({**_sign_in_security_row(user), "events": events})
+
+
+@api.post("/users/{user_id}/unlock")
+async def user_unlock(
+    user_id: UuidIdValue,
+    request: Request,
+    payload: AccountUnlockBody | None = None,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Lift a sign-in lockout early. Only inside the admin's own company (404 otherwise)."""
+    user = await _get_tenant_user(db, claims["tenant_id"], user_id, actor_role=claims.get("role"))
+    state = await auth_guard.unlock_account(
+        db,
+        user,
+        actor_id=claims["sub"],
+        actor_tenant_id=claims["tenant_id"],
+        request=request,
+        note=payload.note if payload else None,
+    )
+    return env({**_sign_in_security_row(user), **state}, "Account unlocked")
+
+
+async def _platform_target_user(db: AsyncSession, tenant_ref: str, user_id: str) -> m.User:
+    tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
+    user = (
+        await db.execute(select(m.User).where(m.User.id == user_id, m.User.tenant_id == tenant.id))
+    ).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
+@api.get("/platform/tenants/{tenant_ref}/users/{user_id}/security")
+async def platform_user_sign_in_security(
+    tenant_ref: TenantRefValue,
+    user_id: UuidIdValue,
+    claims=Depends(require_platform_permission("platform_tenants", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    user = await _platform_target_user(db, tenant_ref, user_id)
+    events = await auth_guard.recent_auth_events(db, tenant_id=user.tenant_id, user_id=user.id, limit=20)
+    return env({**_sign_in_security_row(user), "events": events})
+
+
+@api.post("/platform/tenants/{tenant_ref}/users/{user_id}/unlock")
+async def platform_user_unlock(
+    tenant_ref: TenantRefValue,
+    user_id: UuidIdValue,
+    request: Request,
+    payload: AccountUnlockBody | None = None,
+    claims=Depends(require_platform_permission("platform_tenants", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Software owner staff unlock any company's account; recorded in both companies' logs."""
+    user = await _platform_target_user(db, tenant_ref, user_id)
+    state = await auth_guard.unlock_account(
+        db,
+        user,
+        actor_id=claims["sub"],
+        actor_tenant_id=claims["tenant_id"],
+        request=request,
+        note=payload.note if payload else None,
+    )
+    return env({**_sign_in_security_row(user), **state}, "Account unlocked")
 
 
 @api.get("/users/import/template")
