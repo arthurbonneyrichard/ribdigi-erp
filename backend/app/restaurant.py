@@ -2779,6 +2779,49 @@ async def save_ticket_delivery(db: AsyncSession, tenant_id: str, mode: str) -> d
     return await ticket_delivery(db, tenant_id)
 
 
+async def printed_ticket_starts_cooking(db: AsyncSession, job: m.PrintJob) -> None:
+    """Printer only: nobody taps Start on a screen, so a ticket that printed means the kitchen has it.
+
+    Moves that station's ticket and dishes to "preparing" and a just-sent order to "preparing", so the
+    orders board shows it in the kitchen. Never marks anything ready (that would tell the waiter the food
+    is done). With a kitchen screen in use (both) the cook's own Start tap stays in charge.
+    """
+    if job.source_type != "restaurant_order" or job.purpose not in {"kitchen", "bar"}:
+        return
+    if stored_ticket_delivery(await db.get(m.Tenant, job.tenant_id)) != "printer":
+        return
+    order = await db.get(m.RestaurantOrder, job.source_id)
+    if order is None or order.tenant_id != job.tenant_id or order.status not in {"sent", "preparing"}:
+        return
+    ticket = (
+        await db.execute(
+            select(m.RestaurantKitchenTicket).where(
+                m.RestaurantKitchenTicket.tenant_id == job.tenant_id,
+                m.RestaurantKitchenTicket.order_id == order.id,
+                m.RestaurantKitchenTicket.station == job.purpose,
+            )
+        )
+    ).scalars().first()
+    if ticket is not None and ticket.status == "queued":
+        ticket.status = "preparing"
+    if await _line_prep_status_live(db):
+        line_ids = {str(x) for x in ((job.payload or {}).get("line_ids") or [])}
+        if line_ids:
+            for line in (
+                await db.execute(
+                    select(m.RestaurantOrderLine).where(
+                        m.RestaurantOrderLine.tenant_id == job.tenant_id,
+                        m.RestaurantOrderLine.id.in_(line_ids),
+                    )
+                )
+            ).scalars():
+                if (line.prep_status or "queued") == "queued":
+                    line.prep_status = "preparing"
+    if order.status == "sent":
+        order.status = "preparing"
+    await db.flush()
+
+
 async def _add_order_line(db: AsyncSession, tenant_id: str, order: m.RestaurantOrder, line) -> m.RestaurantOrderLine:
     product = await _product(db, tenant_id, line.product_id)
     await _require_sellable_menu_item(db, tenant_id, product)

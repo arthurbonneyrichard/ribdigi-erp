@@ -136,3 +136,45 @@ async def test_admin_chooses_screen_printer_or_both(client, db_session):
         assert saved.status_code == 200 and saved.json()["data"] == {"mode": mode, "printers": 1}, saved.text
         assert await send_and_count() == 1
     assert kitchen["id"]
+
+
+async def test_printer_only_printed_ticket_starts_cooking(client, db_session):
+    ac, seed = client
+    await set_tenant_industry(db_session, seed["t1"], "restaurant")
+    admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    await _printer(ac, admin, "Cooking kitchen printer", "kitchen")
+    rice = await _product(ac, admin, "Cooking jollof", "kitchen")
+
+    async def sent_order() -> str:
+        order = await ac.post(
+            "/api/v1/restaurant/orders",
+            headers=admin,
+            json={"service_mode": "takeaway", "payment_method": "cash", "customer_name": "Abena", "lines": [{"product_id": rice, "quantity": "1"}]},
+        )
+        oid = order.json()["data"]["id"]
+        assert (await ac.post(f"/api/v1/restaurant/orders/{oid}/send", headers=admin)).status_code == 200
+        return oid
+
+    async def status(oid: str) -> str:
+        rows = (await ac.get("/api/v1/restaurant/orders", headers=admin)).json()["data"]
+        rows = rows if isinstance(rows, list) else rows.get("items", [])
+        return next(r["status"] for r in rows if r["id"] == oid)
+
+    async def print_waiting() -> None:
+        for ticket in (await ac.get("/api/v1/restaurant/print-queue?station=kitchen", headers=admin)).json()["data"]:
+            done = await ac.post(f"/api/v1/restaurant/print-queue/{ticket['id']}/printed", headers=admin, json={"status": "printed"})
+            assert done.status_code == 200, done.text
+
+    # Screen and printer: the cook's own Start tap decides, so printing changes nothing.
+    both = await sent_order()
+    await print_waiting()
+    assert await status(both) == "sent"
+
+    # Printer only: nobody taps Start, so a printed ticket means the kitchen has it. Never "ready".
+    assert (await ac.put("/api/v1/restaurant/ticket-delivery", headers=admin, json={"mode": "printer"})).status_code == 200
+    only = await sent_order()
+    assert await status(only) == "sent"
+    await print_waiting()
+    assert await status(only) == "preparing"
+    tickets = (await ac.get("/api/v1/restaurant/kitchen", headers=admin)).json()["data"]
+    assert all(t["status"] != "ready" for t in tickets)
