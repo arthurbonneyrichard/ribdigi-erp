@@ -132,3 +132,30 @@
 .security-ui .bio-enable.is-on:hover{background:#43A311}
 :root[data-theme="dark"] .security-ui .bio-enable.is-off{background:#4A3600;color:#FFE29A;border-color:#E0A100}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .security-ui .bio-enable.is-off{background:#4A3600;color:#FFE29A;border-color:#E0A100}}
+
+/* Security page title: the same green banner the owner console uses */
+.main .page-head-card.security-head{
+  position:relative;overflow:hidden;padding:22px 26px;border:0;border-radius:22px;color:#fff;
+  background:radial-gradient(120% 140% at 100% 0%,#4AB01255 0%,transparent 55%),linear-gradient(135deg,#003D1F 0%,#0B5A2E 60%,#167A33 100%);
+  box-shadow:0 18px 40px -26px #003D1F
+}
+.main .page-head-card.security-head .page-head-ico{background:#FFFFFF1F;color:#C8E86A;border:1px solid #FFFFFF26}
+.main .page-head-card.security-head h1{color:#fff}
+.main .page-head-card.security-head .page-sub{color:#D6EECB}
+[data-theme="dark"] .main .page-head-card.security-head{
+  background:radial-gradient(120% 140% at 100% 0%,#4AB01233 0%,transparent 55%),linear-gradient(135deg,#0B2A1C 0%,#0F3D26 100%);border:1px solid #1C4633
+}
+
+/* Passkeys card: compact */
+.security-ui .passkey-card{padding:14px 16px}
+.security-ui .passkey-card h2{font-size:17px;margin:0 0 4px}
+.security-ui .passkey-card .security-ui-note{font-size:13px;line-height:1.4;margin-bottom:8px}
+.security-ui .passkey-card .security-ui-inline{gap:8px}
+.security-ui .passkey-card .security-ui-inline input{flex:1 1 9rem;max-width:14rem;min-height:36px;padding:6px 10px}
+.security-ui .passkey-card .security-ui-inline button{min-height:36px;padding:6px 12px;font-size:13px;white-space:nowrap}
+.security-ui .passkey-card .security-ui-list{margin-top:8px;max-height:9rem}
+.security-ui .passkey-card .security-ui-list li{padding:4px 0;font-size:13px}
+@media (max-width:720px){
+  .security-ui .passkey-card .security-ui-inline input{max-width:none}
+  .security-ui .passkey-card .security-ui-inline button{white-space:normal}
+}
