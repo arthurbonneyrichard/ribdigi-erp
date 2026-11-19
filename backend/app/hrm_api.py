@@ -165,6 +165,7 @@ class SettingsBody(BaseModel):
     ssnit_employer_percent: Annotated[float, Field(ge=0, le=100, allow_inf_nan=False)] | None = None
     paye_bands: list[Band] | None = Field(default=None, min_length=1, max_length=20)
     two_person_payroll: bool | None = None
+    vacancy_approval: bool | None = None
     leave_accrual: Literal["upfront", "monthly"] | None = None
     hours_per_day: Annotated[Decimal, Field(gt=0, le=24, max_digits=5, decimal_places=2)] | None = None
     overtime_rate: Annotated[Decimal, Field(ge=1, le=5, max_digits=5, decimal_places=2)] | None = None
@@ -936,6 +937,7 @@ async def hrm_payroll_approve(
     run_id: UuidIdValue, claims=Depends(require_permission("hrm", "write")), db: AsyncSession = Depends(get_db)
 ):
     svc.job(claims, "payroll")
+    svc.approves_pay(claims)
     row = await svc.approve_run(db, claims["tenant_id"], run_id, user_id=claims.get("sub"))
     await db.commit()
     return _env(await svc.present_run(db, row), "Payroll approved")
@@ -949,6 +951,7 @@ async def hrm_payroll_pay(
     db: AsyncSession = Depends(get_db),
 ):
     svc.job(claims, "payroll")
+    svc.approves_pay(claims)
     row = await svc.pay(db, claims["tenant_id"], run_id, what=payload.what, method=payload.method, user_id=claims.get("sub"))
     await db.commit()
     return _env(await svc.present_run(db, row), "Recorded as paid")

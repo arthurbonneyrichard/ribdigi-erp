@@ -4354,6 +4354,8 @@ class HrmSettings(Base):
     paye_bands: Mapped[list | None] = mapped_column(JSON, nullable=True)
     # When on, the person who drew up a payroll cannot also approve it.
     two_person_payroll: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    # When on, a vacancy proposed by anyone but an HR manager waits for approval.
+    vacancy_approval: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     # upfront: the year's annual leave is there from January (less the months before someone started).
     # monthly: it builds up a twelfth each month.
     leave_accrual: Mapped[str] = mapped_column(String(16), default="upfront", server_default="upfront")
@@ -4486,6 +4488,9 @@ class HrmVacancy(Base):
     closes_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    # pending -> open | rejected. A vacancy proposed by anyone but an HR manager waits for one.
+    decided_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    decision_note: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
 
 class HrmCandidate(Base):
@@ -5542,3 +5547,201 @@ class LegalDocumentVersion(Base):
     created_by_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+
+# --- HRM lifecycle: onboarding/offboarding, exit, benefits, career, objectives, custom fields, succession ---
+
+
+class HrmChecklistTask(Base):
+    """One step of a person's onboarding or offboarding (clearance) list."""
+
+    __tablename__ = "hrm_checklist_tasks"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(12), index=True)  # onboarding | offboarding
+    title: Mapped[str] = mapped_column(String(200))
+    sort: Mapped[int] = mapped_column(Integer, default=0)
+    due_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    asset_id: Mapped[str | None] = mapped_column(String(36), nullable=True)  # offboarding: asset to recover
+    done_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    done_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmExitInterview(Base):
+    __tablename__ = "hrm_exit_interviews"
+    __table_args__ = (UniqueConstraint("employee_id", name="uq_hrm_exit_interview_person"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    held_on: Mapped[date] = mapped_column(Date)
+    reason_category: Mapped[str] = mapped_column(String(24))
+    would_return: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    feedback: Mapped[str | None] = mapped_column(Text, nullable=True)
+    held_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmBenefit(Base):
+    """Insurance, pension scheme, welfare or other benefit a person is enrolled in."""
+
+    __tablename__ = "hrm_benefits"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(16))  # insurance | pension | welfare | other
+    name: Mapped[str] = mapped_column(String(160))
+    provider: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    policy_number: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    starts_on: Mapped[date] = mapped_column(Date)
+    ends_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmCareerEvent(Base):
+    """Promotion, transfer or confirmation. Never holds pay; salary changes have their own record."""
+
+    __tablename__ = "hrm_career_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(16))  # promotion | transfer | confirmation | other
+    effective_on: Mapped[date] = mapped_column(Date)
+    from_job_title: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    to_job_title: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    from_department: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    to_department: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmObjective(Base):
+    """An OKR: an objective (company, department or person) or a measurable key result under one."""
+
+    __tablename__ = "hrm_objectives"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(12), default="objective")  # objective | key_result
+    level: Mapped[str] = mapped_column(String(12), default="employee")  # company | department | employee
+    parent_id: Mapped[str | None] = mapped_column(ForeignKey("hrm_objectives.id"), nullable=True, index=True)
+    employee_id: Mapped[str | None] = mapped_column(ForeignKey("hrm_employees.id"), nullable=True, index=True)
+    department: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    period: Mapped[str] = mapped_column(String(16), index=True)  # e.g. 2026-Q4 or 2026
+    title: Mapped[str] = mapped_column(String(200))
+    unit: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    target: Mapped[float | None] = mapped_column(Numeric(16, 2), nullable=True)
+    current: Mapped[float] = mapped_column(Numeric(16, 2), default=0)
+    status: Mapped[str] = mapped_column(String(12), default="open")  # open | done | dropped
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmCustomField(Base):
+    __tablename__ = "hrm_custom_fields"
+    __table_args__ = (UniqueConstraint("tenant_id", "label", name="uq_hrm_custom_field_label"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    label: Mapped[str] = mapped_column(String(80))
+    kind: Mapped[str] = mapped_column(String(8), default="text")  # text | number | date
+    active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmCustomValue(Base):
+    __tablename__ = "hrm_custom_values"
+    __table_args__ = (UniqueConstraint("employee_id", "field_id", name="uq_hrm_custom_value"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    field_id: Mapped[str] = mapped_column(ForeignKey("hrm_custom_fields.id"), index=True)
+    value: Mapped[str] = mapped_column(String(255))
+
+
+class HrmSuccession(Base):
+    """Who could take over a key position, and how soon."""
+
+    __tablename__ = "hrm_succession"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    position: Mapped[str] = mapped_column(String(160))
+    incumbent_id: Mapped[str | None] = mapped_column(ForeignKey("hrm_employees.id"), nullable=True)
+    successor_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    readiness: Mapped[str] = mapped_column(String(12))  # ready_now | one_two_years | three_plus
+    note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmCaseEvent(Base):
+    """A step in a case file: investigation note, evidence, suspension, appeal, appeal decision."""
+
+    __tablename__ = "hrm_case_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    case_id: Mapped[str] = mapped_column(ForeignKey("hrm_cases.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(20))  # investigation | evidence | suspension | appeal | appeal_decision
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    outcome: Mapped[str | None] = mapped_column(String(12), nullable=True)  # appeal_decision: upheld | rejected
+    starts_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    ends_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    storage_key: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    content_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmFieldStaff(Base):
+    """An FMCG staff member's field job and monthly sales target (HR side; visits and orders stay in FMCG)."""
+
+    __tablename__ = "hrm_field_staff"
+    __table_args__ = (UniqueConstraint("employee_id", name="uq_hrm_field_staff_person"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    field_role: Mapped[str] = mapped_column(String(16))  # rep | van_sales | merchandiser | delivery | warehouse | supervisor
+    monthly_sales_target: Mapped[float | None] = mapped_column(Numeric(16, 2), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmRfidReader(Base):
+    """A card reader that posts taps to the ERP with its own token (only a hash is kept)."""
+
+    __tablename__ = "hrm_rfid_readers"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    site_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmRfidCard(Base):
+    """A staff card. One live card per person; a card number belongs to one person in a company."""
+
+    __tablename__ = "hrm_rfid_cards"
+    __table_args__ = (UniqueConstraint("tenant_id", "card_uid", name="uq_hrm_rfid_card"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    card_uid: Mapped[str] = mapped_column(String(40))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

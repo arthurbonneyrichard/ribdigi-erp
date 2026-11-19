@@ -489,6 +489,19 @@ api.include_router(restaurant_tips_api_mod.router)
 from app import hrm_documents_api as hrm_documents_api_mod  # noqa: E402
 
 api.include_router(hrm_documents_api_mod.router)
+from app import hrm_lifecycle_api as hrm_lifecycle_api_mod  # noqa: E402
+
+api.include_router(hrm_lifecycle_api_mod.router)
+from app import hrm_case_work_api as hrm_case_work_api_mod  # noqa: E402
+
+api.include_router(hrm_case_work_api_mod.router)
+from app import hrm_field_api as hrm_field_api_mod  # noqa: E402
+
+api.include_router(hrm_field_api_mod.router)
+from app import hrm_rfid_api as hrm_rfid_api_mod  # noqa: E402
+
+api.include_router(hrm_rfid_api_mod.router)
+api.include_router(hrm_rfid_api_mod.reader_router)
 from app import hotel_booking_api as hotel_booking_api_mod
 
 api.include_router(hotel_booking_api_mod.router)

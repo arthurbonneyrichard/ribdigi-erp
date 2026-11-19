@@ -223,9 +223,28 @@ async def vacancies(claims=_r(), db: AsyncSession = Depends(get_db)):
 @router.post("/vacancies")
 async def vacancy_add(payload: VacancyBody, claims=_w(), db: AsyncSession = Depends(get_db)):
     svc.job(claims, "recruitment")
-    row = await people.add_vacancy(db, claims["tenant_id"], payload, user_id=claims.get("sub"))
+    # With "vacancy approval" on, an HR manager or company admin opens a job directly and anyone
+    # else proposes it for approval. Off (the default), everyone with hiring access opens jobs.
+    needs_approval = bool((await svc.get_settings(db, claims["tenant_id"])).vacancy_approval)
+    row = await people.add_vacancy(db, claims["tenant_id"], payload, user_id=claims.get("sub"), auto_open=svc.runs_hr(claims) or not needs_approval)
     await db.commit()
-    return _env(people.serialize_vacancy(row), "Vacancy opened")
+    return _env(people.serialize_vacancy(row), "Vacancy opened" if row.status == "open" else "Sent for approval")
+
+
+class VacancyDecisionBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    approve: bool
+    note: Annotated[str, Field(min_length=2, max_length=500)] | None = None
+
+
+@router.post("/vacancies/{vacancy_id}/decision")
+async def vacancy_decision(vacancy_id: UuidIdValue, payload: VacancyDecisionBody, claims=_w(), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "recruitment")
+    if not svc.runs_hr(claims):
+        raise HTTPException(status_code=403, detail={"code": "HRM_ROLE_JOB", "message": "An HR manager approves new jobs."})
+    row = await people.decide_vacancy(db, claims["tenant_id"], vacancy_id, approve=payload.approve, note=payload.note, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(people.serialize_vacancy(row), "Vacancy opened" if row.status == "open" else "Vacancy turned down")
 
 
 @router.post("/vacancies/{vacancy_id}/close")

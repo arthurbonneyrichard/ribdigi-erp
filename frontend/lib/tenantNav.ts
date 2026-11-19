@@ -458,6 +458,8 @@ export const HRM_NAV_GROUPS: NavGroup[] = [
     label: 'People',
     items: [
       ['Employees', '/hrm?tab=people', 'hrm'],
+      ['Staff journey', '/hrm?tab=journey', 'hrm'],
+      ['Field workforce', '/hrm?tab=field', 'hrm'],
       ['Leave', '/hrm?tab=leave', 'hrm'],
       ['Attendance', '/hrm?tab=attendance', 'hrm'],
     ],
@@ -511,6 +513,8 @@ export const HRM_NAV_ITEMS: NavItem[] = deskItems(HRM_NAV_GROUPS, 'hrm');
 export const HR_TAB_AREA: Record<string, string> = {
   today: 'people',
   people: 'people',
+  journey: 'people',
+  field: 'people',
   leave: 'leave',
   attendance: 'attendance',
   clock: 'attendance',
@@ -549,6 +553,8 @@ export const HR_AREAS_BY_INDUSTRY: Record<string, string[]> = {
 /** Whether an HRM screen is part of this business type's HR. */
 export function hrTabAllowed(tab: string | null | undefined, industry: string | null | undefined): boolean {
   const area = HR_TAB_AREA[(tab || 'today').trim()] || '';
+  // The field workforce view reads FMCG visits and orders, so only FMCG has it.
+  if ((tab || '').trim() === 'field' && normalizeIndustry(industry) !== 'fmcg') return false;
   const areas = HR_AREAS_BY_INDUSTRY[normalizeIndustry(industry) || ''] || ['self'];
   return Boolean(area) && areas.includes(area);
 }
@@ -658,7 +664,7 @@ export function industryNavHrefOk(href: string, industry: string | null | undefi
   if (path === '/gym' || path.startsWith('/gym/')) return ind === 'gym';
   if (path === '/hrm' || path.startsWith('/hrm/')) {
     // One HR engine for every business type; each gets its own set of HR screens.
-    return ind === 'hrm' || hrTabAllowed(hrTabOf(href), ind);
+    return (ind === 'hrm' && hrTabOf(href) !== 'field') || hrTabAllowed(hrTabOf(href), ind);
   }
   if (path === '/gift-cards') return ind === 'retail';
   if (path === '/ecommerce' || path.startsWith('/ecommerce/')) {
@@ -988,6 +994,16 @@ export const HRM_ROLE_HREFS: Record<string, string[]> = {
     '/hrm', '/hrm?tab=people', '/hrm?tab=leave', '/hrm?tab=attendance', '/hrm?tab=clock', '/hrm?tab=shifts',
     '/hrm?tab=devices', '/hrm?tab=hiring', '/hrm?tab=training',
     '/hrm?tab=contracts', '/hrm?tab=kit', '/hrm?tab=notices', '/hrm?tab=me', '/notifications', '/security', '/support',
+  ],
+  hrm_payroll_officer: [
+    '/hrm', '/hrm?tab=people', '/hrm?tab=leave', '/hrm?tab=attendance', '/hrm?tab=payroll', '/hrm?tab=loans', '/hrm?tab=reports',
+    '/hrm?tab=me', '/notifications', '/security', '/support',
+  ],
+  hrm_recruiter: ['/hrm', '/hrm?tab=hiring', '/hrm?tab=me', '/notifications', '/security', '/support'],
+  hrm_auditor: [
+    '/hrm', '/hrm?tab=people', '/hrm?tab=leave', '/hrm?tab=attendance', '/hrm?tab=payroll', '/hrm?tab=loans', '/hrm?tab=reports',
+    '/hrm?tab=hiring', '/hrm?tab=reviews', '/hrm?tab=training', '/hrm?tab=contracts', '/hrm?tab=kit', '/hrm?tab=claims', '/hrm?tab=notices',
+    '/hrm?tab=me', '/notifications', '/security', '/support',
   ],
   hrm_employee: ['/hrm?tab=me', '/notifications', '/security', '/support'],
 };

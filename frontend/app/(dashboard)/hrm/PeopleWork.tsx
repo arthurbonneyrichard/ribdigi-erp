@@ -9,6 +9,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../../lib/api';
 import { formatMoney } from '../../../lib/format';
+import { CaseFile, MyAppeal } from './CaseFile';
 
 type Row = Record<string, any>;
 
@@ -172,12 +173,19 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
                 {data.vacancies.map((v: Row) => (
                   <tr key={v.id}>
                     <td>{v.title}{v.department ? <><br /><small className="hr-muted">{v.department}</small></> : null}</td>
-                    <td>{v.status === 'open' ? 'Open' : v.status === 'filled' ? 'Filled' : 'Closed'}</td>
+                    <td>{v.status === 'open' ? 'Open' : v.status === 'filled' ? 'Filled' : v.status === 'pending' ? 'Waiting for approval' : v.status === 'rejected' ? `Turned down${v.decision_note ? `: ${v.decision_note}` : ''}` : 'Closed'}</td>
                     <td>{Object.entries(v.candidates || {}).map(([k, n]) => `${STAGE_WORDS[k] || k}: ${n}`).join(', ') || 'None yet'}</td>
                     <td>
                       <div className="hr-row">
                         <button type="button" onClick={() => setOpenVac(openVac === v.id ? '' : v.id)}>{openVac === v.id ? 'Hide' : 'Candidates'}</button>
                         {v.status === 'open' ? <button type="button" className="hr-danger" onClick={() => void run(`/hrm/vacancies/${v.id}/close`, null, 'Vacancy closed')}>Close</button> : null}
+                        {v.status === 'pending' && seesPay ? (
+                          <>
+                            <button type="button" className="btn-ok" aria-label={`Approve job ${v.title}`} onClick={() => void run(`/hrm/vacancies/${v.id}/decision`, { approve: true }, 'Job opened')}>Approve</button>
+                            <button type="button" className="btn-danger" aria-label={`Turn down job ${v.title}`}
+                              onClick={() => { const why = window.prompt('Why is this job turned down?'); if (why && why.trim().length >= 2) void run(`/hrm/vacancies/${v.id}/decision`, { approve: false, note: why.trim() }, 'Job turned down'); }}>Turn down</button>
+                          </>
+                        ) : null}
                       </div>
                     </td>
                   </tr>
@@ -401,7 +409,7 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
               <button
                 type="button" className="hr-primary" disabled={busy || !f.employee_id || !f.training_id || !f.completed_on}
                 onClick={async () => {
-                  if (await run('/hrm/training-records', { employee_id: f.employee_id, training_id: f.training_id, completed_on: f.completed_on, certificate_ref: txt('certificate_ref').trim() || null }, 'Training recorded')) setF({});
+                  if (await run('/hrm/training-records', { employee_id: f.employee_id, training_id: f.training_id, completed_on: f.completed_on, certificate_ref: txt('certificate_ref').trim() || null, cost: seesPay && txt('cost') !== '' ? Number(txt('cost')) : null }, 'Training recorded')) setF({});
                 }}
               >Record</button>
             </div>
@@ -512,6 +520,7 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
               </tbody>
             </table>
           </section>
+          <CaseFile cases={data.cases} />
         </>
       ) : null}
 
@@ -728,7 +737,7 @@ export function MyMore() {
             }}
           >Send to HR</button>
         </div>
-        {more.cases.length ? <table aria-label="My cases"><tbody>{more.cases.map((c: Row) => <tr key={c.id}><td>{c.case_number}</td><td>{c.kind}</td><td>{c.subject}</td><td>{c.status === 'closed' ? `Closed${c.outcome ? `: ${String(c.outcome).replace(/_/g, ' ')}` : ''}` : 'Open'}</td></tr>)}</tbody></table> : null}
+        {more.cases.length ? <table aria-label="My cases"><tbody>{more.cases.map((c: Row) => <tr key={c.id}><td>{c.case_number}</td><td>{c.kind}</td><td>{c.subject}</td><td>{c.status === 'closed' ? `Closed${c.outcome ? `: ${String(c.outcome).replace(/_/g, ' ')}` : ''}` : 'Open'}{c.status === 'closed' ? <> <MyAppeal caseId={c.id} /></> : null}</td></tr>)}</tbody></table> : null}
       </section>
       {more.training.length || more.assets.length || more.contracts.length ? (
         <section className="hr-box" aria-label="My training, kit and contract">

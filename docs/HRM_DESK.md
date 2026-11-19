@@ -18,7 +18,7 @@ One HR engine serves every business type; each company's HR rows stay its own. `
 
 Every type gets My pay and leave. Each desk's sidebar gains an **HR** group with its screens.
 
-**Who does what** (`hrm.job`): company admin and HR manager run all of HR and see pay. HR officers and each desk's manager (store, restaurant, hotel, bakery, FMCG, gym manager) look after staff records, leave, time, training, contracts, kit, notices and hiring up to interview, without pay. Everyone else (cashiers, waiters, reps, drivers, front desk) has only their own file. No wholesale business type exists yet, so there is no wholesale HR.
+**Who does what** (`hrm.job`): company admin and HR manager run all of HR and see pay. HR officers and each desk's manager (store, restaurant, hotel, bakery, FMCG, gym manager) look after staff records, leave, time, training, contracts, kit, notices and hiring up to interview, without pay. Everyone else (cashiers, waiters, reps, drivers, front desk) has only their own file. Wholesale has the same HR as retail (it runs on the retail desk).
 
 ## Sidebar
 
@@ -245,3 +245,37 @@ For the accountant to confirm or decide:
 5. SSNIT's minimum contribution base (reported around GHS 587.80 a month) is not enforced for part-time pay below it.
 6. The 2027 SSNIT cap was not yet announced on 14 Nov 2026; the 2027 minimum wage comes from one news report.
 7. Tips paid through payroll are treated as employment income of the employer.
+
+## Staff journey (`hrm_lifecycle.py`, `hrm_lifecycle_api.py`, screen `Journey.tsx`, tab `journey`)
+
+Area `people` (HR officers and desk managers); the parts marked manager are company admin / HR manager only. No pay figures.
+
+- **Onboarding and offboarding checklists** per person: a default list, extra steps, tick and untick. Offboarding adds one "Recover ..." step per unreturned staff-kit item and refuses to tick it until the item is returned on the kit screen. Clearing does not end employment: record the leaving date and final pay as before.
+- **Exit interview** (manager): one per person, coded reason, would-return, feedback.
+- **Benefits and insurance** (area `contracts`): kind, provider, policy number, dates; end a benefit.
+- **Career history** (manager): promotion, transfer, confirmation. Applied to the staff record on the day it is recorded (future dates refused); keeps the from/to job and department. Pay changes stay under salary changes.
+- **Goals (OKRs)** (area `reviews`, managers): company, department or person objectives with measurable key results; progress = key result current / target. Staff see only their own via `GET /hrm/me/objectives`.
+- **Extra staff fields**: managers define text/number/date fields; officers fill them in.
+- **Succession** (manager): position, current holder, successor, readiness.
+
+Tables `hrm_checklist_tasks`, `hrm_exit_interviews`, `hrm_benefits`, `hrm_career_events`, `hrm_objectives`, `hrm_custom_fields`, `hrm_custom_values`, `hrm_succession` (migration `20261119_0193`, all in backups). Tests: `tests/test_hrm_lifecycle.py`.
+
+## Case file and appeals (`hrm_case_work.py`, `CaseFile.tsx`)
+
+On the Cases screen (HR managers only): investigation notes, evidence files (opened from the file, never inline), and suspension records on disciplinary cases (a dated note; it does not change pay or sign-in). After a case is closed the person may appeal once within 14 days (`POST /hrm/me/cases/{id}/appeal`, or HR records it for them). The appeal must be decided by someone other than the person who closed the case; the person is notified. Staff see only their own appeal and its decision, never notes or evidence. Table `hrm_case_events` (migration `20261119_0194`, in backups). Tests: `tests/test_hrm_case_work.py`.
+
+## Extra HR roles
+
+On an HRM company, in addition to HR manager, HR officer and employee: **Payroll Officer** (`hrm_payroll_officer`: staff, leave, time, payroll; sees pay; draws up and adjusts payroll but cannot approve or pay it, 403 `PAYROLL_APPROVER`), **Recruitment Manager** (`hrm_recruiter`: hiring only) and **HR Auditor** (`hrm_auditor`: read-only on everything except confidential cases and files; no write grant at all). Jobs are in `hrm._JOBS`; mirrored in `tenantNav.ts` and `hrm/page.tsx`. Tests: `test_hrm_roles.py`; payroll security (other companies, officers, frozen approved runs, no double posting) in `test_hrm_security.py`. The annual tax statement and the PAYE and SSNIT schedules already existed (`/hrm/reports/paye|ssnit|tax-statement`).
+
+## FMCG field workforce (`hrm_field.py`, screen `FieldWorkforce.tsx`, tab `field`, FMCG only)
+
+HR gives a person a field job (rep, van sales, merchandiser, delivery, warehouse, supervisor) and a monthly sales target (`hrm_field_staff`, migration `20261119_0195`). `GET /hrm/field-workforce?period=` reads, for each field person: days present (HR attendance, including GPS and QR clock days), territory and visits from FMCG check-ins (today and for the month, against the territory's daily visit target x days in), net sales from delivered orders against target, and commission (only for people who see pay). The sign-in is matched by the email on the staff record; anyone without a match is flagged. Visits, orders and territories are not duplicated here. Other business types get 403 `HRM_AREA_OFF`. Tests: `test_hrm_field.py`.
+
+## RFID card attendance (`hrm_rfid.py`, `Rfid.tsx` on Sites and terminals)
+
+A framework, tested with **simulated** reader traffic only. Not run against real hardware. HR with the payroll job registers a reader and copies its token once (only a SHA-256 is kept; readers are not in backups, so register again after a restore). The reader sends `POST /api/v1/hrm/rfid/punch` with header `X-Reader-Token` and `{card_uid, ref, at?}`: each `ref` is stored once, in and out alternate with the person's last tap, the clock event is marked `rfid` for HR to check, and a tap more than 72 hours old or 5 minutes ahead is refused. One live card per person; a card number belongs to one person. Switching a reader off stops its token. Tables `hrm_rfid_readers`, `hrm_rfid_cards` (migration `20261119_0196`). Tests: `test_hrm_rfid.py`.
+
+## Vacancy approval (setting "Approve new jobs", off by default)
+
+Settings -> `vacancy_approval` (migration `20261119_0204h`). When on, a job proposed by anyone but an HR manager or company admin is **pending**; HR is told. An HR manager or admin other than the proposer approves it (it opens) or turns it down with a reason (`POST /hrm/vacancies/{id}/decision`). Candidates cannot be added to a pending or turned-down job. When off, everyone with hiring access opens jobs directly, as before. Other approvals already in place: leave (manager then HR, with cover and escalation), loans (decided by someone other than the requester), payroll (officer draws up, manager approves; optional two-person rule). There is no single configurable approval engine across modules: each module has its own rule.

@@ -195,3 +195,12 @@
 .main .hrm .hr-org{padding-left:0;border-left:0}
 .main .hrm .hr-org li{margin:8px 0}
 .main .hrm .hr-org-card{display:inline-flex;flex-direction:column;gap:2px;padding:8px 12px;border:1px solid var(--hr-tint);border-radius:12px}
+
+/* Staff journey, case file, field workforce and card readers: rows of controls sit in a line. */
+.main .hrm .hr-box > .hr-row{margin:10px 0}
+.main .hrm .hr-box > .hr-row > input:not([type=checkbox]):not([type=file]),
+.main .hrm .hr-box > .hr-row > select{width:auto;flex:1 1 170px;min-width:0}
+.main .hrm .hr-box > .hr-row > button{flex:0 0 auto}
+.main .hrm .hr-list{list-style:none;margin:8px 0;padding:0;display:grid;gap:6px}
+.main .hrm .hr-okr{border-top:1px solid var(--hr-line);padding:12px 0}
+.main .hrm .hr-okr ul{margin:8px 0 8px 18px}

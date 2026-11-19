@@ -70,6 +70,7 @@ def serialize_vacancy(row: m.HrmVacancy, counts: dict | None = None) -> dict:
         "id": row.id, "title": row.title, "department": row.department, "openings": row.openings,
         "description": row.description, "status": row.status, "closes_on": _iso(row.closes_on),
         "created_at": _iso(row.created_at), "candidates": counts or {},
+        "decision_note": getattr(row, "decision_note", None),
     }
 
 
@@ -92,7 +93,7 @@ async def list_vacancies(db: AsyncSession, tenant_id: str) -> list[dict]:
     return out
 
 
-async def add_vacancy(db: AsyncSession, tenant_id: str, payload, *, user_id) -> m.HrmVacancy:
+async def add_vacancy(db: AsyncSession, tenant_id: str, payload, *, user_id, auto_open: bool = True) -> m.HrmVacancy:
     row = m.HrmVacancy(
         tenant_id=tenant_id,
         title=require_honest_narrative(payload.title, label="job title", max_length=120),
@@ -100,12 +101,43 @@ async def add_vacancy(db: AsyncSession, tenant_id: str, payload, *, user_id) -> 
         openings=payload.openings,
         description=optional_honest_narrative(payload.description, label="description", max_length=4000),
         closes_on=payload.closes_on,
-        status="open",
+        status="open" if auto_open else "pending",
         created_by=user_id,
     )
     db.add(row)
     await db.flush()
-    await _audit(db, tenant_id, user_id, "hrm_vacancy_opened", "hrm_vacancy", row.id, {"title": row.title})
+    await _audit(db, tenant_id, user_id, "hrm_vacancy_opened" if auto_open else "hrm_vacancy_proposed", "hrm_vacancy", row.id, {"title": row.title})
+    if not auto_open:
+        from app import hrm_notify
+
+        await hrm_notify.to_hr(db, tenant_id, "Vacancy to approve", f"{row.title} is waiting for approval.", entity_type="hrm_vacancy", entity_id=row.id, skip_user=user_id)
+    return row
+
+
+async def decide_vacancy(db: AsyncSession, tenant_id: str, vacancy_id: str, *, approve: bool, note, user_id) -> m.HrmVacancy:
+    """An HR manager other than the proposer opens or turns down a proposed vacancy."""
+    row = await _owned(db, m.HrmVacancy, tenant_id, vacancy_id, "Vacancy")
+    if row.status != "pending":
+        raise HTTPException(status_code=409, detail=f"This vacancy is already {row.status}")
+    if user_id and row.created_by == user_id:
+        raise HTTPException(status_code=403, detail="Someone other than the person who proposed this vacancy must decide it")
+    text = optional_honest_narrative(note, label="note", max_length=500)
+    if not approve and not text:
+        raise HTTPException(status_code=422, detail="Say why the vacancy is turned down")
+    row.status = "open" if approve else "rejected"
+    row.decided_by = user_id
+    row.decision_note = text
+    await _audit(db, tenant_id, user_id, "hrm_vacancy_approved" if approve else "hrm_vacancy_rejected", "hrm_vacancy", row.id, {"title": row.title})
+    if row.created_by:
+        from app import hrm_notify
+
+        proposer = await db.get(m.User, row.created_by)
+        emp = None
+        if proposer is not None and proposer.email:
+            emp = (await db.execute(select(m.HrmEmployee).where(m.HrmEmployee.tenant_id == tenant_id, func.lower(m.HrmEmployee.email) == proposer.email.strip().lower()))).scalars().first()
+        if emp is not None:
+            await hrm_notify.to_person(db, tenant_id, emp, "Vacancy decided", f"{row.title} was {'approved' if approve else 'turned down'}.", entity_type="hrm_vacancy", entity_id=row.id)
+    await db.flush()
     return row
 
 
@@ -139,6 +171,8 @@ async def list_candidates(db: AsyncSession, tenant_id: str, vacancy_id: str) -> 
 
 async def add_candidate(db: AsyncSession, tenant_id: str, vacancy_id: str, payload, *, user_id) -> m.HrmCandidate:
     vacancy = await _owned(db, m.HrmVacancy, tenant_id, vacancy_id, "Vacancy")
+    if vacancy.status == "pending":
+        raise HTTPException(status_code=409, detail="This vacancy is waiting for approval")
     if vacancy.status != "open":
         raise HTTPException(status_code=409, detail="This vacancy is closed")
     row = m.HrmCandidate(

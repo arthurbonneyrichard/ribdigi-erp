@@ -222,6 +222,32 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "security": ["read", "write"],
         "staff_guide": ["read", "download"],
     },
+    # Payroll officer draws up and adjusts payroll; a manager approves and pays (hrm_api).
+    "hrm_payroll_officer": {
+        "hrm": ["read", "write"],
+        "notifications": ["read", "write"],
+        "stores": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    # Recruitment manager runs hiring and nothing else in HR.
+    "hrm_recruiter": {
+        "hrm": ["read", "write"],
+        "notifications": ["read", "write"],
+        "stores": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    # Auditor reads everything except confidential cases and files. No write grant at all.
+    "hrm_auditor": {
+        "hrm": ["read"],
+        "audit": ["read"],
+        "reports": ["read"],
+        "notifications": ["read"],
+        "stores": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
     "hrm_employee": {
         "hrm": ["read", "write"],
         "notifications": ["read"],
@@ -448,6 +474,9 @@ ROLE_LABELS: dict[str, str] = {
     "gym_trainer": "Trainer",
     "hrm_manager": "HR Manager",
     "hrm_officer": "HR Officer",
+    "hrm_payroll_officer": "Payroll Officer",
+    "hrm_recruiter": "Recruitment Manager",
+    "hrm_auditor": "HR Auditor",
     "hrm_employee": "Employee",
 }
 
@@ -515,7 +544,7 @@ RESTAURANT_ONLY_ROLES = frozenset(
 BAKERY_ONLY_ROLES = frozenset({"bakery_manager", "bakery_cashier", "bakery_baker", "bakery_driver"})
 FMCG_ONLY_ROLES = frozenset({"fmcg_manager", "fmcg_rep", "fmcg_driver"})
 GYM_ONLY_ROLES = frozenset({"gym_manager", "gym_frontdesk", "gym_trainer"})
-HRM_ONLY_ROLES = frozenset({"hrm_manager", "hrm_officer", "hrm_employee"})
+HRM_ONLY_ROLES = frozenset({"hrm_manager", "hrm_officer", "hrm_payroll_officer", "hrm_recruiter", "hrm_auditor", "hrm_employee"})
 DESK_ONLY_ROLES = {"bakery": BAKERY_ONLY_ROLES, "fmcg": FMCG_ONLY_ROLES, "gym": GYM_ONLY_ROLES, "hrm": HRM_ONLY_ROLES}
 
 # Frontend nav href → required module (read). Used for menu filtering.
@@ -721,6 +750,9 @@ ROLE_RECORD_SCOPE: dict[str, str] = {
     "gym_trainer": "all",
     "hrm_manager": "all",
     "hrm_officer": "all",
+    "hrm_payroll_officer": "all",
+    "hrm_recruiter": "all",
+    "hrm_auditor": "all",
     "hrm_employee": "own",
 }
 
