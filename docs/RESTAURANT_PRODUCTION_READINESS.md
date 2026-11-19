@@ -35,8 +35,8 @@ Restaurant front of house is its own desk, isolated from retail and hotel (`REST
 
 - Card, Mobile Money and wallet are recorded, not charged through a gateway.
 - Restaurant till sales made before the split (on the old shared till) stay as read-only history in reports.
-- Split payment of one bill across two methods is not offered on the restaurant till; take one method per bill.
-- The Orders board refreshes every 20 seconds; it is not push-live.
+- A bill can be paid by more than one method (split payment); the amounts must add up to the bill. Each method is recorded on its own.
+- The Orders board checks for changes every 4 seconds and reloads in full each minute; it is polling, not push-live.
 - The website takes no online payment; guests pay on collection, on delivery or at the table. A pre-order with a booking is a note for the kitchen, rung on the till when the party sits.
 - Online booking needs the website or domain saved under Website and booking; the domain itself is pointed by the owner (no DNS change from the ERP).
 
@@ -58,3 +58,14 @@ Restaurant front of house is its own desk, isolated from retail and hotel (`REST
 - The Orders board and kitchen see changes within about 4 seconds (they check for changes and reload only then).
 - Mobile Money prompts through the restaurant's own Paystack account; a prompt pays one bill only.
 - Still recorded, not charged: card payments (taken on the bank's card machine). Delivery apps (Glovo, Bolt Food) are not linked.
+
+## Kitchen and bar orders: screen, printer or both
+
+- **Choice (company-wide):** Settings → Printers → **Kitchen and bar orders** (`GET|PUT /restaurant/ticket-delivery`, stored in `tenants.document_numbering["restaurant_ticket_delivery"]`, audited). Managers and company admins only; waiter, cashier and kitchen roles are refused by the restaurant job gate.
+  - **Screen and printer** (default): the kitchen screen shows each order and tickets print on any enabled Kitchen or Bar printer.
+  - **Screen only:** nothing prints; the kitchen screen still gets the order.
+  - **Printer only:** tickets print and the kitchen screen shows a note instead of the board. Refused (409) until an enabled printer with the Kitchen or Bar purpose exists.
+- **Printers:** on Settings → Printers a restaurant can link an installed printer for till receipts, kitchen tickets only, bar tickets only, or kitchen and bar. Kitchen dishes print on Kitchen printers and drinks on Bar printers; extras print under the dish; dishes added later print as a new ticket; sending twice prints nothing new.
+- **Printer only and the orders board:** nobody taps Start, so a ticket that reaches paper (network printer, paired till, or the screen's own printer) moves that station's ticket and dishes to *preparing* and a just-sent order to *preparing* (`restaurant.printed_ticket_starts_cooking`). Nothing is ever marked *ready* by printing. With a screen in use the cook's Start tap still decides.
+- **Limits to tell customers:** a printer plugged into a tablet or PC prints only while that screen has **Print tickets here** switched on (checks every 10 seconds). Network and paired-till printers print by themselves. A printer problem never stops an order. Verified by automated tests and the browser print dialog; confirm a physical printer with a test print before go-live.
+- Tests: `backend/tests/test_restaurant_prep_printing.py`. Tutorials: R12, R34 and R39.
