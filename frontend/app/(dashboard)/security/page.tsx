@@ -577,8 +577,14 @@ export default function Page() {
             placeholder="Passkey name"
             title="Optional label"
           />
-          <button type="button" onClick={() => registerPasskey(false)} aria-label="Add passkey">
-            Add passkey
+          <button
+            type="button"
+            className={passkeys.length ? 'bio-enable is-on' : 'bio-enable is-off'}
+            onClick={() => registerPasskey(false)}
+            aria-label="Add passkey"
+            title={passkeys.length ? 'You have a passkey. Add another if you like.' : 'No passkey yet'}
+          >
+            {passkeys.length ? `✓ Passkey added (${passkeys.length}) · Add another` : 'Add passkey'}
           </button>
           <button
             type="button"
