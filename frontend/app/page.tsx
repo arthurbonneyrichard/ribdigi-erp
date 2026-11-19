@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import LoginBrandLogo from '../components/LoginBrandLogo';
 import LoginLegalLinks from '../components/LoginLegalLinks';
+import { NO_BIOMETRIC_MESSAGE, deviceBiometricAvailable, describeWebAuthnError, promptAbort, webauthnSupported } from '../lib/webauthnClient';
 import { loadUserTheme } from '../lib/theme';
 import { openShiftForSignedInUser } from '../lib/cashierShift';
 
@@ -241,13 +242,14 @@ export default function Login() {
       });
       await finishLogin(r.data);
     } catch (err: any) {
-      setError(err.message || 'Passkey login failed');
+      setError(err?.name ? describeWebAuthnError(err, 'signin') : err.message || 'Passkey login failed');
     } finally {
       setBusy(false);
     }
   }
 
   async function passwordlessSignIn(kind: 'biometric') {
+    if (busy) return; // one prompt at a time
     setError('');
     const phase = await probeApi();
     if (phase !== 'online') {
@@ -274,11 +276,17 @@ export default function Login() {
       );
       return;
     }
+    if (!webauthnSupported()) {
+      setError('This browser cannot use fingerprint sign-in. Use Chrome or Edge, or sign in with your password.');
+      return;
+    }
+    if (!(await deviceBiometricAvailable())) {
+      setError(NO_BIOMETRIC_MESSAGE);
+      return;
+    }
     setBusy(true);
+    const abort = promptAbort();
     try {
-      if (!window.PublicKeyCredential) {
-        throw new Error('This browser does not support passkeys');
-      }
       const start = await api('/auth/webauthn/passwordless/start', {
         method: 'POST',
         body: JSON.stringify({ tenant_id: trimmedTenant, email: trimmedEmail }),
@@ -293,7 +301,8 @@ export default function Login() {
         }));
       }
       publicKey.hints = kind === 'biometric' ? ['client-device'] : [];
-      const cred = (await navigator.credentials.get({ publicKey })) as PublicKeyCredential | null;
+      setError('');
+      const cred = (await navigator.credentials.get({ publicKey, signal: abort.signal })) as PublicKeyCredential | null;
       if (!cred) throw new Error('Cancelled');
       const assertion = cred.response as AuthenticatorAssertionResponse;
       const credential = {
@@ -318,12 +327,11 @@ export default function Login() {
         setError(
           'Fingerprint sign-in is not set up for this account yet (or the company code or email is wrong). Sign in with your password, then open Security and choose "Enable fingerprint / face on this device".'
         );
-      } else if (err?.name === 'NotAllowedError') {
-        setError('Cancelled. Try again, or sign in with your password.');
       } else {
-        setError(err.message || 'Could not sign in with a passkey. Use your password instead.');
+        setError(describeWebAuthnError(err, 'signin'));
       }
     } finally {
+      abort.done();
       setBusy(false);
     }
   }
