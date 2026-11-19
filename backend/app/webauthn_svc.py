@@ -135,10 +135,11 @@ async def _pop_challenge(
     return base64url_to_bytes(challenge)
 
 
-async def registration_options(db: AsyncSession, user: m.User) -> dict:
+async def registration_options(db: AsyncSession, user: m.User, *, platform: bool = False) -> dict:
     from webauthn import generate_registration_options, options_to_json
     from webauthn.helpers import bytes_to_base64url
     from webauthn.helpers.structs import (
+        AuthenticatorAttachment,
         AuthenticatorSelectionCriteria,
         ResidentKeyRequirement,
         UserVerificationRequirement,
@@ -164,9 +165,13 @@ async def registration_options(db: AsyncSession, user: m.User) -> dict:
         user_name=user.email,
         user_display_name=user.full_name or user.email,
         exclude_credentials=exclude or None,
+        # platform=True: this device's own fingerprint / face / PIN (Windows Hello, Touch ID, Android).
         authenticator_selection=AuthenticatorSelectionCriteria(
+            authenticator_attachment=AuthenticatorAttachment.PLATFORM if platform else None,
             resident_key=ResidentKeyRequirement.PREFERRED,
-            user_verification=UserVerificationRequirement.PREFERRED,
+            user_verification=(
+                UserVerificationRequirement.REQUIRED if platform else UserVerificationRequirement.PREFERRED
+            ),
         ),
     )
     await _store_challenge(

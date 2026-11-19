@@ -223,14 +223,14 @@ export default function Page() {
     }
   }
 
-  async function registerPasskey() {
+  async function registerPasskey(platform = false) {
     setError('');
     setMessage('');
     try {
       if (!window.PublicKeyCredential) {
         throw new Error('This browser does not support passkeys');
       }
-      const opt = await api('/auth/webauthn/register/options', { method: 'POST', body: '{}' });
+      const opt = await api(`/auth/webauthn/register/options${platform ? '?platform=true' : ''}`, { method: 'POST', body: '{}' });
       const publicKey = publicKeyFromJson(opt.data) as PublicKeyCredentialCreationOptions;
       const cred = (await navigator.credentials.create({ publicKey })) as PublicKeyCredential | null;
       if (!cred) throw new Error('Passkey registration cancelled');
@@ -238,10 +238,10 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           credential: credentialToJson(cred),
-          name: passkeyName.trim() ? passkeyName.trim() : null,
+          name: passkeyName.trim() ? passkeyName.trim() : platform ? 'This device (biometric)' : null,
         }),
       });
-      setMessage('Passkey registered');
+      setMessage(platform ? 'Fingerprint / face sign-in is on for this device' : 'Passkey registered');
       await refresh({ force: true });
     } catch (err: any) {
       setError(err.message || 'Passkey registration failed');
@@ -516,7 +516,7 @@ export default function Page() {
 
       <div className="card">
         <h2>Passkeys</h2>
-        <p className="muted security-ui-note">Use a fingerprint, face, or security key as a second step at sign-in. A blank name is saved as Passkey.</p>
+        <p className="muted security-ui-note">Use a fingerprint, face, or security key. To sign in with the fingerprint button on the sign-in page, choose Enable fingerprint / face on this device while signed in here (your device must have a fingerprint, face or PIN set up). A blank name is saved as Passkey.</p>
         <div className="security-ui-inline">
           <input
             aria-label="Passkey name"
@@ -525,8 +525,11 @@ export default function Page() {
             placeholder="Passkey name"
             title="Optional label"
           />
-          <button type="button" onClick={registerPasskey} aria-label="Add passkey">
+          <button type="button" onClick={() => registerPasskey(false)} aria-label="Add passkey">
             Add passkey
+          </button>
+          <button type="button" onClick={() => registerPasskey(true)} aria-label="Enable fingerprint or face sign-in on this device">
+            Enable fingerprint / face on this device
           </button>
         </div>
         <ul className="security-ui-list">
