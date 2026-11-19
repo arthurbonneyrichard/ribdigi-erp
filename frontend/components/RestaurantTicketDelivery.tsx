@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import '../app/(dashboard)/restaurant/restaurant-desk.css';
 
 type Mode = 'both' | 'screen' | 'printer';
 
@@ -56,16 +57,20 @@ export default function RestaurantTicketDelivery() {
         <strong>Kitchen and bar orders</strong>
         <span>{current?.label}</span>
       </summary>
-      <div className="rest-order-form" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'left', alignItems: 'stretch' }}>
         <p className="rd-hint-line">
           Choose how the kitchen and bar receive each order. Printing needs a Kitchen or Bar printer under Printers
           ({printers ? `${printers} added` : 'none added yet'}).
         </p>
         {CHOICES.map((c) => (
-          <label key={c.value} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+          <label
+            key={c.value}
+            style={{ display: 'flex', gap: 10, alignItems: 'flex-start', justifyContent: 'flex-start', textAlign: 'left', width: '100%', margin: 0 }}
+          >
             <input
               type="radio"
               name="restaurant-ticket-delivery"
+              style={{ marginTop: 4, flex: '0 0 auto' }}
               aria-label={`Kitchen and bar orders: ${c.label}`}
               checked={mode === c.value}
               disabled={busy}
