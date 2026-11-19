@@ -51,6 +51,8 @@ export default function PrinterSettingsPage() {
   const [pairing, setPairing] = useState('');
   const [installedName, setInstalledName] = useState('');
   const [installedPaper, setInstalledPaper] = useState('80mm');
+  // Restaurants can link a printer for the till, or for kitchen and/or bar tickets only.
+  const [installedUse, setInstalledUse] = useState<'receipts' | 'kitchen' | 'bar' | 'kitchen_bar'>('receipts');
   const [showEmailSms, setShowEmailSms] = useState(false);
   const [agents, setAgents] = useState<PrintAgentRow[]>([]);
   const [form, setForm] = useState({
@@ -144,6 +146,12 @@ export default function PrinterSettingsPage() {
     setError('');
     setNotice('');
     try {
+      const purposes =
+        normalizeIndustry(industry) === 'restaurant' && installedUse !== 'receipts'
+          ? installedUse === 'kitchen_bar'
+            ? ['kitchen', 'bar']
+            : [installedUse]
+          : ['customer_receipt'];
       const hasDefault = rows.some(
         (row) => row.is_enabled && row.is_default && (row.purposes || []).includes('customer_receipt')
       );
@@ -153,9 +161,9 @@ export default function PrinterSettingsPage() {
           name,
           connection_type: 'browser_dialog',
           paper: installedPaper === '58mm' || installedPaper === 'a4' ? installedPaper : '80mm',
-          purposes: ['customer_receipt'],
+          purposes,
           copies: 1,
-          is_default: !hasDefault,
+          is_default: purposes.includes('customer_receipt') && !hasDefault,
         }),
       });
       setInstalledName('');
@@ -163,7 +171,9 @@ export default function PrinterSettingsPage() {
         isHotelIndustry(industry)
           ? `${name} is linked for guest receipts.`
           : normalizeIndustry(industry) === 'restaurant'
-            ? `${name} is linked for restaurant till receipts.`
+            ? installedUse === 'receipts'
+              ? `${name} is linked for restaurant till receipts.`
+              : `${name} is linked for ${installedUse === 'kitchen' ? 'kitchen tickets only' : installedUse === 'bar' ? 'bar tickets only' : 'kitchen and bar tickets only'}.`
             : `${name} is linked for POS receipts.`,
       );
       await load();
@@ -421,15 +431,30 @@ export default function PrinterSettingsPage() {
                     <option value="a4">A4 invoice</option>
                   </select>
                 </label>
+                {restaurantPrint ? (
+                  <label className="print-ui-paper">
+                    What it prints
+                    <select
+                      value={installedUse}
+                      onChange={(e) => setInstalledUse(e.target.value as typeof installedUse)}
+                      aria-label="What this restaurant printer prints"
+                    >
+                      <option value="receipts">Till receipts</option>
+                      <option value="kitchen">Kitchen tickets only</option>
+                      <option value="bar">Bar tickets only</option>
+                      <option value="kitchen_bar">Kitchen and bar tickets only</option>
+                    </select>
+                  </label>
+                ) : null}
                 <div className="print-ui-actions">
                   <button
                     type="button"
                     className="btn-ok"
                     onClick={addInstalledPrinter}
                     disabled={busy || !installedName.trim()}
-                    aria-label={hotelPrint ? 'Add to printers used for guest receipts' : restaurantPrint ? 'Add to printers used for the restaurant till' : 'Add to printers used for POS'}
+                    aria-label={hotelPrint ? 'Add to printers used for guest receipts' : restaurantPrint ? (installedUse === 'receipts' ? 'Add to printers used for the restaurant till' : installedUse === 'kitchen' ? 'Add as a kitchen-only printer' : installedUse === 'bar' ? 'Add as a bar-only printer' : 'Add as a kitchen and bar printer') : 'Add to printers used for POS'}
                   >
-                    {hotelPrint ? 'Add to printers used for guest receipts' : restaurantPrint ? 'Add to printers used for the restaurant till' : 'Add to printers used for POS'}
+                    {hotelPrint ? 'Add to printers used for guest receipts' : restaurantPrint ? (installedUse === 'receipts' ? 'Add to printers used for the restaurant till' : installedUse === 'kitchen' ? 'Add as a kitchen-only printer' : installedUse === 'bar' ? 'Add as a bar-only printer' : 'Add as a kitchen and bar printer') : 'Add to printers used for POS'}
                   </button>
                 </div>
                 <p className="print-ui-help">{hotelPrint
