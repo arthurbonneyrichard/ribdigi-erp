@@ -123,3 +123,12 @@
 .privacy-warn{margin:0;padding:10px 12px;border-radius:var(--radius);background:var(--warn-bg);color:#5c3a00;font-size:13px}
 .privacy-table{margin-top:16px}
 .privacy-table caption{text-align:left;font-weight:700;padding:4px 0}
+
+/* Fingerprint enable button: amber = not on yet, green = on for this device */
+.security-ui .bio-enable{font-weight:600;border-radius:10px;padding:10px 16px;cursor:pointer;border:2px solid transparent}
+.security-ui .bio-enable.is-off{background:#FFF1CC;color:#5C3A00;border-color:#E0A100}
+.security-ui .bio-enable.is-off:hover{background:#FFE29A}
+.security-ui .bio-enable.is-on{background:#4AB012;color:#10211B;border-color:#2F7A0C}
+.security-ui .bio-enable.is-on:hover{background:#43A311}
+:root[data-theme="dark"] .security-ui .bio-enable.is-off{background:#4A3600;color:#FFE29A;border-color:#E0A100}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .security-ui .bio-enable.is-off{background:#4A3600;color:#FFE29A;border-color:#E0A100}}
