@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
@@ -14,6 +15,7 @@ from app.config import settings
 from app.honesty import optional_honest_narrative
 
 CHALLENGE_TTL_MINUTES = 5
+logger = logging.getLogger("ribdigi.webauthn")
 
 
 def rp_id() -> str:
@@ -211,6 +213,11 @@ async def verify_registration(
             expected_origin=expected_origin(),
         )
     except Exception as exc:  # noqa: BLE001
+        # Reason class only: never the credential, challenge or keys.
+        logger.warning(
+            "webauthn registration rejected user=%s rp_id=%s origin=%s reason=%s",
+            user.id, rp_id(), expected_origin(), type(exc).__name__,
+        )
         raise HTTPException(status_code=400, detail=f"Passkey registration failed: {exc}") from exc
 
     cred_id = bytes_to_base64url(verification.credential_id)
@@ -322,6 +329,10 @@ async def verify_authentication(
             require_user_verification=require_uv,
         )
     except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "webauthn authentication rejected user=%s rp_id=%s origin=%s reason=%s",
+            user.id, rp_id(), expected_origin(), type(exc).__name__,
+        )
         raise HTTPException(status_code=401, detail=f"Passkey authentication failed: {exc}") from exc
 
     row.sign_count = int(verification.new_sign_count or row.sign_count or 0)

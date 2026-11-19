@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, isAbortError } from '../../../lib/api';
 import { getPrefetched } from '../../../lib/prefetchCache';
 import { pageLoadStarted } from '../../../lib/navTiming';
@@ -11,6 +11,7 @@ import { closeShiftForSignOut } from '../../../lib/cashierShift';
 import './security-ui.css';
 import PrivacyDataCard from '../../../components/PrivacyDataCard';
 import { formatWhen } from '../../../lib/format';
+import { NO_BIOMETRIC_MESSAGE, deviceBiometricAvailable, describeWebAuthnError, promptAbort, webauthnSupported } from '../../../lib/webauthnClient';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 
 function bufferToBase64url(buf: ArrayBuffer): string {
@@ -111,6 +112,7 @@ export default function Page() {
   const prefs = useCompanyFormat();
   const [status, setStatus] = useState<any>(null);
   const [passkeys, setPasskeys] = useState<any[]>([]);
+  const passkeyBusy = useRef(false);
   const [sessions, setSessions] = useState<AuthSessionRow[]>([]);
   const [setup, setSetup] = useState<any>(null);
   const [code, setCode] = useState('');
@@ -237,19 +239,27 @@ export default function Page() {
   async function registerPasskey(platform = false) {
     setError('');
     setMessage('');
+    if (passkeyBusy.current) return; // one prompt at a time
+    if (!webauthnSupported()) {
+      setError('This browser cannot use passkeys or fingerprint. Use Chrome or Edge.');
+      return;
+    }
+    if (platform && !(await deviceBiometricAvailable())) {
+      setError(NO_BIOMETRIC_MESSAGE);
+      return;
+    }
+    passkeyBusy.current = true;
+    const abort = promptAbort();
     try {
-      if (!window.PublicKeyCredential) {
-        throw new Error('This browser does not support passkeys');
-      }
       const opt = await api(`/auth/webauthn/register/options${platform ? '?platform=true' : ''}`, { method: 'POST', body: '{}' });
       const publicKey = publicKeyFromJson(opt.data) as PublicKeyCredentialCreationOptions;
-      const cred = (await navigator.credentials.create({ publicKey })) as PublicKeyCredential | null;
+      const cred = (await navigator.credentials.create({ publicKey, signal: abort.signal })) as PublicKeyCredential | null;
       if (!cred) throw new Error('Passkey registration cancelled');
       await api('/auth/webauthn/register/verify', {
         method: 'POST',
         body: JSON.stringify({
           credential: credentialToJson(cred),
-          name: passkeyName.trim() ? passkeyName.trim() : platform ? 'This device (biometric)' : null,
+          name: passkeyName.trim() ? passkeyName.trim() : null,
         }),
       });
       if (platform) await rememberBiometricDevice();
@@ -261,7 +271,10 @@ export default function Page() {
         setMessage('Fingerprint / face sign-in is already on for this device. Sign out and tap the fingerprint button on the sign-in page.');
         return;
       }
-      setError(err.message || 'Passkey registration failed');
+      setError(describeWebAuthnError(err, 'register'));
+    } finally {
+      abort.done();
+      passkeyBusy.current = false;
     }
   }
 
