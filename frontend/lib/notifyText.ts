@@ -12,6 +12,7 @@ export const NOTIFY_CATEGORY_LABELS: Record<string, string> = {
   expense_approval: 'Expense',
   quotation_expiry: 'Quotation',
   batch_expiry: 'Expiry',
+  fleet_document: 'Vehicle papers',
   recurring_expense_due: 'Recurring',
   hr: 'HR',
   transfer: 'Transfer',

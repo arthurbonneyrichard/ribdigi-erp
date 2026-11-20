@@ -2359,8 +2359,30 @@ class FmcgTradeScheme(Base):
     ends_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    # Promotion controls: approval, budget, limits (migration 0217f).
+    status: Mapped[str] = mapped_column(String(20), default="approved", server_default="approved", index=True)
+    budget: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    max_uses: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    min_qty: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    approved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class FmcgSchemeTarget(Base):
+    """Who a promotion is for. A scheme with no targets is open to every outlet."""
+
+    __tablename__ = "fmcg_scheme_targets"
+    __table_args__ = (UniqueConstraint("tenant_id", "scheme_id", "kind", "ref_id", name="uq_fmcg_scheme_target"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    scheme_id: Mapped[str] = mapped_column(ForeignKey("fmcg_trade_schemes.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(12))
+    ref_id: Mapped[str] = mapped_column(String(36), index=True)
 
 
 class FmcgRoute(Base):
@@ -2424,6 +2446,7 @@ class FmcgDispatch(Base):
     closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     expected_cash: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     counted_cash: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    vehicle_id: Mapped[str | None] = mapped_column(ForeignKey("fmcg_vehicles.id"), nullable=True, index=True)
 
 
 class FmcgTerritory(Base):
@@ -4210,6 +4233,511 @@ class FmcgReturnLine(Base):
     quantity: Mapped[float] = mapped_column(Numeric(14, 3))
     tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+
+
+class FmcgLineBatch(Base):
+    """Which batches a delivered order line took stock from (FEFO). Recall tracing reads this."""
+
+    __tablename__ = "fmcg_line_batches"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    order_id: Mapped[str] = mapped_column(ForeignKey("fmcg_orders.id"), index=True)
+    order_line_id: Mapped[str] = mapped_column(ForeignKey("fmcg_order_lines.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    batch_id: Mapped[str] = mapped_column(ForeignKey("product_batches.id"), index=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    returned_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class FmcgRecall(Base):
+    __tablename__ = "fmcg_recalls"
+    __table_args__ = (UniqueConstraint("tenant_id", "recall_number", name="uq_fmcg_recall_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    recall_number: Mapped[str] = mapped_column(String(40))
+    title: Mapped[str] = mapped_column(String(200))
+    reason: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), default="open", index=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class FmcgRecallBatch(Base):
+    __tablename__ = "fmcg_recall_batches"
+    __table_args__ = (UniqueConstraint("tenant_id", "recall_id", "batch_id", name="uq_fmcg_recall_batch"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    recall_id: Mapped[str] = mapped_column(ForeignKey("fmcg_recalls.id"), index=True)
+    batch_id: Mapped[str] = mapped_column(ForeignKey("product_batches.id"), index=True)
+    quantity_in_stock: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    quantity_delivered: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    recovered_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+
+
+class FmcgVanLoad(Base):
+    """Stock set aside on a van for one dispatch. Reconciled at close."""
+
+    __tablename__ = "fmcg_van_loads"
+    __table_args__ = (UniqueConstraint("tenant_id", "dispatch_id", "product_id", name="uq_fmcg_van_load"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    dispatch_id: Mapped[str] = mapped_column(ForeignKey("fmcg_dispatches.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    loaded_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    sold_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    damaged_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    sample_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    counted_qty: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)
+    variance_qty: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)
+
+
+class FmcgVanExpense(Base):
+    __tablename__ = "fmcg_van_expenses"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    dispatch_id: Mapped[str] = mapped_column(ForeignKey("fmcg_dispatches.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(20))
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class FmcgVanClosing(Base):
+    __tablename__ = "fmcg_van_closings"
+    __table_args__ = (UniqueConstraint("tenant_id", "dispatch_id", name="uq_fmcg_van_closing"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    dispatch_id: Mapped[str] = mapped_column(ForeignKey("fmcg_dispatches.id"), index=True)
+    stock_variance_value: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    cash_variance: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    closed_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    closed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class FmcgProofOfDelivery(Base):
+    """Who received a delivered order: name, signature, optional photo and where the phone was."""
+
+    __tablename__ = "fmcg_proofs_of_delivery"
+    __table_args__ = (UniqueConstraint("tenant_id", "order_id", name="uq_fmcg_pod_order"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    order_id: Mapped[str] = mapped_column(ForeignKey("fmcg_orders.id"), index=True)
+    recipient_name: Mapped[str] = mapped_column(String(150))
+    signature: Mapped[str | None] = mapped_column(Text, nullable=True)
+    photo: Mapped[str | None] = mapped_column(Text, nullable=True)
+    latitude: Mapped[float | None] = mapped_column(Numeric(9, 6), nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Numeric(9, 6), nullable=True)
+    accuracy_m: Mapped[float | None] = mapped_column(Numeric(9, 1), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    captured_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    captured_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class FmcgQcInspection(Base):
+    __tablename__ = "fmcg_qc_inspections"
+    __table_args__ = (UniqueConstraint("tenant_id", "inspection_number", name="uq_fmcg_qc_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    inspection_number: Mapped[str] = mapped_column(String(40))
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    batch_id: Mapped[str | None] = mapped_column(ForeignKey("product_batches.id"), nullable=True, index=True)
+    supplier_id: Mapped[str | None] = mapped_column(ForeignKey("parties.id"), nullable=True, index=True)
+    sample_size: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    packaging_ok: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    label_ok: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    expiry_ok: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    temperature_c: Mapped[float | None] = mapped_column(Numeric(6, 2), nullable=True)
+    certificate_ref: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
+    rejected_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    placed_hold: Mapped[bool] = mapped_column(Boolean, default=False)
+    decision_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    decided_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class FmcgComplaint(Base):
+    __tablename__ = "fmcg_complaints"
+    __table_args__ = (UniqueConstraint("tenant_id", "complaint_number", name="uq_fmcg_complaint_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    complaint_number: Mapped[str] = mapped_column(String(40))
+    customer_id: Mapped[str | None] = mapped_column(ForeignKey("parties.id"), nullable=True, index=True)
+    order_id: Mapped[str | None] = mapped_column(ForeignKey("fmcg_orders.id"), nullable=True, index=True)
+    product_id: Mapped[str | None] = mapped_column(ForeignKey("products.id"), nullable=True, index=True)
+    batch_id: Mapped[str | None] = mapped_column(ForeignKey("product_batches.id"), nullable=True, index=True)
+    category: Mapped[str] = mapped_column(String(20))
+    description: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), default="open", index=True)
+    resolution: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class FmcgLocation(Base):
+    """A zone (a named area of a warehouse) or a bin (a shelf or pallet slot inside a zone)."""
+
+    __tablename__ = "fmcg_locations"
+    __table_args__ = (UniqueConstraint("tenant_id", "warehouse_id", "code", name="uq_fmcg_location_code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    warehouse_id: Mapped[str] = mapped_column(ForeignKey("warehouses.id"), index=True)
+    parent_id: Mapped[str | None] = mapped_column(ForeignKey("fmcg_locations.id"), nullable=True, index=True)
+    kind: Mapped[str] = mapped_column(String(8))
+    code: Mapped[str] = mapped_column(String(30))
+    name: Mapped[str] = mapped_column(String(120))
+    zone_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    capacity: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)
+    pick_order: Mapped[int] = mapped_column(Integer, default=100)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class FmcgBinStock(Base):
+    """What sits in a bin. A location layer over consolidated stock: it never changes stock totals."""
+
+    __tablename__ = "fmcg_bin_stock"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    bin_id: Mapped[str] = mapped_column(ForeignKey("fmcg_locations.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    batch_id: Mapped[str | None] = mapped_column(ForeignKey("product_batches.id"), nullable=True, index=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class FmcgBinCount(Base):
+    __tablename__ = "fmcg_bin_counts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    bin_id: Mapped[str] = mapped_column(ForeignKey("fmcg_locations.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    batch_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    expected_qty: Mapped[float] = mapped_column(Numeric(14, 3))
+    counted_qty: Mapped[float] = mapped_column(Numeric(14, 3))
+    variance_qty: Mapped[float] = mapped_column(Numeric(14, 3))
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    counted_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    counted_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class FmcgVehicle(Base):
+    __tablename__ = "fmcg_vehicles"
+    __table_args__ = (UniqueConstraint("tenant_id", "plate", name="uq_fmcg_vehicle_plate"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    plate: Mapped[str] = mapped_column(String(20))
+    name: Mapped[str] = mapped_column(String(120))
+    kind: Mapped[str] = mapped_column(String(12), default="van")
+    make_model: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    driver_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(12), default="active", index=True)
+    odometer_km: Mapped[float] = mapped_column(Numeric(12, 1), default=0)
+    insurance_expiry: Mapped[date | None] = mapped_column(Date, nullable=True)
+    roadworthy_expiry: Mapped[date | None] = mapped_column(Date, nullable=True)
+    licence_expiry: Mapped[date | None] = mapped_column(Date, nullable=True)
+    service_every_km: Mapped[float | None] = mapped_column(Numeric(12, 1), nullable=True)
+    last_service_km: Mapped[float | None] = mapped_column(Numeric(12, 1), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class FmcgVehicleLog(Base):
+    """Fuel, service, repair, tyre and accident records for a vehicle."""
+
+    __tablename__ = "fmcg_vehicle_logs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    vehicle_id: Mapped[str] = mapped_column(ForeignKey("fmcg_vehicles.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(12), index=True)
+    log_date: Mapped[date] = mapped_column(Date, index=True)
+    odometer_km: Mapped[float | None] = mapped_column(Numeric(12, 1), nullable=True)
+    litres: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    vendor: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    note: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    dispatch_id: Mapped[str | None] = mapped_column(ForeignKey("fmcg_dispatches.id"), nullable=True, index=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class FmcgMustStock(Base):
+    """A product every outlet should have on its shelf, and the fewest facings that count as present."""
+
+    __tablename__ = "fmcg_must_stock"
+    __table_args__ = (UniqueConstraint("tenant_id", "product_id", name="uq_fmcg_must_stock"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    min_facings: Mapped[int] = mapped_column(Integer, default=1)
+
+
+class FmcgShelfAudit(Base):
+    __tablename__ = "fmcg_shelf_audits"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    outlet_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
+    visit_id: Mapped[str | None] = mapped_column(ForeignKey("fmcg_visits.id"), nullable=True, index=True)
+    auditor_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    display_ok: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    required: Mapped[int] = mapped_column(Integer, default=0)
+    available: Mapped[int] = mapped_column(Integer, default=0)
+    compliant: Mapped[int] = mapped_column(Integer, default=0)
+    score_pct: Mapped[float | None] = mapped_column(Numeric(5, 1), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    photo: Mapped[str | None] = mapped_column(Text, nullable=True)
+    audited_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class FmcgShelfAuditLine(Base):
+    __tablename__ = "fmcg_shelf_audit_lines"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    audit_id: Mapped[str] = mapped_column(ForeignKey("fmcg_shelf_audits.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    present: Mapped[bool] = mapped_column(Boolean, default=False)
+    facings: Mapped[int] = mapped_column(Integer, default=0)
+    shelf_price: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    must_stock: Mapped[bool] = mapped_column(Boolean, default=False)
+    min_facings: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class FmcgCompetitorPrice(Base):
+    __tablename__ = "fmcg_competitor_prices"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    outlet_id: Mapped[str | None] = mapped_column(ForeignKey("parties.id"), nullable=True, index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    competitor_brand: Mapped[str] = mapped_column(String(120))
+    competitor_product: Mapped[str] = mapped_column(String(160))
+    price: Mapped[float] = mapped_column(Numeric(14, 2))
+    note: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    observed_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    observed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class FmcgShipment(Base):
+    """An import consignment whose freight, duty and clearing costs are added to the cost of the goods."""
+
+    __tablename__ = "fmcg_shipments"
+    __table_args__ = (UniqueConstraint("tenant_id", "shipment_number", name="uq_fmcg_shipment_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    shipment_number: Mapped[str] = mapped_column(String(40))
+    reference: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    container_no: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    supplier_id: Mapped[str | None] = mapped_column(ForeignKey("parties.id"), nullable=True, index=True)
+    grn_id: Mapped[str | None] = mapped_column(ForeignKey("goods_receipts.id"), nullable=True, index=True)
+    eta: Mapped[date | None] = mapped_column(Date, nullable=True)
+    basis: Mapped[str] = mapped_column(String(10), default="value")
+    status: Mapped[str] = mapped_column(String(12), default="open", index=True)
+    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    total_costs: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    allocated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class FmcgShipmentLine(Base):
+    __tablename__ = "fmcg_shipment_lines"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    shipment_id: Mapped[str] = mapped_column(ForeignKey("fmcg_shipments.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    goods_value: Mapped[float] = mapped_column(Numeric(14, 2))
+    allocated: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    capitalised: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    cost_before: Mapped[float | None] = mapped_column(Numeric(14, 4), nullable=True)
+    cost_after: Mapped[float | None] = mapped_column(Numeric(14, 4), nullable=True)
+
+
+class FmcgShipmentCost(Base):
+    __tablename__ = "fmcg_shipment_costs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    shipment_id: Mapped[str] = mapped_column(ForeignKey("fmcg_shipments.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(16))
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    vendor: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    pay_method: Mapped[str] = mapped_column(String(16))
+    note: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class FmcgBom(Base):
+    """A recipe: what goes into one batch of a finished product."""
+
+    __tablename__ = "fmcg_boms"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    name: Mapped[str] = mapped_column(String(150))
+    output_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=1)
+    shelf_life_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class FmcgBomLine(Base):
+    __tablename__ = "fmcg_bom_lines"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    bom_id: Mapped[str] = mapped_column(ForeignKey("fmcg_boms.id"), index=True)
+    component_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 4))
+    wastage_pct: Mapped[float] = mapped_column(Numeric(5, 2), default=0)
+
+
+class FmcgProductionOrder(Base):
+    __tablename__ = "fmcg_production_orders"
+    __table_args__ = (UniqueConstraint("tenant_id", "order_number", name="uq_fmcg_production_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    order_number: Mapped[str] = mapped_column(String(40))
+    bom_id: Mapped[str] = mapped_column(ForeignKey("fmcg_boms.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    planned_qty: Mapped[float] = mapped_column(Numeric(14, 3))
+    produced_qty: Mapped[float | None] = mapped_column(Numeric(14, 3), nullable=True)
+    status: Mapped[str] = mapped_column(String(14), default="planned", index=True)
+    planned_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    batch_number: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    expiry_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    held_for_qc: Mapped[bool] = mapped_column(Boolean, default=False)
+    material_cost: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    overhead_cost: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    unit_cost: Mapped[float | None] = mapped_column(Numeric(14, 4), nullable=True)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    cancel_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class FmcgProductionMaterial(Base):
+    __tablename__ = "fmcg_production_materials"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    order_id: Mapped[str] = mapped_column(ForeignKey("fmcg_production_orders.id"), index=True)
+    component_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    standard_qty: Mapped[float] = mapped_column(Numeric(14, 3))
+    actual_qty: Mapped[float] = mapped_column(Numeric(14, 3))
+    unit_cost: Mapped[float] = mapped_column(Numeric(14, 4))
+
+
+class FmcgProductionTrace(Base):
+    """Which batches of each material went into a production order, for recall tracing."""
+
+    __tablename__ = "fmcg_production_trace"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    order_id: Mapped[str] = mapped_column(ForeignKey("fmcg_production_orders.id"), index=True)
+    component_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    batch_id: Mapped[str] = mapped_column(ForeignKey("product_batches.id"), index=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+
+
+class FmcgProductionOverhead(Base):
+    __tablename__ = "fmcg_production_overheads"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    order_id: Mapped[str] = mapped_column(ForeignKey("fmcg_production_orders.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(16))
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    pay_method: Mapped[str] = mapped_column(String(16))
+    note: Mapped[str | None] = mapped_column(String(300), nullable=True)
+
+
+class FmcgDistributor(Base):
+    """Trade terms for an outlet that buys in volume: its tier, price discount and monthly target."""
+
+    __tablename__ = "fmcg_distributors"
+    __table_args__ = (UniqueConstraint("tenant_id", "customer_id", name="uq_fmcg_distributor_customer"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    customer_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(14), default="distributor")
+    price_discount_pct: Mapped[float] = mapped_column(Numeric(5, 2), default=0)
+    monthly_target: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    territory_id: Mapped[str | None] = mapped_column(ForeignKey("fmcg_territories.id"), nullable=True, index=True)
+    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class FmcgAlertLog(Base):
+    """An alert already sent for one band of one batch or vehicle document, so it is never sent twice."""
+
+    __tablename__ = "fmcg_alert_log"
+    __table_args__ = (UniqueConstraint("tenant_id", "kind", "ref_id", "band", name="uq_fmcg_alert_band"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(12))
+    ref_id: Mapped[str] = mapped_column(String(80))
+    band: Mapped[int] = mapped_column(Integer)
+    summary: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    sent_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class FmcgOfflineRef(Base):
+    """An action sent from a device. The reference is the device's own, so a retry never saves it twice."""
+
+    __tablename__ = "fmcg_offline_refs"
+    __table_args__ = (UniqueConstraint("tenant_id", "ref", name="uq_fmcg_offline_ref"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    ref: Mapped[str] = mapped_column(String(64))
+    kind: Mapped[str] = mapped_column(String(20))
+    user_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(10))
+    result_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    message: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    captured_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    received_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
 class GymPlan(Base):

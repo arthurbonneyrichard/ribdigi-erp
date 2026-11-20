@@ -370,15 +370,21 @@ function deskTail(desk: string, extraSettings: NavItem[] = []): NavGroup[] {
 
 /** FMCG distributor: selling to outlets, trade, its own stock and buying. No shop menus. */
 export const FMCG_NAV_GROUPS: NavGroup[] = [
-  { id: 'fmcg', label: '', items: [['Dashboard', '/fmcg', 'fmcg']] },
+  { id: 'fmcg', label: '', items: [['Dashboard', '/fmcg', 'fmcg'], ['Business overview', '/fmcg?tab=command', 'fmcg'], ['Ask the assistant', '/fmcg?tab=assistant', 'fmcg']] },
   {
     id: 'fmcg-selling',
     label: 'Selling',
     items: [
       ['Outlets', '/fmcg?tab=outlets', 'fmcg'],
+      ['Distributors', '/fmcg?tab=distributors', 'fmcg'],
       ['Visits', '/fmcg?tab=visits', 'fmcg'],
+      ['Shelf checks', '/fmcg?tab=merch', 'fmcg'],
       ['Orders', '/fmcg?tab=orders', 'fmcg'],
+      ['Van sales', '/fmcg?tab=van', 'fmcg'],
+      ['Fleet', '/fmcg?tab=fleet', 'fmcg'],
       ['Deliveries', '/fmcg?tab=deliveries', 'fmcg'],
+      ['Proof of delivery', '/fmcg?tab=pod', 'fmcg'],
+      ['Complaints', '/fmcg?tab=complaints', 'fmcg'],
       ['Collections', '/fmcg?tab=collections', 'fmcg'],
     ],
   },
@@ -388,7 +394,8 @@ export const FMCG_NAV_GROUPS: NavGroup[] = [
     items: [
       ['Routes', '/fmcg?tab=routes', 'fmcg'],
       ['Territories', '/fmcg?tab=territories', 'fmcg'],
-      ['Trade schemes', '/fmcg?tab=schemes', 'fmcg'],
+      ['Promotions', '/fmcg?tab=promotions', 'fmcg'],
+      ['Report centre', '/fmcg?tab=centre', 'fmcg'],
       ['Pack convert', '/fmcg?tab=packs', 'fmcg'],
     ],
   },
@@ -397,10 +404,15 @@ export const FMCG_NAV_GROUPS: NavGroup[] = [
     label: 'Stock',
     items: [
       ['Products', '/inventory?tab=products', 'inventory'],
+      ['Manufacturing', '/fmcg?tab=manufacturing', 'fmcg'],
       ['Stock levels', '/inventory?tab=whstock', 'inventory'],
+      ['Warehouse layout', '/fmcg?tab=warehouse', 'fmcg'],
+      ['Demand forecast', '/fmcg?tab=forecast', 'fmcg'],
       ['Adjust stock', '/inventory?tab=adjust', 'inventory'],
       ['Stock count', '/inventory?tab=counts', 'inventory'],
-      ['Expiry and batches', '/inventory?tab=expiry', 'inventory'],
+      ['Batches and expiry', '/fmcg?tab=batches', 'fmcg'],
+      ['Quality control', '/fmcg?tab=quality', 'fmcg'],
+      ['Recalls', '/fmcg?tab=recalls', 'fmcg'],
     ],
   },
   {
@@ -408,6 +420,7 @@ export const FMCG_NAV_GROUPS: NavGroup[] = [
     label: 'Buying',
     items: [
       ['Suppliers', '/purchasing?tab=suppliers', 'purchasing'],
+      ['Import shipments', '/fmcg?tab=imports', 'fmcg'],
       ['Purchase orders', '/purchasing?tab=orders', 'purchasing'],
       ['Receive goods', '/purchasing?tab=grn', 'purchasing'],
       ['Supplier bills', '/purchasing?tab=invoices', 'purchasing'],
@@ -987,9 +1000,13 @@ export const CASHIER_NAV_MODULES: string[] = ['sales', 'pos', 'restaurant', 'sup
 /** Gift cards share the POS module. Cashiers stay on the till; other roles keep the page. */
 /** Restaurant staff see only their job's screens (the server enforces the same jobs). */
 export const FMCG_ROLE_HREFS: Record<string, string[]> = {
-  fmcg_rep: ['/hrm?tab=me', '/fmcg', '/fmcg?tab=outlets', '/fmcg?tab=visits', '/fmcg?tab=orders', '/fmcg?tab=collections', '/notifications', '/security', '/support'],
-  fmcg_driver: ['/hrm?tab=me', '/fmcg', '/fmcg?tab=orders', '/fmcg?tab=collections', '/fmcg?tab=deliveries', '/notifications', '/security', '/support'],
+  fmcg_rep: ['/hrm?tab=me', '/fmcg', '/fmcg?tab=outlets', '/fmcg?tab=visits', '/fmcg?tab=orders', '/fmcg?tab=collections', '/fmcg?tab=van', '/fmcg?tab=complaints', '/fmcg?tab=merch', '/notifications', '/security', '/support'],
+  fmcg_driver: ['/hrm?tab=me', '/fmcg', '/fmcg?tab=orders', '/fmcg?tab=collections', '/fmcg?tab=deliveries', '/fmcg?tab=van', '/fmcg?tab=pod', '/fmcg?tab=complaints', '/notifications', '/security', '/support'],
 };
+
+FMCG_ROLE_HREFS.fmcg_storekeeper = ['/hrm?tab=me', '/fmcg', '/fmcg?tab=warehouse', '/fmcg?tab=batches', '/inventory?tab=whstock', '/inventory?tab=adjust', '/inventory?tab=counts', '/notifications', '/security', '/support'];
+FMCG_ROLE_HREFS.fmcg_quality = ['/hrm?tab=me', '/fmcg', '/fmcg?tab=quality', '/fmcg?tab=complaints', '/fmcg?tab=batches', '/fmcg?tab=pod', '/notifications', '/security', '/support'];
+FMCG_ROLE_HREFS.fmcg_fleet = ['/hrm?tab=me', '/fmcg', '/fmcg?tab=fleet', '/fmcg?tab=deliveries', '/notifications', '/security', '/support'];
 
 export const GYM_ROLE_HREFS: Record<string, string[]> = {
   gym_frontdesk: ['/hrm?tab=me', '/gym', '/gym?tab=door', '/gym?tab=members', '/gym?tab=classes', '/gym?tab=floor', '/gym?tab=shop', '/gym?tab=growth', '/gym?tab=setup', '/notifications', '/security', '/support'],

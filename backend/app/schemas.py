@@ -417,6 +417,9 @@ SystemRoleValue = Annotated[
         "fmcg_manager",
         "fmcg_rep",
         "fmcg_driver",
+        "fmcg_storekeeper",
+        "fmcg_quality",
+        "fmcg_fleet",
         "gym_manager",
         "gym_frontdesk",
         "gym_trainer",
@@ -7993,6 +7996,7 @@ class NotificationPreferencesMap(BaseModel):
     payment_due: NotificationChannelPrefs | None = None
     quotation_expiry: NotificationChannelPrefs | None = None
     batch_expiry: NotificationChannelPrefs | None = None
+    fleet_document: NotificationChannelPrefs | None = None
     recurring_expense_due: NotificationChannelPrefs | None = None
     new_order: NotificationChannelPrefs | None = None
     transfer: NotificationChannelPrefs | None = None

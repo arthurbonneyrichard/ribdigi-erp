@@ -469,6 +469,21 @@ api.include_router(pos_extras_api_mod.serial_router)
 from app import bakery_api as bakery_api_mod  # noqa: E402
 from app import fmcg_orders as fmcg_orders_svc  # noqa: E402
 from app import fmcg_orders_api as fmcg_orders_api_mod  # noqa: E402
+from app import fmcg_batches_api as fmcg_batches_api_mod  # noqa: E402
+from app import fmcg_van_api as fmcg_van_api_mod  # noqa: E402
+from app import fmcg_quality_api as fmcg_quality_api_mod  # noqa: E402
+from app import fmcg_promos_api as fmcg_promos_api_mod  # noqa: E402
+from app import fmcg_warehouse_api as fmcg_warehouse_api_mod  # noqa: E402
+from app import fmcg_fleet_api as fmcg_fleet_api_mod  # noqa: E402
+from app import fmcg_forecast_api as fmcg_forecast_api_mod  # noqa: E402
+from app import fmcg_reports_api as fmcg_reports_api_mod  # noqa: E402
+from app import fmcg_merch_api as fmcg_merch_api_mod  # noqa: E402
+from app import fmcg_landed_api as fmcg_landed_api_mod  # noqa: E402
+from app import fmcg_mfg_api as fmcg_mfg_api_mod  # noqa: E402
+from app import fmcg_assistant_api as fmcg_assistant_api_mod  # noqa: E402
+from app import fmcg_distributors_api as fmcg_distributors_api_mod  # noqa: E402
+from app import fmcg_alerts_api as fmcg_alerts_api_mod  # noqa: E402
+from app import fmcg_offline_api as fmcg_offline_api_mod  # noqa: E402
 from app import gym_api as gym_api_mod  # noqa: E402
 from app import gym_ops_api as gym_ops_api_mod  # noqa: E402
 from app import gym_fitness_api as gym_fitness_api_mod  # noqa: E402
@@ -507,6 +522,21 @@ api.include_router(hrm_api_mod.router)
 api.include_router(hrm_people_api_mod.router)
 api.include_router(hrm_time_api_mod.router)
 api.include_router(fmcg_orders_api_mod.router)
+api.include_router(fmcg_batches_api_mod.router)
+api.include_router(fmcg_van_api_mod.router)
+api.include_router(fmcg_quality_api_mod.router)
+api.include_router(fmcg_promos_api_mod.router)
+api.include_router(fmcg_warehouse_api_mod.router)
+api.include_router(fmcg_fleet_api_mod.router)
+api.include_router(fmcg_forecast_api_mod.router)
+api.include_router(fmcg_reports_api_mod.router)
+api.include_router(fmcg_merch_api_mod.router)
+api.include_router(fmcg_landed_api_mod.router)
+api.include_router(fmcg_mfg_api_mod.router)
+api.include_router(fmcg_assistant_api_mod.router)
+api.include_router(fmcg_distributors_api_mod.router)
+api.include_router(fmcg_alerts_api_mod.router)
+api.include_router(fmcg_offline_api_mod.router)
 from app import fmcg_field_api as fmcg_field_api_mod  # noqa: E402
 
 api.include_router(fmcg_field_api_mod.router)
@@ -20105,6 +20135,7 @@ async def fmcg_schemes_create(
         starts_on=payload.starts_on,
         ends_on=payload.ends_on,
         notes=payload.notes,
+        created_by=claims["sub"],
     )
     await audit_svc.record_event(
         db,
