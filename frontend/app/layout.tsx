@@ -37,8 +37,8 @@ export const metadata = {
 };
 
 // Runs before paint to avoid a flash of the wrong theme.
-// Prefer the active signed-in user's scoped key when present; otherwise light (white) default.
-const themeInit = `(function(){try{var uid=localStorage.getItem('ribdigi.theme.userId');var t=uid?localStorage.getItem('ribdigi.theme.'+uid):null;if(t!=='light'&&t!=='dark'){t='light'}document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','light')}})();`;
+// Prefer the active signed-in user's scoped key; signed out, use the last theme shown on this device; otherwise light.
+const themeInit = `(function(){try{var uid=localStorage.getItem('ribdigi.theme.userId');var t=uid?localStorage.getItem('ribdigi.theme.'+uid):localStorage.getItem('ribdigi.theme.device');if(t!=='light'&&t!=='dark'){t='light'}document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','light')}})();`;
 
 const swInit = `(function(){try{if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(function(){})}}catch(e){}})();`;
 
