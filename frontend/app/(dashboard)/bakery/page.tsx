@@ -529,7 +529,7 @@ function BakeryDesk() {
 
   const orderTotal = orderLines.reduce((sum, l) => {
     const found = items.find((i) => i.id === l.product_id);
-    return sum + (found ? Math.round(Number(l.quantity || 0) * (pays(found) + extraFor(l)) * 100) / 100 : 0);
+    return sum + (found ? Math.round(Number(l.quantity || 0) * (pays(found) + extraFor(l) * (Number(found.price) > 0 ? pays(found) / Number(found.price) : 1)) * 100) / 100 : 0);
   }, 0);
 
   async function takeOrder() {

@@ -73,7 +73,7 @@ Cancelling with `deposit_action=refund` gives each instalment back the way it ca
 A manager gives an item option groups under Stock → Item details (`options` on `PUT /bakery/items/{id}/details`, stored in `bakery_item_settings.options`, migration `20261119_0202`). One line per group: `Size*: 6 inch, 10 inch=60` (`*` = must be chosen, `=60` = extra price before tax).
 
 - An order line may carry `options: [{group, choice}]`. `bakery.apply_options` checks each against the item's own list (422 for an unknown group or choice), adds the extra to the unit price before discount and tax, and writes `Size: 10 inch; Flavour: Red velvet` ahead of the customer's writing in the line note (so the order slip, production sheet and delivery show it).
-- Required groups are enforced on orders (`enforce_options`), not at the counter: counter sales may pass `options`, but a counter line without them is not refused.
+- Required groups are enforced on orders (`enforce_options`), not at the counter: counter sales may pass `options`, but a counter line without them is sold at the base price. The counter basket is one line per item, so custom cakes (size, flavour, writing) are taken under Orders, which also holds the date and deposit.
 - Prices always come from the item's list, never from the request. Tests: `test_bakery_safety.py::test_cake_options_price_and_note_an_order`.
 
 ## Food safety (`/bakery?tab=safety`)
