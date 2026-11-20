@@ -48,7 +48,7 @@ const nextConfig = {
       { key: 'X-Content-Type-Options', value: 'nosniff' },
       { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
       { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
-      { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=()' },
+      { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=(self)' },
       // Dev needs eval for hot reload, so the full policy is only enforced on production builds.
       process.env.NODE_ENV === 'production'
         ? { key: 'Content-Security-Policy', value: CSP }
