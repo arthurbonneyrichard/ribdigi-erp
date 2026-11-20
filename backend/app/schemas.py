@@ -4326,6 +4326,7 @@ JobNameValue = Annotated[
         "sample_server_health",
         "hotel_daily_close",
         "sync_hotel_channels",
+        "send_gym_renewal_reminders",
     ],
     BeforeValidator(coerce_package_code_value),
 ]

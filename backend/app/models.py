@@ -4221,6 +4221,22 @@ class GymPlan(Base):
     price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     duration_days: Mapped[int] = mapped_column(Integer, default=30)
     visit_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    access_start: Mapped[str | None] = mapped_column(String(5), nullable=True)  # "HH:MM" local, with access_end
+    access_end: Mapped[str | None] = mapped_column(String(5), nullable=True)
+    access_days: Mapped[str | None] = mapped_column(String(20), nullable=True)  # "1,2,3" Monday=1; empty = every day
+    branch_scope: Mapped[str] = mapped_column(String(10), default="all", server_default="all")  # all | home
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymBranch(Base):
+    __tablename__ = "gym_branches"
+    __table_args__ = (UniqueConstraint("tenant_id", "code", name="uq_gym_branch_code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    code: Mapped[str] = mapped_column(String(20))
+    name: Mapped[str] = mapped_column(String(150))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -4240,6 +4256,9 @@ class GymMember(Base):
     emergency_contact: Mapped[str | None] = mapped_column(String(180), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     joined_on: Mapped[date] = mapped_column(Date, index=True)
+    home_branch_id: Mapped[str | None] = mapped_column(ForeignKey("gym_branches.id"), nullable=True, index=True)
+    marketing_consent: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    consent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -4309,6 +4328,7 @@ class GymCheckIn(Base):
     membership_id: Mapped[str | None] = mapped_column(ForeignKey("gym_memberships.id"), nullable=True, index=True)
     allowed: Mapped[bool] = mapped_column(Boolean, default=True)
     refused_reason: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    branch_id: Mapped[str | None] = mapped_column(ForeignKey("gym_branches.id"), nullable=True, index=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     checked_in_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
@@ -4320,6 +4340,7 @@ class GymClass(Base):
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
     name: Mapped[str] = mapped_column(String(120))
     trainer_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    series_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     starts_at: Mapped[datetime] = mapped_column(DateTime, index=True)
     capacity: Mapped[int] = mapped_column(Integer, default=15)
     status: Mapped[str] = mapped_column(String(20), default="scheduled", index=True)
@@ -4335,6 +4356,512 @@ class GymClassBooking(Base):
     class_id: Mapped[str] = mapped_column(ForeignKey("gym_classes.id"), index=True)
     member_id: Mapped[str] = mapped_column(ForeignKey("gym_members.id"), index=True)
     status: Mapped[str] = mapped_column(String(20), default="booked")
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymTrainer(Base):
+    __tablename__ = "gym_trainers"
+    __table_args__ = (UniqueConstraint("tenant_id", "full_name", name="uq_gym_trainer_name"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    full_name: Mapped[str] = mapped_column(String(150))
+    phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    specialization: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)  # the login this trainer uses
+    commission_pct: Mapped[float] = mapped_column(Numeric(5, 2), default=0, server_default="0")
+    session_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymTrainingSession(Base):
+    """A one-to-one session. A trainer cannot hold two live sessions that overlap."""
+
+    __tablename__ = "gym_training_sessions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    trainer_id: Mapped[str] = mapped_column(ForeignKey("gym_trainers.id"), index=True)
+    member_id: Mapped[str] = mapped_column(ForeignKey("gym_members.id"), index=True)
+    starts_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    ends_at: Mapped[datetime] = mapped_column(DateTime)
+    status: Mapped[str] = mapped_column(String(20), default="booked", index=True)
+    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymLocker(Base):
+    __tablename__ = "gym_lockers"
+    __table_args__ = (UniqueConstraint("tenant_id", "number", name="uq_gym_locker_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    number: Mapped[str] = mapped_column(String(20))
+    status: Mapped[str] = mapped_column(String(20), default="free", index=True)
+    member_id: Mapped[str | None] = mapped_column(ForeignKey("gym_members.id"), nullable=True, index=True)
+    assigned_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    rented_until: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymEquipment(Base):
+    __tablename__ = "gym_equipment"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(150))
+    category: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    serial_number: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    purchase_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    purchase_cost: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    useful_life_months: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    warranty_until: Mapped[date | None] = mapped_column(Date, nullable=True)
+    supplier_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="available", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymMaintenance(Base):
+    __tablename__ = "gym_maintenance"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    equipment_id: Mapped[str] = mapped_column(ForeignKey("gym_equipment.id"), index=True)
+    fault: Mapped[str] = mapped_column(String(500))
+    status: Mapped[str] = mapped_column(String(20), default="open", index=True)
+    resolution: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    opened_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class GymGuestVisit(Base):
+    __tablename__ = "gym_guest_visits"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    guest_name: Mapped[str] = mapped_column(String(180))
+    phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    host_member_id: Mapped[str | None] = mapped_column(ForeignKey("gym_members.id"), nullable=True, index=True)
+    fee: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    visited_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    left_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+
+
+class GymExercise(Base):
+    __tablename__ = "gym_exercises"
+    __table_args__ = (UniqueConstraint("tenant_id", "name", name="uq_gym_exercise_name"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(150))
+    muscle_group: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    equipment: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymProgramme(Base):
+    __tablename__ = "gym_programmes"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    member_id: Mapped[str] = mapped_column(ForeignKey("gym_members.id"), index=True)
+    trainer_id: Mapped[str | None] = mapped_column(ForeignKey("gym_trainers.id"), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(150))
+    goal: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    starts_on: Mapped[date] = mapped_column(Date)
+    ends_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="active", index=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymProgrammeLine(Base):
+    __tablename__ = "gym_programme_lines"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    programme_id: Mapped[str] = mapped_column(ForeignKey("gym_programmes.id"), index=True)
+    exercise_id: Mapped[str] = mapped_column(ForeignKey("gym_exercises.id"), index=True)
+    day_of_week: Mapped[int] = mapped_column(Integer, default=1)
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    sets: Mapped[int] = mapped_column(Integer, default=3)
+    reps: Mapped[int] = mapped_column(Integer, default=10)
+    weight_kg: Mapped[float | None] = mapped_column(Numeric(8, 2), nullable=True)
+    rest_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(300), nullable=True)
+
+
+class GymWorkoutLog(Base):
+    __tablename__ = "gym_workout_logs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    programme_id: Mapped[str] = mapped_column(ForeignKey("gym_programmes.id"), index=True)
+    line_id: Mapped[str] = mapped_column(ForeignKey("gym_programme_lines.id"), index=True)
+    member_id: Mapped[str] = mapped_column(ForeignKey("gym_members.id"), index=True)
+    done_on: Mapped[date] = mapped_column(Date, index=True)
+    sets_done: Mapped[int] = mapped_column(Integer, default=0)
+    reps_done: Mapped[int] = mapped_column(Integer, default=0)
+    weight_kg: Mapped[float | None] = mapped_column(Numeric(8, 2), nullable=True)
+    recorded_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymMeasurement(Base):
+    """Body measurements for one member on one day. Fitness tracking only, not a medical record."""
+
+    __tablename__ = "gym_measurements"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    member_id: Mapped[str] = mapped_column(ForeignKey("gym_members.id"), index=True)
+    measured_on: Mapped[date] = mapped_column(Date, index=True)
+    weight_kg: Mapped[float | None] = mapped_column(Numeric(6, 2), nullable=True)
+    height_cm: Mapped[float | None] = mapped_column(Numeric(6, 1), nullable=True)
+    body_fat_pct: Mapped[float | None] = mapped_column(Numeric(5, 1), nullable=True)
+    waist_cm: Mapped[float | None] = mapped_column(Numeric(6, 1), nullable=True)
+    chest_cm: Mapped[float | None] = mapped_column(Numeric(6, 1), nullable=True)
+    hips_cm: Mapped[float | None] = mapped_column(Numeric(6, 1), nullable=True)
+    arms_cm: Mapped[float | None] = mapped_column(Numeric(6, 1), nullable=True)
+    thighs_cm: Mapped[float | None] = mapped_column(Numeric(6, 1), nullable=True)
+    resting_hr: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    recorded_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymNutritionPlan(Base):
+    """A member's eating targets and meals. Guidance from staff, not medical advice."""
+
+    __tablename__ = "gym_nutrition_plans"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    member_id: Mapped[str] = mapped_column(ForeignKey("gym_members.id"), index=True)
+    name: Mapped[str] = mapped_column(String(150))
+    calories: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    protein_g: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    carbs_g: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    fat_g: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    water_ml: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    allergies: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    preferences: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    meals: Mapped[str | None] = mapped_column(Text, nullable=True)
+    starts_on: Mapped[date] = mapped_column(Date)
+    ends_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="active", index=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymNutritionLog(Base):
+    __tablename__ = "gym_nutrition_logs"
+    __table_args__ = (UniqueConstraint("plan_id", "logged_on", name="uq_gym_nutrition_log_day"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    plan_id: Mapped[str] = mapped_column(ForeignKey("gym_nutrition_plans.id"), index=True)
+    member_id: Mapped[str] = mapped_column(ForeignKey("gym_members.id"), index=True)
+    logged_on: Mapped[date] = mapped_column(Date, index=True)
+    calories: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    protein_g: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    carbs_g: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    fat_g: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    water_ml: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    recorded_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymCredential(Base):
+    """What a member shows at the door. Only a hash of the token is kept; the token is shown once."""
+
+    __tablename__ = "gym_credentials"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    member_id: Mapped[str] = mapped_column(ForeignKey("gym_members.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(20), default="qr")
+    label: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    status: Mapped[str] = mapped_column(String(20), default="active", index=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class GymDevice(Base):
+    """A door reader or turnstile. `verified` stays false until it has been tested on real hardware."""
+
+    __tablename__ = "gym_devices"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    branch_id: Mapped[str | None] = mapped_column(ForeignKey("gym_branches.id"), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    kind: Mapped[str] = mapped_column(String(20), default="qr_scanner")
+    verified: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymDoorEvent(Base):
+    """One scan sent by a device. The device's own event id makes a retry harmless."""
+
+    __tablename__ = "gym_door_events"
+    __table_args__ = (UniqueConstraint("tenant_id", "event_id", name="uq_gym_door_event"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    event_id: Mapped[str] = mapped_column(String(64))
+    device_id: Mapped[str | None] = mapped_column(ForeignKey("gym_devices.id"), nullable=True, index=True)
+    member_id: Mapped[str | None] = mapped_column(ForeignKey("gym_members.id"), nullable=True, index=True)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime)
+    outcome: Mapped[str] = mapped_column(String(20), index=True)  # allowed | refused | unknown | too_old
+    message: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    needs_attention: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymLead(Base):
+    __tablename__ = "gym_leads"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    full_name: Mapped[str] = mapped_column(String(180))
+    phone: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    source: Mapped[str] = mapped_column(String(30), default="walk_in", index=True)
+    status: Mapped[str] = mapped_column(String(20), default="new", index=True)  # new contacted trial converted lost
+    assigned_to: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    next_follow_up: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
+    trial_ends_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    marketing_consent: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    member_id: Mapped[str | None] = mapped_column(ForeignKey("gym_members.id"), nullable=True, index=True)
+    referred_by_member_id: Mapped[str | None] = mapped_column(ForeignKey("gym_members.id"), nullable=True, index=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymCampaign(Base):
+    __tablename__ = "gym_campaigns"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(150))
+    channel: Mapped[str] = mapped_column(String(10))  # sms | email
+    audience: Mapped[str] = mapped_column(String(20))  # active expiring lapsed leads
+    kind: Mapped[str] = mapped_column(String(10), default="marketing")  # marketing | service
+    subject: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    message: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), default="draft", index=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class GymCampaignRecipient(Base):
+    __tablename__ = "gym_campaign_recipients"
+    __table_args__ = (UniqueConstraint("campaign_id", "address", name="uq_gym_campaign_address"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    campaign_id: Mapped[str] = mapped_column(ForeignKey("gym_campaigns.id"), index=True)
+    member_id: Mapped[str | None] = mapped_column(ForeignKey("gym_members.id"), nullable=True, index=True)
+    lead_id: Mapped[str | None] = mapped_column(ForeignKey("gym_leads.id"), nullable=True, index=True)
+    address: Mapped[str] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(20), default="queued", index=True)  # sent failed skipped
+    detail: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class GymPortalLink(Base):
+    """A member's private link to their own portal. Only a hash is kept; it expires and can be cancelled."""
+
+    __tablename__ = "gym_portal_links"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    member_id: Mapped[str] = mapped_column(ForeignKey("gym_members.id"), index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    status: Mapped[str] = mapped_column(String(20), default="active", index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymFeedback(Base):
+    """A complaint, a comment or a trainer rating from a member."""
+
+    __tablename__ = "gym_feedback"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    member_id: Mapped[str] = mapped_column(ForeignKey("gym_members.id"), index=True)
+    trainer_id: Mapped[str | None] = mapped_column(ForeignKey("gym_trainers.id"), nullable=True, index=True)
+    kind: Mapped[str] = mapped_column(String(20), index=True)  # complaint | feedback | rating
+    rating: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    message: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="open", index=True)
+    resolution: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymSettings(Base):
+    """One row per gym: switches a manager controls."""
+
+    __tablename__ = "gym_settings"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), unique=True, index=True)
+    insights_enabled: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    reminder_channels: Mapped[str] = mapped_column(String(10), default="", server_default="")  # "", sms, email, both
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymMemberFile(Base):
+    """A member's photo, ID, signed waiver or progress photo. The bytes live in tenant media storage."""
+
+    __tablename__ = "gym_member_files"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    member_id: Mapped[str] = mapped_column(ForeignKey("gym_members.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(20), index=True)  # photo id_document waiver progress_photo
+    storage_key: Mapped[str] = mapped_column(String(500))
+    filename: Mapped[str] = mapped_column(String(200))
+    content_type: Mapped[str] = mapped_column(String(80))
+    size_bytes: Mapped[int] = mapped_column(Integer, default=0)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymFacility(Base):
+    """Something members book by the slot: sauna, pool lane, studio, court."""
+
+    __tablename__ = "gym_facilities"
+    __table_args__ = (UniqueConstraint("tenant_id", "name", name="uq_gym_facility_name"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    branch_id: Mapped[str | None] = mapped_column(ForeignKey("gym_branches.id"), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    kind: Mapped[str] = mapped_column(String(20), default="other")
+    capacity: Mapped[int] = mapped_column(Integer, default=1)
+    open_time: Mapped[str] = mapped_column(String(5), default="06:00")
+    close_time: Mapped[str] = mapped_column(String(5), default="22:00")
+    max_minutes: Mapped[int] = mapped_column(Integer, default=60)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymFacilityBooking(Base):
+    __tablename__ = "gym_facility_bookings"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    facility_id: Mapped[str] = mapped_column(ForeignKey("gym_facilities.id"), index=True)
+    member_id: Mapped[str] = mapped_column(ForeignKey("gym_members.id"), index=True)
+    starts_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    ends_at: Mapped[datetime] = mapped_column(DateTime)
+    status: Mapped[str] = mapped_column(String(20), default="booked", index=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymCommission(Base):
+    """What a trainer earns on one completed session: the listed session price times their percent."""
+
+    __tablename__ = "gym_commissions"
+    __table_args__ = (UniqueConstraint("session_id", name="uq_gym_commission_session"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    trainer_id: Mapped[str] = mapped_column(ForeignKey("gym_trainers.id"), index=True)
+    session_id: Mapped[str] = mapped_column(ForeignKey("gym_training_sessions.id"), index=True)
+    session_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    percent: Mapped[float] = mapped_column(Numeric(5, 2), default=0)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    earned_on: Mapped[date] = mapped_column(Date, index=True)
+    status: Mapped[str] = mapped_column(String(10), default="accrued", index=True)  # accrued | paid
+    paid_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    pay_reference: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymProduct(Base):
+    """Something the gym shop sells (water, protein, gloves). Its own stock, not the retail catalogue."""
+
+    __tablename__ = "gym_products"
+    __table_args__ = (UniqueConstraint("tenant_id", "name", name="uq_gym_product_name"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(150))
+    sku: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    cost: Mapped[float] = mapped_column(Numeric(14, 4), default=0)
+    stock_qty: Mapped[int] = mapped_column(Integer, default=0)
+    reorder_level: Mapped[int] = mapped_column(Integer, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GymShopSale(Base):
+    __tablename__ = "gym_shop_sales"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    sale_number: Mapped[str] = mapped_column(String(40))
+    member_id: Mapped[str | None] = mapped_column(ForeignKey("gym_members.id"), nullable=True, index=True)
+    method: Mapped[str] = mapped_column(String(20))
+    subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    cost_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    journal_entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class GymShopSaleLine(Base):
+    __tablename__ = "gym_shop_sale_lines"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    sale_id: Mapped[str] = mapped_column(ForeignKey("gym_shop_sales.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("gym_products.id"), index=True)
+    name: Mapped[str] = mapped_column(String(150))
+    quantity: Mapped[int] = mapped_column(Integer)
+    unit_price: Mapped[float] = mapped_column(Numeric(14, 2))
+    unit_cost: Mapped[float] = mapped_column(Numeric(14, 4), default=0)
+    line_total: Mapped[float] = mapped_column(Numeric(14, 2))
+    refunded_qty: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+
+
+class GymSupplierBill(Base):
+    """Stock bought on credit. Owed (account 2000) until paid from the till."""
+
+    __tablename__ = "gym_supplier_bills"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    bill_number: Mapped[str] = mapped_column(String(40))
+    supplier_name: Mapped[str] = mapped_column(String(150))
+    product_id: Mapped[str] = mapped_column(ForeignKey("gym_products.id"), index=True)
+    quantity: Mapped[int] = mapped_column(Integer)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    due_on: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(10), default="open", index=True)  # open | paid
+    paid_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    pay_method: Mapped[str | None] = mapped_column(String(20), nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

@@ -170,6 +170,13 @@ def hotel_daily_close() -> dict:
     return jobs_svc.run_async(jobs_svc.job_hotel_daily_close())
 
 
+@celery.task(name="app.tasks.send_gym_renewal_reminders")
+def send_gym_renewal_reminders() -> dict:
+    if not settings.CELERY_ENABLED:
+        return {"skipped": True, "reason": "CELERY_ENABLED=false"}
+    return jobs_svc.run_async(jobs_svc.job_send_gym_renewal_reminders())
+
+
 @celery.task(name="app.tasks.sync_hotel_channels")
 def sync_hotel_channels() -> dict:
     if not settings.CELERY_ENABLED:

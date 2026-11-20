@@ -470,12 +470,39 @@ from app import bakery_api as bakery_api_mod  # noqa: E402
 from app import fmcg_orders as fmcg_orders_svc  # noqa: E402
 from app import fmcg_orders_api as fmcg_orders_api_mod  # noqa: E402
 from app import gym_api as gym_api_mod  # noqa: E402
+from app import gym_ops_api as gym_ops_api_mod  # noqa: E402
+from app import gym_fitness_api as gym_fitness_api_mod  # noqa: E402
+from app import gym_nutrition_api as gym_nutrition_api_mod  # noqa: E402
+from app import gym_access_api as gym_access_api_mod  # noqa: E402
+from app import gym_door_api as gym_door_api_mod  # noqa: E402
+from app import gym_crm_api as gym_crm_api_mod  # noqa: E402
+from app import gym_portal_api as gym_portal_api_mod  # noqa: E402
+from app import gym_insights_api as gym_insights_api_mod  # noqa: E402
+from app import gym_files_api as gym_files_api_mod  # noqa: E402
+from app import gym_facilities_api as gym_facilities_api_mod  # noqa: E402
+from app import gym_commissions_api as gym_commissions_api_mod  # noqa: E402
+from app import gym_shop_api as gym_shop_api_mod  # noqa: E402
+from app import gym_assets_api as gym_assets_api_mod  # noqa: E402
 from app import hrm_api as hrm_api_mod  # noqa: E402
 from app import hrm_people_api as hrm_people_api_mod  # noqa: E402
 from app import hrm_time_api as hrm_time_api_mod  # noqa: E402
 
 api.include_router(bakery_api_mod.router)
 api.include_router(gym_api_mod.router)
+api.include_router(gym_ops_api_mod.router)
+api.include_router(gym_fitness_api_mod.router)
+api.include_router(gym_nutrition_api_mod.router)
+api.include_router(gym_access_api_mod.router)
+api.include_router(gym_door_api_mod.router)
+api.include_router(gym_crm_api_mod.router)
+api.include_router(gym_portal_api_mod.router)
+api.include_router(gym_portal_api_mod.member_router)
+api.include_router(gym_insights_api_mod.router)
+api.include_router(gym_files_api_mod.router)
+api.include_router(gym_facilities_api_mod.router)
+api.include_router(gym_commissions_api_mod.router)
+api.include_router(gym_shop_api_mod.router)
+api.include_router(gym_assets_api_mod.router)
 api.include_router(hrm_api_mod.router)
 api.include_router(hrm_people_api_mod.router)
 api.include_router(hrm_time_api_mod.router)

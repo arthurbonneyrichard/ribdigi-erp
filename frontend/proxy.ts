@@ -41,6 +41,9 @@ export function proxy(request: NextRequest) {
   if (path === '/stay' || path.startsWith('/stay/')) {
     return NextResponse.next();
   }
+  if (path === '/gym-member' || path.startsWith('/gym-member/')) {
+    return NextResponse.next();
+  }
   const url = request.nextUrl.clone();
   url.pathname = '/storefront';
   return NextResponse.rewrite(url);

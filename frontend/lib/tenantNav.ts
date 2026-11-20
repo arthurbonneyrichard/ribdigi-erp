@@ -436,13 +436,20 @@ export const GYM_NAV_GROUPS: NavGroup[] = [
       ['Door', '/gym?tab=door', 'gym'],
       ['Members', '/gym?tab=members', 'gym'],
       ['Classes', '/gym?tab=classes', 'gym'],
+      ['Gym floor', '/gym?tab=floor', 'gym'],
+      ['Shop', '/gym?tab=shop', 'gym'],
+      ['Fitness', '/gym?tab=fitness', 'gym'],
+      ['My work', '/gym?tab=mywork', 'gym'],
     ],
   },
   {
     id: 'gym-money',
     label: 'Plans and money',
     items: [
+      ['Growth', '/gym?tab=growth', 'gym'],
       ['Plans', '/gym?tab=plans', 'gym'],
+      ['Insights', '/gym?tab=insights', 'gym'],
+      ['Setup', '/gym?tab=setup', 'gym'],
       ['Reports', '/gym?tab=reports', 'gym'],
     ],
   },
@@ -985,8 +992,8 @@ export const FMCG_ROLE_HREFS: Record<string, string[]> = {
 };
 
 export const GYM_ROLE_HREFS: Record<string, string[]> = {
-  gym_frontdesk: ['/hrm?tab=me', '/gym', '/gym?tab=door', '/gym?tab=members', '/gym?tab=classes', '/notifications', '/security', '/support'],
-  gym_trainer: ['/hrm?tab=me', '/gym', '/gym?tab=door', '/gym?tab=classes', '/notifications', '/security', '/support'],
+  gym_frontdesk: ['/hrm?tab=me', '/gym', '/gym?tab=door', '/gym?tab=members', '/gym?tab=classes', '/gym?tab=floor', '/gym?tab=shop', '/gym?tab=growth', '/gym?tab=setup', '/notifications', '/security', '/support'],
+  gym_trainer: ['/hrm?tab=me', '/gym', '/gym?tab=door', '/gym?tab=classes', '/gym?tab=floor', '/gym?tab=fitness', '/gym?tab=mywork', '/notifications', '/security', '/support'],
 };
 
 export const HRM_ROLE_HREFS: Record<string, string[]> = {

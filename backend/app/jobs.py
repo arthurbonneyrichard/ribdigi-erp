@@ -377,6 +377,47 @@ async def job_hotel_daily_close() -> dict:
     return await _for_each_hotel(work)
 
 
+async def job_send_gym_renewal_reminders() -> dict:
+    """Each morning: remind members whose plan ends within 7 days, for gyms that switched this on.
+
+    Off by default. Once per channel per day, so a second run does nothing.
+    """
+    from fastapi import HTTPException
+
+    from app import gym_crm
+    from app.db import on_desk
+    from app.desks import desk_urls, separate_databases
+
+    places = [None, *desk_urls()] if separate_databases() else [None]
+    results: list[dict] = []
+    for desk in places:
+        with on_desk(desk):
+            async with SessionLocal() as db:
+                tenant_ids = (
+                    await db.execute(
+                        select(m.Tenant.id).where(
+                            m.Tenant.status.in_(list(ACTIVE_TENANT_STATUSES)), m.Tenant.suspended_at.is_(None), m.Tenant.industry == "gym"
+                        )
+                    )
+                ).scalars().all()
+                for tenant_id in tenant_ids:
+                    setting = await gym_crm.reminder_setting(db, tenant_id)
+                    channels = {"sms": ["sms"], "email": ["email"], "both": ["sms", "email"]}.get(setting, [])
+                    for channel in channels:
+                        try:
+                            camp = await gym_crm.run_renewal_reminders(db, tenant_id, channel=channel, user_id=None)
+                            await db.commit()
+                            results.append({"tenant_id": tenant_id, "channel": channel, "ok": True, "counts": camp.get("counts")})
+                        except HTTPException as exc:  # already sent today: nothing to do
+                            await db.rollback()
+                            results.append({"tenant_id": tenant_id, "channel": channel, "ok": True, "skipped": str(exc.detail)})
+                        except Exception:  # noqa: BLE001 - one gym failing must not stop the rest
+                            logger.exception("Gym reminder job failed for tenant %s", tenant_id)
+                            await db.rollback()
+                            results.append({"tenant_id": tenant_id, "channel": channel, "ok": False, "error": "job_failed"})
+    return {"gyms": len({r["tenant_id"] for r in results}), "results": results}
+
+
 async def job_sample_server_health() -> dict:
     """One server reading a minute for the owner's monitor (history + alerts)."""
     from app import server_monitor
@@ -414,6 +455,7 @@ JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "scan_hr_escalations": job_scan_hr_escalations,
     "hotel_daily_close": job_hotel_daily_close,
     "sync_hotel_channels": job_sync_hotel_channels,
+    "send_gym_renewal_reminders": job_send_gym_renewal_reminders,
 }
 
 
