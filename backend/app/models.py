@@ -4579,7 +4579,51 @@ class HrmTrainingRecord(Base):
     expires_on: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
     result: Mapped[str | None] = mapped_column(String(120), nullable=True)
     certificate_ref: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    cost: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmTrainingBudget(Base):
+    """What the company plans to spend on training in a calendar year."""
+
+    __tablename__ = "hrm_training_budgets"
+    __table_args__ = (UniqueConstraint("tenant_id", "year", name="uq_hrm_training_budget_year"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    year: Mapped[int] = mapped_column(Integer)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    updated_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmInterview(Base):
+    """One interview of a candidate, with the staff on the panel who each score it."""
+
+    __tablename__ = "hrm_interviews"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    candidate_id: Mapped[str] = mapped_column(ForeignKey("hrm_candidates.id"), index=True)
+    scheduled_at: Mapped[datetime] = mapped_column(DateTime)
+    location: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    panel: Mapped[list] = mapped_column(JSON)  # employee ids
+    status: Mapped[str] = mapped_column(String(16), default="scheduled", index=True)  # scheduled | done | cancelled
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HrmInterviewScore(Base):
+    __tablename__ = "hrm_interview_scores"
+    __table_args__ = (UniqueConstraint("interview_id", "employee_id", name="uq_hrm_interview_score"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    interview_id: Mapped[str] = mapped_column(ForeignKey("hrm_interviews.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
+    score: Mapped[int] = mapped_column(Integer)
+    comment: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 

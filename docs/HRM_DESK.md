@@ -183,7 +183,11 @@ Each punch is stored once. Punch state 0 / 3 / 4 is in, 1 / 2 / 5 is out, anythi
 | Expense claims | Staff claim money spent; someone other than the claimant approves, which pays it back (debit 6000, credit cash/bank). Not through payroll. | HR manager |
 | Notices | Announcements and HR policies staff read under My pay and leave, until taken down. | Officers |
 
-Not built: Ghana overtime tax concession, other biometric brands, document uploads (contracts, CVs and receipts are recorded by reference only), e-signatures, interview panels and calendar invites, 360-degree feedback, training budgets.
+Not built: other biometric brands, e-signatures, calendar invites for interviews. (Document uploads, 360-degree feedback, the overtime tax concession (off until rates are entered), interview panels and training budgets are built: see below.)
+
+**Interview panels (19 Nov):** HR schedules an interview for a candidate and picks 1 to 10 staff of the same company as the panel (`POST /hrm/candidates/{id}/interviews`, `recruitment` area). Each panelist scores 1 to 100 from My pay and leave (`GET /hrm/me/interviews`, `POST /hrm/me/interviews/{id}/score`), once, and only if on the panel (403 otherwise); no panelist sees another's score. HR sees every score and the average, and **Close** (`POST /hrm/interviews/{id}/done`, needs at least one score) puts the rounded average on the candidate and the interview time; **Cancel** drops it. Tables `hrm_interviews`, `hrm_interview_scores`.
+
+**Training budget and cost (19 Nov):** a training record can carry a `cost`. HR managers set a yearly budget (`PUT /hrm/trainings/budget`) and see budget, spent (by completion date), left and `over_budget` (`GET /hrm/trainings/budget?year=`, also on `GET /hrm/trainings`). Costs and budgets are for HR managers and company admins only; officers and staff never see them. Going over budget is flagged, not blocked. Table `hrm_training_budgets`, column `hrm_training_records.cost`; migration `20261119_0191` (chains after the gym migration `20261119_0190`). Tests `test_hrm_interviews_budget.py`.
 
 ## Leave
 

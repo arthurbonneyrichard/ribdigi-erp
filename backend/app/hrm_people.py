@@ -392,7 +392,7 @@ async def add_training(db: AsyncSession, tenant_id: str, payload, *, user_id) ->
     return row
 
 
-async def serialize_record(db: AsyncSession, row: m.HrmTrainingRecord, today: date | None = None) -> dict:
+async def serialize_record(db: AsyncSession, row: m.HrmTrainingRecord, today: date | None = None, *, with_cost: bool = False) -> dict:
     today = today or date.today()
     course = await db.get(m.HrmTraining, row.training_id)
     state = "valid"
@@ -400,12 +400,15 @@ async def serialize_record(db: AsyncSession, row: m.HrmTrainingRecord, today: da
         state = "expired"
     elif row.expires_on and row.expires_on <= today + timedelta(days=30):
         state = "expiring"
-    return {
+    out = {
         "id": row.id, "training_id": row.training_id, "training": course.title if course else None,
         "employee_id": row.employee_id, "employee_name": await _name(db, row.employee_id),
         "completed_on": _iso(row.completed_on), "expires_on": _iso(row.expires_on), "result": row.result,
         "certificate_ref": row.certificate_ref, "state": state,
     }
+    if with_cost:
+        out["cost"] = money_json(row.cost) if row.cost is not None else None
+    return out
 
 
 async def list_records(db: AsyncSession, tenant_id: str, *, employee_id: str | None = None) -> list[m.HrmTrainingRecord]:
@@ -425,7 +428,7 @@ async def record_training(db: AsyncSession, tenant_id: str, payload, *, user_id)
         tenant_id=tenant_id, training_id=course.id, employee_id=employee.id, completed_on=payload.completed_on,
         expires_on=expires, result=optional_honest_narrative(payload.result, label="result", max_length=120),
         certificate_ref=optional_honest_narrative(payload.certificate_ref, label="certificate", max_length=120),
-        created_by=user_id,
+        cost=payload.cost, created_by=user_id,
     )
     db.add(row)
     await db.flush()
@@ -762,4 +765,173 @@ async def retire_notice(db: AsyncSession, tenant_id: str, notice_id: str, *, use
     row.is_active = False
     await _audit(db, tenant_id, user_id, "hrm_notice_retired", "hrm_notice", row.id, {})
     await db.flush()
+    return row
+
+
+# --- Training budget -----------------------------------------------------------------------
+
+
+async def set_training_budget(db: AsyncSession, tenant_id: str, year: int, amount, *, user_id) -> m.HrmTrainingBudget:
+    row = (
+        await db.execute(select(m.HrmTrainingBudget).where(m.HrmTrainingBudget.tenant_id == tenant_id, m.HrmTrainingBudget.year == year))
+    ).scalars().first()
+    if row is None:
+        row = m.HrmTrainingBudget(tenant_id=tenant_id, year=year, amount=amount, updated_by=user_id)
+        db.add(row)
+    else:
+        row.amount = amount
+        row.updated_by = user_id
+        row.updated_at = datetime.utcnow()
+    await db.flush()
+    await _audit(db, tenant_id, user_id, "hrm_training_budget_set", "hrm_training_budget", row.id, {"year": year, "amount": str(amount)})
+    return row
+
+
+async def training_budget(db: AsyncSession, tenant_id: str, year: int) -> dict:
+    """Budget against what recorded training cost in the year (by completion date)."""
+    row = (
+        await db.execute(select(m.HrmTrainingBudget).where(m.HrmTrainingBudget.tenant_id == tenant_id, m.HrmTrainingBudget.year == year))
+    ).scalars().first()
+    spent = (
+        await db.execute(
+            select(func.coalesce(func.sum(m.HrmTrainingRecord.cost), 0)).where(
+                m.HrmTrainingRecord.tenant_id == tenant_id,
+                m.HrmTrainingRecord.completed_on >= date(year, 1, 1),
+                m.HrmTrainingRecord.completed_on <= date(year, 12, 31),
+            )
+        )
+    ).scalar_one()
+    spent_d = Decimal(str(spent))
+    budget_d = Decimal(str(row.amount)) if row else None
+    return {
+        "year": year,
+        "budget": money_json(budget_d) if budget_d is not None else None,
+        "spent": money_json(spent_d),
+        "left": money_json(budget_d - spent_d) if budget_d is not None else None,
+        "over_budget": bool(budget_d is not None and spent_d > budget_d),
+    }
+
+
+# --- Interview panels ----------------------------------------------------------------------
+
+
+async def serialize_interview(db: AsyncSession, row: m.HrmInterview, *, with_scores: bool) -> dict:
+    out = {
+        "id": row.id, "candidate_id": row.candidate_id, "scheduled_at": _iso(row.scheduled_at), "location": row.location,
+        "status": row.status,
+        "panel": [{"employee_id": e, "employee_name": await _name(db, e)} for e in (row.panel or [])],
+    }
+    if with_scores:
+        scores = list(
+            (await db.execute(select(m.HrmInterviewScore).where(m.HrmInterviewScore.interview_id == row.id))).scalars()
+        )
+        out["scores"] = [
+            {"employee_id": x.employee_id, "employee_name": await _name(db, x.employee_id), "score": x.score, "comment": x.comment}
+            for x in scores
+        ]
+        out["average"] = round(sum(x.score for x in scores) / len(scores), 1) if scores else None
+        out["scored_by"] = len(scores)
+    return out
+
+
+async def schedule_interview(db: AsyncSession, tenant_id: str, candidate_id: str, payload, *, user_id) -> m.HrmInterview:
+    cand = await _owned(db, m.HrmCandidate, tenant_id, candidate_id, "Candidate")
+    if cand.stage in ("rejected", "withdrawn", "hired"):
+        raise HTTPException(status_code=409, detail=f"This candidate is {cand.stage}")
+    panel: list[str] = []
+    for eid in payload.panel:
+        person = await _person(db, tenant_id, eid)
+        if person.id not in panel:
+            panel.append(person.id)
+    if not panel:
+        raise HTTPException(status_code=422, detail="Pick at least one person for the panel")
+    row = m.HrmInterview(
+        tenant_id=tenant_id, candidate_id=cand.id, scheduled_at=payload.scheduled_at,
+        location=optional_honest_narrative(payload.location, label="location", max_length=200), panel=panel, created_by=user_id,
+    )
+    db.add(row)
+    await db.flush()
+    await _audit(db, tenant_id, user_id, "hrm_interview_scheduled", "hrm_interview", row.id, {"candidate_id": cand.id, "panel": len(panel)})
+    return row
+
+
+async def list_interviews(db: AsyncSession, tenant_id: str, candidate_id: str) -> list[m.HrmInterview]:
+    await _owned(db, m.HrmCandidate, tenant_id, candidate_id, "Candidate")
+    return list(
+        (
+            await db.execute(
+                select(m.HrmInterview).where(m.HrmInterview.candidate_id == candidate_id).order_by(m.HrmInterview.scheduled_at)
+            )
+        ).scalars()
+    )
+
+
+async def interviews_for_panelist(db: AsyncSession, tenant_id: str, employee_id: str) -> list[dict]:
+    """Interviews this person sits on, still open for scoring. Shows no one else's score."""
+    rows = list(
+        (
+            await db.execute(
+                select(m.HrmInterview).where(m.HrmInterview.tenant_id == tenant_id, m.HrmInterview.status == "scheduled").order_by(m.HrmInterview.scheduled_at)
+            )
+        ).scalars()
+    )
+    out = []
+    for r in rows:
+        if employee_id not in (r.panel or []):
+            continue
+        cand = await db.get(m.HrmCandidate, r.candidate_id)
+        mine = (
+            await db.execute(
+                select(m.HrmInterviewScore).where(m.HrmInterviewScore.interview_id == r.id, m.HrmInterviewScore.employee_id == employee_id)
+            )
+        ).scalars().first()
+        item = await serialize_interview(db, r, with_scores=False)
+        item["candidate_name"] = cand.full_name if cand else None
+        item["my_score"] = mine.score if mine else None
+        out.append(item)
+    return out
+
+
+async def score_interview(db: AsyncSession, tenant_id: str, interview_id: str, employee_id: str, payload) -> m.HrmInterviewScore:
+    row = await _owned(db, m.HrmInterview, tenant_id, interview_id, "Interview")
+    if employee_id not in (row.panel or []):
+        raise HTTPException(status_code=403, detail="You are not on this interview's panel")
+    if row.status != "scheduled":
+        raise HTTPException(status_code=409, detail=f"This interview is {row.status}")
+    existing = (
+        await db.execute(
+            select(m.HrmInterviewScore).where(m.HrmInterviewScore.interview_id == row.id, m.HrmInterviewScore.employee_id == employee_id)
+        )
+    ).scalars().first()
+    if existing is not None:
+        raise HTTPException(status_code=409, detail="You have already scored this interview")
+    score = m.HrmInterviewScore(
+        tenant_id=tenant_id, interview_id=row.id, employee_id=employee_id, score=payload.score,
+        comment=optional_honest_narrative(payload.comment, label="comment", max_length=1000),
+    )
+    db.add(score)
+    await db.flush()
+    await _audit(db, tenant_id, employee_id, "hrm_interview_scored", "hrm_interview", row.id, {"score": payload.score})
+    return score
+
+
+async def finish_interview(db: AsyncSession, tenant_id: str, interview_id: str, *, cancel: bool, user_id) -> m.HrmInterview:
+    """Mark done (the average becomes the candidate's score) or cancelled."""
+    row = await _owned(db, m.HrmInterview, tenant_id, interview_id, "Interview")
+    if row.status != "scheduled":
+        raise HTTPException(status_code=409, detail=f"This interview is already {row.status}")
+    if cancel:
+        row.status = "cancelled"
+    else:
+        scores = list(
+            (await db.execute(select(m.HrmInterviewScore).where(m.HrmInterviewScore.interview_id == row.id))).scalars()
+        )
+        if not scores:
+            raise HTTPException(status_code=409, detail="No panel member has scored yet")
+        row.status = "done"
+        cand = await db.get(m.HrmCandidate, row.candidate_id)
+        cand.score = round(sum(x.score for x in scores) / len(scores))
+        cand.interview_at = row.scheduled_at
+        cand.updated_at = datetime.utcnow()
+    await _audit(db, tenant_id, user_id, "hrm_interview_cancelled" if cancel else "hrm_interview_done", "hrm_interview", row.id, {})
     return row
