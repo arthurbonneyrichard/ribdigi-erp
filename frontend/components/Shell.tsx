@@ -93,7 +93,6 @@ import {
 } from '../lib/companyLogo';
 import OnboardingChecklist from './OnboardingChecklist';
 import StoreSwitcher from './StoreSwitcher';
-import LoginLegalLinks from './LoginLegalLinks';
 
 /** Tenant ERP navigation (business workspace).
  * Hotel/FMCG nav items are packageable but only appear when `/me.enabled_modules`
@@ -2513,9 +2512,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             </div>
           ) : (
             children
-          )}
-          {pathname === '/pos' || pathname === '/restaurant/till' || kiosk || tillOnly ? null : (
-            <LoginLegalLinks className="app-legal" />
           )}
         </div>
       </main>
