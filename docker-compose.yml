@@ -54,6 +54,9 @@ services:
       # The ./backend bind mount hides the image .build-id. Production compose
       # does not set this, so a missing id there still stops the container.
       RIBDIGI_ALLOW_MISSING_BUILD_ID: "1"
+      # Docker Desktop on Windows does not pass file events through the bind mount, so uvicorn --reload
+      # silently kept serving old code. Polling makes saves reload the API again.
+      WATCHFILES_FORCE_POLLING: "true"
     ports: ["8000:8000"]
     depends_on:
       postgres: {condition: service_healthy}

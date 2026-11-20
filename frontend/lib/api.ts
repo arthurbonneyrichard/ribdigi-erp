@@ -446,10 +446,18 @@ async function apiOnce(path: string, opts: RequestInit, retryOn401: boolean, get
     }
     throw attachApiError(body, response.status, undefined, requestId, path);
   }
+  if (!isGetLike(opts)) lastWriteAt = Date.now();
   if (typeof window !== 'undefined' && !isGetLike(opts) && !isPublicAuthPath(path)) {
     bumpLastActivity();
   }
   return body;
+}
+
+let lastWriteAt = 0;
+
+/** When the last successful write (POST, PATCH, PUT, DELETE) finished. Cached GETs older than this are stale. */
+export function lastApiWriteAt(): number {
+  return lastWriteAt;
 }
 
 export async function api(path: string, opts: RequestInit = {}, retryOn401 = true): Promise<any> {

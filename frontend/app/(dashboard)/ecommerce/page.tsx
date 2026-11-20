@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import EmptyState from '../../../components/EmptyState';
 import PageHeader from '../../../components/PageHeader';
@@ -270,9 +271,9 @@ export default function EcommercePage() {
   }
 
   const preview = storefront?.preview_token ? (
-    <a className="list-btn-primary" href={`/storefront?preview_token=${storefront.preview_token}`}>
+    <Link className="list-btn-primary" href={`/storefront?preview_token=${storefront.preview_token}`}>
       Open preview
-    </a>
+    </Link>
   ) : undefined;
 
   if (denied) {
@@ -334,7 +335,7 @@ export default function EcommercePage() {
               {companyLinked ? ' · linked' : ''}
             </p>
           ) : (
-            <p>Not saved on <a href="/company">Company</a></p>
+            <p>Not saved on <Link href="/company">Company</Link></p>
           )}
         </div>
         <div>
@@ -587,7 +588,7 @@ export default function EcommercePage() {
           </p>
         ) : (
           <p className="muted">
-            Save a company website on <a href="/company">Company</a>, then link it here.
+            Save a company website on <Link href="/company">Company</Link>, then link it here.
           </p>
         )}
         {!domains.length ? (

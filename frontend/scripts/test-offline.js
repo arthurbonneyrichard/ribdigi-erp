@@ -16,6 +16,7 @@ const tests = [
   'lib/posOfflineQueue.test.ts',
   'lib/consent.test.ts',
   'lib/legalText.test.ts',
+  'lib/prefetchCache.test.ts',
 ];
 
 try {

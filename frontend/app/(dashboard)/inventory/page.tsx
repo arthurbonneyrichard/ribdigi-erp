@@ -711,6 +711,8 @@ export default function Page() {
   const [whLowOnly, setWhLowOnly] = useState(false);
   const [lowStockPayload, setLowStockPayload] = useState<any>(null);
   const [lowStockBusy, setLowStockBusy] = useState(false);
+  // Set only when a load really failed, so the page shows Loading (not an error) before the first fetch.
+  const [lowStockFailed, setLowStockFailed] = useState(false);
   const [lowStockSearch, setLowStockSearch] = useState('');
   const [receiveDrawerOpen, setReceiveDrawerOpen] = useState(false);
   const [reorderDrawerOpen, setReorderDrawerOpen] = useState(false);
@@ -1075,6 +1077,7 @@ export default function Page() {
 
   async function loadLowStock() {
     setLowStockBusy(true);
+    setLowStockFailed(false);
     setError('');
     try {
       const params = new URLSearchParams();
@@ -1085,6 +1088,7 @@ export default function Page() {
     } catch (err: any) {
       setError(err.message);
       setLowStockPayload(null);
+      setLowStockFailed(true);
     } finally {
       setLowStockBusy(false);
     }
@@ -3095,6 +3099,10 @@ export default function Page() {
     const active = p.is_active !== false;
     return productManageFilter === 'inactive' ? !active : active;
   });
+  // Pickers that post stock list active products only (plus the one already chosen), whatever the
+  // Products table filter shows; a switched-off product should not take opening stock or a receipt by mistake.
+  const stockPickProducts = (current: string) =>
+    products.filter((p) => p.is_active !== false || String(p.id) === String(current || ''));
   const productListRows = sortProducts(
     managedProducts.filter((p) =>
       matchesProductList(
@@ -5961,7 +5969,7 @@ export default function Page() {
                   aria-label="Batch product"
                 >
                   <option value="">{hotelOps ? 'Select supply' : restaurantOps ? 'Select ingredient' : 'Select product'}</option>
-                  {managedProducts.map((p) => (
+                  {stockPickProducts(batchTargetId).map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} ({p.sku}) — {p.stock_qty}
                     </option>
@@ -6227,7 +6235,7 @@ export default function Page() {
                   aria-label="Opening stock product"
                 >
                   <option value="">{hotelOps ? 'Select supply' : restaurantOps ? 'Select ingredient' : 'Select product'}</option>
-                  {managedProducts.map((p) => (
+                  {stockPickProducts(openingTargetId).map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} ({p.sku})
                     </option>
@@ -7119,7 +7127,7 @@ export default function Page() {
                   aria-label="Adjustment product"
                 >
                   <option value="">{hotelOps ? 'Select supply' : restaurantOps ? 'Select ingredient' : 'Select product'}</option>
-                  {managedProducts.map((p) => (
+                  {stockPickProducts(adjustTargetId).map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} ({p.sku}) — on-hand {p.stock_qty}
                     </option>
@@ -7246,7 +7254,7 @@ export default function Page() {
                   aria-label="Stock-out product"
                 >
                   <option value="">{hotelOps ? 'Select supply' : restaurantOps ? 'Select ingredient' : 'Select product'}</option>
-                  {managedProducts.map((p) => (
+                  {stockPickProducts(outTargetId).map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} ({p.sku}) — {p.stock_qty}
                     </option>
@@ -7373,7 +7381,7 @@ export default function Page() {
               aria-label="Search low stock"
             />
           </div>
-          {lowStockBusy ? (
+          {lowStockBusy || (!lowStockPayload && !lowStockFailed) ? (
             <p className="muted">Loading…</p>
           ) : !lowStockPayload ? (
             <EmptyState
@@ -7635,7 +7643,7 @@ export default function Page() {
                   aria-label="Receive stock product"
                 >
                   <option value="">{hotelOps ? 'Select supply' : restaurantOps ? 'Select ingredient' : 'Select product'}</option>
-                  {managedProducts.map((p) => (
+                  {stockPickProducts(receiveTargetId).map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} ({p.sku})
                     </option>

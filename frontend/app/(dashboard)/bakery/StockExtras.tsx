@@ -258,14 +258,20 @@ export function SuppliersPanel() {
   );
 }
 
-/** Suppliers for the Buy stock form. */
-export function useSuppliers(): Row[] {
+/** Suppliers for the Buy stock form. Only managers may list suppliers (bakery_api `_job(..., "correct")`),
+ * so bakers, cashiers and drivers skip the call instead of drawing a 403 on every visit. */
+export function useSuppliers(enabled = true): Row[] {
   const [rows, setRows] = useState<Row[]>([]);
   useEffect(() => {
+    if (!enabled) {
+      setRows([]);
+      return;
+    }
     bakeryApi('/bakery/suppliers').then((r) => setRows(r?.data || [])).catch(() => setRows([]));
-  }, []);
+  }, [enabled]);
   return rows;
 }
+
 
 // "Size*: 6 inch, 10 inch=60" <-> [{ name: 'Size', required: true, choices: [{ label, extra }] }]
 function optionsToText(groups: any[]): string {
