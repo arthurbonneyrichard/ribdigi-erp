@@ -954,7 +954,7 @@ async def create_tenant(
     claims=Depends(require_platform_permission("platform_tenants", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    validate_password_strength(payload.admin_password)
+    validate_password_strength(payload.admin_password, privileged=True)
     try:
         password_hash = hash_password(payload.admin_password)
     except ValueError:
@@ -3334,7 +3334,7 @@ async def change_password(
         verify_password, payload.current_password, user.password_hash
     ):
         raise HTTPException(status_code=401, detail="Current password is incorrect")
-    validate_password_strength(payload.new_password)
+    validate_password_strength(payload.new_password, role=user.role)
     if payload.new_password == payload.current_password:
         raise HTTPException(status_code=400, detail="New password must be different")
     user.password_hash = hash_password(payload.new_password)
@@ -3498,6 +3498,7 @@ async def password_reset(payload: PasswordResetConfirm, request: Request, db: As
     user = await db.get(m.User, row.user_id)
     if not user:
         raise HTTPException(status_code=400, detail="Invalid reset token")
+    validate_password_strength(payload.new_password, role=user.role)
     user.password_hash = hash_password(payload.new_password)
     row.used_at = datetime.utcnow()
     # The emailed link proves the owner: lift any lockout so they can sign in with the new password.
@@ -4520,7 +4521,7 @@ async def add_user(
             status_code=403,
             detail="Only a company admin can assign company_admin",
         )
-    validate_password_strength(payload.password)
+    validate_password_strength(payload.password, role=role_key)
     exists = (
         await db.execute(
             select(m.User).where(
@@ -4697,7 +4698,7 @@ async def update_user(
             await _revoke_user_sessions(db, tenant_id=claims["tenant_id"], user_id=user.id)
 
     if payload.password is not None:
-        validate_password_strength(payload.password)
+        validate_password_strength(payload.password, role=user.role)
         user.password_hash = hash_password(payload.password)
         changes["password_reset"] = True
         await _revoke_user_sessions(db, tenant_id=claims["tenant_id"], user_id=user.id)

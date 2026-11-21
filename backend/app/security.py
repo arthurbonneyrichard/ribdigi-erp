@@ -35,12 +35,24 @@ def verify_password(raw: str, hashed: str) -> bool:
     return pwd.verify(raw, hashed)
 
 
-def validate_password_strength(password: str) -> None:
+ADMIN_PASSWORD_MIN_LENGTH = 12
+_ADMIN_ROLES = {"company_admin", "super_admin"}
+
+
+def validate_password_strength(password: str, *, role: str | None = None, privileged: bool = False) -> None:
     if not PASSWORD_PATTERN.match(password):
         raise HTTPException(
             status_code=400,
             detail="Password must be at least 8 characters and include upper, lower, number, and symbol",
         )
+    # Admin and platform accounts need 12+ characters on a production server. Development and test
+    # stay at 8 so fixtures and demos keep working.
+    if (privileged or role in _ADMIN_ROLES or (role and is_platform_role(role))) and settings.APP_ENV.lower() == "production":
+        if len(password) < ADMIN_PASSWORD_MIN_LENGTH:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Admin passwords must be at least {ADMIN_PASSWORD_MIN_LENGTH} characters and include upper, lower, number, and symbol",
+            )
 
 
 def hash_token(raw: str) -> str:
