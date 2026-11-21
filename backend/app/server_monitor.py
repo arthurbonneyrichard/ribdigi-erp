@@ -494,6 +494,22 @@ async def _backup_stats(db: AsyncSession) -> dict[str, Any]:
                 .where(m.BackupSettings.enabled == True)  # noqa: E712
             )
         ).scalar() or 0
+        # A company "needs a look" while its most recent backup failed; earlier failures that a
+        # later good backup replaced (e.g. before a key was fixed) do not keep the check amber.
+        latest = (
+            select(m.BackupJob.tenant_id, func.max(m.BackupJob.created_at).label("at"))
+            .where(m.BackupJob.status.in_(("completed", "failed")))
+            .group_by(m.BackupJob.tenant_id)
+            .subquery()
+        )
+        failing_now = (
+            await db.execute(
+                select(func.count())
+                .select_from(m.BackupJob)
+                .join(latest, (m.BackupJob.tenant_id == latest.c.tenant_id) & (m.BackupJob.created_at == latest.c.at))
+                .where(m.BackupJob.status == "failed")
+            )
+        ).scalar() or 0
         last_failure = (
             await db.execute(
                 select(m.BackupJob.error_message, m.BackupJob.created_at)
@@ -518,6 +534,7 @@ async def _backup_stats(db: AsyncSession) -> dict[str, Any]:
         "last_success_at": last_ok.replace(tzinfo=timezone.utc).isoformat() if last_ok else None,
         "age_hours": age_h,
         "failed_last_24h": int(failed),
+        "companies_failing": int(failing_now),
         "companies_scheduled": int(scheduled),
         "dir_writable": writable,
         "last_error": (last_failure[0] or "")[:300] if last_failure else None,
@@ -680,11 +697,16 @@ def build_checks(snap: dict[str, Any]) -> list[dict[str, str]]:
     if backups.get("companies_scheduled"):
         age = backups.get("age_hours")
         status = "critical" if age is None or age > settings.MONITOR_BACKUP_MAX_AGE_HOURS else "ok"
-        if status == "ok" and backups.get("failed_last_24h"):
+        failing = backups.get("companies_failing")
+        if failing is None:  # older reading without the per-company figure
+            failing = backups.get("failed_last_24h") or 0
+        if status == "ok" and failing:
             status = "warn"
+        detail = f"{backups.get('failed_last_24h', 0)} failed in 24 h"
+        if failing:
+            detail += f"; last backup failed for {failing} compan{'y' if failing == 1 else 'ies'}"
         checks.append(_check("backups", "Backups", status,
-                             f"{age:.0f} h ago" if age is not None else "none yet",
-                             f"{backups.get('failed_last_24h', 0)} failed in 24 h"))
+                             f"{age:.0f} h ago" if age is not None else "none yet", detail))
     web = snap.get("web") or {}
     if web.get("status") != "skipped":
         checks.append(_check("web", "Public website", "ok" if web.get("status") == "ok" else "critical",
@@ -739,8 +761,18 @@ async def collect_snapshot(db: AsyncSession, *, source: str = "api") -> dict[str
 # ------------------------------------------------------------ history store
 
 
+# Checks that mean the service is down for users. Backups, certificates, disk, CPU, slow replies and
+# the scheduler still raise alerts, but a stale backup is not downtime, so they do not lower uptime.
+_AVAILABILITY_CHECKS = ("database", "desk_db:", "redis", "workers", "web")
+
+
+def _is_availability_check(check_id: str) -> bool:
+    return any(check_id == k or (k.endswith(":") and check_id.startswith(k)) for k in _AVAILABILITY_CHECKS)
+
+
 def compact(snap: dict[str, Any]) -> dict[str, Any]:
     host = snap.get("host") or {}
+    critical = [c["key"] for c in snap.get("checks") or [] if c.get("status") == "critical"]
     disks = host.get("disks") or []
     perf = snap.get("performance") or {}
     return {
@@ -757,6 +789,8 @@ def compact(snap: dict[str, Any]) -> dict[str, Any]:
         "rpm": perf.get("requests_per_minute") if perf else None,
         "err": perf.get("error_rate_pct") if perf.get("requests") else None,
         "src": snap.get("source"),
+        "up": not any(_is_availability_check(cid) for cid in critical),
+        "bad": critical,
     }
 
 
@@ -856,10 +890,21 @@ def downsample(rows: list[dict[str, Any]], buckets: int, since_seconds: int) -> 
     return out
 
 
+def _row_is_up(row: dict[str, Any]) -> bool:
+    """Was the service up at this reading? (not: was every check green)."""
+    if "up" in row:
+        return bool(row["up"])
+    if "db" in row:
+        # Readings stored before 13 Nov 2026 kept only the overall status; a missing database
+        # reply is the one availability signal they carry.
+        return row["db"] is not None
+    return row.get("s") != "critical"
+
+
 def uptime_from(rows: list[dict[str, Any]]) -> dict[str, Any]:
     if not rows:
         return {"samples": 0, "healthy_pct": None, "web_up_pct": None}
-    healthy = sum(1 for r in rows if r.get("s") != "critical")
+    healthy = sum(1 for r in rows if _row_is_up(r))
     web_rows = [r for r in rows if "web" in r]
     web_up = sum(1 for r in web_rows if r.get("web") is not None)
     return {
@@ -1089,6 +1134,23 @@ async def evaluate_alerts(db: AsyncSession, snap: dict[str, Any]) -> list[dict[s
     return fired
 
 
+_LIVE_TTL_SECONDS = 15.0
+_live_cache: dict[str, Any] = {}
+
+
+async def live_snapshot(db: AsyncSession) -> dict[str, Any]:
+    """The page's reading: reuse one taken in the last 15 s instead of probing everything again
+    (a full reading pings Celery, samples CPU and checks the site: about a second)."""
+    latest = await latest_sample_at()
+    hit = _live_cache.get("snap")
+    # Reuse only while no newer reading has been stored (or the history cleared) since.
+    if hit and _now() - hit[0] < _LIVE_TTL_SECONDS and hit[2] == latest:
+        return hit[1]
+    snap = await record(db, source="api")
+    _live_cache["snap"] = (_now(), snap, await latest_sample_at())
+    return snap
+
+
 async def record(db: AsyncSession, *, source: str, force: bool = False) -> dict[str, Any]:
     """Take a reading, store it (unless one is fresh) and evaluate alerts."""
     snap = await collect_snapshot(db, source=source)
@@ -1165,9 +1227,12 @@ def backups_fix_text(backups: dict) -> str:
             f"The backup folder ({settings.BACKUP_DIR}) cannot be written to by the app. On the server run: "
             "docker run --rm -v <project>_backup_data:/d alpine chown -R 10001:10001 /d (the app runs as user 10001)."
         )
+    recovered = backups.get("companies_failing") == 0 and int(backups.get("failed_last_24h") or 0)
     if backups.get("last_error"):
-        parts.append(f"Last error: {backups['last_error']}")
-    if int(backups.get("failed_last_24h") or 0):
+        parts.append(f"{'Earlier error (since fixed)' if recovered else 'Last error'}: {backups['last_error']}")
+    if recovered:
+        parts.append(f"{backups['failed_last_24h']} backup(s) failed earlier in the day; every company's latest backup since succeeded.")
+    elif int(backups.get("failed_last_24h") or 0):
         parts.append(f"{backups['failed_last_24h']} backup(s) failed in the last day: check the backup folder ({settings.BACKUP_DIR}) is writable and has space.")
     if not int(backups.get("companies_scheduled") or 0):
         parts.append("No company has scheduled backups turned on.")
@@ -1189,6 +1254,16 @@ def _placeholder(value: str) -> bool:
     return not v or v.startswith("REPLACE_ME") or v in {"CHANGEME", "CHANGE_ME", "SECRET", "TEST"}
 
 
+def _valid_fernet_key(value: str) -> bool:
+    from app.backup import _fernet_from_configured_key
+
+    try:
+        _fernet_from_configured_key(value, label="key")
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def key_problems() -> list[str]:
     """What is wrong with the three encryption keys: missing, placeholder, too short, or shared."""
     values = {name: (getattr(settings, name, "") or "").strip() for name in _KEY_NAMES}
@@ -1198,6 +1273,8 @@ def key_problems() -> list[str]:
             problems.append(f"{name} is not set")
         elif len(value) < 32:
             problems.append(f"{name} is shorter than 32 characters")
+        elif name != "SECRETS_ENCRYPTION_KEY" and not _valid_fernet_key(value):
+            problems.append(f"{name} is not a valid key (it must be a Fernet key or 64 hex characters)")
     real = [v for v in values.values() if not _placeholder(v)]
     if len(set(real)) < len(real):
         problems.append("two of the keys are the same value; each needs its own")

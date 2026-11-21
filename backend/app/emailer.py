@@ -152,9 +152,10 @@ def _platform_house_logo_bytes() -> tuple[bytes, str, int, int] | None:
 
         with Image.open(path) as src:
             img = src.convert("RGBA") if src.mode in {"RGBA", "LA", "P"} else src.convert("RGB")
-        # Readable ~220px header, bitmap at 2× for HiDPI clients.
-        max_w = 220
-        img.thumbnail((max_w * 2, 144), Image.LANCZOS)
+        # Stacked House mark, kept small in the header (47px tall, about 72px wide);
+        # bitmap at 2x for HiDPI clients.
+        max_w, max_h = 220, 47
+        img.thumbnail((max_w * 2, max_h * 2), Image.LANCZOS)
         buf = io.BytesIO()
         if path.suffix.lower() in {".jpg", ".jpeg"}:
             img.convert("RGB").save(buf, format="JPEG", quality=88, optimize=True)
@@ -162,7 +163,7 @@ def _platform_house_logo_bytes() -> tuple[bytes, str, int, int] | None:
         else:
             img.save(buf, format="PNG", optimize=True)
             subtype = "png"
-        scale = min(max_w / img.width, 72 / img.height, 1.0)
+        scale = min(max_w / img.width, max_h / img.height, 1.0)
         width = max(1, int(round(img.width * scale)))
         height = max(1, int(round(img.height * scale)))
         return buf.getvalue(), subtype, width, height
@@ -244,7 +245,7 @@ def render_branded_html(
                 f'<img class="ribdigi-email-logo ribdigi-house-logo" src="cid:{PLATFORM_LOGO_CID}" '
                 f'width="{width_px}" height="{height_px}" alt="Ribdigi House" '
                 f'style="display:{"inline-block" if centred else "block"};width:{width_px}px;'
-                f'height:{height_px}px;max-width:150px;height:auto;border:0;outline:none;'
+                f'height:{height_px}px;max-width:220px;height:auto;border:0;outline:none;'
                 # On a coloured band the mark sits on a white tile (dark lettering).
                 + ("" if platform_mail else "background:#ffffff;padding:10px 14px;border-radius:12px;")
                 + '" />'
@@ -439,6 +440,22 @@ def _tenant_layout(
     )
 
 
+# Ribdigi House contact lines in the footer of every House email (13 Nov 2026).
+PLATFORM_TELEPHONE = "+233 30 294 4376"
+PLATFORM_WHATSAPP = "+233 53 053 7307"
+
+
+def _platform_contact_html(theme: dict) -> str:
+    tel = "".join(ch for ch in PLATFORM_TELEPHONE if ch.isdigit() or ch == "+")
+    wa = "".join(ch for ch in PLATFORM_WHATSAPP if ch.isdigit())
+    link = "color:#ffffff;text-decoration:none;font-weight:700;"
+    return (
+        '<p class="ribdigi-email-contact" style="margin:0 0 12px;color:#d8e6dd;font-size:13px;line-height:1.7;">'
+        f'Telephone: <a href="tel:{tel}" style="{link}">{html.escape(PLATFORM_TELEPHONE)}</a><br/>'
+        f'WhatsApp: <a href="https://wa.me/{wa}" style="{link}">{html.escape(PLATFORM_WHATSAPP)}</a></p>'
+    )
+
+
 def _platform_layout(
     *, head, preheader_html, theme, font, align, centred, company_esc, title_html, body,
     signature_html, footer, logo_img, used_platform_logo, show_company, tagline,
@@ -506,6 +523,7 @@ def _platform_layout(
         f'<p style="margin:0 0 14px;color:{theme["badge"]};font-size:12px;">'
         f'{html.escape(tagline) if tagline else "RIBDIGI ERP"}</p>'
         f"{footer_extra}"
+        f"{_platform_contact_html(theme)}"
         '<p style="margin:0;color:#b8c7be;font-size:12px;line-height:1.5;">'
         "Sent via Ribdigi House &middot; RIBDIGI ERP</p>"
         "</td></tr></table>"

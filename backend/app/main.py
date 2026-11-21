@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from starlette.middleware.gzip import GZipMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
@@ -45,6 +46,12 @@ async def _lifespan(_app: FastAPI):
         logging.getLogger("ribdigi.security").warning(
             "BACKUP_ENCRYPTION_KEY, TOTP_ENCRYPTION_KEY and SECRETS_ENCRYPTION_KEY should all be set in production"
         )
+    if is_prod:
+        from app.server_monitor import key_problems
+
+        for problem in key_problems():
+            # A malformed BACKUP_ENCRYPTION_KEY stops every backup; say so at boot, not at 02:05.
+            logging.getLogger("ribdigi.security").error("Encryption key problem: %s", problem)
     await _align_hybrid_schema_on_startup()
     yield
 
@@ -59,6 +66,9 @@ app = FastAPI(
 )
 
 # Middleware order: last added runs first on request.
+# Innermost: gzip JSON and text bodies of 1 KB and up when the browser accepts it. Lists and
+# reports shrink 5-10x, which is most of their time on a 150-200 ms round-trip connection.
+app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=5)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(MetricsMiddleware)
 app.add_middleware(RateLimitMiddleware)

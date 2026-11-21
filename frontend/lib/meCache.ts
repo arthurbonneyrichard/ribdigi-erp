@@ -37,6 +37,9 @@ let inflightTenant = '';
 let epoch = 0;
 
 const TTL_MS = 20_000;
+/** Older than TTL but younger than this: answer at once from memory and refresh in the background,
+ *  so changing screens never waits a round trip for /me (the server still checks every call). */
+const STALE_OK_MS = 10 * 60_000;
 
 function activeTenant(): string {
   if (typeof window === 'undefined') return '';
@@ -60,7 +63,16 @@ export async function getMe(options?: { force?: boolean }): Promise<MeBody> {
     return cached.body;
   }
   if (!force && inflight && inflightTenant === tenant) return inflight;
+  if (!force && cached && cached.tenant === tenant && Date.now() - cached.at < STALE_OK_MS) {
+    const stale = cached.body;
+    noteCurrency(stale);
+    void fetchMe(tenant, seen).catch(() => undefined);
+    return stale;
+  }
+  return fetchMe(tenant, seen);
+}
 
+function fetchMe(tenant: string, seen: number): Promise<MeBody> {
   inflightTenant = tenant;
   inflight = api('/me')
     .then((body) => {

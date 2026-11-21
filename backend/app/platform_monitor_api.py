@@ -36,9 +36,11 @@ async def monitor_live(
     claims: dict = Depends(require_platform_permission("platform", "read")),
 ):
     """One live reading of the server, plus uptime and active alerts."""
-    snap = await svc.record(db, source="api")
-    day = await svc.load_samples(24 * 3600)
+    snap = await svc.live_snapshot(db)
+    # One read of the stored readings serves both figures (it was two reads of up to a week).
     week = await svc.load_samples(7 * 24 * 3600)
+    day_cut = svc._now() - 24 * 3600
+    day = [r for r in week if (r.get("t") or 0) >= day_cut]
     return env(
         {
             **snap,

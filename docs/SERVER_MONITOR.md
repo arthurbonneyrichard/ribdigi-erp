@@ -18,7 +18,7 @@ Request speed is measured inside each API worker, so with several uvicorn worker
 
 ## History and uptime
 
-The Celery job `sample_server_health` records one reading a minute (Redis list `ribdigi:monitor:samples`, 7 days). The page also records one when the last is older than 55 s, so history exists without Celery. "Healthy %" is the share of readings with no failing check.
+The Celery job `sample_server_health` records one reading a minute (Redis list `ribdigi:monitor:samples`, 7 days). The page also records one when the last is older than 55 s, so history exists without Celery. "24 h uptime" is the share of readings where the service was up: main and desk databases, Redis, workers and the public site answered. A failing backup, certificate, disk, CPU or slow-reply check still raises an alert and colours the timeline, but is not downtime. Each reading keeps `up` and `bad` (the critical check keys).
 
 ## Alerts
 
