@@ -12,6 +12,9 @@ import { formatMoney } from '../../../lib/format';
 import { getMe } from '../../../lib/meCache';
 import DeskDashboard from '../../../components/DeskDashboard';
 import DeskIcon from '../../../components/DeskIcon';
+import FloorTab from './FloorTab';
+import FitnessTab from './FitnessTab';
+import { GrowthTab, InsightsTab, MyWorkTab, SetupTab, ShopTab } from './ManageTabs';
 import './gym.css';
 
 type Row = Record<string, any>;
@@ -21,6 +24,13 @@ const SCREENS: Record<string, { title: string; sub: string; icon: string }> = {
   door: { title: 'Door', sub: 'Check members in. The screen says who may train.', icon: 'door' },
   members: { title: 'Members', sub: 'Add members, sell and renew plans, and see who is due.', icon: 'users' },
   classes: { title: 'Classes', sub: 'Group classes, trainers and who has booked a place.', icon: 'calendarCheck' },
+  floor: { title: 'Gym floor', sub: 'Personal training, lockers, equipment and guests.', icon: 'users' },
+  fitness: { title: 'Fitness', sub: 'Workout programmes and body measurements. Trainers and managers only.', icon: 'users' },
+  shop: { title: 'Shop', sub: 'Water, protein and kit: sell, restock, refund and pay suppliers.', icon: 'tag' },
+  mywork: { title: 'My work', sub: 'Your sessions, members and programmes.', icon: 'calendarCheck' },
+  growth: { title: 'Growth', sub: 'Leads, campaigns and what members tell you.', icon: 'chart' },
+  insights: { title: 'Insights', sub: 'Who may leave, busy times and equipment. Calculated from your records.', icon: 'chart' },
+  setup: { title: 'Setup', sub: 'Branches, door rules, cards, devices and trainer logins.', icon: 'tag' },
   plans: { title: 'Plans', sub: 'What you sell: monthly, yearly, day passes.', icon: 'tag' },
   reports: { title: 'Reports', sub: 'What the gym brought in and who is about to leave.', icon: 'chart' },
 };
@@ -56,8 +66,8 @@ function Head({ title, icon, meta }: { title: string; icon?: string; meta?: Reac
   );
 }
 const ROLE_TABS: Record<string, string[]> = {
-  gym_trainer: ['today', 'door', 'classes'],
-  gym_frontdesk: ['today', 'door', 'members', 'classes'],
+  gym_trainer: ['today', 'door', 'classes', 'floor', 'fitness', 'mywork'],
+  gym_frontdesk: ['today', 'door', 'members', 'classes', 'floor', 'shop', 'growth', 'setup'],
 };
 const METHODS = [
   { id: 'cash', label: 'Cash' },
@@ -129,7 +139,8 @@ function GymDesk() {
         setClasses(c || []);
         setMembers(m || []);
       }
-      if (tab === 'plans') setPlans((await get('/gym/plans')) || []);
+      if (tab === 'floor' || tab === 'fitness' || tab === 'growth' || tab === 'setup' || tab === 'shop') setMembers((await get('/gym/members')) || []);
+      if (tab === 'plans' || tab === 'setup') setPlans((await get('/gym/plans')) || []);
       if (tab === 'reports') setReport(await get(`/gym/reports?start_date=${range.start}&end_date=${range.end}`));
     } catch (err) {
       setError(problem(err));
@@ -178,7 +189,7 @@ function GymDesk() {
         'Membership cancelled',
       );
     }
-    if (dialog.kind === 'book') ok = await run(`/gym/classes/${dialog.row.id}/book`, { member_id: dialog.member_id }, 'Booked');
+    if (dialog.kind === 'book') ok = await run(`/gym/classes/${dialog.row.id}/book`, { member_id: dialog.member_id, waitlist: Boolean(dialog.waitlist) }, dialog.waitlist ? 'On the waiting list' : 'Booked');
     if (ok) setDialog(null);
   }
 
@@ -421,6 +432,14 @@ function GymDesk() {
         </>
       ) : null}
 
+      {tab === 'floor' ? <FloorTab members={members} /> : null}
+      {tab === 'fitness' ? <FitnessTab members={members} /> : null}
+      {tab === 'mywork' ? <MyWorkTab /> : null}
+      {tab === 'shop' ? <ShopTab members={members} /> : null}
+      {tab === 'growth' ? <GrowthTab members={members} /> : null}
+      {tab === 'setup' ? <SetupTab members={members} plans={plans} /> : null}
+      {tab === 'insights' ? <InsightsTab /> : null}
+
       {tab === 'classes' ? (
         <>
           <section className="gm-box" aria-label="Add class">
@@ -447,9 +466,9 @@ function GymDesk() {
           {classes.map((c) => (
             <section className="gm-box" key={c.id} aria-label={c.name}>
               <div className="gm-row" style={{ justifyContent: 'space-between' }}>
-                <div><h2>{c.name}</h2><p className="gm-muted">{when(c.starts_at)}{c.trainer_name ? ` · ${c.trainer_name}` : ''} · {c.booked} of {c.capacity} booked</p></div>
+                <div><h2>{c.name}</h2><p className="gm-muted">{when(c.starts_at)}{c.trainer_name ? ` · ${c.trainer_name}` : ''} · {c.booked} of {c.capacity} booked{c.waiting ? ` · ${c.waiting} waiting` : ''}</p></div>
                 <div className="gm-row">
-                  <button type="button" className="gm-primary" disabled={c.booked >= c.capacity} onClick={() => setDialog({ kind: 'book', row: c, member_id: '' })}>Book a member</button>
+                  <button type="button" className="gm-primary" onClick={() => setDialog({ kind: 'book', row: c, member_id: '', waitlist: c.booked >= c.capacity })}>{c.booked >= c.capacity ? 'Join waiting list' : 'Book a member'}</button>
                   <button type="button" className="gm-danger" onClick={() => void run(`/gym/classes/${c.id}/cancel`, null, 'Class cancelled')}>Cancel class</button>
                 </div>
               </div>
@@ -461,6 +480,12 @@ function GymDesk() {
                     <button type="button" onClick={() => void run(`/gym/bookings/${b.id}`, { status: 'no_show' }, 'Saved')}>Did not come</button>
                     <button type="button" onClick={() => void run(`/gym/bookings/${b.id}`, { status: 'cancelled' }, 'Booking removed')}>Remove</button>
                   </span>
+                </div>
+              ))}
+              {(c.waitlist || []).map((w: Row, i: number) => (
+                <div className="gm-line" key={w.id}>
+                  <span className="gm-muted">Waiting {i + 1}: {w.member_name}</span>
+                  <span className="gm-row"><button type="button" onClick={() => void run(`/gym/bookings/${w.id}`, { status: 'cancelled' }, 'Removed from the waiting list')}>Remove</button></span>
                 </div>
               ))}
             </section>

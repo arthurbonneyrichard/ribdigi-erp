@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState, type FormEvent } from 'react';
 import CashierPresencePanel from '../../../components/CashierPresencePanel';
 import FormModal from '../../../components/FormModal';
@@ -1034,9 +1035,9 @@ export default function Page() {
                 </button>
               ) : null}
               {canWriteStores && !hideStoreUx ? (
-                <a className="list-btn-secondary" href="/stores" aria-label="Manage stores">
+                <Link className="list-btn-secondary" href="/stores" aria-label="Manage stores">
                   Stores
-                </a>
+                </Link>
               ) : null}
             </>
           ) : undefined

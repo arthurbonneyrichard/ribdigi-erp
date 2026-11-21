@@ -6,6 +6,7 @@
  * the kitchen flow and never touch the retail till tables.
  */
 
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
@@ -909,7 +910,7 @@ function RestaurantTill() {
             <div className="rtill-empty">
               {menu.length === 0 ? (
                 <>
-                  No dishes on the menu yet. Add menu items under <a href="/restaurant?tab=recipes">Recipes</a>.
+                  No dishes on the menu yet. Add menu items under <Link href="/restaurant?tab=recipes">Recipes</Link>.
                 </>
               ) : (
                 'No dish matches.'
@@ -1102,7 +1103,7 @@ function RestaurantTill() {
             </div>
             {storeTables.length === 0 ? (
               <p className="rtill-empty">
-                No tables yet. Add them under <a href="/restaurant?tab=tables">Tables and floor</a>.
+                No tables yet. Add them under <Link href="/restaurant?tab=tables">Tables and floor</Link>.
               </p>
             ) : (
               <div className="rtill-tables">

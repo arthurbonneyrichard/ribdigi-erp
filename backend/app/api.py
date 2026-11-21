@@ -360,6 +360,7 @@ from app.schemas import (
     ChangePasswordRequest,
     TwoFactorVerify,
     WebAuthnLoginOptions,
+    WebAuthnPasswordlessStart,
     WebAuthnLoginVerify,
     WebAuthnRegisterVerify,
     UserCreate,
@@ -468,17 +469,74 @@ api.include_router(pos_extras_api_mod.serial_router)
 from app import bakery_api as bakery_api_mod  # noqa: E402
 from app import fmcg_orders as fmcg_orders_svc  # noqa: E402
 from app import fmcg_orders_api as fmcg_orders_api_mod  # noqa: E402
+from app import fmcg_batches_api as fmcg_batches_api_mod  # noqa: E402
+from app import fmcg_van_api as fmcg_van_api_mod  # noqa: E402
+from app import fmcg_quality_api as fmcg_quality_api_mod  # noqa: E402
+from app import fmcg_promos_api as fmcg_promos_api_mod  # noqa: E402
+from app import fmcg_warehouse_api as fmcg_warehouse_api_mod  # noqa: E402
+from app import fmcg_fleet_api as fmcg_fleet_api_mod  # noqa: E402
+from app import fmcg_forecast_api as fmcg_forecast_api_mod  # noqa: E402
+from app import fmcg_reports_api as fmcg_reports_api_mod  # noqa: E402
+from app import fmcg_merch_api as fmcg_merch_api_mod  # noqa: E402
+from app import fmcg_landed_api as fmcg_landed_api_mod  # noqa: E402
+from app import fmcg_mfg_api as fmcg_mfg_api_mod  # noqa: E402
+from app import fmcg_assistant_api as fmcg_assistant_api_mod  # noqa: E402
+from app import fmcg_distributors_api as fmcg_distributors_api_mod  # noqa: E402
+from app import fmcg_alerts_api as fmcg_alerts_api_mod  # noqa: E402
+from app import fmcg_offline_api as fmcg_offline_api_mod  # noqa: E402
 from app import gym_api as gym_api_mod  # noqa: E402
+from app import gym_ops_api as gym_ops_api_mod  # noqa: E402
+from app import gym_fitness_api as gym_fitness_api_mod  # noqa: E402
+from app import gym_nutrition_api as gym_nutrition_api_mod  # noqa: E402
+from app import gym_access_api as gym_access_api_mod  # noqa: E402
+from app import gym_door_api as gym_door_api_mod  # noqa: E402
+from app import gym_crm_api as gym_crm_api_mod  # noqa: E402
+from app import gym_portal_api as gym_portal_api_mod  # noqa: E402
+from app import gym_insights_api as gym_insights_api_mod  # noqa: E402
+from app import gym_files_api as gym_files_api_mod  # noqa: E402
+from app import gym_facilities_api as gym_facilities_api_mod  # noqa: E402
+from app import gym_commissions_api as gym_commissions_api_mod  # noqa: E402
+from app import gym_shop_api as gym_shop_api_mod  # noqa: E402
+from app import gym_assets_api as gym_assets_api_mod  # noqa: E402
 from app import hrm_api as hrm_api_mod  # noqa: E402
 from app import hrm_people_api as hrm_people_api_mod  # noqa: E402
 from app import hrm_time_api as hrm_time_api_mod  # noqa: E402
 
 api.include_router(bakery_api_mod.router)
 api.include_router(gym_api_mod.router)
+api.include_router(gym_ops_api_mod.router)
+api.include_router(gym_fitness_api_mod.router)
+api.include_router(gym_nutrition_api_mod.router)
+api.include_router(gym_access_api_mod.router)
+api.include_router(gym_door_api_mod.router)
+api.include_router(gym_crm_api_mod.router)
+api.include_router(gym_portal_api_mod.router)
+api.include_router(gym_portal_api_mod.member_router)
+api.include_router(gym_insights_api_mod.router)
+api.include_router(gym_files_api_mod.router)
+api.include_router(gym_facilities_api_mod.router)
+api.include_router(gym_commissions_api_mod.router)
+api.include_router(gym_shop_api_mod.router)
+api.include_router(gym_assets_api_mod.router)
 api.include_router(hrm_api_mod.router)
 api.include_router(hrm_people_api_mod.router)
 api.include_router(hrm_time_api_mod.router)
 api.include_router(fmcg_orders_api_mod.router)
+api.include_router(fmcg_batches_api_mod.router)
+api.include_router(fmcg_van_api_mod.router)
+api.include_router(fmcg_quality_api_mod.router)
+api.include_router(fmcg_promos_api_mod.router)
+api.include_router(fmcg_warehouse_api_mod.router)
+api.include_router(fmcg_fleet_api_mod.router)
+api.include_router(fmcg_forecast_api_mod.router)
+api.include_router(fmcg_reports_api_mod.router)
+api.include_router(fmcg_merch_api_mod.router)
+api.include_router(fmcg_landed_api_mod.router)
+api.include_router(fmcg_mfg_api_mod.router)
+api.include_router(fmcg_assistant_api_mod.router)
+api.include_router(fmcg_distributors_api_mod.router)
+api.include_router(fmcg_alerts_api_mod.router)
+api.include_router(fmcg_offline_api_mod.router)
 from app import fmcg_field_api as fmcg_field_api_mod  # noqa: E402
 
 api.include_router(fmcg_field_api_mod.router)
@@ -488,6 +546,19 @@ api.include_router(restaurant_tips_api_mod.router)
 from app import hrm_documents_api as hrm_documents_api_mod  # noqa: E402
 
 api.include_router(hrm_documents_api_mod.router)
+from app import hrm_lifecycle_api as hrm_lifecycle_api_mod  # noqa: E402
+
+api.include_router(hrm_lifecycle_api_mod.router)
+from app import hrm_case_work_api as hrm_case_work_api_mod  # noqa: E402
+
+api.include_router(hrm_case_work_api_mod.router)
+from app import hrm_field_api as hrm_field_api_mod  # noqa: E402
+
+api.include_router(hrm_field_api_mod.router)
+from app import hrm_rfid_api as hrm_rfid_api_mod  # noqa: E402
+
+api.include_router(hrm_rfid_api_mod.router)
+api.include_router(hrm_rfid_api_mod.reader_router)
 from app import hotel_booking_api as hotel_booking_api_mod
 
 api.include_router(hotel_booking_api_mod.router)
@@ -883,7 +954,7 @@ async def create_tenant(
     claims=Depends(require_platform_permission("platform_tenants", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    validate_password_strength(payload.admin_password)
+    validate_password_strength(payload.admin_password, privileged=True)
     try:
         password_hash = hash_password(payload.admin_password)
     except ValueError:
@@ -2796,12 +2867,14 @@ async def auth_2fa_status(claims=Depends(current_claims), db: AsyncSession = Dep
 
 @api.post("/auth/webauthn/register/options")
 async def webauthn_register_options(
-    claims=Depends(current_claims), db: AsyncSession = Depends(get_db)
+    platform: bool = False,
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
 ):
     from app import webauthn_svc as webauthn
 
     user = await db.get(m.User, claims["sub"])
-    options = await webauthn.registration_options(db, user)
+    options = await webauthn.registration_options(db, user, platform=platform)
     await db.commit()
     return env(options)
 
@@ -2879,9 +2952,61 @@ async def webauthn_login_options(payload: WebAuthnLoginOptions, db: AsyncSession
     user = await db.get(m.User, claims["sub"])
     if not user or not user.is_active or user.tenant_id != claims["tenant_id"]:
         raise HTTPException(status_code=401, detail="Invalid 2FA challenge user")
-    options = await webauthn.authentication_options(db, user)
+    options = await webauthn.authentication_options(
+        db, user, require_uv=bool(claims.get("pwless"))
+    )
     await db.commit()
     return env(options)
+
+
+@api.post("/auth/webauthn/passwordless/start", dependencies=[Depends(auth_guard.ip_limit("login"))])
+async def webauthn_passwordless_start(
+    payload: WebAuthnPasswordlessStart, request: Request, db: AsyncSession = Depends(get_db)
+):
+    """Admin sign-in with a passkey or the device's biometric, no password.
+
+    Only owners/admins with a registered passkey get a challenge; every other case answers with the
+    same generic failure as a wrong password. The assertion (with user verification) is checked by
+    /auth/webauthn/login/verify, so this token alone grants nothing.
+    """
+    from app import webauthn_svc as webauthn
+
+    generic = auth_guard.reject_generic
+    try:
+        tenant = await tenants_svc.resolve_tenant(db, payload.tenant_id)
+    except HTTPException as exc:
+        if exc.status_code != 404:
+            raise
+        await auth_guard.register_unknown(request, reason="unknown_company")
+        raise generic() from None
+    user = (
+        await db.execute(
+            select(m.User).where(m.User.tenant_id == tenant.id, m.User.email == payload.email)
+        )
+    ).scalar_one_or_none()
+    if user is None:
+        await auth_guard.register_unknown(request, reason="unknown_account", tenant_id=tenant.id)
+        raise generic()
+    if auth_guard.is_locked(user):
+        await auth_guard.register_blocked_locked(db, user, request=request)
+        raise generic()
+    if (
+        not user.is_active
+        or not user.email_verified
+        or user.role not in ADMIN_SIGN_IN_ROLES
+        or not await webauthn.user_has_webauthn(db, user.id)
+    ):
+        await auth_guard.register_unknown(request, reason="passkey_unavailable", tenant_id=tenant.id)
+        raise generic()
+    tenant = await tenants_svc.ensure_trial_state(db, tenant)
+    tenants_svc.assert_tenant_active_for_login(tenant)
+    token = totp_svc.create_challenge_token(
+        user_id=user.id, tenant_id=tenant.id, role=user.role, passwordless=True
+    )
+    await totp_svc.load_login_challenge(db, token)
+    options = await webauthn.authentication_options(db, user, require_uv=True)
+    await db.commit()
+    return env({"challenge_token": token, "options": options})
 
 
 @api.post("/auth/webauthn/login/verify", dependencies=[Depends(auth_guard.ip_limit("otp_verify"))])
@@ -2898,7 +3023,10 @@ async def webauthn_login_verify(
         await auth_guard.register_blocked_locked(db, user, request=request)
         raise HTTPException(status_code=401, detail="Passkey sign-in failed")
     await webauthn.verify_authentication(
-        db, user, credential=payload.credential.model_dump(mode="json")
+        db,
+        user,
+        credential=payload.credential.model_dump(mode="json"),
+        require_uv=bool(claims.get("pwless")),
     )
     totp_svc.consume_login_challenge(challenge_row)
     auth_guard.register_success(user)
@@ -3206,7 +3334,7 @@ async def change_password(
         verify_password, payload.current_password, user.password_hash
     ):
         raise HTTPException(status_code=401, detail="Current password is incorrect")
-    validate_password_strength(payload.new_password)
+    validate_password_strength(payload.new_password, role=user.role)
     if payload.new_password == payload.current_password:
         raise HTTPException(status_code=400, detail="New password must be different")
     user.password_hash = hash_password(payload.new_password)
@@ -3370,6 +3498,7 @@ async def password_reset(payload: PasswordResetConfirm, request: Request, db: As
     user = await db.get(m.User, row.user_id)
     if not user:
         raise HTTPException(status_code=400, detail="Invalid reset token")
+    validate_password_strength(payload.new_password, role=user.role)
     user.password_hash = hash_password(payload.new_password)
     row.used_at = datetime.utcnow()
     # The emailed link proves the owner: lift any lockout so they can sign in with the new password.
@@ -4392,7 +4521,7 @@ async def add_user(
             status_code=403,
             detail="Only a company admin can assign company_admin",
         )
-    validate_password_strength(payload.password)
+    validate_password_strength(payload.password, role=role_key)
     exists = (
         await db.execute(
             select(m.User).where(
@@ -4569,7 +4698,7 @@ async def update_user(
             await _revoke_user_sessions(db, tenant_id=claims["tenant_id"], user_id=user.id)
 
     if payload.password is not None:
-        validate_password_strength(payload.password)
+        validate_password_strength(payload.password, role=user.role)
         user.password_hash = hash_password(payload.password)
         changes["password_reset"] = True
         await _revoke_user_sessions(db, tenant_id=claims["tenant_id"], user_id=user.id)
@@ -20007,6 +20136,7 @@ async def fmcg_schemes_create(
         starts_on=payload.starts_on,
         ends_on=payload.ends_on,
         notes=payload.notes,
+        created_by=claims["sub"],
     )
     await audit_svc.record_event(
         db,

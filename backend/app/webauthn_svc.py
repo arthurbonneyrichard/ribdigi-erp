@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
@@ -14,10 +15,19 @@ from app.config import settings
 from app.honesty import optional_honest_narrative
 
 CHALLENGE_TTL_MINUTES = 5
+logger = logging.getLogger("ribdigi.webauthn")
 
 
 def rp_id() -> str:
-    return (settings.WEBAUTHN_RP_ID or "localhost").strip() or "localhost"
+    """Relying-party id. A server that never set WEBAUTHN_RP_ID would stay on "localhost", which no
+    browser accepts for a real site, so fall back to the host of the public site address."""
+    configured = (settings.WEBAUTHN_RP_ID or "").strip()
+    if configured and configured != "localhost":
+        return configured
+    from urllib.parse import urlparse
+
+    host = (urlparse(expected_origin()).hostname or "").strip()
+    return host or configured or "localhost"
 
 
 def rp_name() -> str:
@@ -135,10 +145,11 @@ async def _pop_challenge(
     return base64url_to_bytes(challenge)
 
 
-async def registration_options(db: AsyncSession, user: m.User) -> dict:
+async def registration_options(db: AsyncSession, user: m.User, *, platform: bool = False) -> dict:
     from webauthn import generate_registration_options, options_to_json
     from webauthn.helpers import bytes_to_base64url
     from webauthn.helpers.structs import (
+        AuthenticatorAttachment,
         AuthenticatorSelectionCriteria,
         ResidentKeyRequirement,
         UserVerificationRequirement,
@@ -164,9 +175,13 @@ async def registration_options(db: AsyncSession, user: m.User) -> dict:
         user_name=user.email,
         user_display_name=user.full_name or user.email,
         exclude_credentials=exclude or None,
+        # platform=True: this device's own fingerprint / face / PIN (Windows Hello, Touch ID, Android).
         authenticator_selection=AuthenticatorSelectionCriteria(
+            authenticator_attachment=AuthenticatorAttachment.PLATFORM if platform else None,
             resident_key=ResidentKeyRequirement.PREFERRED,
-            user_verification=UserVerificationRequirement.PREFERRED,
+            user_verification=(
+                UserVerificationRequirement.REQUIRED if platform else UserVerificationRequirement.PREFERRED
+            ),
         ),
     )
     await _store_challenge(
@@ -198,6 +213,11 @@ async def verify_registration(
             expected_origin=expected_origin(),
         )
     except Exception as exc:  # noqa: BLE001
+        # Reason class only: never the credential, challenge or keys.
+        logger.warning(
+            "webauthn registration rejected user=%s rp_id=%s origin=%s reason=%s",
+            user.id, rp_id(), expected_origin(), type(exc).__name__,
+        )
         raise HTTPException(status_code=400, detail=f"Passkey registration failed: {exc}") from exc
 
     cred_id = bytes_to_base64url(verification.credential_id)
@@ -232,7 +252,7 @@ async def verify_registration(
 
 
 async def authentication_options(
-    db: AsyncSession, user: m.User
+    db: AsyncSession, user: m.User, *, require_uv: bool = False
 ) -> dict:
     from webauthn import generate_authentication_options, options_to_json
     from webauthn.helpers import base64url_to_bytes, bytes_to_base64url
@@ -257,7 +277,9 @@ async def authentication_options(
     options = generate_authentication_options(
         rp_id=rp_id(),
         allow_credentials=allow,
-        user_verification=UserVerificationRequirement.PREFERRED,
+        user_verification=(
+            UserVerificationRequirement.REQUIRED if require_uv else UserVerificationRequirement.PREFERRED
+        ),
     )
     await _store_challenge(
         db,
@@ -274,6 +296,7 @@ async def verify_authentication(
     user: m.User,
     *,
     credential: dict,
+    require_uv: bool = False,
 ) -> m.WebAuthnCredential:
     from webauthn import verify_authentication_response
     from webauthn.helpers import base64url_to_bytes, bytes_to_base64url
@@ -303,8 +326,13 @@ async def verify_authentication(
             expected_origin=expected_origin(),
             credential_public_key=base64url_to_bytes(row.public_key),
             credential_current_sign_count=int(row.sign_count or 0),
+            require_user_verification=require_uv,
         )
     except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "webauthn authentication rejected user=%s rp_id=%s origin=%s reason=%s",
+            user.id, rp_id(), expected_origin(), type(exc).__name__,
+        )
         raise HTTPException(status_code=401, detail=f"Passkey authentication failed: {exc}") from exc
 
     row.sign_count = int(verification.new_sign_count or row.sign_count or 0)

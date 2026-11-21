@@ -40,13 +40,22 @@ function filterHeaderArg(arg, drop) {
   return out;
 }
 
+// In CSP report-only mode the proxy hands the old enforced policy over in x-csp-enforced (Next.js
+// would otherwise read it instead of the nonce policy). Set it as the real header here, after rendering.
+const HANDOFF = 'x-csp-enforced';
+
 const originalWriteHead = http.ServerResponse.prototype.writeHead;
 http.ServerResponse.prototype.writeHead = function writeHead(statusCode, ...rest) {
   const drop = dropListFor(this.req);
   if (!this.headersSent) {
     for (const name of drop) this.removeHeader(name);
+    const handoff = this.getHeader(HANDOFF);
+    if (handoff) {
+      this.removeHeader(HANDOFF);
+      this.setHeader('Content-Security-Policy', String(handoff));
+    }
   }
-  if (rest.length) rest[rest.length - 1] = filterHeaderArg(rest[rest.length - 1], drop);
+  if (rest.length) rest[rest.length - 1] = filterHeaderArg(rest[rest.length - 1], drop.concat([HANDOFF]));
   return originalWriteHead.call(this, statusCode, ...rest);
 };
 

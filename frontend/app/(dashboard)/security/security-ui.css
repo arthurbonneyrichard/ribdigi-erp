@@ -123,3 +123,49 @@
 .privacy-warn{margin:0;padding:10px 12px;border-radius:var(--radius);background:var(--warn-bg);color:#5c3a00;font-size:13px}
 .privacy-table{margin-top:16px}
 .privacy-table caption{text-align:left;font-weight:700;padding:4px 0}
+
+/* Fingerprint enable button: amber = not on yet, green = on for this device */
+.security-ui .bio-enable{font-weight:600;border-radius:10px;padding:10px 16px;cursor:pointer;border:2px solid transparent}
+.security-ui .bio-enable.is-off{background:#FFF1CC;color:#5C3A00;border-color:#E0A100}
+.security-ui .bio-enable.is-off:hover{background:#FFE29A}
+.security-ui .bio-enable.is-on{background:#4AB012;color:#10211B;border-color:#2F7A0C}
+.security-ui .bio-enable.is-on:hover{background:#43A311}
+:root[data-theme="dark"] .security-ui .bio-enable.is-off{background:#4A3600;color:#FFE29A;border-color:#E0A100}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .security-ui .bio-enable.is-off{background:#4A3600;color:#FFE29A;border-color:#E0A100}}
+
+/* Security page title: the same green banner the owner console uses (this page only) */
+.main .page-head-card.security-head:not(#_),
+.shell:not(.is-pos):not(.is-kiosk) > .main .page-head-card.security-head:not(#_){
+  position:relative;isolation:isolate;overflow:hidden;padding:22px 26px;border:0!important;border-radius:22px;color:#fff;
+  background:radial-gradient(120% 140% at 100% 0%,#4AB01255 0%,transparent 55%),linear-gradient(135deg,#003D1F 0%,#0B5A2E 60%,#167A33 100%)!important;
+  box-shadow:0 18px 40px -26px #003D1F
+}
+.main .page-head-card.security-head:not(#_)::before{display:none!important}
+.main .page-head-card.security-head:not(#_)::after{
+  content:"";position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;
+  border:28px solid #C8E86A14;pointer-events:none
+}
+.main .page-head-card.security-head:not(#_) > *{position:relative;z-index:1}
+.main .page-head-card.security-head:not(#_) .page-head-ico{background:#FFFFFF1F;color:#C8E86A;border:1px solid #FFFFFF26}
+.main .page-head-card.security-head:not(#_) h1{color:#fff!important}
+.main .page-head-card.security-head:not(#_) .page-sub,
+.main .page-head-card.security-head:not(#_) p{color:#D6EECB!important}
+[data-theme="dark"] .main .page-head-card.security-head:not(#_),
+[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .page-head-card.security-head:not(#_){
+  background:radial-gradient(120% 140% at 100% 0%,#4AB01233 0%,transparent 55%),linear-gradient(135deg,#0B2A1C 0%,#0F3D26 100%)!important;
+  border:1px solid #1C4633!important
+}
+
+/* Passkeys card: compact */
+.security-ui .passkey-card{padding:14px 16px}
+.security-ui .passkey-card h2{font-size:17px;margin:0 0 4px}
+.security-ui .passkey-card .security-ui-note{font-size:13px;line-height:1.4;margin-bottom:8px}
+.security-ui .passkey-card .security-ui-inline{gap:8px}
+.security-ui .passkey-card .security-ui-inline input{flex:1 1 9rem;max-width:14rem;min-height:36px;padding:6px 10px}
+.security-ui .passkey-card .security-ui-inline button{min-height:36px;padding:6px 12px;font-size:13px;white-space:nowrap}
+.security-ui .passkey-card .security-ui-list{margin-top:8px;max-height:9rem}
+.security-ui .passkey-card .security-ui-list li{padding:4px 0;font-size:13px}
+@media (max-width:720px){
+  .security-ui .passkey-card .security-ui-inline input{max-width:none}
+  .security-ui .passkey-card .security-ui-inline button{white-space:normal}
+}

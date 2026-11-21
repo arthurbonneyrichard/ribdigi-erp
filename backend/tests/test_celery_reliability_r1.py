@@ -43,6 +43,7 @@ EXPECTED_HANDLERS = {
     "hotel_daily_close",
     "sync_hotel_channels",
     "sample_server_health",
+    "send_gym_renewal_reminders",
 }
 
 

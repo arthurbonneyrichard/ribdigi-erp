@@ -7,6 +7,8 @@ export const DEFAULT_THEME: ThemeMode = 'light';
 
 const LEGACY_KEY = 'theme';
 const ACTIVE_USER_KEY = 'ribdigi.theme.userId';
+/** Last theme shown on this browser, used only while nobody is signed in. */
+const DEVICE_KEY = 'ribdigi.theme.device';
 
 export function themeKeyForUser(userId: string): string {
   return `ribdigi.theme.${String(userId || '').trim()}`;
@@ -66,10 +68,20 @@ export function loadUserTheme(userId: string): ThemeMode {
   return DEFAULT_THEME;
 }
 
-/** After logout: forget active user and return UI to the light default. */
+/**
+ * After logout: forget the active user but keep the theme on screen, so signing out in dark
+ * mode stays dark. The sign-in page uses this device-level value only; the next person who
+ * signs in gets their own saved theme (or light when they have none), never this one.
+ */
 export function clearSessionTheme(): void {
   if (typeof localStorage === 'undefined') return;
+  let shown: ThemeMode = DEFAULT_THEME;
+  if (typeof document !== 'undefined') {
+    const current = document.documentElement.getAttribute('data-theme');
+    if (current === 'light' || current === 'dark') shown = current;
+  }
+  localStorage.setItem(DEVICE_KEY, shown);
   localStorage.removeItem(ACTIVE_USER_KEY);
   localStorage.removeItem(LEGACY_KEY);
-  applyTheme(DEFAULT_THEME);
+  applyTheme(shown);
 }

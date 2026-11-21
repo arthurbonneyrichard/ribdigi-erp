@@ -1658,7 +1658,7 @@ async def request_admin_password_reset(
     email_error = None
     typed = (new_password or "").strip()
     if typed:
-        validate_password_strength(typed)
+        validate_password_strength(typed, role=user.role)
         user.password_hash = await asyncio.to_thread(hash_password, typed)
         user.failed_login_attempts = 0
         user.locked_until = None

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, isAbortError } from '../../../lib/api';
 import { getPrefetched } from '../../../lib/prefetchCache';
 import { pageLoadStarted } from '../../../lib/navTiming';
@@ -11,6 +11,7 @@ import { closeShiftForSignOut } from '../../../lib/cashierShift';
 import './security-ui.css';
 import PrivacyDataCard from '../../../components/PrivacyDataCard';
 import { formatWhen } from '../../../lib/format';
+import { NO_BIOMETRIC_MESSAGE, deviceBiometricAvailable, describeWebAuthnError, promptAbort, webauthnSupported } from '../../../lib/webauthnClient';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 
 function bufferToBase64url(buf: ArrayBuffer): string {
@@ -111,6 +112,8 @@ export default function Page() {
   const prefs = useCompanyFormat();
   const [status, setStatus] = useState<any>(null);
   const [passkeys, setPasskeys] = useState<any[]>([]);
+  const passkeyBusy = useRef(false);
+  const [bioOn, setBioOn] = useState(false);
   const [sessions, setSessions] = useState<AuthSessionRow[]>([]);
   const [setup, setSetup] = useState<any>(null);
   const [code, setCode] = useState('');
@@ -223,16 +226,56 @@ export default function Page() {
     }
   }
 
-  async function registerPasskey() {
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const saved = JSON.parse(localStorage.getItem('ribdigi:biometric') || 'null');
+        if (!saved?.email || !passkeys.length) {
+          if (!cancelled) setBioOn(false);
+          return;
+        }
+        const me = await api('/me');
+        const same = String(me.data?.email || '').trim().toLowerCase() === String(saved.email).trim().toLowerCase();
+        if (!cancelled) setBioOn(same);
+      } catch {
+        if (!cancelled) setBioOn(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [passkeys]);
+
+  async function rememberBiometricDevice() {
+    try {
+      const me = await api('/me');
+      const em = String(me.data?.email || '').trim();
+      const tid = String(me.data?.tenant_id || '').trim();
+      if (em && tid) localStorage.setItem('ribdigi:biometric', JSON.stringify({ email: em, tenant: tid }));
+    } catch {
+      /* optional */
+    }
+  }
+
+  async function registerPasskey(platform = false) {
     setError('');
     setMessage('');
+    if (passkeyBusy.current) return; // one prompt at a time
+    if (!webauthnSupported()) {
+      setError('This browser cannot use passkeys or fingerprint. Use Chrome or Edge.');
+      return;
+    }
+    if (platform && !(await deviceBiometricAvailable())) {
+      setError(NO_BIOMETRIC_MESSAGE);
+      return;
+    }
+    passkeyBusy.current = true;
+    const abort = promptAbort();
     try {
-      if (!window.PublicKeyCredential) {
-        throw new Error('This browser does not support passkeys');
-      }
-      const opt = await api('/auth/webauthn/register/options', { method: 'POST', body: '{}' });
+      const opt = await api(`/auth/webauthn/register/options${platform ? '?platform=true' : ''}`, { method: 'POST', body: '{}' });
       const publicKey = publicKeyFromJson(opt.data) as PublicKeyCredentialCreationOptions;
-      const cred = (await navigator.credentials.create({ publicKey })) as PublicKeyCredential | null;
+      const cred = (await navigator.credentials.create({ publicKey, signal: abort.signal })) as PublicKeyCredential | null;
       if (!cred) throw new Error('Passkey registration cancelled');
       await api('/auth/webauthn/register/verify', {
         method: 'POST',
@@ -241,10 +284,19 @@ export default function Page() {
           name: passkeyName.trim() ? passkeyName.trim() : null,
         }),
       });
-      setMessage('Passkey registered');
+      if (platform) await rememberBiometricDevice();
+      setMessage(platform ? 'Fingerprint / face sign-in is on for this device' : 'Passkey registered');
       await refresh({ force: true });
     } catch (err: any) {
-      setError(err.message || 'Passkey registration failed');
+      if (platform && /already registered/i.test(String(err?.message || ''))) {
+        await rememberBiometricDevice();
+        setMessage('Fingerprint / face sign-in is already on for this device. Sign out and tap the fingerprint button on the sign-in page.');
+        return;
+      }
+      setError(describeWebAuthnError(err, 'register'));
+    } finally {
+      abort.done();
+      passkeyBusy.current = false;
     }
   }
 
@@ -310,6 +362,7 @@ export default function Page() {
     <div className="security-ui">
       <PageHeader
         title="Security"
+        className="security-head"
         subtitle="Protect your account: two-step sign-in, the devices signed in as you, your password and passkeys."
       />
       {error && <p className="security-ui-alert" role="alert">{error}</p>}
@@ -514,9 +567,9 @@ export default function Page() {
         </div>
       </div>
 
-      <div className="card">
+      <div className="card passkey-card">
         <h2>Passkeys</h2>
-        <p className="muted security-ui-note">Use a fingerprint, face, or security key as a second step at sign-in. A blank name is saved as Passkey.</p>
+        <p className="muted security-ui-note">Sign in with your fingerprint, face or a security key. Choose the amber button while signed in here to turn on fingerprint for this device. A blank name is saved as Passkey.</p>
         <div className="security-ui-inline">
           <input
             aria-label="Passkey name"
@@ -525,8 +578,23 @@ export default function Page() {
             placeholder="Passkey name"
             title="Optional label"
           />
-          <button type="button" onClick={registerPasskey} aria-label="Add passkey">
-            Add passkey
+          <button
+            type="button"
+            className={passkeys.length ? 'bio-enable is-on' : 'bio-enable is-off'}
+            onClick={() => registerPasskey(false)}
+            aria-label="Add passkey"
+            title={passkeys.length ? 'You have a passkey. Add another if you like.' : 'No passkey yet'}
+          >
+            {passkeys.length ? `✓ Passkey added (${passkeys.length}) · Add another` : 'Add passkey'}
+          </button>
+          <button
+            type="button"
+            className={bioOn ? 'bio-enable is-on' : 'bio-enable is-off'}
+            onClick={() => registerPasskey(true)}
+            aria-label={bioOn ? 'Fingerprint sign-in is enabled on this device' : 'Enable fingerprint or face sign-in on this device'}
+            aria-pressed={bioOn}
+          >
+            {bioOn ? '✓ Fingerprint / face enabled on this device' : 'Enable fingerprint / face on this device'}
           </button>
         </div>
         <ul className="security-ui-list">

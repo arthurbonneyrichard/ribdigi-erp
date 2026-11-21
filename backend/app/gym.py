@@ -7,7 +7,8 @@ open shift and booked as revenue on the day it is sold. Every movement of money 
 
 from __future__ import annotations
 
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
+from uuid import uuid4
 
 from fastapi import HTTPException
 from sqlalchemy import func, select
@@ -24,8 +25,8 @@ METHODS = frozenset({"cash", "card", "mobile_money", "bank_transfer"})
 MAX_FREEZE_DAYS = 180
 
 _JOBS = {
-    "gym_frontdesk": frozenset({"members", "desk", "door", "classes"}),
-    "gym_trainer": frozenset({"door", "classes"}),
+    "gym_frontdesk": frozenset({"members", "desk", "door", "classes", "guests", "lockers", "training"}),
+    "gym_trainer": frozenset({"door", "classes", "training", "fitness"}),
 }
 _WORDS = {
     "gym_frontdesk": "Front desk runs members, sales, the door and classes. Refunds, plans and reports need a manager.",
@@ -108,6 +109,10 @@ def serialize_plan(row: m.GymPlan) -> dict:
         "duration_days": int(row.duration_days),
         "visit_limit": int(row.visit_limit) if row.visit_limit else None,
         "is_active": bool(row.is_active),
+        "access_start": row.access_start,
+        "access_end": row.access_end,
+        "access_days": sorted(int(x) for x in str(row.access_days or "").split(",") if x.strip().isdigit()),
+        "branch_scope": row.branch_scope or "all",
     }
 
 
@@ -464,7 +469,7 @@ async def cancel_membership(
 # --- The door ----------------------------------------------------------------------------
 
 
-async def check_in(db: AsyncSession, tenant_id: str, *, member_id: str, user_id) -> dict:
+async def check_in(db: AsyncSession, tenant_id: str, *, member_id: str, user_id, branch_id: str | None = None, at: datetime | None = None) -> dict:
     """Let a member in, or say plainly why not. Refusals are recorded too."""
     member = await _member(db, tenant_id, member_id)
     current = await _latest(db, tenant_id, member.id)
@@ -482,6 +487,16 @@ async def check_in(db: AsyncSession, tenant_id: str, *, member_id: str, user_id)
     plan = await db.get(m.GymPlan, current.plan_id) if current else None
     if refused is None and plan.visit_limit and int(current.visits_used or 0) >= int(plan.visit_limit):
         refused = "No visits left on this plan"
+    if branch_id:
+        from app import gym_access  # local import: gym_access builds on this module
+
+        await gym_access.usable_branch(db, tenant_id, branch_id)
+        if refused is None and plan is not None:
+            refused = await gym_access.door_refusal(db, tenant_id, plan=plan, member=member, branch_id=branch_id, at=at)
+    elif refused is None and plan is not None and (plan.access_days or plan.access_start):
+        from app import gym_access
+
+        refused = await gym_access.door_refusal(db, tenant_id, plan=plan, member=member, branch_id=None, at=at)
     begin = datetime.combine(today, time.min)
     already = (
         await db.execute(
@@ -498,7 +513,8 @@ async def check_in(db: AsyncSession, tenant_id: str, *, member_id: str, user_id)
     db.add(
         m.GymCheckIn(
             tenant_id=tenant_id, member_id=member.id, membership_id=current.id if current else None,
-            allowed=refused is None, refused_reason=refused, created_by=user_id,
+            allowed=refused is None, refused_reason=refused, created_by=user_id, branch_id=branch_id,
+            checked_in_at=(at.astimezone(timezone.utc).replace(tzinfo=None) if at is not None and at.tzinfo else (at or _now())),
         )
     )
     if refused is None:
@@ -551,10 +567,18 @@ async def present_class(db: AsyncSession, row: m.GymClass) -> dict:
         "trainer_name": row.trainer_name,
         "starts_at": row.starts_at.isoformat() if row.starts_at else None,
         "capacity": int(row.capacity),
-        "booked": len(rows),
+        "booked": len([1 for b, _ in rows if b.status != "waitlisted"]),
+        "waiting": len([1 for b, _ in rows if b.status == "waitlisted"]),
         "status": row.status,
         "bookings": [
-            {"id": b.id, "member_id": b.member_id, "member_name": p.full_name, "status": b.status} for b, p in rows
+            {"id": b.id, "member_id": b.member_id, "member_name": p.full_name, "status": b.status}
+            for b, p in rows
+            if b.status != "waitlisted"
+        ],
+        "waitlist": [
+            {"id": b.id, "member_id": b.member_id, "member_name": p.full_name}
+            for b, p in sorted(rows, key=lambda x: x[0].created_at)
+            if b.status == "waitlisted"
         ],
     }
 
@@ -575,18 +599,22 @@ async def list_classes(db: AsyncSession, tenant_id: str) -> list[m.GymClass]:
 async def create_class(db: AsyncSession, tenant_id: str, payload, *, user_id) -> m.GymClass:
     if payload.starts_at < _now() - timedelta(minutes=5):
         raise HTTPException(status_code=422, detail="Choose a time that has not passed")
-    row = m.GymClass(
-        tenant_id=tenant_id,
-        name=require_honest_narrative(payload.name, label="class name", max_length=120),
-        trainer_name=optional_honest_narrative(payload.trainer_name, label="trainer", max_length=150),
-        starts_at=payload.starts_at,
-        capacity=int(payload.capacity),
-        status="scheduled",
-        created_by=user_id,
-    )
-    db.add(row)
+    name = require_honest_narrative(payload.name, label="class name", max_length=120)
+    trainer = optional_honest_narrative(payload.trainer_name, label="trainer", max_length=150)
+    weeks = int(getattr(payload, "repeat_weeks", 1) or 1)
+    if weeks < 1 or weeks > 52:
+        raise HTTPException(status_code=422, detail="A class can repeat for 1 to 52 weeks")
+    series = str(uuid4()) if weeks > 1 else None
+    first = None
+    for i in range(weeks):
+        row = m.GymClass(
+            tenant_id=tenant_id, name=name, trainer_name=trainer, series_id=series,
+            starts_at=payload.starts_at + timedelta(weeks=i), capacity=int(payload.capacity), status="scheduled", created_by=user_id,
+        )
+        db.add(row)
+        first = first or row
     await db.flush()
-    return row
+    return first
 
 
 async def _class(db: AsyncSession, tenant_id: str, class_id: str, *, lock: bool = False) -> m.GymClass:
@@ -599,7 +627,28 @@ async def _class(db: AsyncSession, tenant_id: str, class_id: str, *, lock: bool 
     return row
 
 
-async def book_class(db: AsyncSession, tenant_id: str, class_id: str, *, member_id: str, user_id) -> m.GymClass:
+async def _promote(db: AsyncSession, tenant_id: str, row: m.GymClass) -> None:
+    """Fill free places from the waiting list, oldest first, skipping members whose plan lapsed."""
+    bookings = (
+        await db.execute(select(m.GymClassBooking).where(m.GymClassBooking.class_id == row.id).order_by(m.GymClassBooking.created_at.asc()))
+    ).scalars().all()
+    taken = len([b for b in bookings if b.status in ("booked", "attended", "no_show")])
+    for b in bookings:
+        if taken >= int(row.capacity):
+            break
+        if b.status != "waitlisted":
+            continue
+        if _state(await _latest(db, tenant_id, b.member_id), date.today()) != "active":
+            b.status = "cancelled"
+            continue
+        b.status = "booked"
+        taken += 1
+    await db.flush()
+
+
+async def book_class(
+    db: AsyncSession, tenant_id: str, class_id: str, *, member_id: str, user_id, waitlist: bool = False
+) -> m.GymClass:
     row = await _class(db, tenant_id, class_id, lock=True)
     if row.status != "scheduled":
         raise HTTPException(status_code=409, detail="This class was cancelled")
@@ -607,16 +656,21 @@ async def book_class(db: AsyncSession, tenant_id: str, class_id: str, *, member_
     current = await _latest(db, tenant_id, member.id)
     if _state(current, date.today()) != "active":
         raise HTTPException(status_code=409, detail=f"{member.full_name} has no active membership")
-    taken = (
+    live = (
         await db.execute(
             select(m.GymClassBooking).where(m.GymClassBooking.class_id == row.id, m.GymClassBooking.status != "cancelled")
         )
     ).scalars().all()
-    if any(b.member_id == member.id for b in taken):
+    if any(b.member_id == member.id for b in live):
         raise HTTPException(status_code=409, detail=f"{member.full_name} is already booked")
-    if len(taken) >= int(row.capacity):
-        raise HTTPException(status_code=409, detail="This class is full")
-    db.add(m.GymClassBooking(tenant_id=tenant_id, class_id=row.id, member_id=member.id, status="booked", created_by=user_id))
+    taken = len([b for b in live if b.status != "waitlisted"])
+    if taken >= int(row.capacity):
+        if not waitlist:
+            raise HTTPException(status_code=409, detail="This class is full")
+        status = "waitlisted"
+    else:
+        status = "booked"
+    db.add(m.GymClassBooking(tenant_id=tenant_id, class_id=row.id, member_id=member.id, status=status, created_by=user_id))
     await db.flush()
     return row
 
@@ -625,14 +679,29 @@ async def set_booking(db: AsyncSession, tenant_id: str, booking_id: str, *, stat
     row = await db.get(m.GymClassBooking, booking_id)
     if row is None or row.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Booking not found")
+    klass = await _class(db, tenant_id, row.class_id, lock=True)
+    was_place = row.status != "waitlisted" and row.status != "cancelled"
     row.status = status
     await db.flush()
-    return await _class(db, tenant_id, row.class_id)
+    if status == "cancelled" and was_place and klass.status == "scheduled":
+        await _promote(db, tenant_id, klass)
+    return klass
 
 
-async def cancel_class(db: AsyncSession, tenant_id: str, class_id: str) -> m.GymClass:
+async def cancel_class(db: AsyncSession, tenant_id: str, class_id: str, *, whole_series: bool = False) -> m.GymClass:
     row = await _class(db, tenant_id, class_id, lock=True)
     row.status = "cancelled"
+    if whole_series and row.series_id:
+        # Only the ones that have not started: past classes keep their history.
+        later = (
+            await db.execute(
+                select(m.GymClass)
+                .where(m.GymClass.tenant_id == tenant_id, m.GymClass.series_id == row.series_id, m.GymClass.starts_at >= row.starts_at)
+                .with_for_update()
+            )
+        ).scalars().all()
+        for item in later:
+            item.status = "cancelled"
     await db.flush()
     return row
 

@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import accounting
 from app import audit as audit_svc
+from app import catalog as catalog_svc
 from app import credit as credit_svc
 from app import fmcg as fmcg_svc
 from app import inventory
@@ -33,12 +34,18 @@ REF_ORDER = "fmcg_order"
 REF_RETURN = "fmcg_return"
 
 _JOBS = {
-    "fmcg_rep": frozenset({"outlets", "orders", "collect", "visits"}),
-    "fmcg_driver": frozenset({"deliver", "collect", "returns"}),
+    "fmcg_rep": frozenset({"outlets", "orders", "collect", "visits", "van", "complaints", "merch"}),
+    "fmcg_driver": frozenset({"deliver", "collect", "returns", "van", "complaints"}),
+    "fmcg_storekeeper": frozenset({"warehouse", "batches_read"}),
+    "fmcg_quality": frozenset({"quality", "complaints", "batches_read", "batches_hold"}),
+    "fmcg_fleet": frozenset({"fleet", "dispatch_vehicle"}),
 }
 _WORDS = {
     "fmcg_rep": "Sales reps look after outlets, visits, orders and collections. Ask a manager for the rest.",
     "fmcg_driver": "Drivers deliver, collect and take returns. Ask a manager for the rest.",
+    "fmcg_storekeeper": "Storekeepers look after the warehouse bins and can see batches. Ask a manager for the rest.",
+    "fmcg_quality": "Quality officers inspect goods, hold batches and handle complaints. Ask a manager for the rest.",
+    "fmcg_fleet": "Fleet managers look after vehicles and put them on dispatches. Ask a manager for the rest.",
 }
 
 
@@ -66,6 +73,35 @@ async def _next_number(db: AsyncSession, tenant_id: str, model, prefix: str) -> 
     await db.execute(select(m.Tenant.id).where(m.Tenant.id == tenant_id).with_for_update(key_share=True))
     count = (await db.execute(select(func.count()).select_from(model).where(model.tenant_id == tenant_id))).scalar_one()
     return f"{prefix}-{int(count or 0) + 1:04d}"
+
+
+async def _restock_batches(db: AsyncSession, tenant_id: str, order_line_id: str, qty: float) -> None:
+    """Put sellable returns back on the batches they came from, unless that batch is held or expired."""
+    from app import pharmacy as pharmacy_svc
+
+    parts = (
+        await db.execute(
+            select(m.FmcgLineBatch)
+            .where(m.FmcgLineBatch.tenant_id == tenant_id, m.FmcgLineBatch.order_line_id == order_line_id)
+            .order_by(m.FmcgLineBatch.created_at.asc())
+        )
+    ).scalars().all()
+    held = await pharmacy_svc.open_hold_batch_ids(db, tenant_id, [p.batch_id for p in parts])
+    left = qty
+    for part in parts:
+        room = _qty(float(part.quantity) - float(part.returned_qty or 0))
+        take = min(room, left)
+        if take <= 0:
+            continue
+        part.returned_qty = _qty(float(part.returned_qty or 0) + take)
+        left = _qty(left - take)
+        batch = await db.get(m.ProductBatch, part.batch_id)
+        expired = bool(batch and batch.expiry_date and batch.expiry_date.date() < date.today())
+        if batch and part.batch_id not in held and not expired:
+            batch.quantity = _qty(float(batch.quantity or 0) + take)
+            batch.updated_at = _now()
+        if left <= 0:
+            break
 
 
 async def _post(db, tenant_id: str, *, user_id, description: str, lines: list[dict], reference: str, source: str, source_id: str):
@@ -180,23 +216,32 @@ async def create_outlet(db: AsyncSession, tenant_id: str, payload, *, user_id: s
 # --- Orders ------------------------------------------------------------------------------
 
 
-async def _priced_lines(db: AsyncSession, tenant_id: str, lines) -> tuple[list[dict], float, float, float, float]:
+async def _priced_lines(
+    db: AsyncSession, tenant_id: str, lines, customer_id: str | None = None
+) -> tuple[list[dict], float, float, float, float]:
     """Price from the catalogue, never the request; the best running scheme comes off each line."""
     if not lines:
         raise HTTPException(status_code=422, detail="Add at least one product")
     out: list[dict] = []
+    running: dict = {}
+    tier = 0.0
+    if customer_id:
+        profile = (await db.execute(select(m.FmcgDistributor).where(
+            m.FmcgDistributor.tenant_id == tenant_id, m.FmcgDistributor.customer_id == customer_id, m.FmcgDistributor.is_active.is_(True)))).scalar_one_or_none()
+        tier = float(profile.price_discount_pct or 0) if profile else 0.0
     net_total = tax_total = gross_total = discount_total = 0.0
     for line in lines:
         product = await db.get(m.Product, line.product_id)
         if product is None or product.tenant_id != tenant_id or not product.is_active:
             raise HTTPException(status_code=404, detail="Product not found")
         qty = _qty(line.quantity)
-        price = _money(product.selling_price)
+        price = _money(float(product.selling_price or 0) * (1 - tier / 100))
         if price <= 0:
             raise HTTPException(status_code=422, detail=f"{product.name} has no selling price")
         amount = _money(qty * price)
         discount, meta = await fmcg_svc.best_line_scheme_discount(
-            db, tenant_id=tenant_id, product_id=product.id, line_qty=qty, line_amount=amount
+            db, tenant_id=tenant_id, product_id=product.id, line_qty=qty, line_amount=amount,
+            customer_id=customer_id, running=running,
         )
         discount = _money(min(float(discount or 0), amount))
         spec = await tax_svc.resolve_product_tax(db, tenant_id, product)
@@ -239,7 +284,7 @@ async def create_order(
     outlet = await _outlet(db, tenant_id, payload.customer_id, lock=True)
     if outlet.status != "active":
         raise HTTPException(status_code=409, detail="This outlet is inactive")
-    lines, net, discount, tax, gross = await _priced_lines(db, tenant_id, payload.lines)
+    lines, net, discount, tax, gross = await _priced_lines(db, tenant_id, payload.lines, customer_id=outlet.id)
     override = None
     if payload.terms == "credit":
         # Orders already booked count too, so a rep cannot slip past the limit one order at a time.
@@ -335,7 +380,30 @@ async def _on_trucks(db: AsyncSession, tenant_id: str, product_id: str) -> float
             )
         )
     ).scalar_one()
-    return _qty(total)
+    return _qty(float(total) + await van_reserved(db, tenant_id, product_id))
+
+
+async def van_reserved(db: AsyncSession, tenant_id: str, product_id: str) -> float:
+    """Stock sitting on open vans: loaded, less what was sold, damaged or given as samples."""
+    left = (
+        await db.execute(
+            select(
+                func.coalesce(
+                    func.sum(
+                        m.FmcgVanLoad.loaded_qty - m.FmcgVanLoad.sold_qty - m.FmcgVanLoad.damaged_qty - m.FmcgVanLoad.sample_qty
+                    ),
+                    0,
+                )
+            )
+            .join(m.FmcgDispatch, m.FmcgDispatch.id == m.FmcgVanLoad.dispatch_id)
+            .where(
+                m.FmcgVanLoad.tenant_id == tenant_id,
+                m.FmcgVanLoad.product_id == product_id,
+                m.FmcgDispatch.status == "open",
+            )
+        )
+    ).scalar_one()
+    return _qty(max(float(left or 0), 0))
 
 
 async def load_order(db: AsyncSession, tenant_id: str, order_id: str, *, dispatch_id: str, user_id) -> m.FmcgOrder:
@@ -381,7 +449,8 @@ async def _mark_stop(db, tenant_id: str, row: m.FmcgOrder, status: str, reason: 
 
 
 async def deliver_order(
-    db: AsyncSession, tenant_id: str, order_id: str, *, payment_method: str | None, user_id: str | None
+    db: AsyncSession, tenant_id: str, order_id: str, *, payment_method: str | None, user_id: str | None,
+    from_van: bool = False,
 ) -> m.FmcgOrder:
     """Goods handed over: stock leaves, revenue is booked and the outlet owes the money."""
     row = await _order(db, tenant_id, order_id, lock=True)
@@ -393,23 +462,37 @@ async def deliver_order(
     cost = 0.0
     for line in lines:
         product = await db.get(m.Product, line.product_id)
-        if float(line.quantity) > float(product.stock_qty or 0) + 0.0005:
+        # Stock on a van belongs to that van's sales; a warehouse delivery cannot take it.
+        free = float(product.stock_qty or 0) - (0 if from_van else await van_reserved(db, tenant_id, line.product_id))
+        if float(line.quantity) > free + 0.0005:
             raise HTTPException(
                 status_code=409,
-                detail={"code": "INSUFFICIENT_STOCK", "message": f"Only {_qty(product.stock_qty):g} {line.name} left"},
+                detail={"code": "INSUFFICIENT_STOCK", "message": f"Only {_qty(free):g} {line.name} left"},
             )
         cost += float(line.quantity) * float(product.cost_price or 0)
-        await inventory.apply_stock_change(
+        # First-expiry-first-out: expired, quarantined or recalled batches are never delivered.
+        out = await catalog_svc.stock_out_with_batch(
             db,
             tenant_id=tenant_id,
-            product_id=line.product_id,
-            quantity_delta=-_qty(line.quantity),
-            movement_type="stock_out",
             user_id=user_id,
+            product_id=line.product_id,
+            quantity=_qty(line.quantity),
             reference_type=REF_ORDER,
             reference_id=row.id,
             notes=f"FMCG delivery {row.order_number}",
         )
+        from app import fmcg_warehouse as bins
+
+        for taken in out.get("batches_consumed") or []:
+            db.add(
+                m.FmcgLineBatch(
+                    tenant_id=tenant_id, order_id=row.id, order_line_id=line.id,
+                    product_id=line.product_id, batch_id=taken["batch_id"], quantity=taken["quantity"],
+                )
+            )
+            await bins.consume(db, tenant_id, line.product_id, taken["batch_id"], float(taken["quantity"]))
+        if not out.get("batches_consumed"):
+            await bins.consume(db, tenant_id, line.product_id, None, _qty(line.quantity))
     gross, tax = _money(row.total), _money(row.tax)
     description = f"FMCG delivery {row.order_number}"
     journal = [
@@ -687,6 +770,7 @@ async def create_return(
         )
         if resaleable:
             cost += qty * float(product.cost_price or 0)
+            await _restock_batches(db, tenant_id, line.id, qty)
             await inventory.apply_stock_change(
                 db,
                 tenant_id=tenant_id,
@@ -784,7 +868,15 @@ async def expected_cash(db: AsyncSession, tenant_id: str, dispatch_id: str) -> f
             )
         )
     ).scalar_one()
-    return _money(total)
+    spent = (
+        await db.execute(
+            select(func.coalesce(func.sum(m.FmcgVanExpense.amount), 0)).where(
+                m.FmcgVanExpense.tenant_id == tenant_id, m.FmcgVanExpense.dispatch_id == dispatch_id
+            )
+        )
+    ).scalar_one()
+    # Cash the crew paid out of the takings (fuel, tolls) is not handed in.
+    return _money(float(total) - float(spent))
 
 
 async def settle_dispatch(

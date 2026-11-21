@@ -9832,3 +9832,77 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{background-color:rgb
 :root:not([data-theme="dark"]) .main :focus-visible{outline:2px solid #006B2E!important;outline-offset:2px!important;box-shadow:0 0 0 4px #FFFFFF!important}
 :root:not([data-theme="dark"]) .main :is(input,select,textarea):focus{border-color:#006B2E!important;box-shadow:0 0 0 3px rgba(0,107,46,.28)!important}
 :root:not([data-theme="dark"]) .main input:is([type="checkbox"],[type="radio"]):focus{box-shadow:none!important}
+
+/* 15 Nov 2026, owner's request: white where white belongs (light theme only; dark mode unchanged).
+   Cards, panels, figure tiles, tab bars, dialogs, side drawers, pop-up menus and form fields are solid
+   white instead of see-through glass over a green wash, and the page behind them is a plain, very light
+   tint so the white cards still stand out. Same values the "less transparency" setting already used. */
+:root:not([data-theme="dark"]){
+  --glass-bg:#FFFFFF;
+  --glass-bg-strong:#FFFFFF;
+  --glass-sheen:linear-gradient(transparent,transparent);
+  --glass-wash:#F5F7F4;
+}
+:root:not([data-theme="dark"]) .shell:not(.is-pos):not(.is-kiosk) > .main[data-look="retail"]{--rm-soft:#FFFFFF}
+:root:not([data-theme="dark"]) .shell:not(.is-pos):not(.is-kiosk) > .main :is(.cat-empty,.list-empty):not(#_){background:#FFFFFF}
+
+/* 15 Nov 2026: dashboard figure tiles cut money short ("GHC 430…") at laptop widths, because the figure
+   was fixed at 30px in a ~170px tile. Each tile is a size container, so scale the figure to the tile:
+   30px when there is room, down to 16px in narrow tiles, and never cut it off. */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat .val:not(#_){
+  font-size:clamp(16px,12.5cqi,30px)!important;white-space:nowrap;text-overflow:clip;margin-top:auto!important
+}
+/* ...and let the label wrap onto two lines instead of "GROSS PROFIT, 7 DA…". */
+.shell:not(.is-pos):not(.is-kiosk) > .main .dash .dash-kpis .stat .label:not(#_){white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25}
+
+/* Admin sign-in: biometric button sits to the right of Sign in */
+.login-submit-row{display:flex;gap:10px;align-items:stretch}
+.login-submit-row .login-primary{flex:1 1 auto;width:auto}
+.login-bio{flex:0 0 52px;display:inline-flex;align-items:center;justify-content:center;border-radius:12px;border:1px solid rgba(200,232,106,.45);background:rgba(255,255,255,.08);color:#C8E86A;cursor:pointer;min-height:44px}
+.login-bio:hover:not(:disabled){background:rgba(255,255,255,.14);border-color:rgba(200,232,106,.8)}
+.login-bio:disabled{opacity:.6;cursor:not-allowed}
+
+/* 19 Nov 2026, owner's request: every page title card uses the green banner of the owner console
+   (white card -> green card with white text). The owner console keeps its own plain headings (.plat).
+   Same selector weight as the frosted-glass layer above, plus :not(#_), so it wins. */
+.shell:not(.is-pos):not(.is-kiosk) > .main .page-head-card:not(.plat-hero):not(.plat .page-head-card):not(#_),
+[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .page-head-card:not(.plat-hero):not(.plat .page-head-card):not(#_){
+  position:relative;isolation:isolate;overflow:hidden;padding:22px 26px;border:0!important;border-radius:22px;color:#fff;
+  background:radial-gradient(120% 140% at 100% 0%,#4AB01255 0%,transparent 55%),linear-gradient(135deg,#003D1F 0%,#0B5A2E 60%,#167A33 100%)!important;
+  box-shadow:0 18px 40px -26px #003D1F
+}
+[data-theme="dark"] .shell:not(.is-pos):not(.is-kiosk) > .main .page-head-card:not(.plat-hero):not(.plat .page-head-card):not(#_){
+  background:radial-gradient(120% 140% at 100% 0%,#4AB01233 0%,transparent 55%),linear-gradient(135deg,#0B2A1C 0%,#0F3D26 100%)!important;
+  border:1px solid #1C4633!important
+}
+.shell:not(.is-pos):not(.is-kiosk) > .main .page-head-card:not(.plat-hero):not(.plat .page-head-card):not(#_)::before{display:none}
+.shell:not(.is-pos):not(.is-kiosk) > .main .page-head-card:not(.plat-hero):not(.plat .page-head-card):not(#_)::after{
+  content:"";position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;
+  border:28px solid #C8E86A14;pointer-events:none
+}
+.main .page-head-card:not(.plat-hero):not(.plat .page-head-card) > *{position:relative;z-index:1}
+.main .page-head-card:not(.plat-hero):not(.plat .page-head-card) .page-head-ico{background:#FFFFFF1F;color:#C8E86A;border:1px solid #FFFFFF26}
+.main .page-head-card:not(.plat-hero):not(.plat .page-head-card) h1{color:#fff}
+.main .page-head-card:not(.plat-hero):not(.plat .page-head-card) .page-kicker{color:#C8E86A}
+.main .page-head-card:not(.plat-hero):not(.plat .page-head-card) .page-sub,
+.main .page-head-card:not(.plat-hero):not(.plat .page-head-card) .muted{color:#D6EECB}
+.main .page-head-card:not(.plat-hero):not(.plat .page-head-card) button:not(.btn-primary):not(.btn-ok):not(.btn-danger){color:inherit}
+
+/* Safety net: the white text above must never land on a white card, whatever wraps the page.
+   Same green, without depending on the .shell > .main chain. */
+.main .page-head-card:not(.plat-hero):not(.plat .page-head-card):not(#_){
+  position:relative;overflow:hidden;padding:22px 26px;border:0!important;border-radius:22px;color:#fff;
+  background:radial-gradient(120% 140% at 100% 0%,#4AB01255 0%,transparent 55%),linear-gradient(135deg,#003D1F 0%,#0B5A2E 60%,#167A33 100%)!important;
+  box-shadow:0 18px 40px -26px #003D1F
+}
+[data-theme="dark"] .main .page-head-card:not(.plat-hero):not(.plat .page-head-card):not(#_){
+  background:radial-gradient(120% 140% at 100% 0%,#4AB01233 0%,transparent 55%),linear-gradient(135deg,#0B2A1C 0%,#0F3D26 100%)!important;
+  border:1px solid #1C4633!important
+}
+.main .page-head-card:not(.plat-hero):not(.plat .page-head-card):not(#_)::before{display:none!important}
+.main .page-head-card:not(.plat-hero):not(.plat .page-head-card):not(#_) .page-head-text h1,
+.main .page-head-card:not(.plat-hero):not(.plat .page-head-card):not(#_) h1{color:#fff!important}
+.main .page-head-card:not(.plat-hero):not(.plat .page-head-card):not(#_) .page-sub,
+.main .page-head-card:not(.plat-hero):not(.plat .page-head-card):not(#_) .muted,
+.main .page-head-card:not(.plat-hero):not(.plat .page-head-card):not(#_) p{color:#D6EECB!important}
+.main .page-head-card:not(.plat-hero):not(.plat .page-head-card):not(#_) .page-kicker{color:#C8E86A!important}

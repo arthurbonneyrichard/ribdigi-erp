@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import bakery as svc
 from app.db import get_db
 from app.schemas import E164PhoneValue, IsoDateQueryValue, NonNegativeMoneyValue, PartyNameValue, UuidIdValue
+from app import bakery_safety as safety
 from app.security import require_permission
 
 
@@ -33,9 +34,9 @@ async def _till_context(
 router = APIRouter(prefix="/bakery", tags=["bakery"], dependencies=[Depends(_till_context)])
 
 _JOBS = {
-    "bakery_baker": frozenset({"bake", "waste", "labels", "sheet"}),
+    "bakery_baker": frozenset({"bake", "waste", "labels", "sheet", "safety"}),
     # Cashiers also make the day's trade deliveries and take trade payments.
-    "bakery_cashier": frozenset({"till", "orders", "waste", "trade", "labels", "sheet"}),
+    "bakery_cashier": frozenset({"till", "orders", "waste", "trade", "labels", "sheet", "safety", "regulars"}),
     "bakery_driver": frozenset({"deliver", "sell"}),
 }
 _WORDS = {
@@ -129,6 +130,13 @@ Percent = Annotated[float, Field(ge=0, le=100, allow_inf_nan=False)]
 TillMethod = Literal["cash", "card", "mobile_money", "wallet"]
 
 
+class PickedOption(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    group: Annotated[str, Field(min_length=1, max_length=40)]
+    choice: Annotated[str, Field(min_length=1, max_length=60)]
+
+
 class SaleLine(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -138,6 +146,7 @@ class SaleLine(BaseModel):
     discount_percent: Percent | None = None
     # Sold at the item's day-old price, for bread baked before today.
     day_old: bool = False
+    options: list[PickedOption] | None = Field(default=None, max_length=10)
 
 
 class SalePart(BaseModel):
@@ -185,6 +194,8 @@ class OrderLine(BaseModel):
     product_id: UuidIdValue
     quantity: Qty
     note: Annotated[str, Field(min_length=1, max_length=255)] | None = None
+    # Size, flavour, filling: priced from the item's option list. Required groups must be chosen.
+    options: list[PickedOption] | None = Field(default=None, max_length=10)
 
 
 class OrderBody(BaseModel):
@@ -200,6 +211,8 @@ class OrderBody(BaseModel):
     delivery: bool = False
     address: Annotated[str, Field(min_length=1, max_length=500)] | None = None
     driver_id: UuidIdValue | None = None
+    # A price for the customer to think about: no deposit, no stock or baking planned until confirmed.
+    quote: bool = False
 
 
 class DriverBody(BaseModel):
@@ -489,7 +502,7 @@ async def bakery_refund(
 
 @router.get("/orders")
 async def bakery_orders(
-    show: Annotated[Literal["open", "all"], Query()] = "open",
+    show: Annotated[Literal["open", "all", "quotes"], Query()] = "open",
     claims=Depends(require_permission("bakery", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -515,6 +528,56 @@ async def bakery_order_create(
     row = await svc.create_order(db, claims["tenant_id"], payload, user_id=claims.get("sub"))
     await db.commit()
     return _env(await svc.present_order(db, row), "Order taken")
+
+
+class ConfirmQuoteBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    deposit: NonNegativeMoneyValue = 0
+    method: TillMethod = "cash"
+
+
+class DeclineQuoteBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reason: Annotated[str, Field(min_length=3, max_length=255)]
+
+
+@router.post("/orders/{order_id}/confirm-quote")
+async def bakery_quote_confirm(
+    order_id: UuidIdValue, payload: ConfirmQuoteBody, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)
+):
+    _job(claims, "orders")
+    row = await svc.confirm_quote(db, claims["tenant_id"], order_id, deposit=payload.deposit, method=payload.method, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(await svc.present_order(db, row), "Quote confirmed as an order")
+
+
+@router.post("/orders/{order_id}/decline-quote")
+async def bakery_quote_decline(
+    order_id: UuidIdValue, payload: DeclineQuoteBody, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)
+):
+    _job(claims, "orders")
+    row = await svc.decline_quote(db, claims["tenant_id"], order_id, reason=payload.reason, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(await svc.present_order(db, row), "Quote declined")
+
+
+class PartPaymentBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    amount: Annotated[float, Field(gt=0, le=1e9, allow_inf_nan=False)]
+    method: TillMethod = "cash"
+
+
+@router.post("/orders/{order_id}/part-payment")
+async def bakery_order_part_payment(
+    order_id: UuidIdValue, payload: PartPaymentBody, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)
+):
+    _job(claims, "orders")
+    row = await svc.add_deposit(db, claims["tenant_id"], order_id, amount=payload.amount, method=payload.method, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(await svc.present_order(db, row), "Payment taken")
 
 
 @router.post("/orders/{order_id}/ready")
@@ -579,13 +642,13 @@ async def bakery_order_print(order_id: UuidIdValue, claims=Depends(require_permi
         for i in o["items"]
     )
     where = f"Delivery to: {h.escape(o['address'] or '')}" if o["delivery"] else "Collect from the shop"
-    cancelled = " (CANCELLED)" if o["status"] == "cancelled" else ""
+    cancelled = {"cancelled": " (CANCELLED)", "quote": " (QUOTE, not yet an order)", "declined": " (DECLINED)"}.get(o["status"], "")
     note = f"<p>Note: {h.escape(o['notes'])}</p>" if o.get("notes") else ""
     page = (
         f"<!doctype html><html><head><meta charset='utf-8'><title>Order {h.escape(o['order_number'])}</title><style>{_PRINT_CSS}</style></head><body>"
         f"<h2>{h.escape(getattr(company, 'company_name', '') or '')}</h2>"
         f"<p>{h.escape(getattr(company, 'address', '') or '')}<br/>Tel {h.escape(getattr(company, 'phone', '') or '-')}</p>"
-        f"<h3>Order {h.escape(o['order_number'])}{cancelled}</h3>"
+        f"<h3>{'Quote' if o['status'] == 'quote' else 'Order'} {h.escape(o['order_number'])}{cancelled}</h3>"
         f"<p>For: <b>{h.escape(o['customer_name'] or '')}</b> {h.escape(o['phone'] or '')}<br/>Needed on <b>{o['due_date']}</b> · {where}</p>"
         "<table><thead><tr><th>Item</th><th class='r'>Qty</th><th class='r'>Amount</th></tr></thead>"
         f"<tbody>{lines}</tbody></table>"
@@ -950,6 +1013,21 @@ async def bakery_reports(
 # --- Item details: shelf life, day-old price, allergens, labels, units, shelf level ----------
 
 
+class OptionChoice(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    label: Annotated[str, Field(min_length=1, max_length=60)]
+    extra: Annotated[float, Field(ge=0, le=100000, allow_inf_nan=False)] = 0
+
+
+class OptionGroup(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: Annotated[str, Field(min_length=1, max_length=40)]
+    required: bool = False
+    choices: list[OptionChoice] = Field(min_length=1, max_length=30)
+
+
 class ItemDetails(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -963,6 +1041,7 @@ class ItemDetails(BaseModel):
     purchase_unit: Annotated[str, Field(min_length=1, max_length=30)] | None = None
     units_per_purchase: Annotated[float, Field(gt=0, le=1000000, allow_inf_nan=False)] | None = None
     par_level: Annotated[float, Field(ge=0, le=100000, allow_inf_nan=False)] | None = None
+    options: list[OptionGroup] | None = Field(default=None, max_length=10)
 
 
 @router.get("/allergens")
@@ -1314,3 +1393,190 @@ async def bakery_supplier_pay(
     row = await trade.pay_supplier(db, claims["tenant_id"], supplier_id, payload, user_id=claims.get("sub"))
     await db.commit()
     return _env({"id": row.id, "payment_number": row.payment_number, "amount": svc._money(row.amount)}, "Supplier paid")
+
+
+# ---- Food safety: temperature log and signed checklists -----------------------------------------
+
+
+class SafetyPointBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: Annotated[str, Field(min_length=1, max_length=100)]
+    kind: Literal["fridge", "freezer", "display", "oven", "proofer", "other"]
+    min_c: Annotated[float, Field(ge=-60, le=400, allow_inf_nan=False)] | None = None
+    max_c: Annotated[float, Field(ge=-60, le=400, allow_inf_nan=False)] | None = None
+    checks_per_day: Annotated[int, Field(ge=1, le=24)] = 2
+
+
+class SafetyPointUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    min_c: Annotated[float, Field(ge=-60, le=400, allow_inf_nan=False)] | None = None
+    max_c: Annotated[float, Field(ge=-60, le=400, allow_inf_nan=False)] | None = None
+    checks_per_day: Annotated[int, Field(ge=1, le=24)] | None = None
+    is_active: bool | None = None
+
+
+class SafetyReadingBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    point_id: UuidIdValue
+    reading_c: Annotated[float, Field(ge=-60, le=400, allow_inf_nan=False)]
+    action_taken: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class SafetyCheckBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["opening", "closing", "cleaning", "delivery"]
+    done: list[Annotated[int, Field(ge=0, le=50)]] = Field(max_length=50)
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+def _need_manager(claims: dict) -> None:
+    if str(claims.get("role") or "") in _JOBS:
+        raise HTTPException(status_code=403, detail={"code": "BAKERY_ROLE_JOB", "message": "That needs a manager."})
+
+
+@router.get("/safety")
+async def safety_summary(claims=Depends(require_permission("bakery", "read")), db: AsyncSession = Depends(get_db)):
+    _job(claims, "safety")
+    return _env(await safety.summary(db, claims["tenant_id"]))
+
+
+@router.post("/safety/points")
+async def safety_point_create(payload: SafetyPointBody, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)):
+    _job(claims, "safety")
+    _need_manager(claims)
+    row = await safety.create_point(
+        db, claims["tenant_id"], name=payload.name, kind=payload.kind, min_c=payload.min_c, max_c=payload.max_c,
+        checks_per_day=payload.checks_per_day,
+    )
+    await db.commit()
+    return _env(safety.present_point(row), "Point added")
+
+
+@router.patch("/safety/points/{point_id}")
+async def safety_point_update(
+    point_id: UuidIdValue, payload: SafetyPointUpdate, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)
+):
+    _job(claims, "safety")
+    _need_manager(claims)
+    row = await safety.update_point(
+        db, claims["tenant_id"], point_id, min_c=payload.min_c, max_c=payload.max_c,
+        checks_per_day=payload.checks_per_day, is_active=payload.is_active,
+    )
+    await db.commit()
+    return _env(safety.present_point(row), "Point saved")
+
+
+@router.post("/safety/readings")
+async def safety_reading(payload: SafetyReadingBody, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)):
+    _job(claims, "safety")
+    row = await safety.record_reading(
+        db, claims["tenant_id"], point_id=payload.point_id, reading_c=payload.reading_c,
+        action_taken=payload.action_taken, user_id=claims.get("sub"),
+    )
+    await db.commit()
+    return _env(safety.present_reading(row), "Reading recorded" if row.in_range else "Reading recorded: outside the safe range")
+
+
+@router.post("/safety/checks")
+async def safety_check(payload: SafetyCheckBody, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)):
+    _job(claims, "safety")
+    row = await safety.record_check(
+        db, claims["tenant_id"], kind=payload.kind, done=payload.done, extra_note=payload.notes, user_id=claims.get("sub"),
+    )
+    await db.commit()
+    return _env(safety.present_check(row), "Checklist signed")
+
+
+async def _safety_range(db, tenant_id: str, start_date, end_date):
+    end = date.fromisoformat(str(end_date)[:10]) if end_date else await svc.bakery_today(db, tenant_id)
+    start = date.fromisoformat(str(start_date)[:10]) if start_date else end - timedelta(days=29)
+    if end < start:
+        raise HTTPException(status_code=422, detail="The end date is before the start date")
+    return start, end
+
+
+@router.get("/safety/history")
+async def safety_history(
+    start_date: IsoDateQueryValue | None = None, end_date: IsoDateQueryValue | None = None,
+    claims=Depends(require_permission("bakery", "read")), db: AsyncSession = Depends(get_db),
+):
+    _job(claims, "safety")
+    start, end = await _safety_range(db, claims["tenant_id"], start_date, end_date)
+    return _env(await safety.history(db, claims["tenant_id"], start, end))
+
+
+@router.get("/safety/print", response_class=HTMLResponse)
+async def safety_print(
+    start_date: IsoDateQueryValue | None = None, end_date: IsoDateQueryValue | None = None,
+    claims=Depends(require_permission("bakery", "read")), db: AsyncSession = Depends(get_db),
+):
+    """The record to hand an inspector: every reading and checklist in the period, bad readings in bold."""
+    from app import models as m
+
+    _job(claims, "safety")
+    start, end = await _safety_range(db, claims["tenant_id"], start_date, end_date)
+    company = await db.get(m.Tenant, claims["tenant_id"])
+    data = await safety.history(db, claims["tenant_id"], start, end)
+    return HTMLResponse(safety.render_record(company, data, _PRINT_CSS))
+
+
+# ---- Regulars and birthday texts -----------------------------------------------------------------
+
+
+class RegularBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    phone: E164PhoneValue
+    name: Annotated[str, Field(min_length=1, max_length=180)] | None = None
+    birth_month: Annotated[int, Field(ge=1, le=12)] | None = None
+    birth_day: Annotated[int, Field(ge=1, le=31)] | None = None
+    clear_birthday: bool = False
+    # Only true when the customer agreed to be texted.
+    texts_ok: bool | None = None
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+@router.get("/regulars")
+async def regulars_list(claims=Depends(require_permission("bakery", "read")), db: AsyncSession = Depends(get_db)):
+    from app import bakery_regulars as reg
+
+    _job(claims, "regulars")
+    return _env(await reg.list_regulars(db, claims["tenant_id"]))
+
+
+@router.put("/regulars")
+async def regulars_save(payload: RegularBody, claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)):
+    from app import bakery_regulars as reg
+
+    _job(claims, "regulars")
+    data = await reg.save_regular(
+        db, claims["tenant_id"], phone=payload.phone, name=payload.name, birth_month=payload.birth_month,
+        birth_day=payload.birth_day, texts_ok=payload.texts_ok, notes=payload.notes, clear_birthday=payload.clear_birthday,
+    )
+    await db.commit()
+    return _env(data, "Saved")
+
+
+@router.get("/regulars/birthdays")
+async def regulars_birthdays(
+    days: Annotated[int, Query(ge=1, le=60)] = 14, claims=Depends(require_permission("bakery", "read")), db: AsyncSession = Depends(get_db)
+):
+    from app import bakery_regulars as reg
+
+    _job(claims, "regulars")
+    return _env(await reg.upcoming_birthdays(db, claims["tenant_id"], days=days))
+
+
+@router.post("/regulars/birthday-texts")
+async def regulars_birthday_texts(claims=Depends(require_permission("bakery", "write")), db: AsyncSession = Depends(get_db)):
+    from app import bakery_regulars as reg
+
+    _job(claims, "regulars")
+    _need_manager(claims)
+    data = await reg.send_birthday_texts(db, claims["tenant_id"])
+    await db.commit()
+    return _env(data, f"{data['sent']} birthday texts sent")

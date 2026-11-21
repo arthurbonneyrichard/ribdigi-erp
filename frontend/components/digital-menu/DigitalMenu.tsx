@@ -265,7 +265,7 @@ export function MenuBoardPage({ token }: { token: string }) {
         <main
           key={`${page.title}-${index}`}
           className={`gboard-grid count-${Math.min(page.items.length, ITEMS_PER_PAGE)}${
-            page.items.some((item) => item.image_version) ? '' : ' is-text'
+            page.items.some((item) => item.image_version) ? ' is-list' : ' is-text'
           }`}
         >
           {page.items.map((item) => (

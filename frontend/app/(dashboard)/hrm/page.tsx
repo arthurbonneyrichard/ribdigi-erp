@@ -18,6 +18,8 @@ import { MyClock, TIME_SCREENS, TimeWork } from './TimeWork';
 import LeavePay from './LeavePay';
 import { MyDocuments, StaffFiles } from './Documents';
 import Org from './Org';
+import Journey, { JOURNEY_SCREEN } from './Journey';
+import FieldWorkforce, { FIELD_SCREEN } from './FieldWorkforce';
 import Cover from './Cover';
 import PartPay from './PartPay';
 import Signals from './Signals';
@@ -38,6 +40,8 @@ const SCREENS: Record<string, { title: string; sub: string; icon: string }> = {
   settings: { title: 'Pay rates', sub: 'PAYE bands, SSNIT and the other rates payroll uses.', icon: 'tag' },
   ...TIME_SCREENS,
   ...PEOPLE_WORK_SCREENS,
+  journey: JOURNEY_SCREEN,
+  field: FIELD_SCREEN,
   me: { title: 'My pay and leave', sub: 'Your payslips and your time off.', icon: 'wallet' },
 };
 const TABS = Object.keys(SCREENS).map((id) => ({ id }));
@@ -71,12 +75,17 @@ function Head({ title, icon, meta }: { title: string; icon?: string; meta?: Reac
     </div>
   );
 }
-const OFFICER_TABS = ['today', 'people', 'leave', 'attendance', 'shifts', 'clock', 'devices', 'hiring', 'training', 'contracts', 'kit', 'notices', 'me'];
+const OFFICER_TABS = ['today', 'people', 'journey', 'field', 'leave', 'attendance', 'shifts', 'clock', 'devices', 'hiring', 'training', 'contracts', 'kit', 'notices', 'me'];
 // Mirrors backend hrm.job: HR managers and company admins see everything; officers and each
 // desk's manager run people admin without pay; everyone else sees only their own file.
 const FULL_HR_ROLES = new Set(['company_admin', 'hrm_manager', 'super_admin']);
+// Payroll officers and auditors see pay figures (the server also refuses them approving or paying).
+const PAY_VIEW_ROLES = new Set(['hrm_payroll_officer', 'hrm_auditor']);
 const ROLE_TABS: Record<string, string[]> = {
   hrm_officer: OFFICER_TABS,
+  hrm_payroll_officer: ['today', 'people', 'leave', 'attendance', 'payroll', 'loans', 'reports', 'me'],
+  hrm_recruiter: ['today', 'hiring', 'me'],
+  hrm_auditor: ['today', 'people', 'leave', 'attendance', 'payroll', 'loans', 'reports', 'hiring', 'reviews', 'training', 'contracts', 'kit', 'claims', 'notices', 'me'],
   store_manager: OFFICER_TABS,
   restaurant_manager: OFFICER_TABS,
   hotel_manager: OFFICER_TABS,
@@ -243,7 +252,7 @@ function HrmDesk() {
   }, [role, industry]);
   const wanted = params.get('tab') || (roleTabs(role)?.length === 1 ? 'me' : 'today');
   const tab = allowed.some((t) => t.id === wanted) ? wanted : allowed[0]?.id || 'today';
-  const seesPay = FULL_HR_ROLES.has(role);
+  const seesPay = FULL_HR_ROLES.has(role) || PAY_VIEW_ROLES.has(role);
 
   const [summary, setSummary] = useState<Row | null>(null);
   const [people, setPeople] = useState<Row[]>([]);
@@ -686,6 +695,8 @@ function HrmDesk() {
 
       {PEOPLE_WORK_SCREENS[tab] ? <PeopleWork tab={tab} seesPay={seesPay} /> : null}
       {TIME_SCREENS[tab] ? <TimeWork tab={tab} seesPay={seesPay} /> : null}
+      {tab === 'field' ? <FieldWorkforce seesPay={seesPay} /> : null}
+      {tab === 'journey' ? <Journey isManager={FULL_HR_ROLES.has(role)} /> : null}
 
       {tab === 'today' && summary ? (
         <DeskDashboard
@@ -1324,6 +1335,10 @@ function HrmDesk() {
               <input type="checkbox" checked={Boolean(settings.two_person_payroll)} onChange={(e) => setSettings({ ...settings, two_person_payroll: e.target.checked })} aria-label="Two people for payroll" />
               <span>Someone other than the person who drew up a payroll must approve it</span>
             </label>
+            <label className="hr-check">
+              <input type="checkbox" checked={Boolean(settings.vacancy_approval)} onChange={(e) => setSettings({ ...settings, vacancy_approval: e.target.checked })} aria-label="Approve new jobs" />
+              <span>New jobs proposed by anyone but an HR manager wait for an HR manager&apos;s approval</span>
+            </label>
           </div>
           <h2 style={{ marginTop: 14 }}>PAYE bands a month</h2>
           <table>
@@ -1359,6 +1374,7 @@ function HrmDesk() {
                 ssnit_employer_percent: Number(settings.ssnit_employer_percent),
                 paye_bands: settings.paye_bands.map((b: Row) => ({ width: b.width == null ? null : Number(b.width), rate: Number(b.rate) })),
                 two_person_payroll: Boolean(settings.two_person_payroll),
+                vacancy_approval: Boolean(settings.vacancy_approval),
                 leave_accrual: settings.leave_accrual || 'upfront',
                 carry_over_days: Number(settings.carry_over_days || 0),
                 escalate_after_days: Number(settings.escalate_after_days ?? 3),

@@ -31,6 +31,8 @@ import { formatMoney } from '../../../lib/format';
 import DeskDashboard, { DeskTiles, TrendChart, type DeskTile } from '../../../components/DeskDashboard';
 import DeskIcon from '../../../components/DeskIcon';
 import TradeDesk from './TradeDesk';
+import SafetyDesk from './SafetyDesk';
+import RegularsDesk from './RegularsDesk';
 import { ItemDetailsPanel, ShelfPanel, SuppliersPanel, useSuppliers } from './StockExtras';
 import './bakery.css';
 
@@ -43,6 +45,8 @@ const SCREENS: Record<string, { title: string; sub: string; icon: string }> = {
   deliveries: { title: 'Deliveries', sub: 'Orders going out by van, and the cash that comes back.', icon: 'truck' },
   trade: { title: 'Trade customers', sub: 'Shops, hotels and schools on account: standing orders, invoices, payments, statements.', icon: 'receipt' },
   baking: { title: 'Baking', sub: 'Recipes, what one batch costs, and what was baked.', icon: 'flame' },
+  regulars: { title: 'Regulars', sub: 'Who orders often, their birthdays, and birthday texts for those who agreed.', icon: 'users' },
+  safety: { title: 'Food safety', sub: 'Fridge and oven temperatures, daily checklists and the record for an inspector.', icon: 'check' },
   waste: { title: 'Waste', sub: 'What was thrown away and why. It comes off your profit.', icon: 'trash' },
   stock: { title: 'Stock', sub: 'Items for sale, ingredients, and what you buy in.', icon: 'box' },
   expenses: { title: 'Expenses', sub: 'Rent, gas, wages and the rest, so the report shows what you really kept.', icon: 'wallet' },
@@ -59,8 +63,8 @@ function Head({ icon, title, meta }: { icon: string; title: string; meta?: React
   );
 }
 const ROLE_SCREENS: Record<string, string[]> = {
-  bakery_baker: ['today', 'baking', 'waste', 'orders'],
-  bakery_cashier: ['today', 'counter', 'orders', 'deliveries', 'trade', 'waste'],
+  bakery_baker: ['today', 'baking', 'waste', 'orders', 'safety'],
+  bakery_cashier: ['today', 'counter', 'orders', 'deliveries', 'trade', 'waste', 'safety', 'regulars'],
   bakery_driver: ['today', 'deliveries', 'counter'],
 };
 const METHODS = [
@@ -131,6 +135,9 @@ type Dialog =
   | { kind: 'cancel'; row: Row; reason: string; choice: string }
   | { kind: 'refund'; row: Row; reason: string; choice: string; qty: Record<string, string>; method: string }
   | { kind: 'collect'; row: Row; method: string }
+  | { kind: 'part'; row: Row; amount: string; method: string }
+  | { kind: 'confirmquote'; row: Row; amount: string; method: string }
+  | { kind: 'declinequote'; row: Row; reason: string }
   | { kind: 'failed'; row: Row; reason: string }
   | { kind: 'handin'; row: Row; counted: string }
   | { kind: 'edit'; row: Row; price: string; cost: string; reorder: string };
@@ -161,6 +168,7 @@ function BakeryDesk() {
   const [recipes, setRecipes] = useState<Row[]>([]);
   const [batches, setBatches] = useState<Row[]>([]);
   const [orders, setOrders] = useState<Row[]>([]);
+  const [quotes, setQuotes] = useState<Row[]>([]);
   const [deliveries, setDeliveries] = useState<Row[]>([]);
   const [drivers, setDrivers] = useState<Row[]>([]);
   const [sales, setSales] = useState<Row[]>([]);
@@ -195,15 +203,16 @@ function BakeryDesk() {
   const [recipeLines, setRecipeLines] = useState<Row[]>([]);
   const [bakeQty, setBakeQty] = useState<Record<string, string>>({});
   const [wasteForm, setWasteForm] = useState({ product_id: '', quantity: '', reason: 'unsold' });
-  const blankOrder = { customer_name: '', phone: '', due_date: iso(1), deposit: '0', deposit_method: 'cash', notes: '', delivery: false, address: '', driver_id: '' };
+  const blankOrder = { customer_name: '', phone: '', due_date: iso(1), deposit: '0', deposit_method: 'cash', notes: '', delivery: false, address: '', driver_id: '', quote: false };
   const [orderForm, setOrderForm] = useState(blankOrder);
-  const [orderLines, setOrderLines] = useState<{ product_id: string; quantity: string; note: string }[]>([{ product_id: '', quantity: '1', note: '' }]);
+  const [orderLines, setOrderLines] = useState<{ product_id: string; quantity: string; note: string; picks?: Record<string, string> }[]>([{ product_id: '', quantity: '1', note: '' }]);
+  const [itemOptions, setItemOptions] = useState<Record<string, Row[]>>({});
   const [orderFilter, setOrderFilter] = useState('all');
   const [stockForm, setStockForm] = useState({ name: '', kind: 'item', price: '', reorder_level: '' });
   const [buyForm, setBuyForm] = useState({ product_id: '', quantity: '', unit_cost: '', tax: '', paid_with: 'cash', supplier: '', bill_number: '', bags: false });
   const [expenseForm, setExpenseForm] = useState({ category: 'rent', description: '', amount: '', tax: '', paid_with: 'cash', spent_on: iso(0), from_till: false });
   const [range, setRange] = useState({ start: iso(-6), end: iso(0) });
-  const suppliers = useSuppliers();
+  const suppliers = useSuppliers(isManager);
 
   const load = useCallback(async () => {
     try {
@@ -234,6 +243,7 @@ function BakeryDesk() {
       if (itemRows !== undefined) setItems(itemRows || []);
       if (want === 'orders' && may('orders')) {
         setOrders((await soft('/bakery/orders')) || []);
+        if (!driver && role !== 'bakery_baker') setQuotes((await soft('/bakery/orders?show=quotes')) || []);
         if (!driver) setDrivers((await soft('/bakery/drivers')) || []);
       }
       if (want === 'deliveries' && may('deliveries')) {
@@ -502,28 +512,47 @@ function BakeryDesk() {
     }
   }
 
+  useEffect(() => {
+    for (const l of orderLines) {
+      if (!l.product_id || itemOptions[l.product_id]) continue;
+        const id = l.product_id;
+        setItemOptions((cur) => ({ ...cur, [id]: [] }));
+        bakeryApi(`/bakery/items/${id}/details`).then((r) => setItemOptions((cur) => ({ ...cur, [id]: r?.data?.options || [] }))).catch(() => undefined);
+    }
+  }, [orderLines]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const extraFor = (l: { product_id: string; picks?: Record<string, string> }) =>
+    (itemOptions[l.product_id] || []).reduce((sum, g) => {
+      const hit = (g.choices || []).find((c: Row) => c.label === (l.picks || {})[g.name]);
+      return sum + (hit ? Number(hit.extra) : 0);
+    }, 0);
+
   const orderTotal = orderLines.reduce((sum, l) => {
     const found = items.find((i) => i.id === l.product_id);
-    return sum + (found ? Math.round(Number(l.quantity || 0) * pays(found) * 100) / 100 : 0);
+    return sum + (found ? Math.round(Number(l.quantity || 0) * (pays(found) + extraFor(l) * (Number(found.price) > 0 ? pays(found) / Number(found.price) : 1)) * 100) / 100 : 0);
   }, 0);
 
   async function takeOrder() {
-    const deposit = Number(orderForm.deposit) || 0;
+    const deposit = orderForm.quote ? 0 : Number(orderForm.deposit) || 0;
     const ok = await run(
       '/bakery/orders',
       {
         customer_name: orderForm.customer_name.trim(),
         phone: orderForm.phone.replace(/[\s-]/g, '') || null,
         due_date: orderForm.due_date,
-        lines: orderLines.filter((l) => l.product_id).map((l) => ({ product_id: l.product_id, quantity: Number(l.quantity), note: l.note.trim() || null })),
+        lines: orderLines.filter((l) => l.product_id).map((l) => ({
+          product_id: l.product_id, quantity: Number(l.quantity), note: l.note.trim() || null,
+          options: Object.entries(l.picks || {}).filter(([, v]) => v).map(([group, choice]) => ({ group, choice })),
+        })),
         deposit,
         deposit_method: deposit > 0 ? orderForm.deposit_method : null,
         notes: orderForm.notes.trim() || null,
         delivery: orderForm.delivery,
         address: orderForm.delivery ? orderForm.address.trim() || null : null,
         driver_id: orderForm.delivery && orderForm.driver_id ? orderForm.driver_id : null,
+        quote: orderForm.quote,
       },
-      orderForm.delivery ? 'Order taken for delivery' : 'Order taken',
+      orderForm.quote ? 'Quote saved. Find it under Quotes.' : orderForm.delivery ? 'Order taken for delivery' : 'Order taken',
     );
     if (ok) {
       setOrderForm(blankOrder);
@@ -558,6 +587,9 @@ function BakeryDesk() {
     if (dialog.kind === 'collect') {
       ok = await run(`/bakery/orders/${dialog.row.id}/collect`, { payment_method: Number(dialog.row.balance) > 0 ? dialog.method : null }, dialog.row.delivery ? 'Delivered and paid' : 'Order handed over');
     }
+    if (dialog.kind === 'confirmquote') ok = await run(`/bakery/orders/${dialog.row.id}/confirm-quote`, { deposit: Number(dialog.amount) || 0, method: dialog.method }, 'Quote confirmed as an order');
+    if (dialog.kind === 'declinequote') ok = await run(`/bakery/orders/${dialog.row.id}/decline-quote`, { reason: dialog.reason.trim() }, 'Quote declined');
+    if (dialog.kind === 'part') ok = await run(`/bakery/orders/${dialog.row.id}/part-payment`, { amount: Number(dialog.amount), method: dialog.method }, 'Payment taken');
     if (dialog.kind === 'failed') ok = await run(`/bakery/orders/${dialog.row.id}/delivery-failed`, { reason: dialog.reason.trim() }, 'Brought back to the shop');
     if (dialog.kind === 'handin') {
       const res = (await run(`/bakery/driver/bags/${dialog.row.bag.id}/hand-in`, { counted_cash: Number(dialog.counted) }, 'Cash handed in')) as Row | null;
@@ -591,12 +623,16 @@ function BakeryDesk() {
         && (dialog.row.payment_method !== 'split' || Boolean(dialog.method))
     : dialog.kind === 'cancel' || dialog.kind === 'failed'
       ? dialog.reason.trim().length >= 3
+      : dialog.kind === 'declinequote'
+        ? dialog.reason.trim().length >= 3
+      : dialog.kind === 'part'
+        ? Number(dialog.amount) > 0 && Number(dialog.amount) <= Number(dialog.row.balance) + 0.004
       : dialog.kind === 'handin'
         ? dialog.counted !== ''
         : true;
 
-  const shownOrders = orders.filter((o) =>
-    orderFilter === 'today' ? o.due_date <= iso(0) : orderFilter === 'delivery' ? o.delivery : orderFilter === 'pickup' ? !o.delivery : true,
+  const shownOrders = (orderFilter === 'quotes' ? quotes : orders).filter((o) =>
+    orderFilter === 'quotes' ? true : orderFilter === 'today' ? o.due_date <= iso(0) : orderFilter === 'delivery' ? o.delivery : orderFilter === 'pickup' ? !o.delivery : true,
   );
 
   const reportTiles: DeskTile[] = report
@@ -687,6 +723,32 @@ function BakeryDesk() {
                     </label>
                   </>
                 ) : <p className="bk-muted">Already paid in full.</p>}
+              </>
+            ) : null}
+            {dialog.kind === 'confirmquote' || dialog.kind === 'declinequote' ? (
+              <>
+                <h2>{dialog.kind === 'confirmquote' ? 'Confirm' : 'Decline'} quote {dialog.row.order_number}</h2>
+                {dialog.kind === 'declinequote' ? (
+                  <label><span>Why</span><input autoFocus value={dialog.reason} onChange={(e) => setDialog({ ...dialog, reason: e.target.value })} aria-label="Reason" /></label>
+                ) : (
+                  <>
+                    <p className="bk-muted">The customer said yes. It becomes a booked order for {money(dialog.row.total)}. A deposit is optional and needs an open till.</p>
+                    <label><span>Deposit now</span><input type="number" min="0" step="0.01" value={dialog.amount} onChange={(e) => setDialog({ ...dialog, amount: e.target.value })} aria-label="Quote deposit" /></label>
+                    <label><span>Paid by</span><select value={dialog.method} onChange={(e) => setDialog({ ...dialog, method: e.target.value })} aria-label="Quote deposit method">{METHODS.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}</select></label>
+                  </>
+                )}
+              </>
+            ) : null}
+            {dialog.kind === 'part' ? (
+              <>
+                <h2>Part-payment on {dialog.row.order_number}</h2>
+                <p className="bk-muted">Paid so far {money(dialog.row.deposit)} of {money(dialog.row.total)}. Still owed {money(dialog.row.balance)}.</p>
+                <label><span>Amount paid now</span><input type="number" min="0" step="0.01" autoFocus value={dialog.amount} onChange={(e) => setDialog({ ...dialog, amount: e.target.value })} aria-label="Part-payment amount" /></label>
+                <label><span>How they paid</span>
+                  <select value={dialog.method} onChange={(e) => setDialog({ ...dialog, method: e.target.value })} aria-label="Part-payment method">
+                    {METHODS.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+                  </select>
+                </label>
               </>
             ) : null}
             {dialog.kind === 'handin' ? (
@@ -1051,13 +1113,22 @@ function BakeryDesk() {
                     </select>
                   </label>
                   <label><span>How many</span><input type="number" min={1} value={line.quantity} onChange={(e) => setOrderLines(orderLines.map((l, n) => (n === i ? { ...l, quantity: e.target.value } : l)))} aria-label={`Order quantity ${i + 1}`} /></label>
+                  {(itemOptions[line.product_id] || []).map((g) => (
+                    <label key={g.name}><span>{g.name}{g.required ? ' *' : ''}</span>
+                      <select value={(line.picks || {})[g.name] || ''} onChange={(e) => setOrderLines(orderLines.map((l, n) => (n === i ? { ...l, picks: { ...(l.picks || {}), [g.name]: e.target.value } } : l)))} aria-label={`${g.name} for order item ${i + 1}`}>
+                        <option value="">Choose…</option>
+                        {(g.choices || []).map((c: Row) => <option key={c.label} value={c.label}>{c.label}{Number(c.extra) ? ` (+${c.extra})` : ''}</option>)}
+                      </select>
+                    </label>
+                  ))}
                   <label><span>Writing or design</span><input value={line.note} onChange={(e) => setOrderLines(orderLines.map((l, n) => (n === i ? { ...l, note: e.target.value } : l)))} aria-label={`Order note ${i + 1}`} /></label>
                   {orderLines.length > 1 ? <button type="button" onClick={() => setOrderLines(orderLines.filter((_, n) => n !== i))}>Remove</button> : null}
                 </div>
               ))}
               <p><button type="button" onClick={() => setOrderLines([...orderLines, { product_id: '', quantity: '1', note: '' }])}>Add another item</button></p>
               <div className="bk-form">
-                <label><span>Deposit now</span><input type="number" min={0} step="0.01" value={orderForm.deposit} onChange={(e) => setOrderForm((f) => ({ ...f, deposit: e.target.value }))} aria-label="Order deposit" /></label>
+                <label className="bk-check"><input type="checkbox" checked={orderForm.quote} onChange={(e) => setOrderForm((f) => ({ ...f, quote: e.target.checked }))} aria-label="Save as a quote" /><span>Just a quote for now (no deposit, nothing is baked until confirmed)</span></label>
+                <label><span>Deposit now</span><input type="number" min={0} step="0.01" disabled={orderForm.quote} value={orderForm.deposit} onChange={(e) => setOrderForm((f) => ({ ...f, deposit: e.target.value }))} aria-label="Order deposit" /></label>
                 <label><span>Deposit paid by</span>
                   <select value={orderForm.deposit_method} disabled={Number(orderForm.deposit) <= 0} onChange={(e) => setOrderForm((f) => ({ ...f, deposit_method: e.target.value }))} aria-label="Deposit method">
                     {METHODS.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
@@ -1067,7 +1138,7 @@ function BakeryDesk() {
                 <button
                   type="button" className="bk-primary" onClick={() => void takeOrder()}
                   disabled={busy || !orderForm.customer_name.trim() || !orderLines.some((l) => l.product_id) || (orderForm.delivery && !orderForm.address.trim())}
-                >Take order</button>
+                >{orderForm.quote ? 'Save quote' : 'Take order'}</button>
               </div>
             </section>
           ) : null}
@@ -1075,7 +1146,7 @@ function BakeryDesk() {
             <div className="bk-row bk-spread">
               <Head icon="calendar" title="Open orders" />
               <div className="bk-chips" role="group" aria-label="Show orders">
-                {[['all', 'All'], ['today', 'Due today'], ['pickup', 'Pick up'], ['delivery', 'Delivery']].map(([id, text]) => (
+                {[['all', 'All'], ['today', 'Due today'], ['pickup', 'Pick up'], ['delivery', 'Delivery'], ...(role !== 'bakery_baker' ? [['quotes', `Quotes${quotes.length ? ` (${quotes.length})` : ''}`]] : [])].map(([id, text]) => (
                   <button key={id} type="button" className={orderFilter === id ? 'on' : ''} aria-pressed={orderFilter === id} onClick={() => setOrderFilter(id)}>{text}</button>
                 ))}
               </div>
@@ -1091,18 +1162,26 @@ function BakeryDesk() {
                     <td>{(o.items || []).map((i: Row) => <div key={`${o.id}-${i.name}`}>{i.quantity} x {i.name}{i.note ? <span className="bk-muted"> · {i.note}</span> : null}</div>)}</td>
                     {role !== 'bakery_baker' ? <td className="bk-num">{money(o.balance)}</td> : null}
                     <td>
-                      <span className={`bk-pill ${o.status === 'ready' ? 'ok' : ''}`}>{o.status === 'ready' ? 'Ready' : 'Booked'}</span>
+                      <span className={`bk-pill ${o.status === 'ready' ? 'ok' : ''}`}>{o.status === 'ready' ? 'Ready' : o.status === 'quote' ? 'Quote' : 'Booked'}</span>
                       {o.delivery ? <div className="bk-muted">{DELIVERY_WORDS[o.delivery_status] || 'Delivery'}{o.driver_name ? ` · ${o.driver_name}` : ''}</div> : null}
                     </td>
                     <td className="bk-row">
+                      {o.status === 'quote' ? (
+                        <>
+                          <button type="button" onClick={() => void openPrintable(`/bakery/orders/${o.id}/print`)} aria-label={`Print quote ${o.order_number}`}>Print quote</button>
+                          <button type="button" className="bk-primary" disabled={busy} onClick={() => setDialog({ kind: 'confirmquote', row: o, amount: '', method: 'cash' })} aria-label={`Confirm quote ${o.order_number}`}>Confirm</button>
+                          <button type="button" className="bk-danger" disabled={busy} onClick={() => setDialog({ kind: 'declinequote', row: o, reason: '' })} aria-label={`Decline quote ${o.order_number}`}>Decline</button>
+                        </>
+                      ) : null}
                       {o.status === 'booked' ? <button type="button" disabled={busy} onClick={async () => {
                         const d = await run(`/bakery/orders/${o.id}/ready`, {}, 'Order ready');
                         const t = d && typeof d === 'object' ? (d as Row).customer_texted : null;
                         if (t) setNotice(t.sent ? 'Order ready. The customer has been texted.' : `Order ready. Customer not texted: ${t.reason || 'no reason given'}.`);
                       }}>Ready</button> : null}
-                      {role !== 'bakery_baker' ? <button type="button" onClick={() => void openPrintable(`/bakery/orders/${o.id}/print`)} aria-label={`Print order slip ${o.order_number}`}>Print slip</button> : null}
-                      {role !== 'bakery_baker' && !o.delivery ? <button type="button" className="bk-primary" disabled={busy} onClick={() => setDialog({ kind: 'collect', row: o, method: 'cash' })}>Hand over</button> : null}
-                      {isManager ? <button type="button" className="bk-danger" disabled={busy} onClick={() => setDialog({ kind: 'cancel', row: o, reason: '', choice: 'refund' })}>Cancel</button> : null}
+                      {role !== 'bakery_baker' && o.status !== 'quote' ? <button type="button" onClick={() => void openPrintable(`/bakery/orders/${o.id}/print`)} aria-label={`Print order slip ${o.order_number}`}>Print slip</button> : null}
+                      {role !== 'bakery_baker' && o.status !== 'quote' && Number(o.balance) > 0 ? <button type="button" disabled={busy} onClick={() => setDialog({ kind: 'part', row: o, amount: '', method: 'cash' })} aria-label={`Take part-payment on ${o.order_number}`}>Take payment</button> : null}
+                      {role !== 'bakery_baker' && o.status !== 'quote' && !o.delivery ? <button type="button" className="bk-primary" disabled={busy} onClick={() => setDialog({ kind: 'collect', row: o, method: 'cash' })}>Hand over</button> : null}
+                      {isManager && o.status !== 'quote' ? <button type="button" className="bk-danger" disabled={busy} onClick={() => setDialog({ kind: 'cancel', row: o, reason: '', choice: 'refund' })}>Cancel</button> : null}
                     </td>
                   </tr>
                 ))}
@@ -1208,6 +1287,10 @@ function BakeryDesk() {
       )}
 
       {tab === 'trade' && <TradeDesk items={items} isManager={isManager} />}
+
+      {tab === 'safety' && <SafetyDesk isManager={isManager} />}
+
+      {tab === 'regulars' && <RegularsDesk isManager={isManager} />}
 
       {tab === 'baking' && (
         <>

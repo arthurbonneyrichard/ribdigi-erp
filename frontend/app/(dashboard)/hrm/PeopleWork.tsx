@@ -9,6 +9,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../../lib/api';
 import { formatMoney } from '../../../lib/format';
+import { CaseFile, MyAppeal } from './CaseFile';
 
 type Row = Record<string, any>;
 
@@ -101,6 +102,8 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
   const [data, setData] = useState<Row | null>(null);
   const [extra, setExtra] = useState<Row[]>([]);
   const [openVac, setOpenVac] = useState('');
+  const [ivFor, setIvFor] = useState('');
+  const [ivs, setIvs] = useState<Row[]>([]);
   const [f, setF] = useState<Row>({});
   // Which screen is showing now. Data is tagged with the screen it was loaded for, so a
   // sidebar click from one screen to another never renders the old screen's data in the new
@@ -137,6 +140,11 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
     api(`/hrm/vacancies/${openVac}/candidates`).then((r) => setExtra(r?.data || [])).catch((err) => setError(problem(err)));
   }, [openVac, data, setError]);
 
+  useEffect(() => {
+    if (!ivFor) { setIvs([]); return; }
+    api(`/hrm/candidates/${ivFor}/interviews`).then((r) => setIvs(r?.data || [])).catch((err) => setError(problem(err)));
+  }, [ivFor, data, extra, setError]);
+
   const set = (key: string, value: unknown) => setF((old) => ({ ...old, [key]: value }));
   const txt = (key: string) => String(f[key] ?? '');
 
@@ -172,12 +180,19 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
                 {data.vacancies.map((v: Row) => (
                   <tr key={v.id}>
                     <td>{v.title}{v.department ? <><br /><small className="hr-muted">{v.department}</small></> : null}</td>
-                    <td>{v.status === 'open' ? 'Open' : v.status === 'filled' ? 'Filled' : 'Closed'}</td>
+                    <td>{v.status === 'open' ? 'Open' : v.status === 'filled' ? 'Filled' : v.status === 'pending' ? 'Waiting for approval' : v.status === 'rejected' ? `Turned down${v.decision_note ? `: ${v.decision_note}` : ''}` : 'Closed'}</td>
                     <td>{Object.entries(v.candidates || {}).map(([k, n]) => `${STAGE_WORDS[k] || k}: ${n}`).join(', ') || 'None yet'}</td>
                     <td>
                       <div className="hr-row">
                         <button type="button" onClick={() => setOpenVac(openVac === v.id ? '' : v.id)}>{openVac === v.id ? 'Hide' : 'Candidates'}</button>
                         {v.status === 'open' ? <button type="button" className="hr-danger" onClick={() => void run(`/hrm/vacancies/${v.id}/close`, null, 'Vacancy closed')}>Close</button> : null}
+                        {v.status === 'pending' && seesPay ? (
+                          <>
+                            <button type="button" className="btn-ok" aria-label={`Approve job ${v.title}`} onClick={() => void run(`/hrm/vacancies/${v.id}/decision`, { approve: true }, 'Job opened')}>Approve</button>
+                            <button type="button" className="btn-danger" aria-label={`Turn down job ${v.title}`}
+                              onClick={() => { const why = window.prompt('Why is this job turned down?'); if (why && why.trim().length >= 2) void run(`/hrm/vacancies/${v.id}/decision`, { approve: false, note: why.trim() }, 'Job turned down'); }}>Turn down</button>
+                          </>
+                        ) : null}
                       </div>
                     </td>
                   </tr>
@@ -236,6 +251,9 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
                             </>
                           ) : null}
                           {!['hired', 'rejected', 'withdrawn'].includes(c.stage) ? (
+                            <button type="button" aria-label={`Interviews for ${c.full_name}`} onClick={() => setIvFor(ivFor === c.id ? '' : c.id)}>Interviews</button>
+                          ) : null}
+                          {!['hired', 'rejected', 'withdrawn'].includes(c.stage) ? (
                             <button type="button" className="hr-danger" disabled={busy} onClick={() => void run(`/hrm/candidates/${c.id}/move`, { stage: 'rejected' }, 'Marked as not taken')}>Not taken</button>
                           ) : null}
                         </div>
@@ -243,6 +261,52 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
                     </tr>
                   ))}
                   {extra.length === 0 ? <tr><td colSpan={4} className="hr-muted">No candidates yet.</td></tr> : null}
+                </tbody>
+              </table>
+            </section>
+          ) : null}
+          {openVac && ivFor ? (
+            <section className="hr-box hr-scroll" aria-label="Interview panel">
+              <h2>Interviews: {extra.find((c) => c.id === ivFor)?.full_name}</h2>
+              <p className="hr-muted">Pick the staff who sit on the panel. Each scores privately from My pay and leave. Closing the interview puts the average on the candidate.</p>
+              <div className="hr-form">
+                <label><span>When</span><input type="datetime-local" value={txt('iv_at')} onChange={(e) => set('iv_at', e.target.value)} aria-label="Interview date and time" /></label>
+                <label><span>Where</span><input value={txt('iv_where')} onChange={(e) => set('iv_where', e.target.value)} aria-label="Interview location" /></label>
+                <label className="hr-wide"><span>Panel</span>
+                  <select
+                    multiple size={5} value={(f.iv_panel as string[]) || []}
+                    onChange={(e) => set('iv_panel', Array.from(e.target.selectedOptions).map((o) => o.value))}
+                    aria-label="Interview panel members"
+                  >
+                    {people.map((p) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
+                  </select>
+                </label>
+                <button
+                  type="button" className="hr-primary" disabled={busy || !f.iv_at || !((f.iv_panel as string[]) || []).length}
+                  onClick={async () => {
+                    if (await run(`/hrm/candidates/${ivFor}/interviews`, { scheduled_at: txt('iv_at'), location: txt('iv_where').trim() || null, panel: f.iv_panel }, 'Interview scheduled')) setF({});
+                  }}
+                >Schedule interview</button>
+              </div>
+              <table>
+                <thead><tr><th>When</th><th>Panel</th><th>Scores</th><th /></tr></thead>
+                <tbody>
+                  {ivs.map((v) => (
+                    <tr key={v.id}>
+                      <td>{String(v.scheduled_at || '').replace('T', ' ').slice(0, 16)}{v.location ? <><br /><small className="hr-muted">{v.location}</small></> : null}</td>
+                      <td>{(v.panel || []).map((x: Row) => x.employee_name).join(', ')}</td>
+                      <td>{v.scored_by ? `${v.average} average (${v.scored_by} of ${(v.panel || []).length})` : 'None yet'}{(v.scores || []).map((x: Row) => <div key={x.employee_id}><small className="hr-muted">{x.employee_name}: {x.score}{x.comment ? `, ${x.comment}` : ''}</small></div>)}</td>
+                      <td>
+                        {v.status === 'scheduled' ? (
+                          <div className="hr-row">
+                            <button type="button" className="hr-primary" disabled={busy || !v.scored_by} onClick={() => void run(`/hrm/interviews/${v.id}/done`, null, 'Interview closed')}>Close</button>
+                            <button type="button" className="hr-danger" disabled={busy} onClick={() => void run(`/hrm/interviews/${v.id}/cancel`, null, 'Interview cancelled')}>Cancel</button>
+                          </div>
+                        ) : v.status}
+                      </td>
+                    </tr>
+                  ))}
+                  {ivs.length === 0 ? <tr><td colSpan={4} className="hr-muted">No interviews yet.</td></tr> : null}
                 </tbody>
               </table>
             </section>
@@ -370,6 +434,25 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
               <table><tbody>{data.gaps.map((g: Row, i: number) => <tr key={i}><td>{g.employee_name}</td><td>{g.training}</td><td>{g.why}</td></tr>)}</tbody></table>
             </section>
           ) : null}
+          {seesPay ? (
+            <section className="hr-box" aria-label="Training budget">
+              <h2>Training budget {data.budget?.year ?? new Date().getFullYear()}</h2>
+              <p className="hr-muted">
+                {data.budget?.budget != null
+                  ? `Budget ${money(data.budget.budget)}, spent ${money(data.budget.spent)}, ${data.budget.over_budget ? `over by ${money(-data.budget.left)}` : `${money(data.budget.left)} left`}.`
+                  : `No budget set. Spent so far ${money(data.budget?.spent ?? 0)}.`}
+              </p>
+              <div className="hr-form">
+                <label><span>Budget for the year</span><input type="number" min="0" value={txt('budget_amount')} onChange={(e) => set('budget_amount', e.target.value)} aria-label="Training budget amount" /></label>
+                <button
+                  type="button" className="hr-primary" disabled={busy || txt('budget_amount') === '' || Number(txt('budget_amount')) < 0}
+                  onClick={async () => {
+                    if (await run('/hrm/trainings/budget', { year: new Date().getFullYear(), amount: Number(txt('budget_amount')) }, 'Budget saved', 'PUT')) setF({});
+                  }}
+                >Save budget</button>
+              </div>
+            </section>
+          ) : null}
           <section className="hr-box" aria-label="Add a course">
             <h2>Courses</h2>
             <div className="hr-form">
@@ -397,17 +480,18 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
                 </select>
               </label>
               <label><span>Done on</span><input type="date" value={txt('completed_on')} onChange={(e) => set('completed_on', e.target.value)} aria-label="Training done on" /></label>
+              {seesPay ? <label><span>Cost</span><input type="number" min="0" value={txt('cost')} onChange={(e) => set('cost', e.target.value)} aria-label="Training cost" /></label> : null}
               <label><span>Certificate</span><input value={txt('certificate_ref')} onChange={(e) => set('certificate_ref', e.target.value)} aria-label="Certificate reference" /></label>
               <button
                 type="button" className="hr-primary" disabled={busy || !f.employee_id || !f.training_id || !f.completed_on}
                 onClick={async () => {
-                  if (await run('/hrm/training-records', { employee_id: f.employee_id, training_id: f.training_id, completed_on: f.completed_on, certificate_ref: txt('certificate_ref').trim() || null }, 'Training recorded')) setF({});
+                  if (await run('/hrm/training-records', { employee_id: f.employee_id, training_id: f.training_id, completed_on: f.completed_on, certificate_ref: txt('certificate_ref').trim() || null, cost: seesPay && txt('cost') !== '' ? Number(txt('cost')) : null }, 'Training recorded')) setF({});
                 }}
               >Record</button>
             </div>
             <table>
-              <thead><tr><th>Who</th><th>Course</th><th>Done</th><th>Due again</th></tr></thead>
-              <tbody>{data.records.map((r: Row) => <tr key={r.id}><td>{r.employee_name}</td><td>{r.training}</td><td>{r.completed_on}</td><td>{r.expires_on ? `${r.expires_on}${r.state !== 'valid' ? ` (${r.state})` : ''}` : '—'}</td></tr>)}</tbody>
+              <thead><tr><th>Who</th><th>Course</th><th>Done</th><th>Due again</th>{seesPay ? <th>Cost</th> : null}</tr></thead>
+              <tbody>{data.records.map((r: Row) => <tr key={r.id}><td>{r.employee_name}</td><td>{r.training}</td><td>{r.completed_on}</td><td>{r.expires_on ? `${r.expires_on}${r.state !== 'valid' ? ` (${r.state})` : ''}` : '—'}</td>{seesPay ? <td>{r.cost != null ? money(r.cost) : '—'}</td> : null}</tr>)}</tbody>
             </table>
           </section>
         </>
@@ -512,6 +596,7 @@ export function PeopleWork({ tab, seesPay }: { tab: string; seesPay: boolean }) 
               </tbody>
             </table>
           </section>
+          <CaseFile cases={data.cases} />
         </>
       ) : null}
 
@@ -697,6 +782,7 @@ export function MyMore() {
         </section>
       ))}
       <MyFeedbackAsks />
+      <MyInterviewAsks />
       <section className="hr-box" aria-label="Claim back money spent">
         <h2>Claim back money you spent</h2>
         <div className="hr-form">
@@ -728,7 +814,7 @@ export function MyMore() {
             }}
           >Send to HR</button>
         </div>
-        {more.cases.length ? <table aria-label="My cases"><tbody>{more.cases.map((c: Row) => <tr key={c.id}><td>{c.case_number}</td><td>{c.kind}</td><td>{c.subject}</td><td>{c.status === 'closed' ? `Closed${c.outcome ? `: ${String(c.outcome).replace(/_/g, ' ')}` : ''}` : 'Open'}</td></tr>)}</tbody></table> : null}
+        {more.cases.length ? <table aria-label="My cases"><tbody>{more.cases.map((c: Row) => <tr key={c.id}><td>{c.case_number}</td><td>{c.kind}</td><td>{c.subject}</td><td>{c.status === 'closed' ? `Closed${c.outcome ? `: ${String(c.outcome).replace(/_/g, ' ')}` : ''}` : 'Open'}{c.status === 'closed' ? <> <MyAppeal caseId={c.id} /></> : null}</td></tr>)}</tbody></table> : null}
       </section>
       {more.training.length || more.assets.length || more.contracts.length ? (
         <section className="hr-box" aria-label="My training, kit and contract">
@@ -774,6 +860,37 @@ function MyFeedbackAsks() {
               disabled={busy || !f[`${r.id}_r`] || !(String(f[`${r.id}_s`] || '').trim() || String(f[`${r.id}_i`] || '').trim())}
               onClick={() => void run(`/hrm/me/feedback/${r.id}`, { rating: Number(f[`${r.id}_r`]), strengths: String(f[`${r.id}_s`] || '').trim() || null, improve: String(f[`${r.id}_i`] || '').trim() || null }, 'Thank you. Your feedback is shown without your name.')}
             >Send feedback</button>
+          </div>
+        </section>
+      ))}
+    </>
+  );
+}
+
+function MyInterviewAsks() {
+  const [rows, setRows] = useState<Row[]>([]);
+  const [f, setF] = useState<Row>({});
+  const load = useCallback(async () => setRows((await api('/hrm/me/interviews'))?.data || []), []);
+  const { busy, error, notice, run, setError } = useRunner(load);
+  useEffect(() => {
+    load().catch(() => setRows([]));
+  }, [load]);
+  const open = rows.filter((r) => r.my_score == null);
+  if (!open.length) return notice ? <Banner error={error} notice={notice} /> : null;
+  return (
+    <>
+      <Banner error={error} notice={notice} />
+      {open.map((r) => (
+        <section className="hr-box" aria-label={`Score interview of ${r.candidate_name}`} key={r.id}>
+          <h2>Interview: {r.candidate_name}</h2>
+          <p className="hr-muted">{String(r.scheduled_at || '').replace('T', ' ').slice(0, 16)}{r.location ? `, ${r.location}` : ''}. Your score is private to HR.</p>
+          <div className="hr-form">
+            <label><span>Score, 1 to 100</span><input type="number" min="1" max="100" value={f[`${r.id}_n`] || ''} onChange={(e) => setF({ ...f, [`${r.id}_n`]: e.target.value })} aria-label={`Score for ${r.candidate_name}`} /></label>
+            <label className="hr-wide"><span>Comment</span><textarea value={f[`${r.id}_c`] || ''} onChange={(e) => setF({ ...f, [`${r.id}_c`]: e.target.value })} aria-label={`Comment on ${r.candidate_name}`} /></label>
+            <button
+              type="button" className="hr-primary" disabled={busy || !(Number(f[`${r.id}_n`]) >= 1 && Number(f[`${r.id}_n`]) <= 100)}
+              onClick={() => void run(`/hrm/me/interviews/${r.id}/score`, { score: Number(f[`${r.id}_n`]), comment: String(f[`${r.id}_c`] || '').trim() || null }, 'Score saved')}
+            >Send score</button>
           </div>
         </section>
       ))}

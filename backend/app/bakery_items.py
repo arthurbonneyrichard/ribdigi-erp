@@ -23,7 +23,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.honesty import money_json, optional_honest_narrative
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 # The fourteen allergens food law asks bakers to declare (Codex / EU list, used by Ghana FDA labels).
 ALLERGENS = {
@@ -96,7 +96,60 @@ def present(row: m.BakeryItemSettings | None) -> dict:
         "purchase_unit": row.purchase_unit if row else None,
         "units_per_purchase": _qty(row.units_per_purchase) if row and row.units_per_purchase else None,
         "par_level": _qty(row.par_level) if row and row.par_level else None,
+        "options": list(row.options or []) if row else [],
     }
+
+
+def clean_options(raw) -> list[dict]:
+    """Option groups for an item: each has a name, whether it must be chosen, and priced choices."""
+    out: list[dict] = []
+    seen: set[str] = set()
+    for group in raw or []:
+        g = group if isinstance(group, dict) else group.model_dump()
+        name = require_honest_narrative(g.get("name"), label="option name", max_length=40)
+        if name.lower() in seen:
+            raise HTTPException(status_code=422, detail=f"{name} is listed twice")
+        seen.add(name.lower())
+        choices, labels = [], set()
+        for c in g.get("choices") or []:
+            label = require_honest_narrative(c.get("label"), label="choice", max_length=60)
+            if label.lower() in labels:
+                raise HTTPException(status_code=422, detail=f"{label} is listed twice under {name}")
+            labels.add(label.lower())
+            extra = round(float(c.get("extra") or 0), 2)
+            if extra < 0:
+                raise HTTPException(status_code=422, detail="An extra price cannot be below zero")
+            choices.append({"label": label, "extra": extra})
+        if not choices:
+            raise HTTPException(status_code=422, detail=f"Give {name} at least one choice")
+        out.append({"name": name, "required": bool(g.get("required")), "choices": choices})
+    return out
+
+
+def apply_options(conf: m.BakeryItemSettings | None, picked, *, product_name: str, enforce: bool) -> tuple[float, str | None]:
+    """The extra price and a readable summary for the choices on one line. Prices come from the
+    item's own option list, never from the request."""
+    groups = list((conf.options if conf else None) or [])
+    chosen: dict[str, str] = {}
+    for p in picked or []:
+        chosen[str(p.group).strip().lower()] = str(p.choice).strip().lower()
+    known = {g["name"].lower() for g in groups}
+    stray = [k for k in chosen if k not in known]
+    if stray:
+        raise HTTPException(status_code=422, detail=f"{product_name} has no option called {stray[0]}")
+    extra, parts = 0.0, []
+    for g in groups:
+        want = chosen.get(g["name"].lower())
+        if want is None:
+            if g["required"] and enforce:
+                raise HTTPException(status_code=422, detail=f"Choose {g['name']} for {product_name}")
+            continue
+        hit = next((c for c in g["choices"] if c["label"].lower() == want), None)
+        if hit is None:
+            raise HTTPException(status_code=422, detail=f"{product_name}: {want} is not a choice for {g['name']}")
+        extra += float(hit["extra"])
+        parts.append(f"{g['name']}: {hit['label']}")
+    return round(extra, 2), ("; ".join(parts) or None)
 
 
 async def save(db: AsyncSession, tenant_id: str, product_id: str, payload, *, user_id) -> m.BakeryItemSettings:
@@ -130,6 +183,8 @@ async def save(db: AsyncSession, tenant_id: str, product_id: str, payload, *, us
     for key, size in (("ingredients_text", 2000), ("net_weight", 40), ("storage_note", 200), ("purchase_unit", 30)):
         if key in data:
             setattr(row, key, optional_honest_narrative(data[key], label=key.replace("_", " "), max_length=size))
+    if "options" in data:
+        row.options = clean_options(data["options"])
     if row.purchase_unit and not row.units_per_purchase:
         raise HTTPException(status_code=422, detail="Say how many stock units are in one purchase unit")
     row.updated_at = datetime.utcnow()

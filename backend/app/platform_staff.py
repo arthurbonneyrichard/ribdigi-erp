@@ -166,7 +166,7 @@ async def create_platform_staff(
             status_code=403,
             detail=f"You cannot assign platform role '{role_key}'",
         )
-    validate_password_strength(password)
+    validate_password_strength(password, privileged=True)
     existing = (
         await db.execute(
             select(m.User).where(m.User.tenant_id == tenant_id, m.User.email == email.lower())
@@ -262,7 +262,7 @@ async def update_platform_staff(
     if phone is not None:
         user.phone = phone.strip() or None
     if password is not None:
-        validate_password_strength(password)
+        validate_password_strength(password, privileged=True)
         user.password_hash = hash_password(password)
     if is_active is not None:
         user.is_active = bool(is_active)

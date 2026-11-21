@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import LoginBrandLogo from '../components/LoginBrandLogo';
 import LoginLegalLinks from '../components/LoginLegalLinks';
+import { NO_BIOMETRIC_MESSAGE, deviceBiometricAvailable, describeWebAuthnError, promptAbort, webauthnSupported } from '../lib/webauthnClient';
 import { loadUserTheme } from '../lib/theme';
 import { openShiftForSignedInUser } from '../lib/cashierShift';
 
@@ -241,8 +242,96 @@ export default function Login() {
       });
       await finishLogin(r.data);
     } catch (err: any) {
-      setError(err.message || 'Passkey login failed');
+      setError(err?.name ? describeWebAuthnError(err, 'signin') : err.message || 'Passkey login failed');
     } finally {
+      setBusy(false);
+    }
+  }
+
+  async function passwordlessSignIn(kind: 'biometric') {
+    if (busy) return; // one prompt at a time
+    setError('');
+    const phase = await probeApi();
+    if (phase !== 'online') {
+      await openPreparedTill();
+      return;
+    }
+    let trimmedTenant = tenant.trim();
+    let trimmedEmail = email.trim();
+    if (!trimmedTenant || !trimmedEmail) {
+      // This device remembers who enabled fingerprint, so the button works with empty fields.
+      try {
+        const saved = JSON.parse(localStorage.getItem('ribdigi:biometric') || 'null');
+        if (saved?.tenant && saved?.email) {
+          trimmedTenant = trimmedTenant || String(saved.tenant);
+          trimmedEmail = trimmedEmail || String(saved.email);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    if (!trimmedTenant || !trimmedEmail) {
+      setError(
+        'Fingerprint is not turned on for this device yet. Type your company code and email and sign in with your password once, then open Security and choose "Enable fingerprint / face on this device". After that this button works by itself.'
+      );
+      return;
+    }
+    if (!webauthnSupported()) {
+      setError('This browser cannot use fingerprint sign-in. Use Chrome or Edge, or sign in with your password.');
+      return;
+    }
+    if (!(await deviceBiometricAvailable())) {
+      setError(NO_BIOMETRIC_MESSAGE);
+      return;
+    }
+    setBusy(true);
+    const abort = promptAbort();
+    try {
+      const start = await api('/auth/webauthn/passwordless/start', {
+        method: 'POST',
+        body: JSON.stringify({ tenant_id: trimmedTenant, email: trimmedEmail }),
+      });
+      const token = String(start.data.challenge_token || '');
+      const publicKey: any = { ...start.data.options };
+      publicKey.challenge = base64urlToBuffer(publicKey.challenge);
+      if (Array.isArray(publicKey.allowCredentials)) {
+        publicKey.allowCredentials = publicKey.allowCredentials.map((c: any) => ({
+          ...c,
+          id: base64urlToBuffer(c.id),
+        }));
+      }
+      publicKey.hints = kind === 'biometric' ? ['client-device'] : [];
+      setError('');
+      const cred = (await navigator.credentials.get({ publicKey, signal: abort.signal })) as PublicKeyCredential | null;
+      if (!cred) throw new Error('Cancelled');
+      const assertion = cred.response as AuthenticatorAssertionResponse;
+      const credential = {
+        id: cred.id,
+        rawId: bufferToBase64url(cred.rawId),
+        type: cred.type,
+        response: {
+          clientDataJSON: bufferToBase64url(assertion.clientDataJSON),
+          authenticatorData: bufferToBase64url(assertion.authenticatorData),
+          signature: bufferToBase64url(assertion.signature),
+          userHandle: assertion.userHandle ? bufferToBase64url(assertion.userHandle) : null,
+        },
+        clientExtensionResults: cred.getClientExtensionResults?.() || {},
+      };
+      const r = await api('/auth/webauthn/login/verify', {
+        method: 'POST',
+        body: JSON.stringify({ challenge_token: token, credential }),
+      });
+      await finishLogin(r.data);
+    } catch (err: any) {
+      if (err?.status === 401 || err?.status === 404) {
+        setError(
+          'Fingerprint sign-in is not set up for this account yet (or the company code or email is wrong). Sign in with your password, then open Security and choose "Enable fingerprint / face on this device".'
+        );
+      } else {
+        setError(describeWebAuthnError(err, 'signin'));
+      }
+    } finally {
+      abort.done();
       setBusy(false);
     }
   }
@@ -588,15 +677,36 @@ export default function Login() {
 
           {showPasskey && <p className="login-hint">Or continue with a registered passkey.</p>}
 
-          <button className="login-primary" type="submit" aria-label="Sign in" disabled={busy} aria-busy={busy}>
-            {busy
-              ? 'Signing in…'
-              : needs2fa
-                ? methods.includes('totp')
-                  ? 'Verify & continue'
-                  : 'Continue'
-                : 'Sign in'}
-          </button>
+          <div className={!needs2fa && mode === 'admin' ? 'login-submit-row' : undefined}>
+            <button className="login-primary" type="submit" aria-label="Sign in" disabled={busy} aria-busy={busy}>
+              {busy
+                ? 'Signing in…'
+                : needs2fa
+                  ? methods.includes('totp')
+                    ? 'Verify & continue'
+                    : 'Continue'
+                  : 'Sign in'}
+            </button>
+            {!needs2fa && mode === 'admin' && (
+              <button
+                className="login-bio"
+                type="button"
+                onClick={() => passwordlessSignIn('biometric')}
+                aria-label="Sign in with biometric"
+                title="Sign in with fingerprint, face or device lock"
+                disabled={busy}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 11v3a6 6 0 0 1-1 3.3" />
+                  <path d="M8.5 14a3.5 3.5 0 0 1 7 0c0 2.2-.5 4.3-1.5 6" />
+                  <path d="M5 14a7 7 0 0 1 14 0c0 1.4-.1 2.7-.4 4" />
+                  <path d="M3.5 9.5A9.5 9.5 0 0 1 12 4a9.5 9.5 0 0 1 8.5 5.5" />
+                  <path d="M5 18.5c.3-1 .5-2.3.5-3.5" />
+                </svg>
+              </button>
+            )}
+          </div>
+
 
           {showPasskey && (
             <button

@@ -1,13 +1,14 @@
 /** Tenant-scoped in-flight + short TTL cache for GET payloads (nav hover / first paint). */
 
-import { api, tenantHeaderValue } from './api';
+import { api, lastApiWriteAt, tenantHeaderValue } from './api';
 
 type Body = Awaited<ReturnType<typeof api>>;
 
 const store = new Map<string, { at: number; body: Body; tenant: string }>();
-const inflight = new Map<string, Promise<Body>>();
+const inflight = new Map<string, { started: number; run: Promise<Body> }>();
 
-/** Long enough to cover hover → click and tab switches; writes still force-refresh. */
+/** Long enough to cover hover → click and tab switches. Any write through api() makes older entries stale,
+ * so a list reloaded right after saving shows the new row. */
 const TTL_MS = 45_000;
 
 export function createPaintGet() {
@@ -65,7 +66,7 @@ export function peekPrefetch(path: string): Body | null {
     store.delete(key);
     return null;
   }
-  if (Date.now() - hit.at > TTL_MS) {
+  if (Date.now() - hit.at > TTL_MS || hit.at <= lastApiWriteAt()) {
     store.delete(key);
     return null;
   }
@@ -80,22 +81,25 @@ export async function prefetchGet(path: string, options?: { force?: boolean }): 
     const existing = peekPrefetch(path);
     if (existing) return existing;
     const pending = inflight.get(key);
-    if (pending) return pending;
+    // A load started before the latest write may not include it.
+    if (pending && pending.started > lastApiWriteAt()) return pending.run;
   } else {
     store.delete(key);
     inflight.delete(key);
   }
 
+  const started = Date.now();
   const run = api(path)
     .then((body) => {
       if (activeTenant() !== tenant) return body;
-      store.set(key, { at: Date.now(), body, tenant });
+      // Stamp with the start time: a write that lands while this loads makes it stale.
+      store.set(key, { at: started, body, tenant });
       return body;
     })
     .finally(() => {
-      inflight.delete(key);
+      if (inflight.get(key)?.run === run) inflight.delete(key);
     });
-  inflight.set(key, run);
+  inflight.set(key, { started, run });
   return run;
 }
 
