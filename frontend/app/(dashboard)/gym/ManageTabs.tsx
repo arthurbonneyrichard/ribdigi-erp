@@ -565,7 +565,11 @@ export function InsightsTab() {
   const [risk, setRisk] = useState<Row | null>(null);
   const [att, setAtt] = useState<Row | null>(null);
   const [eq, setEq] = useState<Row | null>(null);
+  const [assets, setAssets] = useState<Row | null>(null);
+  const [ratings, setRatings] = useState<Row[] | null>(null);
   const load = useCallback(async () => {
+    setAssets(await get('/gym/reports/equipment-assets'));
+    setRatings(await get('/gym/reports/trainer-ratings'));
     const s = await get('/gym/insights/status');
     setStatus(s);
     if (s?.insights_enabled) {
@@ -616,6 +620,32 @@ export function InsightsTab() {
           <h2>Equipment to look at</h2>
           <ul>{eq.items.map((e: Row) => <li key={e.equipment_id}><strong>{e.name}</strong>: {e.flags.join('; ')}</li>)}</ul>
           {eq.items.length === 0 ? <p className="gm-muted">Nothing stands out.</p> : null}
+        </section>
+      ) : null}
+      {assets ? (
+        <section className="gm-box gm-scroll" aria-label="Equipment value">
+          <h2>Equipment value (as of {assets.as_of})</h2>
+          <p className="gm-muted">{assets.note}</p>
+          <table>
+            <thead><tr><th>Equipment</th><th>Status</th><th>Cost</th><th>Depreciation</th><th>Book value</th></tr></thead>
+            <tbody>
+              {assets.items.map((i: Row) => <tr key={i.id || i.name}><td>{i.name}</td><td>{i.status}</td><td>{i.purchase_cost ?? ''}</td><td>{i.accumulated_depreciation ?? ''}</td><td>{i.book_value ?? ''}</td></tr>)}
+              {assets.items.length === 0 ? <tr><td colSpan={5} className="gm-muted">No equipment recorded.</td></tr> : null}
+            </tbody>
+            <tfoot><tr><th colSpan={2}>Total</th><th>{assets.total_cost}</th><th>{assets.total_depreciation}</th><th>{assets.total_book_value}</th></tr></tfoot>
+          </table>
+        </section>
+      ) : null}
+      {ratings ? (
+        <section className="gm-box gm-scroll" aria-label="Trainer ratings">
+          <h2>Trainer ratings</h2>
+          <table>
+            <thead><tr><th>Trainer</th><th>Average</th><th>Ratings</th></tr></thead>
+            <tbody>
+              {ratings.map((r: Row) => <tr key={r.trainer_id}><td>{r.trainer}</td><td>{r.average}</td><td>{r.ratings}</td></tr>)}
+              {ratings.length === 0 ? <tr><td colSpan={3} className="gm-muted">No member ratings yet.</td></tr> : null}
+            </tbody>
+          </table>
         </section>
       ) : null}
     </div>

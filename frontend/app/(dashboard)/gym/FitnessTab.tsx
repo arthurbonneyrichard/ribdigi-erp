@@ -34,6 +34,8 @@ export default function FitnessTab({ members }: { members: Row[] }) {
   const [nForm, setNForm] = useState<Record<string, string>>({ starts_on: today() });
   const [intake, setIntake] = useState<Record<string, Record<string, string>>>({});
   const [mForm, setMForm] = useState<Record<string, string>>({});
+  const [draftOpts, setDraftOpts] = useState({ goal: 'muscle', level: 'beginner', days_per_week: '3' });
+  const [draftNote, setDraftNote] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -53,6 +55,26 @@ export default function FitnessTab({ members }: { members: Row[] }) {
     }
   }, [memberId]);
   useEffect(() => { void load(); }, [load]);
+
+  async function makeDraft() {
+    setBusy(true);
+    setError('');
+    setNotice('');
+    setDraftNote('');
+    try {
+      const res = await api('/gym/workout-draft', { method: 'POST', body: JSON.stringify({ member_id: memberId, goal: draftOpts.goal, level: draftOpts.level, days_per_week: Number(draftOpts.days_per_week) }) });
+      const d = res?.data;
+      if (!d) throw new Error('No draft came back');
+      setProg((p) => ({ ...p, name: d.name, goal: d.goal }));
+      setLines(d.lines.map((l: Row) => ({ exercise_id: l.exercise_id, day_of_week: l.day_of_week, sets: l.sets, reps: l.reps, weight_kg: '' })));
+      const missing = (d.muscle_groups_missing_from_library || []).join(', ');
+      setDraftNote(`${d.disclaimer} Review and change every line before you save.${missing ? ` Your library has no exercises for: ${missing}.` : ''}`);
+    } catch (err) {
+      setError(problem(err));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function send(path: string, body: object, done: string) {
     setBusy(true);
@@ -110,6 +132,22 @@ export default function FitnessTab({ members }: { members: Row[] }) {
         <>
           <section className="gm-box" aria-label="New programme">
             <h2>New programme</h2>
+            <div className="gm-form" aria-label="Suggest a draft">
+              <label><span>Goal</span>
+                <select value={draftOpts.goal} onChange={(e) => setDraftOpts({ ...draftOpts, goal: e.target.value })} aria-label="Draft goal">
+                  <option value="strength">Strength</option><option value="muscle">Muscle</option><option value="weight_loss">Weight loss</option><option value="endurance">Endurance</option>
+                </select></label>
+              <label><span>Level</span>
+                <select value={draftOpts.level} onChange={(e) => setDraftOpts({ ...draftOpts, level: e.target.value })} aria-label="Draft level">
+                  <option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option>
+                </select></label>
+              <label><span>Days a week</span>
+                <select value={draftOpts.days_per_week} onChange={(e) => setDraftOpts({ ...draftOpts, days_per_week: e.target.value })} aria-label="Draft days per week">
+                  {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
+                </select></label>
+              <button type="button" disabled={busy} onClick={() => void makeDraft()} aria-label="Suggest workout draft">Suggest a draft</button>
+            </div>
+            {draftNote ? <p className="gm-muted" role="status">{draftNote}</p> : null}
             <div className="gm-form">
               <label><span>Name</span><input value={prog.name} onChange={(e) => setProg({ ...prog, name: e.target.value })} aria-label="Programme name" /></label>
               <label><span>Goal</span><input value={prog.goal} onChange={(e) => setProg({ ...prog, goal: e.target.value })} aria-label="Programme goal" /></label>
