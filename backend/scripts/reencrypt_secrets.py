@@ -14,9 +14,13 @@ Backup files are not rewritten: old backups keep restoring with the old key.
 
 Dry run by default. Pass --apply to write.
 
+--verify reads every stored secret again with the JWT secret replaced by a random value, so a pass
+proves nothing still depends on JWT_SECRET_KEY. It never writes. Run it after --apply.
+
 Usage:
   docker compose exec backend python scripts/reencrypt_secrets.py
   docker compose exec backend python scripts/reencrypt_secrets.py --apply
+  docker compose exec backend python scripts/reencrypt_secrets.py --verify
 """
 
 from __future__ import annotations
@@ -54,6 +58,9 @@ JSON_FIELDS = (
 
 
 def _rotate(cipher, token: str) -> str:
+    if VERIFY:
+        cipher.decrypt(token.encode("ascii"))  # raises InvalidToken when the new keys alone cannot open it
+        return token
     return cipher.rotate(token.encode("ascii")).decode("ascii")
 
 
@@ -112,14 +119,21 @@ async def main() -> int:
     for desk, label in desks:
         with on_desk(desk):
             ok, bad = await _one_database(label)
-        print(f"[{label}] {'rewrote' if APPLY else 'would rewrite'} {ok} value(s); {bad} unreadable.")
+        print(f"[{label}] {'verified' if VERIFY else 'rewrote' if APPLY else 'would rewrite'} {ok} value(s); {bad} unreadable.")
         total_ok += ok
         total_bad += bad
-    print(f"Total: {'rewrote' if APPLY else 'would rewrite'} {total_ok}; {total_bad} unreadable.")
+    print(f"Total: {'verified' if VERIFY else 'rewrote' if APPLY else 'would rewrite'} {total_ok}; {total_bad} unreadable.")
     return 1 if total_bad else 0
 
 
 APPLY = "--apply" in sys.argv
+VERIFY = "--verify" in sys.argv
+if VERIFY:
+    if APPLY:
+        raise SystemExit("--verify never writes; run it on its own.")
+    import secrets as _secrets
+
+    settings.JWT_SECRET_KEY = _secrets.token_urlsafe(48)  # in this process only
 
 if __name__ == "__main__":
     raise SystemExit(asyncio.run(main()))
