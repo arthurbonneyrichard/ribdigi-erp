@@ -72,6 +72,10 @@ services:
       HOSTNAME: 0.0.0.0
       # Server-side guide check calls /me on the compose network, not the public URL.
       API_INTERNAL_URL: http://backend:8000/api/v1
+      # Script policy: legacy (today, default) | report-only (old policy enforced, strict one reported)
+      # | enforce (strict nonce policy). Read at run time, so changing it needs a restart, not a rebuild.
+      # See docs/O3_CSP_NONCE_ROLLOUT.md.
+      CSP_MODE: ${CSP_MODE:-legacy}
     expose:
       - "3000"
     networks:

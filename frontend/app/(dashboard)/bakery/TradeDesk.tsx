@@ -95,9 +95,11 @@ export default function TradeDesk({ items, isManager }: { items: Row[]; isManage
         + `<table style="width:100%;border-collapse:collapse"><tr><th align="left">Date</th><th align="left">What</th><th>Charged</th><th>Paid</th><th>Balance</th></tr>${rows}</table>`
         + `<h3>Owed now ${money(statement.closing_balance)}</h3>`
         + `<p>Not yet due ${money(age.current)} · 1–30 days late ${money(age['1_30'])} · 31–60 days ${money(age['31_60'])} · over 60 days ${money(age.over_60)}</p>`
-        + '<script>window.onload=()=>window.print()</script></body></html>',
+        + '</body></html>',
     );
     page.document.close();
+    page.focus();
+    setTimeout(() => page.print(), 300); // printed from here: the strict script policy blocks scripts written into the page
   }
 
   return (

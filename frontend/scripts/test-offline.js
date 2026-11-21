@@ -8,6 +8,7 @@ const root = path.resolve(__dirname, '..');
 const out = fs.mkdtempSync(path.join(os.tmpdir(), 'ribdigi-offline-test-'));
 const tests = [
   'lib/connectivity.test.ts',
+  'lib/csp.test.ts',
   'lib/formatSession.test.ts',
   'lib/logoBackdrop.test.ts',
   'lib/posKiosk.test.ts',

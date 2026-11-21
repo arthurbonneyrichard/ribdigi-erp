@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import UmamiScript from '../components/UmamiScript';
 import CookieConsent from '../components/CookieConsent';
 import './globals.css';
@@ -45,14 +46,16 @@ const swInit = `(function(){try{if('serviceWorker' in navigator){navigator.servi
 // Clicking anywhere in a date box opens the calendar, not only the small icon.
 const datePickerInit = `(function(){try{var T={date:1,'datetime-local':1,month:1,week:1};document.addEventListener('click',function(e){var el=e.target;if(!el||el.tagName!=='INPUT'||!T[el.type]||el.disabled||el.readOnly||typeof el.showPicker!=='function')return;try{el.showPicker()}catch(_){}},true)}catch(e){}})();`;
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+// Reading the request headers makes every page render per request, which is what a fresh nonce needs.
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preload" as="image" href="/brand/logo-full.png" fetchPriority="high" />
-        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
-        <script dangerouslySetInnerHTML={{ __html: swInit }} />
-        <script dangerouslySetInnerHTML={{ __html: datePickerInit }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: themeInit }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: swInit }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: datePickerInit }} />
         <UmamiScript />
       </head>
       {/* Browser extensions (Grammarly, password managers) add attributes to <body> before
