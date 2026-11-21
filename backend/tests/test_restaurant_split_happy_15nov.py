@@ -171,3 +171,46 @@ async def test_mobile_money_prompt_pays_once(client, seeded, db_session):
         json={"payments": [{"method": "mobile_money", "amount": total, "reference": ref}]},
     )
     assert again.status_code == 409  # one prompt pays one bill
+
+
+async def _table(ac, h, code, store_id=None):
+    body = {"code": code, "name": f"Table {code}", "seats": 4}
+    res = await ac.post(f"{R}/tables", headers=h, json=body)
+    assert res.status_code == 200, res.text
+    return res.json()["data"]
+
+
+@pytest.mark.asyncio
+async def test_move_bill_to_another_table_and_merge_bills(client, seeded, db_session):
+    ac, seed = client
+    h = await _setup(ac, seed, db_session)
+    dish = await _dish(ac, h, "Jollof", 40)
+    t1 = await _table(ac, h, "M1")
+    t2 = await _table(ac, h, "M2")
+    t3 = await _table(ac, h, "M3")
+
+    def body(table):
+        return {"service_mode": "dine_in", "table_id": table["id"], "lines": [{"product_id": dish["id"], "quantity": "1"}]}
+
+    a = await ac.post(f"{R}/orders", headers=h, json=body(t1))
+    assert a.status_code == 200, a.text
+    a = a.json()["data"]
+
+    moved = await ac.post(f"{R}/orders/{a['id']}/move-table", headers=h, json={"table_id": t2["id"]})
+    assert moved.status_code == 200, moved.text
+    tables = {t["code"]: t["status"] for t in (await ac.get(f"{R}/tables", headers=h)).json()["data"]}
+    assert tables["M1"] == "available" and tables["M2"] == "occupied"
+    assert (await ac.post(f"{R}/orders/{a['id']}/move-table", headers=h, json={"table_id": t2["id"]})).status_code == 409
+
+    b = (await ac.post(f"{R}/orders", headers=h, json=body(t3))).json()["data"]
+    busy = await ac.post(f"{R}/orders/{a['id']}/move-table", headers=h, json={"table_id": t3["id"]})
+    assert busy.status_code == 409  # a table with guests: merge instead
+
+    assert (await ac.post(f"{R}/orders/{a['id']}/merge", headers=h, json={"into_order_id": a["id"]})).status_code == 422
+    merged = await ac.post(f"{R}/orders/{a['id']}/merge", headers=h, json={"into_order_id": b["id"]})
+    assert merged.status_code == 200, merged.text
+    assert merged.json()["data"]["subtotal"] == 80
+    tables = {t["code"]: t["status"] for t in (await ac.get(f"{R}/tables", headers=h)).json()["data"]}
+    assert tables["M2"] == "available" and tables["M3"] == "occupied"
+    again = await ac.post(f"{R}/orders/{a['id']}/merge", headers=h, json={"into_order_id": b["id"]})
+    assert again.status_code == 409  # the merged bill is closed

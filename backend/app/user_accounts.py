@@ -81,6 +81,10 @@ async def delete_tenant_user(
         "role": user.role,
     }
 
+    # A removed person's location history goes with them.
+    for model in (m.FmcgTrackPing, m.FmcgTrackState):
+        await db.execute(delete(model).where(model.tenant_id == tenant_id, model.user_id == user.id))
+
     for model in (
         m.AuthSession,
         m.AuthToken,

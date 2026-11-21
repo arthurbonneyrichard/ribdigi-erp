@@ -1410,6 +1410,8 @@ async def replace_sold_out(db: AsyncSession, tenant_id: str, product_ids: list[s
 
 OPEN_STATUSES = {"open", "sent", "preparing", "ready"}
 PAYMENT_METHODS = {"cash", "card", "wallet", "mobile_money"}
+# Paid out of a gift card or a guest's loyalty points. Only accepted as a part of a split payment.
+STORED_VALUE_METHODS = {"gift_card", "loyalty"}
 BILL_CREDIT_DETAIL = "A restaurant bill cannot be put on credit. Choose cash, card, wallet, or Mobile Money."
 TILL_SKIP_STATUSES = frozenset({"cancelled", "void", "voided", "draft"})
 
@@ -3227,8 +3229,29 @@ async def save_service_charge(db: AsyncSession, tenant_id: str, percent: float |
     return {"percent": await service_percent(db, tenant_id)}
 
 
-async def _bill_amounts(db: AsyncSession, tenant_id: str, lines: list) -> tuple[float, float]:
-    subtotal = money_json(round(sum(float(row.line_total or 0) for row in lines), 2))
+def discount_amount_for(gross: float, kind: str | None, value: float) -> float:
+    """What a manager's discount comes to on a bill of this size (a comp is 100 percent)."""
+    gross = money_json(gross)
+    amount = money_json(value or 0)
+    if gross <= 0 or not kind or amount <= 0:
+        return 0.0
+    if kind == "percent":
+        off = round(gross * min(amount, 100.0) / 100, 2)
+    elif kind == "amount":
+        off = round(amount, 2)
+    else:
+        return 0.0
+    return money_json(round(min(off, gross), 2))
+
+
+async def _bill_amounts(
+    db: AsyncSession, tenant_id: str, lines: list, discount_kind: str | None = None, discount_value: float = 0
+) -> tuple[float, float]:
+    """(subtotal after any discount, total). Tax and service are worked out on the discounted amount."""
+    gross = money_json(round(sum(float(row.line_total or 0) for row in lines), 2))
+    discount = discount_amount_for(gross, discount_kind, discount_value)
+    subtotal = money_json(round(gross - discount, 2))
+    factor = (subtotal / gross) if gross > 0 else 1.0
     tenant = await db.get(m.Tenant, tenant_id)
     if tenant is None or packages_svc.canonicalize_industry(getattr(tenant, "industry", None)) != "restaurant":
         return subtotal, subtotal
@@ -3254,7 +3277,7 @@ async def _bill_amounts(db: AsyncSession, tenant_id: str, lines: list) -> tuple[
         if product is None:
             continue
         spec = await tax_svc.resolve_product_tax(db, tenant_id, product)
-        _net, tax, _gross = spec.compute_amounts(float(row.line_total or 0))
+        _net, tax, _gross = spec.compute_amounts(float(row.line_total or 0) * factor)
         if (spec.pricing_mode or "exclusive") == "exclusive" and not spec.is_reverse_charge:
             added_tax = money_json(round(added_tax + tax, 2))
     percent = await service_percent(db, tenant_id)
@@ -3281,7 +3304,15 @@ async def _refresh_order_totals(db: AsyncSession, order: m.RestaurantOrder) -> N
             await db.execute(select(m.RestaurantOrderLine).where(m.RestaurantOrderLine.order_id == order.id))
         ).scalars()
     )
-    subtotal, total = await _bill_amounts(db, order.tenant_id, lines)
+    kind = getattr(order, "discount_kind", None)
+    value = float(getattr(order, "discount_value", 0) or 0)
+    subtotal, total = await _bill_amounts(db, order.tenant_id, lines, kind, value)
+    gross = money_json(round(sum(float(row.line_total or 0) for row in lines), 2))
+    order.discount_amount = discount_amount_for(gross, kind, value)
+    if not order.discount_amount:
+        # Nothing left to discount (every dish removed): the discount goes with it.
+        order.discount_kind = None
+        order.discount_value = 0
     order.subtotal = subtotal
     order.total_amount = total
     await db.flush()
@@ -3988,7 +4019,24 @@ async def order_tenders(db: AsyncSession, order: m.RestaurantOrder) -> list[tupl
 async def _post_sale_journal(db, tenant_id, order, *, user_id, reverse: bool) -> str | None:
     amount = money_json(order.total_amount)
     if amount <= 0:
-        return order.journal_entry_id
+        if money_json(getattr(order, "discount_amount", 0) or 0) <= 0:
+            return order.journal_entry_id
+        # A fully comped bill brings in nothing, but the food and drink still cost money.
+        await accounting.ensure_default_accounts(db, tenant_id)
+        cogs_only: list[dict] = []
+        cogs = await accounting.compute_standard_cogs(
+            db, tenant_id=tenant_id, lines=await _order_stock_lines(db, tenant_id, order)
+        )
+        accounting.append_cogs_lines(cogs_only, cogs, reverse=reverse)
+        if not cogs_only:
+            return order.journal_entry_id
+        entry = await accounting.post_journal_entry(
+            db, tenant_id=tenant_id, user_id=user_id,
+            description=f"Restaurant {'comp refund' if reverse else 'comp'} {order.order_number}",
+            lines=cogs_only, reference=order.order_number,
+            source_type="restaurant_order", source_id=order.id,
+        )
+        return entry.id
     await accounting.ensure_default_accounts(db, tenant_id)
     _service, tax = bill_parts(money_json(order.subtotal), amount, await service_percent(db, tenant_id))
     revenue_amount = money_json(round(amount - tax, 2))
@@ -4081,6 +4129,18 @@ async def complete_order(
         from app import restaurant_tips
 
         await restaurant_tips.record_tip(db, order, tip, user_id=user_id)
+    if order.party_id:
+        from app import loyalty_gift
+
+        await loyalty_gift.award_sale_points(
+            db,
+            tenant_id=tenant_id,
+            party_id=order.party_id,
+            total=money_json(order.total_amount),
+            payments=[
+                {"payment_method": method, "amount": amount} for method, amount in await order_tenders(db, order)
+            ],
+        )
     order.status = "completed"
     order.completed_at = _now()
     order.completed_by = user_id
@@ -4112,12 +4172,18 @@ async def _record_split_tenders(db: AsyncSession, order: m.RestaurantOrder, paym
         method = str(getattr(item, "method", None) or (item.get("method") if isinstance(item, dict) else "") or "").strip().lower()
         amount = money_json(getattr(item, "amount", None) if not isinstance(item, dict) else item.get("amount"))
         reference = getattr(item, "reference", None) if not isinstance(item, dict) else item.get("reference")
-        if method not in PAYMENT_METHODS:
-            raise HTTPException(status_code=422, detail="Each part needs cash, card, wallet or Mobile Money")
+        if method not in PAYMENT_METHODS and method not in STORED_VALUE_METHODS:
+            raise HTTPException(status_code=422, detail="Each part needs cash, card, wallet, Mobile Money, a gift card or points")
         if amount <= 0:
             raise HTTPException(status_code=422, detail="Each part needs an amount above zero")
-        parts.append((method, amount, (str(reference).strip()[:100] or None) if reference else None))
-    if len(parts) == 1:
+        ref_text = (str(reference).strip()[:100] or None) if reference else None
+        if method == "gift_card" and not ref_text:
+            raise HTTPException(status_code=422, detail="Enter the gift card code")
+        if method == "loyalty" and not order.party_id:
+            raise HTTPException(status_code=422, detail="Add the guest to the bill before spending points")
+        parts.append((method, amount, ref_text))
+    stored_value = any(p[0] in STORED_VALUE_METHODS for p in parts)
+    if len(parts) == 1 and not stored_value:
         order.payment_method = parts[0][0]
         if parts[0][2]:
             await till_payments.claim(db, tenant_id=order.tenant_id, reference=parts[0][2], amount=parts[0][1], used_ref=order.order_number)
@@ -4132,8 +4198,21 @@ async def _record_split_tenders(db: AsyncSession, order: m.RestaurantOrder, paym
     await db.execute(
         m.RestaurantOrderPayment.__table__.delete().where(m.RestaurantOrderPayment.order_id == order.id)
     )
+    if stored_value:
+        from app import loyalty_gift
+
+        await loyalty_gift.settle_pos_tenders(
+            db,
+            tenant_id=order.tenant_id,
+            party_id=order.party_id,
+            payments=[
+                {"payment_method": method, "amount": amount, "reference": reference}
+                for method, amount, reference in parts
+                if method in STORED_VALUE_METHODS
+            ],
+        )
     for method, amount, reference in parts:
-        if reference:
+        if reference and method not in STORED_VALUE_METHODS:
             await till_payments.claim(db, tenant_id=order.tenant_id, reference=reference, amount=amount, used_ref=order.order_number)
         db.add(
             m.RestaurantOrderPayment(
@@ -4199,6 +4278,79 @@ async def split_order(
     return order, new
 
 
+async def move_order_table(
+    db: AsyncSession, tenant_id: str, order_id: str, *, table_id: str, user_id: str | None
+) -> m.RestaurantOrder:
+    """Move an open bill (and its guests) to another free table, e.g. when a party changes seats."""
+    order = await _order(db, tenant_id, order_id, user_id=user_id)
+    if order.status not in OPEN_STATUSES:
+        raise HTTPException(status_code=409, detail="Only an open bill can be moved")
+    if order.table_id == table_id:
+        raise HTTPException(status_code=409, detail="The bill is already on that table")
+    target = await _table(db, tenant_id, table_id, user_id=user_id)
+    if not target.is_active:
+        raise HTTPException(status_code=409, detail="That table is retired")
+    if target.store_id != order.store_id:
+        raise HTTPException(status_code=409, detail="That table is in another store")
+    if target.status not in ("available", "held"):
+        raise HTTPException(status_code=409, detail="That table has guests. Merge the bills instead")
+    old_table_id = order.table_id
+    old_code = None
+    if old_table_id:
+        old = await db.get(m.RestaurantTable, old_table_id)
+        old_code = old.code if old is not None else None
+    order.table_id = target.id
+    target.status = "occupied"
+    await db.flush()
+    await _release_table_if_clear(db, tenant_id, old_table_id)
+    await audit_svc.record_event(
+        db, tenant_id=tenant_id, user_id=user_id, module="restaurant",
+        action="restaurant_order_table_moved", entity="restaurant_order", entity_id=order.id,
+        details={"from": old_code, "to": target.code},
+    )
+    return order
+
+
+async def merge_orders(
+    db: AsyncSession, tenant_id: str, order_id: str, *, into_order_id: str, user_id: str | None
+) -> m.RestaurantOrder:
+    """Fold one open bill into another (two tables joined, or a late add-on) so they are paid together."""
+    if order_id == into_order_id:
+        raise HTTPException(status_code=422, detail="Pick a different bill to merge into")
+    source = await _order(db, tenant_id, order_id, user_id=user_id)
+    target = await _order(db, tenant_id, into_order_id, user_id=user_id)
+    for row in (source, target):
+        if row.status not in OPEN_STATUSES:
+            raise HTTPException(status_code=409, detail="Only open bills can be merged")
+    if source.store_id != target.store_id:
+        raise HTTPException(status_code=409, detail="The bills are in different stores")
+    lines = (
+        await db.execute(select(m.RestaurantOrderLine).where(m.RestaurantOrderLine.order_id == source.id))
+    ).scalars().all()
+    for ln in lines:
+        ln.order_id = target.id
+    tickets = (
+        await db.execute(select(m.RestaurantKitchenTicket).where(m.RestaurantKitchenTicket.order_id == source.id))
+    ).scalars().all()
+    for ticket in tickets:
+        ticket.order_id = target.id
+    source_table_id = source.table_id
+    source_number = source.order_number
+    source.status = "cancelled"
+    source.notes = f"Merged into {target.order_number}"
+    await db.flush()
+    await _refresh_order_totals(db, source)
+    await _refresh_order_totals(db, target)
+    if source_table_id and source_table_id != target.table_id:
+        await _release_table_if_clear(db, tenant_id, source_table_id)
+    await audit_svc.record_event(
+        db, tenant_id=tenant_id, user_id=user_id, module="restaurant",
+        action="restaurant_orders_merged", entity="restaurant_order", entity_id=target.id,
+        details={"merged": source_number, "lines": len(lines)},
+    )
+    return target
+
+
 async def cancel_order(db: AsyncSession, tenant_id: str, order_id: str, *, user_id: str | None, void: bool) -> m.RestaurantOrder:
     order = await _order(db, tenant_id, order_id, user_id=user_id)
     if order.status in {"completed", "refunded"}:
@@ -4223,6 +4375,51 @@ async def cancel_order(db: AsyncSession, tenant_id: str, order_id: str, *, user_
     return order
 
 
+async def _restore_stored_value(db: AsyncSession, order: m.RestaurantOrder) -> None:
+    """A refunded bill gives back the gift card balance and points it spent, and takes back the points it earned."""
+    from app import loyalty_gift
+
+    spent_points = 0.0
+    if (order.payment_method or "") == "split":
+        pay_rows = (
+            await db.execute(
+                select(m.RestaurantOrderPayment).where(
+                    m.RestaurantOrderPayment.tenant_id == order.tenant_id,
+                    m.RestaurantOrderPayment.order_id == order.id,
+                )
+            )
+        ).scalars().all()
+        for row in pay_rows:
+            if row.method == "gift_card" and row.reference:
+                card = (
+                    await db.execute(
+                        select(m.GiftCard).where(
+                            m.GiftCard.tenant_id == order.tenant_id, m.GiftCard.code == str(row.reference).strip().upper()
+                        )
+                    )
+                ).scalar_one_or_none()
+                if card is not None:
+                    card.balance = money_json(round(money_json(card.balance or 0) + money_json(row.amount), 2))
+                    card.status = "active"
+            elif row.method == "loyalty":
+                spent_points = money_json(round(spent_points + money_json(row.amount), 2))
+    if not order.party_id:
+        return
+    party = await db.get(m.Party, order.party_id)
+    if party is None or party.tenant_id != order.tenant_id:
+        return
+    if spent_points > 0:
+        await loyalty_gift.adjust_loyalty(
+            db, tenant_id=order.tenant_id, party_id=party.id, delta=spent_points, post_journal=False
+        )
+    earned = money_json(round(max(money_json(order.total_amount) - spent_points, 0) * loyalty_gift.LOYALTY_EARN_RATE, 2))
+    take_back = min(earned, money_json(party.loyalty_points or 0))
+    if take_back > 0:
+        await loyalty_gift.adjust_loyalty(
+            db, tenant_id=order.tenant_id, party_id=party.id, delta=-take_back, post_journal=True
+        )
+
+
 async def refund_order(db: AsyncSession, tenant_id: str, order_id: str, *, user_id: str | None) -> m.RestaurantOrder:
     order = await _order(db, tenant_id, order_id, user_id=user_id)
     if order.status == "refunded":
@@ -4231,6 +4428,7 @@ async def refund_order(db: AsyncSession, tenant_id: str, order_id: str, *, user_
         raise HTTPException(status_code=409, detail="Only a completed order can be refunded")
     await _deduct_or_restore(db, tenant_id, order, user_id=user_id, sign=1)
     await _post_sale_journal(db, tenant_id, order, user_id=user_id, reverse=True)
+    await _restore_stored_value(db, order)
     order.status = "refunded"
     await till_svc.record_cash_refund(db, order, user_id=user_id)
     await db.flush()
@@ -4423,6 +4621,14 @@ def serialize_order(row: m.RestaurantOrder) -> dict:
         "subtotal": money_json(row.subtotal),
         "total_amount": money_json(row.total_amount),
         "tip_amount": money_json(getattr(row, "tip_amount", 0) or 0),
+        "discount_kind": getattr(row, "discount_kind", None),
+        "discount_value": money_json(getattr(row, "discount_value", 0) or 0),
+        "discount_amount": money_json(getattr(row, "discount_amount", 0) or 0),
+        "discount_reason": getattr(row, "discount_reason", None),
+        "party_id": getattr(row, "party_id", None),
+        "rider_name": getattr(row, "rider_name", None),
+        "rider_phone": getattr(row, "rider_phone", None),
+        "delivery_status": getattr(row, "delivery_status", None),
         "store_id": row.store_id,
         "notes": kitchen,
         "delivery_address": address,

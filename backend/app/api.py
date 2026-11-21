@@ -475,6 +475,7 @@ from app import fmcg_quality_api as fmcg_quality_api_mod  # noqa: E402
 from app import fmcg_promos_api as fmcg_promos_api_mod  # noqa: E402
 from app import fmcg_warehouse_api as fmcg_warehouse_api_mod  # noqa: E402
 from app import fmcg_fleet_api as fmcg_fleet_api_mod  # noqa: E402
+from app import fmcg_tracking_api as fmcg_tracking_api_mod  # noqa: E402
 from app import fmcg_forecast_api as fmcg_forecast_api_mod  # noqa: E402
 from app import fmcg_reports_api as fmcg_reports_api_mod  # noqa: E402
 from app import fmcg_merch_api as fmcg_merch_api_mod  # noqa: E402
@@ -528,6 +529,7 @@ api.include_router(fmcg_quality_api_mod.router)
 api.include_router(fmcg_promos_api_mod.router)
 api.include_router(fmcg_warehouse_api_mod.router)
 api.include_router(fmcg_fleet_api_mod.router)
+api.include_router(fmcg_tracking_api_mod.router)
 api.include_router(fmcg_forecast_api_mod.router)
 api.include_router(fmcg_reports_api_mod.router)
 api.include_router(fmcg_merch_api_mod.router)

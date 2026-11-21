@@ -231,3 +231,15 @@ Retail `/sales` routes still answer for an FMCG company, because schemes also ap
 ## Demo
 
 `PYTHONPATH=. python scripts/seed_fmcg_demo.py` creates `demo-fmcg-rec` (Northern Star Distributors; owner, rep and driver logins). It refuses to run in production.
+
+## Live staff map (21 Nov 2026: `fmcg_tracking.py`, screen `/fmcg?tab=livemap`)
+
+FMCG companies only. Shows where reps and drivers were last seen, with the day's path, distance and stops.
+
+- **Not real-time GPS.** A web page reads the phone's position only while the ERP is open on screen. The screen is kept awake while sharing; if the phone still sleeps or the app closes, the map shows "last seen N min ago". Background tracking would need a native app.
+- **Privacy rules (enforced on the server):** HR or an admin switches sharing on per person (`PUT /fmcg/tracking/people/{id}`); the person must accept a notice and sees a permanent banner; positions are refused unless the person is **clocked in** (HR clock, matched by login email); no one else is ever read.
+- **Who sees whom:** company admin, HR manager and the distribution manager see everyone. Anyone else sees only the people who report to them in HR (the employee's manager link, transitive); a person out of scope gets 404, a manager with no reports gets 403.
+- **Audit and retention:** every time a manager opens someone's day it is written to the audit log (`fmcg_tracking_trail_viewed`); switching on/off and notice acceptance are audited. Points older than 30 days are deleted by the daily FMCG scan (`scan_batch_expiry`; restart celery worker/beat after pull). A deleted user's points go with them. Tables `fmcg_track_state`, `fmcg_track_pings` are in backup specs.
+- **Phone:** `components/StaffLocationSharer.tsx` (mounted in the Shell for FMCG): sends every 30 s or after moving 50 m, queues points offline, batches of up to 100; fixes worse than 200 m accuracy, future or over-12-hour-old points are dropped; duplicates ignored.
+- **Map:** `components/TileMap.tsx`, OpenStreetMap tiles (no map library). A busy company should use its own tile provider (`tileUrl`).
+- Migration `20261121_0228f`. **The privacy policy text (`legalDefaults.ts`) should disclose staff location tracking; that is the owner's legal wording to change.**

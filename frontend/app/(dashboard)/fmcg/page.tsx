@@ -19,6 +19,7 @@ import FmcgImports, { IMPORT_TABS } from './FmcgImports';
 import FmcgMfg, { MFG_TABS } from './FmcgMfg';
 import FmcgAssistant, { ASSISTANT_TABS } from './FmcgAssistant';
 import FmcgDistributors, { DISTRIBUTOR_TABS } from './FmcgDistributors';
+import FmcgLive, { LIVE_TABS } from './FmcgLive';
 import './fmcg-selling.css';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
@@ -192,7 +193,7 @@ export default function FmcgPage() {
           return;
         }
         // The overview is the dashboard only; set-up data loads on the tabs that use it.
-        if (!tab || SELLING_TABS.includes(tab) || FIELD_TABS.includes(tab) || BATCH_TABS.includes(tab) || VAN_TABS.includes(tab) || QUALITY_TABS.includes(tab) || PROMO_TABS.includes(tab) || WAREHOUSE_TABS.includes(tab) || FLEET_TABS.includes(tab) || FORECAST_TABS.includes(tab) || CENTRE_TABS.includes(tab) || MERCH_TABS.includes(tab) || IMPORT_TABS.includes(tab) || MFG_TABS.includes(tab) || ASSISTANT_TABS.includes(tab) || DISTRIBUTOR_TABS.includes(tab)) return;
+        if (!tab || SELLING_TABS.includes(tab) || FIELD_TABS.includes(tab) || BATCH_TABS.includes(tab) || VAN_TABS.includes(tab) || QUALITY_TABS.includes(tab) || PROMO_TABS.includes(tab) || WAREHOUSE_TABS.includes(tab) || FLEET_TABS.includes(tab) || FORECAST_TABS.includes(tab) || CENTRE_TABS.includes(tab) || MERCH_TABS.includes(tab) || IMPORT_TABS.includes(tab) || MFG_TABS.includes(tab) || ASSISTANT_TABS.includes(tab) || DISTRIBUTOR_TABS.includes(tab) || LIVE_TABS.includes(tab)) return;
         await refresh();
         if (tab !== 'packs' && tab !== 'schemes') return;
         const [prod, unit] = await Promise.all([api('/products'), api('/catalog/units')]);
@@ -357,6 +358,10 @@ export default function FmcgPage() {
 
   if (FIELD_TABS.includes(tab)) {
     return <FmcgField tab={tab} />;
+  }
+
+  if (LIVE_TABS.includes(tab)) {
+    return <FmcgLive tab={tab} />;
   }
 
   if (DISTRIBUTOR_TABS.includes(tab)) {

@@ -3069,6 +3069,20 @@ class RestaurantOrder(Base):
     tip_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
     # The tip share-out that took this tip (NULL until shared).
     tip_run_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    # The guest on the bill (a customer, found or made by phone): earns and spends loyalty points.
+    party_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    # A manager's discount or comp. percent|amount; a comp is 100 percent. discount_amount is what it came to.
+    discount_kind: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    discount_value: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    discount_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
+    discount_reason: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    discount_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    # Delivery: who rides it and how far along it is (assigned | out | delivered).
+    rider_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    rider_phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    delivery_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    dispatched_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class RestaurantOrderLine(Base):
@@ -3105,6 +3119,65 @@ class RestaurantKitchenTicket(Base):
     station: Mapped[str] = mapped_column(String(20), default="kitchen")
     status: Mapped[str] = mapped_column(String(20), default="queued")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class RestaurantFeedback(Base):
+    """A guest's rating of a visit or an order, taken by staff or left on the website."""
+
+    __tablename__ = "restaurant_feedback"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    order_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    order_number: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    guest_name: Mapped[str | None] = mapped_column(String(180), nullable=True)
+    rating: Mapped[int] = mapped_column(Integer)
+    comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source: Mapped[str] = mapped_column(String(12), default="staff")
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class FmcgTrackState(Base):
+    """FMCG staff location sharing, one row per person: whether HR switched it on, whether they accepted
+    the notice, and the last position (so the live map is one cheap query). No foreign key to users: the
+    row can sit on a desk database."""
+
+    __tablename__ = "fmcg_track_state"
+    __table_args__ = (UniqueConstraint("tenant_id", "user_id", name="uq_fmcg_track_state_user"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    user_id: Mapped[str] = mapped_column(String(36), index=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    enabled_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    enabled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    notice_ack_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_latitude: Mapped[float | None] = mapped_column(Numeric(9, 6), nullable=True)
+    last_longitude: Mapped[float | None] = mapped_column(Numeric(9, 6), nullable=True)
+    last_accuracy_m: Mapped[float | None] = mapped_column(Numeric(8, 1), nullable=True)
+    last_speed_kmh: Mapped[float | None] = mapped_column(Numeric(6, 1), nullable=True)
+    last_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class FmcgTrackPing(Base):
+    """One position of one person, kept 30 days. Only accepted while the person is clocked in."""
+
+    __tablename__ = "fmcg_track_pings"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "user_id", "captured_at", name="uq_fmcg_track_ping"),
+        Index("ix_fmcg_track_pings_user_time", "tenant_id", "user_id", "captured_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    user_id: Mapped[str] = mapped_column(String(36))
+    latitude: Mapped[float] = mapped_column(Numeric(9, 6))
+    longitude: Mapped[float] = mapped_column(Numeric(9, 6))
+    accuracy_m: Mapped[float | None] = mapped_column(Numeric(8, 1), nullable=True)
+    speed_kmh: Mapped[float | None] = mapped_column(Numeric(6, 1), nullable=True)
+    captured_at: Mapped[datetime] = mapped_column(DateTime)
+    received_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class SupportTicketSequence(Base):

@@ -44,6 +44,11 @@ type Tracked = {
   status_words: string;
   service: 'pickup' | 'delivery';
   total_amount: number;
+  delivery_status?: string | null;
+  delivery_words?: string;
+  rider_name?: string | null;
+  rider_phone?: string | null;
+  can_rate?: boolean;
   items: { name: string; quantity: number; line_total: number }[];
 };
 
@@ -137,7 +142,7 @@ export default function RestaurantSite({ slug, focus }: { slug: string; focus: '
       if (last) {
         call(`/public/restaurant-site/${encodeURIComponent(slug)}/order/${encodeURIComponent(last)}`)
           .then((data) => {
-            if (data && !['completed', 'cancelled', 'voided', 'refunded'].includes(data.status)) setTracked(data);
+            if (data && (!['completed', 'cancelled', 'voided', 'refunded'].includes(data.status) || data.can_rate)) setTracked(data);
           })
           .catch(() => undefined);
       }
@@ -472,7 +477,7 @@ export default function RestaurantSite({ slug, focus }: { slug: string; focus: '
                 }}
               />
             ) : null}
-            {panel === 'tracking' && tracked ? <TrackingPanel order={tracked} money={money} site={site} onClose={() => setPanel(null)} /> : null}
+            {panel === 'tracking' && tracked ? <TrackingPanel order={tracked} money={money} site={site} slug={slug} onUpdate={setTracked} onClose={() => setPanel(null)} /> : null}
           </aside>
         </div>
       ) : null}
@@ -704,13 +709,37 @@ function TrackingPanel({
   order,
   money,
   site,
+  slug,
+  onUpdate,
   onClose,
 }: {
   order: Tracked;
   money: (v: unknown) => string;
   site: Site;
+  slug: string;
+  onUpdate: (order: Tracked) => void;
   onClose: () => void;
 }) {
+  const [stars, setStars] = useState(0);
+  const [comment, setComment] = useState('');
+  const [rateBusy, setRateBusy] = useState(false);
+  const [rateError, setRateError] = useState('');
+  async function sendRating() {
+    if (!stars) return;
+    setRateBusy(true);
+    setRateError('');
+    try {
+      const data = await call(`/public/restaurant-site/${encodeURIComponent(slug)}/order/${encodeURIComponent(order.id)}/feedback`, {
+        method: 'POST',
+        body: JSON.stringify({ rating: stars, ...(comment.trim() ? { comment: comment.trim() } : {}) }),
+      });
+      if (data) onUpdate(data);
+    } catch (err) {
+      setRateError((err as Error).message);
+    } finally {
+      setRateBusy(false);
+    }
+  }
   const at = stepIndex(order.status);
   const stopped = ['cancelled', 'voided', 'refunded'].includes(order.status);
   return (
@@ -735,6 +764,13 @@ function TrackingPanel({
               : 'Thank you! The restaurant has your order.'}
         </p>
       </div>
+      {order.service === 'delivery' && order.delivery_words ? (
+        <p className="rs-small" role="status" aria-label="Delivery status">
+          <strong>{order.delivery_words}</strong>
+          {order.rider_name ? ` · Rider ${order.rider_name}` : ''}
+          {order.rider_phone ? <> · <a href={`tel:${order.rider_phone}`}>{order.rider_phone}</a></> : null}
+        </p>
+      ) : null}
       {!stopped ? (
         <ol className="rs-steps" aria-label="Order progress">
           {STEPS.map((step, i) => (
@@ -761,6 +797,31 @@ function TrackingPanel({
         <span>To pay (tax included)</span>
         <strong>{money(order.total_amount)}</strong>
       </div>
+      {order.can_rate ? (
+        <div className="rs-thanks" aria-label="Rate your order">
+          <p>How was your order?</p>
+          <div role="radiogroup" aria-label="Rating">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                role="radio"
+                aria-checked={stars === n}
+                aria-label={`${n} ${n === 1 ? 'star' : 'stars'}`}
+                onClick={() => setStars(n)}
+                style={{ fontSize: 28, background: 'none', border: 0, cursor: 'pointer', color: n <= stars ? '#b8860b' : '#8a8a8a' }}
+              >
+                {n <= stars ? '★' : '☆'}
+              </button>
+            ))}
+          </div>
+          <input aria-label="Tell us more (optional)" placeholder="Tell us more (optional)" value={comment} onChange={(e) => setComment(e.target.value)} maxLength={500} />
+          {rateError ? <p role="alert">{rateError}</p> : null}
+          <button type="button" aria-label="Send rating" disabled={!stars || rateBusy} onClick={sendRating}>
+            {rateBusy ? 'Sending…' : 'Send rating'}
+          </button>
+        </div>
+      ) : null}
       <p className="rs-small">
         This page updates by itself.{site.phone ? ' Questions? ' : ''}
         {site.phone ? <a href={`tel:${site.phone}`}>Call {site.phone}</a> : null}

@@ -93,6 +93,7 @@ import {
 } from '../lib/companyLogo';
 import OnboardingChecklist from './OnboardingChecklist';
 import StoreSwitcher from './StoreSwitcher';
+import StaffLocationSharer from './StaffLocationSharer';
 
 /** Tenant ERP navigation (business workspace).
  * Hotel/FMCG nav items are packageable but only appear when `/me.enabled_modules`
@@ -2335,6 +2336,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             : undefined
         }
       >
+        {isPlatformOwner ? null : <StaffLocationSharer industry={industry} />}
         <div className="topbar">
           <div className="topbar-left">
             {pathname === '/pos' ? (

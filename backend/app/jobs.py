@@ -110,6 +110,10 @@ async def job_scan_batch_expiry() -> dict:
         if tenant is not None and canonicalize_industry(getattr(tenant, "industry", None)) == "fmcg":
             # FMCG companies have their own warning days and vehicle document alerts.
             sent = await fmcg_alerts.scan(db, tenant_id)
+            from app import fmcg_tracking
+
+            # Staff location points are kept 30 days, then deleted.
+            await fmcg_tracking.purge_old(db, tenant_id)
             return {"created": sent["batch"] + sent["vehicle"], "fmcg": sent}
         created = await notifications_svc.scan_batch_expiry(db, tenant_id)
         return {"created": created}

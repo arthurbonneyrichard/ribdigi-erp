@@ -186,6 +186,7 @@ export const RESTAURANT_NAV_ITEMS: NavItem[] = [
   ['Website and booking', '/restaurant?tab=booking', 'restaurant'],
   ['Orders', '/restaurant/orders', 'restaurant'],
   ['Kitchen', '/restaurant?tab=kitchen', 'restaurant'],
+  ['Bar', '/restaurant?tab=bar', 'restaurant'],
   ['Recipes', '/restaurant?tab=recipes', 'restaurant'],
   ['Waste', '/restaurant?tab=waste', 'restaurant'],
   ['Bills', '/restaurant/bills', 'restaurant'],
@@ -226,6 +227,7 @@ export const RESTAURANT_NAV_GROUPS: NavGroup[] = [
       ['Website and booking', '/restaurant?tab=booking', 'restaurant'],
       ['Orders', '/restaurant/orders', 'restaurant'],
       ['Kitchen', '/restaurant?tab=kitchen', 'restaurant'],
+      ['Bar', '/restaurant?tab=bar', 'restaurant'],
       ['Recipes', '/restaurant?tab=recipes', 'restaurant'],
       ['Waste', '/restaurant?tab=waste', 'restaurant'],
     ],
@@ -378,6 +380,7 @@ export const FMCG_NAV_GROUPS: NavGroup[] = [
       ['Outlets', '/fmcg?tab=outlets', 'fmcg'],
       ['Distributors', '/fmcg?tab=distributors', 'fmcg'],
       ['Visits', '/fmcg?tab=visits', 'fmcg'],
+      ['Live staff map', '/fmcg?tab=livemap', 'fmcg'],
       ['Shelf checks', '/fmcg?tab=merch', 'fmcg'],
       ['Orders', '/fmcg?tab=orders', 'fmcg'],
       ['Van sales', '/fmcg?tab=van', 'fmcg'],
@@ -1004,9 +1007,9 @@ export const FMCG_ROLE_HREFS: Record<string, string[]> = {
   fmcg_driver: ['/hrm?tab=me', '/fmcg', '/fmcg?tab=orders', '/fmcg?tab=collections', '/fmcg?tab=deliveries', '/fmcg?tab=van', '/fmcg?tab=pod', '/fmcg?tab=complaints', '/notifications', '/security', '/support'],
 };
 
-FMCG_ROLE_HREFS.fmcg_storekeeper = ['/hrm?tab=me', '/fmcg', '/fmcg?tab=warehouse', '/fmcg?tab=batches', '/inventory?tab=whstock', '/inventory?tab=adjust', '/inventory?tab=counts', '/notifications', '/security', '/support'];
-FMCG_ROLE_HREFS.fmcg_quality = ['/hrm?tab=me', '/fmcg', '/fmcg?tab=quality', '/fmcg?tab=complaints', '/fmcg?tab=batches', '/fmcg?tab=pod', '/notifications', '/security', '/support'];
-FMCG_ROLE_HREFS.fmcg_fleet = ['/hrm?tab=me', '/fmcg', '/fmcg?tab=fleet', '/fmcg?tab=deliveries', '/notifications', '/security', '/support'];
+FMCG_ROLE_HREFS.fmcg_storekeeper = ['/hrm?tab=me', '/fmcg', '/fmcg?tab=livemap', '/fmcg?tab=warehouse', '/fmcg?tab=batches', '/inventory?tab=whstock', '/inventory?tab=adjust', '/inventory?tab=counts', '/notifications', '/security', '/support'];
+FMCG_ROLE_HREFS.fmcg_quality = ['/hrm?tab=me', '/fmcg', '/fmcg?tab=livemap', '/fmcg?tab=quality', '/fmcg?tab=complaints', '/fmcg?tab=batches', '/fmcg?tab=pod', '/notifications', '/security', '/support'];
+FMCG_ROLE_HREFS.fmcg_fleet = ['/hrm?tab=me', '/fmcg', '/fmcg?tab=livemap', '/fmcg?tab=fleet', '/fmcg?tab=deliveries', '/notifications', '/security', '/support'];
 
 export const GYM_ROLE_HREFS: Record<string, string[]> = {
   gym_frontdesk: ['/hrm?tab=me', '/gym', '/gym?tab=door', '/gym?tab=members', '/gym?tab=classes', '/gym?tab=floor', '/gym?tab=shop', '/gym?tab=growth', '/gym?tab=setup', '/notifications', '/security', '/support'],
@@ -1039,7 +1042,7 @@ export const BAKERY_ROLE_HREFS: Record<string, string[]> = {
 };
 
 export const RESTAURANT_ROLE_HREFS: Record<string, string[]> = {
-  restaurant_waiter: ['/hrm?tab=me', '/restaurant/tips', '/restaurant/till', '/restaurant/orders', '/restaurant?tab=tables', '/restaurant?tab=kitchen', '/restaurant/help', '/notifications', '/security'],
+  restaurant_waiter: ['/hrm?tab=me', '/restaurant/tips', '/restaurant/till', '/restaurant/orders', '/restaurant?tab=tables', '/restaurant?tab=kitchen', '/restaurant?tab=bar', '/restaurant/help', '/notifications', '/security'],
   restaurant_cashier: ['/hrm?tab=me', '/restaurant/tips',
     '/restaurant/till',
     '/restaurant/orders',
@@ -1048,11 +1051,12 @@ export const RESTAURANT_ROLE_HREFS: Record<string, string[]> = {
     '/restaurant/day-close',
     '/restaurant?tab=tables',
     '/restaurant?tab=kitchen',
+    '/restaurant?tab=bar',
     '/restaurant/help',
     '/notifications',
     '/security',
   ],
-  restaurant_kitchen: ['/hrm?tab=me', '/restaurant/tips', '/restaurant?tab=kitchen', '/restaurant?tab=waste', '/restaurant/ingredients?tab=menu', '/restaurant/help', '/notifications', '/security'],
+  restaurant_kitchen: ['/hrm?tab=me', '/restaurant/tips', '/restaurant?tab=kitchen', '/restaurant?tab=bar', '/restaurant?tab=waste', '/restaurant/ingredients?tab=menu', '/restaurant/help', '/notifications', '/security'],
 };
 
 const HOTEL_STAFF_LINKS = ['/notifications', '/security', '/support'];

@@ -19,6 +19,12 @@ from app.honesty import money_json, optional_honest_narrative, require_honest_na
 
 MAX_LINES = 30
 SITE_PAY_METHODS = {"cash", "mobile_money", "card"}
+DELIVERY_WORDS = {
+    "assigned": "A rider has been assigned",
+    "out": "On the way to you",
+    "delivered": "Delivered",
+}
+
 TRACK_WORDS = {
     "open": "Received",
     "sent": "In the kitchen",
@@ -202,6 +208,8 @@ async def track_order(db: AsyncSession, slug: str, order_id: str) -> dict:
     order = await db.get(m.RestaurantOrder, order_id)
     if order is None or order.tenant_id != tenant.id or not rs.channel_for_order(order.notes):
         raise HTTPException(status_code=404, detail="Order not found")
+    from app import restaurant_extras as extras
+
     presented = (await rs.present_orders(db, tenant.id, [order]))[0]
     return {
         "id": order.id,
@@ -210,6 +218,11 @@ async def track_order(db: AsyncSession, slug: str, order_id: str) -> dict:
         "status_words": TRACK_WORDS.get(order.status, order.status),
         "service": "delivery" if order.service_mode == "delivery" else "pickup",
         "total_amount": money_json(order.total_amount),
+        "delivery_status": order.delivery_status,
+        "delivery_words": DELIVERY_WORDS.get(order.delivery_status or "", ""),
+        "rider_name": order.rider_name if order.delivery_status in {"assigned", "out"} else None,
+        "rider_phone": order.rider_phone if order.delivery_status in {"assigned", "out"} else None,
+        "can_rate": order.status == "completed" and not await extras.feedback_given(db, tenant.id, order.id),
         "items": [
             {"name": item["name"], "quantity": item["quantity"], "line_total": item["line_total"]}
             for item in presented["items"]
