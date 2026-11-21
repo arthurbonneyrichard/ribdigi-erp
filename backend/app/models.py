@@ -6778,7 +6778,7 @@ class HrmSuccession(Base):
     position: Mapped[str] = mapped_column(String(160))
     incumbent_id: Mapped[str | None] = mapped_column(ForeignKey("hrm_employees.id"), nullable=True)
     successor_id: Mapped[str] = mapped_column(ForeignKey("hrm_employees.id"), index=True)
-    readiness: Mapped[str] = mapped_column(String(12))  # ready_now | one_two_years | three_plus
+    readiness: Mapped[str] = mapped_column(String(20))  # ready_now | one_two_years | three_plus
     note: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

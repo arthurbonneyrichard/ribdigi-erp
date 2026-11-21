@@ -95,6 +95,7 @@ async def test_each_band_alerts_once_even_if_the_alert_is_deleted(client, seeded
     assert (await fmcg_alerts.scan(db_session, seed["t1"].id))["batch"] == 0
     await _set_expiry(db_session, b.id, -2)
     assert (await fmcg_alerts.scan(db_session, seed["t1"].id))["batch"] == 1  # expired
+    await db_session.commit()  # the API reads through its own connection, so the scan must be saved first
     notes = await _notes(db_session, "batch_expiry")
     assert any("expired" in n.title.lower() for n in notes)
     log = (await ac.get(f"{API}/alerts/log", headers=await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha"))).json()["data"]
