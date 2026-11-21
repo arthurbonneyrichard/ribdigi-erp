@@ -29,6 +29,11 @@ function analyticsOrigin(env: Record<string, string | undefined>): string {
   }
 }
 
+// Google Maps (the staff map) loads its script from Google. Allowed only when the company set a key.
+function mapsOrigin(env: Record<string, string | undefined>): string {
+  return (env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '').trim() ? ' https://maps.googleapis.com https://maps.gstatic.com' : '';
+}
+
 export const REPORT_PATH = '/api/csp-report';
 
 const REST =
@@ -37,14 +42,14 @@ const REST =
   "worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https:";
 
 export function legacyPolicy(env: Record<string, string | undefined>): string {
-  return `default-src 'self'; script-src 'self' 'unsafe-inline'${analyticsOrigin(env)}; ${REST}`;
+  return `default-src 'self'; script-src 'self' 'unsafe-inline'${analyticsOrigin(env)}${mapsOrigin(env)}; ${REST}`;
 }
 
 export function noncePolicy(nonce: string, env: Record<string, string | undefined>, opts: { dev?: boolean; report?: boolean } = {}): string {
   // Dev server hot reload needs eval; production builds never do.
   const dev = opts.dev ? " 'unsafe-eval'" : '';
   const report = opts.report ? `; report-uri ${REPORT_PATH}` : '';
-  return `default-src 'self'; script-src 'self' 'nonce-${nonce}'${dev}${analyticsOrigin(env)}; ${REST}${report}`;
+  return `default-src 'self'; script-src 'self' 'nonce-${nonce}'${dev}${analyticsOrigin(env)}${mapsOrigin(env)}; ${REST}${report}`;
 }
 
 export function newNonce(): string {

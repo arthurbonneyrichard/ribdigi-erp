@@ -9,7 +9,8 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../../../lib/api';
-import TileMap, { type MapMarker } from '../../../components/TileMap';
+import StaffMap from '../../../components/StaffMap';
+import type { MapMarker } from '../../../components/TileMap';
 import './fmcg-selling.css';
 
 type Row = Record<string, any>;
@@ -131,7 +132,7 @@ export default function FmcgLive({ tab }: { tab: string }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16, alignItems: 'start' }}>
         <div>
-          <TileMap markers={markers} path={path} height={460} label="Staff locations map" onSelect={(id) => !id.startsWith('stop-') && setSelected(id === selected ? '' : id)} />
+          <StaffMap markers={markers} path={path} height={460} label="Staff locations map" onSelect={(id) => !id.startsWith('stop-') && setSelected(id === selected ? '' : id)} />
           <p className="fs-hint" style={{ marginTop: 6 }}>Green = live now. Amber = last seen a while ago. Grey = sharing off or off duty. Red = a stop of 10 minutes or more.</p>
         </div>
 
