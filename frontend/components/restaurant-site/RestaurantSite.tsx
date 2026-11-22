@@ -66,30 +66,52 @@ const readable = (bg: string) => (contrast(bg, '#FFFFFF') >= contrast(bg, '#1021
 /** The restaurant's own colours become the website's colour variables. Text colours are chosen for contrast. */
 const bannerSrc_ready = (s: Site) => Boolean(s.banner_version);
 
+const mixHex = (a: string, b: string, pa: number) =>
+  '#' +
+  [1, 3, 5]
+    .map((i) => Math.round(pa * parseInt(a.slice(i, i + 2), 16) + (1 - pa) * parseInt(b.slice(i, i + 2), 16)).toString(16).padStart(2, '0'))
+    .join('')
+    .toUpperCase();
+
 function designVars(d?: Design): React.CSSProperties {
   const vars: Record<string, string> = {};
   const own = (c?: string | null) => (c && HEX.test(c) ? c : null);
   const primary = own(d?.primary);
   const accent = own(d?.accent);
   const bg = own(d?.background);
+  const page = bg || '#FFFFFF';
+  const ink = readable(page);
   if (primary) {
     vars['--rs-forest'] = primary;
     vars['--rs-deep'] = primary;
     vars['--rs-on-primary'] = readable(primary);
-    vars['--rs-lime'] = contrast(accent || '#C8E86A', primary) >= 3 ? accent || '#C8E86A' : readable(primary);
+    const lime = contrast(accent || '#C8E86A', primary) >= 3 ? accent || '#C8E86A' : readable(primary);
+    vars['--rs-lime'] = lime;
+    vars['--rs-on-lime'] = readable(lime);
+    // Headings and outlines must show against the page. A main colour too close to the page falls back to plain text colour.
+    const clash = contrast(primary, page) < 4.5;
+    vars['--rs-heading'] = clash ? ink : primary;
+    if (contrast(primary, page) < 2.2) vars['--rs-btn-edge'] = ink;
+  } else if (bg) {
+    vars['--rs-heading'] = ink;
   }
-  if (accent) {
-    vars['--rs-brand'] = accent;
-    vars['--rs-brand-dark'] = `color-mix(in srgb, ${accent} 78%, black)`;
-    vars['--rs-on-accent'] = readable(accent);
-    vars['--rs-tint'] = `color-mix(in srgb, ${accent} 14%, white)`;
+  if (accent || bg) {
+    const a = accent || '#4AB012';
+    if (accent) {
+      vars['--rs-brand'] = accent;
+      vars['--rs-brand-dark'] = `color-mix(in srgb, ${accent} 78%, black)`;
+      vars['--rs-on-accent'] = readable(accent);
+      vars['--rs-on-brand-dark'] = readable(mixHex(accent, '#000000', 0.78));
+    }
+    // A soft wash of the highlight colour over the page, so text in the page's own colour stays readable on it.
+    vars['--rs-tint'] = `color-mix(in srgb, ${a} 16%, ${page})`;
   }
   if (bg) {
     vars['--rs-white'] = bg;
-    vars['--rs-mist'] = `color-mix(in srgb, ${bg} 90%, ${readable(bg) === '#FFFFFF' ? 'white' : 'black'})`;
-    vars['--rs-ink'] = readable(bg);
-    vars['--rs-muted'] = readable(bg) === '#FFFFFF' ? '#D6E3D8' : '#4D5D56';
-    vars['--rs-line'] = `color-mix(in srgb, ${readable(bg)} 18%, ${bg})`;
+    vars['--rs-mist'] = `color-mix(in srgb, ${bg} 90%, ${ink === '#FFFFFF' ? 'white' : 'black'})`;
+    vars['--rs-ink'] = ink;
+    vars['--rs-muted'] = ink === '#FFFFFF' ? '#D6E3D8' : '#4D5D56';
+    vars['--rs-line'] = `color-mix(in srgb, ${ink} 18%, ${bg})`;
   }
   return vars as React.CSSProperties;
 }

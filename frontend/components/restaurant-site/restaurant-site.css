@@ -314,6 +314,21 @@
   .rsite .rs-book-wrap{padding:28px 18px;border-radius:26px}
 }
 
+/* List layout: one dish per row, square photo on the left, name, text and price beside it. */
+.rsite .rs-grid:not(.sq){grid-template-columns:repeat(auto-fill,minmax(min(100%,460px),1fr));gap:14px}
+.rsite .rs-grid:not(.sq) .rs-dish{flex-direction:row;align-items:stretch;min-height:0}
+.rsite .rs-grid:not(.sq) .rs-dish:hover{transform:translateY(-2px)}
+.rsite .rs-grid:not(.sq) .rs-dish-pic,.rsite .rs-grid:not(.sq) .rs-dish-pic.noimg{flex:0 0 132px;width:132px;height:132px;aspect-ratio:1/1;align-self:center;margin:12px 0 12px 12px;border-radius:14px}
+.rsite .rs-grid:not(.sq) .rs-dish-body{justify-content:center;padding:14px 16px}
+.rsite .rs-grid:not(.sq) .rs-dish-body p{-webkit-line-clamp:2}
+.rsite .rs-grid:not(.sq) .rs-dish-foot{padding-top:6px}
+@media (max-width:520px){
+  .rsite .rs-grid:not(.sq){grid-template-columns:1fr}
+  .rsite .rs-grid:not(.sq) .rs-dish-pic,.rsite .rs-grid:not(.sq) .rs-dish-pic.noimg{flex-basis:104px;width:104px;height:104px;margin:10px 0 10px 10px}
+  .rsite .rs-grid:not(.sq) .rs-dish-body{padding:10px 12px}
+  .rsite .rs-grid:not(.sq) .rs-dish-foot{flex-wrap:wrap}
+}
+
 /* Corners */
 .rsite.rs-corners-soft .rs-dish,.rsite.rs-corners-soft .rs-book-card,.rsite.rs-corners-soft .rs-track-strip{border-radius:12px}
 .rsite.rs-corners-soft .rs-btn,.rsite.rs-corners-soft .rs-add,.rsite.rs-corners-soft .rs-bag-btn,.rsite.rs-corners-soft .rs-cats button,.rsite.rs-corners-soft .rs-search,.rsite.rs-corners-soft .rs-float,.rsite.rs-corners-soft .rs-step,.rsite.rs-corners-soft .rs-facts li{border-radius:10px}
@@ -332,3 +347,33 @@
 .rsite .rs-hero-photo{display:block;max-width:520px;margin-left:auto;margin-right:auto}
 @media (min-width:861px){.rsite .rs-hero-photo{margin-right:0}}
 .rsite .rs-hero-art:has(.rs-hero-photo){display:flex;align-items:center;justify-content:center}
+
+/* ===== Readability: every surface and text pair follows the restaurant's own colours ===== */
+.rsite{--rs-heading:var(--rs-forest)}
+.rsite .rs-links a:hover,.rsite .rs-kicker,.rsite .rs-dish-mono,.rsite .rs-dish-mono.drink,.rsite .rs-tag,.rsite .rs-check span,.rsite .rs-thanks p{color:var(--rs-ink) !important}
+.rsite .rs-hero h1,.rsite .rs-menu-head h2,.rsite .rs-group h3,.rsite .rs-book-done h2,.rsite .rs-sheet-head h2,.rsite .rs-total strong,.rsite .rs-steps li.done,.rsite .rs-closed h1,.rsite .rs-foot strong,.rsite .rs-dish-foot strong{color:var(--rs-heading)}
+.rsite .rs-dish-foot strong{color:var(--rs-ink)}
+.rsite .rs-dish-mono,.rsite .rs-dish-mono.drink{background:var(--rs-tint)}
+.rsite .rs-sheet,.rsite .rs-book-card,.rsite .rs-search,.rsite .rs-dish,.rsite .rs-tag,.rsite .rs-form input:not([type=checkbox]),.rsite .rs-form select,.rsite .rs-party button,.rsite .rs-pay button,.rsite .rs-choice button,.rsite .rs-step.small button,.rsite .rs-steps .dot{background:var(--rs-white);color:var(--rs-ink)}
+.rsite .rs-cats button{background:var(--rs-tint);color:var(--rs-ink)}
+.rsite .rs-x,.rsite .rs-back,.rsite .rs-note{background:var(--rs-mist);color:var(--rs-ink)}
+.rsite .rs-step.small span{color:var(--rs-ink)}
+.rsite .rs-choice button.on{background:var(--rs-tint);border-color:var(--rs-brand);color:var(--rs-ink)}
+.rsite .rs-choice button span{color:var(--rs-muted)}
+.rsite .rs-check{background:var(--rs-tint)}
+.rsite .rs-thanks{background:var(--rs-tint)}
+.rsite .rs-closed{background:var(--rs-mist);color:var(--rs-ink)}
+.rsite .rs-closed p{color:var(--rs-muted)}
+.rsite .rs-bag-btn span{background:var(--rs-lime);color:var(--rs-on-lime,var(--rs-forest))}
+.rsite .rs-btn-ghost{color:var(--rs-heading);border-color:var(--rs-heading);background:transparent}
+.rsite .rs-btn-main{border-color:var(--rs-btn-edge,transparent)}
+.rsite .rs-bag-btn,.rsite .rs-float{border:2px solid var(--rs-btn-edge,transparent)}
+.rsite .rs-cats button.on,.rsite .rs-party button.on,.rsite .rs-pay button.on{background:var(--rs-forest);color:var(--rs-on-primary,#fff);border-color:var(--rs-btn-edge,var(--rs-forest))}
+.rsite .rs-book-wrap{border:2px solid var(--rs-btn-edge,transparent)}
+.rsite .rs-hero.has-banner .rs-kicker{background:rgba(255,255,255,.2);color:#fff !important}
+.rsite .rs-hero.has-banner .rs-btn-main{border-color:#fff}
+.rsite .rs-hero.has-banner .rs-btn-ghost{background:rgba(255,255,255,.14);color:#fff;border-color:#fff}
+.rsite .rs-hero.has-banner .rs-facts li{background:rgba(0,0,0,.35);color:#fff;border-color:rgba(255,255,255,.3)}
+.rsite .rs-hero.has-banner h1{color:#fff}
+.rsite .rs-error{background:#FCE7E2;color:#8A2A12}
+.rsite .rs-add:hover{background:var(--rs-brand-dark);color:var(--rs-on-brand-dark,#fff)}

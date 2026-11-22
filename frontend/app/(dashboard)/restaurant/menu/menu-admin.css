@@ -37,15 +37,15 @@
   .dmenu-top{grid-template-columns:1fr}
   .dmenu-edit{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
-.dmenu-hint{margin:6px 0 0;font-size:13px;color:#4D5D56}
+.dmenu-hint{margin:6px 0 0;font-size:13px;color:color-mix(in srgb,currentColor 72%,transparent)}
 .dmenu-colour{display:inline-flex;align-items:center;gap:8px;margin-left:8px}
-.dmenu-colour small{color:#4D5D56}
+.dmenu-colour small{color:color-mix(in srgb,currentColor 72%,transparent)}
 
 .dmenu-presets{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 14px}
 .dmenu-preset{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:999px;border:2px solid var(--rd-line,#d4e5c4);background:var(--rd-panel,#fff);color:inherit;font-weight:700;cursor:pointer}
 .dmenu-preset .sw{width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.15)}
 .dmenu-hero-image{display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px;align-items:center;margin:0 0 16px;padding:14px;border:1px solid var(--rd-line,#d4e5c4);border-radius:16px}
-.dmenu-hero-thumb{aspect-ratio:16/10;border-radius:12px;overflow:hidden;background:rgba(127,127,127,.15);display:flex;align-items:center;justify-content:center;font-size:13px;color:#4D5D56}
+.dmenu-hero-thumb{aspect-ratio:16/10;border-radius:12px;overflow:hidden;background:rgba(127,127,127,.15);display:flex;align-items:center;justify-content:center;font-size:13px;color:color-mix(in srgb,currentColor 72%,transparent)}
 .dmenu-hero-thumb img{width:100%;height:100%;object-fit:cover}
 .dmenu-hero-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .dmenu-upload{display:inline-flex;align-items:center;min-height:42px;padding:0 18px;border-radius:12px;background:#4AB012;color:#10211B;font-weight:800;cursor:pointer}
@@ -67,14 +67,14 @@
 .dmenu-colour-row{display:grid;grid-template-columns:48px minmax(0,1fr) auto auto;gap:12px;align-items:center}
 .dmenu-colour-row input[type=color]{width:48px;height:48px;padding:0;border:2px solid var(--rd-line,#d4e5c4);border-radius:12px;background:none;cursor:pointer}
 .dmenu-colour-row .t{display:flex;flex-direction:column;min-width:0}
-.dmenu-colour-row .t small{color:#4D5D56}
-.dmenu-colour-row code{font-size:12.5px;color:#4D5D56}
+.dmenu-colour-row .t small{color:color-mix(in srgb,currentColor 72%,transparent)}
+.dmenu-colour-row code{font-size:12.5px;color:color-mix(in srgb,currentColor 72%,transparent)}
 .dmenu-choice{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px}
-.dmenu-choice .l{min-width:92px;font-weight:700;color:#4D5D56;font-size:14px}
+.dmenu-choice .l{min-width:92px;font-weight:700;color:color-mix(in srgb,currentColor 72%,transparent);font-size:14px}
 .dmenu-choice .opts{display:inline-flex;flex-wrap:wrap;gap:4px;padding:4px;border-radius:12px;background:rgba(127,127,127,.12)}
 .dmenu-choice .opts button{min-height:36px;padding:0 14px;border:0;border-radius:9px;background:transparent;color:inherit;font-weight:700;cursor:pointer}
 .dmenu-choice .opts button.on{background:#fff;color:#10211B;box-shadow:0 1px 4px rgba(0,0,0,.18)}
-.dmenu-field{display:flex;flex-direction:column;gap:4px;margin-top:8px;font-weight:700;font-size:14px;color:#4D5D56}
+.dmenu-field{display:flex;flex-direction:column;gap:4px;margin-top:8px;font-weight:700;font-size:14px;color:color-mix(in srgb,currentColor 72%,transparent)}
 .dmenu-field input{min-height:44px;border-radius:12px;border:2px solid var(--rd-line,#d4e5c4);padding:0 12px;font-size:15px;color:inherit;background:var(--rd-panel,#fff)}
 .dmenu-design-preview{position:sticky;top:12px;display:flex;flex-direction:column;gap:10px}
 .dmenu-preview-bar{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -120,7 +120,7 @@
 .dmenu-remove:hover{background:#b42318;color:#fff}
 .dmenu-styles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
 .dmenu-style{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px;border:2px solid var(--rd-line,#d4e5c4);border-radius:14px;background:var(--rd-panel,#fff);color:inherit;cursor:pointer;text-align:left}
-.dmenu-style small{color:#4D5D56}
+.dmenu-style small{color:color-mix(in srgb,currentColor 72%,transparent)}
 .dmenu-style .pic{display:block;position:relative;width:100%;aspect-ratio:16/9;margin-bottom:6px;border-radius:8px;background:rgba(127,127,127,.18);overflow:hidden}
 .dmenu-style .pic i{position:absolute;border-radius:3px;background:rgba(127,127,127,.55)}
 .dmenu-style .pic.full{background:linear-gradient(135deg,#6b7280,#9ca3af)}
