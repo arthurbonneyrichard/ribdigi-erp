@@ -18,6 +18,7 @@ import {
   type Row,
   whereWords,
 } from '../../../../lib/restaurantDesk';
+import GuestExtras from './GuestExtras';
 import '../restaurant-desk.css';
 
 type Sort = 'recent' | 'visits' | 'spent';
@@ -247,6 +248,7 @@ export default function RestaurantGuestsPage() {
           </aside>
         </div>
       ) : null}
+      <GuestExtras />
     </div>
   );
 }

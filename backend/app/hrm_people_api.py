@@ -9,7 +9,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -133,6 +133,26 @@ class TrainingRecordBody(BaseModel):
     completed_on: date
     result: Annotated[str, Field(min_length=1, max_length=120)] | None = None
     certificate_ref: Annotated[str, Field(min_length=1, max_length=120)] | None = None
+    cost: NonNegativeMoneyValue | None = None
+
+
+class TrainingBudgetBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    year: Annotated[int, Field(ge=2000, le=2100)]
+    amount: NonNegativeMoneyValue
+
+
+class InterviewBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    scheduled_at: datetime
+    location: Annotated[str, Field(min_length=2, max_length=200)] | None = None
+    panel: Annotated[list[UuidIdValue], Field(min_length=1, max_length=10)]
+
+
+class InterviewScoreBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    score: Annotated[int, Field(ge=1, le=100)]
+    comment: Annotated[str, Field(min_length=1, max_length=1000)] | None = None
 
 
 class ContractBody(BaseModel):
@@ -223,9 +243,28 @@ async def vacancies(claims=_r(), db: AsyncSession = Depends(get_db)):
 @router.post("/vacancies")
 async def vacancy_add(payload: VacancyBody, claims=_w(), db: AsyncSession = Depends(get_db)):
     svc.job(claims, "recruitment")
-    row = await people.add_vacancy(db, claims["tenant_id"], payload, user_id=claims.get("sub"))
+    # With "vacancy approval" on, an HR manager or company admin opens a job directly and anyone
+    # else proposes it for approval. Off (the default), everyone with hiring access opens jobs.
+    needs_approval = bool((await svc.get_settings(db, claims["tenant_id"])).vacancy_approval)
+    row = await people.add_vacancy(db, claims["tenant_id"], payload, user_id=claims.get("sub"), auto_open=svc.runs_hr(claims) or not needs_approval)
     await db.commit()
-    return _env(people.serialize_vacancy(row), "Vacancy opened")
+    return _env(people.serialize_vacancy(row), "Vacancy opened" if row.status == "open" else "Sent for approval")
+
+
+class VacancyDecisionBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    approve: bool
+    note: Annotated[str, Field(min_length=2, max_length=500)] | None = None
+
+
+@router.post("/vacancies/{vacancy_id}/decision")
+async def vacancy_decision(vacancy_id: UuidIdValue, payload: VacancyDecisionBody, claims=_w(), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "recruitment")
+    if not svc.runs_hr(claims):
+        raise HTTPException(status_code=403, detail={"code": "HRM_ROLE_JOB", "message": "An HR manager approves new jobs."})
+    row = await people.decide_vacancy(db, claims["tenant_id"], vacancy_id, approve=payload.approve, note=payload.note, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(people.serialize_vacancy(row), "Vacancy opened" if row.status == "open" else "Vacancy turned down")
 
 
 @router.post("/vacancies/{vacancy_id}/close")
@@ -367,7 +406,8 @@ async def trainings(claims=_r(), db: AsyncSession = Depends(get_db)):
     return _env(
         {
             "courses": [people.serialize_training(r) for r in await people.list_trainings(db, tid)],
-            "records": [await people.serialize_record(db, r) for r in await people.list_records(db, tid)],
+            "records": [await people.serialize_record(db, r, with_cost=svc.sees_pay(claims)) for r in await people.list_records(db, tid)],
+            "budget": await people.training_budget(db, tid, date.today().year) if svc.sees_pay(claims) else None,
             "gaps": await people.training_gaps(db, tid),
         }
     )
@@ -386,7 +426,75 @@ async def training_record(payload: TrainingRecordBody, claims=_w(), db: AsyncSes
     svc.job(claims, "training")
     row = await people.record_training(db, claims["tenant_id"], payload, user_id=claims.get("sub"))
     await db.commit()
-    return _env(await people.serialize_record(db, row), "Training recorded")
+    return _env(await people.serialize_record(db, row, with_cost=svc.sees_pay(claims)), "Training recorded")
+
+
+@router.get("/trainings/budget")
+async def training_budget_get(year: int | None = None, claims=_r(), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "training")
+    if not svc.sees_pay(claims):
+        raise HTTPException(status_code=403, detail="Training budgets are for the HR manager")
+    return _env(await people.training_budget(db, claims["tenant_id"], year or date.today().year))
+
+
+@router.put("/trainings/budget")
+async def training_budget_set(payload: TrainingBudgetBody, claims=_w(), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "training")
+    if not svc.sees_pay(claims):
+        raise HTTPException(status_code=403, detail="Training budgets are for the HR manager")
+    await people.set_training_budget(db, claims["tenant_id"], payload.year, payload.amount, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(await people.training_budget(db, claims["tenant_id"], payload.year), "Budget saved")
+
+
+# --- Interview panels ----------------------------------------------------------------------
+
+
+@router.post("/candidates/{candidate_id}/interviews")
+async def interview_schedule(candidate_id: UuidIdValue, payload: InterviewBody, claims=_w(), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "recruitment")
+    row = await people.schedule_interview(db, claims["tenant_id"], candidate_id, payload, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(await people.serialize_interview(db, row, with_scores=True), "Interview scheduled")
+
+
+@router.get("/candidates/{candidate_id}/interviews")
+async def interview_list(candidate_id: UuidIdValue, claims=_r(), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "recruitment")
+    rows = await people.list_interviews(db, claims["tenant_id"], candidate_id)
+    return _env([await people.serialize_interview(db, r, with_scores=True) for r in rows])
+
+
+@router.post("/interviews/{interview_id}/done")
+async def interview_done(interview_id: UuidIdValue, claims=_w(), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "recruitment")
+    row = await people.finish_interview(db, claims["tenant_id"], interview_id, cancel=False, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(await people.serialize_interview(db, row, with_scores=True), "Interview closed")
+
+
+@router.post("/interviews/{interview_id}/cancel")
+async def interview_cancel(interview_id: UuidIdValue, claims=_w(), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "recruitment")
+    row = await people.finish_interview(db, claims["tenant_id"], interview_id, cancel=True, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(await people.serialize_interview(db, row, with_scores=True), "Interview cancelled")
+
+
+@router.get("/me/interviews")
+async def my_interviews(claims=_r(), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "self")
+    me = await svc.employee_for_user(db, claims["tenant_id"], claims.get("sub"))
+    return _env(await people.interviews_for_panelist(db, claims["tenant_id"], me.id))
+
+
+@router.post("/me/interviews/{interview_id}/score")
+async def my_interview_score(interview_id: UuidIdValue, payload: InterviewScoreBody, claims=_r(), db: AsyncSession = Depends(get_db)):
+    svc.job(claims, "self")
+    me = await svc.employee_for_user(db, claims["tenant_id"], claims.get("sub"))
+    await people.score_interview(db, claims["tenant_id"], interview_id, me.id, payload)
+    await db.commit()
+    return _env({"scored": True}, "Score saved")
 
 
 # --- Contracts -----------------------------------------------------------------------------

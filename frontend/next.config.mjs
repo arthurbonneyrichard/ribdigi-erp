@@ -6,22 +6,7 @@ function apiProxyTarget() {
   return raw.replace(/\/$/, '');
 }
 
-// Analytics is optional: its host joins script-src only when NEXT_PUBLIC_UMAMI_SRC is set.
-// blob: frames and media show attachment previews.
-function analyticsOrigin() {
-  const src = (process.env.NEXT_PUBLIC_UMAMI_SRC || '').trim();
-  if (!src || !(process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID || '').trim()) return '';
-  try {
-    return ` ${new URL(src).origin}`;
-  } catch {
-    return '';
-  }
-}
-const CSP =
-  `default-src 'self'; script-src 'self' 'unsafe-inline'${analyticsOrigin()}; ` +
-  "style-src 'self' 'unsafe-inline'; font-src 'self' data:; " +
-  "img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' https: wss:; frame-src 'self' https: blob:; " +
-  "worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https:";
+// Content-Security-Policy is built per request in proxy.ts (lib/csp.ts): scripts need a fresh nonce.
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -48,11 +33,7 @@ const nextConfig = {
       { key: 'X-Content-Type-Options', value: 'nosniff' },
       { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
       { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
-      { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=()' },
-      // Dev needs eval for hot reload, so the full policy is only enforced on production builds.
-      process.env.NODE_ENV === 'production'
-        ? { key: 'Content-Security-Policy', value: CSP }
-        : { key: 'Content-Security-Policy-Report-Only', value: CSP },
+      { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=(self)' },
     ];
     return [
       { source: '/:path*', headers: base },

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import TillMomoPrompt from '../../../components/TillMomoPrompt';
 import PosHoldLayaway from '../../../components/PosHoldLayaway';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -2999,9 +3000,9 @@ function PosTill() {
                         : `${session.store_name || 'This store'} has no products in stock to sell yet. Add products and their stock in Inventory, then come back.`}
                 </p>
                 {!lastBrowseQuery.trim() && !categoryFilter ? (
-                  <a className="tpos-btn" href="/inventory" aria-label={restaurantTill ? 'Go to Ingredients' : 'Go to Inventory'}>
+                  <Link className="tpos-btn" href="/inventory" aria-label={restaurantTill ? 'Go to Ingredients' : 'Go to Inventory'}>
                     {restaurantTill ? 'Go to Ingredients' : 'Go to Inventory'}
-                  </a>
+                  </Link>
                 ) : (
                 <button
                   type="button"

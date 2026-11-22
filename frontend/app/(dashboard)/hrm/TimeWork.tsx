@@ -9,6 +9,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../../lib/api';
 import { formatMoney } from '../../../lib/format';
+import Rfid from './Rfid';
 
 type Row = Record<string, any>;
 
@@ -442,6 +443,7 @@ export function TimeWork({ tab, seesPay }: { tab: string; seesPay: boolean }) {
               </tbody>
             </table>
           </section>
+          <Rfid canAddReader={seesPay} />
         </>
       ) : null}
     </>

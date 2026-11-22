@@ -24,10 +24,13 @@ ARG NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 ARG NEXT_PUBLIC_UMAMI_SRC=
 ARG NEXT_PUBLIC_UMAMI_WEBSITE_ID=
 ARG NEXT_PUBLIC_UMAMI_DOMAINS=erp.ribdigihouse.com
+# Optional tile provider for the staff map (OpenStreetMap when empty).
+ARG NEXT_PUBLIC_MAP_TILE_URL=
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
     NEXT_PUBLIC_UMAMI_SRC=${NEXT_PUBLIC_UMAMI_SRC} \
     NEXT_PUBLIC_UMAMI_WEBSITE_ID=${NEXT_PUBLIC_UMAMI_WEBSITE_ID} \
-    NEXT_PUBLIC_UMAMI_DOMAINS=${NEXT_PUBLIC_UMAMI_DOMAINS}
+    NEXT_PUBLIC_UMAMI_DOMAINS=${NEXT_PUBLIC_UMAMI_DOMAINS} \
+    NEXT_PUBLIC_MAP_TILE_URL=${NEXT_PUBLIC_MAP_TILE_URL}
 COPY --from=deps /app/node_modules ./node_modules
 # Stamp is in the frontend context so a rebuild cannot reuse an image whose
 # context still hashes as the old production tree.

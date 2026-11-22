@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { api } from './api';
 import { createPaintGet, invalidatePrefetchCache, peekPrefetch, prefetchGet } from './prefetchCache';
 
 function installLocalStorage(tenant: string | null) {
@@ -119,6 +120,38 @@ test('paint getter reuses the first GET then forces after done()', async () => {
     const second = await paint.get('/sales/invoices');
     assert.equal(second.data.started, 2);
     assert.equal(started, 2);
+  } finally {
+    globalThis.fetch = origFetch;
+    invalidatePrefetchCache();
+  }
+});
+
+test('a write makes cached lists stale so the new row shows straight away', async () => {
+  const tenantA = '11111111-1111-4111-8111-111111111111';
+  let gets = 0;
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    const method = (init?.method || 'GET').toUpperCase();
+    if (method === 'GET') gets += 1;
+    return {
+      ok: true,
+      status: 200,
+      headers: { get: () => null },
+      json: async () => ({ data: method === 'GET' ? { gets } : { saved: true } }),
+    } as unknown as Response;
+  }) as typeof fetch;
+
+  try {
+    installLocalStorage(tenantA);
+    invalidatePrefetchCache();
+    const before = await prefetchGet('/catalog/categories');
+    assert.equal(before.data.gets, 1);
+    assert.equal((await prefetchGet('/catalog/categories')).data.gets, 1, 'reused inside the TTL');
+    await new Promise((r) => setTimeout(r, 2));
+    await api('/catalog/categories', { method: 'POST', body: JSON.stringify({ name: 'Baby Care' }) });
+    assert.equal(peekPrefetch('/catalog/categories'), null);
+    const after = await prefetchGet('/catalog/categories');
+    assert.equal(after.data.gets, 2);
   } finally {
     globalThis.fetch = origFetch;
     invalidatePrefetchCache();

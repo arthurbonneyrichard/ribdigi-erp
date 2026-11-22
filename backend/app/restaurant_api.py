@@ -28,7 +28,8 @@ _WAITER_WRITES = (
     r"POST /tables/[^/]+/(hold|release)",
     r"POST /orders",
     r"PATCH /orders/[^/]+",
-    r"POST /orders/[^/]+/(send|cancel|split)",
+    r"POST /orders/[^/]+/(send|cancel|split|move-table|merge|guest|rider|dispatch|delivered)",
+    r"POST /feedback",
     r"POST /bookings",
     r"PATCH /bookings/[^/]+",
     r"POST /bookings/[^/]+/(seat|finish|cancel)",
@@ -44,6 +45,7 @@ _RESTAURANT_ROLE_WRITES: dict[str, tuple[str, ...]] = {
         r"POST /till/momo(/[^/]+/otp)?",
         r"POST /till/shift/open",
         r"POST /till/shift/[^/]+/(cash|close)",
+        r"POST /gift-cards",
         r"PUT /sold-out",
     ),
     "restaurant_kitchen": (
@@ -55,8 +57,8 @@ _RESTAURANT_ROLE_WRITES: dict[str, tuple[str, ...]] = {
     ),
 }
 _RESTAURANT_JOB_WORDS = {
-    "restaurant_waiter": "A waiter takes orders and seats guests. Payment, refunds and menu changes need a cashier or manager.",
-    "restaurant_cashier": "A cashier takes orders and payment. Refunds, menu and settings changes need a manager.",
+    "restaurant_waiter": "A waiter takes orders and seats guests. Payment, refunds and menu changes need a cashier or manager. Discounts and comps need a manager.",
+    "restaurant_cashier": "A cashier takes orders and payment. Discounts, comps, refunds, menu and settings changes need a manager.",
     "restaurant_kitchen": "The kitchen prepares orders, marks dishes sold out and records waste. Orders and payment are taken at the till.",
 }
 
@@ -909,9 +911,10 @@ async def restaurant_send(
 class RestaurantTenderBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    method: Literal["cash", "card", "wallet", "mobile_money"]
+    method: Literal["cash", "card", "wallet", "mobile_money", "gift_card", "loyalty"]
     amount: PositiveMoneyValue
     # A Mobile Money prompt's reference (from /restaurant/till/momo), checked as paid before it counts.
+    # For a gift card it is the card code. Loyalty points need the guest on the bill (1 point = 1 currency unit).
     reference: Annotated[str, Field(min_length=4, max_length=100)] | None = None
 
 
@@ -1041,6 +1044,239 @@ async def restaurant_split(
         {"order": restaurant_svc.serialize_order(first), "new_order": restaurant_svc.serialize_order(second)},
         f"Bill split: {second.order_number} is the new bill",
     )
+
+
+class RestaurantMoveTableBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    table_id: UuidIdValue
+
+
+class RestaurantMergeBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    into_order_id: UuidIdValue
+
+
+@router.post("/orders/{order_id}/move-table")
+async def restaurant_move_table(
+    order_id: str,
+    payload: RestaurantMoveTableBody,
+    claims=Depends(require_permission("restaurant", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await restaurant_svc.move_order_table(
+        db, claims["tenant_id"], order_id, table_id=payload.table_id, user_id=claims.get("sub")
+    )
+    await db.commit()
+    return _env(restaurant_svc.serialize_order(row), "Bill moved to the new table")
+
+
+@router.post("/orders/{order_id}/merge")
+async def restaurant_merge(
+    order_id: str,
+    payload: RestaurantMergeBody,
+    claims=Depends(require_permission("restaurant", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await restaurant_svc.merge_orders(
+        db, claims["tenant_id"], order_id, into_order_id=payload.into_order_id, user_id=claims.get("sub")
+    )
+    await db.commit()
+    return _env(restaurant_svc.serialize_order(row), f"Bills merged into {row.order_number}")
+
+
+class RestaurantDiscountBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["percent", "amount", "comp", "clear"]
+    value: Annotated[float, Field(ge=0, le=1000000, allow_inf_nan=False)] = 0
+    reason: Annotated[str, Field(max_length=200)] | None = None
+
+
+class RestaurantGuestBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    phone: Annotated[str, Field(min_length=6, max_length=30)]
+    name: Annotated[str, Field(max_length=180)] | None = None
+
+
+class RestaurantRiderBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: Annotated[str, Field(min_length=2, max_length=120)]
+    phone: Annotated[str, Field(max_length=30)] | None = None
+
+
+class RestaurantGiftCardBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    amount: PositiveMoneyValue
+    method: Literal["cash", "card", "mobile_money", "wallet"]
+    buyer: Annotated[str, Field(max_length=120)] | None = None
+
+
+class RestaurantFeedbackBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    rating: Annotated[int, Field(ge=1, le=5)]
+    comment: Annotated[str, Field(max_length=1000)] | None = None
+    guest_name: Annotated[str, Field(max_length=180)] | None = None
+    order_number: Annotated[str, Field(max_length=40)] | None = None
+
+
+class SiteFeedbackBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    rating: Annotated[int, Field(ge=1, le=5)]
+    comment: Annotated[str, Field(max_length=1000)] | None = None
+
+
+@router.post("/orders/{order_id}/discount")
+async def restaurant_discount(
+    order_id: UuidIdValue,
+    payload: RestaurantDiscountBody,
+    claims=Depends(require_permission("restaurant", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import restaurant_extras as extras
+
+    row = await extras.set_discount(
+        db, claims["tenant_id"], order_id, kind=payload.kind, value=payload.value, reason=payload.reason,
+        user_id=claims.get("sub"),
+    )
+    await db.commit()
+    return _env(restaurant_svc.serialize_order(row), "Discount taken off the bill" if payload.kind == "clear" else "Discount applied")
+
+
+@router.post("/orders/{order_id}/guest")
+async def restaurant_attach_guest(
+    order_id: UuidIdValue,
+    payload: RestaurantGuestBody,
+    claims=Depends(require_permission("restaurant", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import restaurant_extras as extras
+
+    data = await extras.attach_guest(
+        db, claims["tenant_id"], order_id, phone=payload.phone, name=payload.name, user_id=claims.get("sub")
+    )
+    await db.commit()
+    return _env(data, "Guest added to the bill")
+
+
+@router.get("/orders/{order_id}/guest")
+async def restaurant_order_guest(
+    order_id: UuidIdValue,
+    claims=Depends(require_permission("restaurant", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import restaurant_extras as extras
+
+    return _env(await extras.guest_for_order(db, claims["tenant_id"], order_id, claims.get("sub")))
+
+
+@router.post("/orders/{order_id}/rider")
+async def restaurant_assign_rider(
+    order_id: UuidIdValue,
+    payload: RestaurantRiderBody,
+    claims=Depends(require_permission("restaurant", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import restaurant_extras as extras
+
+    row = await extras.assign_rider(
+        db, claims["tenant_id"], order_id, name=payload.name, phone=payload.phone, user_id=claims.get("sub")
+    )
+    await db.commit()
+    return _env(restaurant_svc.serialize_order(row), "Rider assigned")
+
+
+@router.post("/orders/{order_id}/dispatch")
+async def restaurant_dispatch(
+    order_id: UuidIdValue,
+    claims=Depends(require_permission("restaurant", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import restaurant_extras as extras
+
+    row = await extras.dispatch_order(db, claims["tenant_id"], order_id, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(restaurant_svc.serialize_order(row), "Order is out for delivery")
+
+
+@router.post("/orders/{order_id}/delivered")
+async def restaurant_delivered(
+    order_id: UuidIdValue,
+    claims=Depends(require_permission("restaurant", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import restaurant_extras as extras
+
+    row = await extras.deliver_order(db, claims["tenant_id"], order_id, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(restaurant_svc.serialize_order(row), "Order delivered")
+
+
+@router.get("/gift-cards")
+async def restaurant_gift_cards(
+    claims=Depends(require_permission("restaurant", "read")), db: AsyncSession = Depends(get_db)
+):
+    from app import restaurant_extras as extras
+
+    return _env(await extras.list_gift_cards(db, claims["tenant_id"]))
+
+
+@router.get("/gift-cards/{code}")
+async def restaurant_gift_card(
+    code: Annotated[str, Field(min_length=3, max_length=32)],
+    claims=Depends(require_permission("restaurant", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import restaurant_extras as extras
+
+    return _env(await extras.check_gift_card(db, claims["tenant_id"], code))
+
+
+@router.post("/gift-cards")
+async def restaurant_sell_gift_card(
+    payload: RestaurantGiftCardBody,
+    claims=Depends(require_permission("restaurant", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import restaurant_extras as extras
+
+    row = await extras.sell_gift_card(
+        db, claims["tenant_id"], amount=payload.amount, method=payload.method, buyer=payload.buyer,
+        user_id=claims.get("sub"),
+    )
+    await db.commit()
+    return _env(extras.serialize_card(row), f"Gift card {row.code} sold")
+
+
+@router.get("/feedback")
+async def restaurant_feedback_board(
+    claims=Depends(require_permission("restaurant", "read")), db: AsyncSession = Depends(get_db)
+):
+    from app import restaurant_extras as extras
+
+    return _env(await extras.feedback_board(db, claims["tenant_id"]))
+
+
+@router.post("/feedback")
+async def restaurant_add_feedback(
+    payload: RestaurantFeedbackBody,
+    claims=Depends(require_permission("restaurant", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import restaurant_extras as extras
+
+    row = await extras.add_feedback(
+        db, claims["tenant_id"], rating=payload.rating, comment=payload.comment, guest_name=payload.guest_name,
+        order_id=None, order_number=payload.order_number, source="staff", user_id=claims.get("sub"),
+    )
+    await db.commit()
+    return _env(extras.serialize_feedback(row), "Feedback saved")
 
 
 @router.post("/orders/{order_id}/cancel")
@@ -1980,6 +2216,19 @@ async def public_restaurant_site_track(slug: str, order_id: UuidIdValue, db: Asy
     from app import restaurant_site as site_svc
 
     return _env(await site_svc.track_order(db, slug, order_id))
+
+
+@site_public_router.post("/{slug}/order/{order_id}/feedback")
+async def public_restaurant_site_feedback(
+    slug: str, order_id: UuidIdValue, payload: SiteFeedbackBody, db: AsyncSession = Depends(get_db)
+):
+    from app import restaurant_extras as extras
+    from app import restaurant_site as site_svc
+
+    tenant, _booking, _ordering = await site_svc._site_tenant(db, slug)
+    await extras.site_feedback(db, tenant.id, order_id, rating=payload.rating, comment=payload.comment)
+    await db.commit()
+    return _env(await site_svc.track_order(db, slug, order_id), "Thank you for your feedback")
 
 
 @site_public_router.post("/{slug}/book")

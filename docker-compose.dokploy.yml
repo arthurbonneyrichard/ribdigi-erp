@@ -62,6 +62,7 @@ services:
         NEXT_PUBLIC_UMAMI_SRC: ${NEXT_PUBLIC_UMAMI_SRC:-}
         NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-}
         NEXT_PUBLIC_UMAMI_DOMAINS: ${NEXT_PUBLIC_UMAMI_DOMAINS:-erp.ribdigihouse.com}
+        NEXT_PUBLIC_MAP_TILE_URL: ${NEXT_PUBLIC_MAP_TILE_URL:-}
     # Rebuild from this checkout. A cached frontend image omits the sign-in
     # status handling and can keep serving an older page against a new API.
     pull_policy: build
@@ -72,6 +73,10 @@ services:
       HOSTNAME: 0.0.0.0
       # Server-side guide check calls /me on the compose network, not the public URL.
       API_INTERNAL_URL: http://backend:8000/api/v1
+      # Script policy: legacy (today, default) | report-only (old policy enforced, strict one reported)
+      # | enforce (strict nonce policy). Read at run time, so changing it needs a restart, not a rebuild.
+      # See docs/O3_CSP_NONCE_ROLLOUT.md.
+      CSP_MODE: ${CSP_MODE:-legacy}
     expose:
       - "3000"
     networks:

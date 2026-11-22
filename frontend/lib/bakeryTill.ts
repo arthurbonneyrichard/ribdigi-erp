@@ -44,4 +44,9 @@ export async function openPrintable(path: string): Promise<void> {
   page.document.open();
   page.document.write(text);
   page.document.close();
+  // The server pages used to print themselves with an inline script; the strict script policy blocks that.
+  if (/window\.print\(\)/.test(text)) {
+    page.focus();
+    setTimeout(() => page.print(), 300);
+  }
 }

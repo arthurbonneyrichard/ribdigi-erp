@@ -93,7 +93,7 @@ import {
 } from '../lib/companyLogo';
 import OnboardingChecklist from './OnboardingChecklist';
 import StoreSwitcher from './StoreSwitcher';
-import LoginLegalLinks from './LoginLegalLinks';
+import StaffLocationSharer from './StaffLocationSharer';
 
 /** Tenant ERP navigation (business workspace).
  * Hotel/FMCG nav items are packageable but only appear when `/me.enabled_modules`
@@ -752,6 +752,8 @@ const NAV_ITEM_ICON: Record<string, string> = {
   '/bakery?tab=trade': 'customers',
   '/bakery?tab=baking': 'inventory',
   '/bakery?tab=waste': 'audit',
+  '/bakery?tab=safety': 'audit',
+  '/bakery?tab=regulars': 'customers',
   '/bakery?tab=stock': 'inventory',
   '/bakery?tab=expenses': 'expenses',
   '/bakery?tab=reports': 'reports',
@@ -2334,6 +2336,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             : undefined
         }
       >
+        {isPlatformOwner ? null : <StaffLocationSharer industry={industry} />}
         <div className="topbar">
           <div className="topbar-left">
             {pathname === '/pos' ? (
@@ -2511,9 +2514,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             </div>
           ) : (
             children
-          )}
-          {pathname === '/pos' || pathname === '/restaurant/till' || kiosk || tillOnly ? null : (
-            <LoginLegalLinks className="app-legal" />
           )}
         </div>
       </main>

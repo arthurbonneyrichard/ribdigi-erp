@@ -72,6 +72,7 @@ class CheckInBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     member_id: UuidIdValue
+    branch_id: UuidIdValue | None = None
 
 
 class ClassBody(BaseModel):
@@ -81,12 +82,14 @@ class ClassBody(BaseModel):
     trainer_name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
     starts_at: datetime
     capacity: Annotated[int, Field(ge=1, le=500)]
+    repeat_weeks: Annotated[int, Field(ge=1, le=52)] = 1
 
 
 class BookBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     member_id: UuidIdValue
+    waitlist: bool = False
 
 
 class BookingStatus(BaseModel):
@@ -222,7 +225,7 @@ async def gym_check_in(
     payload: CheckInBody, claims=Depends(require_permission("gym", "write")), db: AsyncSession = Depends(get_db)
 ):
     svc.job(claims, "door")
-    data = await svc.check_in(db, claims["tenant_id"], member_id=payload.member_id, user_id=claims.get("sub"))
+    data = await svc.check_in(db, claims["tenant_id"], member_id=payload.member_id, user_id=claims.get("sub"), branch_id=payload.branch_id)
     await db.commit()
     return _env(data, data["message"])
 
@@ -255,17 +258,17 @@ async def gym_class_book(
     db: AsyncSession = Depends(get_db),
 ):
     svc.job(claims, "classes")
-    row = await svc.book_class(db, claims["tenant_id"], class_id, member_id=payload.member_id, user_id=claims.get("sub"))
+    row = await svc.book_class(db, claims["tenant_id"], class_id, member_id=payload.member_id, user_id=claims.get("sub"), waitlist=payload.waitlist)
     await db.commit()
     return _env(await svc.present_class(db, row), "Booked")
 
 
 @router.post("/classes/{class_id}/cancel")
 async def gym_class_cancel(
-    class_id: UuidIdValue, claims=Depends(require_permission("gym", "write")), db: AsyncSession = Depends(get_db)
+    class_id: UuidIdValue, series: bool = False, claims=Depends(require_permission("gym", "write")), db: AsyncSession = Depends(get_db)
 ):
     svc.job(claims, "classes")
-    await svc.cancel_class(db, claims["tenant_id"], class_id)
+    await svc.cancel_class(db, claims["tenant_id"], class_id, whole_series=series)
     await db.commit()
     return _env({"id": class_id}, "Class cancelled")
 

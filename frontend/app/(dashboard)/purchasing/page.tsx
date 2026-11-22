@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import FormModal from '../../../components/FormModal';
@@ -3996,9 +3997,9 @@ export default function Page() {
                     {formatNumber(inv.paid_amount ?? 0, formatPrefs)} · left {formatNumber(inv.balance_due, formatPrefs)}
                   </span>
                   {inv.supplier_id ? (
-                    <a href={`/credit?kind=payable&panel=pay&supplier=${inv.supplier_id}&bill=${inv.id}`}>
+                    <Link href={`/credit?kind=payable&panel=pay&supplier=${inv.supplier_id}&bill=${inv.id}`}>
                       Pay {inv.invoice_number}
-                    </a>
+                    </Link>
                   ) : null}
                 </p>
               ))
@@ -4727,13 +4728,13 @@ export default function Page() {
             </h3>
             {(selectedInvoice.status === 'unpaid' || selectedInvoice.status === 'partial' || selectedInvoice.status === 'overdue') && selectedInvoice.supplier_id ? (
               <p style={{ marginTop: 0 }}>
-                <a
+                <Link
                   className="btn-primary"
                   href={`/credit?kind=payable&panel=pay&supplier=${selectedInvoice.supplier_id}&bill=${selectedInvoice.id}`}
                   aria-label={`Record payment for supplier bill ${selectedInvoice.id}`}
                 >
                   Pay this bill
-                </a>
+                </Link>
               </p>
             ) : null}
             {selectedInvoice.can_cancel && (

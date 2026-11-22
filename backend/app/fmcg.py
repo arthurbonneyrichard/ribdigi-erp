@@ -53,6 +53,11 @@ def serialize_scheme(row: m.FmcgTradeScheme) -> dict:
         "ends_on": row.ends_on.isoformat() if row.ends_on else None,
         "notes": row.notes,
         "is_active": bool(row.is_active),
+        "status": getattr(row, "status", None) or "approved",
+        "budget": money_json(row.budget) if getattr(row, "budget", None) is not None else None,
+        "max_uses": getattr(row, "max_uses", None),
+        "min_qty": money_json(row.min_qty) if getattr(row, "min_qty", None) is not None else None,
+        "rejection_reason": getattr(row, "rejection_reason", None),
         "created_at": row.created_at.isoformat() if row.created_at else None,
     }
 
@@ -115,6 +120,7 @@ async def create_scheme(
     starts_on: date | str | None = None,
     ends_on: date | str | None = None,
     notes: str | None = None,
+    created_by: str | None = None,
 ) -> m.FmcgTradeScheme:
     code_clean = require_honest_narrative(code, label="scheme code", max_length=40).upper()
     name_clean = require_honest_narrative(name, label="scheme name", max_length=150)
@@ -160,7 +166,11 @@ async def create_scheme(
         ends_on=end,
         notes=optional_honest_narrative(notes, label="notes", max_length=500),
         is_active=True,
+        created_by=created_by,
     )
+    from app import fmcg_promos as promos
+
+    row.status = await promos.initial_status(db, tenant_id, scheme_type=type_key, value=float(value or 0), budget=None)
     db.add(row)
     await db.flush()
     return row
@@ -230,6 +240,8 @@ async def preview_active_schemes(
         if scheme.starts_on and scheme.starts_on > today:
             continue
         if scheme.ends_on and scheme.ends_on < today:
+            continue
+        if (getattr(scheme, "status", None) or "approved") != "approved":
             continue
         if scheme.product_id:
             if not product_id or scheme.product_id != product_id:
@@ -532,36 +544,58 @@ async def best_line_scheme_discount(
     product_id: str | None,
     line_qty: float,
     line_amount: float,
+    customer_id: str | None = None,
+    running: dict | None = None,
 ) -> tuple[float, dict | None]:
-    """Return (discount_amount, scheme_meta) for the best active scheme on a line."""
-    previews = await preview_active_schemes(
-        db,
-        tenant_id=tenant_id,
-        line_qty=line_qty,
-        line_amount=line_amount,
-        product_id=product_id,
-    )
-    # Also include schemes with no product scope
-    all_active = await list_schemes(db, tenant_id=tenant_id, is_active=True)
+    """Return (discount_amount, scheme_meta) for the best usable scheme on a line.
+
+    Usable means: approved and active, inside its dates, matching the product or category,
+    at or above its minimum quantity, open to this outlet (route / territory / outlet targets),
+    and with budget and use limit still left. Only the single best scheme applies, so schemes
+    never stack. ``running`` carries what earlier lines of the same order already took.
+    """
+    from app import fmcg_promos as promos
+
     today = date.today()
-    for scheme in all_active:
+    product = await db.get(m.Product, product_id) if product_id else None
+    ctx = await promos.outlet_context(db, tenant_id, customer_id) if customer_id else None
+    best: dict | None = None
+    for scheme in await list_schemes(db, tenant_id=tenant_id, is_active=True):
+        if (getattr(scheme, "status", None) or "approved") != "approved":
+            continue
         if scheme.starts_on and scheme.starts_on > today:
             continue
         if scheme.ends_on and scheme.ends_on < today:
             continue
-        if scheme.product_id and product_id and scheme.product_id != product_id:
+        if scheme.product_id and scheme.product_id != product_id:
             continue
-        if scheme.product_id and not product_id:
+        if scheme.category_id and (product is None or product.category_id != scheme.category_id):
             continue
-        # unscoped schemes always considered
-        if not scheme.product_id:
-            meta = preview_scheme_discount(scheme, line_qty=line_qty, line_amount=line_amount)
-            if not any(p["scheme_id"] == scheme.id for p in previews):
-                previews.append(meta)
-    if not previews:
+        if scheme.min_qty is not None and float(line_qty) + 1e-9 < float(scheme.min_qty):
+            continue
+        if not await promos.outlet_eligible(db, tenant_id, scheme.id, ctx):
+            continue
+        meta = preview_scheme_discount(scheme, line_qty=line_qty, line_amount=line_amount)
+        discount = float(meta.get("discount_amount") or 0)
+        if discount <= 0:
+            continue
+        if scheme.budget is not None or scheme.max_uses is not None:
+            spent, uses = await promos.usage(db, tenant_id, scheme.id, lock=True)
+            if running and scheme.id in running:
+                spent += running[scheme.id][0]
+                uses += running[scheme.id][1]
+            if scheme.budget is not None and spent + discount > float(scheme.budget) + 0.0049:
+                continue
+            if scheme.max_uses is not None and uses + 1 > int(scheme.max_uses):
+                continue
+        if best is None or discount > float(best["discount_amount"]):
+            best = meta
+    if best is None:
         return 0.0, None
-    best = max(previews, key=lambda p: float(p.get("discount_amount") or 0))
-    return float(best.get("discount_amount") or 0), best
+    if running is not None:
+        spent, uses = running.get(best["scheme_id"], (0.0, 0))
+        running[best["scheme_id"]] = (spent + float(best["discount_amount"]), uses + 1)
+    return float(best["discount_amount"]), best
 
 
 async def _next_dispatch_number(db: AsyncSession, tenant_id: str) -> str:

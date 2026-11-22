@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import PageHeader from '../../../components/PageHeader';
 import EmailDesigner from '../../../components/EmailDesigner';
@@ -961,7 +962,7 @@ export default function Page() {
             />
             <p className="muted" style={{ margin: '6px 0 0' }}>
               This is the public company URL. Link it for the built-in storefront on{' '}
-              <a href="/ecommerce">Online store</a>.
+              <Link href="/ecommerce">Online store</Link>.
             </p>
           </div>
           <div className="company-page-field">
@@ -1616,13 +1617,13 @@ export default function Page() {
                 : 'Add and manage staff in Settings → Users.'}
           </p>
           {restaurantCompany(tenant?.industry) ? (
-            <a href="/restaurant/staff" aria-label="Add User">
+            <Link href="/restaurant/staff" aria-label="Add User">
               Add staff
-            </a>
+            </Link>
           ) : (
-            <a href="/users#create-user" aria-label="Add User">
+            <Link href="/users#create-user" aria-label="Add User">
               Add User
-            </a>
+            </Link>
           )}
         </div>
       </div>
@@ -1719,13 +1720,13 @@ export default function Page() {
           </p>
           <div className="company-page-scroll">
             <nav aria-label="Company administration links" className="company-page-links">
-              <a href="/users">{isHotelIndustry(tenant.industry) || restaurantCompany(tenant.industry) ? 'Staff and permissions' : 'Users and roles'}</a>
-              {isHotelIndustry(tenant.industry) ? null : <a href="/stores">Stores and locations</a>}
-              <a href="/notifications">Notifications</a>
-              <a href="/audit">Activity log</a>
-              <a href="/company/billing">Subscription billing</a>
-              <a href="/printers">Printers</a>
-              <a href="/backup">Download a backup</a>
+              <Link href="/users">{isHotelIndustry(tenant.industry) || restaurantCompany(tenant.industry) ? 'Staff and permissions' : 'Users and roles'}</Link>
+              {isHotelIndustry(tenant.industry) ? null : <Link href="/stores">Stores and locations</Link>}
+              <Link href="/notifications">Notifications</Link>
+              <Link href="/audit">Activity log</Link>
+              <Link href="/company/billing">Subscription billing</Link>
+              <Link href="/printers">Printers</Link>
+              <Link href="/backup">Download a backup</Link>
             </nav>
           </div>
           <p className="muted">

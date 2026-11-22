@@ -55,6 +55,10 @@ _JOBS = {
     # Officers are staff too: "self" lets them use their own file (documents, feedback, cover).
     "hrm_officer": frozenset({"people", "leave", "attendance", "recruitment", "training", "contracts", "assets", "notices", "self"}),
     "hrm_employee": frozenset({"self"}),
+    "hrm_payroll_officer": frozenset({"people", "leave", "attendance", "payroll", "self"}),
+    "hrm_recruiter": frozenset({"recruitment", "self"}),
+    # Reads everything but confidential cases; has no write grant (rbac), so every write is refused.
+    "hrm_auditor": frozenset({"people", "leave", "attendance", "payroll", "recruitment", "reviews", "training", "contracts", "assets", "claims", "notices", "self"}),
 }
 # A desk's manager looks after their staff's records, leave and time, but not pay.
 _DESK_MANAGER_AREAS = frozenset({"people", "leave", "attendance", "training", "contracts", "assets", "notices", "recruitment", "self"})
@@ -69,6 +73,9 @@ _WORDS = {
     "gym_manager": "Managers look after staff records, leave and time. Pay needs the company admin.",
     "hrm_officer": "HR officers look after staff records, leave, attendance, hiring, training, contracts and assets. Pay, reviews, claims and cases need a manager.",
     "hrm_employee": "You can see your own leave and payslips. Ask HR for the rest.",
+    "hrm_payroll_officer": "Payroll officers look after leave, time and payroll. Approving and paying payroll needs an HR manager.",
+    "hrm_recruiter": "Recruitment managers look after hiring only.",
+    "hrm_auditor": "Auditors can read HR records but not confidential cases, and cannot change anything.",
 }
 
 
@@ -105,8 +112,20 @@ def runs_hr(claims: dict) -> bool:
     return str(claims.get("role") or "") in HR_FULL_ROLES
 
 
+PAY_VIEW_ROLES = frozenset({"hrm_payroll_officer", "hrm_auditor"})
+
+
 def sees_pay(claims: dict) -> bool:
-    return runs_hr(claims)
+    return runs_hr(claims) or str(claims.get("role") or "") in PAY_VIEW_ROLES
+
+
+def approves_pay(claims: dict) -> None:
+    """Approving and paying payroll is a manager's job, not the payroll officer's."""
+    if not runs_hr(claims):
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "PAYROLL_APPROVER", "message": "Only an HR manager or company admin can approve or pay payroll."},
+        )
 
 
 def job(claims: dict, area: str) -> None:
@@ -206,6 +225,7 @@ def serialize_settings(row: m.HrmSettings) -> dict:
         "ssnit_employer_percent": _money(row.ssnit_employer_percent),
         "paye_bands": row.paye_bands or list(DEFAULT_PAYE_BANDS),
         "two_person_payroll": bool(getattr(row, "two_person_payroll", False)),
+        "vacancy_approval": bool(getattr(row, "vacancy_approval", False)),
         "hours_per_day": money_json(getattr(row, "hours_per_day", 8) or 8),
         "overtime_rate": money_json(getattr(row, "overtime_rate", 1.5) or 1.5),
         "clock_needs_site": bool(getattr(row, "clock_needs_site", False)),

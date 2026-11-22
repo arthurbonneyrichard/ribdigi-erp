@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import EmptyState from '../../../components/EmptyState';
@@ -856,9 +857,9 @@ export default function Page() {
           <p className="muted">
             Open Purchases to record a supplier bill. That increases what the company owes. This page only records money going out.
           </p>
-          <a href="/purchasing?tab=invoices">
+          <Link href="/purchasing?tab=invoices">
             <button type="button">Go to Purchases</button>
-          </a>
+          </Link>
             </>
           )}
         </div>

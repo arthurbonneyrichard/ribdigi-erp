@@ -6,6 +6,7 @@
  * the kitchen flow and never touch the retail till tables.
  */
 
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
@@ -61,6 +62,8 @@ const METHODS: { id: Method; label: string }[] = [
   { id: 'mobile_money', label: 'Mobile Money' },
   { id: 'wallet', label: 'Wallet' },
 ];
+
+type PartMethod = Method | 'gift_card' | 'loyalty';
 
 const OPEN_STATUSES = new Set(['open', 'sent', 'preparing', 'ready']);
 
@@ -138,7 +141,11 @@ function RestaurantTill() {
   const [method, setMethod] = useState<Method>('cash');
   const [tendered, setTendered] = useState('');
   // Paid more than one way: each part is a method and an amount (and a MoMo prompt reference).
-  const [parts, setParts] = useState<{ method: Method; amount: string; reference?: string }[] | null>(null);
+  const [parts, setParts] = useState<{ method: PartMethod; amount: string; reference?: string }[] | null>(null);
+  // The guest on the bill (found or made by phone): earns points on this bill and can spend them.
+  const [loyaltyGuest, setLoyaltyGuest] = useState<{ name: string; phone: string; loyalty_points: number } | null>(null);
+  const [guestPhone, setGuestPhone] = useState('');
+  const [guestName, setGuestName] = useState('');
   const [momoRef, setMomoRef] = useState('');
   const [splitPick, setSplitPick] = useState<Set<string> | null>(null);
   // Tip on top of the bill: held for staff, never sales. Online only.
@@ -593,7 +600,30 @@ function RestaurantTill() {
     setParts(null);
     setMomoRef('');
     setSplitPick(null);
+    setLoyaltyGuest(null);
+    setGuestPhone('');
+    setGuestName('');
+    if (paying?.id && !paying.offline && paying.party_id) {
+      api(`/restaurant/orders/${paying.id}/guest`)
+        .then((res) => setLoyaltyGuest(res?.data || null))
+        .catch(() => undefined);
+    }
   }, [paying?.id, paying?.offline_ref]);
+
+  async function addGuest() {
+    if (!paying || paying.offline) return;
+    setError('');
+    try {
+      const res = await api(`/restaurant/orders/${paying.id}/guest`, {
+        method: 'POST',
+        body: JSON.stringify({ phone: guestPhone.replace(/[\s-]/g, ''), ...(guestName.trim() ? { name: guestName.trim() } : {}) }),
+      });
+      setLoyaltyGuest(res?.data || null);
+      setPaying({ ...paying, party_id: res?.data?.party_id || paying.party_id });
+    } catch (err) {
+      setError(detail(err));
+    }
+  }
 
   const partsTotal = (parts || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
 
@@ -640,7 +670,7 @@ function RestaurantTill() {
         void api('/restaurant/till/shift')
           .then((res) => setShift(res?.data || null))
           .catch(() => undefined);
-        setDone({ number: paying.order_number, total, change: 0, method: parts[0].method });
+        setDone({ number: paying.order_number, total, change: 0, method: (parts.find((x) => x.method !== 'gift_card' && x.method !== 'loyalty')?.method || 'cash') as Method });
         setPaying(null);
         setNotice('');
         resetTicket(mode);
@@ -909,7 +939,7 @@ function RestaurantTill() {
             <div className="rtill-empty">
               {menu.length === 0 ? (
                 <>
-                  No dishes on the menu yet. Add menu items under <a href="/restaurant?tab=recipes">Recipes</a>.
+                  No dishes on the menu yet. Add menu items under <Link href="/restaurant?tab=recipes">Recipes</Link>.
                 </>
               ) : (
                 'No dish matches.'
@@ -1102,7 +1132,7 @@ function RestaurantTill() {
             </div>
             {storeTables.length === 0 ? (
               <p className="rtill-empty">
-                No tables yet. Add them under <a href="/restaurant?tab=tables">Tables and floor</a>.
+                No tables yet. Add them under <Link href="/restaurant?tab=tables">Tables and floor</Link>.
               </p>
             ) : (
               <div className="rtill-tables">
@@ -1195,6 +1225,12 @@ function RestaurantTill() {
                 <dt>Dishes</dt>
                 <dd>{money(paying.subtotal)}</dd>
               </div>
+              {Number(paying.discount_amount || 0) > 0 ? (
+                <div>
+                  <dt>{paying.discount_kind === 'percent' && Number(paying.discount_value) >= 100 ? 'Comp' : 'Discount'}{paying.discount_reason ? ` · ${paying.discount_reason}` : ''}</dt>
+                  <dd>−{money(paying.discount_amount)}</dd>
+                </div>
+              ) : null}
               {Number(paying.service_amount || 0) > 0 ? (
                 <div>
                   <dt>Service</dt>
@@ -1256,6 +1292,23 @@ function RestaurantTill() {
               </div>
             ) : null}
             {!paying.offline ? (
+              <div className="rtill-cash" aria-label="Guest on the bill">
+                {loyaltyGuest ? (
+                  <p className="rtill-tax-note">
+                    Guest: <strong>{loyaltyGuest.name}</strong> · {money(loyaltyGuest.loyalty_points)} points. This bill earns 1% in points.
+                  </p>
+                ) : (
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input aria-label="Guest phone for points" placeholder="Guest phone, +233…" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} />
+                    <input aria-label="Guest name for points" placeholder="Name (new guest)" value={guestName} onChange={(e) => setGuestName(e.target.value)} />
+                    <button type="button" aria-label="Add guest to the bill" disabled={guestPhone.trim().length < 8} onClick={addGuest}>
+                      Add guest for points
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : null}
+            {!paying.offline ? (
               <div className="rtill-cash">
                 {parts ? (
                   <>
@@ -1265,18 +1318,28 @@ function RestaurantTill() {
                         <select
                           aria-label={`Part ${i + 1} method`}
                           value={p.method}
-                          onChange={(e) => setParts(parts.map((x, j) => (j === i ? { ...x, method: e.target.value as Method, reference: undefined } : x)))}
+                          onChange={(e) => setParts(parts.map((x, j) => (j === i ? { ...x, method: e.target.value as PartMethod, reference: undefined } : x)))}
                         >
                           {METHODS.map((mm) => (
                             <option key={mm.id} value={mm.id}>{mm.label}</option>
                           ))}
+                          <option value="gift_card">Gift card</option>
+                          {loyaltyGuest ? <option value="loyalty">Points ({money(loyaltyGuest.loyalty_points)})</option> : null}
                         </select>
                         <input
                           aria-label={`Part ${i + 1} amount`}
                           inputMode="decimal"
                           value={p.amount}
-                          onChange={(e) => setParts(parts.map((x, j) => (j === i ? { ...x, amount: e.target.value.replace(/[^0-9.]/g, ''), reference: undefined } : x)))}
+                          onChange={(e) => setParts(parts.map((x, j) => (j === i ? { ...x, amount: e.target.value.replace(/[^0-9.]/g, ''), reference: x.method === 'gift_card' ? x.reference : undefined } : x)))}
                         />
+                        {p.method === 'gift_card' ? (
+                          <input
+                            aria-label={`Part ${i + 1} gift card code`}
+                            placeholder="Gift card code"
+                            value={p.reference || ''}
+                            onChange={(e) => setParts(parts.map((x, j) => (j === i ? { ...x, reference: e.target.value.trim().toUpperCase() } : x)))}
+                          />
+                        ) : null}
                         {parts.length > 2 ? (
                           <button type="button" aria-label={`Remove part ${i + 1}`} onClick={() => setParts(parts.filter((_, j) => j !== i))}>Remove</button>
                         ) : null}

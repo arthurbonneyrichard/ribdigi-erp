@@ -111,6 +111,10 @@ celery.conf.update(
             "task": "app.tasks.sync_hotel_channels",
             "schedule": crontab(minute="*/30"),
         },
+        "send-gym-renewal-reminders": {
+            "task": "app.tasks.send_gym_renewal_reminders",
+            "schedule": crontab(minute=10, hour=7),
+        },
         "hotel-daily-close": {
             "task": "app.tasks.hotel_daily_close",
             "schedule": crontab(minute=15, hour=2),

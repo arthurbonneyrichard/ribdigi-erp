@@ -46,6 +46,48 @@ Ingredients and items for sale are ordinary products under Inventory. An item wi
 - **Production sheet** (`GET /bakery/production-sheet/print`, Today → Print production sheet): what to bake (orders, trade, shelf level, on hand) and the orders due today and tomorrow with their writing. No prices, so bakers may print it.
 - Tests: `test_bakery_slips_and_texts.py`.
 
+## Regulars and birthday texts (`/bakery?tab=regulars`)
+
+`bakery_regulars.py`, table `bakery_regulars` (migration `20261119_0203`). Regulars are found from the phone numbers on orders (cancelled orders do not count), so there is no second customer list: `GET /bakery/regulars` gives orders, spend and last order per phone, biggest spenders first.
+
+- `PUT /bakery/regulars` sets a name, a birthday (month and day together; impossible dates are refused; 29 Feb is celebrated on 28 Feb in common years) and `texts_ok`. A phone with no order yet is 404. Cashiers and managers may edit; bakers and drivers cannot see the list.
+- `GET /bakery/regulars/birthdays?days=` lists coming birthdays (default 14).
+- `POST /bakery/regulars/birthday-texts` (manager) texts today's birthdays **only if `texts_ok`**, once per year each (`last_text_year`), through the company's SMS settings. It reports `sent`, `already_texted` and `failed` with reasons; with no SMS set up nothing is marked as texted.
+- Never text anyone who has not agreed. Tests: `test_bakery_regulars.py`.
+
+## Quotes
+
+An order taken with `quote: true` (Orders → "Just a quote for now") is a quote: status `quote`, number `BQ-…`, no deposit (422), not in `ORDER_OPEN`, so nothing is planned, baked or delivered for it. `GET /bakery/orders?show=quotes` lists them (Orders → Quotes); the slip prints as "Quote".
+
+- `POST /bakery/orders/{id}/confirm-quote` `{deposit, method}` makes it a booked order with a real `BO-…` number. An optional deposit goes through `add_deposit`, so it needs an open till; a refused confirm leaves it a quote. A past collection day is refused (422).
+- `POST /bakery/orders/{id}/decline-quote` `{reason}` sets status `declined`. Anything that is not a quote is 409. Test: `test_bakery_regulars.py::test_quote_confirm_and_decline`.
+
+## Part-payments on big orders
+
+`POST /bakery/orders/{id}/part-payment` `{amount, method}` (Orders → Take payment) takes another instalment on an open order, for wedding and event cakes paid in stages. It needs an open till, cannot exceed what is still owed (422), and books Dr money / Cr the order's deposit account (2168; 1100 for old orders) exactly like the first deposit, so collection still turns the whole deposit into revenue once. A cancelled or collected order refuses it (409).
+
+Cancelling with `deposit_action=refund` gives each instalment back the way it came in (`bakery.add_deposit`, `_deposit_parts`: one credit line and one `deposit_refund` payment per method); a kept deposit still goes to 4400. Test: `test_bakery_regulars.py::test_part_payments_and_refund_by_method`.
+
+## Cake and order options
+
+A manager gives an item option groups under Stock → Item details (`options` on `PUT /bakery/items/{id}/details`, stored in `bakery_item_settings.options`, migration `20261119_0202`). One line per group: `Size*: 6 inch, 10 inch=60` (`*` = must be chosen, `=60` = extra price before tax).
+
+- An order line may carry `options: [{group, choice}]`. `bakery.apply_options` checks each against the item's own list (422 for an unknown group or choice), adds the extra to the unit price before discount and tax, and writes `Size: 10 inch; Flavour: Red velvet` ahead of the customer's writing in the line note (so the order slip, production sheet and delivery show it).
+- Required groups are enforced on orders (`enforce_options`), not at the counter: counter sales may pass `options`, but a counter line without them is sold at the base price. The counter basket is one line per item, so custom cakes (size, flavour, writing) are taken under Orders, which also holds the date and deposit.
+- Prices always come from the item's list, never from the request. Tests: `test_bakery_safety.py::test_cake_options_price_and_note_an_order`.
+
+## Food safety (`/bakery?tab=safety`)
+
+`bakery_safety.py`, tables `bakery_safety_points`, `bakery_safety_readings`, `bakery_safety_checks` (migration `20261119_0201`). Nothing here touches the books.
+
+- **Points:** a fridge, freezer, display, oven, proofer or other, each with a safe range in °C (kind defaults: fridge 0 to 5, freezer −25 to −18, display 0 to 8, oven 160 to 260, proofer 25 to 40) and checks per day. A manager adds and edits them (`POST|PATCH /bakery/safety/points`); a switched-off point takes no readings.
+- **Readings:** `POST /bakery/safety/readings`. A reading outside the range must say what was done about it (400 otherwise); it is saved with `in_range=false`. Bakers and cashiers may record.
+- **Checklists:** opening, closing, deep clean and delivery (`bakery_safety.CHECKLISTS`). `POST /bakery/safety/checks` signs one with the lines ticked; it counts as done for the day only when every line is ticked.
+- **Today:** `GET /bakery/safety` shows each point's last reading, readings still due, bad readings and which checklists are done.
+- **Inspector record:** `GET /bakery/safety/print?start_date&end_date` (default last 30 days) prints every reading and checklist, bad readings in bold. `GET /bakery/safety/history` is the same data as JSON.
+- **Dashboard:** bad readings and readings still to take show under "Needs you now" on Today.
+- Tests: `test_bakery_safety.py`. Ranges are typical values: the company should confirm them with its own food safety plan.
+
 ## Shelf life, day-old and labels
 
 Item details (`PUT /bakery/items/{id}/details`, manager; Stock → Item details), stored in `bakery_item_settings`:

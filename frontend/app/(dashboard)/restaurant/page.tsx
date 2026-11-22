@@ -111,6 +111,7 @@ const TAB_HEADINGS: Record<string, [string, string]> = {
   tables: ['Tables and floor', 'Drag tables to match your room. Take an order, hold a table, or edit it from its card.'],
   booking: ['Website and booking', 'Your public website, table bookings and walk-ins.'],
   kitchen: ['Kitchen', 'Every dish to cook, oldest first. Start it, then mark it ready.'],
+  bar: ['Bar', 'Every drink to make, oldest first. Start it, then mark it ready.'],
   recipes: ['Recipes', 'What goes into each dish, so stock comes off when it sells.'],
   waste: ['Waste', 'Record spoiled or dropped ingredients so stock stays right.'],
   orders: ['Full order editor', 'Menu settings, and every detail on an order.'],
@@ -294,7 +295,7 @@ export default function RestaurantPage() {
   // Set by the admin under Settings → Printers → Kitchen and bar orders. Printer only hides the kitchen board.
   const [ticketMode, setTicketMode] = useState<'both' | 'screen' | 'printer'>('both');
   useEffect(() => {
-    if (tab !== 'kitchen') return;
+    if (tab !== 'kitchen' && tab !== 'bar') return;
     api('/restaurant/ticket-delivery')
       .then((res) => setTicketMode((res?.data?.mode || 'both') as 'both' | 'screen' | 'printer'))
       .catch(() => undefined);
@@ -303,6 +304,11 @@ export default function RestaurantPage() {
   const [soldOutId, setSoldOutId] = useState('');
   const floorMapRef = useRef<HTMLDivElement | null>(null);
   const heardTickets = useRef<Set<string> | null>(null);
+  const heardScreen = useRef<string>('');
+  const [moveTarget, setMoveTarget] = useState<Record<string, string>>({});
+  const [discountForm, setDiscountForm] = useState<Record<string, { kind: string; value: string; reason: string }>>({});
+  const [riderForm, setRiderForm] = useState<Record<string, { name: string; phone: string }>>({});
+  const [mergeTarget, setMergeTarget] = useState<Record<string, string>>({});
   const kitchenAudio = useRef<AudioContext | null>(null);
 
   // What each desk shows on top of the live lists. The full set loads once when the page opens;
@@ -313,6 +319,7 @@ export default function RestaurantPage() {
     tables: ['/stores', '/restaurant/floor-places'],
     booking: ['/restaurant/booking-link', '/restaurant/bookings', '/restaurant/online-orders'],
     kitchen: ['/restaurant/kitchen-sound', '/restaurant/clock'],
+    bar: ['/restaurant/kitchen-sound', '/restaurant/clock'],
     recipes: ['/products', '/restaurant/recipes', '/restaurant/sold-out'],
     waste: ['/products', '/restaurant/recipes', '/warehouses', '/restaurant/waste'],
   };
@@ -469,15 +476,18 @@ export default function RestaurantPage() {
   }, [tab]);
 
   useEffect(() => {
-    const ids = kitchen.map((row) => String(row.id));
-    const previous = heardTickets.current;
+    // Each screen chimes only for its own station's tickets.
+    const screen = tab === 'bar' ? 'bar' : 'kitchen';
+    const ids = kitchen.filter((row) => (row.station || 'kitchen') === screen).map((row) => String(row.id));
+    const previous = heardScreen.current === screen ? heardTickets.current : null;
+    heardScreen.current = screen;
     heardTickets.current = new Set(ids);
     if (!kitchenSound.on || previous === null) return;
     if (!ids.some((id) => !previous.has(id))) return;
     const ctx = kitchenAudio.current;
     if (!ctx || ctx.state !== 'running') return;
     playKitchenChime(ctx);
-  }, [kitchen, kitchenSound.on]);
+  }, [kitchen, kitchenSound.on, tab]);
 
   async function createTable(event: FormEvent) {
     event.preventDefault();
@@ -1649,6 +1659,30 @@ export default function RestaurantPage() {
     }
   }
 
+  async function postOrder(orderId: string, action: string, body: Record<string, unknown>, done: string) {
+    setError('');
+    try {
+      const res = await api(`/restaurant/orders/${orderId}/${action}`, { method: 'POST', body: JSON.stringify(body) });
+      setMessage(res?.message || done);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message || 'That did not work');
+    }
+  }
+
+  async function moveOrTable(orderId: string, action: 'move-table' | 'merge', body: Record<string, string>) {
+    setError('');
+    try {
+      const res = await api(`/restaurant/orders/${orderId}/${action}`, { method: 'POST', body: JSON.stringify(body) });
+      setMessage(res?.message || (action === 'merge' ? 'Bills merged' : 'Bill moved'));
+      setMoveTarget((current) => ({ ...current, [orderId]: '' }));
+      setMergeTarget((current) => ({ ...current, [orderId]: '' }));
+      await refresh();
+    } catch (err: any) {
+      setError(err.message || (action === 'merge' ? 'Could not merge the bills' : 'Could not move the bill'));
+    }
+  }
+
   async function act(orderId: string, action: string) {
     setError('');
     try {
@@ -1908,6 +1942,8 @@ export default function RestaurantPage() {
 
   const waitingBookings = bookings.filter((row) => row.status === 'requested');
   const openOrders = orders.filter((row) => ['open', 'sent', 'preparing', 'ready'].includes(String(row.status)));
+  const screenStation = tab === 'bar' ? 'bar' : 'kitchen';
+  const screenTickets = kitchen.filter((row) => (row.station || 'kitchen') === screenStation);
   const liveTickets = kitchen.filter((row) => ['queued', 'preparing'].includes(String(row.status)));
   const readyTickets = kitchen.filter((row) => row.status === 'ready');
   const heldTables = tables.filter((row) => row.status === 'held');
@@ -2024,7 +2060,20 @@ export default function RestaurantPage() {
               <span className="ico" aria-hidden>♨</span>
               <span>
                 <strong>Kitchen</strong>
-                <small>{liveTickets.length} cooking · {readyTickets.length} ready</small>
+                <small>
+                  {liveTickets.filter((row) => (row.station || 'kitchen') === 'kitchen').length} cooking ·{' '}
+                  {readyTickets.filter((row) => (row.station || 'kitchen') === 'kitchen').length} ready
+                </small>
+              </span>
+            </Link>
+            <Link className="rd-action" href="/restaurant?tab=bar">
+              <span className="ico" aria-hidden>🍹</span>
+              <span>
+                <strong>Bar</strong>
+                <small>
+                  {liveTickets.filter((row) => row.station === 'bar').length} making ·{' '}
+                  {readyTickets.filter((row) => row.station === 'bar').length} ready
+                </small>
               </span>
             </Link>
             <Link className="rd-action" href="/restaurant?tab=tables">
@@ -2128,12 +2177,15 @@ export default function RestaurantPage() {
             <div className="rd-panel">
               <div className="rd-panel-head">
                 <h3>Kitchen and bar</h3>
-                <Link href="/restaurant?tab=kitchen">Open kitchen →</Link>
+                <span>
+                  <Link href="/restaurant?tab=kitchen">Open kitchen →</Link>{' '}
+                  <Link href="/restaurant?tab=bar">Open bar →</Link>
+                </span>
               </div>
               <ul className="rd-mini" aria-label="Restaurant live tickets">
                 {[...readyTickets, ...liveTickets].slice(0, 6).map((row) => (
                   <li key={row.id}>
-                    <Link href="/restaurant?tab=kitchen">
+                    <Link href={row.station === 'bar' ? '/restaurant?tab=bar' : '/restaurant?tab=kitchen'}>
                       <strong>{row.order_number || 'Order'}</strong>
                       <small>{orderWord(row.station || 'kitchen')}</small>
                       <span className={`rd-pill ${row.status === 'ready' ? '' : 'wait'}`}>{orderWord(row.status)}</span>
@@ -4240,6 +4292,169 @@ export default function RestaurantPage() {
                     ) : null}
                   </>
                 )}
+                {['open', 'sent', 'preparing', 'ready'].includes(String(row.status)) && (
+                  <div className="rest-order-actions">
+                    <select
+                      aria-label={`Move order ${row.order_number} to table`}
+                      value={moveTarget[row.id] || ''}
+                      onChange={(e) => setMoveTarget((current) => ({ ...current, [row.id]: e.target.value }))}
+                    >
+                      <option value="">Move to table…</option>
+                      {tables
+                        .filter((t) => t.is_active !== false && t.id !== row.table_id && (t.status === 'available' || t.status === 'held'))
+                        .map((t) => (
+                          <option key={t.id} value={t.id}>{t.code}{t.name ? ` · ${t.name}` : ''}</option>
+                        ))}
+                    </select>
+                    <button
+                      type="button"
+                      aria-label={`Move order ${row.order_number}`}
+                      disabled={!moveTarget[row.id]}
+                      onClick={() => moveOrTable(row.id, 'move-table', { table_id: moveTarget[row.id] })}
+                    >
+                      Move
+                    </button>
+                    <select
+                      aria-label={`Merge order ${row.order_number} into bill`}
+                      value={mergeTarget[row.id] || ''}
+                      onChange={(e) => setMergeTarget((current) => ({ ...current, [row.id]: e.target.value }))}
+                    >
+                      <option value="">Merge into bill…</option>
+                      {openOrders
+                        .filter((o) => o.id !== row.id)
+                        .map((o) => (
+                          <option key={o.id} value={o.id}>{o.order_number}{o.table_code ? ` · Table ${o.table_code}` : ''}</option>
+                        ))}
+                    </select>
+                    <button
+                      type="button"
+                      aria-label={`Merge order ${row.order_number}`}
+                      disabled={!mergeTarget[row.id]}
+                      onClick={() => moveOrTable(row.id, 'merge', { into_order_id: mergeTarget[row.id] })}
+                    >
+                      Merge
+                    </button>
+                  </div>
+                )}
+                {['open', 'sent', 'preparing', 'ready'].includes(String(row.status)) && (
+                  <div className="rest-order-actions" aria-label={`Discount on ${row.order_number}`}>
+                    {Number(row.discount_amount || 0) > 0 ? (
+                      <>
+                        <span className="rd-pill wait">
+                          {row.discount_kind === 'percent' && Number(row.discount_value) >= 100 ? 'Comp' : 'Discount'} −{Number(row.discount_amount).toFixed(2)}
+                          {row.discount_reason ? ` · ${row.discount_reason}` : ''}
+                        </span>
+                        <button type="button" aria-label={`Remove discount from ${row.order_number}`} onClick={() => postOrder(row.id, 'discount', { kind: 'clear' }, 'Discount removed')}>
+                          Remove discount
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <select
+                          aria-label={`Discount kind for ${row.order_number}`}
+                          value={discountForm[row.id]?.kind || 'percent'}
+                          onChange={(e) => setDiscountForm((c) => ({ ...c, [row.id]: { kind: e.target.value, value: c[row.id]?.value || '', reason: c[row.id]?.reason || '' } }))}
+                        >
+                          <option value="percent">Percent off</option>
+                          <option value="amount">Amount off</option>
+                          <option value="comp">Comp (free)</option>
+                        </select>
+                        {(discountForm[row.id]?.kind || 'percent') !== 'comp' ? (
+                          <input
+                            aria-label={`Discount value for ${row.order_number}`}
+                            inputMode="decimal"
+                            placeholder="Value"
+                            value={discountForm[row.id]?.value || ''}
+                            onChange={(e) => setDiscountForm((c) => ({ ...c, [row.id]: { kind: c[row.id]?.kind || 'percent', value: e.target.value.replace(/[^0-9.]/g, ''), reason: c[row.id]?.reason || '' } }))}
+                          />
+                        ) : null}
+                        <input
+                          aria-label={`Discount reason for ${row.order_number}`}
+                          placeholder="Reason (manager only)"
+                          value={discountForm[row.id]?.reason || ''}
+                          onChange={(e) => setDiscountForm((c) => ({ ...c, [row.id]: { kind: c[row.id]?.kind || 'percent', value: c[row.id]?.value || '', reason: e.target.value } }))}
+                        />
+                        <button
+                          type="button"
+                          aria-label={`Apply discount to ${row.order_number}`}
+                          disabled={
+                            (discountForm[row.id]?.reason || '').trim().length < 3 ||
+                            ((discountForm[row.id]?.kind || 'percent') !== 'comp' && !Number(discountForm[row.id]?.value))
+                          }
+                          onClick={() =>
+                            postOrder(
+                              row.id,
+                              'discount',
+                              {
+                                kind: discountForm[row.id]?.kind || 'percent',
+                                ...((discountForm[row.id]?.kind || 'percent') !== 'comp' ? { value: Number(discountForm[row.id]?.value) } : {}),
+                                reason: (discountForm[row.id]?.reason || '').trim(),
+                              },
+                              'Discount applied',
+                            )
+                          }
+                        >
+                          Apply discount
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+                {row.service_mode === 'delivery' && !['completed', 'cancelled', 'voided', 'refunded'].includes(String(row.status)) && (
+                  <div className="rest-order-actions" aria-label={`Rider for ${row.order_number}`}>
+                    {row.delivery_status ? (
+                      <span className="rd-pill">
+                        {row.delivery_status === 'assigned' ? 'Rider assigned' : row.delivery_status === 'out' ? 'Out for delivery' : 'Delivered'}
+                        {row.rider_name ? ` · ${row.rider_name}` : ''}
+                        {row.rider_phone ? ` · ${row.rider_phone}` : ''}
+                      </span>
+                    ) : null}
+                    {row.delivery_status !== 'out' && row.delivery_status !== 'delivered' ? (
+                      <>
+                        <input
+                          aria-label={`Rider name for ${row.order_number}`}
+                          placeholder="Rider name"
+                          value={riderForm[row.id]?.name ?? ''}
+                          onChange={(e) => setRiderForm((c) => ({ ...c, [row.id]: { name: e.target.value, phone: c[row.id]?.phone || '' } }))}
+                        />
+                        <input
+                          aria-label={`Rider phone for ${row.order_number}`}
+                          placeholder="Rider phone, +233…"
+                          value={riderForm[row.id]?.phone ?? ''}
+                          onChange={(e) => setRiderForm((c) => ({ ...c, [row.id]: { name: c[row.id]?.name || '', phone: e.target.value } }))}
+                        />
+                        <button
+                          type="button"
+                          aria-label={`Assign rider to ${row.order_number}`}
+                          disabled={(riderForm[row.id]?.name || '').trim().length < 2}
+                          onClick={() =>
+                            postOrder(
+                              row.id,
+                              'rider',
+                              {
+                                name: (riderForm[row.id]?.name || '').trim(),
+                                ...((riderForm[row.id]?.phone || '').trim() ? { phone: (riderForm[row.id]?.phone || '').replace(/[\s-]/g, '') } : {}),
+                              },
+                              'Rider assigned',
+                            )
+                          }
+                        >
+                          Assign rider
+                        </button>
+                      </>
+                    ) : null}
+                    {row.delivery_status === 'assigned' ? (
+                      <button type="button" className="rd-go" aria-label={`Send ${row.order_number} out for delivery`} onClick={() => postOrder(row.id, 'dispatch', {}, 'Out for delivery')}>
+                        Out for delivery
+                      </button>
+                    ) : null}
+                    {row.delivery_status === 'out' ? (
+                      <button type="button" className="rd-go" aria-label={`Mark ${row.order_number} delivered`} onClick={() => postOrder(row.id, 'delivered', {}, 'Delivered')}>
+                        Delivered
+                      </button>
+                    ) : null}
+                  </div>
+                )}
                 <div className="rest-order-actions">
                 {row.status === 'open' && (
                   <button type="button" aria-label={`Send order ${row.order_number} to kitchen`} onClick={() => act(row.id, 'send')}>Send to kitchen</button>
@@ -4265,13 +4480,13 @@ export default function RestaurantPage() {
           </ul>
         </section>
       )}
-      {restaurantDesk && tab === 'kitchen' && (
-        <section className="rdesk rd-kitchen" aria-label="Restaurant kitchen">
+      {restaurantDesk && (tab === 'kitchen' || tab === 'bar') && (
+        <section className="rdesk rd-kitchen" aria-label={tab === 'bar' ? 'Restaurant bar' : 'Restaurant kitchen'}>
           <div className="rd-kds-bar">
             <div className="rd-kds-counts">
-              <span className="rd-pill grey">{kitchen.filter((row) => row.status === 'queued').length} waiting</span>
-              <span className="rd-pill wait">{kitchen.filter((row) => row.status === 'preparing').length} cooking</span>
-              <span className="rd-pill">{kitchen.filter((row) => row.status === 'ready').length} ready</span>
+              <span className="rd-pill grey">{screenTickets.filter((row) => row.status === 'queued').length} waiting</span>
+              <span className="rd-pill wait">{screenTickets.filter((row) => row.status === 'preparing').length} {tab === 'bar' ? 'making' : 'cooking'}</span>
+              <span className="rd-pill">{screenTickets.filter((row) => row.status === 'ready').length} ready</span>
               <span className="rd-hint">Refreshes every 15 seconds.</span>
             </div>
             <div className="rd-kds-tools">
@@ -4330,8 +4545,9 @@ export default function RestaurantPage() {
             </p>
           ) : (
             <div className="rd-kds">
-              {stationQueue('kitchen', 'Kitchen', 'No tickets in the kitchen.', 'Kitchen queue')}
-              {stationQueue('bar', 'Bar', 'No tickets at the bar.', 'Bar queue')}
+              {tab === 'bar'
+                ? stationQueue('bar', 'Bar', 'No tickets at the bar.', 'Bar queue')
+                : stationQueue('kitchen', 'Kitchen', 'No tickets in the kitchen.', 'Kitchen queue')}
             </div>
           )}
         </section>

@@ -417,11 +417,17 @@ SystemRoleValue = Annotated[
         "fmcg_manager",
         "fmcg_rep",
         "fmcg_driver",
+        "fmcg_storekeeper",
+        "fmcg_quality",
+        "fmcg_fleet",
         "gym_manager",
         "gym_frontdesk",
         "gym_trainer",
         "hrm_manager",
         "hrm_officer",
+        "hrm_payroll_officer",
+        "hrm_recruiter",
+        "hrm_auditor",
         "hrm_employee",
     ],
     BeforeValidator(coerce_platform_role_value),
@@ -4323,6 +4329,7 @@ JobNameValue = Annotated[
         "sample_server_health",
         "hotel_daily_close",
         "sync_hotel_channels",
+        "send_gym_renewal_reminders",
     ],
     BeforeValidator(coerce_package_code_value),
 ]
@@ -7989,6 +7996,7 @@ class NotificationPreferencesMap(BaseModel):
     payment_due: NotificationChannelPrefs | None = None
     quotation_expiry: NotificationChannelPrefs | None = None
     batch_expiry: NotificationChannelPrefs | None = None
+    fleet_document: NotificationChannelPrefs | None = None
     recurring_expense_due: NotificationChannelPrefs | None = None
     new_order: NotificationChannelPrefs | None = None
     transfer: NotificationChannelPrefs | None = None

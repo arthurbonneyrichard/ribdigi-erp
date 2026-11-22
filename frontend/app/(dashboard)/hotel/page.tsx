@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import DashboardGreeting from '../../../components/DashboardGreeting';
@@ -535,6 +535,50 @@ function roomPlainName(code?: string | null, name?: string | null) {
   const prefix = roomCode ? `${roomCode} · ` : '';
   if (prefix && labeled.startsWith(prefix)) return labeled.slice(prefix.length);
   return String(name || '').trim() || labeled;
+}
+
+type CityAccount = { party_id: string; name: string; owed: number; invoices: { invoice_id: string; invoice_number: string; reservation_number: string; folio_number: string; check_out_date: string | null; total: number; owed: number }[] };
+
+/** What each company account owes the hotel: open invoices for stays billed to a company, largest balance first. */
+function CityLedger() {
+  const [rows, setRows] = useState<CityAccount[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      try {
+        const res = await api('/hotel/city-ledger');
+        if (live) setRows(res?.data ?? []);
+      } catch {
+        if (live) setFailed(true);
+      }
+    })();
+    return () => { live = false; };
+  }, []);
+  if (failed) return null;
+  return (
+    <div className="card" style={{ marginBottom: 16 }} aria-label="City ledger">
+      <h2 style={{ marginTop: 0 }}>City ledger: company accounts</h2>
+      <p className="muted">Stays billed to a company. Each account shows what it still owes.</p>
+      {rows === null ? <p className="muted">Loading</p> : rows.length === 0 ? <p className="muted">No company owes the hotel anything.</p> : (
+        <div className="list-table-wrap">
+          <table className="table">
+            <thead><tr><th>Company</th><th>Invoice</th><th>Stay</th><th>Check-out</th><th>Total</th><th>Owed</th></tr></thead>
+            <tbody>
+              {rows.map((a) => (
+                <React.Fragment key={a.party_id}>
+                  <tr><td colSpan={5}><strong>{a.name}</strong></td><td><strong>{money(a.owed)}</strong></td></tr>
+                  {a.invoices.map((i) => (
+                    <tr key={i.invoice_id}><td></td><td>{i.invoice_number}</td><td>{i.reservation_number}</td><td>{i.check_out_date ? formatDate(i.check_out_date) : ''}</td><td>{money(i.total)}</td><td>{money(i.owed)}</td></tr>
+                  ))}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function money(value: number | string | null | undefined) {
@@ -4019,6 +4063,8 @@ export default function HotelPage() {
           )}
         </div>
       )}
+
+      {show('billing') && <CityLedger />}
 
       {show('billing') && (
         <div className="card" style={{ marginBottom: 16 }}>

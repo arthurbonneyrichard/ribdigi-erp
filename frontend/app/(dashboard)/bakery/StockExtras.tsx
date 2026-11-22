@@ -73,6 +73,7 @@ export function ItemDetailsPanel({ stockItems, onSaved }: { stockItems: Row[]; o
           purchase_unit: d.purchase_unit || '',
           units_per_purchase: d.units_per_purchase ?? '',
           par_level: d.par_level ?? '',
+          options_text: optionsToText(d.options || []),
         });
       })
       .catch((err) => act.setError(problem(err)));
@@ -106,6 +107,7 @@ export function ItemDetailsPanel({ stockItems, onSaved }: { stockItems: Row[]; o
                 <label><span>Keep on the shelf each day</span><input type="number" min="0" value={form.par_level} onChange={(e) => setForm({ ...form, par_level: e.target.value })} aria-label="Shelf level" /></label>
                 <label><span>Net weight</span><input value={form.net_weight} placeholder="e.g. 400 g" onChange={(e) => setForm({ ...form, net_weight: e.target.value })} aria-label="Net weight" /></label>
                 <label className="bk-span2"><span>Storage note</span><input value={form.storage_note} placeholder="e.g. Keep in a cool dry place" onChange={(e) => setForm({ ...form, storage_note: e.target.value })} aria-label="Storage note" /></label>
+                <label className="bk-span2"><span>Choices when ordering, one group per line, like Size*: 6 inch, 10 inch=60 (a * makes it required, =60 is the extra price)</span><textarea rows={3} value={form.options_text || ''} placeholder={'Size*: 6 inch, 10 inch=60\nFlavour: Vanilla, Red velvet=15'} onChange={(e) => setForm({ ...form, options_text: e.target.value })} aria-label="Order choices" /></label>
                 <label className="bk-span2"><span>Ingredient list for the label (leave blank to use the recipe)</span><input value={form.ingredients_text} onChange={(e) => setForm({ ...form, ingredients_text: e.target.value })} aria-label="Label ingredients" /></label>
               </>
             ) : (
@@ -145,6 +147,7 @@ export function ItemDetailsPanel({ stockItems, onSaved }: { stockItems: Row[]; o
                     shelf_life_days: num(form.shelf_life_days), day_old_discount_pct: num(form.day_old_discount_pct) || null,
                     par_level: num(form.par_level), net_weight: text(form.net_weight), storage_note: text(form.storage_note),
                     ingredients_text: text(form.ingredients_text), allergens: form.allergens,
+                    options: textToOptions(form.options_text || ''),
                   }
                 : {
                     stock_unit: form.stock_unit, purchase_unit: text(form.purchase_unit),
@@ -255,11 +258,46 @@ export function SuppliersPanel() {
   );
 }
 
-/** Suppliers for the Buy stock form. */
-export function useSuppliers(): Row[] {
+/** Suppliers for the Buy stock form. Only managers may list suppliers (bakery_api `_job(..., "correct")`),
+ * so bakers, cashiers and drivers skip the call instead of drawing a 403 on every visit. */
+export function useSuppliers(enabled = true): Row[] {
   const [rows, setRows] = useState<Row[]>([]);
   useEffect(() => {
+    if (!enabled) {
+      setRows([]);
+      return;
+    }
     bakeryApi('/bakery/suppliers').then((r) => setRows(r?.data || [])).catch(() => setRows([]));
-  }, []);
+  }, [enabled]);
   return rows;
+}
+
+
+// "Size*: 6 inch, 10 inch=60" <-> [{ name: 'Size', required: true, choices: [{ label, extra }] }]
+function optionsToText(groups: any[]): string {
+  return groups
+    .map((g) => `${g.name}${g.required ? '*' : ''}: ${(g.choices || []).map((c: any) => (Number(c.extra) ? `${c.label}=${c.extra}` : c.label)).join(', ')}`)
+    .join('\n');
+}
+
+function textToOptions(textValue: string) {
+  return textValue
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [head, ...rest] = line.split(':');
+      const name = head.trim();
+      const required = name.endsWith('*');
+      const choices = rest
+        .join(':')
+        .split(',')
+        .map((c) => c.trim())
+        .filter(Boolean)
+        .map((c) => {
+          const [label, extra] = c.split('=');
+          return { label: label.trim(), extra: Number(extra) || 0 };
+        });
+      return { name: required ? name.slice(0, -1).trim() : name, required, choices };
+    });
 }

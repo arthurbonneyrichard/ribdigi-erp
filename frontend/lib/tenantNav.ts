@@ -186,6 +186,7 @@ export const RESTAURANT_NAV_ITEMS: NavItem[] = [
   ['Website and booking', '/restaurant?tab=booking', 'restaurant'],
   ['Orders', '/restaurant/orders', 'restaurant'],
   ['Kitchen', '/restaurant?tab=kitchen', 'restaurant'],
+  ['Bar', '/restaurant?tab=bar', 'restaurant'],
   ['Recipes', '/restaurant?tab=recipes', 'restaurant'],
   ['Waste', '/restaurant?tab=waste', 'restaurant'],
   ['Bills', '/restaurant/bills', 'restaurant'],
@@ -226,6 +227,7 @@ export const RESTAURANT_NAV_GROUPS: NavGroup[] = [
       ['Website and booking', '/restaurant?tab=booking', 'restaurant'],
       ['Orders', '/restaurant/orders', 'restaurant'],
       ['Kitchen', '/restaurant?tab=kitchen', 'restaurant'],
+      ['Bar', '/restaurant?tab=bar', 'restaurant'],
       ['Recipes', '/restaurant?tab=recipes', 'restaurant'],
       ['Waste', '/restaurant?tab=waste', 'restaurant'],
     ],
@@ -307,6 +309,7 @@ export const BAKERY_NAV_GROUPS: NavGroup[] = [
       ['Orders', '/bakery?tab=orders', 'bakery'],
       ['Deliveries', '/bakery?tab=deliveries', 'bakery'],
       ['Trade customers', '/bakery?tab=trade', 'bakery'],
+      ['Regulars', '/bakery?tab=regulars', 'bakery'],
     ],
   },
   {
@@ -315,6 +318,7 @@ export const BAKERY_NAV_GROUPS: NavGroup[] = [
     items: [
       ['Baking', '/bakery?tab=baking', 'bakery'],
       ['Waste', '/bakery?tab=waste', 'bakery'],
+      ['Food safety', '/bakery?tab=safety', 'bakery'],
     ],
   },
   {
@@ -368,15 +372,22 @@ function deskTail(desk: string, extraSettings: NavItem[] = []): NavGroup[] {
 
 /** FMCG distributor: selling to outlets, trade, its own stock and buying. No shop menus. */
 export const FMCG_NAV_GROUPS: NavGroup[] = [
-  { id: 'fmcg', label: '', items: [['Dashboard', '/fmcg', 'fmcg']] },
+  { id: 'fmcg', label: '', items: [['Dashboard', '/fmcg', 'fmcg'], ['Business overview', '/fmcg?tab=command', 'fmcg'], ['Ask the assistant', '/fmcg?tab=assistant', 'fmcg']] },
   {
     id: 'fmcg-selling',
     label: 'Selling',
     items: [
       ['Outlets', '/fmcg?tab=outlets', 'fmcg'],
+      ['Distributors', '/fmcg?tab=distributors', 'fmcg'],
       ['Visits', '/fmcg?tab=visits', 'fmcg'],
+      ['Live staff map', '/fmcg?tab=livemap', 'fmcg'],
+      ['Shelf checks', '/fmcg?tab=merch', 'fmcg'],
       ['Orders', '/fmcg?tab=orders', 'fmcg'],
+      ['Van sales', '/fmcg?tab=van', 'fmcg'],
+      ['Fleet', '/fmcg?tab=fleet', 'fmcg'],
       ['Deliveries', '/fmcg?tab=deliveries', 'fmcg'],
+      ['Proof of delivery', '/fmcg?tab=pod', 'fmcg'],
+      ['Complaints', '/fmcg?tab=complaints', 'fmcg'],
       ['Collections', '/fmcg?tab=collections', 'fmcg'],
     ],
   },
@@ -386,7 +397,8 @@ export const FMCG_NAV_GROUPS: NavGroup[] = [
     items: [
       ['Routes', '/fmcg?tab=routes', 'fmcg'],
       ['Territories', '/fmcg?tab=territories', 'fmcg'],
-      ['Trade schemes', '/fmcg?tab=schemes', 'fmcg'],
+      ['Promotions', '/fmcg?tab=promotions', 'fmcg'],
+      ['Report centre', '/fmcg?tab=centre', 'fmcg'],
       ['Pack convert', '/fmcg?tab=packs', 'fmcg'],
     ],
   },
@@ -395,10 +407,15 @@ export const FMCG_NAV_GROUPS: NavGroup[] = [
     label: 'Stock',
     items: [
       ['Products', '/inventory?tab=products', 'inventory'],
+      ['Manufacturing', '/fmcg?tab=manufacturing', 'fmcg'],
       ['Stock levels', '/inventory?tab=whstock', 'inventory'],
+      ['Warehouse layout', '/fmcg?tab=warehouse', 'fmcg'],
+      ['Demand forecast', '/fmcg?tab=forecast', 'fmcg'],
       ['Adjust stock', '/inventory?tab=adjust', 'inventory'],
       ['Stock count', '/inventory?tab=counts', 'inventory'],
-      ['Expiry and batches', '/inventory?tab=expiry', 'inventory'],
+      ['Batches and expiry', '/fmcg?tab=batches', 'fmcg'],
+      ['Quality control', '/fmcg?tab=quality', 'fmcg'],
+      ['Recalls', '/fmcg?tab=recalls', 'fmcg'],
     ],
   },
   {
@@ -406,6 +423,7 @@ export const FMCG_NAV_GROUPS: NavGroup[] = [
     label: 'Buying',
     items: [
       ['Suppliers', '/purchasing?tab=suppliers', 'purchasing'],
+      ['Import shipments', '/fmcg?tab=imports', 'fmcg'],
       ['Purchase orders', '/purchasing?tab=orders', 'purchasing'],
       ['Receive goods', '/purchasing?tab=grn', 'purchasing'],
       ['Supplier bills', '/purchasing?tab=invoices', 'purchasing'],
@@ -434,13 +452,20 @@ export const GYM_NAV_GROUPS: NavGroup[] = [
       ['Door', '/gym?tab=door', 'gym'],
       ['Members', '/gym?tab=members', 'gym'],
       ['Classes', '/gym?tab=classes', 'gym'],
+      ['Gym floor', '/gym?tab=floor', 'gym'],
+      ['Shop', '/gym?tab=shop', 'gym'],
+      ['Fitness', '/gym?tab=fitness', 'gym'],
+      ['My work', '/gym?tab=mywork', 'gym'],
     ],
   },
   {
     id: 'gym-money',
     label: 'Plans and money',
     items: [
+      ['Growth', '/gym?tab=growth', 'gym'],
       ['Plans', '/gym?tab=plans', 'gym'],
+      ['Insights', '/gym?tab=insights', 'gym'],
+      ['Setup', '/gym?tab=setup', 'gym'],
       ['Reports', '/gym?tab=reports', 'gym'],
     ],
   },
@@ -456,6 +481,8 @@ export const HRM_NAV_GROUPS: NavGroup[] = [
     label: 'People',
     items: [
       ['Employees', '/hrm?tab=people', 'hrm'],
+      ['Staff journey', '/hrm?tab=journey', 'hrm'],
+      ['Field workforce', '/hrm?tab=field', 'hrm'],
       ['Leave', '/hrm?tab=leave', 'hrm'],
       ['Attendance', '/hrm?tab=attendance', 'hrm'],
     ],
@@ -509,6 +536,8 @@ export const HRM_NAV_ITEMS: NavItem[] = deskItems(HRM_NAV_GROUPS, 'hrm');
 export const HR_TAB_AREA: Record<string, string> = {
   today: 'people',
   people: 'people',
+  journey: 'people',
+  field: 'people',
   leave: 'leave',
   attendance: 'attendance',
   clock: 'attendance',
@@ -547,6 +576,8 @@ export const HR_AREAS_BY_INDUSTRY: Record<string, string[]> = {
 /** Whether an HRM screen is part of this business type's HR. */
 export function hrTabAllowed(tab: string | null | undefined, industry: string | null | undefined): boolean {
   const area = HR_TAB_AREA[(tab || 'today').trim()] || '';
+  // The field workforce view reads FMCG visits and orders, so only FMCG has it.
+  if ((tab || '').trim() === 'field' && normalizeIndustry(industry) !== 'fmcg') return false;
   const areas = HR_AREAS_BY_INDUSTRY[normalizeIndustry(industry) || ''] || ['self'];
   return Boolean(area) && areas.includes(area);
 }
@@ -656,7 +687,7 @@ export function industryNavHrefOk(href: string, industry: string | null | undefi
   if (path === '/gym' || path.startsWith('/gym/')) return ind === 'gym';
   if (path === '/hrm' || path.startsWith('/hrm/')) {
     // One HR engine for every business type; each gets its own set of HR screens.
-    return ind === 'hrm' || hrTabAllowed(hrTabOf(href), ind);
+    return (ind === 'hrm' && hrTabOf(href) !== 'field') || hrTabAllowed(hrTabOf(href), ind);
   }
   if (path === '/gift-cards') return ind === 'retail';
   if (path === '/ecommerce' || path.startsWith('/ecommerce/')) {
@@ -972,13 +1003,17 @@ export const CASHIER_NAV_MODULES: string[] = ['sales', 'pos', 'restaurant', 'sup
 /** Gift cards share the POS module. Cashiers stay on the till; other roles keep the page. */
 /** Restaurant staff see only their job's screens (the server enforces the same jobs). */
 export const FMCG_ROLE_HREFS: Record<string, string[]> = {
-  fmcg_rep: ['/hrm?tab=me', '/fmcg', '/fmcg?tab=outlets', '/fmcg?tab=visits', '/fmcg?tab=orders', '/fmcg?tab=collections', '/notifications', '/security', '/support'],
-  fmcg_driver: ['/hrm?tab=me', '/fmcg', '/fmcg?tab=orders', '/fmcg?tab=collections', '/fmcg?tab=deliveries', '/notifications', '/security', '/support'],
+  fmcg_rep: ['/hrm?tab=me', '/fmcg', '/fmcg?tab=outlets', '/fmcg?tab=visits', '/fmcg?tab=orders', '/fmcg?tab=collections', '/fmcg?tab=van', '/fmcg?tab=complaints', '/fmcg?tab=merch', '/notifications', '/security', '/support'],
+  fmcg_driver: ['/hrm?tab=me', '/fmcg', '/fmcg?tab=orders', '/fmcg?tab=collections', '/fmcg?tab=deliveries', '/fmcg?tab=van', '/fmcg?tab=pod', '/fmcg?tab=complaints', '/notifications', '/security', '/support'],
 };
 
+FMCG_ROLE_HREFS.fmcg_storekeeper = ['/hrm?tab=me', '/fmcg', '/fmcg?tab=livemap', '/fmcg?tab=warehouse', '/fmcg?tab=batches', '/inventory?tab=whstock', '/inventory?tab=adjust', '/inventory?tab=counts', '/notifications', '/security', '/support'];
+FMCG_ROLE_HREFS.fmcg_quality = ['/hrm?tab=me', '/fmcg', '/fmcg?tab=livemap', '/fmcg?tab=quality', '/fmcg?tab=complaints', '/fmcg?tab=batches', '/fmcg?tab=pod', '/notifications', '/security', '/support'];
+FMCG_ROLE_HREFS.fmcg_fleet = ['/hrm?tab=me', '/fmcg', '/fmcg?tab=livemap', '/fmcg?tab=fleet', '/fmcg?tab=deliveries', '/notifications', '/security', '/support'];
+
 export const GYM_ROLE_HREFS: Record<string, string[]> = {
-  gym_frontdesk: ['/hrm?tab=me', '/gym', '/gym?tab=door', '/gym?tab=members', '/gym?tab=classes', '/notifications', '/security', '/support'],
-  gym_trainer: ['/hrm?tab=me', '/gym', '/gym?tab=door', '/gym?tab=classes', '/notifications', '/security', '/support'],
+  gym_frontdesk: ['/hrm?tab=me', '/gym', '/gym?tab=door', '/gym?tab=members', '/gym?tab=classes', '/gym?tab=floor', '/gym?tab=shop', '/gym?tab=growth', '/gym?tab=setup', '/notifications', '/security', '/support'],
+  gym_trainer: ['/hrm?tab=me', '/gym', '/gym?tab=door', '/gym?tab=classes', '/gym?tab=floor', '/gym?tab=fitness', '/gym?tab=mywork', '/notifications', '/security', '/support'],
 };
 
 export const HRM_ROLE_HREFS: Record<string, string[]> = {
@@ -987,17 +1022,27 @@ export const HRM_ROLE_HREFS: Record<string, string[]> = {
     '/hrm?tab=devices', '/hrm?tab=hiring', '/hrm?tab=training',
     '/hrm?tab=contracts', '/hrm?tab=kit', '/hrm?tab=notices', '/hrm?tab=me', '/notifications', '/security', '/support',
   ],
+  hrm_payroll_officer: [
+    '/hrm', '/hrm?tab=people', '/hrm?tab=leave', '/hrm?tab=attendance', '/hrm?tab=payroll', '/hrm?tab=loans', '/hrm?tab=reports',
+    '/hrm?tab=me', '/notifications', '/security', '/support',
+  ],
+  hrm_recruiter: ['/hrm', '/hrm?tab=hiring', '/hrm?tab=me', '/notifications', '/security', '/support'],
+  hrm_auditor: [
+    '/hrm', '/hrm?tab=people', '/hrm?tab=leave', '/hrm?tab=attendance', '/hrm?tab=payroll', '/hrm?tab=loans', '/hrm?tab=reports',
+    '/hrm?tab=hiring', '/hrm?tab=reviews', '/hrm?tab=training', '/hrm?tab=contracts', '/hrm?tab=kit', '/hrm?tab=claims', '/hrm?tab=notices',
+    '/hrm?tab=me', '/notifications', '/security', '/support',
+  ],
   hrm_employee: ['/hrm?tab=me', '/notifications', '/security', '/support'],
 };
 
 export const BAKERY_ROLE_HREFS: Record<string, string[]> = {
-  bakery_baker: ['/hrm?tab=me', '/bakery', '/bakery?tab=baking', '/bakery?tab=waste', '/bakery?tab=orders', '/notifications', '/security', '/support'],
-  bakery_cashier: ['/hrm?tab=me', '/bakery', '/bakery?tab=counter', '/bakery?tab=orders', '/bakery?tab=deliveries', '/bakery?tab=trade', '/bakery?tab=waste', '/notifications', '/security', '/support'],
+  bakery_baker: ['/hrm?tab=me', '/bakery', '/bakery?tab=baking', '/bakery?tab=waste', '/bakery?tab=safety', '/bakery?tab=orders', '/notifications', '/security', '/support'],
+  bakery_cashier: ['/hrm?tab=me', '/bakery', '/bakery?tab=counter', '/bakery?tab=orders', '/bakery?tab=deliveries', '/bakery?tab=trade', '/bakery?tab=regulars', '/bakery?tab=waste', '/bakery?tab=safety', '/notifications', '/security', '/support'],
   bakery_driver: ['/hrm?tab=me', '/bakery', '/bakery?tab=deliveries', '/bakery?tab=counter', '/notifications', '/security', '/support'],
 };
 
 export const RESTAURANT_ROLE_HREFS: Record<string, string[]> = {
-  restaurant_waiter: ['/hrm?tab=me', '/restaurant/tips', '/restaurant/till', '/restaurant/orders', '/restaurant?tab=tables', '/restaurant?tab=kitchen', '/restaurant/help', '/notifications', '/security'],
+  restaurant_waiter: ['/hrm?tab=me', '/restaurant/tips', '/restaurant/till', '/restaurant/orders', '/restaurant?tab=tables', '/restaurant?tab=kitchen', '/restaurant?tab=bar', '/restaurant/help', '/notifications', '/security'],
   restaurant_cashier: ['/hrm?tab=me', '/restaurant/tips',
     '/restaurant/till',
     '/restaurant/orders',
@@ -1006,11 +1051,12 @@ export const RESTAURANT_ROLE_HREFS: Record<string, string[]> = {
     '/restaurant/day-close',
     '/restaurant?tab=tables',
     '/restaurant?tab=kitchen',
+    '/restaurant?tab=bar',
     '/restaurant/help',
     '/notifications',
     '/security',
   ],
-  restaurant_kitchen: ['/hrm?tab=me', '/restaurant/tips', '/restaurant?tab=kitchen', '/restaurant?tab=waste', '/restaurant/ingredients?tab=menu', '/restaurant/help', '/notifications', '/security'],
+  restaurant_kitchen: ['/hrm?tab=me', '/restaurant/tips', '/restaurant?tab=kitchen', '/restaurant?tab=bar', '/restaurant?tab=waste', '/restaurant/ingredients?tab=menu', '/restaurant/help', '/notifications', '/security'],
 };
 
 const HOTEL_STAFF_LINKS = ['/notifications', '/security', '/support'];

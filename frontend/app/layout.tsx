@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import UmamiScript from '../components/UmamiScript';
 import CookieConsent from '../components/CookieConsent';
 import './globals.css';
@@ -37,22 +38,24 @@ export const metadata = {
 };
 
 // Runs before paint to avoid a flash of the wrong theme.
-// Prefer the active signed-in user's scoped key when present; otherwise light (white) default.
-const themeInit = `(function(){try{var uid=localStorage.getItem('ribdigi.theme.userId');var t=uid?localStorage.getItem('ribdigi.theme.'+uid):null;if(t!=='light'&&t!=='dark'){t='light'}document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','light')}})();`;
+// Prefer the active signed-in user's scoped key; signed out, use the last theme shown on this device; otherwise light.
+const themeInit = `(function(){try{var uid=localStorage.getItem('ribdigi.theme.userId');var t=uid?localStorage.getItem('ribdigi.theme.'+uid):localStorage.getItem('ribdigi.theme.device');if(t!=='light'&&t!=='dark'){t='light'}document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','light')}})();`;
 
 const swInit = `(function(){try{if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(function(){})}}catch(e){}})();`;
 
 // Clicking anywhere in a date box opens the calendar, not only the small icon.
 const datePickerInit = `(function(){try{var T={date:1,'datetime-local':1,month:1,week:1};document.addEventListener('click',function(e){var el=e.target;if(!el||el.tagName!=='INPUT'||!T[el.type]||el.disabled||el.readOnly||typeof el.showPicker!=='function')return;try{el.showPicker()}catch(_){}},true)}catch(e){}})();`;
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+// Reading the request headers makes every page render per request, which is what a fresh nonce needs.
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preload" as="image" href="/brand/logo-full.png" fetchPriority="high" />
-        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
-        <script dangerouslySetInnerHTML={{ __html: swInit }} />
-        <script dangerouslySetInnerHTML={{ __html: datePickerInit }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: themeInit }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: swInit }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: datePickerInit }} />
         <UmamiScript />
       </head>
       {/* Browser extensions (Grammarly, password managers) add attributes to <body> before

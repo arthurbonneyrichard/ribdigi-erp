@@ -105,3 +105,29 @@ async def test_warehouse_low_stock_emails_roles(db_session, seeded, monkeypatch)
     assert "admin@alpha.example.com" in recipients
     assert "cashier@alpha.example.com" not in recipients
     assert any("Store/warehouse low stock" in (m.get("subject") or "") for m in emailer.get_dev_outbox())
+
+
+@pytest.mark.asyncio
+async def test_low_stock_check_survives_duplicate_unread_alerts(db_session, seeded):
+    """Two unread low-stock alerts for one product must not break the next stock move (15 Nov 2026:
+    completing a stock count returned 500 with MultipleResultsFound)."""
+    tenant_id = seeded["t1"].id
+    product = seeded["p1"]
+    product.stock_qty = 2
+    product.reorder_level = 10
+    for _ in range(2):
+        db_session.add(
+            m.Notification(
+                tenant_id=tenant_id,
+                category="low_stock",
+                title="Low Stock",
+                message="old alert",
+                entity_type="product",
+                entity_id=product.id,
+                status="unread",
+            )
+        )
+    await db_session.flush()
+
+    note = await note_svc.notify_low_stock_if_needed(db_session, tenant_id=tenant_id, product=product)
+    assert note is None  # an unread alert already exists, so no new one
