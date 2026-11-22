@@ -656,3 +656,8 @@
 .main .rdesk .rd-role-pick button.on small{color:#C8E86A}
 @media (max-width:640px){.main .rdesk .rd-role-pick{grid-template-columns:1fr}}
 .main .rdesk .rd-tool select{min-height:40px;border-radius:10px;border:2px solid var(--rd-line);background:var(--rd-panel);color:var(--rd-ink);padding:0 8px;font-weight:700}
+
+/* Kitchen and bar screens: full screen for a wall display. */
+.main .rdesk.rd-kitchen:fullscreen{background:var(--bg,#F5F7EC);color:var(--ink,#10211B);padding:16px;overflow:auto;width:100vw;height:100vh}
+.main .rdesk.rd-kitchen:fullscreen::backdrop{background:var(--bg,#F5F7EC)}
+[data-theme="dark"] .main .rdesk.rd-kitchen:fullscreen{background:#0b1410;color:#e8f0ea}

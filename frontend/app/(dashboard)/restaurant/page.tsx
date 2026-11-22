@@ -310,6 +310,27 @@ export default function RestaurantPage() {
   const [riderForm, setRiderForm] = useState<Record<string, { name: string; phone: string }>>({});
   const [mergeTarget, setMergeTarget] = useState<Record<string, string>>({});
   const kitchenAudio = useRef<AudioContext | null>(null);
+  const kitchenBox = useRef<HTMLElement | null>(null);
+  const [kitchenFull, setKitchenFull] = useState(false);
+  useEffect(() => {
+    const onChange = () => setKitchenFull(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+  // A wall screen must not sleep in the middle of service.
+  useEffect(() => {
+    if (!kitchenFull) return;
+    let lock: { release: () => Promise<void> } | null = null;
+    const nav = navigator as Navigator & { wakeLock?: { request: (t: 'screen') => Promise<{ release: () => Promise<void> }> } };
+    nav.wakeLock?.request('screen').then((l) => (lock = l)).catch(() => undefined);
+    return () => {
+      void lock?.release().catch(() => undefined);
+    };
+  }, [kitchenFull]);
+  function toggleKitchenFullscreen() {
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+    else void kitchenBox.current?.requestFullscreen?.().catch(() => undefined);
+  }
 
   // What each desk shows on top of the live lists. The full set loads once when the page opens;
   // after that a refresh (every 15 s, and after each button) only fetches the live lists plus the
@@ -4481,7 +4502,7 @@ export default function RestaurantPage() {
         </section>
       )}
       {restaurantDesk && (tab === 'kitchen' || tab === 'bar') && (
-        <section className="rdesk rd-kitchen" aria-label={tab === 'bar' ? 'Restaurant bar' : 'Restaurant kitchen'}>
+        <section ref={kitchenBox} className="rdesk rd-kitchen" aria-label={tab === 'bar' ? 'Restaurant bar' : 'Restaurant kitchen'}>
           <div className="rd-kds-bar">
             <div className="rd-kds-counts">
               <span className="rd-pill grey">{screenTickets.filter((row) => row.status === 'queued').length} waiting</span>
@@ -4490,6 +4511,14 @@ export default function RestaurantPage() {
               <span className="rd-hint">Refreshes every 15 seconds.</span>
             </div>
             <div className="rd-kds-tools">
+              <button
+                type="button"
+                className="rd-primary"
+                aria-label={kitchenFull ? 'Exit full screen' : tab === 'bar' ? 'Bar screen full screen' : 'Kitchen screen full screen'}
+                onClick={toggleKitchenFullscreen}
+              >
+                {kitchenFull ? 'Exit full screen' : 'Full screen'}
+              </button>
               <KitchenPrintTool />
               <div className="rd-tool" aria-label="Restaurant kitchen sound">
                 <span>
