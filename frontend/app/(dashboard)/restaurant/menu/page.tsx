@@ -226,6 +226,21 @@ export default function RestaurantDigitalMenuPage() {
   const [previewMode, setPreviewMode] = useState<'phone' | 'desktop'>('phone');
   const [previewTick, setPreviewTick] = useState(0);
 
+  const [dropping, setDropping] = useState(false);
+
+  function uploadSiteImage(file?: File | null) {
+    if (!file) return;
+    if (!/^image\/(png|jpe?g|webp)$/i.test(file.type)) {
+      setError('Choose a JPG, PNG or WebP photo.');
+      return;
+    }
+    void run(async () => {
+      const form = new FormData();
+      form.append('file', file);
+      await api('/restaurant/menu/site-image', { method: 'POST', body: form });
+    }, 'Display image saved.');
+  }
+
   async function run(action: () => Promise<unknown>, done?: string) {
     setBusy(true);
     setError('');
@@ -247,7 +262,7 @@ export default function RestaurantDigitalMenuPage() {
     api(path, { method, body: body === undefined ? undefined : JSON.stringify(body) });
 
   const logoPreview = useStaffImage(preview && data?.has_logo ? '/tenants/me/logo' : null, preview?.restaurant?.logo_version);
-  const siteImagePreview = useStaffImage(data?.settings?.has_site_image ? '/restaurant/menu/site-image' : null, data?.settings?.has_site_image ? 'y' : 'n');
+  const siteImagePreview = useStaffImage(data?.settings?.has_site_image ? '/restaurant/menu/site-image' : null, data?.settings?.has_site_image ? `y${previewTick}` : 'n');
   const bannerPreview = useStaffImage(preview?.banner?.version ? '/restaurant/menu/banner' : null, preview?.banner?.version);
 
   if (!data) {
@@ -631,46 +646,62 @@ export default function RestaurantDigitalMenuPage() {
             <fieldset className="dmenu-step">
               <legend><span>3</span> Display image</legend>
               <div className="dmenu-hero-image">
-                <div className="dmenu-hero-thumb">
-                  {siteImagePreview ? <img src={siteImagePreview} alt="Your display image" /> : <span>No image yet</span>}
-                </div>
-                <div>
-                  <p className="dmenu-hint">The big picture at the top of your site. A wide photo of your food or your place works best.</p>
-                  <div className="dmenu-hero-actions">
-                    <label className="dmenu-upload">
-                      {settings.has_site_image ? 'Change image' : 'Add image'}
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        disabled={!editable}
-                        aria-label="Website display image"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          e.target.value = '';
-                          if (!file) return;
-                          void run(async () => {
-                            const form = new FormData();
-                            form.append('file', file);
-                            await api('/restaurant/menu/site-image', { method: 'POST', body: form });
-                          }, 'Display image saved.');
-                        }}
-                      />
-                    </label>
-                    {settings.has_site_image ? (
-                      <button type="button" className="btn-danger" disabled={!editable} aria-label="Remove website display image" onClick={() => void run(() => send('/restaurant/menu/site-image', 'DELETE'), 'Display image removed.')}>
-                        Remove
-                      </button>
-                    ) : null}
-                  </div>
+                <label
+                  className={`dmenu-drop${siteImagePreview ? ' has' : ''}${dropping ? ' over' : ''}`}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (editable) setDropping(true);
+                  }}
+                  onDragLeave={() => setDropping(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDropping(false);
+                    if (editable) uploadSiteImage(e.dataTransfer.files?.[0]);
+                  }}
+                >
+                  {siteImagePreview ? <img src={siteImagePreview} alt="Your display image" /> : null}
+                  <span className="dmenu-drop-text">
+                    <b>{busy ? 'Saving…' : siteImagePreview ? 'Change image' : 'Add your image'}</b>
+                    <small>{siteImagePreview ? 'Click or drop a new photo' : 'Click here or drop a photo'}</small>
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    disabled={!editable || busy}
+                    aria-label="Website display image"
+                    onChange={(e) => {
+                      uploadSiteImage(e.target.files?.[0]);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                <div className="dmenu-hero-side">
+                  <p className="dmenu-hint">
+                    The big picture at the top of your site. Choose the one you like best and change it any time. A wide photo of your food or your place works best (JPG, PNG or WebP). We make it smaller for you so the site stays fast.
+                  </p>
+                  {settings.has_site_image ? (
+                    <button type="button" className="dmenu-remove" disabled={!editable || busy} aria-label="Remove website display image" onClick={() => void run(() => send('/restaurant/menu/site-image', 'DELETE'), 'Display image removed.')}>
+                      Remove image
+                    </button>
+                  ) : null}
                 </div>
               </div>
-              <Choice
-                label="Image style"
-                value={design.hero || 'full'}
-                disabled={!editable}
-                options={[['full', 'Full width'], ['split', 'Beside title'], ['plain', 'No image']]}
-                onPick={(v) => saveDesign({ hero: v })}
-              />
+              <div className="dmenu-styles" role="group" aria-label="Image style">
+                {([
+                  ['full', 'Full width', 'Behind the title'],
+                  ['split', 'Beside title', 'Next to the text'],
+                  ['plain', 'No image', 'Just colour'],
+                ] as const).map(([key, title, sub]) => (
+                  <button key={key} type="button" className={`dmenu-style${(design.hero || 'full') === key ? ' on' : ''}`} aria-pressed={(design.hero || 'full') === key} disabled={!editable} onClick={() => saveDesign({ hero: key })}>
+                    <span className={`pic ${key}`} aria-hidden>
+                      <i />
+                      <i />
+                    </span>
+                    <b>{title}</b>
+                    <small>{sub}</small>
+                  </button>
+                ))}
+              </div>
             </fieldset>
 
             <fieldset className="dmenu-step">
