@@ -9,8 +9,14 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../../../lib/api';
-import StaffMap from '../../../components/StaffMap';
+import dynamic from 'next/dynamic';
 import type { MapMarker } from '../../../components/TileMap';
+
+// Leaflet touches `window` when imported, so it must load in the browser only.
+const StaffMap = dynamic(() => import('../../../components/StaffMap'), {
+  ssr: false,
+  loading: () => <div style={{ height: 460 }} aria-busy="true">Loading map…</div>,
+});
 import './fmcg-selling.css';
 
 type Row = Record<string, any>;

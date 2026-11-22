@@ -277,6 +277,8 @@ export default function RestaurantPage() {
   const [expandedOrder, setExpandedOrder] = useState('');
   const [showClosedOrders, setShowClosedOrders] = useState(false);
   const [addingRecipe, setAddingRecipe] = useState(false);
+  const [recipeSearch, setRecipeSearch] = useState('');
+  const [recipeFilter, setRecipeFilter] = useState<'all' | 'short' | 'costly'>('all');
   const [editingRecipe, setEditingRecipe] = useState('');
   const [retiringRecipe, setRetiringRecipe] = useState('');
   const [addingBooking, setAddingBooking] = useState(false);
@@ -310,6 +312,27 @@ export default function RestaurantPage() {
   const [riderForm, setRiderForm] = useState<Record<string, { name: string; phone: string }>>({});
   const [mergeTarget, setMergeTarget] = useState<Record<string, string>>({});
   const kitchenAudio = useRef<AudioContext | null>(null);
+  const kitchenBox = useRef<HTMLElement | null>(null);
+  const [kitchenFull, setKitchenFull] = useState(false);
+  useEffect(() => {
+    const onChange = () => setKitchenFull(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+  // A wall screen must not sleep in the middle of service.
+  useEffect(() => {
+    if (!kitchenFull) return;
+    let lock: { release: () => Promise<void> } | null = null;
+    const nav = navigator as Navigator & { wakeLock?: { request: (t: 'screen') => Promise<{ release: () => Promise<void> }> } };
+    nav.wakeLock?.request('screen').then((l) => (lock = l)).catch(() => undefined);
+    return () => {
+      void lock?.release().catch(() => undefined);
+    };
+  }, [kitchenFull]);
+  function toggleKitchenFullscreen() {
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+    else void kitchenBox.current?.requestFullscreen?.().catch(() => undefined);
+  }
 
   // What each desk shows on top of the live lists. The full set loads once when the page opens;
   // after that a refresh (every 15 s, and after each button) only fetches the live lists plus the
@@ -1949,6 +1972,23 @@ export default function RestaurantPage() {
   const heldTables = tables.filter((row) => row.status === 'held');
   const lowIngredients = products.filter((row) => Number(row.reorder_level || 0) > 0 && Number(row.stock_qty || 0) <= Number(row.reorder_level || 0));
   const recipeMenuIds = new Set(recipes.map((row) => row.product_id));
+  const recipeIsShort = (row: Row) =>
+    row.can_make === 0 ||
+    Object.entries(row.line_info || {}).some(([id, info]: [string, any]) => {
+      const line = (row.lines || []).find((l: Row) => l.ingredient_id === id);
+      return line && Number(info.stock) < Number(line.quantity);
+    });
+  const recipeQuery = recipeSearch.trim().toLowerCase();
+  const shownRecipes = recipes.filter((row) => {
+    if (recipeFilter === 'short' && !recipeIsShort(row)) return false;
+    if (recipeFilter === 'costly' && !(Number(row.food_cost_pct) > 40)) return false;
+    if (!recipeQuery) return true;
+    return (
+      String(row.name || '').toLowerCase().includes(recipeQuery) ||
+      String(row.menu_item || '').toLowerCase().includes(recipeQuery) ||
+      (row.lines || []).some((l: Row) => String(l.name || '').toLowerCase().includes(recipeQuery))
+    );
+  });
   const recipeIngredientIds = new Set(
     recipes.flatMap((row) => (row.lines || []).map((line: Row) => line.ingredient_id))
   );
@@ -4481,7 +4521,7 @@ export default function RestaurantPage() {
         </section>
       )}
       {restaurantDesk && (tab === 'kitchen' || tab === 'bar') && (
-        <section className="rdesk rd-kitchen" aria-label={tab === 'bar' ? 'Restaurant bar' : 'Restaurant kitchen'}>
+        <section ref={kitchenBox} className="rdesk rd-kitchen" aria-label={tab === 'bar' ? 'Restaurant bar' : 'Restaurant kitchen'}>
           <div className="rd-kds-bar">
             <div className="rd-kds-counts">
               <span className="rd-pill grey">{screenTickets.filter((row) => row.status === 'queued').length} waiting</span>
@@ -4490,6 +4530,14 @@ export default function RestaurantPage() {
               <span className="rd-hint">Refreshes every 15 seconds.</span>
             </div>
             <div className="rd-kds-tools">
+              <button
+                type="button"
+                className="rd-primary"
+                aria-label={kitchenFull ? 'Exit full screen' : tab === 'bar' ? 'Bar screen full screen' : 'Kitchen screen full screen'}
+                onClick={toggleKitchenFullscreen}
+              >
+                {kitchenFull ? 'Exit full screen' : 'Full screen'}
+              </button>
               <KitchenPrintTool />
               <div className="rd-tool" aria-label="Restaurant kitchen sound">
                 <span>
@@ -4714,8 +4762,35 @@ export default function RestaurantPage() {
           </details>
 
           {recipes.length ? (
+            <div className="rd-recipe-tools" role="search">
+              <input
+                type="search"
+                aria-label="Search recipes"
+                placeholder="Search a dish or an ingredient"
+                value={recipeSearch}
+                onChange={(e) => setRecipeSearch(e.target.value)}
+              />
+              {([
+                ['all', 'All'],
+                ['short', 'Short on stock'],
+                ['costly', 'Food cost over 40%'],
+              ] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`rd-chip${recipeFilter === key ? ' on' : ''}`}
+                  aria-pressed={recipeFilter === key}
+                  onClick={() => setRecipeFilter(key)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {recipes.length && !shownRecipes.length ? <p className="rd-hint-line">No recipe matches. Clear the search or the filter.</p> : null}
+          {recipes.length ? (
             <ul className="rest-order-list" aria-label="Restaurant recipes">
-              {recipes.map((row) => {
+              {shownRecipes.map((row) => {
                 const editing = editingRecipe === row.id;
                 const lines = leftoverRecipeLines(row);
                 const facts: Array<[string, string]> = [
@@ -4736,13 +4811,31 @@ export default function RestaurantPage() {
                     </div>
                     {!editing ? (
                       <>
-                        <ul className="rd-ing-list">
-                          {lines.map((line: Row) => (
-                            <li key={`${row.id}-${line.ingredient_id}`}>
-                              <b>{Number(line.quantity)}</b> {line.name}
-                            </li>
-                          ))}
+                        <ul className="rd-ing-table" aria-label={`Ingredients of ${row.name}`}>
+                          {lines.map((line: Row) => {
+                            const info = row.line_info?.[line.ingredient_id];
+                            const short = info && Number(info.stock) < Number(line.quantity);
+                            return (
+                              <li key={`${row.id}-${line.ingredient_id}`} className={short ? 'short' : ''}>
+                                <span className="n">{line.name}</span>
+                                <span className="q">{Number(line.quantity)}</span>
+                                <span className="c">{info?.cost ? Number(info.cost).toFixed(2) : '–'}</span>
+                                <span className="s">{short ? `Only ${Number(info.stock)} in stock` : info ? 'In stock' : ''}</span>
+                              </li>
+                            );
+                          })}
                         </ul>
+                        <div className="rd-cost-tiles" aria-label={`Cost of ${row.name}`}>
+                          <div><span>Cost per dish</span><b>{Number(row.cost || 0).toFixed(2)}</b></div>
+                          {row.selling_price ? <div><span>Sells for</span><b>{Number(row.selling_price).toFixed(2)}</b></div> : null}
+                          {row.food_cost_pct != null ? (
+                            <div className={Number(row.food_cost_pct) > 40 ? 'warn' : ''}><span>Food cost</span><b>{row.food_cost_pct}%</b></div>
+                          ) : null}
+                          {row.margin != null ? <div><span>Margin</span><b>{Number(row.margin).toFixed(2)}</b></div> : null}
+                          {row.can_make != null ? (
+                            <div className={row.can_make === 0 ? 'warn' : ''}><span>Stock covers</span><b>{row.can_make} {row.can_make === 1 ? 'dish' : 'dishes'}</b></div>
+                          ) : null}
+                        </div>
                         <div className="rest-order-actions rd-row-actions">
                           <button type="button" aria-label={`Edit recipe ${row.name}`} onClick={() => setEditingRecipe(row.id)}>
                             Edit

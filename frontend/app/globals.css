@@ -9902,3 +9902,10 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{background-color:rgb
 .main .page-head-card:not(.plat-hero):not(.plat .page-head-card):not(#_) .muted,
 .main .page-head-card:not(.plat-hero):not(.plat .page-head-card):not(#_) p{color:#D6EECB!important}
 .main .page-head-card:not(.plat-hero):not(.plat .page-head-card):not(#_) .page-kicker{color:#C8E86A!important}
+
+/* Mobile + dark mode: Log out was a dim maroon block; make it a clearly light, readable button. */
+@media(max-width:900px){
+  [data-theme="dark"] .main .topbar-right .logout-btn:not(.till-full-btn){background:#f8fafc;color:#b42318;border-color:#f8fafc}
+  [data-theme="dark"] .main .topbar-right .logout-btn:not(.till-full-btn):hover,
+  [data-theme="dark"] .main .topbar-right .logout-btn:not(.till-full-btn):active{background:#fff;color:#991b1b;border-color:#fff}
+}

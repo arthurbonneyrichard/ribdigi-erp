@@ -782,7 +782,7 @@ async def restaurant_recipe(
     claims=Depends(require_permission("restaurant", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    row = await restaurant_svc.create_recipe(db, claims["tenant_id"], payload)
+    row = await restaurant_svc.create_recipe(db, claims["tenant_id"], payload, user_id=claims.get("sub"))
     await db.commit()
     listed = await restaurant_svc.list_recipes(db, claims["tenant_id"])
     saved = next((item for item in listed if item["id"] == row.id), None)
@@ -1406,6 +1406,36 @@ async def restaurant_till_offline_sync(
     await db.commit()
     booked = body["counts"].get("booked", 0)
     return _env(body, f"{booked} offline sale(s) booked")
+
+
+@router.get("/till/dish-image/{product_id}")
+async def restaurant_till_dish_image(
+    product_id: UuidIdValue,
+    request: Request,
+    claims=Depends(require_permission("restaurant", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """A dish photo for the till. The product list carries a storage key, not a link a browser can open."""
+    from fastapi.responses import Response
+
+    from app import logo_media as logo_media_svc
+    from app import models as m
+    from sqlalchemy import select
+
+    product = (
+        await db.execute(
+            select(m.Product).where(m.Product.id == product_id, m.Product.tenant_id == claims["tenant_id"])
+        )
+    ).scalar_one_or_none()
+    if product is None or not product.image_url:
+        return Response(status_code=404)
+    return logo_media_svc.keyed_media_response(
+        product.image_url,
+        tenant_id=claims["tenant_id"],
+        request=request,
+        cache_control="private, no-cache",
+        vary="Authorization",
+    )
 
 
 @router.get("/till/shift")

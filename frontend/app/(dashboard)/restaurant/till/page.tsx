@@ -8,7 +8,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { api } from '../../../../lib/api';
+import { api, apiFetch } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
 import PosLockGate, { PosLockButton, useTillSale } from '../../../../components/PosLockGate';
 import { formatMoney } from '../../../../lib/format';
@@ -33,6 +33,33 @@ import {
   type SyncResult,
 } from '../../../../lib/restaurantOffline';
 import './restaurant-till.css';
+
+const dishPhotos = new Map<string, string>();
+
+/** The till loads a dish photo with the signed-in session, because the list only carries a storage key. */
+function DishPhoto({ productId, version }: { productId: string; version: string }) {
+  const key = `${productId}:${version}`;
+  const [src, setSrc] = useState(dishPhotos.get(key) || '');
+  useEffect(() => {
+    if (dishPhotos.has(key)) {
+      setSrc(dishPhotos.get(key) || '');
+      return;
+    }
+    let live = true;
+    apiFetch(`/restaurant/till/dish-image/${productId}`)
+      .then(async (res) => {
+        if (!res.ok) return;
+        const url = URL.createObjectURL(await res.blob());
+        dishPhotos.set(key, url);
+        if (live) setSrc(url);
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [key, productId]);
+  return src ? <img src={src} alt="" decoding="async" /> : <span className="rtill-dish-initial" aria-hidden />;
+}
 
 type Row = Record<string, any>;
 type Mode = 'dine_in' | 'takeaway' | 'delivery';
@@ -960,7 +987,7 @@ function RestaurantTill() {
                     onClick={() => addItem(row)}
                   >
                     {row.has_image && row.image_url ? (
-                      <img src={row.image_url} alt="" loading="lazy" />
+                      <DishPhoto productId={row.id} version={String(row.image_url)} />
                     ) : (
                       <span className="rtill-dish-initial" aria-hidden>
                         {String(row.name || '?').slice(0, 1)}

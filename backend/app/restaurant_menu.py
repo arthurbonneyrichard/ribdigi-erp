@@ -132,6 +132,11 @@ def _serialize_settings(row: m.RestaurantMenuSettings) -> dict:
         "board_style": row.board_style,
         "board_rotate_seconds": int(row.board_rotate_seconds or 12),
         "show_unavailable": bool(row.show_unavailable),
+        "primary_color": row.primary_color,
+        "background_color": row.background_color,
+        "board_background_color": row.board_background_color,
+        "has_banner": bool(row.banner_url),
+        "banner_position": row.banner_position or "top",
     }
 
 
@@ -212,7 +217,13 @@ async def save_settings(db: AsyncSession, tenant_id: str, payload, *, user_id: s
         if not HEX_COLOR.match(color):
             raise HTTPException(status_code=422, detail="Choose a colour like #4AB012.")
         row.accent_color = color.upper()
-    for field in ("board_style", "board_rotate_seconds", "show_unavailable", "is_published"):
+    for field in ("primary_color", "background_color", "board_background_color"):
+        if field in data:
+            raw = str(data[field] or "").strip()
+            if raw and not HEX_COLOR.match(raw):
+                raise HTTPException(status_code=422, detail="Choose a colour like #4AB012.")
+            setattr(row, field, raw.upper() or None)
+    for field in ("board_style", "board_rotate_seconds", "show_unavailable", "is_published", "banner_position"):
         if field in data:
             setattr(row, field, data[field])
     row.updated_at = _now()
@@ -502,8 +513,15 @@ def _guest_payload(
             "tagline": row.tagline,
         },
         "currency": tenant.currency or "GHS",
+        "banner": {
+            "version": logo_media_svc.logo_version(tenant.id, row.banner_url),
+            "position": row.banner_position or "top",
+        },
         "theme": {
             "accent": row.accent_color,
+            "primary": row.primary_color,
+            "background": row.background_color,
+            "board_background": row.board_background_color,
             "style": row.board_style,
             "rotate_seconds": int(row.board_rotate_seconds or 12),
         },
@@ -530,6 +548,29 @@ async def public_logo_tenant(db: AsyncSession, token: str) -> m.Tenant:
     if not getattr(tenant, "logo_url", None):
         raise HTTPException(status_code=404, detail="No logo uploaded")
     return tenant
+
+
+async def public_banner_key(db: AsyncSession, token: str) -> tuple[m.Tenant, str]:
+    row, tenant = await _published_menu(db, token)
+    if not row.banner_url:
+        raise HTTPException(status_code=404, detail="No banner uploaded")
+    return tenant, row.banner_url
+
+
+async def set_banner(db: AsyncSession, tenant_id: str, key: str | None, *, user_id: str | None) -> dict:
+    tenant = await rs._restaurant_tenant(db, tenant_id=tenant_id)
+    row = await ensure_menu(db, tenant)
+    row.banner_url = key
+    row.updated_at = _now()
+    await _log(db, tenant.id, user_id, "restaurant_menu_banner_saved" if key else "restaurant_menu_banner_removed", row.id, {})
+    await db.flush()
+    return _serialize_settings(row)
+
+
+async def admin_banner_key(db: AsyncSession, tenant_id: str) -> str | None:
+    tenant = await rs._restaurant_tenant(db, tenant_id=tenant_id)
+    row = await ensure_menu(db, tenant)
+    return row.banner_url
 
 
 async def public_item_image(db: AsyncSession, token: str, item_id: str) -> tuple[m.Tenant, str]:

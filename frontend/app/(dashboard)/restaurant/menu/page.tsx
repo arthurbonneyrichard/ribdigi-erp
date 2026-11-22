@@ -21,12 +21,16 @@ function canEditMenu(me: Row | null): boolean {
 }
 
 /** Staff can see photos before the menu is public, so these load with the staff session. */
-function StaffPhoto({ itemId, version }: { itemId: string; version?: string | null }) {
+function useStaffImage(path: string | null, version?: string | null): string {
   const [url, setUrl] = useState('');
   useEffect(() => {
+    if (!path) {
+      setUrl('');
+      return;
+    }
     let live = true;
     let made = '';
-    apiFetch(`/restaurant/menu/items/${itemId}/photo`)
+    apiFetch(path)
       .then(async (res) => {
         if (!res.ok) return;
         made = URL.createObjectURL(await res.blob());
@@ -37,7 +41,12 @@ function StaffPhoto({ itemId, version }: { itemId: string; version?: string | nu
       live = false;
       if (made) URL.revokeObjectURL(made);
     };
-  }, [itemId, version]);
+  }, [path, version]);
+  return url;
+}
+
+function StaffPhoto({ itemId, version }: { itemId: string; version?: string | null }) {
+  const url = useStaffImage(`/restaurant/menu/items/${itemId}/photo`, version);
   return url ? <img src={url} alt="" /> : null;
 }
 
@@ -197,6 +206,9 @@ export default function RestaurantDigitalMenuPage() {
   const send = (path: string, method: string, body?: unknown) =>
     api(path, { method, body: body === undefined ? undefined : JSON.stringify(body) });
 
+  const logoPreview = useStaffImage(preview && data?.has_logo ? '/tenants/me/logo' : null, preview?.restaurant?.logo_version);
+  const bannerPreview = useStaffImage(preview?.banner?.version ? '/restaurant/menu/banner' : null, preview?.banner?.version);
+
   if (!data) {
     return (
       <div className="rdesk">
@@ -274,6 +286,8 @@ export default function RestaurantDigitalMenuPage() {
         <section className="dmenu-phone" aria-label="Menu preview">
           <GuestMenuView
             menu={preview}
+            logoSrc={logoPreview}
+            bannerSrc={bannerPreview}
             photo={(item: GuestItem) => (item.image_version ? <StaffPhoto itemId={item.id} version={item.image_version} /> : null)}
           />
         </section>
@@ -373,6 +387,31 @@ export default function RestaurantDigitalMenuPage() {
                 onChange={(e) => saveSettings({ accent_color: e.target.value })}
               />
             </label>
+            {([
+              ['primary_color', 'Header and card colour', '#006B2E', 'Menu header colour'],
+              ['background_color', 'Page background colour', '#F5FAF0', 'Menu background colour'],
+              ['board_background_color', 'TV board background colour', '#001A0E', 'TV board background colour'],
+            ] as const).map(([key, label, fallback, aria]) => (
+              <label key={key}>
+                {label}
+                <span className="dmenu-colour">
+                  <input
+                    type="color"
+                    value={settings[key] || fallback}
+                    disabled={!editable}
+                    aria-label={aria}
+                    onChange={(e) => saveSettings({ [key]: e.target.value })}
+                  />
+                  {settings[key] ? (
+                    <button type="button" disabled={!editable} aria-label={`Reset ${label.toLowerCase()}`} onClick={() => saveSettings({ [key]: null }, 'Colour reset.')}>
+                      Reset
+                    </button>
+                  ) : (
+                    <small>Default</small>
+                  )}
+                </span>
+              </label>
+            ))}
             <label>
               Board style
               <select
@@ -401,6 +440,55 @@ export default function RestaurantDigitalMenuPage() {
                 }}
               />
             </label>
+            <label>
+              Banner image
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                disabled={!editable}
+                aria-label="Menu banner image"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = '';
+                  if (!file) return;
+                  void run(async () => {
+                    const form = new FormData();
+                    form.append('file', file);
+                    await api('/restaurant/menu/banner', { method: 'POST', body: form });
+                  }, 'Banner saved.');
+                }}
+              />
+            </label>
+            {settings.has_banner ? (
+              <>
+                <label>
+                  Banner position
+                  <select
+                    value={settings.banner_position || 'top'}
+                    disabled={!editable}
+                    aria-label="Banner position"
+                    onChange={(e) => saveSettings({ banner_position: e.target.value })}
+                  >
+                    <option value="top">Top of the menu</option>
+                    <option value="footer">Bottom of the menu</option>
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  className="btn-danger"
+                  disabled={!editable}
+                  aria-label="Remove menu banner"
+                  onClick={() => void run(() => send('/restaurant/menu/banner', 'DELETE'), 'Banner removed.')}
+                >
+                  Remove banner
+                </button>
+              </>
+            ) : null}
+            <p className="dmenu-hint">
+              {data.has_logo
+                ? 'Your company logo shows at the top of the menu.'
+                : 'Add your logo under Company to show it at the top of the menu.'}
+            </p>
             <label className="dmenu-check">
               <input
                 type="checkbox"

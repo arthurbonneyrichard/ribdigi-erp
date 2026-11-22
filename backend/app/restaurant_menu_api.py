@@ -43,6 +43,10 @@ class SettingsBody(Body):
     board_style: Literal["forest", "mist"] | None = None
     board_rotate_seconds: int | None = Field(default=None, ge=5, le=60)
     show_unavailable: bool | None = None
+    banner_position: Literal["top", "footer"] | None = None
+    primary_color: Annotated[str, Field(max_length=7)] | None = None
+    background_color: Annotated[str, Field(max_length=7)] | None = None
+    board_background_color: Annotated[str, Field(max_length=7)] | None = None
 
 
 class CategoryCreateBody(Body):
@@ -104,7 +108,7 @@ async def menu_preview(claims=Depends(can_read), db: AsyncSession = Depends(get_
 @router.patch("/settings")
 async def menu_settings(payload: SettingsBody, claims=Depends(can_edit), db: AsyncSession = Depends(get_db)):
     data = await menu_svc.save_settings(
-        db, claims["tenant_id"], _drop_nulls(payload, "tagline"), user_id=claims.get("sub")
+        db, claims["tenant_id"], _drop_nulls(payload, "tagline", "primary_color", "background_color", "board_background_color"), user_id=claims.get("sub")
     )
     await db.commit()
     return _env(data, "Menu settings saved")
@@ -227,6 +231,39 @@ async def menu_item_photo_get(
     )
 
 
+@router.post("/banner")
+async def menu_banner_upload(
+    file: UploadFile = File(...), claims=Depends(can_edit), db: AsyncSession = Depends(get_db)
+):
+    stored = await storage_svc.save_upload(
+        tenant_id=claims["tenant_id"],
+        category="banners",
+        upload=file,
+        allowed_types=storage_svc.LOGO_CONTENT_TYPES,
+        max_bytes=int(settings.MEDIA_MAX_LOGO_BYTES),
+    )
+    data = await menu_svc.set_banner(db, claims["tenant_id"], stored.key, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(data, "Banner saved")
+
+
+@router.delete("/banner")
+async def menu_banner_delete(claims=Depends(can_edit), db: AsyncSession = Depends(get_db)):
+    data = await menu_svc.set_banner(db, claims["tenant_id"], None, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(data, "Banner removed")
+
+
+@router.get("/banner")
+async def menu_banner_get(request: Request, claims=Depends(can_read), db: AsyncSession = Depends(get_db)):
+    key = await menu_svc.admin_banner_key(db, claims["tenant_id"])
+    if not key:
+        return Response(status_code=404)
+    return logo_media_svc.keyed_media_response(
+        key, tenant_id=claims["tenant_id"], request=request, cache_control="private, no-cache", vary="Authorization"
+    )
+
+
 def _download(data: bytes, filename: str, media_type: str) -> Response:
     return Response(
         content=data,
@@ -267,6 +304,14 @@ async def public_menu(token: str, request: Request, db: AsyncSession = Depends(g
 async def public_menu_logo(token: str, request: Request, db: AsyncSession = Depends(get_db)):
     tenant = await menu_svc.public_logo_tenant(db, token)
     return logo_media_svc.tenant_logo_response(tenant, request=request, requested_version=None)
+
+
+@public_router.get("/{token}/banner")
+async def public_menu_banner(token: str, request: Request, db: AsyncSession = Depends(get_db)):
+    tenant, key = await menu_svc.public_banner_key(db, token)
+    return logo_media_svc.keyed_media_response(
+        key, tenant_id=tenant.id, request=request, cache_control="public, no-cache", vary="Accept"
+    )
 
 
 @public_router.get("/{token}/items/{item_id}/image")

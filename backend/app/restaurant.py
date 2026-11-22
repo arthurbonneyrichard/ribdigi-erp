@@ -2320,8 +2320,41 @@ async def list_recipes(db: AsyncSession, tenant_id: str) -> list[dict]:
                 )
             ).scalars()
         }
+    def _cost_info(recipe_row, recipe_lines):
+        """Ingredient cost for one dish, food-cost %, and how many dishes the stock covers."""
+        dish = products.get(recipe_row.product_id)
+        cost = 0.0
+        can_make = None
+        for line in recipe_lines:
+            ing = products.get(line.ingredient_id)
+            qty = float(money_json(line.quantity))
+            if ing is None or qty <= 0:
+                continue
+            cost += qty * float(money_json(ing.cost_price or 0))
+            makes = int(max(float(money_json(ing.stock_qty or 0)), 0.0) // qty)
+            can_make = makes if can_make is None else min(can_make, makes)
+        price = float(money_json(dish.selling_price or 0)) if dish is not None else 0.0
+        return {
+            "cost": round(cost, 2),
+            "selling_price": round(price, 2),
+            "food_cost_pct": round(cost / price * 100, 1) if price > 0 else None,
+            "margin": round(price - cost, 2) if price > 0 else None,
+            "can_make": can_make,
+        }
+
     return [
         {
+            **_cost_info(recipe, [ln for ln in lines if ln.recipe_id == recipe.id]),
+            "line_info": {
+                ln.ingredient_id: {
+                    "stock": money_json(products[ln.ingredient_id].stock_qty or 0),
+                    "cost": round(
+                        float(money_json(ln.quantity)) * float(money_json(products[ln.ingredient_id].cost_price or 0)), 2
+                    ),
+                }
+                for ln in lines
+                if ln.recipe_id == recipe.id and ln.ingredient_id in products
+            },
             "id": recipe.id,
             "name": recipe.name,
             "product_id": recipe.product_id,
@@ -2347,8 +2380,19 @@ async def list_recipes(db: AsyncSession, tenant_id: str) -> list[dict]:
     ]
 
 
-async def create_recipe(db: AsyncSession, tenant_id: str, payload) -> m.RestaurantRecipe:
-    await _product(db, tenant_id, payload.product_id)
+def _merged_lines(lines) -> list[tuple[str, float]]:
+    """One line per ingredient: the same ingredient picked twice adds up instead of stocking out twice."""
+    merged: dict[str, float] = {}
+    for line in lines:
+        qty = float(money_json(line.quantity))
+        if qty <= 0:
+            raise HTTPException(status_code=422, detail="Ingredient quantity must be greater than zero")
+        merged[line.ingredient_id] = round(merged.get(line.ingredient_id, 0.0) + qty, 4)
+    return list(merged.items())
+
+
+async def create_recipe(db: AsyncSession, tenant_id: str, payload, *, user_id: str | None = None) -> m.RestaurantRecipe:
+    dish = await _product(db, tenant_id, payload.product_id)
     existing = (
         await db.execute(
             select(m.RestaurantRecipe).where(
@@ -2357,27 +2401,37 @@ async def create_recipe(db: AsyncSession, tenant_id: str, payload) -> m.Restaura
             )
         )
     ).scalar_one_or_none()
-    if existing:
+    if existing and existing.is_active:
         raise HTTPException(status_code=409, detail="Recipe already exists for this menu item")
     if not payload.lines:
         raise HTTPException(status_code=422, detail="Recipe needs at least one ingredient")
-    recipe = m.RestaurantRecipe(
-        tenant_id=tenant_id,
-        product_id=payload.product_id,
-        name=require_honest_narrative(payload.name, label="recipe name", min_length=1)[:160],
-    )
-    db.add(recipe)
+    merged = _merged_lines(payload.lines)
+    for ingredient_id, _qty in merged:
+        await _require_waste_ingredient(db, tenant_id, await _product(db, tenant_id, ingredient_id))
+        if ingredient_id == dish.id:
+            raise HTTPException(status_code=422, detail="A dish cannot be an ingredient of itself.")
+    name = require_honest_narrative(payload.name, label="recipe name", min_length=1)[:160]
+    if existing:
+        # A retired recipe holds the dish's one recipe slot. Writing a new one brings it back.
+        recipe = existing
+        recipe.is_active = True
+        recipe.name = name
+        await db.execute(
+            delete(m.RestaurantRecipeLine).where(
+                m.RestaurantRecipeLine.tenant_id == tenant_id,
+                m.RestaurantRecipeLine.recipe_id == recipe.id,
+            )
+        )
+    else:
+        recipe = m.RestaurantRecipe(tenant_id=tenant_id, product_id=payload.product_id, name=name)
+        db.add(recipe)
     await db.flush()
-    for line in payload.lines:
-        await _product(db, tenant_id, line.ingredient_id)
-        qty = money_json(line.quantity)
-        if qty <= 0:
-            raise HTTPException(status_code=422, detail="Ingredient quantity must be greater than zero")
+    for ingredient_id, qty in merged:
         db.add(
             m.RestaurantRecipeLine(
                 tenant_id=tenant_id,
                 recipe_id=recipe.id,
-                ingredient_id=line.ingredient_id,
+                ingredient_id=ingredient_id,
                 quantity=qty,
             )
         )
@@ -2386,6 +2440,16 @@ async def create_recipe(db: AsyncSession, tenant_id: str, payload) -> m.Restaura
         await _write_cook_time(db, tenant_id, recipe.id, payload.cook_time)
     if getattr(payload, "servings", None):
         await _write_servings(db, tenant_id, recipe.id, payload.servings)
+    await audit_svc.record_event(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        module="restaurant",
+        action="restaurant_recipe_created",
+        entity="restaurant_recipe",
+        entity_id=recipe.id,
+        details={"name": recipe.name, "ingredients": len(merged)},
+    )
     return recipe
 
 
@@ -2410,12 +2474,11 @@ async def update_recipe(
                 m.RestaurantRecipeLine.recipe_id == row.id,
             )
         )
-        for line in payload.lines:
-            ingredient = await _product(db, tenant_id, line.ingredient_id)
+        for ingredient_id, qty in _merged_lines(payload.lines):
+            ingredient = await _product(db, tenant_id, ingredient_id)
             await _require_waste_ingredient(db, tenant_id, ingredient)
-            qty = money_json(line.quantity)
-            if qty <= 0:
-                raise HTTPException(status_code=422, detail="Ingredient quantity must be greater than zero")
+            if ingredient.id == row.product_id:
+                raise HTTPException(status_code=422, detail="A dish cannot be an ingredient of itself.")
             db.add(
                 m.RestaurantRecipeLine(
                     tenant_id=tenant_id,

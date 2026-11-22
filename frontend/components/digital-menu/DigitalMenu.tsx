@@ -23,10 +23,73 @@ export type GuestItem = {
 export type GuestMenu = {
   restaurant: { name: string; logo_version: string | null; phone: string | null; address: string | null; tagline: string | null };
   currency: string;
-  theme: { accent: string; style: 'forest' | 'mist'; rotate_seconds: number };
+  banner?: { version: string | null; position: 'top' | 'footer' };
+  theme: { accent: string; primary?: string | null; background?: string | null; board_background?: string | null; style: 'forest' | 'mist'; rotate_seconds: number };
   categories: { id: string; name: string; items: GuestItem[] }[];
   version: string;
 };
+
+const lum = (hex: string) => {
+  const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+};
+const contrast = (a: string, b: string) => {
+  const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
+  return (x + 0.05) / (y + 0.05);
+};
+const readable = (bg: string) => (contrast(bg, '#FFFFFF') >= contrast(bg, '#10211B') ? '#FFFFFF' : '#10211B');
+const HEX = /^#[0-9A-Fa-f]{6}$/;
+
+/** The restaurant's own colours. Text colours are picked for contrast, so any colour stays readable. */
+const DEFAULT_ACCENT = '#4AB012';
+
+/** The accent is still the stock green when the restaurant has not chosen one; then it follows their own colours. */
+function accentFor(theme: GuestMenu['theme']): string {
+  const own = (c?: string | null) => (c && HEX.test(c) ? c : null);
+  const primary = own(theme.primary);
+  const background = own(theme.background);
+  if (theme.accent.toUpperCase() !== DEFAULT_ACCENT || (!primary && !background)) return theme.accent;
+  if (primary && (!background || contrast(primary, background) >= 3)) return primary;
+  return readable(background || primary || '#FFFFFF');
+}
+
+export function menuColorVars(theme: GuestMenu['theme']): React.CSSProperties {
+  const accent = accentFor(theme);
+  const vars: Record<string, string> = { '--menu-accent': accent };
+  vars['--menu-on-accent'] = readable(accent);
+  if (theme.primary && HEX.test(theme.primary)) {
+    vars['--menu-primary'] = theme.primary;
+    vars['--menu-on-primary'] = readable(theme.primary);
+  }
+  if (theme.background && HEX.test(theme.background)) {
+    const bg = theme.background;
+    vars['--menu-bg'] = bg;
+    vars['--menu-ink'] = readable(bg);
+    vars['--menu-card'] = readable(bg) === '#FFFFFF' ? 'rgba(255,255,255,.08)' : '#FFFFFF';
+    // Prices use the accent when it reads on the background, otherwise the text colour.
+    vars['--menu-price'] = contrast(accent, bg) >= 3 ? accent : readable(bg);
+  }
+  return vars as React.CSSProperties;
+}
+
+/** TV board colours: background, card colour and text, each picked for contrast. */
+export function boardColorVars(theme: GuestMenu['theme']): React.CSSProperties {
+  const vars: Record<string, string> = { ...(menuColorVars(theme) as Record<string, string>) };
+  const mist = theme.style === 'mist';
+  const own = [theme.board_background, theme.background].find((c) => c && HEX.test(c));
+  const bg = own || (mist ? '#F5FAF0' : '#001A0E');
+  const panel = theme.primary && HEX.test(theme.primary) ? theme.primary : mist ? '#FFFFFF' : '#003D1F';
+  const ink = readable(bg);
+  const onPanel = readable(panel);
+  vars['--bg'] = bg;
+  vars['--panel'] = panel;
+  vars['--ink'] = ink;
+  vars['--soft'] = ink === '#FFFFFF' ? '#D6E3D8' : '#4D5D56';
+  vars['--on-panel'] = onPanel;
+  vars['--on-panel-soft'] = onPanel === '#FFFFFF' ? '#D6E3D8' : '#4D5D56';
+  vars['--menu-price'] = contrast(accentFor(theme), panel) >= 3 ? accentFor(theme) : onPanel;
+  return vars as React.CSSProperties;
+}
 
 export function menuPrice(value: number, currency: string): string {
   const amount = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value || 0);
@@ -34,6 +97,7 @@ export function menuPrice(value: number, currency: string): string {
 }
 
 const logoUrl = (token: string, version: string) => `/api/v1/public/menu/${token}/logo?v=${version}`;
+const bannerUrl = (token: string, version: string) => `/api/v1/public/menu/${token}/banner?v=${version}`;
 const photoUrl = (token: string, item: GuestItem) => `/api/v1/public/menu/${token}/items/${item.id}/image?v=${item.image_version}`;
 
 export function useGuestMenu(token: string, pollMs: number) {
@@ -91,10 +155,15 @@ export function GuestMenuView({
   menu,
   token,
   photo,
+  logoSrc,
+  bannerSrc,
 }: {
   menu: GuestMenu;
   token?: string;
   photo?: (item: GuestItem) => React.ReactNode;
+  /** Staff preview only: images loaded with the staff session instead of the public link. */
+  logoSrc?: string;
+  bannerSrc?: string;
 }) {
   const { restaurant, currency, categories, theme } = menu;
   const [active, setActive] = useState(categories[0]?.id || '');
@@ -105,6 +174,14 @@ export function GuestMenuView({
     document.getElementById(`gmenu-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  const bannerPos = menu.banner?.position || 'top';
+  const bannerHref = bannerSrc || (token && menu.banner?.version ? bannerUrl(token, menu.banner.version) : '');
+  const logoHref = logoSrc || (token && restaurant.logo_version ? logoUrl(token, restaurant.logo_version) : '');
+  const banner =
+    bannerHref ? (
+      <img className={`gmenu-banner is-${bannerPos}`} src={bannerHref} alt={`${restaurant.name} banner`} decoding="async" />
+    ) : null;
+
   const image = (item: GuestItem) => {
     if (photo) return photo(item);
     if (!token || !item.image_version) return null;
@@ -112,11 +189,10 @@ export function GuestMenuView({
   };
 
   return (
-    <div className="gmenu" style={{ '--menu-accent': theme.accent } as React.CSSProperties}>
+    <div className="gmenu" style={menuColorVars(theme)}>
+      {banner && bannerPos === 'top' ? banner : null}
       <header className="gmenu-head">
-        {token && restaurant.logo_version ? (
-          <img className="gmenu-logo" src={logoUrl(token, restaurant.logo_version)} alt={`${restaurant.name} logo`} />
-        ) : null}
+        {logoHref ? <img className="gmenu-logo" src={logoHref} alt={`${restaurant.name} logo`} /> : null}
         <h1>{restaurant.name}</h1>
         {restaurant.tagline ? <p>{restaurant.tagline}</p> : null}
       </header>
@@ -181,6 +257,7 @@ export function GuestMenuView({
         ))}
       </main>
 
+      {banner && bannerPos === 'footer' ? banner : null}
       {restaurant.phone || restaurant.address ? (
         <footer className="gmenu-foot">
           {restaurant.address ? <span>{restaurant.address}</span> : null}
@@ -249,10 +326,17 @@ export function MenuBoardPage({ token }: { token: string }) {
   const { restaurant, currency, theme } = menu;
 
   return (
-    <div className={`gboard is-${theme.style}`} style={{ '--menu-accent': theme.accent } as React.CSSProperties}>
+    <div className={`gboard is-${theme.style} has-colours`} style={boardColorVars(theme)}>
       <header className="gboard-head">
         <div className="gboard-brand">
-          {restaurant.logo_version ? <img src={logoUrl(token, restaurant.logo_version)} alt="" /> : null}
+          {restaurant.logo_version ? (
+            <img
+              className="gboard-logo"
+              src={logoUrl(token, restaurant.logo_version)}
+              alt={`${restaurant.name} logo`}
+              onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
+            />
+          ) : null}
           <div>
             <h1>{restaurant.name}</h1>
             {restaurant.tagline ? <p>{restaurant.tagline}</p> : null}
