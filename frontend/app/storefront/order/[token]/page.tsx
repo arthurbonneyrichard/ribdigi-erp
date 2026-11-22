@@ -43,7 +43,7 @@ export default function OrderStatusPage() {
             {(items as Array<any>).map((line, idx) => (
               <article key={`${line.product_id || idx}`} className="sf-line">
                 {line.image_url ? (
-                  <img className="sf-thumb" src={storefrontAssetUrl(line.image_url)} alt="" />
+                  <img className="sf-thumb" src={storefrontAssetUrl(line.image_url)} alt="" loading="lazy" decoding="async" />
                 ) : (
                   <div className="sf-thumb-fallback" aria-hidden>{String(line.name || 'Item').slice(0, 1)}</div>
                 )}

@@ -2209,6 +2209,17 @@ async def public_restaurant_site(slug: str, db: AsyncSession = Depends(get_db)):
     return _env(await site_svc.site_page(db, slug))
 
 
+@site_public_router.get("/{slug}/banner")
+async def public_restaurant_site_banner(slug: str, request: Request, db: AsyncSession = Depends(get_db)):
+    from app import logo_media as logo_media_svc
+    from app import restaurant_site as site_svc
+
+    tenant, key = await site_svc.site_banner_key(db, slug)
+    return logo_media_svc.keyed_media_response(
+        key, tenant_id=tenant.id, request=request, cache_control="public, no-cache", vary="Accept"
+    )
+
+
 @site_public_router.get("/{slug}/logo")
 async def public_restaurant_site_logo(slug: str, request: Request, db: AsyncSession = Depends(get_db)):
     from app import logo_media as logo_media_svc

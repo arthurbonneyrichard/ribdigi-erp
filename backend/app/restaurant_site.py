@@ -78,6 +78,29 @@ async def _menu(db: AsyncSession, tenant: m.Tenant) -> list[dict]:
     return out
 
 
+async def _design(db: AsyncSession, tenant: m.Tenant) -> dict:
+    from app import logo_media as logo_media_svc
+    from app import restaurant_menu as menu_svc
+
+    row = await menu_svc._settings_row(db, tenant.id)
+    key = (row.site_image_url or row.banner_url) if row is not None else None
+    return {
+        "design": menu_svc.site_design_of(row),
+        "banner_version": logo_media_svc.logo_version(tenant.id, key) if key else None,
+    }
+
+
+async def site_banner_key(db: AsyncSession, slug: str) -> tuple[m.Tenant, str]:
+    from app import restaurant_menu as menu_svc
+
+    tenant, _booking, _ordering = await _site_tenant(db, slug)
+    row = await menu_svc._settings_row(db, tenant.id)
+    key = (row.site_image_url or row.banner_url) if row is not None else None
+    if not key:
+        raise HTTPException(status_code=404, detail="No display image uploaded")
+    return tenant, key
+
+
 async def site_page(db: AsyncSession, slug: str) -> dict:
     tenant, booking_open, ordering_open = await _site_tenant(db, slug)
     return {
@@ -93,6 +116,7 @@ async def site_page(db: AsyncSession, slug: str) -> dict:
         "delivery_zones": await rs.list_delivery_zones(db, tenant.id) if ordering_open else [],
         "service_percent": await rs.service_percent(db, tenant.id),
         "menu": await _menu(db, tenant),
+        **await _design(db, tenant),
     }
 
 

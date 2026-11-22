@@ -421,11 +421,12 @@ def media_response(
 ) -> Response:
     media = read_object(key, tenant_id=tenant_id)
     disposition = "attachment" if as_attachment else "inline"
-    return Response(
-        content=media.data,
-        media_type=media.content_type,
-        headers={"Content-Disposition": f'{disposition}; filename="{media.filename}"'},
-    )
+    headers = {"Content-Disposition": f'{disposition}; filename="{media.filename}"'}
+    if not as_attachment and media.content_type.startswith("image/"):
+        # Every upload gets a new random key and is never overwritten, so the browser may keep a
+        # picture for good instead of downloading it again each time a screen opens.
+        headers["Cache-Control"] = "private, max-age=31536000, immutable"
+    return Response(content=media.data, media_type=media.content_type, headers=headers)
 
 
 def delete_tenant_media(tenant_id: str) -> None:
@@ -456,6 +457,53 @@ def delete_tenant_media(tenant_id: str) -> None:
     path.relative_to(root)
     if path.is_dir():
         shutil.rmtree(path)
+
+
+def iter_keys(prefix: str = ""):
+    """Every stored object key, optionally under a prefix (local disk or S3)."""
+    if storage_backend() == "s3":
+        ensure_bucket()
+        client = _s3_client()
+        token = None
+        while True:
+            kwargs = {"Bucket": _s3_bucket(), "Prefix": prefix}
+            if token:
+                kwargs["ContinuationToken"] = token
+            page = client.list_objects_v2(**kwargs)
+            for obj in page.get("Contents") or []:
+                yield obj["Key"]
+            if not page.get("IsTruncated"):
+                return
+            token = page.get("NextContinuationToken")
+    root = media_root().resolve()
+    base = root / prefix if prefix else root
+    if base.is_dir():
+        for path in base.rglob("*"):
+            if path.is_file():
+                yield path.relative_to(root).as_posix()
+
+
+def optimize_existing(*, dry_run: bool = True) -> dict:
+    """Shrink pictures uploaded before uploads were optimised. Same keys, smaller files."""
+    report = {"checked": 0, "shrunk": 0, "bytes_before": 0, "bytes_after": 0}
+    for key in iter_keys():
+        parts = key.split("/")
+        max_side = IMAGE_MAX_SIDE.get(parts[1]) if len(parts) >= 3 else None
+        if not max_side:
+            continue
+        content_type = content_type_for_key(key)
+        if not content_type.startswith("image/"):
+            continue
+        data = _get_bytes(key)
+        report["checked"] += 1
+        smaller, _ = optimize_image(data, content_type, max_side)
+        if len(smaller) < len(data):
+            report["shrunk"] += 1
+            report["bytes_before"] += len(data)
+            report["bytes_after"] += len(smaller)
+            if not dry_run:
+                _put_bytes(key, smaller, content_type)
+    return report
 
 
 def storage_status() -> dict:

@@ -4014,7 +4014,7 @@ export default function Page() {
                             <div className="list-prod">
                               {img ? (
                                 // eslint-disable-next-line @next/next/no-img-element
-                                <img src={img} alt="" />
+                                <img src={img} alt="" loading="lazy" decoding="async" />
                               ) : (
                                 <span className="list-prod-ph" aria-hidden>
                                   {String(p.name || '?').slice(0, 1).toUpperCase()}

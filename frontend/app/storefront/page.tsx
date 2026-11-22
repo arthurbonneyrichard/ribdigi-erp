@@ -165,7 +165,7 @@ export default function StorefrontHome() {
           <article className="sf-card" key={item.product_id}>
             <Link href={storefrontHref(`/storefront/product/${item.product_id}`)}>
               {item.image_url ? (
-                <img className="sf-thumb" src={storefrontAssetUrl(item.image_url)} alt={item.image_alt || item.name} />
+                <img className="sf-thumb" src={storefrontAssetUrl(item.image_url)} alt={item.image_alt || item.name} loading="lazy" decoding="async" />
               ) : (
                 <div className="sf-thumb-fallback" aria-hidden>{item.name.slice(0, 1)}</div>
               )}

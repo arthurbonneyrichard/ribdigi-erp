@@ -684,3 +684,17 @@
 .main .rdesk .rd-cost-tiles .warn{background:var(--rd-bad-tint)}
 .main .rdesk .rd-cost-tiles .warn b{color:var(--rd-bad-ink)}
 @media(max-width:520px){.main .rdesk .rd-ing-table li{grid-template-columns:minmax(0,1fr) 52px 60px}.main .rdesk .rd-ing-table .s{grid-column:1 / -1;text-align:left}}
+
+/* Recipe form: one tidy row of fields (dish, name, cook time, servings), same height, same baseline. */
+.main .rdesk .rd-recipe-form,.main .rdesk .rd-recipe-fields{grid-template-columns:minmax(0,2fr) minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);align-items:start;gap:12px 14px}
+.main .rdesk .rd-recipe-form label,.main .rdesk .rd-recipe-fields label{min-width:0;justify-content:flex-start}
+.main .rdesk .rd-recipe-form label > span,.main .rdesk .rd-recipe-fields label > span{min-height:18px;line-height:18px}
+.main .rdesk .rd-recipe-form input,.main .rdesk .rd-recipe-form select,.main .rdesk .rd-recipe-fields input{height:44px;box-sizing:border-box}
+.main .rdesk .rd-recipe-form .rd-ingredients{display:flex;flex-direction:column;gap:10px;padding:12px;border:1px solid var(--rd-line);border-radius:14px}
+.main .rdesk .rd-recipe-form .rd-ingredient-add{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) auto;gap:12px;align-items:end}
+.main .rdesk .rd-recipe-form .rd-ingredient-add input,.main .rdesk .rd-recipe-form .rd-ingredient-add select{width:100%;box-sizing:border-box}
+.main .rdesk .rd-recipe-form .rd-ingredient-add button{height:44px;padding:0 18px}
+.main .rdesk .rd-recipe-form .rd-ingredients ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.main .rdesk .rd-recipe-form .rd-ingredients li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 10px;border-radius:10px;background:var(--rd-tint)}
+@media(max-width:900px){.main .rdesk .rd-recipe-form,.main .rdesk .rd-recipe-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.main .rdesk .rd-recipe-form,.main .rdesk .rd-recipe-fields{grid-template-columns:minmax(0,1fr)}.main .rdesk .rd-recipe-form .rd-ingredient-add{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.main .rdesk .rd-recipe-form .rd-ingredient-add button{grid-column:1 / -1}}
