@@ -7,7 +7,7 @@ from decimal import Decimal
 import re
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, BeforeValidator, ConfigDict, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -1950,6 +1950,57 @@ class OnlineOrdersBody(BaseModel):
     open: bool
 
 
+class AlertsBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    emails: list[EmailStr] | None = Field(default=None, max_length=5)
+    whatsapp: E164PhoneValue | None = None
+    whatsapp_from: E164PhoneValue | None = None
+    whatsapp_template: Annotated[str, Field(max_length=40)] | None = None
+    orders: bool | None = None
+    bookings: bool | None = None
+    email_on: bool | None = None
+    whatsapp_on: bool | None = None
+
+
+@router.get("/alerts")
+async def restaurant_alerts_get(
+    claims=Depends(require_permission("restaurant", "read")), db: AsyncSession = Depends(get_db)
+):
+    from app import restaurant_alerts as alerts
+
+    tenant = await restaurant_svc._restaurant_tenant(db, tenant_id=claims["tenant_id"])
+    return _env(alerts.serialize(tenant))
+
+
+@router.put("/alerts")
+async def restaurant_alerts_put(
+    payload: AlertsBody,
+    claims=Depends(require_permission("restaurant", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import restaurant_alerts as alerts
+
+    data = await alerts.save_alerts(db, claims["tenant_id"], payload, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(data, "Alerts saved")
+
+
+@router.post("/alerts/test")
+async def restaurant_alerts_test(
+    claims=Depends(require_permission("restaurant", "write")), db: AsyncSession = Depends(get_db)
+):
+    from app import restaurant_alerts as alerts
+
+    tenant = await restaurant_svc._restaurant_tenant(db, tenant_id=claims["tenant_id"])
+    sample = {
+        "id": None, "number": "R-TEST", "service": "pickup", "total": 45, "name": "Test Guest", "phone": "+233200000000",
+        "items": "2× Jollof, 1× Sobolo", "address": None, "ready_by": None, "allergy": None, "notes": "This is a test.",
+    }
+    result = await alerts.deliver(tenant, "order", sample, only_test=True)
+    return _env(result, "Test sent")
+
+
 @router.get("/online-orders")
 async def restaurant_online_orders(
     claims=Depends(require_permission("restaurant", "read")),
@@ -2244,12 +2295,21 @@ async def public_restaurant_site_menu_image(
 
 
 @site_public_router.post("/{slug}/order")
-async def public_restaurant_site_order(slug: str, payload: SiteOrderBody, db: AsyncSession = Depends(get_db)):
+async def public_restaurant_site_order(
+    slug: str, payload: SiteOrderBody, background: BackgroundTasks, db: AsyncSession = Depends(get_db)
+):
     from app import restaurant_site as site_svc
 
     row = await site_svc.create_site_order(db, slug, payload)
     await db.commit()
-    return _env(await site_svc.track_order(db, slug, row.id), "Order received")
+    tracked = await site_svc.track_order(db, slug, row.id)
+    from app import restaurant_alerts as alerts
+
+    background.add_task(
+        alerts.dispatch, row.tenant_id, "order",
+        alerts.order_info(row, tracked, name=payload.customer_name, phone=payload.phone, payload=payload),
+    )
+    return _env(tracked, "Order received")
 
 
 @site_public_router.get("/{slug}/order/{order_id}")
@@ -2273,9 +2333,14 @@ async def public_restaurant_site_feedback(
 
 
 @site_public_router.post("/{slug}/book")
-async def public_restaurant_site_book(slug: str, payload: SiteBookingBody, db: AsyncSession = Depends(get_db)):
+async def public_restaurant_site_book(
+    slug: str, payload: SiteBookingBody, background: BackgroundTasks, db: AsyncSession = Depends(get_db)
+):
     from app import restaurant_site as site_svc
 
     row = await site_svc.create_site_booking(db, slug, payload)
     await db.commit()
+    from app import restaurant_alerts as alerts
+
+    background.add_task(alerts.dispatch, row.tenant_id, "booking", alerts.booking_info(row))
     return _env(restaurant_svc.serialize_booking(row), "Booking requested")

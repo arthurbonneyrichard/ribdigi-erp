@@ -43,7 +43,11 @@ type Design = {
   primary: string | null;
   accent: string | null;
   background: string | null;
-  font: 'serif' | 'sans' | 'rounded';
+  font: 'serif' | 'sans' | 'rounded' | 'elegant' | 'modern';
+  cards?: 'shadow' | 'outline' | 'flat';
+  header?: 'glass' | 'solid' | 'plain';
+  align?: 'left' | 'center';
+  show_facts?: boolean;
   corners: 'round' | 'soft' | 'sharp';
   layout: 'square' | 'list';
   pattern: 'none' | 'food';
@@ -332,7 +336,7 @@ export default function RestaurantSite({ slug, focus }: { slug: string; focus: '
   }
 
   const design = site.design;
-  const siteClass = `rsite rs-font-${design?.font || 'serif'} rs-corners-${design?.corners || 'round'} rs-layout-${design?.layout || 'square'} rs-pat-${design?.pattern || 'none'}`;
+  const siteClass = `rsite rs-font-${design?.font || 'serif'} rs-corners-${design?.corners || 'round'} rs-layout-${design?.layout || 'square'} rs-pat-${design?.pattern || 'none'} rs-cards-${design?.cards || 'shadow'} rs-header-${design?.header || 'glass'} rs-align-${design?.align || 'left'}`;
   const heroMode = design?.hero === 'plain' ? 'plain' : design?.hero === 'split' ? 'split' : bannerSrc_ready(site) ? 'full' : 'split';
   const bannerSrc = site.banner_version ? `${apiRoot()}/public/restaurant-site/${encodeURIComponent(slug)}/banner?v=${site.banner_version}` : '';
 
@@ -401,7 +405,7 @@ export default function RestaurantSite({ slug, focus }: { slug: string; focus: '
               </button>
             ) : null}
           </div>
-          <ul className="rs-facts">
+          <ul className="rs-facts" hidden={design?.show_facts === false}>
             {site.ordering_open ? <li>Pickup & delivery</li> : null}
             <li>Pay when you get your food</li>
             {site.address ? <li>{site.address}</li> : null}

@@ -133,3 +133,15 @@
 .dmenu-style.on{border-color:#4AB012;background:rgba(74,176,18,.1);box-shadow:0 0 0 3px rgba(74,176,18,.25)}
 .dmenu-style.on b::before{content:"\2713\00a0";color:#2F7A0C}
 @media(max-width:640px){.dmenu-hero-image{grid-template-columns:1fr}.dmenu-styles{grid-template-columns:1fr}}
+
+/* Order and booking alerts */
+.dmenu-alert-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.dmenu-alert-box{padding:14px 16px;border:1px solid var(--rd-line,#d4e5c4);border-radius:16px;min-width:0}
+.dmenu-alert-box h3{margin:0 0 8px;font-size:17px}
+.dmenu-adv{margin:10px 0}
+.dmenu-adv summary{cursor:pointer;font-weight:700}
+.dmenu-switches{display:flex;flex-wrap:wrap;gap:8px 22px;margin:14px 0}
+.dmenu-switch{display:inline-flex;align-items:center;gap:8px;font-weight:700;cursor:pointer}
+.dmenu-switch input{width:20px;height:20px;accent-color:#4AB012}
+.dmenu-alert-actions{display:flex;flex-wrap:wrap;gap:10px}
+@media(max-width:760px){.dmenu-alert-grid{grid-template-columns:1fr}}

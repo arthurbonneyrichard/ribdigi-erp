@@ -129,6 +129,10 @@ SITE_DESIGN_DEFAULTS = {
     "corners": "round",  # round | soft | sharp
     "layout": "square",  # square | list
     "pattern": "none",  # none | food
+    "cards": "shadow",  # shadow | outline | flat
+    "header": "glass",  # glass | solid | plain
+    "align": "left",  # left | center (top of the page)
+    "show_facts": True,  # pickup / delivery / pay-later chips under the title
     "hero": "full",  # full (image behind the title) | split (image beside it) | plain
     "headline": None,
     "intro": None,
@@ -154,9 +158,11 @@ async def save_site_design(db: AsyncSession, tenant_id: str, payload, *, user_id
             if raw and not HEX_COLOR.match(raw):
                 raise HTTPException(status_code=422, detail="Choose a colour like #4AB012.")
             design[field] = raw.upper() or None
-    for field in ("font", "corners", "layout", "pattern", "hero"):
+    for field in ("font", "corners", "layout", "pattern", "hero", "cards", "header", "align"):
         if data.get(field):
             design[field] = data[field]
+    if data.get("show_facts") is not None:
+        design["show_facts"] = bool(data["show_facts"])
     for field, label, limit in (("headline", "headline", 80), ("intro", "intro", 240)):
         if field in data:
             design[field] = optional_honest_narrative(data[field], label=label, max_length=limit)

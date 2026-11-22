@@ -152,3 +152,61 @@ async def send_test_sms(*, to: str, tenant: Any | None = None) -> SmsResult:
     if not c.configured and mode != "console":
         raise HTTPException(status_code=400, detail="Twilio is not configured")
     return await send_sms(to=to, body="RIBDIGI ERP test SMS. Delivery is working.", cfg=c, tenant=tenant)
+
+
+async def send_whatsapp(
+    *,
+    to: str,
+    body: str,
+    tenant: Any | None = None,
+    from_number: str | None = None,
+    template_sid: str | None = None,
+    variables: dict[str, str] | None = None,
+) -> SmsResult:
+    """A WhatsApp message through the company's Twilio account.
+
+    ``from_number`` is the Twilio WhatsApp sender (Twilio's sandbox number while testing). With
+    ``template_sid`` the approved template is used, which is what WhatsApp requires to start a chat.
+    """
+    import json
+
+    phone = normalize_phone(to)
+    c = resolve_sms_config(tenant)
+    mode = _delivery_mode(c)
+    if not phone or not phone.startswith("+"):
+        return SmsResult(sent=False, mode=mode, error="WhatsApp number must include the country code, like +233...")
+    if mode == "disabled":
+        return SmsResult(sent=False, mode="disabled", recipients=[phone])
+    text = (body or "").strip()[:1500]
+    record = {"to": f"whatsapp:{phone}", "body": text, "mode": mode, "channel": "whatsapp"}
+    if mode == "console":
+        _DEV_OUTBOX.append(record)
+        logger.info("WhatsApp console to=%s body=%s", phone, text[:80])
+        return SmsResult(sent=True, mode="console", recipients=[phone])
+
+    sid = (c.account_sid or "").strip()
+    token = (c.auth_token or "").strip()
+    sender = normalize_phone(from_number) or normalize_phone(c.from_number)
+    if not sender or not sender.startswith("+"):
+        return SmsResult(sent=False, mode="twilio", error="Add the WhatsApp sender number first.", recipients=[phone])
+    data = {"To": f"whatsapp:{phone}", "From": f"whatsapp:{sender}"}
+    if template_sid:
+        data["ContentSid"] = template_sid
+        data["ContentVariables"] = json.dumps(variables or {})
+    else:
+        data["Body"] = text
+    url = f"https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json"
+    try:
+        async with httpx.AsyncClient(timeout=float(settings.SMS_TIMEOUT_SECONDS)) as client:
+            response = await client.post(url, data=data, auth=(sid, token))
+        if response.status_code >= 400:
+            detail = response.text[:500]
+            _DEV_OUTBOX.append({**record, "delivered": False, "error": detail})
+            return SmsResult(sent=False, mode="twilio", recipients=[phone], error=detail)
+        message_sid = response.json().get("sid")
+        _DEV_OUTBOX.append({**record, "delivered": True, "sid": message_sid})
+        return SmsResult(sent=True, mode="twilio", sid=message_sid, recipients=[phone])
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Twilio WhatsApp send failed")
+        _DEV_OUTBOX.append({**record, "delivered": False, "error": str(exc)})
+        return SmsResult(sent=False, mode="twilio", recipients=[phone], error=str(exc)[:500])

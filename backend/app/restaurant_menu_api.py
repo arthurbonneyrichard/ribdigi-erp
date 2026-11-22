@@ -54,7 +54,11 @@ class SiteDesignBody(Body):
     primary: Annotated[str, Field(max_length=7)] | None = None
     accent: Annotated[str, Field(max_length=7)] | None = None
     background: Annotated[str, Field(max_length=7)] | None = None
-    font: Literal["serif", "sans", "rounded"] | None = None
+    font: Literal["serif", "sans", "rounded", "elegant", "modern"] | None = None
+    cards: Literal["shadow", "outline", "flat"] | None = None
+    header: Literal["glass", "solid", "plain"] | None = None
+    align: Literal["left", "center"] | None = None
+    show_facts: bool | None = None
     corners: Literal["round", "soft", "sharp"] | None = None
     layout: Literal["square", "list"] | None = None
     pattern: Literal["none", "food"] | None = None

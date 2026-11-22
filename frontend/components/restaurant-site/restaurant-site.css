@@ -377,3 +377,40 @@
 .rsite .rs-hero.has-banner h1{color:#fff}
 .rsite .rs-error{background:#FCE7E2;color:#8A2A12}
 .rsite .rs-add:hover{background:var(--rs-brand-dark);color:var(--rs-on-brand-dark,#fff)}
+
+/* ===== More design options ===== */
+.rsite.rs-font-elegant{--rs-serif:'Palatino Linotype','Book Antiqua',Palatino,Georgia,serif;font-family:'Palatino Linotype','Book Antiqua',Palatino,Georgia,serif}
+.rsite.rs-font-modern{--rs-serif:'Avenir Next','Century Gothic','Trebuchet MS','Segoe UI',sans-serif;font-family:'Avenir Next','Century Gothic','Trebuchet MS','Segoe UI',sans-serif}
+
+/* Cards: soft shadow (default), thin outline, or flat tint */
+.rsite.rs-cards-outline .rs-dish{box-shadow:none;border:2px solid var(--rs-line)}
+.rsite.rs-cards-outline .rs-dish:hover{box-shadow:none;border-color:var(--rs-brand)}
+.rsite.rs-cards-flat .rs-dish{box-shadow:none;border:0;background:var(--rs-tint)}
+.rsite.rs-cards-flat .rs-dish:hover{box-shadow:none;transform:none}
+.rsite.rs-cards-flat .rs-dish.in{box-shadow:0 0 0 3px var(--rs-brand)}
+
+/* Header: glass (default), solid main colour, or plain */
+.rsite.rs-header-solid .rs-top{background:var(--rs-forest);border-bottom-color:transparent;backdrop-filter:none}
+.rsite.rs-header-solid .rs-top .rs-brand,.rsite.rs-header-solid .rs-top .rs-links a{color:var(--rs-on-primary,#fff)}
+.rsite.rs-header-solid .rs-top .rs-links a:hover{background:rgba(255,255,255,.16);color:var(--rs-on-primary,#fff) !important}
+.rsite.rs-header-solid .rs-bag-btn{background:var(--rs-lime);color:var(--rs-on-lime,var(--rs-forest));border-color:transparent}
+.rsite.rs-header-solid .rs-bag-btn span{background:var(--rs-forest);color:var(--rs-on-primary,#fff)}
+.rsite.rs-header-plain .rs-top{position:static;background:transparent;backdrop-filter:none;border-bottom:0}
+
+/* Top of the page: left or centred */
+.rsite.rs-align-center .rs-hero{grid-template-columns:1fr;text-align:center}
+.rsite.rs-align-center .rs-hero-text{max-width:760px;margin:0 auto}
+.rsite.rs-align-center .rs-lede{margin-left:auto;margin-right:auto}
+.rsite.rs-align-center .rs-hero-cta,.rsite.rs-align-center .rs-facts{justify-content:center}
+.rsite.rs-align-center .rs-hero-art{display:none}
+
+/* Menu: three across on a computer */
+@media (min-width:1000px){
+  .rsite .rs-grid,.rsite .rs-grid.sq,.rsite .rs-grid:not(.sq){grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+  .rsite .rs-grid:not(.sq) .rs-dish-pic,.rsite .rs-grid:not(.sq) .rs-dish-pic.noimg{flex-basis:104px;width:104px;height:104px}
+  .rsite .rs-grid:not(.sq) .rs-dish-body{padding:12px 14px}
+}
+@media (min-width:640px) and (max-width:999px){
+  .rsite .rs-grid.sq{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+.rsite .rs-facts[hidden]{display:none}
