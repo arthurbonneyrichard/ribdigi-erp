@@ -9913,3 +9913,21 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{background-color:rgb
   [data-theme="dark"] .main .topbar-right .logout-btn:not(.till-full-btn):hover,
   [data-theme="dark"] .main .topbar-right .logout-btn:not(.till-full-btn):active{background:#fff;color:#991b1b;border-color:#fff}
 }
+
+/* Numbers, prices and figures are bold everywhere, and use equal-width digits so columns line up. */
+.num,.col-num,.fs-num,.hr-num,.bk-num,.gm-num,.nums,
+.stat .val,.val,.kpi .val,
+.money-inline,.money-fill,.money-sign,
+.sf-price,.sf-qty,
+.tpos-total,.tpos-qty,.tpos-price-value,.tpos-price-selling,.tpos-receipt-preview-total,.tpos-split-other-amount,
+.pos-ui-due,.pos-ui-qty,
+.rtill-dish-price,.rtill-line-price,
+.rs-total,.rd-po-total,.hstay-total,.hday-numbers,
+.credit-money-lines,.purchase-ui-money-lines,
+.product-price-field,.product-price-label,
+td[align="right"],th[align="right"],
+[class*="-price"]:not(label):not(input):not(select),[class*="-total"]:not(label):not(input):not(select),
+[class*="-amount"]:not(label):not(input):not(select),[class*="-money"]:not(label):not(input):not(select){
+  font-weight:700 !important;
+  font-variant-numeric:tabular-nums;
+}

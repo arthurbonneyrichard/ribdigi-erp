@@ -44,9 +44,23 @@ class SettingsBody(Body):
     board_rotate_seconds: int | None = Field(default=None, ge=5, le=60)
     show_unavailable: bool | None = None
     banner_position: Literal["top", "footer"] | None = None
+    background_pattern: Literal["food", "dots", "none"] | None = None
     primary_color: Annotated[str, Field(max_length=7)] | None = None
     background_color: Annotated[str, Field(max_length=7)] | None = None
     board_background_color: Annotated[str, Field(max_length=7)] | None = None
+
+
+class SiteDesignBody(Body):
+    primary: Annotated[str, Field(max_length=7)] | None = None
+    accent: Annotated[str, Field(max_length=7)] | None = None
+    background: Annotated[str, Field(max_length=7)] | None = None
+    font: Literal["serif", "sans", "rounded"] | None = None
+    corners: Literal["round", "soft", "sharp"] | None = None
+    layout: Literal["square", "list"] | None = None
+    pattern: Literal["none", "food"] | None = None
+    hero: Literal["full", "split", "plain"] | None = None
+    headline: Annotated[str, Field(max_length=80)] | None = None
+    intro: Annotated[str, Field(max_length=240)] | None = None
 
 
 class CategoryCreateBody(Body):
@@ -112,6 +126,48 @@ async def menu_settings(payload: SettingsBody, claims=Depends(can_edit), db: Asy
     )
     await db.commit()
     return _env(data, "Menu settings saved")
+
+
+@router.patch("/site-design")
+async def menu_site_design(payload: SiteDesignBody, claims=Depends(can_edit), db: AsyncSession = Depends(get_db)):
+    data = await menu_svc.save_site_design(
+        db, claims["tenant_id"], _drop_nulls(payload, "primary", "accent", "background", "headline", "intro"), user_id=claims.get("sub")
+    )
+    await db.commit()
+    return _env(data, "Website design saved")
+
+
+@router.post("/site-image")
+async def menu_site_image_upload(
+    file: UploadFile = File(...), claims=Depends(can_edit), db: AsyncSession = Depends(get_db)
+):
+    stored = await storage_svc.save_upload(
+        tenant_id=claims["tenant_id"],
+        category="banners",
+        upload=file,
+        allowed_types=storage_svc.LOGO_CONTENT_TYPES,
+        max_bytes=int(settings.MEDIA_MAX_LOGO_BYTES),
+    )
+    data = await menu_svc.set_site_image(db, claims["tenant_id"], stored.key, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(data, "Display image saved")
+
+
+@router.delete("/site-image")
+async def menu_site_image_delete(claims=Depends(can_edit), db: AsyncSession = Depends(get_db)):
+    data = await menu_svc.set_site_image(db, claims["tenant_id"], None, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(data, "Display image removed")
+
+
+@router.get("/site-image")
+async def menu_site_image_get(request: Request, claims=Depends(can_read), db: AsyncSession = Depends(get_db)):
+    key = await menu_svc.admin_site_image_key(db, claims["tenant_id"])
+    if not key:
+        return Response(status_code=404)
+    return logo_media_svc.keyed_media_response(
+        key, tenant_id=claims["tenant_id"], request=request, cache_control="private, no-cache", vary="Authorization"
+    )
 
 
 @router.post("/regenerate-link")

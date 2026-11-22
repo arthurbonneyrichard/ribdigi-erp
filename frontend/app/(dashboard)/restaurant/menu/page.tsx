@@ -47,8 +47,44 @@ function useStaffImage(path: string | null, version?: string | null): string {
 
 function StaffPhoto({ itemId, version }: { itemId: string; version?: string | null }) {
   const url = useStaffImage(`/restaurant/menu/items/${itemId}/photo`, version);
-  return url ? <img src={url} alt="" /> : null;
+  return url ? <img src={url} alt="" loading="lazy" decoding="async" /> : null;
 }
+
+function Choice({
+  label,
+  value,
+  options,
+  onPick,
+  disabled,
+}: {
+  label: string;
+  value: string;
+  options: [string, string][];
+  onPick: (value: string) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="dmenu-choice" role="group" aria-label={label || 'Choose'}>
+      {label ? <span className="l">{label}</span> : null}
+      <div className="opts">
+        {options.map(([key, text]) => (
+          <button key={key} type="button" className={value === key ? 'on' : ''} aria-pressed={value === key} disabled={disabled} onClick={() => onPick(key)}>
+            {text}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const DESIGN_PRESETS: { name: string; design: Record<string, string> }[] = [
+  { name: 'Fresh green', design: { primary: '#0B6B3A', accent: '#4AB012', background: '#FFFFFF', font: 'sans', corners: 'round' } },
+  { name: 'Midnight gold', design: { primary: '#111827', accent: '#F59E0B', background: '#0F172A', font: 'sans', corners: 'soft' } },
+  { name: 'Sunset', design: { primary: '#9A3412', accent: '#F97316', background: '#FFF7ED', font: 'serif', corners: 'soft' } },
+  { name: 'Ocean', design: { primary: '#0C4A6E', accent: '#0EA5E9', background: '#F0F9FF', font: 'sans', corners: 'round' } },
+  { name: 'Berry', design: { primary: '#831843', accent: '#EC4899', background: '#FDF2F8', font: 'rounded', corners: 'soft' } },
+  { name: 'Black and gold', design: { primary: '#1C1917', accent: '#CA8A04', background: '#FAFAF9', font: 'serif', corners: 'sharp' } },
+];
 
 async function downloadFile(path: string, filename: string) {
   const res = await apiFetch(path);
@@ -187,6 +223,9 @@ export default function RestaurantDigitalMenuPage() {
     };
   }, [load, loadQr]);
 
+  const [previewMode, setPreviewMode] = useState<'phone' | 'desktop'>('phone');
+  const [previewTick, setPreviewTick] = useState(0);
+
   async function run(action: () => Promise<unknown>, done?: string) {
     setBusy(true);
     setError('');
@@ -194,6 +233,7 @@ export default function RestaurantDigitalMenuPage() {
     try {
       await action();
       await load();
+      setPreviewTick((t) => t + 1);
       if (preview) setPreview((await api('/restaurant/menu/preview')).data);
       if (done) setNotice(done);
     } catch (err) {
@@ -207,6 +247,7 @@ export default function RestaurantDigitalMenuPage() {
     api(path, { method, body: body === undefined ? undefined : JSON.stringify(body) });
 
   const logoPreview = useStaffImage(preview && data?.has_logo ? '/tenants/me/logo' : null, preview?.restaurant?.logo_version);
+  const siteImagePreview = useStaffImage(data?.settings?.has_site_image ? '/restaurant/menu/site-image' : null, data?.settings?.has_site_image ? 'y' : 'n');
   const bannerPreview = useStaffImage(preview?.banner?.version ? '/restaurant/menu/banner' : null, preview?.banner?.version);
 
   if (!data) {
@@ -223,6 +264,12 @@ export default function RestaurantDigitalMenuPage() {
   const currency: string = data.currency;
   const editable = canEditMenu(me);
   const slug = String(data.company_name || 'restaurant').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+  const design: Row = settings.site_design || { font: 'serif', corners: 'round', layout: 'square', pattern: 'none' };
+
+  function saveDesign(patch: Row, done = 'Website design saved.') {
+    void run(() => send('/restaurant/menu/site-design', 'PATCH', patch), done);
+  }
 
   function saveSettings(patch: Row, done = 'Saved.') {
     void run(() => send('/restaurant/menu/settings', 'PATCH', patch), done);
@@ -413,6 +460,19 @@ export default function RestaurantDigitalMenuPage() {
               </label>
             ))}
             <label>
+              Background pattern
+              <select
+                value={settings.background_pattern || 'food'}
+                disabled={!editable}
+                aria-label="Menu background pattern"
+                onChange={(e) => saveSettings({ background_pattern: e.target.value })}
+              >
+                <option value="food">Food icons</option>
+                <option value="dots">Soft dots</option>
+                <option value="none">Plain</option>
+              </select>
+            </label>
+            <label>
               Board style
               <select
                 value={settings.board_style}
@@ -502,6 +562,178 @@ export default function RestaurantDigitalMenuPage() {
           </div>
         </section>
       </div>
+
+      <section className="rd-panel dmenu-design" aria-label="Website design">
+        <div className="rd-panel-head">
+          <h2>Website design</h2>
+          <small>How your online ordering and booking pages look to customers. Every change saves at once and shows in the preview.</small>
+        </div>
+        <div className="dmenu-design-grid">
+          <div className="dmenu-design-controls">
+            <fieldset className="dmenu-step">
+              <legend><span>1</span> Pick a look</legend>
+              <div className="dmenu-presets" role="group" aria-label="Design starters">
+                {DESIGN_PRESETS.map((preset) => {
+                  const on = ['primary', 'accent', 'background'].every((k) => (design[k] || '').toUpperCase() === preset.design[k].toUpperCase());
+                  return (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      className={`dmenu-preset${on ? ' on' : ''}`}
+                      disabled={!editable}
+                      aria-pressed={on}
+                      aria-label={`Use the ${preset.name} look`}
+                      onClick={() => saveDesign(preset.design, `${preset.name} look applied. Change anything below.`)}
+                    >
+                      <span className="sws">
+                        <span className="sw" style={{ background: preset.design.primary }} />
+                        <span className="sw" style={{ background: preset.design.accent }} />
+                        <span className="sw" style={{ background: preset.design.background }} />
+                      </span>
+                      {preset.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+
+            <fieldset className="dmenu-step">
+              <legend><span>2</span> Your colours</legend>
+              <div className="dmenu-colours">
+                {([
+                  ['primary', 'Main colour', 'Header, buttons, booking area', '#003D1F'],
+                  ['accent', 'Highlight colour', 'Badges and selected dishes', '#4AB012'],
+                  ['background', 'Page background', 'Behind everything', '#FFFFFF'],
+                ] as const).map(([key, label, help, fallback]) => (
+                  <div key={key} className="dmenu-colour-row">
+                    <input
+                      type="color"
+                      value={design[key] || fallback}
+                      disabled={!editable}
+                      aria-label={`Website ${label}`}
+                      onChange={(e) => saveDesign({ [key]: e.target.value })}
+                    />
+                    <span className="t">
+                      <strong>{label}</strong>
+                      <small>{help}</small>
+                    </span>
+                    <code>{(design[key] || 'Default').toUpperCase()}</code>
+                    {design[key] ? (
+                      <button type="button" className="rd-link" disabled={!editable} aria-label={`Reset website ${label}`} onClick={() => saveDesign({ [key]: null }, 'Colour reset.')}>
+                        Reset
+                      </button>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </fieldset>
+
+            <fieldset className="dmenu-step">
+              <legend><span>3</span> Display image</legend>
+              <div className="dmenu-hero-image">
+                <div className="dmenu-hero-thumb">
+                  {siteImagePreview ? <img src={siteImagePreview} alt="Your display image" /> : <span>No image yet</span>}
+                </div>
+                <div>
+                  <p className="dmenu-hint">The big picture at the top of your site. A wide photo of your food or your place works best.</p>
+                  <div className="dmenu-hero-actions">
+                    <label className="dmenu-upload">
+                      {settings.has_site_image ? 'Change image' : 'Add image'}
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        disabled={!editable}
+                        aria-label="Website display image"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          e.target.value = '';
+                          if (!file) return;
+                          void run(async () => {
+                            const form = new FormData();
+                            form.append('file', file);
+                            await api('/restaurant/menu/site-image', { method: 'POST', body: form });
+                          }, 'Display image saved.');
+                        }}
+                      />
+                    </label>
+                    {settings.has_site_image ? (
+                      <button type="button" className="btn-danger" disabled={!editable} aria-label="Remove website display image" onClick={() => void run(() => send('/restaurant/menu/site-image', 'DELETE'), 'Display image removed.')}>
+                        Remove
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+              <Choice
+                label="Image style"
+                value={design.hero || 'full'}
+                disabled={!editable}
+                options={[['full', 'Full width'], ['split', 'Beside title'], ['plain', 'No image']]}
+                onPick={(v) => saveDesign({ hero: v })}
+              />
+            </fieldset>
+
+            <fieldset className="dmenu-step">
+              <legend><span>4</span> Style</legend>
+              <Choice label="Font" value={design.font} disabled={!editable} options={[['serif', 'Classic'], ['sans', 'Clean'], ['rounded', 'Friendly']]} onPick={(v) => saveDesign({ font: v })} />
+              <Choice label="Corners" value={design.corners} disabled={!editable} options={[['round', 'Round'], ['soft', 'Soft'], ['sharp', 'Sharp']]} onPick={(v) => saveDesign({ corners: v })} />
+              <Choice label="Menu layout" value={design.layout} disabled={!editable} options={[['square', 'Square cards'], ['list', 'List']]} onPick={(v) => saveDesign({ layout: v })} />
+              <Choice label="Background" value={design.pattern} disabled={!editable} options={[['none', 'Plain'], ['food', 'Food icons']]} onPick={(v) => saveDesign({ pattern: v })} />
+            </fieldset>
+
+            <fieldset className="dmenu-step">
+              <legend><span>5</span> Your words</legend>
+              <label className="dmenu-field">
+                Headline
+                <input
+                  key={`h-${design.headline || ''}`}
+                  defaultValue={design.headline || ''}
+                  maxLength={80}
+                  disabled={!editable}
+                  placeholder="Your restaurant name"
+                  aria-label="Website headline"
+                  onBlur={(e) => {
+                    const next = e.target.value.trim() || null;
+                    if (next !== (design.headline || null)) saveDesign({ headline: next });
+                  }}
+                />
+              </label>
+              <label className="dmenu-field">
+                Welcome text
+                <input
+                  key={`i-${design.intro || ''}`}
+                  defaultValue={design.intro || ''}
+                  maxLength={240}
+                  disabled={!editable}
+                  placeholder="A line about your food"
+                  aria-label="Website welcome text"
+                  onBlur={(e) => {
+                    const next = e.target.value.trim() || null;
+                    if (next !== (design.intro || null)) saveDesign({ intro: next });
+                  }}
+                />
+              </label>
+            </fieldset>
+          </div>
+
+          <aside className="dmenu-design-preview" aria-label="Website preview">
+            <div className="dmenu-preview-bar">
+              <Choice label="" value={previewMode} options={[['phone', 'Phone'], ['desktop', 'Computer']]} onPick={(v) => setPreviewMode(v as 'phone' | 'desktop')} />
+              {data.site_slug ? (
+                <a href={`/order/${data.site_slug}`} target="_blank" rel="noreferrer" className="dmenu-btn">
+                  Open site
+                </a>
+              ) : null}
+            </div>
+            <div className={`dmenu-device ${previewMode}`}>
+              {data.site_slug ? (
+                <iframe key={previewTick} title="Your website" src={`/order/${data.site_slug}?preview=${previewTick}`} loading="lazy" />
+              ) : null}
+            </div>
+            <p className="dmenu-hint">If the preview says the page is not open, switch on online orders or the booking link first.</p>
+          </aside>
+        </div>
+      </section>
 
       {categories.map((category, categoryIndex) => (
         <section key={category.id} className="rd-panel dmenu-category">

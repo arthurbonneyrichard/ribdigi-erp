@@ -4662,7 +4662,7 @@ export default function RestaurantPage() {
           ) : null}
 
           {addingRecipe ? (
-            <form className="rest-order-form rd-panel rd-form-grid" onSubmit={async (event) => {
+            <form className="rest-order-form rd-panel rd-form-grid rd-recipe-form" onSubmit={async (event) => {
               await createRecipe(event);
             }}>
               <h3>New recipe</h3>
@@ -4844,7 +4844,7 @@ export default function RestaurantPage() {
                       </>
                     ) : (
                       <>
-                        <div className="rest-order-line-fields rd-form-grid">
+                        <div className="rest-order-line-fields rd-form-grid rd-recipe-fields">
                           <label>
                             <span>Name</span>
                             <input

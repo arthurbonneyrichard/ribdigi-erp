@@ -3877,6 +3877,10 @@ class RestaurantMenuSettings(Base):
     primary_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
     background_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
     board_background_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    site_design: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    site_image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # food | dots | none
+    background_pattern: Mapped[str] = mapped_column(String(10), default="food", server_default="food")
     banner_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # top | footer
     banner_position: Mapped[str] = mapped_column(String(10), default="top", server_default="top")

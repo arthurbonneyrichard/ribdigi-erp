@@ -85,7 +85,7 @@ export default function CartPage() {
       {lines.map((line) => (
         <article key={`${line.product_id}:${line.variant_id || 'base'}`} className="sf-line">
           {line.image_url ? (
-            <img className="sf-thumb" src={storefrontAssetUrl(line.image_url)} alt="" />
+            <img className="sf-thumb" src={storefrontAssetUrl(line.image_url)} alt="" loading="lazy" decoding="async" />
           ) : (
             <div className="sf-thumb-fallback" aria-hidden>{line.name.slice(0, 1)}</div>
           )}

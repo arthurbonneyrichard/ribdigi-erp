@@ -24,7 +24,7 @@ export type GuestMenu = {
   restaurant: { name: string; logo_version: string | null; phone: string | null; address: string | null; tagline: string | null };
   currency: string;
   banner?: { version: string | null; position: 'top' | 'footer' };
-  theme: { accent: string; primary?: string | null; background?: string | null; board_background?: string | null; style: 'forest' | 'mist'; rotate_seconds: number };
+  theme: { accent: string; primary?: string | null; background?: string | null; board_background?: string | null; pattern?: 'food' | 'dots' | 'none'; style: 'forest' | 'mist'; rotate_seconds: number };
   categories: { id: string; name: string; items: GuestItem[] }[];
   version: string;
 };
@@ -189,7 +189,7 @@ export function GuestMenuView({
   };
 
   return (
-    <div className="gmenu" style={menuColorVars(theme)}>
+    <div className={`gmenu pat-${theme.pattern || 'food'}`} style={menuColorVars(theme)}>
       {banner && bannerPos === 'top' ? banner : null}
       <header className="gmenu-head">
         {logoHref ? <img className="gmenu-logo" src={logoHref} alt={`${restaurant.name} logo`} /> : null}
@@ -326,7 +326,7 @@ export function MenuBoardPage({ token }: { token: string }) {
   const { restaurant, currency, theme } = menu;
 
   return (
-    <div className={`gboard is-${theme.style} has-colours`} style={boardColorVars(theme)}>
+    <div className={`gboard is-${theme.style} has-colours pat-${theme.pattern || 'food'}`} style={boardColorVars(theme)}>
       <header className="gboard-head">
         <div className="gboard-brand">
           {restaurant.logo_version ? (
@@ -356,7 +356,7 @@ export function MenuBoardPage({ token }: { token: string }) {
             <article key={item.id} className={`gboard-item${item.available ? '' : ' is-out'}`}>
               {item.image_version ? (
                 <div className="gboard-photo">
-                  <img src={photoUrl(token, item)} alt="" />
+                  <img src={photoUrl(token, item)} alt="" decoding="async" />
                 </div>
               ) : null}
               <div className="gboard-copy">

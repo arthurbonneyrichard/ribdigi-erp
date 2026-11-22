@@ -35,7 +35,64 @@ type Site = {
   delivery_zones: string[];
   service_percent?: number;
   menu: MenuItem[];
+  design?: Design;
+  banner_version?: string | null;
 };
+
+type Design = {
+  primary: string | null;
+  accent: string | null;
+  background: string | null;
+  font: 'serif' | 'sans' | 'rounded';
+  corners: 'round' | 'soft' | 'sharp';
+  layout: 'square' | 'list';
+  pattern: 'none' | 'food';
+  hero?: 'full' | 'split' | 'plain';
+  headline: string | null;
+  intro: string | null;
+};
+
+const HEX = /^#[0-9A-Fa-f]{6}$/;
+const lum = (hex: string) => {
+  const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+};
+const contrast = (a: string, b: string) => {
+  const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
+  return (x + 0.05) / (y + 0.05);
+};
+const readable = (bg: string) => (contrast(bg, '#FFFFFF') >= contrast(bg, '#10211B') ? '#FFFFFF' : '#10211B');
+
+/** The restaurant's own colours become the website's colour variables. Text colours are chosen for contrast. */
+const bannerSrc_ready = (s: Site) => Boolean(s.banner_version);
+
+function designVars(d?: Design): React.CSSProperties {
+  const vars: Record<string, string> = {};
+  const own = (c?: string | null) => (c && HEX.test(c) ? c : null);
+  const primary = own(d?.primary);
+  const accent = own(d?.accent);
+  const bg = own(d?.background);
+  if (primary) {
+    vars['--rs-forest'] = primary;
+    vars['--rs-deep'] = primary;
+    vars['--rs-on-primary'] = readable(primary);
+    vars['--rs-lime'] = contrast(accent || '#C8E86A', primary) >= 3 ? accent || '#C8E86A' : readable(primary);
+  }
+  if (accent) {
+    vars['--rs-brand'] = accent;
+    vars['--rs-brand-dark'] = `color-mix(in srgb, ${accent} 78%, black)`;
+    vars['--rs-on-accent'] = readable(accent);
+    vars['--rs-tint'] = `color-mix(in srgb, ${accent} 14%, white)`;
+  }
+  if (bg) {
+    vars['--rs-white'] = bg;
+    vars['--rs-mist'] = `color-mix(in srgb, ${bg} 90%, ${readable(bg) === '#FFFFFF' ? 'white' : 'black'})`;
+    vars['--rs-ink'] = readable(bg);
+    vars['--rs-muted'] = readable(bg) === '#FFFFFF' ? '#D6E3D8' : '#4D5D56';
+    vars['--rs-line'] = `color-mix(in srgb, ${readable(bg)} 18%, ${bg})`;
+  }
+  return vars as React.CSSProperties;
+}
 
 type Tracked = {
   id: string;
@@ -252,8 +309,13 @@ export default function RestaurantSite({ slug, focus }: { slug: string; focus: '
     );
   }
 
+  const design = site.design;
+  const siteClass = `rsite rs-font-${design?.font || 'serif'} rs-corners-${design?.corners || 'round'} rs-layout-${design?.layout || 'square'} rs-pat-${design?.pattern || 'none'}`;
+  const heroMode = design?.hero === 'plain' ? 'plain' : design?.hero === 'split' ? 'split' : bannerSrc_ready(site) ? 'full' : 'split';
+  const bannerSrc = site.banner_version ? `${apiRoot()}/public/restaurant-site/${encodeURIComponent(slug)}/banner?v=${site.banner_version}` : '';
+
   return (
-    <div className="rsite">
+    <div className={siteClass} style={designVars(design)}>
       <header className="rs-top">
         <a className="rs-brand" href="#top" aria-label={`${site.company_name} home`}>
           {site.has_logo ? (
@@ -277,7 +339,11 @@ export default function RestaurantSite({ slug, focus }: { slug: string; focus: '
         ) : null}
       </header>
 
-      <section className="rs-hero" id="top">
+      <section
+        className={`rs-hero rs-hero-${heroMode}${heroMode === 'full' && bannerSrc ? ' has-banner' : ''}`}
+        id="top"
+        style={heroMode === 'full' && bannerSrc ? ({ '--rs-banner': `url(${bannerSrc})` } as React.CSSProperties) : undefined}
+      >
         <div className="rs-hero-text">
           <p className="rs-kicker">
             {site.ordering_open && site.booking_open
@@ -286,12 +352,14 @@ export default function RestaurantSite({ slug, focus }: { slug: string; focus: '
                 ? 'Order online'
                 : 'Book a table'}
           </p>
-          <h1>{site.company_name}</h1>
+          <h1>{design?.headline || site.company_name}</h1>
           <p className="rs-lede">
-            {site.ordering_open
-              ? 'Fresh food and cold drinks, ready for pickup or brought to your door.'
-              : 'Have a look at the menu and save yourself a table.'}
-            {site.booking_open ? ' Coming to eat with us? Book your table in a minute.' : ''}
+            {design?.intro ||
+              `${
+                site.ordering_open
+                  ? 'Fresh food and cold drinks, ready for pickup or brought to your door.'
+                  : 'Have a look at the menu and save yourself a table.'
+              }${site.booking_open ? ' Coming to eat with us? Book your table in a minute.' : ''}`}
           </p>
           <div className="rs-hero-cta">
             <button
@@ -318,13 +386,14 @@ export default function RestaurantSite({ slug, focus }: { slug: string; focus: '
           </ul>
         </div>
         <div className="rs-hero-art" aria-hidden>
-          {menu
+          {heroMode === 'split' && bannerSrc ? <img className="rs-hero-photo" src={bannerSrc} alt="" /> : null}
+          {heroMode === 'split' && bannerSrc ? null : menu
             .filter((m) => m.has_image)
             .slice(0, 3)
             .map((m, i) => (
               <img key={m.id} className={`rs-plate p${i}`} src={imageUrl(m)} alt="" />
             ))}
-          {menu.filter((m) => m.has_image).length === 0 ? (
+          {menu.filter((m) => m.has_image).length === 0 && !(heroMode === 'split' && bannerSrc) ? (
             <div className="rs-hero-badge">
               <span>{menu.length}</span>
               dishes & drinks
@@ -371,7 +440,7 @@ export default function RestaurantSite({ slug, focus }: { slug: string; focus: '
         {grouped.map((group) => (
           <div key={group.name} className="rs-group">
             <h3>{group.name}</h3>
-            <div className="rs-grid">
+            <div className={`rs-grid${design?.layout === 'list' ? '' : ' sq'}`}>
               {group.items.map((item) => {
                 const qty = bag[item.id] || 0;
                 return (

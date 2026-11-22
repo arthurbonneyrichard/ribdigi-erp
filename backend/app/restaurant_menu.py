@@ -121,8 +121,56 @@ async def ensure_menu(db: AsyncSession, tenant: m.Tenant) -> m.RestaurantMenuSet
     return row
 
 
+SITE_DESIGN_DEFAULTS = {
+    "primary": None,  # header, buttons and the booking band
+    "accent": None,  # highlights, badges, selected dishes
+    "background": None,  # page background
+    "font": "serif",  # serif | sans | rounded
+    "corners": "round",  # round | soft | sharp
+    "layout": "square",  # square | list
+    "pattern": "none",  # none | food
+    "hero": "full",  # full (image behind the title) | split (image beside it) | plain
+    "headline": None,
+    "intro": None,
+}
+
+
+def site_design_of(row: m.RestaurantMenuSettings | None) -> dict:
+    """The website design with every missing choice filled in."""
+    saved = (row.site_design if row is not None else None) or {}
+    out = {**SITE_DESIGN_DEFAULTS}
+    out.update({k: v for k, v in saved.items() if k in SITE_DESIGN_DEFAULTS})
+    return out
+
+
+async def save_site_design(db: AsyncSession, tenant_id: str, payload, *, user_id: str | None) -> dict:
+    tenant = await rs._restaurant_tenant(db, tenant_id=tenant_id)
+    row = await ensure_menu(db, tenant)
+    data = payload.model_dump(exclude_unset=True)
+    design = site_design_of(row)
+    for field in ("primary", "accent", "background"):
+        if field in data:
+            raw = str(data[field] or "").strip()
+            if raw and not HEX_COLOR.match(raw):
+                raise HTTPException(status_code=422, detail="Choose a colour like #4AB012.")
+            design[field] = raw.upper() or None
+    for field in ("font", "corners", "layout", "pattern", "hero"):
+        if data.get(field):
+            design[field] = data[field]
+    for field, label, limit in (("headline", "headline", 80), ("intro", "intro", 240)):
+        if field in data:
+            design[field] = optional_honest_narrative(data[field], label=label, max_length=limit)
+    row.site_design = design
+    row.updated_at = _now()
+    await _log(db, tenant.id, user_id, "restaurant_site_design_saved", row.id, {"fields": sorted(data)})
+    await db.flush()
+    return design
+
+
 def _serialize_settings(row: m.RestaurantMenuSettings) -> dict:
     return {
+        "site_design": site_design_of(row),
+        "has_site_image": bool(row.site_image_url),
         "public_token": row.public_token,
         "public_url": menu_url(row.public_token),
         "board_url": f"{menu_url(row.public_token)}/board",
@@ -135,6 +183,7 @@ def _serialize_settings(row: m.RestaurantMenuSettings) -> dict:
         "primary_color": row.primary_color,
         "background_color": row.background_color,
         "board_background_color": row.board_background_color,
+        "background_pattern": row.background_pattern or "food",
         "has_banner": bool(row.banner_url),
         "banner_position": row.banner_position or "top",
     }
@@ -185,6 +234,7 @@ async def admin_menu(db: AsyncSession, tenant_id: str) -> dict:
     unlisted.sort(key=lambda r: str(r["name"]).casefold())
     return {
         "company_name": tenant.company_name,
+        "site_slug": tenant.slug,
         "currency": tenant.currency or "GHS",
         "has_logo": bool(getattr(tenant, "logo_url", None)),
         "settings": _serialize_settings(row),
@@ -223,7 +273,7 @@ async def save_settings(db: AsyncSession, tenant_id: str, payload, *, user_id: s
             if raw and not HEX_COLOR.match(raw):
                 raise HTTPException(status_code=422, detail="Choose a colour like #4AB012.")
             setattr(row, field, raw.upper() or None)
-    for field in ("board_style", "board_rotate_seconds", "show_unavailable", "is_published", "banner_position"):
+    for field in ("board_style", "board_rotate_seconds", "show_unavailable", "is_published", "banner_position", "background_pattern"):
         if field in data:
             setattr(row, field, data[field])
     row.updated_at = _now()
@@ -522,6 +572,7 @@ def _guest_payload(
             "primary": row.primary_color,
             "background": row.background_color,
             "board_background": row.board_background_color,
+            "pattern": row.background_pattern or "food",
             "style": row.board_style,
             "rotate_seconds": int(row.board_rotate_seconds or 12),
         },
@@ -565,6 +616,22 @@ async def set_banner(db: AsyncSession, tenant_id: str, key: str | None, *, user_
     await _log(db, tenant.id, user_id, "restaurant_menu_banner_saved" if key else "restaurant_menu_banner_removed", row.id, {})
     await db.flush()
     return _serialize_settings(row)
+
+
+async def set_site_image(db: AsyncSession, tenant_id: str, key: str | None, *, user_id: str | None) -> dict:
+    tenant = await rs._restaurant_tenant(db, tenant_id=tenant_id)
+    row = await ensure_menu(db, tenant)
+    row.site_image_url = key
+    row.updated_at = _now()
+    await _log(db, tenant.id, user_id, "restaurant_site_image_saved" if key else "restaurant_site_image_removed", row.id, {})
+    await db.flush()
+    return _serialize_settings(row)
+
+
+async def admin_site_image_key(db: AsyncSession, tenant_id: str) -> str | None:
+    tenant = await rs._restaurant_tenant(db, tenant_id=tenant_id)
+    row = await ensure_menu(db, tenant)
+    return row.site_image_url
 
 
 async def admin_banner_key(db: AsyncSession, tenant_id: str) -> str | None:
