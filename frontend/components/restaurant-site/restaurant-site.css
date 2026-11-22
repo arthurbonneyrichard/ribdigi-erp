@@ -326,3 +326,9 @@
 
 .rsite.rs-corners-sharp .rs-plate,.rsite.rs-corners-sharp .rs-hero-badge{border-radius:0}
 .rsite.rs-corners-soft .rs-plate,.rsite.rs-corners-soft .rs-hero-badge{border-radius:10px}
+
+/* Display image beside the title: centred with the text, never stretched. */
+.rsite .rs-hero.rs-hero-split{align-items:center}
+.rsite .rs-hero-photo{display:block;max-width:520px;margin-left:auto;margin-right:auto}
+@media (min-width:861px){.rsite .rs-hero-photo{margin-right:0}}
+.rsite .rs-hero-art:has(.rs-hero-photo){display:flex;align-items:center;justify-content:center}
