@@ -3876,6 +3876,7 @@ class RestaurantMenuSettings(Base):
     show_unavailable: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     primary_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
     background_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    board_background_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
     banner_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # top | footer
     banner_position: Mapped[str] = mapped_column(String(10), default="top", server_default="top")

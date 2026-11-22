@@ -277,6 +277,8 @@ export default function RestaurantPage() {
   const [expandedOrder, setExpandedOrder] = useState('');
   const [showClosedOrders, setShowClosedOrders] = useState(false);
   const [addingRecipe, setAddingRecipe] = useState(false);
+  const [recipeSearch, setRecipeSearch] = useState('');
+  const [recipeFilter, setRecipeFilter] = useState<'all' | 'short' | 'costly'>('all');
   const [editingRecipe, setEditingRecipe] = useState('');
   const [retiringRecipe, setRetiringRecipe] = useState('');
   const [addingBooking, setAddingBooking] = useState(false);
@@ -1970,6 +1972,23 @@ export default function RestaurantPage() {
   const heldTables = tables.filter((row) => row.status === 'held');
   const lowIngredients = products.filter((row) => Number(row.reorder_level || 0) > 0 && Number(row.stock_qty || 0) <= Number(row.reorder_level || 0));
   const recipeMenuIds = new Set(recipes.map((row) => row.product_id));
+  const recipeIsShort = (row: Row) =>
+    row.can_make === 0 ||
+    Object.entries(row.line_info || {}).some(([id, info]: [string, any]) => {
+      const line = (row.lines || []).find((l: Row) => l.ingredient_id === id);
+      return line && Number(info.stock) < Number(line.quantity);
+    });
+  const recipeQuery = recipeSearch.trim().toLowerCase();
+  const shownRecipes = recipes.filter((row) => {
+    if (recipeFilter === 'short' && !recipeIsShort(row)) return false;
+    if (recipeFilter === 'costly' && !(Number(row.food_cost_pct) > 40)) return false;
+    if (!recipeQuery) return true;
+    return (
+      String(row.name || '').toLowerCase().includes(recipeQuery) ||
+      String(row.menu_item || '').toLowerCase().includes(recipeQuery) ||
+      (row.lines || []).some((l: Row) => String(l.name || '').toLowerCase().includes(recipeQuery))
+    );
+  });
   const recipeIngredientIds = new Set(
     recipes.flatMap((row) => (row.lines || []).map((line: Row) => line.ingredient_id))
   );
@@ -4743,8 +4762,35 @@ export default function RestaurantPage() {
           </details>
 
           {recipes.length ? (
+            <div className="rd-recipe-tools" role="search">
+              <input
+                type="search"
+                aria-label="Search recipes"
+                placeholder="Search a dish or an ingredient"
+                value={recipeSearch}
+                onChange={(e) => setRecipeSearch(e.target.value)}
+              />
+              {([
+                ['all', 'All'],
+                ['short', 'Short on stock'],
+                ['costly', 'Food cost over 40%'],
+              ] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`rd-chip${recipeFilter === key ? ' on' : ''}`}
+                  aria-pressed={recipeFilter === key}
+                  onClick={() => setRecipeFilter(key)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {recipes.length && !shownRecipes.length ? <p className="rd-hint-line">No recipe matches. Clear the search or the filter.</p> : null}
+          {recipes.length ? (
             <ul className="rest-order-list" aria-label="Restaurant recipes">
-              {recipes.map((row) => {
+              {shownRecipes.map((row) => {
                 const editing = editingRecipe === row.id;
                 const lines = leftoverRecipeLines(row);
                 const facts: Array<[string, string]> = [
@@ -4765,13 +4811,31 @@ export default function RestaurantPage() {
                     </div>
                     {!editing ? (
                       <>
-                        <ul className="rd-ing-list">
-                          {lines.map((line: Row) => (
-                            <li key={`${row.id}-${line.ingredient_id}`}>
-                              <b>{Number(line.quantity)}</b> {line.name}
-                            </li>
-                          ))}
+                        <ul className="rd-ing-table" aria-label={`Ingredients of ${row.name}`}>
+                          {lines.map((line: Row) => {
+                            const info = row.line_info?.[line.ingredient_id];
+                            const short = info && Number(info.stock) < Number(line.quantity);
+                            return (
+                              <li key={`${row.id}-${line.ingredient_id}`} className={short ? 'short' : ''}>
+                                <span className="n">{line.name}</span>
+                                <span className="q">{Number(line.quantity)}</span>
+                                <span className="c">{info?.cost ? Number(info.cost).toFixed(2) : '–'}</span>
+                                <span className="s">{short ? `Only ${Number(info.stock)} in stock` : info ? 'In stock' : ''}</span>
+                              </li>
+                            );
+                          })}
                         </ul>
+                        <div className="rd-cost-tiles" aria-label={`Cost of ${row.name}`}>
+                          <div><span>Cost per dish</span><b>{Number(row.cost || 0).toFixed(2)}</b></div>
+                          {row.selling_price ? <div><span>Sells for</span><b>{Number(row.selling_price).toFixed(2)}</b></div> : null}
+                          {row.food_cost_pct != null ? (
+                            <div className={Number(row.food_cost_pct) > 40 ? 'warn' : ''}><span>Food cost</span><b>{row.food_cost_pct}%</b></div>
+                          ) : null}
+                          {row.margin != null ? <div><span>Margin</span><b>{Number(row.margin).toFixed(2)}</b></div> : null}
+                          {row.can_make != null ? (
+                            <div className={row.can_make === 0 ? 'warn' : ''}><span>Stock covers</span><b>{row.can_make} {row.can_make === 1 ? 'dish' : 'dishes'}</b></div>
+                          ) : null}
+                        </div>
                         <div className="rest-order-actions rd-row-actions">
                           <button type="button" aria-label={`Edit recipe ${row.name}`} onClick={() => setEditingRecipe(row.id)}>
                             Edit

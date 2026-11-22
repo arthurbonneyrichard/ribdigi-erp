@@ -661,3 +661,26 @@
 .main .rdesk.rd-kitchen:fullscreen{background:var(--bg,#F5F7EC);color:var(--ink,#10211B);padding:16px;overflow:auto;width:100vw;height:100vh}
 .main .rdesk.rd-kitchen:fullscreen::backdrop{background:var(--bg,#F5F7EC)}
 [data-theme="dark"] .main .rdesk.rd-kitchen:fullscreen{background:#0b1410;color:#e8f0ea}
+
+.rd-cost{display:flex;flex-wrap:wrap;gap:4px 16px;margin:8px 0 0;font-size:14px;color:#4D5D56}
+.rd-cost b{color:#10211B}
+.rd-cost .rd-warn,.rd-ing-list .rd-warn{color:#b42318}
+.rd-ing-list small{color:#4D5D56}
+
+.main .rdesk .rd-recipe-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 12px}
+.main .rdesk .rd-recipe-tools input[type=search]{flex:1 1 220px;min-height:42px;border-radius:12px;border:2px solid var(--rd-line);padding:0 12px;background:var(--rd-panel);color:var(--rd-ink)}
+.main .rdesk .rd-chip{min-height:38px;padding:0 14px;border-radius:999px;border:2px solid var(--rd-line);background:var(--rd-panel);color:var(--rd-ink);font-weight:700;cursor:pointer}
+.main .rdesk .rd-chip.on{background:var(--rd-brand);border-color:var(--rd-brand);color:#10211B}
+.main .rdesk .rd-ing-table{list-style:none;margin:0;padding:0;border:1px solid var(--rd-line);border-radius:12px;overflow:hidden}
+.main .rdesk .rd-ing-table li{display:grid;grid-template-columns:minmax(0,1fr) 64px 70px minmax(0,130px);gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--rd-line);font-size:14px}
+.main .rdesk .rd-ing-table li:last-child{border-bottom:0}
+.main .rdesk .rd-ing-table .q,.main .rdesk .rd-ing-table .c{text-align:right;font-variant-numeric:tabular-nums}
+.main .rdesk .rd-ing-table .s{font-size:12.5px;color:var(--rd-muted);text-align:right}
+.main .rdesk .rd-ing-table li.short .s{color:#b42318;font-weight:700}
+.main .rdesk .rd-cost-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
+.main .rdesk .rd-cost-tiles div{padding:8px 12px;border-radius:12px;background:var(--rd-tint);display:flex;flex-direction:column;gap:2px}
+.main .rdesk .rd-cost-tiles span{font-size:12px;color:var(--rd-muted)}
+.main .rdesk .rd-cost-tiles b{font-size:17px}
+.main .rdesk .rd-cost-tiles .warn{background:var(--rd-bad-tint)}
+.main .rdesk .rd-cost-tiles .warn b{color:var(--rd-bad-ink)}
+@media(max-width:520px){.main .rdesk .rd-ing-table li{grid-template-columns:minmax(0,1fr) 52px 60px}.main .rdesk .rd-ing-table .s{grid-column:1 / -1;text-align:left}}

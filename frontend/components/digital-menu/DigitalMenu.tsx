@@ -24,7 +24,7 @@ export type GuestMenu = {
   restaurant: { name: string; logo_version: string | null; phone: string | null; address: string | null; tagline: string | null };
   currency: string;
   banner?: { version: string | null; position: 'top' | 'footer' };
-  theme: { accent: string; primary?: string | null; background?: string | null; style: 'forest' | 'mist'; rotate_seconds: number };
+  theme: { accent: string; primary?: string | null; background?: string | null; board_background?: string | null; style: 'forest' | 'mist'; rotate_seconds: number };
   categories: { id: string; name: string; items: GuestItem[] }[];
   version: string;
 };
@@ -41,9 +41,22 @@ const readable = (bg: string) => (contrast(bg, '#FFFFFF') >= contrast(bg, '#1021
 const HEX = /^#[0-9A-Fa-f]{6}$/;
 
 /** The restaurant's own colours. Text colours are picked for contrast, so any colour stays readable. */
+const DEFAULT_ACCENT = '#4AB012';
+
+/** The accent is still the stock green when the restaurant has not chosen one; then it follows their own colours. */
+function accentFor(theme: GuestMenu['theme']): string {
+  const own = (c?: string | null) => (c && HEX.test(c) ? c : null);
+  const primary = own(theme.primary);
+  const background = own(theme.background);
+  if (theme.accent.toUpperCase() !== DEFAULT_ACCENT || (!primary && !background)) return theme.accent;
+  if (primary && (!background || contrast(primary, background) >= 3)) return primary;
+  return readable(background || primary || '#FFFFFF');
+}
+
 export function menuColorVars(theme: GuestMenu['theme']): React.CSSProperties {
-  const vars: Record<string, string> = { '--menu-accent': theme.accent };
-  vars['--menu-on-accent'] = readable(theme.accent);
+  const accent = accentFor(theme);
+  const vars: Record<string, string> = { '--menu-accent': accent };
+  vars['--menu-on-accent'] = readable(accent);
   if (theme.primary && HEX.test(theme.primary)) {
     vars['--menu-primary'] = theme.primary;
     vars['--menu-on-primary'] = readable(theme.primary);
@@ -54,7 +67,7 @@ export function menuColorVars(theme: GuestMenu['theme']): React.CSSProperties {
     vars['--menu-ink'] = readable(bg);
     vars['--menu-card'] = readable(bg) === '#FFFFFF' ? 'rgba(255,255,255,.08)' : '#FFFFFF';
     // Prices use the accent when it reads on the background, otherwise the text colour.
-    vars['--menu-price'] = contrast(theme.accent, bg) >= 3 ? theme.accent : readable(bg);
+    vars['--menu-price'] = contrast(accent, bg) >= 3 ? accent : readable(bg);
   }
   return vars as React.CSSProperties;
 }
@@ -63,7 +76,8 @@ export function menuColorVars(theme: GuestMenu['theme']): React.CSSProperties {
 export function boardColorVars(theme: GuestMenu['theme']): React.CSSProperties {
   const vars: Record<string, string> = { ...(menuColorVars(theme) as Record<string, string>) };
   const mist = theme.style === 'mist';
-  const bg = theme.background && HEX.test(theme.background) ? theme.background : mist ? '#F5FAF0' : '#001A0E';
+  const own = [theme.board_background, theme.background].find((c) => c && HEX.test(c));
+  const bg = own || (mist ? '#F5FAF0' : '#001A0E');
   const panel = theme.primary && HEX.test(theme.primary) ? theme.primary : mist ? '#FFFFFF' : '#003D1F';
   const ink = readable(bg);
   const onPanel = readable(panel);
@@ -73,7 +87,7 @@ export function boardColorVars(theme: GuestMenu['theme']): React.CSSProperties {
   vars['--soft'] = ink === '#FFFFFF' ? '#D6E3D8' : '#4D5D56';
   vars['--on-panel'] = onPanel;
   vars['--on-panel-soft'] = onPanel === '#FFFFFF' ? '#D6E3D8' : '#4D5D56';
-  vars['--menu-price'] = contrast(theme.accent, panel) >= 3 ? theme.accent : onPanel;
+  vars['--menu-price'] = contrast(accentFor(theme), panel) >= 3 ? accentFor(theme) : onPanel;
   return vars as React.CSSProperties;
 }
 

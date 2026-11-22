@@ -46,6 +46,7 @@ class SettingsBody(Body):
     banner_position: Literal["top", "footer"] | None = None
     primary_color: Annotated[str, Field(max_length=7)] | None = None
     background_color: Annotated[str, Field(max_length=7)] | None = None
+    board_background_color: Annotated[str, Field(max_length=7)] | None = None
 
 
 class CategoryCreateBody(Body):
@@ -107,7 +108,7 @@ async def menu_preview(claims=Depends(can_read), db: AsyncSession = Depends(get_
 @router.patch("/settings")
 async def menu_settings(payload: SettingsBody, claims=Depends(can_edit), db: AsyncSession = Depends(get_db)):
     data = await menu_svc.save_settings(
-        db, claims["tenant_id"], _drop_nulls(payload, "tagline", "primary_color", "background_color"), user_id=claims.get("sub")
+        db, claims["tenant_id"], _drop_nulls(payload, "tagline", "primary_color", "background_color", "board_background_color"), user_id=claims.get("sub")
     )
     await db.commit()
     return _env(data, "Menu settings saved")
@@ -236,7 +237,7 @@ async def menu_banner_upload(
 ):
     stored = await storage_svc.save_upload(
         tenant_id=claims["tenant_id"],
-        category="logos",
+        category="banners",
         upload=file,
         allowed_types=storage_svc.LOGO_CONTENT_TYPES,
         max_bytes=int(settings.MEDIA_MAX_LOGO_BYTES),

@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
+import io
+import logging
 import re
 import uuid
 from dataclasses import dataclass
@@ -12,6 +15,8 @@ from fastapi import HTTPException, UploadFile
 from fastapi.responses import Response
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 SAFE_NAME = re.compile(r"[^A-Za-z0-9._-]+")
 
@@ -281,6 +286,53 @@ def _delete_bytes(key: str) -> bool:
     return False
 
 
+# Longest side, in pixels, kept for each kind of upload. Phone photos are 4000 px and several MB;
+# a till tile, menu card or catalogue row never needs more than this, so uploads are shrunk once
+# here and every screen opens faster. The company logo is not listed: its original is kept for
+# printing and PDFs. Receipts and documents keep more detail so text stays readable.
+IMAGE_MAX_SIDE = {
+    "product_images": 1280,
+    "brand_logos": 800,
+    "banners": 1600,
+    "ecommerce_banner": 1600,
+    "purchase_invoices": 2400,
+    "expenses": 2400,
+    "journals": 2400,
+}
+
+
+def optimize_image(data: bytes, content_type: str, max_side: int) -> tuple[bytes, str]:
+    """Shrink and recompress a picture, keeping its format. Any trouble returns the original bytes."""
+    if content_type not in {"image/png", "image/jpeg", "image/jpg", "image/webp"}:
+        return data, content_type  # GIFs may be animated; leave them alone
+    try:
+        from PIL import Image, ImageOps
+
+        with Image.open(io.BytesIO(data)) as img:
+            if getattr(img, "n_frames", 1) > 1:
+                return data, content_type
+            img.load()
+            fixed = ImageOps.exif_transpose(img)  # also drops the camera's GPS/EXIF block
+            resized = max(fixed.size) > max_side
+            if resized:
+                fixed.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+            out = io.BytesIO()
+            if content_type == "image/png":
+                fixed.save(out, "PNG", optimize=True)
+            elif content_type == "image/webp":
+                fixed.save(out, "WEBP", quality=82, method=4)
+            else:
+                if fixed.mode not in ("RGB", "L"):
+                    fixed = fixed.convert("RGB")
+                fixed.save(out, "JPEG", quality=82, optimize=True, progressive=True)
+        result = out.getvalue()
+        if resized or len(result) < len(data):
+            return result, content_type
+    except Exception:  # noqa: BLE001 - a picture we cannot recompress is still stored as sent
+        logger.warning("image optimisation skipped", exc_info=True)
+    return data, content_type
+
+
 async def save_upload(
     *,
     tenant_id: str,
@@ -308,6 +360,10 @@ async def save_upload(
             status_code=400,
             detail=f"That file is too large. Maximum size is {max_mb} MB.",
         )
+    max_side = IMAGE_MAX_SIDE.get(category)
+    if max_side:
+        data, content_type = await asyncio.to_thread(optimize_image, data, content_type, max_side)
+        size = len(data)
     original = sanitize_filename(upload.filename)
     key = build_key(tenant_id, category, content_type, original)
     validate_key(key, tenant_id=tenant_id)

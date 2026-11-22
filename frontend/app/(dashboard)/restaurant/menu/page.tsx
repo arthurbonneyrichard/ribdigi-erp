@@ -390,6 +390,7 @@ export default function RestaurantDigitalMenuPage() {
             {([
               ['primary_color', 'Header and card colour', '#006B2E', 'Menu header colour'],
               ['background_color', 'Page background colour', '#F5FAF0', 'Menu background colour'],
+              ['board_background_color', 'TV board background colour', '#001A0E', 'TV board background colour'],
             ] as const).map(([key, label, fallback, aria]) => (
               <label key={key}>
                 {label}

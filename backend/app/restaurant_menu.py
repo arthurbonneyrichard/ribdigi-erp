@@ -134,6 +134,7 @@ def _serialize_settings(row: m.RestaurantMenuSettings) -> dict:
         "show_unavailable": bool(row.show_unavailable),
         "primary_color": row.primary_color,
         "background_color": row.background_color,
+        "board_background_color": row.board_background_color,
         "has_banner": bool(row.banner_url),
         "banner_position": row.banner_position or "top",
     }
@@ -216,7 +217,7 @@ async def save_settings(db: AsyncSession, tenant_id: str, payload, *, user_id: s
         if not HEX_COLOR.match(color):
             raise HTTPException(status_code=422, detail="Choose a colour like #4AB012.")
         row.accent_color = color.upper()
-    for field in ("primary_color", "background_color"):
+    for field in ("primary_color", "background_color", "board_background_color"):
         if field in data:
             raw = str(data[field] or "").strip()
             if raw and not HEX_COLOR.match(raw):
@@ -520,6 +521,7 @@ def _guest_payload(
             "accent": row.accent_color,
             "primary": row.primary_color,
             "background": row.background_color,
+            "board_background": row.board_background_color,
             "style": row.board_style,
             "rotate_seconds": int(row.board_rotate_seconds or 12),
         },

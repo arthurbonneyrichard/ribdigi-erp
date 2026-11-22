@@ -85,7 +85,7 @@
 }
 .main .rtill button.rtill-dish:active{transform:scale(.97)}
 .main .rtill button.rtill-dish:hover{outline:2px solid var(--rt-accent)}
-.main .rtill button.rtill-dish img,.main .rtill .rtill-dish-initial{width:100%;height:78px;border-radius:12px;object-fit:cover}
+.main .rtill button.rtill-dish img,.main .rtill .rtill-dish-initial{width:100%;height:auto;aspect-ratio:1/1;border-radius:12px;object-fit:cover}
 .main .rtill .rtill-dish-initial{
   display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:800;
   font-family:Georgia,'Times New Roman',serif;color:var(--rt-accent);background:#E4F2D6

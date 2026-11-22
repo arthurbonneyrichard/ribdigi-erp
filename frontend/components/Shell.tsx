@@ -1087,7 +1087,8 @@ function PosLockTopButton() {
   );
 }
 
-/** Turns this till into a kiosk: full screen, no menu, closed only with the close code. */
+/** Turns this till into a kiosk. Not shown anywhere for now (hidden for every industry); kept for when it returns. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function KioskTopButton({ onStart }: { onStart: () => void }) {
   return (
     <button type="button" className="tpos-btn pos-top-drawer-btn" aria-label="Start kiosk mode" onClick={onStart}>
@@ -2347,13 +2348,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                   <PosReturnTopButton />
                   <PosLockTopButton />
                   <PosDrawerTopControls />
-                  {kiosk ? null : <KioskTopButton onStart={() => beginKiosk('/pos')} />}
                 </div>
               </>
-            ) : pathname === '/restaurant/till' && !kiosk ? (
-              <div className="pos-top-tools">
-                <KioskTopButton onStart={() => beginKiosk('/restaurant/till')} />
-              </div>
             ) : null}
           </div>
           {!isPlatformOwner ? (
