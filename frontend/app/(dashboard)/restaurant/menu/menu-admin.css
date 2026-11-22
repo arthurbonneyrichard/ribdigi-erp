@@ -102,3 +102,34 @@
 .dmenu-preset{position:relative}
 .dmenu-preset.on{border-color:#4AB012;border-width:3px;background:rgba(74,176,18,.12);box-shadow:0 0 0 3px rgba(74,176,18,.25);font-weight:900}
 .dmenu-preset.on::after{content:"\2713";position:absolute;top:-10px;right:-10px;width:26px;height:26px;border-radius:50%;background:#4AB012;color:#10211B;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+
+/* Step 3: display image drop area and style picker. */
+.dmenu-hero-image{display:grid;grid-template-columns:minmax(220px,300px) minmax(0,1fr);gap:18px;align-items:center;padding:0;border:0;background:none}
+.dmenu-drop{position:relative;display:flex;align-items:center;justify-content:center;aspect-ratio:16/10;border:2px dashed rgba(127,127,127,.55);border-radius:16px;overflow:hidden;background:rgba(127,127,127,.08);cursor:pointer;transition:border-color .15s ease,background .15s ease}
+.dmenu-drop:hover,.dmenu-drop.over{border-color:#4AB012;background:rgba(74,176,18,.1)}
+.dmenu-drop.has{border-style:solid;border-color:transparent}
+.dmenu-drop img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.dmenu-drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.dmenu-drop-text{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 14px;text-align:center;border-radius:12px}
+.dmenu-drop.has .dmenu-drop-text{opacity:0;background:rgba(0,0,0,.6);color:#fff;transition:opacity .15s ease}
+.dmenu-drop.has:hover .dmenu-drop-text,.dmenu-drop.has.over .dmenu-drop-text{opacity:1}
+.dmenu-drop-text small{color:inherit;opacity:.75}
+.dmenu-hero-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.dmenu-hero-side .dmenu-hint{margin:0}
+.dmenu-remove{align-self:flex-start;min-height:40px;padding:0 16px;border-radius:12px;border:2px solid #b42318;background:transparent;color:#b42318;font-weight:800;cursor:pointer}
+.dmenu-remove:hover{background:#b42318;color:#fff}
+.dmenu-styles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+.dmenu-style{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px;border:2px solid var(--rd-line,#d4e5c4);border-radius:14px;background:var(--rd-panel,#fff);color:inherit;cursor:pointer;text-align:left}
+.dmenu-style small{color:#4D5D56}
+.dmenu-style .pic{display:block;position:relative;width:100%;aspect-ratio:16/9;margin-bottom:6px;border-radius:8px;background:rgba(127,127,127,.18);overflow:hidden}
+.dmenu-style .pic i{position:absolute;border-radius:3px;background:rgba(127,127,127,.55)}
+.dmenu-style .pic.full{background:linear-gradient(135deg,#6b7280,#9ca3af)}
+.dmenu-style .pic.full i:first-child{left:12%;top:34%;width:46%;height:10%;background:#fff}
+.dmenu-style .pic.full i:last-child{left:12%;top:52%;width:30%;height:8%;background:rgba(255,255,255,.7)}
+.dmenu-style .pic.split i:first-child{left:8%;top:34%;width:34%;height:10%}
+.dmenu-style .pic.split i:last-child{right:8%;top:14%;width:40%;height:72%;background:#9ca3af}
+.dmenu-style .pic.plain i:first-child{left:20%;top:38%;width:60%;height:10%}
+.dmenu-style .pic.plain i:last-child{left:32%;top:56%;width:36%;height:8%}
+.dmenu-style.on{border-color:#4AB012;background:rgba(74,176,18,.1);box-shadow:0 0 0 3px rgba(74,176,18,.25)}
+.dmenu-style.on b::before{content:"\2713\00a0";color:#2F7A0C}
+@media(max-width:640px){.dmenu-hero-image{grid-template-columns:1fr}.dmenu-styles{grid-template-columns:1fr}}
