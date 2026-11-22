@@ -10,6 +10,7 @@ import { api, apiFetch } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
 import { problem, type Row } from '../../../../lib/restaurantDesk';
 import { GuestMenuView, menuPrice, type GuestItem, type GuestMenu } from '../../../../components/digital-menu/DigitalMenu';
+import OnlineAlertsPanel from '../../../../components/OnlineAlertsPanel';
 import '../restaurant-desk.css';
 import './menu-admin.css';
 
@@ -74,148 +75,6 @@ function Choice({
         ))}
       </div>
     </div>
-  );
-}
-
-/** Where to tell the restaurant when a guest orders or books online. */
-function AlertsPanel({ editable }: { editable: boolean }) {
-  const [cfg, setCfg] = useState<Row | null>(null);
-  const [emails, setEmails] = useState('');
-  const [whatsapp, setWhatsapp] = useState('');
-  const [sender, setSender] = useState('');
-  const [template, setTemplate] = useState('');
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const apply = (c: Row) => {
-    setCfg(c);
-    setEmails((c.emails || []).join(', '));
-    setWhatsapp(c.whatsapp || '');
-    setSender(c.whatsapp_from || '');
-    setTemplate(c.whatsapp_template || '');
-  };
-
-  useEffect(() => {
-    api('/restaurant/alerts')
-      .then((res) => apply(res.data))
-      .catch((err) => setMsg({ ok: false, text: problem(err) }));
-  }, []);
-
-  async function save(patch: Row, done = 'Alerts saved.') {
-    setBusy(true);
-    setMsg(null);
-    try {
-      const res = await api('/restaurant/alerts', { method: 'PUT', body: JSON.stringify(patch) });
-      apply(res.data);
-      setMsg({ ok: true, text: done });
-    } catch (err) {
-      setMsg({ ok: false, text: problem(err) });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function saveContacts() {
-    const list = emails.split(/[,\s;]+/).map((e) => e.trim()).filter(Boolean);
-    await save({
-      emails: list,
-      whatsapp: whatsapp.trim() || null,
-      whatsapp_from: sender.trim() || null,
-      whatsapp_template: template.trim() || null,
-    });
-  }
-
-  async function sendTest() {
-    setBusy(true);
-    setMsg(null);
-    try {
-      const res = await api('/restaurant/alerts/test', { method: 'POST' });
-      const r = res.data || {};
-      const parts: string[] = [];
-      if (r.email) parts.push(r.email.sent ? `Email sent to ${(r.email.to || []).join(', ')}.` : `Email did not send: ${r.email.error || 'check the email settings'}.`);
-      if (r.whatsapp) parts.push(r.whatsapp.sent ? 'WhatsApp sent.' : `WhatsApp did not send: ${String(r.whatsapp.error || 'check the number and sender').slice(0, 160)}`);
-      if (!parts.length) parts.push('Nothing to send yet. Add an email address or a WhatsApp number and save.');
-      setMsg({ ok: !parts.some((p) => p.includes('did not')), text: parts.join(' ') });
-    } catch (err) {
-      setMsg({ ok: false, text: problem(err) });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  if (!cfg) return null;
-  const ch = cfg.channels || {};
-  const toggle = (key: string, label: string) => (
-    <label className="dmenu-switch">
-      <input type="checkbox" checked={Boolean(cfg[key])} disabled={!editable || busy} aria-label={label} onChange={(e) => save({ [key]: e.target.checked })} />
-      <span>{label}</span>
-    </label>
-  );
-
-  return (
-    <section className="rd-panel dmenu-alerts" aria-label="Order and booking alerts">
-      <div className="rd-panel-head">
-        <h2>Order and booking alerts</h2>
-        <small>Get told straight away when a guest orders or books on your website. The alert also shows in the ERP.</small>
-      </div>
-      <div className="dmenu-alert-grid">
-        <div className="dmenu-alert-box">
-          <h3>Email</h3>
-          <label className="dmenu-field">
-            Send to (up to 5, separated by commas)
-            <input
-              value={emails}
-              disabled={!editable}
-              placeholder={cfg.company_email ? `Now using ${cfg.company_email}` : 'owner@yourrestaurant.com'}
-              aria-label="Alert email addresses"
-              onChange={(e) => setEmails(e.target.value)}
-            />
-          </label>
-          <p className="dmenu-hint">
-            {ch.email === 'disabled' ? 'Email sending is switched off for this company.' : ch.email === 'console' ? 'Email is in test mode here: messages are logged, not sent.' : 'Sent from your company email settings.'}
-          </p>
-        </div>
-        <div className="dmenu-alert-box">
-          <h3>WhatsApp</h3>
-          <label className="dmenu-field">
-            Your WhatsApp number (with country code)
-            <input value={whatsapp} disabled={!editable} placeholder="+233241234567" inputMode="tel" aria-label="Alert WhatsApp number" onChange={(e) => setWhatsapp(e.target.value)} />
-          </label>
-          <details className="dmenu-adv">
-            <summary>WhatsApp sender and template (needed once, then forget it)</summary>
-            <label className="dmenu-field">
-              Sender number from Twilio
-              <input value={sender} disabled={!editable} placeholder="+14155238886" inputMode="tel" aria-label="Twilio WhatsApp sender number" onChange={(e) => setSender(e.target.value)} />
-            </label>
-            <label className="dmenu-field">
-              Approved message template (optional)
-              <input value={template} disabled={!editable} placeholder="HXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" aria-label="Twilio WhatsApp template id" onChange={(e) => setTemplate(e.target.value)} />
-            </label>
-            <p className="dmenu-hint">
-              WhatsApp messages go through your Twilio account (set it up under Company, SMS). WhatsApp only lets a business start a chat with an approved template. Without one, messages work in Twilio&apos;s test sandbox and when you have messaged the number in the last 24 hours.
-            </p>
-          </details>
-          <p className="dmenu-hint">
-            {!ch.whatsapp_ready ? (ch.whatsapp === 'console' ? 'Twilio is not set up yet, so WhatsApp is in test mode.' : 'Twilio is not set up yet.') : 'Twilio is connected.'}
-          </p>
-        </div>
-      </div>
-      <div className="dmenu-switches">
-        {toggle('orders', 'Alert me about online orders')}
-        {toggle('bookings', 'Alert me about table bookings')}
-        {toggle('email_on', 'Use email')}
-        {toggle('whatsapp_on', 'Use WhatsApp')}
-      </div>
-      <div className="dmenu-alert-actions">
-        <button type="button" className="rd-primary" disabled={!editable || busy} aria-label="Save alert contacts" onClick={() => void saveContacts()}>
-          Save contacts
-        </button>
-        <button type="button" disabled={!editable || busy} aria-label="Send a test alert" onClick={() => void sendTest()}>
-          Send me a test
-        </button>
-      </div>
-      {msg ? <p className={msg.ok ? 'dmenu-ok' : 'dmenu-error'} role="status">{msg.text}</p> : null}
-    </section>
   );
 }
 
@@ -728,7 +587,7 @@ export default function RestaurantDigitalMenuPage() {
         </section>
       </div>
 
-      <AlertsPanel editable={editable} />
+      <OnlineAlertsPanel editable={editable} />
 
       <section className="rd-panel dmenu-design" aria-label="Website design">
         <div className="rd-panel-head">

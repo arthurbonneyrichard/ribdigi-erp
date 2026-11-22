@@ -565,6 +565,9 @@ from app import hotel_booking_api as hotel_booking_api_mod
 
 api.include_router(hotel_booking_api_mod.router)
 api.include_router(hotel_booking_api_mod.public_router)
+from app import online_alerts_api as online_alerts_api_mod
+
+api.include_router(online_alerts_api_mod.router)
 from app import support_api as support_api_mod
 
 api.include_router(support_api_mod.router)

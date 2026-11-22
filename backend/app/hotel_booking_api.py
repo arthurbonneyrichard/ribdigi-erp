@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -104,7 +104,9 @@ async def hotel_booking_page(slug: str, db: AsyncSession = Depends(get_db)):
 
 
 @public_router.post("/{slug}")
-async def hotel_booking_create(slug: str, payload: PublicStayBody, db: AsyncSession = Depends(get_db)):
+async def hotel_booking_create(
+    slug: str, payload: PublicStayBody, background: BackgroundTasks, db: AsyncSession = Depends(get_db)
+):
     body = await hotel_svc.create_public_stay(
         db,
         slug,
@@ -119,4 +121,30 @@ async def hotel_booking_create(slug: str, payload: PublicStayBody, db: AsyncSess
         notes=payload.notes,
     )
     await db.commit()
+    try:
+        from sqlalchemy import select
+
+        from app import models as m
+        from app import online_alerts as alerts
+
+        tenant = (await db.execute(select(m.Tenant).where(m.Tenant.slug == slug))).scalars().first()
+        if tenant is not None:
+            title, lines, link = alerts.compose_hotel(
+                tenant,
+                {
+                    "number": body.get("reservation_number"), "name": payload.guest_name, "phone": payload.phone,
+                    "email": str(payload.email) if payload.email else None, "check_in": body.get("check_in_date"),
+                    "check_out": body.get("check_out_date"), "nights": body.get("nights"), "adults": payload.adults,
+                    "children": payload.children, "room": body.get("room_name"), "total": body.get("estimated_total"),
+                    "notes": payload.notes,
+                },
+            )
+            alerts.schedule(
+                background, tenant.id, kind="booking", title=title, lines=lines, link=link,
+                entity_type="hotel_reservation", entity_id=body.get("id"),
+            )
+    except Exception:  # noqa: BLE001
+        import logging
+
+        logging.getLogger(__name__).exception("stay request alert could not be queued")
     return _env(body, "Stay requested")

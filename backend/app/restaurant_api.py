@@ -2305,8 +2305,9 @@ async def public_restaurant_site_order(
     tracked = await site_svc.track_order(db, slug, row.id)
     from app import restaurant_alerts as alerts
 
-    background.add_task(
-        alerts.dispatch, row.tenant_id, "order",
+    tenant, _b, _o = await site_svc._site_tenant(db, slug)
+    alerts.schedule(
+        background, tenant, "order",
         alerts.order_info(row, tracked, name=payload.customer_name, phone=payload.phone, payload=payload),
     )
     return _env(tracked, "Order received")
@@ -2342,5 +2343,6 @@ async def public_restaurant_site_book(
     await db.commit()
     from app import restaurant_alerts as alerts
 
-    background.add_task(alerts.dispatch, row.tenant_id, "booking", alerts.booking_info(row))
+    tenant, _b, _o = await site_svc._site_tenant(db, slug)
+    alerts.schedule(background, tenant, "booking", alerts.booking_info(row))
     return _env(restaurant_svc.serialize_booking(row), "Booking requested")

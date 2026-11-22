@@ -8,6 +8,7 @@ import StatusChip from '../../../components/StatusChip';
 import { api, apiFetch } from '../../../lib/api';
 import { formatMoney, formatWhen } from '../../../lib/format';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
+import OnlineAlertsPanel from '../../../components/OnlineAlertsPanel';
 import './ecom-desk.css';
 
 const RESERVED_HOSTS = new Set([
@@ -491,6 +492,8 @@ export default function EcommercePage() {
         </form>
       </section>
       ) : null}
+
+      {ecomTab === 'shop' ? <OnlineAlertsPanel /> : null}
 
       {ecomTab === 'shop' ? (
       <section className="card" aria-labelledby="ecom-media">

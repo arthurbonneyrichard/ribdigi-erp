@@ -126,3 +126,60 @@ async def test_test_button_reports_each_channel(client, db_session, monkeypatch)
     assert result.status_code == 200, result.text
     data = result.json()["data"]
     assert data["email"]["sent"] is True and data["whatsapp"]["sent"] is True
+
+
+# ---- the same alerts for the online shop and the hotel ----
+
+from tests.test_ecommerce_r1 import _login_admin, _seed_storefront  # noqa: E402
+from tests.test_hotel_audit_2026_11 import _hotel, _open_booking, _request, _room  # noqa: E402
+
+
+async def test_online_shop_order_alerts_the_shop(client, db_session, seeded, monkeypatch):
+    ac, seed = client
+    monkeypatch.setattr(settings, "SMS_ENABLED", True)
+    monkeypatch.setattr(settings, "TWILIO_ACCOUNT_SID", "")
+    admin = await _login_admin(ac)
+    saved = await ac.put(
+        "/api/v1/online-alerts", headers=admin, json={"emails": ["shop@example.com"], "whatsapp": "+233241112233"}
+    )
+    assert saved.status_code == 200, saved.text
+    assert saved.json()["data"]["industry"] == "retail"
+    storefront, _warehouse, _store = await _seed_storefront(db_session, seed, buffer=0, stock=10)
+    preview = storefront.preview_token
+    cart = (await ac.post(f"/api/v1/storefront/cart?preview_token={preview}")).json()["data"]["token"]
+    await ac.post(
+        f"/api/v1/storefront/cart/{cart}/items?preview_token={preview}",
+        json={"product_id": seed["p1"].id, "quantity": 2},
+    )
+    emailer.clear_dev_outbox()
+    sms_svc.clear_dev_outbox()
+    placed = await ac.post(
+        f"/api/v1/storefront/checkout?preview_token={preview}",
+        json={"cart_token": cart, "guest_name": "Ama Guest", "guest_email": "ama@example.com",
+              "guest_phone": "+233201234567", "fulfillment": "delivery", "delivery_address": "12 Market Street Accra"},
+    )
+    assert placed.status_code == 200, placed.text
+    mails = [row for row in emailer.get_dev_outbox() if "shop@example.com" in str(row.get("to"))]
+    assert mails and "New shop order" in mails[-1]["subject"]
+    assert "12 Market Street" in mails[-1]["text_body"] and "Ama Guest" in mails[-1]["text_body"]
+    chats = [row for row in sms_svc.get_dev_outbox() if row.get("channel") == "whatsapp"]
+    assert chats and chats[-1]["to"] == "whatsapp:+233241112233"
+
+
+async def test_hotel_stay_request_alerts_the_hotel(client, db_session, seeded, monkeypatch):
+    ac, seed = client
+    monkeypatch.setattr(settings, "SMS_ENABLED", True)
+    monkeypatch.setattr(settings, "TWILIO_ACCOUNT_SID", "")
+    h = await _hotel(ac, seed, db_session)
+    slug = await _open_booking(ac, h, db_session, seed)
+    saved = await ac.put("/api/v1/online-alerts", headers=h, json={"emails": ["front@example.com"]})
+    assert saved.status_code == 200, saved.text
+    assert saved.json()["data"]["industry"] == "hotel"
+    emailer.clear_dev_outbox()
+    placed = await ac.post(f"/api/v1/public/hotel-booking/{slug}", json=_request(await _room(ac, h), nights=2))
+    assert placed.status_code == 200, placed.text
+    mails = [row for row in emailer.get_dev_outbox() if "front@example.com" in str(row.get("to"))]
+    assert mails and "New stay request" in mails[-1]["subject"]
+    assert "2 nights" in mails[-1]["text_body"] and "Ama Boateng" in mails[-1]["text_body"]
+    test = await ac.post("/api/v1/online-alerts/test", headers=h)
+    assert test.status_code == 200 and test.json()["data"]["email"]["sent"] is True
