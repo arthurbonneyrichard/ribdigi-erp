@@ -561,13 +561,16 @@ export const HR_TAB_AREA: Record<string, string> = {
 const ALL_HR_AREAS = ['people', 'leave', 'attendance', 'payroll', 'recruitment', 'reviews', 'training', 'contracts', 'cases', 'assets', 'claims', 'notices', 'self'];
 
 /** The HR each business type gets, one engine for all (backend hrm.HR_AREAS_BY_INDUSTRY). */
+// Retail, wholesale and restaurant run the same HR (mirrors backend _SHOP_AND_RESTAURANT_HR).
+const SHOP_AND_RESTAURANT_HR = ['people', 'leave', 'attendance', 'payroll', 'reviews', 'claims', 'notices', 'self'];
+
 export const HR_AREAS_BY_INDUSTRY: Record<string, string[]> = {
   hrm: ALL_HR_AREAS,
   fmcg: ALL_HR_AREAS,
-  retail: ['people', 'leave', 'attendance', 'payroll', 'reviews', 'claims', 'notices', 'self'],
-  wholesale: ['people', 'leave', 'attendance', 'payroll', 'reviews', 'claims', 'notices', 'self'],
+  retail: SHOP_AND_RESTAURANT_HR,
+  wholesale: SHOP_AND_RESTAURANT_HR,
   pharmacy: ['people', 'leave', 'attendance', 'payroll', 'training', 'contracts', 'reviews', 'notices', 'self'],
-  restaurant: ['people', 'leave', 'attendance', 'payroll', 'reviews', 'notices', 'self'],
+  restaurant: SHOP_AND_RESTAURANT_HR,
   hotel: ['people', 'leave', 'attendance', 'payroll', 'training', 'contracts', 'reviews', 'notices', 'self'],
   bakery: ['people', 'leave', 'attendance', 'payroll', 'notices', 'self'],
   gym: ['people', 'leave', 'attendance', 'payroll', 'training', 'notices', 'self'],
