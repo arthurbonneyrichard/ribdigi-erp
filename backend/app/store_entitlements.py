@@ -23,7 +23,7 @@ from app import packages as packages_svc
 
 STORE_LIMIT_REACHED = "STORE_LIMIT_REACHED"
 # Platform create "Multi-store" default when no explicit override (Professional catalog).
-MULTI_STORE_DEFAULT_CAP = 10
+MULTI_STORE_DEFAULT_CAP = 5
 
 # One lock per tenant in this process. Postgres also uses SELECT … FOR UPDATE.
 # SQLite (including the test StaticPool) does not honor that row lock, so two
@@ -106,7 +106,7 @@ def resolve_create_max_stores_override(
     """Persist an override so single-store tenants cannot create extra stores.
 
     single → 1 (even if a later package would allow more, until platform changes it).
-    multi → explicit override (>= 2) or Professional default 10.
+    multi → explicit override (>= 2) or Professional default 5.
     """
     mode = (store_mode or "single").strip().lower()
     if mode == "single":
@@ -119,7 +119,7 @@ def resolve_create_max_stores_override(
     if cap <= 1:
         raise HTTPException(
             status_code=422,
-            detail="multi-store max_stores_override must be >= 2 (omit for 10)",
+            detail="multi-store max_stores_override must be >= 2 (omit for 5)",
         )
     return cap
 

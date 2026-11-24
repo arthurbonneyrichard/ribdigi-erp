@@ -290,6 +290,9 @@ async def current_claims(
     data["package_code"] = getattr(tenant, "package_code", None) or "trial"
     data["enabled_modules"] = packages_svc.resolve_enabled_modules(tenant)
     data["industry"] = packages_svc.canonicalize_industry(getattr(tenant, "industry", None)) or ""
+    from app import restaurant_plan
+
+    data["package_locked_features"] = restaurant_plan.starter_locks(data["package_code"], data["industry"])
     data["branch_id"] = getattr(user, "branch_id", None)
     data["department_id"] = getattr(user, "department_id", None)
     from app import store_access as store_access_svc

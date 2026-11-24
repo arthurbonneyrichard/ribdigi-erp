@@ -111,7 +111,7 @@ PACKAGES: dict[str, dict[str, Any]] = {
         "description": "Multi-store + purchasing, credit, tax, AI",
         "modules": list(_PROFESSIONAL),
         "max_companies": 1,
-        "max_stores": 10,
+        "max_stores": 5,
     },
     "enterprise": {
         "code": "enterprise",
@@ -119,7 +119,7 @@ PACKAGES: dict[str, dict[str, Any]] = {
         "description": "All tenant modules",
         "modules": list(_ENTERPRISE),
         "max_companies": 1,
-        "max_stores": None,
+        "max_stores": 10,
     },
 }
 

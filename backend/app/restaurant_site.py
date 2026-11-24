@@ -45,6 +45,10 @@ async def _booking_link(db: AsyncSession, tenant_id: str) -> m.RestaurantBooking
 
 async def _site_tenant(db: AsyncSession, slug: str) -> tuple[m.Tenant, bool, bool]:
     tenant = await rs._restaurant_tenant(db, slug=slug)
+    from app import restaurant_plan
+
+    if not restaurant_plan.site_allowed(tenant):
+        raise HTTPException(status_code=404, detail="This restaurant is not taking orders or bookings online")
     booking_open = await _booking_link(db, tenant.id) is not None
     ordering_open = rs._online_orders_open(tenant)
     if not booking_open and not ordering_open:

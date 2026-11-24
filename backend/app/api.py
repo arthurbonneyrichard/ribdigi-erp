@@ -438,7 +438,10 @@ from app import restaurant_api as restaurant_api_mod
 
 api.include_router(commerce_extras_api_mod.router)
 api.include_router(billing_api_mod.router)
-api.include_router(restaurant_api_mod.router)
+from app import restaurant_plan as restaurant_plan_mod  # noqa: E402
+
+_plan_gate = [Depends(restaurant_plan_mod.restaurant_package_gate)]
+api.include_router(restaurant_api_mod.router, dependencies=_plan_gate)
 api.include_router(restaurant_api_mod.public_router)
 api.include_router(restaurant_api_mod.order_public_router)
 api.include_router(restaurant_api_mod.site_public_router)
@@ -461,7 +464,7 @@ api.include_router(hotel_channels_api_mod.public_router)
 from app import till_payments_api as till_payments_api_mod  # noqa: E402
 
 for _till_router in till_payments_api_mod.ROUTERS:
-    api.include_router(_till_router)
+    api.include_router(_till_router, dependencies=_plan_gate)
 from app import pos_extras_api as pos_extras_api_mod  # noqa: E402
 
 api.include_router(pos_extras_api_mod.router)
@@ -544,7 +547,7 @@ from app import fmcg_field_api as fmcg_field_api_mod  # noqa: E402
 api.include_router(fmcg_field_api_mod.router)
 from app import restaurant_tips_api as restaurant_tips_api_mod  # noqa: E402
 
-api.include_router(restaurant_tips_api_mod.router)
+api.include_router(restaurant_tips_api_mod.router, dependencies=_plan_gate)
 from app import hrm_documents_api as hrm_documents_api_mod  # noqa: E402
 
 api.include_router(hrm_documents_api_mod.router)
@@ -567,7 +570,7 @@ api.include_router(hotel_booking_api_mod.router)
 api.include_router(hotel_booking_api_mod.public_router)
 from app import online_alerts_api as online_alerts_api_mod
 
-api.include_router(online_alerts_api_mod.router)
+api.include_router(online_alerts_api_mod.router, dependencies=_plan_gate)
 from app import support_api as support_api_mod
 
 api.include_router(support_api_mod.router)
@@ -3696,6 +3699,10 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             "record_scope": record_scope_from_permissions(user.role, perms if isinstance(perms, dict) else None),
             "package_code": claims.get("package_code") or (getattr(tenant, "package_code", None) if tenant else "trial"),
             "enabled_modules": live_modules,
+            "package_locked_features": restaurant_plan_mod.starter_locks(
+                claims.get("package_code") or (getattr(tenant, "package_code", None) if tenant else "trial"),
+                live_industry,
+            ),
             "industry": live_industry,
             "industry_raw": (str(raw_industry).strip() if raw_industry else None) or None,
             "industry_valid": live_industry is not None,
