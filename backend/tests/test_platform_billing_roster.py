@@ -55,7 +55,7 @@ async def test_finance_sees_company_plans_without_secrets(client, db_session):
     alpha = rows["Alpha Co"]
     assert alpha["plan"] == "Professional"
     assert alpha["package_code"] == "professional"
-    assert alpha["amount"] == 499.0
+    assert alpha["amount"] == 599.0
     assert alpha["currency"] == "GHS"
     assert alpha["status"] == "active"
     assert "id" not in alpha
@@ -97,7 +97,7 @@ async def test_assign_package_updates_the_list_and_does_not_pay(client, db_sessi
     alpha = next(row for row in listed.json()["data"] if row["slug"] == "alpha")
     assert alpha["plan"] == "Starter"
     assert alpha["package_code"] == "starter"
-    assert alpha["amount"] == 199.0
+    assert alpha["amount"] == 149.0
     assert alpha["term_value"] == 6
     assert alpha["term_unit"] == "months"
     assert alpha["status"] == "active"
