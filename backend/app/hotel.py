@@ -22,6 +22,7 @@ from sqlalchemy.orm import undefer
 from app.document_display import format_tenant_date
 from app import accounting
 from app import models as m
+from app import site_favicon as _site_favicon
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 import logging
@@ -5291,6 +5292,7 @@ def _serialize_hotel_booking_link(tenant: m.Tenant, row: m.HotelBookingLink | No
         "slug": tenant.slug,
         "company_name": tenant.company_name,
         "path": f"/stay/{tenant.slug}",
+        "favicon_version": _site_favicon.version_of(tenant),
         "hostname": row.hostname if row else None,
         "link_kind": row.link_kind if row else None,
         "open": row is not None,

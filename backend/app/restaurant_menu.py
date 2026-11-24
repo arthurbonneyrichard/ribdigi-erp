@@ -26,6 +26,7 @@ from app import audit as audit_svc
 from app import logo_media as logo_media_svc
 from app import models as m
 from app import restaurant as rs
+from app import site_favicon as _site_favicon
 from app.catalog import allocate_sku
 from app.config import settings
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
@@ -129,6 +130,10 @@ SITE_DESIGN_DEFAULTS = {
     "corners": "round",  # round | soft | sharp
     "layout": "square",  # square | list
     "pattern": "none",  # none | food
+    "cards": "shadow",  # shadow | outline | flat
+    "header": "glass",  # glass | solid | plain
+    "align": "left",  # left | center (top of the page)
+    "show_facts": True,  # pickup / delivery / pay-later chips under the title
     "hero": "full",  # full (image behind the title) | split (image beside it) | plain
     "headline": None,
     "intro": None,
@@ -154,9 +159,11 @@ async def save_site_design(db: AsyncSession, tenant_id: str, payload, *, user_id
             if raw and not HEX_COLOR.match(raw):
                 raise HTTPException(status_code=422, detail="Choose a colour like #4AB012.")
             design[field] = raw.upper() or None
-    for field in ("font", "corners", "layout", "pattern", "hero"):
+    for field in ("font", "corners", "layout", "pattern", "hero", "cards", "header", "align"):
         if data.get(field):
             design[field] = data[field]
+    if data.get("show_facts") is not None:
+        design["show_facts"] = bool(data["show_facts"])
     for field, label, limit in (("headline", "headline", 80), ("intro", "intro", 240)):
         if field in data:
             design[field] = optional_honest_narrative(data[field], label=label, max_length=limit)
@@ -522,6 +529,21 @@ async def _published_menu(db: AsyncSession, token: str) -> tuple[m.RestaurantMen
     return row, tenant
 
 
+DEFAULT_ACCENT = "#4AB012"
+
+
+def _theme_colours(row: m.RestaurantMenuSettings) -> dict:
+    """Colours for the guest menu and TV board. The website design chooses them; the menu's own
+    colours are only a fallback for a restaurant that has not picked website colours yet."""
+    site = site_design_of(row)
+    own_accent = row.accent_color if row.accent_color and row.accent_color.upper() != DEFAULT_ACCENT else None
+    return {
+        "accent": site.get("accent") or own_accent or DEFAULT_ACCENT,
+        "primary": site.get("primary") or row.primary_color,
+        "background": site.get("background") or row.background_color,
+    }
+
+
 def _guest_payload(
     row: m.RestaurantMenuSettings,
     tenant: m.Tenant,
@@ -561,6 +583,7 @@ def _guest_payload(
             "phone": tenant.phone,
             "address": tenant.address,
             "tagline": row.tagline,
+            "favicon_version": _site_favicon.version_of(tenant),
         },
         "currency": tenant.currency or "GHS",
         "banner": {
@@ -568,10 +591,8 @@ def _guest_payload(
             "position": row.banner_position or "top",
         },
         "theme": {
-            "accent": row.accent_color,
-            "primary": row.primary_color,
-            "background": row.background_color,
-            "board_background": row.board_background_color,
+            **_theme_colours(row),
+            "board_background": None if site_design_of(row).get("background") else row.board_background_color,
             "pattern": row.background_pattern or "food",
             "style": row.board_style,
             "rotate_seconds": int(row.board_rotate_seconds or 12),

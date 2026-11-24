@@ -304,6 +304,7 @@ NotificationCategoryValue = Annotated[
         "staff_account",
         "admin_password_reset",
         "hr",
+        "fleet_document",
     ],
     BeforeValidator(coerce_package_code_value),
 ]

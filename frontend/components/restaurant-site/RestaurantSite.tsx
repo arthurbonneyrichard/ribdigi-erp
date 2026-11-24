@@ -9,6 +9,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiRoot } from '../../lib/api';
+import { usePageIcon } from '../../lib/usePageIcon';
 import { formatMoney } from '../../lib/format';
 import './restaurant-site.css';
 
@@ -37,13 +38,18 @@ type Site = {
   menu: MenuItem[];
   design?: Design;
   banner_version?: string | null;
+  favicon_version?: string | null;
 };
 
 type Design = {
   primary: string | null;
   accent: string | null;
   background: string | null;
-  font: 'serif' | 'sans' | 'rounded';
+  font: 'serif' | 'sans' | 'rounded' | 'elegant' | 'modern';
+  cards?: 'shadow' | 'outline' | 'flat';
+  header?: 'glass' | 'solid' | 'plain';
+  align?: 'left' | 'center';
+  show_facts?: boolean;
   corners: 'round' | 'soft' | 'sharp';
   layout: 'square' | 'list';
   pattern: 'none' | 'food';
@@ -201,6 +207,61 @@ export default function RestaurantSite({ slug, focus }: { slug: string; focus: '
   const [search, setSearch] = useState('');
   const [bag, setBag] = useState<Record<string, number>>({});
   const [panel, setPanel] = useState<Panel>(null);
+  usePageIcon(
+    site?.favicon_version ? `${apiRoot()}/public/restaurant-site/${encodeURIComponent(slug)}/favicon?v=${site.favicon_version}` : null,
+    site?.company_name,
+  );
+  const panelRef = useRef<Panel>(null);
+  const fromBrowserBack = useRef(false);
+  panelRef.current = panel;
+
+  // The cookie notice sits over the bottom of the screen. Keep the floating bag and the end of the bag and
+  // checkout sheets above it so nothing is hidden or untappable.
+  useEffect(() => {
+    const root = document.documentElement;
+    const update = () => {
+      const banner = document.querySelector('.cc-banner') as HTMLElement | null;
+      root.style.setProperty('--rs-cc', banner ? `${banner.offsetHeight + 12}px` : '0px');
+    };
+    update();
+    const watcher = new MutationObserver(update);
+    watcher.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener('resize', update);
+    return () => {
+      watcher.disconnect();
+      window.removeEventListener('resize', update);
+      root.style.removeProperty('--rs-cc');
+    };
+  }, []);
+
+  // The phone's back button and the Escape key step back through the bag instead of leaving the page.
+  useEffect(() => {
+    if (panel && !fromBrowserBack.current) {
+      try {
+        window.history.pushState({ rsPanel: panel }, '');
+      } catch {
+        /* history may be locked in a frame */
+      }
+    }
+    fromBrowserBack.current = false;
+  }, [panel]);
+  useEffect(() => {
+    const stepBack = () => setPanel((p) => (p === 'checkout' ? 'bag' : null));
+    const onPop = () => {
+      if (!panelRef.current) return;
+      fromBrowserBack.current = true;
+      stepBack();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && panelRef.current) stepBack();
+    };
+    window.addEventListener('popstate', onPop);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, []);
   const [tracked, setTracked] = useState<Tracked | null>(null);
   const bookRef = useRef<HTMLElement | null>(null);
   const menuRef = useRef<HTMLElement | null>(null);
@@ -332,7 +393,7 @@ export default function RestaurantSite({ slug, focus }: { slug: string; focus: '
   }
 
   const design = site.design;
-  const siteClass = `rsite rs-font-${design?.font || 'serif'} rs-corners-${design?.corners || 'round'} rs-layout-${design?.layout || 'square'} rs-pat-${design?.pattern || 'none'}`;
+  const siteClass = `rsite rs-font-${design?.font || 'serif'} rs-corners-${design?.corners || 'round'} rs-layout-${design?.layout || 'square'} rs-pat-${design?.pattern || 'none'} rs-cards-${design?.cards || 'shadow'} rs-header-${design?.header || 'glass'} rs-align-${design?.align || 'left'}`;
   const heroMode = design?.hero === 'plain' ? 'plain' : design?.hero === 'split' ? 'split' : bannerSrc_ready(site) ? 'full' : 'split';
   const bannerSrc = site.banner_version ? `${apiRoot()}/public/restaurant-site/${encodeURIComponent(slug)}/banner?v=${site.banner_version}` : '';
 
@@ -401,7 +462,7 @@ export default function RestaurantSite({ slug, focus }: { slug: string; focus: '
               </button>
             ) : null}
           </div>
-          <ul className="rs-facts">
+          <ul className="rs-facts" hidden={design?.show_facts === false}>
             {site.ordering_open ? <li>Pickup & delivery</li> : null}
             <li>Pay when you get your food</li>
             {site.address ? <li>{site.address}</li> : null}
@@ -703,8 +764,8 @@ function CheckoutPanel({
   return (
     <form onSubmit={place} className="rs-form">
       <div className="rs-sheet-head">
-        <button type="button" className="rs-back" onClick={onBack}>
-          ← Bag
+        <button type="button" className="rs-back" aria-label="Back to your bag" onClick={onBack}>
+          <span aria-hidden>←</span> Back to bag
         </button>
         <h2>How do you want it?</h2>
       </div>

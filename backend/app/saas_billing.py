@@ -216,15 +216,18 @@ async def save_tax_settings(db: AsyncSession, payload, *, actor) -> m.PlatformBi
 # ---- Industry prices --------------------------------------------------------------
 
 # Starting monthly prices in GHS per industry: (starter, professional, enterprise).
-# Yearly = 10 x monthly. Retail and pharmacy use the general plans (199/499/999).
+# Yearly = 10 x monthly. Pharmacy uses the general plans (199/499/999); retail and wholesale have their own.
 # The migration 20261112_0161 holds the same table for existing catalogs.
 INDUSTRY_MONTHLY_PRICES: dict[str, tuple[str, str, str]] = {
     "hotel": ("349.00", "799.00", "1499.00"),
-    "restaurant": ("249.00", "599.00", "1199.00"),
+    "restaurant": ("179.00", "599.00", "1099.00"),
     "fmcg": ("299.00", "699.00", "1399.00"),
     "bakery": ("179.00", "449.00", "899.00"),
     "gym": ("149.00", "349.00", "699.00"),
     "hrm": ("149.00", "349.00", "699.00"),
+    # Retail desk and wholesale (same desk) share one price set.
+    "retail": ("149.00", "599.00", "1099.00"),
+    "wholesale": ("149.00", "599.00", "1099.00"),
 }
 
 

@@ -8176,3 +8176,37 @@ async def test_restaurant_till_return_comes_off_store_sales_today(client, db_ses
     await set_tenant_industry(db_session, seed["t1"], "hotel")
     hotel = await ac.get("/api/v1/restaurant/summary", headers=admin)
     assert hotel.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_restaurant_order_can_change_while_kitchen_is_preparing(client, db_session):
+    ac, seed = client
+    await set_tenant_industry(db_session, seed["t1"], "restaurant")
+    admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    dish = await _product(ac, admin, name="Banku", selling_price=20, prep_station="kitchen", stock_qty=9)
+    drink = await _product(ac, admin, name="Lemonade", selling_price=5, prep_station="kitchen", stock_qty=9)
+    opened = await ac.post(
+        "/api/v1/restaurant/orders",
+        json={"service_mode": "takeaway", "payment_method": "cash", "lines": [{"product_id": dish["id"], "quantity": "1"}]},
+        headers=admin,
+    )
+    order_id = opened.json()["data"]["id"]
+    sent = await ac.post(f"/api/v1/restaurant/orders/{order_id}/send", headers=admin)
+    assert sent.status_code == 200, sent.text
+    listed = await ac.get("/api/v1/restaurant/orders", headers=admin)
+    row = next(r for r in listed.json()["data"] if r["id"] == order_id)
+    started = await ac.post(f"/api/v1/restaurant/kitchen/lines/{row['items'][0]['id']}/start", headers=admin)
+    assert started.status_code == 200, started.text
+    listed = await ac.get("/api/v1/restaurant/orders", headers=admin)
+    row = next(r for r in listed.json()["data"] if r["id"] == order_id)
+    assert row["status"] in {"preparing", "ready"}
+    changed = await ac.patch(
+        f"/api/v1/restaurant/orders/{order_id}",
+        headers=admin,
+        json={
+            "lines": [{"product_id": drink["id"], "quantity": "1"}],
+            "line_quantities": [{"line_id": row["items"][0]["id"], "quantity": "2"}],
+        },
+    )
+    assert changed.status_code == 200, changed.text
+    assert changed.json()["data"]["total_amount"] == 45

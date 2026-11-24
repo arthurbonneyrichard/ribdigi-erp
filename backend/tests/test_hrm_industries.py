@@ -43,6 +43,12 @@ def test_each_industry_has_its_hr_areas():
     assert hrm.hr_areas_for(None) == frozenset({"self"})
 
 
+def test_restaurant_has_the_same_hr_as_retail():
+    # Retail and restaurant share one HR feature set (staff claims included).
+    assert hrm.hr_areas_for("restaurant") == hrm.hr_areas_for("retail")
+    assert "claims" in hrm.hr_areas_for("restaurant")
+
+
 async def test_retail_company_runs_payroll_and_cashier_sees_only_own_file(client, db_session):
     ac, seed = client
     h = await _company(ac, seed, db_session, "retail")

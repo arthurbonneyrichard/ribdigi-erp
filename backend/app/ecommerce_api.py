@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, File, Header, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Header, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -818,10 +818,48 @@ async def public_cart_item(
     return env(await ecom.serialize_cart(db, cart))
 
 
+async def _alert_shop_owner(db, tenant, order, items, payload, background) -> None:
+    """Tell the shop about the new order (email, WhatsApp, in-app). Never stops the checkout."""
+    try:
+        from sqlalchemy import select
+
+        from app import models as m
+        from app import online_alerts as alerts
+
+        names = {
+            row.id: row.name
+            for row in (
+                await db.execute(select(m.Product).where(m.Product.id.in_([i.product_id for i in items])))
+            ).scalars()
+        }
+        listed = ", ".join(
+            f"{int(i.quantity) if float(i.quantity).is_integer() else float(i.quantity)}× {names.get(i.product_id, 'Item')}"
+            for i in items
+        )
+        title, lines, link = alerts.compose_retail(
+            tenant,
+            {
+                "number": order.order_number, "fulfillment": order.fulfillment, "total": float(order.total_amount or 0),
+                "paid": False, "name": order.guest_name, "phone": payload.guest_phone,
+                "email": str(payload.guest_email) if payload.guest_email else None, "items": listed,
+                "address": order.delivery_address if order.fulfillment == "delivery" else None, "notes": payload.notes,
+            },
+        )
+        alerts.schedule(
+            background, tenant.id, kind="order", title=title, lines=lines, link=link,
+            entity_type="ecommerce_order", entity_id=order.id,
+        )
+    except Exception:  # noqa: BLE001
+        import logging
+
+        logging.getLogger(__name__).exception("shop order alert could not be queued")
+
+
 @storefront.post("/checkout")
 async def public_checkout(
     payload: CheckoutBody,
     request: Request,
+    background: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     preview_token: Annotated[StorefrontSecretTokenValue | None, Query()] = None,
     host: Annotated[str | None, Header()] = None,
@@ -852,6 +890,7 @@ async def public_checkout(
     )
     await db.commit()
     items = await ecom.order_items(db, order.id)
+    await _alert_shop_owner(db, tenant, order, items, payload, background)
     return env({**ecom.serialize_order(order, items), "payment": pay})
 
 

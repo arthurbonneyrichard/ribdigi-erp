@@ -88,13 +88,15 @@ ALL_HR_AREAS = frozenset(
     {"people", "leave", "attendance", "payroll", "recruitment", "reviews", "training",
      "contracts", "cases", "assets", "claims", "notices", "self"}
 )
+# Retail, wholesale and restaurant run the same HR: one shared set so they cannot drift apart.
+_SHOP_AND_RESTAURANT_HR = frozenset({"people", "leave", "attendance", "payroll", "reviews", "claims", "notices", "self"})
 HR_AREAS_BY_INDUSTRY: dict[str, frozenset[str]] = {
     "hrm": ALL_HR_AREAS,
     "fmcg": ALL_HR_AREAS,
-    "retail": frozenset({"people", "leave", "attendance", "payroll", "reviews", "claims", "notices", "self"}),
-    "wholesale": frozenset({"people", "leave", "attendance", "payroll", "reviews", "claims", "notices", "self"}),
+    "retail": _SHOP_AND_RESTAURANT_HR,
+    "wholesale": _SHOP_AND_RESTAURANT_HR,
     "pharmacy": frozenset({"people", "leave", "attendance", "payroll", "training", "contracts", "reviews", "notices", "self"}),
-    "restaurant": frozenset({"people", "leave", "attendance", "payroll", "reviews", "notices", "self"}),
+    "restaurant": _SHOP_AND_RESTAURANT_HR,
     "hotel": frozenset({"people", "leave", "attendance", "payroll", "training", "contracts", "reviews", "notices", "self"}),
     "bakery": frozenset({"people", "leave", "attendance", "payroll", "notices", "self"}),
     "gym": frozenset({"people", "leave", "attendance", "payroll", "training", "notices", "self"}),

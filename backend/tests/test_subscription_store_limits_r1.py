@@ -22,13 +22,13 @@ def test_package_catalog_exposes_max_stores():
     assert packages_svc.package_modules  # smoke
     assert store_ent_svc.package_max_stores("trial") == 1
     assert store_ent_svc.package_max_stores("starter") == 1
-    assert store_ent_svc.package_max_stores("professional") == 10
-    assert store_ent_svc.package_max_stores("enterprise") is None
+    assert store_ent_svc.package_max_stores("professional") == 5
+    assert store_ent_svc.package_max_stores("enterprise") == 10
     pkgs = packages_svc.list_packages()
     pro = next(p for p in pkgs if p["code"] == "professional")
-    assert pro["max_stores"] == 10
+    assert pro["max_stores"] == 5
     ent = next(p for p in pkgs if p["code"] == "enterprise")
-    assert ent["max_stores"] is None
+    assert ent["max_stores"] == 10
 
 
 def test_effective_limit_override_and_allocation():
@@ -39,8 +39,8 @@ def test_effective_limit_override_and_allocation():
         max_stores_override=None,
         store_limit=None,
     )
-    assert store_ent_svc.subscription_store_entitlement(tenant) == 10
-    assert store_ent_svc.effective_store_limit(tenant) == 10
+    assert store_ent_svc.subscription_store_entitlement(tenant) == 5
+    assert store_ent_svc.effective_store_limit(tenant) == 5
 
     tenant.max_stores_override = 3
     assert store_ent_svc.subscription_store_entitlement(tenant) == 3
@@ -55,7 +55,7 @@ def test_effective_limit_override_and_allocation():
     tenant.max_stores_override = None
     tenant.package_code = "enterprise"
     tenant.store_limit = None
-    assert store_ent_svc.effective_store_limit(tenant) is None
+    assert store_ent_svc.effective_store_limit(tenant) == 10
 
 
 def test_stores_entitlement_ui_wired():
@@ -95,7 +95,7 @@ def test_is_multi_store_and_create_override():
         m.Tenant(slug="c", company_name="C", package_code="professional", max_stores_override=1)
     )
     assert store_ent_svc.resolve_create_max_stores_override("single", None) == 1
-    assert store_ent_svc.resolve_create_max_stores_override("multi", None) == 10
+    assert store_ent_svc.resolve_create_max_stores_override("multi", None) == 5
     assert store_ent_svc.resolve_create_max_stores_override("multi", 5) == 5
     flags = store_ent_svc.ui_store_flags(
         m.Tenant(slug="d", company_name="D", package_code="starter", max_stores_override=1)
@@ -383,9 +383,9 @@ async def test_stores_entitlement_endpoint(client, db_session):
     data = r.json()["data"]
     assert "stores_active" in data
     assert "effective_store_limit" in data
-    assert data["effective_store_limit"] == 10  # professional seed
+    assert data["effective_store_limit"] == 5  # professional seed
     assert data["multi_store"] is True
-    assert data["max_stores"] == 10
+    assert data["max_stores"] == 5
 
 
 @pytest.mark.asyncio
@@ -396,7 +396,7 @@ async def test_me_exposes_multi_store_from_tenant_columns(client, db_session):
     assert me.status_code == 200, me.text
     body = me.json()["data"]
     assert body["multi_store"] is True
-    assert body["max_stores"] == 10
+    assert body["max_stores"] == 5
 
     tenant = await tenants_svc.get_tenant(db_session, seed["t1"].id)
     await tenants_svc.set_max_stores_override(db_session, tenant, 1)
@@ -450,5 +450,5 @@ async def test_create_tenant_store_mode_sets_override(client, db_session):
     row2 = (
         await db_session.execute(select(m.Tenant).where(m.Tenant.slug == "chain-mart-store-mode"))
     ).scalar_one()
-    assert row2.max_stores_override == 10
+    assert row2.max_stores_override == 5
     assert store_ent_svc.is_multi_store(row2) is True

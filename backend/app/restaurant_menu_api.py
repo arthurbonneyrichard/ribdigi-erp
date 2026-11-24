@@ -54,7 +54,11 @@ class SiteDesignBody(Body):
     primary: Annotated[str, Field(max_length=7)] | None = None
     accent: Annotated[str, Field(max_length=7)] | None = None
     background: Annotated[str, Field(max_length=7)] | None = None
-    font: Literal["serif", "sans", "rounded"] | None = None
+    font: Literal["serif", "sans", "rounded", "elegant", "modern"] | None = None
+    cards: Literal["shadow", "outline", "flat"] | None = None
+    header: Literal["glass", "solid", "plain"] | None = None
+    align: Literal["left", "center"] | None = None
+    show_facts: bool | None = None
     corners: Literal["round", "soft", "sharp"] | None = None
     layout: Literal["square", "list"] | None = None
     pattern: Literal["none", "food"] | None = None
@@ -354,6 +358,14 @@ async def public_menu(token: str, request: Request, db: AsyncSession = Depends(g
     if (request.headers.get("if-none-match") or "").strip() == etag:
         return Response(status_code=304, headers=headers)
     return JSONResponse(_env(body), headers=headers)
+
+
+@public_router.get("/{token}/favicon")
+async def public_menu_favicon(token: str, request: Request, db: AsyncSession = Depends(get_db)):
+    from app import site_favicon
+
+    _row, tenant = await menu_svc._published_menu(db, token)
+    return site_favicon.image_response(tenant, request, public=True)
 
 
 @public_router.get("/{token}/logo")

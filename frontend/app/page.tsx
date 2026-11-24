@@ -69,6 +69,16 @@ export default function Login() {
   const [debugVerifyToken, setDebugVerifyToken] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  // Amber until fingerprint is turned on for this device (Security page), green once it is.
+  const [bioReady, setBioReady] = useState(false);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('ribdigi:biometric') || 'null');
+      setBioReady(Boolean(saved?.tenant && saved?.email));
+    } catch {
+      setBioReady(false);
+    }
+  }, []);
   // Offline selling belongs to the User sign-in: with no internet, a till that a staff member
   // prepared earlier is opened from the User tab, by the person it was prepared for.
   const [offlineTill, setOfflineTill] = useState<{ name: string } | null>(null);
@@ -689,11 +699,11 @@ export default function Login() {
             </button>
             {!needs2fa && mode === 'admin' && (
               <button
-                className="login-bio"
+                className={bioReady ? 'login-bio is-on' : 'login-bio is-off'}
                 type="button"
                 onClick={() => passwordlessSignIn('biometric')}
                 aria-label="Sign in with biometric"
-                title="Sign in with fingerprint, face or device lock"
+                title={bioReady ? 'Sign in with fingerprint, face or device lock' : 'Fingerprint is not turned on for this device yet. Turn it on in Security after you sign in.'}
                 disabled={busy}
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

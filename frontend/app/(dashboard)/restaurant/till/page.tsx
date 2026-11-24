@@ -516,6 +516,44 @@ function RestaurantTill() {
     return res?.data || current;
   }
 
+  /** Change a dish that is already on the saved order (one more, one less, or remove). */
+  async function changeSaved(item: Row, by: number) {
+    if (!current || busy) return;
+    const next = Number(item.quantity) + by;
+    setBusy(true);
+    setError('');
+    try {
+      const onlyLine = (current.items || []).length <= 1;
+      if (next <= 0 && onlyLine) {
+        if (draft.length) {
+          // Move the new dishes onto the order first, then the old one can go.
+          await saveOrder();
+          setDraft([]);
+        } else {
+          if (!window.confirm('Remove the last dish and cancel this order?')) return;
+          await api(`/restaurant/orders/${current.id}/cancel`, { method: 'POST' });
+          resetTicket(mode);
+          await load();
+          return;
+        }
+      }
+      await api(`/restaurant/orders/${current.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(
+          next > 0
+            ? { line_quantities: [{ line_id: item.id, quantity: next }] }
+            : { remove_line_ids: [item.id] },
+        ),
+      });
+      const fresh = await refreshOrder(current.id);
+      if (fresh) setCurrent(fresh);
+    } catch (err) {
+      setError(detail(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function refreshOrder(id: string): Promise<Row | null> {
     const res = await api('/restaurant/orders');
     const rows: Row[] = res?.data || [];
@@ -1050,8 +1088,16 @@ function RestaurantTill() {
           <div className="rtill-lines">
             {current
               ? (current.items || []).map((item: Row) => (
-                  <div key={item.id} className="rtill-line sent">
-                    <span className="rtill-line-qty">{Number(item.quantity)}×</span>
+                  <div key={item.id} className="rtill-line">
+                    <div className="rtill-stepper">
+                      <button type="button" disabled={busy} aria-label={`One less ${item.name}`} onClick={() => void changeSaved(item, -1)}>
+                        −
+                      </button>
+                      <span>{Number(item.quantity)}</span>
+                      <button type="button" disabled={busy} aria-label={`One more ${item.name}`} onClick={() => void changeSaved(item, 1)}>
+                        +
+                      </button>
+                    </div>
                     <span className="rtill-line-name">
                       {item.name}
                       {item.modifiers?.length || item.note ? (
@@ -1244,7 +1290,7 @@ function RestaurantTill() {
             <div className="rtill-sheet-head">
               <h2>Bill {paying.order_number}</h2>
               <button type="button" className="rtill-link" onClick={() => setPaying(null)}>
-                Back
+                Change order
               </button>
             </div>
             <dl className="rtill-bill-sum">

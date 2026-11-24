@@ -5,11 +5,14 @@
  * Prices and names here are the same ones the till uses.
  */
 
+import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, apiFetch } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
 import { problem, type Row } from '../../../../lib/restaurantDesk';
 import { GuestMenuView, menuPrice, type GuestItem, type GuestMenu } from '../../../../components/digital-menu/DigitalMenu';
+import OnlineAlertsPanel from '../../../../components/OnlineAlertsPanel';
+import SiteIconSetting from '../../../../components/SiteIconSetting';
 import '../restaurant-desk.css';
 import './menu-admin.css';
 
@@ -84,6 +87,14 @@ const DESIGN_PRESETS: { name: string; design: Record<string, string> }[] = [
   { name: 'Ocean', design: { primary: '#0C4A6E', accent: '#0EA5E9', background: '#F0F9FF', font: 'sans', corners: 'round' } },
   { name: 'Berry', design: { primary: '#831843', accent: '#EC4899', background: '#FDF2F8', font: 'rounded', corners: 'soft' } },
   { name: 'Black and gold', design: { primary: '#1C1917', accent: '#CA8A04', background: '#FAFAF9', font: 'serif', corners: 'sharp' } },
+  { name: 'Forest and cream', design: { primary: '#14532D', accent: '#B45309', background: '#FEFCE8', font: 'elegant', corners: 'soft' } },
+  { name: 'Charcoal and red', design: { primary: '#27272A', accent: '#DC2626', background: '#FAFAFA', font: 'modern', corners: 'sharp' } },
+  { name: 'Teal fresh', design: { primary: '#115E59', accent: '#14B8A6', background: '#F0FDFA', font: 'modern', corners: 'round' } },
+  { name: 'Lavender', design: { primary: '#4C1D95', accent: '#9333EA', background: '#FAF5FF', font: 'rounded', corners: 'round' } },
+  { name: 'Coral', design: { primary: '#9F1239', accent: '#FB7185', background: '#FFF1F2', font: 'sans', corners: 'round' } },
+  { name: 'Olive', design: { primary: '#3F6212', accent: '#CA8A04', background: '#F7FEE7', font: 'elegant', corners: 'soft' } },
+  { name: 'Night red', design: { primary: '#450A0A', accent: '#F97316', background: '#1C1917', font: 'serif', corners: 'soft' } },
+  { name: 'Monochrome', design: { primary: '#18181B', accent: '#71717A', background: '#FFFFFF', font: 'modern', corners: 'sharp' } },
 ];
 
 async function downloadFile(path: string, filename: string) {
@@ -355,417 +366,6 @@ export default function RestaurantDigitalMenuPage() {
         </section>
       ) : null}
 
-      <div className="dmenu-top">
-        <section className="rd-panel dmenu-share">
-          <div className="rd-panel-head">
-            <h2>Share your menu</h2>
-            <span className={`dmenu-state${settings.is_published ? ' on' : ''}`}>
-              {settings.is_published ? 'Live for guests' : 'Not published'}
-            </span>
-          </div>
-          <div className="dmenu-qr">
-            {qr ? <img src={qr} alt="QR code for your menu" /> : <div className="dmenu-qr-empty" />}
-            <div>
-              {editable ? (
-                <button
-                  type="button"
-                  className={settings.is_published ? 'btn-danger' : 'btn-ok'}
-                  disabled={busy}
-                  onClick={() =>
-                    saveSettings(
-                      { is_published: !settings.is_published },
-                      settings.is_published ? 'Menu unpublished. Guests can no longer open it.' : 'Your menu is live.'
-                    )
-                  }
-                >
-                  {settings.is_published ? 'Unpublish menu' : 'Publish menu'}
-                </button>
-              ) : null}
-              <p className="dmenu-link">
-                <a href={settings.public_url} target="_blank" rel="noreferrer">
-                  {settings.public_url}
-                </a>
-              </p>
-              <div className="dmenu-row-actions">
-                <button type="button" onClick={() => void copyLink()}>
-                  Copy link
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    void downloadFile('/restaurant/menu/qr.png?size=large', `menu-qr-${slug}.png`).catch((err) => setError(problem(err)))
-                  }
-                >
-                  Download PNG
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    void downloadFile('/restaurant/menu/qr.pdf', `menu-qr-card-${slug}.pdf`).catch((err) => setError(problem(err)))
-                  }
-                >
-                  Printable card (PDF)
-                </button>
-                <a className="dmenu-btn" href={settings.board_url} target="_blank" rel="noreferrer">
-                  Open TV board
-                </a>
-                {editable ? (
-                  <button type="button" className="btn-danger" disabled={busy} onClick={regenerate}>
-                    New QR code
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="rd-panel">
-          <div className="rd-panel-head">
-            <h2>Look and feel</h2>
-          </div>
-          <div className="dmenu-look">
-            <label>
-              Tagline
-              <input
-                key={settings.tagline || ''}
-                defaultValue={settings.tagline || ''}
-                maxLength={160}
-                disabled={!editable}
-                aria-label="Menu tagline"
-                placeholder="Fresh from our kitchen"
-                onBlur={(e) => {
-                  const next = e.target.value.trim() || null;
-                  if (next !== (settings.tagline || null)) saveSettings({ tagline: next });
-                }}
-              />
-            </label>
-            <label>
-              Accent colour
-              <input
-                type="color"
-                value={settings.accent_color}
-                disabled={!editable}
-                aria-label="Menu accent colour"
-                onChange={(e) => saveSettings({ accent_color: e.target.value })}
-              />
-            </label>
-            {([
-              ['primary_color', 'Header and card colour', '#006B2E', 'Menu header colour'],
-              ['background_color', 'Page background colour', '#F5FAF0', 'Menu background colour'],
-              ['board_background_color', 'TV board background colour', '#001A0E', 'TV board background colour'],
-            ] as const).map(([key, label, fallback, aria]) => (
-              <label key={key}>
-                {label}
-                <span className="dmenu-colour">
-                  <input
-                    type="color"
-                    value={settings[key] || fallback}
-                    disabled={!editable}
-                    aria-label={aria}
-                    onChange={(e) => saveSettings({ [key]: e.target.value })}
-                  />
-                  {settings[key] ? (
-                    <button type="button" disabled={!editable} aria-label={`Reset ${label.toLowerCase()}`} onClick={() => saveSettings({ [key]: null }, 'Colour reset.')}>
-                      Reset
-                    </button>
-                  ) : (
-                    <small>Default</small>
-                  )}
-                </span>
-              </label>
-            ))}
-            <label>
-              Background pattern
-              <select
-                value={settings.background_pattern || 'food'}
-                disabled={!editable}
-                aria-label="Menu background pattern"
-                onChange={(e) => saveSettings({ background_pattern: e.target.value })}
-              >
-                <option value="food">Food icons</option>
-                <option value="dots">Soft dots</option>
-                <option value="none">Plain</option>
-              </select>
-            </label>
-            <label>
-              Board style
-              <select
-                value={settings.board_style}
-                disabled={!editable}
-                aria-label="Board style"
-                onChange={(e) => saveSettings({ board_style: e.target.value })}
-              >
-                <option value="forest">Dark green</option>
-                <option value="mist">Light</option>
-              </select>
-            </label>
-            <label>
-              Seconds per board page
-              <input
-                type="number"
-                min={5}
-                max={60}
-                key={settings.board_rotate_seconds}
-                defaultValue={settings.board_rotate_seconds}
-                disabled={!editable}
-                aria-label="Seconds per board page"
-                onBlur={(e) => {
-                  const next = Math.min(60, Math.max(5, Number(e.target.value) || 12));
-                  if (next !== settings.board_rotate_seconds) saveSettings({ board_rotate_seconds: next });
-                }}
-              />
-            </label>
-            <label>
-              Banner image
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                disabled={!editable}
-                aria-label="Menu banner image"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  e.target.value = '';
-                  if (!file) return;
-                  void run(async () => {
-                    const form = new FormData();
-                    form.append('file', file);
-                    await api('/restaurant/menu/banner', { method: 'POST', body: form });
-                  }, 'Banner saved.');
-                }}
-              />
-            </label>
-            {settings.has_banner ? (
-              <>
-                <label>
-                  Banner position
-                  <select
-                    value={settings.banner_position || 'top'}
-                    disabled={!editable}
-                    aria-label="Banner position"
-                    onChange={(e) => saveSettings({ banner_position: e.target.value })}
-                  >
-                    <option value="top">Top of the menu</option>
-                    <option value="footer">Bottom of the menu</option>
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  className="btn-danger"
-                  disabled={!editable}
-                  aria-label="Remove menu banner"
-                  onClick={() => void run(() => send('/restaurant/menu/banner', 'DELETE'), 'Banner removed.')}
-                >
-                  Remove banner
-                </button>
-              </>
-            ) : null}
-            <p className="dmenu-hint">
-              {data.has_logo
-                ? 'Your company logo shows at the top of the menu.'
-                : 'Add your logo under Company to show it at the top of the menu.'}
-            </p>
-            <label className="dmenu-check">
-              <input
-                type="checkbox"
-                checked={settings.show_unavailable}
-                disabled={!editable}
-                aria-label="Show unavailable dishes"
-                onChange={(e) => saveSettings({ show_unavailable: e.target.checked })}
-              />
-              Show sold-out dishes, marked unavailable
-            </label>
-          </div>
-        </section>
-      </div>
-
-      <section className="rd-panel dmenu-design" aria-label="Website design">
-        <div className="rd-panel-head">
-          <h2>Website design</h2>
-          <small>How your online ordering and booking pages look to customers. Every change saves at once and shows in the preview.</small>
-        </div>
-        <div className="dmenu-design-grid">
-          <div className="dmenu-design-controls">
-            <fieldset className="dmenu-step">
-              <legend><span>1</span> Pick a look</legend>
-              <div className="dmenu-presets" role="group" aria-label="Design starters">
-                {DESIGN_PRESETS.map((preset) => {
-                  const on = ['primary', 'accent', 'background'].every((k) => (design[k] || '').toUpperCase() === preset.design[k].toUpperCase());
-                  return (
-                    <button
-                      key={preset.name}
-                      type="button"
-                      className={`dmenu-preset${on ? ' on' : ''}`}
-                      disabled={!editable}
-                      aria-pressed={on}
-                      aria-label={`Use the ${preset.name} look`}
-                      onClick={() => saveDesign(preset.design, `${preset.name} look applied. Change anything below.`)}
-                    >
-                      <span className="sws">
-                        <span className="sw" style={{ background: preset.design.primary }} />
-                        <span className="sw" style={{ background: preset.design.accent }} />
-                        <span className="sw" style={{ background: preset.design.background }} />
-                      </span>
-                      {preset.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </fieldset>
-
-            <fieldset className="dmenu-step">
-              <legend><span>2</span> Your colours</legend>
-              <div className="dmenu-colours">
-                {([
-                  ['primary', 'Main colour', 'Header, buttons, booking area', '#003D1F'],
-                  ['accent', 'Highlight colour', 'Badges and selected dishes', '#4AB012'],
-                  ['background', 'Page background', 'Behind everything', '#FFFFFF'],
-                ] as const).map(([key, label, help, fallback]) => (
-                  <div key={key} className="dmenu-colour-row">
-                    <input
-                      type="color"
-                      value={design[key] || fallback}
-                      disabled={!editable}
-                      aria-label={`Website ${label}`}
-                      onChange={(e) => saveDesign({ [key]: e.target.value })}
-                    />
-                    <span className="t">
-                      <strong>{label}</strong>
-                      <small>{help}</small>
-                    </span>
-                    <code>{(design[key] || 'Default').toUpperCase()}</code>
-                    {design[key] ? (
-                      <button type="button" className="rd-link" disabled={!editable} aria-label={`Reset website ${label}`} onClick={() => saveDesign({ [key]: null }, 'Colour reset.')}>
-                        Reset
-                      </button>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            </fieldset>
-
-            <fieldset className="dmenu-step">
-              <legend><span>3</span> Display image</legend>
-              <div className="dmenu-hero-image">
-                <label
-                  className={`dmenu-drop${siteImagePreview ? ' has' : ''}${dropping ? ' over' : ''}`}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    if (editable) setDropping(true);
-                  }}
-                  onDragLeave={() => setDropping(false)}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    setDropping(false);
-                    if (editable) uploadSiteImage(e.dataTransfer.files?.[0]);
-                  }}
-                >
-                  {siteImagePreview ? <img src={siteImagePreview} alt="Your display image" /> : null}
-                  <span className="dmenu-drop-text">
-                    <b>{busy ? 'Saving…' : siteImagePreview ? 'Change image' : 'Add your image'}</b>
-                    <small>{siteImagePreview ? 'Click or drop a new photo' : 'Click here or drop a photo'}</small>
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    disabled={!editable || busy}
-                    aria-label="Website display image"
-                    onChange={(e) => {
-                      uploadSiteImage(e.target.files?.[0]);
-                      e.target.value = '';
-                    }}
-                  />
-                </label>
-                <div className="dmenu-hero-side">
-                  <p className="dmenu-hint">
-                    The big picture at the top of your site. Choose the one you like best and change it any time. A wide photo of your food or your place works best (JPG, PNG or WebP). We make it smaller for you so the site stays fast.
-                  </p>
-                  {settings.has_site_image ? (
-                    <button type="button" className="dmenu-remove" disabled={!editable || busy} aria-label="Remove website display image" onClick={() => void run(() => send('/restaurant/menu/site-image', 'DELETE'), 'Display image removed.')}>
-                      Remove image
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-              <div className="dmenu-styles" role="group" aria-label="Image style">
-                {([
-                  ['full', 'Full width', 'Behind the title'],
-                  ['split', 'Beside title', 'Next to the text'],
-                  ['plain', 'No image', 'Just colour'],
-                ] as const).map(([key, title, sub]) => (
-                  <button key={key} type="button" className={`dmenu-style${(design.hero || 'full') === key ? ' on' : ''}`} aria-pressed={(design.hero || 'full') === key} disabled={!editable} onClick={() => saveDesign({ hero: key })}>
-                    <span className={`pic ${key}`} aria-hidden>
-                      <i />
-                      <i />
-                    </span>
-                    <b>{title}</b>
-                    <small>{sub}</small>
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-
-            <fieldset className="dmenu-step">
-              <legend><span>4</span> Style</legend>
-              <Choice label="Font" value={design.font} disabled={!editable} options={[['serif', 'Classic'], ['sans', 'Clean'], ['rounded', 'Friendly']]} onPick={(v) => saveDesign({ font: v })} />
-              <Choice label="Corners" value={design.corners} disabled={!editable} options={[['round', 'Round'], ['soft', 'Soft'], ['sharp', 'Sharp']]} onPick={(v) => saveDesign({ corners: v })} />
-              <Choice label="Menu layout" value={design.layout} disabled={!editable} options={[['square', 'Square cards'], ['list', 'List']]} onPick={(v) => saveDesign({ layout: v })} />
-              <Choice label="Background" value={design.pattern} disabled={!editable} options={[['none', 'Plain'], ['food', 'Food icons']]} onPick={(v) => saveDesign({ pattern: v })} />
-            </fieldset>
-
-            <fieldset className="dmenu-step">
-              <legend><span>5</span> Your words</legend>
-              <label className="dmenu-field">
-                Headline
-                <input
-                  key={`h-${design.headline || ''}`}
-                  defaultValue={design.headline || ''}
-                  maxLength={80}
-                  disabled={!editable}
-                  placeholder="Your restaurant name"
-                  aria-label="Website headline"
-                  onBlur={(e) => {
-                    const next = e.target.value.trim() || null;
-                    if (next !== (design.headline || null)) saveDesign({ headline: next });
-                  }}
-                />
-              </label>
-              <label className="dmenu-field">
-                Welcome text
-                <input
-                  key={`i-${design.intro || ''}`}
-                  defaultValue={design.intro || ''}
-                  maxLength={240}
-                  disabled={!editable}
-                  placeholder="A line about your food"
-                  aria-label="Website welcome text"
-                  onBlur={(e) => {
-                    const next = e.target.value.trim() || null;
-                    if (next !== (design.intro || null)) saveDesign({ intro: next });
-                  }}
-                />
-              </label>
-            </fieldset>
-          </div>
-
-          <aside className="dmenu-design-preview" aria-label="Website preview">
-            <div className="dmenu-preview-bar">
-              <Choice label="" value={previewMode} options={[['phone', 'Phone'], ['desktop', 'Computer']]} onPick={(v) => setPreviewMode(v as 'phone' | 'desktop')} />
-              {data.site_slug ? (
-                <a href={`/order/${data.site_slug}`} target="_blank" rel="noreferrer" className="dmenu-btn">
-                  Open site
-                </a>
-              ) : null}
-            </div>
-            <div className={`dmenu-device ${previewMode}`}>
-              {data.site_slug ? (
-                <iframe key={previewTick} title="Your website" src={`/order/${data.site_slug}?preview=${previewTick}`} loading="lazy" />
-              ) : null}
-            </div>
-            <p className="dmenu-hint">If the preview says the page is not open, switch on online orders or the booking link first.</p>
-          </aside>
-        </div>
-      </section>
-
       {categories.map((category, categoryIndex) => (
         <section key={category.id} className="rd-panel dmenu-category">
           <div className="rd-panel-head">
@@ -918,6 +518,10 @@ export default function RestaurantDigitalMenuPage() {
         <section className="rd-panel">
           <div className="rd-panel-head">
             <h2>Add to the menu</h2>
+            <div className="dmenu-row-actions">
+              <Link className="rd-linkish" href="/restaurant/ingredients?tab=menu" aria-label="Open menu items">Menu items</Link>
+              <Link className="rd-primary" href="/restaurant/ingredients?tab=menu&add=1" aria-label="Add a menu item">+ Menu item</Link>
+            </div>
           </div>
           <form
             className="dmenu-add"
@@ -1035,6 +639,405 @@ export default function RestaurantDigitalMenuPage() {
           ) : null}
         </section>
       ) : null}
+
+      <div className="dmenu-top">
+        <section className="rd-panel dmenu-share">
+          <div className="rd-panel-head">
+            <h2>Share your menu</h2>
+            <span className={`dmenu-state${settings.is_published ? ' on' : ''}`}>
+              {settings.is_published ? 'Live for guests' : 'Not published'}
+            </span>
+          </div>
+          <div className="dmenu-qr">
+            {qr ? <img src={qr} alt="QR code for your menu" /> : <div className="dmenu-qr-empty" />}
+            <div>
+              {editable ? (
+                <button
+                  type="button"
+                  className={settings.is_published ? 'btn-danger' : 'btn-ok'}
+                  disabled={busy}
+                  onClick={() =>
+                    saveSettings(
+                      { is_published: !settings.is_published },
+                      settings.is_published ? 'Menu unpublished. Guests can no longer open it.' : 'Your menu is live.'
+                    )
+                  }
+                >
+                  {settings.is_published ? 'Unpublish menu' : 'Publish menu'}
+                </button>
+              ) : null}
+              <p className="dmenu-link">
+                <a href={settings.public_url} target="_blank" rel="noreferrer">
+                  {settings.public_url}
+                </a>
+              </p>
+              <div className="dmenu-row-actions">
+                <button type="button" onClick={() => void copyLink()}>
+                  Copy link
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    void downloadFile('/restaurant/menu/qr.png?size=large', `menu-qr-${slug}.png`).catch((err) => setError(problem(err)))
+                  }
+                >
+                  Download PNG
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    void downloadFile('/restaurant/menu/qr.pdf', `menu-qr-card-${slug}.pdf`).catch((err) => setError(problem(err)))
+                  }
+                >
+                  Printable card (PDF)
+                </button>
+                <a className="dmenu-btn" href={settings.board_url} target="_blank" rel="noreferrer">
+                  Open TV board
+                </a>
+                {editable ? (
+                  <button type="button" className="btn-danger" disabled={busy} onClick={regenerate}>
+                    New QR code
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="rd-panel">
+          <div className="rd-panel-head">
+            <h2>Look and feel</h2>
+          </div>
+          <div className="dmenu-look">
+            <label>
+              Tagline
+              <input
+                key={settings.tagline || ''}
+                defaultValue={settings.tagline || ''}
+                maxLength={160}
+                disabled={!editable}
+                aria-label="Menu tagline"
+                placeholder="Fresh from our kitchen"
+                onBlur={(e) => {
+                  const next = e.target.value.trim() || null;
+                  if (next !== (settings.tagline || null)) saveSettings({ tagline: next });
+                }}
+              />
+            </label>
+            <div className="dmenu-wide dmenu-site-colours">
+              <div>
+                <strong>Colours come from Website design</strong>
+                <small>The menu and the TV board use the colours you choose under Website design: main colour, highlight colour and page background.</small>
+              </div>
+              <button
+                type="button"
+                className="btn-ok"
+                aria-label="Go to Website design colours"
+                onClick={() => document.querySelector('.dmenu-design')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              >
+                Choose colours
+              </button>
+            </div>
+            <label>
+              Background pattern
+              <select
+                value={settings.background_pattern || 'food'}
+                disabled={!editable}
+                aria-label="Menu background pattern"
+                onChange={(e) => saveSettings({ background_pattern: e.target.value })}
+              >
+                <option value="food">Food icons</option>
+                <option value="dots">Soft dots</option>
+                <option value="none">Plain</option>
+              </select>
+            </label>
+            <label>
+              Board style
+              <select
+                value={settings.board_style}
+                disabled={!editable}
+                aria-label="Board style"
+                onChange={(e) => saveSettings({ board_style: e.target.value })}
+              >
+                <option value="forest">Dark green</option>
+                <option value="mist">Light</option>
+              </select>
+            </label>
+            <label>
+              Seconds per board page
+              <input
+                type="number"
+                min={5}
+                max={60}
+                key={settings.board_rotate_seconds}
+                defaultValue={settings.board_rotate_seconds}
+                disabled={!editable}
+                aria-label="Seconds per board page"
+                onBlur={(e) => {
+                  const next = Math.min(60, Math.max(5, Number(e.target.value) || 12));
+                  if (next !== settings.board_rotate_seconds) saveSettings({ board_rotate_seconds: next });
+                }}
+              />
+            </label>
+            <label>
+              Banner image
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                disabled={!editable}
+                aria-label="Menu banner image"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = '';
+                  if (!file) return;
+                  void run(async () => {
+                    const form = new FormData();
+                    form.append('file', file);
+                    await api('/restaurant/menu/banner', { method: 'POST', body: form });
+                  }, 'Banner saved.');
+                }}
+              />
+            </label>
+            {settings.has_banner ? (
+              <>
+                <label>
+                  Banner position
+                  <select
+                    value={settings.banner_position || 'top'}
+                    disabled={!editable}
+                    aria-label="Banner position"
+                    onChange={(e) => saveSettings({ banner_position: e.target.value })}
+                  >
+                    <option value="top">Top of the menu</option>
+                    <option value="footer">Bottom of the menu</option>
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  className="btn-danger"
+                  disabled={!editable}
+                  aria-label="Remove menu banner"
+                  onClick={() => void run(() => send('/restaurant/menu/banner', 'DELETE'), 'Banner removed.')}
+                >
+                  Remove banner
+                </button>
+              </>
+            ) : null}
+            <p className="dmenu-hint">
+              {data.has_logo
+                ? 'Your company logo shows at the top of the menu.'
+                : 'Add your logo under Company to show it at the top of the menu.'}
+            </p>
+            <label className="dmenu-check">
+              <input
+                type="checkbox"
+                checked={settings.show_unavailable}
+                disabled={!editable}
+                aria-label="Show unavailable dishes"
+                onChange={(e) => saveSettings({ show_unavailable: e.target.checked })}
+              />
+              Show sold-out dishes, marked unavailable
+            </label>
+          </div>
+        </section>
+      </div>
+
+      <OnlineAlertsPanel editable={editable} />
+
+      <section className="rd-panel dmenu-design" aria-label="Website design">
+        <div className="rd-panel-head">
+          <h2>Website design</h2>
+          <small>How your online ordering and booking pages look to customers. Every change saves at once and shows in the preview.</small>
+        </div>
+        <div className="dmenu-design-grid">
+          <div className="dmenu-design-controls">
+            <fieldset className="dmenu-step">
+              <legend><span>1</span> Pick a look</legend>
+              <div className="dmenu-presets" role="group" aria-label="Design starters">
+                {DESIGN_PRESETS.map((preset) => {
+                  const on = ['primary', 'accent', 'background'].every((k) => (design[k] || '').toUpperCase() === preset.design[k].toUpperCase());
+                  return (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      className={`dmenu-preset${on ? ' on' : ''}`}
+                      disabled={!editable}
+                      aria-pressed={on}
+                      aria-label={`Use the ${preset.name} look`}
+                      onClick={() => saveDesign(preset.design, `${preset.name} look applied. Change anything below.`)}
+                    >
+                      <span className="sws">
+                        <span className="sw" style={{ background: preset.design.primary }} />
+                        <span className="sw" style={{ background: preset.design.accent }} />
+                        <span className="sw" style={{ background: preset.design.background }} />
+                      </span>
+                      {preset.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+
+            <fieldset className="dmenu-step">
+              <legend><span>2</span> Your colours</legend>
+              <div className="dmenu-colours">
+                {([
+                  ['primary', 'Main colour', 'Header, buttons, booking area', '#003D1F'],
+                  ['accent', 'Highlight colour', 'Badges and selected dishes', '#4AB012'],
+                  ['background', 'Page background', 'Behind everything', '#FFFFFF'],
+                ] as const).map(([key, label, help, fallback]) => (
+                  <div key={key} className="dmenu-colour-row">
+                    <input
+                      type="color"
+                      value={design[key] || fallback}
+                      disabled={!editable}
+                      aria-label={`Website ${label}`}
+                      onChange={(e) => saveDesign({ [key]: e.target.value })}
+                    />
+                    <span className="t">
+                      <strong>{label}</strong>
+                      <small>{help}</small>
+                    </span>
+                    <code>{(design[key] || 'Default').toUpperCase()}</code>
+                    {design[key] ? (
+                      <button type="button" className="rd-link" disabled={!editable} aria-label={`Reset website ${label}`} onClick={() => saveDesign({ [key]: null }, 'Colour reset.')}>
+                        Reset
+                      </button>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </fieldset>
+
+            <fieldset className="dmenu-step">
+              <legend><span>3</span> Display image</legend>
+              <div className="dmenu-hero-image">
+                <label
+                  className={`dmenu-drop${siteImagePreview ? ' has' : ''}${dropping ? ' over' : ''}`}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (editable) setDropping(true);
+                  }}
+                  onDragLeave={() => setDropping(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDropping(false);
+                    if (editable) uploadSiteImage(e.dataTransfer.files?.[0]);
+                  }}
+                >
+                  {siteImagePreview ? <img src={siteImagePreview} alt="Your display image" /> : null}
+                  <span className="dmenu-drop-text">
+                    <b>{busy ? 'Saving…' : siteImagePreview ? 'Change image' : 'Add your image'}</b>
+                    <small>{siteImagePreview ? 'Click or drop a new photo' : 'Click here or drop a photo'}</small>
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    disabled={!editable || busy}
+                    aria-label="Website display image"
+                    onChange={(e) => {
+                      uploadSiteImage(e.target.files?.[0]);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                <div className="dmenu-hero-side">
+                  <p className="dmenu-hint">
+                    The big picture at the top of your site. Choose the one you like best and change it any time. A wide photo of your food or your place works best (JPG, PNG or WebP). We make it smaller for you so the site stays fast.
+                  </p>
+                  {settings.has_site_image ? (
+                    <button type="button" className="dmenu-remove" disabled={!editable || busy} aria-label="Remove website display image" onClick={() => void run(() => send('/restaurant/menu/site-image', 'DELETE'), 'Display image removed.')}>
+                      Remove image
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+              <div className="dmenu-styles" role="group" aria-label="Image style">
+                {([
+                  ['full', 'Full width', 'Behind the title'],
+                  ['split', 'Beside title', 'Next to the text'],
+                  ['plain', 'No image', 'Just colour'],
+                ] as const).map(([key, title, sub]) => (
+                  <button key={key} type="button" className={`dmenu-style${(design.hero || 'full') === key ? ' on' : ''}`} aria-pressed={(design.hero || 'full') === key} disabled={!editable} onClick={() => saveDesign({ hero: key })}>
+                    <span className={`pic ${key}`} aria-hidden>
+                      <i />
+                      <i />
+                    </span>
+                    <b>{title}</b>
+                    <small>{sub}</small>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+
+            <fieldset className="dmenu-step">
+              <legend><span>4</span> Style</legend>
+              <Choice label="Font" value={design.font} disabled={!editable} options={[['serif', 'Classic'], ['elegant', 'Elegant'], ['sans', 'Clean'], ['modern', 'Modern'], ['rounded', 'Friendly']]} onPick={(v) => saveDesign({ font: v })} />
+              <Choice label="Corners" value={design.corners} disabled={!editable} options={[['round', 'Round'], ['soft', 'Soft'], ['sharp', 'Sharp']]} onPick={(v) => saveDesign({ corners: v })} />
+              <Choice label="Menu layout" value={design.layout} disabled={!editable} options={[['square', 'Square cards'], ['list', 'List']]} onPick={(v) => saveDesign({ layout: v })} />
+              <Choice label="Dish cards" value={design.cards || 'shadow'} disabled={!editable} options={[['shadow', 'Shadow'], ['outline', 'Outline'], ['flat', 'Flat']]} onPick={(v) => saveDesign({ cards: v })} />
+              <Choice label="Top bar" value={design.header || 'glass'} disabled={!editable} options={[['glass', 'Frosted'], ['solid', 'Main colour'], ['plain', 'Plain']]} onPick={(v) => saveDesign({ header: v })} />
+              <Choice label="Title position" value={design.align || 'left'} disabled={!editable} options={[['left', 'Left'], ['center', 'Centred']]} onPick={(v) => saveDesign({ align: v })} />
+              <Choice label="Info chips" value={design.show_facts === false ? 'off' : 'on'} disabled={!editable} options={[['on', 'Show'], ['off', 'Hide']]} onPick={(v) => saveDesign({ show_facts: v === 'on' })} />
+              <Choice label="Background" value={design.pattern} disabled={!editable} options={[['none', 'Plain'], ['food', 'Food icons']]} onPick={(v) => saveDesign({ pattern: v })} />
+            </fieldset>
+
+            <fieldset className="dmenu-step">
+              <legend><span>5</span> Your words</legend>
+              <label className="dmenu-field">
+                Headline
+                <input
+                  key={`h-${design.headline || ''}`}
+                  defaultValue={design.headline || ''}
+                  maxLength={80}
+                  disabled={!editable}
+                  placeholder="Your restaurant name"
+                  aria-label="Website headline"
+                  onBlur={(e) => {
+                    const next = e.target.value.trim() || null;
+                    if (next !== (design.headline || null)) saveDesign({ headline: next });
+                  }}
+                />
+              </label>
+              <label className="dmenu-field">
+                Welcome text
+                <input
+                  key={`i-${design.intro || ''}`}
+                  defaultValue={design.intro || ''}
+                  maxLength={240}
+                  disabled={!editable}
+                  placeholder="A line about your food"
+                  aria-label="Website welcome text"
+                  onBlur={(e) => {
+                    const next = e.target.value.trim() || null;
+                    if (next !== (design.intro || null)) saveDesign({ intro: next });
+                  }}
+                />
+              </label>
+            </fieldset>
+          </div>
+
+          <aside className="dmenu-design-preview" aria-label="Website preview">
+            <div className="dmenu-preview-bar">
+              <Choice label="" value={previewMode} options={[['phone', 'Phone'], ['desktop', 'Computer']]} onPick={(v) => setPreviewMode(v as 'phone' | 'desktop')} />
+              {data.site_slug ? (
+                <a href={`/order/${data.site_slug}`} target="_blank" rel="noreferrer" className="dmenu-btn">
+                  Open site
+                </a>
+              ) : null}
+            </div>
+            <div className={`dmenu-device ${previewMode}`}>
+              {data.site_slug ? (
+                <iframe key={previewTick} title="Your website" src={`/order/${data.site_slug}?preview=${previewTick}`} loading="lazy" />
+              ) : null}
+            </div>
+            <p className="dmenu-hint">If the preview says the page is not open, switch on online orders or the booking link first.</p>
+          </aside>
+        </div>
+      </section>
+
+      <SiteIconSetting editable={editable} />
+
     </div>
   );
 }

@@ -128,7 +128,7 @@ async def test_catalog_picks_own_industry_then_general(client):
         retail = await billing_svc.plan_for_package(db, "starter", "months", "retail")
         unknown = await billing_svc.plan_for_package(db, "starter", "months", None)
     assert hotel.code == "starter-month-hotel"
-    assert retail.code == "starter-month"
+    assert retail.code == "starter-month-retail"
     assert unknown.code == "starter-month"
 
 

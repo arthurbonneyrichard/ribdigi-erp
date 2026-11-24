@@ -43,6 +43,11 @@ export default function RestaurantStockPage() {
   const [filter, setFilter] = useState<'all' | 'low' | 'out'>('all');
   const [search, setSearch] = useState('');
   const [sheet, setSheet] = useState<Sheet>(null);
+  const wantsAdd = useSearchParams().get('add') === '1';
+  useEffect(() => {
+    // Opened from Digital menu with + Menu item.
+    if (wantsAdd && tab === 'menu') setSheet({ kind: 'add-dish' });
+  }, [wantsAdd, tab]);
 
   const load = useCallback(async () => {
     try {

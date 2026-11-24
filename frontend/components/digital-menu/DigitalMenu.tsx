@@ -7,6 +7,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { usePageIcon } from '../../lib/usePageIcon';
 import './digital-menu.css';
 
 export type GuestItem = {
@@ -21,7 +22,7 @@ export type GuestItem = {
 };
 
 export type GuestMenu = {
-  restaurant: { name: string; logo_version: string | null; phone: string | null; address: string | null; tagline: string | null };
+  restaurant: { name: string; logo_version: string | null; favicon_version?: string | null; phone: string | null; address: string | null; tagline: string | null };
   currency: string;
   banner?: { version: string | null; position: 'top' | 'footer' };
   theme: { accent: string; primary?: string | null; background?: string | null; board_background?: string | null; pattern?: 'food' | 'dots' | 'none'; style: 'forest' | 'mist'; rotate_seconds: number };
@@ -96,6 +97,7 @@ export function menuPrice(value: number, currency: string): string {
   return `${currency} ${amount}`;
 }
 
+const faviconUrl = (token: string, version: string) => `/api/v1/public/menu/${token}/favicon?v=${version}`;
 const logoUrl = (token: string, version: string) => `/api/v1/public/menu/${token}/logo?v=${version}`;
 const bannerUrl = (token: string, version: string) => `/api/v1/public/menu/${token}/banner?v=${version}`;
 const photoUrl = (token: string, item: GuestItem) => `/api/v1/public/menu/${token}/items/${item.id}/image?v=${item.image_version}`;
@@ -270,6 +272,7 @@ export function GuestMenuView({
 
 export function GuestMenuPage({ token }: { token: string }) {
   const { menu, gone } = useGuestMenu(token, 60_000);
+  usePageIcon(menu?.restaurant.favicon_version ? faviconUrl(token, menu.restaurant.favicon_version) : null, menu ? `${menu.restaurant.name} menu` : null);
   if (gone) return <Unavailable />;
   if (!menu) return <div className="gmenu-loading" role="status" aria-label="Loading the menu" />;
   return <GuestMenuView menu={menu} token={token} />;
@@ -293,6 +296,7 @@ function boardPages(menu: GuestMenu): BoardPage[] {
 
 export function MenuBoardPage({ token }: { token: string }) {
   const { menu, gone } = useGuestMenu(token, 20_000);
+  usePageIcon(menu?.restaurant.favicon_version ? faviconUrl(token, menu.restaurant.favicon_version) : null, menu ? `${menu.restaurant.name} menu board` : null);
   const [index, setIndex] = useState(0);
   const [full, setFull] = useState(false);
   const pages = useMemo(() => (menu ? boardPages(menu) : []), [menu]);
