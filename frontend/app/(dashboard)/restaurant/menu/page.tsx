@@ -5,12 +5,14 @@
  * Prices and names here are the same ones the till uses.
  */
 
+import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, apiFetch } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
 import { problem, type Row } from '../../../../lib/restaurantDesk';
 import { GuestMenuView, menuPrice, type GuestItem, type GuestMenu } from '../../../../components/digital-menu/DigitalMenu';
 import OnlineAlertsPanel from '../../../../components/OnlineAlertsPanel';
+import SiteIconSetting from '../../../../components/SiteIconSetting';
 import '../restaurant-desk.css';
 import './menu-admin.css';
 
@@ -364,6 +366,280 @@ export default function RestaurantDigitalMenuPage() {
         </section>
       ) : null}
 
+      {categories.map((category, categoryIndex) => (
+        <section key={category.id} className="rd-panel dmenu-category">
+          <div className="rd-panel-head">
+            <h2>
+              {category.name}
+              {category.is_published ? null : <small> · hidden from guests</small>}
+            </h2>
+            {editable ? (
+              <div className="dmenu-row-actions">
+                <button
+                  type="button"
+                  aria-label={`Move ${category.name} up`}
+                  disabled={busy || categoryIndex === 0}
+                  onClick={() => void run(() => send('/restaurant/menu/categories/order', 'PUT', { ids: move(categories, categoryIndex, -1) }))}
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Move ${category.name} down`}
+                  disabled={busy || categoryIndex === categories.length - 1}
+                  onClick={() => void run(() => send('/restaurant/menu/categories/order', 'PUT', { ids: move(categories, categoryIndex, 1) }))}
+                >
+                  ↓
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() =>
+                    void run(() => send(`/restaurant/menu/categories/${category.id}`, 'PATCH', { is_published: !category.is_published }))
+                  }
+                >
+                  {category.is_published ? 'Hide' : 'Show'}
+                </button>
+                {category.items.length === 0 ? (
+                  <button
+                    type="button"
+                    className="btn-danger"
+                    disabled={busy}
+                    onClick={() => void run(() => send(`/restaurant/menu/categories/${category.id}`, 'DELETE'), 'Category removed.')}
+                  >
+                    Remove
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+
+          {category.items.length === 0 ? <p className="muted">No dishes here yet.</p> : null}
+          {category.items.map((item: Row, itemIndex: number) => (
+            <div key={item.id} className={`dmenu-item${item.is_published ? '' : ' is-draft'}`}>
+              <div className="dmenu-line">
+                <div className="dmenu-thumb">{item.has_image ? <StaffPhoto itemId={item.id} /> : null}</div>
+                <div className="dmenu-name">
+                  <strong>{item.name}</strong>
+                  <small>
+                    {menuPrice(item.price, currency)}
+                    {item.promo_label ? ` · ${item.promo_label}` : ''}
+                    {item.available ? '' : ' · sold out'}
+                    {item.dish_active ? '' : ' · dish switched off'}
+                  </small>
+                </div>
+                {editable ? (
+                  <div className="dmenu-row-actions">
+                    <button
+                      type="button"
+                      aria-label={`Move ${item.name} up`}
+                      disabled={busy || itemIndex === 0}
+                      onClick={() =>
+                        void run(() => send(`/restaurant/menu/categories/${category.id}/items/order`, 'PUT', { ids: move(category.items, itemIndex, -1) }))
+                      }
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Move ${item.name} down`}
+                      disabled={busy || itemIndex === category.items.length - 1}
+                      onClick={() =>
+                        void run(() => send(`/restaurant/menu/categories/${category.id}/items/order`, 'PUT', { ids: move(category.items, itemIndex, 1) }))
+                      }
+                    >
+                      ↓
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={item.is_published}
+                      disabled={busy}
+                      onClick={() => void run(() => send(`/restaurant/menu/items/${item.id}`, 'PATCH', { is_published: !item.is_published }))}
+                    >
+                      {item.is_published ? 'Unpublish' : 'Publish'}
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={!item.available}
+                      disabled={busy}
+                      onClick={() => void run(() => send(`/restaurant/menu/items/${item.id}`, 'PATCH', { available: !item.available }))}
+                    >
+                      {item.available ? 'Mark sold out' : 'Mark available'}
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={item.is_featured}
+                      disabled={busy}
+                      onClick={() => void run(() => send(`/restaurant/menu/items/${item.id}`, 'PATCH', { is_featured: !item.is_featured }))}
+                    >
+                      {item.is_featured ? 'Unfeature' : 'Feature'}
+                    </button>
+                    <button type="button" className="btn-ok" onClick={() => setEditing(editing === item.id ? '' : item.id)}>
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-danger"
+                      disabled={busy}
+                      onClick={() => void run(() => send(`/restaurant/menu/items/${item.id}`, 'DELETE'), `${item.name} taken off the menu. It stays on the till.`)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+              {editing === item.id ? (
+                <ItemEditor
+                  item={item}
+                  categories={categories}
+                  currency={currency}
+                  onCancel={() => setEditing('')}
+                  onSave={(body) =>
+                    void run(async () => {
+                      await send(`/restaurant/menu/items/${item.id}`, 'PATCH', body);
+                      setEditing('');
+                    }, 'Dish saved. The till uses the same price.')
+                  }
+                  onPhoto={(file) =>
+                    void run(async () => {
+                      const form = new FormData();
+                      form.append('file', file);
+                      await api(`/restaurant/menu/items/${item.id}/photo`, { method: 'POST', body: form });
+                    }, 'Photo saved.')
+                  }
+                />
+              ) : null}
+            </div>
+          ))}
+        </section>
+      ))}
+
+      {editable ? (
+        <section className="rd-panel">
+          <div className="rd-panel-head">
+            <h2>Add to the menu</h2>
+            <div className="dmenu-row-actions">
+              <Link className="rd-linkish" href="/restaurant/ingredients?tab=menu" aria-label="Open menu items">Menu items</Link>
+              <Link className="rd-primary" href="/restaurant/ingredients?tab=menu&add=1" aria-label="Add a menu item">+ Menu item</Link>
+            </div>
+          </div>
+          <form
+            className="dmenu-add"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const name = newCategory.trim();
+              if (!name) return;
+              void run(async () => {
+                await send('/restaurant/menu/categories', 'POST', { name });
+                setNewCategory('');
+              }, 'Category added.');
+            }}
+          >
+            <label>
+              New category
+              <input value={newCategory} onChange={(e) => setNewCategory(e.target.value)} maxLength={120} aria-label="New category name" />
+            </label>
+            <button type="submit" className="btn-ok" disabled={busy || !newCategory.trim()}>
+              Add category
+            </button>
+          </form>
+
+          {categories.length > 0 ? (
+            <form
+              className="dmenu-add"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void run(async () => {
+                  await send('/restaurant/menu/items', 'POST', {
+                    category_id: adding.category_id || categories[0].id,
+                    name: String(adding.name).trim(),
+                    price: Number(adding.price),
+                    station: adding.station,
+                  });
+                  setAdding({ category_id: adding.category_id, name: '', price: '', station: adding.station });
+                }, 'Dish added. It is on the till too.');
+              }}
+            >
+              <label>
+                New dish
+                <input
+                  value={adding.name}
+                  onChange={(e) => setAdding({ ...adding, name: e.target.value })}
+                  maxLength={200}
+                  aria-label="New dish name"
+                />
+              </label>
+              <label>
+                Price ({currency})
+                <input
+                  value={adding.price}
+                  inputMode="decimal"
+                  onChange={(e) => setAdding({ ...adding, price: e.target.value })}
+                  aria-label="New dish price"
+                />
+              </label>
+              <label>
+                Category
+                <select
+                  value={adding.category_id || categories[0].id}
+                  onChange={(e) => setAdding({ ...adding, category_id: e.target.value })}
+                  aria-label="New dish category"
+                >
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Made in
+                <select
+                  value={adding.station}
+                  onChange={(e) => setAdding({ ...adding, station: e.target.value })}
+                  aria-label="New dish station"
+                >
+                  <option value="kitchen">Kitchen</option>
+                  <option value="bar">Bar</option>
+                </select>
+              </label>
+              <button type="submit" className="btn-ok" disabled={busy || !String(adding.name).trim() || adding.price === ''}>
+                Add dish
+              </button>
+            </form>
+          ) : null}
+
+          {unlisted.length > 0 && categories.length > 0 ? (
+            <div className="dmenu-unlisted">
+              <h3>On the till, not on this menu</h3>
+              {unlisted.map((dish) => (
+                <div key={dish.id} className="dmenu-line">
+                  <div className="dmenu-name">
+                    <strong>{dish.name}</strong>
+                    <small>{menuPrice(dish.price, currency)}</small>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-ok"
+                    disabled={busy}
+                    onClick={() =>
+                      void run(() =>
+                        send('/restaurant/menu/items', 'POST', {
+                          category_id: adding.category_id || categories[0].id,
+                          product_id: dish.id,
+                        })
+                      )
+                    }
+                  >
+                    Add
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
       <div className="dmenu-top">
         <section className="rd-panel dmenu-share">
           <div className="rd-panel-head">
@@ -448,41 +724,20 @@ export default function RestaurantDigitalMenuPage() {
                 }}
               />
             </label>
-            <label>
-              Accent colour
-              <input
-                type="color"
-                value={settings.accent_color}
-                disabled={!editable}
-                aria-label="Menu accent colour"
-                onChange={(e) => saveSettings({ accent_color: e.target.value })}
-              />
-            </label>
-            {([
-              ['primary_color', 'Header and card colour', '#006B2E', 'Menu header colour'],
-              ['background_color', 'Page background colour', '#F5FAF0', 'Menu background colour'],
-              ['board_background_color', 'TV board background colour', '#001A0E', 'TV board background colour'],
-            ] as const).map(([key, label, fallback, aria]) => (
-              <label key={key}>
-                {label}
-                <span className="dmenu-colour">
-                  <input
-                    type="color"
-                    value={settings[key] || fallback}
-                    disabled={!editable}
-                    aria-label={aria}
-                    onChange={(e) => saveSettings({ [key]: e.target.value })}
-                  />
-                  {settings[key] ? (
-                    <button type="button" disabled={!editable} aria-label={`Reset ${label.toLowerCase()}`} onClick={() => saveSettings({ [key]: null }, 'Colour reset.')}>
-                      Reset
-                    </button>
-                  ) : (
-                    <small>Default</small>
-                  )}
-                </span>
-              </label>
-            ))}
+            <div className="dmenu-wide dmenu-site-colours">
+              <div>
+                <strong>Colours come from Website design</strong>
+                <small>The menu and the TV board use the colours you choose under Website design: main colour, highlight colour and page background.</small>
+              </div>
+              <button
+                type="button"
+                className="btn-ok"
+                aria-label="Go to Website design colours"
+                onClick={() => document.querySelector('.dmenu-design')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              >
+                Choose colours
+              </button>
+            </div>
             <label>
               Background pattern
               <select
@@ -781,275 +1036,8 @@ export default function RestaurantDigitalMenuPage() {
         </div>
       </section>
 
-      {categories.map((category, categoryIndex) => (
-        <section key={category.id} className="rd-panel dmenu-category">
-          <div className="rd-panel-head">
-            <h2>
-              {category.name}
-              {category.is_published ? null : <small> · hidden from guests</small>}
-            </h2>
-            {editable ? (
-              <div className="dmenu-row-actions">
-                <button
-                  type="button"
-                  aria-label={`Move ${category.name} up`}
-                  disabled={busy || categoryIndex === 0}
-                  onClick={() => void run(() => send('/restaurant/menu/categories/order', 'PUT', { ids: move(categories, categoryIndex, -1) }))}
-                >
-                  ↑
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Move ${category.name} down`}
-                  disabled={busy || categoryIndex === categories.length - 1}
-                  onClick={() => void run(() => send('/restaurant/menu/categories/order', 'PUT', { ids: move(categories, categoryIndex, 1) }))}
-                >
-                  ↓
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() =>
-                    void run(() => send(`/restaurant/menu/categories/${category.id}`, 'PATCH', { is_published: !category.is_published }))
-                  }
-                >
-                  {category.is_published ? 'Hide' : 'Show'}
-                </button>
-                {category.items.length === 0 ? (
-                  <button
-                    type="button"
-                    className="btn-danger"
-                    disabled={busy}
-                    onClick={() => void run(() => send(`/restaurant/menu/categories/${category.id}`, 'DELETE'), 'Category removed.')}
-                  >
-                    Remove
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
+      <SiteIconSetting editable={editable} />
 
-          {category.items.length === 0 ? <p className="muted">No dishes here yet.</p> : null}
-          {category.items.map((item: Row, itemIndex: number) => (
-            <div key={item.id} className={`dmenu-item${item.is_published ? '' : ' is-draft'}`}>
-              <div className="dmenu-line">
-                <div className="dmenu-thumb">{item.has_image ? <StaffPhoto itemId={item.id} /> : null}</div>
-                <div className="dmenu-name">
-                  <strong>{item.name}</strong>
-                  <small>
-                    {menuPrice(item.price, currency)}
-                    {item.promo_label ? ` · ${item.promo_label}` : ''}
-                    {item.available ? '' : ' · sold out'}
-                    {item.dish_active ? '' : ' · dish switched off'}
-                  </small>
-                </div>
-                {editable ? (
-                  <div className="dmenu-row-actions">
-                    <button
-                      type="button"
-                      aria-label={`Move ${item.name} up`}
-                      disabled={busy || itemIndex === 0}
-                      onClick={() =>
-                        void run(() => send(`/restaurant/menu/categories/${category.id}/items/order`, 'PUT', { ids: move(category.items, itemIndex, -1) }))
-                      }
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Move ${item.name} down`}
-                      disabled={busy || itemIndex === category.items.length - 1}
-                      onClick={() =>
-                        void run(() => send(`/restaurant/menu/categories/${category.id}/items/order`, 'PUT', { ids: move(category.items, itemIndex, 1) }))
-                      }
-                    >
-                      ↓
-                    </button>
-                    <button
-                      type="button"
-                      aria-pressed={item.is_published}
-                      disabled={busy}
-                      onClick={() => void run(() => send(`/restaurant/menu/items/${item.id}`, 'PATCH', { is_published: !item.is_published }))}
-                    >
-                      {item.is_published ? 'Unpublish' : 'Publish'}
-                    </button>
-                    <button
-                      type="button"
-                      aria-pressed={!item.available}
-                      disabled={busy}
-                      onClick={() => void run(() => send(`/restaurant/menu/items/${item.id}`, 'PATCH', { available: !item.available }))}
-                    >
-                      {item.available ? 'Mark sold out' : 'Mark available'}
-                    </button>
-                    <button
-                      type="button"
-                      aria-pressed={item.is_featured}
-                      disabled={busy}
-                      onClick={() => void run(() => send(`/restaurant/menu/items/${item.id}`, 'PATCH', { is_featured: !item.is_featured }))}
-                    >
-                      {item.is_featured ? 'Unfeature' : 'Feature'}
-                    </button>
-                    <button type="button" className="btn-ok" onClick={() => setEditing(editing === item.id ? '' : item.id)}>
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-danger"
-                      disabled={busy}
-                      onClick={() => void run(() => send(`/restaurant/menu/items/${item.id}`, 'DELETE'), `${item.name} taken off the menu. It stays on the till.`)}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-              {editing === item.id ? (
-                <ItemEditor
-                  item={item}
-                  categories={categories}
-                  currency={currency}
-                  onCancel={() => setEditing('')}
-                  onSave={(body) =>
-                    void run(async () => {
-                      await send(`/restaurant/menu/items/${item.id}`, 'PATCH', body);
-                      setEditing('');
-                    }, 'Dish saved. The till uses the same price.')
-                  }
-                  onPhoto={(file) =>
-                    void run(async () => {
-                      const form = new FormData();
-                      form.append('file', file);
-                      await api(`/restaurant/menu/items/${item.id}/photo`, { method: 'POST', body: form });
-                    }, 'Photo saved.')
-                  }
-                />
-              ) : null}
-            </div>
-          ))}
-        </section>
-      ))}
-
-      {editable ? (
-        <section className="rd-panel">
-          <div className="rd-panel-head">
-            <h2>Add to the menu</h2>
-          </div>
-          <form
-            className="dmenu-add"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const name = newCategory.trim();
-              if (!name) return;
-              void run(async () => {
-                await send('/restaurant/menu/categories', 'POST', { name });
-                setNewCategory('');
-              }, 'Category added.');
-            }}
-          >
-            <label>
-              New category
-              <input value={newCategory} onChange={(e) => setNewCategory(e.target.value)} maxLength={120} aria-label="New category name" />
-            </label>
-            <button type="submit" className="btn-ok" disabled={busy || !newCategory.trim()}>
-              Add category
-            </button>
-          </form>
-
-          {categories.length > 0 ? (
-            <form
-              className="dmenu-add"
-              onSubmit={(e) => {
-                e.preventDefault();
-                void run(async () => {
-                  await send('/restaurant/menu/items', 'POST', {
-                    category_id: adding.category_id || categories[0].id,
-                    name: String(adding.name).trim(),
-                    price: Number(adding.price),
-                    station: adding.station,
-                  });
-                  setAdding({ category_id: adding.category_id, name: '', price: '', station: adding.station });
-                }, 'Dish added. It is on the till too.');
-              }}
-            >
-              <label>
-                New dish
-                <input
-                  value={adding.name}
-                  onChange={(e) => setAdding({ ...adding, name: e.target.value })}
-                  maxLength={200}
-                  aria-label="New dish name"
-                />
-              </label>
-              <label>
-                Price ({currency})
-                <input
-                  value={adding.price}
-                  inputMode="decimal"
-                  onChange={(e) => setAdding({ ...adding, price: e.target.value })}
-                  aria-label="New dish price"
-                />
-              </label>
-              <label>
-                Category
-                <select
-                  value={adding.category_id || categories[0].id}
-                  onChange={(e) => setAdding({ ...adding, category_id: e.target.value })}
-                  aria-label="New dish category"
-                >
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Made in
-                <select
-                  value={adding.station}
-                  onChange={(e) => setAdding({ ...adding, station: e.target.value })}
-                  aria-label="New dish station"
-                >
-                  <option value="kitchen">Kitchen</option>
-                  <option value="bar">Bar</option>
-                </select>
-              </label>
-              <button type="submit" className="btn-ok" disabled={busy || !String(adding.name).trim() || adding.price === ''}>
-                Add dish
-              </button>
-            </form>
-          ) : null}
-
-          {unlisted.length > 0 && categories.length > 0 ? (
-            <div className="dmenu-unlisted">
-              <h3>On the till, not on this menu</h3>
-              {unlisted.map((dish) => (
-                <div key={dish.id} className="dmenu-line">
-                  <div className="dmenu-name">
-                    <strong>{dish.name}</strong>
-                    <small>{menuPrice(dish.price, currency)}</small>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn-ok"
-                    disabled={busy}
-                    onClick={() =>
-                      void run(() =>
-                        send('/restaurant/menu/items', 'POST', {
-                          category_id: adding.category_id || categories[0].id,
-                          product_id: dish.id,
-                        })
-                      )
-                    }
-                  >
-                    Add
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </section>
-      ) : null}
     </div>
   );
 }

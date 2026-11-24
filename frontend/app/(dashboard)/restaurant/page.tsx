@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent, type PointerEvent as ReactPointerEvent } from 'react';
+// @ts-ignore -- @types/react-dom is not installed; createPortal is a stable React API
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import DashboardGreeting from '../../../components/DashboardGreeting';
@@ -248,6 +250,7 @@ export default function RestaurantPage() {
     notes: '',
   });
   const [orderLines, setOrderLines] = useState<{ product_id: string; quantity: string; modifier_ids: string[]; course: string; note: string; hold: boolean; seat: string; spice: string; doneness: string }[]>([]);
+  const [kdsSlot, setKdsSlot] = useState<HTMLDivElement | null>(null);
   const [recipeForm, setRecipeForm] = useState({ product_id: '', ingredient_id: '', quantity: '1', name: '', cook_time: '', servings: '' });
   const [leftoverCookTimes, setLeftoverCookTimes] = useState<Record<string, string>>({});
   const [leftoverServings, setLeftoverServings] = useState<Record<string, string>>({});
@@ -1855,7 +1858,7 @@ export default function RestaurantPage() {
       .sort((a, b) => String(a.opened_at || '').localeCompare(String(b.opened_at || '')));
     const nowMs = Date.now();
     return (
-      <section className="rd-kds-col" aria-label={label}>
+      <section className={`rd-kds-col is-${station}`} aria-label={label}>
         <div className="rd-col-head">
           <span className="dot" aria-hidden />
           {title}
@@ -1883,9 +1886,10 @@ export default function RestaurantPage() {
             return (
               <li
                 key={row.id}
-                className={`rest-order rd-ticket${allReady ? ' is-ready' : mins >= 20 ? ' is-late' : mins >= 10 ? ' is-warm' : ''}`}
+                className={`rest-order rd-ticket rd-own st-${station}${allReady ? ' is-ready' : mins >= 20 ? ' is-late' : mins >= 10 ? ' is-warm' : ''}`}
               >
                 <div className="rd-ticket-head">
+                  <span className="rd-station">{station === 'bar' ? 'Bar' : 'Kitchen'}</span>
                   <strong>{row.table_code ? `Table ${row.table_code}` : row.customer_name || orderWord(row.service_mode)}</strong>
                   <span className="num">{row.order_number || 'Order'}</span>
                   <span className="age">{mins < 1 ? 'now' : `${mins} min`}</span>
@@ -2068,6 +2072,7 @@ export default function RestaurantPage() {
         <PageHeader
           title={(TAB_HEADINGS[tab] || TAB_HEADINGS.orders)[0]}
           subtitle={(TAB_HEADINGS[tab] || TAB_HEADINGS.orders)[1]}
+          actions={['kitchen', 'bar'].includes(tab) && !kitchenFull ? <div ref={setKdsSlot} className="kds-tools-slot" /> : undefined}
         />
       ) : null}
       {error && <p className="rest-flash is-bad" role="alert">{error}</p>}
@@ -4529,57 +4534,64 @@ export default function RestaurantPage() {
               <span className="rd-pill">{screenTickets.filter((row) => row.status === 'ready').length} ready</span>
               <span className="rd-hint">Refreshes every 15 seconds.</span>
             </div>
-            <div className="rd-kds-tools">
-              <button
-                type="button"
-                className="rd-primary"
-                aria-label={kitchenFull ? 'Exit full screen' : tab === 'bar' ? 'Bar screen full screen' : 'Kitchen screen full screen'}
-                onClick={toggleKitchenFullscreen}
-              >
-                {kitchenFull ? 'Exit full screen' : 'Full screen'}
-              </button>
-              <KitchenPrintTool />
-              <div className="rd-tool" aria-label="Restaurant kitchen sound">
-                <span>
-                  <strong>Kitchen sound</strong>
-                  <small>A new ticket plays a short chime when the kitchen refreshes.</small>
-                </span>
-                {kitchenSound.on ? (
-                  <>
-                    <span className="rd-sr">Kitchen sound is on.</span>
-                    <button type="button" className="rd-primary" aria-label="Turn off kitchen sound" onClick={() => saveKitchenSound(false)}>
-                      On
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <span className="rd-sr">Kitchen sound is off.</span>
-                    <button type="button" aria-label="Turn on kitchen sound" onClick={() => saveKitchenSound(true)}>
-                      Off
-                    </button>
-                  </>
-                )}
-              </div>
-              <div className="rd-tool" aria-label="Restaurant clock">
-                <span>
-                  <strong>Who is here</strong>
-                  <small>
-                    {clock.open.length
-                      ? clock.open.map((row) => row.name).join(', ')
-                      : 'No one is clocked in.'}{' '}
-                    This does not open the till.
-                  </small>
-                </span>
-                {clock.mine_open ? (
-                  <button type="button" aria-label="Clock out" onClick={() => punchClock('out')}>Clock out</button>
-                ) : (
-                  <>
-                    <span className="rd-sr">Not clocked in.</span>
-                    <button type="button" className="rd-go" aria-label="Clock in" onClick={() => punchClock('in')}>Clock in</button>
-                  </>
-                )}
-              </div>
-            </div>
+            {(() => {
+              const tools = (
+                    <div className="rd-kds-tools">
+                      <button
+                        type="button"
+                        className="rd-primary"
+                        aria-label={kitchenFull ? 'Exit full screen' : tab === 'bar' ? 'Bar screen full screen' : 'Kitchen screen full screen'}
+                        onClick={toggleKitchenFullscreen}
+                      >
+                        {kitchenFull ? 'Exit full screen' : 'Full screen'}
+                      </button>
+                      <KitchenPrintTool />
+                      <div className="rd-tool" aria-label="Restaurant kitchen sound">
+                        <span>
+                          <strong>Kitchen sound</strong>
+                          <small>A new ticket plays a short chime when the kitchen refreshes.</small>
+                        </span>
+                        {kitchenSound.on ? (
+                          <>
+                            <span className="rd-sr">Kitchen sound is on.</span>
+                            <button type="button" className="rd-primary" aria-label="Turn off kitchen sound" onClick={() => saveKitchenSound(false)}>
+                              On
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="rd-sr">Kitchen sound is off.</span>
+                            <button type="button" aria-label="Turn on kitchen sound" onClick={() => saveKitchenSound(true)}>
+                              Off
+                            </button>
+                          </>
+                        )}
+                      </div>
+                      <div className="rd-tool" aria-label="Restaurant clock">
+                        <span>
+                          <strong>Who is here</strong>
+                          <small>
+                            {clock.open.length
+                              ? clock.open.map((row) => row.name).join(', ')
+                              : 'No one is clocked in.'}{' '}
+                            This does not open the till.
+                          </small>
+                        </span>
+                        {clock.mine_open ? (
+                          <button type="button" aria-label="Clock out" onClick={() => punchClock('out')}>Clock out</button>
+                        ) : (
+                          <>
+                            <span className="rd-sr">Not clocked in.</span>
+                            <button type="button" className="rd-go" aria-label="Clock in" onClick={() => punchClock('in')}>Clock in</button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+              );
+              // In full screen the controls are not shown; Esc leaves full screen.
+              if (kitchenFull) return null;
+              return kdsSlot ? createPortal(tools, kdsSlot) : tools;
+            })()}
           </div>
           <ul className="rd-sr" aria-label="Restaurant clock list">
             {clock.open.map((row) => (
@@ -4641,7 +4653,9 @@ export default function RestaurantPage() {
           {menuWithoutRecipe.length ? (
             <div className="rd-panel rd-needs">
               <strong>These dishes have no recipe yet</strong>
-              <span className="rd-hint-line">Without a recipe, selling a dish does not take its ingredients off stock.</span>
+              <span className="rd-hint-line">
+                Without a recipe, a sale takes the dish itself off stock, so a dish with no stock of its own (like fresh juice) is refused when the bill is closed. Write a recipe so the ingredients (limes, sugar…) come off stock instead.
+              </span>
               <div className="rd-facts">
                 {menuWithoutRecipe.slice(0, 24).map((row) => (
                   <button
@@ -4651,7 +4665,8 @@ export default function RestaurantPage() {
                     aria-label={`Write a recipe for ${row.name}`}
                     onClick={() => {
                       setAddingRecipe(true);
-                      setRecipeForm((current) => ({ ...current, product_id: row.id, name: current.name || row.name }));
+                      setRecipeForm((current) => ({ ...current, product_id: row.id, name: row.name }));
+                      setTimeout(() => document.getElementById('rd-new-recipe')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
                     }}
                   >
                     + {row.name}
@@ -4662,7 +4677,7 @@ export default function RestaurantPage() {
           ) : null}
 
           {addingRecipe ? (
-            <form className="rest-order-form rd-panel rd-form-grid rd-recipe-form" onSubmit={async (event) => {
+            <form id="rd-new-recipe" className="rest-order-form rd-panel rd-form-grid rd-recipe-form" onSubmit={async (event) => {
               await createRecipe(event);
             }}>
               <h3>New recipe</h3>
@@ -4691,10 +4706,14 @@ export default function RestaurantPage() {
                 <strong>Ingredients for one serving</strong>
                 {recipeLines.length > 0 ? (
                   <ul aria-label="Restaurant recipe lines">
-                    {recipeLines.map((line, index) => (
+                    {recipeLines.map((line, index) => {
+                      const ing = products.find((row) => row.id === line.ingredient_id);
+                      const lineCost = Number(line.quantity || 0) * Number(ing?.cost_price || 0);
+                      return (
                       <li key={`${line.ingredient_id}-${index}`}>
                         <span>
-                          <b>{line.quantity}</b> × {products.find((row) => row.id === line.ingredient_id)?.name || 'Ingredient'}
+                          <b>{line.quantity}</b> × {ing?.name || 'Ingredient'}
+                          {lineCost > 0 ? <small className="rd-hint"> · cost {lineCost.toFixed(2)}</small> : null}
                         </span>
                         <button
                           type="button"
@@ -4705,7 +4724,16 @@ export default function RestaurantPage() {
                           Remove
                         </button>
                       </li>
-                    ))}
+                      );
+                    })}
+                    <li className="rd-total-line">
+                      <span><b>Cost of one serving</b></span>
+                      <b>
+                        {recipeLines
+                          .reduce((sum, line) => sum + Number(line.quantity || 0) * Number(products.find((row) => row.id === line.ingredient_id)?.cost_price || 0), 0)
+                          .toFixed(2)}
+                      </b>
+                    </li>
                   </ul>
                 ) : (
                   <span className="rd-hint-line">Pick an ingredient and how much one dish uses, then Add.</span>
@@ -4716,12 +4744,15 @@ export default function RestaurantPage() {
                     <select aria-label="Restaurant recipe ingredient" value={recipeForm.ingredient_id} onChange={(e) => setRecipeForm({ ...recipeForm, ingredient_id: e.target.value })}>
                       <option value="">Ingredient</option>
                       {ingredientItems.map((row) => (
-                        <option key={row.id} value={row.id}>{row.name}</option>
+                        <option key={row.id} value={row.id}>
+                          {row.name}
+                          {row.stock_qty !== undefined ? ` · ${Number(row.stock_qty)} in stock` : ''}
+                        </option>
                       ))}
                     </select>
                   </label>
                   <label>
-                    <span>Quantity</span>
+                    <span>Quantity per serving</span>
                     <input aria-label="Restaurant recipe quantity" inputMode="decimal" value={recipeForm.quantity} onChange={(e) => setRecipeForm({ ...recipeForm, quantity: e.target.value })} />
                   </label>
                   <button type="button" aria-label="Add restaurant ingredient" onClick={addRecipeLine}>+ Add</button>
@@ -5014,6 +5045,21 @@ export default function RestaurantPage() {
                   ))}
                 </select>
               </label>
+              {(() => {
+                const picked = ingredientItems.find((row) => row.id === wasteForm.product_id);
+                if (!picked) return null;
+                const qty = Number(wasteForm.quantity || 0);
+                const onHand = picked.stock_qty !== undefined ? Number(picked.stock_qty) : null;
+                const cost = qty * Number(picked.cost_price || 0);
+                const over = onHand !== null && qty > onHand;
+                return (
+                  <p className={`rd-hint-line rd-span${over ? ' rd-warn' : ''}`} role={over ? 'alert' : undefined}>
+                    {onHand !== null ? `${onHand} on hand. ` : ''}
+                    {over ? 'That is more than you have in stock. ' : ''}
+                    {cost > 0 ? `Cost of this waste: ${cost.toFixed(2)}.` : ''}
+                  </p>
+                );
+              })()}
               <div className="rd-field rd-span">
                 <span>Reason</span>
                 <div className="rd-chips" role="radiogroup" aria-label="Waste reason">

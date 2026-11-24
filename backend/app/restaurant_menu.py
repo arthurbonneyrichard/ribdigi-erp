@@ -26,6 +26,7 @@ from app import audit as audit_svc
 from app import logo_media as logo_media_svc
 from app import models as m
 from app import restaurant as rs
+from app import site_favicon as _site_favicon
 from app.catalog import allocate_sku
 from app.config import settings
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
@@ -528,6 +529,21 @@ async def _published_menu(db: AsyncSession, token: str) -> tuple[m.RestaurantMen
     return row, tenant
 
 
+DEFAULT_ACCENT = "#4AB012"
+
+
+def _theme_colours(row: m.RestaurantMenuSettings) -> dict:
+    """Colours for the guest menu and TV board. The website design chooses them; the menu's own
+    colours are only a fallback for a restaurant that has not picked website colours yet."""
+    site = site_design_of(row)
+    own_accent = row.accent_color if row.accent_color and row.accent_color.upper() != DEFAULT_ACCENT else None
+    return {
+        "accent": site.get("accent") or own_accent or DEFAULT_ACCENT,
+        "primary": site.get("primary") or row.primary_color,
+        "background": site.get("background") or row.background_color,
+    }
+
+
 def _guest_payload(
     row: m.RestaurantMenuSettings,
     tenant: m.Tenant,
@@ -567,6 +583,7 @@ def _guest_payload(
             "phone": tenant.phone,
             "address": tenant.address,
             "tagline": row.tagline,
+            "favicon_version": _site_favicon.version_of(tenant),
         },
         "currency": tenant.currency or "GHS",
         "banner": {
@@ -574,10 +591,8 @@ def _guest_payload(
             "position": row.banner_position or "top",
         },
         "theme": {
-            "accent": row.accent_color,
-            "primary": row.primary_color,
-            "background": row.background_color,
-            "board_background": row.board_background_color,
+            **_theme_colours(row),
+            "board_background": None if site_design_of(row).get("background") else row.board_background_color,
             "pattern": row.background_pattern or "food",
             "style": row.board_style,
             "rotate_seconds": int(row.board_rotate_seconds or 12),

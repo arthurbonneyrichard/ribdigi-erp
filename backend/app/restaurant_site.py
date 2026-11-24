@@ -14,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app import site_favicon as _site_favicon
 from app import restaurant as rs
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
@@ -90,6 +91,7 @@ async def _design(db: AsyncSession, tenant: m.Tenant) -> dict:
     key = (row.site_image_url or row.banner_url) if row is not None else None
     return {
         "design": menu_svc.site_design_of(row),
+        "favicon_version": _site_favicon.version_of(tenant),
         "banner_version": logo_media_svc.logo_version(tenant.id, key) if key else None,
     }
 

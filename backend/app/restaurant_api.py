@@ -2260,6 +2260,15 @@ async def public_restaurant_site(slug: str, db: AsyncSession = Depends(get_db)):
     return _env(await site_svc.site_page(db, slug))
 
 
+@site_public_router.get("/{slug}/favicon")
+async def public_restaurant_site_favicon(slug: str, request: Request, db: AsyncSession = Depends(get_db)):
+    from app import restaurant_site as site_svc
+    from app import site_favicon
+
+    tenant, _booking, _ordering = await site_svc._site_tenant(db, slug)
+    return site_favicon.image_response(tenant, request, public=True)
+
+
 @site_public_router.get("/{slug}/banner")
 async def public_restaurant_site_banner(slug: str, request: Request, db: AsyncSession = Depends(get_db)):
     from app import logo_media as logo_media_svc

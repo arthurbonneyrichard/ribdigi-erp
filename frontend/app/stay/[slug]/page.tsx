@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { apiRoot } from '../../../lib/api';
+import { usePageIcon } from '../../../lib/usePageIcon';
 
 type PageInfo = {
   company_name?: string;
@@ -10,6 +11,7 @@ type PageInfo = {
   link_kind?: string | null;
   path?: string;
   open?: boolean;
+  favicon_version?: string | null;
 };
 
 type RoomChoice = {
@@ -45,6 +47,10 @@ export default function HotelStayPage() {
   const params = useParams<{ slug: string }>();
   const slug = String(params?.slug || '');
   const [info, setInfo] = useState<PageInfo | null>(null);
+  usePageIcon(
+    info?.favicon_version ? `${apiRoot()}/public/hotel-booking/${encodeURIComponent(slug)}/favicon?v=${info.favicon_version}` : null,
+    info?.company_name,
+  );
   const [guestName, setGuestName] = useState('');
   const [phone, setPhone] = useState('');
   const [checkIn, setCheckIn] = useState('');

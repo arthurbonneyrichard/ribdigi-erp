@@ -8899,7 +8899,7 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{background-color:rgb
     .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-tabs:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
     .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-table-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
     .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-booking-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
-    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-ticket:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-ticket:not(.rd-own):not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
     .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-recipe-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
     .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk button.rd-staff-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on),
     .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk button.rd-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on){
@@ -8912,7 +8912,7 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{background-color:rgb
     .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-tabs:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
     .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-table-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
     .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-booking-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
-    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-ticket:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
+    .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-ticket:not(.rd-own):not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
     .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk .rd-recipe-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
     .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk button.rd-staff-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after,
     .shell:not(.is-pos):not(.is-kiosk) > .main .rdesk button.rd-card:not(.failed):not(.out):not(.waiting):not(.warn):not([aria-pressed="true"]):not(.is-credit):not(.is-due):not(.hero):not(.is-on):not(.on)::after{
@@ -9861,6 +9861,11 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{background-color:rgb
 .login-bio{flex:0 0 52px;display:inline-flex;align-items:center;justify-content:center;border-radius:12px;border:1px solid rgba(200,232,106,.45);background:rgba(255,255,255,.08);color:#C8E86A;cursor:pointer;min-height:44px}
 .login-bio:hover:not(:disabled){background:rgba(255,255,255,.14);border-color:rgba(200,232,106,.8)}
 .login-bio:disabled{opacity:.6;cursor:not-allowed}
+/* Same colours as the Security fingerprint button: amber = not on yet, green = on for this device */
+.login-bio.is-off{background:#FFF1CC;color:#5C3A00;border-color:#E0A100}
+.login-bio.is-off:hover:not(:disabled){background:#FFE29A;border-color:#E0A100}
+.login-bio.is-on{background:#4AB012;color:#10211B;border-color:#2F7A0C}
+.login-bio.is-on:hover:not(:disabled){background:#43A311;border-color:#2F7A0C}
 
 /* 19 Nov 2026, owner's request: every page title card uses the green banner of the owner console
    (white card -> green card with white text). The owner console keeps its own plain headings (.plat).

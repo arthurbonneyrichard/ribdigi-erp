@@ -3405,7 +3405,7 @@ async def update_order(
     db: AsyncSession, tenant_id: str, order_id: str, payload, *, user_id: str | None
 ) -> m.RestaurantOrder:
     order = await _order(db, tenant_id, order_id, user_id=user_id)
-    if order.status not in {"open", "sent"}:
+    if order.status not in {"open", "sent", "preparing", "ready"}:
         raise HTTPException(status_code=409, detail="Order cannot be changed.")
     changed = False
     if "store_id" in getattr(payload, "model_fields_set", set()):
@@ -3702,7 +3702,9 @@ async def update_order(
     if not changed:
         raise HTTPException(status_code=422, detail="Nothing to change.")
     await _refresh_order_totals(db, order)
-    if order.status == "sent" and (added_stations or removed_stations):
+    if order.status in {"sent", "preparing", "ready"} and (added_stations or removed_stations):
+        if added_stations and order.status == "ready":
+            order.status = "preparing"
         tickets = list(
             (
                 await db.execute(

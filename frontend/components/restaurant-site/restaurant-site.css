@@ -414,3 +414,34 @@
   .rsite .rs-grid.sq{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 .rsite .rs-facts[hidden]{display:none}
+
+/* Bag and checkout sheet: the header with Back and Close stays in view and is easy to tap. */
+.rsite .rs-sheet-head{position:sticky;top:-20px;z-index:3;margin:-20px -20px 0;padding:14px 20px;background:var(--rs-white);border-bottom:1px solid var(--rs-line)}
+.rsite .rs-back,.rsite .rs-x{min-height:44px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.rsite .rs-back{display:inline-flex;align-items:center;gap:6px;padding:0 16px;flex:0 0 auto;font-weight:800;white-space:nowrap;position:relative;z-index:4}
+.rsite .rs-x{min-width:44px}
+.rsite .rs-sheet-head h2{min-width:0;font-size:22px}
+
+/* Keep the floating bag and the ends of the sheets clear of the cookie notice. */
+.rsite .rs-float{bottom:calc(16px + var(--rs-cc,0px))}
+.rsite .rs-sheet{padding-bottom:calc(20px + var(--rs-cc,0px))}
+
+/* Square menu: four cards across */
+.rsite .rs-grid.sq{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.rsite .rs-grid.sq .rs-dish-body{padding:12px 14px 14px}
+.rsite .rs-grid.sq .rs-dish-body h4{font-size:16px;line-height:1.25}
+.rsite .rs-grid.sq .rs-dish-body p{font-size:13px}
+.rsite .rs-grid.sq .rs-dish-foot strong{font-size:16px}
+@media (max-width:900px){.rsite .rs-grid.sq{gap:12px}}
+@media (max-width:700px){
+  .rsite .rs-grid.sq{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .rsite .rs-grid.sq .rs-dish-body{padding:8px 8px 10px;gap:4px}
+  .rsite .rs-grid.sq .rs-dish-body h4{font-size:13px}
+  .rsite .rs-grid.sq .rs-dish-body p{display:none}
+  .rsite .rs-grid.sq .rs-dish-foot{flex-direction:column;align-items:stretch;gap:6px;padding-top:4px}
+  .rsite .rs-grid.sq .rs-dish-foot strong{font-size:13px}
+  .rsite .rs-grid.sq .rs-dish-mono{font-size:28px}
+}
+@media (max-width:520px){
+  .rsite .rs-grid.sq{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+}

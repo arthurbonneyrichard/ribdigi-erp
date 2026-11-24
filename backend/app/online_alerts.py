@@ -24,6 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import audit as audit_svc
 from app import models as m
+from app import site_favicon as _site_favicon
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -97,6 +98,7 @@ def serialize(tenant: m.Tenant) -> dict:
         "industry": industry_of(tenant),
         "channels": channel_status(tenant),
         "company_email": getattr(tenant, "email", None),
+        "has_favicon": bool(_site_favicon.key_of(tenant)),
     }
 
 

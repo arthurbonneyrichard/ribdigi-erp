@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, Request, Response, UploadFile
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -39,6 +39,36 @@ async def _tenant(db: AsyncSession, claims):
     from app import tenants as tenants_svc
 
     return await tenants_svc.get_tenant(db, claims["tenant_id"])
+
+
+@router.get("/favicon")
+async def favicon_get(request: Request, claims=Depends(can_manage), db: AsyncSession = Depends(get_db)):
+    from app import site_favicon
+
+    tenant = await _tenant(db, claims)
+    if not site_favicon.key_of(tenant):
+        return Response(status_code=404)
+    return site_favicon.image_response(tenant, request, public=False)
+
+
+@router.post("/favicon")
+async def favicon_upload(
+    file: UploadFile = File(...), claims=Depends(can_manage), db: AsyncSession = Depends(get_db)
+):
+    from app import site_favicon
+
+    data = await site_favicon.save(db, await _tenant(db, claims), file, user_id=claims.get("sub"))
+    await db.commit()
+    return _env(data, "Icon saved")
+
+
+@router.delete("/favicon")
+async def favicon_delete(claims=Depends(can_manage), db: AsyncSession = Depends(get_db)):
+    from app import site_favicon
+
+    data = await site_favicon.remove(db, await _tenant(db, claims), user_id=claims.get("sub"))
+    await db.commit()
+    return _env(data, "Icon removed")
 
 
 @router.get("")

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import DashboardGreeting from '../../../components/DashboardGreeting';
 import OnlineAlertsPanel from '../../../components/OnlineAlertsPanel';
+import SiteIconSetting from '../../../components/SiteIconSetting';
 import PageHeader from '../../../components/PageHeader';
 import RowActions, { type RowActionItem } from '../../../components/RowActions';
 import { navItemVisibleForRole, roleHomePath } from '../../../lib/tenantNav';
@@ -3290,6 +3291,7 @@ export default function HotelPage() {
       </form>
       )}
       {resView === 'online-booking' && <OnlineAlertsPanel />}
+      {resView === 'online-booking' && <SiteIconSetting />}
       {resView === 'online-booking' && (
       <div className="card" id="online-booking" style={{ marginBottom: 16 }}>
         {stayLink?.installed === false ? (

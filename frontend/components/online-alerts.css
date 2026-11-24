@@ -41,3 +41,102 @@
 .oa-error{background:rgba(180,35,24,.14);color:#b42318}
 [data-theme="dark"] .oa-error{color:#fca5a5}
 @media(max-width:760px){.oa-grid{grid-template-columns:1fr}}
+
+/* Website icon setting */
+.oa-icon-row{display:grid;grid-template-columns:128px minmax(0,1fr);gap:18px;align-items:center;margin-top:14px}
+.oa-icon-drop{position:relative;display:flex;align-items:center;justify-content:center;width:128px;height:128px;border:2px dashed rgba(127,127,127,.55);border-radius:20px;overflow:hidden;background:rgba(127,127,127,.08);cursor:pointer;text-align:center;font-weight:700}
+.oa-icon-drop:hover,.oa-icon-drop.over{border-color:#4AB012;background:rgba(74,176,18,.1)}
+.oa-icon-drop img{width:100%;height:100%;object-fit:cover}
+.oa-icon-drop input,.oa-file input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.oa-file{position:relative;display:inline-flex;align-items:center;overflow:hidden;cursor:pointer}
+.oa-tab-preview{display:inline-flex;align-items:center;gap:8px;max-width:240px;padding:8px 14px;border-radius:10px 10px 0 0;background:rgba(127,127,127,.18);font-size:13px}
+.oa-tab-preview img,.oa-tab-preview i{width:16px;height:16px;border-radius:3px;background:rgba(127,127,127,.5);object-fit:cover;flex:0 0 auto}
+@media(max-width:520px){.oa-icon-row{grid-template-columns:1fr}}
+
+/* Alignment: equal-height boxes, aligned headers, even switches and actions */
+.oa-grid{align-items:stretch}
+.oa-box{display:flex;flex-direction:column}
+.oa-box-head{min-height:34px;padding-bottom:8px;border-bottom:1px solid rgba(127,127,127,.2)}
+.oa-box-head h3{line-height:1.2}
+.oa-box .oa-field{margin-top:10px}
+.oa-box .oa-hint:not(.oa-adv .oa-hint),.oa-box .oa-warn{min-height:20px}
+.oa-adv{margin-top:auto;padding-top:12px}
+.oa-field span{line-height:1.3}
+.oa-field input{width:100%;box-sizing:border-box}
+.oa-switches{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:16px 0 4px}
+.oa-switch{justify-content:space-between;flex-direction:row-reverse;padding:10px 14px;border:1px solid rgba(127,127,127,.28);border-radius:14px;background:rgba(127,127,127,.04)}
+.oa-switch .track{flex:0 0 42px}
+.oa-actions{align-items:center;padding-top:14px;border-top:1px solid rgba(127,127,127,.2)}
+.oa-actions .oa-hint{margin:0 0 0 auto}
+.oa-primary,.oa-secondary{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap}
+@media(max-width:760px){
+  .oa-panel{padding:14px}
+  .oa-switches{grid-template-columns:1fr}
+  .oa-actions{flex-direction:column;align-items:stretch}
+  .oa-actions .oa-hint{margin:0;text-align:center}
+}
+
+/* Switch fix: the white knob stays inside its track and never sits on the label text */
+.oa-switch{position:relative;display:flex;align-items:center;justify-content:space-between;flex-direction:row-reverse;gap:16px;min-height:52px;box-sizing:border-box}
+.oa-switch > span:not(.track){flex:1 1 auto;min-width:0;text-align:left;line-height:1.3;overflow-wrap:anywhere}
+.oa-switch .track{flex:none;width:46px;min-width:46px;height:26px;box-sizing:border-box;overflow:hidden;display:block}
+.oa-switch .track::after{top:3px;left:3px;width:20px;height:20px}
+.oa-switch input:checked + .track::after{transform:translateX(20px)}
+.oa-switch input{inset:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0;z-index:2}
+.oa-switch .track,.oa-switch > span:not(.track){position:relative;z-index:1}
+.oa-switches{align-items:stretch}
+.oa-box-head{align-items:center}
+.oa-status{flex:none;white-space:nowrap}
+.oa-box-head h3{min-width:0}
+
+/* Website icon: drop zone, browser preview, tips */
+.oa-icon-row{grid-template-columns:150px minmax(0,1fr);gap:22px;align-items:start}
+.oa-icon-drop{width:150px;height:150px;border-radius:26px;flex-direction:column;background:repeating-conic-gradient(rgba(127,127,127,.14) 0 25%,transparent 0 50%) 50%/16px 16px;transition:border-color .15s ease,transform .15s ease,box-shadow .15s ease}
+.oa-icon-drop:hover{transform:translateY(-2px);box-shadow:0 8px 20px -10px rgba(0,0,0,.4)}
+.oa-icon-drop.over{border-style:solid;box-shadow:0 0 0 4px rgba(74,176,18,.25)}
+.oa-icon-cue{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:10px;color:inherit}
+.oa-icon-cue b{font-size:14px}
+.oa-icon-cue small{font-size:12px;opacity:.75;font-weight:600}
+.oa-icon-drop.has .oa-icon-cue{position:absolute;inset:0;background:rgba(16,33,27,.62);color:#fff;opacity:0;transition:opacity .15s ease}
+.oa-icon-drop.has:hover .oa-icon-cue,.oa-icon-drop.has.over .oa-icon-cue,.oa-icon-drop.has.busy .oa-icon-cue,.oa-icon-drop.has:focus-within .oa-icon-cue{opacity:1}
+.oa-icon-drop input{z-index:2}
+.oa-icon-drop:focus-within{outline:3px solid rgba(74,176,18,.5);outline-offset:3px}
+.oa-browser{border:1px solid rgba(127,127,127,.3);border-radius:14px;overflow:hidden;background:rgba(127,127,127,.06)}
+.oa-browser-bar{display:flex;align-items:flex-end;gap:14px;padding:10px 12px 0;background:rgba(127,127,127,.16)}
+.oa-browser-bar .dots{display:flex;gap:6px;align-self:center;padding-bottom:8px}
+.oa-browser-bar .dots i{width:10px;height:10px;border-radius:50%;background:rgba(127,127,127,.55)}
+.oa-browser .oa-tab-preview{max-width:230px;min-width:0;background:rgba(127,127,127,.06);border:1px solid rgba(127,127,127,.3);border-bottom:0;padding:8px 12px}
+.oa-browser .oa-tab-preview span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.oa-browser .oa-tab-preview em{margin-left:auto;font-style:normal;opacity:.55}
+.oa-browser-sizes{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:12px 14px;font-size:12.5px}
+.oa-browser-sizes > span{opacity:.7;font-weight:700}
+.oa-browser-sizes img,.oa-browser-sizes i{border-radius:4px;object-fit:cover;background:rgba(127,127,127,.4);display:inline-block}
+.oa-browser-sizes img.round{border-radius:12px}
+.oa-icon-tips{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:12px 0 0;padding:0}
+.oa-icon-tips li{padding:4px 12px;border-radius:999px;background:rgba(127,127,127,.14);font-size:12.5px;font-weight:700}
+.oa-icon-side .oa-actions{border-top:0;padding-top:0}
+@media(max-width:520px){.oa-icon-row{grid-template-columns:1fr;justify-items:stretch}.oa-icon-drop{width:100%;height:150px}}
+
+/* The page's global ".main label" rule (inline-block, small grey text) was beating these panels. Higher specificity restores them. */
+.main label.oa-icon-drop{display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0;font-size:14px;font-weight:700;color:inherit}
+.main label.oa-icon-drop .oa-icon-cue{color:inherit}
+.main .oa-icon-drop.has .oa-icon-cue{color:#fff}
+.main label.oa-primary,.main label.oa-primary.oa-file{display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin:0;padding:0 20px;font-size:15px;font-weight:800;color:#10211B;background:#4AB012;border-radius:12px}
+.main label.oa-primary:hover{filter:brightness(1.06)}
+.main .oa-icon-drop input,.main .oa-file input{position:absolute;inset:0;width:100%;height:100%;opacity:0;padding:0;margin:0;border:0;background:transparent;cursor:pointer}
+.main label.oa-field{display:flex;flex-direction:column;gap:4px;margin:10px 0 0;font-size:14px;font-weight:700;color:inherit}
+.main label.oa-field > span{color:inherit;opacity:.75}
+.main label.oa-switch{display:flex;flex-direction:row-reverse;align-items:center;justify-content:space-between;margin:0;font-size:15px;font-weight:700;color:inherit}
+.main .oa-switch input{position:absolute;inset:0;width:100%;height:100%;opacity:0;padding:0;margin:0;border:0;background:transparent}
+.main .oa-icon-side .oa-actions{align-items:center}
+.main .oa-icon-tips li{color:inherit}
+
+/* Icon preview: show the whole picture, never crop it; keep the drop square on phones */
+.oa-icon-drop img{object-fit:contain;padding:10px;box-sizing:border-box}
+@media(max-width:520px){
+  .oa-icon-row{justify-items:start}
+  .oa-icon-drop{width:150px;height:150px}
+  .oa-icon-side{width:100%}
+  .oa-icon-side .oa-actions{justify-content:flex-start;flex-direction:row}
+  .main .oa-icon-side .oa-actions label.oa-primary,.oa-icon-side .oa-actions .oa-secondary{flex:0 0 auto}
+}

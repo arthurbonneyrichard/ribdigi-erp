@@ -360,6 +360,14 @@ async def public_menu(token: str, request: Request, db: AsyncSession = Depends(g
     return JSONResponse(_env(body), headers=headers)
 
 
+@public_router.get("/{token}/favicon")
+async def public_menu_favicon(token: str, request: Request, db: AsyncSession = Depends(get_db)):
+    from app import site_favicon
+
+    _row, tenant = await menu_svc._published_menu(db, token)
+    return site_favicon.image_response(tenant, request, public=True)
+
+
 @public_router.get("/{token}/logo")
 async def public_menu_logo(token: str, request: Request, db: AsyncSession = Depends(get_db)):
     tenant = await menu_svc.public_logo_tenant(db, token)

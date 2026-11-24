@@ -183,3 +183,54 @@ async def test_hotel_stay_request_alerts_the_hotel(client, db_session, seeded, m
     assert "2 nights" in mails[-1]["text_body"] and "Ama Boateng" in mails[-1]["text_body"]
     test = await ac.post("/api/v1/online-alerts/test", headers=h)
     assert test.status_code == 200 and test.json()["data"]["email"]["sent"] is True
+
+
+async def test_company_can_add_its_own_browser_icon(client, db_session, monkeypatch):
+    import io
+
+    from PIL import Image
+
+    ac, admin, _dish = await _ready(client, db_session, monkeypatch)
+    page = (await ac.get("/api/v1/public/restaurant-site/alpha")).json()["data"]
+    assert page["favicon_version"] is None
+    assert (await ac.get("/api/v1/public/restaurant-site/alpha/favicon")).status_code == 404
+
+    buf = io.BytesIO()
+    Image.new("RGBA", (600, 600), (200, 30, 30, 255)).save(buf, "PNG")
+    up = await ac.post(
+        "/api/v1/online-alerts/favicon", headers=admin, files={"file": ("icon.png", buf.getvalue(), "image/png")}
+    )
+    assert up.status_code == 200, up.text
+    page = (await ac.get("/api/v1/public/restaurant-site/alpha")).json()["data"]
+    assert page["favicon_version"]
+    icon = await ac.get("/api/v1/public/restaurant-site/alpha/favicon")
+    assert icon.status_code == 200 and icon.headers["content-type"] == "image/png"
+    assert Image.open(io.BytesIO(icon.content)).size == (256, 256)  # shrunk to icon size
+    assert (await ac.get("/api/v1/online-alerts/favicon", headers=admin)).status_code == 200
+    assert (await ac.get("/api/v1/online-alerts", headers=admin)).json()["data"]["has_favicon"] is True
+
+    gone = await ac.delete("/api/v1/online-alerts/favicon", headers=admin)
+    assert gone.status_code == 200, gone.text
+    assert (await ac.get("/api/v1/public/restaurant-site/alpha/favicon")).status_code == 404
+    bad = await ac.post(
+        "/api/v1/online-alerts/favicon", headers=admin, files={"file": ("x.txt", b"not an image", "text/plain")}
+    )
+    assert bad.status_code == 400, bad.text
+
+
+async def test_tv_board_starts_from_the_website_colours(client, db_session, monkeypatch):
+    ac, admin, _dish = await _ready(client, db_session, monkeypatch)
+    menu = (await ac.get("/api/v1/restaurant/menu", headers=admin)).json()["data"]
+    token = menu["settings"]["public_token"]
+    await ac.patch("/api/v1/restaurant/menu/settings", headers=admin, json={"is_published": True})
+    await ac.patch(
+        "/api/v1/restaurant/menu/site-design",
+        headers=admin,
+        json={"primary": "#9A3412", "accent": "#F97316", "background": "#FFF7ED"},
+    )
+    theme = (await ac.get(f"/api/v1/public/menu/{token}")).json()["data"]["theme"]
+    assert (theme["primary"], theme["accent"], theme["background"]) == ("#9A3412", "#F97316", "#FFF7ED")
+    # The website design chooses the colours; an old menu colour does not override it.
+    await ac.patch("/api/v1/restaurant/menu/settings", headers=admin, json={"primary_color": "#112233"})
+    theme = (await ac.get(f"/api/v1/public/menu/{token}")).json()["data"]["theme"]
+    assert theme["primary"] == "#9A3412" and theme["background"] == "#FFF7ED"

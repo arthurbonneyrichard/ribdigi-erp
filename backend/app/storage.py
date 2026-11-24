@@ -294,6 +294,7 @@ IMAGE_MAX_SIDE = {
     "product_images": 1280,
     "brand_logos": 800,
     "banners": 1600,
+    "favicons": 256,
     "ecommerce_banner": 1600,
     "purchase_invoices": 2400,
     "expenses": 2400,

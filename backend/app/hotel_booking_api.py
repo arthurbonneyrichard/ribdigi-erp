@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -96,6 +96,15 @@ async def hotel_booking_rooms(
         children=children,
     )
     return _env(rows)
+
+
+@public_router.get("/{slug}/favicon")
+async def hotel_booking_favicon(slug: str, request: Request, db: AsyncSession = Depends(get_db)):
+    from app import site_favicon
+
+    await hotel_svc.hotel_booking_page(db, slug)  # only for a hotel whose booking page is open
+    tenant = await hotel_svc._hotel_booking_tenant(db, slug=slug)
+    return site_favicon.image_response(tenant, request, public=True)
 
 
 @public_router.get("/{slug}")
