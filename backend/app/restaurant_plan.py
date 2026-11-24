@@ -45,30 +45,69 @@ LOCKED_ON_STARTER: dict[str, dict] = {
     },
 }
 
-_COMPILED = [(key, re.compile(rule)) for key, spec in LOCKED_ON_STARTER.items() for rule in spec["rules"]]
+# Retail and wholesale (the retail desk): what Starter leaves off. Same Pro+ rule as the restaurant.
+LOCKED_ON_STARTER_RETAIL: dict[str, dict] = {
+    "gift_loyalty": {
+        "label": "Gift cards and loyalty points",
+        "rules": (r"POST /gift-cards", r"POST /customers/[^/]+/loyalty"),
+    },
+    "momo_prompts": {
+        "label": "Mobile Money prompts",
+        "rules": (r"POST /pos/momo(/[^/]+/otp)?",),
+    },
+    "held_layaway": {
+        "label": "Held sales and layaway",
+        "rules": (r"POST /pos/held(/[^/]+/take)?", r"POST /pos/layaways(/[^/]+/(payments|cancel))?"),
+    },
+    "serials": {
+        "label": "Serial-number tracking",
+        "rules": (),
+    },
+}
+RETAIL_INDUSTRIES = frozenset({"retail", "wholesale"})
+_ALL_LOCKS = {"restaurant": LOCKED_ON_STARTER, "retail": LOCKED_ON_STARTER_RETAIL}
+
+
+def _desk(industry: str | None) -> str | None:
+    value = (industry or "").strip().lower()
+    if value == "restaurant":
+        return "restaurant"
+    if value in RETAIL_INDUSTRIES:
+        return "retail"
+    return None
+
+
+_COMPILED = [
+    (key, re.compile(rule), desk)
+    for desk, locks in _ALL_LOCKS.items()
+    for key, spec in locks.items()
+    for rule in spec["rules"]
+]
 
 
 def locked_feature(package_code: str | None, industry: str | None, action: str) -> str | None:
     """The locked feature key this ``METHOD /path`` action hits, or None when it is allowed."""
     if (package_code or "").strip().lower() != "starter":
         return None
-    if (industry or "").strip().lower() != "restaurant":
+    desk = _desk(industry)
+    if desk is None:
         return None
-    for key, rule in _COMPILED:
-        if rule.fullmatch(action):
+    for key, rule, rule_desk in _COMPILED:
+        if rule_desk == desk and rule.fullmatch(action):
             return key
     return None
 
 
 def starter_locks(package_code: str | None, industry: str | None) -> list[dict]:
     """Locked features for the Starter restaurant (empty on every other plan), for the UI."""
-    if (package_code or "").strip().lower() != "starter" or (industry or "").strip().lower() != "restaurant":
+    desk = _desk(industry)
+    if (package_code or "").strip().lower() != "starter" or desk is None:
         return []
-    return [{"key": key, "label": spec["label"], "upgrade_to": "professional"} for key, spec in LOCKED_ON_STARTER.items()]
+    return [{"key": key, "label": spec["label"], "upgrade_to": "professional"} for key, spec in _ALL_LOCKS[desk].items()]
 
 
 def upgrade_error(feature: str) -> HTTPException:
-    label = LOCKED_ON_STARTER[feature]["label"]
+    label = (LOCKED_ON_STARTER.get(feature) or LOCKED_ON_STARTER_RETAIL[feature])["label"]
     return HTTPException(
         status_code=403,
         detail={
@@ -90,6 +129,12 @@ async def restaurant_package_gate(request: Request, claims: dict = Depends(curre
     feature = locked_feature(claims.get("package_code"), claims.get("industry"), action)
     if feature:
         raise upgrade_error(feature)
+
+
+def require_serials_allowed(claims: dict) -> None:
+    """Serial-number tracking is Professional and up on the retail desk."""
+    if _desk(claims.get("industry")) == "retail" and (claims.get("package_code") or "").strip().lower() == "starter":
+        raise upgrade_error("serials")
 
 
 def site_allowed(tenant) -> bool:

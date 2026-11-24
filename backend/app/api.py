@@ -436,11 +436,11 @@ from app import commerce_extras_api as commerce_extras_api_mod
 from app import billing_api as billing_api_mod
 from app import restaurant_api as restaurant_api_mod
 
-api.include_router(commerce_extras_api_mod.router)
-api.include_router(billing_api_mod.router)
 from app import restaurant_plan as restaurant_plan_mod  # noqa: E402
 
 _plan_gate = [Depends(restaurant_plan_mod.restaurant_package_gate)]
+api.include_router(commerce_extras_api_mod.router, dependencies=_plan_gate)
+api.include_router(billing_api_mod.router)
 api.include_router(restaurant_api_mod.router, dependencies=_plan_gate)
 api.include_router(restaurant_api_mod.public_router)
 api.include_router(restaurant_api_mod.order_public_router)
@@ -467,7 +467,7 @@ for _till_router in till_payments_api_mod.ROUTERS:
     api.include_router(_till_router, dependencies=_plan_gate)
 from app import pos_extras_api as pos_extras_api_mod  # noqa: E402
 
-api.include_router(pos_extras_api_mod.router)
+api.include_router(pos_extras_api_mod.router, dependencies=_plan_gate)
 api.include_router(pos_extras_api_mod.serial_router)
 from app import bakery_api as bakery_api_mod  # noqa: E402
 from app import fmcg_orders as fmcg_orders_svc  # noqa: E402
@@ -4991,6 +4991,8 @@ async def add_product(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    if payload.tracks_serials:
+        restaurant_plan_mod.require_serials_allowed(claims)
     data = payload.model_dump()
     category_id, brand_id, unit_id, category_label = await catalog_meta_svc.resolve_product_refs(
         db,
@@ -5246,6 +5248,8 @@ async def patch_product(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    if payload.tracks_serials:
+        restaurant_plan_mod.require_serials_allowed(claims)
     product = (
         await db.execute(
             select(m.Product).where(
