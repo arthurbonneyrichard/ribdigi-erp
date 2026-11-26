@@ -10,6 +10,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { api } from '../../../lib/api';
 import { formatMoney } from '../../../lib/format';
 import { getMe } from '../../../lib/meCache';
+import { printPaymentReceipt } from '../../../lib/receiptPrint';
 import { FmcgHead } from './FmcgSelling';
 import './fmcg-selling.css';
 
@@ -198,7 +199,7 @@ export default function FmcgVan({ tab }: { tab: string }) {
                       customer_id: sale.customer_id, terms: sale.terms,
                       lines: [{ product_id: sale.product_id, quantity: Number(sale.quantity) }],
                       ...(sale.terms === 'cash' ? { payment_method: sale.payment_method } : {}),
-                    }).then((r: Row) => { setSale({ ...sale, product_id: '', quantity: '' }); return r; }), 'Sold.')}>Sell</button>
+                    }).then((r: Row) => { printPaymentReceipt('fmcg_payment', r?.data?.payment_id); setSale({ ...sale, product_id: '', quantity: '' }); return r; }), 'Sold.')}>Sell</button>
                 </div>
                 <p className="fs-muted">This records the sale and the money. It does not take the payment: Mobile Money and card are what the outlet already paid you.</p>
               </section>

@@ -30,6 +30,7 @@ import {
   UNPREPARED_OFFLINE,
 } from '../../../lib/connectivity';
 import { openReceiptPrintWindow } from '../../../lib/posReceiptPrint';
+import { printPaymentReceipt, requestReceiptPrint } from '../../../lib/receiptPrint';
 import { consumeWedgeKey, looksLikeBarcode, type WedgeBuffer } from '../../../lib/posWedgeScan';
 import {
   allocationRemainingFor,
@@ -1731,63 +1732,46 @@ function PosTill() {
     }
   }
 
-  function customerReceiptRouteNote(
-    jobs: Array<{ purpose?: string; status?: string }>
-  ): string {
-    const receiptJobs = (jobs || []).filter((job) => job.purpose === 'customer_receipt');
-    const bits: string[] = [];
-    if (
-      receiptJobs.some(
-        (job) => job.status === 'queued' || job.status === 'claimed' || job.status === 'printing'
-      )
-    ) {
-      bits.push(
-        'The till agent uses the paper size stored on that printer, not the size next to Pay'
-      );
-    }
-    if (receiptJobs.some((job) => job.status === 'printed')) {
-      bits.push(
-        'A network printer was sent this receipt at the size stored on that printer. This does not confirm that paper came out'
-      );
-    }
-    return bits.join('. ');
-  }
-
   async function printReceiptAfterPay(
     saleId: string,
-    jobs: Array<{ id?: string; purpose?: string; status?: string }>,
     offline?: { rec: QueuedSale; lines: Array<{ name: string; quantity: number; unit: number }>; store: string }
   ) {
     if (!saleId || printedPayIds.current.has(saleId)) return;
     printedPayIds.current.add(saleId);
-    const paper = receiptPaper === '58mm' ? '58mm' : '80mm';
     if (offline) {
-      printProvisionalReceipt(offline.rec, offline.lines, offline.store, paper);
+      printOfflineReceipt(offline);
       return;
     }
-    const receiptJobs = (jobs || []).filter((job) => job.purpose === 'customer_receipt');
-    // A network printer or print agent already has this receipt: do not print it twice.
-    if (
-      receiptJobs.some((job) =>
-        ['printed', 'queued', 'claimed', 'printing'].includes(String(job.status || ''))
-      )
-    ) {
-      return;
-    }
-    // Otherwise print in the browser straight after Pay, also when no receipt printer is set up.
-    const browserJob = receiptJobs.find((job) => job.status === 'browser_pending' && job.id);
-    try {
-      const detail = await api(`/pos/sales/${saleId}/receipt?paper=${encodeURIComponent(paper)}`);
-      const payload = detail.data || {};
-      const opened = openReceiptPrintWindow(payload.html, payload.text || '');
-      if (!opened || !browserJob?.id) return;
-      await api(`/printers/jobs/${browserJob.id}/browser-ack`, {
-        method: 'POST',
-        body: JSON.stringify({ status: 'printed' }),
-      });
-    } catch {
-      return;
-    }
+    printPaymentReceipt('pos_sale', saleId);
+  }
+
+  /** An offline sale prints through the till agent on this computer. */
+  function printOfflineReceipt(
+    offline: { rec: QueuedSale; lines: Array<{ name: string; quantity: number; unit: number }>; store: string },
+    again = false
+  ) {
+    const payload = offline.rec.payload as Record<string, unknown>;
+    const total = Number(payload.total || 0);
+    const given = payload.cash_tendered == null ? null : Number(payload.cash_tendered);
+    const paper = receiptPaper === '58mm' ? '58mm' : '80mm';
+    requestReceiptPrint({
+      kind: 'offline',
+      ref: offline.rec.local_receipt_number,
+      again,
+      receipt: {
+        reference: offline.rec.local_receipt_number,
+        company_name: offline.store || null,
+        created_at: new Date(offline.rec.created_at).toISOString(),
+        items: offline.lines.map((l) => ({ name: l.name, quantity: l.quantity, line_total: l.unit * l.quantity })),
+        total,
+        payments: Array.isArray(payload.payments)
+          ? (payload.payments as Array<{ payment_method: string; amount: number }>)
+          : [{ payment_method: String(payload.payment_method || 'cash'), amount: total }],
+        cash_tendered: given,
+        change_due: given == null ? null : Math.max(0, Math.round((given - total) * 100) / 100),
+      },
+      browserFallback: () => printProvisionalReceipt(offline.rec, offline.lines, offline.store, paper),
+    });
   }
 
   async function checkout() {
@@ -1906,6 +1890,9 @@ function PosTill() {
     if (!splitTender && paymentMethod === 'loyalty' && !customerId) {
       setError('Select a customer before paying with loyalty points');
       return;
+    }
+    if (!splitTender && paymentMethod === 'cash' && cashReceivedEntered && cashTenderAmount >= cartTotal) {
+      body.cash_tendered = cashTenderAmount;
     }
     const attemptKey = JSON.stringify({
       session_id: body.session_id,
@@ -2030,7 +2017,7 @@ function PosTill() {
           store: store?.name || session.store_name || '',
         });
         setPayAsReprint(true);
-        void printReceiptAfterPay(queued.id, [], {
+        void printReceiptAfterPay(queued.id, {
           rec: queued,
           lines: receiptLines,
           store: store?.name || session.store_name || '',
@@ -2126,19 +2113,17 @@ function PosTill() {
       setReprintTarget({ offline: false, id: r.data.id });
       setPayAsReprint(true);
       dispatchDrawerKick(r.data.drawer);
-      const jobs = Array.isArray(r.data.print_jobs) ? r.data.print_jobs : [];
-      void printReceiptAfterPay(r.data.id, jobs);
+      void printReceiptAfterPay(r.data.id);
       await refreshSession();
       await browse(q);
       const statusLabel = String(r.data.payment_status || '').replace(/_/g, ' ');
       const bal = Number(r.data.balance_due || 0);
-      const routeNote = customerReceiptRouteNote(jobs);
       const extra =
         (r.data?.credit_limit_overridden
           ? ' (credit override)'
           : statusLabel
             ? ` · ${statusLabel}${bal > 0 ? ` · balance ${money(bal)}` : ''}`
-            : '') + (routeNote ? ` · ${routeNote}` : '');
+            : '');
       setMessage(`Sale ${r.data.reference} saved${extra}`);
       checkoutReqRef.current = null;
       checkoutAttemptRef.current = null;
@@ -2222,80 +2207,14 @@ function PosTill() {
     }
   }
 
-  async function reprintLastReceipt() {
-    if (!reprintTarget || receiptBusy) return;
+  function reprintLastReceipt() {
+    if (!reprintTarget) return;
     setError('');
-    setReceiptBusy('reprint');
-    try {
-      const paper = receiptPaper === '58mm' ? '58mm' : '80mm';
-      if (reprintTarget.offline) {
-        printProvisionalReceipt(reprintTarget.rec, reprintTarget.lines, reprintTarget.store, paper);
-        return;
-      }
-      const notes: string[] = [];
-      let openedBrowser = false;
-      try {
-        const queued = await api('/printers/reprint', {
-          method: 'POST',
-          body: JSON.stringify({ source_type: 'pos_sale', source_id: reprintTarget.id }),
-        });
-        const jobs = Array.isArray(queued.data) ? queued.data : [];
-        const receiptJobs = jobs.filter(
-          (job: { purpose?: string }) => job.purpose === 'customer_receipt'
-        );
-        const browser = receiptJobs.find(
-          (job: { id?: string; status?: string }) => job.status === 'browser_pending' && job.id
-        );
-        const agentQueued = receiptJobs.some(
-          (job: { status?: string }) =>
-            job.status === 'queued' || job.status === 'claimed' || job.status === 'printing'
-        );
-        const networkSent = receiptJobs.some((job: { status?: string }) => job.status === 'printed');
-        if (browser?.id) {
-          const detail = await api(`/pos/sales/${reprintTarget.id}/receipt?paper=${encodeURIComponent(paper)}`);
-          const payload = detail.data || {};
-          openedBrowser = openReceiptPrintWindow(payload.html, payload.text || '');
-          if (openedBrowser) {
-            await api(`/printers/jobs/${browser.id}/browser-ack`, {
-              method: 'POST',
-              body: JSON.stringify({ status: 'printed' }),
-            });
-          }
-        } else if (!agentQueued && !networkSent) {
-          const receipt = await api(`/pos/sales/${reprintTarget.id}/receipt?paper=${encodeURIComponent(paper)}`);
-          openedBrowser = openReceiptPrintWindow(receipt.data?.html, receipt.data?.text || '');
-        }
-        if (openedBrowser) {
-          notes.push(
-            'Browser receipt uses the size next to Pay. This does not confirm that paper came out.'
-          );
-        }
-        if (agentQueued) {
-          notes.push(
-            'Reprint is queued for the till agent. That printer uses the paper size stored on it, not the size next to Pay.'
-          );
-        }
-        if (networkSent) {
-          notes.push(
-            'Reprint was sent to a network printer at the paper size stored on it. This does not confirm that paper came out.'
-          );
-        }
-      } catch {
-        const receipt = await api(`/pos/sales/${reprintTarget.id}/receipt?paper=${encodeURIComponent(paper)}`);
-        openedBrowser = openReceiptPrintWindow(receipt.data?.html, receipt.data?.text || '');
-        if (openedBrowser) {
-          notes.push(
-            'Browser receipt uses the size next to Pay. This does not confirm that paper came out.'
-          );
-        }
-      }
-      if (notes.length) setMessage(notes.join(' '));
-      else if (!openedBrowser) setError('Reprint could not open the print dialog.');
-    } catch (err: any) {
-      setError(err?.message || 'Reprint could not open the print dialog.');
-    } finally {
-      setReceiptBusy('');
+    if (reprintTarget.offline) {
+      printOfflineReceipt(reprintTarget, true);
+      return;
     }
+    printPaymentReceipt('pos_sale', reprintTarget.id, { mode: 'reprint' });
   }
 
   async function sendLastReceipt(channel: 'email' | 'sms') {
@@ -3608,7 +3527,7 @@ function PosTill() {
                       disabled={!!receiptBusy}
                       aria-label="Print receipt"
                     >
-                      {receiptBusy === 'reprint' ? 'Printing…' : 'Print receipt'}
+                      Print receipt
                     </button>
                   </div>
                 </div>

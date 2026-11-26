@@ -10,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import fmcg_orders as orders
 from app import fmcg_van as svc
+from app import models as m
+from app import receipt_print
 from app.db import get_db
 from app.fmcg_orders_api import Method, OrderBody, OVERRIDE_ROLES
 from app.schemas import NonNegativeMoneyValue, PositiveMoneyValue, UuidIdValue
@@ -107,8 +109,10 @@ async def van_sell(
         can_override=str(claims.get("role") or "") in OVERRIDE_ROLES,
     )
     order = await orders.present_order(db, result["order"])
+    order_id = result["order"].id
     await db.commit()
-    return _env({"order": order, "van": result["summary"]}, "Sold from the van")
+    payment_id = await receipt_print.newest_id(db, m.FmcgPayment, claims["tenant_id"], m.FmcgPayment.order_id, order_id)
+    return _env({"order": order, "van": result["summary"], "payment_id": payment_id}, "Sold from the van")
 
 
 @router.post("/dispatches/{dispatch_id}/van/losses")

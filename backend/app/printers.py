@@ -9,6 +9,7 @@ The browser cannot enumerate OS printers or silently fan-out. Destinations are:
 from __future__ import annotations
 
 import asyncio
+import base64
 import ipaddress
 import logging
 import re
@@ -48,6 +49,12 @@ TERMINAL_STATUSES = frozenset({"printed", "cancelled"})
 MAX_ATTEMPTS = 8
 PAIRING_TTL_MINUTES = 15
 AGENT_TOKEN_PREFIX = "rdp_"
+# A job nothing picked up in this long is failed, so a till agent switched on days later
+# does not print a pile of old receipts.
+QUEUED_EXPIRY_HOURS = 12
+# How a till agent reaches a USB, Bluetooth or locally installed printer.
+_WINDOWS_DEVICE_RE = re.compile(r"^windows:[^\\/\x00-\x1f:*?\"<>|]{1,200}$")
+_SERIAL_DEVICE_RE = re.compile(r"^serial:COM[1-9][0-9]{0,2}(@(9600|19200|38400|57600|115200))?$")
 
 _HOST_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,253}$")
 
@@ -66,6 +73,8 @@ class PrinterCreate(BaseModel):
     is_default: bool = False
     host: str | None = None
     port: int = Field(default=9100, ge=1, le=65535)
+    # Till agent only: "windows:<installed printer name>" (USB, LAN or Bluetooth) or "serial:COM5".
+    device: str | None = Field(default=None, max_length=220)
 
 
 class PrinterUpdate(BaseModel):
@@ -85,6 +94,7 @@ class PrinterUpdate(BaseModel):
     host: str | None = None
     port: int | None = Field(default=None, ge=1, le=65535)
     clear_host: bool = False
+    device: str | None = Field(default=None, max_length=220)
 
 
 class PairingCodeCreate(BaseModel):
@@ -259,6 +269,36 @@ def validate_network_host(host: str) -> str:
     )
 
 
+def validate_device(value: str) -> str:
+    device = (value or "").strip()
+    if device.lower().startswith("serial:"):
+        device = "serial:" + device[7:].upper()
+    elif device.lower().startswith("windows:"):
+        device = "windows:" + device[8:].strip()
+    if _WINDOWS_DEVICE_RE.match(device) or _SERIAL_DEVICE_RE.match(device):
+        return device
+    raise HTTPException(
+        status_code=400,
+        detail="device must be windows:<installed printer name> or serial:COM<number>",
+    )
+
+
+def printer_device(row: m.Printer) -> str | None:
+    """The host column holds either a network address or a device on the till."""
+    value = str(row.host or "")
+    return value if value.startswith(("windows:", "serial:")) else None
+
+
+def agent_target(row: m.Printer) -> str | None:
+    """Where a till agent sends this printer's bytes. None: the agent's own default printer."""
+    device = printer_device(row)
+    if device:
+        return device
+    if row.host:
+        return f"tcp:{row.host}:{int(row.port or 9100)}"
+    return None
+
+
 def pos_show_receipt_email_sms(tenant: m.Tenant | None) -> bool:
     """Company choice: Email/SMS receipt actions on the till. Default off."""
     raw = getattr(tenant, "print_branding", None) if tenant else None
@@ -289,7 +329,8 @@ def capabilities(industry: str | None = None) -> dict[str, Any]:
     return {
         "browser_enumerates_os_printers": False,
         "browser_silent_fanout": False,
-        "fallback": "browser_print_dialog",
+        "fallback": "none_after_payment",
+        "agent_links": ["network", "windows", "serial", "agent_default"],
         "destinations": sorted(CONNECTION_TYPES),
         "industry": ind,
         "purposes": allowed,
@@ -361,8 +402,14 @@ def serialize_printer(row: m.Printer) -> dict[str, Any]:
         "copies": int(row.copies or 1),
         "is_enabled": bool(row.is_enabled),
         "is_default": bool(row.is_default),
-        "host": row.host if row.connection_type == "network" else None,
-        "port": int(row.port or 9100) if row.connection_type == "network" else None,
+        "host": row.host
+        if row.connection_type in {"network", "print_agent"} and not printer_device(row)
+        else None,
+        "port": int(row.port or 9100)
+        if row.connection_type == "network"
+        or (row.connection_type == "print_agent" and row.host and not printer_device(row))
+        else None,
+        "device": printer_device(row),
         "status": row.status,
         "last_error": row.last_error,
         "last_seen_at": row.last_seen_at,
@@ -485,7 +532,10 @@ async def create_printer(
         agent = await db.get(m.PrintAgent, agent_id)
         if not agent or agent.tenant_id != tenant_id or not agent.is_active:
             raise HTTPException(status_code=404, detail="Print agent not found")
-        host = None
+        if payload.device:
+            host = validate_device(payload.device)
+        elif payload.host:
+            host = validate_network_host(payload.host)
     else:
         agent_id = None
         host = None
@@ -571,6 +621,8 @@ async def update_printer(
         row.agent_id = agent.id
     if payload.clear_host:
         row.host = None
+    elif payload.device is not None:
+        row.host = validate_device(payload.device)
     elif payload.host is not None:
         row.host = validate_network_host(payload.host)
     if payload.port is not None:
@@ -579,7 +631,9 @@ async def update_printer(
         raise HTTPException(status_code=400, detail="host is required for network printers")
     if row.connection_type == "print_agent" and not row.agent_id:
         raise HTTPException(status_code=400, detail="agent_id is required for print_agent printers")
-    if row.connection_type != "network":
+    if row.connection_type == "network" and printer_device(row):
+        raise HTTPException(status_code=400, detail="A network printer needs an IP address, not a till device")
+    if row.connection_type == "browser_dialog":
         row.host = None
     if row.connection_type != "print_agent":
         row.agent_id = None
@@ -875,6 +929,13 @@ async def _deliver_network_job(db: AsyncSession, printer: m.Printer, job: m.Prin
     await _restaurant_ticket_printed(db, job)
 
 
+async def deliver_now(db: AsyncSession, job: m.PrintJob) -> None:
+    """Send a retried network job again. Agent jobs wait for the agent to collect them."""
+    printer = await db.get(m.Printer, job.printer_id)
+    if printer:
+        await _deliver_network_job(db, printer, job)
+
+
 async def _restaurant_ticket_printed(db: AsyncSession, job: m.PrintJob) -> None:
     """A kitchen or bar ticket reached paper. In Printer only mode that starts the dish. Never blocks printing."""
     if job.source_type != "restaurant_order":
@@ -943,11 +1004,12 @@ async def enqueue_job(
         payload=_jsonable(payload),
         created_by=user_id,
     )
-    db.add(job)
     try:
-        await db.flush()
+        # A savepoint: losing a race for the same job must not break the caller's transaction.
+        async with db.begin_nested():
+            db.add(job)
+            await db.flush()
     except IntegrityError:
-        await db.refresh(printer)
         existing = (
             await db.execute(
                 select(m.PrintJob).where(
@@ -973,6 +1035,7 @@ async def enqueue_pos_sale_prints(
     store_id: str | None,
     tenant: m.Tenant | None = None,
     store: m.Store | None = None,
+    terminal_id: str | None = None,
 ) -> list[m.PrintJob]:
     """Fan-out jobs for one completed sale. Never creates another sale."""
     jobs: list[m.PrintJob] = []
@@ -988,9 +1051,16 @@ async def enqueue_pos_sale_prints(
     paper_default = receipt.get("default_receipt_paper") or "80mm"
     receipt_text = receipts_svc.render_thermal_text(receipt, paper=paper_default)
     receipt_html = receipts_svc.render_thermal_html(receipt, paper=paper_default)
-    receipt_printers = await matching_printers(
-        db, tenant_id=tenant_id, store_id=store_id, purpose="customer_receipt", industry=industry
-    )
+    from app import receipt_print as receipt_print_svc
+
+    if tenant is None:
+        tenant = await db.get(m.Tenant, tenant_id)
+    if receipt_print_svc.terminal_settings(tenant, terminal_id)["auto_print"]:
+        receipt_printers = await receipt_print_svc.receipt_printers(
+            db, tenant=tenant, store_id=store_id, terminal_id=terminal_id
+        )
+    else:
+        receipt_printers = []
     for printer in receipt_printers:
         paper = printer.paper if printer.paper in {"58mm", "80mm"} else "80mm"
         payload = {
@@ -1292,7 +1362,8 @@ async def complete_job(
     wanted = (status or "").strip().lower()
     if wanted not in {"printed", "failed", "cancelled"}:
         raise HTTPException(status_code=400, detail="status must be printed, failed, or cancelled")
-    if job.status == "printed" and wanted == "printed":
+    if job.status == "printed":
+        # Paper already came out: a late or repeated report never reopens the job.
         return job
     job.status = wanted
     job.last_error = detail if wanted != "printed" else None
@@ -1317,9 +1388,43 @@ async def complete_job(
     return job
 
 
+async def expire_stale_jobs(db: AsyncSession, *, tenant_id: str, agent_id: str) -> None:
+    cutoff = datetime.utcnow() - timedelta(hours=QUEUED_EXPIRY_HOURS)
+    rows = (
+        await db.execute(
+            select(m.PrintJob)
+            .join(m.Printer, m.Printer.id == m.PrintJob.printer_id)
+            .where(
+                m.PrintJob.tenant_id == tenant_id,
+                m.Printer.agent_id == agent_id,
+                m.PrintJob.status == "queued",
+                m.PrintJob.updated_at < cutoff,
+            )
+            .limit(200)
+        )
+    ).scalars().all()
+    for job in rows:
+        job.status = "failed"
+        job.last_error = "Not printed in time. Print it again if it is still needed."
+        job.updated_at = datetime.utcnow()
+        await _record_attempt(db, job, status="failed", detail="expired in the queue")
+
+
+async def agent_job(db: AsyncSession, job: m.PrintJob) -> dict[str, Any]:
+    """A claimed job as the till agent needs it: ready-made printer bytes and where to send them."""
+    data = serialize_job(job, include_payload=True)
+    printer = await db.get(m.Printer, job.printer_id)
+    text = str((job.payload or {}).get("text") or "")
+    data["printer_name"] = printer.name if printer else None
+    data["target"] = agent_target(printer) if printer else None
+    data["escpos_base64"] = base64.b64encode(escpos_receipt_bytes(text)).decode("ascii") if text else None
+    return data
+
+
 async def claim_jobs(
     db: AsyncSession, *, agent: m.PrintAgent, limit: int = 10
 ) -> list[m.PrintJob]:
+    await expire_stale_jobs(db, tenant_id=agent.tenant_id, agent_id=agent.id)
     stmt = (
         select(m.PrintJob)
         .join(m.Printer, m.Printer.id == m.PrintJob.printer_id)

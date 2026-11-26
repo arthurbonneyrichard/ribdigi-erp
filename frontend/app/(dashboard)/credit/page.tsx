@@ -13,6 +13,7 @@ import { openDocumentPrint } from '../../../lib/documentPrint';
 import { createPaintGet } from '../../../lib/prefetchCache';
 import { formatMoney, formatWhen } from '../../../lib/format';
 import { AmountField } from '../../../components/AmountField';
+import { printPaymentReceipt } from '../../../lib/receiptPrint';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 
 function retryAfterFrom(raw: unknown): number {
@@ -479,7 +480,7 @@ export default function Page() {
             }
           : {};
       if (kind === 'receivable') {
-        await api(`/customers/${partyId.trim()}/payments`, {
+        const paid = await api(`/customers/${partyId.trim()}/payments`, {
           method: 'POST',
           body: JSON.stringify({
             // trim so Record payment (UuidIdValue customer_id) does not 422 on whitespace
@@ -494,6 +495,7 @@ export default function Page() {
             ...chequeFields,
           }),
         });
+        printPaymentReceipt('customer_payment', paid?.data?.id);
       } else {
         await api(`/suppliers/${partyId.trim()}/payments`, {
           method: 'POST',

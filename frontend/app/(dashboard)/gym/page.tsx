@@ -15,6 +15,7 @@ import DeskIcon from '../../../components/DeskIcon';
 import FloorTab from './FloorTab';
 import FitnessTab from './FitnessTab';
 import { GrowthTab, InsightsTab, MyWorkTab, SetupTab, ShopTab } from './ManageTabs';
+import { printPaymentReceipt } from '../../../lib/receiptPrint';
 import './gym.css';
 
 type Row = Record<string, any>;
@@ -180,6 +181,7 @@ function GymDesk() {
     let ok: unknown = null;
     if (dialog.kind === 'sell') {
       ok = await run('/gym/memberships', { member_id: dialog.row.id, plan_id: dialog.plan_id, method: dialog.method }, 'Membership sold');
+      if (ok) printPaymentReceipt('gym_payment', (ok as Row).payment_id);
     }
     if (dialog.kind === 'cancel') {
       const refund = Number(dialog.refund || 0);

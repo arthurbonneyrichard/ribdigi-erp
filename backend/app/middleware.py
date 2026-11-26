@@ -114,6 +114,12 @@ AUTH_PATH_PREFIXES = (
 )
 
 
+# Till print agents poll about once a second. One shop address can hold several, so they get
+# their own bucket (room for about 20) instead of using up the shop's other requests.
+PRINT_AGENT_PREFIX = "/api/v1/printers/agent/"
+PRINT_AGENT_PER_MINUTE = 1500
+
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         response = await call_next(request)
@@ -162,6 +168,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return raw or "anon"
 
     def _limit_for_path(self, path: str, method: str = "GET") -> int:
+        if path.startswith(PRINT_AGENT_PREFIX):
+            return PRINT_AGENT_PER_MINUTE
         if any(path.startswith(p) for p in AUTH_PATH_PREFIXES):
             return settings.RATE_LIMIT_AUTH_PER_MINUTE
         if any(path.startswith(p) for p in STOREFRONT_WRITE_PREFIXES + STOREFRONT_PUBLIC_PREFIXES):
@@ -195,7 +203,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
         method = request.method.upper()
         limit = self._limit_for_path(path, method)
-        if any(path.startswith(p) for p in AUTH_PATH_PREFIXES):
+        scope = self._tenant_scope(request)
+        if path.startswith(PRINT_AGENT_PREFIX):
+            # The tenant header means nothing here, so it cannot be used to open more buckets.
+            kind, scope = "print-agent", "anon"
+        elif any(path.startswith(p) for p in AUTH_PATH_PREFIXES):
             kind = "auth"
         elif any(path.startswith(p) for p in STOREFRONT_WRITE_PREFIXES + STOREFRONT_PUBLIC_PREFIXES):
             # Own bucket: shop visitors must not share a counter with staff using the ERP.
@@ -204,7 +216,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             kind = "read"
         else:
             kind = "api"
-        key = f"{self._client_ip(request)}:{kind}:{self._tenant_scope(request)}"
+        key = f"{self._client_ip(request)}:{kind}:{scope}"
         allowed, retry_after, remaining = await rate_limiter.allow(key, limit)
         if not allowed:
             return JSONResponse(

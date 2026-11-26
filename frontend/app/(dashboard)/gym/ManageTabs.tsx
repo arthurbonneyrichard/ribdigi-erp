@@ -7,6 +7,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { printPaymentReceipt } from '../../../lib/receiptPrint';
 import { api, apiFetch } from '../../../lib/api';
 
 type Row = Record<string, any>;
@@ -766,7 +767,7 @@ export function ShopTab({ members }: { members: Row[] }) {
             <button type="button" className="gm-primary" disabled={busy || lines.length === 0}
               onClick={async () => {
                 const r = await run('/gym/shop/sales', { items: lines.map(([product_id, quantity]) => ({ product_id, quantity })), method, member_id: member || undefined }, 'Sold');
-                if (r && r !== true) { setReceipt(r); setCart({}); }
+                if (r && r !== true) { printPaymentReceipt('gym_sale', r.id); setReceipt(r); setCart({}); }
               }}>Charge about {total.toFixed(2)}</button>
           </div>
           {receipt ? <p role="status">Sale {receipt.sale_number}: {receipt.total} by {String(receipt.method).replace('_', ' ')} ({receipt.lines.map((l: Row) => `${l.quantity} x ${l.name}`).join(', ')})</p> : null}

@@ -32,6 +32,7 @@ import {
   type PriceSheet,
   type SyncResult,
 } from '../../../../lib/restaurantOffline';
+import { printPaymentReceipt, requestReceiptPrint } from '../../../../lib/receiptPrint';
 import './restaurant-till.css';
 
 const dishPhotos = new Map<string, string>();
@@ -732,6 +733,7 @@ function RestaurantTill() {
             payments: parts.map((p) => ({ method: p.method, amount: Number(p.amount), ...(p.reference ? { reference: p.reference } : {}) })),
           }),
         });
+        printPaymentReceipt('restaurant_order', paying.id);
         void api('/restaurant/till/shift')
           .then((res) => setShift(res?.data || null))
           .catch(() => undefined);
@@ -780,6 +782,19 @@ function RestaurantTill() {
         })),
       };
       setQueue(enqueueSale(sale));
+      requestReceiptPrint({
+        kind: 'offline',
+        ref: sale.offline_ref,
+        receipt: {
+          reference: String(paying.order_number),
+          created_at: sale.created_at,
+          items: sale.lines.map((l) => ({ name: l.name || 'Item', quantity: l.quantity, line_total: Number(l.amount || 0) })),
+          total,
+          payments: [{ payment_method: method, amount: total }],
+          cash_tendered: method === 'cash' && cash > 0 ? cash : null,
+          change_due: method === 'cash' && cash > 0 ? Math.max(0, cash - total) : null,
+        },
+      });
       setDone({
         number: String(paying.order_number),
         total,
@@ -806,6 +821,9 @@ function RestaurantTill() {
           ...(tipAmount ? { tip: tipAmount } : {}),
           ...(method === 'mobile_money' && momoRef ? { payments: [{ method, amount: total, reference: momoRef }] } : {}),
         }),
+      });
+      printPaymentReceipt('restaurant_order', paying.id, {
+        cashTendered: method === 'cash' && cash > 0 ? cash : null,
       });
       void api('/restaurant/till/shift')
         .then((res) => setShift(res?.data || null))

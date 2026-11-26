@@ -1,41 +1,72 @@
-# Till print agent (stub)
+# Till print agent
 
-This process runs **on the till PC or Android termux/python**, not in the browser.
+Runs **on the till computer**, not in the browser. It collects this till's print
+jobs from the ERP and sends ESC/POS bytes straight to the thermal printer, with
+no print dialog. Python 3.10+ only; nothing to install with pip.
 
-The browser **cannot** enumerate every OS printer and **cannot** silently send
-to kitchen + bar + receipt at once. Pair this agent, or register a private
-network IP on the server allowlist.
+A job is reported **printed** only when the printer, or the Windows print queue,
+accepted it. That is not a paper sensor: check the first slips by eye.
 
-## Pair (Company Admin)
+## 1. Check the printer first (no ERP needed)
+
+```powershell
+python agent.py test "windows:Xprinter XP-80"     # USB, LAN or Bluetooth printer installed in Windows
+python agent.py test "tcp:192.168.1.130:9100"     # network printer by IP
+python agent.py test "serial:COM5@19200"          # serial or Bluetooth COM port
+```
+
+Linux: `python3 agent.py test "file:/dev/usb/lp0"` (only from the till's own settings).
+Android tablets are supported only through a network printer reached by an agent
+on another computer on the same network.
+
+## 2. Pair
 
 1. Sign in as Company Admin (or a role with `printers:write`).
-2. Open **Settings → Printers**.
-3. Enter a till name and click **Issue till pairing code**.
-4. On the till:
+2. **Printers → Network or till agent → Issue till pairing code**.
+3. On the till (PowerShell):
 
-```bash
-export RIBDIGI_API_BASE=https://YOUR-ERP/api/v1
+```powershell
+$env:RIBDIGI_API_BASE = "https://YOUR-ERP/api/v1"
 python agent.py pair ABCD1234 "Front till"
-export RIBDIGI_AGENT_TOKEN=rdp_...   # shown once
+$env:RIBDIGI_AGENT_TOKEN = "rdp_..."     # shown once
 python agent.py
 ```
 
-5. In Printers, add a destination with connection **Paired till agent** and
-   assign purposes (`customer_receipt`, `kitchen`, `bar`, `invoice`).
+Keep it running (Windows Task Scheduler, "At log on"). Do **not** commit tokens
+or `.env` files.
 
-Do **not** commit tokens or `.env` files.
+## 3. Add the printer in the ERP
 
-## Offline sale journal
+Connection **Paired till agent**, then say how the till reaches it: installed
+Windows printer, IP address, COM port, or the till's own `RIBDIGI_PRINTER`.
+Tick the jobs it prints. On each till open **Printers → Automatic receipt
+printing on this till** to choose its printer.
 
-`python agent.py` also listens on `127.0.0.1:8765` (override with `RIBDIGI_OFFLINE_PORT`). Point of Sale writes each queued sale there. The file is outside the browser:
+## Offline sales
+
+`python agent.py` also listens on `127.0.0.1:8765` (`RIBDIGI_OFFLINE_PORT`).
+When the till has no connection, the ERP page sends the provisional receipt to
+`/v1/print` there. Only the ERP's own web address may print: it is taken from
+`RIBDIGI_API_BASE`; set `RIBDIGI_WEB_ORIGIN` if the web app has a different
+address. The printer is `RIBDIGI_PRINTER`, or the one the last receipt used.
+Chrome may ask once to allow the page to reach this computer.
+
+The same listener keeps a copy of queued offline sales outside the browser:
 
 - `RIBDIGI_OFFLINE_JOURNAL`, or
 - `%LOCALAPPDATA%\Ribdigi\pos-offline-journal.json` on Windows
 
-`python agent.py journal` runs only that listener. It does not need `RIBDIGI_AGENT_TOKEN` and it does not upload the sale. Clearing site data does not delete the file. Recovery works only when this process was running at the time the sale was saved, and the file is still on this PC. A private window with no journal file cannot recover the sale. The browser device id is still not strong device binding.
+`python agent.py journal` runs only the listener. It does not need
+`RIBDIGI_AGENT_TOKEN` and it does not upload the sale.
 
-## Hardware still required
+## Troubleshooting
 
-This stub prints to stdout and marks jobs `printed`. Real ESC/POS, CUPS, or
-Android USB printing is a local install step on the till. Until that is wired,
-use **Browser print dialog** fallback on POS.
+| Message | Meaning |
+|---|---|
+| `did not print. Check that it is switched on and connected` | Windows kept the job; the agent removed it from the queue |
+| `Could not reach the printer at …` | Wrong IP, printer off, or a different network |
+| `The printer is out of paper` / `offline` | Network printer status answer |
+| `Windows has no printer called …` | The name must match Windows exactly |
+
+`python agent.py --dry-run` prints the text to the window and never reports a job
+as printed.

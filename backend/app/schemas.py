@@ -9452,6 +9452,8 @@ class PosSaleCreate(BaseModel):
     local_receipt_number: Annotated[str, Field(max_length=64)] | None = None
     # Pharmacy POS fill. Omit on retail. Existence is tenant-scoped (**404**/409).
     prescription_id: UuidIdValue | None = None
+    # Cash handed over at the till, printed with the change on the receipt. Never affects the books.
+    cash_tendered: NonNegativeMoneyValue | None = None
 
     @model_validator(mode="after")
     def require_override_reason_when_flagged(self):

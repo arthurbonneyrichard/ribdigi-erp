@@ -34,6 +34,7 @@ import TradeDesk from './TradeDesk';
 import SafetyDesk from './SafetyDesk';
 import RegularsDesk from './RegularsDesk';
 import { ItemDetailsPanel, ShelfPanel, SuppliersPanel, useSuppliers } from './StockExtras';
+import { printPaymentReceipt, requestReceiptPrint, type OfflineReceiptRequest } from '../../../lib/receiptPrint';
 import './bakery.css';
 
 type Row = Record<string, any>;
@@ -104,17 +105,22 @@ const label = (list: { id: string; label: string }[], id: string) => list.find((
 const safe = (value: unknown) =>
   String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
 
-function printReceipt(sale: Row) {
-  const rows = (sale.items || [])
-    .map((i: Row) => `<tr><td>${safe(i.quantity)} x ${safe(i.name)}</td><td style="text-align:right">${money(i.line_total)}</td></tr>`)
-    .join('');
-  const page = window.open('', '_blank', 'width=360,height=600');
-  if (!page) return;
-  page.document.write(
-    `<html><body style="font-family:monospace"><h3>${safe(sale.sale_number)}</h3><table style="width:100%">${rows}</table><hr/>${Number(sale.discount) > 0 ? `<p>Discount ${money(sale.discount)}</p>` : ''}<p>Tax ${money(sale.tax)}</p><h3>Total ${money(sale.total)}</h3></body></html>`,
-  );
-  page.document.close();
-  page.print();
+/** The slip for a sale kept on this till while offline. */
+function offlineSlip(ref: string, sale: OfflineSale, number: string, given: number): OfflineReceiptRequest {
+  const cash = sale.payment_method === 'cash' && given > 0;
+  return {
+    kind: 'offline',
+    ref,
+    receipt: {
+      reference: number,
+      created_at: sale.created_at,
+      items: sale.lines.map((l) => ({ name: l.name || 'Item', quantity: l.quantity, line_total: Number(l.amount || 0) })),
+      total: sale.charged_total,
+      payments: [{ payment_method: sale.payment_method, amount: sale.charged_total }],
+      cash_tendered: cash ? given : null,
+      change_due: cash ? Math.max(0, given - sale.charged_total) : null,
+    },
+  };
 }
 
 function downloadCsv(name: string, rows: (string | number)[][]) {
@@ -447,7 +453,10 @@ function BakeryDesk() {
       })),
     };
     setQueue(enqueueSale(sale, undefined, undefined, 'bakery'));
+    const slip = offlineSlip(ref, sale, offlineLabel(ref), Number(given));
+    requestReceiptPrint(slip);
     setLastSale({
+      offline: slip,
       sale_number: offlineLabel(ref),
       total: sale.charged_total,
       tax: 0,
@@ -484,6 +493,8 @@ function BakeryDesk() {
       change != null && change > 0 ? `Sale complete. Give ${money(change)} change.` : 'Sale complete',
     );
     if (sale) {
+      const cashGiven = !splitOn && method === 'cash' && Number(given) > 0 ? Number(given) : null;
+      printPaymentReceipt('bakery_sale', (sale as Row).id, { cashTendered: cashGiven });
       setLastSale(sale as Row);
       setBasket({});
       setGiven('');
@@ -555,6 +566,7 @@ function BakeryDesk() {
       orderForm.quote ? 'Quote saved. Find it under Quotes.' : orderForm.delivery ? 'Order taken for delivery' : 'Order taken',
     );
     if (ok) {
+      if (deposit > 0) printPaymentReceipt('bakery_order_payment', (ok as Row).payment_id);
       setOrderForm(blankOrder);
       setOrderLines([{ product_id: '', quantity: '1', note: '' }]);
     }
@@ -586,10 +598,17 @@ function BakeryDesk() {
     }
     if (dialog.kind === 'collect') {
       ok = await run(`/bakery/orders/${dialog.row.id}/collect`, { payment_method: Number(dialog.row.balance) > 0 ? dialog.method : null }, dialog.row.delivery ? 'Delivered and paid' : 'Order handed over');
+      if (ok && Number(dialog.row.balance) > 0) printPaymentReceipt('bakery_sale', (ok as Row).sale_id);
     }
-    if (dialog.kind === 'confirmquote') ok = await run(`/bakery/orders/${dialog.row.id}/confirm-quote`, { deposit: Number(dialog.amount) || 0, method: dialog.method }, 'Quote confirmed as an order');
+    if (dialog.kind === 'confirmquote') {
+      ok = await run(`/bakery/orders/${dialog.row.id}/confirm-quote`, { deposit: Number(dialog.amount) || 0, method: dialog.method }, 'Quote confirmed as an order');
+      if (ok && Number(dialog.amount) > 0) printPaymentReceipt('bakery_order_payment', (ok as Row).payment_id);
+    }
     if (dialog.kind === 'declinequote') ok = await run(`/bakery/orders/${dialog.row.id}/decline-quote`, { reason: dialog.reason.trim() }, 'Quote declined');
-    if (dialog.kind === 'part') ok = await run(`/bakery/orders/${dialog.row.id}/part-payment`, { amount: Number(dialog.amount), method: dialog.method }, 'Payment taken');
+    if (dialog.kind === 'part') {
+      ok = await run(`/bakery/orders/${dialog.row.id}/part-payment`, { amount: Number(dialog.amount), method: dialog.method }, 'Payment taken');
+      if (ok) printPaymentReceipt('bakery_order_payment', (ok as Row).payment_id);
+    }
     if (dialog.kind === 'failed') ok = await run(`/bakery/orders/${dialog.row.id}/delivery-failed`, { reason: dialog.reason.trim() }, 'Brought back to the shop');
     if (dialog.kind === 'handin') {
       const res = (await run(`/bakery/driver/bags/${dialog.row.bag.id}/hand-in`, { counted_cash: Number(dialog.counted) }, 'Cash handed in')) as Row | null;
@@ -1028,7 +1047,7 @@ function BakeryDesk() {
                 <button type="button" className="bk-primary bk-wide bk-charge" disabled={busy || basketLines.length === 0 || (change != null && change < 0) || discountTooBig || (needsReason && discountReason.trim().length < 3) || !splitReady} onClick={() => void charge()}>
                   Charge {money(basketTotal)}
                 </button>
-                {lastSale ? <button type="button" className="bk-wide" onClick={() => printReceipt(lastSale)}>Print receipt {lastSale.sale_number}</button> : null}
+                {lastSale ? <button type="button" className="bk-wide" onClick={() => (lastSale.offline ? requestReceiptPrint({ ...lastSale.offline, again: true }) : printPaymentReceipt('bakery_sale', lastSale.id, { mode: 'reprint' }))}>Print receipt {lastSale.sale_number}</button> : null}
                 <div className="bk-drawer">
                   <span>{usingBag ? 'Cash in your bag' : 'Cash in the drawer'}</span><b>{money(till.expected_cash)}</b>
                 </div>

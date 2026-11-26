@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense } from 'react';
+import ReceiptPrinterHost from '../../components/ReceiptPrinter';
 import Shell from '../../components/Shell';
 
 /**
@@ -12,6 +13,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <Suspense fallback={<div className="page-skeleton" role="status" aria-live="polite"><div className="page-skeleton-progress" /><p className="muted">Loading workspace…</p></div>}>
       <Shell>{children}</Shell>
+      <ReceiptPrinterHost />
     </Suspense>
   );
 }
